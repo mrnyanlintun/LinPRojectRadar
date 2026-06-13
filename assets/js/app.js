@@ -122,19 +122,8 @@
         "stroke-dasharray": r === ZONE_EDGES.red ? "none" : "2 5"
       }));
     });
-    const zoneLabels = [
-      { r: ZONE_EDGES.green / 2,                          text: "GREEN",      color: "var(--clear-green)" },
-      { r: (ZONE_EDGES.green + ZONE_EDGES.amber) / 2,     text: "AMBER",      color: "var(--radar-amber)" },
-      { r: (ZONE_EDGES.amber + ZONE_EDGES.red) / 2 + 6,   text: "RED-REVIEW", color: "var(--alarm-red)" }
-    ];
-    zoneLabels.forEach((z) => {
-      const t = el("text", {
-        x: CENTER, y: CENTER - z.r, "text-anchor": "middle",
-        class: "zone-label", fill: z.color
-      });
-      t.textContent = z.text;
-      svg.appendChild(t);
-    });
+    // Zone names are NOT written across the scope face (they read as floating
+    // text); the legend below the radar names green / amber / red instead.
 
     // sector dividers + labels
     SECTOR_DRAW.forEach((sec) => {
