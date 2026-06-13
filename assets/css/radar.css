@@ -604,3 +604,15 @@ body[data-theme="schematic"] .la-launcher { color: #10131a; }
 }
 .awaiting-state p { margin: 0 0 8px; }
 .awaiting-state p:last-child { margin-bottom: 0; }
+
+/* ---------- Phase 2: store status banner (non-fatal) ---------- */
+.store-banner {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: 18px; z-index: 120; max-width: min(560px, 92vw);
+  font-size: 13px; line-height: 1.4; padding: 10px 16px;
+  border-radius: 999px; box-shadow: var(--shadow);
+  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+}
+.store-banner.info { background: var(--surface); border: 1px solid var(--line); color: var(--muted); }
+.store-banner.warn { background: color-mix(in srgb, var(--radar-amber) 14%, var(--surface)); border: 1px solid var(--radar-amber); color: var(--text); }
+.store-banner[hidden] { display: none; }
