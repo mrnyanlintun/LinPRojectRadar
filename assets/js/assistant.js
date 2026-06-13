@@ -144,25 +144,28 @@
     wrap.id = "lin-assistant";
     wrap.innerHTML =
       `<button id="la-launcher" class="la-launcher" aria-expanded="false" aria-controls="la-panel"
-               title="Lin AI assistant — explains, doesn't decide">
-         <span aria-hidden="true">?</span><span class="la-launcher-label">Assistant</span>
+               title="Ask Lin">
+         <span aria-hidden="true">💬</span><span class="la-launcher-label">Ask Lin</span>
        </button>
-       <div id="la-panel" class="la-panel" role="dialog" aria-label="Lin AI assistant" hidden>
+       <div id="la-panel" class="la-panel" role="dialog" aria-label="Lin assistant" hidden>
          <div class="la-head">
-           <div>
-             <strong>Lin Assistant</strong>
-             <span class="la-tag">AI (Llama via Groq) — explains, doesn't decide</span>
+           <div><strong>Lin</strong></div>
+           <div class="la-head-actions">
+             <button id="la-voice-toggle" class="la-icon-btn" type="button" aria-pressed="true" title="Speak answers aloud" hidden>
+               <span class="la-voice-on" aria-hidden="true">🔊</span><span class="la-voice-off" aria-hidden="true">🔇</span>
+             </button>
+             <button id="la-close" class="la-close" aria-label="Close assistant">×</button>
            </div>
-           <button id="la-close" class="la-close" aria-label="Close assistant">×</button>
          </div>
          <div id="la-msgs" class="la-msgs" aria-live="polite">
            <div class="la-msg la-bot">
-             <p>I answer questions about this demo and the selected project. Answers come from an AI model (Llama 3.3 via Groq) through the project's own backend; if it's unreachable I fall back to scripted help from the knowledge library. I <strong>explain</strong> — the governance decision is owned by the rule logic, not by me.</p>
+             <p>I answer questions about this demo and the selected project. If the AI is unreachable I fall back to scripted help from the knowledge library. Type a question, or use the mic to ask by voice.</p>
            </div>
          </div>
          <div class="la-suggest">${SUGGESTIONS.map((s) => `<button class="la-chip">${esc(s)}</button>`).join("")}</div>
          <form id="la-form" class="la-form">
-           <input id="la-input" type="text" placeholder="Ask about the demo…" aria-label="Question for the scripted assistant" maxlength="200" autocomplete="off" />
+           <button id="la-mic" class="la-icon-btn la-mic" type="button" title="Ask by voice" aria-label="Ask by voice" hidden>🎙️</button>
+           <input id="la-input" type="text" placeholder="Ask about the demo…" aria-label="Question for the Lin assistant" maxlength="200" autocomplete="off" />
            <button type="submit" class="btn primary la-send">Ask</button>
          </form>
        </div>`;
@@ -185,24 +188,56 @@
     document.getElementById("la-close").addEventListener("click", () => toggle(false));
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !panel.hidden) toggle(false); });
 
+    /* ---------- voice OUT (text-to-speech) ---------- */
+    const ttsOK = "speechSynthesis" in window && typeof window.SpeechSynthesisUtterance !== "undefined";
+    let voiceOut = true;
+    try { voiceOut = localStorage.getItem("lin-voice-out") !== "off"; } catch (e) {}
+    const voiceToggle = document.getElementById("la-voice-toggle");
+    function reflectVoiceToggle() {
+      if (!voiceToggle) return;
+      voiceToggle.setAttribute("aria-pressed", String(voiceOut));
+      voiceToggle.classList.toggle("muted", !voiceOut);
+      voiceToggle.title = voiceOut ? "Answers spoken aloud (tap to mute)" : "Answers muted (tap to speak)";
+    }
+    if (ttsOK && voiceToggle) {
+      voiceToggle.hidden = false;
+      reflectVoiceToggle();
+      voiceToggle.addEventListener("click", () => {
+        voiceOut = !voiceOut;
+        try { localStorage.setItem("lin-voice-out", voiceOut ? "on" : "off"); } catch (e) {}
+        if (!voiceOut) window.speechSynthesis.cancel();
+        reflectVoiceToggle();
+      });
+    }
+    function speak(text) {
+      // Autoplay note: browsers may block the first utterance until the user
+      // has interacted with the page; that's expected, not an error.
+      if (!ttsOK || !voiceOut || !text) return;
+      try {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(String(text));
+        u.rate = 1.0; u.pitch = 1.0;
+        window.speechSynthesis.speak(u);
+      } catch (e) { /* non-fatal */ }
+    }
+
     function addBot(html) {
       msgs.insertAdjacentHTML("beforeend", `<div class="la-msg la-bot"><p>${html}</p></div>`);
       msgs.scrollTop = msgs.scrollHeight;
     }
-    function scriptedReply(text) {
+    function scripted(text) {
       const a = answer(text);
-      return `<strong>${esc(a.title)}.</strong> ${esc(a.body)}`;
+      return { html: `<strong>${esc(a.title)}.</strong> ${esc(a.body)}`, plain: `${a.title}. ${a.body}` };
     }
 
     async function ask(text) {
-      if (!text.trim()) return;
+      if (!text || !text.trim()) return;
       msgs.insertAdjacentHTML("beforeend", `<div class="la-msg la-user"><p>${esc(text)}</p></div>`);
       msgs.scrollTop = msgs.scrollHeight;
 
       // No backend configured → scripted answer only.
       if (!(window.LinStore && LinStore.configured && LinStore.configured())) {
-        addBot(scriptedReply(text));
-        return;
+        const s = scripted(text); addBot(s.html); speak(s.plain); return;
       }
       // Live AI answer via Groq (scoped to the open project), with scripted fallback.
       const thinking = document.createElement("div");
@@ -214,13 +249,14 @@
         const answerText = await LinStore.chat(text, id);
         thinking.remove();
         if (answerText && String(answerText).trim()) {
-          addBot(esc(String(answerText)));
+          addBot(esc(String(answerText))); speak(String(answerText));
         } else {
-          addBot(scriptedReply(text) + ` <span class="la-fallback-note">(scripted fallback)</span>`);
+          const s = scripted(text); addBot(s.html + ` <span class="la-fallback-note">(scripted fallback)</span>`); speak(s.plain);
         }
       } catch (e) {
         thinking.remove();
-        addBot(scriptedReply(text) + ` <span class="la-fallback-note">(scripted fallback — AI unreachable)</span>`);
+        const s = scripted(text);
+        addBot(s.html + ` <span class="la-fallback-note">(scripted fallback — AI unreachable)</span>`); speak(s.plain);
       }
     }
 
@@ -232,6 +268,29 @@
 
     wrap.querySelectorAll(".la-chip").forEach((c) =>
       c.addEventListener("click", () => ask(c.textContent)));
+
+    /* ---------- voice IN (speech-to-text) ---------- */
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const mic = document.getElementById("la-mic");
+    if (SR && mic) {
+      mic.hidden = false;
+      let recog = null, listening = false;
+      mic.addEventListener("click", () => {
+        if (listening && recog) { recog.stop(); return; }
+        recog = new SR();
+        recog.lang = "en-US"; recog.interimResults = false; recog.maxAlternatives = 1;
+        recog.onstart = () => { listening = true; mic.classList.add("listening"); mic.title = "Listening… (tap to stop)"; input.placeholder = "Listening…"; };
+        recog.onerror = () => { /* non-fatal: mic permission denied, no speech, etc. */ };
+        recog.onend = () => { listening = false; mic.classList.remove("listening"); mic.title = "Ask by voice"; input.placeholder = "Ask about the demo…"; };
+        recog.onresult = (ev) => {
+          const said = ev.results[0][0].transcript;
+          input.value = said;
+          ask(said);            // same Groq chat path as typed questions
+          input.value = "";
+        };
+        try { recog.start(); } catch (e) { /* already started */ }
+      });
+    }
 
     // public hook so other pages (e.g. Knowledge "Ask the AI") can open the
     // assistant pre-filled and send through the same live chat + fallback path.

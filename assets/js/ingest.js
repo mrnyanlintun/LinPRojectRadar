@@ -236,7 +236,7 @@
       box.innerHTML =
         `<h3 class="kn-defterm">AI document analysis ${verdict ? `· <span class="ig-verdict v-${verdict.toLowerCase()}">${esc(verdict.toUpperCase())}</span>` : ""}</h3>
          <p class="ig-analysis-text">${esc(String(analysis))}</p>
-         <p class="dc-note">Illustrative analysis (Llama via Groq) — supporting explanation only, <strong>not a validated compliance determination</strong>. The signal delta is set by the transparent keyword rules above and gated by Approve/Reject.</p>`;
+         <p class="dc-note">Illustrative AI analysis, supporting explanation only (<strong>not a validated compliance determination</strong>). The signal delta is set by the transparent keyword rules above and gated by Approve/Reject.</p>`;
     } catch (e) {
       box.innerHTML = `<p class="kn-sub">AI analysis unreachable — keyword extraction above still works. (Retry later.)</p>`;
     }
@@ -342,7 +342,7 @@
         <section class="panel">
           <p class="eyebrow">Create project</p>
           <h2 class="kn-h">New project</h2>
-          <p class="kn-sub">Assigns the next numeric id (backend-owned) and creates an <strong>empty</strong> project (no signals) plotted in an awaiting-ingest state. Synthetic; persisted to the Drive-backed project store. Populate its signals to run the models.</p>
+          <p class="kn-sub">A new project is assigned a project number automatically and starts empty. Ingest documents to populate its quantitative project-management analysis.</p>
           <label class="rationale-label" for="np-name">Project name</label>
           <input id="np-name" class="ig-input" maxlength="80" placeholder="e.g. Concourse Wayfinding Refresh" />
           <label class="rationale-label" for="np-sector">Delivery type</label>

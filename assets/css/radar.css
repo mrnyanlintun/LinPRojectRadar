@@ -670,3 +670,19 @@ body.nav-open .nav-rail { transform: translateX(0); }
 }
 .kn-ask:hover { background: color-mix(in srgb, var(--phosphor) 24%, transparent); }
 .kn-ask:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
+
+/* ---------- Phase 5: assistant voice controls ---------- */
+.la-head-actions { display: flex; align-items: center; gap: 6px; }
+.la-icon-btn {
+  background: transparent; border: 1px solid var(--line); border-radius: 8px;
+  color: var(--text); cursor: pointer; font-size: 15px; line-height: 1;
+  width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
+}
+.la-icon-btn:hover { background: var(--surface-soft); }
+.la-icon-btn:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
+.la-voice-off { display: none; }
+.la-icon-btn.muted .la-voice-on { display: none; }
+.la-icon-btn.muted .la-voice-off { display: inline; }
+.la-mic.listening { border-color: var(--alarm-red); color: var(--alarm-red); animation: la-pulse 1.1s ease-in-out infinite; }
+@keyframes la-pulse { 0%,100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--alarm-red) 45%, transparent); } 50% { box-shadow: 0 0 0 5px transparent; } }
+@media (prefers-reduced-motion: reduce) { .la-mic.listening { animation: none; } }
