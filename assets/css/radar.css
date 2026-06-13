@@ -1,6 +1,6 @@
 /* ============================================================
    Lin Project Radar — radar.css
-   Three themes: light (default) / console / schematic
+   Two themes: dark (default) / light
    ============================================================ */
 
 :root {
@@ -27,11 +27,11 @@
   --clear-green: #16a34a;
   --eyebrow: #2563eb;
 
-  --zone-green: rgba(22,163,74,.08);
-  --zone-amber: rgba(245,158,11,.08);
-  --zone-red: rgba(239,68,68,.08);
-  --zone-crit: rgba(239,68,68,.14);
-  --ring-line: rgba(15,23,42,.16);
+  --zone-green: rgba(22,163,74,.18);
+  --zone-amber: rgba(245,158,11,.20);
+  --zone-red: rgba(239,68,68,.18);
+  --zone-crit: rgba(239,68,68,.28);
+  --ring-line: rgba(15,23,42,.20);
   --sweep-fill: rgba(37,99,235,.10);
 
   --grid-opacity: 0;
@@ -39,7 +39,8 @@
   --shadow: 0 14px 40px rgba(15,23,42,.10);
 }
 
-body[data-theme="console"] {
+/* ----- DARK (default) ----- */
+body[data-theme="dark"] {
   --page-bg: #03101f;
   --surface: rgba(8,22,42,.72);
   --surface-soft: rgba(4,16,32,.55);
@@ -49,48 +50,22 @@ body[data-theme="console"] {
   --muted: #9bc1d2;
   --faint: rgba(190,225,238,.6);
   --phosphor: #35d6e8;
-  --radar-amber: #ffaa3d;
+  --radar-amber: #ffb01f;
   --alarm-red: #ff5d52;
-  --clear-green: #3fd68f;
-  --eyebrow: #ffaa3d;
+  --clear-green: #2fe08f;
+  --eyebrow: #ffb01f;
 
-  --zone-green: rgba(63,214,143,.07);
-  --zone-amber: rgba(255,170,61,.07);
-  --zone-red: rgba(255,93,82,.08);
-  --zone-crit: rgba(255,93,82,.16);
-  --ring-line: rgba(120,215,235,.22);
+  /* bright, saturated status bands so blips read clearly on dark */
+  --zone-green: rgba(47,224,143,.20);
+  --zone-amber: rgba(255,176,31,.20);
+  --zone-red: rgba(255,93,82,.22);
+  --zone-crit: rgba(255,93,82,.30);
+  --ring-line: rgba(120,215,235,.30);
   --sweep-fill: rgba(53,214,232,.12);
 
   --grid-opacity: .4;
   --glass-blur: blur(16px) saturate(160%);
   --shadow: 0 18px 54px rgba(0,0,0,.45), 0 0 36px rgba(53,214,232,.08);
-}
-
-body[data-theme="schematic"] {
-  --page-bg: #121315;
-  --surface: rgba(27,28,31,.78);
-  --surface-soft: rgba(18,19,21,.6);
-  --line: rgba(160,164,170,.34);
-  --line-strong: rgba(225,228,232,.32);
-  --text: #f0f1f2;
-  --muted: #a2a7ae;
-  --faint: #72777f;
-  --phosphor: #8ab4ff;
-  --radar-amber: #facc15;
-  --alarm-red: #f87171;
-  --clear-green: #4ade80;
-  --eyebrow: #facc15;
-
-  --zone-green: rgba(74,222,128,.06);
-  --zone-amber: rgba(250,204,21,.06);
-  --zone-red: rgba(248,113,113,.07);
-  --zone-crit: rgba(248,113,113,.14);
-  --ring-line: rgba(180,184,190,.24);
-  --sweep-fill: rgba(250,204,21,.08);
-
-  --grid-opacity: .6;
-  --glass-blur: blur(14px) saturate(125%);
-  --shadow: 0 20px 58px rgba(0,0,0,.5);
 }
 
 * { box-sizing: border-box; }
@@ -160,7 +135,6 @@ body::before {
 .theme-switch button:hover { color: var(--text); }
 .theme-switch button.active { background: var(--phosphor); color: #fff; }
 body[data-theme="light"] .theme-switch button.active { color: #fff; }
-body[data-theme="schematic"] .theme-switch button.active { color: #10131a; }
 
 /* ---------- page intro ---------- */
 .intro { margin: 8px 0 22px; }
@@ -315,7 +289,6 @@ body[data-theme="schematic"] .theme-switch button.active { color: #10131a; }
 }
 .btn:hover { background: var(--surface-soft); }
 .btn.primary { background: var(--phosphor); color: #fff; border-color: var(--phosphor); }
-body[data-theme="schematic"] .btn.primary { color: #10131a; }
 .btn.primary:hover { opacity: .9; background: var(--phosphor); }
 .btn:disabled { opacity: .4; cursor: not-allowed; }
 .btn:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
@@ -374,7 +347,6 @@ body[data-theme="schematic"] .btn.primary { color: #10131a; }
 .nav-rail button svg { width: 16px; height: 16px; flex: 0 0 auto; }
 .nav-rail button:hover { color: var(--text); background: var(--surface-soft); }
 .nav-rail button.active { background: var(--phosphor); border-color: var(--phosphor); color: #fff; }
-body[data-theme="schematic"] .nav-rail button.active { color: #10131a; }
 .nav-rail button:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
 
 /* narrow screens: rail becomes a horizontal strip above the content */
@@ -493,7 +465,6 @@ body[data-theme="schematic"] .nav-rail button.active { color: #10131a; }
   font-family: var(--font-display); font-weight: 700; font-size: 14px;
   padding: 11px 18px; cursor: pointer; box-shadow: var(--shadow);
 }
-body[data-theme="schematic"] .la-launcher { color: #10131a; }
 .la-launcher span[aria-hidden] {
   display: inline-flex; width: 20px; height: 20px; align-items: center; justify-content: center;
   border: 2px solid currentColor; border-radius: 50%; font-size: 12px;
@@ -626,3 +597,76 @@ body[data-theme="schematic"] .la-launcher { color: #10131a; }
 .ig-verdict.v-consistent { color: var(--clear-green); background: color-mix(in srgb, var(--clear-green) 16%, transparent); }
 .la-thinking p { opacity: 0.7; font-style: italic; }
 .la-fallback-note { color: var(--faint); font-size: 11px; }
+
+/* ============================================================
+   Phase 4 UI pass: full-width radar, overlay nav, knowledge
+   ============================================================ */
+
+/* ---------- full-width radar on Portfolio ---------- */
+.radar-panel-wide { width: 100%; }
+.radar-panel-wide .radar-wrap { max-width: min(700px, 72vh); margin: 0 auto; }
+.portfolio-below { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; align-items: start; }
+.portfolio-below .log-panel { grid-column: 1 / -1; }
+@media (max-width: 940px) { .portfolio-below { grid-template-columns: 1fr; } }
+
+/* ---------- nav rail + theme as a reveal overlay ---------- */
+.layout { display: block; }                 /* nav is an overlay, not a column */
+.content { min-width: 0; }
+
+.nav-toggle {
+  display: none;                            /* shown on touch/narrow (below) */
+  align-items: center; justify-content: center;
+  width: 38px; height: 38px; flex: 0 0 auto;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
+}
+.nav-toggle svg { width: 18px; height: 18px; }
+.nav-toggle:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
+
+.nav-edge { position: fixed; left: 0; top: 64px; bottom: 0; width: 14px; z-index: 58; }
+
+.nav-rail {
+  position: fixed; left: 0; top: 72px; z-index: 60;
+  width: 188px; max-height: calc(100vh - 90px); overflow: auto;
+  display: flex; flex-direction: column; gap: 4px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  box-shadow: var(--shadow);
+  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  padding: 12px 10px;
+  transform: translateX(-112%); transition: transform .2s ease;
+}
+body.nav-open .nav-rail { transform: translateX(0); }
+.nav-rail .theme-switch { margin-top: 10px; }
+
+/* a thin always-visible tab hint on the left edge (desktop affordance) */
+@media (hover: hover) and (pointer: fine) and (min-width: 760px) {
+  .nav-edge::before {
+    content: ""; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    width: 4px; height: 64px; border-radius: 0 4px 4px 0;
+    background: var(--phosphor); opacity: .5;
+  }
+}
+
+/* touch / narrow / non-hover: show the hamburger toggle */
+@media (hover: none), (pointer: coarse), (max-width: 759px) {
+  .nav-toggle { display: inline-flex; }
+  .nav-edge { display: none; }
+  .nav-rail { top: 0; max-height: 100vh; border-radius: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-rail { transition: none; }
+}
+
+/* ---------- Knowledge: impact + Ask-the-AI ---------- */
+.kn-impact { font-size: 13px; line-height: 1.55; color: var(--text); margin: 8px 0 6px; }
+.kn-impact b { color: var(--eyebrow); }
+.kn-ask {
+  font-family: var(--font-body); font-size: 12px; font-weight: 600;
+  background: color-mix(in srgb, var(--phosphor) 14%, transparent);
+  color: var(--phosphor); border: 1px solid var(--phosphor);
+  border-radius: 999px; padding: 5px 12px; cursor: pointer;
+}
+.kn-ask:hover { background: color-mix(in srgb, var(--phosphor) 24%, transparent); }
+.kn-ask:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }

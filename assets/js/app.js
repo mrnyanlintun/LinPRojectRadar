@@ -563,7 +563,41 @@
 
   function wireNav() {
     document.querySelectorAll("[data-nav]").forEach((b) =>
-      b.addEventListener("click", () => showPage(b.dataset.nav)));
+      b.addEventListener("click", () => {
+        showPage(b.dataset.nav);
+        // on touch/narrow the rail is a toggled overlay — close after choosing
+        if (!hoverCapable()) setNavOpen(false);
+      }));
+  }
+
+  /* ---------- nav rail + theme reveal (hover on desktop, tap on touch) ---------- */
+  const hoverCapable = () =>
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches &&
+    window.matchMedia("(min-width: 760px)").matches;
+
+  function setNavOpen(open) {
+    document.body.classList.toggle("nav-open", open);
+    const t = $("#nav-toggle");
+    if (t) t.setAttribute("aria-expanded", String(open));
+  }
+
+  function wireNavReveal() {
+    const rail = $("#nav-rail");
+    const edge = $("#nav-edge");
+    const toggle = $("#nav-toggle");
+    if (toggle) toggle.addEventListener("click", () => setNavOpen(!document.body.classList.contains("nav-open")));
+    // desktop hover: hot-zone reveals, leaving the rail hides
+    if (edge) edge.addEventListener("mouseenter", () => { if (hoverCapable()) setNavOpen(true); });
+    if (rail) {
+      rail.addEventListener("mouseleave", () => { if (hoverCapable()) setNavOpen(false); });
+      // keyboard access: focusing into the rail reveals it; leaving hides it
+      rail.addEventListener("focusin", () => setNavOpen(true));
+      rail.addEventListener("focusout", (e) => {
+        if (!rail.contains(e.relatedTarget) && e.relatedTarget !== toggle) setNavOpen(false);
+      });
+    }
+    // Escape closes the overlay
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") setNavOpen(false); });
   }
 
   /* ---------- public API (used by ingest.js) ---------- */
@@ -589,15 +623,16 @@
     document.querySelectorAll("[data-set-theme]").forEach((b) =>
       b.addEventListener("click", () => applyTheme(b.dataset.setTheme))
     );
-    // theme rename migration: clean→light, aviation→console, twin→schematic
-    const THEME_MIGRATE = { clean: "light", aviation: "console", twin: "schematic" };
-    let saved = "light";
-    try { saved = localStorage.getItem("lin-radar-theme") || "light"; } catch (e) {}
-    if (THEME_MIGRATE[saved]) saved = THEME_MIGRATE[saved];
-    if (!["light", "console", "schematic"].includes(saved)) saved = "light";
+    // Two themes only (Light / Dark), Dark default. Migrate any legacy stored
+    // value: the old light/"clean" map to Light; every other legacy theme
+    // (the old dark variants) maps to Dark.
+    let stored = "dark";
+    try { stored = localStorage.getItem("lin-radar-theme") || "dark"; } catch (e) {}
+    const saved = (stored === "light" || stored === "clean") ? "light" : "dark";
     applyTheme(saved);
 
     wireNav();
+    wireNavReveal();
     wireTzSelect();
     startClock();
     showPage("portfolio");

@@ -358,7 +358,7 @@
           <p class="eyebrow">Active (${active.length})</p>
           ${active.map(rowFor).join("") || `<p class="pr-empty">No active projects.</p>`}
           <p class="eyebrow" style="margin-top:16px">Archived</p>
-          <p class="pr-empty">Archiving moves the project's folder to <span class="mod-mono">00_Archive</span> in Drive and removes it from the active portfolio.</p>
+          <div id="archived-list"><p class="pr-empty">Loading archived projects…</p></div>
         </section>
       </div>
 
@@ -410,6 +410,33 @@
       b.addEventListener("click", () => {
         root.querySelector("#populate-panel .ps-project").value = b.dataset.populate;
         root.querySelector("#populate-panel").scrollIntoView({ block: "start" });
+      }));
+
+    // async: load the archived list from the backend and wire Restore
+    loadArchivedList(root);
+  }
+
+  async function loadArchivedList(root) {
+    const box = root.querySelector("#archived-list");
+    if (!box) return;
+    let archived = [];
+    try { archived = await LinStore.listArchived(); }
+    catch (e) { box.innerHTML = `<p class="pr-empty">Couldn't load archived projects. Retry.</p>`; return; }
+    box.innerHTML = archived.length
+      ? archived.map((p) =>
+          `<div class="pr-row"><span class="pr-code">${esc(p.id)}</span>` +
+          `<span class="pr-name">${esc(p.name)} <span class="kn-sub">· ${esc(SECTOR_LABEL[p.sector] || p.sector)}</span></span>` +
+          `<span class="pr-code">archived</span>` +
+          `<button class="btn small" data-restore="${esc(p.id)}">Restore</button></div>`).join("")
+      : `<p class="pr-empty">Nothing archived. Archiving moves a project's folder to <span class="mod-mono">00_Archive</span> in Drive.</p>`;
+    box.querySelectorAll("[data-restore]").forEach((b) =>
+      b.addEventListener("click", async () => {
+        try {
+          await LinStore.restoreProject(b.dataset.restore);
+          logEvent(`RESTORED ${b.dataset.restore}.`);
+          if (window.LinApp) LinApp.refresh();
+          renderManagePage();
+        } catch (e) { LinStore.banner("Couldn't restore — store unreachable. Retry.", "warn"); }
       }));
   }
 

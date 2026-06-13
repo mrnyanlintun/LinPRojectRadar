@@ -171,6 +171,33 @@
     } finally { loading(false); }
   }
 
+  // Restore brings an archived project back to the active portfolio.
+  async function restoreProject(id) {
+    if (!configured()) throw new Error("Project store not configured (LIN_API_URL).");
+    loading(true, "Restoring");
+    try {
+      const j = await apiPost({ action: "restore", id });
+      const p = (j && j.project) || null;
+      const ai = LIN_ARCHIVED.findIndex((x) => x.id === id);
+      if (ai >= 0) LIN_ARCHIVED.splice(ai, 1);
+      if (p && !LIN_PROJECTS.some((x) => x.id === p.id)) LIN_PROJECTS.push(p);
+      writeCache(LIN_PROJECTS.concat(LIN_ARCHIVED));
+      banner("");
+      return { restored: id };
+    } finally { loading(false); }
+  }
+
+  // Fetch the archived list from the backend into the LIN_ARCHIVED mirror.
+  async function listArchived() {
+    if (!configured()) return LIN_ARCHIVED.slice();
+    try {
+      const j = await apiGet("?action=listarchived");
+      LIN_ARCHIVED.length = 0;
+      (j.projects || []).forEach((p) => LIN_ARCHIVED.push(p));
+      return LIN_ARCHIVED.slice();
+    } catch (e) { lastError = e; return LIN_ARCHIVED.slice(); }
+  }
+
   /* ---------- Groq-backed endpoints (key lives in Apps Script, never here) ----------
      chat: explanatory assistant answer; analyze: document risk summary +
      optional spec-comparison verdict. Both return the backend payload; callers
@@ -203,9 +230,9 @@
 
   window.LinStore = {
     load, listProjects, getProject, createProject, saveProject,
-    archiveProject, chat, analyze,
+    archiveProject, restoreProject, listArchived, chat, analyze,
     // sync mirror accessors used by render code
-    cachedActive, cachedArchived, getCached, listActive: cachedActive, listArchived: cachedArchived,
+    cachedActive, cachedArchived, getCached, listActive: cachedActive,
     hasSignals, errored, configured, banner, loading
   };
   window.hasSignals = hasSignals;
