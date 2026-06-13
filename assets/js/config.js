@@ -10,4 +10,4 @@
    state instead of crashing).
    ============================================================ */
 
-window.LIN_API_URL = "PASTE_APPS_SCRIPT_EXEC_URL_HERE";
+window.LIN_API_URL = "https://script.google.com/macros/s/AKfycbwhmg_1L_RjbxPTR0IF3xpmHgLLzHA67O3mH27uqrAFfv8bF9U359yBqwjqbZO3YNTO/exec";

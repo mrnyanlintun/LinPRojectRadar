@@ -156,18 +156,38 @@
     } finally { loading(false); }
   }
 
-  // Archive/restore are project flags persisted through save (no extra endpoint).
+  // Archive uses the backend endpoint (it moves the Drive folder to 00_Archive),
+  // then we drop it from the in-memory active mirror + cache.
   async function archiveProject(id) {
-    const p = getCached(id);
-    if (!p) return null;
-    p.archived = true;
-    return saveProject(p);
+    if (!configured()) throw new Error("Project store not configured (LIN_API_URL).");
+    loading(true, "Archiving");
+    try {
+      await apiPost({ action: "archive", id });
+      const i = LIN_PROJECTS.findIndex((p) => p.id === id);
+      if (i >= 0) LIN_PROJECTS.splice(i, 1);
+      writeCache(LIN_PROJECTS.concat(LIN_ARCHIVED));
+      banner("");
+      return { archived: id };
+    } finally { loading(false); }
   }
-  async function restoreProject(id) {
-    const p = getCached(id);
-    if (!p) return null;
-    p.archived = false;
-    return saveProject(p);
+
+  /* ---------- Groq-backed endpoints (key lives in Apps Script, never here) ----------
+     chat: explanatory assistant answer; analyze: document risk summary +
+     optional spec-comparison verdict. Both return the backend payload; callers
+     fall back gracefully on error. */
+  async function chat(question, id) {
+    const body = { action: "chat", question };
+    if (id) body.id = id;
+    const j = await apiPost(body);
+    return j.answer;
+  }
+  async function analyze({ text, docType, spec, id }) {
+    const body = { action: "analyze", text };
+    if (docType) body.docType = docType;
+    if (spec) body.spec = spec;
+    if (id) body.id = id;
+    const j = await apiPost(body);
+    return j.analysis;
   }
 
   /* ---------- synchronous accessors for render (read the mirror) ---------- */
@@ -183,7 +203,7 @@
 
   window.LinStore = {
     load, listProjects, getProject, createProject, saveProject,
-    archiveProject, restoreProject,
+    archiveProject, chat, analyze,
     // sync mirror accessors used by render code
     cachedActive, cachedArchived, getCached, listActive: cachedActive, listArchived: cachedArchived,
     hasSignals, errored, configured, banner, loading
