@@ -1,13 +1,18 @@
 /* ============================================================
-   lin-project-radar — auditor.js  (Technical Auditor page)
+   lin-project-radar — auditor.js  (Technical Auditor page, v2)
    ------------------------------------------------------------
-   Section A — User Requirements: per-project corpus ingest
-     (Specification / Code of Practice / User Requirement).
-   Section B — Technical Audit: pick corpus refs, upload a
-     submission (PDF/image), run a Gemini-backed audit via the
-     backend, render the verdict table, download CSV, list past.
-   All file payloads are read client-side with FileReader and
-   sent as base64; all network goes through LinStore (LIN_API_URL).
+   ONE project picker at the top scopes the whole page.
+   Section A — User Requirements: a single upload card
+     (doctype dropdown + file + Upload). Corpus list below,
+     grouped by doctype.
+   Section B — Technical Audit: review type + submission +
+     Run Audit. Corpus is auto-attached in full (no checkboxes).
+     Results table + DOWNLOAD REMARK button appear only after a
+     successful audit.
+   Audit History at the bottom shows past CSV filenames + dates
+     (Drive-stored; no in-app re-download from the list).
+   All file payloads are base64 via FileReader; all network
+   goes through LinStore (LIN_API_URL).
    ============================================================ */
 (function () {
   "use strict";
@@ -15,41 +20,48 @@
   const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
   const DOC_TYPES = [
-    { key: "specification",    label: "Specification",
-      blurb: "Project specifications, technical requirements, and material standards." },
-    { key: "code_of_practice", label: "Code of Practice",
-      blurb: "Applicable building codes, standards, and regulations (e.g. IBC, ACI, NFPA)." },
-    { key: "user_requirement", label: "User Requirement",
-      blurb: "Owner/client base drawings, design intent documents, or consultant requirements." }
+    { key: "specification",    label: "Specification" },
+    { key: "code_of_practice", label: "Code of Practice" },
+    { key: "user_requirement", label: "User Requirement" }
   ];
-  const DOC_TYPE_LABEL = { specification: "Specification", code_of_practice: "Code of Practice", user_requirement: "User Requirement" };
+  const DOC_TYPE_LABEL = {
+    specification: "Specification",
+    code_of_practice: "Code of Practice",
+    user_requirement: "User Requirement"
+  };
 
   const REVIEW_TYPES = [
     { key: "material_submittal", label: "Material Submittal" },
     { key: "drawing",            label: "Drawing" }
   ];
+  const REVIEW_TYPE_LABEL = { material_submittal: "Material Submittal", drawing: "Drawing" };
 
   const ACCEPT = ".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg";
 
-  /* ---------- in-memory page state ---------- */
+  /* ---------- page state ---------- */
   let state = {
     projectId: "",
+
     corpus: [],
     corpusLoading: false,
     corpusError: "",
+
     pastAudits: [],
+    pastLoading: false,
     pastError: "",
-    /* per-docType chosen file (for Section A) */
-    pickA: { specification: null, code_of_practice: null, user_requirement: null },
-    uploadMsg: { specification: "", code_of_practice: "", user_requirement: "" },
-    uploadBusy: { specification: false, code_of_practice: false, user_requirement: false },
+
+    /* Section A (upload card) */
+    pickDocType: "specification",
+    pickFile: null,           // File object
+    uploadBusy: false,
+    uploadMsg: "",            // "" | "✓ ..." | "Upload failed: ..."
+
     /* Section B */
     reviewType: "material_submittal",
-    selectedCorpusIds: new Set(),
-    submission: null,                 // {name, mime, size, base64}
+    submission: null,         // {name, mime, size, base64}
     auditing: false,
     auditError: "",
-    auditResult: null                 // { items[], summary{}, csvContent, csvName }
+    auditResult: null         // {items[], summary{}, csvContent, csvName}
   };
 
   /* ---------- helpers ---------- */
@@ -77,10 +89,9 @@
   }
   function projectOptions() {
     const list = (LinStore.cachedActive && LinStore.cachedActive()) || [];
-    return `<option value="">Select project…</option>` +
+    return `<option value="">Select a project…</option>` +
       list.map((p) => `<option value="${esc(p.id)}"${p.id === state.projectId ? " selected" : ""}>${esc(p.id)} — ${esc(p.name)}</option>`).join("");
   }
-
   function statusKey(s) {
     const v = String(s || "").toLowerCase().trim();
     if (v === "approved")           return "approved";
@@ -89,8 +100,15 @@
     if (v === "remark")             return "remark";
     return "other";
   }
+  function fileIdOf(f) { return f.fileId || f.id || f.driveId || ""; }
+  function reviewTypeFromName(name) {
+    const n = String(name || "").toLowerCase();
+    if (n.includes("material")) return "Material Submittal";
+    if (n.includes("drawing"))  return "Drawing";
+    return "—";
+  }
 
-  /* ---------- corpus + past-audits loading ---------- */
+  /* ---------- loaders ---------- */
   async function loadCorpus() {
     if (!state.projectId) { state.corpus = []; return; }
     state.corpusLoading = true; state.corpusError = "";
@@ -98,15 +116,15 @@
       const list = await LinStore.listCorpus(state.projectId);
       state.corpus = Array.isArray(list) ? list : [];
     } catch (e) {
-      state.corpusError = "Couldn't load corpus — store unreachable.";
       state.corpus = [];
+      state.corpusError = "Couldn't load corpus — store unreachable.";
     } finally {
       state.corpusLoading = false;
     }
   }
   async function loadPastAudits() {
     if (!state.projectId) { state.pastAudits = []; return; }
-    state.pastError = "";
+    state.pastLoading = true; state.pastError = "";
     try {
       const list = await LinStore.listAuditResults(state.projectId);
       const arr = Array.isArray(list) ? list.slice() : [];
@@ -117,8 +135,10 @@
       });
       state.pastAudits = arr;
     } catch (e) {
-      state.pastError = "Couldn't load past audit results.";
       state.pastAudits = [];
+      state.pastError = "Couldn't load audit history.";
+    } finally {
+      state.pastLoading = false;
     }
   }
 
@@ -126,96 +146,74 @@
   function corpusByType(type) {
     return state.corpus.filter((f) => (f.docType || "").toLowerCase() === type);
   }
-  function corpusEntryHtml(f) {
-    const fileId = f.fileId || f.id || f.driveId || "";
-    const name = f.name || f.filename || "(unnamed)";
-    const when = f.createdAt || f.date || f.modifiedAt || "";
-    return `<li class="aud-corpus-row">
-      <span class="aud-corpus-name">${esc(name)}</span>
-      <span class="aud-corpus-date kn-sub">${esc(fmtDate(when))}</span>
-      <span class="mod-mono kn-sub" title="File ID">${esc(String(fileId).slice(0, 10))}${fileId.length > 10 ? "…" : ""}</span>
-    </li>`;
-  }
-  function corpusCheckHtml(f) {
-    const fileId = f.fileId || f.id || f.driveId || "";
-    const name = f.name || f.filename || "(unnamed)";
-    const when = f.createdAt || f.date || f.modifiedAt || "";
-    const t = (f.docType || "").toLowerCase();
-    const checked = state.selectedCorpusIds.has(fileId);
-    return `<label class="aud-check">
-      <input type="checkbox" class="aud-corpus-pick" data-fileid="${esc(fileId)}" ${checked ? "checked" : ""} />
-      <span class="aud-check-main">${esc(name)}</span>
-      <span class="aud-check-meta kn-sub">${esc(DOC_TYPE_LABEL[t] || t || "Reference")} · ${esc(fmtDate(when))}</span>
-    </label>`;
-  }
 
-  function sectionAHtml() {
-    const subs = DOC_TYPES.map((dt) => {
-      const list = corpusByType(dt.key);
-      const pick = state.pickA[dt.key];
-      const busy = state.uploadBusy[dt.key];
-      const msg = state.uploadMsg[dt.key];
-      const disabled = !state.projectId || !pick || busy;
-      return `<div class="aud-doctype" data-doctype="${dt.key}">
-        <div class="aud-doctype-head">
-          <p class="eyebrow">${esc(dt.label)}</p>
-          <p class="kn-sub">${esc(dt.blurb)}</p>
-        </div>
-        <div class="aud-uploader">
-          <label class="aud-filebtn ${state.projectId ? "" : "is-disabled"}">
-            <input type="file" class="aud-a-file" accept="${ACCEPT}" data-doctype="${dt.key}" ${state.projectId ? "" : "disabled"} />
-            <span class="aud-filebtn-label">${pick ? esc(pick.name) : "Choose file (PDF or image)…"}</span>
-            ${pick ? `<span class="kn-sub">· ${esc(fmtSize(pick.size))}</span>` : ""}
-          </label>
-          <button class="btn primary aud-a-upload" data-doctype="${dt.key}" ${disabled ? "disabled" : ""}>${busy ? "Uploading…" : "Upload"}</button>
-        </div>
-        ${msg ? `<p class="aud-msg ${msg.startsWith("✓") ? "ok" : "warn"}" aria-live="polite">${esc(msg)}</p>` : ""}
-        <p class="eyebrow" style="margin-top:10px">Already uploaded</p>
-        ${list.length
-          ? `<ul class="aud-corpus-list">${list.map(corpusEntryHtml).join("")}</ul>`
-          : `<p class="kn-sub aud-corpus-empty">${state.projectId ? "None uploaded yet." : "Select a project to view its corpus."}</p>`}
-      </div>`;
-    }).join("");
-
-    return `<section class="panel aud-panel aud-panel-a">
-      <p class="eyebrow">Section A · Corpus</p>
-      <h2 class="kn-h">User Requirements</h2>
-      <p class="kn-sub">Upload the reference documents this project will be audited against. These are stored in the project folder and available for all future audits.</p>
-
-      <label class="rationale-label">Project
+  function topPickerHtml() {
+    return `<section class="panel aud-topbar">
+      <label class="rationale-label" for="aud-project">Project
         <select id="aud-project" class="ig-input">${projectOptions()}</select></label>
-
-      <div class="aud-doctype-grid">${subs}</div>
+      <p class="kn-sub">Every section below is scoped to this project. Selecting a project loads its reference corpus and audit history.</p>
     </section>`;
   }
 
-  function corpusChecklistHtml() {
+  function corpusListHtml() {
+    if (!state.projectId) return `<p class="kn-sub">Select a project to view its corpus.</p>`;
     if (state.corpusLoading) return `<p class="kn-sub">Loading corpus…</p>`;
-    if (state.corpusError)   return `<p class="aud-msg warn">${esc(state.corpusError)}</p>`;
-    if (!state.projectId)    return `<p class="kn-sub">Select a project to load its reference corpus.</p>`;
-    if (!state.corpus.length) return `<p class="kn-sub">No reference documents uploaded yet. Upload in User Requirements above.</p>`;
-    const groups = DOC_TYPES.map((dt) => {
-      const list = corpusByType(dt.key);
-      if (!list.length) return "";
-      return `<div class="aud-check-group">
+    if (state.corpusError) return `<p class="aud-msg warn">${esc(state.corpusError)}</p>`;
+    return DOC_TYPES.map((dt) => {
+      const items = corpusByType(dt.key);
+      const rows = items.length
+        ? `<ul class="aud-corpus-list">${items.map((f) => {
+            const name = f.name || f.filename || "(unnamed)";
+            const when = f.createdAt || f.date || f.modifiedAt || "";
+            return `<li class="aud-corpus-row">
+              <span class="aud-corpus-name">${esc(name)}</span>
+              <span class="aud-corpus-date kn-sub">${esc(fmtDate(when))}</span>
+            </li>`;
+          }).join("")}</ul>`
+        : `<p class="kn-sub aud-corpus-empty">None uploaded yet.</p>`;
+      return `<div class="aud-corpus-group">
         <p class="eyebrow">${esc(dt.label)}</p>
-        ${list.map(corpusCheckHtml).join("")}
+        ${rows}
       </div>`;
     }).join("");
-    return `<div class="aud-corpus-toolbar">
-        <button type="button" class="aud-link" id="aud-select-all">Select all</button>
-        <span class="kn-sub">·</span>
-        <button type="button" class="aud-link" id="aud-deselect-all">Deselect all</button>
-        <span class="kn-sub">· ${state.selectedCorpusIds.size} selected</span>
+  }
+
+  function sectionAHtml() {
+    const canUpload = !!(state.projectId && state.pickFile && !state.uploadBusy);
+    const msg = state.uploadMsg;
+    return `<section class="panel aud-panel ${state.projectId ? "" : "is-muted"}">
+      <p class="eyebrow">Section A · Corpus</p>
+      <h2 class="kn-h">User Requirements</h2>
+      <p class="kn-sub">Upload the reference documents this project will be audited against. Stored in the project folder and reused automatically in every future audit.</p>
+
+      <div class="aud-card">
+        <div class="aud-upload-row">
+          <label class="rationale-label">Document type
+            <select id="aud-a-doctype" class="ig-input" ${state.projectId ? "" : "disabled"}>
+              ${DOC_TYPES.map((dt) => `<option value="${dt.key}"${dt.key === state.pickDocType ? " selected" : ""}>${esc(dt.label)}</option>`).join("")}
+            </select></label>
+          <label class="aud-filebtn ${state.projectId ? "" : "is-disabled"}">
+            <input type="file" id="aud-a-file" accept="${ACCEPT}" ${state.projectId ? "" : "disabled"} />
+            <span class="aud-filebtn-label">${state.pickFile ? esc(state.pickFile.name) : "Choose file (PDF or image)…"}</span>
+            ${state.pickFile ? `<span class="kn-sub">· ${esc(fmtSize(state.pickFile.size))}</span>` : ""}
+          </label>
+          <button class="btn primary" id="aud-a-upload" ${canUpload ? "" : "disabled"}>${state.uploadBusy ? "Uploading…" : "Upload"}</button>
+        </div>
+        ${msg ? `<p class="aud-msg ${msg.startsWith("✓") ? "ok" : "warn"}" aria-live="polite">${esc(msg)}</p>` : ""}
       </div>
-      ${groups}`;
+
+      <div class="aud-corpus-block">
+        <p class="eyebrow" style="margin-top:18px">Uploaded references</p>
+        ${corpusListHtml()}
+      </div>
+    </section>`;
   }
 
   function resultsHtml() {
     if (state.auditError) return `<p class="aud-msg warn" aria-live="polite">${esc(state.auditError)}</p>`;
     if (state.auditing) return `<div class="aud-loading" aria-live="polite">
         <span class="aud-spinner" aria-hidden="true"></span>
-        <span>Auditing with Gemini… this may take 10–20 seconds for large documents.</span>
+        <span>Auditing with Gemini… this may take 10–20 seconds.</span>
       </div>`;
     if (!state.auditResult) return "";
     const r = state.auditResult;
@@ -242,183 +240,173 @@
     }).join("");
 
     return `<div class="aud-result">
-      <div class="aud-result-head">
-        <div class="aud-summary">
-          <strong>${total}</strong> items reviewed —
-          <span class="aud-status aud-status-approved">${ap} Approved</span>,
-          <span class="aud-status aud-status-approved-as-noted">${apN} Approved as Noted</span>,
-          <span class="aud-status aud-status-rejected">${rj} Rejected</span>,
-          <span class="aud-status aud-status-remark">${rm} Remarks</span>
-        </div>
-        <button class="btn primary" id="aud-download-csv">Download CSV</button>
+      <div class="aud-summary">
+        <strong>${total}</strong> items reviewed —
+        <span class="aud-status aud-status-approved">${ap} Approved</span>,
+        <span class="aud-status aud-status-approved-as-noted">${apN} Approved as Noted</span>,
+        <span class="aud-status aud-status-rejected">${rj} Rejected</span>,
+        <span class="aud-status aud-status-remark">${rm} Remarks</span>
       </div>
-      ${r.csvName || r.filename ? `<p class="kn-sub">Results saved to project folder: <span class="mod-mono">${esc(csvName)}</span></p>` : ""}
+
       ${items.length
         ? `<div class="aud-table-wrap"><table class="aud-table">
             <thead><tr><th>#</th><th>Item Submitted</th><th>Remark</th><th>Citation</th><th>Status</th></tr></thead>
             <tbody>${rows}</tbody>
           </table></div>`
         : `<p class="kn-sub">The audit returned no line items.</p>`}
+
+      <div class="aud-download-row">
+        <button class="btn primary aud-download" id="aud-download-csv">Download Remark</button>
+        <p class="kn-sub aud-saved-note">Results also saved to project folder: <span class="mod-mono">${esc(csvName)}</span></p>
+      </div>
     </div>`;
   }
 
-  function pastAuditsHtml() {
-    if (!state.projectId) return `<p class="kn-sub">Select a project to view its past audits.</p>`;
-    if (state.pastError)  return `<p class="aud-msg warn">${esc(state.pastError)}</p>`;
-    if (!state.pastAudits.length) return `<p class="kn-sub">No audit results yet for this project.</p>`;
-    return `<ul class="aud-past-list">
-      ${state.pastAudits.map((f) => {
-        const name = f.name || f.filename || "(unnamed)";
-        const when = f.createdAt || f.date || f.modifiedAt || "";
-        return `<li class="aud-past-row">
-          <span class="aud-past-name">${esc(name)}</span>
-          <span class="aud-past-date kn-sub">${esc(fmtDate(when))}</span>
-        </li>`;
-      }).join("")}
-    </ul>`;
-  }
-
   function sectionBHtml() {
-    const corpusReady = state.projectId && state.selectedCorpusIds.size > 0;
-    const canRun = !!(state.projectId && corpusReady && state.submission && !state.auditing);
-    return `<section class="panel aud-panel aud-panel-b">
+    const hasProject = !!state.projectId;
+    const hasCorpus = state.corpus.length > 0;
+    const canRun = !!(hasProject && hasCorpus && state.submission && !state.auditing);
+    const emptyCorpusMsg = hasProject && !state.corpusLoading && !hasCorpus
+      ? `<p class="aud-msg warn">No reference documents found for this project. Upload specifications, codes, or user requirements in User Requirements above before running an audit.</p>`
+      : "";
+    return `<section class="panel aud-panel ${hasProject ? "" : "is-muted"}">
       <p class="eyebrow">Section B · Audit</p>
       <h2 class="kn-h">Technical Audit</h2>
-      <p class="kn-sub">Select a project, choose reference documents from the corpus, upload a submission, and run the audit. Results are saved to the project folder and available to download.</p>
+      <p class="kn-sub">Upload a submission to audit it against all reference documents in this project's corpus. Results are saved to the project folder.</p>
       <p class="aud-illus" role="note">Audit findings are AI-generated (Gemini) and illustrative only. All verdicts require named human review and sign-off before any formal action is taken.</p>
 
       <div class="aud-step">
-        <p class="eyebrow">Step 1 · Project</p>
-        <label class="rationale-label">Project
-          <select id="aud-project-b" class="ig-input">${projectOptions()}</select></label>
-      </div>
-
-      <div class="aud-step">
-        <p class="eyebrow">Step 2 · Review type</p>
-        <label class="rationale-label">Review type
-          <select id="aud-review-type" class="ig-input">
+        <p class="eyebrow">Step 1 · Review type</p>
+        <label class="rationale-label" for="aud-review-type">Review type
+          <select id="aud-review-type" class="ig-input" ${hasProject ? "" : "disabled"}>
             ${REVIEW_TYPES.map((rt) => `<option value="${rt.key}"${rt.key === state.reviewType ? " selected" : ""}>${esc(rt.label)}</option>`).join("")}
           </select></label>
       </div>
 
       <div class="aud-step">
-        <p class="eyebrow">Step 3 · Reference corpus</p>
-        ${corpusChecklistHtml()}
-      </div>
-
-      <div class="aud-step">
-        <p class="eyebrow">Step 4 · Submission</p>
-        <label class="aud-filebtn ${state.projectId ? "" : "is-disabled"}">
-          <input type="file" id="aud-submission" accept="${ACCEPT}" ${state.projectId ? "" : "disabled"} />
+        <p class="eyebrow">Step 2 · Submission</p>
+        <label class="aud-filebtn ${hasProject ? "" : "is-disabled"}">
+          <input type="file" id="aud-submission" accept="${ACCEPT}" ${hasProject ? "" : "disabled"} />
           <span class="aud-filebtn-label">${state.submission ? esc(state.submission.name) : "Submission (PDF or image)…"}</span>
           ${state.submission ? `<span class="kn-sub">· ${esc(fmtSize(state.submission.size))}</span>` : ""}
         </label>
       </div>
 
       <div class="aud-step">
-        <p class="eyebrow">Step 5 · Run</p>
+        <p class="eyebrow">Step 3 · Run audit</p>
         <div class="dc-actions">
           <button class="btn primary" id="aud-run" ${canRun ? "" : "disabled"}>${state.auditing ? "Running…" : "Run Audit"}</button>
         </div>
+        ${emptyCorpusMsg}
         ${resultsHtml()}
       </div>
+    </section>`;
+  }
 
-      <div class="aud-step aud-past">
-        <p class="eyebrow">Past Audits</p>
-        ${pastAuditsHtml()}
-      </div>
+  function historyHtml() {
+    if (!state.projectId) return `<p class="kn-sub">Select a project to view its audit history.</p>`;
+    if (state.pastLoading) return `<p class="kn-sub">Loading audit history…</p>`;
+    if (state.pastError) return `<p class="aud-msg warn">${esc(state.pastError)}</p>`;
+    if (!state.pastAudits.length) return `<p class="kn-sub">No audit history yet for this project.</p>`;
+    const rows = state.pastAudits.map((f) => {
+      const name = f.name || f.filename || "(unnamed)";
+      const when = f.createdAt || f.date || f.modifiedAt || "";
+      return `<tr>
+        <td class="aud-past-date">${esc(fmtDate(when))}</td>
+        <td>${esc(reviewTypeFromName(name))}</td>
+        <td class="aud-past-name mod-mono">${esc(name)}</td>
+      </tr>`;
+    }).join("");
+    return `<div class="aud-table-wrap"><table class="aud-table">
+        <thead><tr><th>Date</th><th>Review Type</th><th>Filename</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+      <p class="kn-sub" style="margin-top:8px">To re-download a past result, open the project folder in Google Drive.</p>`;
+  }
+
+  function historySectionHtml() {
+    return `<section class="panel aud-panel ${state.projectId ? "" : "is-muted"}">
+      <p class="eyebrow">Audit history</p>
+      <h2 class="kn-h">Audit History</h2>
+      ${historyHtml()}
     </section>`;
   }
 
   function renderAuditorPage() {
     const root = document.getElementById("auditor-root");
     if (!root) return;
-    root.innerHTML = sectionAHtml() + sectionBHtml();
+    root.innerHTML =
+      topPickerHtml() +
+      `<div class="aud-stack">` +
+        sectionAHtml() +
+        sectionBHtml() +
+        historySectionHtml() +
+      `</div>`;
     wire(root);
   }
 
   /* ---------- wiring ---------- */
   function wire(root) {
     const $ = (sel) => root.querySelector(sel);
-    const $$ = (sel) => root.querySelectorAll(sel);
 
-    /* keep the two project selectors in sync */
-    const selA = $("#aud-project");
-    const selB = $("#aud-project-b");
-    function onProjectChange(id) {
-      if (state.projectId === id) return;
+    /* Top picker — scopes the whole page */
+    const sel = $("#aud-project");
+    if (sel) sel.addEventListener("change", (e) => {
+      const id = e.target.value;
+      if (id === state.projectId) return;
       state.projectId = id;
-      state.selectedCorpusIds.clear();
+      /* reset per-project state */
+      state.pickFile = null;
+      state.uploadMsg = "";
       state.submission = null;
       state.auditResult = null;
       state.auditError = "";
-      state.pickA = { specification: null, code_of_practice: null, user_requirement: null };
-      state.uploadMsg = { specification: "", code_of_practice: "", user_requirement: "" };
+      renderAuditorPage();
       Promise.all([loadCorpus(), loadPastAudits()]).then(renderAuditorPage);
-      renderAuditorPage(); // immediate redraw to flip enabled states + show "loading"
-    }
-    if (selA) selA.addEventListener("change", (e) => onProjectChange(e.target.value));
-    if (selB) selB.addEventListener("change", (e) => onProjectChange(e.target.value));
+    });
 
-    /* Section A: file pick + upload */
-    $$(".aud-a-file").forEach((inp) => inp.addEventListener("change", (e) => {
-      const dt = e.target.dataset.doctype;
+    /* Section A */
+    const dt = $("#aud-a-doctype");
+    if (dt) dt.addEventListener("change", (e) => { state.pickDocType = e.target.value; });
+
+    const aFile = $("#aud-a-file");
+    if (aFile) aFile.addEventListener("change", (e) => {
       const f = e.target.files && e.target.files[0];
-      if (!f) return;
-      state.pickA[dt] = f;
-      state.uploadMsg[dt] = "";
+      state.pickFile = f || null;
+      state.uploadMsg = "";
       renderAuditorPage();
-    }));
-    $$(".aud-a-upload").forEach((btn) => btn.addEventListener("click", async () => {
-      const dt = btn.dataset.doctype;
-      const f = state.pickA[dt];
-      if (!state.projectId || !f) return;
-      state.uploadBusy[dt] = true;
-      state.uploadMsg[dt] = "";
+    });
+
+    const aUp = $("#aud-a-upload");
+    if (aUp) aUp.addEventListener("click", async () => {
+      if (!state.projectId || !state.pickFile) return;
+      state.uploadBusy = true; state.uploadMsg = "";
       renderAuditorPage();
+      const f = state.pickFile;
       try {
         const b64 = await readFileAsBase64(f);
         await LinStore.ingestCorpus({
           id: state.projectId,
           name: f.name,
-          docType: dt,
+          docType: state.pickDocType,
           mimeType: f.type || "application/octet-stream",
           dataBase64: b64
         });
-        state.uploadMsg[dt] = "✓ Uploaded — " + f.name;
-        state.pickA[dt] = null;
+        state.uploadMsg = "✓ Uploaded — " + f.name;
+        state.pickFile = null;
         await loadCorpus();
-      } catch (e) {
-        state.uploadMsg[dt] = "Upload failed: " + (e && e.message ? e.message : "store unreachable");
+      } catch (err) {
+        state.uploadMsg = "Upload failed: " + (err && err.message ? err.message : "store unreachable");
       } finally {
-        state.uploadBusy[dt] = false;
+        state.uploadBusy = false;
         renderAuditorPage();
       }
-    }));
+    });
 
-    /* Section B: review type */
+    /* Section B */
     const rt = $("#aud-review-type");
     if (rt) rt.addEventListener("change", (e) => { state.reviewType = e.target.value; });
 
-    /* Section B: corpus checks */
-    $$(".aud-corpus-pick").forEach((cb) => cb.addEventListener("change", (e) => {
-      const id = e.target.dataset.fileid;
-      if (e.target.checked) state.selectedCorpusIds.add(id);
-      else state.selectedCorpusIds.delete(id);
-      renderAuditorPage();
-    }));
-    const selAll = $("#aud-select-all");
-    if (selAll) selAll.addEventListener("click", () => {
-      state.corpus.forEach((f) => state.selectedCorpusIds.add(f.fileId || f.id || f.driveId || ""));
-      renderAuditorPage();
-    });
-    const deselAll = $("#aud-deselect-all");
-    if (deselAll) deselAll.addEventListener("click", () => {
-      state.selectedCorpusIds.clear();
-      renderAuditorPage();
-    });
-
-    /* Section B: submission file */
     const sub = $("#aud-submission");
     if (sub) sub.addEventListener("change", async (e) => {
       const f = e.target.files && e.target.files[0];
@@ -426,6 +414,7 @@
       try {
         const b64 = await readFileAsBase64(f);
         state.submission = { name: f.name, mime: f.type || "application/octet-stream", size: f.size, base64: b64 };
+        state.auditError = "";
       } catch (err) {
         state.submission = null;
         state.auditError = "Couldn't read submission file.";
@@ -433,33 +422,32 @@
       renderAuditorPage();
     });
 
-    /* Section B: Run Audit */
-    const runBtn = $("#aud-run");
-    if (runBtn) runBtn.addEventListener("click", async () => {
-      if (!state.projectId || !state.submission || state.selectedCorpusIds.size === 0) return;
+    const run = $("#aud-run");
+    if (run) run.addEventListener("click", async () => {
+      if (!state.projectId || !state.submission || state.corpus.length === 0) return;
       state.auditing = true; state.auditError = ""; state.auditResult = null;
       renderAuditorPage();
       try {
+        const corpusIds = state.corpus.map(fileIdOf).filter(Boolean);
         const resp = await LinStore.runAudit({
           id: state.projectId,
           reviewType: state.reviewType,
           submissionName: state.submission.name,
           submissionMime: state.submission.mime,
           submissionBase64: state.submission.base64,
-          corpusIds: Array.from(state.selectedCorpusIds)
+          corpusIds
         });
         const payload = resp.audit || resp.result || resp;
         state.auditResult = payload || { items: [], summary: {} };
         loadPastAudits().then(renderAuditorPage);
-      } catch (e) {
-        state.auditError = "Audit failed: " + (e && e.message ? e.message : "store unreachable");
+      } catch (err) {
+        state.auditError = "Audit failed: " + (err && err.message ? err.message : "store unreachable");
       } finally {
         state.auditing = false;
         renderAuditorPage();
       }
     });
 
-    /* Section B: download CSV */
     const dl = $("#aud-download-csv");
     if (dl) dl.addEventListener("click", () => {
       const r = state.auditResult;
