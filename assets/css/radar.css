@@ -27,12 +27,17 @@
   --clear-green: #16a34a;
   --eyebrow: #2563eb;
 
+  /* sector identity (theme-aware): white/blue/magenta, kept clear of
+     the green/amber/red health palette. Design uses dark text on Light. */
+  --sector-design: #141a23;
+  --sector-construction: #1d4ed8;
+  --sector-hybrid: #c026d3;
+
   --zone-green: rgba(22,163,74,.18);
   --zone-amber: rgba(245,158,11,.20);
   --zone-red: rgba(239,68,68,.18);
   --zone-crit: rgba(239,68,68,.28);
   --ring-line: rgba(15,23,42,.20);
-  --sweep-fill: rgba(37,99,235,.10);
 
   --grid-opacity: 0;
   --glass-blur: blur(14px);
@@ -55,13 +60,16 @@ body[data-theme="dark"] {
   --clear-green: #2fe08f;
   --eyebrow: #ffb01f;
 
+  --sector-design: #ffffff;
+  --sector-construction: #4aa3ff;
+  --sector-hybrid: #ff5cc8;
+
   /* bright, saturated status bands so blips read clearly on dark */
   --zone-green: rgba(47,224,143,.20);
   --zone-amber: rgba(255,176,31,.20);
   --zone-red: rgba(255,93,82,.22);
   --zone-crit: rgba(255,93,82,.30);
   --ring-line: rgba(120,215,235,.30);
-  --sweep-fill: rgba(53,214,232,.12);
 
   --grid-opacity: .4;
   --glass-blur: blur(16px) saturate(160%);
@@ -166,8 +174,10 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 
 .sector-label {
   font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em;
-  fill: var(--muted);
+  font-weight: 700;
+  /* fill is set per-sector inline (theme-aware --sector-* colours) */
 }
+.sector-icon { pointer-events: none; }
 .blip { cursor: pointer; }
 .blip:focus-visible { outline: none; }
 .blip:focus-visible .blip-ring { opacity: 1 !important; }
@@ -186,8 +196,6 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .blip-dot { transition: r .15s ease; }
 .blip:hover .blip-dot { r: 8; }
 
-@keyframes sweepspin { to { transform: rotate(360deg); } }
-.sweep { transform-origin: 200px 200px; animation: sweepspin 6s linear infinite; }
 
 .radar-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
 .radar-legend span { display: inline-flex; align-items: center; gap: 6px; }
@@ -312,7 +320,6 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 
 /* ---------- reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
-  .sweep { animation: none; display: none; }
   .blip-dot { transition: none; }
   .blip-label { transition: none; }
   * { scroll-behavior: auto; }
