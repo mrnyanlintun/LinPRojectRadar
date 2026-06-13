@@ -59,9 +59,9 @@
     <section class="page" data-page="portfolio">
 
     <section class="intro">
-      <p class="eyebrow">Portfolio — signal to action</p>
+      <p class="eyebrow">Portfolio · signal to action</p>
       <h1>From multi-model signals to a governed decision</h1>
-      <p>Each project is a blip on the scope. Distance from center is drift from baseline; angle is delivery sector. Select a project to see its signal ledger, the signal-conflict classification, and the PCEIF governance decision — with explicit authority, documentation, and a contractor fairness gate where required.</p>
+      <p>Each project is a blip on the scope. Distance from center is drift from baseline; angle is delivery sector. Select a project to see its signal ledger, the signal-conflict classification, and the PCEIF governance decision, with explicit authority, documentation, and a contractor fairness gate where required.</p>
     </section>
 
     <!-- RADAR (full-width, the focus of the Portfolio page) -->
@@ -71,10 +71,19 @@
              aria-label="Radar scope. Projects plotted by health and delivery sector. A keyboard-accessible list of the same projects is provided below.">
         </svg>
       </div>
-      <div class="radar-legend" aria-hidden="true">
-        <span><i class="lg-green"></i> Green</span>
-        <span><i class="lg-amber"></i> Amber</span>
-        <span><i class="lg-red"></i> Red-review</span>
+      <div class="radar-legend">
+        <div class="lg-group">
+          <span class="lg-title">Status</span>
+          <span><i class="lg-green"></i> Green</span>
+          <span><i class="lg-amber"></i> Amber</span>
+          <span><i class="lg-red"></i> Red-review</span>
+        </div>
+        <div class="lg-group">
+          <span class="lg-title">Sector</span>
+          <span><svg class="lg-hat" style="color:var(--sector-design)" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 18h19M5 18a7 7 0 0 1 14 0M9.5 6.6a6.5 6.5 0 0 1 5 0M12 6.4V5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Design</span>
+          <span><svg class="lg-hat" style="color:var(--sector-construction)" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 18h19M5 18a7 7 0 0 1 14 0M9.5 6.6a6.5 6.5 0 0 1 5 0M12 6.4V5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Construction</span>
+          <span><svg class="lg-hat" style="color:var(--sector-hybrid)" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 18h19M5 18a7 7 0 0 1 14 0M9.5 6.6a6.5 6.5 0 0 1 5 0M12 6.4V5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Hybrid</span>
+        </div>
       </div>
       <p class="radar-note">Center = on baseline · outer rim = high drift. Sectors: Design / Construction / Hybrid delivery. Select a blip (or a list row below) to open its Project Detail; the list is an equivalent keyboard control path.</p>
 

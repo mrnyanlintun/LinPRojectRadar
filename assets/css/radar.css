@@ -172,12 +172,6 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .radar-wrap { position: relative; width: 100%; aspect-ratio: 1 / 1; }
 #radar-svg { width: 100%; height: 100%; display: block; }
 
-.sector-label {
-  font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em;
-  font-weight: 700;
-  /* fill is set per-sector inline (theme-aware --sector-* colours) */
-}
-.sector-icon { pointer-events: none; }
 .blip { cursor: pointer; }
 .blip:focus-visible { outline: none; }
 .blip:focus-visible .blip-ring { opacity: 1 !important; }
@@ -693,3 +687,12 @@ body.nav-open .nav-rail { transform: translateX(0); }
 .la-mic.listening { border-color: var(--alarm-red); color: var(--alarm-red); animation: la-pulse 1.1s ease-in-out infinite; }
 @keyframes la-pulse { 0%,100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--alarm-red) 45%, transparent); } 50% { box-shadow: 0 0 0 5px transparent; } }
 @media (prefers-reduced-motion: reduce) { .la-mic.listening { animation: none; } }
+
+/* ---------- Phase 7: grouped legend (Status + Sector) ---------- */
+.radar-legend { flex-direction: column; align-items: flex-start; gap: 8px; }
+.lg-group { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.lg-title {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--faint); min-width: 52px;
+}
+.lg-hat { width: 16px; height: 16px; flex: 0 0 auto; vertical-align: -3px; }
