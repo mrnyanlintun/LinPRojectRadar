@@ -12,28 +12,14 @@
   // 0° = right, positive = clockwise (y grows downward in polar()).
   // internal key stays "combined" (and SYN-CMB codes are unchanged);
   // only the human-facing sector label is "HYBRID".
-  // Sector identity is carried by label + spoke COLOUR and a small line icon —
-  // never by wedge fills or blip colour (those stay reserved for health).
-  // Colours are theme-aware CSS vars (--sector-*); icons are thin line art.
+  // Sectors define only the angular wedge a project plots in (by id prefix).
+  // Sector identity is shown in the legend below the radar, not on the scope.
   const SECTORS = {
-    design:       { label: "DESIGN",       start: -90, end: 30,  color: "var(--sector-design)",       icon: "pencil" },
-    construction: { label: "CONSTRUCTION", start: 30,  end: 150, color: "var(--sector-construction)", icon: "crane" },
-    hybrid:       { label: "HYBRID",       start: 150, end: 270, color: "var(--sector-hybrid)",       icon: "hybrid" },
+    design:       { label: "DESIGN",       start: -90, end: 30  },
+    construction: { label: "CONSTRUCTION", start: 30,  end: 150 },
+    hybrid:       { label: "HYBRID",       start: 150, end: 270 },
     // legacy alias so any "combined" records still plot in the hybrid arc
-    combined:     { label: "HYBRID",       start: 150, end: 270, color: "var(--sector-hybrid)",       icon: "hybrid" }
-  };
-  // sectors drawn once on the scope (skip the legacy alias to avoid a dup label)
-  const SECTOR_DRAW = [SECTORS.design, SECTORS.construction, SECTORS.hybrid];
-
-  // thin-stroke line icons, ~20 units, drawn in a local 0..20 box then placed.
-  const SECTOR_ICONS = {
-    // pencil (Design)
-    pencil: '<path d="M3 17 L13 7 M13 7 L16 10 L6 20 L3 17 Z M11 9 L14 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>',
-    // tower crane (Construction): mast, jib, counter-jib, hook
-    crane: '<path d="M6 20 V4 M3 20 H9 M2 6 H18 M6 4 L9 6 M15 6 V9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>',
-    // Hybrid: a drawing sheet (with a folded corner + a content line) and a
-    // single diagonal jib rising from it — the legible single-combo fallback.
-    hybrid: '<path d="M3 6 H11 L14 9 V19 H3 Z M11 6 V9 H14 M5 13 H10 M11 9 L18 3 M14 3 H18 V7" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>'
+    combined:     { label: "HYBRID",       start: 150, end: 270 }
   };
 
   const STATUS_COLOR = {
@@ -136,48 +122,9 @@
         "stroke-dasharray": r === ZONE_EDGES.red ? "none" : "2 5"
       }));
     });
-    // Zone names are NOT written across the scope face (they read as floating
-    // text); the legend below the radar names green / amber / red instead.
-
-    // neutral sector boundary dividers (structure only)
-    [-90, 30, 150, 270].forEach((ang) => {
-      const p = polar(ang, R_MAX);
-      svg.appendChild(el("line", {
-        x1: CENTER, y1: CENTER, x2: p.x, y2: p.y,
-        stroke: "var(--ring-line)", "stroke-width": "1"
-      }));
-    });
-
-    // per-sector colour: a thin coloured centre spoke + label + line icon.
-    // All positions computed from CENTER / R_MAX, so they reflow with the
-    // (viewBox-scaled) radar at any size.
-    SECTOR_DRAW.forEach((sec) => {
-      const mid = (sec.start + sec.end) / 2;
-      // coloured centre spoke (modest opacity so it doesn't compete with rings)
-      const sp = polar(mid, R_MAX);
-      svg.appendChild(el("line", {
-        x1: CENTER, y1: CENTER, x2: sp.x, y2: sp.y,
-        stroke: sec.color, "stroke-width": "1.2", opacity: "0.45"
-      }));
-      // label just outside the outer ring along the sector centre angle
-      const lp = polar(mid, R_MAX + 22);
-      const t = el("text", {
-        x: lp.x, y: lp.y, "text-anchor": "middle", "dominant-baseline": "middle",
-        class: "sector-label", fill: sec.color
-      });
-      t.textContent = sec.label;
-      svg.appendChild(t);
-      // line icon radially OUTSIDE the label (away from the rings, so it never
-      // clips a ring on any sector), centred on the same sector angle.
-      const ip = polar(mid, R_MAX + 46);
-      const g = el("g", {
-        class: "sector-icon",
-        transform: `translate(${(ip.x - 10).toFixed(1)} ${(ip.y - 10).toFixed(1)})`,
-        style: `color:${sec.color}`
-      });
-      g.innerHTML = SECTOR_ICONS[sec.icon] || "";
-      svg.appendChild(g);
-    });
+    // Clean scope face: only health rings + blips. Sector identity (angle)
+    // is keyed in the legend below the radar — no spokes, dividers, on-scope
+    // labels, or on-scope icons are drawn across the face.
 
     // blips — two passes:
     //   pass 1: dot positions, with a small static radius jitter when two
