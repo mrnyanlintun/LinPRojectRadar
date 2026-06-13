@@ -44,6 +44,10 @@
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4.5a1 1 0 0 1 1-1h3.6l1.4 1.6h6a1 1 0 0 1 1 1v6.4a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
         <span>Manage Projects</span>
       </button>
+      <button data-nav="auditor">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM10 2v3h3M5 8.5h6M5 11h6M5 6h3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+        <span>Technical Auditor</span>
+      </button>
       <button data-nav="knowledge">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.2C6.8 2.2 5 2 3 2v11c2 0 3.8.2 5 1.2 1.2-1 3-1.2 5-1.2V2c-2 0-3.8.2-5 1.2zM8 3.2v11" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
         <span>Knowledge</span>
@@ -124,6 +128,15 @@
       <div id="manage-root"></div>
     </section>
 
+    <section class="page" data-page="auditor" hidden>
+      <section class="intro">
+        <p class="eyebrow">Technical Auditor</p>
+        <h1>Reference corpus and AI-assisted technical audit</h1>
+        <p>Upload reference documents (specifications, codes of practice, user requirements) for a project, then run a Gemini-assisted technical audit of a submission (material submittal or drawing) against that corpus. Findings are illustrative and require named human review before any formal action.</p>
+      </section>
+      <div id="auditor-root"></div>
+    </section>
+
     <section class="page" data-page="knowledge" hidden>
       <section class="intro">
         <p class="eyebrow">Knowledge library</p>
@@ -155,6 +168,7 @@
   <script src="assets/js/knowledge.js"></script>
   <script src="assets/js/modules.js"></script>
   <script src="assets/js/ingest.js"></script>
+  <script src="assets/js/auditor.js"></script>
   <script src="assets/js/deepdive.js"></script>
   <script src="assets/js/detail.js"></script>
   <script src="assets/js/assistant.js"></script>
