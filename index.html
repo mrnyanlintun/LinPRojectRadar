@@ -15,20 +15,22 @@
   <div class="app">
 
     <header class="topbar">
-      <button id="nav-toggle" class="nav-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="nav-rail">
-        <svg class="nav-toggle-icon nav-toggle-icon-open" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        <svg class="nav-toggle-icon nav-toggle-icon-close" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </button>
       <a class="nav-logo" href="#" onclick="event.preventDefault(); if (window.LinApp) LinApp.showPage('portfolio');">
         <img src="logo.png" alt="Lin Project Radar" class="nav-logo-img">
         <span class="nav-logo-text">LIN PROJECT RADAR</span>
       </a>
-      <span class="clock" id="tz-clock" aria-label="Current time in selected timezone">--:--:--</span>
-      <select id="tz-select" class="tz-select" aria-label="Timezone"></select>
+      <div class="topbar-right">
+        <span class="clock" id="tz-clock" aria-label="Current time in selected timezone">--:--:--</span>
+        <select id="tz-select" class="tz-select" aria-label="Timezone"></select>
+        <button id="nav-toggle" class="nav-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="nav-rail">
+          <svg class="nav-toggle-icon nav-toggle-icon-open" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <svg class="nav-toggle-icon nav-toggle-icon-close" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
     </header>
 
     <div class="layout">
