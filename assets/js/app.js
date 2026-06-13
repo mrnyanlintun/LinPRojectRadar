@@ -518,6 +518,7 @@
     if (page === "modules" && window.LinModules) LinModules.renderModulesPage();
     if (page === "knowledge" && window.LinKnowledge) LinKnowledge.renderKnowledgePage();
     if (page === "manage" && window.LinIngest) LinIngest.renderManagePage();
+    if (page === "auditor" && window.LinAuditor) LinAuditor.renderAuditorPage();
     if (page === "detail" && window.LinDetail && selectedId) LinDetail.render(selectedId);
     window.scrollTo({ top: 0 });
   }

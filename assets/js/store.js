@@ -217,6 +217,37 @@
     return j.analysis;
   }
 
+  /* ---------- Technical Auditor: corpus + audit endpoints (Gemini-backed) ----------
+     listcorpus / listauditresults are GETs; ingestcorpus / audit are POSTs.
+     File payloads are base64-encoded by the caller (FileReader) so the wire
+     stays a plain JSON string and the request remains a CORS-safe simple POST. */
+  async function listCorpus(id) {
+    if (!configured()) return [];
+    try {
+      const j = await apiGet("?action=listcorpus&id=" + encodeURIComponent(id));
+      return j.corpus || j.files || [];
+    } catch (e) { lastError = e; throw e; }
+  }
+  async function listAuditResults(id) {
+    if (!configured()) return [];
+    try {
+      const j = await apiGet("?action=listauditresults&id=" + encodeURIComponent(id));
+      return j.results || j.files || [];
+    } catch (e) { lastError = e; throw e; }
+  }
+  async function ingestCorpus({ id, name, docType, mimeType, dataBase64 }) {
+    if (!configured()) throw new Error("Project store not configured (LIN_API_URL).");
+    const j = await apiPost({ action: "ingestcorpus", id, name, docType, mimeType, dataBase64 });
+    return j.file || j.corpus || j;
+  }
+  async function runAudit({ id, reviewType, submissionName, submissionMime, submissionBase64, corpusIds }) {
+    if (!configured()) throw new Error("Project store not configured (LIN_API_URL).");
+    const j = await apiPost({
+      action: "audit", id, reviewType, submissionName, submissionMime, submissionBase64, corpusIds
+    });
+    return j;
+  }
+
   /* ---------- synchronous accessors for render (read the mirror) ---------- */
   function cachedActive() { return LIN_PROJECTS.slice(); }
   function cachedArchived() { return LIN_ARCHIVED.slice(); }
@@ -231,6 +262,7 @@
   window.LinStore = {
     load, listProjects, getProject, createProject, saveProject,
     archiveProject, restoreProject, listArchived, chat, analyze,
+    listCorpus, listAuditResults, ingestCorpus, runAudit,
     // sync mirror accessors used by render code
     cachedActive, cachedArchived, getCached, listActive: cachedActive,
     hasSignals, errored, configured, banner, loading
