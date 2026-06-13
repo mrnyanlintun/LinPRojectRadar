@@ -135,9 +135,17 @@ body::before {
   .nav-logo-text { display: none; }
 }
 
+.topbar-right {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 12px;
+}
+
 .clock {
   font-family: var(--font-mono); font-size: 13px; color: var(--muted);
-  padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
 .synthetic-badge {
@@ -639,22 +647,22 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
   border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
   position: relative;
 }
-.nav-toggle .nav-toggle-icon { width: 28px; height: 28px; }
+.nav-toggle .nav-toggle-icon { width: 24px; height: 24px; }
 .nav-toggle .nav-toggle-icon-close { display: none; }
 body.nav-open .nav-toggle .nav-toggle-icon-open { display: none; }
 body.nav-open .nav-toggle .nav-toggle-icon-close { display: block; }
 .nav-toggle:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
 
 .nav-rail {
-  position: fixed; left: 0; top: 0; z-index: 60;
+  position: fixed; right: 0; top: 0; z-index: 60;
   width: 220px; max-height: 100vh; overflow: auto;
   display: flex; flex-direction: column; gap: 4px;
   background: var(--surface); border: 1px solid var(--line);
-  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
   box-shadow: var(--shadow);
   backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
   padding: 14px 12px;
-  transform: translateX(-112%); transition: transform .2s ease;
+  transform: translateX(112%); transition: transform .2s ease;
 }
 body.nav-open .nav-rail { transform: translateX(0); }
 .nav-rail .theme-switch { margin-top: 10px; }
