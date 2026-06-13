@@ -17,7 +17,7 @@
   function render(id) {
     const root = document.getElementById("detail-root");
     if (!root) return;
-    const p = (window.LinStore ? LinStore.getProject(id) : null) ||
+    const p = (window.LinStore ? LinStore.getCached(id) : null) ||
               LIN_PROJECTS.find((x) => x.id === id);
     if (!p) {
       root.innerHTML = `<p class="pr-empty">Project not found (it may have been archived). <button class="btn small" data-back>Back to Portfolio</button></p>`;

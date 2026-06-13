@@ -52,17 +52,17 @@
   }
 
   /* ---------- populate / rebuild a project's signals (runs sim.js) ---------- */
-  function rebuildWithDocScore(project, docScore, docSource, docExcerpt) {
+  async function rebuildWithDocScore(project, docScore, docSource, docExcerpt) {
     const e = project.signals.evm;
     const cu = project.signals.cusum;
     project.signals = LinSim.buildSignals({
       cpi: e.cpi, spi: e.spi, bac: e.bac, metric: cu.metric, series: cu.series,
       docScore, docSource, docExcerpt, seed: LinSim.hashSeed(project.id)
     });
-    LinStore.saveProject(project);
+    await LinStore.saveProject(project);
   }
 
-  function populateSignals(project, inputs) {
+  async function populateSignals(project, inputs) {
     const doc = inputs.docText ? analyzeText(inputs.docText) : { fired: [], scoreDelta: 0, excerpt: "" };
     const docScore = inputs.docText ? Math.max(0, Math.min(1, 0.1 + doc.scoreDelta)) : (Number(inputs.docScore) || 0.1);
     const series = (inputs.seriesText || "").trim()
@@ -75,13 +75,13 @@
       docExcerpt: doc.excerpt || undefined, seed: LinSim.hashSeed(project.id)
     });
     project.fairnessSensitive = !!inputs.fairnessSensitive;
-    LinStore.saveProject(project);
+    await LinStore.saveProject(project);
     logEvent(`POPULATED signals for ${project.id}: CPI ${Number(inputs.cpi).toFixed(2)}, SPI ${Number(inputs.spi).toFixed(2)} → MC ran 5,000 iters (P80 ${project.signals.mc.p80.toFixed(1)}), CUSUM ${project.signals.cusum.breached ? "BREACH" : "in-control"}, doc ${docScore.toFixed(2)}.`);
   }
 
   /* ---------- keyword doc-ingest proposal (updates the doc signal) ---------- */
   function proposeIngest(projectId, docType, text) {
-    const project = LinStore.getProject(projectId);
+    const project = LinStore.getCached(projectId);
     if (!project || !text.trim()) return null;
     if (!hasSignals(project)) return { needsPopulate: true, projectId };
     const a = analyzeText(text);
@@ -93,16 +93,16 @@
       to: { score: newScore, status: LinSim.docStatus(newScore) }
     };
   }
-  function applyProposal(prop) {
-    const project = LinStore.getProject(prop.projectId);
+  async function applyProposal(prop) {
+    const project = LinStore.getCached(prop.projectId);
     if (!project || !hasSignals(project)) return;
     // Rebuild the package so the new doc score flows through MC spread + statuses.
-    rebuildWithDocScore(project, prop.to.score, `(ingested) ${prop.docType}`, prop.excerpt || project.signals.doc.excerpt);
+    await rebuildWithDocScore(project, prop.to.score, `(ingested) ${prop.docType}`, prop.excerpt || project.signals.doc.excerpt);
   }
 
   /* ---------- page rendering ---------- */
   function projectOptions() {
-    return LinStore.listProjects().map((p) => `<option value="${esc(p.id)}">${esc(p.id)} — ${esc(p.name)}</option>`).join("");
+    return LinStore.cachedActive().map((p) => `<option value="${esc(p.id)}">${esc(p.id)} — ${esc(p.name)}</option>`).join("");
   }
   function renderLog() {
     const elLog = document.getElementById("ingest-log");
@@ -164,13 +164,18 @@
          <button class="btn ig-reject">Reject — discard</button>
        </div>
        <p class="dc-note">Nothing changes until Approve is clicked. The whole signal package is re-derived so the new document score flows through the Monte Carlo spread and the decision.</p>`;
-    box.querySelector(".ig-approve").addEventListener("click", () => {
-      applyProposal(prop);
-      logEvent(`APPROVED doc ingest (${prop.docType}) on ${prop.projectId}: doc ${prop.from.score.toFixed(2)}→${prop.to.score.toFixed(2)}. Rules: ${prop.fired.map((f) => f.rule.id).join(", ") || "none"}.`);
-      box.innerHTML = `<p class="kn-sub">Applied and re-derived. The project has been re-plotted and re-run through the decision rules.</p>`;
-      pendingProposal = null;
-      if (window.LinApp) LinApp.refresh();
-      if (onApplied) onApplied(prop.projectId);
+    box.querySelector(".ig-approve").addEventListener("click", async () => {
+      box.innerHTML = `<p class="kn-sub">Saving to the project store…</p>`;
+      try {
+        await applyProposal(prop);
+        logEvent(`APPROVED doc ingest (${prop.docType}) on ${prop.projectId}: doc ${prop.from.score.toFixed(2)}→${prop.to.score.toFixed(2)}. Rules: ${prop.fired.map((f) => f.rule.id).join(", ") || "none"}.`);
+        box.innerHTML = `<p class="kn-sub">Applied and re-derived. Saved to Drive; re-plotted and re-run through the decision rules.</p>`;
+        pendingProposal = null;
+        if (window.LinApp) LinApp.refresh();
+        if (onApplied) onApplied(prop.projectId);
+      } catch (e) {
+        box.innerHTML = `<p class="kn-sub">Couldn't save to the project store — change not applied. Retry.</p>`;
+      }
     });
     box.querySelector(".ig-reject").addEventListener("click", () => {
       logEvent(`REJECTED doc ingest (${prop.docType}) on ${prop.projectId}. No state change.`);
@@ -233,30 +238,35 @@
 
   function wirePopulateForm(container, onDone) {
     const $c = (sel) => container.querySelector(sel);
-    $c(".ps-run").addEventListener("click", () => {
+    $c(".ps-run").addEventListener("click", async () => {
       const id = $c(".ps-project").value;
-      const project = LinStore.getProject(id);
+      const project = LinStore.getCached(id);
       const box = $c(".ps-result");
       if (!project) { box.innerHTML = `<p class="kn-sub">Select a project first.</p>`; return; }
       const cpi = Number($c(".ps-cpi").value), spi = Number($c(".ps-spi").value);
       if (!Number.isFinite(cpi) || !Number.isFinite(spi) || cpi <= 0 || spi <= 0) {
         box.innerHTML = `<p class="kn-sub">Enter valid CPI and SPI (positive numbers).</p>`; return;
       }
-      populateSignals(project, {
-        cpi, spi, bac: $c(".ps-bac").value,
-        seriesText: $c(".ps-series").value, docText: $c(".ps-doc").value,
-        fairnessSensitive: $c(".ps-fair").checked, metric: "SPI"
-      });
-      const s = project.signals;
-      box.innerHTML = `<p class="kn-sub">Populated <strong>${esc(project.id)}</strong>. Monte Carlo ran <strong>${s.mc.iterations.toLocaleString()}</strong> iterations → P50 ${s.mc.p50.toFixed(1)}, P80 ${s.mc.p80.toFixed(1)} (${s.mc.status}). CUSUM peak ${s.cusum.drift.toFixed(2)} vs H ${s.cusum.threshold.toFixed(2)} → ${s.cusum.breached ? "BREACH" : "in control"} (${s.cusum.status}). Open its Detail to see the live charts.</p>`;
-      if (window.LinApp) LinApp.refresh();
-      if (onDone) onDone(project.id);
+      box.innerHTML = `<p class="kn-sub">Running models and saving to the project store…</p>`;
+      try {
+        await populateSignals(project, {
+          cpi, spi, bac: $c(".ps-bac").value,
+          seriesText: $c(".ps-series").value, docText: $c(".ps-doc").value,
+          fairnessSensitive: $c(".ps-fair").checked, metric: "SPI"
+        });
+        const s = project.signals;
+        box.innerHTML = `<p class="kn-sub">Populated <strong>${esc(project.id)}</strong> (saved to Drive). Monte Carlo ran <strong>${s.mc.iterations.toLocaleString()}</strong> iterations → P50 ${s.mc.p50.toFixed(1)}, P80 ${s.mc.p80.toFixed(1)} (${s.mc.status}). CUSUM peak ${s.cusum.drift.toFixed(2)} vs H ${s.cusum.threshold.toFixed(2)} → ${s.cusum.breached ? "BREACH" : "in control"} (${s.cusum.status}). Open its Detail to see the live charts.</p>`;
+        if (window.LinApp) LinApp.refresh();
+        if (onDone) onDone(project.id);
+      } catch (e) {
+        box.innerHTML = `<p class="kn-sub">Couldn't save to the project store — signals not persisted. Retry.</p>`;
+      }
     });
   }
 
   function renderScopedIngest(projectId, container, onApplied) {
     if (!container) return;
-    const project = LinStore.getProject(projectId);
+    const project = LinStore.getCached(projectId);
     const populated = hasSignals(project);
     container.innerHTML =
       `<h4 class="kn-h" style="font-size:14px">${populated ? "Re-populate signals (re-runs Monte Carlo + CUSUM)" : "Populate signals (runs Monte Carlo + CUSUM)"}</h4>` +
@@ -288,15 +298,15 @@
       </div>`;
     };
 
-    const active = LinStore.listProjects();
-    const archived = LinStore.listArchived();
+    const active = LinStore.cachedActive();
+    const archived = LinStore.cachedArchived();
 
     root.innerHTML =
       `<div class="kn-grid">
         <section class="panel">
           <p class="eyebrow">Create project</p>
           <h2 class="kn-h">New project</h2>
-          <p class="kn-sub">Assigns the next numeric id and creates an <strong>empty</strong> project (no signals) plotted in an awaiting-ingest state. Client-side and synthetic; persists in this browser only (localStorage). Populate its signals to run the models.</p>
+          <p class="kn-sub">Assigns the next numeric id (backend-owned) and creates an <strong>empty</strong> project (no signals) plotted in an awaiting-ingest state. Synthetic; persisted to the Drive-backed project store. Populate its signals to run the models.</p>
           <label class="rationale-label" for="np-name">Project name</label>
           <input id="np-name" class="ig-input" maxlength="80" placeholder="e.g. Concourse Wayfinding Refresh" />
           <label class="rationale-label" for="np-sector">Delivery type</label>
@@ -339,22 +349,27 @@
     wirePopulateForm(root.querySelector("#populate-panel"), (id) => { renderManagePage(); });
     wireIngestForm(root.querySelector("#ingest-panel"), (id) => { if (window.LinApp) LinApp.selectProject(id); });
 
-    document.getElementById("np-create").addEventListener("click", () => {
+    document.getElementById("np-create").addEventListener("click", async () => {
       const name = document.getElementById("np-name").value.trim();
       const sector = document.getElementById("np-sector").value;
       const msg = document.getElementById("np-msg");
       if (name.length < 3) { msg.textContent = "Enter a project name (min 3 characters)."; return; }
-      const p = LinStore.createProject({ name, sector });
-      logEvent(`Created EMPTY project ${p.id} — ${name} (${SECTOR_LABEL[sector] || sector}); awaiting ingest.`);
-      if (window.LinApp) LinApp.refresh();
-      renderManagePage();
-      document.getElementById("np-msg").textContent = `Created ${p.id} (empty). Populate its signals to run the models.`;
+      msg.textContent = "Creating project in the store…";
+      try {
+        const p = await LinStore.createProject({ name, sector });
+        logEvent(`Created EMPTY project ${p.id} — ${name} (${SECTOR_LABEL[sector] || sector}); awaiting ingest.`);
+        if (window.LinApp) LinApp.refresh();
+        renderManagePage();
+        document.getElementById("np-msg").textContent = `Created ${p.id} (empty, saved to Drive). Populate its signals to run the models.`;
+      } catch (e) {
+        msg.textContent = "Couldn't reach the project store to create the project. Retry.";
+      }
     });
 
     root.querySelectorAll("[data-archive]").forEach((b) =>
-      b.addEventListener("click", () => { LinStore.archiveProject(b.dataset.archive); logEvent(`ARCHIVED ${b.dataset.archive}.`); if (window.LinApp) LinApp.refresh(); renderManagePage(); }));
+      b.addEventListener("click", async () => { try { await LinStore.archiveProject(b.dataset.archive); logEvent(`ARCHIVED ${b.dataset.archive}.`); if (window.LinApp) LinApp.refresh(); renderManagePage(); } catch (e) { LinStore.banner("Couldn't archive — store unreachable. Retry.", "warn"); } }));
     root.querySelectorAll("[data-restore]").forEach((b) =>
-      b.addEventListener("click", () => { LinStore.restoreProject(b.dataset.restore); logEvent(`RESTORED ${b.dataset.restore}.`); if (window.LinApp) LinApp.refresh(); renderManagePage(); }));
+      b.addEventListener("click", async () => { try { await LinStore.restoreProject(b.dataset.restore); logEvent(`RESTORED ${b.dataset.restore}.`); if (window.LinApp) LinApp.refresh(); renderManagePage(); } catch (e) { LinStore.banner("Couldn't restore — store unreachable. Retry.", "warn"); } }));
     root.querySelectorAll("[data-detail]").forEach((b) =>
       b.addEventListener("click", () => LinApp.openDetail(b.dataset.detail)));
     root.querySelectorAll("[data-populate]").forEach((b) =>

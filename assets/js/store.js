@@ -1,140 +1,192 @@
 /* ============================================================
-   lin-project-radar — store.js  (Phase 1)
+   lin-project-radar — store.js  (Phase 2: Drive-backed)
    ------------------------------------------------------------
-   The SINGLE data-access seam. All project reads/writes/creates
-   go through here. Phase 1 is backed by localStorage ONLY — no
-   network calls. Phase 2 will swap this implementation for an
-   Apps Script / Google Drive backend WITHOUT touching the UI:
-   the UI only ever calls listProjects/getProject/createProject/
-   saveProject/archive/restore below.
+   The single data-access seam. Phase 1 was localStorage; Phase 2
+   talks to a Google Apps Script Web App (one endpoint, LIN_API_URL):
+     GET  ?action=list            → { ok, projects:[...] }
+     GET  ?action=get&id=01       → { ok, project:{...} }
+     POST {action:"create",name,sector} → { ok, project:{...} }
+     POST {action:"save",project} → { ok, project:{...} }
 
-   It owns the live in-memory arrays window.LIN_PROJECTS and
-   window.LIN_ARCHIVED so existing render modules keep reading
-   them, and persists every mutation to localStorage.
+   CORS: Apps Script Web Apps can't set arbitrary CORS headers, so
+   we only ever make "simple requests" to skip the preflight —
+   GETs with no custom headers, and POSTs with
+   Content-Type: text/plain;charset=UTF-8 (the body is still a JSON
+   string; the backend JSON.parses e.postData.contents). We set NO
+   custom headers (no X-*, no Authorization) anywhere.
+
+   The UI keeps reading the in-memory mirrors window.LIN_PROJECTS /
+   window.LIN_ARCHIVED (so render code stays synchronous). store
+   hydrates them from the backend and mirrors the last good list to
+   localStorage as a CACHE ONLY — Drive is the source of truth.
+   Archive is a project flag (archived:true) persisted via save,
+   since the backend exposes only list/get/create/save.
    ============================================================ */
 
 (function () {
   "use strict";
 
-  const KEY_PROJECTS = "lpr-projects-v1";   // active + archived, full records
-  const KEY_ARCHIVED = "lpr-archived-v1";   // array of archived ids
+  const CACHE_KEY = "lpr-cache-list-v2";
+  const url = () => (window.LIN_API_URL || "").trim();
+  const configured = () => url() && !/PASTE_/.test(url());
 
-  /* ---------- low-level persistence ---------- */
-  function readAll() {
-    try { return JSON.parse(localStorage.getItem(KEY_PROJECTS) || "null"); }
-    catch (e) { return null; }
+  /* ---------- non-fatal status banner ---------- */
+  let bannerEl = null;
+  function banner(msg, kind) {
+    if (!bannerEl) {
+      bannerEl = document.createElement("div");
+      bannerEl.id = "store-banner";
+      bannerEl.setAttribute("role", "status");
+      document.body.appendChild(bannerEl);
+    }
+    if (!msg) { bannerEl.hidden = true; return; }
+    bannerEl.hidden = false;
+    bannerEl.className = "store-banner " + (kind || "info");
+    bannerEl.textContent = msg;
   }
-  function writeAll(records) {
-    try { localStorage.setItem(KEY_PROJECTS, JSON.stringify(records)); } catch (e) {}
+  function loading(on, what) { if (on) banner((what || "Contacting the project store") + "…", "info"); else banner(""); }
+
+  /* ---------- cache mirror (last good list) ---------- */
+  function readCache() {
+    try { return JSON.parse(localStorage.getItem(CACHE_KEY) || "null"); } catch (e) { return null; }
   }
-  function readArchivedIds() {
-    try { return JSON.parse(localStorage.getItem(KEY_ARCHIVED) || "[]"); }
-    catch (e) { return []; }
-  }
-  function writeArchivedIds(ids) {
-    try { localStorage.setItem(KEY_ARCHIVED, JSON.stringify(ids)); } catch (e) {}
+  function writeCache(projects) {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(projects)); } catch (e) {}
   }
 
-  /* Persist the current in-memory state (active + archived) as one record set. */
-  function persist() {
-    const records = LIN_PROJECTS.concat(LIN_ARCHIVED);
-    writeAll(records);
-    writeArchivedIds(LIN_ARCHIVED.map((p) => p.id));
+  /* ---------- in-memory hydration from a flat project list ---------- */
+  function hydrate(projects) {
+    LIN_PROJECTS.length = 0;
+    LIN_ARCHIVED.length = 0;
+    (projects || []).forEach((p) => (p.archived ? LIN_ARCHIVED : LIN_PROJECTS).push(p));
   }
 
-  /* ---------- a project has signals only after ingest populates them ---------- */
+  /* ---------- CORS-safe fetch helpers (simple requests only) ---------- */
+  async function apiGet(qs) {
+    const r = await fetch(url() + qs);                       // no custom headers → no preflight
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    if (!j || j.ok === false) throw new Error((j && j.error) || "backend error");
+    return j;
+  }
+  async function apiPost(body) {
+    const r = await fetch(url(), {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=UTF-8" }, // simple request → no preflight
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    if (!j || j.ok === false) throw new Error((j && j.error) || "backend error");
+    return j;
+  }
+
+  let lastError = null;
+  function errored() { return lastError; }
+
+  /* ---------- load: hydrate the portfolio from the backend ---------- */
+  async function load() {
+    lastError = null;
+    if (!configured()) {
+      const cached = readCache();
+      hydrate(cached || []);
+      banner("Project store not configured (LIN_API_URL). Showing " +
+        (cached ? "last cached" : "an empty") + " portfolio — set the URL in config.js.", "warn");
+      return LIN_PROJECTS.slice();
+    }
+    loading(true, "Loading projects");
+    try {
+      const j = await apiGet("?action=list");
+      const projects = j.projects || [];
+      hydrate(projects);
+      writeCache(projects);
+      banner("");
+      return LIN_PROJECTS.slice();
+    } catch (e) {
+      lastError = e;
+      const cached = readCache();
+      hydrate(cached || []);
+      banner("Couldn't reach the project store" + (cached ? " — showing last cached projects. Retry." : ". Retry."), "warn");
+      return LIN_PROJECTS.slice();
+    } finally {
+      loading(false);
+    }
+  }
+
+  /* ---------- the async seam (same names as Phase 1) ---------- */
+  async function listProjects() { await load(); return LIN_PROJECTS.slice(); }
+
+  async function getProject(id) {
+    if (!configured()) return getCached(id);
+    try {
+      const j = await apiGet("?action=get&id=" + encodeURIComponent(id));
+      return j.project || getCached(id);
+    } catch (e) { lastError = e; return getCached(id); }
+  }
+
+  async function createProject({ name, sector }) {
+    if (!configured()) throw new Error("Project store not configured (LIN_API_URL).");
+    loading(true, "Creating project");
+    try {
+      const j = await apiPost({ action: "create", name, sector });
+      const p = j.project;
+      // backend owns id numbering; reflect into memory + cache
+      LIN_PROJECTS.push(p);
+      writeCache(LIN_PROJECTS.concat(LIN_ARCHIVED));
+      banner("");
+      return p;
+    } finally { loading(false); }
+  }
+
+  async function saveProject(project) {
+    if (!configured()) throw new Error("Project store not configured (LIN_API_URL).");
+    loading(true, "Saving");
+    try {
+      const j = await apiPost({ action: "save", project });
+      const saved = j.project || project;
+      // reconcile memory: replace wherever it lives, honour archived flag
+      const fromActive = LIN_PROJECTS.findIndex((p) => p.id === saved.id);
+      if (fromActive >= 0) LIN_PROJECTS.splice(fromActive, 1);
+      const fromArch = LIN_ARCHIVED.findIndex((p) => p.id === saved.id);
+      if (fromArch >= 0) LIN_ARCHIVED.splice(fromArch, 1);
+      (saved.archived ? LIN_ARCHIVED : LIN_PROJECTS).push(saved);
+      writeCache(LIN_PROJECTS.concat(LIN_ARCHIVED));
+      banner("");
+      return saved;
+    } finally { loading(false); }
+  }
+
+  // Archive/restore are project flags persisted through save (no extra endpoint).
+  async function archiveProject(id) {
+    const p = getCached(id);
+    if (!p) return null;
+    p.archived = true;
+    return saveProject(p);
+  }
+  async function restoreProject(id) {
+    const p = getCached(id);
+    if (!p) return null;
+    p.archived = false;
+    return saveProject(p);
+  }
+
+  /* ---------- synchronous accessors for render (read the mirror) ---------- */
+  function cachedActive() { return LIN_PROJECTS.slice(); }
+  function cachedArchived() { return LIN_ARCHIVED.slice(); }
+  function getCached(id) {
+    return LIN_PROJECTS.find((p) => p.id === id) || LIN_ARCHIVED.find((p) => p.id === id) || null;
+  }
+
   function hasSignals(p) {
     return !!(p && p.signals && p.signals.evm && p.signals.cusum && p.signals.mc && p.signals.doc);
   }
 
-  /* ---------- init: hydrate from localStorage, else seed empty shells ---------- */
-  function init() {
-    const stored = readAll();
-    if (stored && Array.isArray(stored) && stored.length) {
-      const archivedIds = new Set(readArchivedIds());
-      LIN_PROJECTS.length = 0;
-      LIN_ARCHIVED.length = 0;
-      stored.forEach((p) => (archivedIds.has(p.id) ? LIN_ARCHIVED : LIN_PROJECTS).push(p));
-    } else {
-      // First run: seed clearly-empty example shells (no fabricated signals).
-      LIN_PROJECTS.length = 0;
-      LIN_ARCHIVED.length = 0;
-      LIN_SEED_PROJECTS.forEach((s) => LIN_PROJECTS.push(JSON.parse(JSON.stringify(s))));
-      persist();
-    }
-  }
-
-  /* ---------- id assignment: numeric, zero-padded, next free ---------- */
-  function nextId() {
-    let max = 0;
-    LIN_PROJECTS.concat(LIN_ARCHIVED).forEach((p) => {
-      const n = parseInt(p.id, 10);
-      if (Number.isFinite(n) && n > max) max = n;
-    });
-    return String(max + 1).padStart(2, "0");
-  }
-
-  /* ---------- public data-access API ---------- */
-
-  function listProjects() { return LIN_PROJECTS.slice(); }
-  function listArchived() { return LIN_ARCHIVED.slice(); }
-  function getProject(id) {
-    return LIN_PROJECTS.find((p) => p.id === id) ||
-           LIN_ARCHIVED.find((p) => p.id === id) || null;
-  }
-
-  // createProject({name, sector}) → empty project (no signals), persisted.
-  // Phase 2 will additionally create a Drive folder here; the UI contract
-  // (returns the new project) does not change.
-  function createProject({ name, sector }) {
-    const project = {
-      id: nextId(),
-      name: String(name || "").trim(),
-      sector: sector === "hybrid" ? "hybrid" : sector,  // design|construction|hybrid
-      reportingPeriod: new Date().toISOString().slice(0, 7),
-      signals: {},          // EMPTY until ingest populates
-      fairnessSensitive: false,
-      createdAt: new Date().toISOString()
-    };
-    LIN_PROJECTS.push(project);
-    persist();
-    return project;
-  }
-
-  function saveProject(project) {
-    const i = LIN_PROJECTS.findIndex((p) => p.id === project.id);
-    if (i >= 0) LIN_PROJECTS[i] = project;
-    else if (!LIN_ARCHIVED.some((p) => p.id === project.id)) LIN_PROJECTS.push(project);
-    persist();
-    return project;
-  }
-
-  function archiveProject(id) {
-    const i = LIN_PROJECTS.findIndex((p) => p.id === id);
-    if (i < 0) return null;
-    const p = LIN_PROJECTS.splice(i, 1)[0];
-    LIN_ARCHIVED.push(p);
-    persist();
-    return p;
-  }
-
-  function restoreProject(id) {
-    const i = LIN_ARCHIVED.findIndex((p) => p.id === id);
-    if (i < 0) return null;
-    const p = LIN_ARCHIVED.splice(i, 1)[0];
-    LIN_PROJECTS.push(p);
-    persist();
-    return p;
-  }
-
   window.LinStore = {
-    init, listProjects, listArchived, getProject,
-    createProject, saveProject, archiveProject, restoreProject,
-    nextId, hasSignals
+    load, listProjects, getProject, createProject, saveProject,
+    archiveProject, restoreProject,
+    // sync mirror accessors used by render code
+    cachedActive, cachedArchived, getCached, listActive: cachedActive, listArchived: cachedArchived,
+    hasSignals, errored, configured, banner, loading
   };
-  // convenience global guard used by render modules
   window.hasSignals = hasSignals;
-
-  // Hydrate immediately (synchronous, before app.js init runs).
-  init();
 })();

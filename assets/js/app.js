@@ -585,7 +585,7 @@
   };
 
   /* ---------- init ---------- */
-  function init() {
+  async function init() {
     document.querySelectorAll("[data-set-theme]").forEach((b) =>
       b.addEventListener("click", () => applyTheme(b.dataset.setTheme))
     );
@@ -597,16 +597,19 @@
     if (!["light", "console", "schematic"].includes(saved)) saved = "light";
     applyTheme(saved);
 
-    // store.js has already hydrated LIN_PROJECTS from localStorage (or seeded
-    // empty shells) before this runs — no separate merge step needed.
-
     wireNav();
     wireTzSelect();
+    startClock();
+    showPage("portfolio");
+
+    // Phase 2: hydrate the portfolio from the Drive-backed store (async).
+    // Renders an empty/awaiting portfolio while loading; the store shows a
+    // non-fatal banner on error and falls back to the last cached list.
+    try { await LinStore.load(); } catch (e) { /* store shows its own banner */ }
+
     buildRadar();
     buildFallbackList();
     renderDecisionLog();
-    startClock();
-    showPage("portfolio");
 
     // default selection: first project in the portfolio (may be empty →
     // shows the awaiting-ingest state, not a fabricated status).
