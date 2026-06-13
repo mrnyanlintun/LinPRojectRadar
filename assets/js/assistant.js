@@ -159,7 +159,7 @@
          </div>
          <div id="la-msgs" class="la-msgs" aria-live="polite">
            <div class="la-msg la-bot">
-             <p>I answer questions about this demo and the selected project. If the AI is unreachable I fall back to scripted help from the knowledge library. Type a question, or use the mic to ask by voice.</p>
+             <p>Ask me about the selected project's cost and schedule performance, signal analysis, and governance decision. I can explain the Monte Carlo forecast, CUSUM detection, PCEIF concepts, and the signal-to-action framework. Type a question or use the mic.</p>
            </div>
          </div>
          <div class="la-suggest">${SUGGESTIONS.map((s) => `<button class="la-chip">${esc(s)}</button>`).join("")}</div>
