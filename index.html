@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="assets/css/radar.css" />
 </head>
 <body data-theme="dark">
@@ -17,9 +18,10 @@
       <button id="nav-toggle" class="nav-toggle" aria-label="Show navigation and theme menu" aria-expanded="false" aria-controls="nav-rail">
         <svg viewBox="0 0 18 18" aria-hidden="true"><path d="M2 4.5h14M2 9h14M2 13.5h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
       </button>
-      <div class="wordmark">
-        <span class="mark">LIN PROJECT RADAR</span>
-      </div>
+      <a class="nav-logo" href="#" onclick="event.preventDefault(); if (window.LinApp) LinApp.showPage('portfolio');">
+        <img src="logo.png" alt="Lin Project Radar" class="nav-logo-img">
+        <span class="nav-logo-text">LIN PROJECT RADAR</span>
+      </a>
       <span class="clock" id="tz-clock" aria-label="Current time in selected timezone">--:--:--</span>
       <select id="tz-select" class="tz-select" aria-label="Timezone"></select>
     </header>
