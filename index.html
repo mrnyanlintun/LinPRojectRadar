@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lin Project Radar</title>
+  <meta name="description" content="Synthetic demonstration of the PCEIF signal-to-action governance workflow for public AEC capital programs. Doctor of Engineering praxis, GWU." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/radar.css" />
+</head>
+<body data-theme="light">
+  <div class="app">
+
+    <header class="topbar">
+      <div class="wordmark">
+        <span class="mark">LIN PROJECT RADAR</span>
+      </div>
+      <span class="clock" id="tz-clock" aria-label="Current time in selected timezone">--:--:--</span>
+      <select id="tz-select" class="tz-select" aria-label="Timezone"></select>
+      <div class="theme-switch" role="group" aria-label="Visual theme">
+        <button data-set-theme="light" class="active">Light</button>
+        <button data-set-theme="console">Console</button>
+        <button data-set-theme="schematic">Schematic</button>
+      </div>
+      <span class="synthetic-badge">SYNTHETIC DEMONSTRATION DATA</span>
+    </header>
+
+    <div class="layout">
+
+    <nav class="nav-rail" aria-label="Site pages">
+      <button data-nav="portfolio" class="active">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="2" fill="currentColor"/><line x1="8" y1="8" x2="13" y2="3.5" stroke="currentColor" stroke-width="1.2"/></svg>
+        <span>Portfolio</span>
+      </button>
+      <!-- internal key stays "modules"; only the display name is "Signals"
+           (same display-name/key pattern as Combined→Hybrid) -->
+      <button data-nav="modules">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 8h2.2l1.6-4.5L8 12.5 10.2 5l1.3 3H15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Signals</span>
+      </button>
+      <button data-nav="manage">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4.5a1 1 0 0 1 1-1h3.6l1.4 1.6h6a1 1 0 0 1 1 1v6.4a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+        <span>Manage Projects</span>
+      </button>
+      <button data-nav="knowledge">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.2C6.8 2.2 5 2 3 2v11c2 0 3.8.2 5 1.2 1.2-1 3-1.2 5-1.2V2c-2 0-3.8.2-5 1.2zM8 3.2v11" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+        <span>Knowledge</span>
+      </button>
+    </nav>
+
+    <main class="content">
+
+    <section class="page" data-page="portfolio">
+
+    <section class="intro">
+      <p class="eyebrow">Portfolio — signal to action</p>
+      <h1>From multi-model signals to a governed decision</h1>
+      <p>Each project is a blip on the scope. Distance from center is drift from baseline; angle is delivery sector. Select a project to see its signal ledger, the signal-conflict classification, and the PCEIF governance decision — with explicit authority, documentation, and a contractor fairness gate where required.</p>
+    </section>
+
+    <div class="console">
+
+      <!-- RADAR -->
+      <section class="panel radar-panel" aria-label="Project radar scope">
+        <div class="radar-wrap">
+          <svg id="radar-svg" viewBox="-50 -50 500 500" role="img"
+               aria-label="Radar scope. Projects plotted by health and delivery sector. A keyboard-accessible list of the same projects is provided below.">
+          </svg>
+        </div>
+        <div class="radar-legend" aria-hidden="true">
+          <span><i class="lg-green"></i> Green</span>
+          <span><i class="lg-amber"></i> Amber</span>
+          <span><i class="lg-red"></i> Red-review</span>
+        </div>
+        <p class="radar-note">Center = on baseline · outer rim = high drift. Sectors: Design / Construction / Hybrid delivery. Select a blip (or a list row below) to open its Project Detail; the list is an equivalent keyboard control path.</p>
+
+        <div class="fallback">
+          <h3 id="list-heading">Projects (list view)</h3>
+          <ul id="project-list" aria-labelledby="list-heading"></ul>
+        </div>
+      </section>
+
+      <!-- LEDGER + DECISION -->
+      <div>
+        <section class="panel" id="ledger" aria-label="Signal ledger" aria-live="polite"></section>
+        <section class="panel decision-section" id="decision-card" aria-label="PCEIF governance decision"></section>
+        <section class="panel log-panel" id="decision-log" aria-label="Decision log"></section>
+      </div>
+
+    </div>
+
+    </section><!-- /page portfolio -->
+
+    <section class="page" data-page="detail" hidden>
+      <div id="detail-root"></div>
+    </section>
+
+    <section class="page" data-page="modules" hidden>
+      <section class="intro">
+        <p class="eyebrow">Signals</p>
+        <h1>The five PCEIF signals, explained</h1>
+        <p>Each signal module shows what it measures, the rule that fired on the synthetic portfolio, and an illustrative graph. Module 05 — the ABM governance layer — calls the same decision.js functions that drive the decision card. Open any project from the Portfolio for the same five signals computed on that project alone.</p>
+      </section>
+      <div id="modules-root"></div>
+    </section>
+
+    <section class="page" data-page="manage" hidden>
+      <section class="intro">
+        <p class="eyebrow">Manage projects</p>
+        <h1>Manage your project portfolio</h1>
+        <p>Everything here is client-side and synthetic. Document extraction runs visible keyword rules against the selected project and proposes a signal delta; nothing changes until a human approves it. Archive keeps projects recoverable while removing them from the portfolio.</p>
+      </section>
+      <div id="manage-root"></div>
+    </section>
+
+    <section class="page" data-page="knowledge" hidden>
+      <section class="intro">
+        <p class="eyebrow">Knowledge library</p>
+        <h1>Methods, terms, and how to use this demo</h1>
+        <p>The curated reference behind the guided assistant — the chatbot answers only from this content, so the two stay consistent.</p>
+      </section>
+      <div id="knowledge-root"></div>
+    </section>
+
+    </main><!-- /content -->
+    </div><!-- /layout -->
+
+    <footer class="foot">
+      Demonstration only. All project data is synthetic; no real project, agency, employer, contractor, or vendor is referenced.
+      This is not a validated production system: it does not validate predictive accuracy, diagnose live projects, or issue contractual direction.
+      Every recommended action requires named human approval before it is recorded, and contractor fairness gates require contractor response opportunity before any formal action.
+      Built for a Doctor of Engineering praxis (The George Washington University, Engineering Management). PCEIF&nbsp;L2-v0.5-demo.
+    </footer>
+
+  </div>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/decision.js"></script>
+  <script src="assets/js/sim.js"></script>
+  <script src="assets/js/tz.js"></script>
+  <script src="assets/js/knowledge.js"></script>
+  <script src="assets/js/modules.js"></script>
+  <script src="assets/js/ingest.js"></script>
+  <script src="assets/js/deepdive.js"></script>
+  <script src="assets/js/detail.js"></script>
+  <script src="assets/js/assistant.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

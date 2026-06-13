@@ -1,0 +1,371 @@
+/* ============================================================
+   lin-project-radar — ingest.js  (Phase 1)
+   ------------------------------------------------------------
+   Create projects (empty), populate a project's signals from
+   ingest inputs (which runs the REAL Monte Carlo + CUSUM via
+   sim.js), run the transparent keyword document-risk extraction,
+   and the active/archived lifecycle.
+
+   ALL project reads/writes go through store.js (the data seam).
+   Phase 1 is localStorage-backed; no network calls. The event
+   log is kept separately (UI state, not project data).
+   ============================================================ */
+
+(function () {
+  "use strict";
+
+  const STORE_LOG = "lpr-ingest-log";
+  const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const SECTOR_LABEL = { design: "Design", construction: "Construction", hybrid: "Hybrid", combined: "Hybrid" };
+
+  /* ---------- visible document-risk keyword rules (Module 03, transparent) ---------- */
+  const INGEST_RULES = [
+    { id: "R1-unresolved", pattern: /unresolved|no committed date|outstanding/i, label: "Unresolved item language", scoreDelta: +0.15 },
+    { id: "R2-dispute",    pattern: /dispute|claim|contested|disagreement/i,     label: "Dispute / claim language",   scoreDelta: +0.25 },
+    { id: "R3-delay",      pattern: /delay|resequenc|slip|behind schedule|late/i, label: "Schedule-impact language",   scoreDelta: +0.20 },
+    { id: "R4-rejected",   pattern: /rejected|resubmit|nonconform|deficien/i,     label: "Rejection / rework language", scoreDelta: +0.20 },
+    { id: "R5-cost",       pattern: /overrun|cost growth|change order|escalation/i, label: "Cost-pressure language",   scoreDelta: +0.20 },
+    { id: "R6-positive",   pattern: /\bresolved\b|\bclosed\b|on schedule|within budget|approved as submitted/i, label: "Favorable resolution language", scoreDelta: -0.15 }
+  ];
+  const DOC_TYPES = ["RFI log", "Submittal notes", "QC comments", "Procurement notes", "Meeting minutes"];
+
+  let pendingProposal = null;
+  let ingestLog = [];
+  try { ingestLog = JSON.parse(localStorage.getItem(STORE_LOG) || "[]"); } catch (e) { ingestLog = []; }
+  function saveLog() { try { localStorage.setItem(STORE_LOG, JSON.stringify(ingestLog.slice(0, 80))); } catch (e) {} }
+  function logEvent(msg) { ingestLog.unshift({ at: new Date().toISOString(), msg }); saveLog(); renderLog(); }
+
+  /* ---------- keyword extraction (transparent, per praxis) ---------- */
+  function analyzeText(text) {
+    const fired = [];
+    let scoreDelta = 0;
+    INGEST_RULES.forEach((r) => {
+      const m = text.match(r.pattern);
+      if (m) { fired.push({ rule: r, match: m[0] }); scoreDelta += r.scoreDelta; }
+    });
+    let excerpt = "";
+    if (fired.length) {
+      const sentences = text.split(/(?<=[.!?])\s+/);
+      excerpt = (sentences.find((s) => fired.some((f) => f.rule.pattern.test(s))) || sentences[0] || "").trim().slice(0, 220);
+    }
+    return { fired, scoreDelta, excerpt };
+  }
+
+  /* ---------- populate / rebuild a project's signals (runs sim.js) ---------- */
+  function rebuildWithDocScore(project, docScore, docSource, docExcerpt) {
+    const e = project.signals.evm;
+    const cu = project.signals.cusum;
+    project.signals = LinSim.buildSignals({
+      cpi: e.cpi, spi: e.spi, bac: e.bac, metric: cu.metric, series: cu.series,
+      docScore, docSource, docExcerpt, seed: LinSim.hashSeed(project.id)
+    });
+    LinStore.saveProject(project);
+  }
+
+  function populateSignals(project, inputs) {
+    const doc = inputs.docText ? analyzeText(inputs.docText) : { fired: [], scoreDelta: 0, excerpt: "" };
+    const docScore = inputs.docText ? Math.max(0, Math.min(1, 0.1 + doc.scoreDelta)) : (Number(inputs.docScore) || 0.1);
+    const series = (inputs.seriesText || "").trim()
+      ? inputs.seriesText.split(/[,\s]+/).map(Number).filter(Number.isFinite)
+      : undefined;
+    project.signals = LinSim.buildSignals({
+      cpi: Number(inputs.cpi), spi: Number(inputs.spi), bac: Number(inputs.bac) || undefined,
+      metric: inputs.metric || "SPI", series, docScore,
+      docSource: inputs.docText ? "(ingested document)" : "(manual signal entry)",
+      docExcerpt: doc.excerpt || undefined, seed: LinSim.hashSeed(project.id)
+    });
+    project.fairnessSensitive = !!inputs.fairnessSensitive;
+    LinStore.saveProject(project);
+    logEvent(`POPULATED signals for ${project.id}: CPI ${Number(inputs.cpi).toFixed(2)}, SPI ${Number(inputs.spi).toFixed(2)} → MC ran 5,000 iters (P80 ${project.signals.mc.p80.toFixed(1)}), CUSUM ${project.signals.cusum.breached ? "BREACH" : "in-control"}, doc ${docScore.toFixed(2)}.`);
+  }
+
+  /* ---------- keyword doc-ingest proposal (updates the doc signal) ---------- */
+  function proposeIngest(projectId, docType, text) {
+    const project = LinStore.getProject(projectId);
+    if (!project || !text.trim()) return null;
+    if (!hasSignals(project)) return { needsPopulate: true, projectId };
+    const a = analyzeText(text);
+    const fromScore = project.signals.doc.score;
+    const newScore = Math.max(0, Math.min(1, fromScore + a.scoreDelta));
+    return {
+      projectId, docType, fired: a.fired, excerpt: a.excerpt,
+      from: { score: fromScore, status: project.signals.doc.status },
+      to: { score: newScore, status: LinSim.docStatus(newScore) }
+    };
+  }
+  function applyProposal(prop) {
+    const project = LinStore.getProject(prop.projectId);
+    if (!project || !hasSignals(project)) return;
+    // Rebuild the package so the new doc score flows through MC spread + statuses.
+    rebuildWithDocScore(project, prop.to.score, `(ingested) ${prop.docType}`, prop.excerpt || project.signals.doc.excerpt);
+  }
+
+  /* ---------- page rendering ---------- */
+  function projectOptions() {
+    return LinStore.listProjects().map((p) => `<option value="${esc(p.id)}">${esc(p.id)} — ${esc(p.name)}</option>`).join("");
+  }
+  function renderLog() {
+    const elLog = document.getElementById("ingest-log");
+    if (!elLog) return;
+    elLog.innerHTML = ingestLog.length
+      ? ingestLog.slice(0, 25).map((e) =>
+          `<div class="ig-log-entry"><span class="mod-mono">${esc(window.LinTZ ? LinTZ.format(e.at) : e.at)}</span> ${esc(e.msg)}</div>`).join("")
+      : `<p class="kn-sub">No ingest events this browser yet.</p>`;
+  }
+
+  /* ---------- shared keyword-ingest form (Manage panel + Project Detail) ---------- */
+  function ingestFormHtml(fixedId) {
+    const projectField = fixedId
+      ? `<input type="hidden" class="ig-project" value="${esc(fixedId)}" />`
+      : `<label class="rationale-label">Project
+           <select class="ig-project ig-input">${projectOptions()}</select></label>`;
+    return `
+      <div class="kn-grid">
+        <div>
+          ${projectField}
+          <label class="rationale-label">Document type
+            <select class="ig-doctype ig-input">${DOC_TYPES.map((d) => `<option>${d}</option>`).join("")}</select></label>
+          <details class="kn-topic"><summary>The keyword rules that will run (visible by design)</summary>
+            <ul class="ig-fired">${INGEST_RULES.map((r) =>
+              `<li><span class="mod-mono">${esc(r.id)}</span> ${esc(r.label)} — /${esc(r.pattern.source)}/i → doc ${r.scoreDelta >= 0 ? "+" : ""}${r.scoreDelta.toFixed(2)}</li>`).join("")}
+            </ul>
+          </details>
+        </div>
+        <div>
+          <label class="rationale-label">Document text
+            <textarea class="ig-text ig-textarea" placeholder="Paste document text here, or load a file below…"></textarea></label>
+          <input type="file" class="ig-file" accept=".txt,.csv,.md,.text" aria-label="Load text file" />
+          <div class="dc-actions"><button class="btn primary ig-run">Run extraction</button></div>
+        </div>
+      </div>
+      <div class="ig-result" aria-live="polite"></div>`;
+  }
+
+  function renderProposal(prop, box, onApplied) {
+    if (!prop) {
+      box.innerHTML = `<p class="kn-sub">No risk rules matched this text. No change proposed — nothing to approve.</p>`;
+      return;
+    }
+    if (prop.needsPopulate) {
+      box.innerHTML = `<p class="kn-sub">This project has no signals yet — populate its signals first (Monte Carlo / CUSUM inputs), then document-risk ingest can update the doc signal.</p>`;
+      return;
+    }
+    const firedHtml = prop.fired.length
+      ? prop.fired.map((f) =>
+          `<li><strong>${esc(f.rule.label)}</strong> <span class="mod-mono">(${esc(f.rule.id)})</span> — matched “${esc(f.match)}” → doc ${f.rule.scoreDelta >= 0 ? "+" : ""}${f.rule.scoreDelta.toFixed(2)}</li>`).join("")
+      : "<li>No rules fired.</li>";
+    box.innerHTML =
+      `<h3 class="kn-defterm">Proposed document-risk delta — human approval required</h3>
+       <ul class="ig-fired">${firedHtml}</ul>
+       <div class="ig-delta mod-mono">doc score ${prop.from.score.toFixed(2)} → <strong>${prop.to.score.toFixed(2)}</strong> (${esc(prop.from.status)} → <strong>${esc(prop.to.status)}</strong>)</div>
+       ${prop.excerpt ? `<p class="ig-excerpt">Evidence excerpt: “${esc(prop.excerpt)}”</p>` : ""}
+       <div class="dc-actions">
+         <button class="btn primary ig-approve">Approve — apply to project</button>
+         <button class="btn ig-reject">Reject — discard</button>
+       </div>
+       <p class="dc-note">Nothing changes until Approve is clicked. The whole signal package is re-derived so the new document score flows through the Monte Carlo spread and the decision.</p>`;
+    box.querySelector(".ig-approve").addEventListener("click", () => {
+      applyProposal(prop);
+      logEvent(`APPROVED doc ingest (${prop.docType}) on ${prop.projectId}: doc ${prop.from.score.toFixed(2)}→${prop.to.score.toFixed(2)}. Rules: ${prop.fired.map((f) => f.rule.id).join(", ") || "none"}.`);
+      box.innerHTML = `<p class="kn-sub">Applied and re-derived. The project has been re-plotted and re-run through the decision rules.</p>`;
+      pendingProposal = null;
+      if (window.LinApp) LinApp.refresh();
+      if (onApplied) onApplied(prop.projectId);
+    });
+    box.querySelector(".ig-reject").addEventListener("click", () => {
+      logEvent(`REJECTED doc ingest (${prop.docType}) on ${prop.projectId}. No state change.`);
+      box.innerHTML = `<p class="kn-sub">Proposal discarded. No project state was changed.</p>`;
+      pendingProposal = null;
+    });
+  }
+
+  function wireIngestForm(container, onApplied) {
+    const $c = (sel) => container.querySelector(sel);
+    $c(".ig-file").addEventListener("change", (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => { $c(".ig-text").value = String(reader.result || "").slice(0, 20000); };
+      reader.readAsText(f);
+    });
+    $c(".ig-run").addEventListener("click", () => {
+      const projectId = $c(".ig-project").value;
+      const docType = $c(".ig-doctype").value;
+      const text = $c(".ig-text").value;
+      const box = $c(".ig-result");
+      if (!text.trim()) { box.innerHTML = `<p class="kn-sub">Paste or load some document text first.</p>`; return; }
+      pendingProposal = proposeIngest(projectId, docType, text);
+      const fired = pendingProposal && pendingProposal.fired ? pendingProposal.fired.length : 0;
+      logEvent(`Ran doc extraction (${docType}) on ${projectId}: ${pendingProposal && pendingProposal.needsPopulate ? "project not populated yet" : fired + " rule(s) fired — awaiting human review"}.`);
+      renderProposal(pendingProposal && (pendingProposal.needsPopulate || pendingProposal.fired.length) ? pendingProposal : null, box, onApplied);
+    });
+  }
+
+  /* ---------- populate-signals form (the path that runs MC + CUSUM) ---------- */
+  function populateFormHtml(fixedId) {
+    const projectField = fixedId
+      ? `<input type="hidden" class="ps-project" value="${esc(fixedId)}" />`
+      : `<label class="rationale-label">Project
+           <select class="ps-project ig-input">${projectOptions()}</select></label>`;
+    return `
+      <div class="kn-grid">
+        <div>
+          ${projectField}
+          <label class="rationale-label">CPI (cost performance index)
+            <input class="ps-cpi ig-input" type="number" step="0.01" value="1.00" /></label>
+          <label class="rationale-label">SPI (schedule performance index)
+            <input class="ps-spi ig-input" type="number" step="0.01" value="1.00" /></label>
+          <label class="rationale-label">BAC — budget at completion (units, optional)
+            <input class="ps-bac ig-input" type="number" step="1" placeholder="100" /></label>
+          <label class="rationale-label" style="display:flex;gap:8px;align-items:center;flex-direction:row">
+            <input class="ps-fair" type="checkbox" /> Delivery-responsibility sensitive (enables fairness gate on red-review)</label>
+        </div>
+        <div>
+          <label class="rationale-label">Metric series for CUSUM (optional, comma-separated; else derived)
+            <textarea class="ps-series ig-textarea" placeholder="e.g. 1.00, 0.99, 0.97, 0.95, 0.92, 0.90"></textarea></label>
+          <label class="rationale-label">Document text for keyword extraction (optional)
+            <textarea class="ps-doc ig-textarea" placeholder="Paste an RFI / submittal / note; keyword rules set the document-risk score."></textarea></label>
+          <div class="dc-actions"><button class="btn primary ps-run">Populate signals &amp; run models</button></div>
+        </div>
+      </div>
+      <div class="ps-result" aria-live="polite"></div>`;
+  }
+
+  function wirePopulateForm(container, onDone) {
+    const $c = (sel) => container.querySelector(sel);
+    $c(".ps-run").addEventListener("click", () => {
+      const id = $c(".ps-project").value;
+      const project = LinStore.getProject(id);
+      const box = $c(".ps-result");
+      if (!project) { box.innerHTML = `<p class="kn-sub">Select a project first.</p>`; return; }
+      const cpi = Number($c(".ps-cpi").value), spi = Number($c(".ps-spi").value);
+      if (!Number.isFinite(cpi) || !Number.isFinite(spi) || cpi <= 0 || spi <= 0) {
+        box.innerHTML = `<p class="kn-sub">Enter valid CPI and SPI (positive numbers).</p>`; return;
+      }
+      populateSignals(project, {
+        cpi, spi, bac: $c(".ps-bac").value,
+        seriesText: $c(".ps-series").value, docText: $c(".ps-doc").value,
+        fairnessSensitive: $c(".ps-fair").checked, metric: "SPI"
+      });
+      const s = project.signals;
+      box.innerHTML = `<p class="kn-sub">Populated <strong>${esc(project.id)}</strong>. Monte Carlo ran <strong>${s.mc.iterations.toLocaleString()}</strong> iterations → P50 ${s.mc.p50.toFixed(1)}, P80 ${s.mc.p80.toFixed(1)} (${s.mc.status}). CUSUM peak ${s.cusum.drift.toFixed(2)} vs H ${s.cusum.threshold.toFixed(2)} → ${s.cusum.breached ? "BREACH" : "in control"} (${s.cusum.status}). Open its Detail to see the live charts.</p>`;
+      if (window.LinApp) LinApp.refresh();
+      if (onDone) onDone(project.id);
+    });
+  }
+
+  function renderScopedIngest(projectId, container, onApplied) {
+    if (!container) return;
+    const project = LinStore.getProject(projectId);
+    const populated = hasSignals(project);
+    container.innerHTML =
+      `<h4 class="kn-h" style="font-size:14px">${populated ? "Re-populate signals (re-runs Monte Carlo + CUSUM)" : "Populate signals (runs Monte Carlo + CUSUM)"}</h4>` +
+      populateFormHtml(projectId) +
+      `<h4 class="kn-h" style="font-size:14px;margin-top:14px">Document-risk ingest (keyword extraction)</h4>` +
+      ingestFormHtml(projectId);
+    wirePopulateForm(container, onApplied);
+    wireIngestForm(container, onApplied);
+  }
+
+  /* ---------- Manage Projects page ---------- */
+  function renderManagePage() {
+    const root = document.getElementById("manage-root");
+    if (!root) return;
+
+    const rowFor = (p) => {
+      const populated = hasSignals(p);
+      const state = populated ? deriveHealthState(p) : "Awaiting ingest";
+      const key = populated ? state.toLowerCase().replace("-review", "") : "empty";
+      return `<div class="pr-row">
+        <span class="pr-code">${esc(p.id)}</span>
+        <span class="pr-name">${esc(p.name)} <span class="kn-sub">· ${esc(SECTOR_LABEL[p.sector] || p.sector)}</span></span>
+        <span class="li-state state-${key}">${esc(state)}</span>
+        <span class="pr-actions">
+          <button class="btn small" data-detail="${esc(p.id)}">Detail</button>
+          <button class="btn small" data-populate="${esc(p.id)}">${populated ? "Re-populate" : "Populate"}</button>
+          <button class="btn small" data-archive="${esc(p.id)}">Archive</button>
+        </span>
+      </div>`;
+    };
+
+    const active = LinStore.listProjects();
+    const archived = LinStore.listArchived();
+
+    root.innerHTML =
+      `<div class="kn-grid">
+        <section class="panel">
+          <p class="eyebrow">Create project</p>
+          <h2 class="kn-h">New project</h2>
+          <p class="kn-sub">Assigns the next numeric id and creates an <strong>empty</strong> project (no signals) plotted in an awaiting-ingest state. Client-side and synthetic; persists in this browser only (localStorage). Populate its signals to run the models.</p>
+          <label class="rationale-label" for="np-name">Project name</label>
+          <input id="np-name" class="ig-input" maxlength="80" placeholder="e.g. Concourse Wayfinding Refresh" />
+          <label class="rationale-label" for="np-sector">Delivery type</label>
+          <select id="np-sector" class="ig-input">
+            <option value="design">Design</option>
+            <option value="construction">Construction</option>
+            <option value="hybrid">Hybrid</option>
+          </select>
+          <div class="dc-actions"><button id="np-create" class="btn primary">Create project</button></div>
+          <p id="np-msg" class="kn-sub" aria-live="polite"></p>
+        </section>
+        <section class="panel">
+          <p class="eyebrow">Active (${active.length})</p>
+          ${active.map(rowFor).join("") || `<p class="pr-empty">No active projects.</p>`}
+          <p class="eyebrow" style="margin-top:16px">Archived (${archived.length})</p>
+          ${archived.map((p) => `<div class="pr-row"><span class="pr-code">${esc(p.id)}</span><span class="pr-name">${esc(p.name)}</span><span class="pr-code">archived</span><button class="btn small" data-restore="${esc(p.id)}">Restore</button></div>`).join("") || `<p class="pr-empty">Nothing archived.</p>`}
+        </section>
+      </div>
+
+      <section class="panel" style="margin-top:18px" id="populate-panel">
+        <p class="eyebrow">Populate signals</p>
+        <h2 class="kn-h">Enter signal inputs — runs the real Monte Carlo &amp; CUSUM</h2>
+        <p class="kn-sub">Enter CPI / SPI (and optionally BAC, a metric series, and a document). On submit the app runs a real 5,000-iteration Monte Carlo over a signal-derived Beta-PERT and the two-sided tabular CUSUM, then derives the PCEIF decision. Demonstration models — not calibrated forecasts.</p>
+        ${populateFormHtml(null)}
+      </section>
+
+      <section class="panel" style="margin-top:18px" id="ingest-panel">
+        <p class="eyebrow">Ingest document</p>
+        <h2 class="kn-h">Keyword document-risk extraction (selected project)</h2>
+        <p class="kn-sub">Transparent keyword rules update the document-risk signal; a human must Approve before anything changes. (Populate a project's signals first.)</p>
+        ${ingestFormHtml(null)}
+      </section>
+
+      <section class="panel" style="margin-top:18px">
+        <p class="eyebrow">Project event log</p>
+        <div id="ingest-log"></div>
+      </section>`;
+
+    renderLog();
+    wirePopulateForm(root.querySelector("#populate-panel"), (id) => { renderManagePage(); });
+    wireIngestForm(root.querySelector("#ingest-panel"), (id) => { if (window.LinApp) LinApp.selectProject(id); });
+
+    document.getElementById("np-create").addEventListener("click", () => {
+      const name = document.getElementById("np-name").value.trim();
+      const sector = document.getElementById("np-sector").value;
+      const msg = document.getElementById("np-msg");
+      if (name.length < 3) { msg.textContent = "Enter a project name (min 3 characters)."; return; }
+      const p = LinStore.createProject({ name, sector });
+      logEvent(`Created EMPTY project ${p.id} — ${name} (${SECTOR_LABEL[sector] || sector}); awaiting ingest.`);
+      if (window.LinApp) LinApp.refresh();
+      renderManagePage();
+      document.getElementById("np-msg").textContent = `Created ${p.id} (empty). Populate its signals to run the models.`;
+    });
+
+    root.querySelectorAll("[data-archive]").forEach((b) =>
+      b.addEventListener("click", () => { LinStore.archiveProject(b.dataset.archive); logEvent(`ARCHIVED ${b.dataset.archive}.`); if (window.LinApp) LinApp.refresh(); renderManagePage(); }));
+    root.querySelectorAll("[data-restore]").forEach((b) =>
+      b.addEventListener("click", () => { LinStore.restoreProject(b.dataset.restore); logEvent(`RESTORED ${b.dataset.restore}.`); if (window.LinApp) LinApp.refresh(); renderManagePage(); }));
+    root.querySelectorAll("[data-detail]").forEach((b) =>
+      b.addEventListener("click", () => LinApp.openDetail(b.dataset.detail)));
+    root.querySelectorAll("[data-populate]").forEach((b) =>
+      b.addEventListener("click", () => {
+        root.querySelector("#populate-panel .ps-project").value = b.dataset.populate;
+        root.querySelector("#populate-panel").scrollIntoView({ block: "start" });
+      }));
+  }
+
+  // Phase 2 seam kept for API compatibility; store.js already hydrates.
+  function mergeUserProjects() {}
+
+  window.LinIngest = { mergeUserProjects, renderManagePage, renderScopedIngest, populateSignals, INGEST_RULES };
+})();
