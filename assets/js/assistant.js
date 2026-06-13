@@ -232,6 +232,12 @@
 
     wrap.querySelectorAll(".la-chip").forEach((c) =>
       c.addEventListener("click", () => ask(c.textContent)));
+
+    // public hook so other pages (e.g. Knowledge "Ask the AI") can open the
+    // assistant pre-filled and send through the same live chat + fallback path.
+    window.LinAssistant = {
+      ask(question) { toggle(true); ask(question); }
+    };
   }
 
   if (document.readyState === "loading") {

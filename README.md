@@ -73,7 +73,7 @@ with `localStorage` only. Phase 2 swaps the implementation for Apps Script/Drive
 ```
 index.html
 .nojekyll
-assets/css/radar.css        visual system + three themes (Light / Console / Schematic)
+assets/css/radar.css        visual system + two themes (Dark default / Light)
 assets/js/data.js           empty-shell seed + live arrays
 assets/js/store.js          data-access seam (localStorage in Phase 1)
 assets/js/decision.js       PCEIF governance + ABM rules (pure functions)
