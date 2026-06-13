@@ -380,6 +380,7 @@
          <div class="dc-field dc-wide"><span class="dc-label">Recommended action</span><span class="dc-value">${d.action}</span></div>
          <div class="dc-field dc-wide"><span class="dc-label">Documentation required</span><span class="dc-value">${d.documentation}</span></div>
        </div>
+       <p class="dc-caveat">Recommended actions require named human approval before they are recorded; fairness gates require contractor response opportunity before any formal action.</p>
        ${fairnessBlock}
        <label class="rationale-label">Reviewer rationale <span class="req">(required, min 20 characters)</span>
        <textarea class="rationale" placeholder="State why this action is taken, deferred, or overridden. Recorded to the audit log."></textarea></label>

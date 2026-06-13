@@ -696,3 +696,11 @@ body.nav-open .nav-rail { transform: translateX(0); }
   text-transform: uppercase; color: var(--faint); min-width: 52px;
 }
 .lg-hat { width: 16px; height: 16px; flex: 0 0 auto; vertical-align: -3px; }
+
+/* ---------- Phase 7b: footer bullets + decision-card caveat ---------- */
+.foot-list { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.foot-list li { position: relative; padding-left: 16px; }
+.foot-list li::before { content: "•"; position: absolute; left: 2px; color: var(--faint); }
+.foot-list strong { color: var(--text); }
+.foot-attrib { margin: 0; }
+.dc-caveat { font-size: 11.5px; line-height: 1.45; color: var(--faint); margin: 8px 0 0; }
