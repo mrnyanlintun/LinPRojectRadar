@@ -15,8 +15,13 @@
   <div class="app">
 
     <header class="topbar">
-      <button id="nav-toggle" class="nav-toggle" aria-label="Show navigation and theme menu" aria-expanded="false" aria-controls="nav-rail">
-        <svg viewBox="0 0 18 18" aria-hidden="true"><path d="M2 4.5h14M2 9h14M2 13.5h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <button id="nav-toggle" class="nav-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="nav-rail">
+        <svg class="nav-toggle-icon nav-toggle-icon-open" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <svg class="nav-toggle-icon nav-toggle-icon-close" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
       </button>
       <a class="nav-logo" href="#" onclick="event.preventDefault(); if (window.LinApp) LinApp.showPage('portfolio');">
         <img src="logo.png" alt="Lin Project Radar" class="nav-logo-img">
@@ -27,9 +32,6 @@
     </header>
 
     <div class="layout">
-
-    <!-- desktop hover hot-zone that reveals the rail (touch uses the hamburger) -->
-    <div id="nav-edge" class="nav-edge" aria-hidden="true"></div>
 
     <nav id="nav-rail" class="nav-rail" aria-label="Site pages and theme">
       <button data-nav="portfolio" class="active">
