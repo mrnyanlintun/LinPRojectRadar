@@ -616,3 +616,13 @@ body[data-theme="schematic"] .la-launcher { color: #10131a; }
 .store-banner.info { background: var(--surface); border: 1px solid var(--line); color: var(--muted); }
 .store-banner.warn { background: color-mix(in srgb, var(--radar-amber) 14%, var(--surface)); border: 1px solid var(--radar-amber); color: var(--text); }
 .store-banner[hidden] { display: none; }
+
+/* ---------- Phase 3: AI analysis + assistant ---------- */
+.ig-analysis { margin-top: 12px; }
+.ig-analysis-text { font-size: 13px; line-height: 1.5; color: var(--text); white-space: pre-wrap; }
+.ig-verdict { font-family: var(--font-mono); font-size: 12px; padding: 2px 8px; border-radius: 999px; }
+.ig-verdict.v-conflict   { color: var(--alarm-red);  background: color-mix(in srgb, var(--alarm-red) 16%, transparent); }
+.ig-verdict.v-gap        { color: var(--radar-amber); background: color-mix(in srgb, var(--radar-amber) 16%, transparent); }
+.ig-verdict.v-consistent { color: var(--clear-green); background: color-mix(in srgb, var(--clear-green) 16%, transparent); }
+.la-thinking p { opacity: 0.7; font-style: italic; }
+.la-fallback-note { color: var(--faint); font-size: 11px; }

@@ -132,13 +132,16 @@
           </details>
         </div>
         <div>
-          <label class="rationale-label">Document text
+          <label class="rationale-label">Document text (RFI / RFA / meeting minutes)
             <textarea class="ig-text ig-textarea" placeholder="Paste document text here, or load a file below…"></textarea></label>
           <input type="file" class="ig-file" accept=".txt,.csv,.md,.text" aria-label="Load text file" />
+          <label class="rationale-label">Spec / code excerpt to compare against (optional, .md or pasted)
+            <textarea class="ig-spec ig-textarea" placeholder="Optional: paste the relevant spec/code clause to check the document against (enables a CONFLICT / GAP / CONSISTENT verdict)."></textarea></label>
           <div class="dc-actions"><button class="btn primary ig-run">Run extraction</button></div>
         </div>
       </div>
-      <div class="ig-result" aria-live="polite"></div>`;
+      <div class="ig-result" aria-live="polite"></div>
+      <div class="ig-analysis" aria-live="polite"></div>`;
   }
 
   function renderProposal(prop, box, onApplied) {
@@ -197,13 +200,46 @@
       const projectId = $c(".ig-project").value;
       const docType = $c(".ig-doctype").value;
       const text = $c(".ig-text").value;
+      const spec = ($c(".ig-spec") && $c(".ig-spec").value || "").trim();
       const box = $c(".ig-result");
       if (!text.trim()) { box.innerHTML = `<p class="kn-sub">Paste or load some document text first.</p>`; return; }
+
+      // 1) transparent keyword layer — produces the actual signal delta + evidence,
+      //    gated by Approve/Reject (unchanged, praxis-required base).
       pendingProposal = proposeIngest(projectId, docType, text);
       const fired = pendingProposal && pendingProposal.fired ? pendingProposal.fired.length : 0;
       logEvent(`Ran doc extraction (${docType}) on ${projectId}: ${pendingProposal && pendingProposal.needsPopulate ? "project not populated yet" : fired + " rule(s) fired — awaiting human review"}.`);
       renderProposal(pendingProposal && (pendingProposal.needsPopulate || pendingProposal.fired.length) ? pendingProposal : null, box, onApplied);
+
+      // 2) AI explanatory layer — supporting analysis only (enhancement, not a
+      //    dependency; keyword ingest above stands alone if this fails).
+      runAnalyze($c(".ig-analysis"), { text, docType, spec, id: projectId });
     });
+  }
+
+  /* AI document analysis (Groq via backend). Clearly labeled illustrative;
+     never gates the keyword signal. Non-fatal on failure. */
+  async function runAnalyze(box, { text, docType, spec, id }) {
+    if (!box) return;
+    if (!(window.LinStore && LinStore.configured && LinStore.configured())) {
+      box.innerHTML = `<p class="kn-sub">AI analysis unavailable (backend not configured). Keyword extraction above is unaffected.</p>`;
+      return;
+    }
+    box.innerHTML = `<p class="kn-sub"><em>Running AI document analysis${spec ? " with spec comparison" : ""}…</em></p>`;
+    try {
+      const analysis = await LinStore.analyze({ text, docType, spec: spec || undefined, id });
+      if (!analysis || !String(analysis).trim()) {
+        box.innerHTML = `<p class="kn-sub">AI analysis returned nothing; keyword extraction above is unaffected.</p>`;
+        return;
+      }
+      const verdict = (String(analysis).match(/\b(CONFLICT|GAP|CONSISTENT)\b/i) || [])[0];
+      box.innerHTML =
+        `<h3 class="kn-defterm">AI document analysis ${verdict ? `· <span class="ig-verdict v-${verdict.toLowerCase()}">${esc(verdict.toUpperCase())}</span>` : ""}</h3>
+         <p class="ig-analysis-text">${esc(String(analysis))}</p>
+         <p class="dc-note">Illustrative analysis (Llama via Groq) — supporting explanation only, <strong>not a validated compliance determination</strong>. The signal delta is set by the transparent keyword rules above and gated by Approve/Reject.</p>`;
+    } catch (e) {
+      box.innerHTML = `<p class="kn-sub">AI analysis unreachable — keyword extraction above still works. (Retry later.)</p>`;
+    }
   }
 
   /* ---------- populate-signals form (the path that runs MC + CUSUM) ---------- */
@@ -321,8 +357,8 @@
         <section class="panel">
           <p class="eyebrow">Active (${active.length})</p>
           ${active.map(rowFor).join("") || `<p class="pr-empty">No active projects.</p>`}
-          <p class="eyebrow" style="margin-top:16px">Archived (${archived.length})</p>
-          ${archived.map((p) => `<div class="pr-row"><span class="pr-code">${esc(p.id)}</span><span class="pr-name">${esc(p.name)}</span><span class="pr-code">archived</span><button class="btn small" data-restore="${esc(p.id)}">Restore</button></div>`).join("") || `<p class="pr-empty">Nothing archived.</p>`}
+          <p class="eyebrow" style="margin-top:16px">Archived</p>
+          <p class="pr-empty">Archiving moves the project's folder to <span class="mod-mono">00_Archive</span> in Drive and removes it from the active portfolio.</p>
         </section>
       </div>
 
@@ -368,8 +404,6 @@
 
     root.querySelectorAll("[data-archive]").forEach((b) =>
       b.addEventListener("click", async () => { try { await LinStore.archiveProject(b.dataset.archive); logEvent(`ARCHIVED ${b.dataset.archive}.`); if (window.LinApp) LinApp.refresh(); renderManagePage(); } catch (e) { LinStore.banner("Couldn't archive — store unreachable. Retry.", "warn"); } }));
-    root.querySelectorAll("[data-restore]").forEach((b) =>
-      b.addEventListener("click", async () => { try { await LinStore.restoreProject(b.dataset.restore); logEvent(`RESTORED ${b.dataset.restore}.`); if (window.LinApp) LinApp.refresh(); renderManagePage(); } catch (e) { LinStore.banner("Couldn't restore — store unreachable. Retry.", "warn"); } }));
     root.querySelectorAll("[data-detail]").forEach((b) =>
       b.addEventListener("click", () => LinApp.openDetail(b.dataset.detail)));
     root.querySelectorAll("[data-populate]").forEach((b) =>

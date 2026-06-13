@@ -144,20 +144,20 @@
     wrap.id = "lin-assistant";
     wrap.innerHTML =
       `<button id="la-launcher" class="la-launcher" aria-expanded="false" aria-controls="la-panel"
-               title="Lin guide — scripted help assistant">
-         <span aria-hidden="true">?</span><span class="la-launcher-label">Guide</span>
+               title="Lin AI assistant — explains, doesn't decide">
+         <span aria-hidden="true">?</span><span class="la-launcher-label">Assistant</span>
        </button>
-       <div id="la-panel" class="la-panel" role="dialog" aria-label="Lin guided help assistant" hidden>
+       <div id="la-panel" class="la-panel" role="dialog" aria-label="Lin AI assistant" hidden>
          <div class="la-head">
            <div>
-             <strong>Lin Guide</strong>
-             <span class="la-tag">Scripted help</span>
+             <strong>Lin Assistant</strong>
+             <span class="la-tag">AI (Llama via Groq) — explains, doesn't decide</span>
            </div>
            <button id="la-close" class="la-close" aria-label="Close assistant">×</button>
          </div>
          <div id="la-msgs" class="la-msgs" aria-live="polite">
            <div class="la-msg la-bot">
-             <p>I answer from this demo's knowledge library, plus live (scripted) status: ask about the selected project, any SYN code, or the portfolio overview. Nothing here calls an external AI service.</p>
+             <p>I answer questions about this demo and the selected project. Answers come from an AI model (Llama 3.3 via Groq) through the project's own backend; if it's unreachable I fall back to scripted help from the knowledge library. I <strong>explain</strong> — the governance decision is owned by the rule logic, not by me.</p>
            </div>
          </div>
          <div class="la-suggest">${SUGGESTIONS.map((s) => `<button class="la-chip">${esc(s)}</button>`).join("")}</div>
@@ -185,14 +185,43 @@
     document.getElementById("la-close").addEventListener("click", () => toggle(false));
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !panel.hidden) toggle(false); });
 
-    function ask(text) {
-      if (!text.trim()) return;
-      msgs.insertAdjacentHTML("beforeend",
-        `<div class="la-msg la-user"><p>${esc(text)}</p></div>`);
-      const a = answer(text);
-      msgs.insertAdjacentHTML("beforeend",
-        `<div class="la-msg la-bot"><p><strong>${esc(a.title)}.</strong> ${esc(a.body)}</p></div>`);
+    function addBot(html) {
+      msgs.insertAdjacentHTML("beforeend", `<div class="la-msg la-bot"><p>${html}</p></div>`);
       msgs.scrollTop = msgs.scrollHeight;
+    }
+    function scriptedReply(text) {
+      const a = answer(text);
+      return `<strong>${esc(a.title)}.</strong> ${esc(a.body)}`;
+    }
+
+    async function ask(text) {
+      if (!text.trim()) return;
+      msgs.insertAdjacentHTML("beforeend", `<div class="la-msg la-user"><p>${esc(text)}</p></div>`);
+      msgs.scrollTop = msgs.scrollHeight;
+
+      // No backend configured → scripted answer only.
+      if (!(window.LinStore && LinStore.configured && LinStore.configured())) {
+        addBot(scriptedReply(text));
+        return;
+      }
+      // Live AI answer via Groq (scoped to the open project), with scripted fallback.
+      const thinking = document.createElement("div");
+      thinking.className = "la-msg la-bot la-thinking";
+      thinking.innerHTML = "<p><em>Thinking…</em></p>";
+      msgs.appendChild(thinking); msgs.scrollTop = msgs.scrollHeight;
+      try {
+        const id = window.LinApp && LinApp.getSelectedId ? LinApp.getSelectedId() : null;
+        const answerText = await LinStore.chat(text, id);
+        thinking.remove();
+        if (answerText && String(answerText).trim()) {
+          addBot(esc(String(answerText)));
+        } else {
+          addBot(scriptedReply(text) + ` <span class="la-fallback-note">(scripted fallback)</span>`);
+        }
+      } catch (e) {
+        thinking.remove();
+        addBot(scriptedReply(text) + ` <span class="la-fallback-note">(scripted fallback — AI unreachable)</span>`);
+      }
     }
 
     form.addEventListener("submit", (e) => {
