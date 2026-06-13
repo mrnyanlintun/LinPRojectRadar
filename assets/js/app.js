@@ -527,37 +527,35 @@
     document.querySelectorAll("[data-nav]").forEach((b) =>
       b.addEventListener("click", () => {
         showPage(b.dataset.nav);
-        // on touch/narrow the rail is a toggled overlay — close after choosing
-        if (!hoverCapable()) setNavOpen(false);
+        // click-toggle nav: choosing an item always closes the rail
+        setNavOpen(false);
       }));
   }
 
-  /* ---------- nav rail + theme reveal (hover on desktop, tap on touch) ---------- */
-  const hoverCapable = () =>
-    window.matchMedia("(hover: hover) and (pointer: fine)").matches &&
-    window.matchMedia("(min-width: 760px)").matches;
-
+  /* ---------- click-toggle nav rail (no hover behavior, all viewports) ---------- */
   function setNavOpen(open) {
     document.body.classList.toggle("nav-open", open);
     const t = $("#nav-toggle");
-    if (t) t.setAttribute("aria-expanded", String(open));
+    if (t) {
+      t.setAttribute("aria-expanded", String(open));
+      t.setAttribute("aria-label", open ? "Close navigation menu" : "Open navigation menu");
+    }
   }
 
   function wireNavReveal() {
     const rail = $("#nav-rail");
-    const edge = $("#nav-edge");
     const toggle = $("#nav-toggle");
-    if (toggle) toggle.addEventListener("click", () => setNavOpen(!document.body.classList.contains("nav-open")));
-    // desktop hover: hot-zone reveals, leaving the rail hides
-    if (edge) edge.addEventListener("mouseenter", () => { if (hoverCapable()) setNavOpen(true); });
-    if (rail) {
-      rail.addEventListener("mouseleave", () => { if (hoverCapable()) setNavOpen(false); });
-      // keyboard access: focusing into the rail reveals it; leaving hides it
-      rail.addEventListener("focusin", () => setNavOpen(true));
-      rail.addEventListener("focusout", (e) => {
-        if (!rail.contains(e.relatedTarget) && e.relatedTarget !== toggle) setNavOpen(false);
-      });
-    }
+    if (toggle) toggle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setNavOpen(!document.body.classList.contains("nav-open"));
+    });
+    // outside-click closes the rail (any click not inside the rail or on the toggle)
+    document.addEventListener("click", (e) => {
+      if (!document.body.classList.contains("nav-open")) return;
+      if (rail && rail.contains(e.target)) return;
+      if (toggle && toggle.contains(e.target)) return;
+      setNavOpen(false);
+    });
     // Escape closes the overlay
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") setNavOpen(false); });
   }
