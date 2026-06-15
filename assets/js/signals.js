@@ -144,12 +144,7 @@
             <select class="ds-doctype ig-input">
               ${DOC_TYPES.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join("")}
             </select></label>
-          <div class="ds-period">
-            <label class="rationale-label">Period start
-              <input type="date" class="ds-start ig-input" /></label>
-            <label class="rationale-label">Period end
-              <input type="date" class="ds-end ig-input" /></label>
-          </div>
+          <p class="kn-sub">Periods (baseline / work period) are read from the document itself — no dates to enter.</p>
         </div>
         <div>
           <label class="rationale-label">Document (PDF or image — one at a time)</label>
@@ -179,8 +174,6 @@
       if (!id) { status.textContent = "Select a project first."; return; }
       if (!picked) { status.textContent = "Choose a document to upload."; return; }
       const docType = $c(".ds-doctype").value;
-      const periodStart = $c(".ds-start").value || "";
-      const periodEnd = $c(".ds-end").value || "";
 
       const btn = $c(".ds-run");
       btn.disabled = true;
@@ -190,12 +183,13 @@
         const resp = await LinStore.extractSignals({
           id, docType, dataBase64: b64,
           mimeType: picked.type || "application/octet-stream",
-          fileName: picked.name, periodStart, periodEnd
+          fileName: picked.name
         });
         const si = resp.signalInputs || resp.signals || {};
         const missing = resp.missing || [];
         const readyToRun = !!resp.readyToRun;
-        cache[id] = { signalInputs: si, missing, readyToRun };
+        const dates = extractDates(resp, si);
+        cache[id] = { signalInputs: si, missing, readyToRun, dates };
 
         const project = LinStore.getCached(id);
         let ran = false;
@@ -222,8 +216,36 @@
     const evs = (project && Array.isArray(project.events)) ? project.events : [];
     return evs.filter((e) => {
       const t = e.type || e.event || e.kind || "";
-      return t === "signals_extracted" || t === "signal_overwritten";
+      return t === "signals_extracted" || t === "signal_overwritten" || t === "baseline_adjusted_eot";
     });
+  }
+
+  /* Pull the read-only extracted periods from an extract response (the backend
+     reads these from the document itself — they are display-only, never input). */
+  function extractDates(resp, si) {
+    const out = {};
+    const KEYS = ["baselineStart", "baselineEnd", "workPeriodFrom", "workPeriodTo"];
+    const take = (obj) => { if (obj) KEYS.forEach((k) => { if (obj[k] != null && obj[k] !== "") out[k] = obj[k]; }); };
+    take(si); take(resp); take(resp && resp.dates); take(resp && resp.periods);
+    return out;
+  }
+
+  function datesBlockHtml(dates) {
+    if (!dates) return "";
+    const rows = [];
+    if (dates.baselineStart || dates.baselineEnd) {
+      rows.push(`<tr><td class="ds-field-name">Baseline period (from contract)</td>
+        <td class="ds-field-val">${esc(dates.baselineStart || "?")} → ${esc(dates.baselineEnd || "?")}</td></tr>`);
+    }
+    if (dates.workPeriodFrom || dates.workPeriodTo) {
+      rows.push(`<tr><td class="ds-field-name">Work period (from pay application)</td>
+        <td class="ds-field-val">${esc(dates.workPeriodFrom || "?")} → ${esc(dates.workPeriodTo || "?")}</td></tr>`);
+    }
+    if (!rows.length) return "";
+    return `<div class="ds-block">
+      <p class="eyebrow">Extracted periods (read-only)</p>
+      <table class="ds-table ds-dates-table"><tbody>${rows.join("")}</tbody></table>
+    </div>`;
   }
 
   function extractedTableHtml(si) {
@@ -278,6 +300,13 @@
           <span class="ds-audit-main">Overwrote <strong>${esc(field)}</strong>: ${esc(from)} → ${esc(to)} — reason: “${esc(reason)}”</span>
           <span class="ds-audit-time">${esc(when)}</span></li>`;
       }
+      if (t === "baseline_adjusted_eot") {
+        const from = e.from != null ? e.from : "?";
+        const to = e.to != null ? e.to : "?";
+        return `<li class="ds-audit-row ds-audit-eot">
+          <span class="ds-audit-main">Baseline completion adjusted <strong>${esc(from)}</strong> → <strong>${esc(to)}</strong> via change order (EOT)</span>
+          <span class="ds-audit-time">${esc(when)}</span></li>`;
+      }
       // signals_extracted
       const fields = Array.isArray(e.fields) ? e.fields.join(", ") : (e.fields || e.field || "signals");
       const docType = e.docType ? (DOC_TYPE_LABEL[e.docType] || e.docType) : "";
@@ -294,6 +323,7 @@
     const entry = cache[id] || {};
     const si = entry.signalInputs || null;
     const missing = entry.missing || [];
+    const dates = entry.dates || null;
     if (!si && !signalEvents(project).length) {
       return `<p class="kn-sub">No documents ingested for this project yet. Upload a document above to extract its signals.</p>`;
     }
@@ -302,6 +332,7 @@
         <p class="eyebrow">Extracted signal inputs</p>
         ${si ? extractedTableHtml(si) : `<p class="kn-sub">No extracted values cached this session. Re-upload a document to view them.</p>`}
       </div>
+      ${datesBlockHtml(dates)}
       <div class="ds-block">
         <p class="eyebrow">Missing values &amp; required documents</p>
         ${missingHtml(missing)}
@@ -371,7 +402,9 @@
         const missing = resp.missing || (cache[id] && cache[id].missing) || [];
         const readyToRun = resp.readyToRun != null ? !!resp.readyToRun
           : (Number.isFinite(Number(si.cpi)) && Number.isFinite(Number(si.spi)));
-        cache[id] = { signalInputs: si, missing, readyToRun };
+        // preserve extracted periods (overwrite responses don't re-send them)
+        const dates = Object.assign({}, (cache[id] && cache[id].dates) || {}, extractDates(resp, si));
+        cache[id] = { signalInputs: si, missing, readyToRun, dates };
 
         if (readyToRun) await runModels(project, si);
         const fresh = await refreshProject(id);
