@@ -242,74 +242,22 @@
     }
   }
 
-  /* ---------- populate-signals form (the path that runs MC + CUSUM) ---------- */
-  function populateFormHtml(fixedId) {
-    const projectField = fixedId
-      ? `<input type="hidden" class="ps-project" value="${esc(fixedId)}" />`
-      : `<label class="rationale-label">Project
-           <select class="ps-project ig-input">${projectOptions()}</select></label>`;
-    return `
-      <div class="kn-grid">
-        <div>
-          ${projectField}
-          <label class="rationale-label">CPI (cost performance index)
-            <input class="ps-cpi ig-input" type="number" step="0.01" value="1.00" /></label>
-          <label class="rationale-label">SPI (schedule performance index)
-            <input class="ps-spi ig-input" type="number" step="0.01" value="1.00" /></label>
-          <label class="rationale-label">BAC — budget at completion (units, optional)
-            <input class="ps-bac ig-input" type="number" step="1" placeholder="100" /></label>
-          <label class="rationale-label" style="display:flex;gap:8px;align-items:center;flex-direction:row">
-            <input class="ps-fair" type="checkbox" /> Delivery-responsibility sensitive (enables fairness gate on red-review)</label>
-        </div>
-        <div>
-          <label class="rationale-label">Metric series for CUSUM (optional, comma-separated; else derived)
-            <textarea class="ps-series ig-textarea" placeholder="e.g. 1.00, 0.99, 0.97, 0.95, 0.92, 0.90"></textarea></label>
-          <label class="rationale-label">Document text for keyword extraction (optional)
-            <textarea class="ps-doc ig-textarea" placeholder="Paste an RFI / submittal / note; keyword rules set the document-risk score."></textarea></label>
-          <div class="dc-actions"><button class="btn primary ps-run">Populate signals &amp; run models</button></div>
-        </div>
-      </div>
-      <div class="ps-result" aria-live="polite"></div>`;
-  }
-
-  function wirePopulateForm(container, onDone) {
-    const $c = (sel) => container.querySelector(sel);
-    $c(".ps-run").addEventListener("click", async () => {
-      const id = $c(".ps-project").value;
-      const project = LinStore.getCached(id);
-      const box = $c(".ps-result");
-      if (!project) { box.innerHTML = `<p class="kn-sub">Select a project first.</p>`; return; }
-      const cpi = Number($c(".ps-cpi").value), spi = Number($c(".ps-spi").value);
-      if (!Number.isFinite(cpi) || !Number.isFinite(spi) || cpi <= 0 || spi <= 0) {
-        box.innerHTML = `<p class="kn-sub">Enter valid CPI and SPI (positive numbers).</p>`; return;
-      }
-      box.innerHTML = `<p class="kn-sub">Running models and saving to the project store…</p>`;
-      try {
-        await populateSignals(project, {
-          cpi, spi, bac: $c(".ps-bac").value,
-          seriesText: $c(".ps-series").value, docText: $c(".ps-doc").value,
-          fairnessSensitive: $c(".ps-fair").checked, metric: "SPI"
-        });
-        const s = project.signals;
-        box.innerHTML = `<p class="kn-sub">Populated <strong>${esc(project.id)}</strong> (saved to Drive). Monte Carlo ran <strong>${s.mc.iterations.toLocaleString()}</strong> iterations → P50 ${s.mc.p50.toFixed(1)}, P80 ${s.mc.p80.toFixed(1)} (${s.mc.status}). CUSUM peak ${s.cusum.drift.toFixed(2)} vs H ${s.cusum.threshold.toFixed(2)} → ${s.cusum.breached ? "BREACH" : "in control"} (${s.cusum.status}). Open its Detail to see the live charts.</p>`;
-        if (window.LinApp) LinApp.refresh();
-        if (onDone) onDone(project.id);
-      } catch (e) {
-        box.innerHTML = `<p class="kn-sub">Couldn't save to the project store — signals not persisted. Retry.</p>`;
-      }
-    });
-  }
+  /* The manual "type CPI / SPI / BAC" populate form was removed in Piece C —
+     signals now come from document extraction (LinSignals). populateSignals()
+     is kept (still exported) as the shared model-run helper. */
 
   function renderScopedIngest(projectId, container, onApplied) {
     if (!container) return;
     const project = LinStore.getCached(projectId);
     const populated = hasSignals(project);
     container.innerHTML =
-      `<h4 class="kn-h" style="font-size:14px">${populated ? "Re-populate signals (re-runs Monte Carlo + CUSUM)" : "Populate signals (runs Monte Carlo + CUSUM)"}</h4>` +
-      populateFormHtml(projectId) +
+      `<h4 class="kn-h" style="font-size:14px">${populated ? "Re-populate signals — upload a document (re-runs Monte Carlo + CUSUM)" : "Populate signals — upload a document (runs Monte Carlo + CUSUM)"}</h4>` +
+      `<p class="kn-sub">Upload a real document (pay application, schedule of values, time-phased schedule, …); the backend extracts the EVM figures and, once CPI and SPI are present, runs the models on the extracted values.</p>` +
+      LinSignals.ingestFormHtml(projectId) +
       `<h4 class="kn-h" style="font-size:14px;margin-top:14px">Document-risk ingest (keyword extraction)</h4>` +
       ingestFormHtml(projectId);
-    wirePopulateForm(container, onApplied);
+    // doc-driven extraction → re-render the detail page so charts + signals panel update
+    LinSignals.wireIngestForm(container, onApplied);
     wireIngestForm(container, onApplied);
   }
 
@@ -362,11 +310,12 @@
         </section>
       </div>
 
-      <section class="panel" style="margin-top:18px" id="populate-panel">
-        <p class="eyebrow">Populate signals</p>
-        <h2 class="kn-h">Enter signal inputs — runs the real Monte Carlo &amp; CUSUM</h2>
-        <p class="kn-sub">Enter CPI / SPI (and optionally BAC, a metric series, and a document). On submit the app runs a real 5,000-iteration Monte Carlo over a signal-derived Beta-PERT and the two-sided tabular CUSUM, then derives the PCEIF decision. Demonstration models — not calibrated forecasts.</p>
-        ${populateFormHtml(null)}
+      <section class="panel" style="margin-top:18px" id="signals-panel">
+        <p class="eyebrow">Populate signals — from documents</p>
+        <h2 class="kn-h">Upload a document; the system extracts the EVM figures</h2>
+        <p class="kn-sub">A PM doesn't type CPI / SPI / BAC — upload a real document (pay application, schedule of values, time-phased schedule, …) and the backend (Gemini) extracts the figures. When both CPI and SPI are present the app runs the same 5,000-iteration Monte Carlo, two-sided CUSUM, and PCEIF decision on the extracted values. Demonstration models — not calibrated forecasts.</p>
+        ${LinSignals.ingestFormHtml(null)}
+        <div id="signals-detail" class="ds-detail-wrap"></div>
       </section>
 
       <section class="panel" style="margin-top:18px" id="ingest-panel">
@@ -382,7 +331,12 @@
       </section>`;
 
     renderLog();
-    wirePopulateForm(root.querySelector("#populate-panel"), (id) => { renderManagePage(); });
+    // document-driven signal extraction (replaces the manual CPI/SPI/BAC form);
+    // on result, render the signals detail panel (extracted / missing / audit).
+    LinSignals.wireIngestForm(root.querySelector("#signals-panel"), (id) => {
+      const panel = root.querySelector("#signals-detail");
+      if (panel) LinSignals.renderSignalsPanel(panel, LinStore.getCached(id));
+    });
     wireIngestForm(root.querySelector("#ingest-panel"), (id) => { if (window.LinApp) LinApp.selectProject(id); });
 
     document.getElementById("np-create").addEventListener("click", async () => {

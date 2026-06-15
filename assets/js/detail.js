@@ -54,7 +54,8 @@
          </details>
        </section>
        <h2 class="detail-mods-h">Five signals — computed for ${esc(p.id)}</h2>
-       <div class="detail-modules"></div>`;
+       <div class="detail-modules"></div>
+       <section class="panel detail-signals" aria-label="Extracted signals detail"></section>`;
 
     // Reuse the shared renderers, scoped to this page's containers.
     LinApp.renderLedger(p, root.querySelector(".detail-ledger"));
@@ -64,6 +65,9 @@
       (id) => render(id)); // on approve: re-render detail so ledger/deep dive reflect the delta
     // HUD-depth per-project deep dive (chart + why-grid + reasoning + rule)
     LinDeepDive.render(p, root.querySelector(".detail-modules"));
+    // Signals detail panel (extracted values, missing docs, audit trail) — sits
+    // under the simulated charts; collapsed by default behind a "Details" toggle.
+    if (window.LinSignals) LinSignals.renderSignalsPanel(root.querySelector(".detail-signals"), p);
 
     wireBack(root);
   }

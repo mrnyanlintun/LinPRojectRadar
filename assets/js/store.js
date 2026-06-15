@@ -248,6 +248,26 @@
     return j;
   }
 
+  /* ---------- Piece C: document-driven signal extraction (Gemini-backed) ----------
+     extractsignals reads figures (BAC/EV/AC/PV/% complete/doc-risk) from one
+     uploaded document and returns the merged signalInputs (+ computed cpi/spi),
+     a `missing` list of still-needed fields/documents, and readyToRun.
+     overwritesignal applies a human correction to one field (with a reason,
+     logged server-side) and returns the recomputed signalInputs. Both are
+     CORS-safe simple POSTs (text/plain) to LIN_API_URL, same as every call. */
+  async function extractSignals({ id, docType, dataBase64, mimeType, fileName, periodStart, periodEnd }) {
+    if (!configured()) throw new Error("Project store not configured (LIN_API_URL).");
+    const j = await apiPost({
+      action: "extractsignals", id, docType, dataBase64, mimeType, fileName, periodStart, periodEnd
+    });
+    return j;
+  }
+  async function overwriteSignal({ id, field, value, reason }) {
+    if (!configured()) throw new Error("Project store not configured (LIN_API_URL).");
+    const j = await apiPost({ action: "overwritesignal", id, field, value, reason });
+    return j;
+  }
+
   /* ---------- synchronous accessors for render (read the mirror) ---------- */
   function cachedActive() { return LIN_PROJECTS.slice(); }
   function cachedArchived() { return LIN_ARCHIVED.slice(); }
@@ -263,6 +283,7 @@
     load, listProjects, getProject, createProject, saveProject,
     archiveProject, restoreProject, listArchived, chat, analyze,
     listCorpus, listAuditResults, ingestCorpus, runAudit,
+    extractSignals, overwriteSignal,
     // sync mirror accessors used by render code
     cachedActive, cachedArchived, getCached, listActive: cachedActive,
     hasSignals, errored, configured, banner, loading
