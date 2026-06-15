@@ -255,10 +255,13 @@
      overwritesignal applies a human correction to one field (with a reason,
      logged server-side) and returns the recomputed signalInputs. Both are
      CORS-safe simple POSTs (text/plain) to LIN_API_URL, same as every call. */
-  async function extractSignals({ id, docType, dataBase64, mimeType, fileName, periodStart, periodEnd }) {
+  async function extractSignals({ id, docType, dataBase64, mimeType, fileName }) {
     if (!configured()) throw new Error("Project store not configured (LIN_API_URL).");
+    // The document IS the input — send only the file (base64) + its type. The
+    // backend extracts every figure AND the periods (baseline / work period)
+    // from the document itself; no text and no user-entered dates are sent.
     const j = await apiPost({
-      action: "extractsignals", id, docType, dataBase64, mimeType, fileName, periodStart, periodEnd
+      action: "extractsignals", id, docType, dataBase64, mimeType, fileName
     });
     return j;
   }
