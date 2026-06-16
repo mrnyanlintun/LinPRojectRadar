@@ -303,8 +303,11 @@
     const items = missing.map((m) => {
       if (typeof m === "string") return `<li class="ds-missing-row">${esc(m)}</li>`;
       const what = m.label || m.fields || m.field || "Missing value";
+      // backend may give a ready-made instruction (`note`, e.g. "Upload Schedule
+      // of Values") or just a doc reference we phrase as "Upload <doc>".
       const doc = m.requiredDoc || m.docLabel || (m.docType && DOC_TYPE_LABEL[m.docType]) || m.doc || "";
-      return `<li class="ds-missing-row">${esc(what)}${doc ? ` — <span class="ds-missing-doc">Upload ${esc(doc)}</span>` : ""}</li>`;
+      const instruction = m.note ? esc(m.note) : (doc ? `Upload ${esc(doc)}` : "");
+      return `<li class="ds-missing-row">${esc(what)}${instruction ? ` — <span class="ds-missing-doc">${instruction}</span>` : ""}</li>`;
     }).join("");
     return `<ul class="ds-missing-list">${items}</ul>`;
   }
