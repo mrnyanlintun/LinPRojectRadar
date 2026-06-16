@@ -150,11 +150,12 @@
     // Item 11: client-side multi-model simulations (zero tokens, zero backend).
     // Run the five additional models from the extracted inputs and store the
     // unified signal array on the project for display + governance synthesis.
+    let simPayload = null;
     if (window.LinSimulations) {
       try {
         const simResults = LinSimulations.runAll(si);
         const now = new Date();
-        project.simulationSignals = {
+        simPayload = {
           signal_metadata: {
             project_id: project.id,
             reporting_period: now.toISOString().substring(0, 7),
@@ -162,9 +163,22 @@
           },
           signal_array: simResults
         };
+        project.simulationSignals = simPayload;
       } catch (e) { /* simulations are non-fatal — never block the core run */ }
     }
+    const builtSignals = project.signals;
     await LinStore.saveProject(project);
+    // saveProject reconciles the in-memory mirror with the backend's echoed
+    // project, which omits client-only fields (the built signals package,
+    // signalInputs, and simulationSignals). Re-assert them onto the canonical
+    // cached object so the detail deep-dive (Five signals + the five extra
+    // simulation cards) and the ledger keep rendering after the save.
+    const cached = LinStore.getCached(project.id);
+    if (cached) {
+      if (!hasSignals(cached) && builtSignals) cached.signals = builtSignals;
+      if (!cached.signalInputs) cached.signalInputs = si;
+      if (!cached.simulationSignals && simPayload) cached.simulationSignals = simPayload;
+    }
     return true;
   }
 
