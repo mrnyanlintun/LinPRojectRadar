@@ -51,7 +51,8 @@
     { key: "spi",                label: "SPI (computed)",           editable: false }
   ];
 
-  const ACCEPT = ".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg";
+  const ACCEPT = ".pdf,.doc,.docx,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg," +
+    "application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
   /* ---------- per-project module cache (latest extraction result) ---------- */
   // cache[id] = { signalInputs, missing, readyToRun }
@@ -122,7 +123,12 @@
       const fresh = await LinStore.getProject(id);
       if (fresh && window.LIN_PROJECTS) {
         const i = LIN_PROJECTS.findIndex((x) => x.id === id);
-        if (i >= 0) LIN_PROJECTS[i] = fresh;
+        if (i >= 0) {
+          // Don't drop signals we just computed/saved if the server's copy
+          // hasn't caught up yet (eventual consistency / save↔get race).
+          if (!hasSignals(fresh) && hasSignals(LIN_PROJECTS[i])) fresh.signals = LIN_PROJECTS[i].signals;
+          LIN_PROJECTS[i] = fresh;
+        }
       }
       return fresh;
     } catch (e) { return LinStore.getCached(id); }
@@ -185,19 +191,25 @@
           mimeType: picked.type || "application/octet-stream",
           fileName: picked.name
         });
-        const si = resp.signalInputs || resp.signals || {};
+        // v7 returns computed CPI/SPI in `computed`; merge them into the
+        // signalInputs view so the ledger + model run see them in one place.
+        const si = mergeComputed(resp);
         const missing = resp.missing || [];
-        const readyToRun = !!resp.readyToRun;
+        const readyToRun = resp.readyToRun != null ? !!resp.readyToRun
+          : (Number.isFinite(Number(si.cpi)) && Number.isFinite(Number(si.spi)));
         const dates = extractDates(resp, si);
         cache[id] = { signalInputs: si, missing, readyToRun, dates };
 
         const project = LinStore.getCached(id);
         let ran = false;
-        if (readyToRun && project) ran = await runModels(project, si);
+        if (readyToRun && project) {
+          status.textContent = "CPI and SPI ready — running models…";
+          ran = await runModels(project, si);
+        }
         await refreshProject(id);
 
         status.textContent = readyToRun
-          ? (ran ? "Extracted — models ran on the extracted signals." : "Extracted — but the models could not run (check CPI/SPI).")
+          ? (ran ? "Extracted — CPI and SPI ready, models ran on the extracted signals." : "Extracted — but the models could not run (check CPI/SPI).")
           : "Extracted. More documents are needed before the models can run (see Details below).";
         if (window.LinApp) LinApp.refresh();
         if (onResult) onResult(id, { signalInputs: si, missing, readyToRun, ran });
@@ -218,6 +230,18 @@
       const t = e.type || e.event || e.kind || "";
       return t === "signals_extracted" || t === "signal_overwritten" || t === "baseline_adjusted_eot";
     });
+  }
+
+  /* Merge the backend's computed CPI/SPI (resp.computed) into the extracted
+     signalInputs so the ledger and the model run read every value from one
+     object. computed wins for cpi/spi; signalInputs supplies everything else. */
+  function mergeComputed(resp) {
+    const si = (resp && (resp.signalInputs || resp.signals)) || {};
+    const computed = (resp && resp.computed) || {};
+    const merged = Object.assign({}, si);
+    if (computed.cpi != null) merged.cpi = computed.cpi;
+    if (computed.spi != null) merged.spi = computed.spi;
+    return merged;
   }
 
   /* Pull the read-only extracted periods from an extract response (the backend
@@ -307,13 +331,12 @@
           <span class="ds-audit-main">Baseline completion adjusted <strong>${esc(from)}</strong> → <strong>${esc(to)}</strong> via change order (EOT)</span>
           <span class="ds-audit-time">${esc(when)}</span></li>`;
       }
-      // signals_extracted
-      const fields = Array.isArray(e.fields) ? e.fields.join(", ") : (e.fields || e.field || "signals");
-      const docType = e.docType ? (DOC_TYPE_LABEL[e.docType] || e.docType) : "";
-      const period = (e.periodStart || e.periodEnd)
-        ? `${e.periodStart || "?"} → ${e.periodEnd || "?"}` : (e.period || "");
+      // signals_extracted — "Signals extracted from [docType] — applied: [applied fields]"
+      const appliedSrc = e.applied != null ? e.applied : (e.fields != null ? e.fields : e.field);
+      const applied = Array.isArray(appliedSrc) ? appliedSrc.join(", ") : (appliedSrc || "signals");
+      const docTypeLabel = e.docType ? (DOC_TYPE_LABEL[e.docType] || e.docType) : "document";
       return `<li class="ds-audit-row ds-audit-extract">
-        <span class="ds-audit-main">Extracted <strong>${esc(fields)}</strong>${docType ? ` from ${esc(docType)}` : ""}${period ? ` · ${esc(period)}` : ""}</span>
+        <span class="ds-audit-main">Signals extracted from <strong>${esc(docTypeLabel)}</strong> — applied: ${esc(applied)}</span>
         <span class="ds-audit-time">${esc(when)}</span></li>`;
     }).join("") + `</ul>`;
   }
@@ -398,7 +421,9 @@
       msg.textContent = "Saving correction and re-running models…";
       try {
         const resp = await LinStore.overwriteSignal({ id, field, value: Number(value), reason });
-        const si = resp.signalInputs || resp.signals || (cache[id] && cache[id].signalInputs) || {};
+        const si = (resp.signalInputs || resp.signals)
+          ? mergeComputed(resp)
+          : (cache[id] && cache[id].signalInputs) || {};
         const missing = resp.missing || (cache[id] && cache[id].missing) || [];
         const readyToRun = resp.readyToRun != null ? !!resp.readyToRun
           : (Number.isFinite(Number(si.cpi)) && Number.isFinite(Number(si.spi)));

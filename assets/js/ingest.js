@@ -251,14 +251,11 @@
     const project = LinStore.getCached(projectId);
     const populated = hasSignals(project);
     container.innerHTML =
-      `<h4 class="kn-h" style="font-size:14px">${populated ? "Re-populate signals — upload a document (re-runs Monte Carlo + CUSUM)" : "Populate signals — upload a document (runs Monte Carlo + CUSUM)"}</h4>` +
-      `<p class="kn-sub">Upload a real document (pay application, schedule of values, time-phased schedule, …); the backend extracts the EVM figures and, once CPI and SPI are present, runs the models on the extracted values.</p>` +
-      LinSignals.ingestFormHtml(projectId) +
-      `<h4 class="kn-h" style="font-size:14px;margin-top:14px">Document-risk ingest (keyword extraction)</h4>` +
-      ingestFormHtml(projectId);
+      `<h4 class="kn-h" style="font-size:14px">${populated ? "Ingest Document — re-extract signals (re-runs Monte Carlo + CUSUM)" : "Ingest Document — extract signals (runs Monte Carlo + CUSUM)"}</h4>` +
+      `<p class="kn-sub">Upload a real document (contract, pay application, schedule of values, time-phased schedule, RFI, …); the backend extracts the EVM figures and, once CPI and SPI are present, runs the models on the extracted values.</p>` +
+      LinSignals.ingestFormHtml(projectId);
     // doc-driven extraction → re-render the detail page so charts + signals panel update
     LinSignals.wireIngestForm(container, onApplied);
-    wireIngestForm(container, onApplied);
   }
 
   /* ---------- Manage Projects page ---------- */
@@ -311,18 +308,11 @@
       </div>
 
       <section class="panel" style="margin-top:18px" id="signals-panel">
-        <p class="eyebrow">Populate signals — from documents</p>
-        <h2 class="kn-h">Upload a document; the system extracts the EVM figures</h2>
-        <p class="kn-sub">A PM doesn't type CPI / SPI / BAC — upload a real document (pay application, schedule of values, time-phased schedule, …) and the backend (Gemini) extracts the figures. When both CPI and SPI are present the app runs the same 5,000-iteration Monte Carlo, two-sided CUSUM, and PCEIF decision on the extracted values. Demonstration models — not calibrated forecasts.</p>
+        <p class="eyebrow">Ingest document</p>
+        <h2 class="kn-h">Ingest Document</h2>
+        <p class="kn-sub">Upload a real project document (contract, pay application, schedule of values, time-phased schedule, RFI, …). The backend OCRs and extracts the EVM figures — or, for narrative documents, a document-risk score. When both CPI and SPI are present the app runs the same 5,000-iteration Monte Carlo, two-sided CUSUM, and PCEIF decision on the extracted values. Demonstration models — not calibrated forecasts.</p>
         ${LinSignals.ingestFormHtml(null)}
         <div id="signals-detail" class="ds-detail-wrap"></div>
-      </section>
-
-      <section class="panel" style="margin-top:18px" id="ingest-panel">
-        <p class="eyebrow">Ingest document</p>
-        <h2 class="kn-h">Keyword document-risk extraction (selected project)</h2>
-        <p class="kn-sub">Transparent keyword rules update the document-risk signal; a human must Approve before anything changes. (Populate a project's signals first.)</p>
-        ${ingestFormHtml(null)}
       </section>
 
       <section class="panel" style="margin-top:18px">
@@ -337,7 +327,6 @@
       const panel = root.querySelector("#signals-detail");
       if (panel) LinSignals.renderSignalsPanel(panel, LinStore.getCached(id));
     });
-    wireIngestForm(root.querySelector("#ingest-panel"), (id) => { if (window.LinApp) LinApp.selectProject(id); });
 
     document.getElementById("np-create").addEventListener("click", async () => {
       const name = document.getElementById("np-name").value.trim();
