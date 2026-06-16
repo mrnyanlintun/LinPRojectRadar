@@ -99,14 +99,23 @@
      fed from extracted cpi/spi/bac/doc-risk. fairnessSensitive is left
      untouched so the red-review fairness gate behaves exactly as before. */
   async function runModels(project, si) {
-    const cpi = Number(si.cpi), spi = Number(si.spi);
-    if (!Number.isFinite(cpi) || !Number.isFinite(spi) || cpi <= 0 || spi <= 0) return false;
+    const cpiNum = Number(si.cpi), spiNum = Number(si.spi);
+    const haveCpi = Number.isFinite(cpiNum) && cpiNum > 0;
+    const haveSpi = Number.isFinite(spiNum) && spiNum > 0;
+    // Run when EITHER index is present. A project with only SPI (or only CPI)
+    // extracted should still compute — buildSignals uses a neutral 1.0 for the
+    // missing index (the model logic itself is unchanged).
+    if (!haveCpi && !haveSpi) return false;
     const bac = Number(si.bac);
     const docScore = Number(si.docRiskScore);
+    // Keep the extracted inputs on the project (matches the signalInputs model
+    // and is persisted with the project on save).
+    project.signalInputs = si;
     project.signals = LinSim.buildSignals({
-      cpi, spi,
+      cpi: haveCpi ? cpiNum : 1,
+      spi: haveSpi ? spiNum : 1,
       bac: Number.isFinite(bac) && bac > 0 ? bac : undefined,
-      metric: "SPI",
+      metric: haveSpi ? "SPI" : "CPI",
       docScore: Number.isFinite(docScore) ? docScore : 0.1,
       docSource: "(extracted from project documents)",
       docExcerpt: "Signals extracted from uploaded documents via the document-ingestion flow.",
@@ -124,9 +133,10 @@
       if (fresh && window.LIN_PROJECTS) {
         const i = LIN_PROJECTS.findIndex((x) => x.id === id);
         if (i >= 0) {
-          // Don't drop signals we just computed/saved if the server's copy
-          // hasn't caught up yet (eventual consistency / save↔get race).
+          // Don't drop the signals/inputs we just computed/saved if the server's
+          // copy hasn't caught up yet (eventual consistency / save↔get race).
           if (!hasSignals(fresh) && hasSignals(LIN_PROJECTS[i])) fresh.signals = LIN_PROJECTS[i].signals;
+          if (!fresh.signalInputs && LIN_PROJECTS[i].signalInputs) fresh.signalInputs = LIN_PROJECTS[i].signalInputs;
           LIN_PROJECTS[i] = fresh;
         }
       }
@@ -200,17 +210,23 @@
         const dates = extractDates(resp, si);
         cache[id] = { signalInputs: si, missing, readyToRun, dates };
 
+        // Run as soon as EITHER index is present (not only when both are).
+        const canCompute = hasIndex(si.cpi) || hasIndex(si.spi);
         const project = LinStore.getCached(id);
         let ran = false;
-        if (readyToRun && project) {
-          status.textContent = "CPI and SPI ready — running models…";
+        if (canCompute && project) {
+          status.textContent = readyToRun
+            ? "CPI and SPI ready — running models…"
+            : "CPI or SPI ready — running models…";
           ran = await runModels(project, si);
         }
         await refreshProject(id);
 
-        status.textContent = readyToRun
-          ? (ran ? "Extracted — CPI and SPI ready, models ran on the extracted signals." : "Extracted — but the models could not run (check CPI/SPI).")
-          : "Extracted. More documents are needed before the models can run (see Details below).";
+        status.textContent = ran
+          ? "Extracted — models ran on the extracted signals."
+          : (canCompute
+              ? "Extracted — but the models could not run (check CPI/SPI)."
+              : "Extracted. Upload a document with CPI or SPI to run the models (see Details below).");
         if (window.LinApp) LinApp.refresh();
         if (onResult) onResult(id, { signalInputs: si, missing, readyToRun, ran });
       } catch (e) {
@@ -230,6 +246,12 @@
       const t = e.type || e.event || e.kind || "";
       return t === "signals_extracted" || t === "signal_overwritten" || t === "baseline_adjusted_eot";
     });
+  }
+
+  /* An EVM index counts as "present" only if it's a real positive number —
+     null / "" / 0 do not qualify (Number(null) is 0, hence the explicit guard). */
+  function hasIndex(v) {
+    return v != null && v !== "" && Number.isFinite(Number(v)) && Number(v) > 0;
   }
 
   /* Merge the backend's computed CPI/SPI (resp.computed) into the extracted
@@ -434,7 +456,9 @@
         const dates = Object.assign({}, (cache[id] && cache[id].dates) || {}, extractDates(resp, si));
         cache[id] = { signalInputs: si, missing, readyToRun, dates };
 
-        if (readyToRun) await runModels(project, si);
+        // re-run when EITHER index is present (consistent with the extract path)
+        const canCompute = hasIndex(si.cpi) || hasIndex(si.spi);
+        if (canCompute) await runModels(project, si);
         const fresh = await refreshProject(id);
         // re-render the whole panel (values + audit trail) and the app/ledger
         renderSignalsPanel(container, fresh || project);
