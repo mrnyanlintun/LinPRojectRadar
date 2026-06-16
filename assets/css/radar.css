@@ -241,6 +241,7 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .li-sim {
   font-family: var(--font-mono); font-size: 10px; white-space: nowrap;
   padding: 1px 7px; border-radius: 999px; border: 1px solid currentColor; opacity: .9;
+  pointer-events: none;   /* never intercept the row's click → detail navigation */
 }
 .state-green { color: var(--clear-green); }
 .state-amber { color: var(--radar-amber); }
