@@ -18,24 +18,50 @@
 
   const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-  /* ---------- document types (value → label) ---------- */
-  const DOC_TYPES = [
-    ["contract_value",        "Contract Value / Original Agreement"],
-    ["schedule_of_values",    "Schedule of Values (G703)"],
-    ["pay_application",       "Pay Application (G702)"],
-    ["time_phased_schedule",  "Time-phased Schedule / Baseline"],
-    ["schedule_update",       "Schedule Update / Look-ahead"],
-    ["change_order",          "Change Order / PCO"],
-    ["monthly_report",        "Monthly Progress Report"],
-    ["rfi",                   "RFI / RFI Log"],
-    ["submittal",             "Submittal / Submittal Register"],
-    ["oac_minutes",           "OAC Meeting Minutes"],
-    ["correspondence_notice", "Correspondence / Notice"],
-    ["risk_register",         "Risk Register"],
-    ["inspection_report",     "Inspection Report / NCR"],
-    ["field_report",          "Daily / Weekly Field Report"],
-    ["commissioning_report",  "Test & Commissioning Report"]
+  /* ---------- document types (24+ airport taxonomy, grouped) ----------
+     Financial & schedule docs carry EVM figures; risk/correspondence and
+     planning/governance docs route to extractsignals too but return only a
+     document_risk_score. The select renders these as <optgroup>s. */
+  const DOC_TYPE_GROUPS = [
+    { label: "Financial & Schedule Documents", types: [
+      ["contract_value",        "Contract Value / Original Agreement"],
+      ["schedule_of_values",    "Schedule of Values (G703)"],
+      ["pay_application",       "Pay Application (G702)"],
+      ["time_phased_schedule",  "Time-phased Schedule / Baseline"],
+      ["schedule_update",       "Schedule Update / Look-ahead"],
+      ["change_order",          "Change Order / PCO"],
+      ["monthly_report",        "Monthly Progress Report"]
+    ]},
+    { label: "Risk & Correspondence Documents", types: [
+      ["rfi",                   "RFI / RFI Log"],
+      ["submittal",             "Submittal / Submittal Register"],
+      ["oac_minutes",           "OAC Meeting Minutes"],
+      ["correspondence_notice", "Correspondence / Notice"],
+      ["risk_register",         "Risk Register"],
+      ["inspection_report",     "Inspection Report / NCR"],
+      ["field_report",          "Daily / Weekly Field Report"],
+      ["commissioning_report",  "Test & Commissioning Report"]
+    ]},
+    { label: "Planning & Governance Documents", types: [
+      ["airport_layout_plan",          "Airport Layout Plan (ALP)"],
+      ["airport_master_plan",          "Airport Master Plan"],
+      ["project_delivery_charter",     "Project Delivery System (PDS) Charter"],
+      ["owners_project_requirements",  "Owner's Project Requirements (OPR)"],
+      ["grant_assurances",             "Grant Assurances & Funding Compliance"],
+      ["bim_execution_plan",           "BIM Execution Plan (BEP)"],
+      ["front_end_project_manual",     "Front-End / Project Manual"],
+      ["technical_specifications",     "Technical Specifications"],
+      ["schematic_design",             "Schematic Design (SD) Sets"],
+      ["design_development",           "Design Development (DD) Sets"],
+      ["construction_documents",       "Construction Documents (CD Sets)"],
+      ["basis_of_design",              "Basis of Design (BOD)"],
+      ["construction_safety_phasing",  "Construction Safety & Phasing Plan (CSPP)"],
+      ["project_execution_plan",       "Project Execution Plan (PEP)"],
+      ["as_built_drawings",            "As-Built Drawings / Closeout Logs"]
+    ]}
   ];
+  // flat list (back-compat) + value→label map
+  const DOC_TYPES = DOC_TYPE_GROUPS.reduce((a, g) => a.concat(g.types), []);
   const DOC_TYPE_LABEL = DOC_TYPES.reduce((m, [k, v]) => (m[k] = v, m), {});
 
   /* signalInputs rows, in display order. editable = has an overwrite pencil. */
@@ -216,7 +242,9 @@
           ${projectField}
           <label class="rationale-label">Document type
             <select class="ds-doctype ig-input">
-              ${DOC_TYPES.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join("")}
+              ${DOC_TYPE_GROUPS.map((g) => `<optgroup label="${esc(g.label)}">${
+                g.types.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join("")
+              }</optgroup>`).join("")}
             </select></label>
           <p class="kn-sub">Periods (baseline / work period) are read from the document itself — no dates to enter.</p>
         </div>
@@ -254,11 +282,18 @@
       status.textContent = "Scanning document with AI… this can take a few seconds.";
       try {
         // PDFs → extract text client-side (PDF.js) and send as `text`.
-        // Images / doc / docx → send the raw file as `dataBase64`.
+        // If PDF.js returns little/no text (scanned or image-only PDF), fall
+        // back to base64 so the backend can OCR / multimodal-parse it.
+        // Images / doc / docx → always send the raw file as `dataBase64`.
         const args = { id, docType, mimeType: picked.type || "application/octet-stream", fileName: picked.name };
         if (isPdf(picked) && typeof pdfjsLib !== "undefined") {
           status.textContent = "Reading PDF text in your browser…";
-          args.text = await extractPDFText(picked);
+          const extractedText = await extractPDFText(picked);
+          if (extractedText && extractedText.trim().length > 200) {
+            args.text = extractedText;                       // born-digital PDF → text path
+          } else {
+            args.dataBase64 = await readFileAsBase64(picked); // scanned/image-only → server fallback
+          }
           status.textContent = "Scanning document with AI… this can take a few seconds.";
         } else {
           args.dataBase64 = await readFileAsBase64(picked);

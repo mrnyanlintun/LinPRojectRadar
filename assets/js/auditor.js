@@ -38,6 +38,39 @@
 
   const ACCEPT = ".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg";
 
+  /* ---------- MasterFormat section detection (Item 15) ----------
+     Parse "SECTION 03 30 00 - CONCRETE" style headings out of corpus text. */
+  function detectMasterFormatSections(text) {
+    if (!text) return [];
+    const pattern = /SECTION\s+\d{2}\s+\d{2}\s+\d{2}[\s\w\-]*/gi;
+    const raw = text.match(pattern) || [];
+    // normalize whitespace + dedupe, keep the leading "SECTION NN NN NN [title]"
+    const seen = {}, out = [];
+    raw.forEach((m) => {
+      const s = m.replace(/\s+/g, " ").trim().slice(0, 60);
+      const key = (s.match(/SECTION\s+\d{2}\s+\d{2}\s+\d{2}/i) || [s])[0].toUpperCase();
+      if (!seen[key]) { seen[key] = 1; out.push(s); }
+    });
+    return out;
+  }
+  const isPdf = (file) => file.type === "application/pdf" || /\.pdf$/i.test(file.name || "");
+  async function extractPdfText(file) {
+    if (typeof pdfjsLib === "undefined") return "";
+    try {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      const buf = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      let text = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        text += content.items.map((it) => it.str).join(" ") + "\n";
+      }
+      return text.trim();
+    } catch (e) { return ""; }
+  }
+
   /* ---------- page state ---------- */
   let state = {
     projectId: "",
@@ -56,12 +89,17 @@
     uploadBusy: false,
     uploadMsg: "",            // "" | "✓ ..." | "Upload failed: ..."
 
+    /* MasterFormat sections detected client-side, keyed by file name (Item 15)
+       — used so tags show immediately even before the backend persists them. */
+    sectionsByName: {},
+
     /* Section B */
     reviewType: "material_submittal",
     submission: null,         // {name, mime, size, base64}
     auditing: false,
     auditError: "",
-    auditResult: null         // {items[], summary{}, csvContent, csvName}
+    auditResult: null,        // {items[], summary{}, csvContent, csvName}
+    drafts: {}                // Item 17: contractor-response drafts keyed by row index
   };
 
   /* ---------- helpers ---------- */
@@ -165,9 +203,19 @@
         ? `<ul class="aud-corpus-list">${items.map((f) => {
             const name = f.name || f.filename || "(unnamed)";
             const when = f.createdAt || f.date || f.modifiedAt || "";
+            // sections from the backend metadata, or the local detection cache
+            const sections = (Array.isArray(f.masterFormatSections) && f.masterFormatSections)
+              || (Array.isArray(f.sections) && f.sections)
+              || state.sectionsByName[name] || [];
+            const tags = sections.length
+              ? `<div class="aud-mf-tags"><span class="aud-mf-count kn-sub">${sections.length} MasterFormat section${sections.length > 1 ? "s" : ""} detected</span>${
+                  sections.slice(0, 8).map((s) => `<span class="aud-mf-tag">${esc(s)}</span>`).join("")
+                }</div>`
+              : "";
             return `<li class="aud-corpus-row">
               <span class="aud-corpus-name">${esc(name)}</span>
               <span class="aud-corpus-date kn-sub">${esc(fmtDate(when))}</span>
+              ${tags}
             </li>`;
           }).join("")}</ul>`
         : `<p class="kn-sub aud-corpus-empty">None uploaded yet.</p>`;
@@ -230,13 +278,27 @@
     const rows = items.map((it, i) => {
       const sk = statusKey(it.status);
       const statusLabel = it.status || "—";
+      const needsDraft = sk === "rejected" || sk === "remark";
+      const draft = state.drafts[i];
+      const draftBtn = needsDraft
+        ? `<button class="aud-draft-btn" data-row="${i}">${draft && draft.loading ? "Drafting…" : "Draft contractor response"}</button>`
+        : "";
+      const draftRow = (needsDraft && draft && (draft.text || draft.loading || draft.error))
+        ? `<tr class="aud-draft-row"><td colspan="5">
+            <div class="aud-draft">
+              <p class="aud-draft-label kn-sub">Draft response request (for contractor fairness gate) — requires human review before sending</p>
+              ${draft.loading ? `<p class="kn-sub">Drafting with AI…</p>`
+                : draft.error ? `<p class="aud-msg warn">${esc(draft.error)}</p>`
+                : `<textarea class="aud-draft-text" rows="5" readonly>${esc(draft.text)}</textarea>`}
+            </div></td></tr>`
+        : "";
       return `<tr>
         <td class="aud-num">${i + 1}</td>
         <td>${esc(it.item || it.itemSubmitted || it.submittedItem || "—")}</td>
         <td>${esc(it.remark || it.comment || it.note || "—")}</td>
         <td class="aud-cite">${esc(it.citation || it.reference || "—")}</td>
-        <td><span class="aud-status aud-status-${sk}">${esc(statusLabel)}</span></td>
-      </tr>`;
+        <td><span class="aud-status aud-status-${sk}">${esc(statusLabel)}</span>${draftBtn ? `<div class="aud-draft-actions">${draftBtn}</div>` : ""}</td>
+      </tr>${draftRow}`;
     }).join("");
 
     return `<div class="aud-result">
@@ -385,14 +447,23 @@
       const f = state.pickFile;
       try {
         const b64 = await readFileAsBase64(f);
+        // Detect MasterFormat sections client-side from PDF text (Item 15).
+        let sections = [];
+        if (isPdf(f)) {
+          const text = await extractPdfText(f);
+          sections = detectMasterFormatSections(text);
+        }
+        if (sections.length) state.sectionsByName[f.name] = sections;
         await LinStore.ingestCorpus({
           id: state.projectId,
           name: f.name,
           docType: state.pickDocType,
           mimeType: f.type || "application/octet-stream",
-          dataBase64: b64
+          dataBase64: b64,
+          masterFormatSections: sections
         });
-        state.uploadMsg = "✓ Uploaded — " + f.name;
+        state.uploadMsg = "✓ Uploaded — " + f.name +
+          (sections.length ? " · " + sections.length + " MasterFormat section" + (sections.length > 1 ? "s" : "") + " detected" : "");
         state.pickFile = null;
         await loadCorpus();
       } catch (err) {
@@ -425,7 +496,7 @@
     const run = $("#aud-run");
     if (run) run.addEventListener("click", async () => {
       if (!state.projectId || !state.submission || state.corpus.length === 0) return;
-      state.auditing = true; state.auditError = ""; state.auditResult = null;
+      state.auditing = true; state.auditError = ""; state.auditResult = null; state.drafts = {};
       renderAuditorPage();
       try {
         const corpusIds = state.corpus.map(fileIdOf).filter(Boolean);
@@ -447,6 +518,28 @@
         renderAuditorPage();
       }
     });
+
+    /* Item 17: per-row "Draft contractor response" via the chat endpoint. */
+    root.querySelectorAll(".aud-draft-btn").forEach((btn) => btn.addEventListener("click", async () => {
+      const i = Number(btn.dataset.row);
+      const r = state.auditResult;
+      const items = r && (Array.isArray(r.items) ? r.items : (Array.isArray(r.results) ? r.results : []));
+      const it = items && items[i];
+      if (!it) return;
+      const item = it.item || it.itemSubmitted || it.submittedItem || "(item)";
+      const remark = it.remark || it.comment || it.note || "(remark)";
+      state.drafts[i] = { loading: true };
+      renderAuditorPage();
+      try {
+        const question = `Draft a polite contractor response request for: ${item} — ${remark}. ` +
+          `Keep it professional, neutral, and under 100 words.`;
+        const answer = await LinStore.chat(question, state.projectId);
+        state.drafts[i] = { text: String(answer || "").trim() || "(no draft returned)" };
+      } catch (e) {
+        state.drafts[i] = { error: "Draft failed: " + (e && e.message ? e.message : "store unreachable") };
+      }
+      renderAuditorPage();
+    }));
 
     const dl = $("#aud-download-csv");
     if (dl) dl.addEventListener("click", () => {
