@@ -512,12 +512,14 @@
     renderDecisionCard(p);
   }
 
-  /* Drill-down: clicking a blip or list row opens Project Detail
-     (and updates the portfolio side ledger via selectProject). */
+  /* Drill-down: clicking a blip or list row opens Project Detail.
+     Switch to the detail page FIRST (showPage renders the detail content from
+     selectedId) so a render error downstream can never block navigation; the
+     portfolio side-ledger update via selectProject is non-blocking. */
   function openDetail(id) {
-    selectProject(id);
-    if (window.LinDetail) LinDetail.render(id);
+    selectedId = id;
     showPage("detail");
+    try { selectProject(id); } catch (e) { /* side-ledger is non-critical to navigation */ }
   }
 
   /* ---------- theme switch ---------- */
@@ -552,12 +554,15 @@
       s.toggleAttribute("hidden", s.dataset.page !== page));
     document.querySelectorAll("[data-nav]").forEach((b) =>
       b.classList.toggle("active", b.dataset.nav === page));
-    // (re)render content pages so they reflect the latest portfolio state
-    if (page === "modules" && window.LinModules) LinModules.renderModulesPage();
-    if (page === "knowledge" && window.LinKnowledge) LinKnowledge.renderKnowledgePage();
-    if (page === "manage" && window.LinIngest) LinIngest.renderManagePage();
-    if (page === "auditor" && window.LinAuditor) LinAuditor.renderAuditorPage();
-    if (page === "detail" && window.LinDetail && selectedId) LinDetail.render(selectedId);
+    // (re)render content pages so they reflect the latest portfolio state.
+    // Guarded so a single page-render error can never leave navigation half-done.
+    try {
+      if (page === "modules" && window.LinModules) LinModules.renderModulesPage();
+      if (page === "knowledge" && window.LinKnowledge) LinKnowledge.renderKnowledgePage();
+      if (page === "manage" && window.LinIngest) LinIngest.renderManagePage();
+      if (page === "auditor" && window.LinAuditor) LinAuditor.renderAuditorPage();
+      if (page === "detail" && window.LinDetail && selectedId) LinDetail.render(selectedId);
+    } catch (e) { /* page is already visible; a render hiccup must not block nav */ }
     window.scrollTo({ top: 0 });
   }
 
