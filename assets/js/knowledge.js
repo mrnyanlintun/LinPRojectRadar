@@ -161,7 +161,110 @@
     }
   ];
 
-  window.LIN_KNOWLEDGE = { terms: TERMS, topics: TOPICS };
+  /* ---------- static glossary (Knowledge page left panel) ----------
+     Plain, scannable definitions + colour thresholds. The TERMS array above is
+     kept for the scripted assistant fallback; this GLOSSARY drives the page. */
+  const T = {
+    green: "var(--clear-green)", amber: "var(--radar-amber)", red: "var(--alarm-red)",
+  };
+  const GLOSSARY = [
+    { term: "EVM — Earned Value Management",
+      definition: "A project controls methodology that integrates scope, schedule, and cost to objectively measure project performance. Compares planned work against actual work completed and actual cost incurred." },
+    { term: "CPI — Cost Performance Index",
+      definition: "CPI = EV / AC. Measures cost efficiency. CPI = 1.00 means on budget; > 1.00 means under budget; < 1.00 means over budget.",
+      thresholds: [
+        { label: "Green: CPI ≥ 0.95", color: T.green },
+        { label: "Amber: CPI 0.90–0.94", color: T.amber },
+        { label: "Red: CPI < 0.90", color: T.red },
+      ] },
+    { term: "SPI — Schedule Performance Index",
+      definition: "SPI = EV / PV. Measures schedule efficiency. SPI = 1.00 means on schedule; > 1.00 means ahead of schedule; < 1.00 means behind schedule.",
+      thresholds: [
+        { label: "Green: SPI ≥ 0.95", color: T.green },
+        { label: "Amber: SPI 0.90–0.94", color: T.amber },
+        { label: "Red: SPI < 0.90", color: T.red },
+      ] },
+    { term: "BAC — Budget at Completion",
+      definition: "The total authorized budget for the project. The baseline against which earned value is measured. Established at contract award; changes only through approved change orders." },
+    { term: "EV — Earned Value",
+      definition: "The budgeted cost of work performed. EV = BAC × % complete (verified). Represents the monetary value of work actually accomplished." },
+    { term: "AC — Actual Cost",
+      definition: "The actual money spent to accomplish the work measured by EV. Comes from the pay application (amount paid to date)." },
+    { term: "PV — Planned Value",
+      definition: "The budgeted cost of work scheduled. Derived from the time-phased baseline schedule. Represents what was planned to be spent by a given date." },
+    { term: "EAC — Estimate at Completion",
+      definition: "Forecast of total project cost. EAC = BAC / CPI (most common formula). P50 EAC = median of Monte Carlo simulation. P80 EAC = 80th percentile (conservative).",
+      thresholds: [
+        { label: "Green: P80 EAC within +5% of BAC", color: T.green },
+        { label: "Amber: P80 EAC +5% to +10% of BAC", color: T.amber },
+        { label: "Red: P80 EAC > +10% of BAC", color: T.red },
+      ] },
+    { term: "P50 / P80",
+      definition: "Percentile outputs from the Monte Carlo simulation. P50 = 50% probability cost will be at or below this value. P80 = 80% probability. P80 is the conservative planning figure." },
+    { term: "Monte Carlo",
+      definition: "5,000-iteration probabilistic simulation sampling EAC from a Beta-PERT distribution derived from CPI and SPI. Produces P50/P80 EAC and P(milestone delay)." },
+    { term: "CUSUM — Cumulative Sum Control Chart",
+      definition: "Statistical process control method that detects sustained drift in a time series. Applied to SPI across 12 reporting periods. Breach = cumulative drift exceeds the decision interval H (5σ). A breach means the pattern is systemic, not noise.",
+      thresholds: [
+        { label: "Green: drift below watch level", color: T.green },
+        { label: "Amber: drift approaching control limit", color: T.amber },
+        { label: "Red: CUSUM breaches threshold", color: T.red },
+      ] },
+    { term: "SPC — Statistical Process Control",
+      definition: "The use of statistical methods to monitor and control a process. CUSUM is the SPC method used in PCEIF to detect schedule drift." },
+    { term: "PERT — Program Evaluation & Review Technique",
+      definition: "Stochastic network scheduling method. Each activity has optimistic (a), most likely (m), and pessimistic (b) durations sampled from a triangular distribution. P80 project duration and path criticality index are computed from 5,000 iterations. Formula: te = (a + 4m + b) / 6" },
+    { term: "LOB — Line of Balance",
+      definition: "Production scheduling method for repetitive work. Plots crew velocity (units/day) for sequential operations. Flags when the buffer between operations collapses — a leading indicator of schedule collision before it shows in EVM." },
+    { term: "CCPM — Critical Chain Project Management",
+      definition: "Aggregates safety margins from individual activities into a single project buffer. Fever chart maps buffer consumption against chain completion. Entering the red zone means the buffer is being consumed faster than progress is being made." },
+    { term: "RCF — Reference Class Forecasting",
+      definition: "Flyvbjerg's debiasing method. Uses historical cost overrun data from similar projects to establish a prior probability distribution — bypassing optimism bias in contractor estimates. P80 RCF prior is the statistically-adjusted realistic budget." },
+    { term: "DSM — Design Structure Matrix",
+      definition: "Models information dependencies between design disciplines (Arch, Structural, MEP). Simulates how a scope change propagates through design iterations. Rework multiplier > 2.5 indicates high coordination risk." },
+    { term: "ABM — Agent-Based Model",
+      definition: "The governance decision layer in PCEIF. Takes the signal package from all modules and derives a conflict classification, recommended action, named authority, and fairness gate requirement. Does not make decisions — surfaces the structured recommendation for human approval." },
+    { term: "Fairness Gate",
+      definition: "A mandatory step requiring contractor explanation before formal action is recorded. Triggered when a fairness-sensitive signal (document risk, LOB, CCPM) reaches Red. Prevents automated model outputs from driving contractual consequences without human review." },
+    { term: "Red-review",
+      definition: "PCEIF governance state requiring Program Director / PMO lead review. Triggered when ≥2 signal classes are Red, or CUSUM breach + Red forecast. Requires full signal package, assigned owner, rationale, response timeframe, and audit record." },
+  ];
+
+  /* ---------- Modules 06-10 — Method Library accordion entries (Fix 3) ---------- */
+  TOPICS.push(
+    {
+      id: "module06",
+      keywords: ["module 06", "module 6", "pert", "program evaluation", "network criticality", "triangular", "path criticality"],
+      title: "Module 06 — Program Evaluation & Review Technique (PERT)",
+      body: "PERT is a stochastic network scheduling method. Each activity has three duration estimates — optimistic (a), most likely (m), and pessimistic (b) — and is sampled from a triangular distribution. The classic deterministic three-point estimate is te = (a + 4m + b) / 6; the simulation aggregates the dominant path across 5,000 runs. P80 duration is the conservative finish (80% of runs at or under). The path-criticality index is the fraction of runs in which the structural path was on the critical path — the higher it is, the less float you have to absorb a slip. In this implementation a lower project SPI widens the pessimistic bound, so an already-drifting schedule grows a fatter P80 tail. Thresholds: Green P80 ≤ baseline; Amber P80 up to +20%; Red P80 > +20%.",
+    },
+    {
+      id: "module07",
+      keywords: ["module 07", "module 7", "lob", "line of balance", "production velocity", "crew", "buffer"],
+      title: "Module 07 — Line of Balance (LOB)",
+      body: "LOB tracks production velocity for sequential, repetitive work — grading runs ahead of paving, paving runs ahead of striping, and so on. Each crew has a rate in units/day; the buffer is the schedule gap between leader and follower at every unit. When the follower's rate slips, that buffer compresses unit by unit and a crew-on-crew collision is being telegraphed before EVM moves. Here, lower project SPI slows the follower (paving) so the minimum crew buffer shrinks. Buffer collapse is a leading schedule indicator: it shows up in the LOB chart before it shows up in CPI or SPI. Thresholds: Green buffer > 3 days; Amber 1.5–3 days; Red ≤ 1.5 days.",
+    },
+    {
+      id: "module08",
+      keywords: ["module 08", "module 8", "ccpm", "critical chain", "buffer", "fever chart"],
+      title: "Module 08 — Critical Chain Project Management (CCPM)",
+      body: "CCPM (Goldratt) aggregates the safety margin embedded in individual activity estimates into a single project buffer at the end of the critical chain. The fever chart plots buffer-consumed % against chain-complete %. Two thresholds drive the zones: the amber line tracks chain completion (buffer consumed ≥ % complete) — burning buffer at the same rate progress is being made; the red line sits a third of the remaining range above (buffer consumed ≥ % complete + (100 − % complete) / 3) — burning buffer faster than the chain can complete. Crossing into red means the buffer will run out before the work does. Thresholds: Green below the amber line; Amber buffer consumed ≥ % complete; Red buffer consumed ≥ % complete + (100 − % complete) / 3.",
+    },
+    {
+      id: "module09",
+      keywords: ["module 09", "module 9", "rcf", "reference class", "forecasting", "flyvbjerg", "debias", "optimism bias"],
+      title: "Module 09 — Reference Class Forecasting (RCF)",
+      body: "Reference Class Forecasting comes from Bent Flyvbjerg's research on optimism bias in large infrastructure projects: bottom-up estimates systematically underestimate cost because they reason from the inside view (this project's plan) rather than the outside view (how comparable projects have actually performed). RCF replaces the inside-view estimate with an empirical prior — the distribution of historical overrun multipliers from a comparable reference class. This implementation uses an airport-infrastructure multiplier set [1.00 … 1.52]; the P80 multiplier is the conservative debiasing factor applied to BAC. The debiasing factor is the multiplier itself: ×1.38 means the outside view says comparable projects finished 38% over their baseline. The P80 RCF prior is the realistic planning budget to compare against the bottom-up EAC. Thresholds: Green P80 within +10% of BAC; Amber +10–25%; Red > +25%.",
+    },
+    {
+      id: "module10",
+      keywords: ["module 10", "dsm", "design structure matrix", "rework", "propagation", "arch", "structural", "mep", "dependency"],
+      title: "Module 10 — Design Structure Matrix (DSM)",
+      body: "A DSM captures information-flow dependencies between work elements as a square matrix: each off-diagonal entry A[i][j] is the strength of i's dependence on j. Here the elements are the three design disciplines — Architectural, Structural, MEP — and the off-diagonals encode how much a unit change in one cascades into the others. Architectural decisions flow downstream into both Structural and MEP, so an arch scope change ripples through the matrix; structural and MEP changes also feed back. The simulation propagates a unit architectural change vector through the matrix for four passes and accumulates the rework absorbed in each discipline. The total cumulative rework multiplier is the coordination cost: a multiplier above 2.5 indicates that one unit of arch change is generating more than 2.5 units of downstream rework — high coordination risk. Thresholds: Green rework multiplier ≤ 2.5; Amber > 2.5.",
+    },
+  );
+
+  window.LIN_KNOWLEDGE = { terms: TERMS, glossary: GLOSSARY, topics: TOPICS };
 
   /* ---------- knowledge page rendering + term lens ---------- */
   function esc(s) {
@@ -172,19 +275,23 @@
     const root = document.getElementById("knowledge-root");
     if (!root) return;
 
+    const glossary = (LIN_KNOWLEDGE.glossary || []).map((g) => {
+      const thresholds = (g.thresholds || []).map((t) =>
+        `<li class="kn-gl-threshold" style="--kn-th:${t.color}">${esc(t.label)}</li>`).join("");
+      return `<div class="kn-gl-item">
+        <p class="kn-gl-term"><strong>${esc(g.term)}</strong></p>
+        <p class="kn-gl-def">${esc(g.definition)}</p>
+        ${thresholds ? `<ul class="kn-gl-thresholds">${thresholds}</ul>` : ""}
+      </div>`;
+    }).join("");
+
     root.innerHTML =
       `<div class="kn-grid">
          <section class="panel kn-terms">
-           <p class="eyebrow">Term lens</p>
+           <p class="eyebrow">Glossary</p>
            <h2 class="kn-h">Definitions</h2>
-           <p class="kn-sub">Click a term to pin its definition. The guided assistant answers from this same content.</p>
-           <div class="kn-chiprow">` +
-      LIN_KNOWLEDGE.terms.map((t, i) =>
-        `<button class="kn-chip" data-term="${i}">${esc(t.term)}</button>`).join("") +
-      `  </div>
-         <div class="kn-def" id="kn-def" aria-live="polite">
-           <p class="kn-sub">Select a term above.</p>
-         </div>
+           <p class="kn-sub">Plain-language definitions of the PCEIF terms and the color thresholds where they apply.</p>
+           <div class="kn-glossary">${glossary}</div>
          </section>
          <section class="panel kn-topics">
            <p class="eyebrow">Method library</p>
@@ -193,25 +300,6 @@
         `<details class="kn-topic"><summary>${esc(t.title)}</summary><p>${esc(t.body)}</p></details>`).join("") +
       `  </section>
        </div>`;
-
-    root.querySelectorAll(".kn-chip").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const t = LIN_KNOWLEDGE.terms[Number(btn.dataset.term)];
-        root.querySelectorAll(".kn-chip").forEach((b) => b.classList.toggle("active", b === btn));
-        const def = document.getElementById("kn-def");
-        def.innerHTML =
-          `<h3 class="kn-defterm">${esc(t.term)}</h3>
-           <p class="kn-defbody"><b>Definition.</b> ${esc(t.definition)}</p>
-           ${t.impact ? `<p class="kn-impact"><b>Impact.</b> ${esc(t.impact)}</p>` : ""}
-           <p class="kn-defformula">${esc(t.formula)}</p>
-           <button class="kn-ask" type="button">Ask the AI about ${esc(t.term)}</button>`;
-        const ask = def.querySelector(".kn-ask");
-        if (ask) ask.addEventListener("click", () => {
-          const q = `Explain ${t.term} and its impact on this portfolio in plain language for a project-controls reviewer.`;
-          if (window.LinAssistant && LinAssistant.ask) LinAssistant.ask(q);
-        });
-      });
-    });
   }
 
   window.LinKnowledge = { renderKnowledgePage };

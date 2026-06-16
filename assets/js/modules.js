@@ -68,6 +68,144 @@
     return out + "</svg>";
   }
 
+  /* ---------- Modules 06-10 helpers (simulation aggregation across portfolio) ---------- */
+
+  // Build a signalInputs object for a project — prefer extracted inputs;
+  // fall back to the canonical Monte Carlo input record (cpi/spi/bac/docScore)
+  // with synthetic % complete so the CCPM module has something to read.
+  function siFor(p) {
+    if (p && p.signalInputs && Object.keys(p.signalInputs).length) return p.signalInputs;
+    const e = p && p.signals && p.signals.evm;
+    if (!e) return {};
+    return {
+      cpi: e.cpi, spi: e.spi, bac: e.bac,
+      docRiskScore: p.signals.doc ? p.signals.doc.score : 0,
+      // proxies so CCPM has chain-complete to read; the bar simply uses buffer-consumed
+      actualPctComplete: 40, plannedPctComplete: 40,
+    };
+  }
+  function simByMethod(arr, method) { return arr.find((s) => s.method_class === method); }
+  // Run a single simulation model for every project, returning [{p, sig}].
+  function runEachProject(projects, method, runner) {
+    return projects.map((p) => {
+      // prefer the persisted simulationSignals.signal_array when available
+      const arr = p.simulationSignals && Array.isArray(p.simulationSignals.signal_array)
+        ? p.simulationSignals.signal_array : null;
+      const sig = (arr && simByMethod(arr, method)) || runner(siFor(p));
+      return { p, sig };
+    });
+  }
+  const simColor = (s) => statusVar(String(s || "green").toLowerCase());
+
+  function module06(projects) {
+    const results = runEachProject(projects, "PERT_Network_Criticality",
+      window.LinSimulations ? LinSimulations.runPERT : () => ({ status_color: "Green", p80_duration_days: 0, path_criticality_index: 0 }));
+    const rows = results.map(({ p, sig }) => ({
+      label: p.id, value: Math.max(0.1, sig.p80_duration_days || 0),
+      color: simColor(sig.status_color),
+      note: `${(sig.p80_duration_days || 0).toFixed(1)}d · crit ${Math.round((sig.path_criticality_index || 0) * 100)}%`,
+    }));
+    const worst = results.slice().sort((a, b) => (b.sig.p80_duration_days || 0) - (a.sig.p80_duration_days || 0))[0];
+    const max = Math.max(1, ...rows.map((r) => r.value)) * 1.15;
+    return {
+      num: "06",
+      title: "Program Evaluation & Review Technique (PERT) — Network Criticality",
+      method: "Stochastic 3-activity network · triangular distribution · 5,000 iterations · te = (a + 4m + b) / 6",
+      explain: "PERT samples each activity's optimistic / most-likely / pessimistic durations from a triangular distribution and aggregates the dominant network path. The P80 duration is the conservative finish date; the path-criticality index is the share of simulated runs where the structural path was on the critical path. Lower project SPI widens the pessimistic bound, so the P80 tail grows when the schedule is already drifting.",
+      rule: `Rule fired: P80 ≤ baseline → Green; P80 up to +20% → Amber; > +20% → Red. Worst current: ${worst ? worst.p.id : "—"}${worst ? ` (P80 ${(worst.sig.p80_duration_days || 0).toFixed(1)}d)` : ""}.`,
+      charts:
+        `<p class="mod-chart-label">Illustrative view — PERT P80 duration by project (days)</p>` +
+        barChart(rows, max, 520),
+    };
+  }
+
+  function module07(projects) {
+    const results = runEachProject(projects, "Line_of_Balance_Velocity",
+      window.LinSimulations ? LinSimulations.runLOB : () => ({ status_color: "Green", minimum_buffer_days: 5 }));
+    // value = min crew buffer (days). Red threshold marker at 1.5d.
+    const rows = results.map(({ p, sig }) => ({
+      label: p.id, value: Math.max(0.05, sig.minimum_buffer_days || 0),
+      color: simColor(sig.status_color),
+      note: `${(sig.minimum_buffer_days || 0).toFixed(1)}d · crit unit ${sig.critical_unit_index ?? "—"}`,
+    }));
+    const worst = results.slice().sort((a, b) => (a.sig.minimum_buffer_days || 0) - (b.sig.minimum_buffer_days || 0))[0];
+    const max = Math.max(6, ...rows.map((r) => r.value)) * 1.15;
+    return {
+      num: "07",
+      title: "Line of Balance (LOB) — Production Velocity",
+      method: "Leader (grading) vs follower (paving) crew velocity · minimum crew-to-crew buffer over linear units",
+      explain: "LOB tracks production rate for sequential, repetitive work. Each crew has a units-per-day velocity; the buffer is the schedule gap between the leader and the follower as units roll. When the follower (paving) slows and that buffer compresses unit by unit, a crew collision is being telegraphed before EVM moves. The implementation slows the follower as project SPI degrades, making buffer collapse a leading schedule signal.",
+      rule: `Rule fired: buffer > 3.0d → Green; 1.5–3.0d → Amber; ≤ 1.5d → Red. Worst current: ${worst ? worst.p.id : "—"}${worst ? ` (min buffer ${(worst.sig.minimum_buffer_days || 0).toFixed(1)}d)` : ""}.`,
+      charts:
+        `<p class="mod-chart-label">Illustrative view — minimum crew buffer by project (days; red ≤ 1.5d)</p>` +
+        barChart(rows, max, 520, { value: 1.5, label: "red ≤ 1.5d" }),
+    };
+  }
+
+  function module08(projects) {
+    const results = runEachProject(projects, "CCPM_Buffer_Health",
+      window.LinSimulations ? LinSimulations.runCCPM : () => ({ status_color: "Green", pct_buffer_consumed: 10, pct_chain_complete: 50 }));
+    const rows = results.map(({ p, sig }) => ({
+      label: p.id, value: Math.max(0.5, sig.pct_buffer_consumed || 0),
+      color: simColor(sig.status_color),
+      note: `${(sig.pct_buffer_consumed || 0).toFixed(1)}% buf @ ${(sig.pct_chain_complete || 0).toFixed(1)}% chain`,
+    }));
+    const worst = results.slice().sort((a, b) => (b.sig.pct_buffer_consumed || 0) - (a.sig.pct_buffer_consumed || 0))[0];
+    return {
+      num: "08",
+      title: "Critical Chain Project Management (CCPM) — Buffer Health",
+      method: "Fever-chart logic: buffer-consumed % vs chain-complete %",
+      explain: "CCPM aggregates safety margin from each activity into a single project buffer, then plots its consumption against chain completion. The fever chart's amber threshold sits at the chain-complete percentage; the red threshold a third of the remaining range above that. Crossing into red means buffer is being burned faster than work is being completed — the buffer will be gone before the chain.",
+      rule: "Rule fired: below the amber line → Green; buffer consumed ≥ % complete → Amber; ≥ % complete + (100 − % complete)/3 → Red." +
+        (worst ? ` Worst current: ${worst.p.id} (${(worst.sig.pct_buffer_consumed || 0).toFixed(1)}% buffer).` : ""),
+      charts:
+        `<p class="mod-chart-label">Illustrative view — buffer consumed by project (%)</p>` +
+        barChart(rows, 100, 520),
+    };
+  }
+
+  function module09(projects) {
+    const results = runEachProject(projects, "Reference_Class_Forecasting",
+      window.LinSimulations ? LinSimulations.runRCF : () => ({ status_color: "Red", vs_bac_pct: 38, debiasing_factor: 1.38 }));
+    const rows = results.map(({ p, sig }) => ({
+      label: p.id, value: Math.max(0.5, sig.vs_bac_pct || 0),
+      color: simColor(sig.status_color),
+      note: `+${(sig.vs_bac_pct || 0).toFixed(1)}% · ×${(sig.debiasing_factor || 0).toFixed(2)}`,
+    }));
+    const max = Math.max(30, ...rows.map((r) => r.value)) * 1.15;
+    return {
+      num: "09",
+      title: "Reference Class Forecasting (RCF) — Cost Prior",
+      method: "Outside-view debiasing · airport-overrun multiplier reference class · P80 vs BAC",
+      explain: "Flyvbjerg's reference-class forecasting replaces the inside-view estimate with an empirical prior drawn from comparable projects. This implementation uses an airport-infrastructure overrun multiplier set; the P80 multiplier is the conservative debiasing factor applied to BAC. It is the structural counter to optimism bias — what comparable projects actually cost, not what this one's bottom-up estimate predicts.",
+      rule: `Rule fired: P80 prior ≤ +10% of BAC → Green; +10–25% → Amber; > +25% → Red.`,
+      charts:
+        `<p class="mod-chart-label">Illustrative view — RCF P80 prior vs BAC by project (%)</p>` +
+        barChart(rows, max, 520, { value: 25, label: "red > +25%" }),
+    };
+  }
+
+  function module10(projects) {
+    const results = runEachProject(projects, "DSM_Rework_Propagation",
+      window.LinSimulations ? LinSimulations.runDSM : () => ({ status_color: "Amber", rework_multiplier: 2.7 }));
+    const rows = results.map(({ p, sig }) => ({
+      label: p.id, value: Math.max(0.1, sig.rework_multiplier || 0),
+      color: simColor(sig.status_color),
+      note: `×${(sig.rework_multiplier || 0).toFixed(2)}`,
+    }));
+    const max = Math.max(4, ...rows.map((r) => r.value)) * 1.15;
+    return {
+      num: "10",
+      title: "Design Structure Matrix (DSM) — Rework Propagation",
+      method: "3×3 Arch / Structural / MEP dependency matrix · architectural change vector · 4 propagation passes",
+      explain: "DSM captures information-flow dependencies between design disciplines as off-diagonal coupling weights. A single unit of architectural change is propagated through the matrix; after four passes the cumulative rework multiplier is the total downstream burden across Arch / Structural / MEP. Architectural changes cascade because both downstream disciplines depend on Arch decisions, so a multiplier above 2.5 signals high coordination risk.",
+      rule: `Rule fired: total rework multiplier ≤ 2.5 → Green; > 2.5 → Amber.`,
+      charts:
+        `<p class="mod-chart-label">Illustrative view — DSM rework multiplier by project (×)</p>` +
+        barChart(rows, max, 520, { value: 2.5, label: "amber > 2.5" }),
+    };
+  }
+
   /* ---------- module definitions ---------- */
 
   function module01(projects) {
@@ -202,7 +340,10 @@
   /* ---------- page rendering ---------- */
 
   function moduleCardsHtml(projects) {
-    const mods = [module01(projects), module02(projects), module03(projects), module04(projects), module05(projects)];
+    const mods = [
+      module01(projects), module02(projects), module03(projects), module04(projects), module05(projects),
+      module06(projects), module07(projects), module08(projects), module09(projects), module10(projects),
+    ];
     return mods.map((m) => `
         <section class="panel mod-card" aria-label="Module ${m.num}: ${esc(m.title)}">
           <div class="mod-head">
