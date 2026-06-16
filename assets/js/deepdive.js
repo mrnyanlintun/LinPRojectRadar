@@ -355,6 +355,33 @@
       rule("GREEN → routine monitoring (PM/Controls); AMBER → early-warning review (PM + Controls lead); RED-REVIEW when ≥2 red signals or CUSUM breach + red forecast (Program director/PMO); fairness-sensitive red-reviews additionally require the contractor fairness gate (deriveDecision in decision.js)."));
   }
 
+  /* ---------- additional client-side simulation signals (items 6–10) ----------
+     Renders project.simulationSignals (built by signals.js after the core run)
+     as a compact panel of status + evidence per model. */
+  const SIM_LABELS = {
+    PERT_Network_Criticality:   "PERT — Network Criticality",
+    Line_of_Balance_Velocity:   "LOB — Production Velocity",
+    CCPM_Buffer_Health:         "CCPM — Buffer Health",
+    Reference_Class_Forecasting:"RCF — Cost Prior",
+    DSM_Rework_Propagation:     "DSM — Rework Propagation"
+  };
+
+  function simSignalsPanel(project) {
+    const payload = project.simulationSignals;
+    const arr = payload && Array.isArray(payload.signal_array) ? payload.signal_array : null;
+    if (!arr || !arr.length) return "";
+    const rows = arr.map((s) => {
+      const label = SIM_LABELS[s.method_class] || s.method_class || "Simulation";
+      return metricBox(label, s.evidence_metric || "—", s.status_color || "green");
+    }).join("");
+    return `<section class="panel dd-panel dd-sim-panel" aria-label="Additional simulation signals">
+      <div class="dd-head"><b>Additional simulation signals</b>
+        <span class="dd-verdict status-green"><i></i>${esc(arr.length)} MODELS · CLIENT-SIDE</span></div>
+      ${note(`${ILLUS} — five extra models (PERT / LOB / CCPM / RCF / DSM) computed live in the browser from the extracted signal inputs (zero tokens, zero backend calls).`)}
+      <div class="dd-grid">${rows}</div>
+    </section>`;
+  }
+
   /* ---------- entry point ---------- */
 
   function render(project, root) {
@@ -369,7 +396,8 @@
     }
     root.innerHTML =
       `<p class="mod-banner">Modules 01 (Monte Carlo) and 02 (CUSUM) are <strong>real client-side computations</strong> on this project's synthetic inputs (demonstration models, not calibrated forecasts). Modules 03–05 are transparent rule/decision logic.</p>` +
-      m01(project) + m02(project) + m03(project) + m04(project) + m05(project);
+      m01(project) + m02(project) + m03(project) + m04(project) + m05(project) +
+      simSignalsPanel(project);
   }
 
   window.LinDeepDive = { render };

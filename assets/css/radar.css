@@ -390,6 +390,13 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 /* ---------- project detail (drill-down) ---------- */
 .detail-head { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin: 8px 0 18px; }
 .detail-back { flex: 0 0 auto; }
+.detail-head-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.detail-reset-msg { margin: 0; }
+
+/* additional simulation signals (deep dive) — long evidence text per model */
+.dd-sim-panel .dd-grid { grid-template-columns: 1fr 1fr; }
+@media (max-width: 700px) { .dd-sim-panel .dd-grid { grid-template-columns: 1fr; } }
+.dd-sim-panel .dd-metric strong { font-size: 12.5px; line-height: 1.35; white-space: normal; word-break: break-word; }
 .detail-id h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(20px,2.6vw,30px); margin: 0 0 6px; letter-spacing: -.01em; }
 .detail-id h1 .mod-mono { color: var(--eyebrow); font-weight: 600; font-size: .8em; }
 .detail-meta { font-size: 13px; color: var(--muted); margin: 0; }

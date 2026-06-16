@@ -41,6 +41,10 @@
              State: <span class="li-state state-${stateKey}">${esc(state)}</span>
            </p>
          </div>
+         <div class="detail-head-actions">
+           <button class="btn small detail-reset" data-reset="${esc(p.id)}">Reset signals</button>
+           <span class="detail-reset-msg kn-sub" aria-live="polite"></span>
+         </div>
        </div>
        <div class="detail-grid">
          <section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>
@@ -70,11 +74,43 @@
     if (window.LinSignals) LinSignals.renderSignalsPanel(root.querySelector(".detail-signals"), p);
 
     wireBack(root);
+    wireReset(root);
   }
 
   function wireBack(root) {
     root.querySelectorAll("[data-back]").forEach((b) =>
       b.addEventListener("click", () => LinApp.showPage("portfolio")));
+  }
+
+  // Reset signals: POST resetsignals, clear local signal state, re-render the
+  // detail page (which then shows "awaiting ingest"). No confirmation dialog.
+  function wireReset(root) {
+    const btn = root.querySelector(".detail-reset");
+    if (!btn) return;
+    const msg = root.querySelector(".detail-reset-msg");
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.reset;
+      btn.disabled = true;
+      if (msg) msg.textContent = "Resetting…";
+      try {
+        await LinStore.resetSignals(id);
+        // clear local model state so the page reflects the cleared project
+        const cached = LinStore.getCached(id);
+        if (cached) { delete cached.signals; delete cached.signalInputs; delete cached.simulationSignals; }
+        try {
+          const fresh = await LinStore.getProject(id);
+          if (fresh && window.LIN_PROJECTS) {
+            const i = LIN_PROJECTS.findIndex((x) => x.id === id);
+            if (i >= 0) LIN_PROJECTS[i] = fresh;
+          }
+        } catch (e) { /* keep the cleared cached copy on fetch failure */ }
+        if (window.LinApp) LinApp.refresh();
+        render(id); // re-render → awaiting ingest
+      } catch (e) {
+        btn.disabled = false;
+        if (msg) msg.textContent = "Reset failed — store unreachable. Retry.";
+      }
+    });
   }
 
   window.LinDetail = { render };
