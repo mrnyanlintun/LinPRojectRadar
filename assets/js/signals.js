@@ -147,6 +147,23 @@
       docExcerpt: "Signals extracted from uploaded documents via the document-ingestion flow.",
       seed: LinSim.hashSeed(project.id)
     });
+    // Item 11: client-side multi-model simulations (zero tokens, zero backend).
+    // Run the five additional models from the extracted inputs and store the
+    // unified signal array on the project for display + governance synthesis.
+    if (window.LinSimulations) {
+      try {
+        const simResults = LinSimulations.runAll(si);
+        const now = new Date();
+        project.simulationSignals = {
+          signal_metadata: {
+            project_id: project.id,
+            reporting_period: now.toISOString().substring(0, 7),
+            data_date: now.toISOString().substring(0, 10)
+          },
+          signal_array: simResults
+        };
+      } catch (e) { /* simulations are non-fatal — never block the core run */ }
+    }
     await LinStore.saveProject(project);
     return true;
   }
@@ -163,6 +180,7 @@
           // copy hasn't caught up yet (eventual consistency / save↔get race).
           if (!hasSignals(fresh) && hasSignals(LIN_PROJECTS[i])) fresh.signals = LIN_PROJECTS[i].signals;
           if (!fresh.signalInputs && LIN_PROJECTS[i].signalInputs) fresh.signalInputs = LIN_PROJECTS[i].signalInputs;
+          if (!fresh.simulationSignals && LIN_PROJECTS[i].simulationSignals) fresh.simulationSignals = LIN_PROJECTS[i].simulationSignals;
           LIN_PROJECTS[i] = fresh;
         }
       }

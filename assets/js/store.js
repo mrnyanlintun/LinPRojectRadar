@@ -271,6 +271,12 @@
     const j = await apiPost({ action: "overwritesignal", id, field, value, reason });
     return j;
   }
+  // Clear a project's signals server-side (back to "awaiting ingest").
+  async function resetSignals(id) {
+    if (!configured()) throw new Error("Project store not configured (LIN_API_URL).");
+    const j = await apiPost({ action: "resetsignals", id });
+    return j;
+  }
 
   /* ---------- synchronous accessors for render (read the mirror) ---------- */
   function cachedActive() { return LIN_PROJECTS.slice(); }
@@ -287,7 +293,7 @@
     load, listProjects, getProject, createProject, saveProject,
     archiveProject, restoreProject, listArchived, chat, analyze,
     listCorpus, listAuditResults, ingestCorpus, runAudit,
-    extractSignals, overwriteSignal,
+    extractSignals, overwriteSignal, resetSignals,
     // sync mirror accessors used by render code
     cachedActive, cachedArchived, getCached, listActive: cachedActive,
     hasSignals, errored, configured, banner, loading
