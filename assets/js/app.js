@@ -311,6 +311,7 @@
   }
 
   function renderLedger(p, root = $("#ledger")) {
+    if (!root) return;   // portfolio no longer hosts the ledger; only the detail page does
     if (!hasSignals(p)) { root.innerHTML = awaitingHtml(p, "Signal ledger"); return; }
     const s = p.signals;
     const conflict = classifyConflict(p);
@@ -392,6 +393,7 @@
      Renders into any container (portfolio side panel or Project Detail),
      so all controls are class-scoped to the container — no duplicate ids. */
   function renderDecisionCard(p, root = $("#decision-card")) {
+    if (!root) return;   // portfolio no longer hosts the decision card; only the detail page does
     if (!hasSignals(p)) { root.innerHTML = awaitingHtml(p, "PCEIF governance decision"); return; }
     const d = deriveDecision(p);
     const stateClass = d.healthState.toLowerCase().replace("-review", "");
@@ -486,6 +488,7 @@
 
   function renderDecisionLog() {
     const wrap = $("#decision-log");
+    if (!wrap) return;   // decision log lives off the portfolio page now
     if (!decisionLog.length) {
       wrap.innerHTML = `<p class="log-empty">No decisions recorded this session.</p>`;
       return;
@@ -503,13 +506,14 @@
 
   /* ---------- selection orchestration ---------- */
   function selectProject(id) {
+    // Portfolio is radar + list only — selection just updates highlights now.
+    // The signal ledger + PCEIF decision are rendered on the Project Detail page
+    // (detail.js calls LinApp.renderLedger / renderDecisionCard into its panels).
     selectedId = id;
     const p = LIN_PROJECTS.find((x) => x.id === id);
     if (!p) return;
     highlightBlip();
     highlightListItem();
-    renderLedger(p);
-    renderDecisionCard(p);
   }
 
   /* Drill-down: clicking a blip or list row opens Project Detail.
