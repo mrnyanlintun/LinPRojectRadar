@@ -79,27 +79,6 @@
     logEvent(`POPULATED signals for ${project.id}: CPI ${Number(inputs.cpi).toFixed(2)}, SPI ${Number(inputs.spi).toFixed(2)} → MC ran 5,000 iters (P80 ${project.signals.mc.p80.toFixed(1)}), CUSUM ${project.signals.cusum.breached ? "BREACH" : "in-control"}, doc ${docScore.toFixed(2)}.`);
   }
 
-  /* ---------- keyword doc-ingest proposal (updates the doc signal) ---------- */
-  function proposeIngest(projectId, docType, text) {
-    const project = LinStore.getCached(projectId);
-    if (!project || !text.trim()) return null;
-    if (!hasSignals(project)) return { needsPopulate: true, projectId };
-    const a = analyzeText(text);
-    const fromScore = project.signals.doc.score;
-    const newScore = Math.max(0, Math.min(1, fromScore + a.scoreDelta));
-    return {
-      projectId, docType, fired: a.fired, excerpt: a.excerpt,
-      from: { score: fromScore, status: project.signals.doc.status },
-      to: { score: newScore, status: LinSim.docStatus(newScore) }
-    };
-  }
-  async function applyProposal(prop) {
-    const project = LinStore.getCached(prop.projectId);
-    if (!project || !hasSignals(project)) return;
-    // Rebuild the package so the new doc score flows through MC spread + statuses.
-    await rebuildWithDocScore(project, prop.to.score, `(ingested) ${prop.docType}`, prop.excerpt || project.signals.doc.excerpt);
-  }
-
   /* ---------- page rendering ---------- */
   function projectOptions() {
     return LinStore.cachedActive().map((p) => `<option value="${esc(p.id)}">${esc(p.id)} — ${esc(p.name)}</option>`).join("");
@@ -113,134 +92,9 @@
       : `<p class="kn-sub">No ingest events this browser yet.</p>`;
   }
 
-  /* ---------- shared keyword-ingest form (Manage panel + Project Detail) ---------- */
-  function ingestFormHtml(fixedId) {
-    const projectField = fixedId
-      ? `<input type="hidden" class="ig-project" value="${esc(fixedId)}" />`
-      : `<label class="rationale-label">Project
-           <select class="ig-project ig-input">${projectOptions()}</select></label>`;
-    return `
-      <div class="kn-grid">
-        <div>
-          ${projectField}
-          <label class="rationale-label">Document type
-            <select class="ig-doctype ig-input">${DOC_TYPES.map((d) => `<option>${d}</option>`).join("")}</select></label>
-          <details class="kn-topic"><summary>The keyword rules that will run (visible by design)</summary>
-            <ul class="ig-fired">${INGEST_RULES.map((r) =>
-              `<li><span class="mod-mono">${esc(r.id)}</span> ${esc(r.label)} — /${esc(r.pattern.source)}/i → doc ${r.scoreDelta >= 0 ? "+" : ""}${r.scoreDelta.toFixed(2)}</li>`).join("")}
-            </ul>
-          </details>
-        </div>
-        <div>
-          <label class="rationale-label">Document text (RFI / RFA / meeting minutes)
-            <textarea class="ig-text ig-textarea" placeholder="Paste document text here, or load a file below…"></textarea></label>
-          <input type="file" class="ig-file" accept=".txt,.csv,.md,.text" aria-label="Load text file" />
-          <label class="rationale-label">Spec / code excerpt to compare against (optional, .md or pasted)
-            <textarea class="ig-spec ig-textarea" placeholder="Optional: paste the relevant spec/code clause to check the document against (enables a CONFLICT / GAP / CONSISTENT verdict)."></textarea></label>
-          <div class="dc-actions"><button class="btn primary ig-run">Run extraction</button></div>
-        </div>
-      </div>
-      <div class="ig-result" aria-live="polite"></div>
-      <div class="ig-analysis" aria-live="polite"></div>`;
-  }
-
-  function renderProposal(prop, box, onApplied) {
-    if (!prop) {
-      box.innerHTML = `<p class="kn-sub">No risk rules matched this text. No change proposed — nothing to approve.</p>`;
-      return;
-    }
-    if (prop.needsPopulate) {
-      box.innerHTML = `<p class="kn-sub">This project has no signals yet — populate its signals first (Monte Carlo / CUSUM inputs), then document-risk ingest can update the doc signal.</p>`;
-      return;
-    }
-    const firedHtml = prop.fired.length
-      ? prop.fired.map((f) =>
-          `<li><strong>${esc(f.rule.label)}</strong> <span class="mod-mono">(${esc(f.rule.id)})</span> — matched “${esc(f.match)}” → doc ${f.rule.scoreDelta >= 0 ? "+" : ""}${f.rule.scoreDelta.toFixed(2)}</li>`).join("")
-      : "<li>No rules fired.</li>";
-    box.innerHTML =
-      `<h3 class="kn-defterm">Proposed document-risk delta — human approval required</h3>
-       <ul class="ig-fired">${firedHtml}</ul>
-       <div class="ig-delta mod-mono">doc score ${prop.from.score.toFixed(2)} → <strong>${prop.to.score.toFixed(2)}</strong> (${esc(prop.from.status)} → <strong>${esc(prop.to.status)}</strong>)</div>
-       ${prop.excerpt ? `<p class="ig-excerpt">Evidence excerpt: “${esc(prop.excerpt)}”</p>` : ""}
-       <div class="dc-actions">
-         <button class="btn primary ig-approve">Approve — apply to project</button>
-         <button class="btn ig-reject">Reject — discard</button>
-       </div>
-       <p class="dc-note">Nothing changes until Approve is clicked. The whole signal package is re-derived so the new document score flows through the Monte Carlo spread and the decision.</p>`;
-    box.querySelector(".ig-approve").addEventListener("click", async () => {
-      box.innerHTML = `<p class="kn-sub">Saving to the project store…</p>`;
-      try {
-        await applyProposal(prop);
-        logEvent(`APPROVED doc ingest (${prop.docType}) on ${prop.projectId}: doc ${prop.from.score.toFixed(2)}→${prop.to.score.toFixed(2)}. Rules: ${prop.fired.map((f) => f.rule.id).join(", ") || "none"}.`);
-        box.innerHTML = `<p class="kn-sub">Applied and re-derived. Saved to Drive; re-plotted and re-run through the decision rules.</p>`;
-        pendingProposal = null;
-        if (window.LinApp) LinApp.refresh();
-        if (onApplied) onApplied(prop.projectId);
-      } catch (e) {
-        box.innerHTML = `<p class="kn-sub">Couldn't save to the project store — change not applied. Retry.</p>`;
-      }
-    });
-    box.querySelector(".ig-reject").addEventListener("click", () => {
-      logEvent(`REJECTED doc ingest (${prop.docType}) on ${prop.projectId}. No state change.`);
-      box.innerHTML = `<p class="kn-sub">Proposal discarded. No project state was changed.</p>`;
-      pendingProposal = null;
-    });
-  }
-
-  function wireIngestForm(container, onApplied) {
-    const $c = (sel) => container.querySelector(sel);
-    $c(".ig-file").addEventListener("change", (e) => {
-      const f = e.target.files && e.target.files[0];
-      if (!f) return;
-      const reader = new FileReader();
-      reader.onload = () => { $c(".ig-text").value = String(reader.result || "").slice(0, 20000); };
-      reader.readAsText(f);
-    });
-    $c(".ig-run").addEventListener("click", () => {
-      const projectId = $c(".ig-project").value;
-      const docType = $c(".ig-doctype").value;
-      const text = $c(".ig-text").value;
-      const spec = ($c(".ig-spec") && $c(".ig-spec").value || "").trim();
-      const box = $c(".ig-result");
-      if (!text.trim()) { box.innerHTML = `<p class="kn-sub">Paste or load some document text first.</p>`; return; }
-
-      // 1) transparent keyword layer — produces the actual signal delta + evidence,
-      //    gated by Approve/Reject (unchanged, praxis-required base).
-      pendingProposal = proposeIngest(projectId, docType, text);
-      const fired = pendingProposal && pendingProposal.fired ? pendingProposal.fired.length : 0;
-      logEvent(`Ran doc extraction (${docType}) on ${projectId}: ${pendingProposal && pendingProposal.needsPopulate ? "project not populated yet" : fired + " rule(s) fired — awaiting human review"}.`);
-      renderProposal(pendingProposal && (pendingProposal.needsPopulate || pendingProposal.fired.length) ? pendingProposal : null, box, onApplied);
-
-      // 2) AI explanatory layer — supporting analysis only (enhancement, not a
-      //    dependency; keyword ingest above stands alone if this fails).
-      runAnalyze($c(".ig-analysis"), { text, docType, spec, id: projectId });
-    });
-  }
-
-  /* AI document analysis (Groq via backend). Clearly labeled illustrative;
-     never gates the keyword signal. Non-fatal on failure. */
-  async function runAnalyze(box, { text, docType, spec, id }) {
-    if (!box) return;
-    if (!(window.LinStore && LinStore.configured && LinStore.configured())) {
-      box.innerHTML = `<p class="kn-sub">AI analysis unavailable (backend not configured). Keyword extraction above is unaffected.</p>`;
-      return;
-    }
-    box.innerHTML = `<p class="kn-sub"><em>Running AI document analysis${spec ? " with spec comparison" : ""}…</em></p>`;
-    try {
-      const analysis = await LinStore.analyze({ text, docType, spec: spec || undefined, id });
-      if (!analysis || !String(analysis).trim()) {
-        box.innerHTML = `<p class="kn-sub">AI analysis returned nothing; keyword extraction above is unaffected.</p>`;
-        return;
-      }
-      const verdict = (String(analysis).match(/\b(CONFLICT|GAP|CONSISTENT)\b/i) || [])[0];
-      box.innerHTML =
-        `<h3 class="kn-defterm">AI document analysis ${verdict ? `· <span class="ig-verdict v-${verdict.toLowerCase()}">${esc(verdict.toUpperCase())}</span>` : ""}</h3>
-         <p class="ig-analysis-text">${esc(String(analysis))}</p>
-         <p class="dc-note">Illustrative AI analysis, supporting explanation only (<strong>not a validated compliance determination</strong>). The signal delta is set by the transparent keyword rules above and gated by Approve/Reject.</p>`;
-    } catch (e) {
-      box.innerHTML = `<p class="kn-sub">AI analysis unreachable — keyword extraction above still works. (Retry later.)</p>`;
-    }
-  }
+  /* The keyword document-risk ingest panel was removed — document ingestion now
+     goes through the single LinSignals "Ingest Document" panel (file upload →
+     extractsignals). The keyword rules + analyzeText remain only as a helper. */
 
   /* The manual "type CPI / SPI / BAC" populate form was removed in Piece C —
      signals now come from document extraction (LinSignals). populateSignals()
