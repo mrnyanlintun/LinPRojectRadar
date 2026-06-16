@@ -66,6 +66,7 @@
       if (b >= c) bCritical++;
     }
     totals.sort(function (x, y) { return x - y; });
+    var p50 = pctile(totals, 0.50);
     var p80 = pctile(totals, 0.80);
     var crit = bCritical / N;
     var baseline = A[1] + Math.max(B[1], C[1]);
@@ -74,7 +75,9 @@
     return {
       method_class: "PERT_Network_Criticality",
       status_color: color,
+      p50_duration_days: round1(p50),
       p80_duration_days: round1(p80),
+      baseline_days: round1(baseline),
       path_criticality_index: round2(crit),
       evidence_metric: "P80 path " + round1(p80) + "d vs baseline " + round1(baseline) +
         "d; structural path critical " + Math.round(crit * 100) + "% of runs"
@@ -105,6 +108,10 @@
       status_color: color,
       minimum_buffer_days: round1(minBuffer),
       critical_unit_index: critUnit,
+      grading_rate: gradingRate,
+      paving_rate: round2(pavingRate),
+      initial_buffer_days: initialBufferDays,
+      units: units,
       evidence_metric: "Min crew buffer " + round1(minBuffer) + "d (paving " + round2(pavingRate) +
         " vs grading " + gradingRate + " units/day)"
     };
@@ -129,6 +136,9 @@
       status_color: color,
       pct_chain_complete: round1(pctChainComplete),
       pct_buffer_consumed: round1(pctBufferConsumed),
+      zone: color,
+      amber_threshold: round1(amber),
+      red_threshold: round1(red),
       evidence_metric: "Buffer " + round1(pctBufferConsumed) + "% consumed at " +
         round1(pctChainComplete) + "% chain complete"
     };
@@ -153,6 +163,11 @@
       rcf_p50_adjusted: Math.round(p50adj),
       rcf_p80_adjusted: Math.round(p80adj),
       debiasing_factor: round2(p80),
+      vs_bac_pct: round1(overP80),
+      p50_multiplier: round2(p50),
+      p80_multiplier: round2(p80),
+      multipliers: sorted.slice(),
+      bac: bac,
       evidence_metric: bac > 0
         ? "P80 cost prior " + money(p80adj) + " (+" + round1(overP80) + "% vs BAC); debias ×" + round2(p80)
         : "Debias ×" + round2(p80) + " (+" + round1(overP80) + "% P80 prior; BAC not yet extracted)"
@@ -185,6 +200,10 @@
       method_class: "DSM_Rework_Propagation",
       status_color: color,
       rework_multiplier: round2(total),
+      matrix: A,
+      arch_impact: round2(cumulative[0]),
+      structural_impact: round2(cumulative[1]),
+      mep_impact: round2(cumulative[2]),
       evidence_metric: "Architectural change → ×" + round2(total) +
         " cumulative rework across Arch/Struct/MEP (4 propagation passes)"
     };
