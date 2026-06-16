@@ -58,6 +58,32 @@
   // cache[id] = { signalInputs, missing, readyToRun }
   const cache = {};
 
+  /* ---------- PDF.js client-side text extraction ----------
+     Apps Script's byte-level PDF parsing is unreliable for ReportLab-generated
+     PDFs, so PDFs are converted to plain text in the browser and sent as `text`.
+     The CDN script (index.html) exposes the global `pdfjsLib`. */
+  let pdfWorkerSet = false;
+  function ensurePdfWorker() {
+    if (pdfWorkerSet || typeof pdfjsLib === "undefined") return;
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    pdfWorkerSet = true;
+  }
+  async function extractPDFText(file) {
+    ensurePdfWorker();
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let text = "";
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map((item) => item.str).join(" ") + "\n";
+    }
+    return text.trim();
+  }
+  const isPdf = (file) =>
+    file.type === "application/pdf" || /\.pdf$/i.test(file.name || "");
+
   /* ---------- helpers ---------- */
   function readFileAsBase64(file) {
     return new Promise((resolve, reject) => {
@@ -195,12 +221,17 @@
       btn.disabled = true;
       status.textContent = "Scanning document with AI… this can take a few seconds.";
       try {
-        const b64 = await readFileAsBase64(picked);
-        const resp = await LinStore.extractSignals({
-          id, docType, dataBase64: b64,
-          mimeType: picked.type || "application/octet-stream",
-          fileName: picked.name
-        });
+        // PDFs → extract text client-side (PDF.js) and send as `text`.
+        // Images / doc / docx → send the raw file as `dataBase64`.
+        const args = { id, docType, mimeType: picked.type || "application/octet-stream", fileName: picked.name };
+        if (isPdf(picked) && typeof pdfjsLib !== "undefined") {
+          status.textContent = "Reading PDF text in your browser…";
+          args.text = await extractPDFText(picked);
+          status.textContent = "Scanning document with AI… this can take a few seconds.";
+        } else {
+          args.dataBase64 = await readFileAsBase64(picked);
+        }
+        const resp = await LinStore.extractSignals(args);
         // v7 returns computed CPI/SPI in `computed`; merge them into the
         // signalInputs view so the ledger + model run see them in one place.
         const si = mergeComputed(resp);
