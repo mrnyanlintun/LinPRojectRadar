@@ -256,9 +256,14 @@
       btn.className = "list-item";
       btn.setAttribute("data-id", p.id);
       const state = stateLabel(p);
+      const sum = simSummary(p);
+      const simChip = sum
+        ? `<span class="li-sim state-${sum.worst}" title="Simulation models: ${sum.red} red, ${sum.amber} amber, ${sum.green} green">${sum.flagged}/${sum.total} sim</span>`
+        : "";
       btn.innerHTML =
         `<span class="li-code">${p.id}</span>` +
         `<span class="li-name">${p.name}</span>` +
+        simChip +
         `<span class="li-state state-${statusKey(p)}">${state}</span>`;
       btn.addEventListener("click", () => openDetail(p.id));
       li.appendChild(btn);
@@ -276,6 +281,22 @@
   function statusPill(status) {
     const map = { green: "Green", amber: "Amber", red: "Red" };
     return `<span class="pill pill-${status}">${map[status] || status}</span>`;
+  }
+
+  /* Summarize the five client-side simulation models (PERT/LOB/CCPM/RCF/DSM)
+     for the Portfolio views. Returns null when none have run (graceful
+     fallback — nothing is shown). */
+  function simSummary(p) {
+    const arr = p && p.simulationSignals && Array.isArray(p.simulationSignals.signal_array)
+      ? p.simulationSignals.signal_array : null;
+    if (!arr || !arr.length) return null;
+    let red = 0, amber = 0, green = 0;
+    arr.forEach((s) => {
+      const c = String(s.status_color || "").toLowerCase();
+      if (c === "red") red++; else if (c === "amber") amber++; else green++;
+    });
+    const worst = red ? "red" : amber ? "amber" : "green";
+    return { red, amber, green, total: arr.length, worst, flagged: red + amber };
   }
 
   function awaitingHtml(p, what) {
@@ -347,7 +368,24 @@
           <div class="sig-meta"><span class="sig-method">${r.method}</span></div>
           <div class="sig-detail">${r.detail}</div>
         </div>`).join("") +
+      simLedgerRow(p) +
       `</div>`;
+  }
+
+  /* 6th ledger row — only when the simulation models have run for this project. */
+  function simLedgerRow(p) {
+    const sum = simSummary(p);
+    if (!sum) return "";
+    return `
+        <div class="signal-row">
+          <div class="sig-top">
+            <span class="sig-name">Simulation signals</span>
+            ${statusPill(sum.worst)}
+          </div>
+          <div class="sig-metric">${sum.red} Red · ${sum.amber} Amber · ${sum.green} Green</div>
+          <div class="sig-meta"><span class="sig-method">PERT · LOB · CCPM · RCF · DSM (client-side)</span></div>
+          <div class="sig-detail">Worst status across the five client-side simulation models.</div>
+        </div>`;
   }
 
   /* ---------- decision card ----------

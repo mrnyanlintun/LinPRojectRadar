@@ -57,7 +57,7 @@
            <div class="detail-ingest-form"></div>
          </details>
        </section>
-       <h2 class="detail-mods-h">Five signals — computed for ${esc(p.id)}</h2>
+       <h2 class="detail-mods-h">Signal stack — 10 models — computed for ${esc(p.id)}</h2>
        <div class="detail-modules"></div>
        <section class="panel detail-signals" aria-label="Extracted signals detail"></section>`;
 

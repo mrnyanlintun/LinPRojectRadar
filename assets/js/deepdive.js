@@ -233,8 +233,8 @@
       note(`${REAL} — real Monte Carlo: ${mc.iterations.toLocaleString()} iterations sampled from a signal-derived Beta-PERT; P50/P80 read from the simulated array`) +
       mcReal.svg +
       `<div class="dd-grid">${
-        metricBox("CPI", e.cpi.toFixed(2), cpiS) +
-        metricBox("SPI", e.spi.toFixed(2), spiS) +
+        metricBox("Cost Performance Index (CPI)", e.cpi.toFixed(2), cpiS) +
+        metricBox("Schedule Performance Index (SPI)", e.spi.toFixed(2), spiS) +
         metricBox("P50 EAC", mc.p50.toFixed(1), "green") +
         metricBox("P80 EAC", mc.p80.toFixed(1), p80S) +
         metricBox("P80 Δ vs BAC", `${mc.overrunPctP80 >= 0 ? "+" : ""}${mc.overrunPctP80.toFixed(1)}%`, p80S) +
@@ -260,7 +260,7 @@
     ];
     const cuReal = cusumChartReal(p);
     const r = cuReal.cu;
-    return panel("02", "SPC / CUSUM Anomaly Monitor", st,
+    return panel("02", "Statistical Process Control (SPC) / Cumulative Sum Control Chart (CUSUM) Anomaly Monitor", st,
       note(`${REAL} — real two-sided tabular CUSUM over the ${cu.metric} series (n=${r.x.length}); breach = statistic crossing the decision interval H`) +
       cuReal.svg +
       `<div class="dd-grid">${
@@ -342,7 +342,7 @@
         ? "Fairness gate REQUIRED: contractor response opportunity must be acknowledged before any formal action — recording is blocked until then."
         : "No fairness gate is required for this state/sensitivity combination."
     ];
-    return panel("05", "ABM Governance Layer", st,
+    return panel("05", "Agent-Based Model (ABM) Governance Layer", st,
       note(`${ILLUS} — decision path computed live by decision.js`) +
       abmChart(p, d) +
       `<div class="dd-grid">${
@@ -355,31 +355,225 @@
       rule("GREEN → routine monitoring (PM/Controls); AMBER → early-warning review (PM + Controls lead); RED-REVIEW when ≥2 red signals or CUSUM breach + red forecast (Program director/PMO); fairness-sensitive red-reviews additionally require the contractor fairness gate (deriveDecision in decision.js)."));
   }
 
-  /* ---------- additional client-side simulation signals (items 6–10) ----------
+  /* ---------- additional client-side simulation modules (06–10) ----------
      Renders project.simulationSignals (built by signals.js after the core run)
-     as a compact panel of status + evidence per model. */
-  const SIM_LABELS = {
-    PERT_Network_Criticality:   "PERT — Network Criticality",
-    Line_of_Balance_Velocity:   "LOB — Production Velocity",
-    CCPM_Buffer_Health:         "CCPM — Buffer Health",
-    Reference_Class_Forecasting:"RCF — Cost Prior",
-    DSM_Rework_Propagation:     "DSM — Rework Propagation"
-  };
+     as five full deep-dive modules — chart + metric grid + reasoning + rule —
+     matching Modules 01–05. Each model object comes from LinSimulations. */
+  const SIM_NOTE = "Client-side quantitative model — computed live in the browser from the extracted signal inputs (zero tokens, no backend calls)";
+  const simCls = (s) => String(s || "green").toLowerCase();
+  const simColor = (s) => COLOR[simCls(s)] || COLOR.green;
+  const fByMethod = (arr, m) => arr.find((s) => s.method_class === m);
 
-  function simSignalsPanel(project) {
+  /* Module 06 chart: horizontal bars Baseline / P50 / P80 (days). */
+  function pertChart(s) {
+    const h = 120, pad = 70, top = 22, rowH = 26;
+    const span = W - pad - 90;
+    const maxd = Math.max(s.baseline_days, s.p80_duration_days) * 1.18 || 1;
+    const sx = (v) => (v / maxd) * span;
+    const rows = [
+      ["Baseline", s.baseline_days, "var(--ring-line)"],
+      ["P50", s.p50_duration_days, COLOR.amber],
+      ["P80", s.p80_duration_days, simColor(s.status_color)]
+    ];
+    return svgo(h, "PERT P50/P80 duration vs baseline") +
+      rows.map((r, i) => {
+        const y = top + i * rowH;
+        return `<text x="8" y="${y + 13}" class="mod-axis" fill="var(--text)">${r[0]}</text>` +
+          `<rect x="${pad}" y="${y + 3}" width="${span}" height="13" rx="3" fill="var(--surface-soft)" stroke="var(--ring-line)"></rect>` +
+          `<rect x="${pad}" y="${y + 3}" width="${sx(r[1]).toFixed(1)}" height="13" rx="3" fill="${r[2]}" opacity="0.8"></rect>` +
+          `<text x="${(pad + sx(r[1]) + 6).toFixed(1)}" y="${y + 13}" class="mod-axis" fill="${r[2]}">${r[1]}d</text>`;
+      }).join("") +
+      `<text x="${W - 14}" y="${h - 6}" text-anchor="end" class="mod-axis">activity duration (days) →</text>` + "</svg>";
+  }
+
+  /* Module 07 chart: grading vs paving velocity lines, buffer zone, critical unit. */
+  function lobChart(s) {
+    const h = 120, pad = 40, base = h - 24, top = 14;
+    const units = s.units || 20;
+    const tMax = Math.max(units / s.grading_rate, s.initial_buffer_days + units / s.paving_rate) * 1.1 || 1;
+    const sx = (u) => pad + (u / units) * (W - pad - 20);
+    const sy = (t) => base - (t / tMax) * (base - top);
+    let grade = "", pave = "";
+    for (let u = 0; u <= units; u++) {
+      grade += (u ? " " : "") + sx(u).toFixed(1) + "," + sy(u / s.grading_rate).toFixed(1);
+      pave += (u ? " " : "") + sx(u).toFixed(1) + "," + sy(s.initial_buffer_days + u / s.paving_rate).toFixed(1);
+    }
+    const zone = grade + " " + pave.split(" ").reverse().join(" ");
+    const cu = s.critical_unit_index;
+    const critMark = cu < units
+      ? `<line x1="${sx(cu)}" y1="${top}" x2="${sx(cu)}" y2="${base}" stroke="${COLOR.red}" stroke-width="1.3" stroke-dasharray="4 3"></line>` +
+        `<text x="${sx(cu)}" y="${top + 8}" text-anchor="middle" class="mod-axis" fill="${COLOR.red}">crit unit ${cu}</text>`
+      : "";
+    return svgo(h, "LOB grading vs paving velocity") +
+      `<line x1="${pad}" y1="${base}" x2="${W - 14}" y2="${base}" stroke="var(--ring-line)"></line>` +
+      `<line x1="${pad}" y1="${top}" x2="${pad}" y2="${base}" stroke="var(--ring-line)"></line>` +
+      `<polygon points="${zone}" fill="var(--zone-green)" opacity="0.5"></polygon>` +
+      `<polyline points="${grade}" fill="none" stroke="${COLOR.green}" stroke-width="2"></polyline>` +
+      `<polyline points="${pave}" fill="none" stroke="${simColor(s.status_color)}" stroke-width="2"></polyline>` +
+      critMark +
+      `<text x="${pad + 4}" y="${top + 8}" class="mod-axis" fill="${COLOR.green}">grading</text>` +
+      `<text x="${W - 14}" y="${h - 6}" text-anchor="end" class="mod-axis">production units (0–${units}) →</text>` + "</svg>";
+  }
+
+  /* Module 08 chart: fever bar Green/Amber/Red with the buffer-consumption dot. */
+  function ccpmChart(s) {
+    const h = 120, pad = 40, barY = 50, barH = 22, span = W - pad - 30;
+    const sx = (v) => pad + (clamp01(v) / 100) * span;
+    const a = s.amber_threshold, r = s.red_threshold, bc = s.pct_buffer_consumed;
+    return svgo(h, "CCPM buffer-health fever chart") +
+      `<text x="${W / 2}" y="22" text-anchor="middle" class="mod-axis">chain complete ${s.pct_chain_complete}% · amber ≥ ${a}% · red ≥ ${r}%</text>` +
+      `<rect x="${pad}" y="${barY}" width="${(sx(a) - pad).toFixed(1)}" height="${barH}" fill="var(--zone-green)"></rect>` +
+      `<rect x="${sx(a)}" y="${barY}" width="${(sx(r) - sx(a)).toFixed(1)}" height="${barH}" fill="var(--zone-amber)"></rect>` +
+      `<rect x="${sx(r)}" y="${barY}" width="${(pad + span - sx(r)).toFixed(1)}" height="${barH}" fill="var(--zone-red)"></rect>` +
+      `<rect x="${pad}" y="${barY}" width="${span}" height="${barH}" fill="none" stroke="var(--ring-line)"></rect>` +
+      `<circle cx="${sx(bc)}" cy="${barY + barH / 2}" r="6" fill="${simColor(s.status_color)}" stroke="var(--text)" stroke-width="1"></circle>` +
+      `<text x="${sx(bc)}" y="${barY - 8}" text-anchor="middle" class="mod-axis" fill="${simColor(s.status_color)}">${bc}% consumed</text>` +
+      `<text x="${pad}" y="${barY + barH + 15}" class="mod-axis">0%</text>` +
+      `<text x="${pad + span}" y="${barY + barH + 15}" text-anchor="end" class="mod-axis">100% buffer consumed</text>` + "</svg>";
+  }
+
+  /* Module 09 chart: multiplier histogram with P50/P80 markers. */
+  function rcfChart(s) {
+    const h = 120, pad = 30, base = h - 26, top = 20;
+    const mult = s.multipliers && s.multipliers.length ? s.multipliers : [1.0];
+    const lo = 1.0, hi = Math.max.apply(null, mult) * 1.04;
+    const sx = (v) => pad + ((v - lo) / (hi - lo)) * (W - pad - 24);
+    const barW = 11;
+    const bars = mult.map((v) => `<rect x="${(sx(v) - barW / 2).toFixed(1)}" y="${top}" width="${barW}" height="${base - top}" rx="2" fill="var(--phosphor)" opacity="0.4"></rect>`).join("");
+    const mk = (v, lab, col) => `<line x1="${sx(v)}" y1="${top - 5}" x2="${sx(v)}" y2="${base}" stroke="${col}" stroke-width="1.6" stroke-dasharray="5 3"></line>` +
+      `<text x="${sx(v)}" y="${top - 7}" text-anchor="middle" class="mod-axis" fill="${col}">${lab}</text>`;
+    return svgo(h, "RCF overrun-multiplier distribution") +
+      `<line x1="${pad}" y1="${base}" x2="${W - 14}" y2="${base}" stroke="var(--ring-line)"></line>` +
+      bars +
+      mk(s.p50_multiplier, "P50 ×" + s.p50_multiplier, COLOR.amber) +
+      mk(s.p80_multiplier, "P80 ×" + s.p80_multiplier, simColor(s.status_color)) +
+      `<text x="${W - 14}" y="${h - 6}" text-anchor="end" class="mod-axis">historical overrun multiplier →</text>` + "</svg>";
+  }
+
+  /* Module 10 chart: 3×3 dependency-matrix heatmap (intensity = weight). */
+  function dsmChart(s) {
+    const h = 120, cell = 30, x0 = 150, y0 = 22;
+    const M = s.matrix || [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    const labels = ["Arch", "Struct", "MEP"];
+    let cells = "";
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+      const w = M[i][j];
+      const op = w > 0 ? (0.14 + 0.82 * w).toFixed(2) : "0.06";
+      cells += `<rect x="${x0 + j * cell}" y="${y0 + i * cell}" width="${cell - 2}" height="${cell - 2}" rx="3" fill="var(--phosphor)" opacity="${op}"></rect>` +
+        `<text x="${x0 + j * cell + (cell - 2) / 2}" y="${y0 + i * cell + (cell - 2) / 2 + 4}" text-anchor="middle" class="mod-axis" fill="var(--text)">${w > 0 ? w.toFixed(2) : "·"}</text>`;
+    }
+    const rowLabs = labels.map((l, i) => `<text x="${x0 - 6}" y="${y0 + i * cell + (cell - 2) / 2 + 4}" text-anchor="end" class="mod-axis">${l}</text>`).join("");
+    const colLabs = labels.map((l, j) => `<text x="${x0 + j * cell + (cell - 2) / 2}" y="${y0 - 6}" text-anchor="middle" class="mod-axis">${l}</text>`).join("");
+    return svgo(h, "DSM dependency-weight heatmap") +
+      cells + rowLabs + colLabs +
+      `<text x="${x0 + 3 * cell + 18}" y="${y0 + 16}" class="mod-axis">change in column</text>` +
+      `<text x="${x0 + 3 * cell + 18}" y="${y0 + 32}" class="mod-axis">propagates to row</text>` +
+      `<text x="14" y="${y0 + 3 * cell + 14}" class="mod-axis">rework ×${s.rework_multiplier}</text>` + "</svg>";
+  }
+  const clamp01 = (v) => Math.max(0, Math.min(100, Number(v) || 0));
+  const moneyShort = (v) => "$" + Math.round(Number(v) || 0).toLocaleString();
+
+  function m06(s) {
+    const st = simCls(s.status_color);
+    return panel("06", "PERT — Network Criticality", st,
+      note(`Program Evaluation & Review Technique (PERT). ${SIM_NOTE} — triangular Monte Carlo over a 3-activity network.`) +
+      pertChart(s) +
+      `<div class="dd-grid">${
+        metricBox("P50 Duration", s.p50_duration_days + "d", "green") +
+        metricBox("P80 Duration", s.p80_duration_days + "d", st) +
+        metricBox("Path Criticality Index", s.path_criticality_index.toFixed(2), st) +
+        metricBox("Status", st.toUpperCase(), st)
+      }</div>` +
+      reasons([
+        `The P80 network duration is ${s.p80_duration_days} days against a ${s.baseline_days}-day deterministic baseline; the gap is the schedule risk the stochastic network exposes.`,
+        `The dominant (structural) path is critical in ${Math.round(s.path_criticality_index * 100)}% of simulated runs — that is where float is thinnest.`
+      ], st) +
+      rule("GREEN if P80 ≤ +15% of baseline; AMBER if +15–30%; RED if > +30%. Lower SPI widens the pessimistic activity bound."));
+  }
+
+  function m07(s) {
+    const st = simCls(s.status_color);
+    return panel("07", "LOB — Production Velocity", st,
+      note(`Line of Balance (LOB). ${SIM_NOTE} — leader (grading) vs follower (paving) crew velocity.`) +
+      lobChart(s) +
+      `<div class="dd-grid">${
+        metricBox("Min Buffer (days)", s.minimum_buffer_days.toFixed(1), st) +
+        metricBox("Critical Unit", String(s.critical_unit_index), st) +
+        metricBox("Grading Rate", s.grading_rate + "/d", "green") +
+        metricBox("Paving Rate", s.paving_rate + "/d", st)
+      }</div>` +
+      reasons([
+        `The follower (paving ${s.paving_rate} units/day) trails the leader (grading ${s.grading_rate} units/day); the crew-to-crew schedule buffer falls to ${s.minimum_buffer_days.toFixed(1)} days.`,
+        `Lower SPI slows the follower, eroding the buffer sooner — the marked critical unit is where collision risk peaks.`
+      ], st) +
+      rule("GREEN if minimum crew buffer > 3.0 days; AMBER if ≤ 3.0; RED if ≤ 1.5."));
+  }
+
+  function m08(s) {
+    const st = simCls(s.status_color);
+    return panel("08", "CCPM — Buffer Health", st,
+      note(`Critical Chain Project Management (CCPM). ${SIM_NOTE} — buffer-burn fever chart vs chain completion.`) +
+      ccpmChart(s) +
+      `<div class="dd-grid">${
+        metricBox("Chain Complete %", s.pct_chain_complete + "%", "green") +
+        metricBox("Buffer Consumed %", s.pct_buffer_consumed + "%", st) +
+        metricBox("Zone", String(s.zone).toUpperCase(), st) +
+        metricBox("Status", st.toUpperCase(), st)
+      }</div>` +
+      reasons([
+        `Buffer is ${s.pct_buffer_consumed}% consumed at ${s.pct_chain_complete}% chain completion — the fever-chart dot sits in the ${String(s.zone).toUpperCase()} zone.`,
+        `Amber when buffer-burn ≥ chain completion; red when it crosses completion + (100 − completion)/3.`
+      ], st) +
+      rule("GREEN below the amber line; AMBER when buffer consumed ≥ chain complete %; RED beyond the upper fever band."));
+  }
+
+  function m09(s) {
+    const st = simCls(s.status_color);
+    return panel("09", "RCF — Cost Prior", st,
+      note(`Reference Class Forecasting (RCF). ${SIM_NOTE} — empirical airport-infrastructure overrun multipliers.`) +
+      rcfChart(s) +
+      `<div class="dd-grid">${
+        metricBox("P50 Adjusted", moneyShort(s.rcf_p50_adjusted), "green") +
+        metricBox("P80 Adjusted", moneyShort(s.rcf_p80_adjusted), st) +
+        metricBox("Debiasing Factor", "×" + s.debiasing_factor.toFixed(2), st) +
+        metricBox("vs BAC %", (s.vs_bac_pct >= 0 ? "+" : "") + s.vs_bac_pct.toFixed(1) + "%", st)
+      }</div>` +
+      reasons([
+        `The outside-view reference class puts the P80 cost prior at ${moneyShort(s.rcf_p80_adjusted)} — ${(s.vs_bac_pct >= 0 ? "+" : "") + s.vs_bac_pct.toFixed(1)}% over the Budget at Completion (BAC).`,
+        `The debiasing factor ×${s.debiasing_factor.toFixed(2)} is the empirical correction applied to the inside-view estimate.`
+      ], st) +
+      rule("GREEN if P80 prior ≤ +10% of BAC; AMBER if +10–25%; RED if > +25%."));
+  }
+
+  function m10(s) {
+    const st = simCls(s.status_color);
+    return panel("10", "DSM — Rework Propagation", st,
+      note(`Design Structure Matrix (DSM). ${SIM_NOTE} — architectural change propagated across Arch/Structural/MEP over 4 passes.`) +
+      dsmChart(s) +
+      `<div class="dd-grid">${
+        metricBox("Rework Multiplier", "×" + s.rework_multiplier.toFixed(2), st) +
+        metricBox("Arch Impact", s.arch_impact.toFixed(2), "green") +
+        metricBox("Structural Impact", s.structural_impact.toFixed(2), st) +
+        metricBox("MEP Impact", s.mep_impact.toFixed(2), st)
+      }</div>` +
+      reasons([
+        `A unit architectural scope change propagates to ×${s.rework_multiplier.toFixed(2)} cumulative rework across the three disciplines after four DSM passes.`,
+        `Structural (${s.structural_impact.toFixed(2)}) and MEP (${s.mep_impact.toFixed(2)}) absorb the downstream burden the dependency matrix transmits.`
+      ], st) +
+      rule("GREEN if total rework multiplier ≤ 2.5; AMBER if > 2.5. Off-diagonal weights are the inter-discipline coupling strengths."));
+  }
+
+  function simModules(project) {
     const payload = project.simulationSignals;
     const arr = payload && Array.isArray(payload.signal_array) ? payload.signal_array : null;
     if (!arr || !arr.length) return "";
-    const rows = arr.map((s) => {
-      const label = SIM_LABELS[s.method_class] || s.method_class || "Simulation";
-      return metricBox(label, s.evidence_metric || "—", s.status_color || "green");
-    }).join("");
-    return `<section class="panel dd-panel dd-sim-panel" aria-label="Additional simulation signals">
-      <div class="dd-head"><b>Additional simulation signals</b>
-        <span class="dd-verdict status-green"><i></i>${esc(arr.length)} MODELS · CLIENT-SIDE</span></div>
-      ${note(`${ILLUS} — five extra models (PERT / LOB / CCPM / RCF / DSM) computed live in the browser from the extracted signal inputs (zero tokens, zero backend calls).`)}
-      <div class="dd-grid">${rows}</div>
-    </section>`;
+    const pert = fByMethod(arr, "PERT_Network_Criticality");
+    const lob = fByMethod(arr, "Line_of_Balance_Velocity");
+    const ccpm = fByMethod(arr, "CCPM_Buffer_Health");
+    const rcf = fByMethod(arr, "Reference_Class_Forecasting");
+    const dsm = fByMethod(arr, "DSM_Rework_Propagation");
+    return (pert ? m06(pert) : "") + (lob ? m07(lob) : "") + (ccpm ? m08(ccpm) : "") +
+      (rcf ? m09(rcf) : "") + (dsm ? m10(dsm) : "");
   }
 
   /* ---------- entry point ---------- */
@@ -397,7 +591,7 @@
     root.innerHTML =
       `<p class="mod-banner">Modules 01 (Monte Carlo) and 02 (CUSUM) are <strong>real client-side computations</strong> on this project's synthetic inputs (demonstration models, not calibrated forecasts). Modules 03–05 are transparent rule/decision logic.</p>` +
       m01(project) + m02(project) + m03(project) + m04(project) + m05(project) +
-      simSignalsPanel(project);
+      simModules(project);
   }
 
   window.LinDeepDive = { render };
