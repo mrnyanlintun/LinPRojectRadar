@@ -482,7 +482,7 @@
         metricBox("P50 Duration", s.p50_duration_days + "d", "green") +
         metricBox("P80 Duration", s.p80_duration_days + "d", st) +
         metricBox("Path Criticality Index", s.path_criticality_index.toFixed(2), st) +
-        metricBox("Status", st.toUpperCase(), st)
+        metricBox("Baseline", s.baseline_days + "d", "green")
       }</div>` +
       reasons([
         `The P80 network duration is ${s.p80_duration_days} days against a ${s.baseline_days}-day deterministic baseline; the gap is the schedule risk the stochastic network exposes.`,

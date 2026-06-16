@@ -235,9 +235,14 @@
       return j.results || j.files || [];
     } catch (e) { lastError = e; throw e; }
   }
-  async function ingestCorpus({ id, name, docType, mimeType, dataBase64 }) {
+  async function ingestCorpus({ id, name, docType, mimeType, dataBase64, masterFormatSections }) {
     if (!configured()) throw new Error("Project store not configured (LIN_API_URL).");
-    const j = await apiPost({ action: "ingestcorpus", id, name, docType, mimeType, dataBase64 });
+    const body = { action: "ingestcorpus", id, name, docType, mimeType, dataBase64 };
+    // MasterFormat sections detected client-side (PDF.js). The backend can
+    // persist these into the corpus metadata / requirements_db.json — see
+    // BACKEND_CHANGES_NEEDED.md. Harmless if the current backend ignores them.
+    if (masterFormatSections && masterFormatSections.length) body.masterFormatSections = masterFormatSections;
+    const j = await apiPost(body);
     return j.file || j.corpus || j;
   }
   async function runAudit({ id, reviewType, submissionName, submissionMime, submissionBase64, corpusIds }) {
