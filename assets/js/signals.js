@@ -260,6 +260,125 @@
       </div>`;
   }
 
+  /* ---------- loading overlay (cycling messages, CSS-only spinner) ---------- */
+  const LOADING_MSGS = [
+    "Reading document…",
+    "Extracting EVM figures…",
+    "Computing CPI / SPI…",
+    "Updating signal ledger…",
+  ];
+  function startLoadingOverlay(container) {
+    if (!container) return function () {};
+    container.classList.add("ds-loading-host");
+    const ov = document.createElement("div");
+    ov.className = "ds-overlay";
+    ov.innerHTML =
+      `<div class="ds-overlay-box">
+         <div class="ds-spin" aria-hidden="true"></div>
+         <p class="ds-overlay-title">Extracting signals…</p>
+         <p class="ds-overlay-msg" aria-live="polite">${esc(LOADING_MSGS[0])}</p>
+       </div>`;
+    container.appendChild(ov);
+    const msgEl = ov.querySelector(".ds-overlay-msg");
+    let i = 0;
+    const timer = setInterval(() => {
+      i = (i + 1) % LOADING_MSGS.length;
+      if (msgEl) msgEl.textContent = LOADING_MSGS[i];
+    }, 2000);
+    let stopped = false;
+    return function stop() {
+      if (stopped) return;
+      stopped = true;
+      clearInterval(timer);
+      ov.remove();
+      container.classList.remove("ds-loading-host");
+    };
+  }
+
+  /* ---------- result modal (success / error, CSS draw animations) ---------- */
+  const MODAL_FIELD_LABELS = {
+    bac: "Budget at Completion (BAC)", ev: "Earned Value (EV)", ac: "Actual Cost (AC)",
+    pv: "Planned Value (PV)", actualPctComplete: "Actual % complete",
+    plannedPctComplete: "Planned % complete", docRiskScore: "Document-risk score",
+    cpi: "Cost Performance Index (CPI)", spi: "Schedule Performance Index (SPI)",
+  };
+  const MONEY_FIELDS = { bac: 1, ev: 1, ac: 1, pv: 1 };
+  function modalValue(key, v) {
+    const n = fmtNum(v);
+    if (n == null) return null;
+    return MONEY_FIELDS[key] ? "$" + n : n;
+  }
+  function showResultModal(opts) {
+    const prev = document.querySelector(".ds-modal-backdrop");
+    if (prev) prev.remove();
+    const back = document.createElement("div");
+    back.className = "ds-modal-backdrop";
+    let inner;
+
+    if (opts.success) {
+      const si = opts.si || {};
+      const fieldRows = ["bac", "ev", "ac", "pv", "actualPctComplete", "plannedPctComplete", "docRiskScore"]
+        .map((k) => {
+          const val = modalValue(k, si[k]);
+          if (val == null) return "";
+          const src = sourceDocType(si, k);
+          return `<li class="ds-modal-field"><span class="ds-mf-label">${esc(MODAL_FIELD_LABELS[k])}</span>` +
+            `<span class="ds-mf-val">${esc(val)}</span>` +
+            (src ? `<span class="ds-mf-src">from ${esc(DOC_TYPE_LABEL[src] || src)}</span>` : "") + `</li>`;
+        }).join("");
+      const compRows = ["cpi", "spi"].map((k) => {
+        const val = fmtNum(si[k]);
+        if (val == null) return "";
+        return `<li class="ds-modal-field"><span class="ds-mf-label">${esc(MODAL_FIELD_LABELS[k])}</span>` +
+          `<span class="ds-mf-val">${esc(val)}</span><span class="ds-mf-src">computed</span></li>`;
+      }).join("");
+      const d = opts.dates || {};
+      const periods = [];
+      if (d.baselineStart || d.baselineEnd) periods.push(`Baseline: ${esc(d.baselineStart || "?")} → ${esc(d.baselineEnd || "?")}`);
+      if (d.workPeriodFrom || d.workPeriodTo) periods.push(`Work period: ${esc(d.workPeriodFrom || "?")} → ${esc(d.workPeriodTo || "?")}`);
+      const missingNames = (opts.missing || [])
+        .map((m) => (typeof m === "string" ? m : (m.field || m.label || ""))).filter(Boolean);
+      const runLine = opts.ran
+        ? `<p class="ds-modal-run ok">✓ All models complete — view results below.</p>`
+        : (opts.readyToRun ? `<p class="ds-modal-run">Models could not run — check CPI / SPI.</p>` : "");
+      inner = `<div class="ds-modal ds-modal-success" role="dialog" aria-label="Signals extracted">
+        <button class="ds-modal-x" aria-label="Close">×</button>
+        <svg class="ds-anim-check" viewBox="0 0 52 52" aria-hidden="true">
+          <circle class="ds-anim-ring" cx="26" cy="26" r="24" fill="none"/>
+          <path class="ds-anim-stroke" fill="none" d="M14 27l8 8 16-16"/></svg>
+        <h3 class="ds-modal-title">Signals extracted</h3>
+        ${(fieldRows || compRows)
+          ? `<ul class="ds-modal-fields">${fieldRows}${compRows}</ul>`
+          : `<p class="kn-sub">No EVM figures were found in this document.</p>`}
+        ${periods.length ? `<div class="ds-modal-periods">${periods.map((p) => `<p>${p}</p>`).join("")}</div>` : ""}
+        ${missingNames.length ? `<p class="ds-modal-missing">Still needed: ${esc(missingNames.join(", "))}</p>` : ""}
+        ${runLine}
+      </div>`;
+    } else {
+      inner = `<div class="ds-modal ds-modal-error" role="alertdialog" aria-label="Extraction failed">
+        <button class="ds-modal-x" aria-label="Close">×</button>
+        <svg class="ds-anim-x" viewBox="0 0 52 52" aria-hidden="true">
+          <circle class="ds-anim-ring" cx="26" cy="26" r="24" fill="none"/>
+          <path class="ds-anim-stroke" fill="none" d="M18 18l16 16"/>
+          <path class="ds-anim-stroke ds-anim-stroke-2" fill="none" d="M34 18l-16 16"/></svg>
+        <h3 class="ds-modal-title">Extraction failed</h3>
+        <p class="ds-modal-err">${esc(opts.error || "Unknown error")}</p>
+        <div class="dc-actions"><button class="btn primary ds-modal-retry">Try again</button></div>
+      </div>`;
+    }
+
+    back.innerHTML = inner;
+    document.body.appendChild(back);
+    let timer = null;
+    const close = () => { if (timer) clearTimeout(timer); back.remove(); };
+    back.querySelector(".ds-modal-x").addEventListener("click", close);
+    back.addEventListener("click", (e) => { if (e.target === back) close(); });
+    const retry = back.querySelector(".ds-modal-retry");
+    if (retry) retry.addEventListener("click", () => { close(); if (opts.onTryAgain) opts.onTryAgain(); });
+    if (opts.success) timer = setTimeout(close, 8000); // auto-dismiss success after 8s
+    return close;
+  }
+
   function wireIngestForm(container, onResult) {
     const $c = (sel) => container.querySelector(sel);
     let picked = null;
@@ -279,7 +398,9 @@
 
       const btn = $c(".ds-run");
       btn.disabled = true;
+      btn.classList.add("ds-loading");
       status.textContent = "Scanning document with AI… this can take a few seconds.";
+      const stopLoading = startLoadingOverlay(container);
       try {
         // PDFs → extract text client-side (PDF.js) and send as `text`.
         // If PDF.js returns little/no text (scanned or image-only PDF), fall
@@ -327,10 +448,17 @@
               : "Extracted. Upload a document with CPI or SPI to run the models (see Details below).");
         if (window.LinApp) LinApp.refresh();
         if (onResult) onResult(id, { signalInputs: si, missing, readyToRun, ran });
+        stopLoading();
+        showResultModal({ success: true, si, missing, dates, readyToRun, ran });
       } catch (e) {
-        status.textContent = "Extraction failed: " + (e && e.message ? e.message : "store unreachable") + ". The form is still usable — retry.";
+        const msg = (e && e.message ? e.message : "store unreachable");
+        status.textContent = "Extraction failed: " + msg + ". The form is still usable — retry.";
+        stopLoading();
+        showResultModal({ success: false, error: msg, onTryAgain: () => { const f = $c(".ds-file"); if (f) f.focus(); } });
       } finally {
+        stopLoading();
         btn.disabled = false;
+        btn.classList.remove("ds-loading");
       }
     });
   }
