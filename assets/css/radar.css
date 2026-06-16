@@ -1021,3 +1021,22 @@ body.nav-open .nav-rail { transform: translateX(0); }
   .ds-anim-ring, .ds-anim-stroke { animation: none; stroke-dashoffset: 0; }
   .ds-modal, .ds-modal-backdrop { animation: none; }
 }
+
+/* ---------- Knowledge page: static glossary list (replaces chip word-cloud) ---------- */
+.kn-glossary { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
+.kn-gl-item {
+  padding: 10px 12px; border: 1px solid var(--line);
+  border-radius: var(--radius-sm); background: var(--surface-soft);
+}
+.kn-gl-term { margin: 0 0 4px; font-size: 14px; color: var(--text); }
+.kn-gl-def { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.kn-gl-thresholds {
+  list-style: none; margin: 8px 0 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.kn-gl-threshold {
+  font-family: var(--font-mono); font-size: 11.5px; line-height: 1.4;
+  padding: 2px 9px; border-radius: 999px;
+  color: var(--kn-th); border: 1px solid var(--kn-th);
+  background: color-mix(in srgb, var(--kn-th) 12%, transparent);
+}
