@@ -901,6 +901,8 @@
     if (!root) return;
     let selectedId = (LIBRARY[0] && LIBRARY[0].id) || "pceif";
 
+    function isMobile() { return window.innerWidth <= 640; }
+
     function navHtml() {
       return LIBRARY.map((t) =>
         `<li><button class="kn-nav-btn${t.id === selectedId ? " active" : ""}" data-topic="${esc(t.id)}">${esc(t.title)}</button></li>`
@@ -915,16 +917,34 @@
       </article>`;
     }
     function paint() {
+      const selectedTopic = LIBRARY.find((x) => x.id === selectedId) || LIBRARY[0];
       root.innerHTML =
         `<div class="kn-lib">
            <aside class="panel kn-nav">
-             <p class="eyebrow">Knowledge Library</p>
-             <ol class="kn-nav-list">${navHtml()}</ol>
+             <button class="kn-nav-toggle" aria-expanded="false" aria-controls="kn-nav-list">
+               <span>Topics: ${esc(selectedTopic.title)}</span>
+               <span class="kn-nav-toggle-arrow">▾</span>
+             </button>
+             <ol class="kn-nav-list" id="kn-nav-list">${navHtml()}</ol>
            </aside>
            <section class="panel kn-content">${contentHtml()}</section>
          </div>`;
+
+      const toggle = root.querySelector(".kn-nav-toggle");
+      const list = root.querySelector(".kn-nav-list");
+
+      toggle.addEventListener("click", () => {
+        const open = list.classList.toggle("kn-nav-open");
+        toggle.setAttribute("aria-expanded", String(open));
+      });
+
       root.querySelectorAll(".kn-nav-btn").forEach((b) => b.addEventListener("click", () => {
         selectedId = b.dataset.topic;
+        // On mobile, collapse the nav after selection
+        if (isMobile()) {
+          list.classList.remove("kn-nav-open");
+          toggle.setAttribute("aria-expanded", "false");
+        }
         paint();
         const article = root.querySelector(".kn-article");
         if (article) article.scrollIntoView({ behavior: "smooth", block: "start" });
