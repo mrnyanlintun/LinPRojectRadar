@@ -301,19 +301,278 @@
   }
 
   /* ===========================================================
-     runAll — accepts a project OR a signalInputs object and an
-     optional existingSignals map (for DST evidence combination).
-     Returns the array of all six simulation signal objects.
+     Module 12 — Rough Set Theory
+     Classifies the project into definite, borderline, or
+     indeterminate zones based on signal voting across states.
+     Lower approximation: states all signals definitively support.
+     Upper approximation: states any signal supports.
+     Boundary = upper - lower = indeterminate zone.
+     =========================================================== */
+  function runRoughSets(existingSignals) {
+    var states = ["Green", "Amber", "Red"];
+    var signalClasses = [];
+
+    var cpi = existingSignals.evm ? existingSignals.evm.cpi : null;
+    var spi = existingSignals.evm ? existingSignals.evm.spi : null;
+    if (cpi && spi) {
+      var evmMin = Math.min(cpi, spi);
+      if (evmMin >= 0.95) signalClasses.push("Green");
+      else if (evmMin >= 0.90) signalClasses.push("Amber");
+      else signalClasses.push("Red");
+    }
+
+    var mc = existingSignals.mc;
+    if (mc) {
+      var p80 = mc.p80DeltaPct || 0;
+      if (p80 <= 5) signalClasses.push("Green");
+      else if (p80 <= 10) signalClasses.push("Amber");
+      else signalClasses.push("Red");
+    }
+
+    var cusum = existingSignals.cusum;
+    if (cusum) {
+      signalClasses.push(cusum.breached ? "Red" : "Green");
+    }
+
+    var doc = existingSignals.doc;
+    if (doc) {
+      var docScore = doc.score || 0;
+      if (docScore < 0.30) signalClasses.push("Green");
+      else if (docScore < 0.70) signalClasses.push("Amber");
+      else signalClasses.push("Red");
+    }
+
+    var counts = { Green: 0, Amber: 0, Red: 0 };
+    signalClasses.forEach(function (s) { counts[s]++; });
+    var total = signalClasses.length || 1;
+
+    var lower = [], upper = [];
+    states.forEach(function (s) {
+      if (counts[s] / total > 0.75) lower.push(s);
+      if (counts[s] > 0) upper.push(s);
+    });
+    var boundary = upper.filter(function (s) { return lower.indexOf(s) === -1; });
+
+    var classification, statusColor;
+    if (lower.length === 1) {
+      classification = "Definite " + lower[0];
+      statusColor = lower[0];
+    } else if (boundary.length > 0) {
+      classification = "Borderline: " + boundary.join(" / ");
+      statusColor = boundary.indexOf("Red") >= 0 ? "Red" : "Amber";
+    } else {
+      classification = "Indeterminate";
+      statusColor = "Amber";
+    }
+
+    return {
+      method_class: "Rough_Sets_Classification",
+      status_color: statusColor,
+      lower_approximation: lower,
+      upper_approximation: upper,
+      boundary_region: boundary,
+      classification: classification,
+      signal_votes: counts,
+      total_signals: total,
+      evidence_metric: classification + " (Green " + counts.Green + ", Amber " + counts.Amber +
+        ", Red " + counts.Red + " of " + total + " signals)"
+    };
+  }
+
+  /* ===========================================================
+     Module 13 — Neutrosophic Logic
+     Truth (T), Indeterminacy (I), Falsity (F) per signal source.
+     T + I + F need not sum to 1 — genuine uncertainty is a
+     separate dimension, not residual of T and F.
+     =========================================================== */
+  function runNeutrosophic(existingSignals) {
+    var components = [];
+
+    var cpi = existingSignals.evm ? existingSignals.evm.cpi : null;
+    var spi = existingSignals.evm ? existingSignals.evm.spi : null;
+    if (cpi && spi) {
+      var evmMin = Math.min(cpi, spi);
+      if (evmMin >= 0.95) components.push({ T: 0.85, I: 0.10, F: 0.05, source: "EVM", state: "Green" });
+      else if (evmMin >= 0.90) components.push({ T: 0.70, I: 0.20, F: 0.10, source: "EVM", state: "Amber" });
+      else components.push({ T: 0.75, I: 0.15, F: 0.10, source: "EVM", state: "Red" });
+    }
+
+    var mc = existingSignals.mc;
+    if (mc) {
+      var p80 = mc.p80DeltaPct || 0;
+      if (p80 <= 5) components.push({ T: 0.80, I: 0.10, F: 0.10, source: "Forecast", state: "Green" });
+      else if (p80 <= 10) components.push({ T: 0.65, I: 0.25, F: 0.10, source: "Forecast", state: "Amber" });
+      else components.push({ T: 0.75, I: 0.15, F: 0.10, source: "Forecast", state: "Red" });
+    }
+
+    var cusum = existingSignals.cusum;
+    if (cusum) {
+      if (cusum.breached) components.push({ T: 0.90, I: 0.05, F: 0.05, source: "CUSUM", state: "Red" });
+      else components.push({ T: 0.80, I: 0.10, F: 0.10, source: "CUSUM", state: "Green" });
+    }
+
+    var doc = existingSignals.doc;
+    if (doc) {
+      var score = doc.score || 0;
+      if (score < 0.30) components.push({ T: 0.85, I: 0.10, F: 0.05, source: "DocRisk", state: "Green" });
+      else if (score < 0.70) components.push({ T: 0.65, I: 0.25, F: 0.10, source: "DocRisk", state: "Amber" });
+      else components.push({ T: 0.75, I: 0.15, F: 0.10, source: "DocRisk", state: "Red" });
+    }
+
+    if (!components.length) {
+      return {
+        method_class: "Neutrosophic_Logic", status_color: "Amber",
+        T: 0, I: 1, F: 0, indeterminacy_level: "High",
+        signal_components: [],
+        evidence_metric: "Insufficient signal data"
+      };
+    }
+
+    var T = components.reduce(function (a, b) { return 1 - (1 - a) * (1 - b.T); }, 0);
+    var I = components.reduce(function (a, b) { return a * b.I; }, 1);
+    var F = components.reduce(function (a, b) { return a * b.F; }, 1);
+    var sum = T + I + F || 1;
+    T = Math.round(T / sum * 100) / 100;
+    I = Math.round(I / sum * 100) / 100;
+    F = Math.round(F / sum * 100) / 100;
+
+    var redCount   = components.filter(function (c) { return c.state === "Red";   }).length;
+    var amberCount = components.filter(function (c) { return c.state === "Amber"; }).length;
+    var statusColor = redCount >= 2 ? "Red" : amberCount >= 2 ? "Amber" : "Green";
+    if (I > 0.30) statusColor = statusColor === "Green" ? "Amber" : statusColor;
+
+    return {
+      method_class: "Neutrosophic_Logic",
+      status_color: statusColor,
+      T: T, I: I, F: F,
+      indeterminacy_level: I > 0.30 ? "High" : I > 0.15 ? "Moderate" : "Low",
+      signal_components: components,
+      evidence_metric: "T=" + T + " I=" + I + " F=" + F +
+        " — Indeterminacy: " + (I > 0.30 ? "High" : I > 0.15 ? "Moderate" : "Low")
+    };
+  }
+
+  /* ===========================================================
+     Module 14 — Interval-valued Fuzzy Sets
+     Membership is a range [lower, upper] reflecting measurement
+     uncertainty in EVM inputs (SoV accuracy ±2%, pay-app ±1%).
+     =========================================================== */
+  function runIntervalFuzzy(existingSignals) {
+    var EV_UNCERTAINTY  = 0.02;
+    var AC_UNCERTAINTY  = 0.01;
+
+    function membershipAmber(val) {
+      if (val <= 0.85 || val >= 0.98) return 0;
+      if (val <= 0.92) return (val - 0.85) / (0.92 - 0.85);
+      return (0.98 - val) / (0.98 - 0.92);
+    }
+    function membershipRed(val) {
+      if (val >= 0.92) return 0;
+      if (val <= 0.85) return 1;
+      return (0.92 - val) / (0.92 - 0.85);
+    }
+    function membershipGreen(val) {
+      if (val <= 0.92) return 0;
+      if (val >= 0.97) return 1;
+      return (val - 0.92) / (0.97 - 0.92);
+    }
+
+    var intervals = [];
+    var cpi = existingSignals.evm ? existingSignals.evm.cpi : null;
+    if (cpi) {
+      var cpiLow = cpi - EV_UNCERTAINTY - AC_UNCERTAINTY;
+      var cpiHigh = cpi + EV_UNCERTAINTY + AC_UNCERTAINTY;
+      intervals.push({
+        source: "CPI", value: cpi, range: [cpiLow, cpiHigh],
+        green: [membershipGreen(cpiLow), membershipGreen(cpiHigh)],
+        amber: [membershipAmber(cpiLow), membershipAmber(cpiHigh)],
+        red:   [membershipRed(cpiLow),   membershipRed(cpiHigh)]
+      });
+    }
+
+    var spi = existingSignals.evm ? existingSignals.evm.spi : null;
+    if (spi) {
+      var spiLow = spi - EV_UNCERTAINTY;
+      var spiHigh = spi + EV_UNCERTAINTY;
+      intervals.push({
+        source: "SPI", value: spi, range: [spiLow, spiHigh],
+        green: [membershipGreen(spiLow), membershipGreen(spiHigh)],
+        amber: [membershipAmber(spiLow), membershipAmber(spiHigh)],
+        red:   [membershipRed(spiLow),   membershipRed(spiHigh)]
+      });
+    }
+
+    if (!intervals.length) {
+      return {
+        method_class: "Interval_Fuzzy_Sets", status_color: "Amber",
+        green_interval: [0, 0], amber_interval: [0, 0], red_interval: [0, 0],
+        uncertainty_width: 0, uncertainty_level: "Low",
+        evidence_metric: "Insufficient signal data"
+      };
+    }
+
+    var aggGreen = [
+      intervals.reduce(function (a, b) { return Math.max(a, b.green[0]); }, 0),
+      intervals.reduce(function (a, b) { return Math.max(a, b.green[1]); }, 0)
+    ];
+    var aggAmber = [
+      intervals.reduce(function (a, b) { return Math.max(a, b.amber[0]); }, 0),
+      intervals.reduce(function (a, b) { return Math.max(a, b.amber[1]); }, 0)
+    ];
+    var aggRed = [
+      intervals.reduce(function (a, b) { return Math.max(a, b.red[0]); }, 0),
+      intervals.reduce(function (a, b) { return Math.max(a, b.red[1]); }, 0)
+    ];
+
+    var greenMid = (aggGreen[0] + aggGreen[1]) / 2;
+    var amberMid = (aggAmber[0] + aggAmber[1]) / 2;
+    var redMid   = (aggRed[0]   + aggRed[1])   / 2;
+    var statusColor = redMid >= amberMid && redMid >= greenMid ? "Red"
+                    : amberMid >= greenMid ? "Amber" : "Green";
+
+    var uncertaintyWidth = Math.round(
+      ((aggRed[1] - aggRed[0]) + (aggAmber[1] - aggAmber[0])) * 100) / 100;
+
+    return {
+      method_class: "Interval_Fuzzy_Sets",
+      status_color: statusColor,
+      green_interval: aggGreen,
+      amber_interval: aggAmber,
+      red_interval:   aggRed,
+      uncertainty_width: uncertaintyWidth,
+      uncertainty_level: uncertaintyWidth > 0.3 ? "High" : uncertaintyWidth > 0.15 ? "Moderate" : "Low",
+      evidence_metric: "Green [" + aggGreen.map(function (v) { return Math.round(v * 100) / 100; }).join(", ") +
+        "] Amber [" + aggAmber.map(function (v) { return Math.round(v * 100) / 100; }).join(", ") +
+        "] Red [" + aggRed.map(function (v) { return Math.round(v * 100) / 100; }).join(", ") + "]"
+    };
+  }
+
+  /* ===========================================================
+     runAll — Modules 04-08 (signalInputs-based) + 12-14
+     (existingSignals-based). DST (Module 11) runs separately in
+     signals.js after the core signal package is assembled, so it
+     can access project.signals directly and its result is appended
+     to the signal_array outside this function.
      =========================================================== */
   function runAll(input, existingSignals) {
     var si = (input && input.signalInputs) ? input.signalInputs : (input || {});
     var es = existingSignals || {};
-    return [runPERT(si), runLOB(si), runCCPM(si), runRCF(si), runDSM(si), runDST(si, es)];
+    return [
+      runPERT(si),             // Module 04
+      runLOB(si),              // Module 05
+      runCCPM(si),             // Module 06
+      runRCF(si),              // Module 07
+      runDSM(si),              // Module 08
+      runRoughSets(es),        // Module 12
+      runNeutrosophic(es),     // Module 13
+      runIntervalFuzzy(es)     // Module 14
+    ];
   }
 
   window.LinSimulations = {
     runAll,
-    runPERT, runLOB, runCCPM, runRCF, runDSM, runDST,
+    runPERT, runLOB, runCCPM, runRCF, runDSM,
+    runDST, runRoughSets, runNeutrosophic, runIntervalFuzzy,
     sampleTriangular
   };
 })();
