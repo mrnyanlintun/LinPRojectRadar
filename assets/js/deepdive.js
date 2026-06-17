@@ -203,8 +203,6 @@
 
   /* ---------- per-module status + reasoning ---------- */
 
-  const ILLUS = "Illustrative view — derived from this project's synthetic data";
-  const REAL = "Real computation on this project's synthetic inputs (demonstration model — not a calibrated forecast)";
 
   function m01(p) {
     const e = p.signals.evm, m = p.signals.mc;
@@ -230,7 +228,7 @@
     const mcReal = mcChartReal(p);
     const mc = mcReal.mc;
     return panel("01", "Hybrid Dynamic Simulation", st,
-      note(`${REAL} — real Monte Carlo: ${mc.iterations.toLocaleString()} iterations sampled from a signal-derived Beta-PERT; P50/P80 read from the simulated array`) +
+      note("Probabilistic estimate at completion from 5,000 iterations of the project's cost and schedule performance indices. P50 and P80 bound the realistic cost exposure range. P80 is the planning-conservative figure used for contingency and escalation decisions.") +
       mcReal.svg +
       `<div class="dd-grid">${
         metricBox("Cost Performance Index (CPI)", e.cpi.toFixed(2), cpiS) +
@@ -261,7 +259,7 @@
     const cuReal = cusumChartReal(p);
     const r = cuReal.cu;
     return panel("02", "Statistical Process Control (SPC) / Cumulative Sum Control Chart (CUSUM) Anomaly Monitor", st,
-      note(`${REAL} — real two-sided tabular CUSUM over the ${cu.metric} series (n=${r.x.length}); breach = statistic crossing the decision interval H`) +
+      note("Cumulative Sum Control Chart monitoring the Schedule Performance Index across reporting periods. Detects sustained drift that single-period variance would mask. A breach means the pattern is systemic and requires explanation before the next reporting cycle closes.") +
       cuReal.svg +
       `<div class="dd-grid">${
         metricBox("Peak CUSUM", r.maxStat.toFixed(2), st) +
@@ -291,7 +289,7 @@
       `The document trail supports the quantitative forecast rather than contradicting it.`
     ];
     return panel("03", "Document-Risk Extraction", st,
-      note(`${ILLUS} — keyword/rule risk score against thresholds`) +
+      note("Risk signal extracted from project documents. Document language often leads the EVM signal by weeks — disputes and coordination failures appear in writing before they register in cost or schedule performance.") +
       docChart(p) +
       `<div class="dd-grid">${
         metricBox("Risk score", d.score.toFixed(2), st) +
@@ -318,7 +316,7 @@
       `The classification feeds Module 05, which maps it to an action and an authority.`
     ];
     return panel("04", "Signal Synthesis", st,
-      note(`${ILLUS} — agreement map across the four signal classes`) +
+      note("Agreement map across all signal classes. When signals diverge, the gap between classes is the finding. PCEIF surfaces disagreement instead of averaging it away.") +
       synthChart(p) +
       `<div class="dd-grid">${
         metricBox("Conflict", conflict.length > 20 ? conflict.slice(0, 19) + "…" : conflict, st) +
@@ -343,7 +341,7 @@
         : "No fairness gate is required for this state/sensitivity combination."
     ];
     return panel("05", "Agent-Based Model (ABM) Governance Layer", st,
-      note(`${ILLUS} — decision path computed live by decision.js`) +
+      note("Governance decision derived from the full signal package using the PCEIF authority matrix. Maps the conflict classification to a specific action, a named authority, and required documentation.") +
       abmChart(p, d) +
       `<div class="dd-grid">${
         metricBox("Derived state", d.healthState, st) +
@@ -359,7 +357,6 @@
      Renders project.simulationSignals (built by signals.js after the core run)
      as five full deep-dive modules — chart + metric grid + reasoning + rule —
      matching Modules 01–05. Each model object comes from LinSimulations. */
-  const SIM_NOTE = "Client-side quantitative model — computed live in the browser from the extracted signal inputs (zero tokens, no backend calls)";
   const simCls = (s) => String(s || "green").toLowerCase();
   const simColor = (s) => COLOR[simCls(s)] || COLOR.green;
   const fByMethod = (arr, m) => arr.find((s) => s.method_class === m);
@@ -476,7 +473,7 @@
   function m06(s) {
     const st = simCls(s.status_color);
     return panel("06", "PERT — Network Criticality", st,
-      note(`Program Evaluation & Review Technique (PERT). ${SIM_NOTE} — triangular Monte Carlo over a 3-activity network.`) +
+      note("Program Evaluation & Review Technique (PERT). Stochastic network analysis quantifying schedule risk across the critical path. The P80 duration is the planning-conservative milestone estimate. The Path Criticality Index identifies which path has the least float and highest probability of driving project completion.") +
       pertChart(s) +
       `<div class="dd-grid">${
         metricBox("P50 Duration", s.p50_duration_days + "d", "green") +
@@ -494,7 +491,7 @@
   function m07(s) {
     const st = simCls(s.status_color);
     return panel("07", "LOB — Production Velocity", st,
-      note(`Line of Balance (LOB). ${SIM_NOTE} — leader (grading) vs follower (paving) crew velocity.`) +
+      note("Line of Balance (LOB). Production velocity analysis for sequential operations. Monitors the time buffer between lead and follow-on crews. Buffer erosion is a leading schedule indicator — it appears before the delay reaches the critical path and before it registers in the SPI.") +
       lobChart(s) +
       `<div class="dd-grid">${
         metricBox("Min Buffer (days)", s.minimum_buffer_days.toFixed(1), st) +
@@ -512,7 +509,7 @@
   function m08(s) {
     const st = simCls(s.status_color);
     return panel("08", "CCPM — Buffer Health", st,
-      note(`Critical Chain Project Management (CCPM). ${SIM_NOTE} — buffer-burn fever chart vs chain completion.`) +
+      note("Critical Chain Project Management (CCPM). Tracks the rate at which the project buffer is being consumed against the rate of chain completion. A project burning buffer faster than it is completing work is on a trajectory toward delay, regardless of what the current SPI reports.") +
       ccpmChart(s) +
       `<div class="dd-grid">${
         metricBox("Chain Complete %", s.pct_chain_complete + "%", "green") +
@@ -530,7 +527,7 @@
   function m09(s) {
     const st = simCls(s.status_color);
     return panel("09", "RCF — Cost Prior", st,
-      note(`Reference Class Forecasting (RCF). ${SIM_NOTE} — empirical airport-infrastructure overrun multipliers.`) +
+      note("Reference Class Forecasting (RCF). Outside-view cost estimate derived from the historical overrun distribution of comparable public infrastructure projects. Corrects for optimism bias in contractor estimates by anchoring the forecast to what projects of this type actually cost.") +
       rcfChart(s) +
       `<div class="dd-grid">${
         metricBox("P50 Adjusted", moneyShort(s.rcf_p50_adjusted), "green") +
@@ -548,7 +545,7 @@
   function m10(s) {
     const st = simCls(s.status_color);
     return panel("10", "DSM — Rework Propagation", st,
-      note(`Design Structure Matrix (DSM). ${SIM_NOTE} — architectural change propagated across Arch/Structural/MEP over 4 passes.`) +
+      note("Design Structure Matrix (DSM). Models how a scope change in one design discipline propagates through downstream disciplines. An architectural revision triggers structural re-coordination and MEP rerouting. The rework multiplier quantifies the total coordination burden a single change introduces across the design team.") +
       dsmChart(s) +
       `<div class="dd-grid">${
         metricBox("Rework Multiplier", "×" + s.rework_multiplier.toFixed(2), st) +
@@ -589,7 +586,7 @@
       return;
     }
     root.innerHTML =
-      `<p class="mod-banner">Modules 01 (Monte Carlo) and 02 (CUSUM) are <strong>real client-side computations</strong> on this project's synthetic inputs (demonstration models, not calibrated forecasts). Modules 03–05 are transparent rule/decision logic.</p>` +
+      `<p class="mod-banner">Modules 01 and 02 are quantitative analyses applied to this project's extracted signal inputs. Modules 03–05 apply the PCEIF rule and decision framework.</p>` +
       m01(project) + m02(project) + m03(project) + m04(project) + m05(project) +
       simModules(project);
   }

@@ -90,8 +90,8 @@
     if (!configured()) {
       const cached = readCache();
       hydrate(cached || []);
-      banner("Project store not configured (LIN_API_URL). Showing " +
-        (cached ? "last cached" : "an empty") + " portfolio — set the URL in config.js.", "warn");
+      banner("Project data is not yet configured. Showing " +
+        (cached ? "last cached" : "an empty") + " portfolio.", "warn");
       return LIN_PROJECTS.slice();
     }
     loading(true, "Loading projects");

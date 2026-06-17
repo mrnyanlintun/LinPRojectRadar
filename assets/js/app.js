@@ -484,8 +484,8 @@
             ${statusPill(sum.worst)}
           </div>
           <div class="sig-metric">${sum.red} Red · ${sum.amber} Amber · ${sum.green} Green</div>
-          <div class="sig-meta"><span class="sig-method">PERT · LOB · CCPM · RCF · DSM (client-side)</span></div>
-          <div class="sig-detail">Worst status across the five client-side simulation models.</div>
+          <div class="sig-meta"><span class="sig-method">PERT · LOB · CCPM · RCF · DSM</span></div>
+          <div class="sig-detail">Worst status across the five simulation modules.</div>
         </div>`;
   }
 

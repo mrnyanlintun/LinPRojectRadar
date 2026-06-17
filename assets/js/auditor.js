@@ -261,7 +261,7 @@
     if (state.auditError) return `<p class="aud-msg warn" aria-live="polite">${esc(state.auditError)}</p>`;
     if (state.auditing) return `<div class="aud-loading" aria-live="polite">
         <span class="aud-spinner" aria-hidden="true"></span>
-        <span>Auditing with Gemini… this may take 10–20 seconds.</span>
+        <span>Auditing… this may take 10–20 seconds.</span>
       </div>`;
     if (!state.auditResult) return "";
     const r = state.auditResult;
@@ -335,7 +335,7 @@
       <p class="eyebrow">Section B · Audit</p>
       <h2 class="kn-h">Technical Audit</h2>
       <p class="kn-sub">Upload a submission to audit it against all reference documents in this project's corpus. Results are saved to the project folder.</p>
-      <p class="aud-illus" role="note">Audit findings are AI-generated (Gemini) and illustrative only. All verdicts require named human review and sign-off before any formal action is taken.</p>
+      <p class="aud-illus" role="note">Audit findings are AI-assisted and require named human review and sign-off before any formal action is taken.</p>
 
       <div class="aud-step">
         <p class="eyebrow">Step 1 · Review type</p>
@@ -383,7 +383,7 @@
         <thead><tr><th>Date</th><th>Review Type</th><th>Filename</th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
-      <p class="kn-sub" style="margin-top:8px">To re-download a past result, open the project folder in Google Drive.</p>`;
+      <p class="kn-sub" style="margin-top:8px">Past results are saved in the project folder.</p>`;
   }
 
   function historySectionHtml() {
