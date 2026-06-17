@@ -173,41 +173,81 @@ If returning full items is too large for the list call, add a separate `GET ?act
 
 ---
 
-## Fix 4 — Lin chat system context: 14 → 19 signal modules
+## Fix 4 — Lin chat system context: final module reorder + PM-facing language
 
-**Context:** The Lin chat assistant's system prompt lives in `Code.gs` (not in this
-repo), so the model-count reference and the new-module descriptions must be
-updated there. The platform now has **19** signal modules — five new evidence
-combination and uncertainty-reasoning methods (15–19) have been added on top of
-the existing 11–14, all running entirely client-side.
+**Context:** The Lin chat assistant's system prompt lives in `Code.gs` (not in
+this repo). Two things changed and must be propagated there: (a) the module
+numbering was finalised — Conservative Dominance (formerly Module 10) is now
+Module 09, ABM Governance (formerly Module 09) is now Module 19 and is the LAST
+module in the stack, and old Modules 11–19 each shifted down by one to become
+Modules 10–18; (b) Lin should use PM-facing confidence-band language when
+answering questions about a project's classification.
 
-**Required backend change:** in the Lin chat system/context prompt, update the
-module-count reference from 14 to 19 and add a short description of Modules 15–19
-so Lin can answer questions about them. Suggested wording to insert verbatim:
+**Required backend changes:**
 
-> The platform has 19 signal modules. Modules 11–19 are evidence combination and
-> uncertainty reasoning methods that run alongside the conservative-dominance
-> synthesis (Module 10). Module 11 uses Dempster-Shafer evidence theory to combine
-> signal belief masses. Module 12 uses Rough Sets to classify projects into
-> definite, borderline, or indeterminate zones. Module 13 uses Neutrosophic Logic
-> to measure truth, indeterminacy, and falsity across signals as independent
-> dimensions. Module 14 uses Interval-valued Fuzzy Sets to account for measurement
-> uncertainty in EVM inputs. Module 15 uses Z-numbers to weight each signal by the
-> reliability of its data source. Module 16 uses Probabilistic Linguistic Term Sets
-> (PLTS) to express each signal as a probability distribution over Green / Amber /
-> Red rather than a crisp label. Module 17 uses Plithogenic Sets to weight signals
-> by how strongly they contradict the dominant classification. Module 18 uses a
-> Belief Rule Base of expert IF-THEN rules with belief-distribution consequents.
-> Module 19 uses Quantum Probability to model signal interference: aligned signals
-> reinforce each other, opposed signals partially cancel through a phase-angle
-> interference term.
+1. **Module count and final numbering.** The platform has **19 signal modules**.
+   The final numbering is:
 
-No client change is required for this fix — Modules 15–19 already compute and
-render client-side (`simulations.js`, `deepdive.js`, `modules.js`, `knowledge.js`).
-This note only tracks the matching backend prompt update.
+   - 01 Monte Carlo EAC Forecast
+   - 02 CUSUM Anomaly Monitor
+   - 03 Document Risk Extraction
+   - 04 PERT Network Criticality
+   - 05 Line of Balance Production Velocity
+   - 06 CCPM Buffer Health
+   - 07 Reference Class Forecasting
+   - 08 DSM Rework Propagation
+   - **09 Conservative Dominance (Signal Synthesis)** — was Module 10
+   - 10 Dempster-Shafer — was Module 11
+   - 11 Rough Sets — was Module 12
+   - 12 Neutrosophic Logic — was Module 13
+   - 13 Interval-valued Fuzzy Sets — was Module 14
+   - 14 Z-numbers — was Module 15
+   - 15 Probabilistic Linguistic Term Sets (PLTS) — was Module 16
+   - 16 Plithogenic Sets — was Module 17
+   - 17 Belief Rule Base (BRB) — was Module 18
+   - 18 Quantum Probability — was Module 19
+   - **19 ABM Governance Layer** — was Module 09 (now LAST, the decision output)
 
-**Module numbering reference (for the prompt):** 01 Monte Carlo EAC · 02 CUSUM ·
-03 Document Risk · 04 PERT · 05 Line of Balance · 06 CCPM · 07 Reference Class
-Forecasting · 08 DSM · 09 ABM Governance · 10 Signal Synthesis · 11 Dempster-Shafer ·
-12 Rough Sets · 13 Neutrosophic Logic · 14 Interval-valued Fuzzy Sets · 15 Z-numbers ·
-16 PLTS · 17 Plithogenic Sets · 18 Belief Rule Base · 19 Quantum Probability.
+2. **Tier description.** Insert the following verbatim into the Lin chat
+   system/context prompt:
+
+   > The platform has 19 signal modules organised in five tiers. Modules 01–03
+   > are quantitative EVM inputs (Monte Carlo EAC, CUSUM, Document Risk).
+   > Modules 04–08 are extended construction and design simulations (PERT, Line
+   > of Balance, CCPM, Reference Class Forecasting, DSM). Module 09 is
+   > Conservative Dominance — the baseline synthesis where the worst single
+   > signal class drives the state. Modules 10–18 are nine independent
+   > evidence-combination and uncertainty-reasoning methods that cross-check
+   > Module 09 (Dempster-Shafer, Rough Sets, Neutrosophic Logic, Interval-valued
+   > Fuzzy Sets, Z-numbers, PLTS, Plithogenic Sets, Belief Rule Base, Quantum
+   > Probability). Module 19 is the ABM Governance Layer — the LAST module —
+   > which consumes the Module 09 baseline and the Modules 10–18 cross-checks
+   > and produces the recorded governance decision card with named authority,
+   > recommended action, required documentation, and fairness gate state.
+
+3. **PM-facing language.** When answering questions about a project's
+   classification, Lin should use the confidence band derived from how many of
+   Modules 10–18 agree with the Module 09 baseline:
+
+   - **8 or 9 of 9 agree → HIGH CONFIDENCE.** Phrasing examples:
+     - Green: "All signal methods agree this project is on track. Routine
+       monitoring is appropriate."
+     - Amber: "Multiple methods flag this project as needing attention. The
+       signals are consistent — a weekly review with the controls lead is
+       recommended before the next reporting cycle."
+     - Red: "The project requires escalation. All evidence methods confirm the
+       classification. A recovery plan review with the program director is
+       required within 48 hours."
+   - **5–7 of 9 agree → MODERATE CONFIDENCE.** Act on the Module 19
+     recommendation but document the uncertainty explicitly.
+   - **Fewer than 5 of 9 agree → LOW CONFIDENCE.** Phrasing: "The classification
+     is [state] but the signal methods disagree. [Specific reason]. Investigate
+     the discrepancy before recording a formal governance action."
+   - **Destructive quantum interference (M18) present.** Phrasing: "The signals
+     are genuinely contradictory. The governance layer recommends [action] but
+     the evidence base is divided — document the uncertainty explicitly."
+
+No client change is required for this fix — the modules already compute and
+render client-side under the new numbering (`simulations.js`, `deepdive.js`,
+`modules.js`, `knowledge.js`). This note only tracks the matching backend prompt
+update.

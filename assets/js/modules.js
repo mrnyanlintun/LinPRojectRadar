@@ -233,7 +233,7 @@
     }));
     const worst = results.slice().sort((a, b) => (b.sig.conflict_mass || 0) - (a.sig.conflict_mass || 0))[0];
     return {
-      num: "11",
+      num: "10",
       title: "Dempster-Shafer (DST) — Evidence Combination",
       method: "Basic probability assignment per signal class · Dempster combination rule · conflict mass K",
       explain: "DST combines the four primary signal classes into a single belief distribution over Green / Amber / Red / Unknown. Unlike conservative dominance, which takes the worst single signal, DST weights all the evidence and reports an explicit belief mass for each state plus a conflict mass measuring how much the sources disagree. High conflict mass is itself a governance signal.",
@@ -257,7 +257,7 @@
     });
     const maxV = Math.max(1, ...results.map(({ sig }) => sig.total_signals || 1));
     return {
-      num: "12",
+      num: "11",
       title: "Rough Sets — Classification",
       method: "Lower / upper approximation over signal votes · boundary region = indeterminate zone",
       explain: "Rough Set Theory classifies the project into definite, borderline, or indeterminate zones. The lower approximation holds states more than 75% of signals agree on; the upper approximation holds any state with support; the boundary between them is genuine indeterminacy where no single classification is certain.",
@@ -277,7 +277,7 @@
       note: `T ${Math.round((sig.T || 0) * 100)}% I ${Math.round((sig.I || 0) * 100)}% F ${Math.round((sig.F || 0) * 100)}% · ${sig.indeterminacy_level || "—"}`,
     }));
     return {
-      num: "13",
+      num: "12",
       title: "Neutrosophic Logic",
       method: "Truth / Indeterminacy / Falsity per signal · disjunctive T · conjunctive I and F",
       explain: "Neutrosophic logic extends fuzzy logic with three independent components — Truth, Indeterminacy, and Falsity — that need not sum to 1. Indeterminacy is modeled as its own dimension, so genuinely contradictory signals raise indeterminacy rather than averaging to a middle value. High indeterminacy is a governance signal in its own right.",
@@ -298,7 +298,7 @@
     }));
     const maxV = Math.max(0.5, ...rows.map((r) => r.value)) * 1.15;
     return {
-      num: "14",
+      num: "13",
       title: "Interval-valued Fuzzy Sets",
       method: "Membership intervals from EVM measurement tolerances (±2% Schedule of Values, ±1% pay application)",
       explain: "Interval-valued fuzzy sets treat each EVM input as a range rather than an exact value, reflecting Schedule of Values and pay-application measurement tolerances. The result is a membership interval for each state; a wide interval means the classification could shift across the plausible input range, so input precision is the limiting factor.",
@@ -319,7 +319,7 @@
     }));
     const maxV = Math.max(2, ...rows.map((r) => r.value)) * 1.15;
     return {
-      num: "15",
+      num: "14",
       title: "Z-numbers — Reliability-weighted Evidence",
       method: "Each signal as a Z-number (Restriction, Reliability) · Zadeh 2011",
       explain: "Z-numbers pair each signal's classification with a reliability measure for its source. A CPI from a verified pay application carries more weight than one from a rough estimate. The aggregate weighs Red / Amber / Green totals by source reliability, so high-confidence sources dominate the recommendation.",
@@ -339,7 +339,7 @@
       note: `G ${sig.p_green || 0}% · A ${sig.p_amber || 0}% · R ${sig.p_red || 0}%`,
     }));
     return {
-      num: "16",
+      num: "15",
       title: "PLTS — Probabilistic Linguistic Term Sets",
       method: "Per-signal probability distribution over linguistic states · Pang 2016",
       explain: "Probabilistic Linguistic Term Sets express each signal as a probability triple across Green / Amber / Red rather than forcing a crisp label. Captures partial confidence within each source — a CUSUM that just barely missed breaching is not the same Green as a deeply stable monitor.",
@@ -359,7 +359,7 @@
       note: `${Math.round((sig.avg_contradiction || 0) * 100)}% · ${sig.contradiction_level || "—"}`,
     }));
     return {
-      num: "17",
+      num: "16",
       title: "Plithogenic Sets — Contradiction Analysis",
       method: "Attribute-level contradiction degrees against the dominant value · Smarandache 2018",
       explain: "Plithogenic Sets assign each signal a contradiction degree measuring how much it opposes the dominant classification. A Green doc signal in a project where EVM and CUSUM are Red has high contradiction — it does not simply cancel the Reds, it is weighted to reflect its opposition. High average contradiction is itself a governance finding.",
@@ -379,7 +379,7 @@
       note: `G ${sig.belief_green || 0}% · A ${sig.belief_amber || 0}% · R ${sig.belief_red || 0}% · ${sig.rules_matched || 0} rule(s)`,
     }));
     return {
-      num: "18",
+      num: "17",
       title: "BRB — Belief Rule Base",
       method: "Expert IF-THEN rules with belief-distribution consequents · Yang 2006",
       explain: "The Belief Rule Base encodes expert knowledge as IF-THEN rules whose consequent is a belief distribution rather than a crisp state. \"If EVM is Red and CUSUM has breached, belief is 90% Red, 8% Amber, 2% Green.\" Matching rules combine by rule weight, bridging the explicit governance rules of PCEIF with probabilistic expert judgment.",
@@ -399,7 +399,7 @@
       note: `Q-G ${sig.p_green || 0}% · Q-A ${sig.p_amber || 0}% · Q-R ${sig.p_red || 0}% · ${sig.interference_type || "—"} · θ ${sig.phase_angle_deg || 0}°`,
     }));
     return {
-      num: "19",
+      num: "18",
       title: "Quantum Probability — Signal Interference",
       method: "Amplitude state vector with phase-angle interference · Busemeyer & Bruza 2012",
       explain: "Quantum Probability models signals as wave amplitudes rather than classical probabilities. When signals align they interfere constructively, amplifying the dominant classification; when signals oppose they interfere destructively, reflecting genuine ambiguity. The phase angle measures signal coherence — small θ means high confidence, large θ means residual uncertainty the governance layer must own.",
@@ -494,8 +494,8 @@
       note: `${n} project${n > 1 ? "s" : ""}`
     }));
     return {
-      num: "10",
-      title: "Signal Synthesis",
+      num: "09",
+      title: "Conservative Dominance — Signal Synthesis",
       method: "Conflict classification (classifyConflict in decision.js)",
       explain: "PCEIF surfaces disagreement between signal classes instead of averaging it away. A green EVM with deteriorating documents, or a red forecast over an acceptable baseline, is itself the finding. The precedence order of the conflict labels is deliberate and documented in decision.js.",
       rule: "Rule fired: precedence — multi-red ▸ anomaly-without-narrative ▸ forecast-ahead ▸ leading-doc-risk ▸ agreement ▸ mixed early warning.",
@@ -526,7 +526,7 @@
        </tr>`).join("");
 
     return {
-      num: "09",
+      num: "19",
       title: "ABM — Agent-Based Governance Layer",
       method: "deriveDecision / deriveHealthState / classifyConflict (decision.js — called live, not duplicated)",
       explain: "The governance layer is modeled as agents: each authority role (PM, controls lead, program director) holds explicit decision rules over the signal package. Those rules ARE the pure functions in decision.js — this module surfaces them. The mapping (health state × conflict × fairness sensitivity) → recommended action, authority, and documentation is the same logic that drives the decision card on the radar page.",
@@ -557,25 +557,30 @@
         </section>`;
   }
 
-  // Cards are grouped into the five method families. The displayed card numbers
-  // (01-19) match the deep-dive module numbering exactly. Note the builder
-  // function names predate the renumber, so display order != function order:
-  // module06=PERT(04), module07=LOB(05), module08=CCPM(06), module09=RCF(07),
-  // module10=DSM(08), module05=ABM(09), module04=Synthesis(10).
-  // Modules 11-19 use matching function names (module11..module19).
+  // Cards are grouped into the five method families. Displayed card numbers
+  // (01-19) match the deep-dive module numbering exactly. Builder function
+  // names predate this reorder, so display order != function order. Mapping:
+  //   module01=Mod 01 (MC)        module02=Mod 02 (CUSUM)   module03=Mod 03 (Doc)
+  //   module06=Mod 04 (PERT)      module07=Mod 05 (LOB)     module08=Mod 06 (CCPM)
+  //   module09=Mod 07 (RCF)       module10=Mod 08 (DSM)
+  //   module04=Mod 09 (Conservative Dominance)
+  //   module11=Mod 10 (DST)       module12=Mod 11 (Rough)   module13=Mod 12 (Neutro)
+  //   module14=Mod 13 (IFS)       module15=Mod 14 (Z-num)   module16=Mod 15 (PLTS)
+  //   module17=Mod 16 (Plith)     module18=Mod 17 (BRB)     module19=Mod 18 (Quantum)
+  //   module05=Mod 19 (ABM Governance — decision output, LAST)
   function moduleCardsHtml(projects) {
     const groups = [
       { label: "Modules 01–03 · Quantitative EVM",
         mods: [module01(projects), module02(projects), module03(projects)] },
-      { label: "Modules 04–08 · Extended simulation",
+      { label: "Modules 04–08 · Extended simulation (leading indicators)",
         mods: [module06(projects), module07(projects), module08(projects), module09(projects), module10(projects)] },
-      { label: "Module 09 · Governance layer",
-        mods: [module05(projects)] },
-      { label: "Module 10 · Signal synthesis",
+      { label: "Module 09 · Signal synthesis — conservative dominance",
         mods: [module04(projects)] },
-      { label: "Modules 11–19 · Evidence combination & uncertainty reasoning",
+      { label: "Modules 10–18 · Evidence combination & uncertainty reasoning",
         mods: [module11(projects), module12(projects), module13(projects), module14(projects),
                module15(projects), module16(projects), module17(projects), module18(projects), module19(projects)] },
+      { label: "Module 19 · Governance decision output",
+        mods: [module05(projects)] },
     ];
     return groups.map((g) =>
       `<p class="mod-group-head">${esc(g.label)}</p>` + g.mods.map(cardHtml).join("")

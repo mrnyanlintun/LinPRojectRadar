@@ -6,29 +6,38 @@
 
    Every chart is an ILLUSTRATIVE view derived deterministically
    from that project's synthetic data — never live or validated
-   model output. Module 09 reads decision.js output directly;
+   model output. Module 19 reads decision.js output directly;
    no governance rules are duplicated here.
 
-   Module numbering:
-     01  Monte Carlo EAC Forecast
-     02  CUSUM Anomaly Monitor
-     03  Document Risk Extraction
-     04  PERT Network Criticality          (simulation)
-     05  Line of Balance Production Velocity (simulation)
-     06  CCPM Buffer Health                 (simulation)
-     07  Reference Class Forecasting        (simulation)
-     08  DSM Rework Propagation             (simulation)
-     09  ABM Governance Layer
-     10  Signal Synthesis (conservative dominance)
-     11  Dempster-Shafer Evidence Combination (simulation)
-     12  Rough Set Theory Classification   (simulation)
-     13  Neutrosophic Logic                (simulation)
-     14  Interval-valued Fuzzy Sets        (simulation)
-     15  Z-numbers (Zadeh 2011)            (simulation)
-     16  Probabilistic Linguistic Term Sets (Pang 2016)
-     17  Plithogenic Sets (Smarandache 2018)
-     18  Belief Rule Base (Yang 2006)
-     19  Quantum Probability (Busemeyer 2012)
+   Display module numbering (final / 2026 reorder):
+     01  Monte Carlo EAC Forecast               — Signal generator
+     02  CUSUM Anomaly Monitor                  — Signal generator
+     03  Document Risk Extraction               — Signal generator
+     04  PERT Network Criticality               — Signal generator
+     05  Line of Balance Production Velocity    — Signal generator
+     06  CCPM Buffer Health                     — Signal generator
+     07  Reference Class Forecasting            — Signal generator
+     08  DSM Rework Propagation                 — Signal generator
+     09  Conservative Dominance (Signal Synthesis) — Baseline synthesis
+     10  Dempster-Shafer Evidence Combination   — Evidence combination
+     11  Rough Set Theory Classification        — Evidence combination
+     12  Neutrosophic Logic                     — Evidence combination
+     13  Interval-valued Fuzzy Sets             — Evidence combination
+     14  Z-numbers (Zadeh 2011)                 — Evidence combination
+     15  Probabilistic Linguistic Term Sets (Pang 2016) — Evidence combination
+     16  Plithogenic Sets (Smarandache 2018)    — Evidence combination
+     17  Belief Rule Base (Yang 2006)           — Evidence combination
+     18  Quantum Probability (Busemeyer 2012)   — Evidence combination
+     19  ABM Governance Layer                   — Decision output (LAST)
+
+   Internal note: this file's function names (m09 = old ABM, m10 = old Synthesis,
+   m11..m19 = old DST..Quantum) PRE-DATE the reorder. They were intentionally NOT
+   renamed because doing so would have caused a domino of cross-file rewrites for
+   no behavioural change. The displayed module number comes from the panel("XX", ...)
+   call inside each function, and the render() order below puts them on screen in
+   the new logical sequence — 01..08, then the new-09 (Synthesis via m10), then
+   new-10..new-18 (the evidence-combination methods via m11..m19), then new-19
+   (Governance via m09) as the final decision card.
    ============================================================ */
 
 (function () {
@@ -187,7 +196,7 @@
       "</svg>";
   }
 
-  /* Module 10: signal agreement map — four signal nodes colored by status,
+  /* Module 09 (Conservative Dominance): signal agreement map — four signal nodes colored by status,
      like the HUD's conflict lens. */
   function synthChart(p) {
     const h = 150;
@@ -207,7 +216,7 @@
       "</svg>";
   }
 
-  /* Module 09: governance decision path driven by decision.js output. */
+  /* Module 19 (ABM Governance): governance decision path driven by decision.js output. */
   function abmChart(p, d) {
     const h = 132;
     const c = COLOR[cls(d.healthState)];
@@ -335,9 +344,9 @@
     ] : [
       `Conflict type "${conflict}": ${redN} red and ${ambN} amber signal class(es) against ${4 - redN - ambN} green.`,
       `PCEIF surfaces this disagreement instead of averaging it away — the gap between signal classes is the finding.`,
-      `The classification feeds Module 09, which maps it to an action and an authority.`
+      `The classification feeds Module 19, which maps it to an action and an authority.`
     ];
-    return panel("10", "Signal Synthesis", st,
+    return panel("09", "Conservative Dominance — Signal Synthesis", st,
       note("Agreement map across all signal classes. When signals diverge, the gap between classes is the finding. PCEIF surfaces disagreement instead of averaging it away. Conservative dominance: the worst single-signal status drives the overall classification.") +
       synthChart(p) +
       `<div class="dd-grid">${
@@ -362,7 +371,7 @@
         ? "Fairness gate REQUIRED: contractor response opportunity must be acknowledged before any formal action — recording is blocked until then."
         : "No fairness gate is required for this state/sensitivity combination."
     ];
-    return panel("09", "Agent-Based Model (ABM) Governance Layer", st,
+    return panel("19", "Agent-Based Model (ABM) Governance Layer", st,
       note("Governance decision derived from the full signal package using the PCEIF authority matrix. Maps the conflict classification to a specific action, a named authority, and required documentation.") +
       abmChart(p, d) +
       `<div class="dd-grid">${
@@ -637,7 +646,7 @@
         : `DST diverges from conservative dominance. Conservative dominance classifies ${conservativeState.toUpperCase()}; DST assigns highest belief to ${s.status_color.toUpperCase()} with conflict mass ${Math.round((s.conflict_mass || 0) * 100)}% indicating significant inter-signal disagreement. The divergence itself is a governance signal.`)
       : `Conservative dominance state not yet available — run signals to compare.`;
 
-    return panel("11", "DST — Evidence Combination", st,
+    return panel("10", "DST — Evidence Combination", st,
       note("Dempster-Shafer Evidence Theory combines the four primary signal classes into a unified belief distribution. Unlike conservative dominance which takes the worst single signal, DST weights all evidence and produces explicit belief masses for each state plus a conflict mass measuring inter-signal disagreement.") +
       dstChart(s) +
       `<div class="dd-grid">${
@@ -646,7 +655,7 @@
         metricBox("Belief Red", Math.round((s.belief_red || 0) * 100) + "%", s.belief_red > 0.3 ? "red" : "amber") +
         metricBox("Conflict Mass", Math.round((s.conflict_mass || 0) * 100) + "%", s.conflict_level === "High" ? "red" : s.conflict_level === "Moderate" ? "amber" : "green") +
         metricBox("Conflict Level", s.conflict_level || "Low", s.conflict_level === "High" ? "red" : s.conflict_level === "Moderate" ? "amber" : "green") +
-        metricBox("Agrees with Module 10", agrees ? "Yes" : (conservativeState ? "No" : "N/A"), agrees ? "green" : (conservativeState ? "amber" : "green"))
+        metricBox("Agrees with Module 09", agrees ? "Yes" : (conservativeState ? "No" : "N/A"), agrees ? "green" : (conservativeState ? "amber" : "green"))
       }</div>` +
       `<p class="dd-chart-note">${esc(comparisonNote)}</p>` +
       reasons([
@@ -732,7 +741,7 @@
     const st = simCls(s.status_color);
     const votes = s.signal_votes || {};
     const total = s.total_signals || 1;
-    return panel("12", "Rough Sets Classification", st,
+    return panel("11", "Rough Sets Classification", st,
       note("Rough Set Theory classifies the project using lower and upper approximations. The lower approximation contains states ALL signals definitively support (>75% agreement). The upper approximation contains states ANY signal supports. The boundary region — upper minus lower — is the indeterminate zone where evidence is insufficient to classify with certainty.") +
       roughSetsChart(s) +
       `<div class="dd-grid">${
@@ -753,7 +762,7 @@
   function m13(s) {
     const st = simCls(s.status_color);
     const T = Math.round((s.T || 0) * 100), I = Math.round((s.I || 0) * 100), F = Math.round((s.F || 0) * 100);
-    return panel("13", "Neutrosophic Logic", st,
+    return panel("12", "Neutrosophic Logic", st,
       note("Neutrosophic Logic extends fuzzy logic with three independent membership dimensions: Truth (T), Indeterminacy (I), and Falsity (F). Unlike classical logic where T + F = 1, neutrosophic values need not sum to 1 — genuine uncertainty is a separate dimension, not a residual of truth and falsity. High indeterminacy signals measurement ambiguity rather than a positive or negative finding.") +
       neutroChart(s) +
       `<div class="dd-grid">${
@@ -774,7 +783,7 @@
     const gi = (s.green_interval || [0, 0]).map((v) => Math.round(v * 100));
     const ai = (s.amber_interval || [0, 0]).map((v) => Math.round(v * 100));
     const ri = (s.red_interval   || [0, 0]).map((v) => Math.round(v * 100));
-    return panel("14", "Interval-valued Fuzzy Sets", st,
+    return panel("13", "Interval-valued Fuzzy Sets", st,
       note("Interval-valued Fuzzy Sets represent membership as a range [lower, upper] rather than a single value, reflecting measurement uncertainty in the input signals. The SoV document introduces approximately +/-2% earned-value uncertainty; pay applications introduce approximately +/-1% cost uncertainty. The width of the interval represents how much the classification can shift given realistic input variation.") +
       ifChart(s) +
       `<div class="dd-grid">${
@@ -904,7 +913,7 @@
 
   function m15(s) {
     const st = simCls(s.status_color);
-    return panel("15", "Z-numbers — Reliability-weighted Evidence", st,
+    return panel("14", "Z-numbers — Reliability-weighted Evidence", st,
       note("Z-numbers (Zadeh, 2011) pair each signal with a reliability measure for its source. A CPI derived from a verified pay application carries more weight than one estimated from a rough schedule update. The governance recommendation is weighted by how trustworthy each signal source is — not just what it says but how reliable the data behind it is.") +
       zNumbersChart(s) +
       `<div class="dd-grid">${
@@ -923,7 +932,7 @@
 
   function m16(s) {
     const st = simCls(s.status_color);
-    return panel("16", "PLTS — Probabilistic Linguistic Term Sets", st,
+    return panel("15", "PLTS — Probabilistic Linguistic Term Sets", st,
       note("Probabilistic Linguistic Term Sets (Pang, 2016) express each signal as a probability distribution across linguistic states rather than a single crisp label. A signal can be Red with 70% probability and Amber with 25% simultaneously. This maps directly to how expert reviewers actually assess projects — with confidence degrees, not binary verdicts.") +
       pltsChart(s) +
       `<div class="dd-grid">${
@@ -941,7 +950,7 @@
 
   function m17(s) {
     const st = simCls(s.status_color);
-    return panel("17", "Plithogenic Sets — Contradiction Analysis", st,
+    return panel("16", "Plithogenic Sets — Contradiction Analysis", st,
       note("Plithogenic Sets (Smarandache, 2018) assign each signal a contradiction degree measuring how much it opposes the dominant classification. A Green doc-risk signal in a project where EVM and CUSUM are both Red has a high contradiction degree — it does not simply cancel the Red signals; it is weighted to reflect its opposition. The contradiction degree itself is a governance finding.") +
       plithogenicChart(s) +
       `<div class="dd-grid">${
@@ -960,7 +969,7 @@
 
   function m18(s) {
     const st = simCls(s.status_color);
-    return panel("18", "BRB — Belief Rule Base", st,
+    return panel("17", "BRB — Belief Rule Base", st,
       note("The Belief Rule Base (Yang, 2006) encodes expert knowledge as IF-THEN rules whose consequent is a belief distribution rather than a crisp state. \"If EVM is Red and CUSUM has breached, belief is 90% Red, 8% Amber, 2% Green.\" Multiple rules can fire simultaneously and are combined by their rule weights, bridging the explicit governance rules of PCEIF with probabilistic expert judgment.") +
       brbChart(s) +
       `<div class="dd-grid">${
@@ -978,7 +987,7 @@
 
   function m19(s) {
     const st = simCls(s.status_color);
-    return panel("19", "Quantum Probability — Signal Interference", st,
+    return panel("18", "Quantum Probability — Signal Interference", st,
       note("Quantum Probability (Busemeyer & Bruza, 2012) models signals as wave amplitudes rather than classical probabilities. When signals align — EVM Red, CUSUM breached, forecast Red — they interfere constructively, amplifying the Red classification. When signals oppose — strong EVM deterioration but clean documents — they interfere destructively, reflecting genuine ambiguity. Constructive interference means high classification confidence; destructive means the signals are genuinely contradictory.") +
       quantumChart(s) +
       `<div class="dd-grid">${
@@ -995,12 +1004,15 @@
       rule("Amplitudes = sqrt of classical probabilities. Interference = 2 alpha gamma cos(theta) where theta is the phase angle from signal coherence. Busemeyer & Bruza, 2012."));
   }
 
-  /* Synthesis comparison panel — Modules 10–19 agreement table. */
+  /* Synthesis comparison panel — Modules 09–18 agreement table.
+     M09 (Conservative Dominance) is the governance baseline; Modules 10–18 are
+     independent evidence-combination methods cross-checking M09. */
   function synthComparisonPanel(project, sims) {
     const arr = sims && sims.signal_array;
     if (!arr) return "";
 
-    const s10 = (function () {
+    // M09 baseline — conservative dominance over the four primary signal classes.
+    const s09 = (function () {
       const s = project.signals;
       if (!s) return null;
       const statuses = [s.evm.status, s.mc.status, s.cusum.status, s.doc.status];
@@ -1013,59 +1025,75 @@
       const sig = fByMethod(arr, method);
       return sig ? (sig.status_color || sig.status || "—") : null;
     };
-    const s11 = get("DST_Evidence_Combination");
-    const s12 = get("Rough_Sets_Classification");
-    const s13 = get("Neutrosophic_Logic");
-    const s14 = get("Interval_Fuzzy_Sets");
-    const s15 = get("Z_Numbers");
-    const s16 = get("PLTS");
-    const s17 = get("Plithogenic_Sets");
-    const s18 = get("Belief_Rule_Base");
-    const s19 = get("Quantum_Probability");
+    const s10 = get("DST_Evidence_Combination");
+    const s11 = get("Rough_Sets_Classification");
+    const s12 = get("Neutrosophic_Logic");
+    const s13 = get("Interval_Fuzzy_Sets");
+    const s14 = get("Z_Numbers");
+    const s15 = get("PLTS");
+    const s16 = get("Plithogenic_Sets");
+    const s17 = get("Belief_Rule_Base");
+    const s18 = get("Quantum_Probability");
 
     const entries = [
-      { num: "10", label: "Conservative Dominance", year: "—",         val: s10 },
-      { num: "11", label: "Dempster-Shafer",        year: "1967/1976", val: s11 },
-      { num: "12", label: "Rough Sets",             year: "1982",      val: s12 },
-      { num: "13", label: "Neutrosophic Logic",     year: "1995",      val: s13 },
-      { num: "14", label: "Interval Fuzzy Sets",    year: "1975/2023", val: s14 },
-      { num: "15", label: "Z-numbers",              year: "2011",      val: s15 },
-      { num: "16", label: "PLTS",                   year: "2016",      val: s16 },
-      { num: "17", label: "Plithogenic Sets",       year: "2018",      val: s17 },
-      { num: "18", label: "Belief Rule Base",       year: "2006/2023", val: s18 },
-      { num: "19", label: "Quantum Probability",    year: "2012",      val: s19 }
+      { num: "09", label: "Conservative Dominance", year: "—",         val: s09 },
+      { num: "10", label: "Dempster-Shafer",        year: "1967/1976", val: s10 },
+      { num: "11", label: "Rough Sets",             year: "1982",      val: s11 },
+      { num: "12", label: "Neutrosophic Logic",     year: "1995",      val: s12 },
+      { num: "13", label: "Interval Fuzzy Sets",    year: "1975/1986", val: s13 },
+      { num: "14", label: "Z-numbers",              year: "2011",      val: s14 },
+      { num: "15", label: "PLTS",                   year: "2016",      val: s15 },
+      { num: "16", label: "Plithogenic Sets",       year: "2018",      val: s16 },
+      { num: "17", label: "Belief Rule Base",       year: "2006/2023", val: s17 },
+      { num: "18", label: "Quantum Probability",    year: "2012",      val: s18 }
     ].filter(function (e) { return e.val; });
 
-    if (!entries.length || !s10) return "";
+    if (!entries.length || !s09) return "";
 
-    // Compare every method against Module 10 (the governance baseline).
-    const baseline = String(s10).toLowerCase();
+    // Compare every method against M09 (the governance baseline).
+    const baseline = String(s09).toLowerCase();
     const vals = entries.map(function (e) { return String(e.val || "").toLowerCase(); });
-    const allAgree   = vals.every(function (v) { return v === baseline; });
+
+    // Count the 9 evidence-combination methods (Modules 10-18) that agree with M09.
+    const evidenceEntries = entries.filter(function (e) { return e.num !== "09"; });
+    const agreeCount = evidenceEntries.filter(function (e) {
+      return String(e.val || "").toLowerCase() === baseline;
+    }).length;
+
+    // Spread across all methods (incl. baseline) for the overall panel banner state.
     const redCount   = vals.filter(function (v) { return v === "red"; }).length;
     const amberCount = vals.filter(function (v) { return v === "amber"; }).length;
     const greenCount = vals.length - redCount - amberCount;
     const overallSt  = redCount >= 2 ? "red" : amberCount >= 2 ? "amber" : "green";
 
-    const header = `<tr class="dd-cmp-head"><th>Module · Method</th><th>Year</th><th>Classification</th><th>Agrees with M10</th></tr>`;
+    const header = `<tr class="dd-cmp-head"><th>Module · Method</th><th>Year</th><th>Classification</th><th>Agrees with M09</th></tr>`;
     const rows = entries.map(function (e) {
       const c = cls(e.val);
-      const isM10 = e.num === "10";
-      const agreesM10 = isM10 ? "—" : (String(e.val).toLowerCase() === baseline ? "Yes" : "No");
-      const agreeCls = isM10 ? "" : (agreesM10 === "Yes" ? "dd-cmp-yes" : "dd-cmp-no");
+      const isBaseline = e.num === "09";
+      const agreesM09 = isBaseline ? "Baseline" : (String(e.val).toLowerCase() === baseline ? "Yes" : "No");
+      const agreeCls = isBaseline ? "" : (agreesM09 === "Yes" ? "dd-cmp-yes" : "dd-cmp-no");
       return `<tr><td class="dd-cmp-mod">Module ${e.num} — ${esc(e.label)}</td>` +
         `<td class="dd-cmp-year">${esc(e.year || "—")}</td>` +
         `<td><span class="dd-verdict status-${c}" style="display:inline-flex;gap:4px;align-items:center"><i></i>${esc(String(e.val).toUpperCase())}</span></td>` +
-        `<td class="${agreeCls}">${agreesM10}</td></tr>`;
+        `<td class="${agreeCls}">${agreesM09}</td></tr>`;
     }).join("");
 
-    const summaryText = allAgree
-      ? `All synthesis methods converge on ${String(s10).toUpperCase()} — high classification confidence.`
-      : `Methods diverge — classification uncertainty is itself a governance signal. Spread across methods: ${redCount} Red, ${amberCount} Amber, ${greenCount} Green. Note the divergence in the decision record.`;
+    // PM-facing confidence band — 8-9 agree = high, 5-7 = moderate, <5 = low.
+    let confidence, summaryText;
+    if (agreeCount >= 8) {
+      confidence = "HIGH";
+      summaryText = `All synthesis methods confirm the classification — high confidence. ${agreeCount} of 9 evidence methods agree with the M09 baseline (${String(s09).toUpperCase()}). Act on the Module 19 recommendation.`;
+    } else if (agreeCount >= 5) {
+      confidence = "MODERATE";
+      summaryText = `${agreeCount} of 9 evidence methods agree with the M09 baseline (${String(s09).toUpperCase()}) — moderate confidence. Act on the Module 19 recommendation but document the uncertainty.`;
+    } else {
+      confidence = "LOW";
+      summaryText = `Significant divergence — investigate before recording a formal governance action. Only ${agreeCount} of 9 evidence methods agree with the M09 baseline (${String(s09).toUpperCase()}). Spread across all methods: ${redCount} Red, ${amberCount} Amber, ${greenCount} Green.`;
+    }
 
     return `<section class="panel dd-panel status-${overallSt}" aria-label="Synthesis comparison">
-      <div class="dd-head"><b>Synthesis Methods Comparison — Modules 10–19</b></div>
-      <p class="dd-chart-note">Agreement check across all synthesis and evidence methods. Conservative dominance (Module 10) is the governance baseline; Modules 11–19 provide independent cross-checks using different evidence frameworks across five decades of uncertainty-reasoning research.</p>
+      <div class="dd-head"><b>Synthesis Methods Comparison — Modules 09–18</b><span class="dd-cmp-conf dd-cmp-conf-${confidence.toLowerCase()}">${confidence} CONFIDENCE</span></div>
+      <p class="dd-chart-note">Agreement check across all synthesis and evidence methods. Conservative dominance (Module 09) is the governance baseline; Modules 10–18 provide independent cross-checks using different evidence frameworks across five decades of uncertainty-reasoning research.</p>
       <table class="dd-cmp-table">${header}${rows}</table>
       <p class="dd-chart-note">${esc(summaryText)}</p>
     </section>`;
@@ -1148,15 +1176,23 @@
       return;
     }
     const sims = simModules(project);
+    // Render order matches the final logical numbering:
+    //   01-03  signal generators (quantitative EVM)
+    //   04-08  extended-simulation generators (leading indicators)
+    //   09     conservative dominance baseline synthesis (internally m10)
+    //   10-18  evidence-combination cross-checks (internally m11..m19)
+    //   sims.synth — Module 09 vs 10-18 agreement table + PM confidence band
+    //   19     ABM Governance decision card (internally m09) — LAST
     root.innerHTML =
-      `<p class="mod-banner">Modules 01–03 are quantitative analyses of this project's extracted signal inputs. Modules 04–08 are schedule and cost simulation models. Modules 09–10 apply the PCEIF governance decision framework. Modules 11–19 are independent evidence synthesis methods cross-checking the Module 10 result.</p>` +
+      `<p class="mod-banner">Modules 01–08 are quantitative signal generators. Module 09 (Conservative Dominance) is the baseline synthesis. Modules 10–18 are independent evidence-combination methods cross-checking M09 across five decades of uncertainty-reasoning research. Module 19 (ABM Governance) is the decision output — the named-authority action that survives this reporting cycle.</p>` +
       m01(project) + m02(project) + m03(project) +
       sims.low +
-      m09(project) + m10(project) +
-      sims.dst +
-      sims.rough + sims.neutro + sims.ifs +
-      sims.z + sims.plts + sims.plith + sims.brb + sims.quantum +
-      sims.synth;
+      m10(project) +                                              // displays as Module 09 (Conservative Dominance)
+      sims.dst +                                                  // displays as Module 10 (DST)
+      sims.rough + sims.neutro + sims.ifs +                       // displays as Modules 11, 12, 13
+      sims.z + sims.plts + sims.plith + sims.brb + sims.quantum + // displays as Modules 14, 15, 16, 17, 18
+      sims.synth +                                                // comparison panel
+      m09(project);                                               // displays as Module 19 (ABM Governance) — LAST
   }
 
   window.LinDeepDive = { render };

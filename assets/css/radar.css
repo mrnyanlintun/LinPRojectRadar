@@ -637,6 +637,14 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .dd-cmp-year { color: var(--faint); font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .04em; white-space: nowrap; }
 .dd-cmp-yes { color: var(--clear-green); font-weight: 600; }
 .dd-cmp-no { color: var(--radar-amber); font-weight: 600; }
+.dd-cmp-conf {
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
+  letter-spacing: .08em; padding: 3px 8px; border-radius: 4px;
+  border: 1px solid currentColor;
+}
+.dd-cmp-conf-high     { color: var(--clear-green); }
+.dd-cmp-conf-moderate { color: var(--radar-amber); }
+.dd-cmp-conf-low      { color: var(--alarm-red);   }
 
 /* ---------- clickable project code links (Signals ABM table) ---------- */
 .mod-link {
