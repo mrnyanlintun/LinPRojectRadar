@@ -99,7 +99,9 @@
     auditing: false,
     auditError: "",
     auditResult: null,        // {items[], summary{}, csvContent, csvName}
-    drafts: {}                // Item 17: contractor-response drafts keyed by row index
+    drafts: {},               // Item 17: contractor-response drafts keyed by row index
+    pastAuditCache: {},       // keyed by audit_id → full audit payload (survives page reload via localStorage)
+    expandedAudit: null       // audit_id of the row expanded in Past Audits
   };
 
   /* ---------- helpers ---------- */
@@ -178,6 +180,58 @@
     } finally {
       state.pastLoading = false;
     }
+  }
+
+  /* ---------- local audit cache (localStorage) ---------- */
+  const AUDIT_CACHE_KEY = "lpr-audit-cache-v1";
+  function readAuditCache() {
+    try { return JSON.parse(localStorage.getItem(AUDIT_CACHE_KEY) || "{}"); } catch (e) { return {}; }
+  }
+  function writeAuditCache(cache) {
+    try { localStorage.setItem(AUDIT_CACHE_KEY, JSON.stringify(cache)); } catch (e) {}
+  }
+  function cacheAuditResult(auditId, payload) {
+    const cache = readAuditCache();
+    cache[auditId] = payload;
+    writeAuditCache(cache);
+    state.pastAuditCache[auditId] = payload;
+  }
+  function loadAuditCache() {
+    const cache = readAuditCache();
+    Object.assign(state.pastAuditCache, cache);
+  }
+
+  /* ---------- XLSX export ---------- */
+  function exportAuditXLSX(auditData, projectId) {
+    const XL = window.XLSX;
+    if (!XL) { alert("SheetJS not loaded — cannot export XLSX."); return; }
+    const r = auditData;
+    const items = Array.isArray(r.items) ? r.items : (Array.isArray(r.results) ? r.results : []);
+    const rows = [
+      ["#", "Item Submitted", "Spec Section", "Remark", "Citation", "Status"]
+    ];
+    items.forEach((it, i) => {
+      rows.push([
+        i + 1,
+        it.item || it.itemSubmitted || it.submittedItem || "",
+        it.specSection || it.spec_section || "",
+        it.remark || it.comment || it.note || "",
+        it.citation || it.reference || "",
+        it.status || ""
+      ]);
+    });
+    rows.push([]);
+    const sum = r.summary || {};
+    const project = LinStore.getCached ? LinStore.getCached(projectId) : null;
+    const projectName = project ? project.name : (projectId || "");
+    rows.push(["Project:", projectName, "Date:", r.run_at ? r.run_at.substring(0, 10) : new Date().toISOString().substring(0, 10),
+               "Overall:", r.overall_verdict || ""]);
+    const ws = XL.utils.aoa_to_sheet(rows);
+    ws["!cols"] = [{ wch: 4 }, { wch: 36 }, { wch: 20 }, { wch: 42 }, { wch: 26 }, { wch: 16 }];
+    const wb = XL.utils.book_new();
+    XL.utils.book_append_sheet(wb, ws, "Audit Results");
+    const filename = "audit_" + (projectId || "proj") + "_" + new Date().toISOString().substring(0, 10) + ".xlsx";
+    XL.writeFile(wb, filename);
   }
 
   /* ---------- rendering ---------- */
@@ -318,8 +372,8 @@
         : `<p class="kn-sub">The audit returned no line items.</p>`}
 
       <div class="aud-download-row">
-        <button class="btn primary aud-download" id="aud-download-csv">Download Remark</button>
-        <p class="kn-sub aud-saved-note">Results also saved to project folder: <span class="mod-mono">${esc(csvName)}</span></p>
+        <button class="btn primary aud-download" id="aud-export-xlsx">Export XLSX</button>
+        <p class="kn-sub aud-saved-note">Results saved to project folder and audit history.</p>
       </div>
     </div>`;
   }
@@ -371,19 +425,50 @@
     if (state.pastError) return `<p class="aud-msg warn">${esc(state.pastError)}</p>`;
     if (!state.pastAudits.length) return `<p class="kn-sub">No audit history yet for this project.</p>`;
     const rows = state.pastAudits.map((f) => {
-      const name = f.name || f.filename || "(unnamed)";
-      const when = f.createdAt || f.date || f.modifiedAt || "";
+      const auditId = f.audit_id || f.id || f.name || "";
+      const name = f.name || f.filename || auditId || "(unnamed)";
+      const when = f.run_at || f.createdAt || f.date || f.modifiedAt || "";
+      const verdict = f.overall_verdict || "";
+      const cached = state.pastAuditCache[auditId];
+      const isExpanded = state.expandedAudit === auditId;
+      const canExport = !!cached;
+      const canView = !!cached;
+      const expandedTable = (isExpanded && cached) ? (() => {
+        const items = Array.isArray(cached.items) ? cached.items : (Array.isArray(cached.results) ? cached.results : []);
+        if (!items.length) return `<tr class="aud-history-detail"><td colspan="5"><p class="kn-sub">No line items in this record.</p></td></tr>`;
+        const itemRows = items.map((it, i) => {
+          const sk = statusKey(it.status);
+          return `<tr>
+            <td class="aud-num">${i + 1}</td>
+            <td>${esc(it.item || it.itemSubmitted || it.submittedItem || "—")}</td>
+            <td>${esc(it.remark || it.comment || it.note || "—")}</td>
+            <td class="aud-cite">${esc(it.citation || it.reference || "—")}</td>
+            <td><span class="aud-status aud-status-${sk}">${esc(it.status || "—")}</span></td>
+          </tr>`;
+        }).join("");
+        return `<tr class="aud-history-detail"><td colspan="5">
+          <div class="aud-table-wrap" style="margin:8px 0">
+            <table class="aud-table">
+              <thead><tr><th>#</th><th>Item Submitted</th><th>Remark</th><th>Citation</th><th>Status</th></tr></thead>
+              <tbody>${itemRows}</tbody>
+            </table>
+          </div></td></tr>`;
+      })() : "";
       return `<tr>
         <td class="aud-past-date">${esc(fmtDate(when))}</td>
         <td>${esc(reviewTypeFromName(name))}</td>
         <td class="aud-past-name mod-mono">${esc(name)}</td>
-      </tr>`;
+        <td>${verdict ? `<span class="aud-status aud-status-${statusKey(verdict)}">${esc(verdict)}</span>` : ""}</td>
+        <td class="aud-past-actions">
+          ${canView ? `<button class="aud-history-view" data-audit-id="${esc(auditId)}">${isExpanded ? "Hide" : "View"}</button>` : ""}
+          ${canExport ? `<button class="aud-history-xlsx" data-audit-id="${esc(auditId)}">Export XLSX</button>` : ""}
+        </td>
+      </tr>${expandedTable}`;
     }).join("");
     return `<div class="aud-table-wrap"><table class="aud-table">
-        <thead><tr><th>Date</th><th>Review Type</th><th>Filename</th></tr></thead>
+        <thead><tr><th>Date</th><th>Review Type</th><th>Filename</th><th>Verdict</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
-      </table></div>
-      <p class="kn-sub" style="margin-top:8px">Past results are saved in the project folder.</p>`;
+      </table></div>`;
   }
 
   function historySectionHtml() {
@@ -397,6 +482,7 @@
   function renderAuditorPage() {
     const root = document.getElementById("auditor-root");
     if (!root) return;
+    loadAuditCache(); // merge localStorage cache into state.pastAuditCache
     root.innerHTML =
       topPickerHtml() +
       `<div class="aud-stack">` +
@@ -510,6 +596,13 @@
         });
         const payload = resp.audit || resp.result || resp;
         state.auditResult = payload || { items: [], summary: {} };
+        // Persist to Drive (non-fatal) and cache locally for View/Export XLSX.
+        const auditId = "audit_" + Date.now();
+        const auditPayload = Object.assign({ audit_id: auditId, run_at: new Date().toISOString(),
+          submittal_file: state.submission ? state.submission.name : "",
+          overall_verdict: (payload && payload.overall_verdict) || "" }, payload);
+        cacheAuditResult(auditId, auditPayload);
+        LinStore.saveAuditResult(state.projectId, auditPayload); // fire-and-forget
         loadPastAudits().then(renderAuditorPage);
       } catch (err) {
         state.auditError = "Audit failed: " + (err && err.message ? err.message : "store unreachable");
@@ -541,20 +634,22 @@
       renderAuditorPage();
     }));
 
-    const dl = $("#aud-download-csv");
-    if (dl) dl.addEventListener("click", () => {
-      const r = state.auditResult;
-      if (!r) return;
-      const csv = r.csvContent || r.csv || "";
-      if (!csv) { alert("No CSV content was returned for this audit."); return; }
-      const name = r.csvName || r.filename || ("audit_" + state.reviewType + "_" + Date.now() + ".csv");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = name;
-      document.body.appendChild(a); a.click(); a.remove();
-      URL.revokeObjectURL(url);
+    const xlsxBtn = $("#aud-export-xlsx");
+    if (xlsxBtn) xlsxBtn.addEventListener("click", () => {
+      if (state.auditResult) exportAuditXLSX(state.auditResult, state.projectId);
     });
+
+    // Past Audits: View toggle and Export XLSX per row
+    root.querySelectorAll(".aud-history-view").forEach((btn) => btn.addEventListener("click", () => {
+      const id = btn.dataset.auditId;
+      state.expandedAudit = state.expandedAudit === id ? null : id;
+      renderAuditorPage();
+    }));
+    root.querySelectorAll(".aud-history-xlsx").forEach((btn) => btn.addEventListener("click", () => {
+      const id = btn.dataset.auditId;
+      const cached = state.pastAuditCache[id];
+      if (cached) exportAuditXLSX(cached, state.projectId);
+    }));
   }
 
   window.LinAuditor = { renderAuditorPage };
