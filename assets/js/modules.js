@@ -1,11 +1,16 @@
 /* ============================================================
    Lin Project Radar — modules.js
-   The five PCEIF simulation modules: plain-language explanation,
+   The fourteen PCEIF signal modules: plain-language explanation,
    key metrics, the rule that fired, and an ILLUSTRATIVE graph
    driven by the synthetic portfolio. Graphs are labeled
    illustrative — never live or validated model output.
 
-   Module 05 (ABM governance layer) calls the existing pure
+   Cards are grouped into five families and numbered 01-14 to
+   match the per-project deep-dive (deepdive.js): 01-03 quantitative
+   EVM, 04-08 extended simulation, 09 governance, 10 synthesis,
+   11-14 evidence combination and uncertainty reasoning.
+
+   The ABM governance layer (Module 09) calls the existing pure
    functions in decision.js. The rules are NOT duplicated here.
    ============================================================ */
 
@@ -95,6 +100,16 @@
       return { p, sig };
     });
   }
+  // Same, for the evidence-combination models (11-14) that read the assembled
+  // signal package (EVM / MC / CUSUM / Doc) rather than the raw signalInputs.
+  function runEachProjectExisting(projects, method, runner) {
+    return projects.map((p) => {
+      const arr = p.simulationSignals && Array.isArray(p.simulationSignals.signal_array)
+        ? p.simulationSignals.signal_array : null;
+      const sig = (arr && simByMethod(arr, method)) || runner(p.signals || {});
+      return { p, sig };
+    });
+  }
   const simColor = (s) => statusVar(String(s || "green").toLowerCase());
 
   function module06(projects) {
@@ -108,7 +123,7 @@
     const worst = results.slice().sort((a, b) => (b.sig.p80_duration_days || 0) - (a.sig.p80_duration_days || 0))[0];
     const max = Math.max(1, ...rows.map((r) => r.value)) * 1.15;
     return {
-      num: "06",
+      num: "04",
       title: "Program Evaluation & Review Technique (PERT) — Network Criticality",
       method: "Stochastic 3-activity network · triangular distribution · 5,000 iterations · te = (a + 4m + b) / 6",
       explain: "PERT samples each activity's optimistic / most-likely / pessimistic durations from a triangular distribution and aggregates the dominant network path. The P80 duration is the conservative finish date; the path-criticality index is the share of simulated runs where the structural path was on the critical path. Lower project SPI widens the pessimistic bound, so the P80 tail grows when the schedule is already drifting.",
@@ -131,7 +146,7 @@
     const worst = results.slice().sort((a, b) => (a.sig.minimum_buffer_days || 0) - (b.sig.minimum_buffer_days || 0))[0];
     const max = Math.max(6, ...rows.map((r) => r.value)) * 1.15;
     return {
-      num: "07",
+      num: "05",
       title: "Line of Balance (LOB) — Production Velocity",
       method: "Leader (grading) vs follower (paving) crew velocity · minimum crew-to-crew buffer over linear units",
       explain: "LOB tracks production rate for sequential, repetitive work. Each crew has a units-per-day velocity; the buffer is the schedule gap between the leader and the follower as units roll. When the follower (paving) slows and that buffer compresses unit by unit, a crew collision is being telegraphed before EVM moves. The implementation slows the follower as project SPI degrades, making buffer collapse a leading schedule signal.",
@@ -152,7 +167,7 @@
     }));
     const worst = results.slice().sort((a, b) => (b.sig.pct_buffer_consumed || 0) - (a.sig.pct_buffer_consumed || 0))[0];
     return {
-      num: "08",
+      num: "06",
       title: "Critical Chain Project Management (CCPM) — Buffer Health",
       method: "Fever-chart logic: buffer-consumed % vs chain-complete %",
       explain: "CCPM aggregates safety margin from each activity into a single project buffer, then plots its consumption against chain completion. The fever chart's amber threshold sits at the chain-complete percentage; the red threshold a third of the remaining range above that. Crossing into red means buffer is being burned faster than work is being completed — the buffer will be gone before the chain.",
@@ -174,7 +189,7 @@
     }));
     const max = Math.max(30, ...rows.map((r) => r.value)) * 1.15;
     return {
-      num: "09",
+      num: "07",
       title: "Reference Class Forecasting (RCF) — Cost Prior",
       method: "Outside-view debiasing · airport-overrun multiplier reference class · P80 vs BAC",
       explain: "Flyvbjerg's reference-class forecasting replaces the inside-view estimate with an empirical prior drawn from comparable projects. This implementation uses an airport-infrastructure overrun multiplier set; the P80 multiplier is the conservative debiasing factor applied to BAC. It is the structural counter to optimism bias — what comparable projects actually cost, not what this one's bottom-up estimate predicts.",
@@ -195,7 +210,7 @@
     }));
     const max = Math.max(4, ...rows.map((r) => r.value)) * 1.15;
     return {
-      num: "10",
+      num: "08",
       title: "Design Structure Matrix (DSM) — Rework Propagation",
       method: "3×3 Arch / Structural / MEP dependency matrix · architectural change vector · 4 propagation passes",
       explain: "DSM captures information-flow dependencies between design disciplines as off-diagonal coupling weights. A single unit of architectural change is propagated through the matrix; after four passes the cumulative rework multiplier is the total downstream burden across Arch / Structural / MEP. Architectural changes cascade because both downstream disciplines depend on Arch decisions, so a multiplier above 2.5 signals high coordination risk.",
@@ -203,6 +218,94 @@
       charts:
         `<p class="mod-chart-label">DSM rework multiplier by project (×)</p>` +
         barChart(rows, max, 520, { value: 2.5, label: "amber > 2.5" }),
+    };
+  }
+
+  /* ---------- evidence-combination modules (11-14) ---------- */
+
+  function module11(projects) {
+    const results = runEachProjectExisting(projects, "DST_Evidence_Combination",
+      window.LinSimulations ? (s) => LinSimulations.runDST({}, s) : () => ({ status_color: "Amber", belief_green: 0.33, belief_amber: 0.34, belief_red: 0.33, conflict_mass: 0 }));
+    const rows = results.map(({ p, sig }) => ({
+      label: p.id, value: Math.max(0.5, Math.round((sig.belief_red || 0) * 100)),
+      color: simColor(sig.status_color),
+      note: `G ${Math.round((sig.belief_green || 0) * 100)}% A ${Math.round((sig.belief_amber || 0) * 100)}% R ${Math.round((sig.belief_red || 0) * 100)}% · K ${Math.round((sig.conflict_mass || 0) * 100)}%`,
+    }));
+    const worst = results.slice().sort((a, b) => (b.sig.conflict_mass || 0) - (a.sig.conflict_mass || 0))[0];
+    return {
+      num: "11",
+      title: "Dempster-Shafer (DST) — Evidence Combination",
+      method: "Basic probability assignment per signal class · Dempster combination rule · conflict mass K",
+      explain: "DST combines the four primary signal classes into a single belief distribution over Green / Amber / Red / Unknown. Unlike conservative dominance, which takes the worst single signal, DST weights all the evidence and reports an explicit belief mass for each state plus a conflict mass measuring how much the sources disagree. High conflict mass is itself a governance signal.",
+      rule: `Rule fired: final state = highest belief mass; conflict mass > 30% → high inter-signal disagreement. Highest conflict: ${worst ? worst.p.id : "—"}${worst ? ` (K ${Math.round((worst.sig.conflict_mass || 0) * 100)}%)` : ""}.`,
+      charts:
+        `<p class="mod-chart-label">DST red belief mass by project (%)</p>` +
+        barChart(rows, 100, 520),
+    };
+  }
+
+  function module12(projects) {
+    const results = runEachProjectExisting(projects, "Rough_Sets_Classification",
+      window.LinSimulations ? (s) => LinSimulations.runRoughSets(s) : () => ({ status_color: "Amber", classification: "Indeterminate", signal_votes: { Green: 0, Amber: 0, Red: 0 }, total_signals: 1 }));
+    const rows = results.map(({ p, sig }) => {
+      const v = sig.signal_votes || { Green: 0, Amber: 0, Red: 0 };
+      return {
+        label: p.id, value: Math.max(0.5, v.Red || 0),
+        color: simColor(sig.status_color),
+        note: `${sig.classification || "—"}`,
+      };
+    });
+    const maxV = Math.max(1, ...results.map(({ sig }) => sig.total_signals || 1));
+    return {
+      num: "12",
+      title: "Rough Sets — Classification",
+      method: "Lower / upper approximation over signal votes · boundary region = indeterminate zone",
+      explain: "Rough Set Theory classifies the project into definite, borderline, or indeterminate zones. The lower approximation holds states more than 75% of signals agree on; the upper approximation holds any state with support; the boundary between them is genuine indeterminacy where no single classification is certain.",
+      rule: "Rule fired: definite if more than 75% of signals agree on one state; borderline if signals span states; indeterminate if no state dominates.",
+      charts:
+        `<p class="mod-chart-label">red-state signal votes by project</p>` +
+        barChart(rows, maxV, 520),
+    };
+  }
+
+  function module13(projects) {
+    const results = runEachProjectExisting(projects, "Neutrosophic_Logic",
+      window.LinSimulations ? (s) => LinSimulations.runNeutrosophic(s) : () => ({ status_color: "Amber", T: 0.7, I: 0.2, F: 0.1, indeterminacy_level: "Moderate" }));
+    const rows = results.map(({ p, sig }) => ({
+      label: p.id, value: Math.max(0.5, Math.round((sig.I || 0) * 100)),
+      color: simColor(sig.status_color),
+      note: `T ${Math.round((sig.T || 0) * 100)}% I ${Math.round((sig.I || 0) * 100)}% F ${Math.round((sig.F || 0) * 100)}% · ${sig.indeterminacy_level || "—"}`,
+    }));
+    return {
+      num: "13",
+      title: "Neutrosophic Logic",
+      method: "Truth / Indeterminacy / Falsity per signal · disjunctive T · conjunctive I and F",
+      explain: "Neutrosophic logic extends fuzzy logic with three independent components — Truth, Indeterminacy, and Falsity — that need not sum to 1. Indeterminacy is modeled as its own dimension, so genuinely contradictory signals raise indeterminacy rather than averaging to a middle value. High indeterminacy is a governance signal in its own right.",
+      rule: "Rule fired: state from dominant signal votes; indeterminacy above 30% elevates a green state to amber — contradictory evidence is a risk.",
+      charts:
+        `<p class="mod-chart-label">indeterminacy (I) by project (%)</p>` +
+        barChart(rows, 100, 520, { value: 30, label: "high > 30%" }),
+    };
+  }
+
+  function module14(projects) {
+    const results = runEachProjectExisting(projects, "Interval_Fuzzy_Sets",
+      window.LinSimulations ? (s) => LinSimulations.runIntervalFuzzy(s) : () => ({ status_color: "Amber", uncertainty_width: 0.2, uncertainty_level: "Moderate" }));
+    const rows = results.map(({ p, sig }) => ({
+      label: p.id, value: Math.max(0.01, sig.uncertainty_width || 0),
+      color: simColor(sig.status_color),
+      note: `width ${(sig.uncertainty_width || 0).toFixed(2)} · ${sig.uncertainty_level || "—"}`,
+    }));
+    const maxV = Math.max(0.5, ...rows.map((r) => r.value)) * 1.15;
+    return {
+      num: "14",
+      title: "Interval-valued Fuzzy Sets",
+      method: "Membership intervals from EVM measurement tolerances (±2% Schedule of Values, ±1% pay application)",
+      explain: "Interval-valued fuzzy sets treat each EVM input as a range rather than an exact value, reflecting Schedule of Values and pay-application measurement tolerances. The result is a membership interval for each state; a wide interval means the classification could shift across the plausible input range, so input precision is the limiting factor.",
+      rule: "Rule fired: state = dominant interval midpoint; combined interval width above 0.30 → high measurement uncertainty.",
+      charts:
+        `<p class="mod-chart-label">classification uncertainty width by project</p>` +
+        barChart(rows, maxV, 520, { value: 0.30, label: "high > 0.30" }),
     };
   }
 
@@ -290,7 +393,7 @@
       note: `${n} project${n > 1 ? "s" : ""}`
     }));
     return {
-      num: "04",
+      num: "10",
       title: "Signal Synthesis",
       method: "Conflict classification (classifyConflict in decision.js)",
       explain: "PCEIF surfaces disagreement between signal classes instead of averaging it away. A green EVM with deteriorating documents, or a red forecast over an acceptable baseline, is itself the finding. The precedence order of the conflict labels is deliberate and documented in decision.js.",
@@ -322,7 +425,7 @@
        </tr>`).join("");
 
     return {
-      num: "05",
+      num: "09",
       title: "ABM — Agent-Based Governance Layer",
       method: "deriveDecision / deriveHealthState / classifyConflict (decision.js — called live, not duplicated)",
       explain: "The governance layer is modeled as agents: each authority role (PM, controls lead, program director) holds explicit decision rules over the signal package. Those rules ARE the pure functions in decision.js — this module surfaces them. The mapping (health state × conflict × fairness sensitivity) → recommended action, authority, and documentation is the same logic that drives the decision card on the radar page.",
@@ -339,12 +442,8 @@
 
   /* ---------- page rendering ---------- */
 
-  function moduleCardsHtml(projects) {
-    const mods = [
-      module01(projects), module02(projects), module03(projects), module04(projects), module05(projects),
-      module06(projects), module07(projects), module08(projects), module09(projects), module10(projects),
-    ];
-    return mods.map((m) => `
+  function cardHtml(m) {
+    return `
         <section class="panel mod-card" aria-label="Module ${m.num}: ${esc(m.title)}">
           <div class="mod-head">
             <span class="mod-num">MODULE ${m.num}</span>
@@ -354,7 +453,30 @@
           <p class="mod-explain">${esc(m.explain)}</p>
           <p class="mod-rule">${esc(m.rule)}</p>
           ${m.charts}
-        </section>`).join("");
+        </section>`;
+  }
+
+  // Cards are grouped into the five method families. The displayed card numbers
+  // (01-14) match the deep-dive module numbering exactly. Note the builder
+  // function names predate the renumber, so display order != function order:
+  // module06=PERT(04), module07=LOB(05), module08=CCPM(06), module09=RCF(07),
+  // module10=DSM(08), module05=ABM(09), module04=Synthesis(10).
+  function moduleCardsHtml(projects) {
+    const groups = [
+      { label: "Modules 01–03 · Quantitative EVM",
+        mods: [module01(projects), module02(projects), module03(projects)] },
+      { label: "Modules 04–08 · Extended simulation",
+        mods: [module06(projects), module07(projects), module08(projects), module09(projects), module10(projects)] },
+      { label: "Module 09 · Governance layer",
+        mods: [module05(projects)] },
+      { label: "Module 10 · Signal synthesis",
+        mods: [module04(projects)] },
+      { label: "Modules 11–14 · Evidence combination & uncertainty reasoning",
+        mods: [module11(projects), module12(projects), module13(projects), module14(projects)] },
+    ];
+    return groups.map((g) =>
+      `<p class="mod-group-head">${esc(g.label)}</p>` + g.mods.map(cardHtml).join("")
+    ).join("");
   }
 
   const BANNER = `<p class="mod-banner">All graphs below are derived from this project's extracted signal inputs. All recommended actions require named human review before any formal action is taken.</p>`;
@@ -373,7 +495,7 @@
     if (!populated.length) {
       root.innerHTML = BANNER +
         `<section class="panel awaiting-state"><p><strong>No populated projects yet.</strong></p>
-         <p class="kn-sub">Create a project and populate its signals on Manage Projects to see the five signal modules across the portfolio. Empty projects are shown on the radar in an awaiting-ingest state, not charted here.</p></section>`;
+         <p class="kn-sub">Create a project and populate its signals on Manage Projects to see the fourteen signal modules across the portfolio. Empty projects are shown on the radar in an awaiting-ingest state, not charted here.</p></section>`;
       return;
     }
     root.innerHTML = BANNER + emptyNote + moduleCardsHtml(populated);
@@ -381,9 +503,9 @@
       b.addEventListener("click", () => LinApp.openDetail(b.dataset.open)));
   }
 
-  /* All five modules computed for ONE project (Project Detail page).
+  /* All fourteen modules computed for ONE project (Project Detail page).
      Same builders, single-project array — no duplicated rules anywhere;
-     Module 05 still calls decision.js live. */
+     the ABM governance module (09) still calls decision.js live. */
   function renderProjectModules(project, root) {
     if (!root) return;
     root.innerHTML = BANNER + moduleCardsHtml([project]);

@@ -437,6 +437,12 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
   border: 1px dashed var(--line-strong); border-radius: var(--radius-md);
   padding: 10px 14px; margin: 0 0 16px;
 }
+.mod-group-head {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--eyebrow); margin: 22px 0 12px; padding-bottom: 6px;
+  border-bottom: 1px solid var(--line-strong);
+}
+.mod-group-head:first-child { margin-top: 4px; }
 .mod-card { margin-bottom: 18px; }
 .mod-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .mod-num { font-family: var(--font-mono); font-size: 11px; letter-spacing: .16em; color: var(--eyebrow); }
@@ -623,6 +629,13 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .dd-rule { margin-top: 11px; border-top: 1px solid var(--line); padding-top: 10px; color: var(--muted); font-family: var(--font-mono); font-size: 10.5px; line-height: 1.5; letter-spacing: .04em; text-transform: uppercase; }
 .dd-rule strong { color: var(--eyebrow); }
 .dd-chart-note { font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin: 10px 0 4px; }
+
+.dd-cmp-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+.dd-cmp-table td, .dd-cmp-table th { padding: 6px 10px; border-bottom: 1px solid var(--line); font-size: 12.5px; text-align: left; }
+.dd-cmp-head th { color: var(--eyebrow); font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; }
+.dd-cmp-mod { color: var(--muted); font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em; }
+.dd-cmp-yes { color: var(--clear-green); font-weight: 600; }
+.dd-cmp-no { color: var(--radar-amber); font-weight: 600; }
 
 /* ---------- clickable project code links (Signals ABM table) ---------- */
 .mod-link {
