@@ -184,12 +184,25 @@
         simPayload = {
           signal_metadata: {
             project_id: project.id,
+            run_at: now.toISOString(),
             reporting_period: now.toISOString().substring(0, 7),
-            data_date: now.toISOString().substring(0, 10)
+            data_date: now.toISOString().substring(0, 10),
+            signal_inputs_snapshot: Object.assign({}, si)
           },
           signal_array: simResults
         };
         project.simulationSignals = simPayload;
+        // Append simulation run event to the project audit trail.
+        project.events = project.events || [];
+        const statusOrder = ["red", "amber", "green"];
+        const statuses = simResults.map((s) => String(s.status_color || s.status || "").toLowerCase());
+        const worstStatus = statusOrder.find((s) => statuses.includes(s)) || "unknown";
+        project.events.push({
+          event: "simulation_run",
+          at: now.toISOString(),
+          modules: simResults.map((s) => ({ method: s.method_class, status: s.status_color || s.status })),
+          worst_status: worstStatus
+        });
       } catch (e) { /* simulations are non-fatal — never block the core run */ }
     }
     const builtSignals = project.signals;

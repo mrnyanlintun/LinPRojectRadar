@@ -252,6 +252,15 @@
     });
     return j;
   }
+  // Save a completed audit result to Drive (_audits/ folder in the project).
+  // Non-fatal: a failure here must never block the UI showing the result.
+  async function saveAuditResult(id, auditData) {
+    if (!configured()) return null;
+    try {
+      const j = await apiPost({ action: "saveauditresult", id, auditData });
+      return j;
+    } catch (e) { lastError = e; return null; }
+  }
 
   /* ---------- Piece C: document-driven signal extraction (Gemini-backed) ----------
      extractsignals reads figures (BAC/EV/AC/PV/% complete/doc-risk) from one
@@ -297,7 +306,7 @@
   window.LinStore = {
     load, listProjects, getProject, createProject, saveProject,
     archiveProject, restoreProject, listArchived, chat, analyze,
-    listCorpus, listAuditResults, ingestCorpus, runAudit,
+    listCorpus, listAuditResults, ingestCorpus, runAudit, saveAuditResult,
     extractSignals, overwriteSignal, resetSignals,
     // sync mirror accessors used by render code
     cachedActive, cachedArchived, getCached, listActive: cachedActive,

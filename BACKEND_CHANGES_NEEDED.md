@@ -76,3 +76,97 @@ The front end already:
 ```
 
 No other backend actions need changes for these items.
+
+---
+
+## Fix 1 — Simulation results + events persisted in project.json (`save_()`)
+
+**Context:** The frontend already calls `LinStore.saveProject(project)` after every simulation run. The saved payload now includes two new fields:
+
+- `project.simulationSignals` — full simulation output with enriched metadata:
+  ```json
+  {
+    "signal_metadata": {
+      "project_id": "SYN-01",
+      "run_at": "2025-10-15T14:32:00.000Z",
+      "reporting_period": "2025-10",
+      "data_date": "2025-10-15",
+      "signal_inputs_snapshot": { "cpi": 0.92, "spi": 0.88, "bac": 5000000 }
+    },
+    "signal_array": [ ... ]
+  }
+  ```
+- `project.events` — append-only audit trail array. Each simulation run appends:
+  ```json
+  {
+    "event": "simulation_run",
+    "at": "2025-10-15T14:32:00.000Z",
+    "modules": [{ "method": "PERT", "status": "amber" }, ...],
+    "worst_status": "amber"
+  }
+  ```
+
+**Required backend change:** `save_()` must persist both `simulationSignals` and `events` as top-level fields in `project.json`. If `save_()` already writes the entire received project object, no change is needed — confirm and test. If it only writes a whitelist of fields, add `simulationSignals` and `events` to that whitelist.
+
+---
+
+## Fix 2 — Save audit result to Drive (`saveauditresult` — new action)
+
+**New POST action:** `saveauditresult`
+
+**Trigger:** After every successful audit run the frontend fires (non-fatally):
+```json
+{
+  "action": "saveauditresult",
+  "id": "<projectId>",
+  "auditData": {
+    "audit_id": "audit_1729000320000",
+    "run_at": "2025-10-15T14:32:00.000Z",
+    "submittal_file": "submittal-concrete-mix.pdf",
+    "overall_verdict": "Approved as Noted",
+    "items": [ ... ],
+    "summary": { ... }
+  }
+}
+```
+
+**Required backend changes:**
+
+1. **`saveauditresult_(body)`** — new handler:
+   - Locate the project folder for `body.id`
+   - Create or get sub-folder `_audits/`
+   - Write `body.auditData` as JSON to `audit_<timestamp>.json`
+   - Append an audit event to `project.events` in `project.json`:
+     ```json
+     { "event": "audit_saved", "at": "<run_at>", "audit_id": "<audit_id>", "verdict": "<overall_verdict>" }
+     ```
+   - Return `{ ok: true, audit_id: "<audit_id>" }`
+
+2. **`audit_()` — also save automatically** — after returning results to the client, call `saveauditresult_()` internally so the record is persisted even if the client-side save fires (double-save is idempotent if both use the same `audit_id`).
+
+---
+
+## Fix 3 — List audit results with full item data (`listauditresults`)
+
+**Current behaviour (assumed):** `listauditresults` returns only metadata (filename, date).
+
+**Required change:** Return the full audit payload for each past result so the frontend can render the audit table inline and offer XLSX re-export without a re-run. Updated response shape:
+
+```json
+{
+  "ok": true,
+  "results": [
+    {
+      "audit_id": "audit_1729000320000",
+      "name": "audit_1729000320000.json",
+      "run_at": "2025-10-15T14:32:00.000Z",
+      "submittal_file": "submittal-concrete-mix.pdf",
+      "overall_verdict": "Approved as Noted",
+      "items": [ ... ],
+      "summary": { ... }
+    }
+  ]
+}
+```
+
+If returning full items is too large for the list call, add a separate `GET ?action=getauditresult&id=<projectId>&auditId=<auditId>` endpoint instead. The frontend currently uses a client-side localStorage cache for items fetched in-session; the Drive-backed retrieval is the fallback for results fetched on a fresh page load.
