@@ -161,9 +161,8 @@
     }
   ];
 
-  /* ---------- static glossary (Knowledge page left panel) ----------
-     Plain, scannable definitions + colour thresholds. The TERMS array above is
-     kept for the scripted assistant fallback; this GLOSSARY drives the page. */
+  /* ---------- (legacy) static glossary — superseded by LIBRARY below ----------
+     Kept around because removing it has no benefit; the page renders LIBRARY. */
   const T = {
     green: "var(--clear-green)", amber: "var(--radar-amber)", red: "var(--alarm-red)",
   };
@@ -264,42 +263,620 @@
     },
   );
 
-  window.LIN_KNOWLEDGE = { terms: TERMS, glossary: GLOSSARY, topics: TOPICS };
-
-  /* ---------- knowledge page rendering + term lens ---------- */
+  /* ---------- Knowledge Library — 11 narrative topics with formulas + SVG ---------- */
   function esc(s) {
     return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
+  // Small typography helpers shared by every topic body.
+  const RAG = {
+    green: "var(--clear-green)", amber: "var(--radar-amber)", red: "var(--alarm-red)",
+  };
+  function ragTable(headerRow, rows) {
+    return `<table class="kn-rag">
+      <thead><tr>${headerRow.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead>
+      <tbody>${rows.map((r) => `<tr>${r.map((c, i) => {
+        if (typeof c === "object" && c.color) return `<td class="kn-rag-cell" style="--kn-th:${c.color}">${esc(c.label)}</td>`;
+        return `<td${i === 0 ? ' class="kn-rag-metric"' : ""}>${esc(String(c))}</td>`;
+      }).join("")}</tr>`).join("")}</tbody>
+    </table>`;
+  }
+  function formulaBlock(lines) {
+    return `<pre class="kn-formula"><code>${lines.map((l) =>
+      Array.isArray(l) ? `<span class="kn-f-expr">${esc(l[0])}</span><span class="kn-f-label">${esc(l[1] || "")}</span>`
+                       : esc(l)).join("\n")}</code></pre>`;
+  }
+
+  /* ---------- inline SVG illustrations (dark + light theme aware) ---------- */
+
+  // PCEIF signal-to-action flow (Topic 1)
+  function svgPceifFlow() {
+    const labels = [
+      "Documents + Schedule + Cost", "10 Signal Modules", "Signal Synthesis",
+      "Conflict Classification", "Governance Decision Card",
+      "Named Human Approval", "Audit Record",
+    ];
+    const w = 720, h = 220, top = 30, bw = 132, gap = (w - labels.length * bw) / (labels.length - 1);
+    let out = `<svg viewBox="0 0 ${w} ${h}" class="kn-svg" role="img" aria-label="PCEIF signal-to-action flow">`;
+    labels.forEach((l, i) => {
+      const x = i * (bw + gap);
+      out += `<rect x="${x}" y="${top}" width="${bw}" height="56" rx="8" fill="var(--surface-soft)" stroke="var(--phosphor)" stroke-width="1.5"></rect>`;
+      // wrap labels at ~14 chars
+      const words = l.split(" "); const lines = []; let cur = "";
+      words.forEach((wd) => { if ((cur + " " + wd).trim().length > 16) { lines.push(cur.trim()); cur = wd; } else cur += " " + wd; });
+      if (cur.trim()) lines.push(cur.trim());
+      lines.slice(0, 3).forEach((ln, j) => {
+        out += `<text x="${x + bw / 2}" y="${top + 22 + j * 13}" text-anchor="middle" class="kn-svg-t" fill="var(--text)">${esc(ln)}</text>`;
+      });
+      if (i < labels.length - 1) {
+        const ax = x + bw + 2, ay = top + 28;
+        out += `<path d="M${ax} ${ay} l${gap - 6} 0" stroke="var(--phosphor)" stroke-width="1.6" marker-end="url(#kn-arrow)"></path>`;
+      }
+    });
+    out += `<defs><marker id="kn-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--phosphor)"/></marker></defs>`;
+    out += `<text x="${w / 2}" y="${h - 30}" text-anchor="middle" class="kn-svg-t" fill="var(--muted)">The system surfaces a recommendation. A named human records the decision.</text>`;
+    return out + "</svg>";
+  }
+
+  // Signal stack grouping → Synthesis (Topic 2)
+  function svgSignalStack() {
+    const w = 720, h = 290;
+    const groups = [
+      { lab: "Quantitative EVM", mods: ["01 EVM", "02 CUSUM"], color: "var(--clear-green)", x: 30, y: 30 },
+      { lab: "Governance Synthesis", mods: ["03 Doc Risk", "04 Synthesis", "05 ABM"], color: "var(--phosphor)", x: 30, y: 116 },
+      { lab: "Extended Simulation", mods: ["06 PERT", "07 LOB", "08 CCPM", "09 RCF", "10 DSM"], color: "var(--radar-amber)", x: 30, y: 222 },
+    ];
+    let out = `<svg viewBox="0 0 ${w} ${h}" class="kn-svg" role="img" aria-label="Signal stack of 10 modules feeding Signal Synthesis">`;
+    groups.forEach((g) => {
+      const bx = g.x, by = g.y, bw = 360, bh = 64;
+      out += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="9" fill="var(--surface-soft)" stroke="${g.color}" stroke-width="1.5"></rect>`;
+      out += `<text x="${bx + 12}" y="${by + 18}" class="kn-svg-t" fill="${g.color}">${esc(g.lab)}</text>`;
+      g.mods.forEach((m, i) => {
+        const cx = bx + 14 + i * 68, cy = by + 30;
+        out += `<rect x="${cx}" y="${cy}" width="60" height="22" rx="4" fill="var(--surface)" stroke="var(--line)"></rect>`;
+        out += `<text x="${cx + 30}" y="${cy + 15}" text-anchor="middle" class="kn-svg-t" fill="var(--text)">${esc(m)}</text>`;
+      });
+      // connector to synthesis node
+      out += `<path d="M${bx + bw + 4} ${by + bh / 2} L 590 145" stroke="var(--phosphor)" stroke-width="1.4" stroke-dasharray="3 3" fill="none"></path>`;
+    });
+    // synthesis target node
+    out += `<rect x="540" y="115" width="160" height="60" rx="9" fill="var(--phosphor)" opacity="0.15" stroke="var(--phosphor)" stroke-width="1.8"></rect>`;
+    out += `<text x="620" y="142" text-anchor="middle" class="kn-svg-t" fill="var(--text)" font-weight="700">Module 04</text>`;
+    out += `<text x="620" y="160" text-anchor="middle" class="kn-svg-t" fill="var(--text)">Signal Synthesis</text>`;
+    return out + "</svg>";
+  }
+
+  // EVM S-curve (Topic 3)
+  function svgEvmSCurve() {
+    const w = 720, h = 280, pad = 50, base = h - 40;
+    const pts = (a, b, c) => {
+      const arr = []; for (let i = 0; i <= 30; i++) { const t = i / 30; const v = 100 * (a * t + b * t * t + c * t * t * t); arr.push([pad + t * (w - pad - 60), base - v / 110 * (base - 30)]); } return arr;
+    };
+    const toPath = (a) => a.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+    const pv = pts(0.30, 0.55, 0.15);   // planned (smooth s-curve, ends at 100)
+    const ev = pts(0.20, 0.40, 0.20);   // earned (lags pv → SV gap)
+    const ac = pts(0.25, 0.55, 0.30);   // actual (above ev at end → CV gap)
+    // markers at month ~70%
+    const k = 22, evP = ev[k], acP = ac[k], pvP = pv[k];
+    let out = `<svg viewBox="0 0 ${w} ${h}" class="kn-svg" role="img" aria-label="EVM S-curve: PV vs EV vs AC with CV and SV gaps">`;
+    out += `<line x1="${pad}" y1="${base}" x2="${w - 14}" y2="${base}" stroke="var(--ring-line)"></line>`;
+    out += `<line x1="${pad}" y1="20" x2="${pad}" y2="${base}" stroke="var(--ring-line)"></line>`;
+    out += `<text x="${w - 14}" y="${h - 14}" text-anchor="end" class="kn-svg-t" fill="var(--muted)">project time →</text>`;
+    out += `<text x="${pad - 6}" y="22" text-anchor="end" class="kn-svg-t" fill="var(--muted)">$</text>`;
+    out += `<path d="${toPath(pv)}" stroke="var(--phosphor)" fill="none" stroke-width="2"></path>`;
+    out += `<path d="${toPath(ev)}" stroke="var(--clear-green)" fill="none" stroke-width="2"></path>`;
+    out += `<path d="${toPath(ac)}" stroke="var(--alarm-red)" fill="none" stroke-width="2"></path>`;
+    // CV gap (EV→AC) and SV gap (EV→PV) at month k
+    out += `<line x1="${evP[0]}" y1="${evP[1]}" x2="${evP[0]}" y2="${acP[1]}" stroke="var(--alarm-red)" stroke-dasharray="3 3"></line>`;
+    out += `<text x="${evP[0] + 8}" y="${(evP[1] + acP[1]) / 2}" class="kn-svg-t" fill="var(--alarm-red)">CV (cost variance)</text>`;
+    out += `<line x1="${evP[0]}" y1="${evP[1]}" x2="${pvP[0]}" y2="${pvP[1]}" stroke="var(--radar-amber)" stroke-dasharray="3 3"></line>`;
+    out += `<text x="${evP[0] - 6}" y="${pvP[1] - 8}" text-anchor="end" class="kn-svg-t" fill="var(--radar-amber)">SV (schedule variance)</text>`;
+    // legend
+    [["PV — planned value", "var(--phosphor)"], ["EV — earned value", "var(--clear-green)"], ["AC — actual cost", "var(--alarm-red)"]]
+      .forEach(([l, c], i) => {
+        const lx = 80 + i * 200, ly = 24;
+        out += `<line x1="${lx}" y1="${ly}" x2="${lx + 18}" y2="${ly}" stroke="${c}" stroke-width="2"></line>`;
+        out += `<text x="${lx + 24}" y="${ly + 4}" class="kn-svg-t" fill="var(--text)">${esc(l)}</text>`;
+      });
+    return out + "</svg>";
+  }
+
+  // Monte Carlo histogram with P50/P80 markers (Topic 4)
+  function svgMcHist() {
+    const w = 720, h = 240, pad = 50, base = h - 36;
+    // synthetic bell-ish histogram (BAC=100, slight right skew)
+    const bars = Array.from({ length: 24 }, (_, i) => {
+      const x = i - 11; return Math.exp(-x * x / 18) * (1 - x * 0.04);
+    });
+    const max = Math.max(...bars);
+    const bw = (w - pad - 60) / bars.length;
+    let out = `<svg viewBox="0 0 ${w} ${h}" class="kn-svg" role="img" aria-label="Monte Carlo simulated EAC distribution with P50 and P80 markers">`;
+    out += `<line x1="${pad}" y1="${base}" x2="${w - 14}" y2="${base}" stroke="var(--ring-line)"></line>`;
+    bars.forEach((v, i) => {
+      const bx = pad + i * bw, bh = (v / max) * (base - 28);
+      out += `<rect x="${bx + 1}" y="${base - bh}" width="${bw - 2}" height="${bh}" fill="var(--phosphor)" opacity="0.45"></rect>`;
+    });
+    const p50x = pad + bw * 12, p80x = pad + bw * 17;
+    out += `<line x1="${p50x}" y1="20" x2="${p50x}" y2="${base}" stroke="var(--radar-amber)" stroke-dasharray="5 4"></line>`;
+    out += `<text x="${p50x + 4}" y="34" class="kn-svg-t" fill="var(--radar-amber)">P50</text>`;
+    out += `<line x1="${p80x}" y1="20" x2="${p80x}" y2="${base}" stroke="var(--alarm-red)" stroke-dasharray="5 4"></line>`;
+    out += `<text x="${p80x + 4}" y="34" class="kn-svg-t" fill="var(--alarm-red)">P80</text>`;
+    out += `<text x="${w - 14}" y="${h - 12}" text-anchor="end" class="kn-svg-t" fill="var(--muted)">simulated EAC (5,000 iterations) →</text>`;
+    return out + "</svg>";
+  }
+
+  // CUSUM line chart with H threshold (Topic 5)
+  function svgCusum() {
+    const w = 720, h = 240, pad = 50, base = h - 36;
+    const periods = 12; const H = 5;
+    const cusum = [0.4, 0.8, 1.2, 1.5, 2.1, 2.6, 3.4, 4.0, 4.7, 5.2, 5.8, 6.4];
+    const sx = (i) => pad + (i / (periods - 1)) * (w - pad - 60);
+    const sy = (v) => base - (v / 7.5) * (base - 28);
+    let out = `<svg viewBox="0 0 ${w} ${h}" class="kn-svg" role="img" aria-label="CUSUM statistic vs decision interval H over 12 periods">`;
+    out += `<line x1="${pad}" y1="${base}" x2="${w - 14}" y2="${base}" stroke="var(--ring-line)"></line>`;
+    out += `<line x1="${pad}" y1="20" x2="${pad}" y2="${base}" stroke="var(--ring-line)"></line>`;
+    // H line
+    out += `<line x1="${pad}" y1="${sy(H)}" x2="${w - 24}" y2="${sy(H)}" stroke="var(--alarm-red)" stroke-dasharray="5 4"></line>`;
+    out += `<text x="${w - 26}" y="${sy(H) - 6}" text-anchor="end" class="kn-svg-t" fill="var(--alarm-red)">H = 5σ (decision interval)</text>`;
+    // statistic line + breach marker
+    const pts = cusum.map((v, i) => sx(i) + "," + sy(v)).join(" ");
+    out += `<polyline points="${pts}" fill="none" stroke="var(--phosphor)" stroke-width="2"></polyline>`;
+    const breach = cusum.findIndex((v) => v > H);
+    if (breach >= 0) {
+      out += `<circle cx="${sx(breach)}" cy="${sy(cusum[breach])}" r="6" fill="var(--alarm-red)"></circle>`;
+      out += `<text x="${sx(breach) + 8}" y="${sy(cusum[breach]) - 8}" class="kn-svg-t" fill="var(--alarm-red)">⚑ breach @ period ${breach + 1}</text>`;
+    }
+    out += `<text x="${w - 14}" y="${h - 12}" text-anchor="end" class="kn-svg-t" fill="var(--muted)">reporting periods →</text>`;
+    return out + "</svg>";
+  }
+
+  // Module 04 agreement map (Topic 7)
+  function svgAgreementMap() {
+    const w = 720, h = 200;
+    const nodes = [["EVM", "var(--clear-green)", 100], ["FORECAST", "var(--radar-amber)", 280], ["CUSUM", "var(--alarm-red)", 460], ["DOC", "var(--clear-green)", 620]];
+    let out = `<svg viewBox="0 0 ${w} ${h}" class="kn-svg" role="img" aria-label="Signal class agreement map">`;
+    nodes.forEach(([l, c, cx], i) => {
+      out += `<circle cx="${cx}" cy="100" r="42" fill="none" stroke="${c}" stroke-width="2.5"></circle>`;
+      out += `<text x="${cx}" y="98" text-anchor="middle" class="kn-svg-t" fill="var(--text)" font-weight="700">${esc(l)}</text>`;
+      out += `<text x="${cx}" y="116" text-anchor="middle" class="kn-svg-t" fill="${c}">${l === "CUSUM" ? "RED" : (l === "FORECAST" ? "AMBER" : "GREEN")}</text>`;
+      if (i < nodes.length - 1) {
+        out += `<line x1="${nodes[i][2] + 44}" y1="100" x2="${nodes[i + 1][2] - 44}" y2="100" stroke="var(--phosphor)" stroke-dasharray="5 5" stroke-width="1.4"></line>`;
+      }
+    });
+    out += `<text x="${w / 2}" y="180" text-anchor="middle" class="kn-svg-t" fill="var(--muted)">CUSUM Red + EVM Green → Anomaly Without Narrative (precedence rule 2)</text>`;
+    return out + "</svg>";
+  }
+
+  /* ---------- 11 Library topics ---------- */
+  const LIBRARY = [
+    {
+      id: "pceif",
+      title: "1. What is PCEIF",
+      eyebrow: "Framework foundation",
+      build: () => `
+        <p class="kn-lead">PCEIF — the <strong>Public Capital EVM Intelligence Framework</strong> — converts the multi-model signals that a public capital program already generates into a structured, accountable governance action with a named authority and a documented audit trail.</p>
+
+        <h3>The problem it solves</h3>
+        <p>Standard Earned Value Management produces excellent data. It does not produce a decision. A PM looking at CPI 0.88 in period 4 has no structured path to a defensible escalation: who must act, on what timeframe, with what documentation, under whose authority. The data exists; the governance link is missing.</p>
+        <p>PCEIF closes that gap. Signals trigger an explicit rule set; the rule set returns a specific action, a specific authority, and the documentation required. The PM still records the decision — the framework simply makes the recommendation traceable.</p>
+
+        <h3>Two-layer architecture</h3>
+        <ul class="kn-list">
+          <li><strong>Layer 1 — Agency Governance.</strong> Sets the policy framework: the authority matrix, escalation thresholds, fairness rules, audit requirements. Established by the program owner; not changed per project.</li>
+          <li><strong>Layer 2 — PM Decision Architecture.</strong> Takes that policy and the project's signal package and surfaces, for each reporting cycle, the specific action the PM should record (or override, with rationale).</li>
+        </ul>
+
+        <h3>Signal-to-action mechanism</h3>
+        ${svgPceifFlow()}
+
+        <h3>What's different from standard EVM</h3>
+        <ul class="kn-list">
+          <li><strong>Standard EVM:</strong> compute CPI / SPI → report to management.</li>
+          <li><strong>PCEIF:</strong> compute 10 signal classes → detect conflict → classify the conflict → surface the action, authority, and documentation — <em>before</em> the next reporting cycle closes.</li>
+        </ul>
+
+        <h3>The role of AI</h3>
+        <p>AI explains and summarizes. It does <strong>not</strong> make governance decisions. Every recommended action requires a named human approval before it is recorded; the AI's job is to make that approval well-informed, not to replace it. This is a design constraint, not a performance limitation.</p>
+      `,
+    },
+    {
+      id: "stack",
+      title: "2. The Signal Stack — 10 Modules",
+      eyebrow: "Architecture",
+      build: () => `
+        <p class="kn-lead">The signal stack splits into three tiers. The first two compute and govern; the third extends quantitative coverage to specialised construction/design risks that EVM does not catch.</p>
+        ${svgSignalStack()}
+
+        <h3>Modules 01–02 — Quantitative EVM (real computation)</h3>
+        <ul class="kn-list">
+          <li><strong>Module 01 — Hybrid Dynamic Simulation.</strong> EVM core (CPI, SPI) plus the 5,000-iteration Monte Carlo P80 EAC forecast.</li>
+          <li><strong>Module 02 — SPC / CUSUM Anomaly Monitor.</strong> Two-sided tabular CUSUM over the SPI series; breach when cumulative drift exceeds the decision interval H = 5σ.</li>
+        </ul>
+
+        <h3>Modules 03–05 — Governance Synthesis (rule-based)</h3>
+        <ul class="kn-list">
+          <li><strong>Module 03 — Document Risk Extraction.</strong> Transparent keyword rules score risk language across RFIs, submittals, OAC minutes, and correspondence.</li>
+          <li><strong>Module 04 — Signal Synthesis.</strong> Classifies the disagreement between signal classes (six conflict types) rather than averaging it away.</li>
+          <li><strong>Module 05 — ABM Governance Layer.</strong> Maps (state × conflict × sector) to action, authority, and documentation. Implemented as pure functions in <code>decision.js</code>.</li>
+        </ul>
+
+        <h3>Modules 06–10 — Extended Simulation Stack (client-side quantitative)</h3>
+        <ul class="kn-list">
+          <li><strong>Module 06 — PERT</strong> network criticality (P80 duration, path criticality index).</li>
+          <li><strong>Module 07 — Line of Balance</strong> production velocity (crew-buffer collapse as a leading indicator).</li>
+          <li><strong>Module 08 — CCPM</strong> buffer-health fever chart (buffer consumed vs chain complete).</li>
+          <li><strong>Module 09 — Reference Class Forecasting</strong> cost prior (outside-view debiasing against an empirical reference class).</li>
+          <li><strong>Module 10 — Design Structure Matrix</strong> rework propagation (architectural change cascades to MEP).</li>
+        </ul>
+
+        <p class="kn-callout">Outputs from all ten feed Module 04 (Signal Synthesis). The synthesis is what gates the governance card — not any individual signal.</p>
+      `,
+    },
+    {
+      id: "evm",
+      title: "3. Module 01 — Earned Value Management (EVM)",
+      eyebrow: "Module 01 (a)",
+      build: () => `
+        <p class="kn-lead">EVM integrates scope, schedule, and cost on a single measurement plane. On U.S. public capital programs it is required under OMB Circular A-11 and FAR Part 34 for major investments; under most agency policies a CPI shortfall sustained over multiple reporting periods is itself a reporting trigger.</p>
+
+        <h3>The three curves</h3>
+        <p><strong>PV</strong> (Planned Value), <strong>EV</strong> (Earned Value), and <strong>AC</strong> (Actual Cost) plotted against project time form the classic EVM S-curve. The gaps between them are the variances PCEIF acts on:</p>
+        ${svgEvmSCurve()}
+
+        <p>EV − AC is the <strong>cost variance</strong>: are we paying more or less than the work is worth? EV − PV is the <strong>schedule variance</strong> expressed in cost terms: are we ahead of or behind the planned burn? They measure different problems and demand different responses.</p>
+
+        <h3>Formulas</h3>
+        ${formulaBlock([
+          ["CPI = EV / AC", "Cost Performance Index"],
+          ["SPI = EV / PV", "Schedule Performance Index"],
+          ["CV  = EV − AC", "Cost Variance ($)"],
+          ["SV  = EV − PV", "Schedule Variance ($)"],
+          "",
+          ["EAC = BAC / CPI", "PCEIF default — assumes current efficiency continues"],
+          ["EAC = AC + (BAC − EV)", "Optimistic — assumes future work on budget"],
+          ["EAC = AC + (BAC − EV) / CPI", "Pessimistic — current CPI continues to completion"],
+          ["VAC = BAC − EAC", "Variance at Completion"],
+        ])}
+
+        <h3>Why PCEIF defaults to BAC / CPI</h3>
+        <p>On public capital programs cost overruns compound. A project 10% over budget at month 6 rarely recovers to baseline by closeout — the inefficiency rate is sticky. <code>BAC / CPI</code> assumes the current rate continues, which is the most defensible assumption for an escalation conversation. The optimistic formula is for the contractor; the pessimistic for risk reserves; the default is for the program controls record.</p>
+
+        <h3>RAG thresholds</h3>
+        ${ragTable(
+          ["Metric", "Green", "Amber", "Red"],
+          [
+            ["CPI", { label: "≥ 0.95", color: RAG.green }, { label: "0.90–0.94", color: RAG.amber }, { label: "< 0.90", color: RAG.red }],
+            ["SPI", { label: "≥ 0.95", color: RAG.green }, { label: "0.90–0.94", color: RAG.amber }, { label: "< 0.90", color: RAG.red }],
+            ["P80 EAC vs BAC", { label: "within +5%", color: RAG.green }, { label: "+5% to +10%", color: RAG.amber }, { label: "> +10%", color: RAG.red }],
+            ["P(milestone delay)", { label: "< 0.30", color: RAG.green }, { label: "0.30–0.60", color: RAG.amber }, { label: "≥ 0.60", color: RAG.red }],
+          ]
+        )}
+
+        <h3>Governance implication</h3>
+        <p>CPI &lt; 0.90 on a public capital program is the FAR-region threshold for potential corrective action reporting. A CPI of 0.88 sustained over three periods is not a "watch item" — under most agency program-controls policies it is a recovery-plan trigger, and the audit record should show the decision was made (or formally deferred) by named authority on a documented date.</p>
+      `,
+    },
+    {
+      id: "montecarlo",
+      title: "4. Module 01 — Monte Carlo Forecast",
+      eyebrow: "Module 01 (b)",
+      build: () => `
+        <p class="kn-lead">A single deterministic EAC gives false precision. A P50/P80 range is more honest and more useful: it lets program controls fund contingency to an explicit risk percentile rather than to a point estimate that pretends the future is known.</p>
+
+        <h3>Why Beta-PERT</h3>
+        <p>For construction cost modelling the Beta-PERT distribution is preferred over a normal or triangular distribution: it is continuous, naturally bounded by optimistic and pessimistic limits, and weighted toward the most-likely value. Across 5,000 iterations the simulated EAC distribution captures both central tendency and tail risk.</p>
+
+        <h3>Formulas</h3>
+        ${formulaBlock([
+          "Beta-PERT parameters:",
+          ["μ  = (a + 4m + b) / 6", "mean — most-likely weighted"],
+          ["σ² = ((b − a) / 6)²", "variance"],
+          ["α  = 6 × (μ − a) / (b − a)  ×  [ (μ − a)(b − μ) / σ²  − 1 ]", "shape α"],
+          ["β  = α × (b − μ) / (μ − a)", "shape β"],
+          "",
+          "Per-iteration sample:",
+          ["EAC_i = BAC / CPI_i,    CPI_i ~ Beta-PERT(a, m, b)", ""],
+          "",
+          "Aggregated outputs:",
+          ["P50 EAC  = 50th percentile of [ EAC_1 … EAC_5000 ]", "median forecast"],
+          ["P80 EAC  = 80th percentile", "conservative planning figure"],
+          ["P(delay) = | { i : EAC_i > BAC × 1.10 } | / 5000", "milestone-delay probability"],
+        ])}
+
+        ${svgMcHist()}
+
+        <p>The distance from P50 to P80 is the tail risk; widening that distance over reporting cycles is itself a finding — even if P50 holds steady, contingency needs are rising.</p>
+      `,
+    },
+    {
+      id: "cusum",
+      title: "5. Module 02 — SPC / CUSUM Anomaly Monitor",
+      eyebrow: "Module 02",
+      build: () => `
+        <p class="kn-lead">A single-period CPI/SPI reading is noisy. Real schedule drift accumulates slowly. Statistical Process Control separates signal from noise; CUSUM is the SPC method that catches sustained drift before any single period would trip a variance threshold.</p>
+
+        <h3>Why tabular CUSUM, not Shewhart</h3>
+        <p>A Shewhart chart flags points that breach 3σ control limits — good at detecting large single-period shifts, poor at detecting small sustained ones. Tabular CUSUM (Page, 1954) accumulates deviations from the target so a half-σ drift that persists over six periods triggers; on a project that is exactly the pattern that hides under Shewhart limits.</p>
+
+        <h3>Two-sided tabular CUSUM</h3>
+        ${formulaBlock([
+          ["C⁺ᵢ = max( 0,  C⁺ᵢ₋₁ + (xᵢ − μ₀ − k) )", "upper (positive drift)"],
+          ["C⁻ᵢ = max( 0,  C⁻ᵢ₋₁ − (xᵢ − μ₀ + k) )", "lower (negative drift)"],
+          "",
+          "Inputs:",
+          ["xᵢ  = SPI at reporting period i", ""],
+          ["μ₀  = 1.00", "target — on schedule"],
+          ["k   = 0.5 σ", "allowance — half the series standard deviation"],
+          ["H   = 5 σ", "decision interval"],
+          "",
+          ["Breach: C⁺ᵢ > H  or  C⁻ᵢ > H", "hand off to governance"],
+        ])}
+
+        <h3>Why H = 5σ (not 3σ)</h3>
+        <p>Construction project SPI series have higher natural variability than manufacturing process measurements. A 3σ decision interval generates excessive false positives; 5σ ensures that only sustained, meaningful drift triggers governance action — at the cost of a slightly slower response. For a governance-grade signal that trade-off is correct.</p>
+
+        ${svgCusum()}
+
+        <h3>What a breach means</h3>
+        <p>A CUSUM breach hands the question to Module 04 (Signal Synthesis) and Module 05 (ABM Governance Layer). The monitor never acts on its own; it produces evidence the governance layer routes. If the breach has no document narrative behind it, the conflict type is "Anomaly Without Narrative" — itself a finding worth surfacing.</p>
+      `,
+    },
+    {
+      id: "doc",
+      title: "6. Module 03 — Document Risk Extraction",
+      eyebrow: "Module 03",
+      build: () => `
+        <p class="kn-lead">EVM lags field conditions by weeks. An RFI log showing 20 open disputes in period 4 predicts a CPI collapse in period 6 — but EVM will not show that collapse until it has already happened. Document risk is the leading signal.</p>
+
+        <h3>How extraction works</h3>
+        <p>Module 03 applies transparent keyword and pattern rules over RFIs, submittal logs, OAC meeting minutes, and project correspondence. Each rule has a weight and an evidence excerpt; the document risk score is a weighted sum normalised to 0–1. Every score is inspectable: the matched rule, the source document, and the excerpt are carried into the ledger.</p>
+
+        <h3>The score</h3>
+        ${ragTable(
+          ["Score", "Status", "Meaning"],
+          [
+            [{ label: "< 0.30", color: RAG.green }, "Green", "Routine language; no significant risk indicators."],
+            [{ label: "0.30–0.70", color: RAG.amber }, "Amber", "Possible cost / schedule / scope impact language present."],
+            [{ label: "≥ 0.70", color: RAG.red }, "Red", "High-impact language converging across multiple document types."],
+          ]
+        )}
+
+        <h3>A real limitation</h3>
+        <p>Keyword extraction is rule-based, not semantic. A sophisticated contractor writes around keyword rules. The score is a <em>leading indicator</em>, never a verdict. PCEIF treats Module 03 Red as a flag that requires Module 04 corroboration before it drives an action — never as a standalone trigger.</p>
+      `,
+    },
+    {
+      id: "synthesis",
+      title: "7. Module 04 — Signal Synthesis",
+      eyebrow: "Module 04",
+      build: () => `
+        <p class="kn-lead">A CPI of 1.02 and a CUSUM breach do <strong>not</strong> average to "slightly above baseline." The breach is the finding. PCEIF surfaces disagreement between signal classes instead of averaging it away — and names the disagreement so the reviewer knows what to investigate.</p>
+
+        <h3>The six conflict types</h3>
+        ${ragTable(
+          ["Conflict Type", "Condition", "Meaning"],
+          [
+            ["Agreement — All Stable", "All Green", "No action required this cycle."],
+            ["Mixed Early Warning", "Ambers only, no Red", "Monitor; no escalation yet."],
+            ["Single Signal Watch", "One Amber", "Investigate the specific signal."],
+            ["Anomaly Without Narrative", "CUSUM Red, EVM Amber/Green", "Schedule anomaly not yet explained by documents."],
+            ["Leading Document Risk", "Doc Red, EVM Green", "Field conditions deteriorating before EVM shows it."],
+            ["Multi-signal Red-review", "≥ 2 Red signals", "Escalation required — full signal package."],
+          ]
+        )}
+
+        ${svgAgreementMap()}
+
+        <h3>Why precedence matters</h3>
+        <p>The classifier walks the table in order: it picks the <em>first</em> matching conflict, not the most common one. That preserves the leading-indicator property — a Document Red overshadowed by aggregate Greens still surfaces as "Leading Document Risk" if it would otherwise be missed.</p>
+      `,
+    },
+    {
+      id: "abm",
+      title: "8. Module 05 — ABM Governance Layer",
+      eyebrow: "Module 05",
+      build: () => `
+        <p class="kn-lead">"Agent-based" here means each authority role (PM, controls lead, program director) is modelled as an agent with explicit, executable decision rules. In <code>decision.js</code> those rules are pure functions — readable, testable, and auditable. Nothing is learned; everything is documented.</p>
+
+        <h3>The three core functions</h3>
+        ${formulaBlock([
+          "deriveHealthState(signals):",
+          "  Conservative dominance — the worst single signal class determines state.",
+          "  Green only if ALL signal classes are Green.",
+          "  Red-review if ≥2 signal classes are Red, OR CUSUM breach + Red forecast.",
+          "",
+          "classifyConflict(signals):  precedence order",
+          "  1.  Multi-signal red-review  (≥2 Red)",
+          "  2.  Anomaly without narrative  (CUSUM Red + EVM not Red)",
+          "  3.  Forecast ahead of status  (Forecast Red + EVM Amber)",
+          "  4.  Leading document risk  (Doc Red + EVM Green)",
+          "  5.  Agreement  (all Green)",
+          "  6.  Mixed early warning  (Ambers, no Red)",
+          "",
+          "deriveDecision(state, conflict, sector):",
+          "  Maps state → action, authority, documentation, fairness gate requirement.",
+          "",
+          "Authority matrix — Layer 1 policy:",
+          "  Green       → Project Manager / Controls Lead     — monthly cycle",
+          "  Amber       → PM + Controls Lead                  — weekly loop",
+          "  Red-review  → Program Director / PMO Lead         — 48 hours",
+          "  Critical    → Contracting Officer / Executive     — immediate",
+        ])}
+
+        <h3>Why the rules are explicit, not learned</h3>
+        <p>A governance system cannot rely on a black-box model. Every recommended action must be traceable to a specific rule that a reviewer can read aloud. During a dispute the PM must be able to say: "the system recommended escalation because two signal classes were Red and the conflict was classified as Multi-signal Red-review under the PCEIF authority matrix." That sentence requires explicit rules, not neural weights.</p>
+        <p>This is also why <code>decision.js</code> is plain Javascript with no compilation step — anyone reading the code can verify the agency's authority matrix is implemented exactly as policy specifies.</p>
+      `,
+    },
+    {
+      id: "modules-06-10",
+      title: "9. Modules 06–10 — Extended Simulation Stack",
+      eyebrow: "Quantitative extensions",
+      build: () => `
+        <p class="kn-lead">Modules 06–10 cover construction/design risks EVM does not catch. They run client-side from the extracted signal inputs — no tokens, no backend — and each returns a status with an evidence metric that feeds Module 04.</p>
+
+        <h3>Module 06 — Program Evaluation &amp; Review Technique (PERT)</h3>
+        <p>Stochastic three-activity network with triangular activity sampling. The dominant path is aggregated across 5,000 iterations.</p>
+        ${formulaBlock([
+          ["te = (a + 4m + b) / 6", "deterministic three-point estimate"],
+          ["dᵢ ~ Triangular(a, m, b)", "per-activity sample"],
+          ["P80 duration = 80th percentile of simulated finishes", ""],
+          ["criticality_index = | runs where path = critical | / 5000", ""],
+        ])}
+        ${ragTable(["Metric", "Green", "Amber", "Red"], [
+          ["P80 vs baseline", { label: "≤ baseline", color: RAG.green }, { label: "+0 to +20%", color: RAG.amber }, { label: "> +20%", color: RAG.red }],
+        ])}
+
+        <h3>Module 07 — Line of Balance (LOB)</h3>
+        <p>Leader (grading) versus follower (paving) crew velocity. SPI degradation slows the follower so the buffer compresses unit by unit.</p>
+        ${formulaBlock([
+          ["lag_per_unit = (1 / paving_rate) − (1 / grading_rate)", "schedule cost per linear unit"],
+          ["buffer(u) = initial_buffer − u × lag_per_unit", "buffer at unit u"],
+          ["min_buffer = minᵤ buffer(u)", "headline metric"],
+        ])}
+        ${ragTable(["Metric", "Green", "Amber", "Red"], [
+          ["min crew buffer (days)", { label: "> 3.0", color: RAG.green }, { label: "1.5–3.0", color: RAG.amber }, { label: "≤ 1.5", color: RAG.red }],
+        ])}
+
+        <h3>Module 08 — Critical Chain Project Management (CCPM)</h3>
+        <p>Buffer-consumption fever chart. The amber threshold tracks chain completion; the red threshold sits a third of the remaining range above.</p>
+        ${formulaBlock([
+          ["amber_line = % complete", ""],
+          ["red_line   = % complete + (100 − % complete) / 3", ""],
+        ])}
+        ${ragTable(["Zone", "Condition"], [
+          [{ label: "Green", color: RAG.green }, "buffer consumed < % complete (below the amber line)"],
+          [{ label: "Amber", color: RAG.amber }, "buffer consumed ≥ % complete"],
+          [{ label: "Red", color: RAG.red }, "buffer consumed ≥ % complete + (100 − % complete) / 3"],
+        ])}
+
+        <h3>Module 09 — Reference Class Forecasting (RCF)</h3>
+        <p>Flyvbjerg's outside-view debiasing. Replaces the inside-view estimate with the empirical distribution from a comparable reference class.</p>
+        ${formulaBlock([
+          ["multipliers = [ 1.00, 1.04, 1.10, 1.14, 1.15, 1.26, 1.38, 1.45, 1.52 ]", "airport-infrastructure reference class"],
+          ["P50 prior = BAC × multipliers[ P50 ]", ""],
+          ["P80 prior = BAC × multipliers[ P80 ]", "conservative debiased budget"],
+          ["debiasing_factor = multipliers[ P80 ]", "headline metric"],
+        ])}
+        ${ragTable(["Metric", "Green", "Amber", "Red"], [
+          ["P80 prior vs BAC", { label: "≤ +10%", color: RAG.green }, { label: "+10% to +25%", color: RAG.amber }, { label: "> +25%", color: RAG.red }],
+        ])}
+
+        <h3>Module 10 — Design Structure Matrix (DSM)</h3>
+        <p>3×3 Arch / Structural / MEP dependency matrix. A unit architectural change is propagated through four passes; the cumulative rework multiplier is the coordination cost.</p>
+        ${formulaBlock([
+          "A = [ [0.0, 0.3, 0.1],   Arch    ← Structural, MEP",
+          "      [0.5, 0.0, 0.2],   Struct  ← Arch, MEP",
+          "      [0.4, 0.4, 0.0] ]  MEP     ← Arch, Structural",
+          "",
+          ["v⁰ = [1, 0, 0],   vᵗ⁺¹ = A · vᵗ", "propagation step"],
+          ["rework_multiplier = Σᵢ Σₜ₌₀⁴ vᵢᵗ", "cumulative across 4 passes"],
+        ])}
+        ${ragTable(["Metric", "Green", "Amber"], [
+          ["rework multiplier", { label: "≤ 2.5", color: RAG.green }, { label: "> 2.5", color: RAG.amber }],
+        ])}
+      `,
+    },
+    {
+      id: "fairness",
+      title: "10. The Fairness Gate",
+      eyebrow: "Procedural safeguard",
+      build: () => `
+        <p class="kn-lead">An automated signal must never directly drive a contractual consequence. The fairness gate is the procedural step that ensures the contractor has a documented opportunity to explain field conditions before a fairness-sensitive Red-review becomes a formal action.</p>
+
+        <h3>When it triggers</h3>
+        <p>The fairness gate engages when the project state is Red-review <em>and</em> at least one fairness-sensitive signal is Red:</p>
+        <ul class="kn-list">
+          <li><strong>Document Risk Red</strong> — risk language identified against the contractor's record.</li>
+          <li><strong>LOB Red</strong> — projected crew collision implies a productivity allegation.</li>
+          <li><strong>CCPM Red</strong> — buffer exhaustion implies the contractor's schedule discipline.</li>
+        </ul>
+
+        <h3>What it requires</h3>
+        <ul class="kn-list">
+          <li>A written request to the contractor stating the signal and the evidence.</li>
+          <li>A reasonable response timeframe (commonly 5 business days; agency policy may set the floor).</li>
+          <li>The reviewer's acknowledgement that the response was solicited and either received or formally non-responded.</li>
+        </ul>
+
+        <h3>What it produces</h3>
+        <p>The contractor's response — or the documented non-response — is recorded alongside the decision card in the audit trail. The decision cannot be recorded until the gate is acknowledged; this is a hard procedural block, not a soft reminder.</p>
+
+        <p class="kn-callout">The fairness gate is a workflow gate, not a statistic. It is never expressed as a score or a percentage; it is either acknowledged or it is not.</p>
+      `,
+    },
+    {
+      id: "decision",
+      title: "11. The Decision Card & Audit Trail",
+      eyebrow: "Accountable record",
+      build: () => `
+        <p class="kn-lead">The decision card is the single artefact that captures, for each governed decision, who decided, what they decided, on what evidence, under what authority, and on what date. It is the record that survives the project — the basis for independent audit, dispute resolution, and program-level reporting.</p>
+
+        <h3>Decision card fields</h3>
+        ${ragTable(
+          ["Field", "Why it matters"],
+          [
+            ["Derived state", "The PCEIF rule output — Green / Amber / Red-review / Critical — that triggered this card."],
+            ["Conflict type", "The named disagreement Module 04 surfaced; tells the reviewer what to investigate."],
+            ["Recommended action", "The specific governance step the authority matrix returned; not a directive, a recommendation."],
+            ["Authority", "The role entitled to record the decision. A different role recording it must document the override rationale."],
+            ["Documentation required", "The artefacts (variance report, recovery plan, corrective-action notice) the agency policy requires for this state."],
+            ["Fairness gate", "Whether the procedural contractor-response gate is required and, if so, acknowledged."],
+            ["Reviewer rationale", "The reviewer's plain-language explanation. Required minimum length; recorded verbatim."],
+            ["Recorded by / at", "Named human, role, and UTC timestamp at the moment of recording."],
+          ]
+        )}
+
+        <h3>What "named human approval" means</h3>
+        <p>A status change is not a decision. A decision has a name attached, a role attached, a rationale attached, and a timestamp. PCEIF will not let a Red-review be recorded as Approved without a rationale that meets the minimum length and a reviewer identifier. This is the same reason the fairness gate cannot be auto-acknowledged.</p>
+
+        <h3>Audit export</h3>
+        <p>The Export Audit JSON action writes the full signal package, derived decision, rationale, fairness acknowledgement, and timestamps to a structured file suitable for ingestion into a program-level audit register. UTC ISO timestamps are preserved alongside the local display time, so the record is unambiguous across time zones.</p>
+
+        <h3>Why structured export matters</h3>
+        <p>Program-level reporting and independent audit do not work on PDFs. They work on structured records that can be queried, aggregated, and reconciled. A decision card that exports cleanly is one that can be audited at scale — and one that protects the reviewer who recorded it.</p>
+      `,
+    },
+  ];
+
+  window.LIN_KNOWLEDGE = { terms: TERMS, glossary: GLOSSARY, topics: TOPICS, library: LIBRARY };
+
+  /* ---------- knowledge page rendering — two-panel navigator + content ---------- */
   function renderKnowledgePage() {
     const root = document.getElementById("knowledge-root");
     if (!root) return;
+    let selectedId = (LIBRARY[0] && LIBRARY[0].id) || "pceif";
 
-    const glossary = (LIN_KNOWLEDGE.glossary || []).map((g) => {
-      const thresholds = (g.thresholds || []).map((t) =>
-        `<li class="kn-gl-threshold" style="--kn-th:${t.color}">${esc(t.label)}</li>`).join("");
-      return `<div class="kn-gl-item">
-        <p class="kn-gl-term"><strong>${esc(g.term)}</strong></p>
-        <p class="kn-gl-def">${esc(g.definition)}</p>
-        ${thresholds ? `<ul class="kn-gl-thresholds">${thresholds}</ul>` : ""}
-      </div>`;
-    }).join("");
-
-    root.innerHTML =
-      `<div class="kn-grid">
-         <section class="panel kn-terms">
-           <p class="eyebrow">Glossary</p>
-           <h2 class="kn-h">Definitions</h2>
-           <p class="kn-sub">Plain-language definitions of the PCEIF terms and the color thresholds where they apply.</p>
-           <div class="kn-glossary">${glossary}</div>
-         </section>
-         <section class="panel kn-topics">
-           <p class="eyebrow">Method library</p>
-           <h2 class="kn-h">PCEIF concepts &amp; how-to</h2>` +
-      LIN_KNOWLEDGE.topics.map((t) =>
-        `<details class="kn-topic"><summary>${esc(t.title)}</summary><p>${esc(t.body)}</p></details>`).join("") +
-      `  </section>
-       </div>`;
+    function navHtml() {
+      return LIBRARY.map((t) =>
+        `<li><button class="kn-nav-btn${t.id === selectedId ? " active" : ""}" data-topic="${esc(t.id)}">${esc(t.title)}</button></li>`
+      ).join("");
+    }
+    function contentHtml() {
+      const t = LIBRARY.find((x) => x.id === selectedId) || LIBRARY[0];
+      return `<article class="kn-article">
+        <p class="eyebrow">${esc(t.eyebrow || "Knowledge Library")}</p>
+        <h2 class="kn-h kn-h-art">${esc(t.title)}</h2>
+        ${t.build()}
+      </article>`;
+    }
+    function paint() {
+      root.innerHTML =
+        `<div class="kn-lib">
+           <aside class="panel kn-nav">
+             <p class="eyebrow">Knowledge Library</p>
+             <ol class="kn-nav-list">${navHtml()}</ol>
+           </aside>
+           <section class="panel kn-content">${contentHtml()}</section>
+         </div>`;
+      root.querySelectorAll(".kn-nav-btn").forEach((b) => b.addEventListener("click", () => {
+        selectedId = b.dataset.topic;
+        paint();
+        const article = root.querySelector(".kn-article");
+        if (article) article.scrollIntoView({ behavior: "smooth", block: "start" });
+      }));
+    }
+    paint();
   }
 
   window.LinKnowledge = { renderKnowledgePage };
