@@ -317,7 +317,7 @@
   // and readable: 4 boxes across the top, 3 boxes centred underneath, with an
   // L-bend connector from box 4 down to box 5.
   function svgPceifFlow() {
-    const row1 = ["Documents + Schedule + Cost", "10 Signal Modules", "Signal Synthesis", "Conflict Classification"];
+    const row1 = ["Documents + Schedule + Cost", "19 Signal Modules", "Signal Synthesis", "Conflict Classification"];
     const row2 = ["Governance Decision Card", "Named Human Approval", "Audit Record"];
     const bw = 200, bh = 70, gap = 40, pad = 24;
     const rowGap = 80;             // vertical space between rows
@@ -541,7 +541,7 @@
         <h3>What's different from standard EVM</h3>
         <ul class="kn-list">
           <li><strong>Standard EVM:</strong> compute CPI / SPI → report to management.</li>
-          <li><strong>PCEIF:</strong> compute 10 signal classes → detect conflict → classify the conflict → surface the action, authority, and documentation — <em>before</em> the next reporting cycle closes.</li>
+          <li><strong>PCEIF:</strong> compute 19 signal classes → detect conflict → classify the conflict → surface the action, authority, and documentation — <em>before</em> the next reporting cycle closes.</li>
         </ul>
 
         <h3>The role of AI</h3>
@@ -550,42 +550,54 @@
     },
     {
       id: "stack",
-      title: "2. The Signal Stack: 10 Modules",
+      title: "2. The Signal Stack — 19 Modules",
       eyebrow: "Architecture",
       build: () => `
-        <p class="kn-lead">The signal stack splits into three tiers. The first two compute and govern; the third extends quantitative coverage to specialised construction/design risks that EVM does not catch.</p>
+        <p class="kn-lead">The signal stack splits into five tiers. The first two compute and govern; the next three extend coverage to specialised construction and design risks, then layer multiple evidence-combination and uncertainty-reasoning frameworks across the result.</p>
         ${svgSignalStack()}
 
-        <h3>Modules 01–02 — Quantitative EVM Analysis</h3>
+        <h3>Modules 01–03 — Quantitative EVM Analysis</h3>
         <ul class="kn-list">
-          <li><strong>Module 01 — Hybrid Dynamic Simulation.</strong> EVM core (CPI, SPI) plus the 5,000-iteration Monte Carlo P80 EAC forecast.</li>
-          <li><strong>Module 02 — SPC / CUSUM Anomaly Monitor.</strong> Two-sided tabular CUSUM over the SPI series; breach when cumulative drift exceeds the decision interval H = 5σ.</li>
-        </ul>
-
-        <h3>Modules 03, 09, 10 — Governance Synthesis (rule-based)</h3>
-        <ul class="kn-list">
+          <li><strong>Module 01 — Monte Carlo EAC Forecast.</strong> EVM core (CPI, SPI) plus the 5,000-iteration Beta-PERT P80 EAC forecast.</li>
+          <li><strong>Module 02 — CUSUM Anomaly Monitor.</strong> Two-sided tabular CUSUM over the SPI series; breach when cumulative drift exceeds the decision interval H = 5σ.</li>
           <li><strong>Module 03 — Document Risk Extraction.</strong> Transparent keyword rules score risk language across RFIs, submittals, OAC minutes, and correspondence.</li>
-          <li><strong>Module 09 — ABM Governance Layer.</strong> Maps (state × conflict × sector) to action, authority, and documentation. Implemented as pure functions in <code>decision.js</code>.</li>
-          <li><strong>Module 10 — Signal Synthesis.</strong> Classifies the disagreement between signal classes (six conflict types) rather than averaging it away. Conservative dominance: worst signal wins.</li>
         </ul>
 
-        <h3>Modules 04–08, 11 — Extended Simulation Stack</h3>
+        <h3>Modules 04–08 — Extended Construction & Design Simulation</h3>
         <ul class="kn-list">
           <li><strong>Module 04 — PERT</strong> network criticality (P80 duration, path criticality index).</li>
           <li><strong>Module 05 — Line of Balance</strong> production velocity (crew-buffer collapse as a leading indicator).</li>
           <li><strong>Module 06 — CCPM</strong> buffer-health fever chart (buffer consumed vs chain complete).</li>
           <li><strong>Module 07 — Reference Class Forecasting</strong> cost prior (outside-view debiasing against an empirical reference class).</li>
           <li><strong>Module 08 — Design Structure Matrix</strong> rework propagation (architectural change cascades to MEP).</li>
-          <li><strong>Module 11 — Dempster-Shafer Evidence Combination</strong> — combines all four signal classes into a belief distribution; conflict mass measures inter-signal disagreement.</li>
         </ul>
 
-        <p class="kn-callout">Outputs from all eleven feed Module 10 (Signal Synthesis). The synthesis is what gates the governance card — not any individual signal. Module 11 provides an independent probabilistic lens to compare against the conservative dominance result.</p>
+        <h3>Modules 09–10 — Governance Synthesis (rule-based)</h3>
+        <ul class="kn-list">
+          <li><strong>Module 09 — ABM Governance Layer.</strong> Maps (state × conflict × sector) to action, authority, and documentation. Implemented as pure functions in <code>decision.js</code>.</li>
+          <li><strong>Module 10 — Signal Synthesis.</strong> Classifies the disagreement between signal classes (six conflict types) rather than averaging it away. Conservative dominance: worst signal wins.</li>
+        </ul>
+
+        <h3>Modules 11–19 — Evidence Combination &amp; Uncertainty Reasoning</h3>
+        <ul class="kn-list">
+          <li><strong>Module 11 — Dempster-Shafer</strong> (1967/1976). Belief masses + conflict mass K.</li>
+          <li><strong>Module 12 — Rough Sets</strong> (1982). Lower / upper approximations and boundary region.</li>
+          <li><strong>Module 13 — Neutrosophic Logic</strong> (1995). Truth / Indeterminacy / Falsity as independent dimensions.</li>
+          <li><strong>Module 14 — Interval-valued Fuzzy Sets</strong> (1975/2023). Membership intervals propagating EVM measurement tolerances.</li>
+          <li><strong>Module 15 — Z-numbers</strong> (2011). Each signal as a (Restriction, Reliability) pair.</li>
+          <li><strong>Module 16 — PLTS</strong> (2016). Per-source probability distribution over linguistic states.</li>
+          <li><strong>Module 17 — Plithogenic Sets</strong> (2018). Contradiction-degree weighting against the dominant value.</li>
+          <li><strong>Module 18 — Belief Rule Base</strong> (2006/2023). Expert IF-THEN rules with belief-distribution consequents.</li>
+          <li><strong>Module 19 — Quantum Probability</strong> (2012). Amplitude state vector with phase-angle interference.</li>
+        </ul>
+
+        <p class="kn-callout">Outputs from Modules 01–08 feed Module 10 (Signal Synthesis). The synthesis is what gates the governance card — not any individual signal. Modules 11–19 each provide an independent lens to compare against the conservative dominance result; divergence between methods is itself a governance-relevant finding.</p>
       `,
     },
     {
-      id: "evm",
-      title: "3. Module 01: Earned Value Management (EVM)",
-      eyebrow: "Module 01 (a)",
+      id: "module01",
+      title: "3. Module 01 — Monte Carlo EAC Forecast",
+      eyebrow: "Module 01",
       build: () => `
         <p class="kn-lead">EVM integrates scope, schedule, and cost on a single measurement plane. On U.S. public capital programs it is required under OMB Circular A-11 and FAR Part 34 for major investments; under most agency policies a CPI shortfall sustained over multiple reporting periods is itself a reporting trigger.</p>
 
@@ -633,19 +645,14 @@
 
         <h3>Governance implication</h3>
         <p>CPI &lt; 0.90 on a public capital program is the FAR-region threshold for potential corrective action reporting. A CPI of 0.88 sustained over three periods is not a "watch item" — under most agency program-controls policies it is a recovery-plan trigger, and the audit record should show the decision was made (or formally deferred) by named authority on a documented date.</p>
-      `,
-    },
-    {
-      id: "montecarlo",
-      title: "4. Module 01: Monte Carlo Forecast",
-      eyebrow: "Module 01 (b)",
-      build: () => `
-        <p class="kn-lead">A single deterministic EAC gives false precision. A P50/P80 range is more honest and more useful: it lets program controls fund contingency to an explicit risk percentile rather than to a point estimate that pretends the future is known.</p>
+
+        <h3>Monte Carlo EAC forecast — why a range, not a point</h3>
+        <p>A single deterministic EAC gives false precision. A P50/P80 range is more honest and more useful: it lets program controls fund contingency to an explicit risk percentile rather than to a point estimate that pretends the future is known.</p>
 
         <h3>Why Beta-PERT</h3>
         <p>For construction cost modelling the Beta-PERT distribution is preferred over a normal or triangular distribution: it is continuous, naturally bounded by optimistic and pessimistic limits, and weighted toward the most-likely value. Across 5,000 iterations the simulated EAC distribution captures both central tendency and tail risk.</p>
 
-        <h3>Formulas</h3>
+        <h3>Monte Carlo formulas</h3>
         ${formulaBlock([
           "Beta-PERT parameters:",
           ["μ  = (a + 4m + b) / 6", "mean — most-likely weighted"],
@@ -668,8 +675,8 @@
       `,
     },
     {
-      id: "cusum",
-      title: "5. Module 02: SPC / CUSUM Anomaly Monitor",
+      id: "module02",
+      title: "4. Module 02 — CUSUM Anomaly Monitor",
       eyebrow: "Module 02",
       build: () => `
         <p class="kn-lead">A single-period CPI/SPI reading is noisy. Real schedule drift accumulates slowly. Statistical Process Control separates signal from noise; CUSUM is the SPC method that catches sustained drift before any single period would trip a variance threshold.</p>
@@ -701,8 +708,8 @@
       `,
     },
     {
-      id: "doc",
-      title: "6. Module 03: Document Risk Extraction",
+      id: "module03",
+      title: "5. Module 03 — Document Risk Extraction",
       eyebrow: "Module 03",
       build: () => `
         <p class="kn-lead">EVM lags field conditions by weeks. An RFI log showing 20 open disputes in period 4 predicts a CPI collapse in period 6 — but EVM will not show that collapse until it has already happened. Document risk is the leading signal.</p>
@@ -725,34 +732,129 @@
       `,
     },
     {
-      id: "synthesis",
-      title: "7. Module 10: Signal Synthesis",
-      eyebrow: "Module 10",
+      id: "module04",
+      title: "6. Module 04 — PERT Network Criticality",
+      eyebrow: "Module 04",
       build: () => `
-        <p class="kn-lead">A CPI of 1.02 and a CUSUM breach do <strong>not</strong> average to "slightly above baseline." The breach is the finding. PCEIF surfaces disagreement between signal classes instead of averaging it away — and names the disagreement so the reviewer knows what to investigate.</p>
+        <p class="kn-lead">A deterministic critical-path estimate is fragile; PERT samples each activity's plausible duration range and reports the probabilistic finish date. The P80 duration is the conservative milestone estimate program controls should plan to.</p>
 
-        <h3>The six conflict types</h3>
-        ${ragTable(
-          ["Conflict Type", "Condition", "Meaning"],
-          [
-            ["Agreement — All Stable", "All Green", "No action required this cycle."],
-            ["Mixed Early Warning", "Ambers only, no Red", "Monitor; no escalation yet."],
-            ["Single Signal Watch", "One Amber", "Investigate the specific signal."],
-            ["Anomaly Without Narrative", "CUSUM Red, EVM Amber/Green", "Schedule anomaly not yet explained by documents."],
-            ["Leading Document Risk", "Doc Red, EVM Green", "Field conditions deteriorating before EVM shows it."],
-            ["Multi-signal Red-review", "≥ 2 Red signals", "Escalation required — full signal package."],
-          ]
-        )}
+        <h3>Why a stochastic network</h3>
+        <p>The Program Evaluation &amp; Review Technique (PERT) treats each activity duration as a random variable rather than a single point. Across 5,000 iterations the dominant network path emerges, and the path-criticality index reports the share of runs in which the structural path was on the critical path — high criticality means thin float concentrated on one chain.</p>
 
-        ${svgAgreementMap()}
+        ${formulaBlock([
+          ["te = (a + 4m + b) / 6", "deterministic three-point estimate"],
+          ["di ~ Triangular(a, m, b)", "per-activity sample"],
+          ["P80 duration = 80th percentile of simulated finishes", ""],
+          ["criticality_index = | runs where path = critical | / 5000", ""],
+        ])}
+        ${ragTable(["Metric", "Green", "Amber", "Red"], [
+          ["P80 vs baseline", { label: "within baseline", color: RAG.green }, { label: "+0 to +20%", color: RAG.amber }, { label: "> +20%", color: RAG.red }],
+        ])}
 
-        <h3>Why precedence matters</h3>
-        <p>The classifier walks the table in order: it picks the <em>first</em> matching conflict, not the most common one. That preserves the leading-indicator property — a Document Red overshadowed by aggregate Greens still surfaces as "Leading Document Risk" if it would otherwise be missed.</p>
+        <h3>How it differs from Module 01</h3>
+        <p>Module 01 (Monte Carlo EAC) randomises cost performance; Module 04 randomises activity durations along the schedule network. Module 01 answers "what will it cost?"; Module 04 answers "when will it finish?". Both contribute independent evidence to Module 10 synthesis.</p>
       `,
     },
     {
-      id: "abm",
-      title: "8. Module 09: ABM Governance Layer",
+      id: "module05",
+      title: "7. Module 05 — Line of Balance Production Velocity",
+      eyebrow: "Module 05",
+      build: () => `
+        <p class="kn-lead">For repetitive linear work — paving, MEP installation, finishes — the schedule risk lives in the gap between leading and following crews, not in EVM aggregates. Line of Balance tracks crew velocity so that buffer collapse appears as a leading schedule signal.</p>
+
+        <h3>Buffer collapse as a leading indicator</h3>
+        <p>The leader crew (grading) sets the pace; the follower (paving) trails by an initial buffer. When the follower slows — typically because SPI is degrading project-wide — the buffer compresses unit by unit, and the unit at which the buffer would hit zero is the crew-collision point. EVM aggregates do not see this; LOB does.</p>
+
+        ${formulaBlock([
+          ["lag_per_unit = (1 / paving_rate) - (1 / grading_rate)", "schedule cost per linear unit"],
+          ["buffer(u) = initial_buffer - u x lag_per_unit", "buffer at unit u"],
+          ["min_buffer = min_u buffer(u)", "headline metric"],
+        ])}
+        ${ragTable(["Metric", "Green", "Amber", "Red"], [
+          ["min crew buffer (days)", { label: "> 3.0", color: RAG.green }, { label: "1.5–3.0", color: RAG.amber }, { label: "≤ 1.5", color: RAG.red }],
+        ])}
+
+        <h3>Reference</h3>
+        <p>Origin: U.S. Navy Bureau of Yards and Docks (1942) for shipbuilding. Adapted to repetitive construction work in the 1960s; remains the canonical scheduling method for linear infrastructure where the same activities repeat across units.</p>
+      `,
+    },
+    {
+      id: "module06",
+      title: "8. Module 06 — CCPM Buffer Health",
+      eyebrow: "Module 06",
+      build: () => `
+        <p class="kn-lead">Critical Chain Project Management aggregates safety margin into a single project buffer rather than scattering it across activities. The fever chart plots buffer consumption against chain completion — a project burning buffer faster than it completes work is on a trajectory to delay, regardless of what current SPI shows.</p>
+
+        <h3>The fever chart</h3>
+        <p>The amber line tracks chain completion (consuming buffer 1:1 with progress is the warning floor); the red line sits a third of the remaining range above. Crossing into red means buffer is being burned faster than work is being earned — the buffer will be gone before the chain.</p>
+
+        ${formulaBlock([
+          ["amber_line = % complete", ""],
+          ["red_line   = % complete + (100 - % complete) / 3", ""],
+        ])}
+        ${ragTable(["Zone", "Condition"], [
+          [{ label: "Green", color: RAG.green }, "buffer consumed < % complete (below the amber line)"],
+          [{ label: "Amber", color: RAG.amber }, "buffer consumed >= % complete"],
+          [{ label: "Red", color: RAG.red }, "buffer consumed >= % complete + (100 - % complete) / 3"],
+        ])}
+
+        <h3>Reference</h3>
+        <p>Goldratt, E.M. (1997). <em>Critical Chain</em>. North River Press. CCPM treats schedule contingency as a programme-level resource rather than per-activity padding, making the actual consumption rate visible.</p>
+      `,
+    },
+    {
+      id: "module07",
+      title: "9. Module 07 — Reference Class Forecasting",
+      eyebrow: "Module 07",
+      build: () => `
+        <p class="kn-lead">Inside-view estimates — bottom-up cost roll-ups from the project's own scope — systematically underestimate cost on public infrastructure. Reference Class Forecasting replaces the inside view with the empirical distribution of overruns from comparable projects.</p>
+
+        <h3>Outside-view debiasing</h3>
+        <p>Flyvbjerg's analysis of public infrastructure shows a consistent pattern: optimism bias in inside-view estimates compounds with strategic mis-representation. The empirical reference-class distribution captures both the bias and the variance; the P80 multiplier is the conservative debiasing factor applied to BAC.</p>
+
+        ${formulaBlock([
+          ["multipliers = [ 1.00, 1.04, 1.10, 1.14, 1.15, 1.26, 1.38, 1.45, 1.52 ]", "airport-infrastructure reference class"],
+          ["P50 prior = BAC x multipliers[ P50 ]", ""],
+          ["P80 prior = BAC x multipliers[ P80 ]", "conservative debiased budget"],
+          ["debiasing_factor = multipliers[ P80 ]", "headline metric"],
+        ])}
+        ${ragTable(["Metric", "Green", "Amber", "Red"], [
+          ["P80 prior vs BAC", { label: "within +10%", color: RAG.green }, { label: "+10% to +25%", color: RAG.amber }, { label: "> +25%", color: RAG.red }],
+        ])}
+
+        <h3>Reference</h3>
+        <p>Flyvbjerg, B. (2008). Curbing optimism bias and strategic misrepresentation in planning. <em>European Planning Studies</em>, 16(1), 3–21. The reference-class method is now embedded in the UK Treasury Green Book guidance.</p>
+      `,
+    },
+    {
+      id: "module08",
+      title: "10. Module 08 — DSM Rework Propagation",
+      eyebrow: "Module 08",
+      build: () => `
+        <p class="kn-lead">Design changes do not stay where they start. The Design Structure Matrix captures the inter-discipline dependency network so a single architectural change can be propagated through Structural and MEP to estimate the cumulative rework burden.</p>
+
+        <h3>The 3x3 design dependency matrix</h3>
+        <p>The off-diagonal entries are the coupling strengths between Arch, Structural, and MEP. A unit architectural change vector is propagated through four passes; the cumulative rework multiplier across all three disciplines is the coordination cost of that single change.</p>
+
+        ${formulaBlock([
+          "A = [ [0.0, 0.3, 0.1],   Arch    <- Structural, MEP",
+          "      [0.5, 0.0, 0.2],   Struct  <- Arch, MEP",
+          "      [0.4, 0.4, 0.0] ]  MEP     <- Arch, Structural",
+          "",
+          ["v0 = [1, 0, 0],   v(t+1) = A · v(t)", "propagation step"],
+          ["rework_multiplier = sum_i sum_t=0..4 v_i(t)", "cumulative across 4 passes"],
+        ])}
+        ${ragTable(["Metric", "Green", "Amber"], [
+          ["rework multiplier", { label: "≤ 2.5", color: RAG.green }, { label: "> 2.5", color: RAG.amber }],
+        ])}
+
+        <h3>Reference</h3>
+        <p>Steward, D.V. (1981). The Design Structure System: A Method for Managing the Design of Complex Systems. <em>IEEE Transactions on Engineering Management</em>, 28(3), 71–74. Modern DSM analysis underpins building-information-modelling clash detection and integrated-project-delivery coordination practice.</p>
+      `,
+    },
+    {
+      id: "module09",
+      title: "11. Module 09 — ABM Governance Layer",
       eyebrow: "Module 09",
       build: () => `
         <p class="kn-lead">"Agent-based" here means each authority role (PM, controls lead, program director) is modelled as an agent with explicit, executable decision rules. In <code>decision.js</code> those rules are pure functions — readable, testable, and auditable. Nothing is learned; everything is documented.</p>
@@ -788,81 +890,46 @@
       `,
     },
     {
-      id: "modules-04-08-11-14",
-      title: "9. Modules 04–08, 11–14: Extended Simulation Stack",
-      eyebrow: "Quantitative extensions",
+      id: "module10",
+      title: "12. Module 10 — Signal Synthesis",
+      eyebrow: "Module 10",
       build: () => `
-        <p class="kn-lead">Modules 04–08 and 11 cover construction and design risks that EVM does not catch. Each returns a status with an evidence metric that feeds Module 10 (Signal Synthesis).</p>
+        <p class="kn-lead">A CPI of 1.02 and a CUSUM breach do <strong>not</strong> average to "slightly above baseline." The breach is the finding. PCEIF surfaces disagreement between signal classes instead of averaging it away — and names the disagreement so the reviewer knows what to investigate.</p>
 
-        <h3>Module 04 — Program Evaluation &amp; Review Technique (PERT)</h3>
-        <p>Stochastic three-activity network with triangular activity sampling. The dominant path is aggregated across 5,000 iterations.</p>
-        ${formulaBlock([
-          ["te = (a + 4m + b) / 6", "deterministic three-point estimate"],
-          ["di ~ Triangular(a, m, b)", "per-activity sample"],
-          ["P80 duration = 80th percentile of simulated finishes", ""],
-          ["criticality_index = | runs where path = critical | / 5000", ""],
-        ])}
-        ${ragTable(["Metric", "Green", "Amber", "Red"], [
-          ["P80 vs baseline", { label: "within baseline", color: RAG.green }, { label: "+0 to +20%", color: RAG.amber }, { label: "> +20%", color: RAG.red }],
-        ])}
+        <h3>The six conflict types</h3>
+        ${ragTable(
+          ["Conflict Type", "Condition", "Meaning"],
+          [
+            ["Agreement — All Stable", "All Green", "No action required this cycle."],
+            ["Mixed Early Warning", "Ambers only, no Red", "Monitor; no escalation yet."],
+            ["Single Signal Watch", "One Amber", "Investigate the specific signal."],
+            ["Anomaly Without Narrative", "CUSUM Red, EVM Amber/Green", "Schedule anomaly not yet explained by documents."],
+            ["Leading Document Risk", "Doc Red, EVM Green", "Field conditions deteriorating before EVM shows it."],
+            ["Multi-signal Red-review", "≥ 2 Red signals", "Escalation required — full signal package."],
+          ]
+        )}
 
-        <h3>Module 05 — Line of Balance (LOB)</h3>
-        <p>Leader (grading) versus follower (paving) crew velocity. SPI degradation slows the follower so the buffer compresses unit by unit.</p>
-        ${formulaBlock([
-          ["lag_per_unit = (1 / paving_rate) - (1 / grading_rate)", "schedule cost per linear unit"],
-          ["buffer(u) = initial_buffer - u x lag_per_unit", "buffer at unit u"],
-          ["min_buffer = min_u buffer(u)", "headline metric"],
-        ])}
-        ${ragTable(["Metric", "Green", "Amber", "Red"], [
-          ["min crew buffer (days)", { label: "> 3.0", color: RAG.green }, { label: "1.5–3.0", color: RAG.amber }, { label: "≤ 1.5", color: RAG.red }],
-        ])}
+        ${svgAgreementMap()}
 
-        <h3>Module 06 — Critical Chain Project Management (CCPM)</h3>
-        <p>Buffer-consumption fever chart. The amber threshold tracks chain completion; the red threshold sits a third of the remaining range above.</p>
-        ${formulaBlock([
-          ["amber_line = % complete", ""],
-          ["red_line   = % complete + (100 - % complete) / 3", ""],
-        ])}
-        ${ragTable(["Zone", "Condition"], [
-          [{ label: "Green", color: RAG.green }, "buffer consumed < % complete (below the amber line)"],
-          [{ label: "Amber", color: RAG.amber }, "buffer consumed >= % complete"],
-          [{ label: "Red", color: RAG.red }, "buffer consumed >= % complete + (100 - % complete) / 3"],
-        ])}
+        <h3>Why precedence matters</h3>
+        <p>The classifier walks the table in order: it picks the <em>first</em> matching conflict, not the most common one. That preserves the leading-indicator property — a Document Red overshadowed by aggregate Greens still surfaces as "Leading Document Risk" if it would otherwise be missed.</p>
 
-        <h3>Module 07 — Reference Class Forecasting (RCF)</h3>
-        <p>Flyvbjerg's outside-view debiasing. Replaces the inside-view estimate with the empirical distribution from a comparable reference class.</p>
-        ${formulaBlock([
-          ["multipliers = [ 1.00, 1.04, 1.10, 1.14, 1.15, 1.26, 1.38, 1.45, 1.52 ]", "airport-infrastructure reference class"],
-          ["P50 prior = BAC x multipliers[ P50 ]", ""],
-          ["P80 prior = BAC x multipliers[ P80 ]", "conservative debiased budget"],
-          ["debiasing_factor = multipliers[ P80 ]", "headline metric"],
-        ])}
-        ${ragTable(["Metric", "Green", "Amber", "Red"], [
-          ["P80 prior vs BAC", { label: "within +10%", color: RAG.green }, { label: "+10% to +25%", color: RAG.amber }, { label: "> +25%", color: RAG.red }],
-        ])}
+        <h3>How it differs from Modules 11–19</h3>
+        <p>Module 10 is the governance baseline: conservative dominance with explicit conflict typing. Modules 11–19 each provide an independent evidence-combination lens (probabilistic, set-theoretic, fuzzy, quantum). When Module 10 and any of 11–19 disagree, the disagreement itself is what gets recorded — the governance layer owns the residual uncertainty rather than picking a method.</p>
+      `,
+    },
+    {
+      id: "module11",
+      title: "13. Module 11 — Dempster-Shafer Evidence Combination",
+      eyebrow: "Module 11 · evidence theory",
+      build: () => `
+        <p class="kn-lead">Dempster-Shafer Theory (DST) is a mathematical framework for reasoning under uncertainty with multiple independent sources. Each source assigns a basic probability assignment (BPA) over a frame of discernment — here {Green, Amber, Red, Unknown}. Dempster's rule combines sources and normalises out the conflict mass K.</p>
 
-        <h3>Module 08 — Design Structure Matrix (DSM)</h3>
-        <p>3x3 Arch / Structural / MEP dependency matrix. A unit architectural change is propagated through four passes; the cumulative rework multiplier is the coordination cost.</p>
-        ${formulaBlock([
-          "A = [ [0.0, 0.3, 0.1],   Arch    <- Structural, MEP",
-          "      [0.5, 0.0, 0.2],   Struct  <- Arch, MEP",
-          "      [0.4, 0.4, 0.0] ]  MEP     <- Arch, Structural",
-          "",
-          ["v0 = [1, 0, 0],   v(t+1) = A · v(t)", "propagation step"],
-          ["rework_multiplier = sum_i sum_t=0..4 v_i(t)", "cumulative across 4 passes"],
-        ])}
-        ${ragTable(["Metric", "Green", "Amber"], [
-          ["rework multiplier", { label: "≤ 2.5", color: RAG.green }, { label: "> 2.5", color: RAG.amber }],
-        ])}
-
-        <h3>Module 11 — Dempster-Shafer Evidence Combination (DST)</h3>
-        <p>DST is a mathematical framework for reasoning under uncertainty with multiple independent sources. Introduced by Dempster (1967) and formalised by Shafer (1976). Each source assigns a basic probability assignment (BPA) over a frame of discernment — here {Green, Amber, Red, Unknown}. Sources are combined via Dempster's rule, which normalises out the conflict mass K.</p>
-
-        <p><strong>What DST adds that conservative dominance does not:</strong> Module 10 takes the worst single signal. DST weights all four evidence sources and produces explicit belief masses for every state. When a project is Green by two signals, Amber by one, and Red by one, conservative dominance outputs Red. DST may output Amber if the combined belief mass for Amber is highest, and its conflict mass will quantify exactly how much the sources disagreed. That conflict mass is itself a governance-relevant finding.</p>
+        <h3>What DST adds beyond conservative dominance</h3>
+        <p>Module 10 takes the worst single signal. DST weights all four evidence sources and produces explicit belief masses for every state. When a project is Green by two signals, Amber by one, Red by one, conservative dominance outputs Red; DST may output Amber if the combined belief mass for Amber is highest, and the conflict mass K quantifies exactly how much the sources disagreed. That conflict mass is itself a governance-relevant finding.</p>
 
         ${formulaBlock([
           "Frame of discernment: Theta = {Green, Amber, Red, Unknown}",
-          "",
           "Each source i assigns mass m_i(A) for each subset A of Theta,",
           "where sum_A m_i(A) = 1.",
           "",
@@ -872,12 +939,6 @@
           "",
           "If K → 1 (total conflict), the combination is undefined;",
           "this implementation returns uniform mass as a safe fallback.",
-          "",
-          "BPA thresholds per source:",
-          "  EVM (CPI/SPI min >= 0.95):  Green 0.80, Amber 0.10, Red 0.05, Unknown 0.05",
-          "  EVM (0.90-0.94):            Green 0.10, Amber 0.70, Red 0.15, Unknown 0.05",
-          "  EVM (< 0.90):               Green 0.05, Amber 0.15, Red 0.75, Unknown 0.05",
-          "  (Same pattern for MC p80delta, CUSUM breach, Doc score thresholds.)",
           "",
           "Final state = argmax_{Green,Amber,Red} m(state)",
           "Conflict level: Low if K < 0.10, Moderate if K 0.10-0.30, High if K > 0.30",
@@ -889,10 +950,19 @@
           [{ label: "> 0.30 (High)", color: RAG.red }, "Strong disagreement — divergence itself is a governance signal worth surfacing."],
         ])}
 
-        <p class="kn-callout">When Module 11 disagrees with Module 10, that disagreement is informative — it means the evidence picture is genuinely ambiguous and no single framing captures the full risk. The governance layer should note the divergence in the audit record.</p>
+        <h3>Reference</h3>
+        <p>Dempster, A.P. (1967). Upper and lower probabilities induced by a multivalued mapping. <em>Annals of Mathematical Statistics</em>, 38(2), 325–339. Shafer, G. (1976). <em>A Mathematical Theory of Evidence</em>. Princeton University Press.</p>
+      `,
+    },
+    {
+      id: "module12",
+      title: "14. Module 12 — Rough Sets Classification",
+      eyebrow: "Module 12 · set theory",
+      build: () => `
+        <p class="kn-lead">Rough Set Theory classifies a project by computing lower and upper approximations of each state class. The lower approximation holds states that all available signals definitively support (over 75% agreement); the upper approximation holds states that any signal supports; the boundary region is the indeterminate zone.</p>
 
-        <h3>Module 12 — Rough Set Theory Classification</h3>
-        <p>Rough Set Theory (Pawlak, 1982) classifies a project by computing lower and upper approximations of each state class. The lower approximation holds states that ALL available signals definitively support (over 75% agreement). The upper approximation holds states that ANY signal supports. The boundary region — upper minus lower — is the indeterminate zone: evidence exists for a state but is insufficient to classify with certainty.</p>
+        <h3>What rough sets add</h3>
+        <p>Unlike fuzzy logic, rough sets do not assign membership grades — they answer set-theoretic questions: Definite? Possible? Indeterminate? A non-empty boundary region is itself a finding: the evidence framework cannot yet support a single classification, so the governance layer must record the indeterminacy rather than force a verdict.</p>
 
         ${formulaBlock([
           "Lower approximation: states with signal agreement > 75%",
@@ -910,8 +980,19 @@
           [{ label: "Boundary region", color: RAG.amber }, "Indeterminate — evidence is present but insufficient for certain classification."],
         ])}
 
-        <h3>Module 13 — Neutrosophic Logic</h3>
-        <p>Neutrosophic Logic (Smarandache, 1995) adds a third dimension to truth value: Indeterminacy (I), alongside Truth (T) and Falsity (F). Unlike fuzzy logic where T + F = 1, neutrosophic components are independent and their sum is unconstrained. High I means the evidence is genuinely undetermined — not a soft positive or a soft negative, but an unresolvable uncertainty that no additional signal of the same type can remove.</p>
+        <h3>Reference</h3>
+        <p>Pawlak, Z. (1982). Rough sets. <em>International Journal of Computer and Information Sciences</em>, 11(5), 341–356. Rough set theory remains a foundational framework for decision-making under incomplete information.</p>
+      `,
+    },
+    {
+      id: "module13",
+      title: "15. Module 13 — Neutrosophic Logic",
+      eyebrow: "Module 13 · three-valued logic",
+      build: () => `
+        <p class="kn-lead">Neutrosophic Logic adds a third dimension to truth value: Indeterminacy (I), alongside Truth (T) and Falsity (F). Unlike classical and fuzzy logic, T + I + F is unconstrained — indeterminacy lives as its own dimension rather than being inferred from the residual of truth and falsity.</p>
+
+        <h3>What neutrosophic adds</h3>
+        <p>High I means the evidence is genuinely undetermined — not a soft positive or a soft negative, but an unresolvable uncertainty that no additional signal of the same type can remove. The governance recommendation can then be explicit: "the data we have cannot yet decide" is a valid output, distinct from "we have data and it says Amber."</p>
 
         ${formulaBlock([
           "Combination rule:",
@@ -931,8 +1012,19 @@
           [{ label: "> 30% (High)", color: RAG.red }, "Evidence architecture needs strengthening before confident classification."],
         ])}
 
-        <h3>Module 14 — Interval-valued Fuzzy Sets</h3>
-        <p>Interval-valued Fuzzy Sets (Sambuc 1975; Zadeh 1975) represent membership as a range [lower, upper] rather than a single value, explicitly propagating input measurement uncertainty through the fuzzy classification. For airport construction EVM, the principal sources are SoV line-item accuracy (~+/-2% EV) and pay-application rounding (~+/-1% AC), compounding to ~+/-3 percentage points on CPI/SPI.</p>
+        <h3>Reference</h3>
+        <p>Smarandache, F. (1995). <em>A Unifying Field in Logics: Neutrosophic Logic</em>. American Research Press. Neutrosophic theory generalises classical, fuzzy, and intuitionistic logics by treating indeterminacy as an independent axis.</p>
+      `,
+    },
+    {
+      id: "module14",
+      title: "16. Module 14 — Interval-valued Fuzzy Sets",
+      eyebrow: "Module 14 · fuzzy logic",
+      build: () => `
+        <p class="kn-lead">Interval-valued Fuzzy Sets represent membership as a range [lower, upper] rather than a single value, explicitly propagating input measurement uncertainty through the fuzzy classification. The width of the resulting interval shows how much realistic input noise could shift the verdict.</p>
+
+        <h3>Measurement tolerances</h3>
+        <p>For airport construction EVM the principal noise sources are Schedule-of-Values line-item accuracy (~±2% EV) and pay-application rounding (~±1% AC), compounding to ~±3 percentage points on CPI/SPI. A narrow interval means the classification is robust to that noise; a wide interval means a Green/Amber boundary crossing is within reach of normal measurement uncertainty.</p>
 
         ${formulaBlock([
           "CPI uncertainty range: [CPI - 0.03, CPI + 0.03]",
@@ -941,7 +1033,7 @@
           "  Amber:  bell centred at 0.92, zero outside [0.85, 0.98]",
           "  Red:    mu_R(v) = 1 if v <= 0.85, 0 if v >= 0.92, linear between",
           "",
-          "State interval: [mu_state(CPI_low), mu_state(CPI_high)]",
+          "State interval: [min(mu(low), mu(high)), max(mu(low), mu(high))]",
           "Aggregation across sources: element-wise max of lower, max of upper.",
           "",
           "Status = state with highest interval midpoint.",
@@ -954,13 +1046,180 @@
           [{ label: "> 0.30 (High)", color: RAG.red }, "Input noise could change the classification — request more precise documents."],
         ])}
 
-        <h3>Academic context</h3>
-        <p>Dempster, A.P. (1967). Upper and lower probabilities induced by a multivalued mapping. Annals of Mathematical Statistics, 38(2), 325–339. Shafer, G. (1976). A Mathematical Theory of Evidence. Princeton University Press. Pawlak, Z. (1982). Rough sets. International Journal of Computer and Information Sciences, 11(5), 341–356. Smarandache, F. (1995). A Unifying Field in Logics: Neutrosophic Logic. American Research Press. Sambuc, R. (1975). Fonctions phi-floues. PhD thesis, University of Marseille. Zadeh, L.A. (1975). The concept of a linguistic variable and its application to approximate reasoning. Information Sciences, 8(3), 199–249. Turksen, I.B. (1986). Interval valued fuzzy sets based on normal forms. Fuzzy Sets and Systems, 20(2), 191–210.</p>
+        <h3>Reference</h3>
+        <p>Sambuc, R. (1975). <em>Fonctions phi-floues</em>. PhD thesis, University of Marseille. Zadeh, L.A. (1975). The concept of a linguistic variable and its application to approximate reasoning. <em>Information Sciences</em>, 8(3), 199–249. Turksen, I.B. (1986). Interval valued fuzzy sets based on normal forms. <em>Fuzzy Sets and Systems</em>, 20(2), 191–210.</p>
+      `,
+    },
+    {
+      id: "module15",
+      title: "17. Module 15 — Z-numbers",
+      eyebrow: "Module 15 · reliability-weighted evidence",
+      build: () => `
+        <p class="kn-lead">A Z-number is a pair (Restriction, Reliability). The restriction is the signal's classification; the reliability is how trustworthy the source data is. A CPI from a verified pay application is more trustworthy than one estimated from a schedule update — and the governance recommendation should reflect that, not just the headline state.</p>
+
+        <h3>What Z-numbers add</h3>
+        <p>Every other synthesis method treats all sources as equally reliable. Z-numbers make reliability a first-class input: a Red signal from a low-reliability source contributes less than a Red from a high-reliability source. This is the same epistemic structure auditors use informally; Module 15 makes it explicit in the audit record.</p>
+
+        ${formulaBlock([
+          "For each signal i with state s_i and reliability r_i in [0, 1]:",
+          ["weighted_Red   = sum_{i: s_i=Red}   r_i", "reliability-weighted total"],
+          ["weighted_Amber = sum_{i: s_i=Amber} r_i", ""],
+          ["weighted_Green = sum_{i: s_i=Green} r_i", ""],
+          "",
+          "Status = state with highest weighted total.",
+          "",
+          "Reliability defaults (this implementation):",
+          "  EVM (pay app):     0.85    Monte Carlo:  0.88",
+          "  CUSUM:             0.90    Doc keyword:  0.65",
+        ])}
+
+        ${ragTable(["Avg reliability", "Interpretation"], [
+          [{ label: "≥ 80%", color: RAG.green }, "High-confidence aggregate — sources are well-instrumented."],
+          [{ label: "60–80%", color: RAG.amber }, "Moderate — at least one source is rule-based or estimated."],
+          [{ label: "< 60%", color: RAG.red }, "Aggregate is dominated by low-reliability sources; improve instrumentation before acting."],
+        ])}
+
+        <h3>Reference</h3>
+        <p>Zadeh, L.A. (2011). A note on Z-numbers. <em>Information Sciences</em>, 181(14), 2923–2932. Z-numbers extend the linguistic-variable framework to model the reliability of the data behind a fuzzy assessment, distinct from the assessment itself.</p>
+      `,
+    },
+    {
+      id: "module16",
+      title: "18. Module 16 — Probabilistic Linguistic Term Sets (PLTS)",
+      eyebrow: "Module 16 · probabilistic linguistics",
+      build: () => `
+        <p class="kn-lead">PLTS expresses each signal as a probability distribution across linguistic states {Green, Amber, Red} rather than forcing a crisp label. A CUSUM that just barely missed breach is not the same Green as a deeply stable monitor — PLTS preserves that distinction explicitly.</p>
+
+        <h3>What PLTS adds</h3>
+        <p>Conservative dominance and Z-numbers both pre-classify each signal as a single state before combining. PLTS skips that crispening step: each source contributes its native probability triple, and the aggregate is the average across all sources. The result is closer to how expert reviewers actually assess projects — with confidence degrees attached to every classification.</p>
+
+        ${formulaBlock([
+          "For each signal i, an expert-mapped probability triple:",
+          ["p_i = (p_Green, p_Amber, p_Red),  sum = 1.0", "per-source linguistic distribution"],
+          "",
+          "Aggregate across N sources:",
+          ["P(s) = (1/N) * sum_i p_i(s)   for s in {Green, Amber, Red}", "averaged probability"],
+          "",
+          "Status = state s with highest aggregate P(s).",
+        ])}
+
+        ${ragTable(["P(Red)", "Interpretation"], [
+          [{ label: "< 25%", color: RAG.green }, "Aggregate probability of Red is low across sources."],
+          [{ label: "25–50%", color: RAG.amber }, "Non-trivial Red probability; review which sources contribute."],
+          [{ label: "≥ 50%", color: RAG.red }, "Majority probability mass sits on Red — escalation indicated."],
+        ])}
+
+        <h3>Reference</h3>
+        <p>Pang, Q., Wang, H., &amp; Xu, Z. (2016). Probabilistic linguistic term sets in multi-attribute group decision making. <em>Information Sciences</em>, 369, 128–143. PLTS now underpins multi-attribute decision frameworks where each criterion's assessment naturally carries a confidence distribution.</p>
+      `,
+    },
+    {
+      id: "module17",
+      title: "19. Module 17 — Plithogenic Sets",
+      eyebrow: "Module 17 · contradiction-degree weighting",
+      build: () => `
+        <p class="kn-lead">Plithogenic Sets assign each signal a contradiction degree against the dominant value. A Green signal in a project where every other signal is Red has high contradiction — it is not cancelled, but it is weighted down to reflect that it is the outlier. High average contradiction means the signals are genuinely opposed, not merely mixed.</p>
+
+        <h3>What plithogenic adds</h3>
+        <p>Most aggregation methods average opposing signals into a middle state. Plithogenic aggregation distinguishes "opposed" from "intermediate" by tracking how far each signal sits from the dominant value: a contradiction degree of 1.0 means the signal is at the opposite pole; 0.5 means it is mid-spectrum. The average contradiction across sources becomes a governance signal in its own right.</p>
+
+        ${formulaBlock([
+          "For each attribute (signal) a:",
+          "  membership(a) in [0, 1]",
+          "  contradiction(a, dominant) in [0, 1]   (0 = same, 1 = opposite)",
+          "",
+          "Aggregation weight per attribute:",
+          ["w(a) = membership(a) * (1 - contradiction(a) * 0.5)", "discounts opposing signals"],
+          "",
+          "State scores:",
+          ["score(s) = sum_{a: state(a) = s} w(a)", "per-state weighted total"],
+          "",
+          "Status = state s with highest score(s).",
+        ])}
+
+        ${ragTable(["Average contradiction", "Interpretation"], [
+          [{ label: "< 30% (Low)", color: RAG.green }, "Signals are broadly consistent."],
+          [{ label: "30–60% (Moderate)", color: RAG.amber }, "Some opposition; review which signals oppose the dominant view."],
+          [{ label: "> 60% (High)", color: RAG.red }, "Signals are genuinely polarised — the disagreement is the finding."],
+        ])}
+
+        <h3>Reference</h3>
+        <p>Smarandache, F. (2018). <em>Plithogeny, Plithogenic Set, Logic, Probability and Statistics</em>. Pons Editions, Brussels. Plithogenic theory generalises crisp / fuzzy / neutrosophic sets by adding the contradiction-degree dimension between attribute values.</p>
+      `,
+    },
+    {
+      id: "module18",
+      title: "20. Module 18 — Belief Rule Base (BRB)",
+      eyebrow: "Module 18 · expert IF-THEN rules",
+      build: () => `
+        <p class="kn-lead">A Belief Rule Base encodes expert knowledge as IF-THEN rules whose consequent is a belief distribution rather than a crisp state. "If EVM is Red and CUSUM has breached, belief is 90% Red, 8% Amber, 2% Green." Multiple matching rules are combined by rule weight to produce the aggregate belief.</p>
+
+        <h3>What BRB adds</h3>
+        <p>BRB bridges the explicit governance rules of PCEIF and probabilistic expert judgement. The rule conditions are crisp (matching the PCEIF authority matrix structure), but the consequents are graded probability distributions (matching how experts actually express confidence). Each rule carries a weight that captures how strongly it should drive the aggregate when it fires.</p>
+
+        ${formulaBlock([
+          "Rule R_k: IF antecedent_k THEN belief = (b_G, b_A, b_R) with weight w_k",
+          "",
+          "Matched rules: M = { R_k : antecedent_k holds for this signal package }",
+          "",
+          "Aggregate belief, weighted average across M:",
+          ["B(s) = sum_{R_k in M} b_k(s) * w_k  /  sum_{R_k in M} w_k", ""],
+          "",
+          "Status = state s with highest B(s).",
+        ])}
+
+        ${ragTable(["B(Red) aggregate", "Interpretation"], [
+          [{ label: "< 25%", color: RAG.green }, "Matched rules collectively assign low Red belief."],
+          [{ label: "25–50%", color: RAG.amber }, "Non-trivial Red belief from at least one high-weight rule."],
+          [{ label: "≥ 50%", color: RAG.red }, "Aggregate belief mass on Red — escalation indicated."],
+        ])}
+
+        <h3>Reference</h3>
+        <p>Yang, J.-B., Liu, J., Wang, J., Sii, H.-S., &amp; Wang, H.-W. (2006). Belief rule-base inference methodology using the evidential reasoning approach — RIMER. <em>IEEE Transactions on Systems, Man, and Cybernetics — Part A</em>, 36(2), 266–285. Extended through 2018–2023 with hierarchical and self-adaptive BRB variants.</p>
+      `,
+    },
+    {
+      id: "module19",
+      title: "21. Module 19 — Quantum Probability",
+      eyebrow: "Module 19 · amplitude interference",
+      build: () => `
+        <p class="kn-lead">Quantum Probability models signals as wave amplitudes rather than classical probabilities. When signals align they interfere constructively, amplifying the dominant classification; when signals oppose they interfere destructively, reflecting genuine ambiguity. The phase angle measures signal coherence.</p>
+
+        <h3>What quantum probability adds</h3>
+        <p>Classical aggregation is additive: opposing signals partially cancel by simple subtraction. Quantum probability is amplitude-based: the cross term 2·α·γ·cos(θ) captures order effects and interference that classical probability cannot represent. In governance terms, destructive interference means the signals are genuinely contradictory in a way no further averaging can resolve — the residual uncertainty belongs to the governance layer.</p>
+
+        ${formulaBlock([
+          "Amplitudes from classical probabilities:",
+          ["α = sqrt( avg P(Green) across sources )", "Green amplitude"],
+          ["γ = sqrt( avg P(Red)   across sources )", "Red amplitude"],
+          "",
+          "Phase angle from signal coherence:",
+          ["θ = |red_count - green_count| / N * pi", "small θ → constructive, large θ → destructive"],
+          "",
+          "Interference cross-term:",
+          ["I = 2 * α * γ * cos(θ)", ""],
+          "",
+          "Quantum probabilities (clipped to [0, 1]):",
+          ["P_q(Red)   = γ² + 0.3 * I", ""],
+          ["P_q(Green) = α² − 0.3 * I", ""],
+          ["P_q(Amber) = 1 − P_q(Red) − P_q(Green)", ""],
+          "",
+          "Status = state with highest P_q.",
+        ])}
+
+        ${ragTable(["Interference type", "Interpretation"], [
+          [{ label: "Constructive (cos θ > 0.3)", color: RAG.green }, "Signals reinforce — high classification confidence."],
+          [{ label: "Neutral", color: RAG.amber }, "Mixed reinforcement and cancellation."],
+          [{ label: "Destructive (cos θ < -0.3)", color: RAG.amber }, "Signals partially cancel — residual uncertainty is genuine."],
+        ])}
+
+        <h3>Reference</h3>
+        <p>Busemeyer, J.R., &amp; Bruza, P.D. (2012). <em>Quantum Models of Cognition and Decision</em>. Cambridge University Press. Quantum probability gives a principled formal framework for order effects and contextual contradictions that classical Bayesian models cannot easily express.</p>
       `,
     },
     {
       id: "fairness",
-      title: "10. The Fairness Gate",
+      title: "22. The Fairness Gate",
       eyebrow: "Procedural safeguard",
       build: () => `
         <p class="kn-lead">An automated signal must never directly drive a contractual consequence. The fairness gate is the procedural step that ensures the contractor has a documented opportunity to explain field conditions before a fairness-sensitive Red-review becomes a formal action.</p>
@@ -988,7 +1247,7 @@
     },
     {
       id: "decision",
-      title: "11. The Decision Card & Audit Trail",
+      title: "23. The Decision Card & Audit Trail",
       eyebrow: "Accountable record",
       build: () => `
         <p class="kn-lead">The decision card is the single artefact that captures, for each governed decision, who decided, what they decided, on what evidence, under what authority, and on what date. It is the record that survives the project — the basis for independent audit, dispute resolution, and program-level reporting.</p>

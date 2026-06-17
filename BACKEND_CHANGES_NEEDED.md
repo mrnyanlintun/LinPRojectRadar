@@ -173,30 +173,41 @@ If returning full items is too large for the list call, add a separate `GET ?act
 
 ---
 
-## Fix 4 — Lin chat system context: 10 → 14 signal modules
+## Fix 4 — Lin chat system context: 14 → 19 signal modules
 
 **Context:** The Lin chat assistant's system prompt lives in `Code.gs` (not in this
 repo), so the model-count reference and the new-module descriptions must be
-updated there. The platform now has **14** signal modules, not 10 — the four new
-ones (11–14) are evidence-combination and uncertainty-reasoning methods that run
-entirely client-side.
+updated there. The platform now has **19** signal modules — five new evidence
+combination and uncertainty-reasoning methods (15–19) have been added on top of
+the existing 11–14, all running entirely client-side.
 
 **Required backend change:** in the Lin chat system/context prompt, update the
-module-count reference from 10 to 14 and add a short description of Modules 11–14
+module-count reference from 14 to 19 and add a short description of Modules 15–19
 so Lin can answer questions about them. Suggested wording to insert verbatim:
 
-> The platform has 14 signal modules. Modules 11–14 are evidence combination and
-> uncertainty reasoning methods: Module 11 uses Dempster-Shafer evidence theory to
-> combine signal belief masses; Module 12 uses Rough Sets to classify projects into
-> definite, borderline, or indeterminate zones; Module 13 uses Neutrosophic Logic
-> to measure truth, indeterminacy, and falsity across signals; Module 14 uses
-> Interval-valued Fuzzy Sets to account for measurement uncertainty in EVM inputs.
+> The platform has 19 signal modules. Modules 11–19 are evidence combination and
+> uncertainty reasoning methods that run alongside the conservative-dominance
+> synthesis (Module 10). Module 11 uses Dempster-Shafer evidence theory to combine
+> signal belief masses. Module 12 uses Rough Sets to classify projects into
+> definite, borderline, or indeterminate zones. Module 13 uses Neutrosophic Logic
+> to measure truth, indeterminacy, and falsity across signals as independent
+> dimensions. Module 14 uses Interval-valued Fuzzy Sets to account for measurement
+> uncertainty in EVM inputs. Module 15 uses Z-numbers to weight each signal by the
+> reliability of its data source. Module 16 uses Probabilistic Linguistic Term Sets
+> (PLTS) to express each signal as a probability distribution over Green / Amber /
+> Red rather than a crisp label. Module 17 uses Plithogenic Sets to weight signals
+> by how strongly they contradict the dominant classification. Module 18 uses a
+> Belief Rule Base of expert IF-THEN rules with belief-distribution consequents.
+> Module 19 uses Quantum Probability to model signal interference: aligned signals
+> reinforce each other, opposed signals partially cancel through a phase-angle
+> interference term.
 
-No client change is required for this fix — the modules already compute and render
-client-side (`simulations.js`, `deepdive.js`, `modules.js`, `knowledge.js`). This
-note only tracks the matching backend prompt update.
+No client change is required for this fix — Modules 15–19 already compute and
+render client-side (`simulations.js`, `deepdive.js`, `modules.js`, `knowledge.js`).
+This note only tracks the matching backend prompt update.
 
 **Module numbering reference (for the prompt):** 01 Monte Carlo EAC · 02 CUSUM ·
 03 Document Risk · 04 PERT · 05 Line of Balance · 06 CCPM · 07 Reference Class
 Forecasting · 08 DSM · 09 ABM Governance · 10 Signal Synthesis · 11 Dempster-Shafer ·
-12 Rough Sets · 13 Neutrosophic Logic · 14 Interval-valued Fuzzy Sets.
+12 Rough Sets · 13 Neutrosophic Logic · 14 Interval-valued Fuzzy Sets · 15 Z-numbers ·
+16 PLTS · 17 Plithogenic Sets · 18 Belief Rule Base · 19 Quantum Probability.

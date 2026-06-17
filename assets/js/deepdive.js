@@ -24,6 +24,11 @@
      12  Rough Set Theory Classification   (simulation)
      13  Neutrosophic Logic                (simulation)
      14  Interval-valued Fuzzy Sets        (simulation)
+     15  Z-numbers (Zadeh 2011)            (simulation)
+     16  Probabilistic Linguistic Term Sets (Pang 2016)
+     17  Plithogenic Sets (Smarandache 2018)
+     18  Belief Rule Base (Yang 2006)
+     19  Quantum Probability (Busemeyer 2012)
    ============================================================ */
 
 (function () {
@@ -786,7 +791,211 @@
       rule("Status = highest midpoint across Green/Amber/Red intervals. Uncertainty level HIGH if combined interval width > 0.30, MODERATE if > 0.15 — corresponds to input noise of roughly +/-3 percentage points on CPI."));
   }
 
-  /* Synthesis comparison panel — Modules 10–14 agreement table. */
+  /* Module 15 chart: reliability-weighted stacked bar (Red / Amber / Green). */
+  function zNumbersChart(s) {
+    const h = 116, pad = 40, barY = 32, barH = 26, span = W - pad - 30;
+    const r = s.weighted_red || 0, a = s.weighted_amber || 0, g = s.weighted_green || 0;
+    const total = Math.max(r + a + g, 0.0001);
+    const wR = (r / total) * span, wA = (a / total) * span, wG = (g / total) * span;
+    return svgo(h, "Z-numbers reliability-weighted stacked bar") +
+      `<rect x="${pad}" y="${barY}" width="${span}" height="${barH}" rx="4" fill="var(--surface-soft)" stroke="var(--ring-line)"></rect>` +
+      `<rect x="${pad}" y="${barY}" width="${wR.toFixed(1)}" height="${barH}" fill="${COLOR.red}" opacity="0.78"></rect>` +
+      `<rect x="${(pad + wR).toFixed(1)}" y="${barY}" width="${wA.toFixed(1)}" height="${barH}" fill="${COLOR.amber}" opacity="0.78"></rect>` +
+      `<rect x="${(pad + wR + wA).toFixed(1)}" y="${barY}" width="${wG.toFixed(1)}" height="${barH}" fill="${COLOR.green}" opacity="0.78"></rect>` +
+      `<text x="${pad}" y="${barY - 6}" class="mod-axis" fill="${COLOR.red}">Red ${r.toFixed(2)}</text>` +
+      `<text x="${pad + span / 2}" y="${barY - 6}" text-anchor="middle" class="mod-axis" fill="${COLOR.amber}">Amber ${a.toFixed(2)}</text>` +
+      `<text x="${pad + span}" y="${barY - 6}" text-anchor="end" class="mod-axis" fill="${COLOR.green}">Green ${g.toFixed(2)}</text>` +
+      `<text x="${pad + span / 2}" y="${barY + barH + 18}" text-anchor="middle" class="mod-axis" fill="var(--muted)">Avg reliability ${Math.round((s.avg_reliability || 0) * 100)}%</text>` +
+      "</svg>";
+  }
+
+  /* Module 16 chart: per-source PLTS probability rows (each row = one source). */
+  function pltsChart(s) {
+    const sources = s.sources || [];
+    const rows = Math.max(sources.length, 1);
+    const h = 32 + rows * 26 + 16, pad = 60, span = W - pad - 30, barH = 16;
+    let out = svgo(h, "PLTS per-source probability distribution") +
+      `<text x="${pad + span / 2}" y="18" text-anchor="middle" class="mod-axis" fill="var(--muted)">P(Green) | P(Amber) | P(Red)</text>`;
+    if (!sources.length) {
+      out += `<text x="${W / 2}" y="${h / 2}" text-anchor="middle" class="mod-axis" fill="var(--muted)">no source data</text>`;
+    } else {
+      sources.forEach((src, i) => {
+        const y = 32 + i * 26;
+        const wG = src.Green * span, wA = src.Amber * span, wR = src.Red * span;
+        out += `<text x="4" y="${y + 12}" class="mod-axis" fill="var(--text)">${esc(src.source)}</text>` +
+          `<rect x="${pad}" y="${y}" width="${span}" height="${barH}" rx="3" fill="var(--surface-soft)" stroke="var(--ring-line)"></rect>` +
+          `<rect x="${pad}" y="${y}" width="${wG.toFixed(1)}" height="${barH}" fill="${COLOR.green}" opacity="0.78"></rect>` +
+          `<rect x="${(pad + wG).toFixed(1)}" y="${y}" width="${wA.toFixed(1)}" height="${barH}" fill="${COLOR.amber}" opacity="0.78"></rect>` +
+          `<rect x="${(pad + wG + wA).toFixed(1)}" y="${y}" width="${wR.toFixed(1)}" height="${barH}" fill="${COLOR.red}" opacity="0.78"></rect>`;
+      });
+    }
+    return out + "</svg>";
+  }
+
+  /* Module 17 chart: bubble scatter — membership (x) vs contradiction (y). */
+  function plithogenicChart(s) {
+    const h = 156, padL = 50, padB = 30, padT = 16, padR = 16;
+    const plotW = W - padL - padR, plotH = h - padT - padB;
+    const sx = (m) => padL + m * plotW;
+    const sy = (c) => padT + (1 - c) * plotH;
+    const attrs = s.attributes || [];
+    const c = (st) => st === "Red" ? COLOR.red : st === "Amber" ? COLOR.amber : COLOR.green;
+    let out = svgo(h, "Plithogenic membership vs contradiction scatter") +
+      `<line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="var(--ring-line)"></line>` +
+      `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="var(--ring-line)"></line>` +
+      `<text x="${padL + plotW / 2}" y="${h - 6}" text-anchor="middle" class="mod-axis-title">Membership →</text>` +
+      `<text transform="rotate(-90 12 ${h / 2})" x="12" y="${h / 2}" text-anchor="middle" class="mod-axis-title">Contradiction ↑</text>`;
+    attrs.forEach((a) => {
+      out += `<circle cx="${sx(a.membership)}" cy="${sy(a.contradiction)}" r="8" fill="${c(a.state)}" opacity="0.78" stroke="var(--text)" stroke-width="1"></circle>` +
+        `<text x="${sx(a.membership) + 11}" y="${sy(a.contradiction) + 4}" class="mod-axis" fill="var(--text)">${esc(a.name)}</text>`;
+    });
+    return out + "</svg>";
+  }
+
+  /* Module 18 chart: matched-rule belief distribution rows. */
+  function brbChart(s) {
+    const matched = s.matched_rules || [];
+    const rows = Math.max(matched.length, 1);
+    const h = 32 + rows * 26 + 16, pad = 80, span = W - pad - 30, barH = 16;
+    let out = svgo(h, "BRB matched-rule weights") +
+      `<text x="${pad + span / 2}" y="18" text-anchor="middle" class="mod-axis" fill="var(--muted)">Aggregate: G ${s.belief_green || 0}% · A ${s.belief_amber || 0}% · R ${s.belief_red || 0}%</text>`;
+    if (!matched.length) {
+      out += `<text x="${W / 2}" y="${h / 2}" text-anchor="middle" class="mod-axis" fill="var(--muted)">no rules matched</text>`;
+    } else {
+      matched.forEach((m, i) => {
+        const y = 32 + i * 26;
+        const w = (m.weight || 0) * span;
+        out += `<text x="4" y="${y + 12}" class="mod-axis" fill="var(--muted)">${esc(m.id)}</text>` +
+          `<rect x="${pad}" y="${y}" width="${span}" height="${barH}" rx="3" fill="var(--surface-soft)" stroke="var(--ring-line)"></rect>` +
+          `<rect x="${pad}" y="${y}" width="${w.toFixed(1)}" height="${barH}" rx="3" fill="var(--phosphor)" opacity="0.6"></rect>` +
+          `<text x="${(pad + w + 6).toFixed(1)}" y="${y + 12}" class="mod-axis" fill="var(--text)">w=${(m.weight || 0).toFixed(2)} — ${esc(m.desc || "")}</text>`;
+      });
+    }
+    return out + "</svg>";
+  }
+
+  /* Module 19 chart: amplitude vector diagram (Green amplitude, Red amplitude,
+     phase angle indicator on a small dial). */
+  function quantumChart(s) {
+    const h = 156, cx = 130, cy = h / 2, r = 56;
+    const phaseDeg = s.phase_angle_deg || 0;
+    const phaseRad = phaseDeg * Math.PI / 180;
+    const ag = s.alpha_green || 0, gr = s.gamma_red || 0;
+    const greenLen = ag * r, redLen = gr * r;
+    const redX = cx + Math.cos(phaseRad) * redLen, redY = cy - Math.sin(phaseRad) * redLen;
+    const intType = s.interference_type || "Neutral";
+    const intColor = intType === "Constructive" ? COLOR.green : intType === "Destructive" ? COLOR.red : "var(--phosphor)";
+    return svgo(h, "Quantum amplitude vectors with interference phase") +
+      `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--ring-line)" stroke-dasharray="3 3"></circle>` +
+      `<line x1="${cx - r - 4}" y1="${cy}" x2="${cx + r + 4}" y2="${cy}" stroke="var(--ring-line)"></line>` +
+      `<line x1="${cx}" y1="${cy - r - 4}" x2="${cx}" y2="${cy + r + 4}" stroke="var(--ring-line)"></line>` +
+      `<line x1="${cx}" y1="${cy}" x2="${(cx + greenLen).toFixed(1)}" y2="${cy}" stroke="${COLOR.green}" stroke-width="2.5"></line>` +
+      `<text x="${(cx + greenLen + 4).toFixed(1)}" y="${cy - 6}" class="mod-axis" fill="${COLOR.green}">α ${ag.toFixed(2)}</text>` +
+      `<line x1="${cx}" y1="${cy}" x2="${redX.toFixed(1)}" y2="${redY.toFixed(1)}" stroke="${COLOR.red}" stroke-width="2.5"></line>` +
+      `<text x="${(redX + 4).toFixed(1)}" y="${(redY - 6).toFixed(1)}" class="mod-axis" fill="${COLOR.red}">γ ${gr.toFixed(2)}</text>` +
+      `<path d="M ${cx + 24} ${cy} A 24 24 0 0 0 ${(cx + 24 * Math.cos(phaseRad)).toFixed(1)} ${(cy - 24 * Math.sin(phaseRad)).toFixed(1)}" fill="none" stroke="${intColor}" stroke-width="1.5"></path>` +
+      `<text x="${cx + 28}" y="${cy - 28}" class="mod-axis" fill="${intColor}">θ = ${phaseDeg}°</text>` +
+      `<text x="${cx + r + 60}" y="${cy - 28}" class="mod-axis" fill="${intColor}">Interference: ${esc(intType)}</text>` +
+      `<text x="${cx + r + 60}" y="${cy - 10}" class="mod-axis" fill="var(--text)">P(Green) ${s.p_green || 0}%</text>` +
+      `<text x="${cx + r + 60}" y="${cy + 8}"  class="mod-axis" fill="var(--text)">P(Amber) ${s.p_amber || 0}%</text>` +
+      `<text x="${cx + r + 60}" y="${cy + 26}" class="mod-axis" fill="var(--text)">P(Red)   ${s.p_red   || 0}%</text>` +
+      "</svg>";
+  }
+
+  function m15(s) {
+    const st = simCls(s.status_color);
+    return panel("15", "Z-numbers — Reliability-weighted Evidence", st,
+      note("Z-numbers (Zadeh, 2011) pair each signal with a reliability measure for its source. A CPI derived from a verified pay application carries more weight than one estimated from a rough schedule update. The governance recommendation is weighted by how trustworthy each signal source is — not just what it says but how reliable the data behind it is.") +
+      zNumbersChart(s) +
+      `<div class="dd-grid">${
+        metricBox("Weighted Red",   (s.weighted_red   || 0).toFixed(2), s.weighted_red   >= (s.weighted_amber || 0) ? "red"   : "green") +
+        metricBox("Weighted Amber", (s.weighted_amber || 0).toFixed(2), s.weighted_amber >= (s.weighted_green || 0) ? "amber" : "green") +
+        metricBox("Weighted Green", (s.weighted_green || 0).toFixed(2), s.weighted_green >  0 ? "green" : "amber") +
+        metricBox("Avg reliability", Math.round((s.avg_reliability || 0) * 100) + "%", s.avg_reliability >= 0.8 ? "green" : s.avg_reliability >= 0.6 ? "amber" : "red") +
+        metricBox("Sources", String(s.signal_count || 0), "green")
+      }</div>` +
+      reasons([
+        `Z-numbers weights each signal source by its data reliability: pay-app EVM 0.85, CUSUM 0.90, Monte Carlo 0.88, doc-risk keyword 0.65.`,
+        `Reliability-weighted totals: Red ${(s.weighted_red || 0).toFixed(2)}, Amber ${(s.weighted_amber || 0).toFixed(2)}, Green ${(s.weighted_green || 0).toFixed(2)}. Higher-reliability sources contribute proportionally more to the aggregate.`
+      ], st) +
+      rule("Green: weighted-Green dominant. Amber: weighted-Amber dominant or mixed. Red: weighted-Red dominant. Higher reliability sources carry proportionally more weight. Zadeh, 2011."));
+  }
+
+  function m16(s) {
+    const st = simCls(s.status_color);
+    return panel("16", "PLTS — Probabilistic Linguistic Term Sets", st,
+      note("Probabilistic Linguistic Term Sets (Pang, 2016) express each signal as a probability distribution across linguistic states rather than a single crisp label. A signal can be Red with 70% probability and Amber with 25% simultaneously. This maps directly to how expert reviewers actually assess projects — with confidence degrees, not binary verdicts.") +
+      pltsChart(s) +
+      `<div class="dd-grid">${
+        metricBox("P(Green)", (s.p_green || 0) + "%", s.p_green >= 60 ? "green" : s.p_green >= 30 ? "amber" : "red") +
+        metricBox("P(Amber)", (s.p_amber || 0) + "%", s.p_amber >= 50 ? "amber" : "green") +
+        metricBox("P(Red)",   (s.p_red   || 0) + "%", s.p_red   >= 50 ? "red" : s.p_red >= 25 ? "amber" : "green") +
+        metricBox("Sources", String((s.sources || []).length), "green")
+      }</div>` +
+      reasons([
+        `Each source assigns a probability triple across Green/Amber/Red linguistic states. The aggregate averages across all available sources.`,
+        `Aggregate: P(Green) ${s.p_green || 0}%, P(Amber) ${s.p_amber || 0}%, P(Red) ${s.p_red || 0}%.`
+      ], st) +
+      rule("State = highest aggregate probability across all signal sources. Pang et al., 2016."));
+  }
+
+  function m17(s) {
+    const st = simCls(s.status_color);
+    return panel("17", "Plithogenic Sets — Contradiction Analysis", st,
+      note("Plithogenic Sets (Smarandache, 2018) assign each signal a contradiction degree measuring how much it opposes the dominant classification. A Green doc-risk signal in a project where EVM and CUSUM are both Red has a high contradiction degree — it does not simply cancel the Red signals; it is weighted to reflect its opposition. The contradiction degree itself is a governance finding.") +
+      plithogenicChart(s) +
+      `<div class="dd-grid">${
+        metricBox("Red score",   (s.red_score   || 0).toFixed(2), s.red_score   >= (s.amber_score || 0) ? "red"   : "green") +
+        metricBox("Amber score", (s.amber_score || 0).toFixed(2), s.amber_score >= (s.green_score || 0) ? "amber" : "green") +
+        metricBox("Green score", (s.green_score || 0).toFixed(2), s.green_score > 0 ? "green" : "amber") +
+        metricBox("Avg contradiction", Math.round((s.avg_contradiction || 0) * 100) + "%", s.contradiction_level === "High" ? "red" : s.contradiction_level === "Moderate" ? "amber" : "green") +
+        metricBox("Contradiction", s.contradiction_level || "Low", s.contradiction_level === "High" ? "red" : s.contradiction_level === "Moderate" ? "amber" : "green")
+      }</div>` +
+      reasons([
+        `Plithogenic aggregation weights each attribute by membership x (1 - contradiction * 0.5). Signals opposing the dominant state are down-weighted, but not erased.`,
+        `Average contradiction ${Math.round((s.avg_contradiction || 0) * 100)}% (${s.contradiction_level || "Low"}) — ${s.contradiction_level === "High" ? "signals are genuinely opposed, this is a finding in itself" : "signals are broadly consistent"}.`
+      ], st) +
+      rule("Aggregation weighted by membership x (1 - contradiction factor). High average contradiction = signals are genuinely opposed. Smarandache, 2018."));
+  }
+
+  function m18(s) {
+    const st = simCls(s.status_color);
+    return panel("18", "BRB — Belief Rule Base", st,
+      note("The Belief Rule Base (Yang, 2006) encodes expert knowledge as IF-THEN rules whose consequent is a belief distribution rather than a crisp state. \"If EVM is Red and CUSUM has breached, belief is 90% Red, 8% Amber, 2% Green.\" Multiple rules can fire simultaneously and are combined by their rule weights, bridging the explicit governance rules of PCEIF with probabilistic expert judgment.") +
+      brbChart(s) +
+      `<div class="dd-grid">${
+        metricBox("Belief Green", (s.belief_green || 0) + "%", s.belief_green >= 60 ? "green" : "amber") +
+        metricBox("Belief Amber", (s.belief_amber || 0) + "%", s.belief_amber >= 50 ? "amber" : "green") +
+        metricBox("Belief Red",   (s.belief_red   || 0) + "%", s.belief_red   >= 50 ? "red"   : s.belief_red >= 25 ? "amber" : "green") +
+        metricBox("Rules activated", String(s.rules_matched || 0), "green")
+      }</div>` +
+      reasons([
+        `${s.rules_matched || 0} expert IF-THEN rule(s) matched this signal package. Each contributes its belief distribution weighted by rule weight; the aggregate is the weighted average.`,
+        `Aggregate belief: Green ${s.belief_green || 0}%, Amber ${s.belief_amber || 0}%, Red ${s.belief_red || 0}%.`
+      ], st) +
+      rule("Expert IF-THEN rules with belief distributions. Multiple matching rules combined by weight. Yang et al., 2006; extended 2018-2023."));
+  }
+
+  function m19(s) {
+    const st = simCls(s.status_color);
+    return panel("19", "Quantum Probability — Signal Interference", st,
+      note("Quantum Probability (Busemeyer & Bruza, 2012) models signals as wave amplitudes rather than classical probabilities. When signals align — EVM Red, CUSUM breached, forecast Red — they interfere constructively, amplifying the Red classification. When signals oppose — strong EVM deterioration but clean documents — they interfere destructively, reflecting genuine ambiguity. Constructive interference means high classification confidence; destructive means the signals are genuinely contradictory.") +
+      quantumChart(s) +
+      `<div class="dd-grid">${
+        metricBox("Q-P(Green)", (s.p_green || 0) + "%", s.p_green >= 60 ? "green" : "amber") +
+        metricBox("Q-P(Amber)", (s.p_amber || 0) + "%", s.p_amber >= 50 ? "amber" : "green") +
+        metricBox("Q-P(Red)",   (s.p_red   || 0) + "%", s.p_red   >= 50 ? "red" : "green") +
+        metricBox("Interference", s.interference_type || "Neutral", s.interference_type === "Destructive" ? "amber" : "green") +
+        metricBox("Phase angle", (s.phase_angle_deg || 0) + "°", "green")
+      }</div>` +
+      reasons([
+        `Amplitudes α=${(s.alpha_green || 0).toFixed(2)} (Green) and γ=${(s.gamma_red || 0).toFixed(2)} (Red) derived from classical signal probabilities (square root of average).`,
+        `Phase angle ${s.phase_angle_deg || 0}° drives a ${(s.interference_type || "Neutral").toLowerCase()} interference of magnitude ${(s.interference_magnitude || 0).toFixed(2)} — ${s.interference_type === "Constructive" ? "signals reinforce each other" : s.interference_type === "Destructive" ? "signals partially cancel, classification uncertainty is genuine" : "neither strong reinforcement nor cancellation"}.`
+      ], st) +
+      rule("Amplitudes = sqrt of classical probabilities. Interference = 2 alpha gamma cos(theta) where theta is the phase angle from signal coherence. Busemeyer & Bruza, 2012."));
+  }
+
+  /* Synthesis comparison panel — Modules 10–19 agreement table. */
   function synthComparisonPanel(project, sims) {
     const arr = sims && sims.signal_array;
     if (!arr) return "";
@@ -808,13 +1017,23 @@
     const s12 = get("Rough_Sets_Classification");
     const s13 = get("Neutrosophic_Logic");
     const s14 = get("Interval_Fuzzy_Sets");
+    const s15 = get("Z_Numbers");
+    const s16 = get("PLTS");
+    const s17 = get("Plithogenic_Sets");
+    const s18 = get("Belief_Rule_Base");
+    const s19 = get("Quantum_Probability");
 
     const entries = [
-      { num: "10", label: "Conservative Dominance", val: s10 },
-      { num: "11", label: "Dempster-Shafer",        val: s11 },
-      { num: "12", label: "Rough Sets",             val: s12 },
-      { num: "13", label: "Neutrosophic",           val: s13 },
-      { num: "14", label: "Interval Fuzzy",         val: s14 }
+      { num: "10", label: "Conservative Dominance", year: "—",         val: s10 },
+      { num: "11", label: "Dempster-Shafer",        year: "1967/1976", val: s11 },
+      { num: "12", label: "Rough Sets",             year: "1982",      val: s12 },
+      { num: "13", label: "Neutrosophic Logic",     year: "1995",      val: s13 },
+      { num: "14", label: "Interval Fuzzy Sets",    year: "1975/2023", val: s14 },
+      { num: "15", label: "Z-numbers",              year: "2011",      val: s15 },
+      { num: "16", label: "PLTS",                   year: "2016",      val: s16 },
+      { num: "17", label: "Plithogenic Sets",       year: "2018",      val: s17 },
+      { num: "18", label: "Belief Rule Base",       year: "2006/2023", val: s18 },
+      { num: "19", label: "Quantum Probability",    year: "2012",      val: s19 }
     ].filter(function (e) { return e.val; });
 
     if (!entries.length || !s10) return "";
@@ -828,13 +1047,14 @@
     const greenCount = vals.length - redCount - amberCount;
     const overallSt  = redCount >= 2 ? "red" : amberCount >= 2 ? "amber" : "green";
 
-    const header = `<tr class="dd-cmp-head"><th>Module · Method</th><th>Classification</th><th>Agrees with M10</th></tr>`;
+    const header = `<tr class="dd-cmp-head"><th>Module · Method</th><th>Year</th><th>Classification</th><th>Agrees with M10</th></tr>`;
     const rows = entries.map(function (e) {
       const c = cls(e.val);
       const isM10 = e.num === "10";
       const agreesM10 = isM10 ? "—" : (String(e.val).toLowerCase() === baseline ? "Yes" : "No");
       const agreeCls = isM10 ? "" : (agreesM10 === "Yes" ? "dd-cmp-yes" : "dd-cmp-no");
       return `<tr><td class="dd-cmp-mod">Module ${e.num} — ${esc(e.label)}</td>` +
+        `<td class="dd-cmp-year">${esc(e.year || "—")}</td>` +
         `<td><span class="dd-verdict status-${c}" style="display:inline-flex;gap:4px;align-items:center"><i></i>${esc(String(e.val).toUpperCase())}</span></td>` +
         `<td class="${agreeCls}">${agreesM10}</td></tr>`;
     }).join("");
@@ -844,8 +1064,8 @@
       : `Methods diverge — classification uncertainty is itself a governance signal. Spread across methods: ${redCount} Red, ${amberCount} Amber, ${greenCount} Green. Note the divergence in the decision record.`;
 
     return `<section class="panel dd-panel status-${overallSt}" aria-label="Synthesis comparison">
-      <div class="dd-head"><b>Synthesis Methods Comparison — Modules 10–14</b></div>
-      <p class="dd-chart-note">Agreement check across all synthesis and evidence methods. Conservative dominance (Module 10) is the governance baseline; Modules 11–14 provide independent cross-checks using different evidence frameworks.</p>
+      <div class="dd-head"><b>Synthesis Methods Comparison — Modules 10–19</b></div>
+      <p class="dd-chart-note">Agreement check across all synthesis and evidence methods. Conservative dominance (Module 10) is the governance baseline; Modules 11–19 provide independent cross-checks using different evidence frameworks across five decades of uncertainty-reasoning research.</p>
       <table class="dd-cmp-table">${header}${rows}</table>
       <p class="dd-chart-note">${esc(summaryText)}</p>
     </section>`;
@@ -854,7 +1074,10 @@
   function simModules(project) {
     const payload = project.simulationSignals;
     const baseArr = payload && Array.isArray(payload.signal_array) ? payload.signal_array : null;
-    if (!baseArr || !baseArr.length) return { low: "", dst: "", rough: "", neutro: "", ifs: "", synth: "" };
+    if (!baseArr || !baseArr.length) return {
+      low: "", dst: "", rough: "", neutro: "", ifs: "",
+      z: "", plts: "", plith: "", brb: "", quantum: "", synth: ""
+    };
 
     const pert = fByMethod(baseArr, "PERT_Network_Criticality");
     const lob  = fByMethod(baseArr, "Line_of_Balance_Velocity");
@@ -862,9 +1085,9 @@
     const rcf  = fByMethod(baseArr, "Reference_Class_Forecasting");
     const dsm  = fByMethod(baseArr, "DSM_Rework_Propagation");
 
-    // Modules 11-14 read the assembled signal package (evm/mc/cusum/doc), not the
+    // Modules 11-19 read the assembled signal package (evm/mc/cusum/doc), not the
     // raw signalInputs. Older persisted signal_arrays (demo seeds and pre-update
-    // ingests) only carry Modules 04-08, so compute the evidence-combination
+    // ingests) carry only Modules 04-08, so compute the evidence-combination
     // models live from project.signals when they are absent — the same fallback
     // the portfolio Signals page uses, so both views always agree.
     const S = window.LinSimulations || {};
@@ -875,26 +1098,41 @@
       if (!sig && typeof fn === "function") { try { sig = fn(); } catch (e) { sig = null; } }
       return sig;
     };
-    const dst    = resolve("DST_Evidence_Combination", S.runDST          && (() => S.runDST(si, es)));
-    const rough  = resolve("Rough_Sets_Classification", S.runRoughSets     && (() => S.runRoughSets(es)));
-    const neutro = resolve("Neutrosophic_Logic",        S.runNeutrosophic  && (() => S.runNeutrosophic(es)));
-    const ifs    = resolve("Interval_Fuzzy_Sets",       S.runIntervalFuzzy && (() => S.runIntervalFuzzy(es)));
+    const dst     = resolve("DST_Evidence_Combination",    S.runDST              && (() => S.runDST(si, es)));
+    const rough   = resolve("Rough_Sets_Classification",   S.runRoughSets        && (() => S.runRoughSets(es)));
+    const neutro  = resolve("Neutrosophic_Logic",          S.runNeutrosophic     && (() => S.runNeutrosophic(es)));
+    const ifs     = resolve("Interval_Fuzzy_Sets",         S.runIntervalFuzzy    && (() => S.runIntervalFuzzy(es)));
+    const z       = resolve("Z_Numbers",                   S.runZNumbers         && (() => S.runZNumbers(es)));
+    const plts    = resolve("PLTS",                        S.runPLTS             && (() => S.runPLTS(es)));
+    const plith   = resolve("Plithogenic_Sets",            S.runPlithogenic      && (() => S.runPlithogenic(es)));
+    const brb     = resolve("Belief_Rule_Base",            S.runBRB              && (() => S.runBRB(es)));
+    const quantum = resolve("Quantum_Probability",         S.runQuantumProbability && (() => S.runQuantumProbability(es)));
 
     const low = (pert ? m04(pert) : "") + (lob ? m05(lob) : "") + (ccpm ? m06(ccpm) : "") +
                 (rcf ? m07(rcf) : "") + (dsm ? m08(dsm) : "");
-    const dstHtml    = dst    ? m11(dst, project) : "";
-    const roughHtml  = rough  ? m12(rough)        : "";
-    const neutroHtml = neutro ? m13(neutro)       : "";
-    const ifsHtml    = ifs    ? m14(ifs)          : "";
+    const dstHtml     = dst     ? m11(dst, project) : "";
+    const roughHtml   = rough   ? m12(rough)        : "";
+    const neutroHtml  = neutro  ? m13(neutro)       : "";
+    const ifsHtml     = ifs     ? m14(ifs)          : "";
+    const zHtml       = z       ? m15(z)            : "";
+    const pltsHtml    = plts    ? m16(plts)         : "";
+    const plithHtml   = plith   ? m17(plith)        : "";
+    const brbHtml     = brb     ? m18(brb)          : "";
+    const quantumHtml = quantum ? m19(quantum)      : "";
 
     // Feed the comparison panel the same resolved set the cards rendered: the
     // persisted array plus any live-computed evidence modules not already in it.
-    const extra = [dst, rough, neutro, ifs]
+    const extra = [dst, rough, neutro, ifs, z, plts, plith, brb, quantum]
       .filter(Boolean)
       .filter((s) => !fByMethod(baseArr, s.method_class));
     const synthHtml = synthComparisonPanel(project, { signal_array: baseArr.concat(extra) });
 
-    return { low, dst: dstHtml, rough: roughHtml, neutro: neutroHtml, ifs: ifsHtml, synth: synthHtml };
+    return {
+      low,
+      dst: dstHtml, rough: roughHtml, neutro: neutroHtml, ifs: ifsHtml,
+      z: zHtml, plts: pltsHtml, plith: plithHtml, brb: brbHtml, quantum: quantumHtml,
+      synth: synthHtml
+    };
   }
 
   /* ---------- entry point ---------- */
@@ -911,12 +1149,13 @@
     }
     const sims = simModules(project);
     root.innerHTML =
-      `<p class="mod-banner">Modules 01–03 are quantitative analyses of this project's extracted signal inputs. Modules 04–08 are schedule and cost simulation models. Modules 09–10 apply the PCEIF governance decision framework. Modules 11–14 are independent evidence synthesis methods cross-checking the Module 10 result.</p>` +
+      `<p class="mod-banner">Modules 01–03 are quantitative analyses of this project's extracted signal inputs. Modules 04–08 are schedule and cost simulation models. Modules 09–10 apply the PCEIF governance decision framework. Modules 11–19 are independent evidence synthesis methods cross-checking the Module 10 result.</p>` +
       m01(project) + m02(project) + m03(project) +
       sims.low +
       m09(project) + m10(project) +
       sims.dst +
       sims.rough + sims.neutro + sims.ifs +
+      sims.z + sims.plts + sims.plith + sims.brb + sims.quantum +
       sims.synth;
   }
 
