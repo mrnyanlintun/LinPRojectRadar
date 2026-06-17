@@ -94,44 +94,106 @@
     const svg = $("#radar-svg");
     svg.innerHTML = "";
 
-    // health zones as TRUE annuli (even-odd rings), so each band shows
-    // only its own fill — no stacked translucent wash.
+    const R = R_MAX; // 165.6 — outer edge
+
+    // ── defs: gradients ──────────────────────────────────────────────────
+    const defs = el("defs");
+
+    // vignette: transparent center → darkened edge
+    const vigGrad = el("radialGradient", { id: "scope-vignette", cx: "50%", cy: "50%", r: "50%" });
+    const vg1 = el("stop"); vg1.setAttribute("offset", "0%"); vg1.setAttribute("stop-color", "rgba(0,0,0,0)");
+    const vg2 = el("stop"); vg2.setAttribute("offset", "100%"); vg2.setAttribute("stop-color", "rgba(0,0,0,0.38)");
+    vigGrad.appendChild(vg1); vigGrad.appendChild(vg2);
+
+    // sweep trail: transparent at center → phosphor glow at outer edge
+    const trailGrad = el("radialGradient", {
+      id: "sweep-trail-grad", gradientUnits: "userSpaceOnUse",
+      cx: CENTER, cy: CENTER, r: R
+    });
+    const tg1 = el("stop"); tg1.setAttribute("offset", "0%"); tg1.setAttribute("stop-color", "var(--phosphor)"); tg1.setAttribute("stop-opacity", "0");
+    const tg2 = el("stop"); tg2.setAttribute("offset", "100%"); tg2.setAttribute("stop-color", "var(--phosphor)"); tg2.setAttribute("stop-opacity", "0.38");
+    trailGrad.appendChild(tg1); trailGrad.appendChild(tg2);
+
+    defs.appendChild(vigGrad); defs.appendChild(trailGrad);
+    svg.appendChild(defs);
+
+    // ── health zones (even-odd annuli) ───────────────────────────────────
     const circlePath = (r) =>
       `M ${CENTER + r} ${CENTER} A ${r} ${r} 0 1 0 ${CENTER - r} ${CENTER} A ${r} ${r} 0 1 0 ${CENTER + r} ${CENTER} Z`;
     const ringPath = (rOuter, rInner) => circlePath(rOuter) + " " + circlePath(rInner);
-
     const ZONE_EDGES = { green: 0.34 * 180, amber: 0.62 * 180, red: R_MAX };
-    // green inner disc
-    svg.appendChild(el("circle", {
-      cx: CENTER, cy: CENTER, r: ZONE_EDGES.green, fill: "var(--zone-green)"
-    }));
-    // amber ring
+    svg.appendChild(el("circle", { cx: CENTER, cy: CENTER, r: ZONE_EDGES.green, fill: "var(--zone-green)" }));
     const amberRing = el("path", { d: ringPath(ZONE_EDGES.amber, ZONE_EDGES.green), fill: "var(--zone-amber)" });
     amberRing.setAttribute("fill-rule", "evenodd");
     svg.appendChild(amberRing);
-    // red-review outer ring
     const redRing = el("path", { d: ringPath(ZONE_EDGES.red, ZONE_EDGES.amber), fill: "var(--zone-red)" });
     redRing.setAttribute("fill-rule", "evenodd");
     svg.appendChild(redRing);
 
-    // labeled ring boundaries
-    [ZONE_EDGES.green, ZONE_EDGES.amber, ZONE_EDGES.red].forEach((r) => {
-      svg.appendChild(el("circle", {
-        cx: CENTER, cy: CENTER, r, fill: "none",
-        stroke: "var(--ring-line)", "stroke-width": "1",
-        "stroke-dasharray": r === ZONE_EDGES.red ? "none" : "2 5"
-      }));
-    });
-    // Clean scope face: only health rings + blips. Sector identity (angle)
-    // is keyed in the legend below the radar — no spokes, dividers, on-scope
-    // labels, or on-scope icons are drawn across the face.
+    // ── vignette overlay (behind grid, over zones) ───────────────────────
+    svg.appendChild(el("circle", {
+      cx: CENTER, cy: CENTER, r: R,
+      fill: "url(#scope-vignette)", "pointer-events": "none"
+    }));
 
-    // blips — two passes:
-    //   pass 1: dot positions, with a small static radius jitter when two
-    //           dots nearly coincide (clamped inside the original zone band
-    //           so distance still means drift);
-    //   pass 2: label positions, nudged apart vertically when they collide,
-    //           with thin leader lines back to the dot when nudged.
+    // ── 4 concentric range rings (equal spacing, faint) ──────────────────
+    for (let i = 1; i <= 4; i++) {
+      svg.appendChild(el("circle", {
+        cx: CENTER, cy: CENTER, r: R * i / 4,
+        fill: "none", stroke: "var(--ring-line)",
+        "stroke-width": "0.7", opacity: "0.5"
+      }));
+    }
+
+    // ── outer solid ring ─────────────────────────────────────────────────
+    svg.appendChild(el("circle", {
+      cx: CENTER, cy: CENTER, r: R,
+      fill: "none", stroke: "var(--ring-line)", "stroke-width": "1.5"
+    }));
+
+    // ── 12 radial lines every 30° ─────────────────────────────────────────
+    for (let deg = 0; deg < 360; deg += 30) {
+      const tip = polar(deg, R);
+      svg.appendChild(el("line", {
+        x1: CENTER, y1: CENTER, x2: tip.x, y2: tip.y,
+        stroke: "var(--ring-line)", "stroke-width": "0.55", opacity: "0.4"
+      }));
+    }
+
+    // ── degree markings just inside outer ring ───────────────────────────
+    for (let deg = 0; deg < 360; deg += 30) {
+      const pos = polar(deg, R - 13);
+      const t = el("text", {
+        x: pos.x, y: pos.y,
+        "text-anchor": "middle", "dominant-baseline": "middle",
+        class: "scope-deg-label"
+      });
+      t.textContent = String(deg);
+      svg.appendChild(t);
+    }
+
+    // ── rotating sweep hand (CSS animation, skipped on reduced-motion) ───
+    if (!reduceMotion()) {
+      const sweepG = el("g", { class: "radar-sweep-group" });
+
+      // 60° trailing phosphor wedge (from –60° to 0° in group-local coords)
+      const tipA = polar(0, R);   // (365.6, 200)
+      const tipB = polar(-60, R); // (282.8, 56.5)
+      sweepG.appendChild(el("path", {
+        d: `M ${CENTER} ${CENTER} L ${tipA.x.toFixed(1)} ${tipA.y.toFixed(1)} A ${R.toFixed(1)} ${R.toFixed(1)} 0 0 0 ${tipB.x.toFixed(1)} ${tipB.y.toFixed(1)} Z`,
+        fill: "url(#sweep-trail-grad)"
+      }));
+
+      // sweep line
+      sweepG.appendChild(el("line", {
+        x1: CENTER, y1: CENTER, x2: tipA.x.toFixed(1), y2: tipA.y.toFixed(1),
+        stroke: "var(--phosphor)", "stroke-width": "1.5", opacity: "0.85"
+      }));
+
+      svg.appendChild(sweepG);
+    }
+
+    // ── blips — two passes (collision jitter + label nudge) ──────────────
     const BAND_EDGES = [R_MIN - 6, 0.34 * 180, 0.62 * 180, R_MAX + 2];
 
     const plots = LIN_PROJECTS.map((p) => {
@@ -139,7 +201,7 @@
       return { p, ang, r: healthToRadius(proxyHealth(p)) };
     });
 
-    // pass 1: dot collision jitter (static, deterministic by list order)
+    // pass 1: dot collision jitter (deterministic by list order)
     const placedDots = [];
     plots.forEach((q) => {
       let pos = polar(q.ang, q.r);
@@ -158,7 +220,7 @@
 
     // pass 2: label collision avoidance (sorted vertical pass)
     const LABEL_W = 58, LABEL_H = 11;
-    plots.forEach((q) => { q.lx = q.x + 13; q.ly = q.y + 4; });
+    plots.forEach((q) => { q.lx = q.x + 14; q.ly = q.y + 5; });
     const byY = plots.slice().sort((a, b) => a.ly - b.ly);
     byY.forEach((q, i) => {
       let moved = true, guard = 0;
@@ -167,12 +229,20 @@
         for (let j = 0; j < i; j++) {
           const o = byY[j];
           if (Math.abs(o.lx - q.lx) < LABEL_W && Math.abs(o.ly - q.ly) < LABEL_H) {
-            q.ly = o.ly + LABEL_H;
-            moved = true;
+            q.ly = o.ly + LABEL_H; moved = true;
           }
         }
       }
     });
+
+    // Lucide hard-hat paths (same SVG as legend icons)
+    const HAT_PATHS = [
+      "M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2z",
+      "M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5",
+      "M4 15v-3a8 8 0 0 1 16 0v3"
+    ];
+    const ICON = 14; // display size in SVG user units
+    const ICON_SCALE = (ICON / 24).toFixed(4);
 
     plots.forEach((q) => {
       const p = q.p;
@@ -180,8 +250,7 @@
       const empty = status === "empty";
       const g = el("g", {
         class: empty ? "blip blip-empty" : "blip",
-        tabindex: "0",
-        role: "button",
+        tabindex: "0", role: "button",
         "aria-label": `${p.id} ${p.name}, ${stateLabel(p)}`,
         "data-id": p.id
       });
@@ -191,31 +260,62 @@
         status === "amber" ? STATUS_COLOR.amber :
         status === "red"   ? STATUS_COLOR.red : "var(--muted)";
 
+      // SVG tooltip
+      const titleEl = el("title");
+      titleEl.textContent = `${p.id} — ${p.name}`;
+      g.appendChild(titleEl);
+
+      // ping ring — synced to sweep: fires when sweep reaches blip's angle
+      const normAng = ((q.ang % 360) + 360) % 360;
+      const pingDelay = -(4 - (normAng / 360) * 4);
+      if (!reduceMotion() && !empty) {
+        const pingRing = el("circle", {
+          cx: q.x, cy: q.y, r: "9",
+          fill: "none", stroke: color,
+          "stroke-width": "1",
+          class: "blip-ping-ring"
+        });
+        pingRing.style.animationDelay = `${pingDelay.toFixed(2)}s`;
+        g.appendChild(pingRing);
+      }
+
+      // keyboard focus ring
       const ring = el("circle", {
         cx: q.x, cy: q.y, r: 11, fill: "none",
         stroke: "var(--phosphor)", "stroke-width": "2",
         class: "blip-ring", opacity: "0"
       });
-      // empty projects render as a hollow, dashed, grey marker — clearly
-      // "awaiting ingest", never a fabricated status colour.
-      const dot = empty
-        ? el("circle", { cx: q.x, cy: q.y, r: 6, fill: "none",
-            stroke: "var(--muted)", "stroke-width": "1.5",
-            "stroke-dasharray": "2 2", class: "blip-dot" })
-        : el("circle", { cx: q.x, cy: q.y, r: 6, fill: color, class: "blip-dot" });
+      g.appendChild(ring);
+
+      // hard-hat icon, scaled from 24×24 to ICON×ICON, centered on blip
+      const tx = (q.x - ICON / 2).toFixed(1);
+      const ty = (q.y - ICON / 2).toFixed(1);
+      const iconG = el("g", {
+        transform: `translate(${tx}, ${ty}) scale(${ICON_SCALE})`,
+        fill: "none", stroke: color,
+        "stroke-linecap": "round", "stroke-linejoin": "round",
+        class: "blip-icon"
+      });
+      if (empty) {
+        iconG.setAttribute("opacity", "0.45");
+        iconG.setAttribute("stroke-dasharray", "2 2");
+      }
+      HAT_PATHS.forEach((d) => {
+        const path = el("path", { d, "vector-effect": "non-scaling-stroke", "stroke-width": "2" });
+        iconG.appendChild(path);
+      });
+      g.appendChild(iconG);
 
       // leader line when the label was nudged away from its natural spot
-      if (Math.abs(q.ly - (q.y + 4)) > 5) {
+      if (Math.abs(q.ly - (q.y + 5)) > 5) {
         g.appendChild(el("line", {
-          x1: q.x + 7, y1: q.y, x2: q.lx - 2, y2: q.ly - 3, class: "blip-leader"
+          x1: q.x + 8, y1: q.y, x2: q.lx - 2, y2: q.ly - 3,
+          class: "blip-leader"
         }));
       }
 
       const label = el("text", { x: q.lx, y: q.ly, class: "blip-label" });
       label.textContent = p.id;
-
-      g.appendChild(ring);
-      g.appendChild(dot);
       g.appendChild(label);
 
       const choose = () => openDetail(p.id);
