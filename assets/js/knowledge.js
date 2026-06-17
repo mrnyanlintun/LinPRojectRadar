@@ -85,7 +85,7 @@
       id: "module01",
       keywords: ["module 01", "module 1", "hybrid", "dynamic simulation", "evm module", "cpi", "spi", "eac", "earned value"],
       title: "Module 01 — Hybrid Dynamic Simulation",
-      body: "Module 01 covers the EVM core: CPI (cost performance, EV/AC) and SPI (schedule performance, EV/PV) against the baseline. On a project's Detail page the Monte Carlo is a REAL client-side computation: 5,000 iterations sampled from a signal-derived Beta-PERT distribution, with P50 and P80 read from the simulated array. It is a demonstration model, not a calibrated forecast."
+      body: "Module 01 covers the EVM core: CPI (cost performance, EV/AC) and SPI (schedule performance, EV/PV) against the baseline. On a project's Detail page the Monte Carlo runs 5,000 iterations sampled from a signal-derived Beta-PERT distribution, with P50 and P80 read from the simulated array. P80 is the planning-conservative figure used for contingency and escalation decisions."
     },
     {
       id: "module02",
@@ -532,7 +532,7 @@
         <p class="kn-lead">The signal stack splits into three tiers. The first two compute and govern; the third extends quantitative coverage to specialised construction/design risks that EVM does not catch.</p>
         ${svgSignalStack()}
 
-        <h3>Modules 01–02 — Quantitative EVM (real computation)</h3>
+        <h3>Modules 01–02 — Quantitative EVM Analysis</h3>
         <ul class="kn-list">
           <li><strong>Module 01 — Hybrid Dynamic Simulation.</strong> EVM core (CPI, SPI) plus the 5,000-iteration Monte Carlo P80 EAC forecast.</li>
           <li><strong>Module 02 — SPC / CUSUM Anomaly Monitor.</strong> Two-sided tabular CUSUM over the SPI series; breach when cumulative drift exceeds the decision interval H = 5σ.</li>
@@ -545,7 +545,7 @@
           <li><strong>Module 05 — ABM Governance Layer.</strong> Maps (state × conflict × sector) to action, authority, and documentation. Implemented as pure functions in <code>decision.js</code>.</li>
         </ul>
 
-        <h3>Modules 06–10 — Extended Simulation Stack (client-side quantitative)</h3>
+        <h3>Modules 06–10 — Extended Simulation Stack</h3>
         <ul class="kn-list">
           <li><strong>Module 06 — PERT</strong> network criticality (P80 duration, path criticality index).</li>
           <li><strong>Module 07 — Line of Balance</strong> production velocity (crew-buffer collapse as a leading indicator).</li>
@@ -758,7 +758,7 @@
       title: "9. Modules 06–10 — Extended Simulation Stack",
       eyebrow: "Quantitative extensions",
       build: () => `
-        <p class="kn-lead">Modules 06–10 cover construction/design risks EVM does not catch. They run client-side from the extracted signal inputs — no tokens, no backend — and each returns a status with an evidence metric that feeds Module 04.</p>
+        <p class="kn-lead">Modules 06–10 cover construction and design risks that EVM does not catch. Each returns a status with an evidence metric that feeds Module 04.</p>
 
         <h3>Module 06 — Program Evaluation &amp; Review Technique (PERT)</h3>
         <p>Stochastic three-activity network with triangular activity sampling. The dominant path is aggregated across 5,000 iterations.</p>

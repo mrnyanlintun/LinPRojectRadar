@@ -28,7 +28,7 @@
   function barChart(rows, max, w, refLine) {
     const h = rows.length * 26 + 30;
     const left = 92, right = 64, barMax = w - left - right;
-    let out = svgOpen(w, h, "Illustrative bar chart of synthetic data");
+    let out = svgOpen(w, h, "Signal analysis chart");
     rows.forEach((r, i) => {
       const y = 14 + i * 26;
       const bw = Math.max(2, Math.min(1, r.value / max) * barMax);
@@ -114,7 +114,7 @@
       explain: "PERT samples each activity's optimistic / most-likely / pessimistic durations from a triangular distribution and aggregates the dominant network path. The P80 duration is the conservative finish date; the path-criticality index is the share of simulated runs where the structural path was on the critical path. Lower project SPI widens the pessimistic bound, so the P80 tail grows when the schedule is already drifting.",
       rule: `Rule fired: P80 ≤ baseline → Green; P80 up to +20% → Amber; > +20% → Red. Worst current: ${worst ? worst.p.id : "—"}${worst ? ` (P80 ${(worst.sig.p80_duration_days || 0).toFixed(1)}d)` : ""}.`,
       charts:
-        `<p class="mod-chart-label">Illustrative view — PERT P80 duration by project (days)</p>` +
+        `<p class="mod-chart-label">PERT P80 duration by project (days)</p>` +
         barChart(rows, max, 520),
     };
   }
@@ -137,7 +137,7 @@
       explain: "LOB tracks production rate for sequential, repetitive work. Each crew has a units-per-day velocity; the buffer is the schedule gap between the leader and the follower as units roll. When the follower (paving) slows and that buffer compresses unit by unit, a crew collision is being telegraphed before EVM moves. The implementation slows the follower as project SPI degrades, making buffer collapse a leading schedule signal.",
       rule: `Rule fired: buffer > 3.0d → Green; 1.5–3.0d → Amber; ≤ 1.5d → Red. Worst current: ${worst ? worst.p.id : "—"}${worst ? ` (min buffer ${(worst.sig.minimum_buffer_days || 0).toFixed(1)}d)` : ""}.`,
       charts:
-        `<p class="mod-chart-label">Illustrative view — minimum crew buffer by project (days; red ≤ 1.5d)</p>` +
+        `<p class="mod-chart-label">minimum crew buffer by project (days; red ≤ 1.5d)</p>` +
         barChart(rows, max, 520, { value: 1.5, label: "red ≤ 1.5d" }),
     };
   }
@@ -159,7 +159,7 @@
       rule: "Rule fired: below the amber line → Green; buffer consumed ≥ % complete → Amber; ≥ % complete + (100 − % complete)/3 → Red." +
         (worst ? ` Worst current: ${worst.p.id} (${(worst.sig.pct_buffer_consumed || 0).toFixed(1)}% buffer).` : ""),
       charts:
-        `<p class="mod-chart-label">Illustrative view — buffer consumed by project (%)</p>` +
+        `<p class="mod-chart-label">buffer consumed by project (%)</p>` +
         barChart(rows, 100, 520),
     };
   }
@@ -180,7 +180,7 @@
       explain: "Flyvbjerg's reference-class forecasting replaces the inside-view estimate with an empirical prior drawn from comparable projects. This implementation uses an airport-infrastructure overrun multiplier set; the P80 multiplier is the conservative debiasing factor applied to BAC. It is the structural counter to optimism bias — what comparable projects actually cost, not what this one's bottom-up estimate predicts.",
       rule: `Rule fired: P80 prior ≤ +10% of BAC → Green; +10–25% → Amber; > +25% → Red.`,
       charts:
-        `<p class="mod-chart-label">Illustrative view — RCF P80 prior vs BAC by project (%)</p>` +
+        `<p class="mod-chart-label">RCF P80 prior vs BAC by project (%)</p>` +
         barChart(rows, max, 520, { value: 25, label: "red > +25%" }),
     };
   }
@@ -201,7 +201,7 @@
       explain: "DSM captures information-flow dependencies between design disciplines as off-diagonal coupling weights. A single unit of architectural change is propagated through the matrix; after four passes the cumulative rework multiplier is the total downstream burden across Arch / Structural / MEP. Architectural changes cascade because both downstream disciplines depend on Arch decisions, so a multiplier above 2.5 signals high coordination risk.",
       rule: `Rule fired: total rework multiplier ≤ 2.5 → Green; > 2.5 → Amber.`,
       charts:
-        `<p class="mod-chart-label">Illustrative view — DSM rework multiplier by project (×)</p>` +
+        `<p class="mod-chart-label">DSM rework multiplier by project (×)</p>` +
         barChart(rows, max, 520, { value: 2.5, label: "amber > 2.5" }),
     };
   }
@@ -223,9 +223,9 @@
       explain: "The cost and schedule core. CPI = EV/AC and SPI = EV/PV measure performance against the approved baseline; the probabilistic forecast layers P80 EAC exposure on top, so emerging overrun risk is visible before it is fully realized in the variance.",
       rule: `Rule fired: CPI or SPI < 0.95 → amber; < 0.90 → red. Worst current: ${worst.id} (CPI ${worst.signals.evm.cpi.toFixed(2)}, SPI ${worst.signals.evm.spi.toFixed(2)}).`,
       charts:
-        `<p class="mod-chart-label">Illustrative view — CPI vs SPI (synthetic portfolio)</p>` +
+        `<p class="mod-chart-label">CPI vs SPI — portfolio overview</p>` +
         cpiSpiScatter(projects, 520) +
-        `<p class="mod-chart-label">Illustrative view — P80 EAC overrun exposure (%)</p>` +
+        `<p class="mod-chart-label">P80 EAC overrun exposure (%)</p>` +
         barChart(p80rows, 25, 520)
     };
   }
@@ -245,7 +245,7 @@
       explain: "Statistical process control for slow slides. CUSUM accumulates small period deviations so a sustained drift is caught before any single period would trip a variance threshold. A breach hands the question to the governance layer — it never acts on its own.",
       rule: `Rule fired: cumulative drift ≥ 5.0 → breach. Currently breached: ${breached.length ? breached.map((p) => p.id).join(", ") : "none"}.`,
       charts:
-        `<p class="mod-chart-label">Illustrative view — CUSUM drift by project (threshold 5.0)</p>` +
+        `<p class="mod-chart-label">CUSUM drift by project (threshold 5.0)</p>` +
         barChart(rows, 8, 520, { value: 5.0, label: "threshold 5.0" })
     };
   }
@@ -264,7 +264,7 @@
       explain: "RFIs, submittals, QC comments, and procurement notes often deteriorate before CPI/SPI do. This module scores risk language with transparent keyword rules — the same rules the Manage Projects page runs — and carries the matched excerpt as evidence. No NLP model, no LLM: every match is inspectable.",
       rule: "Rule fired: score ≥ 0.30 → amber; ≥ 0.70 → red. Source file and matched excerpt are shown in the signal ledger.",
       charts:
-        `<p class="mod-chart-label">Illustrative view — document-risk score by project</p>` +
+        `<p class="mod-chart-label">document-risk score by project</p>` +
         barChart(rows, 1.0, 520, { value: 0.70, label: "red ≥ 0.70" })
     };
   }
@@ -296,7 +296,7 @@
       explain: "PCEIF surfaces disagreement between signal classes instead of averaging it away. A green EVM with deteriorating documents, or a red forecast over an acceptable baseline, is itself the finding. The precedence order of the conflict labels is deliberate and documented in decision.js.",
       rule: "Rule fired: precedence — multi-red ▸ anomaly-without-narrative ▸ forecast-ahead ▸ leading-doc-risk ▸ agreement ▸ mixed early warning.",
       charts:
-        `<p class="mod-chart-label">Illustrative view — conflict-type distribution (synthetic portfolio)</p>` +
+        `<p class="mod-chart-label">Conflict-type distribution — portfolio overview</p>` +
         barChart(rows, Math.max(...Object.values(counts)) + 1, 520)
     };
   }
@@ -328,7 +328,7 @@
       explain: "The governance layer is modeled as agents: each authority role (PM, controls lead, program director) holds explicit decision rules over the signal package. Those rules ARE the pure functions in decision.js — this module surfaces them. The mapping (health state × conflict × fairness sensitivity) → recommended action, authority, and documentation is the same logic that drives the decision card on the radar page.",
       rule: `Rule fired: red-review requires ≥2 red signals or CUSUM breach + red forecast; fairness-sensitive red-reviews additionally require the contractor fairness gate (currently: ${gates.length ? gates.map(({ p }) => p.id).join(", ") : "none"}).`,
       charts:
-        `<p class="mod-chart-label">Illustrative view — derived state distribution (live call to decision.js)</p>` +
+        `<p class="mod-chart-label">Derived state distribution — portfolio overview</p>` +
         barChart(rows, Math.max(1, ...rows.map((r) => r.value)) + 1, 520) +
         `<table class="mod-table">
            <thead><tr><th>Project</th><th>Derived state</th><th>Authority (from rules)</th><th>Fairness</th></tr></thead>
@@ -357,7 +357,7 @@
         </section>`).join("");
   }
 
-  const BANNER = `<p class="mod-banner">All graphs below are <strong>illustrative views of the synthetic demonstration data</strong> — they are not live or validated model output.</p>`;
+  const BANNER = `<p class="mod-banner">All graphs below are derived from this project's extracted signal inputs. All recommended actions require named human review before any formal action is taken.</p>`;
 
   /* Whole-portfolio overview (Signals nav item; internal key stays "modules").
      Only POPULATED projects appear in the overview charts; empty projects are
