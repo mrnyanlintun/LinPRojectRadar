@@ -583,6 +583,15 @@
           ["VAC = BAC − EAC", "Variance at Completion"],
         ])}
 
+        <h3>Reading CPI</h3>
+        <p>CPI measures how many cents of completed work the project is getting for every dollar spent. A CPI of exactly 1.00 means the project is spending exactly what was budgeted for the work done — on budget. A CPI above 1.00 means the project is delivering more work than expected per dollar spent — under budget and efficient. A CPI below 1.00 means the project is spending more than the work is worth — over budget.</p>
+        <p>Worked example: if EV is $900,000 and AC is $1,000,000, then <code>CPI = 900,000 / 1,000,000 = 0.90</code>. The project is spending $1.10 for every $1.00 of work completed. At that rate the independent EAC is <code>BAC / 0.90</code> — a 11% overrun projected to completion. Three sustained periods at CPI 0.90 is a recovery-plan trigger under most agency program-controls policies, not a watch item.</p>
+
+        <h3>Reading SPI</h3>
+        <p>SPI measures how much progress the project is making per dollar of planned progress. An SPI of 1.00 means the project is completing work exactly on the baseline schedule. An SPI above 1.00 means work is completing ahead of schedule. An SPI below 1.00 means the project is behind — less work has been completed than was planned by this date.</p>
+        <p>Worked example: if EV is $720,000 and PV is $900,000, then <code>SPI = 720,000 / 900,000 = 0.80</code>. Only 80 cents of every planned dollar of progress has been earned — the project is 20% behind schedule as measured in cost terms. Note that SPI naturally converges toward 1.00 as the project nears closeout (all work must eventually be earned); it is most informative in the early and middle periods. CUSUM is used to detect the sustained SPI drift that single-period readings obscure.</p>
+        <p>Both CPI and SPI should be read together. A CPI of 0.92 with an SPI of 0.88 tells a different story from a CPI of 0.92 with an SPI of 1.05 — the first is over budget and behind schedule; the second is over budget but ahead of schedule, which may justify a different governance response.</p>
+
         <h3>Why PCEIF defaults to BAC / CPI</h3>
         <p>On public capital programs cost overruns compound. A project 10% over budget at month 6 rarely recovers to baseline by closeout — the inefficiency rate is sticky. <code>BAC / CPI</code> assumes the current rate continues, which is the most defensible assumption for an escalation conversation. The optimistic formula is for the contractor; the pessimistic for risk reserves; the default is for the program controls record.</p>
 
