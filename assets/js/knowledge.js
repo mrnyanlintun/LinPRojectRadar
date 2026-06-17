@@ -100,16 +100,16 @@
       body: "Module 03 scores risk language in project records (RFIs, submittals, QC comments, procurement notes) using visible keyword rules — the same rules the Manage Projects page runs. The score and the matched excerpt feed the signal ledger. In this demo extraction is rule-based and transparent; there is no live NLP or LLM."
     },
     {
-      id: "module04",
-      keywords: ["module 04", "module 4", "synthesis", "conflict", "disagreement", "leading", "forecast ahead"],
-      title: "Module 04: Signal Synthesis",
-      body: "Module 04 classifies disagreement between signal classes instead of averaging it away. Conflict types: Multi-signal red-review, Anomaly without narrative, Forecast ahead of status, Leading document risk, Agreement — low risk, and Mixed early warning. The precedence order is deliberate and documented in decision.js."
+      id: "module10",
+      keywords: ["module 10", "module 10", "synthesis", "conflict", "disagreement", "leading", "forecast ahead", "conservative dominance"],
+      title: "Module 10: Signal Synthesis",
+      body: "Module 10 classifies disagreement between signal classes instead of averaging it away. Conflict types: Multi-signal red-review, Anomaly without narrative, Forecast ahead of status, Leading document risk, Agreement — low risk, and Mixed early warning. The precedence order is deliberate and documented in decision.js. Conservative dominance: the worst single signal drives the overall state."
     },
     {
-      id: "module05",
-      keywords: ["module 05", "module 5", "abm", "agent", "governance layer", "decision rules", "authority"],
-      title: "Module 05: ABM governance layer",
-      body: "Module 05 is the agent-based governance layer: each authority role (PM, controls lead, program director) is an agent with explicit decision rules. Those rules live in decision.js as pure, readable functions — deriveHealthState, classifyConflict, and deriveDecision — and the Signals page calls them directly. The decision card you see on the Portfolio and Project Detail pages IS this module's output."
+      id: "module09",
+      keywords: ["module 09", "module 9", "abm", "agent", "governance layer", "decision rules", "authority"],
+      title: "Module 09: ABM Governance Layer",
+      body: "Module 09 is the agent-based governance layer: each authority role (PM, controls lead, program director) is an agent with explicit decision rules. Those rules live in decision.js as pure, readable functions — deriveHealthState, classifyConflict, and deriveDecision — and the Signals page calls them directly. The decision card you see on the Portfolio and Project Detail pages IS this module's output."
     },
     {
       id: "fairness",
@@ -229,37 +229,43 @@
       definition: "PCEIF governance state requiring Program Director / PMO lead review. Triggered when ≥2 signal classes are Red, or CUSUM breach + Red forecast. Requires full signal package, assigned owner, rationale, response timeframe, and audit record." },
   ];
 
-  /* ---------- Modules 06-10 — Method Library accordion entries (Fix 3) ---------- */
+  /* ---------- Modules 04-08, 11 — Method Library accordion entries ---------- */
   TOPICS.push(
     {
-      id: "module06",
-      keywords: ["module 06", "module 6", "pert", "program evaluation", "network criticality", "triangular", "path criticality"],
-      title: "Module 06: Program Evaluation & Review Technique (PERT)",
-      body: "PERT is a stochastic network scheduling method. Each activity has three duration estimates — optimistic (a), most likely (m), and pessimistic (b) — and is sampled from a triangular distribution. The classic deterministic three-point estimate is te = (a + 4m + b) / 6; the simulation aggregates the dominant path across 5,000 runs. P80 duration is the conservative finish (80% of runs at or under). The path-criticality index is the fraction of runs in which the structural path was on the critical path — the higher it is, the less float you have to absorb a slip. In this implementation a lower project SPI widens the pessimistic bound, so an already-drifting schedule grows a fatter P80 tail. Thresholds: Green P80 ≤ baseline; Amber P80 up to +20%; Red P80 > +20%.",
+      id: "module04",
+      keywords: ["module 04", "module 4", "pert", "program evaluation", "network criticality", "triangular", "path criticality"],
+      title: "Module 04: Program Evaluation & Review Technique (PERT)",
+      body: "PERT is a stochastic network scheduling method. Each activity has three duration estimates — optimistic (a), most likely (m), and pessimistic (b) — and is sampled from a triangular distribution. The classic deterministic three-point estimate is te = (a + 4m + b) / 6; the simulation aggregates the dominant path across 5,000 runs. P80 duration is the conservative finish (80% of runs at or under). The path-criticality index is the fraction of runs in which the structural path was on the critical path — the higher it is, the less float you have to absorb a slip. In this implementation a lower project SPI widens the pessimistic bound, so an already-drifting schedule grows a fatter P80 tail. Thresholds: Green P80 within baseline; Amber P80 up to +20%; Red P80 > +20%.",
     },
     {
-      id: "module07",
-      keywords: ["module 07", "module 7", "lob", "line of balance", "production velocity", "crew", "buffer"],
-      title: "Module 07: Line of Balance (LOB)",
+      id: "module05",
+      keywords: ["module 05", "module 5", "lob", "line of balance", "production velocity", "crew", "buffer"],
+      title: "Module 05: Line of Balance (LOB)",
       body: "LOB tracks production velocity for sequential, repetitive work — grading runs ahead of paving, paving runs ahead of striping, and so on. Each crew has a rate in units/day; the buffer is the schedule gap between leader and follower at every unit. When the follower's rate slips, that buffer compresses unit by unit and a crew-on-crew collision is being telegraphed before EVM moves. Here, lower project SPI slows the follower (paving) so the minimum crew buffer shrinks. Buffer collapse is a leading schedule indicator: it shows up in the LOB chart before it shows up in CPI or SPI. Thresholds: Green buffer > 3 days; Amber 1.5–3 days; Red ≤ 1.5 days.",
     },
     {
-      id: "module08",
-      keywords: ["module 08", "module 8", "ccpm", "critical chain", "buffer", "fever chart"],
-      title: "Module 08: Critical Chain Project Management (CCPM)",
+      id: "module06",
+      keywords: ["module 06", "module 6", "ccpm", "critical chain", "buffer", "fever chart"],
+      title: "Module 06: Critical Chain Project Management (CCPM)",
       body: "CCPM (Goldratt) aggregates the safety margin embedded in individual activity estimates into a single project buffer at the end of the critical chain. The fever chart plots buffer-consumed % against chain-complete %. Two thresholds drive the zones: the amber line tracks chain completion (buffer consumed ≥ % complete) — burning buffer at the same rate progress is being made; the red line sits a third of the remaining range above (buffer consumed ≥ % complete + (100 − % complete) / 3) — burning buffer faster than the chain can complete. Crossing into red means the buffer will run out before the work does. Thresholds: Green below the amber line; Amber buffer consumed ≥ % complete; Red buffer consumed ≥ % complete + (100 − % complete) / 3.",
     },
     {
-      id: "module09",
-      keywords: ["module 09", "module 9", "rcf", "reference class", "forecasting", "flyvbjerg", "debias", "optimism bias"],
-      title: "Module 09: Reference Class Forecasting (RCF)",
-      body: "Reference Class Forecasting comes from Bent Flyvbjerg's research on optimism bias in large infrastructure projects: bottom-up estimates systematically underestimate cost because they reason from the inside view (this project's plan) rather than the outside view (how comparable projects have actually performed). RCF replaces the inside-view estimate with an empirical prior — the distribution of historical overrun multipliers from a comparable reference class. This implementation uses an airport-infrastructure multiplier set [1.00 … 1.52]; the P80 multiplier is the conservative debiasing factor applied to BAC. The debiasing factor is the multiplier itself: ×1.38 means the outside view says comparable projects finished 38% over their baseline. The P80 RCF prior is the realistic planning budget to compare against the bottom-up EAC. Thresholds: Green P80 within +10% of BAC; Amber +10–25%; Red > +25%.",
+      id: "module07",
+      keywords: ["module 07", "module 7", "rcf", "reference class", "forecasting", "flyvbjerg", "debias", "optimism bias"],
+      title: "Module 07: Reference Class Forecasting (RCF)",
+      body: "Reference Class Forecasting comes from Bent Flyvbjerg's research on optimism bias in large infrastructure projects: bottom-up estimates systematically underestimate cost because they reason from the inside view (this project's plan) rather than the outside view (how comparable projects have actually performed). RCF replaces the inside-view estimate with an empirical prior — the distribution of historical overrun multipliers from a comparable reference class. This implementation uses an airport-infrastructure multiplier set [1.00 to 1.52]; the P80 multiplier is the conservative debiasing factor applied to BAC. The debiasing factor is the multiplier itself: x1.38 means the outside view says comparable projects finished 38% over their baseline. The P80 RCF prior is the realistic planning budget to compare against the bottom-up EAC. Thresholds: Green P80 within +10% of BAC; Amber +10–25%; Red > +25%.",
     },
     {
-      id: "module10",
-      keywords: ["module 10", "dsm", "design structure matrix", "rework", "propagation", "arch", "structural", "mep", "dependency"],
-      title: "Module 10: Design Structure Matrix (DSM)",
+      id: "module08",
+      keywords: ["module 08", "module 8", "dsm", "design structure matrix", "rework", "propagation", "arch", "structural", "mep", "dependency"],
+      title: "Module 08: Design Structure Matrix (DSM)",
       body: "A DSM captures information-flow dependencies between work elements as a square matrix: each off-diagonal entry A[i][j] is the strength of i's dependence on j. Here the elements are the three design disciplines — Architectural, Structural, MEP — and the off-diagonals encode how much a unit change in one cascades into the others. Architectural decisions flow downstream into both Structural and MEP, so an arch scope change ripples through the matrix; structural and MEP changes also feed back. The simulation propagates a unit architectural change vector through the matrix for four passes and accumulates the rework absorbed in each discipline. The total cumulative rework multiplier is the coordination cost: a multiplier above 2.5 indicates that one unit of arch change is generating more than 2.5 units of downstream rework — high coordination risk. Thresholds: Green rework multiplier ≤ 2.5; Amber > 2.5.",
+    },
+    {
+      id: "module11",
+      keywords: ["module 11", "module 11", "dst", "dempster", "shafer", "belief", "evidence combination", "conflict mass", "bpa"],
+      title: "Module 11: Dempster-Shafer Evidence Combination (DST)",
+      body: "Dempster-Shafer Theory (DST) is a mathematical framework for reasoning under uncertainty when evidence comes from multiple independent sources. Unlike conservative dominance (Module 10), which takes the worst single signal, DST combines all four signal classes into a belief distribution over {Green, Amber, Red, Unknown}. Each source assigns a basic probability assignment (BPA) — a mass function over subsets of the frame of discernment. Dempster's combination rule then merges sources iteratively, redistributing conflict mass. The conflict mass K measures how much the sources disagree: K > 0.3 is flagged as high inter-signal disagreement, which is itself a governance signal. Academic context: Dempster (1967) and Shafer (1976). When DST agrees with Module 10, both methods corroborate each other. When they diverge, the disagreement is a finding: it tells the governance layer that the evidence picture is genuinely ambiguous rather than clear-cut, and that no single framing captures the full risk.",
     },
   );
 
@@ -386,7 +392,7 @@
     });
     // synthesis target node
     out += `<rect x="540" y="115" width="160" height="60" rx="9" fill="var(--phosphor)" opacity="0.15" stroke="var(--phosphor)" stroke-width="1.8"></rect>`;
-    out += `<text x="620" y="142" text-anchor="middle" class="kn-svg-t" fill="var(--text)" font-weight="700">Module 04</text>`;
+    out += `<text x="620" y="142" text-anchor="middle" class="kn-svg-t" fill="var(--text)" font-weight="700">Module 10</text>`;
     out += `<text x="620" y="160" text-anchor="middle" class="kn-svg-t" fill="var(--text)">Signal Synthesis</text>`;
     return out + "</svg>";
   }
@@ -475,7 +481,7 @@
     return out + "</svg>";
   }
 
-  // Module 04 agreement map (Topic 7)
+  // Module 10 agreement map (Topic 7)
   function svgAgreementMap() {
     const w = 720, h = 200;
     const nodes = [["EVM", "var(--clear-green)", 100], ["FORECAST", "var(--radar-amber)", 280], ["CUSUM", "var(--alarm-red)", 460], ["DOC", "var(--clear-green)", 620]];
@@ -538,23 +544,24 @@
           <li><strong>Module 02 — SPC / CUSUM Anomaly Monitor.</strong> Two-sided tabular CUSUM over the SPI series; breach when cumulative drift exceeds the decision interval H = 5σ.</li>
         </ul>
 
-        <h3>Modules 03–05 — Governance Synthesis (rule-based)</h3>
+        <h3>Modules 03, 09, 10 — Governance Synthesis (rule-based)</h3>
         <ul class="kn-list">
           <li><strong>Module 03 — Document Risk Extraction.</strong> Transparent keyword rules score risk language across RFIs, submittals, OAC minutes, and correspondence.</li>
-          <li><strong>Module 04 — Signal Synthesis.</strong> Classifies the disagreement between signal classes (six conflict types) rather than averaging it away.</li>
-          <li><strong>Module 05 — ABM Governance Layer.</strong> Maps (state × conflict × sector) to action, authority, and documentation. Implemented as pure functions in <code>decision.js</code>.</li>
+          <li><strong>Module 09 — ABM Governance Layer.</strong> Maps (state × conflict × sector) to action, authority, and documentation. Implemented as pure functions in <code>decision.js</code>.</li>
+          <li><strong>Module 10 — Signal Synthesis.</strong> Classifies the disagreement between signal classes (six conflict types) rather than averaging it away. Conservative dominance: worst signal wins.</li>
         </ul>
 
-        <h3>Modules 06–10 — Extended Simulation Stack</h3>
+        <h3>Modules 04–08, 11 — Extended Simulation Stack</h3>
         <ul class="kn-list">
-          <li><strong>Module 06 — PERT</strong> network criticality (P80 duration, path criticality index).</li>
-          <li><strong>Module 07 — Line of Balance</strong> production velocity (crew-buffer collapse as a leading indicator).</li>
-          <li><strong>Module 08 — CCPM</strong> buffer-health fever chart (buffer consumed vs chain complete).</li>
-          <li><strong>Module 09 — Reference Class Forecasting</strong> cost prior (outside-view debiasing against an empirical reference class).</li>
-          <li><strong>Module 10 — Design Structure Matrix</strong> rework propagation (architectural change cascades to MEP).</li>
+          <li><strong>Module 04 — PERT</strong> network criticality (P80 duration, path criticality index).</li>
+          <li><strong>Module 05 — Line of Balance</strong> production velocity (crew-buffer collapse as a leading indicator).</li>
+          <li><strong>Module 06 — CCPM</strong> buffer-health fever chart (buffer consumed vs chain complete).</li>
+          <li><strong>Module 07 — Reference Class Forecasting</strong> cost prior (outside-view debiasing against an empirical reference class).</li>
+          <li><strong>Module 08 — Design Structure Matrix</strong> rework propagation (architectural change cascades to MEP).</li>
+          <li><strong>Module 11 — Dempster-Shafer Evidence Combination</strong> — combines all four signal classes into a belief distribution; conflict mass measures inter-signal disagreement.</li>
         </ul>
 
-        <p class="kn-callout">Outputs from all ten feed Module 04 (Signal Synthesis). The synthesis is what gates the governance card — not any individual signal.</p>
+        <p class="kn-callout">Outputs from all eleven feed Module 10 (Signal Synthesis). The synthesis is what gates the governance card — not any individual signal. Module 11 provides an independent probabilistic lens to compare against the conservative dominance result.</p>
       `,
     },
     {
@@ -672,7 +679,7 @@
         ${svgCusum()}
 
         <h3>What a breach means</h3>
-        <p>A CUSUM breach hands the question to Module 04 (Signal Synthesis) and Module 05 (ABM Governance Layer). The monitor never acts on its own; it produces evidence the governance layer routes. If the breach has no document narrative behind it, the conflict type is "Anomaly Without Narrative" — itself a finding worth surfacing.</p>
+        <p>A CUSUM breach hands the question to Module 10 (Signal Synthesis) and Module 09 (ABM Governance Layer). The monitor never acts on its own; it produces evidence the governance layer routes. If the breach has no document narrative behind it, the conflict type is "Anomaly Without Narrative" — itself a finding worth surfacing.</p>
       `,
     },
     {
@@ -696,13 +703,13 @@
         )}
 
         <h3>A real limitation</h3>
-        <p>Keyword extraction is rule-based, not semantic. A sophisticated contractor writes around keyword rules. The score is a <em>leading indicator</em>, never a verdict. PCEIF treats Module 03 Red as a flag that requires Module 04 corroboration before it drives an action — never as a standalone trigger.</p>
+        <p>Keyword extraction is rule-based, not semantic. A sophisticated contractor writes around keyword rules. The score is a <em>leading indicator</em>, never a verdict. PCEIF treats Module 03 Red as a flag that requires Module 10 corroboration before it drives an action — never as a standalone trigger.</p>
       `,
     },
     {
       id: "synthesis",
-      title: "7. Module 04: Signal Synthesis",
-      eyebrow: "Module 04",
+      title: "7. Module 10: Signal Synthesis",
+      eyebrow: "Module 10",
       build: () => `
         <p class="kn-lead">A CPI of 1.02 and a CUSUM breach do <strong>not</strong> average to "slightly above baseline." The breach is the finding. PCEIF surfaces disagreement between signal classes instead of averaging it away — and names the disagreement so the reviewer knows what to investigate.</p>
 
@@ -727,8 +734,8 @@
     },
     {
       id: "abm",
-      title: "8. Module 05: ABM Governance Layer",
-      eyebrow: "Module 05",
+      title: "8. Module 09: ABM Governance Layer",
+      eyebrow: "Module 09",
       build: () => `
         <p class="kn-lead">"Agent-based" here means each authority role (PM, controls lead, program director) is modelled as an agent with explicit, executable decision rules. In <code>decision.js</code> those rules are pure functions — readable, testable, and auditable. Nothing is learned; everything is documented.</p>
 
@@ -763,72 +770,111 @@
       `,
     },
     {
-      id: "modules-06-10",
-      title: "9. Modules 06–10: Extended Simulation Stack",
+      id: "modules-04-08-11",
+      title: "9. Modules 04–08, 11: Extended Simulation Stack",
       eyebrow: "Quantitative extensions",
       build: () => `
-        <p class="kn-lead">Modules 06–10 cover construction and design risks that EVM does not catch. Each returns a status with an evidence metric that feeds Module 04.</p>
+        <p class="kn-lead">Modules 04–08 and 11 cover construction and design risks that EVM does not catch. Each returns a status with an evidence metric that feeds Module 10 (Signal Synthesis).</p>
 
-        <h3>Module 06 — Program Evaluation &amp; Review Technique (PERT)</h3>
+        <h3>Module 04 — Program Evaluation &amp; Review Technique (PERT)</h3>
         <p>Stochastic three-activity network with triangular activity sampling. The dominant path is aggregated across 5,000 iterations.</p>
         ${formulaBlock([
           ["te = (a + 4m + b) / 6", "deterministic three-point estimate"],
-          ["dᵢ ~ Triangular(a, m, b)", "per-activity sample"],
+          ["di ~ Triangular(a, m, b)", "per-activity sample"],
           ["P80 duration = 80th percentile of simulated finishes", ""],
           ["criticality_index = | runs where path = critical | / 5000", ""],
         ])}
         ${ragTable(["Metric", "Green", "Amber", "Red"], [
-          ["P80 vs baseline", { label: "≤ baseline", color: RAG.green }, { label: "+0 to +20%", color: RAG.amber }, { label: "> +20%", color: RAG.red }],
+          ["P80 vs baseline", { label: "within baseline", color: RAG.green }, { label: "+0 to +20%", color: RAG.amber }, { label: "> +20%", color: RAG.red }],
         ])}
 
-        <h3>Module 07 — Line of Balance (LOB)</h3>
+        <h3>Module 05 — Line of Balance (LOB)</h3>
         <p>Leader (grading) versus follower (paving) crew velocity. SPI degradation slows the follower so the buffer compresses unit by unit.</p>
         ${formulaBlock([
-          ["lag_per_unit = (1 / paving_rate) − (1 / grading_rate)", "schedule cost per linear unit"],
-          ["buffer(u) = initial_buffer − u × lag_per_unit", "buffer at unit u"],
-          ["min_buffer = minᵤ buffer(u)", "headline metric"],
+          ["lag_per_unit = (1 / paving_rate) - (1 / grading_rate)", "schedule cost per linear unit"],
+          ["buffer(u) = initial_buffer - u x lag_per_unit", "buffer at unit u"],
+          ["min_buffer = min_u buffer(u)", "headline metric"],
         ])}
         ${ragTable(["Metric", "Green", "Amber", "Red"], [
           ["min crew buffer (days)", { label: "> 3.0", color: RAG.green }, { label: "1.5–3.0", color: RAG.amber }, { label: "≤ 1.5", color: RAG.red }],
         ])}
 
-        <h3>Module 08 — Critical Chain Project Management (CCPM)</h3>
+        <h3>Module 06 — Critical Chain Project Management (CCPM)</h3>
         <p>Buffer-consumption fever chart. The amber threshold tracks chain completion; the red threshold sits a third of the remaining range above.</p>
         ${formulaBlock([
           ["amber_line = % complete", ""],
-          ["red_line   = % complete + (100 − % complete) / 3", ""],
+          ["red_line   = % complete + (100 - % complete) / 3", ""],
         ])}
         ${ragTable(["Zone", "Condition"], [
           [{ label: "Green", color: RAG.green }, "buffer consumed < % complete (below the amber line)"],
-          [{ label: "Amber", color: RAG.amber }, "buffer consumed ≥ % complete"],
-          [{ label: "Red", color: RAG.red }, "buffer consumed ≥ % complete + (100 − % complete) / 3"],
+          [{ label: "Amber", color: RAG.amber }, "buffer consumed >= % complete"],
+          [{ label: "Red", color: RAG.red }, "buffer consumed >= % complete + (100 - % complete) / 3"],
         ])}
 
-        <h3>Module 09 — Reference Class Forecasting (RCF)</h3>
+        <h3>Module 07 — Reference Class Forecasting (RCF)</h3>
         <p>Flyvbjerg's outside-view debiasing. Replaces the inside-view estimate with the empirical distribution from a comparable reference class.</p>
         ${formulaBlock([
           ["multipliers = [ 1.00, 1.04, 1.10, 1.14, 1.15, 1.26, 1.38, 1.45, 1.52 ]", "airport-infrastructure reference class"],
-          ["P50 prior = BAC × multipliers[ P50 ]", ""],
-          ["P80 prior = BAC × multipliers[ P80 ]", "conservative debiased budget"],
+          ["P50 prior = BAC x multipliers[ P50 ]", ""],
+          ["P80 prior = BAC x multipliers[ P80 ]", "conservative debiased budget"],
           ["debiasing_factor = multipliers[ P80 ]", "headline metric"],
         ])}
         ${ragTable(["Metric", "Green", "Amber", "Red"], [
-          ["P80 prior vs BAC", { label: "≤ +10%", color: RAG.green }, { label: "+10% to +25%", color: RAG.amber }, { label: "> +25%", color: RAG.red }],
+          ["P80 prior vs BAC", { label: "within +10%", color: RAG.green }, { label: "+10% to +25%", color: RAG.amber }, { label: "> +25%", color: RAG.red }],
         ])}
 
-        <h3>Module 10 — Design Structure Matrix (DSM)</h3>
-        <p>3×3 Arch / Structural / MEP dependency matrix. A unit architectural change is propagated through four passes; the cumulative rework multiplier is the coordination cost.</p>
+        <h3>Module 08 — Design Structure Matrix (DSM)</h3>
+        <p>3x3 Arch / Structural / MEP dependency matrix. A unit architectural change is propagated through four passes; the cumulative rework multiplier is the coordination cost.</p>
         ${formulaBlock([
-          "A = [ [0.0, 0.3, 0.1],   Arch    ← Structural, MEP",
-          "      [0.5, 0.0, 0.2],   Struct  ← Arch, MEP",
-          "      [0.4, 0.4, 0.0] ]  MEP     ← Arch, Structural",
+          "A = [ [0.0, 0.3, 0.1],   Arch    <- Structural, MEP",
+          "      [0.5, 0.0, 0.2],   Struct  <- Arch, MEP",
+          "      [0.4, 0.4, 0.0] ]  MEP     <- Arch, Structural",
           "",
-          ["v⁰ = [1, 0, 0],   vᵗ⁺¹ = A · vᵗ", "propagation step"],
-          ["rework_multiplier = Σᵢ Σₜ₌₀⁴ vᵢᵗ", "cumulative across 4 passes"],
+          ["v0 = [1, 0, 0],   v(t+1) = A · v(t)", "propagation step"],
+          ["rework_multiplier = sum_i sum_t=0..4 v_i(t)", "cumulative across 4 passes"],
         ])}
         ${ragTable(["Metric", "Green", "Amber"], [
           ["rework multiplier", { label: "≤ 2.5", color: RAG.green }, { label: "> 2.5", color: RAG.amber }],
         ])}
+
+        <h3>Module 11 — Dempster-Shafer Evidence Combination (DST)</h3>
+        <p>DST is a mathematical framework for reasoning under uncertainty with multiple independent sources. Introduced by Dempster (1967) and formalised by Shafer (1976). Each source assigns a basic probability assignment (BPA) over a frame of discernment — here {Green, Amber, Red, Unknown}. Sources are combined via Dempster's rule, which normalises out the conflict mass K.</p>
+
+        <p><strong>What DST adds that conservative dominance does not:</strong> Module 10 takes the worst single signal. DST weights all four evidence sources and produces explicit belief masses for every state. When a project is Green by two signals, Amber by one, and Red by one, conservative dominance outputs Red. DST may output Amber if the combined belief mass for Amber is highest, and its conflict mass will quantify exactly how much the sources disagreed. That conflict mass is itself a governance-relevant finding.</p>
+
+        ${formulaBlock([
+          "Frame of discernment: Theta = {Green, Amber, Red, Unknown}",
+          "",
+          "Each source i assigns mass m_i(A) for each subset A of Theta,",
+          "where sum_A m_i(A) = 1.",
+          "",
+          "Dempster combination of two sources m1, m2:",
+          ["m(A) = (1 / (1 - K)) * sum_{B∩C=A} m1(B) * m2(C)", "combined mass"],
+          ["K = sum_{B∩C=empty} m1(B) * m2(C)", "conflict mass — inter-source disagreement"],
+          "",
+          "If K → 1 (total conflict), the combination is undefined;",
+          "this implementation returns uniform mass as a safe fallback.",
+          "",
+          "BPA thresholds per source:",
+          "  EVM (CPI/SPI min >= 0.95):  Green 0.80, Amber 0.10, Red 0.05, Unknown 0.05",
+          "  EVM (0.90-0.94):            Green 0.10, Amber 0.70, Red 0.15, Unknown 0.05",
+          "  EVM (< 0.90):               Green 0.05, Amber 0.15, Red 0.75, Unknown 0.05",
+          "  (Same pattern for MC p80delta, CUSUM breach, Doc score thresholds.)",
+          "",
+          "Final state = argmax_{Green,Amber,Red} m(state)",
+          "Conflict level: Low if K < 0.10, Moderate if K 0.10-0.30, High if K > 0.30",
+        ])}
+
+        ${ragTable(["Conflict Mass K", "Interpretation"], [
+          [{ label: "< 0.10 (Low)", color: RAG.green }, "Sources broadly agree — DST result is reliable."],
+          [{ label: "0.10–0.30 (Moderate)", color: RAG.amber }, "Some inter-signal tension — review which sources diverge."],
+          [{ label: "> 0.30 (High)", color: RAG.red }, "Strong disagreement — divergence itself is a governance signal worth surfacing."],
+        ])}
+
+        <p class="kn-callout">When Module 11 disagrees with Module 10, that disagreement is informative — it means the evidence picture is genuinely ambiguous and no single framing captures the full risk. The governance layer should note the divergence in the audit record.</p>
+
+        <h3>Academic context</h3>
+        <p>Dempster, A.P. (1967). Upper and lower probabilities induced by a multivalued mapping. Annals of Mathematical Statistics, 38(2), 325–339. Shafer, G. (1976). A Mathematical Theory of Evidence. Princeton University Press.</p>
       `,
     },
     {
@@ -871,7 +917,7 @@
           ["Field", "Why it matters"],
           [
             ["Derived state", "The PCEIF rule output — Green / Amber / Red-review / Critical — that triggered this card."],
-            ["Conflict type", "The named disagreement Module 04 surfaced; tells the reviewer what to investigate."],
+            ["Conflict type", "The named disagreement Module 10 surfaced; tells the reviewer what to investigate."],
             ["Recommended action", "The specific governance step the authority matrix returned; not a directive, a recommendation."],
             ["Authority", "The role entitled to record the decision. A different role recording it must document the override rationale."],
             ["Documentation required", "The artefacts (variance report, recovery plan, corrective-action notice) the agency policy requires for this state."],

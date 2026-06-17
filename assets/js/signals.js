@@ -179,7 +179,7 @@
     let simPayload = null;
     if (window.LinSimulations) {
       try {
-        const simResults = LinSimulations.runAll(si);
+        const simResults = LinSimulations.runAll(si, project.signals);
         const now = new Date();
         simPayload = {
           signal_metadata: {
@@ -210,8 +210,8 @@
     // saveProject reconciles the in-memory mirror with the backend's echoed
     // project, which omits client-only fields (the built signals package,
     // signalInputs, and simulationSignals). Re-assert them onto the canonical
-    // cached object so the detail deep-dive (Five signals + the five extra
-    // simulation cards) and the ledger keep rendering after the save.
+    // cached object so the detail deep-dive and the ledger keep rendering
+    // after the save.
     const cached = LinStore.getCached(project.id);
     if (cached) {
       if (!hasSignals(cached) && builtSignals) cached.signals = builtSignals;

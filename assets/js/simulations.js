@@ -1,16 +1,15 @@
 /* ============================================================
-   lin-project-radar — simulations.js  (Sprint 0 items 6–10)
+   lin-project-radar — simulations.js
    ------------------------------------------------------------
-   Five additional client-side simulation models that run in the
-   browser from a project's extracted signalInputs — zero tokens,
-   zero backend calls. Each returns a signal object that feeds the
-   unified signal array (item 11) shown in the Five Signals panel.
+   Six client-side simulation models that run in the browser from
+   a project's extracted signalInputs — zero tokens, zero backend.
 
-     6  PERT — Stochastic Network Criticality Index
-     7  LOB  — Line of Balance Production Velocity
-     8  CCPM — Buffer Health (fever chart logic)
-     9  RCF  — Reference Class Forecasting cost prior
-    10  DSM  — Design Structure Matrix rework propagation
+     04  PERT — Stochastic Network Criticality Index
+     05  LOB  — Line of Balance Production Velocity
+     06  CCPM — Buffer Health (fever chart logic)
+     07  RCF  — Reference Class Forecasting cost prior
+     08  DSM  — Design Structure Matrix rework propagation
+     11  DST  — Dempster-Shafer Evidence Combination
 
    These are DEMONSTRATION models (designed heuristics over the
    project's synthetic inputs), not calibrated/validated forecasts.
@@ -210,17 +209,111 @@
   }
 
   /* ===========================================================
-     runAll — accepts a project OR a signalInputs object and
-     returns the array of the five simulation signal objects.
+     Module 11 — Dempster-Shafer Evidence Combination
+     Combines signal evidence from the four primary classes into a
+     unified belief distribution over {Green, Amber, Red, Unknown}.
      =========================================================== */
-  function runAll(input) {
+  function runDST(signalInputs, existingSignals) {
+    var sources = [];
+
+    var cpi = existingSignals.evm ? existingSignals.evm.cpi : null;
+    var spi = existingSignals.evm ? existingSignals.evm.spi : null;
+    if (cpi && spi) {
+      var evmMin = Math.min(cpi, spi);
+      if (evmMin >= 0.95) sources.push({ Green: 0.80, Amber: 0.10, Red: 0.05, Unknown: 0.05 });
+      else if (evmMin >= 0.90) sources.push({ Green: 0.10, Amber: 0.70, Red: 0.15, Unknown: 0.05 });
+      else sources.push({ Green: 0.05, Amber: 0.15, Red: 0.75, Unknown: 0.05 });
+    } else {
+      sources.push({ Green: 0.25, Amber: 0.25, Red: 0.25, Unknown: 0.25 });
+    }
+
+    var mc = existingSignals.mc;
+    if (mc) {
+      var p80delta = mc.p80DeltaPct || 0;
+      if (p80delta <= 5) sources.push({ Green: 0.75, Amber: 0.15, Red: 0.05, Unknown: 0.05 });
+      else if (p80delta <= 10) sources.push({ Green: 0.10, Amber: 0.65, Red: 0.20, Unknown: 0.05 });
+      else sources.push({ Green: 0.05, Amber: 0.10, Red: 0.80, Unknown: 0.05 });
+    } else {
+      sources.push({ Green: 0.25, Amber: 0.25, Red: 0.25, Unknown: 0.25 });
+    }
+
+    var cusum = existingSignals.cusum;
+    if (cusum) {
+      if (!cusum.breached) sources.push({ Green: 0.75, Amber: 0.15, Red: 0.05, Unknown: 0.05 });
+      else sources.push({ Green: 0.05, Amber: 0.15, Red: 0.75, Unknown: 0.05 });
+    } else {
+      sources.push({ Green: 0.25, Amber: 0.25, Red: 0.25, Unknown: 0.25 });
+    }
+
+    var docScore = existingSignals.doc ? existingSignals.doc.score : 0;
+    if (docScore < 0.30) sources.push({ Green: 0.75, Amber: 0.15, Red: 0.05, Unknown: 0.05 });
+    else if (docScore < 0.70) sources.push({ Green: 0.10, Amber: 0.70, Red: 0.15, Unknown: 0.05 });
+    else sources.push({ Green: 0.05, Amber: 0.15, Red: 0.75, Unknown: 0.05 });
+
+    function combine(m1, m2) {
+      var states = ["Green", "Amber", "Red", "Unknown"];
+      var combined = { Green: 0, Amber: 0, Red: 0, Unknown: 0 };
+      var K = 0;
+      states.forEach(function (s1) {
+        states.forEach(function (s2) {
+          var mass = m1[s1] * m2[s2];
+          if (s1 === s2) combined[s1] += mass;
+          else K += mass;
+        });
+      });
+      var norm = 1 - K;
+      if (norm <= 0) return { Green: 0.25, Amber: 0.25, Red: 0.25, Unknown: 0.25, conflict: 1 };
+      states.forEach(function (s) { combined[s] = combined[s] / norm; });
+      combined.conflict = K;
+      return combined;
+    }
+
+    var result = sources[0];
+    for (var i = 1; i < sources.length; i++) {
+      result = combine(result, sources[i]);
+    }
+
+    var decisionStates = ["Green", "Amber", "Red"];
+    var maxState = decisionStates.reduce(function (a, b) {
+      return result[a] > result[b] ? a : b;
+    });
+
+    var conservativeState = existingSignals.decision ? existingSignals.decision.state : null;
+    var agrees = conservativeState && maxState.toLowerCase() === conservativeState.toLowerCase();
+    var conflictLevel = result.conflict > 0.3 ? "High" : result.conflict > 0.1 ? "Moderate" : "Low";
+    var statusColor = maxState === "Red" ? "Red" : maxState === "Amber" ? "Amber" : "Green";
+
+    return {
+      method_class: "DST_Evidence_Combination",
+      status_color: statusColor,
+      belief_green: Math.round(result.Green * 100) / 100,
+      belief_amber: Math.round(result.Amber * 100) / 100,
+      belief_red: Math.round(result.Red * 100) / 100,
+      belief_unknown: Math.round(result.Unknown * 100) / 100,
+      conflict_mass: Math.round(result.conflict * 100) / 100,
+      conflict_level: conflictLevel,
+      agrees_with_conservative: agrees,
+      conservative_state: conservativeState,
+      evidence_metric: "Belief: Green " + Math.round(result.Green * 100) + "% · Amber " +
+        Math.round(result.Amber * 100) + "% · Red " + Math.round(result.Red * 100) +
+        "% · Conflict mass " + Math.round(result.conflict * 100) + "%"
+    };
+  }
+
+  /* ===========================================================
+     runAll — accepts a project OR a signalInputs object and an
+     optional existingSignals map (for DST evidence combination).
+     Returns the array of all six simulation signal objects.
+     =========================================================== */
+  function runAll(input, existingSignals) {
     var si = (input && input.signalInputs) ? input.signalInputs : (input || {});
-    return [runPERT(si), runLOB(si), runCCPM(si), runRCF(si), runDSM(si)];
+    var es = existingSignals || {};
+    return [runPERT(si), runLOB(si), runCCPM(si), runRCF(si), runDSM(si), runDST(si, es)];
   }
 
   window.LinSimulations = {
     runAll,
-    runPERT, runLOB, runCCPM, runRCF, runDSM,
+    runPERT, runLOB, runCCPM, runRCF, runDSM, runDST,
     sampleTriangular
   };
 })();
