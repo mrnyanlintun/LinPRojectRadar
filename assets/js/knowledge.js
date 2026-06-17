@@ -84,31 +84,31 @@
     {
       id: "module01",
       keywords: ["module 01", "module 1", "hybrid", "dynamic simulation", "evm module", "cpi", "spi", "eac", "earned value"],
-      title: "Module 01 — Hybrid Dynamic Simulation",
+      title: "Module 01: Hybrid Dynamic Simulation",
       body: "Module 01 covers the EVM core: CPI (cost performance, EV/AC) and SPI (schedule performance, EV/PV) against the baseline. On a project's Detail page the Monte Carlo runs 5,000 iterations sampled from a signal-derived Beta-PERT distribution, with P50 and P80 read from the simulated array. P80 is the planning-conservative figure used for contingency and escalation decisions."
     },
     {
       id: "module02",
       keywords: ["module 02", "module 2", "cusum", "spc", "anomaly", "drift", "trend", "control"],
-      title: "Module 02 — SPC / CUSUM Anomaly Monitor",
+      title: "Module 02: SPC / CUSUM Anomaly Monitor",
       body: "Module 02 watches for accumulating drift. On a project's Detail page CUSUM is a REAL computation: the standard two-sided tabular recursion runs over the project's metric series and a breach is flagged only when the cumulative statistic crosses the decision interval H. It feeds the governance rules — including the 'Anomaly without narrative' conflict when the document record offers no explanation."
     },
     {
       id: "module03",
       keywords: ["module 03", "module 3", "document", "doc risk", "rfi", "submittal", "extraction", "keyword"],
-      title: "Module 03 — Document-Risk Extraction",
+      title: "Module 03: Document-Risk Extraction",
       body: "Module 03 scores risk language in project records (RFIs, submittals, QC comments, procurement notes) using visible keyword rules — the same rules the Manage Projects page runs. The score and the matched excerpt feed the signal ledger. In this demo extraction is rule-based and transparent; there is no live NLP or LLM."
     },
     {
       id: "module04",
       keywords: ["module 04", "module 4", "synthesis", "conflict", "disagreement", "leading", "forecast ahead"],
-      title: "Module 04 — Signal Synthesis",
+      title: "Module 04: Signal Synthesis",
       body: "Module 04 classifies disagreement between signal classes instead of averaging it away. Conflict types: Multi-signal red-review, Anomaly without narrative, Forecast ahead of status, Leading document risk, Agreement — low risk, and Mixed early warning. The precedence order is deliberate and documented in decision.js."
     },
     {
       id: "module05",
       keywords: ["module 05", "module 5", "abm", "agent", "governance layer", "decision rules", "authority"],
-      title: "Module 05 — ABM governance layer",
+      title: "Module 05: ABM governance layer",
       body: "Module 05 is the agent-based governance layer: each authority role (PM, controls lead, program director) is an agent with explicit decision rules. Those rules live in decision.js as pure, readable functions — deriveHealthState, classifyConflict, and deriveDecision — and the Signals page calls them directly. The decision card you see on the Portfolio and Project Detail pages IS this module's output."
     },
     {
@@ -234,31 +234,31 @@
     {
       id: "module06",
       keywords: ["module 06", "module 6", "pert", "program evaluation", "network criticality", "triangular", "path criticality"],
-      title: "Module 06 — Program Evaluation & Review Technique (PERT)",
+      title: "Module 06: Program Evaluation & Review Technique (PERT)",
       body: "PERT is a stochastic network scheduling method. Each activity has three duration estimates — optimistic (a), most likely (m), and pessimistic (b) — and is sampled from a triangular distribution. The classic deterministic three-point estimate is te = (a + 4m + b) / 6; the simulation aggregates the dominant path across 5,000 runs. P80 duration is the conservative finish (80% of runs at or under). The path-criticality index is the fraction of runs in which the structural path was on the critical path — the higher it is, the less float you have to absorb a slip. In this implementation a lower project SPI widens the pessimistic bound, so an already-drifting schedule grows a fatter P80 tail. Thresholds: Green P80 ≤ baseline; Amber P80 up to +20%; Red P80 > +20%.",
     },
     {
       id: "module07",
       keywords: ["module 07", "module 7", "lob", "line of balance", "production velocity", "crew", "buffer"],
-      title: "Module 07 — Line of Balance (LOB)",
+      title: "Module 07: Line of Balance (LOB)",
       body: "LOB tracks production velocity for sequential, repetitive work — grading runs ahead of paving, paving runs ahead of striping, and so on. Each crew has a rate in units/day; the buffer is the schedule gap between leader and follower at every unit. When the follower's rate slips, that buffer compresses unit by unit and a crew-on-crew collision is being telegraphed before EVM moves. Here, lower project SPI slows the follower (paving) so the minimum crew buffer shrinks. Buffer collapse is a leading schedule indicator: it shows up in the LOB chart before it shows up in CPI or SPI. Thresholds: Green buffer > 3 days; Amber 1.5–3 days; Red ≤ 1.5 days.",
     },
     {
       id: "module08",
       keywords: ["module 08", "module 8", "ccpm", "critical chain", "buffer", "fever chart"],
-      title: "Module 08 — Critical Chain Project Management (CCPM)",
+      title: "Module 08: Critical Chain Project Management (CCPM)",
       body: "CCPM (Goldratt) aggregates the safety margin embedded in individual activity estimates into a single project buffer at the end of the critical chain. The fever chart plots buffer-consumed % against chain-complete %. Two thresholds drive the zones: the amber line tracks chain completion (buffer consumed ≥ % complete) — burning buffer at the same rate progress is being made; the red line sits a third of the remaining range above (buffer consumed ≥ % complete + (100 − % complete) / 3) — burning buffer faster than the chain can complete. Crossing into red means the buffer will run out before the work does. Thresholds: Green below the amber line; Amber buffer consumed ≥ % complete; Red buffer consumed ≥ % complete + (100 − % complete) / 3.",
     },
     {
       id: "module09",
       keywords: ["module 09", "module 9", "rcf", "reference class", "forecasting", "flyvbjerg", "debias", "optimism bias"],
-      title: "Module 09 — Reference Class Forecasting (RCF)",
+      title: "Module 09: Reference Class Forecasting (RCF)",
       body: "Reference Class Forecasting comes from Bent Flyvbjerg's research on optimism bias in large infrastructure projects: bottom-up estimates systematically underestimate cost because they reason from the inside view (this project's plan) rather than the outside view (how comparable projects have actually performed). RCF replaces the inside-view estimate with an empirical prior — the distribution of historical overrun multipliers from a comparable reference class. This implementation uses an airport-infrastructure multiplier set [1.00 … 1.52]; the P80 multiplier is the conservative debiasing factor applied to BAC. The debiasing factor is the multiplier itself: ×1.38 means the outside view says comparable projects finished 38% over their baseline. The P80 RCF prior is the realistic planning budget to compare against the bottom-up EAC. Thresholds: Green P80 within +10% of BAC; Amber +10–25%; Red > +25%.",
     },
     {
       id: "module10",
       keywords: ["module 10", "dsm", "design structure matrix", "rework", "propagation", "arch", "structural", "mep", "dependency"],
-      title: "Module 10 — Design Structure Matrix (DSM)",
+      title: "Module 10: Design Structure Matrix (DSM)",
       body: "A DSM captures information-flow dependencies between work elements as a square matrix: each off-diagonal entry A[i][j] is the strength of i's dependence on j. Here the elements are the three design disciplines — Architectural, Structural, MEP — and the off-diagonals encode how much a unit change in one cascades into the others. Architectural decisions flow downstream into both Structural and MEP, so an arch scope change ripples through the matrix; structural and MEP changes also feed back. The simulation propagates a unit architectural change vector through the matrix for four passes and accumulates the rework absorbed in each discipline. The total cumulative rework multiplier is the coordination cost: a multiplier above 2.5 indicates that one unit of arch change is generating more than 2.5 units of downstream rework — high coordination risk. Thresholds: Green rework multiplier ≤ 2.5; Amber > 2.5.",
     },
   );
@@ -526,7 +526,7 @@
     },
     {
       id: "stack",
-      title: "2. The Signal Stack — 10 Modules",
+      title: "2. The Signal Stack: 10 Modules",
       eyebrow: "Architecture",
       build: () => `
         <p class="kn-lead">The signal stack splits into three tiers. The first two compute and govern; the third extends quantitative coverage to specialised construction/design risks that EVM does not catch.</p>
@@ -559,7 +559,7 @@
     },
     {
       id: "evm",
-      title: "3. Module 01 — Earned Value Management (EVM)",
+      title: "3. Module 01: Earned Value Management (EVM)",
       eyebrow: "Module 01 (a)",
       build: () => `
         <p class="kn-lead">EVM integrates scope, schedule, and cost on a single measurement plane. On U.S. public capital programs it is required under OMB Circular A-11 and FAR Part 34 for major investments; under most agency policies a CPI shortfall sustained over multiple reporting periods is itself a reporting trigger.</p>
@@ -603,7 +603,7 @@
     },
     {
       id: "montecarlo",
-      title: "4. Module 01 — Monte Carlo Forecast",
+      title: "4. Module 01: Monte Carlo Forecast",
       eyebrow: "Module 01 (b)",
       build: () => `
         <p class="kn-lead">A single deterministic EAC gives false precision. A P50/P80 range is more honest and more useful: it lets program controls fund contingency to an explicit risk percentile rather than to a point estimate that pretends the future is known.</p>
@@ -635,7 +635,7 @@
     },
     {
       id: "cusum",
-      title: "5. Module 02 — SPC / CUSUM Anomaly Monitor",
+      title: "5. Module 02: SPC / CUSUM Anomaly Monitor",
       eyebrow: "Module 02",
       build: () => `
         <p class="kn-lead">A single-period CPI/SPI reading is noisy. Real schedule drift accumulates slowly. Statistical Process Control separates signal from noise; CUSUM is the SPC method that catches sustained drift before any single period would trip a variance threshold.</p>
@@ -668,7 +668,7 @@
     },
     {
       id: "doc",
-      title: "6. Module 03 — Document Risk Extraction",
+      title: "6. Module 03: Document Risk Extraction",
       eyebrow: "Module 03",
       build: () => `
         <p class="kn-lead">EVM lags field conditions by weeks. An RFI log showing 20 open disputes in period 4 predicts a CPI collapse in period 6 — but EVM will not show that collapse until it has already happened. Document risk is the leading signal.</p>
@@ -692,7 +692,7 @@
     },
     {
       id: "synthesis",
-      title: "7. Module 04 — Signal Synthesis",
+      title: "7. Module 04: Signal Synthesis",
       eyebrow: "Module 04",
       build: () => `
         <p class="kn-lead">A CPI of 1.02 and a CUSUM breach do <strong>not</strong> average to "slightly above baseline." The breach is the finding. PCEIF surfaces disagreement between signal classes instead of averaging it away — and names the disagreement so the reviewer knows what to investigate.</p>
@@ -718,7 +718,7 @@
     },
     {
       id: "abm",
-      title: "8. Module 05 — ABM Governance Layer",
+      title: "8. Module 05: ABM Governance Layer",
       eyebrow: "Module 05",
       build: () => `
         <p class="kn-lead">"Agent-based" here means each authority role (PM, controls lead, program director) is modelled as an agent with explicit, executable decision rules. In <code>decision.js</code> those rules are pure functions — readable, testable, and auditable. Nothing is learned; everything is documented.</p>
@@ -755,7 +755,7 @@
     },
     {
       id: "modules-06-10",
-      title: "9. Modules 06–10 — Extended Simulation Stack",
+      title: "9. Modules 06–10: Extended Simulation Stack",
       eyebrow: "Quantitative extensions",
       build: () => `
         <p class="kn-lead">Modules 06–10 cover construction and design risks that EVM does not catch. Each returns a status with an evidence metric that feeds Module 04.</p>
