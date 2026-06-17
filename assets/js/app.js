@@ -532,7 +532,10 @@
     document.querySelectorAll("[data-set-theme]").forEach((b) =>
       b.classList.toggle("active", b.dataset.setTheme === theme)
     );
-    try { localStorage.setItem("lin-radar-theme", theme); } catch (e) {}
+    try {
+      localStorage.setItem("lin-theme", theme);        // new primary key
+      localStorage.setItem("lin-radar-theme", theme);  // legacy key (kept for back-compat)
+    } catch (e) {}
   }
 
   /* ---------- clock (timezone-aware via tz.js) ---------- */
@@ -630,12 +633,18 @@
     document.querySelectorAll("[data-set-theme]").forEach((b) =>
       b.addEventListener("click", () => applyTheme(b.dataset.setTheme))
     );
-    // Two themes only (Light / Dark), Dark default. Migrate any legacy stored
-    // value: the old light/"clean" map to Light; every other legacy theme
-    // (the old dark variants) maps to Dark.
+    // Four themes — Light / Dark / Cyberpunk / New York; Dark default.
+    // Read both the new `lin-theme` key and the legacy `lin-radar-theme` key
+    // for backwards compatibility; the old "clean" name maps to Light.
     let stored = "dark";
-    try { stored = localStorage.getItem("lin-radar-theme") || "dark"; } catch (e) {}
-    const saved = (stored === "light" || stored === "clean") ? "light" : "dark";
+    try {
+      stored = localStorage.getItem("lin-theme")
+            || localStorage.getItem("lin-radar-theme")
+            || "dark";
+    } catch (e) {}
+    if (stored === "clean") stored = "light";
+    const VALID_THEMES = ["light", "dark", "cyberpunk", "newyork"];
+    const saved = VALID_THEMES.includes(stored) ? stored : "dark";
     applyTheme(saved);
 
     wireNav();
