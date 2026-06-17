@@ -1,6 +1,6 @@
 /* ============================================================
    Lin Project Radar — modules.js
-   The fourteen PCEIF signal modules: plain-language explanation,
+   The nineteen PCEIF signal modules: plain-language explanation,
    key metrics, the rule that fired, and an ILLUSTRATIVE graph
    driven by the synthetic portfolio. Graphs are labeled
    illustrative — never live or validated model output.
@@ -309,6 +309,107 @@
     };
   }
 
+  function module15(projects) {
+    const results = runEachProjectExisting(projects, "Z_Numbers",
+      window.LinSimulations ? (s) => LinSimulations.runZNumbers(s) : () => ({ status_color: "Amber", weighted_red: 0, weighted_amber: 0, weighted_green: 0, avg_reliability: 0.75 }));
+    const rows = results.map(({ p, sig }) => ({
+      label: p.id, value: Math.max(0.05, sig.weighted_red || 0),
+      color: simColor(sig.status_color),
+      note: `R ${(sig.weighted_red || 0).toFixed(2)} · A ${(sig.weighted_amber || 0).toFixed(2)} · G ${(sig.weighted_green || 0).toFixed(2)} · rel ${Math.round((sig.avg_reliability || 0) * 100)}%`,
+    }));
+    const maxV = Math.max(2, ...rows.map((r) => r.value)) * 1.15;
+    return {
+      num: "15",
+      title: "Z-numbers — Reliability-weighted Evidence",
+      method: "Each signal as a Z-number (Restriction, Reliability) · Zadeh 2011",
+      explain: "Z-numbers pair each signal's classification with a reliability measure for its source. A CPI from a verified pay application carries more weight than one from a rough estimate. The aggregate weighs Red / Amber / Green totals by source reliability, so high-confidence sources dominate the recommendation.",
+      rule: "Rule fired: state = highest reliability-weighted total across Red / Amber / Green.",
+      charts:
+        `<p class="mod-chart-label">reliability-weighted Red total by project</p>` +
+        barChart(rows, maxV, 520),
+    };
+  }
+
+  function module16(projects) {
+    const results = runEachProjectExisting(projects, "PLTS",
+      window.LinSimulations ? (s) => LinSimulations.runPLTS(s) : () => ({ status_color: "Amber", p_green: 33, p_amber: 34, p_red: 33 }));
+    const rows = results.map(({ p, sig }) => ({
+      label: p.id, value: Math.max(1, sig.p_red || 0),
+      color: simColor(sig.status_color),
+      note: `G ${sig.p_green || 0}% · A ${sig.p_amber || 0}% · R ${sig.p_red || 0}%`,
+    }));
+    return {
+      num: "16",
+      title: "PLTS — Probabilistic Linguistic Term Sets",
+      method: "Per-signal probability distribution over linguistic states · Pang 2016",
+      explain: "Probabilistic Linguistic Term Sets express each signal as a probability triple across Green / Amber / Red rather than forcing a crisp label. Captures partial confidence within each source — a CUSUM that just barely missed breaching is not the same Green as a deeply stable monitor.",
+      rule: "Rule fired: state = highest aggregate probability across all signal sources.",
+      charts:
+        `<p class="mod-chart-label">P(Red) % by project</p>` +
+        barChart(rows, 100, 520, { value: 50, label: "red > 50%" }),
+    };
+  }
+
+  function module17(projects) {
+    const results = runEachProjectExisting(projects, "Plithogenic_Sets",
+      window.LinSimulations ? (s) => LinSimulations.runPlithogenic(s) : () => ({ status_color: "Amber", avg_contradiction: 0.5, contradiction_level: "Moderate" }));
+    const rows = results.map(({ p, sig }) => ({
+      label: p.id, value: Math.max(1, Math.round((sig.avg_contradiction || 0) * 100)),
+      color: simColor(sig.status_color),
+      note: `${Math.round((sig.avg_contradiction || 0) * 100)}% · ${sig.contradiction_level || "—"}`,
+    }));
+    return {
+      num: "17",
+      title: "Plithogenic Sets — Contradiction Analysis",
+      method: "Attribute-level contradiction degrees against the dominant value · Smarandache 2018",
+      explain: "Plithogenic Sets assign each signal a contradiction degree measuring how much it opposes the dominant classification. A Green doc signal in a project where EVM and CUSUM are Red has high contradiction — it does not simply cancel the Reds, it is weighted to reflect its opposition. High average contradiction is itself a governance finding.",
+      rule: "Rule fired: aggregation weighted by membership × (1 - contradiction × 0.5). High average contradiction = signals are genuinely opposed.",
+      charts:
+        `<p class="mod-chart-label">average contradiction % by project</p>` +
+        barChart(rows, 100, 520, { value: 60, label: "high > 60%" }),
+    };
+  }
+
+  function module18(projects) {
+    const results = runEachProjectExisting(projects, "Belief_Rule_Base",
+      window.LinSimulations ? (s) => LinSimulations.runBRB(s) : () => ({ status_color: "Amber", belief_green: 33, belief_amber: 34, belief_red: 33, rules_matched: 0 }));
+    const rows = results.map(({ p, sig }) => ({
+      label: p.id, value: Math.max(1, sig.belief_red || 0),
+      color: simColor(sig.status_color),
+      note: `G ${sig.belief_green || 0}% · A ${sig.belief_amber || 0}% · R ${sig.belief_red || 0}% · ${sig.rules_matched || 0} rule(s)`,
+    }));
+    return {
+      num: "18",
+      title: "BRB — Belief Rule Base",
+      method: "Expert IF-THEN rules with belief-distribution consequents · Yang 2006",
+      explain: "The Belief Rule Base encodes expert knowledge as IF-THEN rules whose consequent is a belief distribution rather than a crisp state. \"If EVM is Red and CUSUM has breached, belief is 90% Red, 8% Amber, 2% Green.\" Matching rules combine by rule weight, bridging the explicit governance rules of PCEIF with probabilistic expert judgment.",
+      rule: "Rule fired: aggregate belief = weighted average across all matching rules. State = highest aggregate belief mass.",
+      charts:
+        `<p class="mod-chart-label">aggregate Red belief % by project</p>` +
+        barChart(rows, 100, 520, { value: 50, label: "red > 50%" }),
+    };
+  }
+
+  function module19(projects) {
+    const results = runEachProjectExisting(projects, "Quantum_Probability",
+      window.LinSimulations ? (s) => LinSimulations.runQuantumProbability(s) : () => ({ status_color: "Amber", p_green: 33, p_amber: 34, p_red: 33, interference_type: "Neutral", phase_angle_deg: 90 }));
+    const rows = results.map(({ p, sig }) => ({
+      label: p.id, value: Math.max(1, sig.p_red || 0),
+      color: simColor(sig.status_color),
+      note: `Q-G ${sig.p_green || 0}% · Q-A ${sig.p_amber || 0}% · Q-R ${sig.p_red || 0}% · ${sig.interference_type || "—"} · θ ${sig.phase_angle_deg || 0}°`,
+    }));
+    return {
+      num: "19",
+      title: "Quantum Probability — Signal Interference",
+      method: "Amplitude state vector with phase-angle interference · Busemeyer & Bruza 2012",
+      explain: "Quantum Probability models signals as wave amplitudes rather than classical probabilities. When signals align they interfere constructively, amplifying the dominant classification; when signals oppose they interfere destructively, reflecting genuine ambiguity. The phase angle measures signal coherence — small θ means high confidence, large θ means residual uncertainty the governance layer must own.",
+      rule: "Rule fired: amplitudes = sqrt of classical probabilities. Interference = 2·α·γ·cos(θ) where θ is derived from signal coherence.",
+      charts:
+        `<p class="mod-chart-label">Q-P(Red) % by project</p>` +
+        barChart(rows, 100, 520, { value: 50, label: "red > 50%" }),
+    };
+  }
+
   /* ---------- module definitions ---------- */
 
   function module01(projects) {
@@ -457,10 +558,11 @@
   }
 
   // Cards are grouped into the five method families. The displayed card numbers
-  // (01-14) match the deep-dive module numbering exactly. Note the builder
+  // (01-19) match the deep-dive module numbering exactly. Note the builder
   // function names predate the renumber, so display order != function order:
   // module06=PERT(04), module07=LOB(05), module08=CCPM(06), module09=RCF(07),
   // module10=DSM(08), module05=ABM(09), module04=Synthesis(10).
+  // Modules 11-19 use matching function names (module11..module19).
   function moduleCardsHtml(projects) {
     const groups = [
       { label: "Modules 01–03 · Quantitative EVM",
@@ -471,8 +573,9 @@
         mods: [module05(projects)] },
       { label: "Module 10 · Signal synthesis",
         mods: [module04(projects)] },
-      { label: "Modules 11–14 · Evidence combination & uncertainty reasoning",
-        mods: [module11(projects), module12(projects), module13(projects), module14(projects)] },
+      { label: "Modules 11–19 · Evidence combination & uncertainty reasoning",
+        mods: [module11(projects), module12(projects), module13(projects), module14(projects),
+               module15(projects), module16(projects), module17(projects), module18(projects), module19(projects)] },
     ];
     return groups.map((g) =>
       `<p class="mod-group-head">${esc(g.label)}</p>` + g.mods.map(cardHtml).join("")
@@ -495,7 +598,7 @@
     if (!populated.length) {
       root.innerHTML = BANNER +
         `<section class="panel awaiting-state"><p><strong>No populated projects yet.</strong></p>
-         <p class="kn-sub">Create a project and populate its signals on Manage Projects to see the fourteen signal modules across the portfolio. Empty projects are shown on the radar in an awaiting-ingest state, not charted here.</p></section>`;
+         <p class="kn-sub">Create a project and populate its signals on Manage Projects to see the nineteen signal modules across the portfolio. Empty projects are shown on the radar in an awaiting-ingest state, not charted here.</p></section>`;
       return;
     }
     root.innerHTML = BANNER + emptyNote + moduleCardsHtml(populated);
@@ -503,7 +606,7 @@
       b.addEventListener("click", () => LinApp.openDetail(b.dataset.open)));
   }
 
-  /* All fourteen modules computed for ONE project (Project Detail page).
+  /* All nineteen modules computed for ONE project (Project Detail page).
      Same builders, single-project array — no duplicated rules anywhere;
      the ABM governance module (09) still calls decision.js live. */
   function renderProjectModules(project, root) {
