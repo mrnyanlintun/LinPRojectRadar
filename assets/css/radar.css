@@ -544,6 +544,40 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .la-form input:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 1px; }
 .la-send { padding: 8px 16px; border-radius: 999px; }
 
+/* ---------- radar scope: sweep rotation, ping, degree labels ---------- */
+@keyframes radar-sweep {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes blip-ping {
+  0%   { r: 9;  opacity: 0.85; }
+  65%  { r: 22; opacity: 0; }
+  100% { r: 22; opacity: 0; }
+}
+.radar-sweep-group {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: radar-sweep 4s linear infinite;
+}
+.blip-ping-ring {
+  animation: blip-ping 4s ease-out infinite;
+}
+.scope-deg-label {
+  font-family: var(--font-mono); font-size: 7.5px;
+  fill: var(--faint); opacity: 0.65;
+}
+/* hard-hat icon hover: scale up around its center */
+.blip.hot .blip-icon,
+.blip.selected .blip-icon {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(1.45);
+}
+@media (prefers-reduced-motion: reduce) {
+  .radar-sweep-group { animation: none; }
+  .blip-ping-ring    { animation: none; }
+}
+
 /* ---------- radar zone labels ---------- */
 .zone-label {
   font-family: var(--font-mono); font-size: 8.5px; letter-spacing: .14em;
@@ -642,7 +676,7 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 
 /* ---------- full-width radar on Portfolio ---------- */
 .radar-panel-wide { width: 100%; }
-.radar-panel-wide .radar-wrap { max-width: min(700px, 72vh); margin: 0 auto; }
+.radar-panel-wide .radar-wrap { max-width: 500px; margin: 0 auto; }
 .portfolio-below { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; align-items: start; }
 .portfolio-below .log-panel { grid-column: 1 / -1; }
 @media (max-width: 940px) { .portfolio-below { grid-template-columns: 1fr; } }
