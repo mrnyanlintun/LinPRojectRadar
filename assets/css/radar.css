@@ -1201,3 +1201,122 @@ body[data-theme="newyork"] .nav-logo-text {
   font-family: Georgia, "Times New Roman", "Hoefler Text", serif;
   letter-spacing: 0;
 }
+
+/* ============================================================
+   MOBILE — 640px and below (iPhone SE, 14, 14 Pro Max)
+   All layout changes, touch targets, overflow fixes.
+   ============================================================ */
+
+/* --- prevent horizontal scroll globally --- */
+html { overflow-x: hidden; }
+body { overflow-x: hidden; max-width: 100vw; }
+
+/* --- prevent iOS auto-zoom on input focus (font-size < 16px triggers it) --- */
+@media (max-width: 640px) {
+  input, select, textarea { font-size: 16px !important; }
+}
+
+@media (max-width: 640px) {
+
+  /* ---------- base / spacing ---------- */
+  .app { padding: 0 12px 64px; }
+  body { font-size: 15px; }
+
+  /* ---------- top bar ---------- */
+  .topbar { padding: 10px 0 8px; gap: 8px; flex-wrap: nowrap; }
+  .nav-logo { gap: 10px; padding: 6px 0; }
+  .nav-logo-img { height: 56px; width: 56px; }
+  /* hide clock and tz-select on very small screens to keep topbar one line */
+  .clock { display: none; }
+  #tz-select { display: none; }
+  .topbar-right { gap: 8px; }
+  /* shrink theme buttons inside nav panel for small screens */
+  .theme-switch button { font-size: 11px; padding: 5px 9px; }
+
+  /* ---------- intro headings ---------- */
+  .intro h1 { font-size: 20px; }
+  .intro p { font-size: 14px; }
+
+  /* ---------- radar scope ---------- */
+  /* remove the 500px cap — let it fill the container */
+  .radar-panel-wide .radar-wrap { max-width: 100%; }
+
+  /* ---------- project list rows (portfolio fallback list) ---------- */
+  .list-item { min-height: 48px; padding: 10px 8px; }
+  /* allow project name to wrap rather than truncate */
+  .li-name { white-space: normal; word-break: break-word; }
+
+  /* ---------- manage-projects rows ---------- */
+  .pr-row {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    row-gap: 6px;
+  }
+  .pr-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+  .pr-name { white-space: normal; word-break: break-word; }
+
+  /* ---------- signal ledger decision card ---------- */
+  /* state badge moves below the heading */
+  .dc-head { flex-direction: column; align-items: flex-start; gap: 6px; }
+  /* decision card fields: single column */
+  .dc-grid { grid-template-columns: 1fr; }
+  /* action buttons: full width and stacked */
+  .dc-actions { flex-direction: column; gap: 8px; }
+  .dc-actions .btn { width: 100%; text-align: center; justify-content: center; min-height: 44px; }
+  /* rationale textarea: full width */
+  .rationale { width: 100%; box-sizing: border-box; }
+
+  /* ---------- buttons (general) ---------- */
+  .btn { min-height: 44px; padding: 10px 16px; }
+  .btn.small { min-height: 40px; }
+
+  /* ---------- module charts ---------- */
+  .mod-chart { max-width: 100%; }
+
+  /* ---------- deep-dive metric grid ---------- */
+  /* auto-fit already handles this, but ensure 2-col minimum */
+  .dd-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* ---------- ingest / upload buttons ---------- */
+  .ds-filebtn { width: 100%; justify-content: center; box-sizing: border-box; }
+  .aud-filebtn { width: 100%; justify-content: center; box-sizing: border-box; }
+  /* full-width upload row (already stacks at 760px, reinforce) */
+  .aud-upload-row { grid-template-columns: 1fr; }
+
+  /* ---------- Knowledge Library ---------- */
+  /* un-stick left nav so it just flows above content */
+  .kn-nav { position: static; max-height: none; padding: 12px; }
+  /* reduce content padding */
+  .kn-content { padding: 14px 16px; }
+  .kn-article { max-width: 100%; }
+
+  /* ---------- formula blocks: allow horizontal scroll, no clip ---------- */
+  .kn-formula { overflow-x: auto; font-size: 12px; }
+
+  /* ---------- detail head: wrap gracefully ---------- */
+  .detail-head { flex-direction: column; gap: 10px; }
+  .detail-head-actions { margin-left: 0; }
+
+  /* ---------- portfolio below grid ---------- */
+  .portfolio-below { grid-template-columns: 1fr; }
+
+  /* ---------- footer ---------- */
+  .foot { font-size: 11px; }
+
+  /* ---------- assistant panel: full-width on mobile ---------- */
+  .la-panel {
+    right: 8px; left: 8px; bottom: 70px;
+    width: auto;
+  }
+
+  /* ---------- store banner ---------- */
+  .store-banner { font-size: 12px; padding: 8px 14px; }
+}
+
+/* slightly wider breakpoint for topbar overflow control */
+@media (max-width: 480px) {
+  .synthetic-badge { display: none; }
+}
