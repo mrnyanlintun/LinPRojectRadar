@@ -1151,6 +1151,85 @@ body.nav-open .nav-rail { transform: translateX(0); }
 .kn-flow-wrap .kn-svg-flow { max-height: none; }
 
 /* ============================================================
+   About page
+   ============================================================ */
+.about-grid {
+  display: flex; flex-direction: column; gap: 18px; max-width: 900px;
+}
+.about-section { padding: 24px 28px; }
+.about-h {
+  font-family: var(--font-body); font-size: 17px; font-weight: 700;
+  color: var(--text); margin: 0 0 14px; letter-spacing: 0;
+}
+.about-section p { font-size: 14px; line-height: 1.7; color: var(--text); margin: 0 0 12px; }
+.about-section p:last-child { margin-bottom: 0; }
+.about-section strong { color: var(--text); }
+.about-section em { font-style: italic; color: var(--muted); }
+.about-section code {
+  font-family: var(--font-mono); font-size: 12px;
+  background: var(--surface-soft); border: 1px solid var(--line);
+  border-radius: 4px; padding: 1px 5px; color: var(--phosphor);
+}
+.about-note {
+  background: color-mix(in srgb, var(--phosphor) 8%, transparent);
+  border-left: 3px solid var(--phosphor);
+  border-radius: 0 6px 6px 0;
+  padding: 10px 14px; font-size: 13px !important;
+  color: var(--muted) !important; margin-top: 14px !important;
+}
+.about-list { margin: 10px 0 12px 0; padding-left: 18px; }
+.about-list li { font-size: 14px; line-height: 1.65; color: var(--text); margin-bottom: 6px; }
+.about-list-num { list-style: decimal; }
+.about-flow-list { list-style: none; padding-left: 0; }
+.about-flow-list li { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.about-flow-list li:last-child { border-bottom: none; }
+.about-endpoints {
+  font-family: var(--font-mono); font-size: 12px !important;
+  color: var(--muted) !important; background: var(--surface-soft);
+  border-radius: 6px; padding: 8px 12px !important;
+  word-break: break-word; margin-top: 6px !important;
+}
+
+/* Architecture layer cards */
+.about-arch { display: flex; flex-direction: column; gap: 10px; }
+.about-arch-layer {
+  border-left: 4px solid var(--layer-color, var(--line));
+  background: var(--surface-soft); border-radius: 0 8px 8px 0;
+  padding: 12px 16px;
+}
+.about-arch-layer-muted { --layer-color: var(--muted); opacity: 0.7; }
+.about-arch-label {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+  color: var(--layer-color, var(--muted)); margin-bottom: 6px;
+}
+.about-arch-layer p { margin: 0 0 4px; font-size: 13px !important; }
+.about-arch-layer p:last-child { margin-bottom: 0; }
+
+/* Tech stack table */
+.about-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.about-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+  min-width: 420px;
+}
+.about-table th {
+  text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--muted); border-bottom: 2px solid var(--line);
+}
+.about-table td {
+  padding: 9px 12px; border-bottom: 1px solid var(--line);
+  color: var(--text); vertical-align: top;
+}
+.about-table td:first-child { color: var(--phosphor); font-weight: 600; white-space: nowrap; }
+.about-table tbody tr:last-child td { border-bottom: none; }
+.about-table tbody tr:hover td { background: var(--surface-soft); }
+
+@media (max-width: 640px) {
+  .about-section { padding: 16px; }
+  .about-table { min-width: 340px; }
+}
+
+/* ============================================================
    THEME — NEW YORK  (Manhattan twilight + gold Art Deco + Liberty bronze)
    ============================================================ */
 body[data-theme="newyork"] {
