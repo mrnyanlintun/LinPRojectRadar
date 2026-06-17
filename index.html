@@ -12,6 +12,54 @@
   <link rel="stylesheet" href="assets/css/radar.css" />
 </head>
 <body data-theme="dark">
+  <!-- NYC skyline silhouette (visible only when data-theme="newyork"; CSS-gated).
+       Iconic Manhattan + Brooklyn Bridge silhouette with Empire State Building
+       and Chrysler spire as anchor landmarks. Sits fixed at the viewport bottom,
+       behind every panel, so the city stays in shot as the page scrolls. -->
+  <div class="nyc-skyline" aria-hidden="true">
+    <svg viewBox="0 0 1600 400" preserveAspectRatio="xMidYEnd slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="ny-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#0a0c14"/>
+          <stop offset="1" stop-color="#1a1535"/>
+        </linearGradient>
+      </defs>
+      <rect width="1600" height="400" fill="url(#ny-sky)"/>
+      <!-- Brooklyn Bridge: two stone towers + suspension cables -->
+      <path d="M 0 305 Q 90 245 165 260 Q 245 245 325 305" stroke="#1a1c2e" stroke-width="2" fill="none"/>
+      <path d="M 0 320 Q 90 270 165 282 Q 245 270 325 320" stroke="#1a1c2e" stroke-width="1.4" fill="none"/>
+      <rect x="78" y="225" width="16" height="175" fill="#1a1c2e"/>
+      <rect x="248" y="225" width="16" height="175" fill="#1a1c2e"/>
+      <!-- vertical cable rigging -->
+      <g stroke="#1a1c2e" stroke-width="0.8">
+        <line x1="20" y1="316" x2="20" y2="340"/><line x1="50" y1="300" x2="50" y2="340"/>
+        <line x1="110" y1="270" x2="110" y2="340"/><line x1="140" y1="262" x2="140" y2="340"/>
+        <line x1="180" y1="262" x2="180" y2="340"/><line x1="210" y1="268" x2="210" y2="340"/>
+        <line x1="280" y1="290" x2="280" y2="340"/><line x1="310" y1="310" x2="310" y2="340"/>
+      </g>
+      <!-- Brooklyn waterfront strip -->
+      <rect x="0" y="340" width="420" height="60" fill="#1a1c2e"/>
+      <!-- Lower Manhattan financial district + One World Trade spire -->
+      <path d="M 420 400 L 420 285 L 450 285 L 450 250 L 478 250 L 478 220 L 502 220 L 502 245 L 530 245 L 530 230 L 558 230 L 558 280 L 600 280 L 600 200 L 624 200 L 624 130 L 632 130 L 632 80 L 640 80 L 640 60 L 644 60 L 644 130 L 652 130 L 652 200 L 678 200 L 678 250 L 706 250 L 706 280 L 760 280 L 760 320 L 860 320 L 860 400 Z" fill="#1a1c2e"/>
+      <!-- Midtown + Empire State + Chrysler + Upper East Side step-down -->
+      <path d="M 860 400 L 860 322 L 905 322 L 905 295 L 950 295 L 950 320 L 1000 320 L 1000 270 L 1042 270 L 1042 238 L 1072 238 L 1072 180 L 1082 180 L 1082 100 L 1090 100 L 1090 60 L 1100 60 L 1100 48 L 1106 48 L 1106 100 L 1114 100 L 1114 180 L 1144 180 L 1144 220 L 1184 220 L 1184 200 L 1204 200 L 1204 130 L 1212 130 L 1212 110 L 1220 110 L 1220 95 L 1226 95 L 1226 110 L 1232 110 L 1232 130 L 1240 130 L 1240 200 L 1276 200 L 1276 248 L 1314 248 L 1314 278 L 1352 278 L 1352 308 L 1402 308 L 1402 320 L 1452 320 L 1452 290 L 1500 290 L 1500 320 L 1552 320 L 1552 350 L 1600 350 L 1600 400 Z" fill="#1a1c2e"/>
+      <!-- Rooftop water towers -->
+      <g fill="#0e1020">
+        <rect x="688" y="268" width="6" height="10"/><rect x="685" y="265" width="12" height="3"/>
+        <rect x="1148" y="208" width="6" height="10"/><rect x="1145" y="205" width="12" height="3"/>
+        <rect x="1360" y="266" width="6" height="10"/><rect x="1357" y="263" width="12" height="3"/>
+      </g>
+      <!-- Building window dots (subtle warm glow) -->
+      <g fill="#3a2a18" opacity="0.75">
+        <rect x="605" y="220" width="3" height="3"/><rect x="615" y="220" width="3" height="3"/>
+        <rect x="605" y="240" width="3" height="3"/><rect x="615" y="240" width="3" height="3"/>
+        <rect x="1078" y="195" width="3" height="3"/><rect x="1085" y="195" width="3" height="3"/>
+        <rect x="1078" y="215" width="3" height="3"/><rect x="1085" y="215" width="3" height="3"/>
+        <rect x="1208" y="155" width="3" height="3"/><rect x="1216" y="155" width="3" height="3"/>
+        <rect x="1208" y="175" width="3" height="3"/><rect x="1216" y="175" width="3" height="3"/>
+      </g>
+    </svg>
+  </div>
   <div class="app">
 
     <header class="topbar">
@@ -61,6 +109,8 @@
       <div class="theme-switch" role="group" aria-label="Visual theme">
         <button data-set-theme="light">Light</button>
         <button data-set-theme="dark" class="active">Dark</button>
+        <button data-set-theme="cyberpunk">Cyberpunk</button>
+        <button data-set-theme="newyork">New York ✦</button>
       </div>
     </nav>
 
