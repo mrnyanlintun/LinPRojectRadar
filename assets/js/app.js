@@ -258,12 +258,40 @@
       }
     });
 
-    // Lucide hard-hat paths (same SVG as legend icons)
-    const HAT_PATHS = [
-      "M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2z",
-      "M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5",
-      "M4 15v-3a8 8 0 0 1 16 0v3"
-    ];
+    // Sector-specific blip icons (stroke-based, 24-unit viewBox)
+    // design = compass/dividers, construction = hammer, hybrid = hard hat
+    const SECTOR_ICONS = {
+      design: [
+        // compass pivot circle
+        "M12 4 m-1.2 0 a1.2 1.2 0 1 0 2.4 0 a1.2 1.2 0 1 0 -2.4 0",
+        // left leg: pivot → lower-left foot
+        "M11.1 5 L6 20",
+        // right leg: pivot → lower-right foot
+        "M12.9 5 L18 20",
+        // crossbar connecting the two legs mid-way
+        "M8 14 L16 14"
+      ],
+      construction: [
+        // hammer head (horizontal rectangle)
+        "M3 9 h8 v5 h-8 Z",
+        // handle (vertical, below head center)
+        "M8 14 L8 22"
+      ],
+      hybrid: [
+        // hard-hat brim
+        "M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2z",
+        // crown ridge strap
+        "M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5",
+        // dome arc
+        "M4 15v-3a8 8 0 0 1 16 0v3"
+      ],
+      // legacy alias
+      combined: [
+        "M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2z",
+        "M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5",
+        "M4 15v-3a8 8 0 0 1 16 0v3"
+      ]
+    };
     const ICON = 16; // display size in SVG user units
 
     plots.forEach((q) => {
@@ -326,7 +354,9 @@
         opacity: empty ? "0.45" : "1"
       });
       if (empty) iconG.setAttribute("stroke-dasharray", "2 2");
-      HAT_PATHS.forEach((d) => iconG.appendChild(el("path", { d })));
+      const sector = (p.sector || "hybrid").toLowerCase();
+      const iconPaths = SECTOR_ICONS[sector] || SECTOR_ICONS.hybrid;
+      iconPaths.forEach((d) => iconG.appendChild(el("path", { d })));
       iconSvg.appendChild(iconG);
       g.appendChild(iconSvg);
 
