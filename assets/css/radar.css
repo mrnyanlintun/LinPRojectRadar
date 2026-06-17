@@ -450,6 +450,7 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .mod-chart { width: 100%; max-width: 560px; height: auto; display: block; margin: 4px 0 10px; }
 .mod-chart-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin: 12px 0 4px; }
 .mod-axis { font-family: var(--font-mono); font-size: 9px; fill: var(--muted); }
+.mod-axis-title { font-size: 11px; fill: var(--faint); font-family: var(--font-mono); }
 .mod-mono { font-family: var(--font-mono); font-size: 12px; }
 .mod-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
 .mod-table th { text-align: left; font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line-strong); }

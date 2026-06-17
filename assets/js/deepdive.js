@@ -67,7 +67,7 @@
      and the baseline (demo BAC). Returns { svg, mc } so the caller can show N
      and the computed values. */
   function mcChartReal(p) {
-    const h = 210, pad = 44, base = h - 34;
+    const h = 226, pad = 44, base = h - 50;
     const mc = LinSim.monteCarloEAC(p.signals.mc.inputs, { iterations: 5000 });
     const c = COLOR[p.signals.mc.status];
     const samples = mc.samples;                 // sorted ascending
@@ -101,7 +101,8 @@
       mark(mc.baseline, `BAC ${mc.baseline.toFixed(0)}`, false) +
       mark(mc.p50, `P50 ${mc.p50.toFixed(1)}`, false) +
       mark(mc.p80, `P80 ${mc.p80.toFixed(1)}`, true) +
-      `<text x="${W - 14}" y="${h - 8}" text-anchor="end" class="mod-axis">simulated EAC (units) — ${mc.iterations.toLocaleString()} iterations →</text>` +
+      `<text x="${W / 2}" y="${h - 4}" text-anchor="middle" class="mod-axis-title">Estimate at Completion ($)</text>` +
+      `<text transform="rotate(-90 10 ${h / 2})" x="10" y="${h / 2}" text-anchor="middle" class="mod-axis-title">Frequency</text>` +
       "</svg>";
     return { svg, mc };
   }
@@ -115,7 +116,7 @@
     const cu = LinSim.cusumSeries(cuStored.series, {
       target: cuStored.target, sigma: cuStored.sigma, hUnits: cuStored.hUnits
     });
-    const h = 200, pad = 44, base = h - 30;
+    const h = 216, pad = 44, base = h - 46;
     const n = cu.stat.length;
     const yMax = Math.max(cu.H * 1.35, cu.maxStat * 1.15, 0.01);
     const sx = (i) => pad + (n > 1 ? (i / (n - 1)) : 0) * (W - pad - 20);
@@ -140,7 +141,8 @@
         `<text x="${W - 22}" y="${sy(cu.H) - 5}" text-anchor="end" class="mod-axis" fill="${COLOR.red}">decision interval H = ${cu.H.toFixed(2)} (${cu.hUnits}σ)</text>` +
         `<polyline points="${statPts}" fill="none" stroke="${c}" stroke-width="2"></polyline>` +
         breachMark +
-        `<text x="${W - 14}" y="${h - 6}" text-anchor="end" class="mod-axis">reporting periods (n=${n}) →</text>` +
+        `<text x="${W / 2}" y="${h - 4}" text-anchor="middle" class="mod-axis-title">Reporting Period</text>` +
+        `<text transform="rotate(-90 10 ${h / 2})" x="10" y="${h / 2}" text-anchor="middle" class="mod-axis-title">Cumulative Sum</text>` +
         "</svg>",
       cu
     };
@@ -363,7 +365,7 @@
 
   /* Module 06 chart: horizontal bars Baseline / P50 / P80 (days). */
   function pertChart(s) {
-    const h = 120, pad = 70, top = 22, rowH = 26;
+    const h = 136, pad = 70, top = 22, rowH = 26;
     const span = W - pad - 90;
     const maxd = Math.max(s.baseline_days, s.p80_duration_days) * 1.18 || 1;
     const sx = (v) => (v / maxd) * span;
@@ -380,12 +382,12 @@
           `<rect x="${pad}" y="${y + 3}" width="${sx(r[1]).toFixed(1)}" height="13" rx="3" fill="${r[2]}" opacity="0.8"></rect>` +
           `<text x="${(pad + sx(r[1]) + 6).toFixed(1)}" y="${y + 13}" class="mod-axis" fill="${r[2]}">${r[1]}d</text>`;
       }).join("") +
-      `<text x="${W - 14}" y="${h - 6}" text-anchor="end" class="mod-axis">activity duration (days) →</text>` + "</svg>";
+      `<text x="${W / 2}" y="${h - 4}" text-anchor="middle" class="mod-axis-title">Duration (days)</text>` + "</svg>";
   }
 
   /* Module 07 chart: grading vs paving velocity lines, buffer zone, critical unit. */
   function lobChart(s) {
-    const h = 120, pad = 40, base = h - 24, top = 14;
+    const h = 136, pad = 40, base = h - 40, top = 14;
     const units = s.units || 20;
     const tMax = Math.max(units / s.grading_rate, s.initial_buffer_days + units / s.paving_rate) * 1.1 || 1;
     const sx = (u) => pad + (u / units) * (W - pad - 20);
@@ -409,12 +411,13 @@
       `<polyline points="${pave}" fill="none" stroke="${simColor(s.status_color)}" stroke-width="2"></polyline>` +
       critMark +
       `<text x="${pad + 4}" y="${top + 8}" class="mod-axis" fill="${COLOR.green}">grading</text>` +
-      `<text x="${W - 14}" y="${h - 6}" text-anchor="end" class="mod-axis">production units (0–${units}) →</text>` + "</svg>";
+      `<text x="${W / 2}" y="${h - 4}" text-anchor="middle" class="mod-axis-title">Production Units</text>` +
+      `<text transform="rotate(-90 10 ${h / 2})" x="10" y="${h / 2}" text-anchor="middle" class="mod-axis-title">Schedule Days</text>` + "</svg>";
   }
 
   /* Module 08 chart: fever bar Green/Amber/Red with the buffer-consumption dot. */
   function ccpmChart(s) {
-    const h = 120, pad = 40, barY = 50, barH = 22, span = W - pad - 30;
+    const h = 136, pad = 40, barY = 50, barH = 22, span = W - pad - 30;
     const sx = (v) => pad + (clamp01(v) / 100) * span;
     const a = s.amber_threshold, r = s.red_threshold, bc = s.pct_buffer_consumed;
     return svgo(h, "CCPM buffer-health fever chart") +
@@ -426,12 +429,13 @@
       `<circle cx="${sx(bc)}" cy="${barY + barH / 2}" r="6" fill="${simColor(s.status_color)}" stroke="var(--text)" stroke-width="1"></circle>` +
       `<text x="${sx(bc)}" y="${barY - 8}" text-anchor="middle" class="mod-axis" fill="${simColor(s.status_color)}">${bc}% consumed</text>` +
       `<text x="${pad}" y="${barY + barH + 15}" class="mod-axis">0%</text>` +
-      `<text x="${pad + span}" y="${barY + barH + 15}" text-anchor="end" class="mod-axis">100% buffer consumed</text>` + "</svg>";
+      `<text x="${pad + span}" y="${barY + barH + 15}" text-anchor="end" class="mod-axis">100%</text>` +
+      `<text x="${W / 2}" y="${h - 4}" text-anchor="middle" class="mod-axis-title">Buffer Consumed (%)</text>` + "</svg>";
   }
 
   /* Module 09 chart: multiplier histogram with P50/P80 markers. */
   function rcfChart(s) {
-    const h = 120, pad = 30, base = h - 26, top = 20;
+    const h = 136, pad = 30, base = h - 42, top = 20;
     const mult = s.multipliers && s.multipliers.length ? s.multipliers : [1.0];
     const lo = 1.0, hi = Math.max.apply(null, mult) * 1.04;
     const sx = (v) => pad + ((v - lo) / (hi - lo)) * (W - pad - 24);
@@ -444,12 +448,13 @@
       bars +
       mk(s.p50_multiplier, "P50 ×" + s.p50_multiplier, COLOR.amber) +
       mk(s.p80_multiplier, "P80 ×" + s.p80_multiplier, simColor(s.status_color)) +
-      `<text x="${W - 14}" y="${h - 6}" text-anchor="end" class="mod-axis">historical overrun multiplier →</text>` + "</svg>";
+      `<text x="${W / 2}" y="${h - 4}" text-anchor="middle" class="mod-axis-title">Cost Overrun Multiplier</text>` +
+      `<text transform="rotate(-90 10 ${h / 2})" x="10" y="${h / 2}" text-anchor="middle" class="mod-axis-title">Historical Frequency</text>` + "</svg>";
   }
 
   /* Module 10 chart: 3×3 dependency-matrix heatmap (intensity = weight). */
   function dsmChart(s) {
-    const h = 120, cell = 30, x0 = 150, y0 = 22;
+    const h = 136, cell = 30, x0 = 150, y0 = 22;
     const M = s.matrix || [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
     const labels = ["Arch", "Struct", "MEP"];
     let cells = "";
@@ -465,7 +470,8 @@
       cells + rowLabs + colLabs +
       `<text x="${x0 + 3 * cell + 18}" y="${y0 + 16}" class="mod-axis">change in column</text>` +
       `<text x="${x0 + 3 * cell + 18}" y="${y0 + 32}" class="mod-axis">propagates to row</text>` +
-      `<text x="14" y="${y0 + 3 * cell + 14}" class="mod-axis">rework ×${s.rework_multiplier}</text>` + "</svg>";
+      `<text x="14" y="${y0 + 3 * cell + 14}" class="mod-axis">rework ×${s.rework_multiplier}</text>` +
+      `<text x="${x0 + (3 * cell) / 2}" y="${h - 4}" text-anchor="middle" class="mod-axis-title">Dependency weight</text>` + "</svg>";
   }
   const clamp01 = (v) => Math.max(0, Math.min(100, Number(v) || 0));
   const moneyShort = (v) => "$" + Math.round(Number(v) || 0).toLocaleString();
