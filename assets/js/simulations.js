@@ -4,20 +4,25 @@
    Fourteen client-side simulation models that run in the browser
    from a project's extracted signalInputs — zero tokens, zero backend.
 
+   Display module numbering (final / 2026 reorder):
      04  PERT — Stochastic Network Criticality Index
      05  LOB  — Line of Balance Production Velocity
      06  CCPM — Buffer Health (fever chart logic)
      07  RCF  — Reference Class Forecasting cost prior
      08  DSM  — Design Structure Matrix rework propagation
-     11  DST  — Dempster-Shafer Evidence Combination
-     12  Rough Sets — lower/upper approximation classification
-     13  Neutrosophic — Truth / Indeterminacy / Falsity logic
-     14  Interval Fuzzy — interval-valued fuzzy membership
-     15  Z-numbers — reliability-weighted evidence (Zadeh 2011)
-     16  PLTS — Probabilistic Linguistic Term Sets (Pang 2016)
-     17  Plithogenic Sets — contradiction-degree weighting (Smarandache 2018)
-     18  BRB  — Belief Rule Base, weighted IF-THEN rules (Yang 2006)
-     19  Quantum Probability — amplitude interference (Busemeyer 2012)
+     10  DST  — Dempster-Shafer Evidence Combination
+     11  Rough Sets — lower/upper approximation classification
+     12  Neutrosophic — Truth / Indeterminacy / Falsity logic
+     13  Interval Fuzzy — interval-valued fuzzy membership
+     14  Z-numbers — reliability-weighted evidence (Zadeh 2011)
+     15  PLTS — Probabilistic Linguistic Term Sets (Pang 2016)
+     16  Plithogenic Sets — contradiction-degree weighting (Smarandache 2018)
+     17  BRB  — Belief Rule Base, weighted IF-THEN rules (Yang 2006)
+     18  Quantum Probability — amplitude interference (Busemeyer 2012)
+
+   Module 09 (Conservative Dominance / Signal Synthesis) and Module 19 (ABM
+   Governance) run in the main signal pipeline — not here — because they need
+   the full assembled signal package, not raw signalInputs.
 
    These are DEMONSTRATION models (designed heuristics over the
    project's synthetic inputs), not calibrated/validated forecasts.
@@ -217,7 +222,7 @@
   }
 
   /* ===========================================================
-     Module 11 — Dempster-Shafer Evidence Combination
+     Module 10 — Dempster-Shafer Evidence Combination
      Combines signal evidence from the four primary classes into a
      unified belief distribution over {Green, Amber, Red, Unknown}.
      =========================================================== */
@@ -309,7 +314,7 @@
   }
 
   /* ===========================================================
-     Module 12 — Rough Set Theory
+     Module 11 — Rough Set Theory
      Classifies the project into definite, borderline, or
      indeterminate zones based on signal voting across states.
      Lower approximation: states all signals definitively support.
@@ -388,7 +393,7 @@
   }
 
   /* ===========================================================
-     Module 13 — Neutrosophic Logic
+     Module 12 — Neutrosophic Logic
      Truth (T), Indeterminacy (I), Falsity (F) per signal source.
      T + I + F need not sum to 1 — genuine uncertainty is a
      separate dimension, not residual of T and F.
@@ -461,7 +466,7 @@
   }
 
   /* ===========================================================
-     Module 14 — Interval-valued Fuzzy Sets
+     Module 13 — Interval-valued Fuzzy Sets
      Membership is a range [lower, upper] reflecting measurement
      uncertainty in EVM inputs (SoV accuracy ±2%, pay-app ±1%).
      =========================================================== */
@@ -565,7 +570,7 @@
   }
 
   /* ===========================================================
-     Module 15 — Z-numbers (Zadeh, 2011)
+     Module 14 — Z-numbers (Zadeh, 2011)
      Each signal is a Z-number (Restriction, Reliability): a
      restriction (the classified state) paired with a reliability
      measure for the source. Higher-reliability sources carry
@@ -634,7 +639,7 @@
   }
 
   /* ===========================================================
-     Module 16 — Probabilistic Linguistic Term Sets (Pang, 2016)
+     Module 15 — Probabilistic Linguistic Term Sets (Pang, 2016)
      Each signal is expressed as a probability distribution over
      linguistic states {Green, Amber, Red} rather than a crisp label.
      Captures partial confidence within each source.
@@ -706,7 +711,7 @@
   }
 
   /* ===========================================================
-     Module 17 — Plithogenic Sets (Smarandache, 2018)
+     Module 16 — Plithogenic Sets (Smarandache, 2018)
      Each attribute value carries a contradiction degree against
      the dominant value. High average contradiction means the
      signals are genuinely opposed, not merely mixed.
@@ -783,7 +788,7 @@
   }
 
   /* ===========================================================
-     Module 18 — Belief Rule Base (Yang, 2006; extended 2018-2023)
+     Module 17 — Belief Rule Base (Yang, 2006; extended 2018-2023)
      Expert IF-THEN rules with belief-distribution consequents
      and rule weights. Multiple matching rules are combined by
      weight to produce the aggregate belief over states.
@@ -847,7 +852,7 @@
   }
 
   /* ===========================================================
-     Module 19 — Quantum Probability (Busemeyer & Bruza, 2012)
+     Module 18 — Quantum Probability (Busemeyer & Bruza, 2012)
      Signals modelled as amplitudes in a state vector. The
      interference term captures coherence (aligned signals) vs
      destructive cancellation (opposed signals).
@@ -905,10 +910,13 @@
   }
 
   /* ===========================================================
-     runAll — Modules 04-08 (signalInputs-based) + 12-19
-     (existingSignals-based). DST (Module 11) runs separately in
+     runAll — Modules 04-08 (signalInputs-based) + 11-18
+     (existingSignals-based). DST (Module 10) runs separately in
      signals.js after the core signal package is assembled so it
      can access the assembled project.signals directly.
+     Module 09 (Conservative Dominance) and Module 19 (ABM Governance)
+     are computed in the main signal pipeline and decision.js
+     respectively — they are not signals, they consume signals.
      =========================================================== */
   function runAll(input, existingSignals) {
     var si = (input && input.signalInputs) ? input.signalInputs : (input || {});
@@ -919,14 +927,14 @@
       runCCPM(si),                  // Module 06
       runRCF(si),                   // Module 07
       runDSM(si),                   // Module 08
-      runRoughSets(es),             // Module 12
-      runNeutrosophic(es),          // Module 13
-      runIntervalFuzzy(es),         // Module 14
-      runZNumbers(es),              // Module 15
-      runPLTS(es),                  // Module 16
-      runPlithogenic(es),           // Module 17
-      runBRB(es),                   // Module 18
-      runQuantumProbability(es)     // Module 19
+      runRoughSets(es),             // Module 11
+      runNeutrosophic(es),          // Module 12
+      runIntervalFuzzy(es),         // Module 13
+      runZNumbers(es),              // Module 14
+      runPLTS(es),                  // Module 15
+      runPlithogenic(es),           // Module 16
+      runBRB(es),                   // Module 17
+      runQuantumProbability(es)     // Module 18
     ];
   }
 

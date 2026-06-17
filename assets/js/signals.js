@@ -174,13 +174,13 @@
       seed: LinSim.hashSeed(project.id)
     });
     // Client-side multi-model simulations (zero tokens, zero backend).
-    // runAll() returns modules 04-08 + 12-14. DST (Module 11) runs separately
+    // runAll() returns modules 04-08 + 11-18. DST (Module 10) runs separately
     // after the core signal package is assembled so it reads live signal data.
     let simPayload = null;
     if (window.LinSimulations) {
       try {
         const simResults = LinSimulations.runAll(si, project.signals);
-        // Module 11: DST runs separately — needs the assembled project.signals
+        // Module 10: DST runs separately — needs the assembled project.signals
         // (EVM/MC/CUSUM/Doc) as existingSignals, not the raw signalInputs.
         const dstResult = LinSimulations.runDST(si, project.signals);
         const allResults = simResults.concat([dstResult]);
