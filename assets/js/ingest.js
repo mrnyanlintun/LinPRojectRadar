@@ -89,7 +89,7 @@
     elLog.innerHTML = ingestLog.length
       ? ingestLog.slice(0, 25).map((e) =>
           `<div class="ig-log-entry"><span class="mod-mono">${esc(window.LinTZ ? LinTZ.format(e.at) : e.at)}</span> ${esc(e.msg)}</div>`).join("")
-      : `<p class="kn-sub">No ingest events this browser yet.</p>`;
+      : `<p class="kn-sub">Nothing yet. Upload a document to get started.</p>`;
   }
 
   /* The keyword document-risk ingest panel was removed — document ingestion now
@@ -105,8 +105,8 @@
     const project = LinStore.getCached(projectId);
     const populated = hasSignals(project);
     container.innerHTML =
-      `<h4 class="kn-h" style="font-size:14px">${populated ? "Ingest Document — re-extract signals (re-runs Monte Carlo + CUSUM)" : "Ingest Document — extract signals (runs Monte Carlo + CUSUM)"}</h4>` +
-      `<p class="kn-sub">Upload a real document (contract, pay application, schedule of values, time-phased schedule, RFI, …); the backend extracts the EVM figures and, once CPI and SPI are present, runs the models on the extracted values.</p>` +
+      `<h4 class="kn-h" style="font-size:14px">Upload a Document</h4>` +
+      `<p class="kn-sub">Upload a contract, pay application, schedule, or RFI. The system reads the figures and updates the project signals automatically.</p>` +
       LinSignals.ingestFormHtml(projectId);
     // doc-driven extraction → re-render the detail page so charts + signals panel update
     LinSignals.wireIngestForm(container, onApplied);
@@ -127,7 +127,7 @@
         <span class="li-state state-${key}">${esc(state)}</span>
         <span class="pr-actions">
           <button class="btn small" data-detail="${esc(p.id)}">Detail</button>
-          <button class="btn small" data-populate="${esc(p.id)}">${populated ? "Re-populate" : "Populate"}</button>
+          <button class="btn small" data-populate="${esc(p.id)}">${populated ? "Re-upload" : "Populate"}</button>
           <button class="btn small" data-archive="${esc(p.id)}">Archive</button>
         </span>
       </div>`;
@@ -141,10 +141,10 @@
         <section class="panel">
           <p class="eyebrow">Create project</p>
           <h2 class="kn-h">New project</h2>
-          <p class="kn-sub">A new project is assigned a project number automatically and starts empty. Ingest documents to populate its quantitative project-management analysis.</p>
+          <p class="kn-sub">Give your project a name and sector. Upload documents to get started.</p>
           <label class="rationale-label" for="np-name">Project name</label>
-          <input id="np-name" class="ig-input" maxlength="80" placeholder="e.g. Concourse Wayfinding Refresh" />
-          <label class="rationale-label" for="np-sector">Delivery type</label>
+          <input id="np-name" class="ig-input" maxlength="80" placeholder="e.g. Terminal B Expansion" />
+          <label class="rationale-label" for="np-sector">Sector</label>
           <select id="np-sector" class="ig-input">
             <option value="design">Design</option>
             <option value="construction">Construction</option>
@@ -162,15 +162,15 @@
       </div>
 
       <section class="panel" style="margin-top:18px" id="signals-panel">
-        <p class="eyebrow">Ingest document</p>
-        <h2 class="kn-h">Ingest Document</h2>
-        <p class="kn-sub">Upload a real project document (contract, pay application, schedule of values, time-phased schedule, RFI, …). The backend OCRs and extracts the EVM figures — or, for narrative documents, a document-risk score. When both CPI and SPI are present the app runs the same 5,000-iteration Monte Carlo, two-sided CUSUM, and PCEIF decision on the extracted values. Demonstration models — not calibrated forecasts.</p>
+        <p class="eyebrow">Upload a Document</p>
+        <h2 class="kn-h">Upload a Document</h2>
+        <p class="kn-sub">Upload a contract, pay application, schedule, or RFI. The system reads the figures and updates the project signals automatically.</p>
         ${LinSignals.ingestFormHtml(null)}
         <div id="signals-detail" class="ds-detail-wrap"></div>
       </section>
 
       <section class="panel" style="margin-top:18px">
-        <p class="eyebrow">Project event log</p>
+        <p class="eyebrow">Recent Activity</p>
         <div id="ingest-log"></div>
       </section>`;
 
@@ -223,7 +223,7 @@
       ? archived.map((p) =>
           `<div class="pr-row"><span class="pr-code">${esc(p.id)}</span>` +
           `<span class="pr-name">${esc(p.name)} <span class="kn-sub">· ${esc(SECTOR_LABEL[p.sector] || p.sector)}</span></span>` +
-          `<span class="pr-code">archived</span>` +
+          `<span class="pr-code">Archived</span>` +
           `<button class="btn small" data-restore="${esc(p.id)}">Restore</button></div>`).join("")
       : `<p class="pr-empty">Nothing archived. Archiving moves a project's folder to <span class="mod-mono">00_Archive</span> in Drive.</p>`;
     box.querySelectorAll("[data-restore]").forEach((b) =>

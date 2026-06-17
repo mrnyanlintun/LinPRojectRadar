@@ -96,59 +96,40 @@
 
     const R = R_MAX; // 165.6 — outer edge
 
-    // ── defs: gradients ──────────────────────────────────────────────────
+    // ── defs: sweep-trail gradient ───────────────────────────────────────
     const defs = el("defs");
-
-    // vignette: transparent center → darkened edge
-    const vigGrad = el("radialGradient", { id: "scope-vignette", cx: "50%", cy: "50%", r: "50%" });
-    const vg1 = el("stop"); vg1.setAttribute("offset", "0%"); vg1.setAttribute("stop-color", "rgba(0,0,0,0)");
-    const vg2 = el("stop"); vg2.setAttribute("offset", "100%"); vg2.setAttribute("stop-color", "rgba(0,0,0,0.38)");
-    vigGrad.appendChild(vg1); vigGrad.appendChild(vg2);
-
-    // sweep trail: transparent at center → phosphor glow at outer edge
     const trailGrad = el("radialGradient", {
       id: "sweep-trail-grad", gradientUnits: "userSpaceOnUse",
       cx: CENTER, cy: CENTER, r: R
     });
     const tg1 = el("stop"); tg1.setAttribute("offset", "0%"); tg1.setAttribute("stop-color", "var(--phosphor)"); tg1.setAttribute("stop-opacity", "0");
-    const tg2 = el("stop"); tg2.setAttribute("offset", "100%"); tg2.setAttribute("stop-color", "var(--phosphor)"); tg2.setAttribute("stop-opacity", "0.38");
+    const tg2 = el("stop"); tg2.setAttribute("offset", "100%"); tg2.setAttribute("stop-color", "var(--phosphor)"); tg2.setAttribute("stop-opacity", "0.4");
     trailGrad.appendChild(tg1); trailGrad.appendChild(tg2);
-
-    defs.appendChild(vigGrad); defs.appendChild(trailGrad);
+    defs.appendChild(trailGrad);
     svg.appendChild(defs);
 
-    // ── health zones (even-odd annuli) ───────────────────────────────────
-    const circlePath = (r) =>
-      `M ${CENTER + r} ${CENTER} A ${r} ${r} 0 1 0 ${CENTER - r} ${CENTER} A ${r} ${r} 0 1 0 ${CENTER + r} ${CENTER} Z`;
-    const ringPath = (rOuter, rInner) => circlePath(rOuter) + " " + circlePath(rInner);
-    const ZONE_EDGES = { green: 0.34 * 180, amber: 0.62 * 180, red: R_MAX };
-    svg.appendChild(el("circle", { cx: CENTER, cy: CENTER, r: ZONE_EDGES.green, fill: "var(--zone-green)" }));
-    const amberRing = el("path", { d: ringPath(ZONE_EDGES.amber, ZONE_EDGES.green), fill: "var(--zone-amber)" });
-    amberRing.setAttribute("fill-rule", "evenodd");
-    svg.appendChild(amberRing);
-    const redRing = el("path", { d: ringPath(ZONE_EDGES.red, ZONE_EDGES.amber), fill: "var(--zone-red)" });
-    redRing.setAttribute("fill-rule", "evenodd");
-    svg.appendChild(redRing);
-
-    // ── vignette overlay (behind grid, over zones) ───────────────────────
+    // ── scope background (dark CRT surface, no colored zone bands) ───────
     svg.appendChild(el("circle", {
       cx: CENTER, cy: CENTER, r: R,
-      fill: "url(#scope-vignette)", "pointer-events": "none"
+      fill: "rgba(0,8,18,0.92)"
     }));
 
-    // ── 4 concentric range rings (equal spacing, faint) ──────────────────
+    // ── 4 faint concentric range rings ───────────────────────────────────
     for (let i = 1; i <= 4; i++) {
       svg.appendChild(el("circle", {
         cx: CENTER, cy: CENTER, r: R * i / 4,
-        fill: "none", stroke: "var(--ring-line)",
-        "stroke-width": "0.7", opacity: "0.5"
+        fill: "none",
+        stroke: "rgba(96,210,232,0.12)",
+        "stroke-width": "0.5"
       }));
     }
 
     // ── outer solid ring ─────────────────────────────────────────────────
     svg.appendChild(el("circle", {
       cx: CENTER, cy: CENTER, r: R,
-      fill: "none", stroke: "var(--ring-line)", "stroke-width": "1.5"
+      fill: "none",
+      stroke: "rgba(96,210,232,0.35)",
+      "stroke-width": "1.2"
     }));
 
     // ── 12 radial lines every 30° ─────────────────────────────────────────
@@ -156,7 +137,8 @@
       const tip = polar(deg, R);
       svg.appendChild(el("line", {
         x1: CENTER, y1: CENTER, x2: tip.x, y2: tip.y,
-        stroke: "var(--ring-line)", "stroke-width": "0.55", opacity: "0.4"
+        stroke: "rgba(96,210,232,0.08)",
+        "stroke-width": "0.5"
       }));
     }
 
@@ -172,23 +154,36 @@
       svg.appendChild(t);
     }
 
-    // ── rotating sweep hand (CSS animation, skipped on reduced-motion) ───
+    // ── rotating sweep hand — SMIL animateTransform with explicit center ──
+    // from="0 cx cy" to="360 cx cy" guarantees the pivot is at (cx,cy) in
+    // SVG user coords, independent of CSS viewport sizing.
     if (!reduceMotion()) {
-      const sweepG = el("g", { class: "radar-sweep-group" });
+      const sweepG = el("g");
 
-      // 60° trailing phosphor wedge (from –60° to 0° in group-local coords)
-      const tipA = polar(0, R);   // (365.6, 200)
-      const tipB = polar(-60, R); // (282.8, 56.5)
+      // 60° trailing phosphor wedge: from –60° to 0° (both in SVG screen-polar)
+      const tipA = polar(0, R);   // East  (365.6, 200)
+      const tipB = polar(-60, R); // NE    (282.8,  56.5)
       sweepG.appendChild(el("path", {
         d: `M ${CENTER} ${CENTER} L ${tipA.x.toFixed(1)} ${tipA.y.toFixed(1)} A ${R.toFixed(1)} ${R.toFixed(1)} 0 0 0 ${tipB.x.toFixed(1)} ${tipB.y.toFixed(1)} Z`,
         fill: "url(#sweep-trail-grad)"
       }));
 
-      // sweep line
+      // sweep line: from center (cx,cy) to outer edge at 0° (East)
       sweepG.appendChild(el("line", {
-        x1: CENTER, y1: CENTER, x2: tipA.x.toFixed(1), y2: tipA.y.toFixed(1),
-        stroke: "var(--phosphor)", "stroke-width": "1.5", opacity: "0.85"
+        x1: CENTER, y1: CENTER,
+        x2: tipA.x.toFixed(1), y2: tipA.y.toFixed(1),
+        stroke: "var(--phosphor)", "stroke-width": "1.5", opacity: "0.9"
       }));
+
+      // SMIL rotation — pivot explicitly at (CENTER, CENTER) in user coords
+      const anim = document.createElementNS(SVG_NS, "animateTransform");
+      anim.setAttribute("attributeName", "transform");
+      anim.setAttribute("type", "rotate");
+      anim.setAttribute("from", `0 ${CENTER} ${CENTER}`);
+      anim.setAttribute("to", `360 ${CENTER} ${CENTER}`);
+      anim.setAttribute("dur", "4s");
+      anim.setAttribute("repeatCount", "indefinite");
+      sweepG.appendChild(anim);
 
       svg.appendChild(sweepG);
     }
@@ -241,8 +236,7 @@
       "M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5",
       "M4 15v-3a8 8 0 0 1 16 0v3"
     ];
-    const ICON = 14; // display size in SVG user units
-    const ICON_SCALE = (ICON / 24).toFixed(4);
+    const ICON = 16; // display size in SVG user units
 
     plots.forEach((q) => {
       const p = q.p;
@@ -281,35 +275,37 @@
 
       // keyboard focus ring
       const ring = el("circle", {
-        cx: q.x, cy: q.y, r: 11, fill: "none",
+        cx: q.x, cy: q.y, r: 12, fill: "none",
         stroke: "var(--phosphor)", "stroke-width": "2",
         class: "blip-ring", opacity: "0"
       });
       g.appendChild(ring);
 
-      // hard-hat icon, scaled from 24×24 to ICON×ICON, centered on blip
-      const tx = (q.x - ICON / 2).toFixed(1);
-      const ty = (q.y - ICON / 2).toFixed(1);
-      const iconG = el("g", {
-        transform: `translate(${tx}, ${ty}) scale(${ICON_SCALE})`,
-        fill: "none", stroke: color,
-        "stroke-linecap": "round", "stroke-linejoin": "round",
+      // hard-hat icon: nested <svg> positions it unambiguously in the parent
+      // SVG's coordinate system via x/y/width/height attributes.
+      const iconSvg = el("svg", {
+        x: (q.x - ICON / 2).toFixed(1),
+        y: (q.y - ICON / 2).toFixed(1),
+        width: ICON, height: ICON,
+        viewBox: "0 0 24 24",
+        overflow: "visible",
         class: "blip-icon"
       });
-      if (empty) {
-        iconG.setAttribute("opacity", "0.45");
-        iconG.setAttribute("stroke-dasharray", "2 2");
-      }
-      HAT_PATHS.forEach((d) => {
-        const path = el("path", { d, "vector-effect": "non-scaling-stroke", "stroke-width": "2" });
-        iconG.appendChild(path);
+      const iconG = el("g", {
+        fill: "none", stroke: color,
+        "stroke-linecap": "round", "stroke-linejoin": "round",
+        "stroke-width": "2",
+        opacity: empty ? "0.45" : "1"
       });
-      g.appendChild(iconG);
+      if (empty) iconG.setAttribute("stroke-dasharray", "2 2");
+      HAT_PATHS.forEach((d) => iconG.appendChild(el("path", { d })));
+      iconSvg.appendChild(iconG);
+      g.appendChild(iconSvg);
 
       // leader line when the label was nudged away from its natural spot
       if (Math.abs(q.ly - (q.y + 5)) > 5) {
         g.appendChild(el("line", {
-          x1: q.x + 8, y1: q.y, x2: q.lx - 2, y2: q.ly - 3,
+          x1: q.x + 9, y1: q.y, x2: q.lx - 2, y2: q.ly - 3,
           class: "blip-leader"
         }));
       }

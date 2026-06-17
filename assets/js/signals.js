@@ -246,15 +246,15 @@
                 g.types.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join("")
               }</optgroup>`).join("")}
             </select></label>
-          <p class="kn-sub">Periods (baseline / work period) are read from the document itself — no dates to enter.</p>
+          <p class="kn-sub">Dates are pulled from the document. Nothing to fill in.</p>
         </div>
         <div>
-          <label class="rationale-label">Document (PDF or image — one at a time)</label>
+          <label class="rationale-label">Document</label>
           <label class="aud-filebtn ds-filebtn">
             <input type="file" class="ds-file" accept="${ACCEPT}" />
-            <span class="ds-filebtn-label aud-filebtn-label">Choose document…</span>
+            <span class="ds-filebtn-label aud-filebtn-label">Choose file</span>
           </label>
-          <div class="dc-actions"><button class="btn primary ds-run">Upload &amp; extract</button></div>
+          <div class="dc-actions"><button class="btn primary ds-run">Upload</button></div>
           <p class="ds-status kn-sub" aria-live="polite"></p>
         </div>
       </div>`;
@@ -386,7 +386,7 @@
     if (fileInput) fileInput.addEventListener("change", (e) => {
       picked = (e.target.files && e.target.files[0]) || null;
       const lbl = $c(".ds-filebtn-label");
-      if (lbl) lbl.textContent = picked ? picked.name : "Choose document…";
+      if (lbl) lbl.textContent = picked ? picked.name : "Choose file";
     });
 
     $c(".ds-run").addEventListener("click", async () => {
