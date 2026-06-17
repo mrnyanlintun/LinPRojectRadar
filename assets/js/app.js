@@ -132,6 +132,34 @@
       "stroke-width": "1.2"
     }));
 
+    // ── threshold rings: Green / Amber / Red ─────────────────────────────
+    const THRESHOLD_RINGS = [
+      { frac: 0.33, stroke: "#3fcaa6", label: "On track" },
+      { frac: 0.66, stroke: "#e2b13c", label: "Watch"    },
+      { frac: 0.90, stroke: "#e0556b", label: "Escalate" },
+    ];
+    THRESHOLD_RINGS.forEach(({ frac, stroke, label }) => {
+      const rr = R * frac;
+      svg.appendChild(el("circle", {
+        cx: CENTER, cy: CENTER, r: rr,
+        fill: "none",
+        stroke,
+        "stroke-opacity": "0.4",
+        "stroke-width": "1"
+      }));
+      const t = el("text", {
+        x: CENTER + rr + 4, y: CENTER,
+        "text-anchor": "start",
+        "font-size": "8",
+        fill: stroke,
+        opacity: "0.65",
+        "dominant-baseline": "middle",
+        class: "scope-deg-label"
+      });
+      t.textContent = label;
+      svg.appendChild(t);
+    });
+
     // ── 12 radial lines every 30° ─────────────────────────────────────────
     for (let deg = 0; deg < 360; deg += 30) {
       const tip = polar(deg, R);
