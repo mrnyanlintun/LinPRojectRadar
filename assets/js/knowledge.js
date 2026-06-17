@@ -307,7 +307,7 @@
     const row2X = pad + (w - pad * 2 - row2Width) / 2;
     const arrowReserve = 12;
 
-    let out = `<svg viewBox="0 0 ${w} ${h}" class="kn-svg kn-svg-flow" role="img" aria-label="PCEIF signal-to-action flow (two rows)">`;
+    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="auto" preserveAspectRatio="xMidYMid meet" class="kn-svg kn-svg-flow" role="img" aria-label="PCEIF signal-to-action flow (two rows)">`;
     out += `<defs><marker id="kn-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--phosphor)"/></marker></defs>`;
 
     // Helper: draw a labelled box with wrapped text + a right-pointing arrow to
@@ -371,7 +371,7 @@
       { lab: "Governance Synthesis", mods: ["03 Doc Risk", "04 Synthesis", "05 ABM"], color: "var(--phosphor)", x: 30, y: 116 },
       { lab: "Extended Simulation", mods: ["06 PERT", "07 LOB", "08 CCPM", "09 RCF", "10 DSM"], color: "var(--radar-amber)", x: 30, y: 222 },
     ];
-    let out = `<svg viewBox="0 0 ${w} ${h}" class="kn-svg" role="img" aria-label="Signal stack of 10 modules feeding Signal Synthesis">`;
+    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="auto" class="kn-svg" role="img" aria-label="Signal stack of 10 modules feeding Signal Synthesis">`;
     groups.forEach((g) => {
       const bx = g.x, by = g.y, bw = 360, bh = 64;
       out += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="9" fill="var(--surface-soft)" stroke="${g.color}" stroke-width="1.5"></rect>`;
@@ -403,7 +403,7 @@
     const ac = pts(0.25, 0.55, 0.30);   // actual (above ev at end → CV gap)
     // markers at month ~70%
     const k = 22, evP = ev[k], acP = ac[k], pvP = pv[k];
-    let out = `<svg viewBox="0 0 ${w} ${h}" class="kn-svg" role="img" aria-label="EVM S-curve: PV vs EV vs AC with CV and SV gaps">`;
+    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="auto" class="kn-svg" role="img" aria-label="EVM S-curve: PV vs EV vs AC with CV and SV gaps">`;
     out += `<line x1="${pad}" y1="${base}" x2="${w - 14}" y2="${base}" stroke="var(--ring-line)"></line>`;
     out += `<line x1="${pad}" y1="20" x2="${pad}" y2="${base}" stroke="var(--ring-line)"></line>`;
     out += `<text x="${w - 14}" y="${h - 14}" text-anchor="end" class="kn-svg-t" fill="var(--muted)">project time →</text>`;
@@ -435,7 +435,7 @@
     });
     const max = Math.max(...bars);
     const bw = (w - pad - 60) / bars.length;
-    let out = `<svg viewBox="0 0 ${w} ${h}" class="kn-svg" role="img" aria-label="Monte Carlo simulated EAC distribution with P50 and P80 markers">`;
+    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="auto" class="kn-svg" role="img" aria-label="Monte Carlo simulated EAC distribution with P50 and P80 markers">`;
     out += `<line x1="${pad}" y1="${base}" x2="${w - 14}" y2="${base}" stroke="var(--ring-line)"></line>`;
     bars.forEach((v, i) => {
       const bx = pad + i * bw, bh = (v / max) * (base - 28);
@@ -457,7 +457,7 @@
     const cusum = [0.4, 0.8, 1.2, 1.5, 2.1, 2.6, 3.4, 4.0, 4.7, 5.2, 5.8, 6.4];
     const sx = (i) => pad + (i / (periods - 1)) * (w - pad - 60);
     const sy = (v) => base - (v / 7.5) * (base - 28);
-    let out = `<svg viewBox="0 0 ${w} ${h}" class="kn-svg" role="img" aria-label="CUSUM statistic vs decision interval H over 12 periods">`;
+    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="auto" class="kn-svg" role="img" aria-label="CUSUM statistic vs decision interval H over 12 periods">`;
     out += `<line x1="${pad}" y1="${base}" x2="${w - 14}" y2="${base}" stroke="var(--ring-line)"></line>`;
     out += `<line x1="${pad}" y1="20" x2="${pad}" y2="${base}" stroke="var(--ring-line)"></line>`;
     // H line
@@ -479,7 +479,7 @@
   function svgAgreementMap() {
     const w = 720, h = 200;
     const nodes = [["EVM", "var(--clear-green)", 100], ["FORECAST", "var(--radar-amber)", 280], ["CUSUM", "var(--alarm-red)", 460], ["DOC", "var(--clear-green)", 620]];
-    let out = `<svg viewBox="0 0 ${w} ${h}" class="kn-svg" role="img" aria-label="Signal class agreement map">`;
+    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="auto" class="kn-svg" role="img" aria-label="Signal class agreement map">`;
     nodes.forEach(([l, c, cx], i) => {
       out += `<circle cx="${cx}" cy="100" r="42" fill="none" stroke="${c}" stroke-width="2.5"></circle>`;
       out += `<text x="${cx}" y="98" text-anchor="middle" class="kn-svg-t" fill="var(--text)" font-weight="700">${esc(l)}</text>`;

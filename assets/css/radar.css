@@ -1322,9 +1322,16 @@ body { overflow-x: hidden; max-width: 100vw; }
   }
   .kn-article { max-width: 100%; }
   /* SVG diagrams: shrink to fit, allow horizontal scroll within wrapper */
-  .kn-svg { max-height: 220px; }
+  .kn-svg { max-height: 220px; width: 100% !important; max-width: 100%; height: auto; }
   .kn-flow-wrap { overflow-x: auto; max-width: 100%; }
   .kn-flow-wrap .kn-svg { min-width: auto; }
+
+  /* RAG threshold tables: block-level scrollable container */
+  .kn-rag { display: block; overflow-x: auto; width: 100%; font-size: 12px; -webkit-overflow-scrolling: touch; }
+  .kn-rag thead, .kn-rag tbody, .kn-rag tr { display: revert; }
+
+  /* Contain all direct article children */
+  .kn-article > * { max-width: 100%; box-sizing: border-box; }
 
   /* ---------- formula blocks: allow horizontal scroll, no clip ---------- */
   .kn-formula { overflow-x: auto; font-size: 12px; }
