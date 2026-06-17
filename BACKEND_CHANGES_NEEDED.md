@@ -170,3 +170,33 @@ No other backend actions need changes for these items.
 ```
 
 If returning full items is too large for the list call, add a separate `GET ?action=getauditresult&id=<projectId>&auditId=<auditId>` endpoint instead. The frontend currently uses a client-side localStorage cache for items fetched in-session; the Drive-backed retrieval is the fallback for results fetched on a fresh page load.
+
+---
+
+## Fix 4 — Lin chat system context: 10 → 14 signal modules
+
+**Context:** The Lin chat assistant's system prompt lives in `Code.gs` (not in this
+repo), so the model-count reference and the new-module descriptions must be
+updated there. The platform now has **14** signal modules, not 10 — the four new
+ones (11–14) are evidence-combination and uncertainty-reasoning methods that run
+entirely client-side.
+
+**Required backend change:** in the Lin chat system/context prompt, update the
+module-count reference from 10 to 14 and add a short description of Modules 11–14
+so Lin can answer questions about them. Suggested wording to insert verbatim:
+
+> The platform has 14 signal modules. Modules 11–14 are evidence combination and
+> uncertainty reasoning methods: Module 11 uses Dempster-Shafer evidence theory to
+> combine signal belief masses; Module 12 uses Rough Sets to classify projects into
+> definite, borderline, or indeterminate zones; Module 13 uses Neutrosophic Logic
+> to measure truth, indeterminacy, and falsity across signals; Module 14 uses
+> Interval-valued Fuzzy Sets to account for measurement uncertainty in EVM inputs.
+
+No client change is required for this fix — the modules already compute and render
+client-side (`simulations.js`, `deepdive.js`, `modules.js`, `knowledge.js`). This
+note only tracks the matching backend prompt update.
+
+**Module numbering reference (for the prompt):** 01 Monte Carlo EAC · 02 CUSUM ·
+03 Document Risk · 04 PERT · 05 Line of Balance · 06 CCPM · 07 Reference Class
+Forecasting · 08 DSM · 09 ABM Governance · 10 Signal Synthesis · 11 Dempster-Shafer ·
+12 Rough Sets · 13 Neutrosophic Logic · 14 Interval-valued Fuzzy Sets.

@@ -437,6 +437,12 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
   border: 1px dashed var(--line-strong); border-radius: var(--radius-md);
   padding: 10px 14px; margin: 0 0 16px;
 }
+.mod-group-head {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--eyebrow); margin: 22px 0 12px; padding-bottom: 6px;
+  border-bottom: 1px solid var(--line-strong);
+}
+.mod-group-head:first-child { margin-top: 4px; }
 .mod-card { margin-bottom: 18px; }
 .mod-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .mod-num { font-family: var(--font-mono); font-size: 11px; letter-spacing: .16em; color: var(--eyebrow); }
