@@ -853,24 +853,47 @@
 
   function simModules(project) {
     const payload = project.simulationSignals;
-    const arr = payload && Array.isArray(payload.signal_array) ? payload.signal_array : null;
-    if (!arr || !arr.length) return { low: "", dst: "", synth: "" };
-    const pert   = fByMethod(arr, "PERT_Network_Criticality");
-    const lob    = fByMethod(arr, "Line_of_Balance_Velocity");
-    const ccpm   = fByMethod(arr, "CCPM_Buffer_Health");
-    const rcf    = fByMethod(arr, "Reference_Class_Forecasting");
-    const dsm    = fByMethod(arr, "DSM_Rework_Propagation");
-    const dst    = fByMethod(arr, "DST_Evidence_Combination");
-    const rough  = fByMethod(arr, "Rough_Sets_Classification");
-    const neutro = fByMethod(arr, "Neutrosophic_Logic");
-    const ifs    = fByMethod(arr, "Interval_Fuzzy_Sets");
-    const low    = (pert ? m04(pert) : "") + (lob ? m05(lob) : "") + (ccpm ? m06(ccpm) : "") +
-                   (rcf ? m07(rcf) : "") + (dsm ? m08(dsm) : "");
-    const dstHtml   = dst    ? m11(dst,    project) : "";
-    const roughHtml = rough  ? m12(rough)           : "";
-    const neutroHtml = neutro ? m13(neutro)          : "";
-    const ifsHtml   = ifs    ? m14(ifs)             : "";
-    const synthHtml = synthComparisonPanel(project, payload);
+    const baseArr = payload && Array.isArray(payload.signal_array) ? payload.signal_array : null;
+    if (!baseArr || !baseArr.length) return { low: "", dst: "", rough: "", neutro: "", ifs: "", synth: "" };
+
+    const pert = fByMethod(baseArr, "PERT_Network_Criticality");
+    const lob  = fByMethod(baseArr, "Line_of_Balance_Velocity");
+    const ccpm = fByMethod(baseArr, "CCPM_Buffer_Health");
+    const rcf  = fByMethod(baseArr, "Reference_Class_Forecasting");
+    const dsm  = fByMethod(baseArr, "DSM_Rework_Propagation");
+
+    // Modules 11-14 read the assembled signal package (evm/mc/cusum/doc), not the
+    // raw signalInputs. Older persisted signal_arrays (demo seeds and pre-update
+    // ingests) only carry Modules 04-08, so compute the evidence-combination
+    // models live from project.signals when they are absent — the same fallback
+    // the portfolio Signals page uses, so both views always agree.
+    const S = window.LinSimulations || {};
+    const si = project.signalInputs || {};
+    const es = project.signals || {};
+    const resolve = (method, fn) => {
+      let sig = fByMethod(baseArr, method);
+      if (!sig && typeof fn === "function") { try { sig = fn(); } catch (e) { sig = null; } }
+      return sig;
+    };
+    const dst    = resolve("DST_Evidence_Combination", S.runDST          && (() => S.runDST(si, es)));
+    const rough  = resolve("Rough_Sets_Classification", S.runRoughSets     && (() => S.runRoughSets(es)));
+    const neutro = resolve("Neutrosophic_Logic",        S.runNeutrosophic  && (() => S.runNeutrosophic(es)));
+    const ifs    = resolve("Interval_Fuzzy_Sets",       S.runIntervalFuzzy && (() => S.runIntervalFuzzy(es)));
+
+    const low = (pert ? m04(pert) : "") + (lob ? m05(lob) : "") + (ccpm ? m06(ccpm) : "") +
+                (rcf ? m07(rcf) : "") + (dsm ? m08(dsm) : "");
+    const dstHtml    = dst    ? m11(dst, project) : "";
+    const roughHtml  = rough  ? m12(rough)        : "";
+    const neutroHtml = neutro ? m13(neutro)       : "";
+    const ifsHtml    = ifs    ? m14(ifs)          : "";
+
+    // Feed the comparison panel the same resolved set the cards rendered: the
+    // persisted array plus any live-computed evidence modules not already in it.
+    const extra = [dst, rough, neutro, ifs]
+      .filter(Boolean)
+      .filter((s) => !fByMethod(baseArr, s.method_class));
+    const synthHtml = synthComparisonPanel(project, { signal_array: baseArr.concat(extra) });
+
     return { low, dst: dstHtml, rough: roughHtml, neutro: neutroHtml, ifs: ifsHtml, synth: synthHtml };
   }
 
