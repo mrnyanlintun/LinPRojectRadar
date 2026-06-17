@@ -1108,78 +1108,10 @@ body.nav-open .nav-rail { transform: translateX(0); }
    box gets clipped. */
 .kn-flow-wrap { overflow-x: auto; margin: 10px 0 16px; }
 .kn-flow-wrap .kn-svg { margin: 0; max-height: none; min-width: 100%; }
-.kn-svg-flow-t { font-family: var(--font-mono); font-size: 12px; }
-.kn-svg-flow-cap { font-family: var(--font-body); font-size: 11.5px; font-style: italic; }
-
-/* ============================================================
-   THEME — CYBERPUNK  (neon on black, scanlines, glow accents)
-   ============================================================ */
-body[data-theme="cyberpunk"] {
-  --page-bg: #0a0008;
-  --surface: rgba(15, 0, 13, .85);
-  --surface-soft: rgba(20, 0, 16, .85);
-  --line: rgba(255, 0, 255, .35);
-  --line-strong: rgba(255, 0, 255, .55);
-  --text: #f5b6ff;
-  --muted: #cc7acc;
-  --faint: #8a4f8a;
-  --phosphor: #00ffff;
-  --radar-amber: #ff6600;
-  --alarm-red: #ff003c;
-  --clear-green: #00ff41;
-  --eyebrow: #ff00ff;
-
-  --sector-design: #ff00ff;
-  --sector-construction: #00ffff;
-  --sector-hybrid: #ff6600;
-
-  --zone-green: rgba(0, 255, 65, .14);
-  --zone-amber: rgba(255, 102, 0, .15);
-  --zone-red: rgba(255, 0, 60, .18);
-  --zone-crit: rgba(255, 0, 60, .26);
-  --ring-line: rgba(0, 255, 255, .35);
-
-  --grid-opacity: .55;
-  --glass-blur: blur(14px) saturate(140%);
-  --shadow: 0 18px 54px rgba(0, 0, 0, .65), 0 0 24px rgba(255, 0, 255, .15);
-}
-body[data-theme="cyberpunk"] { font-family: var(--font-mono); letter-spacing: .01em; }
-body[data-theme="cyberpunk"]::before {
-  background-image:
-    repeating-linear-gradient(0deg, rgba(255, 0, 255, .055) 0 1px, transparent 1px 3px),
-    linear-gradient(rgba(0, 255, 255, .06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 255, 255, .06) 1px, transparent 1px);
-  background-size: auto, 44px 44px, 44px 44px;
-}
-body[data-theme="cyberpunk"] .panel {
-  border-color: rgba(0, 255, 255, .35);
-  box-shadow: 0 0 0 1px rgba(255, 0, 255, .12) inset, 0 0 18px rgba(0, 255, 255, .12);
-}
-body[data-theme="cyberpunk"] .eyebrow,
-body[data-theme="cyberpunk"] .nav-logo-text {
-  text-shadow: 0 0 6px currentColor, 0 0 14px color-mix(in srgb, currentColor 40%, transparent);
-}
-body[data-theme="cyberpunk"] h1, body[data-theme="cyberpunk"] h2 {
-  text-shadow: 0 0 4px color-mix(in srgb, var(--phosphor) 50%, transparent);
-}
-body[data-theme="cyberpunk"] .btn.primary {
-  box-shadow: 0 0 0 1px var(--phosphor), 0 0 14px color-mix(in srgb, var(--phosphor) 40%, transparent);
-}
-body[data-theme="cyberpunk"] .pill,
-body[data-theme="cyberpunk"] .state-badge,
-body[data-theme="cyberpunk"] .li-state {
-  text-shadow: 0 0 4px currentColor;
-}
-@keyframes cp-blip-pulse {
-  0% { filter: drop-shadow(0 0 1px currentColor); }
-  50% { filter: drop-shadow(0 0 8px currentColor) drop-shadow(0 0 14px currentColor); }
-  100% { filter: drop-shadow(0 0 1px currentColor); }
-}
-body[data-theme="cyberpunk"] .blip-dot { animation: cp-blip-pulse 2.4s ease-in-out infinite; }
-body[data-theme="cyberpunk"] .blip-label { fill: var(--phosphor); }
-@media (prefers-reduced-motion: reduce) {
-  body[data-theme="cyberpunk"] .blip-dot { animation: none; }
-}
+.kn-svg-flow-t { font-family: var(--font-mono); font-size: 14px; }
+.kn-svg-flow-cap { font-family: var(--font-body); font-size: 13px; font-style: italic; }
+/* Let the 2-row flow diagram render at its natural size — don't cap height. */
+.kn-flow-wrap .kn-svg-flow { max-height: none; }
 
 /* ============================================================
    THEME — NEW YORK  (Manhattan twilight + gold Art Deco + Liberty bronze)

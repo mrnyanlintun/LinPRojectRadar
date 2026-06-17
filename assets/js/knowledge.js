@@ -289,49 +289,77 @@
 
   /* ---------- inline SVG illustrations (dark + light theme aware) ---------- */
 
-  // PCEIF signal-to-action flow (Topic 1) — 7 boxes, left-to-right, no overlap.
+  // PCEIF signal-to-action flow (Topic 1) — two rows so the diagram is large
+  // and readable: 4 boxes across the top, 3 boxes centred underneath, with an
+  // L-bend connector from box 4 down to box 5.
   function svgPceifFlow() {
-    const labels = [
-      "Documents + Schedule + Cost", "10 Signal Modules", "Signal Synthesis",
-      "Conflict Classification", "Governance Decision Card",
-      "Named Human Approval", "Audit Record",
-    ];
-    const bw = 180, bh = 60, gap = 50, pad = 16;
-    const w = labels.length * bw + (labels.length - 1) * gap + pad * 2;
-    const top = 24, h = top + bh + 60;
-    const arrowReserve = 12; // leave room for the arrowhead before next box
-    let out = `<svg viewBox="0 0 ${w} ${h}" class="kn-svg kn-svg-flow" role="img" aria-label="PCEIF signal-to-action flow">`;
-    out += `<defs><marker id="kn-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--phosphor)"/></marker></defs>`;
+    const row1 = ["Documents + Schedule + Cost", "10 Signal Modules", "Signal Synthesis", "Conflict Classification"];
+    const row2 = ["Governance Decision Card", "Named Human Approval", "Audit Record"];
+    const bw = 200, bh = 70, gap = 40, pad = 24;
+    const rowGap = 80;             // vertical space between rows
+    const captionGap = 36;
+    const row1Width = row1.length * bw + (row1.length - 1) * gap;
+    const row2Width = row2.length * bw + (row2.length - 1) * gap;
+    const w = Math.max(row1Width, row2Width) + pad * 2;
+    const row1Y = 28, row2Y = row1Y + bh + rowGap;
+    const h = row2Y + bh + captionGap + 24;
+    const row1X = pad + (w - pad * 2 - row1Width) / 2;
+    const row2X = pad + (w - pad * 2 - row2Width) / 2;
+    const arrowReserve = 12;
 
-    labels.forEach((l, i) => {
-      const x = pad + i * (bw + gap);
-      // box — accent border, tinted fill
-      out += `<rect x="${x}" y="${top}" width="${bw}" height="${bh}" rx="8"
+    let out = `<svg viewBox="0 0 ${w} ${h}" class="kn-svg kn-svg-flow" role="img" aria-label="PCEIF signal-to-action flow (two rows)">`;
+    out += `<defs><marker id="kn-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--phosphor)"/></marker></defs>`;
+
+    // Helper: draw a labelled box with wrapped text + a right-pointing arrow to
+    // the next box in the same row.
+    function drawBox(label, x, y, isLastInRow) {
+      let s = "";
+      s += `<rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="10"
         fill="color-mix(in srgb, var(--phosphor) 10%, var(--surface-soft))"
-        stroke="var(--phosphor)" stroke-width="1.5"></rect>`;
-      // wrap at ~22 chars per line (fits 180px wide box at 12px monospace)
-      const words = l.split(" "); const lines = []; let cur = "";
+        stroke="var(--phosphor)" stroke-width="2"></rect>`;
+      // wrap at ~20 chars per line (14px text fits 200-px-wide box with padding)
+      const words = label.split(" "); const lines = []; let cur = "";
       words.forEach((wd) => {
-        if ((cur + " " + wd).trim().length > 22) { if (cur.trim()) lines.push(cur.trim()); cur = wd; }
+        if ((cur + " " + wd).trim().length > 20) { if (cur.trim()) lines.push(cur.trim()); cur = wd; }
         else cur += " " + wd;
       });
       if (cur.trim()) lines.push(cur.trim());
-      const cy = top + bh / 2;
-      const startY = cy - ((lines.length - 1) * 14) / 2 + 4;
+      const cy = y + bh / 2;
+      const startY = cy - ((lines.length - 1) * 16) / 2 + 5;
       lines.forEach((ln, j) => {
-        out += `<text x="${x + bw / 2}" y="${(startY + j * 14).toFixed(1)}" text-anchor="middle" class="kn-svg-flow-t" fill="var(--text)">${esc(ln)}</text>`;
+        s += `<text x="${x + bw / 2}" y="${(startY + j * 16).toFixed(1)}" text-anchor="middle" class="kn-svg-flow-t" fill="var(--text)">${esc(ln)}</text>`;
       });
-      // right-pointing arrow into the next box (always left → right)
-      if (i < labels.length - 1) {
-        const ax1 = x + bw + 3;
+      if (!isLastInRow) {
+        const ax1 = x + bw + 4;
         const ax2 = x + bw + gap - arrowReserve;
-        const ay = cy;
-        out += `<line x1="${ax1}" y1="${ay}" x2="${ax2}" y2="${ay}" stroke="var(--phosphor)" stroke-width="1.8" marker-end="url(#kn-arrow)"></line>`;
+        s += `<line x1="${ax1}" y1="${cy}" x2="${ax2}" y2="${cy}" stroke="var(--phosphor)" stroke-width="2" marker-end="url(#kn-arrow)"></line>`;
       }
+      return s;
+    }
+
+    // Row 1 (4 boxes)
+    row1.forEach((l, i) => {
+      out += drawBox(l, row1X + i * (bw + gap), row1Y, i === row1.length - 1);
+    });
+    // Row 2 (3 boxes, centred)
+    row2.forEach((l, i) => {
+      out += drawBox(l, row2X + i * (bw + gap), row2Y, i === row2.length - 1);
     });
 
-    // caption
-    out += `<text x="${w / 2}" y="${h - 18}" text-anchor="middle" class="kn-svg-flow-cap" fill="var(--faint)">The system surfaces a recommendation. A named human records the decision.</text>`;
+    // L-bend connector from box 4 (end of row 1) down to box 5 (start of row 2).
+    // Three-segment polyline with a single arrowhead at the end of the last leg
+    // (which is vertical, so the arrowhead correctly points DOWN into box 5).
+    const box4CenterX = row1X + 3 * (bw + gap) + bw / 2;       // bottom-centre of box 4
+    const box4BottomY = row1Y + bh;
+    const box5CenterX = row2X + bw / 2;                        // top-centre of box 5
+    const box5TopY = row2Y;
+    const midY = box4BottomY + (box5TopY - box4BottomY) / 2;
+    const tailReserve = 10;                                    // leave room for arrowhead
+    out += `<polyline points="${box4CenterX},${box4BottomY + 2} ${box4CenterX},${midY} ${box5CenterX},${midY} ${box5CenterX},${box5TopY - tailReserve}"
+      stroke="var(--phosphor)" stroke-width="2" fill="none" marker-end="url(#kn-arrow)"></polyline>`;
+
+    // Italic caption
+    out += `<text x="${w / 2}" y="${row2Y + bh + captionGap}" text-anchor="middle" class="kn-svg-flow-cap" fill="var(--faint)">The system surfaces a recommendation. A named human records the decision.</text>`;
     return `<div class="kn-flow-wrap">${out}</svg></div>`;
   }
 
