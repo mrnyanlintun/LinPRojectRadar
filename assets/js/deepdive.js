@@ -21,6 +21,9 @@
      09  ABM Governance Layer
      10  Signal Synthesis (conservative dominance)
      11  Dempster-Shafer Evidence Combination (simulation)
+     12  Rough Set Theory Classification   (simulation)
+     13  Neutrosophic Logic                (simulation)
+     14  Interval-valued Fuzzy Sets        (simulation)
    ============================================================ */
 
 (function () {
@@ -648,20 +651,219 @@
       rule("DST RULE: Belief masses assigned per signal class performance against thresholds. Dempster combination rule applied iteratively across four sources. Final state = highest belief mass. Conflict mass > 30% = high inter-signal disagreement."));
   }
 
+  /* Module 12 chart: lower/upper/boundary zone horizontal stacked bar. */
+  function roughSetsChart(s) {
+    const h = 96, pad = 40, barY = 32, barH = 24, span = W - pad - 24;
+    const lower = s.lower_approximation || [];
+    const upper = s.upper_approximation || [];
+    const boundary = s.boundary_region || [];
+    const states = ["Green", "Amber", "Red"];
+    const cols = { Green: COLOR.green, Amber: COLOR.amber, Red: COLOR.red };
+    let x = pad, bars = "", ticks = "";
+    const seg = span / 3;
+    states.forEach(function (state, i) {
+      const inLower = lower.indexOf(state) >= 0;
+      const inUpper = upper.indexOf(state) >= 0;
+      const inBoundary = boundary.indexOf(state) >= 0;
+      const col = cols[state];
+      const op = inLower ? "0.85" : inBoundary ? "0.45" : "0.12";
+      bars += `<rect x="${(pad + i * seg).toFixed(1)}" y="${barY}" width="${(seg - 3).toFixed(1)}" height="${barH}" rx="3" fill="${col}" opacity="${op}"></rect>`;
+      const zone = inLower ? "Definite" : inBoundary ? "Borderline" : "Outside";
+      ticks += `<text x="${(pad + i * seg + seg / 2).toFixed(1)}" y="${barY + barH / 2 + 5}" text-anchor="middle" class="mod-axis" fill="var(--text)" font-size="9">${zone}</text>`;
+    });
+    return svgo(h, "Rough Sets lower/upper/boundary approximation") +
+      bars + ticks +
+      `<text x="${pad}" y="${barY + barH + 16}" class="mod-axis" fill="${COLOR.green}">Green</text>` +
+      `<text x="${(pad + seg + seg / 2).toFixed(1)}" y="${barY + barH + 16}" text-anchor="middle" class="mod-axis" fill="${COLOR.amber}">Amber</text>` +
+      `<text x="${(pad + 2 * seg + seg - 2).toFixed(1)}" y="${barY + barH + 16}" text-anchor="end" class="mod-axis" fill="${COLOR.red}">Red</text>` +
+      "</svg>";
+  }
+
+  /* Module 13 chart: T/I/F triple horizontal bars. */
+  function neutroChart(s) {
+    const h = 116, pad = 70, barY = 20, barH = 18, rowGap = 26, span = W - pad - 40;
+    const rows = [
+      { label: "Truth (T)", val: s.T || 0, col: COLOR.green },
+      { label: "Indeterminacy (I)", val: s.I || 0, col: COLOR.amber },
+      { label: "Falsity (F)", val: s.F || 0, col: COLOR.red }
+    ];
+    return svgo(h, "Neutrosophic T/I/F membership bars") +
+      rows.map(function (r, i) {
+        const y = barY + i * rowGap;
+        const w = (r.val * span).toFixed(1);
+        return `<text x="4" y="${y + 13}" class="mod-axis" fill="var(--text)">${r.label}</text>` +
+          `<rect x="${pad}" y="${y}" width="${span}" height="${barH}" rx="3" fill="var(--surface-soft)" stroke="var(--ring-line)"></rect>` +
+          `<rect x="${pad}" y="${y}" width="${w}" height="${barH}" rx="3" fill="${r.col}" opacity="0.8"></rect>` +
+          `<text x="${(pad + parseFloat(w) + 5).toFixed(1)}" y="${y + 13}" class="mod-axis" fill="${r.col}">${Math.round(r.val * 100)}%</text>`;
+      }).join("") +
+      "</svg>";
+  }
+
+  /* Module 14 chart: interval bars for Green/Amber/Red showing lower-upper spread. */
+  function ifChart(s) {
+    const h = 116, pad = 70, barY = 20, barH = 18, rowGap = 26, span = W - pad - 40;
+    const rows = [
+      { label: "Green interval", vals: s.green_interval || [0, 0], col: COLOR.green },
+      { label: "Amber interval", vals: s.amber_interval || [0, 0], col: COLOR.amber },
+      { label: "Red interval",   vals: s.red_interval   || [0, 0], col: COLOR.red   }
+    ];
+    return svgo(h, "Interval-valued Fuzzy membership ranges") +
+      rows.map(function (r, i) {
+        const y = barY + i * rowGap;
+        const x0 = (pad + r.vals[0] * span).toFixed(1);
+        const x1 = (pad + r.vals[1] * span).toFixed(1);
+        const wRange = Math.max(0, r.vals[1] - r.vals[0]) * span;
+        return `<text x="4" y="${y + 13}" class="mod-axis" fill="var(--text)">${r.label}</text>` +
+          `<rect x="${pad}" y="${y}" width="${span}" height="${barH}" rx="3" fill="var(--surface-soft)" stroke="var(--ring-line)"></rect>` +
+          `<rect x="${x0}" y="${y}" width="${wRange.toFixed(1)}" height="${barH}" rx="3" fill="${r.col}" opacity="0.7"></rect>` +
+          `<line x1="${x0}" y1="${y - 3}" x2="${x0}" y2="${y + barH + 3}" stroke="${r.col}" stroke-width="1.5"></line>` +
+          `<line x1="${x1}" y1="${y - 3}" x2="${x1}" y2="${y + barH + 3}" stroke="${r.col}" stroke-width="1.5"></line>` +
+          `<text x="${(pad + r.vals[1] * span + 5).toFixed(1)}" y="${y + 13}" class="mod-axis" fill="${r.col}">[${Math.round(r.vals[0] * 100)}, ${Math.round(r.vals[1] * 100)}]%</text>`;
+      }).join("") +
+      "</svg>";
+  }
+
+  function m12(s) {
+    const st = simCls(s.status_color);
+    const votes = s.signal_votes || {};
+    const total = s.total_signals || 1;
+    return panel("12", "Rough Sets Classification", st,
+      note("Rough Set Theory classifies the project using lower and upper approximations. The lower approximation contains states ALL signals definitively support (>75% agreement). The upper approximation contains states ANY signal supports. The boundary region — upper minus lower — is the indeterminate zone where evidence is insufficient to classify with certainty.") +
+      roughSetsChart(s) +
+      `<div class="dd-grid">${
+        metricBox("Classification", (s.classification || "Unknown").length > 22 ? (s.classification || "").slice(0, 21) + "…" : (s.classification || "Unknown"), st) +
+        metricBox("Lower approx.", (s.lower_approximation || []).join(", ") || "None", st) +
+        metricBox("Boundary region", (s.boundary_region || []).join(", ") || "None", (s.boundary_region || []).length ? "amber" : "green") +
+        metricBox("Green votes", String(votes.Green || 0) + "/" + total, votes.Green >= total * 0.75 ? "green" : "amber") +
+        metricBox("Amber votes", String(votes.Amber || 0) + "/" + total, votes.Amber > 0 ? "amber" : "green") +
+        metricBox("Red votes", String(votes.Red || 0) + "/" + total, votes.Red > 0 ? "red" : "green")
+      }</div>` +
+      reasons([
+        `Rough Sets classifies this project as "${s.classification || "Unknown"}" based on ${total} signal votes (Green: ${votes.Green || 0}, Amber: ${votes.Amber || 0}, Red: ${votes.Red || 0}).`,
+        `Lower approximation (definite states, > 75% agreement): ${(s.lower_approximation || []).join(", ") || "none"}. Boundary region (indeterminate): ${(s.boundary_region || []).join(", ") || "none"}.`
+      ], st) +
+      rule("GREEN definite if > 75% of signals are green; RED definite if > 75% red; otherwise boundary / borderline. Boundary region is the indeterminate zone requiring additional evidence."));
+  }
+
+  function m13(s) {
+    const st = simCls(s.status_color);
+    const T = Math.round((s.T || 0) * 100), I = Math.round((s.I || 0) * 100), F = Math.round((s.F || 0) * 100);
+    return panel("13", "Neutrosophic Logic", st,
+      note("Neutrosophic Logic extends fuzzy logic with three independent membership dimensions: Truth (T), Indeterminacy (I), and Falsity (F). Unlike classical logic where T + F = 1, neutrosophic values need not sum to 1 — genuine uncertainty is a separate dimension, not a residual of truth and falsity. High indeterminacy signals measurement ambiguity rather than a positive or negative finding.") +
+      neutroChart(s) +
+      `<div class="dd-grid">${
+        metricBox("Truth (T)", T + "%", T >= 70 ? "green" : T >= 50 ? "amber" : "red") +
+        metricBox("Indeterminacy (I)", I + "%", I > 30 ? "red" : I > 15 ? "amber" : "green") +
+        metricBox("Falsity (F)", F + "%", F < 10 ? "green" : F < 20 ? "amber" : "red") +
+        metricBox("Indeterminacy level", s.indeterminacy_level || "Low", s.indeterminacy_level === "High" ? "red" : s.indeterminacy_level === "Moderate" ? "amber" : "green")
+      }</div>` +
+      reasons([
+        `Neutrosophic combines ${(s.signal_components || []).length} signal source(s) via disjunctive combination (T) and conjunctive combination (I, F).`,
+        `T=${T}%, I=${I}%, F=${F}%. Indeterminacy level: ${s.indeterminacy_level || "Low"} — ${I > 30 ? "high uncertainty, governance attention warranted" : I > 15 ? "moderate uncertainty in evidence" : "evidence is sufficiently conclusive"}.`
+      ], st) +
+      rule("Status set by signal source majority (red if >= 2 red sources, amber if >= 2 amber, else green). Indeterminacy > 30% upgrades green to amber — the uncertainty itself is a governance signal."));
+  }
+
+  function m14(s) {
+    const st = simCls(s.status_color);
+    const gi = (s.green_interval || [0, 0]).map((v) => Math.round(v * 100));
+    const ai = (s.amber_interval || [0, 0]).map((v) => Math.round(v * 100));
+    const ri = (s.red_interval   || [0, 0]).map((v) => Math.round(v * 100));
+    return panel("14", "Interval-valued Fuzzy Sets", st,
+      note("Interval-valued Fuzzy Sets represent membership as a range [lower, upper] rather than a single value, reflecting measurement uncertainty in the input signals. The SoV document introduces approximately +/-2% earned-value uncertainty; pay applications introduce approximately +/-1% cost uncertainty. The width of the interval represents how much the classification can shift given realistic input variation.") +
+      ifChart(s) +
+      `<div class="dd-grid">${
+        metricBox("Green interval", `[${gi[0]}, ${gi[1]}]%`, gi[1] > 50 ? "green" : "amber") +
+        metricBox("Amber interval", `[${ai[0]}, ${ai[1]}]%`, ai[1] > 40 ? "amber" : "green") +
+        metricBox("Red interval",   `[${ri[0]}, ${ri[1]}]%`, ri[1] > 40 ? "red" : ri[1] > 20 ? "amber" : "green") +
+        metricBox("Uncertainty width", (s.uncertainty_width || 0).toFixed(2), s.uncertainty_level === "High" ? "red" : s.uncertainty_level === "Moderate" ? "amber" : "green") +
+        metricBox("Uncertainty level", s.uncertainty_level || "Low", s.uncertainty_level === "High" ? "red" : s.uncertainty_level === "Moderate" ? "amber" : "green")
+      }</div>` +
+      reasons([
+        `Interval-valued membership reflects +/-2% SoV and +/-1% pay-application input uncertainty. Green [${gi[0]}, ${gi[1]}]%, Amber [${ai[0]}, ${ai[1]}]%, Red [${ri[0]}, ${ri[1]}]%.`,
+        `Uncertainty width ${(s.uncertainty_width || 0).toFixed(2)}: ${s.uncertainty_level || "Low"} — ${s.uncertainty_level === "High" ? "wide interval means input noise could shift the classification" : "interval width is within acceptable precision for this signal package"}.`
+      ], st) +
+      rule("Status = highest midpoint across Green/Amber/Red intervals. Uncertainty level HIGH if combined interval width > 0.30, MODERATE if > 0.15 — corresponds to input noise of roughly +/-3 percentage points on CPI."));
+  }
+
+  /* Synthesis comparison panel — Modules 10–14 agreement table. */
+  function synthComparisonPanel(project, sims) {
+    const arr = sims && sims.signal_array;
+    if (!arr) return "";
+
+    const s10 = (function () {
+      const s = project.signals;
+      if (!s) return null;
+      const statuses = [s.evm.status, s.mc.status, s.cusum.status, s.doc.status];
+      const redN = statuses.filter((x) => x === "red").length;
+      const ambN = statuses.filter((x) => x === "amber").length;
+      return redN >= 2 ? "Red" : (redN || ambN) ? "Amber" : "Green";
+    })();
+
+    const get = function (method) {
+      const sig = fByMethod(arr, method);
+      return sig ? (sig.status_color || sig.status || "—") : null;
+    };
+    const s11 = get("DST_Evidence_Combination");
+    const s12 = get("Rough_Sets_Classification");
+    const s13 = get("Neutrosophic_Logic");
+    const s14 = get("Interval_Fuzzy_Sets");
+
+    const entries = [
+      { num: "10", label: "Signal Synthesis", val: s10 },
+      { num: "11", label: "DST Evidence", val: s11 },
+      { num: "12", label: "Rough Sets", val: s12 },
+      { num: "13", label: "Neutrosophic", val: s13 },
+      { num: "14", label: "Interval Fuzzy", val: s14 }
+    ].filter(function (e) { return e.val; });
+
+    if (!entries.length) return "";
+
+    const vals = entries.map(function (e) { return String(e.val || "").toLowerCase(); });
+    const agree = vals.every(function (v) { return v === vals[0]; });
+    const redCount   = vals.filter(function (v) { return v === "red"; }).length;
+    const amberCount = vals.filter(function (v) { return v === "amber"; }).length;
+    const overallSt  = redCount >= 2 ? "red" : amberCount >= 2 ? "amber" : "green";
+
+    const rows = entries.map(function (e) {
+      const c = cls(e.val);
+      return `<tr><td class="dd-cmp-mod">Module ${e.num} — ${esc(e.label)}</td>` +
+        `<td><span class="dd-verdict status-${c}" style="display:inline-flex;gap:4px;align-items:center"><i></i>${esc(String(e.val).toUpperCase())}</span></td></tr>`;
+    }).join("");
+
+    const summaryText = agree
+      ? `All ${entries.length} synthesis methods agree: ${String(entries[0].val).toUpperCase()}. Strong consensus across evidence frameworks.`
+      : `Methods diverge: ${redCount} Red, ${amberCount} Amber, ${vals.length - redCount - amberCount} Green. Divergence between frameworks is itself a governance signal worth noting in the decision record.`;
+
+    return `<section class="panel dd-panel status-${overallSt}" aria-label="Synthesis comparison">
+      <div class="dd-head"><b>Synthesis Methods Comparison — Modules 10–14</b></div>
+      <p class="dd-chart-note">Agreement check across all synthesis and evidence methods. Conservative dominance (Module 10) represents the governance baseline; Modules 11–14 provide independent cross-checks using different evidence frameworks.</p>
+      <table class="dd-cmp-table">${rows}</table>
+      <p class="dd-chart-note">${esc(summaryText)}</p>
+    </section>`;
+  }
+
   function simModules(project) {
     const payload = project.simulationSignals;
     const arr = payload && Array.isArray(payload.signal_array) ? payload.signal_array : null;
-    if (!arr || !arr.length) return { low: "", dst: "" };
-    const pert = fByMethod(arr, "PERT_Network_Criticality");
-    const lob  = fByMethod(arr, "Line_of_Balance_Velocity");
-    const ccpm = fByMethod(arr, "CCPM_Buffer_Health");
-    const rcf  = fByMethod(arr, "Reference_Class_Forecasting");
-    const dsm  = fByMethod(arr, "DSM_Rework_Propagation");
-    const dst  = fByMethod(arr, "DST_Evidence_Combination");
-    const low  = (pert ? m04(pert) : "") + (lob ? m05(lob) : "") + (ccpm ? m06(ccpm) : "") +
-                 (rcf ? m07(rcf) : "") + (dsm ? m08(dsm) : "");
-    const dstHtml = dst ? m11(dst, project) : "";
-    return { low, dst: dstHtml };
+    if (!arr || !arr.length) return { low: "", dst: "", synth: "" };
+    const pert   = fByMethod(arr, "PERT_Network_Criticality");
+    const lob    = fByMethod(arr, "Line_of_Balance_Velocity");
+    const ccpm   = fByMethod(arr, "CCPM_Buffer_Health");
+    const rcf    = fByMethod(arr, "Reference_Class_Forecasting");
+    const dsm    = fByMethod(arr, "DSM_Rework_Propagation");
+    const dst    = fByMethod(arr, "DST_Evidence_Combination");
+    const rough  = fByMethod(arr, "Rough_Sets_Classification");
+    const neutro = fByMethod(arr, "Neutrosophic_Logic");
+    const ifs    = fByMethod(arr, "Interval_Fuzzy_Sets");
+    const low    = (pert ? m04(pert) : "") + (lob ? m05(lob) : "") + (ccpm ? m06(ccpm) : "") +
+                   (rcf ? m07(rcf) : "") + (dsm ? m08(dsm) : "");
+    const dstHtml   = dst    ? m11(dst,    project) : "";
+    const roughHtml = rough  ? m12(rough)           : "";
+    const neutroHtml = neutro ? m13(neutro)          : "";
+    const ifsHtml   = ifs    ? m14(ifs)             : "";
+    const synthHtml = synthComparisonPanel(project, payload);
+    return { low, dst: dstHtml, rough: roughHtml, neutro: neutroHtml, ifs: ifsHtml, synth: synthHtml };
   }
 
   /* ---------- entry point ---------- */
@@ -678,11 +880,13 @@
     }
     const sims = simModules(project);
     root.innerHTML =
-      `<p class="mod-banner">Modules 01–03 are quantitative analyses applied to this project's extracted signal inputs. Modules 04–08 are client-side simulation models. Modules 09–11 apply the PCEIF rule, decision framework, and evidence synthesis.</p>` +
+      `<p class="mod-banner">Modules 01–03 are quantitative analyses of this project's extracted signal inputs. Modules 04–08 are schedule and cost simulation models. Modules 09–10 apply the PCEIF governance decision framework. Modules 11–14 are independent evidence synthesis methods cross-checking the Module 10 result.</p>` +
       m01(project) + m02(project) + m03(project) +
       sims.low +
       m09(project) + m10(project) +
-      sims.dst;
+      sims.dst +
+      sims.rough + sims.neutro + sims.ifs +
+      sims.synth;
   }
 
   window.LinDeepDive = { render };

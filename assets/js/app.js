@@ -437,7 +437,7 @@
     return `<span class="pill pill-${status}">${map[status] || status}</span>`;
   }
 
-  /* Summarize the six client-side simulation models (PERT/LOB/CCPM/RCF/DSM/DST)
+  /* Summarize the nine client-side simulation models (PERT/LOB/CCPM/RCF/DSM + DST/RoughSets/Neutrosophic/IFS)
      for the Portfolio views. Returns null when none have run (graceful
      fallback — nothing is shown). */
   function simSummary(p) {
@@ -538,8 +538,8 @@
             ${statusPill(sum.worst)}
           </div>
           <div class="sig-metric">${sum.red} Red · ${sum.amber} Amber · ${sum.green} Green</div>
-          <div class="sig-meta"><span class="sig-method">PERT · LOB · CCPM · RCF · DSM · DST</span></div>
-          <div class="sig-detail">Worst status across the six simulation modules.</div>
+          <div class="sig-meta"><span class="sig-method">PERT · LOB · CCPM · RCF · DSM · DST · Rough Sets · Neutrosophic · Interval Fuzzy</span></div>
+          <div class="sig-detail">Worst status across the nine simulation modules.</div>
         </div>`;
   }
 

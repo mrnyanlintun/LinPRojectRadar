@@ -267,6 +267,24 @@
       title: "Module 11: Dempster-Shafer Evidence Combination (DST)",
       body: "Dempster-Shafer Theory (DST) is a mathematical framework for reasoning under uncertainty when evidence comes from multiple independent sources. Unlike conservative dominance (Module 10), which takes the worst single signal, DST combines all four signal classes into a belief distribution over {Green, Amber, Red, Unknown}. Each source assigns a basic probability assignment (BPA) — a mass function over subsets of the frame of discernment. Dempster's combination rule then merges sources iteratively, redistributing conflict mass. The conflict mass K measures how much the sources disagree: K > 0.3 is flagged as high inter-signal disagreement, which is itself a governance signal. Academic context: Dempster (1967) and Shafer (1976). When DST agrees with Module 10, both methods corroborate each other. When they diverge, the disagreement is a finding: it tells the governance layer that the evidence picture is genuinely ambiguous rather than clear-cut, and that no single framing captures the full risk.",
     },
+    {
+      id: "module12",
+      keywords: ["module 12", "rough sets", "rough set theory", "lower approximation", "upper approximation", "boundary region", "indeterminate", "pawlak"],
+      title: "Module 12: Rough Set Theory Classification",
+      body: "Rough Set Theory (Pawlak, 1982) provides a mathematical framework for classifying objects when available information is incomplete or imprecise. The core insight is that some concepts — like 'this project is Green' — cannot be precisely defined with available attributes. Instead, rough sets define three regions: the lower approximation contains all objects (states) that definitely belong to the concept (over 75% of signals agree); the upper approximation contains all objects that possibly belong; and the boundary region — upper minus lower — is the indeterminate zone where evidence is insufficient to classify with certainty. A project falls in the definite Green region when the preponderance of evidence is unambiguous; it falls in the boundary when signals are mixed and classification is uncertain. A wide boundary region is itself a governance signal: it means the evidence does not yet support a confident classification. Unlike DST (Module 11), rough sets do not assign probability masses — they provide a set-theoretic answer: yes, possibly, or unknown. Thresholds: Definite requires > 75% signal agreement for a state; any support places a state in the upper approximation.",
+    },
+    {
+      id: "module13",
+      keywords: ["module 13", "neutrosophic", "neutrosophic logic", "truth", "indeterminacy", "falsity", "t i f", "smarandache"],
+      title: "Module 13: Neutrosophic Logic",
+      body: "Neutrosophic Logic (Smarandache, 1995) extends fuzzy logic by introducing three independent truth-value dimensions: Truth (T), Indeterminacy (I), and Falsity (F). Unlike classical logic (T + F = 1) and fuzzy logic (T + F = 1 as a constraint), neutrosophic values are independent — T + I + F need not equal 1, and can exceed 1 or be less than 1. This is a deliberate feature: it models genuine epistemic uncertainty as a separate dimension rather than forcing it to be the residual of known truths and falsehoods. In project risk terms: T represents the degree to which the evidence supports a given status; F represents evidence against it; I represents the portion of evidence that is genuinely undetermined or contradictory — measurement noise, missing data, or conflicting signals that cannot be resolved by collecting more of the same kind of data. High indeterminacy (I > 30%) is a governance signal: it means the evidence architecture itself needs strengthening before a confident classification is possible, not just that the project is 'in between' Green and Red. This module combines the four primary signal classes disjunctively for T (union of evidence) and conjunctively for I and F, producing a three-component characterization of the current signal package.",
+    },
+    {
+      id: "module14",
+      keywords: ["module 14", "interval fuzzy", "interval-valued fuzzy", "fuzzy interval", "membership interval", "uncertainty interval", "ifs"],
+      title: "Module 14: Interval-valued Fuzzy Sets",
+      body: "Interval-valued Fuzzy Sets (IVFS) extend classical fuzzy sets by representing membership as a range [lower, upper] rather than a single value. The interval reflects measurement uncertainty in the underlying data — the range of possible membership values given the precision of the inputs. For airport construction EVM, the primary sources of input uncertainty are: Schedule of Values (SoV) line-item accuracy of approximately +/-2% of contract value affecting Earned Value, and Pay Application rounding of approximately +/-1% affecting Actual Cost. These compound into a CPI/SPI uncertainty range of approximately +/-3 percentage points. IVFS propagates this uncertainty through the fuzzy membership functions for Green, Amber, and Red states, producing an interval rather than a point estimate. A wide interval signals that the current input precision is insufficient to reliably distinguish between adjacent states — e.g., a Green/Amber boundary crossing falls within the uncertainty band. The uncertainty width metric summarizes the total interval spread: High (> 0.30 width) means the classification is sensitive to input noise; Moderate (0.15-0.30) means some sensitivity; Low (< 0.15) means the signal package is sufficiently precise for reliable classification. References: Sambuc (1975); Zadeh (1975).",
+    },
   );
 
   /* ---------- Knowledge Library — 11 narrative topics with formulas + SVG ---------- */
@@ -770,8 +788,8 @@
       `,
     },
     {
-      id: "modules-04-08-11",
-      title: "9. Modules 04–08, 11: Extended Simulation Stack",
+      id: "modules-04-08-11-14",
+      title: "9. Modules 04–08, 11–14: Extended Simulation Stack",
       eyebrow: "Quantitative extensions",
       build: () => `
         <p class="kn-lead">Modules 04–08 and 11 cover construction and design risks that EVM does not catch. Each returns a status with an evidence metric that feeds Module 10 (Signal Synthesis).</p>
@@ -873,8 +891,71 @@
 
         <p class="kn-callout">When Module 11 disagrees with Module 10, that disagreement is informative — it means the evidence picture is genuinely ambiguous and no single framing captures the full risk. The governance layer should note the divergence in the audit record.</p>
 
+        <h3>Module 12 — Rough Set Theory Classification</h3>
+        <p>Rough Set Theory (Pawlak, 1982) classifies a project by computing lower and upper approximations of each state class. The lower approximation holds states that ALL available signals definitively support (over 75% agreement). The upper approximation holds states that ANY signal supports. The boundary region — upper minus lower — is the indeterminate zone: evidence exists for a state but is insufficient to classify with certainty.</p>
+
+        ${formulaBlock([
+          "Lower approximation: states with signal agreement > 75%",
+          "Upper approximation: states with any supporting signal",
+          "Boundary region: upper - lower (indeterminate zone)",
+          "",
+          "Definite classification: lower approximation contains exactly one state",
+          "Borderline: boundary region is non-empty",
+          "Indeterminate: upper approximation spans multiple states",
+        ])}
+
+        ${ragTable(["Region", "Interpretation"], [
+          ["Lower approximation", "Definite membership — all signals agree on this state."],
+          ["Upper approximation", "Possible membership — at least one signal supports this state."],
+          [{ label: "Boundary region", color: RAG.amber }, "Indeterminate — evidence is present but insufficient for certain classification."],
+        ])}
+
+        <h3>Module 13 — Neutrosophic Logic</h3>
+        <p>Neutrosophic Logic (Smarandache, 1995) adds a third dimension to truth value: Indeterminacy (I), alongside Truth (T) and Falsity (F). Unlike fuzzy logic where T + F = 1, neutrosophic components are independent and their sum is unconstrained. High I means the evidence is genuinely undetermined — not a soft positive or a soft negative, but an unresolvable uncertainty that no additional signal of the same type can remove.</p>
+
+        ${formulaBlock([
+          "Combination rule:",
+          ["T_combined = 1 - prod_i(1 - T_i)", "disjunctive (T grows as evidence accumulates)"],
+          ["I_combined = prod_i(I_i)", "conjunctive (I shrinks as certainty increases)"],
+          ["F_combined = prod_i(F_i)", "conjunctive (F shrinks as evidence resolves)"],
+          "",
+          "Normalise: T, I, F each divided by (T + I + F)",
+          "",
+          "Status: Red if >= 2 sources Red; Amber if >= 2 Amber; else Green.",
+          "If I_normalised > 0.30, upgrade Green to Amber (uncertainty warning).",
+        ])}
+
+        ${ragTable(["Indeterminacy (I)", "Interpretation"], [
+          [{ label: "< 15% (Low)", color: RAG.green }, "Evidence is sufficiently conclusive for classification."],
+          [{ label: "15–30% (Moderate)", color: RAG.amber }, "Moderate uncertainty — some sources are ambiguous."],
+          [{ label: "> 30% (High)", color: RAG.red }, "Evidence architecture needs strengthening before confident classification."],
+        ])}
+
+        <h3>Module 14 — Interval-valued Fuzzy Sets</h3>
+        <p>Interval-valued Fuzzy Sets (Sambuc 1975; Zadeh 1975) represent membership as a range [lower, upper] rather than a single value, explicitly propagating input measurement uncertainty through the fuzzy classification. For airport construction EVM, the principal sources are SoV line-item accuracy (~+/-2% EV) and pay-application rounding (~+/-1% AC), compounding to ~+/-3 percentage points on CPI/SPI.</p>
+
+        ${formulaBlock([
+          "CPI uncertainty range: [CPI - 0.03, CPI + 0.03]",
+          "Membership functions per state (Green / Amber / Red):",
+          "  Green:  mu_G(v) = 0 if v <= 0.92, 1 if v >= 0.97, linear between",
+          "  Amber:  bell centred at 0.92, zero outside [0.85, 0.98]",
+          "  Red:    mu_R(v) = 1 if v <= 0.85, 0 if v >= 0.92, linear between",
+          "",
+          "State interval: [mu_state(CPI_low), mu_state(CPI_high)]",
+          "Aggregation across sources: element-wise max of lower, max of upper.",
+          "",
+          "Status = state with highest interval midpoint.",
+          "Uncertainty width = sum of (red + amber) interval spreads.",
+        ])}
+
+        ${ragTable(["Uncertainty width", "Interpretation"], [
+          [{ label: "< 0.15 (Low)", color: RAG.green }, "Input precision is sufficient for reliable classification."],
+          [{ label: "0.15–0.30 (Moderate)", color: RAG.amber }, "Boundary classification may shift with better input data."],
+          [{ label: "> 0.30 (High)", color: RAG.red }, "Input noise could change the classification — request more precise documents."],
+        ])}
+
         <h3>Academic context</h3>
-        <p>Dempster, A.P. (1967). Upper and lower probabilities induced by a multivalued mapping. Annals of Mathematical Statistics, 38(2), 325–339. Shafer, G. (1976). A Mathematical Theory of Evidence. Princeton University Press.</p>
+        <p>Dempster, A.P. (1967). Upper and lower probabilities induced by a multivalued mapping. Annals of Mathematical Statistics, 38(2), 325–339. Shafer, G. (1976). A Mathematical Theory of Evidence. Princeton University Press. Pawlak, Z. (1982). Rough sets. International Journal of Computer and Information Sciences, 11(5), 341–356. Smarandache, F. (1995). A Unifying Field in Logics: Neutrosophic Logic. American Research Press. Sambuc, R. (1975). Fonctions phi-floues. PhD thesis, University of Marseille. Zadeh, L.A. (1975). The concept of a linguistic variable and its application to approximate reasoning. Information Sciences, 8(3), 199–249.</p>
       `,
     },
     {

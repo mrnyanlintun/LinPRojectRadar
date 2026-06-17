@@ -173,13 +173,17 @@
       docExcerpt: "Signals extracted from uploaded documents via the document-ingestion flow.",
       seed: LinSim.hashSeed(project.id)
     });
-    // Item 11: client-side multi-model simulations (zero tokens, zero backend).
-    // Run the five additional models from the extracted inputs and store the
-    // unified signal array on the project for display + governance synthesis.
+    // Client-side multi-model simulations (zero tokens, zero backend).
+    // runAll() returns modules 04-08 + 12-14. DST (Module 11) runs separately
+    // after the core signal package is assembled so it reads live signal data.
     let simPayload = null;
     if (window.LinSimulations) {
       try {
         const simResults = LinSimulations.runAll(si, project.signals);
+        // Module 11: DST runs separately — needs the assembled project.signals
+        // (EVM/MC/CUSUM/Doc) as existingSignals, not the raw signalInputs.
+        const dstResult = LinSimulations.runDST(si, project.signals);
+        const allResults = simResults.concat([dstResult]);
         const now = new Date();
         simPayload = {
           signal_metadata: {
@@ -189,18 +193,18 @@
             data_date: now.toISOString().substring(0, 10),
             signal_inputs_snapshot: Object.assign({}, si)
           },
-          signal_array: simResults
+          signal_array: allResults
         };
         project.simulationSignals = simPayload;
         // Append simulation run event to the project audit trail.
         project.events = project.events || [];
         const statusOrder = ["red", "amber", "green"];
-        const statuses = simResults.map((s) => String(s.status_color || s.status || "").toLowerCase());
+        const statuses = allResults.map((s) => String(s.status_color || s.status || "").toLowerCase());
         const worstStatus = statusOrder.find((s) => statuses.includes(s)) || "unknown";
         project.events.push({
           event: "simulation_run",
           at: now.toISOString(),
-          modules: simResults.map((s) => ({ method: s.method_class, status: s.status_color || s.status })),
+          modules: allResults.map((s) => ({ method: s.method_class, status: s.status_color || s.status })),
           worst_status: worstStatus
         });
       } catch (e) { /* simulations are non-fatal — never block the core run */ }
