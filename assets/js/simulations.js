@@ -1,7 +1,7 @@
 /* ============================================================
    lin-project-radar — simulations.js
    ------------------------------------------------------------
-   Six client-side simulation models that run in the browser from
+   Nine client-side simulation models that run in the browser from
    a project's extracted signalInputs — zero tokens, zero backend.
 
      04  PERT — Stochastic Network Criticality Index
@@ -10,6 +10,9 @@
      07  RCF  — Reference Class Forecasting cost prior
      08  DSM  — Design Structure Matrix rework propagation
      11  DST  — Dempster-Shafer Evidence Combination
+     12  Rough Sets — lower/upper approximation classification
+     13  Neutrosophic — Truth / Indeterminacy / Falsity logic
+     14  Interval Fuzzy — interval-valued fuzzy membership
 
    These are DEMONSTRATION models (designed heuristics over the
    project's synthetic inputs), not calibrated/validated forecasts.
@@ -477,6 +480,15 @@
       return (val - 0.92) / (0.97 - 0.92);
     }
 
+    // An interval-valued membership is the [min, max] of the membership
+    // function across the input interval. Some membership functions decrease
+    // in CPI (Red) and some are non-monotonic (Amber), so evaluating the two
+    // endpoints and ordering them keeps every interval ascending.
+    function membershipInterval(fn, lo, hi) {
+      var a = fn(lo), b = fn(hi);
+      return [Math.min(a, b), Math.max(a, b)];
+    }
+
     var intervals = [];
     var cpi = existingSignals.evm ? existingSignals.evm.cpi : null;
     if (cpi) {
@@ -484,9 +496,9 @@
       var cpiHigh = cpi + EV_UNCERTAINTY + AC_UNCERTAINTY;
       intervals.push({
         source: "CPI", value: cpi, range: [cpiLow, cpiHigh],
-        green: [membershipGreen(cpiLow), membershipGreen(cpiHigh)],
-        amber: [membershipAmber(cpiLow), membershipAmber(cpiHigh)],
-        red:   [membershipRed(cpiLow),   membershipRed(cpiHigh)]
+        green: membershipInterval(membershipGreen, cpiLow, cpiHigh),
+        amber: membershipInterval(membershipAmber, cpiLow, cpiHigh),
+        red:   membershipInterval(membershipRed,   cpiLow, cpiHigh)
       });
     }
 
@@ -496,9 +508,9 @@
       var spiHigh = spi + EV_UNCERTAINTY;
       intervals.push({
         source: "SPI", value: spi, range: [spiLow, spiHigh],
-        green: [membershipGreen(spiLow), membershipGreen(spiHigh)],
-        amber: [membershipAmber(spiLow), membershipAmber(spiHigh)],
-        red:   [membershipRed(spiLow),   membershipRed(spiHigh)]
+        green: membershipInterval(membershipGreen, spiLow, spiHigh),
+        amber: membershipInterval(membershipAmber, spiLow, spiHigh),
+        red:   membershipInterval(membershipRed,   spiLow, spiHigh)
       });
     }
 

@@ -625,8 +625,11 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .dd-chart-note { font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin: 10px 0 4px; }
 
 .dd-cmp-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-.dd-cmp-table td { padding: 6px 10px; border-bottom: 1px solid var(--line); font-size: 12.5px; }
+.dd-cmp-table td, .dd-cmp-table th { padding: 6px 10px; border-bottom: 1px solid var(--line); font-size: 12.5px; text-align: left; }
+.dd-cmp-head th { color: var(--eyebrow); font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; }
 .dd-cmp-mod { color: var(--muted); font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em; }
+.dd-cmp-yes { color: var(--clear-green); font-weight: 600; }
+.dd-cmp-no { color: var(--radar-amber); font-weight: 600; }
 
 /* ---------- clickable project code links (Signals ABM table) ---------- */
 .mod-link {

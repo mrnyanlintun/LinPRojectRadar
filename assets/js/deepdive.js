@@ -810,35 +810,43 @@
     const s14 = get("Interval_Fuzzy_Sets");
 
     const entries = [
-      { num: "10", label: "Signal Synthesis", val: s10 },
-      { num: "11", label: "DST Evidence", val: s11 },
-      { num: "12", label: "Rough Sets", val: s12 },
-      { num: "13", label: "Neutrosophic", val: s13 },
-      { num: "14", label: "Interval Fuzzy", val: s14 }
+      { num: "10", label: "Conservative Dominance", val: s10 },
+      { num: "11", label: "Dempster-Shafer",        val: s11 },
+      { num: "12", label: "Rough Sets",             val: s12 },
+      { num: "13", label: "Neutrosophic",           val: s13 },
+      { num: "14", label: "Interval Fuzzy",         val: s14 }
     ].filter(function (e) { return e.val; });
 
-    if (!entries.length) return "";
+    if (!entries.length || !s10) return "";
 
+    // Compare every method against Module 10 (the governance baseline).
+    const baseline = String(s10).toLowerCase();
     const vals = entries.map(function (e) { return String(e.val || "").toLowerCase(); });
-    const agree = vals.every(function (v) { return v === vals[0]; });
+    const allAgree   = vals.every(function (v) { return v === baseline; });
     const redCount   = vals.filter(function (v) { return v === "red"; }).length;
     const amberCount = vals.filter(function (v) { return v === "amber"; }).length;
+    const greenCount = vals.length - redCount - amberCount;
     const overallSt  = redCount >= 2 ? "red" : amberCount >= 2 ? "amber" : "green";
 
+    const header = `<tr class="dd-cmp-head"><th>Module · Method</th><th>Classification</th><th>Agrees with M10</th></tr>`;
     const rows = entries.map(function (e) {
       const c = cls(e.val);
+      const isM10 = e.num === "10";
+      const agreesM10 = isM10 ? "—" : (String(e.val).toLowerCase() === baseline ? "Yes" : "No");
+      const agreeCls = isM10 ? "" : (agreesM10 === "Yes" ? "dd-cmp-yes" : "dd-cmp-no");
       return `<tr><td class="dd-cmp-mod">Module ${e.num} — ${esc(e.label)}</td>` +
-        `<td><span class="dd-verdict status-${c}" style="display:inline-flex;gap:4px;align-items:center"><i></i>${esc(String(e.val).toUpperCase())}</span></td></tr>`;
+        `<td><span class="dd-verdict status-${c}" style="display:inline-flex;gap:4px;align-items:center"><i></i>${esc(String(e.val).toUpperCase())}</span></td>` +
+        `<td class="${agreeCls}">${agreesM10}</td></tr>`;
     }).join("");
 
-    const summaryText = agree
-      ? `All ${entries.length} synthesis methods agree: ${String(entries[0].val).toUpperCase()}. Strong consensus across evidence frameworks.`
-      : `Methods diverge: ${redCount} Red, ${amberCount} Amber, ${vals.length - redCount - amberCount} Green. Divergence between frameworks is itself a governance signal worth noting in the decision record.`;
+    const summaryText = allAgree
+      ? `All synthesis methods converge on ${String(s10).toUpperCase()} — high classification confidence.`
+      : `Methods diverge — classification uncertainty is itself a governance signal. Spread across methods: ${redCount} Red, ${amberCount} Amber, ${greenCount} Green. Note the divergence in the decision record.`;
 
     return `<section class="panel dd-panel status-${overallSt}" aria-label="Synthesis comparison">
       <div class="dd-head"><b>Synthesis Methods Comparison — Modules 10–14</b></div>
-      <p class="dd-chart-note">Agreement check across all synthesis and evidence methods. Conservative dominance (Module 10) represents the governance baseline; Modules 11–14 provide independent cross-checks using different evidence frameworks.</p>
-      <table class="dd-cmp-table">${rows}</table>
+      <p class="dd-chart-note">Agreement check across all synthesis and evidence methods. Conservative dominance (Module 10) is the governance baseline; Modules 11–14 provide independent cross-checks using different evidence frameworks.</p>
+      <table class="dd-cmp-table">${header}${rows}</table>
       <p class="dd-chart-note">${esc(summaryText)}</p>
     </section>`;
   }
