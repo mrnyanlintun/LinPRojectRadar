@@ -6,8 +6,21 @@
 
    Every chart is an ILLUSTRATIVE view derived deterministically
    from that project's synthetic data — never live or validated
-   model output. Module 05 reads decision.js output directly;
+   model output. Module 09 reads decision.js output directly;
    no governance rules are duplicated here.
+
+   Module numbering:
+     01  Monte Carlo EAC Forecast
+     02  CUSUM Anomaly Monitor
+     03  Document Risk Extraction
+     04  PERT Network Criticality          (simulation)
+     05  Line of Balance Production Velocity (simulation)
+     06  CCPM Buffer Health                 (simulation)
+     07  Reference Class Forecasting        (simulation)
+     08  DSM Rework Propagation             (simulation)
+     09  ABM Governance Layer
+     10  Signal Synthesis (conservative dominance)
+     11  Dempster-Shafer Evidence Combination (simulation)
    ============================================================ */
 
 (function () {
@@ -158,7 +171,7 @@
     return svgo(h, "Illustrative document-risk score gauge") +
       `<rect x="${pad}" y="${barY}" width="${span}" height="${barH}" rx="4" fill="var(--surface-soft)" stroke="var(--ring-line)"></rect>` +
       `<rect x="${pad}" y="${barY}" width="${(sx(score) - pad).toFixed(1)}" height="${barH}" rx="4" fill="${c}" opacity="0.55"></rect>` +
-      [[0.30, "amber ≥ 0.30", COLOR.amber], [0.70, "red ≥ 0.70", COLOR.red]].map(([v, lab, col]) =>
+      [[0.30, "amber >= 0.30", COLOR.amber], [0.70, "red >= 0.70", COLOR.red]].map(([v, lab, col]) =>
         `<line x1="${sx(v)}" y1="${barY - 8}" x2="${sx(v)}" y2="${barY + barH + 8}" stroke="${col}" stroke-width="1.3" stroke-dasharray="4 3"></line>` +
         `<text x="${sx(v) + 3}" y="${barY - 12}" class="mod-axis" fill="${col}">${lab}</text>`).join("") +
       `<circle cx="${sx(score)}" cy="${barY + barH / 2}" r="6" fill="${c}" stroke="var(--text)" stroke-width="1"></circle>` +
@@ -166,7 +179,7 @@
       "</svg>";
   }
 
-  /* Module 04: signal agreement map — four signal nodes colored by status,
+  /* Module 10: signal agreement map — four signal nodes colored by status,
      like the HUD's conflict lens. */
   function synthChart(p) {
     const h = 150;
@@ -186,7 +199,7 @@
       "</svg>";
   }
 
-  /* Module 05: governance decision path driven by decision.js output. */
+  /* Module 09: governance decision path driven by decision.js output. */
   function abmChart(p, d) {
     const h = 132;
     const c = COLOR[cls(d.healthState)];
@@ -204,7 +217,6 @@
   }
 
   /* ---------- per-module status + reasoning ---------- */
-
 
   function m01(p) {
     const e = p.signals.evm, m = p.signals.mc;
@@ -237,11 +249,11 @@
         metricBox("Schedule Performance Index (SPI)", e.spi.toFixed(2), spiS) +
         metricBox("P50 EAC", mc.p50.toFixed(1), "green") +
         metricBox("P80 EAC", mc.p80.toFixed(1), p80S) +
-        metricBox("P80 Δ vs BAC", `${mc.overrunPctP80 >= 0 ? "+" : ""}${mc.overrunPctP80.toFixed(1)}%`, p80S) +
+        metricBox("P80 Delta vs BAC", `${mc.overrunPctP80 >= 0 ? "+" : ""}${mc.overrunPctP80.toFixed(1)}%`, p80S) +
         metricBox("P(delay)", m.pMilestoneDelay.toFixed(2), pdS)
       }</div>` +
       reasons(why, st) +
-      rule("GREEN if CPI/SPI ≥ 0.95 and P80 EAC within +5%; AMBER if one forecast indicator enters the watch range (CPI/SPI < 0.95, P80 +5–10%, P(delay) ≥ 0.30); RED if CPI/SPI < 0.90, P80 ≥ +10%, or P(delay) ≥ 0.60."));
+      rule("GREEN if CPI/SPI >= 0.95 and P80 EAC within +5%; AMBER if one forecast indicator enters the watch range (CPI/SPI < 0.95, P80 +5-10%, P(delay) >= 0.30); RED if CPI/SPI < 0.90, P80 >= +10%, or P(delay) >= 0.60."));
   }
 
   function m02(p) {
@@ -266,13 +278,13 @@
       `<div class="dd-grid">${
         metricBox("Peak CUSUM", r.maxStat.toFixed(2), st) +
         metricBox("Decision H", r.H.toFixed(2), "green") +
-        metricBox("σ estimate", r.sigma.toFixed(3), "green") +
+        metricBox("Sigma estimate", r.sigma.toFixed(3), "green") +
         metricBox("Breached", r.breached ? "YES" : "NO", r.breached ? "red" : "green") +
         metricBox("Monitored", cu.metric, "green") +
         metricBox("Periods", String(r.x.length), "green")
       }</div>` +
       reasons(why, st) +
-      rule("GREEN if cumulative drift is below watch level; AMBER if drift approaches the control limit; RED if CUSUM breaches the threshold (≥ 5.0)."));
+      rule("GREEN if cumulative drift is below watch level; AMBER if drift approaches the control limit; RED if CUSUM breaches the threshold (>= 5.0)."));
   }
 
   function m03(p) {
@@ -281,11 +293,11 @@
     const why = st === "red" ? [
       `Document risk score ${d.score.toFixed(2)} is at or above the 0.70 red threshold — the text evidence itself can justify escalation before the next cost report reflects it.`,
       `Source: ${d.source}. The extracted language points to cost/schedule/scope impact rather than routine correspondence.`,
-      `Evidence excerpt: “${d.excerpt}”`
+      `Evidence excerpt: "${d.excerpt}"`
     ] : st === "amber" ? [
       `Document risk score ${d.score.toFixed(2)} sits in the 0.30–0.70 watch band; impact language is reviewable rather than conclusive.`,
       `Source: ${d.source}.`,
-      `Evidence excerpt: “${d.excerpt}”`
+      `Evidence excerpt: "${d.excerpt}"`
     ] : [
       `Document risk score ${d.score.toFixed(2)} is below the 0.30 watch threshold — records are routine for this reporting cycle.`,
       `The document trail supports the quantitative forecast rather than contradicting it.`
@@ -299,10 +311,10 @@
         metricBox("Source", d.source.length > 22 ? d.source.slice(0, 21) + "…" : d.source, "green")
       }</div>` +
       reasons(why, st) +
-      rule("GREEN if score < 0.30 (routine language); AMBER if 0.30–0.70 (possible cost/schedule/scope impact); RED if ≥ 0.70 (high-impact language converging across records)."));
+      rule("GREEN if score < 0.30 (routine language); AMBER if 0.30-0.70 (possible cost/schedule/scope impact); RED if >= 0.70 (high-impact language converging across records)."));
   }
 
-  function m04(p) {
+  function m10(p) {
     const conflict = classifyConflict(p);
     const s = p.signals;
     const statuses = [s.evm.status, s.mc.status, s.cusum.status, s.doc.status];
@@ -313,12 +325,12 @@
       `All four signal classes are green and aligned — there is no disagreement to surface.`,
       `Agreement is itself recorded: the decision card still logs the evidence package for auditability.`
     ] : [
-      `Conflict type “${conflict}”: ${redN} red and ${ambN} amber signal class(es) against ${4 - redN - ambN} green.`,
+      `Conflict type "${conflict}": ${redN} red and ${ambN} amber signal class(es) against ${4 - redN - ambN} green.`,
       `PCEIF surfaces this disagreement instead of averaging it away — the gap between signal classes is the finding.`,
-      `The classification feeds Module 05, which maps it to an action and an authority.`
+      `The classification feeds Module 09, which maps it to an action and an authority.`
     ];
-    return panel("04", "Signal Synthesis", st,
-      note("Agreement map across all signal classes. When signals diverge, the gap between classes is the finding. PCEIF surfaces disagreement instead of averaging it away.") +
+    return panel("10", "Signal Synthesis", st,
+      note("Agreement map across all signal classes. When signals diverge, the gap between classes is the finding. PCEIF surfaces disagreement instead of averaging it away. Conservative dominance: the worst single-signal status drives the overall classification.") +
       synthChart(p) +
       `<div class="dd-grid">${
         metricBox("Conflict", conflict.length > 20 ? conflict.slice(0, 19) + "…" : conflict, st) +
@@ -327,22 +339,22 @@
         metricBox("Aligned", redN + ambN === 0 ? "YES" : "NO", redN + ambN === 0 ? "green" : "amber")
       }</div>` +
       reasons(why, st) +
-      rule("Precedence: multi-signal red-review ▸ anomaly without narrative ▸ forecast ahead of status ▸ leading document risk ▸ agreement ▸ mixed early warning (classifyConflict in decision.js)."));
+      rule("Precedence: multi-signal red-review > anomaly without narrative > forecast ahead of status > leading document risk > agreement > mixed early warning (classifyConflict in decision.js). Conservative dominance: worst signal wins."));
   }
 
-  function m05(p) {
+  function m09(p) {
     // All values below come straight from decision.js — no duplicated rules.
     const d = deriveDecision(p);
     const st = cls(d.healthState);
     const why = [
-      `decision.js derives state “${d.healthState}” with conflict “${d.conflictType}” for this project.`,
+      `decision.js derives state "${d.healthState}" with conflict "${d.conflictType}" for this project.`,
       `Recommended action: ${d.action}`,
       `Authority entitled to act: ${d.authority}. Documentation required: ${d.documentation}`,
       d.fairnessGateRequired
         ? "Fairness gate REQUIRED: contractor response opportunity must be acknowledged before any formal action — recording is blocked until then."
         : "No fairness gate is required for this state/sensitivity combination."
     ];
-    return panel("05", "Agent-Based Model (ABM) Governance Layer", st,
+    return panel("09", "Agent-Based Model (ABM) Governance Layer", st,
       note("Governance decision derived from the full signal package using the PCEIF authority matrix. Maps the conflict classification to a specific action, a named authority, and required documentation.") +
       abmChart(p, d) +
       `<div class="dd-grid">${
@@ -352,18 +364,18 @@
         metricBox("Sector", p.sector === "combined" ? "Hybrid" : p.sector, "green")
       }</div>` +
       reasons(why, st) +
-      rule("GREEN → routine monitoring (PM/Controls); AMBER → early-warning review (PM + Controls lead); RED-REVIEW when ≥2 red signals or CUSUM breach + red forecast (Program director/PMO); fairness-sensitive red-reviews additionally require the contractor fairness gate (deriveDecision in decision.js)."));
+      rule("GREEN → routine monitoring (PM/Controls); AMBER → early-warning review (PM + Controls lead); RED-REVIEW when >=2 red signals or CUSUM breach + red forecast (Program director/PMO); fairness-sensitive red-reviews additionally require the contractor fairness gate (deriveDecision in decision.js)."));
   }
 
-  /* ---------- additional client-side simulation modules (06–10) ----------
+  /* ---------- simulation modules (04–08, 11) ----------
      Renders project.simulationSignals (built by signals.js after the core run)
-     as five full deep-dive modules — chart + metric grid + reasoning + rule —
-     matching Modules 01–05. Each model object comes from LinSimulations. */
+     as deep-dive modules — chart + metric grid + reasoning + rule —
+     matching Modules 01–03. Each model object comes from LinSimulations. */
   const simCls = (s) => String(s || "green").toLowerCase();
   const simColor = (s) => COLOR[simCls(s)] || COLOR.green;
   const fByMethod = (arr, m) => arr.find((s) => s.method_class === m);
 
-  /* Module 06 chart: horizontal bars Baseline / P50 / P80 (days). */
+  /* Module 04 chart: horizontal bars Baseline / P50 / P80 (days). */
   function pertChart(s) {
     const h = 136, pad = 70, top = 22, rowH = 26;
     const span = W - pad - 90;
@@ -385,7 +397,7 @@
       `<text x="${W / 2}" y="${h - 4}" text-anchor="middle" class="mod-axis-title">Duration (days)</text>` + "</svg>";
   }
 
-  /* Module 07 chart: grading vs paving velocity lines, buffer zone, critical unit. */
+  /* Module 05 chart: grading vs paving velocity lines, buffer zone, critical unit. */
   function lobChart(s) {
     const h = 136, pad = 40, base = h - 40, top = 14;
     const units = s.units || 20;
@@ -415,13 +427,13 @@
       `<text transform="rotate(-90 10 ${h / 2})" x="10" y="${h / 2}" text-anchor="middle" class="mod-axis-title">Schedule Days</text>` + "</svg>";
   }
 
-  /* Module 08 chart: fever bar Green/Amber/Red with the buffer-consumption dot. */
+  /* Module 06 chart: fever bar Green/Amber/Red with the buffer-consumption dot. */
   function ccpmChart(s) {
     const h = 136, pad = 40, barY = 50, barH = 22, span = W - pad - 30;
     const sx = (v) => pad + (clamp01(v) / 100) * span;
     const a = s.amber_threshold, r = s.red_threshold, bc = s.pct_buffer_consumed;
     return svgo(h, "CCPM buffer-health fever chart") +
-      `<text x="${W / 2}" y="22" text-anchor="middle" class="mod-axis">chain complete ${s.pct_chain_complete}% · amber ≥ ${a}% · red ≥ ${r}%</text>` +
+      `<text x="${W / 2}" y="22" text-anchor="middle" class="mod-axis">chain complete ${s.pct_chain_complete}% · amber >= ${a}% · red >= ${r}%</text>` +
       `<rect x="${pad}" y="${barY}" width="${(sx(a) - pad).toFixed(1)}" height="${barH}" fill="var(--zone-green)"></rect>` +
       `<rect x="${sx(a)}" y="${barY}" width="${(sx(r) - sx(a)).toFixed(1)}" height="${barH}" fill="var(--zone-amber)"></rect>` +
       `<rect x="${sx(r)}" y="${barY}" width="${(pad + span - sx(r)).toFixed(1)}" height="${barH}" fill="var(--zone-red)"></rect>` +
@@ -433,7 +445,7 @@
       `<text x="${W / 2}" y="${h - 4}" text-anchor="middle" class="mod-axis-title">Buffer Consumed (%)</text>` + "</svg>";
   }
 
-  /* Module 09 chart: multiplier histogram with P50/P80 markers. */
+  /* Module 07 chart: multiplier histogram with P50/P80 markers. */
   function rcfChart(s) {
     const h = 136, pad = 30, base = h - 42, top = 20;
     const mult = s.multipliers && s.multipliers.length ? s.multipliers : [1.0];
@@ -446,13 +458,13 @@
     return svgo(h, "RCF overrun-multiplier distribution") +
       `<line x1="${pad}" y1="${base}" x2="${W - 14}" y2="${base}" stroke="var(--ring-line)"></line>` +
       bars +
-      mk(s.p50_multiplier, "P50 ×" + s.p50_multiplier, COLOR.amber) +
-      mk(s.p80_multiplier, "P80 ×" + s.p80_multiplier, simColor(s.status_color)) +
+      mk(s.p50_multiplier, "P50 x" + s.p50_multiplier, COLOR.amber) +
+      mk(s.p80_multiplier, "P80 x" + s.p80_multiplier, simColor(s.status_color)) +
       `<text x="${W / 2}" y="${h - 4}" text-anchor="middle" class="mod-axis-title">Cost Overrun Multiplier</text>` +
       `<text transform="rotate(-90 10 ${h / 2})" x="10" y="${h / 2}" text-anchor="middle" class="mod-axis-title">Historical Frequency</text>` + "</svg>";
   }
 
-  /* Module 10 chart: 3×3 dependency-matrix heatmap (intensity = weight). */
+  /* Module 08 chart: 3x3 dependency-matrix heatmap (intensity = weight). */
   function dsmChart(s) {
     const h = 136, cell = 30, x0 = 150, y0 = 22;
     const M = s.matrix || [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
@@ -470,16 +482,51 @@
       cells + rowLabs + colLabs +
       `<text x="${x0 + 3 * cell + 18}" y="${y0 + 16}" class="mod-axis">change in column</text>` +
       `<text x="${x0 + 3 * cell + 18}" y="${y0 + 32}" class="mod-axis">propagates to row</text>` +
-      `<text x="14" y="${y0 + 3 * cell + 14}" class="mod-axis">rework ×${s.rework_multiplier}</text>` +
+      `<text x="14" y="${y0 + 3 * cell + 14}" class="mod-axis">rework x${s.rework_multiplier}</text>` +
       `<text x="${x0 + (3 * cell) / 2}" y="${h - 4}" text-anchor="middle" class="mod-axis-title">Dependency weight</text>` + "</svg>";
   }
+
+  /* Module 11 chart: horizontal stacked belief-distribution bar. */
+  function dstChart(s) {
+    const h = 96, pad = 40, barY = 32, barH = 24;
+    const span = W - pad - 24;
+    const segments = [
+      { key: "belief_green",   color: COLOR.green,         label: "Green" },
+      { key: "belief_amber",   color: COLOR.amber,         label: "Amber" },
+      { key: "belief_red",     color: COLOR.red,           label: "Red"   },
+      { key: "belief_unknown", color: "var(--ring-line)",  label: "Unknown/Conflict" }
+    ];
+    let x = pad, bars = "", ticks = "";
+    segments.forEach((seg) => {
+      const pct = Number(s[seg.key]) || 0;
+      const w = pct * span;
+      if (w > 0) {
+        bars += `<rect x="${x.toFixed(1)}" y="${barY}" width="${w.toFixed(1)}" height="${barH}" fill="${seg.color}" opacity="0.75"></rect>`;
+        if (w > 28) {
+          ticks += `<text x="${(x + w / 2).toFixed(1)}" y="${barY + barH / 2 + 4}" text-anchor="middle" class="mod-axis" fill="var(--bg)" font-weight="600">${Math.round(pct * 100)}%</text>`;
+        }
+      }
+      x += w;
+    });
+    return svgo(h, "DST belief distribution — stacked horizontal bar showing Green/Amber/Red/Unknown masses") +
+      `<rect x="${pad}" y="${barY}" width="${span}" height="${barH}" rx="4" fill="var(--surface-soft)" stroke="var(--ring-line)"></rect>` +
+      bars +
+      `<rect x="${pad}" y="${barY}" width="${span}" height="${barH}" rx="4" fill="none" stroke="var(--ring-line)"></rect>` +
+      ticks +
+      `<text x="${pad}" y="${barY + barH + 16}" class="mod-axis" fill="${COLOR.green}">Green</text>` +
+      `<text x="${pad + span * 0.3}" y="${barY + barH + 16}" class="mod-axis" fill="${COLOR.amber}">Amber</text>` +
+      `<text x="${pad + span * 0.6}" y="${barY + barH + 16}" class="mod-axis" fill="${COLOR.red}">Red</text>` +
+      `<text x="${pad + span}" y="${barY + barH + 16}" text-anchor="end" class="mod-axis" fill="var(--muted)">Unknown</text>` +
+      "</svg>";
+  }
+
   const clamp01 = (v) => Math.max(0, Math.min(100, Number(v) || 0));
   const moneyShort = (v) => "$" + Math.round(Number(v) || 0).toLocaleString();
 
-  function m06(s) {
+  function m04(s) {
     const st = simCls(s.status_color);
-    return panel("06", "PERT — Network Criticality", st,
-      note("Program Evaluation & Review Technique (PERT). Stochastic network analysis quantifying schedule risk across the critical path. The P80 duration is the planning-conservative milestone estimate. The Path Criticality Index identifies which path has the least float and highest probability of driving project completion.") +
+    return panel("04", "PERT — Network Criticality", st,
+      note("Program Evaluation and Review Technique (PERT). Stochastic network analysis quantifying schedule risk across the critical path. The P80 duration is the planning-conservative milestone estimate. The Path Criticality Index identifies which path has the least float and highest probability of driving project completion.") +
       pertChart(s) +
       `<div class="dd-grid">${
         metricBox("P50 Duration", s.p50_duration_days + "d", "green") +
@@ -491,12 +538,12 @@
         `The P80 network duration is ${s.p80_duration_days} days against a ${s.baseline_days}-day deterministic baseline; the gap is the schedule risk the stochastic network exposes.`,
         `The dominant (structural) path is critical in ${Math.round(s.path_criticality_index * 100)}% of simulated runs — that is where float is thinnest.`
       ], st) +
-      rule("GREEN if P80 ≤ +15% of baseline; AMBER if +15–30%; RED if > +30%. Lower SPI widens the pessimistic activity bound."));
+      rule("GREEN if P80 <= +15% of baseline; AMBER if +15-30%; RED if > +30%. Lower SPI widens the pessimistic activity bound."));
   }
 
-  function m07(s) {
+  function m05(s) {
     const st = simCls(s.status_color);
-    return panel("07", "LOB — Production Velocity", st,
+    return panel("05", "LOB — Production Velocity", st,
       note("Line of Balance (LOB). Production velocity analysis for sequential operations. Monitors the time buffer between lead and follow-on crews. Buffer erosion is a leading schedule indicator — it appears before the delay reaches the critical path and before it registers in the SPI.") +
       lobChart(s) +
       `<div class="dd-grid">${
@@ -509,12 +556,12 @@
         `The follower (paving ${s.paving_rate} units/day) trails the leader (grading ${s.grading_rate} units/day); the crew-to-crew schedule buffer falls to ${s.minimum_buffer_days.toFixed(1)} days.`,
         `Lower SPI slows the follower, eroding the buffer sooner — the marked critical unit is where collision risk peaks.`
       ], st) +
-      rule("GREEN if minimum crew buffer > 3.0 days; AMBER if ≤ 3.0; RED if ≤ 1.5."));
+      rule("GREEN if minimum crew buffer > 3.0 days; AMBER if <= 3.0; RED if <= 1.5."));
   }
 
-  function m08(s) {
+  function m06(s) {
     const st = simCls(s.status_color);
-    return panel("08", "CCPM — Buffer Health", st,
+    return panel("06", "CCPM — Buffer Health", st,
       note("Critical Chain Project Management (CCPM). Tracks the rate at which the project buffer is being consumed against the rate of chain completion. A project burning buffer faster than it is completing work is on a trajectory toward delay, regardless of what the current SPI reports.") +
       ccpmChart(s) +
       `<div class="dd-grid">${
@@ -525,58 +572,96 @@
       }</div>` +
       reasons([
         `Buffer is ${s.pct_buffer_consumed}% consumed at ${s.pct_chain_complete}% chain completion — the fever-chart dot sits in the ${String(s.zone).toUpperCase()} zone.`,
-        `Amber when buffer-burn ≥ chain completion; red when it crosses completion + (100 − completion)/3.`
+        `Amber when buffer-burn >= chain completion; red when it crosses completion + (100 - completion)/3.`
       ], st) +
-      rule("GREEN below the amber line; AMBER when buffer consumed ≥ chain complete %; RED beyond the upper fever band."));
+      rule("GREEN below the amber line; AMBER when buffer consumed >= chain complete %; RED beyond the upper fever band."));
   }
 
-  function m09(s) {
+  function m07(s) {
     const st = simCls(s.status_color);
-    return panel("09", "RCF — Cost Prior", st,
+    return panel("07", "RCF — Cost Prior", st,
       note("Reference Class Forecasting (RCF). Outside-view cost estimate derived from the historical overrun distribution of comparable public infrastructure projects. Corrects for optimism bias in contractor estimates by anchoring the forecast to what projects of this type actually cost.") +
       rcfChart(s) +
       `<div class="dd-grid">${
         metricBox("P50 Adjusted", moneyShort(s.rcf_p50_adjusted), "green") +
         metricBox("P80 Adjusted", moneyShort(s.rcf_p80_adjusted), st) +
-        metricBox("Debiasing Factor", "×" + s.debiasing_factor.toFixed(2), st) +
+        metricBox("Debiasing Factor", "x" + s.debiasing_factor.toFixed(2), st) +
         metricBox("vs BAC %", (s.vs_bac_pct >= 0 ? "+" : "") + s.vs_bac_pct.toFixed(1) + "%", st)
       }</div>` +
       reasons([
         `The outside-view reference class puts the P80 cost prior at ${moneyShort(s.rcf_p80_adjusted)} — ${(s.vs_bac_pct >= 0 ? "+" : "") + s.vs_bac_pct.toFixed(1)}% over the Budget at Completion (BAC).`,
-        `The debiasing factor ×${s.debiasing_factor.toFixed(2)} is the empirical correction applied to the inside-view estimate.`
+        `The debiasing factor x${s.debiasing_factor.toFixed(2)} is the empirical correction applied to the inside-view estimate.`
       ], st) +
-      rule("GREEN if P80 prior ≤ +10% of BAC; AMBER if +10–25%; RED if > +25%."));
+      rule("GREEN if P80 prior <= +10% of BAC; AMBER if +10-25%; RED if > +25%."));
   }
 
-  function m10(s) {
+  function m08(s) {
     const st = simCls(s.status_color);
-    return panel("10", "DSM — Rework Propagation", st,
+    return panel("08", "DSM — Rework Propagation", st,
       note("Design Structure Matrix (DSM). Models how a scope change in one design discipline propagates through downstream disciplines. An architectural revision triggers structural re-coordination and MEP rerouting. The rework multiplier quantifies the total coordination burden a single change introduces across the design team.") +
       dsmChart(s) +
       `<div class="dd-grid">${
-        metricBox("Rework Multiplier", "×" + s.rework_multiplier.toFixed(2), st) +
+        metricBox("Rework Multiplier", "x" + s.rework_multiplier.toFixed(2), st) +
         metricBox("Arch Impact", s.arch_impact.toFixed(2), "green") +
         metricBox("Structural Impact", s.structural_impact.toFixed(2), st) +
         metricBox("MEP Impact", s.mep_impact.toFixed(2), st)
       }</div>` +
       reasons([
-        `A unit architectural scope change propagates to ×${s.rework_multiplier.toFixed(2)} cumulative rework across the three disciplines after four DSM passes.`,
+        `A unit architectural scope change propagates to x${s.rework_multiplier.toFixed(2)} cumulative rework across the three disciplines after four DSM passes.`,
         `Structural (${s.structural_impact.toFixed(2)}) and MEP (${s.mep_impact.toFixed(2)}) absorb the downstream burden the dependency matrix transmits.`
       ], st) +
-      rule("GREEN if total rework multiplier ≤ 2.5; AMBER if > 2.5. Off-diagonal weights are the inter-discipline coupling strengths."));
+      rule("GREEN if total rework multiplier <= 2.5; AMBER if > 2.5. Off-diagonal weights are the inter-discipline coupling strengths."));
+  }
+
+  function m11(s, project) {
+    const st = simCls(s.status_color);
+    // Derive conservative state on-the-fly if not stored on the signal
+    let conservativeState = s.conservative_state;
+    if (!conservativeState && project && window.deriveDecision) {
+      try { conservativeState = deriveDecision(project).healthState; } catch (e) { /* non-fatal */ }
+    }
+    const agrees = conservativeState &&
+      s.status_color.toLowerCase() === conservativeState.toLowerCase().replace("-review", "");
+
+    const comparisonNote = conservativeState
+      ? (agrees
+        ? `DST confirms the conservative dominance result — both methods classify this project as ${conservativeState.toUpperCase()}.`
+        : `DST diverges from conservative dominance. Conservative dominance classifies ${conservativeState.toUpperCase()}; DST assigns highest belief to ${s.status_color.toUpperCase()} with conflict mass ${Math.round((s.conflict_mass || 0) * 100)}% indicating significant inter-signal disagreement. The divergence itself is a governance signal.`)
+      : `Conservative dominance state not yet available — run signals to compare.`;
+
+    return panel("11", "DST — Evidence Combination", st,
+      note("Dempster-Shafer Evidence Theory combines the four primary signal classes into a unified belief distribution. Unlike conservative dominance which takes the worst single signal, DST weights all evidence and produces explicit belief masses for each state plus a conflict mass measuring inter-signal disagreement.") +
+      dstChart(s) +
+      `<div class="dd-grid">${
+        metricBox("Belief Green", Math.round((s.belief_green || 0) * 100) + "%", "green") +
+        metricBox("Belief Amber", Math.round((s.belief_amber || 0) * 100) + "%", "amber") +
+        metricBox("Belief Red", Math.round((s.belief_red || 0) * 100) + "%", s.belief_red > 0.3 ? "red" : "amber") +
+        metricBox("Conflict Mass", Math.round((s.conflict_mass || 0) * 100) + "%", s.conflict_level === "High" ? "red" : s.conflict_level === "Moderate" ? "amber" : "green") +
+        metricBox("Conflict Level", s.conflict_level || "Low", s.conflict_level === "High" ? "red" : s.conflict_level === "Moderate" ? "amber" : "green") +
+        metricBox("Agrees with Module 10", agrees ? "Yes" : (conservativeState ? "No" : "N/A"), agrees ? "green" : (conservativeState ? "amber" : "green"))
+      }</div>` +
+      `<p class="dd-chart-note">${esc(comparisonNote)}</p>` +
+      reasons([
+        `DST assigns belief Green ${Math.round((s.belief_green || 0) * 100)}%, Amber ${Math.round((s.belief_amber || 0) * 100)}%, Red ${Math.round((s.belief_red || 0) * 100)}% — highest belief mass determines the output state.`,
+        `Conflict mass ${Math.round((s.conflict_mass || 0) * 100)}% (${s.conflict_level || "Low"}) reflects disagreement between the four evidence sources. High conflict mass is itself a signal worth surfacing to the governance layer.`
+      ], st) +
+      rule("DST RULE: Belief masses assigned per signal class performance against thresholds. Dempster combination rule applied iteratively across four sources. Final state = highest belief mass. Conflict mass > 30% = high inter-signal disagreement."));
   }
 
   function simModules(project) {
     const payload = project.simulationSignals;
     const arr = payload && Array.isArray(payload.signal_array) ? payload.signal_array : null;
-    if (!arr || !arr.length) return "";
+    if (!arr || !arr.length) return { low: "", dst: "" };
     const pert = fByMethod(arr, "PERT_Network_Criticality");
-    const lob = fByMethod(arr, "Line_of_Balance_Velocity");
+    const lob  = fByMethod(arr, "Line_of_Balance_Velocity");
     const ccpm = fByMethod(arr, "CCPM_Buffer_Health");
-    const rcf = fByMethod(arr, "Reference_Class_Forecasting");
-    const dsm = fByMethod(arr, "DSM_Rework_Propagation");
-    return (pert ? m06(pert) : "") + (lob ? m07(lob) : "") + (ccpm ? m08(ccpm) : "") +
-      (rcf ? m09(rcf) : "") + (dsm ? m10(dsm) : "");
+    const rcf  = fByMethod(arr, "Reference_Class_Forecasting");
+    const dsm  = fByMethod(arr, "DSM_Rework_Propagation");
+    const dst  = fByMethod(arr, "DST_Evidence_Combination");
+    const low  = (pert ? m04(pert) : "") + (lob ? m05(lob) : "") + (ccpm ? m06(ccpm) : "") +
+                 (rcf ? m07(rcf) : "") + (dsm ? m08(dsm) : "");
+    const dstHtml = dst ? m11(dst, project) : "";
+    return { low, dst: dstHtml };
   }
 
   /* ---------- entry point ---------- */
@@ -587,14 +672,17 @@
       root.innerHTML =
         `<section class="panel awaiting-state">
            <p><strong>Awaiting ingest — no signals yet.</strong></p>
-           <p class="kn-sub">The five modules compute from this project's signals. Populate signals (Manage Projects, or the “Ingest” panel above) to run the real Monte Carlo (5,000 iterations) and CUSUM, the keyword document-risk extraction, and the PCEIF synthesis + governance decision. Nothing is computed or fabricated until inputs are ingested.</p>
+           <p class="kn-sub">The modules compute from this project's signals. Populate signals (Manage Projects, or the "Ingest" panel above) to run the real Monte Carlo (5,000 iterations) and CUSUM, the keyword document-risk extraction, and the PCEIF synthesis + governance decision. Nothing is computed or fabricated until inputs are ingested.</p>
          </section>`;
       return;
     }
+    const sims = simModules(project);
     root.innerHTML =
-      `<p class="mod-banner">Modules 01 and 02 are quantitative analyses applied to this project's extracted signal inputs. Modules 03–05 apply the PCEIF rule and decision framework.</p>` +
-      m01(project) + m02(project) + m03(project) + m04(project) + m05(project) +
-      simModules(project);
+      `<p class="mod-banner">Modules 01–03 are quantitative analyses applied to this project's extracted signal inputs. Modules 04–08 are client-side simulation models. Modules 09–11 apply the PCEIF rule, decision framework, and evidence synthesis.</p>` +
+      m01(project) + m02(project) + m03(project) +
+      sims.low +
+      m09(project) + m10(project) +
+      sims.dst;
   }
 
   window.LinDeepDive = { render };
