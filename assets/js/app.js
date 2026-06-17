@@ -633,9 +633,10 @@
     document.querySelectorAll("[data-set-theme]").forEach((b) =>
       b.addEventListener("click", () => applyTheme(b.dataset.setTheme))
     );
-    // Four themes — Light / Dark / Cyberpunk / New York; Dark default.
-    // Read both the new `lin-theme` key and the legacy `lin-radar-theme` key
-    // for backwards compatibility; the old "clean" name maps to Light.
+    // Three themes — Light / Dark / New York; Dark default. Read both the new
+    // `lin-theme` key and the legacy `lin-radar-theme` key for backwards
+    // compatibility; the old "clean" name maps to Light; the removed
+    // "cyberpunk" theme falls back to Dark.
     let stored = "dark";
     try {
       stored = localStorage.getItem("lin-theme")
@@ -643,7 +644,8 @@
             || "dark";
     } catch (e) {}
     if (stored === "clean") stored = "light";
-    const VALID_THEMES = ["light", "dark", "cyberpunk", "newyork"];
+    if (stored === "cyberpunk") stored = "dark";   // theme removed
+    const VALID_THEMES = ["light", "dark", "newyork"];
     const saved = VALID_THEMES.includes(stored) ? stored : "dark";
     applyTheme(saved);
 
