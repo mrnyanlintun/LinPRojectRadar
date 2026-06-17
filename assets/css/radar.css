@@ -1022,21 +1022,84 @@ body.nav-open .nav-rail { transform: translateX(0); }
   .ds-modal, .ds-modal-backdrop { animation: none; }
 }
 
-/* ---------- Knowledge page: static glossary list (replaces chip word-cloud) ---------- */
-.kn-glossary { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
-.kn-gl-item {
-  padding: 10px 12px; border: 1px solid var(--line);
-  border-radius: var(--radius-sm); background: var(--surface-soft);
+/* ---------- Knowledge Library — two-panel navigator + narrative content ---------- */
+.kn-lib {
+  display: grid; grid-template-columns: 260px 1fr; gap: 18px; align-items: start;
 }
-.kn-gl-term { margin: 0 0 4px; font-size: 14px; color: var(--text); }
-.kn-gl-def { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
-.kn-gl-thresholds {
-  list-style: none; margin: 8px 0 0; padding: 0;
-  display: flex; flex-wrap: wrap; gap: 6px;
+@media (max-width: 900px) { .kn-lib { grid-template-columns: 1fr; } }
+.kn-nav { position: sticky; top: 12px; max-height: calc(100vh - 40px); overflow: auto; padding: 18px 14px; }
+.kn-nav-list { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.kn-nav-btn {
+  display: block; width: 100%; text-align: left;
+  background: none; border: 1px solid transparent; border-radius: 8px;
+  color: var(--text); font: inherit; font-size: 13px; line-height: 1.4;
+  padding: 9px 11px; cursor: pointer;
 }
-.kn-gl-threshold {
-  font-family: var(--font-mono); font-size: 11.5px; line-height: 1.4;
-  padding: 2px 9px; border-radius: 999px;
-  color: var(--kn-th); border: 1px solid var(--kn-th);
-  background: color-mix(in srgb, var(--kn-th) 12%, transparent);
+.kn-nav-btn:hover { background: var(--surface-soft); border-color: var(--line); }
+.kn-nav-btn.active { background: color-mix(in srgb, var(--phosphor) 14%, transparent); border-color: var(--phosphor); color: var(--text); font-weight: 600; }
+
+.kn-content { padding: 26px 28px; }
+.kn-article { max-width: 760px; }
+.kn-h-art { font-size: clamp(20px, 2.6vw, 28px); margin: 6px 0 18px; letter-spacing: -.01em; }
+.kn-article h3 {
+  font-family: var(--font-display); font-weight: 700; font-size: 16px;
+  margin: 24px 0 10px; letter-spacing: .005em; color: var(--text);
 }
+.kn-article p { font-size: 14px; line-height: 1.7; color: var(--text); margin: 0 0 12px; }
+.kn-article .kn-lead { font-size: 15px; line-height: 1.65; color: var(--text); margin-bottom: 18px; }
+.kn-article strong { color: var(--text); }
+.kn-article em { font-style: italic; color: var(--muted); }
+.kn-article code {
+  font-family: var(--font-mono); font-size: 12.5px;
+  background: var(--surface-soft); padding: 1px 6px; border-radius: 4px;
+  border: 1px solid var(--line);
+}
+.kn-list { padding-left: 22px; margin: 4px 0 14px; }
+.kn-list li { font-size: 14px; line-height: 1.65; color: var(--text); margin-bottom: 6px; }
+.kn-callout {
+  border-left: 3px solid var(--phosphor);
+  background: color-mix(in srgb, var(--phosphor) 8%, transparent);
+  padding: 10px 14px; border-radius: 0 8px 8px 0;
+  font-size: 13.5px; line-height: 1.6; margin: 14px 0;
+}
+
+/* Formula block — monospace, labelled */
+.kn-formula {
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.65;
+  background: var(--surface-soft); border: 1px solid var(--line);
+  border-radius: 8px; padding: 14px 16px; margin: 10px 0 14px;
+  overflow-x: auto; white-space: pre; color: var(--text);
+}
+.kn-formula .kn-f-expr { display: inline-block; min-width: 50%; color: var(--text); }
+.kn-formula .kn-f-label { color: var(--muted); font-style: italic; }
+.kn-formula .kn-f-label:not(:empty)::before { content: "    "; }
+
+/* RAG threshold table */
+.kn-rag {
+  width: 100%; border-collapse: collapse; margin: 8px 0 16px;
+  font-size: 13px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+}
+.kn-rag thead th {
+  text-align: left; font-family: var(--font-mono); font-size: 10.5px;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+  padding: 8px 12px; background: var(--surface-soft); border-bottom: 1px solid var(--line);
+}
+.kn-rag tbody td {
+  padding: 10px 12px; border-bottom: 1px solid var(--line);
+  color: var(--text); vertical-align: top;
+}
+.kn-rag tbody tr:last-child td { border-bottom: 0; }
+.kn-rag tbody td.kn-rag-metric { font-weight: 600; }
+.kn-rag tbody td.kn-rag-cell {
+  font-family: var(--font-mono); font-weight: 600; color: var(--kn-th);
+  background: color-mix(in srgb, var(--kn-th) 10%, transparent);
+}
+
+/* Inline SVG illustration */
+.kn-svg {
+  width: 100%; height: auto; max-height: 320px;
+  margin: 10px 0 16px;
+  background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px;
+  padding: 8px;
+}
+.kn-svg-t { font-family: var(--font-mono); font-size: 10px; }
