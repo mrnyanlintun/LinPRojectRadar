@@ -289,33 +289,50 @@
 
   /* ---------- inline SVG illustrations (dark + light theme aware) ---------- */
 
-  // PCEIF signal-to-action flow (Topic 1)
+  // PCEIF signal-to-action flow (Topic 1) — 7 boxes, left-to-right, no overlap.
   function svgPceifFlow() {
     const labels = [
       "Documents + Schedule + Cost", "10 Signal Modules", "Signal Synthesis",
       "Conflict Classification", "Governance Decision Card",
       "Named Human Approval", "Audit Record",
     ];
-    const w = 720, h = 220, top = 30, bw = 132, gap = (w - labels.length * bw) / (labels.length - 1);
-    let out = `<svg viewBox="0 0 ${w} ${h}" class="kn-svg" role="img" aria-label="PCEIF signal-to-action flow">`;
+    const bw = 180, bh = 60, gap = 50, pad = 16;
+    const w = labels.length * bw + (labels.length - 1) * gap + pad * 2;
+    const top = 24, h = top + bh + 60;
+    const arrowReserve = 12; // leave room for the arrowhead before next box
+    let out = `<svg viewBox="0 0 ${w} ${h}" class="kn-svg kn-svg-flow" role="img" aria-label="PCEIF signal-to-action flow">`;
+    out += `<defs><marker id="kn-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--phosphor)"/></marker></defs>`;
+
     labels.forEach((l, i) => {
-      const x = i * (bw + gap);
-      out += `<rect x="${x}" y="${top}" width="${bw}" height="56" rx="8" fill="var(--surface-soft)" stroke="var(--phosphor)" stroke-width="1.5"></rect>`;
-      // wrap labels at ~14 chars
+      const x = pad + i * (bw + gap);
+      // box — accent border, tinted fill
+      out += `<rect x="${x}" y="${top}" width="${bw}" height="${bh}" rx="8"
+        fill="color-mix(in srgb, var(--phosphor) 10%, var(--surface-soft))"
+        stroke="var(--phosphor)" stroke-width="1.5"></rect>`;
+      // wrap at ~22 chars per line (fits 180px wide box at 12px monospace)
       const words = l.split(" "); const lines = []; let cur = "";
-      words.forEach((wd) => { if ((cur + " " + wd).trim().length > 16) { lines.push(cur.trim()); cur = wd; } else cur += " " + wd; });
-      if (cur.trim()) lines.push(cur.trim());
-      lines.slice(0, 3).forEach((ln, j) => {
-        out += `<text x="${x + bw / 2}" y="${top + 22 + j * 13}" text-anchor="middle" class="kn-svg-t" fill="var(--text)">${esc(ln)}</text>`;
+      words.forEach((wd) => {
+        if ((cur + " " + wd).trim().length > 22) { if (cur.trim()) lines.push(cur.trim()); cur = wd; }
+        else cur += " " + wd;
       });
+      if (cur.trim()) lines.push(cur.trim());
+      const cy = top + bh / 2;
+      const startY = cy - ((lines.length - 1) * 14) / 2 + 4;
+      lines.forEach((ln, j) => {
+        out += `<text x="${x + bw / 2}" y="${(startY + j * 14).toFixed(1)}" text-anchor="middle" class="kn-svg-flow-t" fill="var(--text)">${esc(ln)}</text>`;
+      });
+      // right-pointing arrow into the next box (always left → right)
       if (i < labels.length - 1) {
-        const ax = x + bw + 2, ay = top + 28;
-        out += `<path d="M${ax} ${ay} l${gap - 6} 0" stroke="var(--phosphor)" stroke-width="1.6" marker-end="url(#kn-arrow)"></path>`;
+        const ax1 = x + bw + 3;
+        const ax2 = x + bw + gap - arrowReserve;
+        const ay = cy;
+        out += `<line x1="${ax1}" y1="${ay}" x2="${ax2}" y2="${ay}" stroke="var(--phosphor)" stroke-width="1.8" marker-end="url(#kn-arrow)"></line>`;
       }
     });
-    out += `<defs><marker id="kn-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--phosphor)"/></marker></defs>`;
-    out += `<text x="${w / 2}" y="${h - 30}" text-anchor="middle" class="kn-svg-t" fill="var(--muted)">The system surfaces a recommendation. A named human records the decision.</text>`;
-    return out + "</svg>";
+
+    // caption
+    out += `<text x="${w / 2}" y="${h - 18}" text-anchor="middle" class="kn-svg-flow-cap" fill="var(--faint)">The system surfaces a recommendation. A named human records the decision.</text>`;
+    return `<div class="kn-flow-wrap">${out}</svg></div>`;
   }
 
   // Signal stack grouping → Synthesis (Topic 2)

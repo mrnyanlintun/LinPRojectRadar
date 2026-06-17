@@ -1103,6 +1103,13 @@ body.nav-open .nav-rail { transform: translateX(0); }
   padding: 8px;
 }
 .kn-svg-t { font-family: var(--font-mono); font-size: 10px; }
+/* PCEIF flow diagram: explicit sizing + monospace 12px box text + italic caption.
+   When the SVG is wider than the panel, the wrapper scrolls horizontally so no
+   box gets clipped. */
+.kn-flow-wrap { overflow-x: auto; margin: 10px 0 16px; }
+.kn-flow-wrap .kn-svg { margin: 0; max-height: none; min-width: 100%; }
+.kn-svg-flow-t { font-family: var(--font-mono); font-size: 12px; }
+.kn-svg-flow-cap { font-family: var(--font-body); font-size: 11.5px; font-style: italic; }
 
 /* ============================================================
    THEME — CYBERPUNK  (neon on black, scanlines, glow accents)
@@ -1211,7 +1218,7 @@ body[data-theme="newyork"] {
 body[data-theme="newyork"] .nyc-skyline {
   display: block;
   position: fixed; left: 0; right: 0; bottom: 0;
-  height: 28vh; min-height: 220px; max-height: 360px;
+  height: 48vh; min-height: 360px; max-height: 600px;
   z-index: 0; pointer-events: none; opacity: .55;
 }
 body[data-theme="newyork"] .nyc-skyline svg { width: 100%; height: 100%; display: block; }
