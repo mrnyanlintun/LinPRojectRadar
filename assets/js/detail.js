@@ -320,21 +320,41 @@
     return b;
   }
 
+  // Resolve the governance state from every shape we've seen on the wire:
+  // decision.state (PCEIF), decision.healthState (raw deriveDecision output),
+  // decision.derivedState (legacy backend field), project.status (top-level
+  // override). Falls back to deriveHealthState(project) if decision.js is
+  // available and signals are populated. Returns null if no state can be
+  // resolved — callers should never assume a default.
+  function resolveBriefState(project) {
+    const s = (project && project.signals) || {};
+    const d = s.decision || {};
+    const raw = d.state || d.healthState || d.derivedState || (project && project.status) || null;
+    if (raw) return String(raw);
+    try {
+      if (typeof deriveHealthState === "function" && s.evm && s.mc && s.cusum && s.doc) {
+        return deriveHealthState(project);
+      }
+    } catch (e) { /* defensive */ }
+    return null;
+  }
+
   function briefSignalsDigest(project) {
     const s = (project && project.signals) || {};
     const bits = [];
     if (s.evm) {
       const cpi = Number(s.evm.cpi);
       const spi = Number(s.evm.spi);
-      bits.push("cost " + (cpi >= 0.95 ? "on budget" : cpi >= 0.90 ? "slightly over" : "over budget"));
-      bits.push("schedule " + (spi >= 0.95 ? "on plan" : spi >= 0.90 ? "slightly behind" : "behind"));
+      if (Number.isFinite(cpi)) bits.push("cost " + (cpi >= 0.95 ? "on budget" : cpi >= 0.90 ? "slightly over" : "over budget"));
+      if (Number.isFinite(spi)) bits.push("schedule " + (spi >= 0.95 ? "on plan" : spi >= 0.90 ? "slightly behind" : "behind"));
     }
-    if (s.cusum) bits.push(s.cusum.breached ? "sustained drift" : "no drift");
+    if (s.cusum) bits.push(s.cusum.breached ? "sustained schedule drift" : "no drift");
     if (s.doc) {
       const score = Number(s.doc.score);
-      bits.push("docs " + (score < 0.30 ? "clean" : score < 0.70 ? "elevated risk" : "high risk"));
+      if (Number.isFinite(score)) bits.push("documents " + (score < 0.20 ? "clean" : score < 0.40 ? "minor risk" : score < 0.70 ? "elevated risk" : "high risk"));
     }
-    if (s.decision && s.decision.state) bits.push("state " + s.decision.state);
+    const state = resolveBriefState(project);
+    if (state) bits.push("overall state " + state);
     return bits.join(", ");
   }
 
@@ -353,49 +373,97 @@
     // endpoint. Backend already has the project context via `id`; we just
     // give Lin a short digest and the briefing rules.
     const digest = briefSignalsDigest(project);
+    const state = resolveBriefState(project) || "unknown";
+    console.log("[brief] decision packet for " + project.id + ":", project.signals && project.signals.decision);
+    console.log("[brief] resolved governance state for " + project.id + ":", state);
     return "Executive brief for project " + project.id +
-      " (" + project.name + "). Signal summary: " + digest + ". " +
+      " (" + project.name + "). Overall governance state: " + state + ". " +
+      "Signal summary: " + digest + ". " +
       "Write 4-6 sentences for a program director. Use 5-status vocabulary: " +
       "Complete=milestone achieved, Green=on track, Yellow=early warning, " +
       "Amber=significant risk, Red=critical. Phrase as 'in the amber zone' " +
       "or 'showing early warning signs', not bare RAG words. Lead with overall " +
       "health, name the top concern, state recommended action and who takes it, " +
-      "note whether evidence agrees. No module numbers, no metric values, no " +
-      "bullet points, no preamble.";
+      "note whether evidence agrees. The recommended action MUST be consistent " +
+      "with the concerns — do not say 'routine monitoring' if any concern is " +
+      "present. Only mention signal classes that the summary reports. No module " +
+      "numbers, no metric values, no bullet points, no preamble.";
   }
 
   // Scripted fallback when the chat endpoint fails. Same pattern as Ask Lin's
   // catch block in assistant.js — show something useful instead of an error.
+  // Only mentions signals that are actually present and accurate; the action
+  // is keyed to the concerns themselves so it can never contradict them
+  // (the previous version produced "Routine monitoring is appropriate" next
+  // to "sustained drift detected").
   function scriptedBrief(project) {
     const s = (project && project.signals) || {};
-    const state = (s.decision && s.decision.state) || "Unknown";
-    const conflict = (s.decision && s.decision.conflict) || "";
-    const authority = (s.decision && s.decision.authority) || "the project manager";
-    const stateWord = state === "Red-review" ? "in the red — critical failure"
-                    : state === "Amber"      ? "in the amber zone"
-                    : state === "Green"      ? "on track"
-                    : "in an unknown state";
-    const lead = "Project " + project.id + " is " + stateWord + ".";
+    const d = s.decision || {};
+    const conflict = d.conflict || "";
+    const authority = d.authority || "the project manager";
+
     const concerns = [];
     if (s.evm) {
-      if (Number(s.evm.cpi) < 0.90) concerns.push("cost is over budget");
-      else if (Number(s.evm.cpi) < 0.95) concerns.push("cost is slightly over budget");
-      if (Number(s.evm.spi) < 0.90) concerns.push("the schedule is behind");
-      else if (Number(s.evm.spi) < 0.95) concerns.push("the schedule is slipping");
+      const cpi = Number(s.evm.cpi);
+      if (Number.isFinite(cpi)) {
+        if (cpi < 0.90) concerns.push("cost is over budget");
+        else if (cpi < 0.95) concerns.push("cost is slightly over budget");
+      }
+      const spi = Number(s.evm.spi);
+      if (Number.isFinite(spi)) {
+        if (spi < 0.90) concerns.push("the schedule is behind");
+        else if (spi < 0.95) concerns.push("the schedule is slipping");
+      }
     }
     if (s.cusum && s.cusum.breached) concerns.push("the trend monitor has detected sustained drift");
-    if (s.doc && Number(s.doc.score) >= 0.70) concerns.push("document risk is high");
+    if (s.doc) {
+      const ds = Number(s.doc.score);
+      if (Number.isFinite(ds) && ds >= 0.70) concerns.push("document risk is high");
+      else if (Number.isFinite(ds) && ds >= 0.40) concerns.push("document risk is elevated");
+    }
+
+    // Resolve state. If decision.js doesn't tell us, infer from the concerns
+    // so the lead line never reads "in an unknown state" when there are real
+    // concerns on the package.
+    let state = resolveBriefState(project);
+    if (!state) {
+      if (concerns.length >= 2) state = "Red-review";
+      else if (concerns.length === 1) state = "Amber";
+      else state = "Green";
+    }
+
+    const stateWord = state === "Red-review" || state === "Red" ? "in the red zone — critical failure"
+                    : state === "Amber"   ? "in the amber zone — significant risk"
+                    : state === "Yellow"  ? "showing early warning signs"
+                    : state === "Complete" ? "showing the milestone as achieved"
+                    : state === "Green"   ? "on track"
+                    : "in an unsettled state";
+    const lead = "Project " + project.id + " is " + stateWord + ".";
+
     const concernLine = concerns.length
       ? "The most pressing concerns are that " + concerns.slice(0, 2).join(" and ") + "."
       : "No single concern dominates the signal package.";
-    const action = state === "Red-review"
-      ? "The recommendation is for " + authority + " to convene a recovery review within 48 hours."
-      : state === "Amber"
-        ? "The recommendation is for " + authority + " to open a weekly review loop and tighten the recovery plan."
-        : "Routine monitoring is appropriate this cycle.";
+
+    // Action picks its branch from the CONCERNS as well as the state, so it
+    // can never read "Routine monitoring" while concerns are listed.
+    let action;
+    const hasCritical = concerns.some((c) => c.indexOf("over budget") >= 0 || c.indexOf("schedule is behind") >= 0 || c.indexOf("sustained drift") >= 0 || c.indexOf("high") >= 0);
+    if (state === "Red-review" || state === "Red" || (hasCritical && concerns.length >= 2)) {
+      action = "The recommendation is for " + authority + " to convene a recovery review within 48 hours.";
+    } else if (state === "Amber" || hasCritical) {
+      action = "The recommendation is for " + authority + " to open a weekly review loop and tighten the recovery plan.";
+    } else if (state === "Yellow" || concerns.length === 1) {
+      action = "The recommendation is for the project manager to schedule a weekly check-in and investigate the early-warning variance before the next cycle.";
+    } else if (state === "Complete") {
+      action = "The recommendation is to begin closeout documentation.";
+    } else {
+      action = "Routine monthly monitoring is appropriate this cycle.";
+    }
+
     const conflictLine = conflict
       ? "The evidence methods classify this as " + conflict.toLowerCase() + "."
       : "The evidence methods broadly agree on the assessment.";
+
     return [lead, concernLine, action, conflictLine].join(" ");
   }
 
