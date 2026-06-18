@@ -45,11 +45,21 @@
 
   const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const COLOR = {
-    green: "var(--clear-green)",
-    amber: "var(--radar-amber)",
-    red:   "var(--alarm-red)"
+    complete: "var(--blue-status)",
+    blue:     "var(--blue-status)",
+    green:    "var(--clear-green)",
+    yellow:   "var(--yellow)",
+    amber:    "var(--radar-amber)",
+    red:      "var(--alarm-red)"
   };
-  const cls = (s) => String(s).toLowerCase().replace("-review", "");
+  const cls = (s) => {
+    const k = String(s || "").toLowerCase().replace("-review", "");
+    if (k === "blue") return "complete";
+    if (k === "light-amber" || k === "lightamber") return "yellow";
+    if (k === "orange") return "amber";
+    if (k === "critical") return "red";
+    return k;
+  };
 
   /* ---------- HUD-style building blocks ---------- */
 
@@ -376,16 +386,22 @@
     // by the second metric row and the regulatory-basis box. Pulled from the
     // PCEIF Layer 1 policy table; the strings here mirror exactly what the
     // Knowledge Library "Module 19" section explains in full.
-    const stateKey = d.healthState; // "Green" | "Amber" | "Red-review"
-    const timeframe = stateKey === "Green" ? "Monthly reporting cycle"
-                    : stateKey === "Amber" ? "Weekly review loop"
+    const stateKey = d.healthState; // "Complete" | "Green" | "Yellow" | "Amber" | "Red-review"
+    const timeframe = stateKey === "Complete" ? "Closeout documentation"
+                    : stateKey === "Green"    ? "Monthly reporting cycle"
+                    : stateKey === "Yellow"   ? "Weekly check-in"
+                    : stateKey === "Amber"    ? "Weekly review loop"
                     : stateKey === "Red-review" ? "48 business hours"
                     : "Immediate";
     const regulatoryBasis = stateKey === "Red-review"
       ? "FAR Part 34 / OMB Circular A-11"
-      : "Delegated PM authority";
-    const timeframeStatus = stateKey === "Green" ? "green"
-                          : stateKey === "Amber" ? "amber" : "red";
+      : stateKey === "Complete"
+        ? "Closeout / sign-off authority"
+        : "Delegated PM authority";
+    const timeframeStatus = stateKey === "Complete" ? "complete"
+                          : stateKey === "Green"    ? "green"
+                          : stateKey === "Yellow"   ? "yellow"
+                          : stateKey === "Amber"    ? "amber" : "red";
 
     return panel("19", "Agent-Based Model (ABM) Governance Layer", st,
       note("Governance decision derived from the full signal package using the PCEIF authority matrix. Maps the conflict classification to a specific action, a named authority, and required documentation.") +

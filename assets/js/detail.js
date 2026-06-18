@@ -33,16 +33,20 @@
   function normalizeStatus(status) {
     const s = String(status || "").toLowerCase();
     if (s === "red" || s === "red-review" || s === "critical") return "Red";
-    if (s === "amber") return "Amber";
+    if (s === "amber" || s === "orange") return "Amber";
+    if (s === "yellow" || s === "light-amber" || s === "lightamber") return "Yellow";
     if (s === "green") return "Green";
+    if (s === "complete" || s === "blue") return "Complete";
     return null;
   }
   function statusToRadius(status) {
     const s = normalizeStatus(status);
-    if (s === "Red") return 1.0;
-    if (s === "Amber") return 0.60;
+    if (s === "Red") return 1.00;
+    if (s === "Amber") return 0.70;
+    if (s === "Yellow") return 0.45;
     if (s === "Green") return 0.25;
-    return 0;
+    if (s === "Complete") return 0.10;
+    return 0; // no data — plot at centre so the 19-sided polygon stays closed
   }
   function statusClass(status) {
     const s = normalizeStatus(status);
@@ -155,14 +159,17 @@
           ${previous ? `<p class="kn-sub sw-vs"><span class="sw-prev-key"></span> vs ${esc(periodLabel(previous.period))}</p>` : ""}
         </div>
         <div class="sw-legend" aria-label="Signal web legend">
-          <span><i class="sw-green"></i>Healthy</span>
-          <span><i class="sw-amber"></i>Watch</span>
-          <span><i class="sw-red"></i>Escalate</span>
+          <span><i class="sw-complete"></i>Complete</span>
+          <span><i class="sw-green"></i>Green</span>
+          <span><i class="sw-yellow"></i>Yellow</span>
+          <span><i class="sw-amber"></i>Amber</span>
+          <span><i class="sw-red"></i>Red</span>
         </div>
       </div>
       <svg class="signal-web-svg" viewBox="0 0 420 380" role="img" aria-label="19 module signal web">
         <circle class="sw-ring sw-ring-green" cx="210" cy="190" r="37.5"></circle>
-        <circle class="sw-ring sw-ring-amber" cx="210" cy="190" r="90"></circle>
+        <circle class="sw-ring sw-ring-yellow" cx="210" cy="190" r="67.5"></circle>
+        <circle class="sw-ring sw-ring-amber" cx="210" cy="190" r="105"></circle>
         <circle class="sw-ring sw-ring-red" cx="210" cy="190" r="150"></circle>
         ${axis}
         ${previousStatuses ? `<polygon class="sw-web-prev" points="${polygonPoints(previousStatuses)}"></polygon>` : ""}
@@ -188,8 +195,10 @@
     }
 
     const populated = hasSignals(p);
-    const state = populated ? deriveHealthState(p) : "Awaiting ingest";
-    const stateKey = populated ? state.toLowerCase().replace("-review", "") : "empty";
+    const state = populated
+      ? (typeof deriveHealthStateLabel === "function" ? deriveHealthStateLabel(p) : deriveHealthState(p))
+      : "Awaiting ingest";
+    const stateKey = populated ? String(state).toLowerCase().replace("-review", "") : "empty";
 
     root.innerHTML =
       `<div class="detail-head">

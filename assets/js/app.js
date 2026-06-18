@@ -38,9 +38,12 @@
   };
 
   const STATUS_COLOR = {
-    green: "var(--clear-green)",
-    amber: "var(--radar-amber)",
-    red:   "var(--alarm-red)"
+    complete: "var(--blue-status)",
+    blue:     "var(--blue-status)",
+    green:    "var(--clear-green)",
+    yellow:   "var(--yellow)",
+    amber:    "var(--radar-amber)",
+    red:      "var(--alarm-red)"
   };
 
   const SVG_NS = "http://www.w3.org/2000/svg";
@@ -83,19 +86,27 @@
      derived state (and only those reach decision.js). */
   function statusKey(p) {
     if (!hasSignals(p)) return "empty";
-    return deriveHealthState(p).toLowerCase().replace("-review", "");
+    const label = typeof deriveHealthStateLabel === "function"
+      ? deriveHealthStateLabel(p)
+      : deriveHealthState(p);
+    return String(label).toLowerCase().replace("-review", "");
   }
   function stateLabel(p) {
-    return hasSignals(p) ? deriveHealthState(p) : "Awaiting ingest";
+    if (!hasSignals(p)) return "Awaiting ingest";
+    return typeof deriveHealthStateLabel === "function"
+      ? deriveHealthStateLabel(p)
+      : deriveHealthState(p);
   }
   // health proxy → radius band, so distance still reads as drift:
-  // green near center, amber mid, red outer. Empty sits at a neutral mid-ring.
+  // complete inside the blue ring, then green/yellow/amber/red moving outward.
   function proxyHealth(p) {
     switch (statusKey(p)) {
-      case "green": return 85;   // inside green zone
-      case "amber": return 55;   // inside amber ring
-      case "red":   return 25;   // inside red-review ring
-      default:      return 50;   // empty → neutral radius (rendered hollow/grey)
+      case "complete": return 95;  // inside complete (blue) ring
+      case "green":    return 80;  // inside green zone
+      case "yellow":   return 60;  // inside yellow ring
+      case "amber":    return 40;  // inside amber ring
+      case "red":      return 18;  // inside red-review ring
+      default:         return 50;  // empty → neutral radius (rendered hollow/grey)
     }
   }
 
@@ -149,8 +160,10 @@
 
     // ── threshold rings: Green / Amber / Red ─────────────────────────────
     const THRESHOLD_RINGS = [
+      { frac: 0.18, stroke: "#4ea0ff", label: "Complete" },
       { frac: 0.33, stroke: "#3fcaa6", label: "On track" },
-      { frac: 0.66, stroke: "#e2b13c", label: "Watch"    },
+      { frac: 0.55, stroke: "#f0c040", label: "Watch"    },
+      { frac: 0.72, stroke: "#e2b13c", label: "Risk"     },
       { frac: 0.90, stroke: "#e0556b", label: "Escalate" },
     ];
     THRESHOLD_RINGS.forEach(({ frac, stroke, label }) => {
@@ -320,10 +333,7 @@
         "data-id": p.id
       });
 
-      const color =
-        status === "green" ? STATUS_COLOR.green :
-        status === "amber" ? STATUS_COLOR.amber :
-        status === "red"   ? STATUS_COLOR.red : "var(--muted)";
+      const color = STATUS_COLOR[status] || "var(--muted)";
 
       // SVG tooltip
       const titleEl = el("title");

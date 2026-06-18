@@ -76,6 +76,12 @@
       body: "PCEIF (Public Capital EVM Intelligence Framework) is a signal-to-action governance framework for public AEC capital programs. Four signal classes (EVM, Monte Carlo forecast, SPC/CUSUM anomaly, and document risk) feed explicit governance rules that derive a health state, classify signal conflict, and recommend an action with a named authority and required documentation. This site is a synthetic demonstration of that workflow."
     },
     {
+      id: "five-status",
+      keywords: ["status", "five status", "5 status", "complete", "yellow", "blue", "rag", "red amber green", "why five", "authority matrix", "closeout"],
+      title: "Why five status levels (Complete / Green / Yellow / Amber / Red)",
+      body: "Traditional RAG collapses important distinctions. PCEIF uses five status levels for three reasons. (1) RAG hides the gap between 'slightly off' and 'stalled' — both show as Red. (2) Complete (blue) marks projects that have hit their milestone and transition to closeout governance — different authority, different documentation. (3) Yellow is an early-warning band between Green and Amber: minor variance, still recoverable, requiring a PM weekly check-in before it escalates. Each status maps to a distinct authority/timeframe in the Module 19 matrix."
+    },
+    {
       id: "radar",
       keywords: ["radar", "portfolio", "blip", "scope", "circle", "ring", "sector", "distance", "center"],
       title: "Reading the portfolio scope",
@@ -559,8 +565,40 @@
       `,
     },
     {
+      id: "five-status",
+      title: "2. Why Five Status Levels",
+      eyebrow: "Governance model",
+      build: () => `
+        <p class="kn-lead">Traditional RAG (Red-Amber-Green) systems use three states. PCEIF uses five — Complete, Green, Yellow, Amber, Red — for three concrete reasons.</p>
+
+        <h3>1. RAG collapses important distinctions</h3>
+        <p>A project that is slightly behind schedule and a project that has completely stalled both show as Red under RAG. A PM responding to a slightly-behind project applies very different actions than one responding to a stalled project. Collapsing them to the same status loses the governance signal.</p>
+
+        <h3>2. The Complete state enables closeout governance</h3>
+        <p>Public capital programs have a distinct closeout phase — work is done, but sign-off, commissioning, and documentation must be completed. A Green state implies active monitoring is still required. A Complete state signals the project has met its targets and transitions to closeout governance — different authority, different documentation requirements.</p>
+
+        <h3>3. Yellow provides an early warning band</h3>
+        <p>The gap between Green (all good) and Amber (significant risk) is too wide. A project moving from Green to Amber has often already been in trouble for 2-3 reporting periods. Yellow captures the early warning zone — minor variance, still recoverable, but requiring PM attention before the next cycle. This is the band where early intervention prevents escalation.</p>
+
+        <h3>The five-status authority matrix</h3>
+        <table class="kn-table">
+          <thead><tr><th>Status</th><th>Meaning</th><th>PM action</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pill pill-complete">Complete</span></td><td>Milestone achieved, signed off</td><td>Closeout documentation</td></tr>
+            <tr><td><span class="pill pill-green">Green</span></td><td>Fully on track</td><td>Routine monthly monitoring</td></tr>
+            <tr><td><span class="pill pill-yellow">Yellow</span></td><td>Minor variance, early warning</td><td>PM weekly check-in</td></tr>
+            <tr><td><span class="pill pill-amber">Amber</span></td><td>Significant risk, major bottleneck</td><td>PM + Controls Lead weekly review</td></tr>
+            <tr><td><span class="pill pill-red">Red</span></td><td>Critical failure, escalation required</td><td>Program Director within 48 hours</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Why not more than five?</h3>
+        <p>Six or more statuses create decision paralysis — the PM spends time debating whether a project is "Orange-Amber" vs "Deep-Amber" rather than acting. Five states map cleanly to five distinct governance responses with different authorities and timeframes.</p>
+      `,
+    },
+    {
       id: "stack",
-      title: "2. The Signal Stack: 19 Modules",
+      title: "3. The Signal Stack: 19 Modules",
       eyebrow: "Architecture",
       build: () => `
         <p class="kn-lead">The signal stack splits into five tiers. The first two compute and govern; the next three extend coverage to specialised construction and design risks, then layer multiple evidence-combination and uncertainty-reasoning frameworks across the result.</p>
@@ -1262,14 +1300,22 @@
         ${ragTable(
           ["State", "Authority", "Timeframe", "Basis"],
           [
+            [{ label: "Complete", color: "#4ea0ff" },
+             "Project Manager / Controls Lead",
+             "Closeout documentation",
+             "Milestone achieved and signed off — transition to closeout governance"],
             [{ label: "Green", color: RAG.green },
              "Project Manager / Controls Lead",
              "Monthly reporting cycle",
              "Routine performance within delegated PM authority"],
+            [{ label: "Yellow", color: "#f0c040" },
+             "Project Manager",
+             "Weekly check-in",
+             "Minor variance — early-warning band, investigate before next cycle"],
             [{ label: "Amber", color: RAG.amber },
              "PM + Project Controls Lead",
              "Weekly review loop",
-             "Early warning requiring controls oversight but within PM authority"],
+             "Significant risk requiring controls oversight but within PM authority"],
             [{ label: "Red-review", color: RAG.red },
              "Program Director / PMO Lead",
              "48 business hours",
@@ -1319,7 +1365,9 @@
           "  Maps state → action, authority, documentation, fairness gate requirement.",
           "",
           "Authority matrix, Layer 1 policy:",
+          "  Complete    → Project Manager / Controls Lead    , closeout documentation",
           "  Green       → Project Manager / Controls Lead    , monthly cycle",
+          "  Yellow      → Project Manager                    , weekly check-in",
           "  Amber       → PM + Controls Lead                 , weekly loop",
           "  Red-review  → Program Director / PMO Lead        , 48 hours",
           "  Critical    → Contracting Officer / Executive    , immediate",
