@@ -322,6 +322,13 @@
 
   function buildBriefPrompt(project) {
     const s = (project && project.signals) || {};
+    // Guard: refuse to send a chat request when the project has nothing
+    // worth briefing on. We require either the assembled decision package
+    // or one of the four core signal classes (evm/mc/cusum/doc). Returning
+    // null tells refreshBrief to show the explicit "no signals yet" state
+    // instead of POSTing a hollow prompt to the backend.
+    const hasCore = !!(s.evm || s.mc || s.cusum || s.doc);
+    if (!hasCore && !s.decision) return null;
     const sim = (project.simulationSignals && project.simulationSignals.signal_array) || [];
     const lines = [];
 
@@ -393,15 +400,18 @@
     return `<div class="eb-foot">Generated: ${esc(when)} · 19 signals analysed</div>`;
   }
 
-  function briefBodyHtml(state, brief) {
+  function briefBodyHtml(state, brief, errMsg) {
     if (state === "loading") {
       return `<div class="eb-body eb-loading" aria-live="polite">
         <span class="eb-shimmer"></span>
         <span class="eb-status">Analysing 19 signal modules…</span>
       </div>`;
     }
+    if (state === "skipped") {
+      return `<div class="eb-body eb-skipped">No signal data yet for this project. Ingest a document to generate a brief.</div>`;
+    }
     if (state === "error") {
-      return `<div class="eb-body eb-error" role="alert">Brief unavailable — check connection.</div>`;
+      return `<div class="eb-body eb-error" role="alert">Brief unavailable: ${esc(errMsg || "unknown error")}</div>`;
     }
     return `<div class="eb-body">${esc(brief && brief.text ? brief.text : "")}</div>`;
   }
@@ -430,14 +440,14 @@
     </section>`;
   }
 
-  function setBriefState(root, state, project, brief) {
+  function setBriefState(root, state, project, brief, errMsg) {
     const panel = root.querySelector(".eb-panel");
     if (!panel) return;
     const old = panel.querySelector(".eb-body");
     if (old) old.remove();
     const oldFoot = panel.querySelector(".eb-foot");
     if (oldFoot) oldFoot.remove();
-    panel.insertAdjacentHTML("beforeend", briefBodyHtml(state, brief));
+    panel.insertAdjacentHTML("beforeend", briefBodyHtml(state, brief, errMsg));
     if (state === "ready" && brief) panel.insertAdjacentHTML("beforeend", briefFooter(brief));
     if (project) {
       const accent = briefAccentClass(project);
@@ -447,7 +457,8 @@
 
   async function refreshBrief(root, project, opts) {
     if (!project || !window.LinStore || typeof LinStore.chat !== "function") {
-      setBriefState(root, "error", project, null);
+      console.error("[brief] LinStore.chat unavailable");
+      setBriefState(root, "error", project, null, "chat endpoint unavailable");
       return;
     }
     const force = !!(opts && opts.force);
@@ -457,22 +468,43 @@
       setBriefState(root, "ready", project, cached);
       return;
     }
+    // Guard: a project with no signals at all has nothing meaningful to brief
+    // on. Show the explicit "no signals" state instead of burning a chat call
+    // (the backend prompt would be all-empty signal lines).
+    const prompt = buildBriefPrompt(project);
+    if (prompt == null) {
+      console.log("[brief] skipped " + project.id + " — no signals to brief on");
+      setBriefState(root, "skipped", project, null);
+      return;
+    }
     setBriefState(root, "loading", project, null);
+    console.log("[brief] calling chat for project", project.id);
+    console.log("[brief] prompt =", prompt);
     try {
-      const prompt = buildBriefPrompt(project);
-      const answer = await LinStore.chat(prompt, project.id);
+      // 15s timeout — if the chat hangs the user gets an actionable error +
+      // a working Regenerate button instead of a spinning shimmer forever.
+      const TIMEOUT_MS = 15000;
+      const chatP = LinStore.chat(prompt, project.id);
+      const timeoutP = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("chat timed out after 15s")), TIMEOUT_MS));
+      const answer = await Promise.race([chatP, timeoutP]);
+      console.log("[brief] chat response for " + project.id + ":", answer);
       const text = String(answer || "").trim();
-      if (!text) throw new Error("empty brief");
+      if (!text) throw new Error("empty brief returned");
       const brief = { text, generated_at: new Date().toISOString(), period };
       project.executiveBrief = brief;
       setBriefState(root, "ready", project, brief);
       // Persist — non-blocking. Save failure leaves the brief in memory so
       // the user still sees it this session; next reload will refetch.
       if (LinStore.saveProject) {
-        LinStore.saveProject(project).catch(() => { /* non-fatal */ });
+        LinStore.saveProject(project).catch((err) => {
+          console.error("[brief] saveProject failed (non-fatal):", err);
+        });
       }
-    } catch (e) {
-      setBriefState(root, "error", project, null);
+    } catch (err) {
+      console.error("[brief] chat error for " + project.id + ":", err);
+      const msg = (err && err.message) ? err.message : "unknown error";
+      setBriefState(root, "error", project, null, msg);
     }
   }
 

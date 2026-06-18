@@ -715,6 +715,7 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 @keyframes eb-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 .eb-status { font-family: var(--font-mono); font-size: 12px; color: var(--faint); letter-spacing: .04em; }
 .eb-body.eb-error { color: var(--faint); font-size: 13px; }
+.eb-body.eb-skipped { color: var(--faint); font-size: 13px; font-style: italic; }
 .eb-foot { margin-top: 14px; font-size: 11px; color: var(--faint); font-family: var(--font-mono); letter-spacing: .04em; }
 .eb-regen { white-space: nowrap; }
 
