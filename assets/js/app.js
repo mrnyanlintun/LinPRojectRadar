@@ -38,12 +38,9 @@
   };
 
   const STATUS_COLOR = {
-    complete: "var(--blue-status)",
-    blue:     "var(--blue-status)",
-    green:    "var(--clear-green)",
-    yellow:   "var(--yellow)",
-    amber:    "var(--radar-amber)",
-    red:      "var(--alarm-red)"
+    green: "var(--clear-green)",
+    amber: "var(--radar-amber)",
+    red:   "var(--alarm-red)"
   };
 
   const SVG_NS = "http://www.w3.org/2000/svg";
@@ -86,27 +83,19 @@
      derived state (and only those reach decision.js). */
   function statusKey(p) {
     if (!hasSignals(p)) return "empty";
-    const label = typeof deriveHealthStateLabel === "function"
-      ? deriveHealthStateLabel(p)
-      : deriveHealthState(p);
-    return String(label).toLowerCase().replace("-review", "");
+    return deriveHealthState(p).toLowerCase().replace("-review", "");
   }
   function stateLabel(p) {
-    if (!hasSignals(p)) return "Awaiting ingest";
-    return typeof deriveHealthStateLabel === "function"
-      ? deriveHealthStateLabel(p)
-      : deriveHealthState(p);
+    return hasSignals(p) ? deriveHealthState(p) : "Awaiting ingest";
   }
   // health proxy → radius band, so distance still reads as drift:
-  // complete inside the blue ring, then green/yellow/amber/red moving outward.
+  // green near center, amber mid, red outer. Empty sits at a neutral mid-ring.
   function proxyHealth(p) {
     switch (statusKey(p)) {
-      case "complete": return 95;  // inside complete (blue) ring
-      case "green":    return 80;  // inside green zone
-      case "yellow":   return 60;  // inside yellow ring
-      case "amber":    return 40;  // inside amber ring
-      case "red":      return 18;  // inside red-review ring
-      default:         return 50;  // empty → neutral radius (rendered hollow/grey)
+      case "green": return 85;   // inside green zone
+      case "amber": return 55;   // inside amber ring
+      case "red":   return 25;   // inside red-review ring
+      default:      return 50;   // empty → neutral radius (rendered hollow/grey)
     }
   }
 
@@ -160,10 +149,8 @@
 
     // ── threshold rings: Green / Amber / Red ─────────────────────────────
     const THRESHOLD_RINGS = [
-      { frac: 0.18, stroke: "#4ea0ff", label: "Complete" },
       { frac: 0.33, stroke: "#3fcaa6", label: "On track" },
-      { frac: 0.55, stroke: "#f0c040", label: "Watch"    },
-      { frac: 0.72, stroke: "#e2b13c", label: "Risk"     },
+      { frac: 0.66, stroke: "#e2b13c", label: "Watch"    },
       { frac: 0.90, stroke: "#e0556b", label: "Escalate" },
     ];
     THRESHOLD_RINGS.forEach(({ frac, stroke, label }) => {
@@ -247,22 +234,10 @@
     // ── blips — two passes (collision jitter + label nudge) ──────────────
     const BAND_EDGES = [R_MIN - 6, 0.34 * 180, 0.62 * 180, R_MAX + 2];
 
-    // Per-project compute is wrapped so a single bad project (e.g. a partial
-    // signals package or a state value the derivation chain doesn't expect)
-    // logs the error and is skipped, instead of throwing out of .map() and
-    // blanking the entire portfolio.
-    const plots = LIN_PROJECTS.reduce((acc, p) => {
-      try {
-        const ang = hashAngle(p);
-        acc.push({ p, ang, r: healthToRadius(proxyHealth(p)) });
-      } catch (err) {
-        console.error("[radar] skipped project " + (p && p.id) + " — render derivation threw:", err);
-      }
-      return acc;
-    }, []);
-    if (!plots.length && LIN_PROJECTS.length) {
-      console.error("[radar] all " + LIN_PROJECTS.length + " project(s) failed to render — check derivation errors above");
-    }
+    const plots = LIN_PROJECTS.map((p) => {
+      const ang = hashAngle(p);
+      return { p, ang, r: healthToRadius(proxyHealth(p)) };
+    });
 
     // pass 1: dot collision jitter (deterministic by list order)
     const placedDots = [];
@@ -345,7 +320,10 @@
         "data-id": p.id
       });
 
-      const color = STATUS_COLOR[status] || "var(--muted)";
+      const color =
+        status === "green" ? STATUS_COLOR.green :
+        status === "amber" ? STATUS_COLOR.amber :
+        status === "red"   ? STATUS_COLOR.red : "var(--muted)";
 
       // SVG tooltip
       const titleEl = el("title");
