@@ -247,10 +247,22 @@
     // ── blips — two passes (collision jitter + label nudge) ──────────────
     const BAND_EDGES = [R_MIN - 6, 0.34 * 180, 0.62 * 180, R_MAX + 2];
 
-    const plots = LIN_PROJECTS.map((p) => {
-      const ang = hashAngle(p);
-      return { p, ang, r: healthToRadius(proxyHealth(p)) };
-    });
+    // Per-project compute is wrapped so a single bad project (e.g. a partial
+    // signals package or a state value the derivation chain doesn't expect)
+    // logs the error and is skipped, instead of throwing out of .map() and
+    // blanking the entire portfolio.
+    const plots = LIN_PROJECTS.reduce((acc, p) => {
+      try {
+        const ang = hashAngle(p);
+        acc.push({ p, ang, r: healthToRadius(proxyHealth(p)) });
+      } catch (err) {
+        console.error("[radar] skipped project " + (p && p.id) + " — render derivation threw:", err);
+      }
+      return acc;
+    }, []);
+    if (!plots.length && LIN_PROJECTS.length) {
+      console.error("[radar] all " + LIN_PROJECTS.length + " project(s) failed to render — check derivation errors above");
+    }
 
     // pass 1: dot collision jitter (deterministic by list order)
     const placedDots = [];

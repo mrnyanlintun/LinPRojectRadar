@@ -513,7 +513,13 @@
 
   function module05(projects) {
     // Calls the existing decision.js pure functions — no duplicated rules.
-    const decisions = projects.map((p) => ({ p, d: deriveDecision(p) }));
+    // Skip projects whose derivation throws so one bad project can't blank
+    // the whole Module 19 card (the same defence as the radar render path).
+    const decisions = projects.reduce((acc, p) => {
+      try { acc.push({ p, d: deriveDecision(p) }); }
+      catch (err) { console.error("[module19] skipped " + (p && p.id) + ":", err); }
+      return acc;
+    }, []);
     const byState = { "Green": [], "Amber": [], "Red-review": [] };
     decisions.forEach(({ p, d }) => (byState[d.healthState] || (byState[d.healthState] = [])).push({ p, d }));
     const gates = decisions.filter(({ d }) => d.fairnessGateRequired);
