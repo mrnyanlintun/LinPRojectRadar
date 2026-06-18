@@ -79,7 +79,7 @@
       id: "five-status",
       keywords: ["status", "five status", "5 status", "complete", "yellow", "blue", "rag", "red amber green", "why five", "authority matrix", "closeout"],
       title: "Why five status levels (Complete / Green / Yellow / Amber / Red)",
-      body: "Traditional RAG collapses important distinctions. PCEIF uses five status levels for three reasons. (1) RAG hides the gap between 'slightly off' and 'stalled' — both show as Red. (2) Complete (blue) marks projects that have hit their milestone and transition to closeout governance — different authority, different documentation. (3) Yellow is an early-warning band between Green and Amber: minor variance, still recoverable, requiring a PM weekly check-in before it escalates. Each status maps to a distinct authority/timeframe in the Module 19 matrix."
+      body: "Traditional RAG collapses important distinctions. PCEIF uses five status levels for three reasons. (1) RAG hides the gap between 'slightly off' and 'stalled' — both show as Red. (2) Complete (blue) marks projects that have hit their milestone and transition to closeout governance — different authority, different documentation. (3) Yellow is an early-warning band between Green and Amber: minor variance, still recoverable, requiring a PM weekly check-in before it escalates. Each status maps to a distinct authority/timeframe in the Cat 9.1 matrix."
     },
     {
       id: "radar",
@@ -90,32 +90,32 @@
     {
       id: "module01",
       keywords: ["module 01", "module 1", "hybrid", "dynamic simulation", "evm module", "cpi", "spi", "eac", "earned value"],
-      title: "Module 01: Hybrid Dynamic Simulation",
-      body: "Module 01 covers the EVM core: CPI (cost performance, EV/AC) and SPI (schedule performance, EV/PV) against the baseline. On a project's Detail page the Monte Carlo runs 5,000 iterations sampled from a signal-derived Beta-PERT distribution, with P50 and P80 read from the simulated array. P80 is the planning-conservative figure used for contingency and escalation decisions."
+      title: "Cat 1.1: Hybrid Dynamic Simulation",
+      body: "Cat 1.1 covers the EVM core: CPI (cost performance, EV/AC) and SPI (schedule performance, EV/PV) against the baseline. On a project's Detail page the Monte Carlo runs 5,000 iterations sampled from a signal-derived Beta-PERT distribution, with P50 and P80 read from the simulated array. P80 is the planning-conservative figure used for contingency and escalation decisions."
     },
     {
       id: "module02",
       keywords: ["module 02", "module 2", "cusum", "spc", "anomaly", "drift", "trend", "control"],
-      title: "Module 02: SPC / CUSUM Anomaly Monitor",
-      body: "Module 02 watches for accumulating drift. On a project's Detail page CUSUM is a REAL computation: the standard two-sided tabular recursion runs over the project's metric series and a breach is flagged only when the cumulative statistic crosses the decision interval H. It feeds the governance rules, including the 'Anomaly without narrative' conflict when the document record offers no explanation."
+      title: "Cat 1.2: SPC / CUSUM Anomaly Monitor",
+      body: "Cat 1.2 watches for accumulating drift. On a project's Detail page CUSUM is a REAL computation: the standard two-sided tabular recursion runs over the project's metric series and a breach is flagged only when the cumulative statistic crosses the decision interval H. It feeds the governance rules, including the 'Anomaly without narrative' conflict when the document record offers no explanation."
     },
     {
       id: "module03",
       keywords: ["module 03", "module 3", "document", "doc risk", "rfi", "submittal", "extraction", "keyword"],
-      title: "Module 03: Document-Risk Extraction",
-      body: "Module 03 scores risk language in project records (RFIs, submittals, QC comments, procurement notes) using visible keyword rules, the same rules the Manage Projects page runs. The score and the matched excerpt feed the signal ledger. In this demo extraction is rule-based and transparent; there is no live NLP or LLM."
+      title: "Cat 1.3: Document-Risk Extraction",
+      body: "Cat 1.3 scores risk language in project records (RFIs, submittals, QC comments, procurement notes) using visible keyword rules, the same rules the Manage Projects page runs. The score and the matched excerpt feed the signal ledger. In this demo extraction is rule-based and transparent; there is no live NLP or LLM."
     },
     {
       id: "module10",
       keywords: ["module 10", "module 10", "synthesis", "conflict", "disagreement", "leading", "forecast ahead", "conservative dominance"],
-      title: "Module 09: Conservative Dominance (Signal Synthesis)",
-      body: "Module 09 classifies disagreement between signal classes instead of averaging it away. Conflict types: Multi-signal red-review, Anomaly without narrative, Forecast ahead of status, Leading document risk, Agreement, low risk, and Mixed early warning. The precedence order is deliberate and documented in decision.js. Conservative dominance: the worst single signal drives the overall state. M09 is the baseline that Modules 10–18 cross-check before Module 19 records the decision."
+      title: "Cat 6.1: Conservative Dominance (Signal Synthesis)",
+      body: "Cat 6.1 classifies disagreement between signal classes instead of averaging it away. Conflict types: Multi-signal red-review, Anomaly without narrative, Forecast ahead of status, Leading document risk, Agreement, low risk, and Mixed early warning. The precedence order is deliberate and documented in decision.js. Conservative dominance: the worst single signal drives the overall state. Cat 6.1 is the baseline that Cat 7.1–Cat 7.9 cross-check before Cat 9.1 records the decision."
     },
     {
       id: "module19",
       keywords: ["module 19", "module 09", "abm", "agent", "governance layer", "decision rules", "authority"],
-      title: "Module 19: ABM Governance Layer",
-      body: "Module 19 is the agent-based governance layer: each authority role (PM, controls lead, program director) is an agent with explicit decision rules. Those rules live in decision.js as pure, readable functions (deriveHealthState, classifyConflict, and deriveDecision), and the Signals page calls them directly. The decision card you see on the Portfolio and Project Detail pages IS this module's output. Module 19 is the LAST module in the stack, the artefact that survives the reporting cycle."
+      title: "Cat 9.1: ABM Governance Layer",
+      body: "Cat 9.1 is the agent-based governance layer: each authority role (PM, controls lead, program director) is an agent with explicit decision rules. Those rules live in decision.js as pure, readable functions (deriveHealthState, classifyConflict, and deriveDecision), and the Signals page calls them directly. The decision card you see on the Portfolio and Project Detail pages IS this module's output. Cat 9.1 is the LAST module in the stack, the artefact that survives the reporting cycle."
     },
     {
       id: "fairness",
@@ -145,7 +145,7 @@
       id: "ingest",
       keywords: ["ingest", "upload", "paste", "doc type", "approve", "reject", "delta"],
       title: "Ingesting a document",
-      body: "Pick a project and document type, then paste or upload text (.txt / .csv / PDF-extracted text). The app runs the same visible keyword rules as Module 03, shows exactly which rule fired and the proposed signal delta, and nothing changes until a human clicks Approve. Reject discards the proposal. Every ingest event is logged."
+      body: "Pick a project and document type, then paste or upload text (.txt / .csv / PDF-extracted text). The app runs the same visible keyword rules as Cat 1.3, shows exactly which rule fired and the proposed signal delta, and nothing changes until a human clicks Approve. Reject discards the proposal. Every ingest event is logged."
     },
     {
       id: "themes",
@@ -235,60 +235,60 @@
       definition: "PCEIF governance state requiring Program Director / PMO lead review. Triggered when ≥2 signal classes are Red, or CUSUM breach + Red forecast. Requires full signal package, assigned owner, rationale, response timeframe, and audit record." },
   ];
 
-  /* ---------- Modules 04-08, 11, Method Library accordion entries ---------- */
+  /* ---------- Cat 2.1–Cat 3.2, 11, Method Library accordion entries ---------- */
   TOPICS.push(
     {
       id: "module04",
       keywords: ["module 04", "module 4", "pert", "program evaluation", "network criticality", "triangular", "path criticality"],
-      title: "Module 04: Program Evaluation & Review Technique (PERT)",
+      title: "Cat 2.1: Program Evaluation & Review Technique (PERT)",
       body: "PERT is a stochastic network scheduling method. Each activity has three duration estimates, optimistic (a), most likely (m), and pessimistic (b), and is sampled from a triangular distribution. The classic deterministic three-point estimate is te = (a + 4m + b) / 6; the simulation aggregates the dominant path across 5,000 runs. P80 duration is the conservative finish (80% of runs at or under). The path-criticality index is the fraction of runs in which the structural path was on the critical path, the higher it is, the less float you have to absorb a slip. In this implementation a lower project SPI widens the pessimistic bound, so an already-drifting schedule grows a fatter P80 tail. Thresholds: Green P80 within baseline; Amber P80 up to +20%; Red P80 > +20%.",
     },
     {
       id: "module05",
       keywords: ["module 05", "module 5", "lob", "line of balance", "production velocity", "crew", "buffer"],
-      title: "Module 05: Line of Balance (LOB)",
+      title: "Cat 2.2: Line of Balance (LOB)",
       body: "LOB tracks production velocity for sequential, repetitive work, grading runs ahead of paving, paving runs ahead of striping, and so on. Each crew has a rate in units/day; the buffer is the schedule gap between leader and follower at every unit. When the follower's rate slips, that buffer compresses unit by unit and a crew-on-crew collision is being telegraphed before EVM moves. Here, lower project SPI slows the follower (paving) so the minimum crew buffer shrinks. Buffer collapse is a leading schedule indicator: it shows up in the LOB chart before it shows up in CPI or SPI. Thresholds: Green buffer > 3 days; Amber 1.5–3 days; Red ≤ 1.5 days.",
     },
     {
       id: "module06",
       keywords: ["module 06", "module 6", "ccpm", "critical chain", "buffer", "fever chart"],
-      title: "Module 06: Critical Chain Project Management (CCPM)",
+      title: "Cat 2.3: Critical Chain Project Management (CCPM)",
       body: "CCPM (Goldratt) aggregates the safety margin embedded in individual activity estimates into a single project buffer at the end of the critical chain. The fever chart plots buffer-consumed % against chain-complete %. Two thresholds drive the zones: the amber line tracks chain completion (buffer consumed ≥ % complete), burning buffer at the same rate progress is being made; the red line sits a third of the remaining range above (buffer consumed ≥ % complete + (100 − % complete) / 3), burning buffer faster than the chain can complete. Crossing into red means the buffer will run out before the work does. Thresholds: Green below the amber line; Amber buffer consumed ≥ % complete; Red buffer consumed ≥ % complete + (100 − % complete) / 3.",
     },
     {
       id: "module07",
       keywords: ["module 07", "module 7", "rcf", "reference class", "forecasting", "flyvbjerg", "debias", "optimism bias"],
-      title: "Module 07: Reference Class Forecasting (RCF)",
+      title: "Cat 3.1: Reference Class Forecasting (RCF)",
       body: "Reference Class Forecasting comes from Bent Flyvbjerg's research on optimism bias in large infrastructure projects: bottom-up estimates systematically underestimate cost because they reason from the inside view (this project's plan) rather than the outside view (how comparable projects have actually performed). RCF replaces the inside-view estimate with an empirical prior, the distribution of historical overrun multipliers from a comparable reference class. This implementation uses an airport-infrastructure multiplier set [1.00 to 1.52]; the P80 multiplier is the conservative debiasing factor applied to BAC. The debiasing factor is the multiplier itself: x1.38 means the outside view says comparable projects finished 38% over their baseline. The P80 RCF prior is the realistic planning budget to compare against the bottom-up EAC. Thresholds: Green P80 within +10% of BAC; Amber +10–25%; Red > +25%.",
     },
     {
       id: "module08",
       keywords: ["module 08", "module 8", "dsm", "design structure matrix", "rework", "propagation", "arch", "structural", "mep", "dependency"],
-      title: "Module 08: Design Structure Matrix (DSM)",
+      title: "Cat 3.2: Design Structure Matrix (DSM)",
       body: "A DSM captures information-flow dependencies between work elements as a square matrix: each off-diagonal entry A[i][j] is the strength of i's dependence on j. Here the elements are the three design disciplines, Architectural, Structural, MEP, and the off-diagonals encode how much a unit change in one cascades into the others. Architectural decisions flow downstream into both Structural and MEP, so an arch scope change ripples through the matrix; structural and MEP changes also feed back. The simulation propagates a unit architectural change vector through the matrix for four passes and accumulates the rework absorbed in each discipline. The total cumulative rework multiplier is the coordination cost: a multiplier above 2.5 indicates that one unit of arch change is generating more than 2.5 units of downstream rework, high coordination risk. Thresholds: Green rework multiplier ≤ 2.5; Amber > 2.5.",
     },
     {
       id: "module11",
       keywords: ["module 11", "module 11", "dst", "dempster", "shafer", "belief", "evidence combination", "conflict mass", "bpa"],
-      title: "Module 11: Dempster-Shafer Evidence Combination (DST)",
-      body: "Dempster-Shafer Theory (DST) is a mathematical framework for reasoning under uncertainty when evidence comes from multiple independent sources. Unlike conservative dominance (Module 09), which takes the worst single signal, DST combines all four signal classes into a belief distribution over {Green, Amber, Red, Unknown}. Each source assigns a basic probability assignment (BPA), a mass function over subsets of the frame of discernment. Dempster's combination rule then merges sources iteratively, redistributing conflict mass. The conflict mass K measures how much the sources disagree: K > 0.3 is flagged as high inter-signal disagreement, which is itself a governance signal. Academic context: Dempster (1967) and Shafer (1976). When DST agrees with Module 09, both methods corroborate each other. When they diverge, the disagreement is a finding: it tells the governance layer that the evidence picture is genuinely ambiguous rather than clear-cut, and that no single framing captures the full risk.",
+      title: "Cat 7.1: Dempster-Shafer Evidence Combination (DST)",
+      body: "Dempster-Shafer Theory (DST) is a mathematical framework for reasoning under uncertainty when evidence comes from multiple independent sources. Unlike conservative dominance (Cat 6.1), which takes the worst single signal, DST combines all four signal classes into a belief distribution over {Green, Amber, Red, Unknown}. Each source assigns a basic probability assignment (BPA), a mass function over subsets of the frame of discernment. Dempster's combination rule then merges sources iteratively, redistributing conflict mass. The conflict mass K measures how much the sources disagree: K > 0.3 is flagged as high inter-signal disagreement, which is itself a governance signal. Academic context: Dempster (1967) and Shafer (1976). When DST agrees with Cat 6.1, both methods corroborate each other. When they diverge, the disagreement is a finding: it tells the governance layer that the evidence picture is genuinely ambiguous rather than clear-cut, and that no single framing captures the full risk.",
     },
     {
       id: "module12",
       keywords: ["module 12", "rough sets", "rough set theory", "lower approximation", "upper approximation", "boundary region", "indeterminate", "pawlak"],
-      title: "Module 12: Rough Set Theory Classification",
-      body: "Rough Set Theory (Pawlak, 1982) provides a mathematical framework for classifying objects when available information is incomplete or imprecise. The core insight is that some concepts, like 'this project is Green', cannot be precisely defined with available attributes. Instead, rough sets define three regions: the lower approximation contains all objects (states) that definitely belong to the concept (over 75% of signals agree); the upper approximation contains all objects that possibly belong; and the boundary region, upper minus lower, is the indeterminate zone where evidence is insufficient to classify with certainty. A project falls in the definite Green region when the preponderance of evidence is unambiguous; it falls in the boundary when signals are mixed and classification is uncertain. A wide boundary region is itself a governance signal: it means the evidence does not yet support a confident classification. Unlike DST (Module 10), rough sets do not assign probability masses, they provide a set-theoretic answer: yes, possibly, or unknown. Thresholds: Definite requires > 75% signal agreement for a state; any support places a state in the upper approximation.",
+      title: "Cat 7.2: Rough Set Theory Classification",
+      body: "Rough Set Theory (Pawlak, 1982) provides a mathematical framework for classifying objects when available information is incomplete or imprecise. The core insight is that some concepts, like 'this project is Green', cannot be precisely defined with available attributes. Instead, rough sets define three regions: the lower approximation contains all objects (states) that definitely belong to the concept (over 75% of signals agree); the upper approximation contains all objects that possibly belong; and the boundary region, upper minus lower, is the indeterminate zone where evidence is insufficient to classify with certainty. A project falls in the definite Green region when the preponderance of evidence is unambiguous; it falls in the boundary when signals are mixed and classification is uncertain. A wide boundary region is itself a governance signal: it means the evidence does not yet support a confident classification. Unlike DST (Cat 7.1), rough sets do not assign probability masses, they provide a set-theoretic answer: yes, possibly, or unknown. Thresholds: Definite requires > 75% signal agreement for a state; any support places a state in the upper approximation.",
     },
     {
       id: "module13",
       keywords: ["module 13", "neutrosophic", "neutrosophic logic", "truth", "indeterminacy", "falsity", "t i f", "smarandache"],
-      title: "Module 13: Neutrosophic Logic",
+      title: "Cat 7.3: Neutrosophic Logic",
       body: "Neutrosophic Logic (Smarandache, 1995) extends fuzzy logic by introducing three independent truth-value dimensions: Truth (T), Indeterminacy (I), and Falsity (F). Unlike classical logic (T + F = 1) and fuzzy logic (T + F = 1 as a constraint), neutrosophic values are independent, T + I + F need not equal 1, and can exceed 1 or be less than 1. This is a deliberate feature: it models genuine epistemic uncertainty as a separate dimension rather than forcing it to be the residual of known truths and falsehoods. In project risk terms: T represents the degree to which the evidence supports a given status; F represents evidence against it; I represents the portion of evidence that is genuinely undetermined or contradictory, measurement noise, missing data, or conflicting signals that cannot be resolved by collecting more of the same kind of data. High indeterminacy (I > 30%) is a governance signal: it means the evidence architecture itself needs strengthening before a confident classification is possible, not just that the project is 'in between' Green and Red. This module combines the four primary signal classes disjunctively for T (union of evidence) and conjunctively for I and F, producing a three-component characterization of the current signal package.",
     },
     {
       id: "module14",
       keywords: ["module 14", "interval fuzzy", "interval-valued fuzzy", "fuzzy interval", "membership interval", "uncertainty interval", "ifs"],
-      title: "Module 14: Interval-valued Fuzzy Sets",
+      title: "Cat 7.4: Interval-valued Fuzzy Sets",
       body: "Interval-valued Fuzzy Sets (IVFS) extend classical fuzzy sets by representing membership as a range [lower, upper] rather than a single value. The interval reflects measurement uncertainty in the underlying data, the range of possible membership values given the precision of the inputs. For airport construction EVM, the primary sources of input uncertainty are: Schedule of Values (SoV) line-item accuracy of approximately +/-2% of contract value affecting Earned Value, and Pay Application rounding of approximately +/-1% affecting Actual Cost. These compound into a CPI/SPI uncertainty range of approximately +/-3 percentage points. IVFS propagates this uncertainty through the fuzzy membership functions for Green, Amber, and Red states, producing an interval rather than a point estimate. A wide interval signals that the current input precision is insufficient to reliably distinguish between adjacent states, e.g., a Green/Amber boundary crossing falls within the uncertainty band. The uncertainty width metric summarizes the total interval spread: High (> 0.30 width) means the classification is sensitive to input noise; Moderate (0.15-0.30) means some sensitivity; Low (< 0.15) means the signal package is sufficiently precise for reliable classification. References: Sambuc (1975); Zadeh (1975); Turksen (1986).",
     },
   );
@@ -325,12 +325,12 @@
   function svgPceifFlow() {
     const row1 = [
       "Documents + Schedule + Cost",
-      "Signal Generation: Modules 01-08",
-      "Baseline Synthesis: Module 09",
-      "Evidence Combination: Modules 10-18"
+      "Signal Generation: Cat 1.1–Cat 3.2",
+      "Baseline Synthesis: Cat 6.1",
+      "Evidence Combination: Cat 7.1–Cat 7.9"
     ];
     const row2 = [
-      "Governance Decision: Module 19",
+      "Governance Decision: Cat 9.1",
       "Named Human Approval",
       "Audit Record"
     ];
@@ -410,7 +410,7 @@
       { lab: "Governance Synthesis", mods: ["03 Doc Risk", "04 Synthesis", "05 ABM"], color: "var(--phosphor)", x: 30, y: 116 },
       { lab: "Extended Simulation", mods: ["06 PERT", "07 LOB", "08 CCPM", "09 RCF", "10 DSM"], color: "var(--radar-amber)", x: 30, y: 222 },
     ];
-    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="auto" class="kn-svg" role="img" aria-label="Signal stack of 19 modules feeding the governance decision">`;
+    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="auto" class="kn-svg" role="img" aria-label="Signal stack of 9 categories feeding the governance decision">`;
     groups.forEach((g) => {
       const bx = g.x, by = g.y, bw = 360, bh = 64;
       out += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="9" fill="var(--surface-soft)" stroke="${g.color}" stroke-width="1.5"></rect>`;
@@ -425,7 +425,7 @@
     });
     // synthesis target node
     out += `<rect x="540" y="115" width="160" height="60" rx="9" fill="var(--phosphor)" opacity="0.15" stroke="var(--phosphor)" stroke-width="1.8"></rect>`;
-    out += `<text x="620" y="142" text-anchor="middle" class="kn-svg-t" fill="var(--text)" font-weight="700">Module 09</text>`;
+    out += `<text x="620" y="142" text-anchor="middle" class="kn-svg-t" fill="var(--text)" font-weight="700">Cat 6.1</text>`;
     out += `<text x="620" y="160" text-anchor="middle" class="kn-svg-t" fill="var(--text)">Signal Synthesis</text>`;
     return out + "</svg>";
   }
@@ -514,7 +514,7 @@
     return out + "</svg>";
   }
 
-  // Module 10 agreement map (Topic 7)
+  // Cat 7.1 agreement map (Topic 7)
   function svgAgreementMap() {
     const w = 720, h = 200;
     const nodes = [["EVM", "var(--clear-green)", 100], ["FORECAST", "var(--radar-amber)", 280], ["CUSUM", "var(--alarm-red)", 460], ["DOC", "var(--clear-green)", 620]];
@@ -545,7 +545,7 @@
         <p>PCEIF closes that gap. Signals trigger an explicit rule set; the rule set returns a specific action, a specific authority, and the documentation required. The PM still records the decision, the framework simply makes the recommendation traceable.</p>
 
         <h3>Two-layer architecture</h3>
-        <p>Nineteen signal modules feed two layers of governance. Modules 01 to 08 generate signals. Module 09 synthesizes them into a baseline state. Modules 10 to 18 quantify confidence by cross-checking the baseline through nine independent evidence-combination methods. Module 19 produces the governance decision card with a named authority and required documentation.</p>
+        <p>Nineteen signal modules feed two layers of governance. Cat 1.1–Cat 3.2 generate signals. Cat 6.1 synthesizes them into a baseline state. Cat 7.1–Cat 7.9 quantify confidence by cross-checking the baseline through nine independent evidence-combination methods. Cat 9.1 produces the governance decision card with a named authority and required documentation.</p>
         <ul class="kn-list">
           <li><strong>Layer 1, Agency Governance.</strong> Sets the policy framework: the authority matrix, escalation thresholds, fairness rules, audit requirements. Established by the program owner; not changed per project.</li>
           <li><strong>Layer 2, PM Decision Architecture.</strong> Takes that policy and the project's signal package and surfaces, for each reporting cycle, the specific action the PM should record (or override, with rationale).</li>
@@ -604,46 +604,46 @@
         <p class="kn-lead">The signal stack splits into five tiers. The first two compute and govern; the next three extend coverage to specialised construction and design risks, then layer multiple evidence-combination and uncertainty-reasoning frameworks across the result.</p>
         ${svgSignalStack()}
 
-        <h3>Modules 01–03, Quantitative EVM Analysis</h3>
+        <h3>Cat 1.1–Cat 1.3, Quantitative EVM Analysis</h3>
         <ul class="kn-list">
-          <li><strong>Module 01: Monte Carlo EAC Forecast.</strong> EVM core (CPI, SPI) plus the 5,000-iteration Beta-PERT P80 EAC forecast.</li>
-          <li><strong>Module 02: CUSUM Anomaly Monitor.</strong> Two-sided tabular CUSUM over the SPI series; breach when cumulative drift exceeds the decision interval H = 5σ.</li>
-          <li><strong>Module 03: Document Risk Extraction.</strong> Transparent keyword rules score risk language across RFIs, submittals, OAC minutes, and correspondence.</li>
+          <li><strong>Cat 1.1: Monte Carlo EAC Forecast.</strong> EVM core (CPI, SPI) plus the 5,000-iteration Beta-PERT P80 EAC forecast.</li>
+          <li><strong>Cat 1.2: CUSUM Anomaly Monitor.</strong> Two-sided tabular CUSUM over the SPI series; breach when cumulative drift exceeds the decision interval H = 5σ.</li>
+          <li><strong>Cat 1.3: Document Risk Extraction.</strong> Transparent keyword rules score risk language across RFIs, submittals, OAC minutes, and correspondence.</li>
         </ul>
 
-        <h3>Modules 04–08, Extended Construction & Design Simulation</h3>
+        <h3>Cat 2.1–Cat 3.2, Extended Construction & Design Simulation</h3>
         <ul class="kn-list">
-          <li><strong>Module 04: PERT</strong> network criticality (P80 duration, path criticality index).</li>
-          <li><strong>Module 05: Line of Balance</strong> production velocity (crew-buffer collapse as a leading indicator).</li>
-          <li><strong>Module 06: CCPM</strong> buffer-health fever chart (buffer consumed vs chain complete).</li>
-          <li><strong>Module 07: Reference Class Forecasting</strong> cost prior (outside-view debiasing against an empirical reference class).</li>
-          <li><strong>Module 08: Design Structure Matrix</strong> rework propagation (architectural change cascades to MEP).</li>
+          <li><strong>Cat 2.1: PERT</strong> network criticality (P80 duration, path criticality index).</li>
+          <li><strong>Cat 2.2: Line of Balance</strong> production velocity (crew-buffer collapse as a leading indicator).</li>
+          <li><strong>Cat 2.3: CCPM</strong> buffer-health fever chart (buffer consumed vs chain complete).</li>
+          <li><strong>Cat 3.1: Reference Class Forecasting</strong> cost prior (outside-view debiasing against an empirical reference class).</li>
+          <li><strong>Cat 3.2: Design Structure Matrix</strong> rework propagation (architectural change cascades to MEP).</li>
         </ul>
 
-        <h3>Module 09, Baseline Synthesis</h3>
+        <h3>Cat 6.1, Baseline Synthesis</h3>
         <ul class="kn-list">
-          <li><strong>Module 09: Conservative Dominance.</strong> Classifies the disagreement between signal classes (six conflict types) rather than averaging it away. Worst signal wins. This is the governance baseline that Modules 10–18 cross-check.</li>
+          <li><strong>Cat 6.1: Conservative Dominance.</strong> Classifies the disagreement between signal classes (six conflict types) rather than averaging it away. Worst signal wins. This is the governance baseline that Cat 7.1–Cat 7.9 cross-check.</li>
         </ul>
 
-        <h3>Modules 10–18, Evidence Combination &amp; Uncertainty Reasoning</h3>
+        <h3>Cat 7.1–Cat 7.9, Evidence Combination &amp; Uncertainty Reasoning</h3>
         <ul class="kn-list">
-          <li><strong>Module 10: Dempster-Shafer</strong> (1967/1976). Belief masses + conflict mass K.</li>
-          <li><strong>Module 11: Rough Sets</strong> (1982). Lower / upper approximations and boundary region.</li>
-          <li><strong>Module 12: Neutrosophic Logic</strong> (1995). Truth / Indeterminacy / Falsity as independent dimensions.</li>
-          <li><strong>Module 13: Interval-valued Fuzzy Sets</strong> (1975/1986). Membership intervals propagating EVM measurement tolerances.</li>
-          <li><strong>Module 14: Z-numbers</strong> (2011). Each signal as a (Restriction, Reliability) pair.</li>
-          <li><strong>Module 15: PLTS</strong> (2016). Per-source probability distribution over linguistic states.</li>
-          <li><strong>Module 16: Plithogenic Sets</strong> (2018). Contradiction-degree weighting against the dominant value.</li>
-          <li><strong>Module 17: Belief Rule Base</strong> (2006/2023). Expert IF-THEN rules with belief-distribution consequents.</li>
-          <li><strong>Module 18: Quantum Probability</strong> (2012). Amplitude state vector with phase-angle interference.</li>
+          <li><strong>Cat 7.1: Dempster-Shafer</strong> (1967/1976). Belief masses + conflict mass K.</li>
+          <li><strong>Cat 7.2: Rough Sets</strong> (1982). Lower / upper approximations and boundary region.</li>
+          <li><strong>Cat 7.3: Neutrosophic Logic</strong> (1995). Truth / Indeterminacy / Falsity as independent dimensions.</li>
+          <li><strong>Cat 7.4: Interval-valued Fuzzy Sets</strong> (1975/1986). Membership intervals propagating EVM measurement tolerances.</li>
+          <li><strong>Cat 7.5: Z-numbers</strong> (2011). Each signal as a (Restriction, Reliability) pair.</li>
+          <li><strong>Cat 7.6: PLTS</strong> (2016). Per-source probability distribution over linguistic states.</li>
+          <li><strong>Cat 7.7: Plithogenic Sets</strong> (2018). Contradiction-degree weighting against the dominant value.</li>
+          <li><strong>Cat 7.8: Belief Rule Base</strong> (2006/2023). Expert IF-THEN rules with belief-distribution consequents.</li>
+          <li><strong>Cat 7.9: Quantum Probability</strong> (2012). Amplitude state vector with phase-angle interference.</li>
         </ul>
 
-        <h3>Module 19, Governance Decision Output</h3>
+        <h3>Cat 9.1, Governance Decision Output</h3>
         <ul class="kn-list">
-          <li><strong>Module 19: ABM Governance Layer.</strong> Consumes the M09 baseline plus the M10–18 cross-checks and maps (state × conflict × sector) to action, authority, and documentation. Implemented as pure functions in <code>decision.js</code>. This is the LAST module, the artefact that survives the reporting cycle.</li>
+          <li><strong>Cat 9.1: ABM Governance Layer.</strong> Consumes the Cat 6.1 baseline plus the M10–18 cross-checks and maps (state × conflict × sector) to action, authority, and documentation. Implemented as pure functions in <code>decision.js</code>. This is the LAST module, the artefact that survives the reporting cycle.</li>
         </ul>
 
-        <p class="kn-callout">Outputs from Modules 01–08 feed Module 09 (Conservative Dominance). M09 is the governance baseline; Modules 10–18 each provide an independent lens to compare against it. Module 19 consumes both and produces the recorded decision card. Divergence between Modules 10–18 and M09 is itself a governance-relevant finding that the PM must own explicitly.</p>
+        <p class="kn-callout">Outputs from Cat 1.1–Cat 3.2 feed Cat 6.1 (Conservative Dominance). Cat 6.1 is the governance baseline; Cat 7.1–Cat 7.9 each provide an independent lens to compare against it. Cat 9.1 consumes both and produces the recorded decision card. Divergence between Cat 7.1–Cat 7.9 and Cat 6.1 is itself a governance-relevant finding that the PM must own explicitly.</p>
       `,
     },
     {
@@ -655,20 +655,20 @@
 
         <h3>The five tiers</h3>
         <ul class="kn-list">
-          <li><strong>Tier 1: Modules 01–03: Quantitative EVM.</strong> Compute what IS happening on cost, schedule, and field documents. These are the inputs everything else stands on.</li>
-          <li><strong>Tier 2: Modules 04–08: Extended simulation.</strong> Leading indicators that surface schedule and design risks BEFORE EVM shows the problem (network criticality, crew buffer, fever chart, outside-view priors, rework cascades).</li>
-          <li><strong>Tier 3: Module 09: Baseline synthesis.</strong> Conservative dominance classification, the worst single signal wins. This is the governance baseline state.</li>
-          <li><strong>Tier 4, Modules 10 to 18: Evidence combination.</strong> Nine independent uncertainty-reasoning frameworks (Dempster-Shafer, Rough Sets, Neutrosophic, Interval Fuzzy, Z-numbers, PLTS, Plithogenic, BRB, Quantum) confidence-check the M09 baseline.</li>
-          <li><strong>Tier 5: Module 19: Governance decision.</strong> Named-authority action, required documentation, fairness gate, the artefact that survives the reporting cycle.</li>
+          <li><strong>Tier 1: Cat 1.1–Cat 1.3: Quantitative EVM.</strong> Compute what IS happening on cost, schedule, and field documents. These are the inputs everything else stands on.</li>
+          <li><strong>Tier 2: Cat 2.1–Cat 3.2: Extended simulation.</strong> Leading indicators that surface schedule and design risks BEFORE EVM shows the problem (network criticality, crew buffer, fever chart, outside-view priors, rework cascades).</li>
+          <li><strong>Tier 3: Cat 6.1: Baseline synthesis.</strong> Conservative dominance classification, the worst single signal wins. This is the governance baseline state.</li>
+          <li><strong>Tier 4, Cat 7.1–Cat 7.9: Evidence combination.</strong> Nine independent uncertainty-reasoning frameworks (Dempster-Shafer, Rough Sets, Neutrosophic, Interval Fuzzy, Z-numbers, PLTS, Plithogenic, BRB, Quantum) confidence-check the Cat 6.1 baseline.</li>
+          <li><strong>Tier 5: Cat 9.1: Governance decision.</strong> Named-authority action, required documentation, fairness gate, the artefact that survives the reporting cycle.</li>
         </ul>
 
         <h3>PM decision protocol</h3>
         <ol class="kn-list">
-          <li><strong>Step 1.</strong> Read Module 19 (Governance recommendation). This is the action.</li>
-          <li><strong>Step 2.</strong> Check Module 09 (Conservative dominance). This is the baseline state.</li>
-          <li><strong>Step 3.</strong> Count how many of Modules 10–18 agree with Module 09:
+          <li><strong>Step 1.</strong> Read Cat 9.1 (Governance recommendation). This is the action.</li>
+          <li><strong>Step 2.</strong> Check Cat 6.1 (Conservative dominance). This is the baseline state.</li>
+          <li><strong>Step 3.</strong> Count how many of Cat 7.1–Cat 7.9 agree with Cat 6.1:
             <ul class="kn-list">
-              <li>8–9 agree: <strong>HIGH CONFIDENCE</strong>, act on the Module 19 recommendation.</li>
+              <li>8–9 agree: <strong>HIGH CONFIDENCE</strong>, act on the Cat 9.1 recommendation.</li>
               <li>5–7 agree: <strong>MODERATE CONFIDENCE</strong>, act, but document the uncertainty.</li>
               <li>&lt; 5 agree: <strong>LOW CONFIDENCE</strong>, investigate before acting.</li>
             </ul>
@@ -697,13 +697,13 @@
           ]
         )}
 
-        <p class="kn-callout">The point of the stack is that the recommended action is defensible, not just to the PM, but to a future auditor reading the decision card. "Module 19 recommended Red-review; 8 of 9 evidence methods agreed with the M09 baseline; the contractor fairness gate was acknowledged on [date]" reads cleanly. "It looked Red so we escalated" does not.</p>
+        <p class="kn-callout">The point of the stack is that the recommended action is defensible, not just to the PM, but to a future auditor reading the decision card. "Cat 9.1 recommended Red-review; 8 of 9 evidence methods agreed with the Cat 6.1 baseline; the contractor fairness gate was acknowledged on [date]" reads cleanly. "It looked Red so we escalated" does not.</p>
       `,
     },
     {
       id: "module01",
-      title: "4. Module 01: Monte Carlo EAC Forecast",
-      eyebrow: "Module 01",
+      title: "4. Cat 1.1: Monte Carlo EAC Forecast",
+      eyebrow: "Cat 1.1",
       build: () => `
         <p class="kn-lead">EVM integrates scope, schedule, and cost on a single measurement plane. On U.S. public capital programs it is required under OMB Circular A-11 and FAR Part 34 for major investments; under most agency policies a CPI shortfall sustained over multiple reporting periods is itself a reporting trigger.</p>
 
@@ -782,8 +782,8 @@
     },
     {
       id: "module02",
-      title: "5. Module 02: CUSUM Anomaly Monitor",
-      eyebrow: "Module 02",
+      title: "5. Cat 1.2: CUSUM Anomaly Monitor",
+      eyebrow: "Cat 1.2",
       build: () => `
         <p class="kn-lead">A single-period CPI/SPI reading is noisy. Real schedule drift accumulates slowly. Statistical Process Control separates signal from noise; CUSUM is the SPC method that catches sustained drift before any single period would trip a variance threshold.</p>
 
@@ -810,18 +810,18 @@
         ${svgCusum()}
 
         <h3>What a breach means</h3>
-        <p>A CUSUM breach hands the question to Module 09 (Conservative Dominance) and ultimately Module 19 (ABM Governance Layer). The monitor never acts on its own; it produces evidence the governance layer routes. If the breach has no document narrative behind it, the conflict type is "Anomaly Without Narrative", itself a finding worth surfacing.</p>
+        <p>A CUSUM breach hands the question to Cat 6.1 (Conservative Dominance) and ultimately Cat 9.1 (ABM Governance Layer). The monitor never acts on its own; it produces evidence the governance layer routes. If the breach has no document narrative behind it, the conflict type is "Anomaly Without Narrative", itself a finding worth surfacing.</p>
       `,
     },
     {
       id: "module03",
-      title: "6. Module 03: Document Risk Extraction",
-      eyebrow: "Module 03",
+      title: "6. Cat 1.3: Document Risk Extraction",
+      eyebrow: "Cat 1.3",
       build: () => `
         <p class="kn-lead">EVM lags field conditions by weeks. An RFI log showing 20 open disputes in period 4 predicts a CPI collapse in period 6, but EVM will not show that collapse until it has already happened. Document risk is the leading signal.</p>
 
         <h3>How extraction works</h3>
-        <p>Module 03 applies transparent keyword and pattern rules over RFIs, submittal logs, OAC meeting minutes, and project correspondence. Each rule has a weight and an evidence excerpt; the document risk score is a weighted sum normalised to 0–1. Every score is inspectable: the matched rule, the source document, and the excerpt are carried into the ledger.</p>
+        <p>Cat 1.3 applies transparent keyword and pattern rules over RFIs, submittal logs, OAC meeting minutes, and project correspondence. Each rule has a weight and an evidence excerpt; the document risk score is a weighted sum normalised to 0–1. Every score is inspectable: the matched rule, the source document, and the excerpt are carried into the ledger.</p>
 
         <h3>The score</h3>
         ${ragTable(
@@ -834,13 +834,13 @@
         )}
 
         <h3>A real limitation</h3>
-        <p>Keyword extraction is rule-based, not semantic. A sophisticated contractor writes around keyword rules. The score is a <em>leading indicator</em>, never a verdict. PCEIF treats Module 03 Red as a flag that requires Module 09 corroboration before it drives an action, never as a standalone trigger.</p>
+        <p>Keyword extraction is rule-based, not semantic. A sophisticated contractor writes around keyword rules. The score is a <em>leading indicator</em>, never a verdict. PCEIF treats Cat 1.3 Red as a flag that requires Cat 6.1 corroboration before it drives an action, never as a standalone trigger.</p>
       `,
     },
     {
       id: "module04",
-      title: "7. Module 04: PERT Network Criticality",
-      eyebrow: "Module 04",
+      title: "7. Cat 2.1: PERT Network Criticality",
+      eyebrow: "Cat 2.1",
       build: () => `
         <p class="kn-lead">A deterministic critical-path estimate is fragile; PERT samples each activity's plausible duration range and reports the probabilistic finish date. The P80 duration is the conservative milestone estimate program controls should plan to.</p>
 
@@ -857,14 +857,14 @@
           ["P80 vs baseline", { label: "within baseline", color: RAG.green }, { label: "+0 to +20%", color: RAG.amber }, { label: "> +20%", color: RAG.red }],
         ])}
 
-        <h3>How it differs from Module 01</h3>
-        <p>Module 01 (Monte Carlo EAC) randomises cost performance; Module 04 randomises activity durations along the schedule network. Module 01 answers "what will it cost?"; Module 04 answers "when will it finish?". Both contribute independent evidence to Module 09 synthesis.</p>
+        <h3>How it differs from Cat 1.1</h3>
+        <p>Cat 1.1 (Monte Carlo EAC) randomises cost performance; Cat 2.1 randomises activity durations along the schedule network. Cat 1.1 answers "what will it cost?"; Cat 2.1 answers "when will it finish?". Both contribute independent evidence to Cat 6.1 synthesis.</p>
       `,
     },
     {
       id: "module05",
-      title: "8. Module 05: Line of Balance Production Velocity",
-      eyebrow: "Module 05",
+      title: "8. Cat 2.2: Line of Balance Production Velocity",
+      eyebrow: "Cat 2.2",
       build: () => `
         <p class="kn-lead">For repetitive linear work, paving, MEP installation, finishes, the schedule risk lives in the gap between leading and following crews, not in EVM aggregates. Line of Balance tracks crew velocity so that buffer collapse appears as a leading schedule signal.</p>
 
@@ -886,8 +886,8 @@
     },
     {
       id: "module06",
-      title: "9. Module 06: CCPM Buffer Health",
-      eyebrow: "Module 06",
+      title: "9. Cat 2.3: CCPM Buffer Health",
+      eyebrow: "Cat 2.3",
       build: () => `
         <p class="kn-lead">Critical Chain Project Management aggregates safety margin into a single project buffer rather than scattering it across activities. The fever chart plots buffer consumption against chain completion, a project burning buffer faster than it completes work is on a trajectory to delay, regardless of what current SPI shows.</p>
 
@@ -910,8 +910,8 @@
     },
     {
       id: "module07",
-      title: "10. Module 07: Reference Class Forecasting",
-      eyebrow: "Module 07",
+      title: "10. Cat 3.1: Reference Class Forecasting",
+      eyebrow: "Cat 3.1",
       build: () => `
         <p class="kn-lead">Inside-view estimates, bottom-up cost roll-ups from the project's own scope, systematically underestimate cost on public infrastructure. Reference Class Forecasting replaces the inside view with the empirical distribution of overruns from comparable projects.</p>
 
@@ -934,8 +934,8 @@
     },
     {
       id: "module08",
-      title: "11. Module 08: DSM Rework Propagation",
-      eyebrow: "Module 08",
+      title: "11. Cat 3.2: DSM Rework Propagation",
+      eyebrow: "Cat 3.2",
       build: () => `
         <p class="kn-lead">Design changes do not stay where they start. The Design Structure Matrix captures the inter-discipline dependency network so a single architectural change can be propagated through Structural and MEP to estimate the cumulative rework burden.</p>
 
@@ -960,8 +960,8 @@
     },
     {
       id: "module09",
-      title: "12. Module 09: Conservative Dominance (Signal Synthesis)",
-      eyebrow: "Module 09 · baseline synthesis",
+      title: "12. Cat 6.1: Conservative Dominance (Signal Synthesis)",
+      eyebrow: "Cat 6.1 · baseline synthesis",
       build: () => `
         <p class="kn-lead">A CPI of 1.02 and a CUSUM breach do <strong>not</strong> average to "slightly above baseline." The breach is the finding. PCEIF surfaces disagreement between signal classes instead of averaging it away, and names the disagreement so the reviewer knows what to investigate.</p>
 
@@ -983,19 +983,19 @@
         <h3>Why precedence matters</h3>
         <p>The classifier walks the table in order: it picks the <em>first</em> matching conflict, not the most common one. That preserves the leading-indicator property, a Document Red overshadowed by aggregate Greens still surfaces as "Leading Document Risk" if it would otherwise be missed.</p>
 
-        <h3>How it differs from Modules 10–18</h3>
-        <p>Module 09 is the governance baseline: conservative dominance with explicit conflict typing. Modules 10–18 each provide an independent evidence-combination lens (probabilistic, set-theoretic, fuzzy, quantum). When Module 09 and any of 10–18 disagree, the disagreement itself is what gets recorded, the governance layer owns the residual uncertainty rather than picking a method. Module 19 (ABM Governance) consumes both the M09 baseline and the M10–18 cross-checks to produce the actionable decision card.</p>
+        <h3>How it differs from Cat 7.1–Cat 7.9</h3>
+        <p>Cat 6.1 is the governance baseline: conservative dominance with explicit conflict typing. Cat 7.1–Cat 7.9 each provide an independent evidence-combination lens (probabilistic, set-theoretic, fuzzy, quantum). When Cat 6.1 and any of 10–18 disagree, the disagreement itself is what gets recorded, the governance layer owns the residual uncertainty rather than picking a method. Cat 9.1 (ABM Governance) consumes both the Cat 6.1 baseline and the M10–18 cross-checks to produce the actionable decision card.</p>
       `,
     },
     {
       id: "module10",
-      title: "13. Module 10: Dempster-Shafer Evidence Combination",
-      eyebrow: "Module 10 · evidence theory",
+      title: "13. Cat 7.1: Dempster-Shafer Evidence Combination",
+      eyebrow: "Cat 7.1 · evidence theory",
       build: () => `
         <p class="kn-lead">Dempster-Shafer Theory (DST) is a mathematical framework for reasoning under uncertainty with multiple independent sources. Each source assigns a basic probability assignment (BPA) over a frame of discernment, here {Green, Amber, Red, Unknown}. Dempster's rule combines sources and normalises out the conflict mass K.</p>
 
         <h3>What DST adds beyond conservative dominance</h3>
-        <p>Module 09 takes the worst single signal. DST weights all four evidence sources and produces explicit belief masses for every state. When a project is Green by two signals, Amber by one, Red by one, conservative dominance outputs Red; DST may output Amber if the combined belief mass for Amber is highest, and the conflict mass K quantifies exactly how much the sources disagreed. That conflict mass is itself a governance-relevant finding.</p>
+        <p>Cat 6.1 takes the worst single signal. DST weights all four evidence sources and produces explicit belief masses for every state. When a project is Green by two signals, Amber by one, Red by one, conservative dominance outputs Red; DST may output Amber if the combined belief mass for Amber is highest, and the conflict mass K quantifies exactly how much the sources disagreed. That conflict mass is itself a governance-relevant finding.</p>
 
         ${formulaBlock([
           "Frame of discernment: Theta = {Green, Amber, Red, Unknown}",
@@ -1025,8 +1025,8 @@
     },
     {
       id: "module11",
-      title: "14. Module 11: Rough Sets Classification",
-      eyebrow: "Module 11 · set theory",
+      title: "14. Cat 7.2: Rough Sets Classification",
+      eyebrow: "Cat 7.2 · set theory",
       build: () => `
         <p class="kn-lead">Rough Set Theory classifies a project by computing lower and upper approximations of each state class. The lower approximation holds states that all available signals definitively support (over 75% agreement); the upper approximation holds states that any signal supports; the boundary region is the indeterminate zone.</p>
 
@@ -1055,8 +1055,8 @@
     },
     {
       id: "module12",
-      title: "15. Module 12: Neutrosophic Logic",
-      eyebrow: "Module 12 · three-valued logic",
+      title: "15. Cat 7.3: Neutrosophic Logic",
+      eyebrow: "Cat 7.3 · three-valued logic",
       build: () => `
         <p class="kn-lead">Neutrosophic Logic adds a third dimension to truth value: Indeterminacy (I), alongside Truth (T) and Falsity (F). Unlike classical and fuzzy logic, T + I + F is unconstrained, indeterminacy lives as its own dimension rather than being inferred from the residual of truth and falsity.</p>
 
@@ -1087,8 +1087,8 @@
     },
     {
       id: "module13",
-      title: "16. Module 13: Interval-valued Fuzzy Sets",
-      eyebrow: "Module 13 · fuzzy logic",
+      title: "16. Cat 7.4: Interval-valued Fuzzy Sets",
+      eyebrow: "Cat 7.4 · fuzzy logic",
       build: () => `
         <p class="kn-lead">Interval-valued Fuzzy Sets represent membership as a range [lower, upper] rather than a single value, explicitly propagating input measurement uncertainty through the fuzzy classification. The width of the resulting interval shows how much realistic input noise could shift the verdict.</p>
 
@@ -1121,13 +1121,13 @@
     },
     {
       id: "module14",
-      title: "17. Module 14: Z-numbers",
-      eyebrow: "Module 14 · reliability-weighted evidence",
+      title: "17. Cat 7.5: Z-numbers",
+      eyebrow: "Cat 7.5 · reliability-weighted evidence",
       build: () => `
         <p class="kn-lead">A Z-number is a pair (Restriction, Reliability). The restriction is the signal's classification; the reliability is how trustworthy the source data is. A CPI from a verified pay application is more trustworthy than one estimated from a schedule update, and the governance recommendation should reflect that, not just the headline state.</p>
 
         <h3>What Z-numbers add</h3>
-        <p>Every other synthesis method treats all sources as equally reliable. Z-numbers make reliability a first-class input: a Red signal from a low-reliability source contributes less than a Red from a high-reliability source. This is the same epistemic structure auditors use informally; Module 14 makes it explicit in the audit record.</p>
+        <p>Every other synthesis method treats all sources as equally reliable. Z-numbers make reliability a first-class input: a Red signal from a low-reliability source contributes less than a Red from a high-reliability source. This is the same epistemic structure auditors use informally; Cat 7.5 makes it explicit in the audit record.</p>
 
         ${formulaBlock([
           "For each signal i with state s_i and reliability r_i in [0, 1]:",
@@ -1154,8 +1154,8 @@
     },
     {
       id: "module15",
-      title: "18. Module 15: Probabilistic Linguistic Term Sets (PLTS)",
-      eyebrow: "Module 15 · probabilistic linguistics",
+      title: "18. Cat 7.6: Probabilistic Linguistic Term Sets (PLTS)",
+      eyebrow: "Cat 7.6 · probabilistic linguistics",
       build: () => `
         <p class="kn-lead">PLTS expresses each signal as a probability distribution across linguistic states {Green, Amber, Red} rather than forcing a crisp label. A CUSUM that just barely missed breach is not the same Green as a deeply stable monitor, PLTS preserves that distinction explicitly.</p>
 
@@ -1184,8 +1184,8 @@
     },
     {
       id: "module16",
-      title: "19. Module 16: Plithogenic Sets",
-      eyebrow: "Module 16 · contradiction-degree weighting",
+      title: "19. Cat 7.7: Plithogenic Sets",
+      eyebrow: "Cat 7.7 · contradiction-degree weighting",
       build: () => `
         <p class="kn-lead">Plithogenic Sets assign each signal a contradiction degree against the dominant value. A Green signal in a project where every other signal is Red has high contradiction, it is not cancelled, but it is weighted down to reflect that it is the outlier. High average contradiction means the signals are genuinely opposed, not merely mixed.</p>
 
@@ -1218,8 +1218,8 @@
     },
     {
       id: "module17",
-      title: "20. Module 17: Belief Rule Base (BRB)",
-      eyebrow: "Module 17 · expert IF-THEN rules",
+      title: "20. Cat 7.8: Belief Rule Base (BRB)",
+      eyebrow: "Cat 7.8 · expert IF-THEN rules",
       build: () => `
         <p class="kn-lead">A Belief Rule Base encodes expert knowledge as IF-THEN rules whose consequent is a belief distribution rather than a crisp state. "If EVM is Red and CUSUM has breached, belief is 90% Red, 8% Amber, 2% Green." Multiple matching rules are combined by rule weight to produce the aggregate belief.</p>
 
@@ -1249,8 +1249,8 @@
     },
     {
       id: "module18",
-      title: "21. Module 18: Quantum Probability",
-      eyebrow: "Module 18 · amplitude interference",
+      title: "21. Cat 7.9: Quantum Probability",
+      eyebrow: "Cat 7.9 · amplitude interference",
       build: () => `
         <p class="kn-lead">Quantum Probability models signals as wave amplitudes rather than classical probabilities. When signals align they interfere constructively, amplifying the dominant classification; when signals oppose they interfere destructively, reflecting genuine ambiguity. The phase angle measures signal coherence.</p>
 
@@ -1288,10 +1288,10 @@
     },
     {
       id: "module19",
-      title: "22. Module 19: ABM Governance Layer",
-      eyebrow: "Module 19 · decision output (LAST)",
+      title: "22. Cat 9.1: ABM Governance Layer",
+      eyebrow: "Cat 9.1 · decision output (LAST)",
       build: () => `
-        <p class="kn-lead">"Agent-based" here means each authority role (PM, controls lead, program director) is modelled as an agent with explicit, executable decision rules. In <code>decision.js</code> those rules are pure functions, readable, testable, and auditable. Nothing is learned; everything is documented. Module 19 is the LAST module because it consumes the M09 baseline plus the M10–18 evidence checks and produces the recorded decision card.</p>
+        <p class="kn-lead">"Agent-based" here means each authority role (PM, controls lead, program director) is modelled as an agent with explicit, executable decision rules. In <code>decision.js</code> those rules are pure functions, readable, testable, and auditable. Nothing is learned; everything is documented. Cat 9.1 is the LAST module because it consumes the Cat 6.1 baseline plus the M10–18 evidence checks and produces the recorded decision card.</p>
 
         <h3>Why the authority matrix exists</h3>
         <p>PCEIF operates under two layers. Layer 1 is the agency governance policy: the program owner sets the authority matrix before any project starts. Layer 2 is the PM decision architecture: it uses that matrix to route each signal package to the correct authority. The matrix is not hardcoded. A different agency can configure different thresholds and authorities. What PCEIF provides is the routing logic and the audit trail.</p>
@@ -1377,8 +1377,8 @@
         <p>A governance system cannot rely on a black-box model. Every recommended action must be traceable to a specific rule that a reviewer can read aloud. During a dispute the PM must be able to say: "the system recommended escalation because two signal classes were Red and the conflict was classified as Multi-signal Red-review under the PCEIF authority matrix." That sentence requires explicit rules, not neural weights.</p>
         <p>This is also why <code>decision.js</code> is plain JavaScript with no compilation step, anyone reading the code can verify the agency's authority matrix is implemented exactly as policy specifies.</p>
 
-        <h3>Why Module 19 is the LAST module</h3>
-        <p>The position is deliberate. The PM should read Module 19 first as the recommended action, then walk backward through the evidence chain to confirm. Modules 01–08 supply the inputs; Module 09 is the baseline classification; Modules 10–18 are the confidence check; Module 19 is what gets recorded. Placing the decision artefact at the end of the stack reflects the audit-trail order: the recommendation is the last thing the PM commits to, not the first thing they see.</p>
+        <h3>Why Cat 9.1 is the LAST module</h3>
+        <p>The position is deliberate. The PM should read Cat 9.1 first as the recommended action, then walk backward through the evidence chain to confirm. Cat 1.1–Cat 3.2 supply the inputs; Cat 6.1 is the baseline classification; Cat 7.1–Cat 7.9 are the confidence check; Cat 9.1 is what gets recorded. Placing the decision artefact at the end of the stack reflects the audit-trail order: the recommendation is the last thing the PM commits to, not the first thing they see.</p>
       `,
     },
     {
@@ -1421,7 +1421,7 @@
           ["Field", "Why it matters"],
           [
             ["Derived state", "The PCEIF rule output, Green / Amber / Red-review / Critical, that triggered this card."],
-            ["Conflict type", "The named disagreement Module 09 surfaced; tells the reviewer what to investigate."],
+            ["Conflict type", "The named disagreement Cat 6.1 surfaced; tells the reviewer what to investigate."],
             ["Recommended action", "The specific governance step the authority matrix returned; not a directive, a recommendation."],
             ["Authority", "The role entitled to record the decision. A different role recording it must document the override rationale."],
             ["Documentation required", "The artefacts (variance report, recovery plan, corrective-action notice) the agency policy requires for this state."],
@@ -1555,7 +1555,13 @@
     function modNavBtn(id) {
       const t = lookupTopic(id);
       if (!t) return "";
-      const label = CAT_LABEL_BY_ID[id] ? CAT_LABEL_BY_ID[id] + " " + t.title.replace(/^\d+\.\s*Module \d+:\s*/, "").replace(/^\d+\.\s*/, "") : t.title;
+      // Titles are now "N. Cat X.Y: Name" (or legacy "N. Module NN: Name").
+      // Strip the leading ordinal and the Cat/Module prefix, then re-prefix
+      // with the canonical Cat X.Y label so the nav never double-prints it.
+      const bare = t.title
+        .replace(/^\d+\.\s*/, "")
+        .replace(/^(Cat\s[\d.]+|Module\s\d+):\s*/, "");
+      const label = CAT_LABEL_BY_ID[id] ? CAT_LABEL_BY_ID[id] + " " + bare : t.title;
       return `<li class="kn-nav-mod"><button class="kn-nav-btn${t.id === selectedId ? " active" : ""}" data-topic="${esc(t.id)}">${esc(label)}</button></li>`;
     }
 

@@ -371,7 +371,7 @@
     ] : [
       `Conflict type "${conflict}": ${redN} red and ${ambN} amber signal class(es) against ${4 - redN - ambN} green.`,
       `PCEIF surfaces this disagreement instead of averaging it away — the gap between signal classes is the finding.`,
-      `The classification feeds Module 19, which maps it to an action and an authority.`
+      `The classification feeds Cat 9.1, which maps it to an action and an authority.`
     ];
     return panel("09", "Conservative Dominance — Signal Synthesis", st,
       note("Agreement map across all signal classes. When signals diverge, the gap between classes is the finding. PCEIF surfaces disagreement instead of averaging it away. Conservative dominance: the worst single-signal status drives the overall classification.") +
@@ -712,7 +712,7 @@
         metricBox("Belief Red", Math.round((s.belief_red || 0) * 100) + "%", s.belief_red > 0.3 ? "red" : "amber") +
         metricBox("Conflict Mass", Math.round((s.conflict_mass || 0) * 100) + "%", s.conflict_level === "High" ? "red" : s.conflict_level === "Moderate" ? "amber" : "green") +
         metricBox("Conflict Level", s.conflict_level || "Low", s.conflict_level === "High" ? "red" : s.conflict_level === "Moderate" ? "amber" : "green") +
-        metricBox("Agrees with Module 09", agrees ? "Yes" : (conservativeState ? "No" : "N/A"), agrees ? "green" : (conservativeState ? "amber" : "green"))
+        metricBox("Agrees with Cat 6.1", agrees ? "Yes" : (conservativeState ? "No" : "N/A"), agrees ? "green" : (conservativeState ? "amber" : "green"))
       }</div>` +
       `<p class="dd-chart-note">${esc(comparisonNote)}</p>` +
       reasons([
@@ -1139,18 +1139,18 @@
     let confidence, summaryText;
     if (agreeCount >= 8) {
       confidence = "HIGH";
-      summaryText = `All synthesis methods confirm the classification — high confidence. ${agreeCount} of 9 evidence methods agree with the M09 baseline (${String(s09).toUpperCase()}). Act on the Module 19 recommendation.`;
+      summaryText = `All synthesis methods confirm the classification — high confidence. ${agreeCount} of 9 evidence methods agree with the Cat 6.1 baseline (${String(s09).toUpperCase()}). Act on the Cat 9.1 recommendation.`;
     } else if (agreeCount >= 5) {
       confidence = "MODERATE";
-      summaryText = `${agreeCount} of 9 evidence methods agree with the M09 baseline (${String(s09).toUpperCase()}) — moderate confidence. Act on the Module 19 recommendation but document the uncertainty.`;
+      summaryText = `${agreeCount} of 9 evidence methods agree with the Cat 6.1 baseline (${String(s09).toUpperCase()}) — moderate confidence. Act on the Cat 9.1 recommendation but document the uncertainty.`;
     } else {
       confidence = "LOW";
-      summaryText = `Significant divergence — investigate before recording a formal governance action. Only ${agreeCount} of 9 evidence methods agree with the M09 baseline (${String(s09).toUpperCase()}). Spread across all methods: ${redCount} Red, ${amberCount} Amber, ${greenCount} Green.`;
+      summaryText = `Significant divergence — investigate before recording a formal governance action. Only ${agreeCount} of 9 evidence methods agree with the Cat 6.1 baseline (${String(s09).toUpperCase()}). Spread across all methods: ${redCount} Red, ${amberCount} Amber, ${greenCount} Green.`;
     }
 
     return `<section class="panel dd-panel status-${overallSt}" aria-label="Synthesis comparison">
-      <div class="dd-head"><b>Synthesis Methods Comparison — Modules 09–18</b><span class="dd-cmp-conf dd-cmp-conf-${confidence.toLowerCase()}">${confidence} CONFIDENCE</span></div>
-      <p class="dd-chart-note">Agreement check across all synthesis and evidence methods. Conservative dominance (Module 09) is the governance baseline; Modules 10–18 provide independent cross-checks using different evidence frameworks across five decades of uncertainty-reasoning research.</p>
+      <div class="dd-head"><b>Synthesis Methods Comparison — Cat 6.1 & Cat 7.1–7.9</b><span class="dd-cmp-conf dd-cmp-conf-${confidence.toLowerCase()}">${confidence} CONFIDENCE</span></div>
+      <p class="dd-chart-note">Agreement check across all synthesis and evidence methods. Conservative dominance (Cat 6.1) is the governance baseline; Cat 7.1–7.9 provide independent cross-checks using different evidence frameworks across five decades of uncertainty-reasoning research.</p>
       <table class="dd-cmp-table">${header}${rows}</table>
       <p class="dd-chart-note">${esc(summaryText)}</p>
     </section>`;
@@ -1241,7 +1241,7 @@
     //   sims.synth — Module 09 vs 10-18 agreement table + PM confidence band
     //   19     ABM Governance decision card (internally m09) — LAST
     root.innerHTML =
-      `<p class="mod-banner">Modules 01–08 are quantitative signal generators. Module 09 (Conservative Dominance) is the baseline synthesis. Modules 10–18 are independent evidence-combination methods cross-checking M09 across five decades of uncertainty-reasoning research. Module 19 (ABM Governance) is the decision output — the named-authority action that survives this reporting cycle.</p>` +
+      `<p class="mod-banner">Cat 1–Cat 3 modules are quantitative signal generators. Cat 6.1 (Conservative Dominance) is the baseline synthesis. Cat 7.1–7.9 are independent evidence-combination methods cross-checking Cat 6.1 across five decades of uncertainty-reasoning research. Cat 9.1 (ABM Governance) is the decision output — the named-authority action that survives this reporting cycle.</p>` +
       m01(project) + m02(project) + m03(project) +
       sims.low +
       m10(project) +                                              // displays as Module 09 (Conservative Dominance)
