@@ -760,6 +760,15 @@
       status.textContent = "Scanning document with AI… this can take a few seconds.";
       const stopLoading = startLoadingOverlay(container);
       try {
+        // Client-side size check. Large files sent as base64 can exceed the
+        // Apps Script request limit and surface as a "Failed to fetch". Log the
+        // size up front so the actual payload size is visible in the console.
+        const fileBytes = picked.size || 0;
+        const fileMB = fileBytes / (1024 * 1024);
+        const oversized = fileBytes > 2 * 1024 * 1024;
+        console.log("[upload] selected file:", picked.name, "·",
+          fileMB.toFixed(2) + " MB (" + fileBytes + " bytes) ·",
+          picked.type || "unknown type", oversized ? "· OVER 2 MB" : "");
         // PDFs → extract text client-side (PDF.js) and send as `text`.
         // If PDF.js returns little/no text (scanned or image-only PDF), fall
         // back to base64 so the backend can OCR / multimodal-parse it.
@@ -776,6 +785,22 @@
           status.textContent = "Scanning document with AI… this can take a few seconds.";
         } else {
           args.dataBase64 = await readFileAsBase64(picked);
+        }
+        // Log the real payload size right before the fetch. Base64 inflates the
+        // raw file by ~33%, so this is what Apps Script actually receives.
+        if (args.dataBase64 != null) {
+          const b64Bytes = args.dataBase64.length;
+          console.log("[upload] sending base64 payload:", b64Bytes + " chars (~" +
+            (b64Bytes / (1024 * 1024)).toFixed(2) + " MB)");
+          // Oversized base64 uploads are the ones that fail — block with the
+          // warning instead of letting the fetch die with "Failed to fetch".
+          // (Born-digital PDFs take the text path above and are unaffected.)
+          if (oversized) {
+            status.textContent = "File too large for direct upload. Consider compressing the PDF.";
+            return; // finally{} re-enables the button and clears the overlay
+          }
+        } else {
+          console.log("[upload] sending extracted text:", (args.text ? args.text.length : 0) + " chars");
         }
         const resp = await LinStore.extractSignals(args);
         // v7 returns computed CPI/SPI in `computed`; merge them into the

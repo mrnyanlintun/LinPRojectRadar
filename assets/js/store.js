@@ -101,6 +101,21 @@
       hydrate(projects);
       writeCache(projects);
       banner("");
+      // A project can go "missing" from the portfolio because it was
+      // accidentally archived. When the active list is empty — or there are
+      // archived projects at all — surface a warning so they're discoverable.
+      try {
+        await listArchived();                 // ?action=listarchived → LIN_ARCHIVED
+        const n = LIN_ARCHIVED.length;
+        if (n > 0 || LIN_PROJECTS.length === 0) {
+          console.log("[load] active:", LIN_PROJECTS.length, "· archived:", n,
+            "·", LIN_ARCHIVED.map((p) => p.id).join(", "));
+        }
+        if (n > 0) {
+          banner(n + (n === 1 ? " project is" : " projects are") +
+            " archived — restore from the archive tab", "warn");
+        }
+      } catch (e2) { /* non-fatal — the archive check is advisory only */ }
       return LIN_PROJECTS.slice();
     } catch (e) {
       lastError = e;

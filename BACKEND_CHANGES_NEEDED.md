@@ -447,3 +447,118 @@ These feed the 15 currently-inactive modules (Cat 2.7-2.9, 3.4-3.6, 3.8, 3.10,
 4.4-4.5, 4.8-4.9, 9.6-9.9). Until the backend supplies them, those modules
 return the standard `insufficient_data` stub and are excluded from the
 spider / ensemble counts — no fabricated statuses.
+
+---
+
+## Fix 10 — Diagnose a project missing from the portfolio (`listProjects_()` logging + `testProject07`)
+
+**Symptom:** project 07 exists in Drive (`Lin Project Radar/07/project.json`,
+modified June 17) but does not appear on the portfolio page. Most likely
+`?action=list` is **silently skipping** that folder because reading or parsing
+its `project.json` throws (malformed JSON, or a field that trips parsing), and
+`listProjects_()` swallows the per-folder error.
+
+These are **backend-only diagnostics** — paste into `Code.gs` in the Apps Script
+editor. They don't change behaviour, they just make the failure visible in the
+execution log (View → Executions / `Logger.log`).
+
+### 1. Log per-folder read failures instead of swallowing them
+
+In `listProjects_()`, wherever each project folder is read via
+`readProjectJson_(folder)`, wrap it so a failure logs the **folder name and the
+error** and is then skipped (so one bad project can't break the whole list):
+
+```javascript
+function listProjects_() {
+  var root = getRootFolder_();              // existing helper — Lin Project Radar root
+  var folders = root.getFolders();
+  var projects = [];
+  var skipped = [];
+
+  while (folders.hasNext()) {
+    var folder = folders.next();
+    var name = folder.getName();
+    // Skip non-project folders (e.g. _corpus) exactly as the current code does.
+    if (name.charAt(0) === '_') continue;
+
+    try {
+      var p = readProjectJson_(folder);     // existing helper
+      if (p) {
+        projects.push(p);
+      } else {
+        skipped.push(name + ' (readProjectJson_ returned null/empty)');
+        Logger.log('listProjects_: SKIP folder "%s" — no parseable project.json', name);
+      }
+    } catch (err) {
+      // Previously this folder was silently dropped. Log it loudly instead.
+      skipped.push(name + ' (' + err + ')');
+      Logger.log('listProjects_: ERROR reading folder "%s" — %s', name, err);
+    }
+  }
+
+  if (skipped.length) {
+    Logger.log('listProjects_: %s folder(s) skipped: %s', skipped.length, skipped.join('; '));
+  }
+  Logger.log('listProjects_: returning %s project(s)', projects.length);
+  return projects;
+}
+```
+
+> Adapt the iteration/helper names to your actual `Code.gs` — the key change is
+> the `try/catch` around `readProjectJson_(folder)` that logs
+> `folder.getName()` + the error, plus the summary `skipped`/count logs.
+
+### 2. `testProject07()` — read and log project 07's JSON directly
+
+Run this from the Apps Script editor (Run → `testProject07`, then check
+View → Executions) to see exactly what is in `07/project.json` and whether it
+parses:
+
+```javascript
+function testProject07() {
+  var root = getRootFolder_();              // existing helper
+  var folders = root.getFoldersByName('07');
+  if (!folders.hasNext()) {
+    Logger.log('testProject07: no folder named "07" under the root');
+    return;
+  }
+  var folder = folders.next();
+  Logger.log('testProject07: folder id=%s name=%s', folder.getId(), folder.getName());
+
+  var files = folder.getFilesByName('project.json');
+  if (!files.hasNext()) {
+    Logger.log('testProject07: folder "07" has no project.json');
+    return;
+  }
+  var file = files.next();
+  var raw = file.getBlob().getDataAsString();
+  Logger.log('testProject07: project.json is %s chars, last modified %s',
+             raw.length, file.getLastUpdated());
+  Logger.log('testProject07: raw (first 1000 chars):\n%s', raw.slice(0, 1000));
+
+  try {
+    var p = JSON.parse(raw);
+    Logger.log('testProject07: PARSED OK — id=%s, name=%s, archived=%s, keys=%s',
+               p.id, p.name, p.archived, Object.keys(p).join(','));
+  } catch (err) {
+    Logger.log('testProject07: JSON.parse FAILED — %s', err);
+  }
+
+  // Also exercise the real read path so we see what listProjects_ would get.
+  try {
+    var viaHelper = readProjectJson_(folder);
+    Logger.log('testProject07: readProjectJson_ returned %s',
+               viaHelper ? JSON.stringify(viaHelper).slice(0, 500) : '(null/empty)');
+  } catch (err2) {
+    Logger.log('testProject07: readProjectJson_ THREW — %s', err2);
+  }
+}
+```
+
+**What to look for in the execution log:**
+
+- `JSON.parse FAILED` → the file is malformed; the logged raw text shows where.
+- `archived=true` → it's not missing, it was archived (the frontend now warns
+  when archived projects exist — see `store.js` `load()`).
+- `readProjectJson_ THREW` but `JSON.parse OK` → the helper trips on a specific
+  field (e.g. an unexpected type); the error message names it.
