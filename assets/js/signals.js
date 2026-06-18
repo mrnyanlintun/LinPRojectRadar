@@ -480,6 +480,65 @@
     return snapshot;
   }
 
+  /* ---------- Cat 8 — portfolio-wide ML anomaly detection ----------
+     Builds signal vectors from every loaded project (plus the current one) and
+     POSTs them to the backend `portfolioanalyze` endpoint (Code.gs v10.17),
+     which returns the 5 Cat 8 module results. Non-fatal and async — the core
+     signal run is never blocked by it. Returns an array of Cat-8 sim results
+     (real results, or insufficient-data stubs when there isn't enough data). */
+  const CAT8_METHODS = ["Isolation_Forest", "Portfolio_Outlier", "Trajectory_Classifier",
+                        "Cross_Project_Pattern", "Anomaly_Score"];
+  function cat8Insufficient(message) {
+    return CAT8_METHODS.map((mc) => ({
+      method_class: mc, status_color: null, insufficient_data: true,
+      evidence_metric: message || "Insufficient portfolio data"
+    }));
+  }
+  function portfolioVector(p) {
+    const si = p && p.signalInputs;
+    if (!si || si.cpi == null) return null;
+    return {
+      id: p.id,
+      cpi: si.cpi,
+      spi: si.spi,
+      docRiskScore: si.docRiskScore || 0,
+      actualPctComplete: si.actualPctComplete || 0
+    };
+  }
+  async function runPortfolioAnalysis(project, allProjects) {
+    const list = allProjects || window.LIN_PROJECTS || [];
+    const portfolio = list.map(portfolioVector).filter(Boolean);
+    // Ensure the current project is represented (it may not be in the mirror yet).
+    const self = portfolioVector(project);
+    if (self && !portfolio.some((v) => v.id === project.id)) portfolio.push(self);
+
+    if (portfolio.length < 2) {
+      return cat8Insufficient("Need 3+ projects with signal data for portfolio analysis");
+    }
+    if (!window.LinStore || !LinStore.post ||
+        (LinStore.configured && !LinStore.configured())) {
+      return cat8Insufficient("Portfolio analysis endpoint unavailable");
+    }
+    try {
+      const resp = await LinStore.post({
+        action: "portfolioanalyze",
+        id: project.id,
+        portfolio: portfolio,
+        history: project.history || []
+      });
+      if (!resp || resp.ok === false || resp.insufficient_data) {
+        return cat8Insufficient((resp && resp.message) || "Insufficient portfolio data");
+      }
+      const results = [];
+      const rs = resp.results || {};
+      Object.keys(rs).forEach((k) => { if (rs[k]) results.push(rs[k]); });
+      return results.length ? results : cat8Insufficient("No portfolio results returned");
+    } catch (err) {
+      console.error("portfolioanalyze failed:", err && err.message);
+      return cat8Insufficient("Portfolio analysis request failed");
+    }
+  }
+
   /* ---------- run the EXISTING models from extracted signalInputs ----------
      Same path the old manual form used (LinSim.buildSignals + saveProject),
      fed from extracted cpi/spi/bac/doc-risk. fairnessSensitive is left
@@ -545,6 +604,19 @@
           worst_status: worstStatus
         });
       } catch (e) { /* simulations are non-fatal — never block the core run */ }
+    }
+    // Cat 8 — portfolio-wide ML anomaly detection (POST portfolioanalyze). Runs
+    // AFTER runAll() so the snapshot below is built with Cat 8 included. Async
+    // and non-fatal: merged into the sim array when it returns, skipped on error.
+    if (simPayload) {
+      try {
+        const cat8 = await runPortfolioAnalysis(project, window.LIN_PROJECTS);
+        if (Array.isArray(cat8) && cat8.length) {
+          simPayload.signal_array = simPayload.signal_array
+            .filter((s) => CAT8_METHODS.indexOf(s.method_class) < 0)
+            .concat(cat8);
+        }
+      } catch (e) { /* Cat 8 is non-fatal — never block the core run */ }
     }
     persistHistorySnapshot(project);
     try { buildCategorySnapshot(project); } catch (e) { /* non-fatal — keeps the legacy snapshot path working */ }

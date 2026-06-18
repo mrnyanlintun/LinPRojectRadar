@@ -340,6 +340,8 @@
     archiveProject, restoreProject, listArchived, chat, analyze,
     listCorpus, listAuditResults, ingestCorpus, runAudit, saveAuditResult,
     extractSignals, overwriteSignal, resetSignals,
+    // generic POST passthrough (used by the Cat 8 portfolioanalyze call)
+    post: apiPost,
     // sync mirror accessors used by render code
     cachedActive, cachedArchived, getCached, listActive: cachedActive,
     hasSignals, errored, configured, banner, loading

@@ -148,14 +148,14 @@ window.LIN_CATEGORIES = [
   {
     id: 'cat8', num: 'Cat 8', name: 'ML & AI Pattern Detection',
     color: '#64748b',
-    parked: true,
-    description: 'Machine learning anomaly detection — requires portfolio training data. Available in Stage 2.',
+    parked: false,  // NOW ACTIVE — portfolioanalyze (Code.gs v10.17) computes these
+    description: 'Machine learning anomaly detection using portfolio-wide signal comparison.',
     modules: [
-      { id: 'cat8_1', num: '8.1', name: 'Isolation Forest', method_class: 'Isolation_Forest', active: false, required: ['portfolioVectors'] },
-      { id: 'cat8_2', num: '8.2', name: 'Portfolio Outlier Detection', method_class: 'Portfolio_Outlier', active: false, required: ['portfolioVectors'] },
-      { id: 'cat8_3', num: '8.3', name: 'Signal Trajectory Classifier', method_class: 'Trajectory_Classifier', active: false, required: ['signalHistory'] },
-      { id: 'cat8_4', num: '8.4', name: 'Cross-project Pattern Detector', method_class: 'Cross_Project_Pattern', active: false, required: ['portfolioVectors'] },
-      { id: 'cat8_5', num: '8.5', name: 'Anomaly Score', method_class: 'Anomaly_Score', active: false, required: ['portfolioVectors'] }
+      { id: 'cat8_1', num: '8.1', name: 'Isolation Forest', method_class: 'Isolation_Forest', active: true, required: ['portfolioVectors'] },
+      { id: 'cat8_2', num: '8.2', name: 'Portfolio Outlier Detection', method_class: 'Portfolio_Outlier', active: true, required: ['portfolioVectors'] },
+      { id: 'cat8_3', num: '8.3', name: 'Signal Trajectory Classifier', method_class: 'Trajectory_Classifier', active: true, required: ['signalHistory'] },
+      { id: 'cat8_4', num: '8.4', name: 'Cross-project Pattern Detector', method_class: 'Cross_Project_Pattern', active: true, required: ['portfolioVectors'] },
+      { id: 'cat8_5', num: '8.5', name: 'Anomaly Score', method_class: 'Anomaly_Score', active: true, required: ['portfolioVectors'] }
     ]
   },
   {
@@ -205,6 +205,13 @@ window.getModuleStatus = function (methodClass, project) {
     case "abm_governance":         return s.decision ? s.decision.state : null;
     // Cat 5.1 reuses the Cat 3 DSM result under a distinct method_class.
     case "DSM_Rework_Cat5":        return findSim("DSM_Rework_Propagation");
+    // Cat 8 ML/AI — results come from the portfolioanalyze POST and are merged
+    // into the simulation signal_array like the other sim modules.
+    case "Isolation_Forest":
+    case "Portfolio_Outlier":
+    case "Trajectory_Classifier":
+    case "Cross_Project_Pattern":
+    case "Anomaly_Score":          return findSim(methodClass);
     default:                       return findSim(methodClass);
   }
 };

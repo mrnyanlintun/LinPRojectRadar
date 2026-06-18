@@ -562,3 +562,57 @@ function testProject07() {
   when archived projects exist — see `store.js` `load()`).
 - `readProjectJson_ THREW` but `JSON.parse OK` → the helper trips on a specific
   field (e.g. an unexpected type); the error message names it.
+
+---
+
+## Fix 11 — `POST portfolioanalyze` (Cat 8 ML/AI) — already implemented in Code.gs v10.17
+
+**Status:** implemented in `Code.gs` **v10.17** and deployed. Documented here so
+the frontend↔backend contract is recorded in-repo.
+
+**What the frontend does** (`signals.js` → `runPortfolioAnalysis`, called from
+`runModels()` immediately after `runAll()`/`runDST()` and before the snapshot is
+built):
+
+1. Builds a `portfolio` array of signal vectors from every loaded project (plus
+   the current one) that has `signalInputs.cpi`:
+   ```json
+   { "id": "06", "cpi": 0.82, "spi": 0.84, "docRiskScore": 0.55, "actualPctComplete": 42 }
+   ```
+2. If fewer than 2 projects have signal data, it does **not** call the backend —
+   it fills the 5 Cat 8 modules with `insufficient_data` stubs client-side.
+3. Otherwise it POSTs (CORS-safe `text/plain` body, same as every other action):
+   ```json
+   { "action": "portfolioanalyze", "id": "<project id>",
+     "portfolio": [ …vectors… ], "history": [ …project.history… ] }
+   ```
+
+**Expected response shape** (what the frontend parses):
+
+```json
+{
+  "ok": true,
+  "results": {
+    "Isolation_Forest":      { "method_class": "Isolation_Forest",      "status_color": "Amber", "evidence_metric": "Mahalanobis distance 2.1σ from portfolio centroid" },
+    "Portfolio_Outlier":     { "method_class": "Portfolio_Outlier",     "status_color": "Red",   "evidence_metric": "Bottom 12th percentile CPI & SPI" },
+    "Trajectory_Classifier": { "method_class": "Trajectory_Classifier", "status_color": "Amber", "evidence_metric": "Declining CPI over 3 periods" },
+    "Cross_Project_Pattern": { "method_class": "Cross_Project_Pattern", "status_color": "Green", "evidence_metric": "No matching distress cluster" },
+    "Anomaly_Score":         { "method_class": "Anomaly_Score",         "status_color": "Amber", "evidence_metric": "Composite anomaly index 64%" }
+  }
+}
+```
+
+- Each entry must carry `method_class` and `status_color` (Green/Amber/Red/null).
+  `evidence_metric` is shown in the spider-web tooltip. The frontend converts
+  `results` (object) to an array and merges it into
+  `simulationSignals.signal_array`, where `getModuleStatus()` reads it like any
+  other Cat 8 module.
+- For not-enough-data, return either `{ "ok": true, "insufficient_data": true,
+  "message": "…" }` or `{ "ok": false, "message": "…" }`; the frontend renders
+  the 5 modules as no-data with the message in the tooltip.
+
+**Contract summary:**
+- Called after `runAll()` completes (once per signal extraction run).
+- Returns the 5 Cat 8 module results.
+- Requires the `portfolio` array to contain **at least 2** projects with signal
+  data (the frontend short-circuits below that and never calls the endpoint).
