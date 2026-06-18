@@ -368,12 +368,16 @@
     }).join("");
 
     const activeCount = axes.filter((a) => a.status && normalizeStatus(a.status)).length;
+    // Count computed modules whose result leaned on a derived [est.] field.
+    const simArr = (project.simulationSignals && project.simulationSignals.signal_array) || [];
+    const estCount = simArr.filter((r) =>
+      r && r.status_color && /\b(estimated|derived|assumed)\b/i.test(String(r.evidence_metric || ""))).length;
 
     return `<section class="panel signal-web-panel">
       <div class="sw-head">
         <div>
           <p class="eyebrow">Signal Web — ${esc(periodTitle(cur && cur.period))}</p>
-          <p class="kn-sub sw-vs">89-module view · ${activeCount} computed · Cat 8 ML active — portfolio analysis</p>
+          <p class="kn-sub sw-vs">89-module view · ${activeCount} active modules · ${estCount} estimated</p>
         </div>
         <div class="sw-legend" aria-label="Signal web legend">
           <span><i class="sw-complete"></i>Complete</span>

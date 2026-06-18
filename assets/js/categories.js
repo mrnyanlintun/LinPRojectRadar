@@ -9,11 +9,12 @@
    Every module carries: id, num, name, method_class, active
    (true/false) and required (input keys it needs to compute).
 
-   Active now: 69 · Needs new doc data: 15 · Parked Cat 8: 5.
+   Active now: 80 · Still need new doc data: 9.
 
-   Cat 8 (ML & AI) is parked — Stage 2. Its modules are listed
-   so the structure is forward-compatible, but anything that
-   summarises the portfolio skips them.
+   Cat 8 (ML & AI) is active — its 5 modules compute via the
+   portfolioanalyze endpoint. Many Cat 2-9 modules now compute
+   from fields derived from the existing document set (see
+   signals.js deriveExtendedFields), tagged [est.] in the UI.
 
    Globals (no ES modules) so the site runs from file:// too.
    Loaded BEFORE the modules that consume it (categories.js
@@ -52,7 +53,7 @@ window.LIN_CATEGORIES = [
       { id: 'cat2_5', num: '2.5', name: 'Float Consumption Rate', method_class: 'Float_Consumption', active: true, required: ['totalFloat','consumedFloat'] },
       { id: 'cat2_6', num: '2.6', name: 'S-Curve Deviation', method_class: 'SCurve_Deviation', active: true, required: ['actualPctComplete','plannedPctComplete','ev','pv'] },
       { id: 'cat2_7', num: '2.7', name: 'Milestone Trend Analysis', method_class: 'Milestone_Trend', active: false, required: ['milestoneHistory'] },
-      { id: 'cat2_8', num: '2.8', name: 'Look-Ahead Schedule Health', method_class: 'Lookahead_Health', active: false, required: ['activitiesPlanned','activitiesConstrained'] },
+      { id: 'cat2_8', num: '2.8', name: 'Look-Ahead Schedule Health', method_class: 'Lookahead_Health', active: true, required: ['activitiesPlanned','activitiesConstrained'] },
       { id: 'cat2_9', num: '2.9', name: 'Resource Loading Index', method_class: 'Resource_Loading', active: false, required: ['plannedLaborHours','actualLaborHours'] },
       { id: 'cat2_10', num: '2.10', name: 'Schedule Risk Analysis P80', method_class: 'Schedule_Risk_Analysis', active: true, required: ['spi','baselineEnd','baselineStart','actualPctComplete'] },
       { id: 'cat2_11', num: '2.11', name: 'Critical Path Index', method_class: 'Critical_Path_Index', active: true, required: ['spi','plannedPctComplete','actualPctComplete'] }
@@ -67,12 +68,12 @@ window.LIN_CATEGORIES = [
       { id: 'cat3_2', num: '3.2', name: 'DSM Rework Propagation', method_class: 'DSM_Rework_Propagation', active: true, required: ['cpi','spi'] },
       { id: 'cat3_3', num: '3.3', name: 'Contingency Burn Rate', method_class: 'Contingency_Burn_Rate', active: true, required: ['originalContingency','remainingContingency','actualPctComplete'] },
       { id: 'cat3_4', num: '3.4', name: 'Labor Productivity Index', method_class: 'Labor_Productivity', active: false, required: ['plannedLaborHours','actualLaborHours','actualPctComplete'] },
-      { id: 'cat3_5', num: '3.5', name: 'Material Cost Variance', method_class: 'Material_Cost_Variance', active: false, required: ['materialCostBaseline','materialCostCurrent'] },
-      { id: 'cat3_6', num: '3.6', name: 'Overhead Absorption Rate', method_class: 'Overhead_Absorption', active: false, required: ['indirectCostPlan','indirectCostActual'] },
+      { id: 'cat3_5', num: '3.5', name: 'Material Cost Variance', method_class: 'Material_Cost_Variance', active: true, required: ['materialCostBaseline','materialCostCurrent'] },
+      { id: 'cat3_6', num: '3.6', name: 'Overhead Absorption Rate', method_class: 'Overhead_Absorption', active: true, required: ['indirectCostPlan','indirectCostActual'] },
       { id: 'cat3_7', num: '3.7', name: 'Cost Risk Analysis P80', method_class: 'Cost_Risk_Analysis', active: true, required: ['bac','cpi','ac','ev'] },
       { id: 'cat3_8', num: '3.8', name: 'Analogous Estimating Ratio', method_class: 'Analogous_Estimating', active: false, required: ['analogousOverrunPct','bac'] },
       { id: 'cat3_9', num: '3.9', name: 'Parametric Cost Index', method_class: 'Parametric_Cost', active: true, required: ['bac','ev','ac','actualPctComplete'] },
-      { id: 'cat3_10', num: '3.10', name: 'Inflation Adjustment Index', method_class: 'Inflation_Adjustment', active: false, required: ['materialCostBaseline','materialCostCurrent'] }
+      { id: 'cat3_10', num: '3.10', name: 'Inflation Adjustment Index', method_class: 'Inflation_Adjustment', active: true, required: ['materialCostBaseline','materialCostCurrent'] }
     ]
   },
   {
@@ -84,10 +85,10 @@ window.LIN_CATEGORIES = [
       { id: 'cat4_2', num: '4.2', name: 'RFI Velocity', method_class: 'RFI_Velocity', active: true, required: ['rfiCount','rfiPeriodDays'] },
       { id: 'cat4_3', num: '4.3', name: 'Submittal Rejection Rate', method_class: 'Submittal_Rejection', active: true, required: ['submittalsTotal','submittalsRejected'] },
       { id: 'cat4_4', num: '4.4', name: 'NCR Rate', method_class: 'NCR_Rate', active: false, required: ['ncrIssued','ncrClosed','ncrOpen'] },
-      { id: 'cat4_5', num: '4.5', name: 'Weather Day Impact', method_class: 'Weather_Impact', active: false, required: ['weatherDaysLost','floatRemaining'] },
+      { id: 'cat4_5', num: '4.5', name: 'Weather Day Impact', method_class: 'Weather_Impact', active: true, required: ['weatherDaysLost'] },
       { id: 'cat4_6', num: '4.6', name: 'Change Order Frequency', method_class: 'CO_Frequency', active: true, required: ['changeOrderCount','baselineContractSum','revisedContractSum'] },
       { id: 'cat4_7', num: '4.7', name: 'Dispute Escalation Index', method_class: 'Dispute_Escalation', active: true, required: ['docRiskScore','rfiCount','changeOrderCount'] },
-      { id: 'cat4_8', num: '4.8', name: 'Subcontractor Performance', method_class: 'Subcontractor_Performance', active: false, required: ['subcontractorComplianceScore'] },
+      { id: 'cat4_8', num: '4.8', name: 'Subcontractor Performance', method_class: 'Subcontractor_Performance', active: true, required: ['subcontractorComplianceScore'] },
       { id: 'cat4_9', num: '4.9', name: 'Procurement Lead Time Monitor', method_class: 'Procurement_Lead_Time', active: false, required: ['longLeadItemsTotal','longLeadAtRisk','longLeadDelayed'] },
       { id: 'cat4_10', num: '4.10', name: 'Specification Conflict Density', method_class: 'Spec_Conflict_Density', active: true, required: ['docRiskScore','rfiCount'] }
     ]
@@ -168,9 +169,9 @@ window.LIN_CATEGORIES = [
       { id: 'cat9_3', num: '9.3', name: 'OMB A-11 Check', method_class: 'OMB_A11_Check', active: true, required: ['bac','cpi','actualPctComplete'] },
       { id: 'cat9_4', num: '9.4', name: 'EVM Reporting Threshold', method_class: 'EVM_Reporting_Threshold', active: true, required: ['bac','cpi','spi'] },
       { id: 'cat9_5', num: '9.5', name: 'Contract Modification Frequency', method_class: 'Contract_Mod_Frequency', active: true, required: ['changeOrderCount','baselineContractSum','revisedContractSum'] },
-      { id: 'cat9_6', num: '9.6', name: 'Quality Compliance Index', method_class: 'Quality_Compliance', active: false, required: ['qualityAuditScore','totalFindings'] },
-      { id: 'cat9_7', num: '9.7', name: 'Safety Performance Index', method_class: 'Safety_Performance', active: false, required: ['oshaIncidentRate','industryBenchmarkRate'] },
-      { id: 'cat9_8', num: '9.8', name: 'Environmental Compliance Rate', method_class: 'Environmental_Compliance', active: false, required: ['environmentalComplianceRate'] },
+      { id: 'cat9_6', num: '9.6', name: 'Quality Compliance Index', method_class: 'Quality_Compliance', active: true, required: ['qualityDeficienciesNoted'] },
+      { id: 'cat9_7', num: '9.7', name: 'Safety Performance Index', method_class: 'Safety_Performance', active: true, required: ['safetyIncidentsDiscussed'] },
+      { id: 'cat9_8', num: '9.8', name: 'Environmental Compliance Rate', method_class: 'Environmental_Compliance', active: true, required: ['environmentalIssuesDiscussed'] },
       { id: 'cat9_9', num: '9.9', name: 'Contractor Performance Score', method_class: 'Contractor_Performance', active: false, required: ['overallRating','scheduleRating','costRating'] }
     ]
   }

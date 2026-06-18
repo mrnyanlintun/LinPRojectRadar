@@ -265,7 +265,7 @@
     const current = Array.isArray(arr) && arr.length &&
       meta && meta.module_set_version >= SIM_MODULE_SET_VERSION;
     if (current) return;
-    const si = resolveSimInputs(project);
+    const si = deriveExtendedFields(resolveSimInputs(project));
     // Diagnostic: confirm CPI/SPI/BAC actually reach runAll when it fires.
     console.log("[runAll] inputs:", {
       cpi: si.cpi, spi: si.spi, bac: si.bac, ev: si.ev, ac: si.ac, pv: si.pv,
@@ -543,6 +543,116 @@
      Same path the old manual form used (LinSim.buildSignals + saveProject),
      fed from extracted cpi/spi/bac/doc-risk. fairnessSensitive is left
      untouched so the red-review fairness gate behaves exactly as before. */
+  /* Derive extended signalInputs from the figures we already extract (BAC, AC,
+     CPI, SPI, doc-risk, RFI, %-complete). This lets ~15 modules compute from the
+     existing document set using industry-standard ratios. Every derived value is
+     tagged in si.sources with docType 'derived' so the UI can flag it [est.] and
+     the modules can note "estimated". Checks use == null so an absent (undefined)
+     OR null field is derived; preconditions use != null so we never derive from a
+     missing input. Returns the same (mutated) si. */
+  function deriveExtendedFields(si) {
+    if (!si) return si;
+    si.sources = si.sources || {};
+    const now = () => new Date().toISOString();
+    const mark = (key, value, note) => { si.sources[key] = { docType: 'derived', value: value, note: note, at: now() }; };
+
+    if (si.materialCostBaseline == null && si.bac != null) {
+      si.materialCostBaseline = Math.round(si.bac * 0.40);
+      mark('materialCostBaseline', si.materialCostBaseline, 'Derived: 40% of BAC');
+    }
+    if (si.materialCostCurrent == null && si.ac != null) {
+      si.materialCostCurrent = Math.round(si.ac * 0.40);
+      mark('materialCostCurrent', si.materialCostCurrent, 'Derived: 40% of AC');
+    }
+    if (si.indirectCostPlan == null && si.bac != null) {
+      si.indirectCostPlan = Math.round(si.bac * 0.12);
+      mark('indirectCostPlan', si.indirectCostPlan, 'Derived: 12% overhead on BAC');
+    }
+    if (si.indirectCostActual == null && si.ac != null) {
+      si.indirectCostActual = Math.round(si.ac * 0.12);
+      mark('indirectCostActual', si.indirectCostActual, 'Derived: 12% overhead on AC');
+    }
+    if (si.baselineContractSum == null && si.bac != null) {
+      si.baselineContractSum = si.bac;
+      mark('baselineContractSum', si.bac, 'Derived: original BAC');
+    }
+    if (si.revisedContractSum == null && si.bac != null) {
+      si.revisedContractSum = si.bac;
+      mark('revisedContractSum', si.bac, 'Derived: current BAC');
+    }
+    if (si.changeOrderCount == null) {
+      si.changeOrderCount = 0;
+      mark('changeOrderCount', 0, 'Derived: no change orders uploaded');
+    }
+    if (si.originalContingency == null && si.bac != null) {
+      si.originalContingency = Math.round(si.bac * 0.10);
+      mark('originalContingency', si.originalContingency, 'Derived: 10% of BAC');
+    }
+    if (si.remainingContingency == null && si.originalContingency != null && si.cpi != null) {
+      const burnFactor = Math.max(0, 1 - (1 - si.cpi) * 2);
+      si.remainingContingency = Math.round(si.originalContingency * burnFactor);
+      mark('remainingContingency', si.remainingContingency, 'Derived: estimated from CPI performance');
+    }
+    if (si.rfiCount == null && si.rfiNumber != null) {
+      si.rfiCount = si.rfiNumber;
+      mark('rfiCount', si.rfiNumber, 'Derived: from RFI sequential number');
+    }
+    if (si.rfiPeriodDays == null && si.rfiCount != null) {
+      si.rfiPeriodDays = 30;
+      mark('rfiPeriodDays', 30, 'Derived: assumed 30-day period');
+    }
+    if (si.submittalsTotal == null && si.docRiskScore != null) {
+      si.submittalsTotal = 10;
+      si.submittalsRejected = Math.round(si.docRiskScore * 3);
+      mark('submittalsTotal', 10, 'Derived: estimated from doc risk');
+    }
+    if (si.activitiesPlanned == null && si.plannedPctComplete != null) {
+      si.activitiesPlanned = 10;
+      si.activitiesConstrained = Math.round(Math.max(0, (1 - (si.spi != null ? si.spi : 1)) * 4));
+      si.lookaheadWeeks = 6;
+      mark('activitiesPlanned', 10, 'Derived: estimated from SPI');
+    }
+    if (si.qualityDeficienciesNoted == null && si.docRiskScore != null) {
+      si.qualityDeficienciesNoted = Math.round(si.docRiskScore * 5);
+      si.itemsInspected = 20;
+      si.itemsFailed = si.qualityDeficienciesNoted;
+      mark('qualityDeficienciesNoted', si.qualityDeficienciesNoted, 'Derived: estimated from doc risk score');
+    }
+    if (si.safetyIncidentsDiscussed == null && si.docRiskScore != null) {
+      si.safetyIncidentsDiscussed = Math.round(si.docRiskScore * 2);
+      mark('safetyIncidentsDiscussed', si.safetyIncidentsDiscussed, 'Derived: estimated from doc risk score');
+    }
+    if (si.environmentalIssuesDiscussed == null && si.docRiskScore != null) {
+      si.environmentalIssuesDiscussed = Math.round(si.docRiskScore * 1.5);
+      mark('environmentalIssuesDiscussed', si.environmentalIssuesDiscussed, 'Derived: estimated from doc risk score');
+    }
+    if (si.weatherDaysLost == null && si.spi != null) {
+      si.weatherDaysLost = Math.round(Math.max(0, (1 - si.spi) * 10));
+      mark('weatherDaysLost', si.weatherDaysLost, 'Derived: estimated from SPI degradation');
+    }
+    if (si.floatRemaining == null && si.spi != null && si.bac != null) {
+      si.floatRemaining = Math.round(Math.max(0, si.spi * 15));
+      mark('floatRemaining', si.floatRemaining, 'Derived: estimated from SPI');
+    }
+    // Subcontractor compliance: OAC issues + NCR + doc risk + RFI velocity.
+    if (si.subcontractorComplianceScore == null) {
+      let subBase = 100;
+      if (si.subcontractorIssuesDiscussed) subBase -= si.subcontractorIssuesDiscussed * 8;
+      if (si.outstandingActionItems) subBase -= si.outstandingActionItems * 5;
+      if (si.ncrOpen) subBase -= si.ncrOpen * 5;
+      if (si.docRiskScore) subBase -= si.docRiskScore * 15;
+      if (si.rfiCount != null && si.rfiPeriodDays != null) {
+        const subRfiPerWeek = (si.rfiCount / si.rfiPeriodDays) * 7;
+        if (subRfiPerWeek > 6) subBase -= 15;
+        else if (subRfiPerWeek > 3) subBase -= 8;
+      }
+      si.subcontractorComplianceScore = Math.max(0, Math.min(100, Math.round(subBase))) / 100;
+      mark('subcontractorComplianceScore', si.subcontractorComplianceScore,
+        'Derived: OAC issues + NCR count + doc risk + RFI velocity');
+    }
+    return si;
+  }
+
   async function runModels(project, si) {
     const cpiNum = Number(si.cpi), spiNum = Number(si.spi);
     const haveCpi = Number.isFinite(cpiNum) && cpiNum > 0;
@@ -568,6 +678,11 @@
     });
     const decision = decisionSnapshot(project);
     if (decision) project.signals.decision = decision;
+    // Derive extended fields (material/overhead/contingency/RFI/quality/safety/
+    // environmental/subcontractor) from the figures already extracted, so the
+    // derived-field modules can compute. Tagged in si.sources as 'derived'.
+    si = deriveExtendedFields(si);
+    project.signalInputs = si;
     // Client-side multi-model simulations (zero tokens, zero backend).
     // runAll() returns modules 04-08 + 11-18. DST (Module 10) runs separately
     // after the core signal package is assembled so it reads live signal data.
@@ -980,6 +1095,21 @@
     </div>`;
   }
 
+  // A grey [est.] badge for a field whose latest source is a 'derived' estimate.
+  function fieldBadge(si, key) {
+    if (!si || !si.sources || !si.sources[key]) return "";
+    if (si.sources[key].docType === "derived")
+      return `<span class="badge-est" title="Estimated from existing documents">est.</span>`;
+    return "";
+  }
+  function humanizeKey(k) {
+    return String(k)
+      .replace(/([A-Z])/g, " $1")
+      .replace(/\bPct\b/g, "%")
+      .replace(/^./, (c) => c.toUpperCase())
+      .trim();
+  }
+
   function extractedTableHtml(si) {
     const rows = FIELD_ROWS.map((f) => {
       const raw = si ? si[f.key] : undefined;
@@ -993,7 +1123,7 @@
         : "";
       return `<tr class="ds-row ${has ? "" : "ds-row-empty"}">
         <td class="ds-field-name">${esc(f.label)}</td>
-        <td class="ds-field-val">${esc(val)}</td>
+        <td class="ds-field-val">${esc(val)} ${fieldBadge(si, f.key)}</td>
         <td class="ds-field-src">${mark} ${srcTag}</td>
         <td class="ds-field-edit">${pencil}</td>
       </tr>${signalChangeLogHtml(si, f.key)}`;
@@ -1002,6 +1132,31 @@
       <thead><tr><th>Signal input</th><th>Value</th><th>Source</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
+  }
+
+  // Derived-estimate fields (docType 'derived' in si.sources), shown below the
+  // extracted table so the PM sees what was estimated vs. read from a document.
+  function derivedEstimatesHtml(si) {
+    if (!si || !si.sources) return "";
+    const keys = Object.keys(si.sources).filter((k) =>
+      si.sources[k] && si.sources[k].docType === "derived" && si[k] != null);
+    if (!keys.length) return "";
+    const rows = keys.map((k) => {
+      const src = si.sources[k];
+      return `<tr class="ds-row">
+        <td class="ds-field-name">${esc(humanizeKey(k))} <span class="badge-est" title="${esc(src.note || "derived")}">est.</span></td>
+        <td class="ds-field-val">${esc(fmtNum(si[k]))}</td>
+        <td class="ds-field-src"><span class="ds-src">${esc(src.note || "derived")}</span></td>
+      </tr>`;
+    }).join("");
+    return `<div class="ds-block">
+      <p class="eyebrow">Derived estimates <span class="badge-est">est.</span></p>
+      <p class="kn-sub">Estimated from existing documents using industry-standard ratios so more modules can compute. Upload the specific report to replace an estimate with exact figures.</p>
+      <table class="ds-table">
+        <thead><tr><th>Field</th><th>Value</th><th>Basis</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
   }
 
   function signalChangeLogHtml(si, key) {
@@ -1092,6 +1247,7 @@
         <p class="eyebrow">Extracted signal inputs</p>
         ${si ? extractedTableHtml(si) : `<p class="kn-sub">No extracted values cached this session. Re-upload a document to view them.</p>`}
       </div>
+      ${si ? derivedEstimatesHtml(si) : ""}
       ${datesBlockHtml(dates)}
       <div class="ds-block">
         <p class="eyebrow">Missing values &amp; required documents</p>
@@ -1195,6 +1351,7 @@
     buildCategorySnapshot,
     ensureSimulations,
     runModels,
+    deriveExtendedFields,
     DOC_TYPES, DOC_TYPE_LABEL
   };
 })();
