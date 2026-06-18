@@ -329,6 +329,41 @@ persists the whole project; confirm it does not whitelist this field out.
 
 ---
 
+
+---
+
+## Fix 7 - Preserve the stored 19-module log on `save_()`
+
+**Context:** the frontend now writes a rich `module_log` array (M01..M19, one
+entry per module) onto every `project.history[].snapshot`. The executive brief
+generates from THAT stored log — not from recomputed live signals. If the
+backend `save_()` strips `history` (or its nested `module_log` / `evidence_agreement`
+fields), the brief reverts to "Run signal extraction first" on every reload.
+
+**Required backend behaviour:**
+
+1. **Preserve `history` verbatim.** `save_()` must write `project.history` to
+   `project.json` without filtering, reshaping, or dropping fields. Each
+   snapshot now carries:
+   - `period`, `computed_at`, `project_id`, `project_name`, `sector`
+   - `signal_inputs` (bac, ev, ac, pv, cpi, spi, doc_risk_score)
+   - `module_log[]` (M01-M19 per-module entries with status, tier, metrics)
+   - `total_modules`
+   - `governance` (state, conflict, authority, action, fairness_gate)
+   - `evidence_agreement` (methods_checked, methods_agreeing, confidence)
+
+2. **Max 24 periods retained.** Front end enforces this before save — back
+   end does not need to expand it but must not duplicate same-period entries.
+
+3. **No whitelist trimming.** If `save_()` uses a field allow-list, add
+   `history`, `signals`, `simulationSignals`, `signalInputs.sources`, and
+   `executiveBrief` to it. Dropping any of these silently regresses the
+   brief / spider / audit-trail flows.
+
+4. **The executive brief is generated from this stored log**, not recomputed
+   signals. The brief prompt the client sends to `action=chat` references
+   `snapshot.module_log` line-by-line — keeping the stored log intact is what
+   makes the brief reproducible across reporting periods.
 ## Fix 8 - History endpoint + chat-with-snapshot
 
 The frontend now persists a rich category snapshot per reporting period on
