@@ -158,48 +158,98 @@
       return p.x.toFixed(1) + "," + p.y.toFixed(1);
     }).join(" ");
   }
+  // Inverted radius: full polygon at the rim = healthy. See PR #74 spec.
+  function catRadius(status) {
+    const s = normalizeStatus(status);
+    if (s === "Complete") return 1.00;
+    if (s === "Green") return 0.80;
+    if (s === "Yellow") return 0.60;
+    if (s === "Amber") return 0.35;
+    if (s === "Red") return 0.10;
+    return 0.05; // parked or no data
+  }
+
+  // Category-axis helpers — 9 axes evenly spaced (40deg apart), CSS centred
+  // on (210, 190) like the previous module web.
+  function catPointFor(i, radiusFactor, outerRadius) {
+    const cx = 210, cy = 190, n = LIN_CATEGORIES.length;
+    const angle = -Math.PI / 2 + (Math.PI * 2 * i / n);
+    const r = outerRadius * radiusFactor;
+    return {
+      x: cx + Math.cos(angle) * r,
+      y: cy + Math.sin(angle) * r,
+      tx: cx + Math.cos(angle) * (outerRadius + 22),
+      ty: cy + Math.sin(angle) * (outerRadius + 22),
+      ax: cx + Math.cos(angle) * outerRadius,
+      ay: cy + Math.sin(angle) * outerRadius
+    };
+  }
+
+  function catPolygonPoints(statuses) {
+    return statuses.map((status, i) => {
+      const p = catPointFor(i, catRadius(status), 135);
+      return p.x.toFixed(1) + "," + p.y.toFixed(1);
+    }).join(" ");
+  }
+
+  function pickWorstModule(cat) {
+    const order = { Red: 0, "Red-review": 1, Amber: 2, Yellow: 3, Green: 4, Complete: 5 };
+    return (cat.modules || []).filter((m) => m.status).slice()
+      .sort((a, b) => (order[a.status] != null ? order[a.status] : 3) - (order[b.status] != null ? order[b.status] : 3))[0] || null;
+  }
+
   function signalWebHtml(project) {
+    if (!window.LIN_CATEGORIES) return "";
     if (!window.hasSignals || !hasSignals(project)) return "";
-    const all = snapshots(project);
-    const cur = currentSnapshot(project);
-    if (!cur) return "";
-    const currentPeriod = cur.period;
-    const chosenPeriod = selectedHistoryPeriod[project.id] || currentPeriod;
-    const selected = all.find((h) => h.period === chosenPeriod) || cur;
-    const selectedIndex = all.findIndex((h) => h.period === selected.period);
-    const previous = selectedIndex > 0 ? all[selectedIndex - 1] : null;
-    ensureEvidenceModules(project, selected);
-    if (previous) ensureEvidenceModules(project, previous);
-    const statuses = moduleStatuses(selected);
-    const previousStatuses = previous ? moduleStatuses(previous) : null;
-    const axis = MODULES.map((m, i) => {
-      const p = pointFor(i, 1, 150);
-      return `<line class="sw-axis" x1="210" y1="190" x2="${p.ax.toFixed(1)}" y2="${p.ay.toFixed(1)}"></line>`;
+
+    // Build a category-shaped view from the live project (works without a
+    // stored snapshot, so the spider renders the moment models complete).
+    const cats = LIN_CATEGORIES.map((cat) => {
+      const modules = cat.modules.map((m) => ({
+        id: m.id, num: m.num, name: m.name, method_class: m.method_class,
+        status: window.getModuleStatus ? getModuleStatus(m.method_class, project) : null
+      }));
+      return {
+        id: cat.id, num: cat.num, name: cat.name, parked: !!cat.parked,
+        status: window.getCategoryStatus ? getCategoryStatus(cat.id, project) : null,
+        modules
+      };
+    });
+
+    const statuses = cats.map((c) => c.parked ? null : c.status);
+    const axisLines = cats.map((c, i) => {
+      const p = catPointFor(i, 1, 135);
+      const parked = c.parked ? " sw-axis-parked" : "";
+      return `<line class="sw-axis${parked}" x1="210" y1="190" x2="${p.ax.toFixed(1)}" y2="${p.ay.toFixed(1)}"></line>`;
     }).join("");
-    const dots = MODULES.map((m, i) => {
-      const p = pointFor(i, 1, 150);
-      const status = statuses[i];
-      const dot = pointFor(i, statusToRadius(status), 150);
-      const labelAnchor = Math.abs(p.tx - 210) < 12 ? "middle" : (p.tx > 210 ? "start" : "end");
-      return `<text class="sw-label" x="${p.tx.toFixed(1)}" y="${p.ty.toFixed(1)}" text-anchor="${labelAnchor}">${m[0]}</text>
-        <circle class="sw-dot sw-${statusClass(status)}" cx="${dot.x.toFixed(1)}" cy="${dot.y.toFixed(1)}" r="4">
-          <title>${esc(m[0] + " — " + m[1] + "\nStatus: " + (normalizeStatus(status) || "No data") + "\n" + metricFor(selected, MODULE_KEYS[i]))}</title>
+
+    const dots = cats.map((c, i) => {
+      const labelP = catPointFor(i, 1, 135);
+      const dotP = catPointFor(i, catRadius(statuses[i]), 135);
+      const labelAnchor = Math.abs(labelP.tx - 210) < 12 ? "middle" : (labelP.tx > 210 ? "start" : "end");
+      const worst = pickWorstModule(c);
+      const title = c.parked
+        ? c.num + " " + c.name + "\nStatus: Stage 2 (parked)"
+        : c.num + " " + c.name +
+          "\nCategory status: " + (statuses[i] || "No data") +
+          (worst ? "\nWorst module: " + worst.name + " — " + (worst.status || "no data") : "");
+      const labelText = c.parked ? c.num + " ML*" : c.num + " " + c.name.split(" ")[0];
+      const labelClass = c.parked ? "sw-label sw-label-parked" : "sw-label";
+      const dotClass = c.parked ? "sw-dot sw-none" : ("sw-dot sw-" + statusClass(statuses[i]));
+      return `<text class="${labelClass}" x="${labelP.tx.toFixed(1)}" y="${labelP.ty.toFixed(1)}" text-anchor="${labelAnchor}">${esc(labelText)}</text>
+        <circle class="${dotClass}" cx="${dotP.x.toFixed(1)}" cy="${dotP.y.toFixed(1)}" r="4">
+          <title>${esc(title)}</title>
         </circle>`;
     }).join("");
-    const overall = selected.governance && selected.governance.state;
-    const pills = all.slice().reverse().map((h) => {
-      const st = h.governance && h.governance.state;
-      return `<button class="sw-history-pill ${h.period === selected.period ? "active" : ""}" data-history-period="${esc(h.period)}">
-        <i class="sw-${statusClass(st)}"></i>${esc(periodLabel(h.period))}</button>`;
-    }).join("");
-    const history = all.length > 1
-      ? `<div class="sw-history-row"><p class="eyebrow">Reporting history</p><div>${pills}</div></div>`
-      : `<div class="sw-history-row"><p class="eyebrow">Reporting history</p><p class="kn-sub">First reporting period — no prior history.</p></div>`;
+
+    const cur = currentSnapshot(project);
+    const overall = cur && cur.governance && cur.governance.state;
+
     return `<section class="panel signal-web-panel">
       <div class="sw-head">
         <div>
-          <p class="eyebrow">Signal Web — ${esc(periodTitle(selected.period))}</p>
-          ${previous ? `<p class="kn-sub sw-vs"><span class="sw-prev-key"></span> vs ${esc(periodLabel(previous.period))}</p>` : ""}
+          <p class="eyebrow">Signal Web — ${esc(periodTitle(cur && cur.period))}</p>
+          <p class="kn-sub sw-vs">9-category view · Cat 8 ML* parked for Stage 2</p>
         </div>
         <div class="sw-legend" aria-label="Signal web legend">
           <span><i class="sw-complete"></i>Complete</span>
@@ -209,20 +259,20 @@
           <span><i class="sw-red"></i>Red</span>
         </div>
       </div>
-      <svg class="signal-web-svg" viewBox="0 0 420 380" role="img" aria-label="19 module signal web">
-        <circle class="sw-ring sw-ring-green" cx="210" cy="190" r="37.5"></circle>
-        <circle class="sw-ring sw-ring-yellow" cx="210" cy="190" r="67.5"></circle>
-        <circle class="sw-ring sw-ring-amber" cx="210" cy="190" r="105"></circle>
-        <circle class="sw-ring sw-ring-red" cx="210" cy="190" r="150"></circle>
-        ${axis}
-        ${previousStatuses ? `<polygon class="sw-web-prev" points="${polygonPoints(previousStatuses)}"></polygon>` : ""}
-        <polygon class="sw-web-current" points="${polygonPoints(statuses)}"></polygon>
+      <svg class="signal-web-svg" viewBox="0 0 420 380" role="img" aria-label="9 category signal web">
+        <circle class="sw-ring sw-ring-red"   cx="210" cy="190" r="47"></circle>
+        <circle class="sw-ring sw-ring-amber" cx="210" cy="190" r="81"></circle>
+        <circle class="sw-ring sw-ring-green" cx="210" cy="190" r="121.5"></circle>
+        <text class="sw-ring-label sw-ring-label-green" x="210" y="62"  text-anchor="middle">Healthy</text>
+        <text class="sw-ring-label sw-ring-label-amber" x="210" y="105" text-anchor="middle">Watch</text>
+        <text class="sw-ring-label sw-ring-label-red"   x="210" y="138" text-anchor="middle">Escalate</text>
+        ${axisLines}
+        <polygon class="sw-web-current" points="${catPolygonPoints(statuses)}"></polygon>
         ${dots}
         <circle class="sw-center sw-${statusClass(overall)}" cx="210" cy="190" r="5">
           <title>Overall governance state: ${esc(normalizeStatus(overall) || overall || "No data")}</title>
         </circle>
       </svg>
-      ${history}
     </section>`;
   }
 
@@ -358,63 +408,74 @@
     return bits.join(", ");
   }
 
-  // Locate the snapshot the brief should reflect. Prefer current reporting
-  // period; fall back to the most recent stored snapshot. Returns null when
-  // no usable snapshot exists — callers show the 'run signal extraction'
-  // state instead of POSTing a hollow prompt or calling the AI on nothing.
+  /* Pick the snapshot the brief reads from. Builds a category snapshot on
+     the fly when LinSignals is available and the project has signals — the
+     stored history may not include the new category fields yet on legacy
+     projects. Returns null when there is nothing to brief on. */
   function briefSnapshot(project) {
-    if (!project || !Array.isArray(project.history) || !project.history.length) return null;
-    const period = (project.reportingPeriod) || new Date().toISOString().substring(0, 7);
-    const match = project.history.find((h) => h && h.period === period);
-    const fallback = project.history[project.history.length - 1];
-    const snap = match || fallback;
-    if (!snap || !Array.isArray(snap.module_log) || !snap.module_log.length) return null;
-    return snap;
+    if (!project) return null;
+    const history = Array.isArray(project.history) ? project.history : [];
+    let snap = history.length ? history[history.length - 1] : null;
+    if (snap && snap.categories) return snap;
+    if (window.LinSignals && typeof LinSignals.buildCategorySnapshot === "function") {
+      try {
+        const fresh = LinSignals.buildCategorySnapshot(project);
+        if (fresh && fresh.categories) return fresh;
+      } catch (e) { /* defensive */ }
+    }
+    return null;
   }
 
   function buildBriefPrompt(project) {
     const snapshot = briefSnapshot(project);
-    if (!snapshot) {
-      console.log("[brief] no stored snapshot for " + (project && project.id) + " — skipping chat call");
+    if (!snapshot || !snapshot.categories) {
+      console.log("[brief] no stored category snapshot for " + (project && project.id) + " — skipping chat");
       return null;
     }
 
-    const logLines = snapshot.module_log.map((m) => {
-      let line = m.module + " " + m.name + ": " + (m.status || "no reading");
-      if (m.evidence_metric) line += " — " + m.evidence_metric;
-      return line;
-    });
+    const cats = Object.keys(snapshot.categories).map((k) => snapshot.categories[k]);
+    const catSummary = cats
+      .filter((c) => !c.parked && c.status)
+      .map((c) => {
+        const order = { Red: 0, "Red-review": 1, Amber: 2, Yellow: 3, Green: 4, Complete: 5 };
+        const worst = (c.modules || [])
+          .filter((m) => m.status)
+          .slice()
+          .sort((a, b) => (order[a.status] != null ? order[a.status] : 3) - (order[b.status] != null ? order[b.status] : 3))[0];
+        const worstDesc = worst ? " (worst: " + worst.name + (worst.evidence_metric ? " — " + worst.evidence_metric : "") + ")" : "";
+        return c.num + " " + c.name + ": " + c.status + worstDesc;
+      }).join("\n");
 
-    const ag = snapshot.evidence_agreement || {};
-    const confidence = ag.confidence
-      ? ag.confidence + " confidence (" + (ag.methods_agreeing || 0) + " of " + (ag.methods_checked || 0) + " evidence methods agree)"
+    const conf = snapshot.summary && snapshot.summary.evidence_agreement;
+    const confText = conf
+      ? conf.confidence + " confidence (" + conf.methods_agreeing + " of " + conf.methods_checked + " evidence methods agree)"
       : "agreement not computed";
-
     const gov = snapshot.governance || {};
     const computedDay = (snapshot.computed_at || "").substring(0, 10) || "unknown date";
+    const totalModules = (snapshot.summary && snapshot.summary.total_modules) || 0;
 
-    console.log("[brief] using stored snapshot for " + project.id + " (period " + snapshot.period + ", " + snapshot.total_modules + " modules)");
+    console.log("[brief] using stored category snapshot for " + project.id + " (period " + snapshot.period + ", " + totalModules + " modules across " + cats.filter((c) => !c.parked).length + " categories)");
 
     return "You are briefing a senior program director before a governance meeting. " +
-      "Write a 4-6 sentence executive brief about project " +
-      snapshot.project_id + " (" + (snapshot.project_name || "unnamed") + ", " + (snapshot.sector || "unknown") + " sector).\n\n" +
+      "Write a 4-6 sentence executive brief about " +
+      (snapshot.project_name || project.name) + " (Project " + snapshot.project_id + ", " + (snapshot.sector || "unknown") + " sector).\n\n" +
       "This brief is based on a stored computational log from " + computedDay + ". " +
-      "The platform ran " + snapshot.total_modules + " signal models simultaneously — " +
-      "computational analysis no human reviewer could complete in real time. " +
-      "The stored results are:\n\n" + logLines.join("\n") + "\n\n" +
-      "Overall governance state: " + (gov.state || "unknown") + "\n" +
-      "Conflict classification: " + (gov.conflict || "none") + "\n" +
-      "Recommended authority: " + (gov.authority || "unknown") + "\n" +
-      "Evidence agreement: " + confidence + "\n\n" +
-      "The brief must:\n" +
-      "1. State the overall project health clearly in the first sentence.\n" +
-      "2. Identify the one or two most critical concerns from the log.\n" +
-      "3. State the recommended action and who should take it.\n" +
-      "4. Note whether the evidence methods agree or diverge — and what that means.\n" +
-      "5. Use plain English — no module numbers, no metric values, no jargon.\n" +
-      "6. Use 5-level status language: Complete, on track, early warning, significant risk, critical.\n" +
-      "7. Written as if speaking directly to the program director.\n" +
-      "Start immediately with the project status. No preamble.";
+      "The platform computed " + totalModules + " signal modules across 9 analytical categories. " +
+      "No human reviewer could complete this analysis in real time.\n\n" +
+      "Category results:\n" + catSummary +
+      "\n\nOverall governance: " + (gov.state || "unknown") +
+      "\nAuthority: " + (gov.authority || "unknown") +
+      "\nRecommended action: " + (gov.action || "unknown") +
+      "\nEvidence agreement: " + confText +
+      "\n\nBrief requirements:\n" +
+      "1. First sentence: overall project health in plain English\n" +
+      "2. Second/third sentence: the one or two most critical category concerns\n" +
+      "3. Fourth sentence: recommended action and who takes it\n" +
+      "4. Fifth sentence: confidence level — do the evidence methods agree?\n" +
+      "5. No module numbers, no metric values, no jargon\n" +
+      "6. Use: on track / early warning / significant risk / critical failure\n" +
+      "7. Speak directly to the program director\n" +
+      "Start immediately with the project status.";
   }
 
   // Scripted fallback when the chat endpoint fails. Same pattern as Ask Lin's
@@ -507,16 +568,16 @@
     const snap = brief.snapshot || null;
     const computedAt = (snap && snap.computed_at) || brief.generated_at || null;
     if (!computedAt) return "";
-    let when = computedAt;
+    let when = computedAt.substring(0, 10);
     try {
       const d = new Date(computedAt);
       when = d.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
     } catch (e) {}
-    const total = (snap && snap.total_modules) || 19;
-    const ag = snap && snap.evidence_agreement;
-    const conf = ag && ag.confidence ? ag.confidence + " confidence" : null;
-    const parts = ["Generated from stored log", when, total + " modules"];
-    if (conf) parts.push(conf);
+    const total = (snap && snap.summary && snap.summary.total_modules) || null;
+    const conf = snap && snap.summary && snap.summary.evidence_agreement && snap.summary.evidence_agreement.confidence;
+    const parts = ["Generated from stored log", when];
+    if (total) parts.push(total + " modules");
+    if (conf) parts.push(conf + " confidence");
     return `<div class="eb-foot">${esc(parts.join(" · "))}</div>`;
   }
 
@@ -528,7 +589,7 @@
       </div>`;
     }
     if (state === "skipped") {
-      return `<div class="eb-body eb-skipped">Run signal extraction first to generate the stored log. Upload project documents to populate.</div>`;
+      return `<div class="eb-body eb-skipped">Upload project documents to generate the stored log. The executive brief is generated from that log — not from recomputed signals.</div>`;
     }
     if (state === "error") {
       return `<div class="eb-body eb-error" role="alert">Brief unavailable: ${esc(errMsg || "unknown error")}</div>`;

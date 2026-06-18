@@ -329,6 +329,9 @@ persists the whole project; confirm it does not whitelist this field out.
 
 ---
 
+
+---
+
 ## Fix 7 - Preserve the stored 19-module log on `save_()`
 
 **Context:** the frontend now writes a rich `module_log` array (M01..M19, one
@@ -361,3 +364,40 @@ fields), the brief reverts to "Run signal extraction first" on every reload.
    signals. The brief prompt the client sends to `action=chat` references
    `snapshot.module_log` line-by-line — keeping the stored log intact is what
    makes the brief reproducible across reporting periods.
+## Fix 8 - History endpoint + chat-with-snapshot
+
+The frontend now persists a rich category snapshot per reporting period on
+`project.history`. It is the audit-trail artefact that drives the spider web,
+the signal ledger, the Signals page, and the executive brief.
+
+**Required backend endpoints:**
+
+1. **POST `?action=savehistory`** — body `{ id, snapshot: { ...full snapshot... } }`.
+   - Save to `_history/<period>_snapshot.json` inside the project folder.
+   - Append `{ event: "snapshot_saved", period, at }` to `project.events`.
+   - Return `{ ok: true, period, snapshot_id }`.
+   - Idempotent on `period` — re-saving the same period replaces the file.
+
+2. **GET `?action=gethistory&id=<id>`** — already exists in spec from Fix 5; behaviour now extended:
+   - Read every JSON file in `_history/` and return them sorted by `period` ascending.
+   - Return `{ ok: true, history: [ ... ] }`.
+
+3. **POST `?action=chat` (updated)** — body may now include an optional `snapshot` field:
+   - If `snapshot` is present, use `snapshot.summary` (plus `snapshot.categories` rollups) as the project context for the prompt, instead of reading `project.json` from Drive.
+   - This keeps the brief grounded in the stored computational log instead of refetching live signals and reduces Drive reads to one write per period.
+   - Snapshot context shape: `{ categories, summary, governance }`.
+
+**Snapshot field reference (must be persisted verbatim):**
+
+```
+period, computed_at, project_id, project_name, sector,
+signal_inputs { bac, ev, ac, pv, cpi, spi, doc_risk_score,
+                baseline_start, baseline_end },
+categories { cat1..cat9: { id, num, name, status, parked, modules[] } },
+summary { total_modules, by_status, by_category, evidence_agreement {
+          methods_checked, methods_agreeing, confidence } },
+governance { state, conflict, authority, action, documentation, fairness_gate },
+executive_brief
+```
+
+**Retention:** the front end keeps at most 24 periods; the back end stores everything written and never deletes.

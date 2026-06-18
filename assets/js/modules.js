@@ -581,22 +581,44 @@
   //   module17=Mod 16 (Plith)     module18=Mod 17 (BRB)     module19=Mod 18 (Quantum)
   //   module05=Mod 19 (ABM Governance — decision output, LAST)
   function moduleCardsHtml(projects) {
-    const groups = [
-      { label: "Modules 01–03 · Quantitative EVM",
-        mods: [module01(projects), module02(projects), module03(projects)] },
-      { label: "Modules 04–08 · Extended simulation (leading indicators)",
-        mods: [module06(projects), module07(projects), module08(projects), module09(projects), module10(projects)] },
-      { label: "Module 09 · Signal synthesis — conservative dominance",
-        mods: [module04(projects)] },
-      { label: "Modules 10–18 · Evidence combination & uncertainty reasoning",
-        mods: [module11(projects), module12(projects), module13(projects), module14(projects),
-               module15(projects), module16(projects), module17(projects), module18(projects), module19(projects)] },
-      { label: "Module 19 · Governance decision output",
-        mods: [module05(projects)] },
-    ];
-    return groups.map((g) =>
-      `<p class="mod-group-head">${esc(g.label)}</p>` + g.mods.map(cardHtml).join("")
-    ).join("");
+    // 9-category layout. Each existing module card slots under one Cat header;
+    // duplicates (e.g. Doc Risk appears in Cat 1.3 AND Cat 4.1) render once per
+    // category — by design the spec puts the same module in two categories
+    // when it carries both quantitative and qualitative meaning.
+    const catSlot = {
+      cat1: [module01(projects), module02(projects), module03(projects)],
+      cat2: [module06(projects), module07(projects), module08(projects)],
+      cat3: [module09(projects), module10(projects)],
+      cat4: [module03(projects)],
+      cat5: [module10(projects)],
+      cat6: [module04(projects)],
+      cat7: [module11(projects), module12(projects), module13(projects), module14(projects),
+             module15(projects), module16(projects), module17(projects), module18(projects), module19(projects)],
+      cat8: null, // Stage 2 placeholder
+      cat9: [module05(projects)]
+    };
+    if (!window.LIN_CATEGORIES) {
+      // Defensive: if categories.js failed to load, fall back to the old
+      // group layout so the page still renders.
+      return Object.values(catSlot).filter(Boolean).flat().map(cardHtml).join("");
+    }
+    return LIN_CATEGORIES.map((cat) => {
+      const head =
+        `<div class="mod-cat-head" style="--cat-color:${esc(cat.color)}">
+          <span class="mod-cat-num">${esc(cat.num)}</span>
+          <span class="mod-cat-name">${esc(cat.name)}</span>
+          <span class="mod-cat-desc">${esc(cat.description)}</span>
+        </div>`;
+      if (cat.id === "cat8") {
+        return head + `<section class="panel mod-card mod-card-parked">
+          <p class="eyebrow">Stage 2 — parked</p>
+          <p>${esc(cat.description)}</p>
+          <p class="kn-sub">Planned modules: ${esc(cat.modules.map((m) => m.num + " " + m.name).join(", "))}.</p>
+        </section>`;
+      }
+      const cards = (catSlot[cat.id] || []).map(cardHtml).join("");
+      return head + cards;
+    }).join("");
   }
 
   const BANNER = `<p class="mod-banner">All graphs below are derived from this project's extracted signal inputs. All recommended actions require named human review before any formal action is taken.</p>`;
