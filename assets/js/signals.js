@@ -16,6 +16,11 @@
 (function () {
   "use strict";
 
+  // Bump when runAll()'s module set grows so projects carrying an older,
+  // shorter signal_array get recomputed instead of short-circuiting on a
+  // non-empty-but-stale array. v2 = the full 89-module rollout.
+  const SIM_MODULE_SET_VERSION = 2;
+
   const esc = (s) => String(s == null ? "" : s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -235,11 +240,37 @@
      must run AFTER MC/CUSUM/Doc. If a project was saved before this code
      shipped — or simulationSignals never got persisted — compute on-the-fly
      so the spider chart's 19 axes all carry a status. */
+  /* Reconstruct the model inputs. Prefer the extracted signalInputs, but the
+     backend echo omits client-only fields — a re-fetched/reloaded project can
+     arrive with project.signals (CPI/SPI/BAC baked into signals.evm) yet no
+     signalInputs. Falling back to signals.evm keeps the index-driven modules
+     computing instead of collapsing the whole web to "No data". */
+  function resolveSimInputs(project) {
+    const si = Object.assign({}, project.signalInputs || {});
+    const evm = (project.signals && project.signals.evm) || {};
+    if (si.cpi == null && evm.cpi != null) si.cpi = evm.cpi;
+    if (si.spi == null && evm.spi != null) si.spi = evm.spi;
+    if (si.bac == null && evm.bac != null) si.bac = evm.bac;
+    const doc = project.signals && project.signals.doc;
+    if (si.docRiskScore == null && doc && doc.score != null) si.docRiskScore = doc.score;
+    return si;
+  }
+
   function ensureSimulations(project) {
     if (!project || !project.signals || !window.LinSimulations) return;
     const arr = project.simulationSignals && project.simulationSignals.signal_array;
-    if (Array.isArray(arr) && arr.length) return;
-    const si = project.signalInputs || {};
+    const meta = project.simulationSignals && project.simulationSignals.signal_metadata;
+    // Already current — a non-empty array stamped with this module-set version.
+    // Older/unstamped arrays (pre-89-module rollout) are recomputed below.
+    const current = Array.isArray(arr) && arr.length &&
+      meta && meta.module_set_version >= SIM_MODULE_SET_VERSION;
+    if (current) return;
+    const si = resolveSimInputs(project);
+    // Diagnostic: confirm CPI/SPI/BAC actually reach runAll when it fires.
+    console.log("[runAll] inputs:", {
+      cpi: si.cpi, spi: si.spi, bac: si.bac, ev: si.ev, ac: si.ac, pv: si.pv,
+      docRiskScore: si.docRiskScore, fields: Object.keys(si)
+    });
     try {
       const simResults = LinSimulations.runAll(si, project.signals, project);
       const dstResult = LinSimulations.runDST(si, project.signals);
@@ -248,6 +279,7 @@
         signal_metadata: {
           project_id: project.id,
           reporting_period: project.reportingPeriod || null,
+          module_set_version: SIM_MODULE_SET_VERSION,
           signal_inputs_snapshot: Object.assign({}, si),
           computed_inline: true
         },
@@ -495,6 +527,7 @@
             run_at: now.toISOString(),
             reporting_period: now.toISOString().substring(0, 7),
             data_date: now.toISOString().substring(0, 10),
+            module_set_version: SIM_MODULE_SET_VERSION,
             signal_inputs_snapshot: Object.assign({}, si)
           },
           signal_array: allResults
