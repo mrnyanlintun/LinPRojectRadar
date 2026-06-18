@@ -12,6 +12,18 @@
    ============================================================ */
 
 const PCEIF_VERSION = "L2-v0.5-demo";
+
+/* 5-status palette (Complete / Green / Yellow / Amber / Red). Kept on the
+   global so renderers can read both the canonical label set and the hex
+   palette without duplicating it. */
+const PCEIF_STATUS_LABELS = ["Complete", "Green", "Yellow", "Amber", "Red"];
+const PCEIF_STATUS_HEX = {
+  Complete: "#4ea0ff",
+  Green: "#3fcaa6",
+  Yellow: "#f0c040",
+  Amber: "#e2b13c",
+  Red: "#e0556b"
+};
 const DATA_BOUNDARY =
   "Synthetic demonstration data only; not a validated production system.";
 
@@ -25,6 +37,24 @@ function signalStatuses(project) {
 
 function countStatus(statuses, level) {
   return Object.values(statuses).filter((v) => v === level).length;
+}
+
+/* ------------------------------------------------------------
+   1b. Status normalization (5-status system)
+   ------------------------------------------------------------
+   PCEIF uses five status levels — Complete (blue), Green, Yellow,
+   Amber, Red. Sources upstream may still emit "Red-review" or
+   "Critical"; these normalize to "Red". "Light-amber" normalizes
+   to "Yellow". Anything else falls back to its lowercased label.
+   ------------------------------------------------------------ */
+function normalizeStatusLabel(status) {
+  const s = String(status || "").toLowerCase();
+  if (s === "complete" || s === "blue") return "Complete";
+  if (s === "green") return "Green";
+  if (s === "yellow" || s === "light-amber" || s === "lightamber") return "Yellow";
+  if (s === "amber" || s === "orange") return "Amber";
+  if (s === "red" || s === "red-review" || s === "redreview" || s === "critical") return "Red";
+  return null;
 }
 
 /* ------------------------------------------------------------
@@ -74,11 +104,30 @@ function deriveHealthState(project) {
   const s = signalStatuses(project);
   const reds = countStatus(s, "red");
   const ambers = countStatus(s, "amber");
+  const yellows = countStatus(s, "yellow") + countStatus(s, "light-amber");
+  const completes = countStatus(s, "complete") + countStatus(s, "blue");
+  const greens = countStatus(s, "green");
+  const total = Object.keys(s).length;
 
-  if (reds === 0 && ambers === 0) return "Green";
+  // Red dominates — two or more red signals, or breached trend rule plus red forecast.
   if (reds >= 2 || (project.signals.cusum.breached && s.mc === "red"))
     return "Red-review";
-  return "Amber";
+  if (reds >= 1) return "Red-review";
+  if (ambers >= 1) return "Amber";
+  if (yellows >= 1) return "Yellow";
+  // Complete — every class either Complete or Green, and at least one Complete.
+  if (completes >= 1 && (completes + greens) === total) return "Complete";
+  return "Green";
+}
+
+/* Map the legacy 3-state deriveHealthState return ("Green" | "Amber" |
+   "Red-review") onto the 5-status display label set used by the UI. The
+   conservative-dominance rule above is the source of truth; this is just a
+   relabelling helper for renderers that want a 5-state badge. */
+function deriveHealthStateLabel(project) {
+  const raw = deriveHealthState(project);
+  if (raw === "Red-review") return "Red";
+  return raw;
 }
 
 /* ------------------------------------------------------------
@@ -102,10 +151,18 @@ function deriveDecision(project) {
 
   let action, authority, documentation;
 
-  if (healthState === "Green") {
+  if (healthState === "Complete") {
+    action = "Closeout documentation";
+    authority = "Project manager / Controls lead";
+    documentation = "Closeout sign-off, commissioning record, archive";
+  } else if (healthState === "Green") {
     action = "Routine monitoring";
     authority = "Project manager / Controls lead";
     documentation = "Monthly signal log entry";
+  } else if (healthState === "Yellow") {
+    action = "PM weekly check-in — early-warning band, investigate variance before next cycle";
+    authority = "Project manager";
+    documentation = "Weekly check-in note, follow-up date";
   } else if (healthState === "Red-review") {
     action = fairnessGateRequired
       ? "Request contractor explanation and recovery-plan review — fairness gate required before any formal action"

@@ -20,8 +20,14 @@
   const SVG_NS = "http://www.w3.org/2000/svg";
   const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-  const statusVar = (s) =>
-    s === "green" ? "var(--clear-green)" : s === "amber" ? "var(--radar-amber)" : "var(--alarm-red)";
+  const statusVar = (s) => {
+    const k = String(s || "").toLowerCase().replace("-review", "");
+    if (k === "complete" || k === "blue") return "var(--blue-status)";
+    if (k === "green") return "var(--clear-green)";
+    if (k === "yellow" || k === "light-amber") return "var(--yellow)";
+    if (k === "amber") return "var(--radar-amber)";
+    return "var(--alarm-red)";
+  };
 
   /* ---------- tiny SVG chart helpers (no external libs) ---------- */
 
