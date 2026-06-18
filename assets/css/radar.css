@@ -686,6 +686,38 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .detail-ingest { margin-bottom: 18px; }
 .detail-ingest-form { margin-top: 10px; }
 
+/* ---------- project detail executive brief ---------- */
+.eb-panel {
+  margin-bottom: 18px;
+  border-left: 3px solid var(--muted);
+  background: var(--surface-soft);
+}
+.eb-panel.eb-accent-green { border-left-color: var(--clear-green); }
+.eb-panel.eb-accent-amber { border-left-color: var(--radar-amber); }
+.eb-panel.eb-accent-red   { border-left-color: var(--alarm-red); }
+.eb-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.eb-eyebrow { font-family: var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--phosphor); margin: 0; font-size: 11px; }
+.eb-sub { margin: 4px 0 0; font-size: 12px; color: var(--faint); }
+.eb-body {
+  margin-top: 12px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--muted);
+  white-space: pre-wrap;
+}
+.eb-body.eb-loading { display: flex; align-items: center; gap: 12px; min-height: 60px; }
+.eb-shimmer {
+  display: inline-block; width: 60%; height: 14px; border-radius: 4px;
+  background: linear-gradient(90deg, var(--surface-soft) 0%, color-mix(in srgb, var(--phosphor) 18%, transparent) 50%, var(--surface-soft) 100%);
+  background-size: 200% 100%;
+  animation: eb-shimmer 1.4s linear infinite;
+}
+@keyframes eb-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.eb-status { font-family: var(--font-mono); font-size: 12px; color: var(--faint); letter-spacing: .04em; }
+.eb-body.eb-error { color: var(--faint); font-size: 13px; }
+.eb-foot { margin-top: 14px; font-size: 11px; color: var(--faint); font-family: var(--font-mono); letter-spacing: .04em; }
+.eb-regen { white-space: nowrap; }
+
 /* ---------- project detail signal web ---------- */
 .signal-web-panel { margin-bottom: 18px; }
 .sw-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
