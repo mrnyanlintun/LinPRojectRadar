@@ -639,6 +639,7 @@
        <div class="dc-actions">
          <button class="btn primary record-btn" disabled>Record decision</button>
          <button class="btn export-btn">Export audit JSON</button>
+         <button class="btn export-xlsx-btn">Export Report (XLSX)</button>
        </div>
        <p class="dc-note">Recommendation only — a named human reviewer records the decision. The recommendation does not trigger any action on its own.</p>`;
 
@@ -695,6 +696,20 @@
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
+    });
+
+    const xlsxBtn = $(".export-xlsx-btn", root);
+    if (xlsxBtn) xlsxBtn.addEventListener("click", () => {
+      try {
+        if (window.LinExport && typeof LinExport.exportProjectReport === "function") {
+          LinExport.exportProjectReport(p);
+        } else {
+          alert("XLSX export not available — the SheetJS library failed to load.");
+        }
+      } catch (e) {
+        console.error("[xlsx] export failed:", e);
+        alert("XLSX export failed: " + (e && e.message ? e.message : "unknown error"));
+      }
     });
   }
 

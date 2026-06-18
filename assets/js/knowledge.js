@@ -598,7 +598,7 @@
     },
     {
       id: "stack",
-      title: "3. The Signal Stack: 19 Modules",
+      title: "3. The Signal Stack: 9 Categories · 19 Active Modules",
       eyebrow: "Architecture",
       build: () => `
         <p class="kn-lead">The signal stack splits into five tiers. The first two compute and govern; the next three extend coverage to specialised construction and design risks, then layer multiple evidence-combination and uncertainty-reasoning frameworks across the result.</p>
@@ -1446,6 +1446,86 @@
   window.LIN_KNOWLEDGE = { terms: TERMS, glossary: GLOSSARY, topics: TOPICS, library: LIBRARY };
 
   /* ---------- knowledge page rendering, two-panel navigator + content ---------- */
+  /* ---------- 9-category nav structure ----------
+     Top-level entries are either flat topics (rendered as a single button) or
+     a `category` group with a list of child topic ids. Cat 8 is parked: the
+     topic ids are 'stage2:*' synthetic stubs that surface a "coming in Stage
+     2" placeholder when selected. */
+  const CATEGORY_NAV = [
+    { id: "pceif" },
+    { id: "five-status" },
+    { id: "how-categories-advise-pm" },
+    { category: "cat1", num: "Cat 1", name: "Quantitative EVM",
+      children: ["module01", "module02", "module03"] },
+    { category: "cat2", num: "Cat 2", name: "Schedule Simulation",
+      children: ["module04", "module05", "module06"] },
+    { category: "cat3", num: "Cat 3", name: "Cost Simulation",
+      children: ["module07", "module08"] },
+    { category: "cat4", num: "Cat 4", name: "Document & Risk Signals",
+      children: ["module03"] },
+    { category: "cat5", num: "Cat 5", name: "System Dynamics",
+      children: ["module08"] },
+    { category: "cat6", num: "Cat 6", name: "Signal Synthesis",
+      children: ["module09"] },
+    { category: "cat7", num: "Cat 7", name: "Evidence Combination",
+      children: ["module10", "module11", "module12", "module13", "module14",
+                 "module15", "module16", "module17", "module18"] },
+    { category: "cat8", num: "Cat 8", name: "ML & AI (Stage 2)", parked: true,
+      children: ["stage2:isolation", "stage2:portfolio", "stage2:trajectory",
+                 "stage2:cross-project", "stage2:anomaly-score"] },
+    { category: "cat9", num: "Cat 9", name: "Governance & Compliance",
+      children: ["module19"] },
+    { id: "fairness" },
+    { id: "decision" }
+  ];
+
+  // Cat X.Y label per topic id, used in the nav and the article header.
+  const CAT_LABEL_BY_ID = {
+    module01: "Cat 1.1", module02: "Cat 1.2", module03: "Cat 1.3 / Cat 4.1",
+    module04: "Cat 2.1", module05: "Cat 2.2", module06: "Cat 2.3",
+    module07: "Cat 3.1", module08: "Cat 3.2 / Cat 5.1",
+    module09: "Cat 6.1",
+    module10: "Cat 7.1", module11: "Cat 7.2", module12: "Cat 7.3",
+    module13: "Cat 7.4", module14: "Cat 7.5", module15: "Cat 7.6",
+    module16: "Cat 7.7", module17: "Cat 7.8", module18: "Cat 7.9",
+    module19: "Cat 9.1"
+  };
+
+  // Stage-2 stub topics displayed inside Cat 8.
+  const STAGE2_STUBS = {
+    "stage2:isolation":      { id: "stage2:isolation",      title: "Cat 8.1 Isolation Forest (coming)" },
+    "stage2:portfolio":      { id: "stage2:portfolio",      title: "Cat 8.2 Portfolio Outlier (coming)" },
+    "stage2:trajectory":     { id: "stage2:trajectory",     title: "Cat 8.3 Signal Trajectory (coming)" },
+    "stage2:cross-project":  { id: "stage2:cross-project",  title: "Cat 8.4 Cross-project Pattern (coming)" },
+    "stage2:anomaly-score":  { id: "stage2:anomaly-score",  title: "Cat 8.5 Anomaly Score (coming)" }
+  };
+
+  const STAGE2_PLACEHOLDER_BODY = `
+    <p class="kn-lead">Machine learning and AI pattern detection methods require portfolio-level training data and will be available in Stage 2. These methods detect anomalies by comparing a project's signal combination against the full portfolio — identifying projects that are statistically unusual even when individual signals appear borderline.</p>
+    <p class="kn-sub">This topic is a placeholder. The category structure is forward-compatible with Stage 2 — once the methods ship, the category will activate without any other change to the workflow.</p>
+  `;
+
+  const CATEGORIES_ADVISE_PM_TOPIC = {
+    id: "how-categories-advise-pm",
+    title: "How the Categories Advise the PM",
+    eyebrow: "Reading the categories",
+    build: () => `
+      <p class="kn-lead">The nine categories each answer a different governance question. Reading them together tells the PM where to spend attention this reporting cycle.</p>
+      <ul class="kn-list">
+        <li><strong>Cat 1 Quantitative EVM</strong> — what is happening NOW (cost / schedule indices).</li>
+        <li><strong>Cat 2 Schedule Simulation</strong> — WHEN will problems appear (time-based leading indicators).</li>
+        <li><strong>Cat 3 Cost Simulation</strong> — HOW MUCH will it cost (budget-based leading indicators).</li>
+        <li><strong>Cat 4 Document & Risk Signals</strong> — qualitative early warning from project records, BEFORE EVM shows the slip.</li>
+        <li><strong>Cat 5 System Dynamics</strong> — how the components AMPLIFY each other (rework propagation).</li>
+        <li><strong>Cat 6 Signal Synthesis</strong> — the BASELINE classification (conservative dominance) — the worst single signal wins.</li>
+        <li><strong>Cat 7 Evidence Combination</strong> — HOW CONFIDENT is the classification (nine independent uncertainty-reasoning methods cross-check the baseline).</li>
+        <li><strong>Cat 8 ML & AI</strong> — portfolio-trained anomaly detection (Stage 2).</li>
+        <li><strong>Cat 9 Governance & Compliance</strong> — the named authority, required action, and audit trail. ALWAYS LAST.</li>
+      </ul>
+      <p>The PM reads the categories top-down to GENERATE the picture, then bottom-up (start at Cat 9) to ACT on it. The decision is whatever Cat 9 records — the rest of the stack is the evidence supporting that decision.</p>
+    `
+  };
+
   function renderKnowledgePage() {
     const root = document.getElementById("knowledge-root");
     if (!root) return;
@@ -1453,21 +1533,63 @@
 
     function isMobile() { return window.innerWidth <= 640; }
 
-    function navHtml() {
-      return LIBRARY.map((t) =>
-        `<li><button class="kn-nav-btn${t.id === selectedId ? " active" : ""}" data-topic="${esc(t.id)}">${esc(t.title)}</button></li>`
+    // Topic lookup that includes Stage 2 stubs and the new how-the-categories
+    // topic alongside the existing LIBRARY entries.
+    function lookupTopic(id) {
+      if (STAGE2_STUBS[id]) {
+        return Object.assign({}, STAGE2_STUBS[id], {
+          eyebrow: "Stage 2 — parked",
+          build: () => STAGE2_PLACEHOLDER_BODY
+        });
+      }
+      if (id === "how-categories-advise-pm") return CATEGORIES_ADVISE_PM_TOPIC;
+      return LIBRARY.find((x) => x.id === id) || null;
+    }
+
+    function flatNavBtn(id) {
+      const t = lookupTopic(id);
+      if (!t) return "";
+      return `<li><button class="kn-nav-btn${t.id === selectedId ? " active" : ""}" data-topic="${esc(t.id)}">${esc(t.title)}</button></li>`;
+    }
+
+    function modNavBtn(id) {
+      const t = lookupTopic(id);
+      if (!t) return "";
+      const label = CAT_LABEL_BY_ID[id] ? CAT_LABEL_BY_ID[id] + " " + t.title.replace(/^\d+\.\s*Module \d+:\s*/, "").replace(/^\d+\.\s*/, "") : t.title;
+      return `<li class="kn-nav-mod"><button class="kn-nav-btn${t.id === selectedId ? " active" : ""}" data-topic="${esc(t.id)}">${esc(label)}</button></li>`;
+    }
+
+    function categoryGroup(g) {
+      const childButtons = (g.children || []).map((cid) =>
+        STAGE2_STUBS[cid] ? flatNavBtn(cid) : modNavBtn(cid)
       ).join("");
+      const open = g.children && g.children.some((c) => c === selectedId);
+      const parkedTag = g.parked ? `<span class="kn-nav-cat-parked">Stage 2</span>` : "";
+      return `<li class="kn-nav-cat">
+        <details${open ? " open" : ""}>
+          <summary class="kn-nav-cat-head">
+            <span class="kn-nav-cat-num">${esc(g.num)}</span>
+            <span class="kn-nav-cat-name">${esc(g.name)}</span>
+            ${parkedTag}
+          </summary>
+          <ol class="kn-nav-cat-list">${childButtons}</ol>
+        </details>
+      </li>`;
+    }
+
+    function navHtml() {
+      return CATEGORY_NAV.map((g) => g.category ? categoryGroup(g) : flatNavBtn(g.id)).join("");
     }
     function contentHtml() {
-      const t = LIBRARY.find((x) => x.id === selectedId) || LIBRARY[0];
+      const t = lookupTopic(selectedId) || LIBRARY[0];
       return `<article class="kn-article">
         <p class="eyebrow">${esc(t.eyebrow || "Knowledge Library")}</p>
         <h2 class="kn-h kn-h-art">${esc(t.title)}</h2>
-        ${t.build()}
+        ${t.build ? t.build() : ""}
       </article>`;
     }
     function paint() {
-      const selectedTopic = LIBRARY.find((x) => x.id === selectedId) || LIBRARY[0];
+      const selectedTopic = lookupTopic(selectedId) || LIBRARY[0];
       root.innerHTML =
         `<div class="kn-lib">
            <aside class="panel kn-nav">

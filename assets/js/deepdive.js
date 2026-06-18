@@ -85,10 +85,27 @@
     return `<p class="dd-chart-note">${esc(text)}</p>`;
   }
 
+  // Legacy module number -> Cat X.Y notation. Call sites still pass "01".."19"
+  // for backwards compatibility; the panel header renders the Cat notation.
+  const CAT_FROM_MODULE = {
+    "01": "Cat 1.1", "02": "Cat 1.2", "03": "Cat 1.3",
+    "04": "Cat 2.1", "05": "Cat 2.2", "06": "Cat 2.3",
+    "07": "Cat 3.1", "08": "Cat 3.2",
+    "09": "Cat 6.1",
+    "10": "Cat 7.1", "11": "Cat 7.2", "12": "Cat 7.3", "13": "Cat 7.4",
+    "14": "Cat 7.5", "15": "Cat 7.6", "16": "Cat 7.7", "17": "Cat 7.8", "18": "Cat 7.9",
+    "19": "Cat 9.1"
+  };
+  function catLabel(num) {
+    const key = String(num).trim();
+    return CAT_FROM_MODULE[key] || (/^Cat /i.test(key) ? key : "Cat " + key);
+  }
+
   function panel(num, title, status, inner) {
     const c = cls(status);
-    return `<section class="panel dd-panel status-${c}" aria-label="Module ${num} deep dive">
-      <div class="dd-head"><b>Why Module ${num} (${esc(title)}) is ${esc(String(status).toUpperCase())}</b>${verdict(title, status)}</div>
+    const catRef = catLabel(num);
+    return `<section class="panel dd-panel status-${c}" aria-label="${esc(catRef)} deep dive">
+      <div class="dd-head"><b>Why ${esc(catRef.toUpperCase())} (${esc(title)}) is ${esc(String(status).toUpperCase())}</b>${verdict(title, status)}</div>
       ${inner}
     </section>`;
   }
