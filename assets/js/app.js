@@ -8,6 +8,21 @@
 (function () {
   "use strict";
 
+  /* ---------- HTML escape helper (XSS defence) ----------
+     EVERY interpolation of dynamic data into innerHTML must pass through
+     esc(). Quote escaping (" and ') is required so values land safely
+     inside HTML attributes too, not just text content. Other files
+     (deepdive.js, knowledge.js, signals.js, etc.) have their own local
+     esc(); app.js previously had none, which the security scan flagged. */
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   // Exact equal thirds (120° each). Angles are screen-polar:
   // 0° = right, positive = clockwise (y grows downward in polar()).
   // internal key stays "combined" (and SYN-CMB codes are unchanged);
@@ -412,13 +427,13 @@
       const state = stateLabel(p);
       const sum = simSummary(p);
       const simChip = sum
-        ? `<span class="li-sim state-${sum.worst}" title="Simulation models: ${sum.red} red, ${sum.amber} amber, ${sum.green} green">${sum.flagged}/${sum.total} sim</span>`
+        ? `<span class="li-sim state-${esc(sum.worst)}" title="Simulation models: ${esc(sum.red)} red, ${esc(sum.amber)} amber, ${esc(sum.green)} green">${esc(sum.flagged)}/${esc(sum.total)} sim</span>`
         : "";
       btn.innerHTML =
-        `<span class="li-code">${p.id}</span>` +
-        `<span class="li-name">${p.name}</span>` +
+        `<span class="li-code">${esc(p.id)}</span>` +
+        `<span class="li-name">${esc(p.name)}</span>` +
         simChip +
-        `<span class="li-state state-${statusKey(p)}">${state}</span>`;
+        `<span class="li-state state-${esc(statusKey(p))}">${esc(state)}</span>`;
       btn.addEventListener("click", () => openDetail(p.id));
       li.appendChild(btn);
       ul.appendChild(li);
@@ -434,7 +449,7 @@
   /* ---------- signal ledger ---------- */
   function statusPill(status) {
     const map = { green: "Green", amber: "Amber", red: "Red" };
-    return `<span class="pill pill-${status}">${map[status] || status}</span>`;
+    return `<span class="pill pill-${esc(status)}">${esc(map[status] || status)}</span>`;
   }
 
   /* Summarize the fourteen client-side simulation models (PERT/LOB/CCPM/RCF/DSM + DST/RoughSets/Neutrosophic/IFS + Z/PLTS/Plithogenic/BRB/Quantum)
@@ -455,8 +470,8 @@
 
   function awaitingHtml(p, what) {
     return `<div class="ledger-head"><div>
-        <p class="eyebrow">${what}</p>
-        <h2>${p.id}</h2><p class="ledger-sub">${p.name}</p>
+        <p class="eyebrow">${esc(what)}</p>
+        <h2>${esc(p.id)}</h2><p class="ledger-sub">${esc(p.name)}</p>
       </div></div>
       <div class="awaiting-state">
         <p><strong>Awaiting ingest.</strong> This project has no signals yet.</p>
@@ -475,7 +490,7 @@
         name: "EVM cost / schedule", method: "Earned Value Management",
         status: s.evm.status,
         metric: `CPI ${s.evm.cpi.toFixed(2)} · SPI ${s.evm.spi.toFixed(2)}`,
-        detail: `Data date ${s.evm.dataDate}`
+        detail: `Data date ${esc(s.evm.dataDate)}`
       },
       {
         name: "Probabilistic forecast", method: `Monte Carlo · ${s.mc.iterations.toLocaleString()} iter`,
@@ -486,14 +501,17 @@
       {
         name: "Anomaly / trend", method: "SPC / CUSUM",
         status: s.cusum.status,
-        metric: `${s.cusum.metric} drift ${s.cusum.drift.toFixed(1)} / ${s.cusum.threshold.toFixed(1)}`,
+        metric: `${esc(s.cusum.metric)} drift ${s.cusum.drift.toFixed(1)} / ${s.cusum.threshold.toFixed(1)}`,
         detail: s.cusum.breached ? "Threshold breached" : "Within control limits"
       },
       {
         name: "Document risk", method: "Keyword / rule extraction",
         status: s.doc.status,
         metric: `Risk score ${s.doc.score.toFixed(2)}`,
-        detail: `<span class="src">${s.doc.source}</span><span class="excerpt">“${s.doc.excerpt}”</span>`
+        // s.doc.source and s.doc.excerpt come from extracted-document content,
+        // i.e. attacker-controllable input. Escape BEFORE wrapping in markup
+        // so the template literal itself remains static structural HTML.
+        detail: `<span class="src">${esc(s.doc.source)}</span><span class="excerpt">“${esc(s.doc.excerpt)}”</span>`
       }
     ];
 
@@ -504,23 +522,23 @@
       `<div class="ledger-head">
          <div>
            <p class="eyebrow">Signal ledger</p>
-           <h2>${p.id}</h2>
-           <p class="ledger-sub">${p.name}</p>
+           <h2>${esc(p.id)}</h2>
+           <p class="ledger-sub">${esc(p.name)}</p>
          </div>
        </div>
-       <div class="conflict-banner ${conflictClass}">
+       <div class="conflict-banner ${esc(conflictClass)}">
          <span class="conflict-label">Signal conflict</span>
-         <span class="conflict-value">${conflict}</span>
+         <span class="conflict-value">${esc(conflict)}</span>
        </div>
        <div class="signal-rows">` +
       rows.map((r) => `
         <div class="signal-row">
           <div class="sig-top">
-            <span class="sig-name">${r.name}</span>
+            <span class="sig-name">${esc(r.name)}</span>
             ${statusPill(r.status)}
           </div>
-          <div class="sig-metric">${r.metric}</div>
-          <div class="sig-meta"><span class="sig-method">${r.method}</span></div>
+          <div class="sig-metric">${esc(r.metric)}</div>
+          <div class="sig-meta"><span class="sig-method">${esc(r.method)}</span></div>
           <div class="sig-detail">${r.detail}</div>
         </div>`).join("") +
       simLedgerRow(p) +
@@ -566,13 +584,13 @@
            <p class="eyebrow">PCEIF governance decision</p>
            <h2>Recommended action</h2>
          </div>
-         <span class="state-badge state-${stateClass}">${d.healthState}</span>
+         <span class="state-badge state-${esc(stateClass)}">${esc(d.healthState)}</span>
        </div>
        <div class="dc-grid">
-         <div class="dc-field"><span class="dc-label">Conflict</span><span class="dc-value">${d.conflictType}</span></div>
-         <div class="dc-field"><span class="dc-label">Authority</span><span class="dc-value">${d.authority}</span></div>
-         <div class="dc-field dc-wide"><span class="dc-label">Recommended action</span><span class="dc-value">${d.action}</span></div>
-         <div class="dc-field dc-wide"><span class="dc-label">Documentation required</span><span class="dc-value">${d.documentation}</span></div>
+         <div class="dc-field"><span class="dc-label">Conflict</span><span class="dc-value">${esc(d.conflictType)}</span></div>
+         <div class="dc-field"><span class="dc-label">Authority</span><span class="dc-value">${esc(d.authority)}</span></div>
+         <div class="dc-field dc-wide"><span class="dc-label">Recommended action</span><span class="dc-value">${esc(d.action)}</span></div>
+         <div class="dc-field dc-wide"><span class="dc-label">Documentation required</span><span class="dc-value">${esc(d.documentation)}</span></div>
        </div>
        <p class="dc-caveat">Recommended actions require named human approval before they are recorded; fairness gates require contractor response opportunity before any formal action.</p>
        ${fairnessBlock}
@@ -651,10 +669,10 @@
       `<p class="eyebrow">Decision log (this session)</p>` +
       decisionLog.map((e) => `
         <div class="log-entry">
-          <div class="log-top"><span class="log-proj">${e.project}</span><span class="log-state state-${e.state.toLowerCase().replace("-review","")}">${e.state}</span></div>
-          <div class="log-action">${e.action}</div>
-          <div class="log-rationale">“${e.rationale}”</div>
-          <div class="log-time">${LinTZ.format(e.recordedAt)}${e.fairnessAcknowledged ? " · fairness gate acknowledged" : ""}</div>
+          <div class="log-top"><span class="log-proj">${esc(e.project)}</span><span class="log-state state-${esc(e.state.toLowerCase().replace("-review",""))}">${esc(e.state)}</span></div>
+          <div class="log-action">${esc(e.action)}</div>
+          <div class="log-rationale">“${esc(e.rationale)}”</div>
+          <div class="log-time">${esc(LinTZ.format(e.recordedAt))}${e.fairnessAcknowledged ? " · fairness gate acknowledged" : ""}</div>
         </div>`).join("");
   }
 
@@ -705,7 +723,7 @@
     const sel = $("#tz-select");
     if (!sel) return;
     sel.innerHTML = LinTZ.zones.map((z) =>
-      `<option value="${z.id}"${z.id === LinTZ.get() ? " selected" : ""}>${z.label}</option>`).join("");
+      `<option value="${esc(z.id)}"${z.id === LinTZ.get() ? " selected" : ""}>${esc(z.label)}</option>`).join("");
     sel.addEventListener("change", () => LinTZ.set(sel.value));
   }
 
