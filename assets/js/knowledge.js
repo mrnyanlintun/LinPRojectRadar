@@ -950,7 +950,7 @@
       `,
     },
     {
-      id: "module11",
+      id: "module10",
       title: "13. Module 10: Dempster-Shafer Evidence Combination",
       eyebrow: "Module 10 · evidence theory",
       build: () => `
@@ -986,7 +986,7 @@
       `,
     },
     {
-      id: "module12",
+      id: "module11",
       title: "14. Module 11: Rough Sets Classification",
       eyebrow: "Module 11 · set theory",
       build: () => `
@@ -1016,7 +1016,7 @@
       `,
     },
     {
-      id: "module13",
+      id: "module12",
       title: "15. Module 12: Neutrosophic Logic",
       eyebrow: "Module 12 · three-valued logic",
       build: () => `
@@ -1048,7 +1048,7 @@
       `,
     },
     {
-      id: "module14",
+      id: "module13",
       title: "16. Module 13: Interval-valued Fuzzy Sets",
       eyebrow: "Module 13 · fuzzy logic",
       build: () => `
@@ -1082,7 +1082,7 @@
       `,
     },
     {
-      id: "module15",
+      id: "module14",
       title: "17. Module 14: Z-numbers",
       eyebrow: "Module 14 · reliability-weighted evidence",
       build: () => `
@@ -1115,7 +1115,7 @@
       `,
     },
     {
-      id: "module16",
+      id: "module15",
       title: "18. Module 15: Probabilistic Linguistic Term Sets (PLTS)",
       eyebrow: "Module 15 · probabilistic linguistics",
       build: () => `
@@ -1145,7 +1145,7 @@
       `,
     },
     {
-      id: "module17",
+      id: "module16",
       title: "19. Module 16: Plithogenic Sets",
       eyebrow: "Module 16 · contradiction-degree weighting",
       build: () => `
@@ -1179,7 +1179,7 @@
       `,
     },
     {
-      id: "module18",
+      id: "module17",
       title: "20. Module 17: Belief Rule Base (BRB)",
       eyebrow: "Module 17 · expert IF-THEN rules",
       build: () => `
@@ -1210,7 +1210,7 @@
       `,
     },
     {
-      id: "module19",
+      id: "module18",
       title: "21. Module 18: Quantum Probability",
       eyebrow: "Module 18 · amplitude interference",
       build: () => `
@@ -1254,6 +1254,51 @@
       eyebrow: "Module 19 · decision output (LAST)",
       build: () => `
         <p class="kn-lead">"Agent-based" here means each authority role (PM, controls lead, program director) is modelled as an agent with explicit, executable decision rules. In <code>decision.js</code> those rules are pure functions, readable, testable, and auditable. Nothing is learned; everything is documented. Module 19 is the LAST module because it consumes the M09 baseline plus the M10–18 evidence checks and produces the recorded decision card.</p>
+
+        <h3>Why the authority matrix exists</h3>
+        <p>PCEIF operates under two layers. Layer 1 is the agency governance policy: the program owner sets the authority matrix before any project starts. Layer 2 is the PM decision architecture: it uses that matrix to route each signal package to the correct authority. The matrix is not hardcoded. A different agency can configure different thresholds and authorities. What PCEIF provides is the routing logic and the audit trail.</p>
+
+        <h3>The authority matrix</h3>
+        ${ragTable(
+          ["State", "Authority", "Timeframe", "Basis"],
+          [
+            [{ label: "Green", color: RAG.green },
+             "Project Manager / Controls Lead",
+             "Monthly reporting cycle",
+             "Routine performance within delegated PM authority"],
+            [{ label: "Amber", color: RAG.amber },
+             "PM + Project Controls Lead",
+             "Weekly review loop",
+             "Early warning requiring controls oversight but within PM authority"],
+            [{ label: "Red-review", color: RAG.red },
+             "Program Director / PMO Lead",
+             "48 business hours",
+             "Cost or schedule signal exceeds PM delegated authority threshold. FAR Part 34 and OMB Circular A-11 require named senior approver on record for programs showing sustained underperformance"],
+            [{ label: "Critical", color: RAG.red },
+             "Contracting Officer / Executive Board",
+             "Immediate",
+             "Potential contract default, major scope change, or regulatory reporting threshold breached"],
+          ]
+        )}
+
+        <h3>Why Program Director for Red-review (not PM)</h3>
+        <p>Three reasons:</p>
+        <ol class="kn-list">
+          <li><strong>Authority limit.</strong> PMs have delegated authority up to a defined threshold. A sustained CPI below 0.90 or multiple Red signals typically exceeds that threshold. The PM cannot unilaterally authorize a recovery plan without program-level approval.</li>
+          <li><strong>Regulatory basis.</strong> OMB Circular A-11 (capital programming) and FAR Part 34 (major system acquisitions) require that cost overruns above defined thresholds be reported to a named senior official with documented rationale and a corrective action plan. The Program Director is that official.</li>
+          <li><strong>Accountability chain.</strong> Public capital programs are publicly accountable. A governance action recorded only at the PM level is insufficient for audit purposes when the project is in distress. The Program Director's name on the record creates the accountability chain the oversight framework requires.</li>
+        </ol>
+
+        <h3>Why 48 hours</h3>
+        <p>The 48-hour timeframe is derived from standard agency program controls policy. The next reporting cycle cannot close with an unresolved Red-review: the decision must be on record before the period closes. 48 business hours gives the Program Director time to review the full signal package, consult with the PM, and record a decision or deferral with rationale.</p>
+
+        <h3>The fairness gate</h3>
+        <p>For Red-review on fairness-sensitive signals (document risk, LOB crew buffer, CCPM buffer), the contractor must have a response opportunity before the Program Director records a formal action. This prevents automated model outputs from directly triggering contractual consequences without the contractor's voice. The fairness gate is a PCEIF Layer 1 policy requirement, not optional.</p>
+
+        <h3>Layer 1 vs Layer 2</h3>
+        <p><strong>Layer 1 (Agency Governance):</strong> sets the matrix. Which thresholds trigger which authority, what documentation is required, whether a fairness gate applies. Established by the program owner before any project starts. Not changed per project.</p>
+        <p><strong>Layer 2 (PM Decision Architecture):</strong> uses the matrix. Takes the signal package from all 19 modules, applies the matrix, and surfaces the specific recommendation for this reporting cycle. The PM sees the recommendation, records a decision (approve, defer, or override with rationale), and the audit trail captures everything.</p>
+        <p class="kn-callout">AI explains and summarizes. It does not make governance decisions. Every recommended action requires named human approval before it is recorded.</p>
 
         <h3>The three core functions</h3>
         ${formulaBlock([

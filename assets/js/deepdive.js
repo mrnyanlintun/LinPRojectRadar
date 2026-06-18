@@ -368,11 +368,28 @@
       `Recommended action: ${d.action}`,
       `Authority entitled to act: ${d.authority}. Documentation required: ${d.documentation}`,
       d.fairnessGateRequired
-        ? "Fairness gate REQUIRED: contractor response opportunity must be acknowledged before any formal action — recording is blocked until then."
+        ? "Fairness gate REQUIRED: contractor response opportunity must be acknowledged before any formal action, recording is blocked until then."
         : "No fairness gate is required for this state/sensitivity combination."
     ];
+
+    // Derive the authority-matrix row for this project's current state — used
+    // by the second metric row and the regulatory-basis box. Pulled from the
+    // PCEIF Layer 1 policy table; the strings here mirror exactly what the
+    // Knowledge Library "Module 19" section explains in full.
+    const stateKey = d.healthState; // "Green" | "Amber" | "Red-review"
+    const timeframe = stateKey === "Green" ? "Monthly reporting cycle"
+                    : stateKey === "Amber" ? "Weekly review loop"
+                    : stateKey === "Red-review" ? "48 business hours"
+                    : "Immediate";
+    const regulatoryBasis = stateKey === "Red-review"
+      ? "FAR Part 34 / OMB Circular A-11"
+      : "Delegated PM authority";
+    const timeframeStatus = stateKey === "Green" ? "green"
+                          : stateKey === "Amber" ? "amber" : "red";
+
     return panel("19", "Agent-Based Model (ABM) Governance Layer", st,
       note("Governance decision derived from the full signal package using the PCEIF authority matrix. Maps the conflict classification to a specific action, a named authority, and required documentation.") +
+      `<p class="dd-chart-note" style="text-transform:none; letter-spacing:.02em">The authority matrix is set at the agency level (Layer 1) before any project starts. It maps each signal state to the authority entitled to act, the required timeframe, and the documentation that must be on record. Program Director / PMO Lead is assigned to Red-review because sustained underperformance typically exceeds PM delegated authority and triggers OMB Circular A-11 and FAR Part 34 reporting requirements. The 48-hour timeframe ensures the decision is recorded before the reporting cycle closes.</p>` +
       abmChart(p, d) +
       `<div class="dd-grid">${
         metricBox("Derived state", d.healthState, st) +
@@ -380,8 +397,15 @@
         metricBox("Conflict", d.conflictType.length > 20 ? d.conflictType.slice(0, 19) + "…" : d.conflictType, st) +
         metricBox("Sector", p.sector === "combined" ? "Hybrid" : p.sector, "green")
       }</div>` +
+      `<p class="dd-chart-note">Authority matrix (this project)</p>` +
+      `<div class="dd-grid">${
+        metricBox("Authority", d.authority, st) +
+        metricBox("Timeframe", timeframe, timeframeStatus) +
+        metricBox("Fairness gate", d.fairnessGateRequired ? "Required" : "Not required", d.fairnessGateRequired ? "red" : "green") +
+        metricBox("Regulatory basis", regulatoryBasis, stateKey === "Red-review" ? "red" : "green")
+      }</div>` +
       reasons(why, st) +
-      rule("GREEN → routine monitoring (PM/Controls); AMBER → early-warning review (PM + Controls lead); RED-REVIEW when >=2 red signals or CUSUM breach + red forecast (Program director/PMO); fairness-sensitive red-reviews additionally require the contractor fairness gate (deriveDecision in decision.js)."));
+      rule("GREEN → routine monitoring (PM/Controls); AMBER → early-warning review (PM + Controls lead); RED-REVIEW when >=2 red signals or CUSUM breach + red forecast (Program director/PMO); fairness-sensitive red-reviews additionally require the contractor fairness gate (deriveDecision in decision.js). Authority assignments reflect the PCEIF Layer 1 authority matrix derived from agency program controls policy, OMB Circular A-11, and FAR Part 34."));
   }
 
   /* ---------- simulation modules (04–08, 11) ----------
