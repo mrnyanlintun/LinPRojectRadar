@@ -55,10 +55,21 @@
   }
 
   /* ---------- in-memory hydration from a flat project list ---------- */
+  /* Interpret the archived flag robustly. The backend JSON has been seen with
+     non-boolean shapes — notably the STRING "false", which is truthy in JS and
+     would silently route an active project into the archive (and then vanish
+     entirely once listArchived() overwrites LIN_ARCHIVED with the real archive
+     list). Only genuine archived markers count; everything else stays visible. */
+  function isArchived(p) {
+    const a = p && p.archived;
+    if (a === true || a === 1) return true;
+    if (typeof a === "string") return /^(true|1|yes|archived)$/i.test(a.trim());
+    return false;
+  }
   function hydrate(projects) {
     LIN_PROJECTS.length = 0;
     LIN_ARCHIVED.length = 0;
-    (projects || []).forEach((p) => (p.archived ? LIN_ARCHIVED : LIN_PROJECTS).push(p));
+    (projects || []).forEach((p) => (isArchived(p) ? LIN_ARCHIVED : LIN_PROJECTS).push(p));
   }
 
   /* ---------- CORS-safe fetch helpers (simple requests only) ---------- */
@@ -101,6 +112,12 @@
       hydrate(projects);
       writeCache(projects);
       banner("");
+      // Diagnostic: what the API returned vs how it was split. A project that
+      // appears in the API list but is absent from "Projects loaded" was routed
+      // to the archive (inspect its archived flag) — never dropped silently.
+      console.log("API ?action=list returned:", projects.length,
+        projects.map((p) => p.id + (isArchived(p) ? " (archived)" : "")));
+      console.log("Projects loaded:", LIN_PROJECTS.length, LIN_PROJECTS.map((p) => p.id));
       // A project can go "missing" from the portfolio because it was
       // accidentally archived. When the active list is empty — or there are
       // archived projects at all — surface a warning so they're discoverable.
@@ -164,7 +181,7 @@
       if (fromActive >= 0) LIN_PROJECTS.splice(fromActive, 1);
       const fromArch = LIN_ARCHIVED.findIndex((p) => p.id === saved.id);
       if (fromArch >= 0) LIN_ARCHIVED.splice(fromArch, 1);
-      (saved.archived ? LIN_ARCHIVED : LIN_PROJECTS).push(saved);
+      (isArchived(saved) ? LIN_ARCHIVED : LIN_PROJECTS).push(saved);
       writeCache(LIN_PROJECTS.concat(LIN_ARCHIVED));
       banner("");
       return saved;
