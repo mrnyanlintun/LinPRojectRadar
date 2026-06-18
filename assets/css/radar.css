@@ -1244,6 +1244,16 @@ body.nav-open .nav-rail { transform: translateX(0); }
 }
 .kn-nav-btn:hover { background: var(--surface-soft); border-color: var(--line); }
 .kn-nav-btn.active { background: color-mix(in srgb, var(--phosphor) 14%, transparent); border-color: var(--phosphor); color: var(--text); font-weight: 600; }
+.kn-nav-cat { list-style: none; margin-top: 6px; }
+.kn-nav-cat details { border-radius: 6px; }
+.kn-nav-cat-head { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 8px; list-style: none; border-radius: 6px; font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em; color: var(--text); }
+.kn-nav-cat-head::-webkit-details-marker { display: none; }
+.kn-nav-cat-head:hover { background: var(--surface-soft); }
+.kn-nav-cat-num { font-weight: 700; color: var(--phosphor); min-width: 44px; }
+.kn-nav-cat-name { flex: 1; font-weight: 600; text-transform: none; }
+.kn-nav-cat-parked { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: color-mix(in srgb, var(--muted) 14%, transparent); color: var(--faint); font-style: italic; }
+.kn-nav-cat-list { list-style: none; padding: 0 0 4px 18px; margin: 2px 0 6px; display: flex; flex-direction: column; gap: 1px; }
+.kn-nav-mod .kn-nav-btn { font-size: 12px; padding: 5px 8px; }
 
 .kn-content { padding: 26px 28px; }
 .kn-article { max-width: 760px; }

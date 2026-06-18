@@ -555,11 +555,25 @@
 
   /* ---------- page rendering ---------- */
 
+  // Legacy module number -> Cat X.Y notation used in user-facing copy. The
+  // underlying `m.num` strings ("01".."19") are preserved as keys for
+  // backwards compatibility; only the rendered label changes.
+  const CAT_FROM_MODULE = {
+    "01": "Cat 1.1", "02": "Cat 1.2", "03": "Cat 1.3",
+    "04": "Cat 2.1", "05": "Cat 2.2", "06": "Cat 2.3",
+    "07": "Cat 3.1", "08": "Cat 3.2",
+    "09": "Cat 6.1",
+    "10": "Cat 7.1", "11": "Cat 7.2", "12": "Cat 7.3", "13": "Cat 7.4",
+    "14": "Cat 7.5", "15": "Cat 7.6", "16": "Cat 7.7", "17": "Cat 7.8", "18": "Cat 7.9",
+    "19": "Cat 9.1"
+  };
+
   function cardHtml(m) {
+    const catRef = CAT_FROM_MODULE[String(m.num).trim()] || ("Cat " + m.num);
     return `
-        <section class="panel mod-card" aria-label="Module ${m.num}: ${esc(m.title)}">
+        <section class="panel mod-card" aria-label="${esc(catRef)}: ${esc(m.title)}">
           <div class="mod-head">
-            <span class="mod-num">MODULE ${m.num}</span>
+            <span class="mod-num">${esc(catRef.toUpperCase())}</span>
             <h2>${esc(m.title)}</h2>
           </div>
           <p class="mod-method">${esc(m.method)}</p>
