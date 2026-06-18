@@ -713,10 +713,6 @@ body[data-theme="light"] .sw-axis { stroke: rgba(15,23,42,0.14); }
 .sw-web-current { fill: rgba(78,160,255,0.15); stroke: #4ea0ff; stroke-width: 1.5; }
 .sw-web-prev { fill: none; stroke: rgba(233,162,59,0.4); stroke-width: 1; stroke-dasharray: 4 4; }
 .sw-label { font-family: var(--font-mono); font-size: 9px; fill: var(--faint); dominant-baseline: middle; }
-.sw-ring-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; opacity: .55; }
-.sw-ring-label-green { fill: #3fcaa6; }
-.sw-ring-label-amber { fill: #e2b13c; }
-.sw-ring-label-red { fill: #e0556b; }
 .sw-dot { stroke: var(--surface); stroke-width: 1.5; }
 .sw-dot:hover { r: 6px; }
 .sw-center { stroke: var(--surface); stroke-width: 2; }
