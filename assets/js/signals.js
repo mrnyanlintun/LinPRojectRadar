@@ -760,15 +760,10 @@
       status.textContent = "Scanning document with AI… this can take a few seconds.";
       const stopLoading = startLoadingOverlay(container);
       try {
-        // Client-side size check. Large files sent as base64 can exceed the
-        // Apps Script request limit and surface as a "Failed to fetch". Log the
-        // size up front so the actual payload size is visible in the console.
-        const fileBytes = picked.size || 0;
-        const fileMB = fileBytes / (1024 * 1024);
-        const oversized = fileBytes > 2 * 1024 * 1024;
-        console.log("[upload] selected file:", picked.name, "·",
-          fileMB.toFixed(2) + " MB (" + fileBytes + " bytes) ·",
-          picked.type || "unknown type", oversized ? "· OVER 2 MB" : "");
+        // Document upload diagnostics — the detailed logging + the hard size
+        // cap run just below, immediately before the fetch. A "Failed to fetch"
+        // with no HTTP status is usually a CORS preflight block, a network
+        // timeout on a large payload, or mixed content (http vs https).
         // PDFs → extract text client-side (PDF.js) and send as `text`.
         // If PDF.js returns little/no text (scanned or image-only PDF), fall
         // back to base64 so the backend can OCR / multimodal-parse it.
@@ -786,21 +781,23 @@
         } else {
           args.dataBase64 = await readFileAsBase64(picked);
         }
-        // Log the real payload size right before the fetch. Base64 inflates the
-        // raw file by ~33%, so this is what Apps Script actually receives.
-        if (args.dataBase64 != null) {
-          const b64Bytes = args.dataBase64.length;
-          console.log("[upload] sending base64 payload:", b64Bytes + " chars (~" +
-            (b64Bytes / (1024 * 1024)).toFixed(2) + " MB)");
-          // Oversized base64 uploads are the ones that fail — block with the
-          // warning instead of letting the fetch die with "Failed to fetch".
-          // (Born-digital PDFs take the text path above and are unaffected.)
-          if (oversized) {
-            status.textContent = "File too large for direct upload. Consider compressing the PDF.";
-            return; // finally{} re-enables the button and clears the overlay
-          }
-        } else {
-          console.log("[upload] sending extracted text:", (args.text ? args.text.length : 0) + " chars");
+        // Diagnostics immediately before the fetch — confirm exactly what is
+        // sent to the extractsignals endpoint.
+        const dataBase64 = args.dataBase64 || "";
+        console.log("Upload URL:", window.LIN_API_URL);
+        console.log("File size (bytes):", picked.size);
+        console.log("Base64 length:", dataBase64.length);
+        console.log("Doc type:", docType);
+        console.log("Project id:", id);
+
+        // Hard cap: base64 payloads over ~5M chars (~3.75 MB file) reliably
+        // fail the Apps Script POST as "Failed to fetch". Block before the
+        // fetch so the user gets a clear message instead of a network error.
+        // Born-digital PDFs take the text path above (no dataBase64) and are
+        // unaffected by this cap.
+        if (dataBase64.length > 5000000) {
+          status.textContent = "File too large — maximum 3MB. Please compress the PDF.";
+          return; // finally{} re-enables the button + clears the overlay
         }
         const resp = await LinStore.extractSignals(args);
         // v7 returns computed CPI/SPI in `computed`; merge them into the
@@ -841,6 +838,7 @@
         stopLoading();
         showResultModal({ success: true, si, missing, dates, readyToRun, ran });
       } catch (e) {
+        console.error("Upload fetch error:", e && e.name, e && e.message);
         const msg = (e && e.message ? e.message : "store unreachable");
         status.textContent = "Extraction failed: " + msg + ". The form is still usable — retry.";
         stopLoading();
