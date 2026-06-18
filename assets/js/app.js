@@ -63,9 +63,12 @@
 
   // Stable angle within a sector from a hashed id (no per-render jitter)
   function hashAngle(project) {
-    const sec = SECTORS[project.sector];
+    // Unknown / missing sector must not throw and drop the project — fall back
+    // to the hybrid arc so it still plots.
+    const sec = SECTORS[project.sector] || SECTORS.hybrid;
+    const id = String(project && project.id || "");
     let h = 0;
-    for (let i = 0; i < project.id.length; i++) h = (h * 31 + project.id.charCodeAt(i)) >>> 0;
+    for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
     const span = sec.end - sec.start;
     const frac = (h % 1000) / 1000;
     // keep blips off the exact sector boundaries
@@ -108,6 +111,11 @@
   function buildRadar() {
     const svg = $("#radar-svg");
     svg.innerHTML = "";
+
+    // Visibility into exactly what reaches the radar. A project missing from
+    // this list was dropped before render (hydrate / archived split) rather
+    // than by buildRadar itself.
+    console.log("Projects loaded:", LIN_PROJECTS.length, LIN_PROJECTS.map((p) => p.id));
 
     const R = R_MAX; // 165.6 — outer edge
 
@@ -235,8 +243,15 @@
     const BAND_EDGES = [R_MIN - 6, 0.34 * 180, 0.62 * 180, R_MAX + 2];
 
     const plots = LIN_PROJECTS.map((p) => {
-      const ang = hashAngle(p);
-      return { p, ang, r: healthToRadius(proxyHealth(p)) };
+      try {
+        const ang = hashAngle(p);
+        return { p, ang, r: healthToRadius(proxyHealth(p)) };
+      } catch (err) {
+        // Never drop a project because its plot math threw — log it and place
+        // it at a neutral default so it still appears on the radar.
+        console.error("Radar plot failed for project", p && p.id, "—", err && err.message);
+        return { p, ang: 0, r: healthToRadius(50) };
+      }
     });
 
     // pass 1: dot collision jitter (deterministic by list order)
@@ -310,6 +325,7 @@
     const ICON = 16; // display size in SVG user units
 
     plots.forEach((q) => {
+     try {
       const p = q.p;
       const status = statusKey(p);
       const empty = status === "empty";
@@ -401,6 +417,11 @@
       g.addEventListener("blur", lower);
 
       svg.appendChild(g);
+     } catch (err) {
+      // One project's blip failing must never blank the radar or silently drop
+      // the others — log which project and keep going.
+      console.error("Blip render failed for project", q && q.p && q.p.id, "—", err && err.message);
+     }
     });
 
     highlightBlip();
@@ -420,23 +441,39 @@
     const ul = $("#project-list");
     ul.innerHTML = "";
     LIN_PROJECTS.forEach((p) => {
-      const li = document.createElement("li");
-      const btn = document.createElement("button");
-      btn.className = "list-item";
-      btn.setAttribute("data-id", p.id);
-      const state = stateLabel(p);
-      const sum = simSummary(p);
-      const simChip = sum
-        ? `<span class="li-sim state-${esc(sum.worst)}" title="Simulation models: ${esc(sum.red)} red, ${esc(sum.amber)} amber, ${esc(sum.green)} green">${esc(sum.flagged)}/${esc(sum.total)} sim</span>`
-        : "";
-      btn.innerHTML =
-        `<span class="li-code">${esc(p.id)}</span>` +
-        `<span class="li-name">${esc(p.name)}</span>` +
-        simChip +
-        `<span class="li-state state-${esc(statusKey(p))}">${esc(state)}</span>`;
-      btn.addEventListener("click", () => openDetail(p.id));
-      li.appendChild(btn);
-      ul.appendChild(li);
+      try {
+        const li = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.className = "list-item";
+        btn.setAttribute("data-id", p.id);
+        const state = stateLabel(p);
+        const sum = simSummary(p);
+        const simChip = sum
+          ? `<span class="li-sim state-${esc(sum.worst)}" title="Simulation models: ${esc(sum.red)} red, ${esc(sum.amber)} amber, ${esc(sum.green)} green">${esc(sum.flagged)}/${esc(sum.total)} sim</span>`
+          : "";
+        btn.innerHTML =
+          `<span class="li-code">${esc(p.id)}</span>` +
+          `<span class="li-name">${esc(p.name)}</span>` +
+          simChip +
+          `<span class="li-state state-${esc(statusKey(p))}">${esc(state)}</span>`;
+        btn.addEventListener("click", () => openDetail(p.id));
+        li.appendChild(btn);
+        ul.appendChild(li);
+      } catch (err) {
+        // Keep the list resilient — render a minimal fallback row and log,
+        // rather than dropping the project (or breaking the whole list).
+        console.error("List render failed for project", p && p.id, "—", err && err.message);
+        const li = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.className = "list-item";
+        btn.setAttribute("data-id", p && p.id || "");
+        btn.innerHTML =
+          `<span class="li-code">${esc(p && p.id || "?")}</span>` +
+          `<span class="li-name">${esc(p && p.name || "(unrenderable)")}</span>`;
+        if (p && p.id) btn.addEventListener("click", () => openDetail(p.id));
+        li.appendChild(btn);
+        ul.appendChild(li);
+      }
     });
   }
 
