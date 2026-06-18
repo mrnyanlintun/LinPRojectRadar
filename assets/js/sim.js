@@ -166,29 +166,22 @@
   /* ---------- status thresholds (shared, deterministic) ---------- */
   function evmStatus(cpi, spi) {
     if (cpi < 0.90 || spi < 0.85) return "red";
-    if (cpi < 0.93 || spi < 0.90) return "amber";
-    if (cpi < 0.97 || spi < 0.95) return "yellow";
+    if (cpi < 0.95 || spi < 0.95) return "amber";
     return "green";
   }
-  /* 5-status thresholds (Complete / Green / Yellow / Amber / Red). */
   function mcStatus(overrunPctP80) {
     if (overrunPctP80 >= 10) return "red";
-    if (overrunPctP80 >= 7)  return "amber";
-    if (overrunPctP80 >= 5)  return "yellow";
-    if (overrunPctP80 <= 0)  return "complete"; // P80 EAC ≤ baseline BAC
+    if (overrunPctP80 >= 5) return "amber";
     return "green";
   }
   function cusumStatus(cu) {
     if (cu.breached) return "red";
-    if (cu.maxStat >= 0.85 * cu.H) return "amber";
-    if (cu.maxStat >= 0.60 * cu.H) return "yellow";
+    if (cu.maxStat >= 0.6 * cu.H) return "amber";
     return "green";
   }
   function docStatus(score) {
     if (score >= 0.70) return "red";
-    if (score >= 0.40) return "amber";
-    if (score >= 0.20) return "yellow";
-    if (score <= 0.001) return "complete"; // every doc clean
+    if (score >= 0.30) return "amber";
     return "green";
   }
 
