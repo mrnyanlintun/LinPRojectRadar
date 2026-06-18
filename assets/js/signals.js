@@ -16,7 +16,9 @@
 (function () {
   "use strict";
 
-  const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const esc = (s) => String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
   /* ---------- document types (24+ airport taxonomy, grouped) ----------
      Financial & schedule docs carry EVM figures; risk/correspondence and
@@ -140,10 +142,160 @@
     return `<option value="">Select project…</option>` +
       list.map((p) => `<option value="${esc(p.id)}"${p.id === selectedId ? " selected" : ""}>${esc(p.id)} — ${esc(p.name)}</option>`).join("");
   }
-  function sourceDocType(si, key) {
+  function sourceLog(si, key) {
     const src = si && si.sources && si.sources[key];
+    if (!src) return [];
+    return Array.isArray(src) ? src : [src];
+  }
+  function latestSource(si, key) {
+    const log = sourceLog(si, key);
+    return log.length ? log[log.length - 1] : null;
+  }
+  function sourceDocType(si, key) {
+    const src = latestSource(si, key);
     if (!src) return null;
     return src.docType || src.doc || src.type || null;
+  }
+  function appendSourceEntry(si, key, value, docTypeName, fileNameStr, reason, at) {
+    if (!si || value == null || value === "") return;
+    si.sources = si.sources || {};
+    if (!Array.isArray(si.sources[key])) si.sources[key] = si.sources[key] ? [si.sources[key]] : [];
+    si.sources[key].push({
+      value,
+      docType: docTypeName || "unknown",
+      fileName: fileNameStr || null,
+      at: at || new Date().toISOString(),
+      reason: reason == null ? null : reason
+    });
+  }
+  function appendExtractedSources(si, keys, docTypeName, fileNameStr) {
+    const seen = {};
+    (keys || []).forEach((key) => {
+      if (!FIELD_ROWS.some((f) => f.key === key) || seen[key]) return;
+      seen[key] = true;
+      appendSourceEntry(si, key, si[key], docTypeName, fileNameStr, null);
+    });
+  }
+  function fullSourceHistory(si) {
+    si = si || {};
+    const src = si.sources || {};
+    return ["bac", "ev", "ac", "pv", "cpi", "spi"].reduce((out, key) => {
+      const log = Array.isArray(src[key]) ? src[key] : (src[key] ? [src[key]] : []);
+      out[key] = { current: si[key], log: log.slice() };
+      return out;
+    }, {});
+  }
+
+  const MODULE_METHOD_MAP = {
+    PERT_Network_Criticality: "m04_pert",
+    Line_of_Balance_Velocity: "m05_lob",
+    CCPM_Buffer_Health: "m06_ccpm",
+    Reference_Class_Forecasting: "m07_rcf",
+    DSM_Rework_Propagation: "m08_dsm",
+    Rough_Sets_Classification: "m11_rough_sets",
+    Neutrosophic_Logic: "m12_neutrosophic",
+    Interval_Fuzzy_Sets: "m13_interval_fuzzy",
+    Z_Numbers: "m14_z_numbers",
+    PLTS: "m15_plts",
+    Plithogenic_Sets: "m16_plithogenic",
+    Belief_Rule_Base: "m17_brb",
+    Quantum_Probability: "m18_quantum",
+    DST_Evidence_Combination: "m10_dst"
+  };
+
+  function decisionSnapshot(project) {
+    if (!project || !project.signals) return null;
+    if (project.signals.decision) return project.signals.decision;
+    if (typeof deriveDecision !== "function") return null;
+    const d = deriveDecision(project);
+    return {
+      state: d.healthState,
+      conflict: d.conflictType,
+      authority: d.authority,
+      action: d.action,
+      fairnessGate: d.fairnessGateRequired
+    };
+  }
+
+  function buildHistorySnapshot(project, at) {
+    if (!project || !project.signals) return null;
+    const now = at || new Date();
+    const period = now.toISOString().substring(0, 7);
+    const si = project.signalInputs || {};
+    const s = project.signals || {};
+    const d = decisionSnapshot(project) || {};
+    const snapshot = {
+      period,
+      computed_at: now.toISOString(),
+      signal_inputs: Object.assign({}, si),
+      signal_inputs_with_history: fullSourceHistory(si),
+      module_results: {
+        m01_monte_carlo: s.mc ? {
+          p50: s.mc.p50,
+          p80: s.mc.p80,
+          p80_delta_pct: s.mc.p80DeltaPct != null ? s.mc.p80DeltaPct : s.mc.p80eacOverrunPct,
+          p_delay: s.mc.pDelay != null ? s.mc.pDelay : s.mc.pMilestoneDelay,
+          status: s.mc.status
+        } : null,
+        m02_cusum: s.cusum ? {
+          breached: s.cusum.breached,
+          peak: s.cusum.peak != null ? s.cusum.peak : s.cusum.drift,
+          decision_h: s.cusum.h != null ? s.cusum.h : s.cusum.threshold,
+          breach_period: s.cusum.breachPeriod != null ? s.cusum.breachPeriod : s.cusum.breachIndex,
+          status: s.cusum.status
+        } : null,
+        m03_doc_risk: {
+          score: s.doc ? s.doc.score : null,
+          status: s.doc ? s.doc.status : "Green"
+        },
+        m04_pert: null,
+        m05_lob: null,
+        m06_ccpm: null,
+        m07_rcf: null,
+        m08_dsm: null,
+        m09_conservative: { state: d.state || null, conflict: d.conflict || null },
+        m10_dst: null,
+        m11_rough_sets: null,
+        m12_neutrosophic: null,
+        m13_interval_fuzzy: null,
+        m14_z_numbers: null,
+        m15_plts: null,
+        m16_plithogenic: null,
+        m17_brb: null,
+        m18_quantum: null,
+        m19_abm: {
+          state: d.state || null,
+          authority: d.authority || null,
+          action: d.action || null,
+          fairness_gate: d.fairnessGate || false
+        }
+      },
+      governance: {
+        state: d.state || null,
+        conflict: d.conflict || null,
+        authority: d.authority || null,
+        action: d.action || null,
+        fairness_gate: d.fairnessGate || false
+      }
+    };
+    const sim = project.simulationSignals && project.simulationSignals.signal_array;
+    if (Array.isArray(sim)) {
+      sim.forEach((sig) => {
+        const key = MODULE_METHOD_MAP[sig.method_class];
+        if (key) snapshot.module_results[key] = sig;
+      });
+    }
+    return snapshot;
+  }
+
+  function persistHistorySnapshot(project, at) {
+    const snapshot = buildHistorySnapshot(project, at);
+    if (!snapshot) return null;
+    project.history = Array.isArray(project.history) ? project.history : [];
+    project.history = project.history.filter((h) => h && h.period !== snapshot.period);
+    project.history.push(snapshot);
+    if (project.history.length > 24) project.history = project.history.slice(-24);
+    return snapshot;
   }
 
   /* ---------- run the EXISTING models from extracted signalInputs ----------
@@ -173,6 +325,8 @@
       docExcerpt: "Signals extracted from uploaded documents via the document-ingestion flow.",
       seed: LinSim.hashSeed(project.id)
     });
+    const decision = decisionSnapshot(project);
+    if (decision) project.signals.decision = decision;
     // Client-side multi-model simulations (zero tokens, zero backend).
     // runAll() returns modules 04-08 + 11-18. DST (Module 10) runs separately
     // after the core signal package is assembled so it reads live signal data.
@@ -209,6 +363,7 @@
         });
       } catch (e) { /* simulations are non-fatal — never block the core run */ }
     }
+    persistHistorySnapshot(project);
     const builtSignals = project.signals;
     await LinStore.saveProject(project);
     // saveProject reconciles the in-memory mirror with the backend's echoed
@@ -221,6 +376,7 @@
       if (!hasSignals(cached) && builtSignals) cached.signals = builtSignals;
       if (!cached.signalInputs) cached.signalInputs = si;
       if (!cached.simulationSignals && simPayload) cached.simulationSignals = simPayload;
+      if (project.history) cached.history = project.history;
     }
     return true;
   }
@@ -238,6 +394,7 @@
           if (!hasSignals(fresh) && hasSignals(LIN_PROJECTS[i])) fresh.signals = LIN_PROJECTS[i].signals;
           if (!fresh.signalInputs && LIN_PROJECTS[i].signalInputs) fresh.signalInputs = LIN_PROJECTS[i].signalInputs;
           if (!fresh.simulationSignals && LIN_PROJECTS[i].simulationSignals) fresh.simulationSignals = LIN_PROJECTS[i].simulationSignals;
+          if (!fresh.history && LIN_PROJECTS[i].history) fresh.history = LIN_PROJECTS[i].history;
           LIN_PROJECTS[i] = fresh;
         }
       }
@@ -440,6 +597,13 @@
         // v7 returns computed CPI/SPI in `computed`; merge them into the
         // signalInputs view so the ledger + model run see them in one place.
         const si = mergeComputed(resp);
+        const appliedKeys = (resp.applied && resp.applied.length)
+          ? resp.applied.slice()
+          : FIELD_ROWS.map((row) => row.key).filter((key) => si[key] != null && si[key] !== "");
+        ["cpi", "spi"].forEach((key) => {
+          if (si[key] != null && si[key] !== "" && !appliedKeys.includes(key)) appliedKeys.push(key);
+        });
+        appendExtractedSources(si, appliedKeys, docType, picked.name);
         const missing = resp.missing || [];
         const readyToRun = resp.readyToRun != null ? !!resp.readyToRun
           : (Number.isFinite(Number(si.cpi)) && Number.isFinite(Number(si.spi)));
@@ -553,12 +717,38 @@
         <td class="ds-field-val">${esc(val)}</td>
         <td class="ds-field-src">${mark} ${srcTag}</td>
         <td class="ds-field-edit">${pencil}</td>
-      </tr>`;
+      </tr>${signalChangeLogHtml(si, f.key)}`;
     }).join("");
     return `<table class="ds-table">
       <thead><tr><th>Signal input</th><th>Value</th><th>Source</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
+  }
+
+  function signalChangeLogHtml(si, key) {
+    const log = sourceLog(si, key).slice().sort((a, b) =>
+      new Date(a.at || 0).getTime() - new Date(b.at || 0).getTime());
+    if (!log.length) {
+      return `<tr class="ds-source-row"><td></td><td colspan="3"><span class="ds-source-empty">No changes recorded.</span></td></tr>`;
+    }
+    const last = log.length - 1;
+    const rows = log.map((entry, i) => {
+      const when = entry.at ? fmtDate(entry.at) : "unknown time";
+      const val = fmtNum(entry.value);
+      const doc = entry.docType ? (DOC_TYPE_LABEL[entry.docType] || entry.docType) : "Unknown source";
+      const bits = [doc];
+      if (entry.fileName) bits.push(entry.fileName);
+      if (entry.reason) bits.push(entry.reason);
+      return `<div class="ds-source-entry${i === last ? " is-current" : ""}">
+        <span>${esc(when)}</span>
+        <strong>${esc(val == null ? "—" : val)}</strong>
+        <em>${esc(bits.join(" · "))}</em>
+        ${i === last ? `<b>current</b>` : ""}
+      </div>`;
+    }).join("");
+    return `<tr class="ds-source-row"><td></td><td colspan="3">
+      <div class="ds-source-log"><span class="ds-source-title">Change log</span>${rows}</div>
+    </td></tr>`;
   }
 
   function missingHtml(missing) {
@@ -692,6 +882,7 @@
         const si = (resp.signalInputs || resp.signals)
           ? mergeComputed(resp)
           : (cache[id] && cache[id].signalInputs) || {};
+        appendSourceEntry(si, field, Number(value), "manual_override", null, reason || "Manual override by PM");
         const missing = resp.missing || (cache[id] && cache[id].missing) || [];
         const readyToRun = resp.readyToRun != null ? !!resp.readyToRun
           : (Number.isFinite(Number(si.cpi)) && Number.isFinite(Number(si.spi)));
@@ -720,6 +911,7 @@
   window.LinSignals = {
     ingestFormHtml, wireIngestForm,
     renderSignalsPanel,
+    buildHistorySnapshot,
     runModels,
     DOC_TYPES, DOC_TYPE_LABEL
   };

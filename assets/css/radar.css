@@ -659,6 +659,43 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .detail-ingest { margin-bottom: 18px; }
 .detail-ingest-form { margin-top: 10px; }
 
+/* ---------- project detail signal web ---------- */
+.signal-web-panel { margin-bottom: 18px; }
+.sw-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.sw-vs { margin-top: 4px; margin-bottom: 0; }
+.sw-legend { display: flex; gap: 12px; flex-wrap: wrap; font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.sw-legend span, .sw-history-pill { display: inline-flex; align-items: center; gap: 6px; }
+.sw-legend i, .sw-history-pill i {
+  width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--faint);
+}
+.sw-green { background: var(--clear-green) !important; fill: var(--clear-green); }
+.sw-amber { background: var(--radar-amber) !important; fill: var(--radar-amber); }
+.sw-red { background: var(--alarm-red) !important; fill: var(--alarm-red); }
+.sw-none { background: var(--faint) !important; fill: var(--faint); }
+.sw-prev-key { display: inline-block; width: 26px; border-top: 1px dashed rgba(233,162,59,0.65); transform: translateY(-3px); }
+.signal-web-svg { display: block; width: 100%; height: auto; max-height: 420px; margin-top: 10px; overflow: visible; }
+.sw-ring { fill: none; stroke-width: 1; }
+.sw-ring-green { stroke: #3fcaa6; opacity: .2; }
+.sw-ring-amber { stroke: #e2b13c; opacity: .2; }
+.sw-ring-red { stroke: #e0556b; opacity: .2; }
+.sw-axis { stroke: rgba(255,255,255,0.1); stroke-width: .5; }
+body[data-theme="light"] .sw-axis { stroke: rgba(15,23,42,0.14); }
+.sw-web-current { fill: rgba(78,160,255,0.15); stroke: #4ea0ff; stroke-width: 1.5; }
+.sw-web-prev { fill: none; stroke: rgba(233,162,59,0.4); stroke-width: 1; stroke-dasharray: 4 4; }
+.sw-label { font-family: var(--font-mono); font-size: 9px; fill: var(--faint); dominant-baseline: middle; }
+.sw-dot { stroke: var(--surface); stroke-width: 1.5; }
+.sw-dot:hover { r: 6px; }
+.sw-center { stroke: var(--surface); stroke-width: 2; }
+.sw-history-row { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 12px; }
+.sw-history-row > div { display: flex; gap: 8px; flex-wrap: wrap; }
+.sw-history-pill {
+  font-family: var(--font-mono); font-size: 10.5px; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .08em; cursor: pointer;
+  border: 1px solid var(--line); background: transparent; border-radius: 999px;
+  padding: 5px 9px;
+}
+.sw-history-pill:hover, .sw-history-pill.active { color: var(--text); border-color: var(--phosphor); background: color-mix(in srgb, var(--phosphor) 10%, transparent); }
+
 /* ---------- Phase 1: empty / awaiting-ingest states ---------- */
 .state-empty { color: var(--muted); }
 .blip-empty .blip-label { fill: var(--muted); font-style: italic; }
@@ -952,6 +989,21 @@ body.nav-open .nav-rail { transform: translateX(0); }
 .ds-field-val { font-family: var(--font-mono); }
 .ds-row-empty .ds-field-val { color: var(--faint); }
 .ds-src { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+.ds-source-row td { padding-top: 0; }
+.ds-source-log {
+  display: grid; gap: 4px; margin: 0 0 6px;
+  font-family: var(--font-mono); font-size: 10.5px; color: var(--muted);
+}
+.ds-source-title { color: var(--faint); text-transform: uppercase; letter-spacing: .08em; }
+.ds-source-entry {
+  display: grid; grid-template-columns: minmax(128px, .8fr) minmax(78px, .5fr) minmax(160px, 1.4fr) auto;
+  gap: 8px; align-items: baseline; padding: 4px 6px; border-radius: 4px;
+}
+.ds-source-entry strong { color: var(--text); font-weight: 600; }
+.ds-source-entry em { color: var(--muted); font-style: normal; overflow-wrap: anywhere; }
+.ds-source-entry b { color: var(--clear-green); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.ds-source-entry.is-current { background: color-mix(in srgb, var(--clear-green) 10%, transparent); }
+.ds-source-empty { font-family: var(--font-mono); font-size: 10.5px; color: var(--faint); }
 .ds-extracted {
   font-family: var(--font-mono); font-size: 10.5px; color: var(--clear-green);
   background: color-mix(in srgb, var(--clear-green) 14%, transparent);
