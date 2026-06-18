@@ -238,6 +238,14 @@ def get_project(id: str):
     return {"ok": bool(p), "project": p}
 
 
+@app.get("/gethistory")
+def get_history(id: str):
+    pid = validate_project_id(id)
+    db = _load()
+    p = _find(db, pid)
+    return {"ok": bool(p), "history": (p or {}).get("history", [])}
+
+
 @app.post("/create")
 def create_project(body: dict):
     with _lock:
@@ -405,6 +413,16 @@ def overwritesignal(body: dict):
         si = (p.get("signalInputs") if p else None) or {}
         old = si.get(field)
         si[field] = value
+        sources = si.setdefault("sources", {})
+        if not isinstance(sources.get(field), list):
+            sources[field] = [sources[field]] if sources.get(field) else []
+        sources[field].append({
+            "value": _num(value),
+            "docType": "manual_override",
+            "fileName": None,
+            "at": _now(),
+            "reason": body.get("reason") or "Manual override by PM",
+        })
         if p is not None:
             p["signalInputs"] = si
             p.setdefault("events", []).append({

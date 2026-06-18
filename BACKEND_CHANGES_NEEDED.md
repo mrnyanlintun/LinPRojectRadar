@@ -251,3 +251,50 @@ No client change is required for this fix — the modules already compute and
 render client-side under the new numbering (`simulations.js`, `deepdive.js`,
 `modules.js`, `knowledge.js`). This note only tracks the matching backend prompt
 update.
+
+---
+
+## Fix 5 - Project history snapshots and signal source change log
+
+**Context:** the frontend now stores a `project.history` array after each full
+19-module run. Each snapshot contains:
+
+- `period` and `computed_at`
+- `signal_inputs`
+- `signal_inputs_with_history` for BAC, EV, AC, PV, CPI, and SPI
+- `module_results` for Modules 01-19
+- `governance` output from the Module 19 decision card
+
+**Required backend changes:**
+
+1. **`save_()` persistence:** confirm `save_()` writes the entire received
+   project object. If it uses a field whitelist, add `history`, `signals`,
+   `simulationSignals`, and `signalInputs.sources`. The `history` array must be
+   preserved exactly as sent by the client.
+
+2. **New GET action:** add `GET ?action=gethistory&id=XX`, returning:
+   ```json
+   { "ok": true, "history": [ "...snapshots..." ] }
+   ```
+   Read the array from `project.json.history`; return an empty array when no
+   history exists.
+
+3. **Snapshot retention:** the client retains a maximum of 24 periods per
+   project. The backend should not expand this or duplicate same-period entries.
+
+4. **Sources array format:** preserve `signalInputs.sources[field]` as an array
+   of change-log entries. Do not flatten it back to a single object. Each entry
+   has:
+   ```json
+   {
+     "value": 24900000,
+     "docType": "contract_value",
+     "fileName": "contract.pdf",
+     "at": "2026-06-17T09:15:00.000Z",
+     "reason": null
+   }
+   ```
+
+5. **Manual overrides:** in `overwriteSignal_()`, append a source-log entry for
+   the overridden field with `docType: "manual_override"`, `fileName: null`, the
+   current timestamp, and the PM-provided reason (or `"Manual override by PM"`).
