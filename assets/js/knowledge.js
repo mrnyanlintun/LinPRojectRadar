@@ -1448,9 +1448,9 @@
   /* ---------- knowledge page rendering, two-panel navigator + content ---------- */
   /* ---------- 9-category nav structure ----------
      Top-level entries are either flat topics (rendered as a single button) or
-     a `category` group with a list of child topic ids. Cat 8 is parked: the
-     topic ids are 'stage2:*' synthetic stubs that surface a "coming in Stage
-     2" placeholder when selected. */
+     a `category` group with a list of child topic ids. Cat 8 (ML & AI) is now
+     active — its topic ids are 'stage2:*' (kept for back-compat) and resolve to
+     the real per-method articles in CAT8_TOPICS. */
   const CATEGORY_NAV = [
     { id: "pceif" },
     { id: "five-status" },
@@ -1470,7 +1470,7 @@
     { category: "cat7", num: "Cat 7", name: "Evidence Combination",
       children: ["module10", "module11", "module12", "module13", "module14",
                  "module15", "module16", "module17", "module18"] },
-    { category: "cat8", num: "Cat 8", name: "ML & AI (Stage 2)", parked: true,
+    { category: "cat8", num: "Cat 8", name: "ML & AI Pattern Detection",
       children: ["stage2:isolation", "stage2:portfolio", "stage2:trajectory",
                  "stage2:cross-project", "stage2:anomaly-score"] },
     { category: "cat9", num: "Cat 9", name: "Governance & Compliance",
@@ -1491,19 +1491,26 @@
     module19: "Cat 9.1"
   };
 
-  // Stage-2 stub topics displayed inside Cat 8.
-  const STAGE2_STUBS = {
-    "stage2:isolation":      { id: "stage2:isolation",      title: "Cat 8.1 Isolation Forest (coming)" },
-    "stage2:portfolio":      { id: "stage2:portfolio",      title: "Cat 8.2 Portfolio Outlier (coming)" },
-    "stage2:trajectory":     { id: "stage2:trajectory",     title: "Cat 8.3 Signal Trajectory (coming)" },
-    "stage2:cross-project":  { id: "stage2:cross-project",  title: "Cat 8.4 Cross-project Pattern (coming)" },
-    "stage2:anomaly-score":  { id: "stage2:anomaly-score",  title: "Cat 8.5 Anomaly Score (coming)" }
-  };
+  // Cat 8 — ML & AI Pattern Detection. Active (portfolioanalyze, Code.gs v10.17).
+  // The shared overview is prepended to every Cat 8 article so the category
+  // context (portfolio-wide comparison) is always visible.
+  const CAT8_OVERVIEW = "Cat 8 uses portfolio-wide signal comparison to detect anomalies that individual module analysis cannot surface. Rather than evaluating a project in isolation, these methods ask: how does this project compare to every other project in the portfolio? A project with normal-looking EVM can still be anomalous if its combination of cost performance, schedule performance, and document risk is unlike any other project in the program.";
 
-  const STAGE2_PLACEHOLDER_BODY = `
-    <p class="kn-lead">Machine learning and AI pattern detection methods require portfolio-level training data and will be available in Stage 2. These methods detect anomalies by comparing a project's signal combination against the full portfolio — identifying projects that are statistically unusual even when individual signals appear borderline.</p>
-    <p class="kn-sub">This topic is a placeholder. The category structure is forward-compatible with Stage 2 — once the methods ship, the category will activate without any other change to the workflow.</p>
-  `;
+  const CAT8_TOPICS = {
+    "stage2:isolation": { id: "stage2:isolation", title: "Cat 8.1 Isolation Forest",
+      body: "Measures how far a project's signal combination sits from the portfolio centroid using Mahalanobis distance. High distance = unusual combination of signals. A project with moderate CPI and moderate SPI but very high document risk may appear amber on individual modules but anomalous when compared against the full portfolio." },
+    "stage2:portfolio": { id: "stage2:portfolio", title: "Cat 8.2 Portfolio Outlier Detection",
+      body: "Ranks the project by CPI and SPI percentile within the portfolio. A project in the bottom 15th percentile on both dimensions is a portfolio-level outlier — regardless of whether individual thresholds are breached." },
+    "stage2:trajectory": { id: "stage2:trajectory", title: "Cat 8.3 Signal Trajectory Classifier",
+      body: "Analyzes CPI trend across reporting periods from the stored snapshot history. Distinguishes improving, stable, declining, and deteriorating trajectories. Requires at least 2 reporting periods." },
+    "stage2:cross-project": { id: "stage2:cross-project", title: "Cat 8.4 Cross-project Pattern Detector",
+      body: "Identifies other projects in the portfolio with similar signal combinations. When multiple projects show the same distress pattern, it may indicate a systemic program-level issue rather than an isolated project problem." },
+    "stage2:anomaly-score": { id: "stage2:anomaly-score", title: "Cat 8.5 Composite Anomaly Score",
+      body: "Weighted combination of all Cat 8 methods into a single anomaly index from 0 to 100%. Above 70% = highly anomalous, immediate attention required. This is the single most important Cat 8 output for the executive brief." }
+  };
+  function cat8TopicBody(t) {
+    return `<p class="kn-sub">${CAT8_OVERVIEW}</p><p class="kn-lead">${t.body}</p>`;
+  }
 
   const CATEGORIES_ADVISE_PM_TOPIC = {
     id: "how-categories-advise-pm",
@@ -1519,7 +1526,7 @@
         <li><strong>Cat 5 System Dynamics</strong> — how the components AMPLIFY each other (rework propagation).</li>
         <li><strong>Cat 6 Signal Synthesis</strong> — the BASELINE classification (conservative dominance) — the worst single signal wins.</li>
         <li><strong>Cat 7 Evidence Combination</strong> — HOW CONFIDENT is the classification (nine independent uncertainty-reasoning methods cross-check the baseline).</li>
-        <li><strong>Cat 8 ML & AI</strong> — portfolio-trained anomaly detection (Stage 2).</li>
+        <li><strong>Cat 8 ML & AI</strong> — portfolio-wide anomaly detection: how unusual is this project versus the whole program (Isolation Forest, outlier ranking, trajectory, cross-project patterns, composite score).</li>
         <li><strong>Cat 9 Governance & Compliance</strong> — the named authority, required action, and audit trail. ALWAYS LAST.</li>
       </ul>
       <p>The PM reads the categories top-down to GENERATE the picture, then bottom-up (start at Cat 9) to ACT on it. The decision is whatever Cat 9 records — the rest of the stack is the evidence supporting that decision.</p>
@@ -1536,10 +1543,11 @@
     // Topic lookup that includes Stage 2 stubs and the new how-the-categories
     // topic alongside the existing LIBRARY entries.
     function lookupTopic(id) {
-      if (STAGE2_STUBS[id]) {
-        return Object.assign({}, STAGE2_STUBS[id], {
-          eyebrow: "Stage 2 — parked",
-          build: () => STAGE2_PLACEHOLDER_BODY
+      if (CAT8_TOPICS[id]) {
+        const t = CAT8_TOPICS[id];
+        return Object.assign({}, t, {
+          eyebrow: "Cat 8 — ML & AI Pattern Detection",
+          build: () => cat8TopicBody(t)
         });
       }
       if (id === "how-categories-advise-pm") return CATEGORIES_ADVISE_PM_TOPIC;
@@ -1567,7 +1575,7 @@
 
     function categoryGroup(g) {
       const childButtons = (g.children || []).map((cid) =>
-        STAGE2_STUBS[cid] ? flatNavBtn(cid) : modNavBtn(cid)
+        CAT8_TOPICS[cid] ? flatNavBtn(cid) : modNavBtn(cid)
       ).join("");
       const open = g.children && g.children.some((c) => c === selectedId);
       const parkedTag = g.parked ? `<span class="kn-nav-cat-parked">Stage 2</span>` : "";

@@ -268,8 +268,8 @@
       const startSlot = slot;
       cat.modules.forEach((m) => {
         const angle = -Math.PI / 2 + (Math.PI * 2 * slot) / totalSlots;
-        // Parked categories (Cat 8 ML) never compute — axes still render, but
-        // they carry no status (grey dot at the near-centre ring).
+        // Parked categories never compute; inactive modules need document data.
+        // Everything else (incl. active Cat 8 ML) resolves via getModuleStatus.
         const status = (cat.parked || m.active === false) ? null
           : (window.getModuleStatus ? getModuleStatus(m.method_class, project) : null);
         axes.push({ cat, module: m, angle, status });
@@ -279,6 +279,7 @@
       bands.push({
         color: cat.color,
         parked: !!cat.parked,
+        ml: cat.id === "cat8", // ML category keeps a labelled grey arc band
         num: cat.num,
         a0: -Math.PI / 2 + (Math.PI * 2 * (startSlot - 0.45)) / totalSlots,
         a1: -Math.PI / 2 + (Math.PI * 2 * (endSlot + 0.45)) / totalSlots,
@@ -318,11 +319,12 @@
       return `<path class="${cls}" d="${bandArcPath(b, 1.04)}" stroke="${esc(b.color)}"></path>`;
     }).join("");
 
-    // Parked-category arc labels (Cat 8 ML*) — the asterisk ties to the footnote.
-    const bandLabels = bands.filter((b) => b.parked).map((b) => {
+    // ML-category arc label (Cat 8 ML) — keeps the grey band identifiable now
+    // that Cat 8 is active (portfolio analysis), without the Stage-2 asterisk.
+    const bandLabels = bands.filter((b) => b.ml).map((b) => {
       const lp = modPoint(b.amid, 1.22);
       const anchor = Math.abs(lp.x - MOD_CX) < 10 ? "middle" : (lp.x > MOD_CX ? "start" : "end");
-      return `<text class="sw-mod-band-label" x="${lp.x.toFixed(1)}" y="${lp.y.toFixed(1)}" text-anchor="${anchor}">${esc(b.num)} ML*</text>`;
+      return `<text class="sw-mod-band-label" x="${lp.x.toFixed(1)}" y="${lp.y.toFixed(1)}" text-anchor="${anchor}">${esc(b.num)} ML</text>`;
     }).join("");
 
     // Axis spokes.
@@ -371,7 +373,7 @@
       <div class="sw-head">
         <div>
           <p class="eyebrow">Signal Web — ${esc(periodTitle(cur && cur.period))}</p>
-          <p class="kn-sub sw-vs">89-module view · ${activeCount} computed · Cat 8 ML parked for Stage 2</p>
+          <p class="kn-sub sw-vs">89-module view · ${activeCount} computed · Cat 8 ML active — portfolio analysis</p>
         </div>
         <div class="sw-legend" aria-label="Signal web legend">
           <span><i class="sw-complete"></i>Complete</span>
@@ -396,7 +398,6 @@
           <title>Overall governance state: ${esc(normalizeStatus(overall) || overall || "No data")}</title>
         </circle>
       </svg>
-      <p class="sw-footnote">* Cat 8 ML/AI — available in Stage 2</p>
     </section>`;
   }
 
