@@ -320,6 +320,24 @@
     return b;
   }
 
+  function briefSignalsDigest(project) {
+    const s = (project && project.signals) || {};
+    const bits = [];
+    if (s.evm) {
+      const cpi = Number(s.evm.cpi);
+      const spi = Number(s.evm.spi);
+      bits.push("cost " + (cpi >= 0.95 ? "on budget" : cpi >= 0.90 ? "slightly over" : "over budget"));
+      bits.push("schedule " + (spi >= 0.95 ? "on plan" : spi >= 0.90 ? "slightly behind" : "behind"));
+    }
+    if (s.cusum) bits.push(s.cusum.breached ? "sustained drift" : "no drift");
+    if (s.doc) {
+      const score = Number(s.doc.score);
+      bits.push("docs " + (score < 0.30 ? "clean" : score < 0.70 ? "elevated risk" : "high risk"));
+    }
+    if (s.decision && s.decision.state) bits.push("state " + s.decision.state);
+    return bits.join(", ");
+  }
+
   function buildBriefPrompt(project) {
     const s = (project && project.signals) || {};
     // Guard: refuse to send a chat request when the project has nothing
@@ -329,59 +347,56 @@
     // instead of POSTing a hollow prompt to the backend.
     const hasCore = !!(s.evm || s.mc || s.cusum || s.doc);
     if (!hasCore && !s.decision) return null;
-    const sim = (project.simulationSignals && project.simulationSignals.signal_array) || [];
-    const lines = [];
 
+    // Short prompt only. Match Ask Lin's payload size profile — the previous
+    // 3KB structured prompt caused 'Failed to fetch' against the Apps Script
+    // endpoint. Backend already has the project context via `id`; we just
+    // give Lin a short digest and the briefing rules.
+    const digest = briefSignalsDigest(project);
+    return "Executive brief for project " + project.id +
+      " (" + project.name + "). Signal summary: " + digest + ". " +
+      "Write 4-6 sentences for a program director. Use 5-status vocabulary: " +
+      "Complete=milestone achieved, Green=on track, Yellow=early warning, " +
+      "Amber=significant risk, Red=critical. Phrase as 'in the amber zone' " +
+      "or 'showing early warning signs', not bare RAG words. Lead with overall " +
+      "health, name the top concern, state recommended action and who takes it, " +
+      "note whether evidence agrees. No module numbers, no metric values, no " +
+      "bullet points, no preamble.";
+  }
+
+  // Scripted fallback when the chat endpoint fails. Same pattern as Ask Lin's
+  // catch block in assistant.js — show something useful instead of an error.
+  function scriptedBrief(project) {
+    const s = (project && project.signals) || {};
+    const state = (s.decision && s.decision.state) || "Unknown";
+    const conflict = (s.decision && s.decision.conflict) || "";
+    const authority = (s.decision && s.decision.authority) || "the project manager";
+    const stateWord = state === "Red-review" ? "in the red — critical failure"
+                    : state === "Amber"      ? "in the amber zone"
+                    : state === "Green"      ? "on track"
+                    : "in an unknown state";
+    const lead = "Project " + project.id + " is " + stateWord + ".";
+    const concerns = [];
     if (s.evm) {
-      const cpi = Number(s.evm.cpi);
-      const spi = Number(s.evm.spi);
-      lines.push("Cost performance: " + (cpi >= 0.95 ? "on budget" : cpi >= 0.90 ? "slightly over budget" : "over budget"));
-      lines.push("Schedule performance: " + (spi >= 0.95 ? "on schedule" : spi >= 0.90 ? "slightly behind" : "behind schedule"));
+      if (Number(s.evm.cpi) < 0.90) concerns.push("cost is over budget");
+      else if (Number(s.evm.cpi) < 0.95) concerns.push("cost is slightly over budget");
+      if (Number(s.evm.spi) < 0.90) concerns.push("the schedule is behind");
+      else if (Number(s.evm.spi) < 0.95) concerns.push("the schedule is slipping");
     }
-    if (s.mc) lines.push("Probabilistic forecast: " + (s.mc.status || "no reading"));
-    if (s.cusum) lines.push("Trend detection: " + (s.cusum.breached ? "sustained drift detected" : "no sustained drift"));
-    if (s.doc) {
-      const score = Number(s.doc.score);
-      lines.push("Document risk: " + (score < 0.30 ? "clean" : score < 0.70 ? "elevated" : "high"));
-    }
-
-    sim.forEach((m) => {
-      const name = String(m.method_class || "").replace(/_/g, " ");
-      const color = m.status_color || m.status || "no reading";
-      const metric = m.evidence_metric ? " — " + m.evidence_metric : "";
-      if (name) lines.push(name + ": " + color + metric);
-    });
-
-    if (s.decision) {
-      if (s.decision.state) lines.push("Governance recommendation: " + s.decision.state);
-      if (s.decision.conflict) lines.push("Conflict classification: " + s.decision.conflict);
-      if (s.decision.authority) lines.push("Authority: " + s.decision.authority);
-    }
-
-    const sectorLabel = SECTOR_LABEL[project.sector] || project.sector || "unknown";
-    return "Write a 4-6 sentence executive brief for a program director about project " +
-      project.id + " (" + project.name + ", " + sectorLabel + " sector). " +
-      "Based on these signal readings:\n" + lines.join("\n") + "\n\n" +
-      "Status vocabulary — the project uses a 5-level status system. Use these " +
-      "phrasings, NOT classic RAG (red / amber / green):\n" +
-      "  Complete — milestone achieved, ready for closeout. Phrase as: \"the project has successfully completed this phase\" or \"the milestone has been achieved\".\n" +
-      "  Green — fully on track. Phrase as: \"the project is on track\" or \"performance is on plan\".\n" +
-      "  Yellow — early warning, minor variance, still recoverable. Phrase as: \"the project is showing early warning signs\" or \"<dimension> is in the yellow zone\".\n" +
-      "  Amber — significant risk, major bottleneck requiring controls oversight. Phrase as: \"the project is in the amber zone\" or \"<dimension> is at significant risk\".\n" +
-      "  Red — critical failure, escalation required. Phrase as: \"<dimension> has reached critical failure\" or \"the project requires immediate escalation\".\n" +
-      "Examples of correct phrasing:\n" +
-      "  • \"Cost performance is showing early warning signs.\" (Yellow)\n" +
-      "  • \"The schedule has reached critical failure.\" (Red)\n" +
-      "  • \"The project is in the amber zone on schedule performance.\" (Amber)\n" +
-      "  • \"The project has successfully completed this phase.\" (Complete)\n\n" +
-      "The brief must:\n" +
-      "1. Lead with the overall project health in plain English using the 5-status vocabulary above.\n" +
-      "2. Identify the one or two most important concerns.\n" +
-      "3. State what action is recommended and who should take it.\n" +
-      "4. Note whether the evidence methods agree or disagree.\n" +
-      "5. No bullet points, no headers, no module numbers, no metric values, no raw RAG words on their own.\n" +
-      "6. Write as if briefing a senior official before a governance meeting.\n" +
-      "Start directly with the project status — no preamble.";
+    if (s.cusum && s.cusum.breached) concerns.push("the trend monitor has detected sustained drift");
+    if (s.doc && Number(s.doc.score) >= 0.70) concerns.push("document risk is high");
+    const concernLine = concerns.length
+      ? "The most pressing concerns are that " + concerns.slice(0, 2).join(" and ") + "."
+      : "No single concern dominates the signal package.";
+    const action = state === "Red-review"
+      ? "The recommendation is for " + authority + " to convene a recovery review within 48 hours."
+      : state === "Amber"
+        ? "The recommendation is for " + authority + " to open a weekly review loop and tighten the recovery plan."
+        : "Routine monitoring is appropriate this cycle.";
+    const conflictLine = conflict
+      ? "The evidence methods classify this as " + conflict.toLowerCase() + "."
+      : "The evidence methods broadly agree on the assessment.";
+    return [lead, concernLine, action, conflictLine].join(" ");
   }
 
   function briefAccentClass(project) {
@@ -503,8 +518,19 @@
       }
     } catch (err) {
       console.error("[brief] chat error for " + project.id + ":", err);
-      const msg = (err && err.message) ? err.message : "unknown error";
-      setBriefState(root, "error", project, null, msg);
+      // Match Ask Lin's pattern: if the live AI endpoint fails, fall back to
+      // a scripted brief built from the same project data we already have in
+      // memory. The user gets useful text instead of an error string, and the
+      // Regenerate button still lets them retry the live call.
+      try {
+        const text = scriptedBrief(project);
+        const brief = { text, generated_at: new Date().toISOString(), period, source: "scripted" };
+        project.executiveBrief = brief;
+        setBriefState(root, "ready", project, brief);
+      } catch (e2) {
+        const msg = (err && err.message) ? err.message : "unknown error";
+        setBriefState(root, "error", project, null, msg);
+      }
     }
   }
 
