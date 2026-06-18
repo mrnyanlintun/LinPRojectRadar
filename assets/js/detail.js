@@ -198,58 +198,151 @@
       .sort((a, b) => (order[a.status] != null ? order[a.status] : 3) - (order[b.status] != null ? order[b.status] : 3))[0] || null;
   }
 
+  /* ============================================================
+     89-axis module spider web. One axis per defined module across
+     all 9 categories. Active modules plot at a status radius
+     (healthy = near the rim); inactive / parked / no-data modules
+     sit on a tiny grey ring just off-centre. Category clusters are
+     separated by a small angular gap and backed by a faint arc in
+     the category colour.
+     ============================================================ */
+  const MOD_CX = 250, MOD_CY = 250, MOD_OUTER = 200;
+  const DOT_COLOR = {
+    Complete: "#4ea0ff", Green: "#3fcaa6", Yellow: "#f0c040",
+    Amber: "#e2b13c", Red: "#e0556b", none: "#26344f"
+  };
+
+  function moduleStatusToRadius(status) {
+    const s = normalizeStatus(status);
+    if (s === "Complete") return 1.00;
+    if (s === "Green") return 0.85;
+    if (s === "Yellow") return 0.65;
+    if (s === "Amber") return 0.40;
+    if (s === "Red") return 0.15;
+    return 0.05; // no data — grey near-centre
+  }
+  function moduleToRadius(module, status) {
+    if (module.active === false || module.parked) return 0.05;
+    if (!status) return 0.05;
+    return moduleStatusToRadius(status);
+  }
+  function modPoint(angle, radiusFactor) {
+    const r = MOD_OUTER * radiusFactor;
+    return { x: MOD_CX + Math.cos(angle) * r, y: MOD_CY + Math.sin(angle) * r };
+  }
+
+  // Resolve a module's live evidence_metric for the hover tooltip.
+  function moduleEvidence(m, project) {
+    const sim = (project.simulationSignals && project.simulationSignals.signal_array) || [];
+    const cls = m.method_class === "DSM_Rework_Cat5" ? "DSM_Rework_Propagation" : m.method_class;
+    const found = sim.find((x) => x.method_class === cls);
+    if (found && found.evidence_metric) return found.evidence_metric;
+    const s = project.signals || {};
+    if ((m.method_class === "Monte_Carlo") && s.mc)
+      return s.mc.p80eacOverrunPct != null ? "P80 EAC +" + Number(s.mc.p80eacOverrunPct).toFixed(1) + "%" : null;
+    if ((m.method_class === "CUSUM") && s.cusum)
+      return s.cusum.breached ? "CUSUM breach detected" : "Within control limits";
+    if ((m.method_class === "Doc_Risk" || m.method_class === "Doc_Risk_Cat4") && s.doc)
+      return s.doc.score != null ? "Doc-risk score " + Number(s.doc.score).toFixed(2) : null;
+    if ((m.method_class === "Conservative_Dominance" || m.method_class === "ABM_Governance") && s.decision)
+      return s.decision.action || s.decision.state || null;
+    return null;
+  }
+
+  // Flatten the 89 modules into axis entries with angles, leaving a one-slot
+  // gap between categories so the clusters read as distinct petals.
+  function buildModuleAxes(project) {
+    const cats = LIN_CATEGORIES;
+    const moduleCount = cats.reduce((n, c) => n + c.modules.length, 0);
+    const gaps = Math.max(0, cats.length - 1);
+    const totalSlots = moduleCount + gaps;
+    const axes = [];
+    const bands = [];
+    let slot = 0;
+    cats.forEach((cat, ci) => {
+      if (ci > 0) slot += 1; // gap between clusters
+      const startSlot = slot;
+      cat.modules.forEach((m) => {
+        const angle = -Math.PI / 2 + (Math.PI * 2 * slot) / totalSlots;
+        const status = (cat.parked || m.active === false) ? null
+          : (window.getModuleStatus ? getModuleStatus(m.method_class, project) : null);
+        axes.push({ cat, module: m, angle, status });
+        slot += 1;
+      });
+      const endSlot = slot - 1;
+      bands.push({
+        color: cat.color,
+        a0: -Math.PI / 2 + (Math.PI * 2 * (startSlot - 0.45)) / totalSlots,
+        a1: -Math.PI / 2 + (Math.PI * 2 * (endSlot + 0.45)) / totalSlots
+      });
+    });
+    return { axes, bands };
+  }
+
+  function bandArcPath(band, radiusFactor) {
+    const r = MOD_OUTER * radiusFactor;
+    const p0 = { x: MOD_CX + Math.cos(band.a0) * r, y: MOD_CY + Math.sin(band.a0) * r };
+    const p1 = { x: MOD_CX + Math.cos(band.a1) * r, y: MOD_CY + Math.sin(band.a1) * r };
+    const large = (band.a1 - band.a0) > Math.PI ? 1 : 0;
+    return `M ${p0.x.toFixed(1)} ${p0.y.toFixed(1)} A ${r.toFixed(1)} ${r.toFixed(1)} 0 ${large} 1 ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`;
+  }
+
   function signalWebHtml(project) {
     if (!window.LIN_CATEGORIES) return "";
     if (!window.hasSignals || !hasSignals(project)) return "";
 
-    // Build a category-shaped view from the live project (works without a
-    // stored snapshot, so the spider renders the moment models complete).
-    const cats = LIN_CATEGORIES.map((cat) => {
-      const modules = cat.modules.map((m) => ({
-        id: m.id, num: m.num, name: m.name, method_class: m.method_class,
-        status: window.getModuleStatus ? getModuleStatus(m.method_class, project) : null
-      }));
-      return {
-        id: cat.id, num: cat.num, name: cat.name, parked: !!cat.parked,
-        status: window.getCategoryStatus ? getCategoryStatus(cat.id, project) : null,
-        modules
-      };
-    });
+    const { axes, bands } = buildModuleAxes(project);
 
-    const statuses = cats.map((c) => c.parked ? null : c.status);
-    const axisLines = cats.map((c, i) => {
-      const p = catPointFor(i, 1, 135);
-      const parked = c.parked ? " sw-axis-parked" : "";
-      return `<line class="sw-axis${parked}" x1="210" y1="190" x2="${p.ax.toFixed(1)}" y2="${p.ay.toFixed(1)}"></line>`;
+    // Category colour bands behind each cluster (subtle grouping).
+    const bandPaths = bands.map((b) =>
+      `<path class="sw-mod-band" d="${bandArcPath(b, 1.04)}" stroke="${esc(b.color)}"></path>`
+    ).join("");
+
+    // Axis spokes.
+    const axisLines = axes.map((a) => {
+      const tip = modPoint(a.angle, 1.0);
+      const parked = (a.cat.parked || a.module.active === false) ? " sw-axis-parked" : "";
+      return `<line class="sw-axis${parked}" x1="${MOD_CX}" y1="${MOD_CY}" x2="${tip.x.toFixed(1)}" y2="${tip.y.toFixed(1)}"></line>`;
     }).join("");
 
-    const dots = cats.map((c, i) => {
-      const labelP = catPointFor(i, 1, 135);
-      const dotP = catPointFor(i, catRadius(statuses[i]), 135);
-      const labelAnchor = Math.abs(labelP.tx - 210) < 12 ? "middle" : (labelP.tx > 210 ? "start" : "end");
-      const worst = pickWorstModule(c);
-      const title = c.parked
-        ? c.num + " " + c.name + "\nStatus: Stage 2 (parked)"
-        : c.num + " " + c.name +
-          "\nCategory status: " + (statuses[i] || "No data") +
-          (worst ? "\nWorst module: " + worst.name + " — " + (worst.status || "no data") : "");
-      const labelText = c.parked ? c.num + " ML*" : c.num + " " + c.name.split(" ")[0];
-      const labelClass = c.parked ? "sw-label sw-label-parked" : "sw-label";
-      const dotClass = c.parked ? "sw-dot sw-none" : ("sw-dot sw-" + statusClass(statuses[i]));
-      return `<text class="${labelClass}" x="${labelP.tx.toFixed(1)}" y="${labelP.ty.toFixed(1)}" text-anchor="${labelAnchor}">${esc(labelText)}</text>
-        <circle class="${dotClass}" cx="${dotP.x.toFixed(1)}" cy="${dotP.y.toFixed(1)}" r="4">
+    // Web polygon connecting every module's plotted point.
+    const polyPoints = axes.map((a) => {
+      const p = modPoint(a.angle, moduleToRadius(a.module, a.status));
+      return p.x.toFixed(1) + "," + p.y.toFixed(1);
+    }).join(" ");
+
+    // Dots + labels.
+    const nodes = axes.map((a) => {
+      const active = !(a.cat.parked || a.module.active === false);
+      const norm = active ? normalizeStatus(a.status) : null;
+      const rf = moduleToRadius(a.module, a.status);
+      const dp = modPoint(a.angle, rf);
+      const color = active ? (DOT_COLOR[norm] || DOT_COLOR.none) : DOT_COLOR.none;
+      const dotR = active && norm ? 3.2 : 1.6;
+      const lp = modPoint(a.angle, 1.09);
+      const anchor = Math.abs(lp.x - MOD_CX) < 10 ? "middle" : (lp.x > MOD_CX ? "start" : "end");
+      const ev = active ? moduleEvidence(a.module, project) : null;
+      const statusLabel = a.cat.parked ? "Stage 2 (parked)"
+        : a.module.active === false ? "Inactive — needs document data"
+        : (norm || "No data");
+      const title = a.module.num + " " + a.module.name + " — " + statusLabel +
+        (ev ? " — " + ev : "");
+      return `<line class="sw-mod-spoke" x1="${MOD_CX}" y1="${MOD_CY}" x2="${dp.x.toFixed(1)}" y2="${dp.y.toFixed(1)}" stroke="${esc(color)}"></line>
+        <circle class="sw-dot" cx="${dp.x.toFixed(1)}" cy="${dp.y.toFixed(1)}" r="${dotR}" fill="${esc(color)}">
           <title>${esc(title)}</title>
-        </circle>`;
+        </circle>
+        <text class="sw-mod-label" x="${lp.x.toFixed(1)}" y="${lp.y.toFixed(1)}" text-anchor="${anchor}">${esc(a.module.num)}</text>`;
     }).join("");
 
     const cur = currentSnapshot(project);
     const overall = cur && cur.governance && cur.governance.state;
+    const activeCount = axes.filter((a) => a.status && normalizeStatus(a.status)).length;
 
     return `<section class="panel signal-web-panel">
       <div class="sw-head">
         <div>
           <p class="eyebrow">Signal Web — ${esc(periodTitle(cur && cur.period))}</p>
-          <p class="kn-sub sw-vs">9-category view · Cat 8 ML* parked for Stage 2</p>
+          <p class="kn-sub sw-vs">89-module view · ${activeCount} computed · Cat 8 ML parked for Stage 2</p>
         </div>
         <div class="sw-legend" aria-label="Signal web legend">
           <span><i class="sw-complete"></i>Complete</span>
@@ -257,22 +350,142 @@
           <span><i class="sw-yellow"></i>Yellow</span>
           <span><i class="sw-amber"></i>Amber</span>
           <span><i class="sw-red"></i>Red</span>
+          <span><i class="sw-none"></i>No data</span>
         </div>
       </div>
-      <svg class="signal-web-svg" viewBox="0 0 420 380" role="img" aria-label="9 category signal web">
-        <circle class="sw-ring sw-ring-red"   cx="210" cy="190" r="47"></circle>
-        <circle class="sw-ring sw-ring-amber" cx="210" cy="190" r="81"></circle>
-        <circle class="sw-ring sw-ring-green" cx="210" cy="190" r="121.5"></circle>
-        <text class="sw-ring-label sw-ring-label-green" x="210" y="62"  text-anchor="middle">Healthy</text>
-        <text class="sw-ring-label sw-ring-label-amber" x="210" y="105" text-anchor="middle">Watch</text>
-        <text class="sw-ring-label sw-ring-label-red"   x="210" y="138" text-anchor="middle">Escalate</text>
+      <svg class="signal-web-svg sw-mod-svg" viewBox="0 0 500 500" role="img" aria-label="89 module signal web">
+        <circle class="sw-ring sw-ring-red"   cx="${MOD_CX}" cy="${MOD_CY}" r="${(MOD_OUTER*0.40).toFixed(1)}"></circle>
+        <circle class="sw-ring sw-ring-amber" cx="${MOD_CX}" cy="${MOD_CY}" r="${(MOD_OUTER*0.65).toFixed(1)}"></circle>
+        <circle class="sw-ring sw-ring-green" cx="${MOD_CX}" cy="${MOD_CY}" r="${(MOD_OUTER*0.85).toFixed(1)}"></circle>
+        <circle class="sw-ring sw-ring-outer" cx="${MOD_CX}" cy="${MOD_CY}" r="${MOD_OUTER}"></circle>
+        ${bandPaths}
         ${axisLines}
-        <polygon class="sw-web-current" points="${catPolygonPoints(statuses)}"></polygon>
-        ${dots}
-        <circle class="sw-center sw-${statusClass(overall)}" cx="210" cy="190" r="5">
+        <polygon class="sw-web-current" points="${polyPoints}"></polygon>
+        ${nodes}
+        <circle class="sw-center sw-${statusClass(overall)}" cx="${MOD_CX}" cy="${MOD_CY}" r="5">
           <title>Overall governance state: ${esc(normalizeStatus(overall) || overall || "No data")}</title>
         </circle>
       </svg>
+    </section>`;
+  }
+
+  /* ============================================================
+     Ensemble analysis panel — three views of the 89-module output:
+       1) per-module scatter across status columns
+       2) ensemble distribution bar (count per status + trend line)
+       3) consensus stacked bar (single proportional bar)
+     ============================================================ */
+  const ENSEMBLE_STATES = ["Complete", "Green", "Yellow", "Amber", "Red"];
+
+  function ensembleTally(project) {
+    const counts = { Complete: 0, Green: 0, Yellow: 0, Amber: 0, Red: 0, none: 0 };
+    const rows = [];
+    let idx = 0;
+    LIN_CATEGORIES.forEach((cat) => {
+      cat.modules.forEach((m) => {
+        idx += 1;
+        const active = !(cat.parked || m.active === false);
+        const status = active && window.getModuleStatus ? getModuleStatus(m.method_class, project) : null;
+        const norm = active ? normalizeStatus(status) : null;
+        const bucket = norm && counts[norm] != null ? norm : "none";
+        counts[bucket] += 1;
+        rows.push({ index: idx, num: m.num, name: m.name, color: cat.color, bucket });
+      });
+    });
+    return { counts, rows };
+  }
+
+  function ensembleHtml(project) {
+    if (!window.LIN_CATEGORIES) return "";
+    if (!window.hasSignals || !hasSignals(project)) return "";
+    const { counts, rows } = ensembleTally(project);
+    const activeTotal = ENSEMBLE_STATES.reduce((n, k) => n + counts[k], 0);
+    if (!activeTotal) return ""; // nothing computed yet
+
+    // All charts draw in numeric user-units inside a 0..100 wide viewBox with
+    // preserveAspectRatio="none", so x can stretch to the panel width.
+
+    // SVG charts use uniform scaling so dots stay circular and text is not
+    // stretched. The consensus bar is plain HTML (text never distorts).
+
+    // ---- Chart 1: scatter (6 columns incl. No data, 89 rows) ----
+    const cols = ENSEMBLE_STATES.concat(["none"]);
+    const colLabel = { Complete: "Complete", Green: "Green", Yellow: "Yellow", Amber: "Amber", Red: "Red", none: "No data" };
+    const SW = 120, SH = 150;
+    const colW = SW / cols.length;
+    const scatterDots = rows.map((r) => {
+      const ci = cols.indexOf(r.bucket);
+      const cx = (ci + 0.5) * colW;
+      const cy = 16 + (r.index / 89) * (SH - 22);
+      const fill = r.bucket === "none" ? DOT_COLOR.none : DOT_COLOR[r.bucket];
+      const rad = r.bucket === "none" ? 1.3 : 2.1;
+      return `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${rad}" fill="${esc(fill)}"><title>${esc(r.num + " " + r.name + " — " + colLabel[r.bucket])}</title></circle>`;
+    }).join("");
+    const scatterGrid = cols.map((c, i) =>
+      (i ? `<line class="ens-col-line" x1="${(i * colW).toFixed(2)}" y1="14" x2="${(i * colW).toFixed(2)}" y2="${SH}"></line>` : "") +
+      `<text x="${((i + 0.5) * colW).toFixed(2)}" y="9" text-anchor="middle" class="ens-col-label">${esc(colLabel[c])}</text>`
+    ).join("");
+
+    // ---- Chart 2: distribution bar ----
+    const maxCount = Math.max(1, ...ENSEMBLE_STATES.map((k) => counts[k]));
+    const BW = 120, BH = 150, barTop = 22, barBottom = 122;
+    const bW = BW / ENSEMBLE_STATES.length;
+    const barBody = ENSEMBLE_STATES.map((k, i) => {
+      const h = (counts[k] / maxCount) * (barBottom - barTop);
+      const x = i * bW, y = barBottom - h;
+      const pct = activeTotal ? Math.round((counts[k] / activeTotal) * 100) : 0;
+      return `<rect x="${(x + bW * 0.18).toFixed(2)}" y="${y.toFixed(1)}" width="${(bW * 0.64).toFixed(2)}" height="${h.toFixed(1)}" fill="${esc(DOT_COLOR[k])}" rx="1.5"></rect>
+        <text x="${(x + bW * 0.5).toFixed(2)}" y="${(y - 4).toFixed(1)}" text-anchor="middle" class="ens-bar-count">${counts[k]} · ${pct}%</text>
+        <text x="${(x + bW * 0.5).toFixed(2)}" y="${barBottom + 14}" text-anchor="middle" class="ens-col-label">${esc(k)}</text>`;
+    }).join("");
+    const trendPts = ENSEMBLE_STATES.map((k, i) => {
+      const h = (counts[k] / maxCount) * (barBottom - barTop);
+      return `${(i * bW + bW * 0.5).toFixed(2)},${(barBottom - h).toFixed(1)}`;
+    });
+    const trendLine = `<polyline class="ens-trend" points="${trendPts.join(" ")}"></polyline>`;
+
+    // ---- Chart 3: consensus stacked bar (HTML) ----
+    const segs = ENSEMBLE_STATES.map((k) => {
+      const w = (counts[k] / activeTotal) * 100;
+      if (w <= 0) return "";
+      const pct = Math.round(w);
+      return `<div class="ens-seg" style="width:${w.toFixed(2)}%;background:${esc(DOT_COLOR[k])}" title="${esc(k)}: ${counts[k]} (${pct}%)">${w >= 8 ? pct + "%" : ""}</div>`;
+    }).join("");
+    const legend = ENSEMBLE_STATES.map((k) =>
+      `<span class="ens-leg"><i style="background:${esc(DOT_COLOR[k])}"></i>${esc(k)}: ${counts[k]} (${Math.round((counts[k] / activeTotal) * 100)}%)</span>`
+    ).join("");
+
+    return `<section class="panel ens-panel" aria-label="Ensemble analysis">
+      <div class="sw-head">
+        <div>
+          <p class="eyebrow">Ensemble analysis — ${activeTotal} active models</p>
+          <p class="kn-sub sw-vs">Individual model outputs · distribution · consensus</p>
+        </div>
+      </div>
+
+      <div class="ens-grid">
+        <div class="ens-chart">
+          <p class="ens-chart-title">Individual model outputs</p>
+          <svg class="ens-scatter" viewBox="0 0 ${SW} ${SH}" role="img" aria-label="Per-module status scatter">
+            ${scatterGrid}
+            ${scatterDots}
+          </svg>
+        </div>
+
+        <div class="ens-chart">
+          <p class="ens-chart-title">Ensemble distribution</p>
+          <svg class="ens-bars" viewBox="0 0 ${BW} ${BH}" role="img" aria-label="Ensemble distribution bars">
+            ${barBody}
+            ${trendLine}
+          </svg>
+        </div>
+      </div>
+
+      <div class="ens-consensus">
+        <p class="ens-chart-title">Consensus</p>
+        <div class="ens-stack">${segs}</div>
+        <div class="ens-legend">${legend}</div>
+      </div>
     </section>`;
   }
 
@@ -310,8 +523,9 @@
            <span class="detail-reset-msg kn-sub" aria-live="polite"></span>
          </div>
        </div>
-        ${signalWebHtml(p)}
         ${executiveBriefHtml(p)}
+        ${signalWebHtml(p)}
+        ${ensembleHtml(p)}
         <div class="detail-grid">
          <section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>
          <section class="panel detail-decision" aria-label="PCEIF governance decision (project detail)"></section>

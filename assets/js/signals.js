@@ -60,6 +60,19 @@
       ["construction_safety_phasing",  "Construction Safety & Phasing Plan (CSPP)"],
       ["project_execution_plan",       "Project Execution Plan (PEP)"],
       ["as_built_drawings",            "As-Built Drawings / Closeout Logs"]
+    ]},
+    { label: "Compliance & Performance Documents", types: [
+      ["safety_report",            "Safety Report"],
+      ["quality_audit_report",     "Quality Audit Report"],
+      ["environmental_report",     "Environmental Compliance Report"],
+      ["ncr_log",                  "NCR Log (Non-Conformance)"],
+      ["subcontractor_report",     "Subcontractor Performance Report"],
+      ["procurement_log",          "Procurement Log"],
+      ["lookahead_schedule",       "Look-Ahead Schedule (6-week)"],
+      ["resource_report",          "Resource Report"],
+      ["cost_report",              "Cost Report"],
+      ["past_performance_report",  "Past Performance Report"],
+      ["historical_data",          "Historical Project Data"]
     ]}
   ];
   // flat list (back-compat) + value→label map
@@ -228,7 +241,7 @@
     if (Array.isArray(arr) && arr.length) return;
     const si = project.signalInputs || {};
     try {
-      const simResults = LinSimulations.runAll(si, project.signals);
+      const simResults = LinSimulations.runAll(si, project.signals, project);
       const dstResult = LinSimulations.runDST(si, project.signals);
       const all = simResults.concat([dstResult]);
       project.simulationSignals = {
@@ -470,7 +483,7 @@
     let simPayload = null;
     if (window.LinSimulations) {
       try {
-        const simResults = LinSimulations.runAll(si, project.signals);
+        const simResults = LinSimulations.runAll(si, project.signals, project);
         // Module 10: DST runs separately — needs the assembled project.signals
         // (EVM/MC/CUSUM/Doc) as existingSignals, not the raw signalInputs.
         const dstResult = LinSimulations.runDST(si, project.signals);
