@@ -308,8 +308,9 @@
      ============================================================ */
 
   function briefCurrentPeriod(project) {
-    const snap = currentSnapshot(project);
-    return (snap && snap.period) || project.reportingPeriod || null;
+    let snap = null;
+    try { snap = currentSnapshot(project); } catch (e) { /* snapshot may throw on partial signals */ }
+    return (snap && snap.period) || (project && project.reportingPeriod) || null;
   }
 
   function briefForPeriod(project, period) {
@@ -354,18 +355,31 @@
     return "Write a 4-6 sentence executive brief for a program director about project " +
       project.id + " (" + project.name + ", " + sectorLabel + " sector). " +
       "Based on these signal readings:\n" + lines.join("\n") + "\n\n" +
+      "Status vocabulary — the project uses a 5-level status system. Use these " +
+      "phrasings, NOT classic RAG (red / amber / green):\n" +
+      "  Complete — milestone achieved, ready for closeout. Phrase as: \"the project has successfully completed this phase\" or \"the milestone has been achieved\".\n" +
+      "  Green — fully on track. Phrase as: \"the project is on track\" or \"performance is on plan\".\n" +
+      "  Yellow — early warning, minor variance, still recoverable. Phrase as: \"the project is showing early warning signs\" or \"<dimension> is in the yellow zone\".\n" +
+      "  Amber — significant risk, major bottleneck requiring controls oversight. Phrase as: \"the project is in the amber zone\" or \"<dimension> is at significant risk\".\n" +
+      "  Red — critical failure, escalation required. Phrase as: \"<dimension> has reached critical failure\" or \"the project requires immediate escalation\".\n" +
+      "Examples of correct phrasing:\n" +
+      "  • \"Cost performance is showing early warning signs.\" (Yellow)\n" +
+      "  • \"The schedule has reached critical failure.\" (Red)\n" +
+      "  • \"The project is in the amber zone on schedule performance.\" (Amber)\n" +
+      "  • \"The project has successfully completed this phase.\" (Complete)\n\n" +
       "The brief must:\n" +
-      "1. State the overall project health in plain English\n" +
-      "2. Identify the one or two most important concerns\n" +
-      "3. State what action is recommended and who should take it\n" +
-      "4. Note if the evidence methods agree or disagree\n" +
-      "5. No bullet points, no headers, no module numbers, no metric values\n" +
-      "6. Written as if briefing a senior official before a governance meeting\n" +
+      "1. Lead with the overall project health in plain English using the 5-status vocabulary above.\n" +
+      "2. Identify the one or two most important concerns.\n" +
+      "3. State what action is recommended and who should take it.\n" +
+      "4. Note whether the evidence methods agree or disagree.\n" +
+      "5. No bullet points, no headers, no module numbers, no metric values, no raw RAG words on their own.\n" +
+      "6. Write as if briefing a senior official before a governance meeting.\n" +
       "Start directly with the project status — no preamble.";
   }
 
   function briefAccentClass(project) {
-    const snap = currentSnapshot(project);
+    let snap = null;
+    try { snap = currentSnapshot(project); } catch (e) {}
     const overall = snap && snap.governance && snap.governance.state;
     const cls = String(overall || "").toLowerCase().replace("-review", "");
     return cls || "none";
@@ -393,17 +407,23 @@
   }
 
   function executiveBriefHtml(project) {
-    const period = briefCurrentPeriod(project);
-    const cached = briefForPeriod(project, period);
-    const accent = briefAccentClass(project);
+    // Every helper is wrapped — the card must ALWAYS render so the user
+    // sees the loading shimmer (or the cached brief) regardless of whether
+    // the signal snapshot is computable yet. A throw here would otherwise
+    // take down the whole detail-page template-literal assembly.
+    let period = null, cached = null, accent = "none", projectId = "";
+    try { period = briefCurrentPeriod(project); } catch (e) {}
+    try { cached = briefForPeriod(project, period); } catch (e) {}
+    try { accent = briefAccentClass(project); } catch (e) {}
+    try { projectId = (project && project.id) || ""; } catch (e) {}
     const state = cached ? "ready" : "loading";
-    return `<section class="panel eb-panel eb-accent-${esc(accent)}" aria-label="Executive brief">
+    return `<section class="panel eb-panel eb-accent-${esc(accent)}" aria-label="Executive brief" data-eb-id="${esc(projectId)}">
       <div class="eb-head">
         <div>
           <p class="eyebrow eb-eyebrow">Executive brief</p>
           <p class="kn-sub eb-sub">Generated from 19-module signal analysis</p>
         </div>
-        <button type="button" class="btn small eb-regen" data-eb-regen="${esc(project.id)}" aria-label="Regenerate brief">Regenerate ↺</button>
+        <button type="button" class="btn small eb-regen" data-eb-regen="${esc(projectId)}" aria-label="Regenerate brief">Regenerate ↺</button>
       </div>
       ${briefBodyHtml(state, cached)}
       ${cached ? briefFooter(cached) : ""}
