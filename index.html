@@ -12,11 +12,12 @@
        - frame-ancestors 'none' is a hard clickjacking block. -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://unpkg.com;
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://unpkg.com https://accounts.google.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com;
     font-src 'self' https://fonts.gstatic.com;
     img-src 'self' data: https:;
-    connect-src 'self' https://script.google.com https://api.openai.com;
+    connect-src 'self' https://script.google.com https://api.openai.com https://accounts.google.com;
+    frame-src 'self' https://accounts.google.com;
     frame-ancestors 'none';
   " />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -27,6 +28,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="assets/css/radar.css" />
+  <!-- Google Identity Services — Stage 1 OAuth sign-in (see assets/js/auth.js) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body data-theme="dark">
   <!-- NYC backdrop (visible only when data-theme="newyork"; CSS-gated).
@@ -196,7 +199,38 @@
       </g>
     </svg>
   </div>
-  <div class="app">
+
+  <!-- Login Screen (Stage 1 Google OAuth — see assets/js/auth.js) -->
+  <div id="lin-login" style="display:none;">
+    <div class="login-panel">
+      <div class="login-logo"><img src="logo.png" alt="Lin Project Radar" width="56" height="56"></div>
+      <p class="login-eyebrow">PCEIF — Public Capital EVM Intelligence Framework</p>
+      <h1 class="login-title">Lin Project Radar</h1>
+      <p class="login-sub">Sign in with your authorized Google account to access the platform.</p>
+      <div id="google-signin-btn"></div>
+      <p class="login-footnote">
+        Access is restricted to authorized users only.<br>
+        GWU Doctor of Engineering Praxis — Nyan Lin Tun
+      </p>
+    </div>
+  </div>
+
+  <!-- Access Denied Screen -->
+  <div id="lin-access-denied" style="display:none;">
+    <div class="login-panel">
+      <div class="login-logo"><img src="logo.png" alt="Lin Project Radar" width="56" height="56"></div>
+      <h2 class="login-title" style="color:var(--alarm-red)">Access Restricted</h2>
+      <p class="login-sub">
+        The account <strong id="denied-email"></strong> is not authorized
+        to access Lin Project Radar.
+      </p>
+      <p class="login-sub">This platform is restricted to authorized users only.</p>
+      <button onclick="LinAuth.logout()" class="btn-secondary">Sign in with a different account</button>
+      <p class="login-footnote">GWU Doctor of Engineering Praxis — Nyan Lin Tun</p>
+    </div>
+  </div>
+
+  <div class="app" id="lin-app" style="display:none;">
 
     <header class="topbar">
       <a class="nav-logo" href="#" onclick="event.preventDefault(); if (window.LinApp) LinApp.showPage('portfolio');">
@@ -204,6 +238,10 @@
         <span class="nav-logo-text">LIN PROJECT RADAR</span>
       </a>
       <div class="topbar-right">
+        <div class="auth-user">
+          <span class="auth-email" id="auth-email-display"></span>
+          <button onclick="LinAuth.logout()" class="btn-logout" title="Sign out">Sign out</button>
+        </div>
         <span class="clock" id="tz-clock" aria-label="Current time in selected timezone">--:--:--</span>
         <select id="tz-select" class="tz-select" aria-label="Timezone"></select>
         <button id="nav-toggle" class="nav-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="nav-rail">
@@ -458,6 +496,7 @@
   <!-- SheetJS: client-side XLSX generation for audit export. -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="assets/js/config.js"></script>
+  <script src="assets/js/auth.js"></script>
   <script src="assets/js/data.js"></script>
   <script src="assets/js/categories.js"></script>
   <script src="assets/js/store.js"></script>

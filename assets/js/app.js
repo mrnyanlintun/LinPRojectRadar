@@ -887,6 +887,8 @@
     openDetail,
     showPage,
     getSelectedId() { return selectedId; },
+    // called by auth.js after a successful sign-in
+    init,
     // shared renderers, reused by the Project Detail page (detail.js)
     renderLedger,
     renderDecisionCard
@@ -917,6 +919,11 @@
     wireNavReveal();
     wireTzSelect();
     startClock();
+    // Show the signed-in user's email in the top bar (auth.js / Stage 1).
+    try {
+      const emailEl = document.getElementById("auth-email-display");
+      if (emailEl && window.LinAuth && LinAuth.getEmail) emailEl.textContent = LinAuth.getEmail() || "";
+    } catch (e) { /* non-fatal */ }
     showPage("portfolio");
 
     // Phase 2: hydrate the portfolio from the Drive-backed store (async).
@@ -936,9 +943,22 @@
     window.matchMedia("(prefers-reduced-motion: reduce)").addEventListener?.("change", buildRadar);
   }
 
+  // Auth gate (Stage 1): only initialise the app for an authenticated,
+  // authorized user. LinAuth.init() shows the login screen and returns false
+  // when sign-in is required; after a successful sign-in it calls LinApp.init().
+  // When the auth layer is absent the app runs unguarded so it is never bricked.
+  function boot() {
+    if (window.LinAuth && typeof LinAuth.init === "function") {
+      if (LinAuth.init()) init();
+    } else {
+      const appEl = document.getElementById("lin-app");
+      if (appEl) appEl.style.display = "block";
+      init();
+    }
+  }
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+    document.addEventListener("DOMContentLoaded", boot);
   } else {
-    init();
+    boot();
   }
 })();
