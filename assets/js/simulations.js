@@ -910,39 +910,1167 @@
   }
 
   /* ===========================================================
-     runAll — Modules 04-08 (signalInputs-based) + 11-18
-     (existingSignals-based). DST (Module 10) runs separately in
-     signals.js after the core signal package is assembled so it
-     can access the assembled project.signals directly.
-     Module 09 (Conservative Dominance) and Module 19 (ABM Governance)
-     are computed in the main signal pipeline and decision.js
-     respectively — they are not signals, they consume signals.
+     Stage-2 full-89 module calculations.
+     ------------------------------------------------------------
+     These run from the project's signalInputs (si) directly —
+     cpi / spi / docRiskScore plus any extracted document data.
+     Every function checks its required inputs first and returns a
+     standard insufficient-data stub when any are missing, so the
+     ensemble / spider only ever count modules that truly computed.
      =========================================================== */
-  function runAll(input, existingSignals) {
+
+  function checkInputs(si, required) {
+    for (var i = 0; i < required.length; i++) {
+      if (si[required[i]] === null || si[required[i]] === undefined) return false;
+    }
+    return true;
+  }
+
+  function insufficientData(methodClass) {
+    return {
+      method_class: methodClass,
+      status_color: null,
+      insufficient_data: true,
+      evidence_metric: 'Insufficient data — upload required documents'
+    };
+  }
+
+  /* ---------- Cat 1 — EVM extensions ---------- */
+
+  function runBayesianEAC(si) {
+    if (!checkInputs(si, ['bac','ev','ac','cpi'])) return insufficientData('Bayesian_EAC');
+    var priorMean = si.bac;
+    var priorVariance = Math.pow(si.bac * 0.15, 2);
+    var likelihoodMean = si.bac / si.cpi;
+    var likelihoodVariance = Math.pow(si.bac * (1 - si.cpi) / si.cpi, 2);
+    var posteriorMean = (priorMean / priorVariance + likelihoodMean / likelihoodVariance) /
+                       (1 / priorVariance + 1 / likelihoodVariance);
+    var deltaPct = ((posteriorMean - si.bac) / si.bac) * 100;
+    var status = deltaPct <= 5 ? 'Green' : deltaPct <= 10 ? 'Yellow' : deltaPct <= 20 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Bayesian_EAC', status_color: status,
+      posterior_eac: Math.round(posteriorMean),
+      delta_pct: Math.round(deltaPct * 10) / 10,
+      evidence_metric: 'Bayesian EAC: $' + Math.round(posteriorMean).toLocaleString() +
+        ' (' + (deltaPct > 0 ? '+' : '') + Math.round(deltaPct * 10) / 10 + '% BAC)'
+    };
+  }
+
+  function runKalmanFilter(si) {
+    var history = si.spiHistory || (si.spi ? [si.spi] : null);
+    if (!history || history.length < 2) return insufficientData('Kalman_Filter');
+    var Q = 0.01, R = 0.1;
+    var x = history[0], P = 1.0;
+    for (var i = 1; i < history.length; i++) {
+      P = P + Q;
+      var K = P / (P + R);
+      x = x + K * (history[i] - x);
+      P = (1 - K) * P;
+    }
+    var smoothedSPI = Math.round(x * 1000) / 1000;
+    var trend = history.length >= 3 ?
+      (history[history.length-1] - history[history.length-3]) / 2 : 0;
+    var status = smoothedSPI >= 0.95 ? 'Green' :
+                 smoothedSPI >= 0.92 ? 'Yellow' :
+                 smoothedSPI >= 0.88 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Kalman_Filter', status_color: status,
+      smoothed_spi: smoothedSPI, trend: Math.round(trend * 1000) / 1000,
+      evidence_metric: 'Kalman SPI: ' + smoothedSPI +
+        ' (trend: ' + (trend >= 0 ? '+' : '') + Math.round(trend * 1000) / 1000 + '/period)'
+    };
+  }
+
+  function runARIMAForecast(si) {
+    var history = si.cpiHistory || (si.cpi ? [si.cpi] : null);
+    if (!history || history.length < 3) return insufficientData('ARIMA_Forecast');
+    var diffs = [];
+    for (var i = 1; i < history.length; i++) diffs.push(history[i] - history[i-1]);
+    var phi = 0;
+    if (diffs.length >= 2) {
+      var num = 0, den = 0;
+      for (var j = 1; j < diffs.length; j++) {
+        num += diffs[j] * diffs[j-1];
+        den += diffs[j-1] * diffs[j-1];
+      }
+      phi = den !== 0 ? Math.max(-0.9, Math.min(0.9, num / den)) : 0;
+    }
+    var lastDiff = diffs[diffs.length - 1] || 0;
+    var forecastDiff = phi * lastDiff;
+    var forecastCPI = history[history.length - 1] + forecastDiff;
+    forecastCPI = Math.round(forecastCPI * 1000) / 1000;
+    var status = forecastCPI >= 0.95 ? 'Green' :
+                 forecastCPI >= 0.92 ? 'Yellow' :
+                 forecastCPI >= 0.88 ? 'Amber' : 'Red';
+    return {
+      method_class: 'ARIMA_Forecast', status_color: status,
+      forecast_cpi: forecastCPI, phi: Math.round(phi * 100) / 100,
+      evidence_metric: 'ARIMA CPI forecast: ' + forecastCPI +
+        ' (' + (forecastDiff >= 0 ? 'recovering' : 'declining') + ')'
+    };
+  }
+
+  function runEarnedSchedule(si) {
+    if (!checkInputs(si, ['ev','pv','bac','actualPctComplete','plannedPctComplete']))
+      return insufficientData('Earned_Schedule');
+    var actualPct = si.actualPctComplete / 100;
+    var plannedPct = si.plannedPctComplete / 100;
+    var SPI_t = plannedPct > 0 ? actualPct / plannedPct : null;
+    if (!SPI_t) return insufficientData('Earned_Schedule');
+    var baselineDays = si.baselineStart && si.baselineEnd ?
+      (new Date(si.baselineEnd) - new Date(si.baselineStart)) / 86400000 : null;
+    var delayDays = baselineDays ? Math.round(baselineDays * (1 - SPI_t)) : null;
+    var status = SPI_t >= 0.95 ? 'Green' :
+                 SPI_t >= 0.92 ? 'Yellow' :
+                 SPI_t >= 0.88 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Earned_Schedule', status_color: status,
+      spi_time: Math.round(SPI_t * 1000) / 1000,
+      delay_days: delayDays,
+      evidence_metric: 'ES SPI(t): ' + Math.round(SPI_t * 1000) / 1000 +
+        (delayDays ? ' (' + delayDays + ' day delay implied)' : '')
+    };
+  }
+
+  function runTCPI(si) {
+    if (!checkInputs(si, ['bac','ev','ac'])) return insufficientData('TCPI');
+    var remainingWork = si.bac - si.ev;
+    var remainingBudget = si.bac - si.ac;
+    if (remainingBudget <= 0) return {
+      method_class: 'TCPI', status_color: 'Red',
+      tcpi: null, evidence_metric: 'Budget exhausted — no remaining funds'
+    };
+    var tcpi = remainingWork / remainingBudget;
+    tcpi = Math.round(tcpi * 1000) / 1000;
+    var status = tcpi <= 1.05 ? 'Green' :
+                 tcpi <= 1.10 ? 'Yellow' :
+                 tcpi <= 1.20 ? 'Amber' : 'Red';
+    return {
+      method_class: 'TCPI', status_color: status, tcpi: tcpi,
+      evidence_metric: 'TCPI: ' + tcpi +
+        ' — ' + (tcpi <= 1.05 ? 'achievable' :
+                 tcpi <= 1.10 ? 'challenging' :
+                 tcpi <= 1.20 ? 'very difficult' : 'unrealistic') +
+        ' to finish within budget'
+    };
+  }
+
+  function runVAC(si) {
+    if (!checkInputs(si, ['bac','cpi'])) return insufficientData('VAC');
+    var eac = si.bac / si.cpi;
+    var vac = si.bac - eac;
+    var vacPct = (vac / si.bac) * 100;
+    var status = vacPct >= -5 ? 'Green' :
+                 vacPct >= -10 ? 'Yellow' :
+                 vacPct >= -20 ? 'Amber' : 'Red';
+    return {
+      method_class: 'VAC', status_color: status,
+      vac: Math.round(vac), vac_pct: Math.round(vacPct * 10) / 10,
+      evidence_metric: 'VAC: $' + Math.round(Math.abs(vac)).toLocaleString() +
+        ' ' + (vac < 0 ? 'over' : 'under') + ' budget (' +
+        Math.round(Math.abs(vacPct) * 10) / 10 + '%)'
+    };
+  }
+
+  function runBudgetExecutionRate(si) {
+    if (!checkInputs(si, ['ac','bac','actualPctComplete'])) return insufficientData('Budget_Execution_Rate');
+    var expectedSpend = si.bac * (si.actualPctComplete / 100);
+    var executionRate = expectedSpend > 0 ? si.ac / expectedSpend : null;
+    if (!executionRate) return insufficientData('Budget_Execution_Rate');
+    executionRate = Math.round(executionRate * 1000) / 1000;
+    var status = executionRate <= 1.05 ? 'Green' :
+                 executionRate <= 1.10 ? 'Yellow' :
+                 executionRate <= 1.20 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Budget_Execution_Rate', status_color: status,
+      execution_rate: executionRate,
+      evidence_metric: 'Budget execution rate: ' + executionRate +
+        ' (spending ' + (executionRate > 1 ? Math.round((executionRate-1)*100) + '% faster' : 'on plan') + ')'
+    };
+  }
+
+  function runRegressionToMean(si) {
+    var history = si.cpiHistory || (si.cpi ? [si.cpi] : null);
+    if (!history || history.length < 2) return insufficientData('Regression_To_Mean');
+    var mean = history.reduce(function(a,b){return a+b;},0) / history.length;
+    var current = history[history.length - 1];
+    var deviation = current - mean;
+    var regressedCPI = mean + deviation * 0.5;
+    regressedCPI = Math.round(regressedCPI * 1000) / 1000;
+    var status = regressedCPI >= 0.95 ? 'Green' :
+                 regressedCPI >= 0.92 ? 'Yellow' :
+                 regressedCPI >= 0.88 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Regression_To_Mean', status_color: status,
+      regressed_cpi: regressedCPI, historical_mean: Math.round(mean * 1000) / 1000,
+      evidence_metric: 'Regressed CPI: ' + regressedCPI +
+        ' (mean: ' + Math.round(mean * 1000) / 1000 + ')'
+    };
+  }
+
+  function runICERatio(si) {
+    if (!checkInputs(si, ['bac','cpi','ev','ac'])) return insufficientData('ICE_Ratio');
+    var eacCPI = si.bac / si.cpi;
+    var eacParametric = si.ac + (si.bac - si.ev);
+    var iceRatio = eacParametric > 0 ? eacCPI / eacParametric : null;
+    if (!iceRatio) return insufficientData('ICE_Ratio');
+    iceRatio = Math.round(iceRatio * 1000) / 1000;
+    var status = Math.abs(iceRatio - 1) <= 0.05 ? 'Green' :
+                 Math.abs(iceRatio - 1) <= 0.10 ? 'Yellow' :
+                 Math.abs(iceRatio - 1) <= 0.20 ? 'Amber' : 'Red';
+    return {
+      method_class: 'ICE_Ratio', status_color: status, ice_ratio: iceRatio,
+      eac_cpi: Math.round(eacCPI), eac_parametric: Math.round(eacParametric),
+      evidence_metric: 'ICE ratio: ' + iceRatio +
+        ' (CPI-EAC $' + Math.round(eacCPI).toLocaleString() +
+        ' vs parametric $' + Math.round(eacParametric).toLocaleString() + ')'
+    };
+  }
+
+  /* ---------- Cat 2 — Schedule extensions ---------- */
+
+  function runScheduleCompression(si) {
+    if (!checkInputs(si, ['baselineEnd','baselineStart','actualPctComplete']))
+      return insufficientData('Schedule_Compression');
+    var totalDays = (new Date(si.baselineEnd) - new Date(si.baselineStart)) / 86400000;
+    if (totalDays <= 0) return insufficientData('Schedule_Compression');
+    var remainingPct = (100 - si.actualPctComplete) / 100;
+    var remainingDays = totalDays * remainingPct;
+    var spi = si.spi || 1.0;
+    var requiredDays = remainingDays;
+    var availableDays = remainingDays * spi;
+    var compressionRatio = requiredDays > 0 ? requiredDays / Math.max(availableDays, 1) : 1;
+    compressionRatio = Math.round(compressionRatio * 100) / 100;
+    var status = compressionRatio <= 1.05 ? 'Green' :
+                 compressionRatio <= 1.15 ? 'Yellow' :
+                 compressionRatio <= 1.30 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Schedule_Compression', status_color: status,
+      compression_ratio: compressionRatio, remaining_days: Math.round(remainingDays),
+      evidence_metric: 'Schedule compression: ' + compressionRatio + 'x — ' +
+        Math.round(remainingDays) + ' days of work remaining'
+    };
+  }
+
+  function runFloatConsumption(si) {
+    if (!checkInputs(si, ['totalFloat','consumedFloat'])) return insufficientData('Float_Consumption');
+    var floatRemaining = si.totalFloat - si.consumedFloat;
+    var consumptionRate = si.totalFloat > 0 ? si.consumedFloat / si.totalFloat : null;
+    if (consumptionRate === null) return insufficientData('Float_Consumption');
+    var pctComplete = si.actualPctComplete || 50;
+    var expectedConsumption = pctComplete / 100;
+    var floatStress = consumptionRate / Math.max(expectedConsumption, 0.01);
+    floatStress = Math.round(floatStress * 100) / 100;
+    var status = floatStress <= 1.0 ? 'Green' :
+                 floatStress <= 1.3 ? 'Yellow' :
+                 floatStress <= 1.6 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Float_Consumption', status_color: status,
+      float_remaining_days: Math.round(floatRemaining),
+      consumption_rate: Math.round(consumptionRate * 100),
+      float_stress: floatStress,
+      evidence_metric: 'Float: ' + Math.round(floatRemaining) + ' days remaining — ' +
+        Math.round(consumptionRate * 100) + '% consumed'
+    };
+  }
+
+  function runSCurveDeviation(si) {
+    if (!checkInputs(si, ['actualPctComplete','plannedPctComplete','ev','pv']))
+      return insufficientData('SCurve_Deviation');
+    var pctDeviation = si.actualPctComplete - si.plannedPctComplete;
+    var valueDeviation = si.pv > 0 ? ((si.ev - si.pv) / si.pv) * 100 : null;
+    if (valueDeviation === null) return insufficientData('SCurve_Deviation');
+    var combinedDeviation = (pctDeviation + valueDeviation) / 2;
+    var status = combinedDeviation >= -2 ? 'Green' :
+                 combinedDeviation >= -5 ? 'Yellow' :
+                 combinedDeviation >= -10 ? 'Amber' : 'Red';
+    return {
+      method_class: 'SCurve_Deviation', status_color: status,
+      pct_deviation: Math.round(pctDeviation * 10) / 10,
+      value_deviation: Math.round(valueDeviation * 10) / 10,
+      evidence_metric: 'S-curve: ' + Math.round(pctDeviation * 10) / 10 +
+        '% behind planned progress, ' + Math.round(valueDeviation * 10) / 10 +
+        '% EV vs PV deviation'
+    };
+  }
+
+  function runScheduleRiskAnalysis(si) {
+    if (!checkInputs(si, ['spi','baselineEnd','baselineStart','actualPctComplete']))
+      return insufficientData('Schedule_Risk_Analysis');
+    var totalDays = (new Date(si.baselineEnd) - new Date(si.baselineStart)) / 86400000;
+    if (totalDays <= 0) return insufficientData('Schedule_Risk_Analysis');
+    var remainingPct = (100 - si.actualPctComplete) / 100;
+    var remainingDays = totalDays * remainingPct;
+    var p50Days = remainingDays / si.spi;
+    var uncertainty = Math.max(0.05, 1 - si.spi) * 0.5;
+    var p80Days = p50Days * (1 + uncertainty * 1.28);
+    var delayDays = Math.round(p80Days - remainingDays);
+    var status = delayDays <= 0 ? 'Green' :
+                 delayDays <= 14 ? 'Yellow' :
+                 delayDays <= 30 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Schedule_Risk_Analysis', status_color: status,
+      p50_delay_days: Math.round(p50Days - remainingDays),
+      p80_delay_days: delayDays,
+      evidence_metric: 'SRA P80 delay: ' + delayDays + ' days beyond baseline'
+    };
+  }
+
+  function runCriticalPathIndex(si) {
+    if (!checkInputs(si, ['spi','plannedPctComplete','actualPctComplete']))
+      return insufficientData('Critical_Path_Index');
+    var progressRatio = si.plannedPctComplete > 0 ?
+      si.actualPctComplete / si.plannedPctComplete : si.spi;
+    var cpi_schedule = si.spi;
+    var criticalPathIndex = (progressRatio + cpi_schedule) / 2;
+    criticalPathIndex = Math.round(criticalPathIndex * 1000) / 1000;
+    var status = criticalPathIndex >= 0.95 ? 'Green' :
+                 criticalPathIndex >= 0.92 ? 'Yellow' :
+                 criticalPathIndex >= 0.88 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Critical_Path_Index', status_color: status,
+      critical_path_index: criticalPathIndex,
+      evidence_metric: 'Critical Path Index: ' + criticalPathIndex
+    };
+  }
+
+  /* ---------- Cat 3 — Cost extensions ---------- */
+
+  function runContingencyBurnRate(si) {
+    if (!checkInputs(si, ['originalContingency','remainingContingency','actualPctComplete']))
+      return insufficientData('Contingency_Burn_Rate');
+    var burned = si.originalContingency - si.remainingContingency;
+    var burnRate = si.originalContingency > 0 ? burned / si.originalContingency : null;
+    if (burnRate === null) return insufficientData('Contingency_Burn_Rate');
+    var expectedBurn = si.actualPctComplete / 100;
+    var burnStress = expectedBurn > 0 ? burnRate / expectedBurn : burnRate;
+    burnStress = Math.round(burnStress * 100) / 100;
+    var status = burnStress <= 1.0 ? 'Green' :
+                 burnStress <= 1.3 ? 'Yellow' :
+                 burnStress <= 1.6 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Contingency_Burn_Rate', status_color: status,
+      burn_rate_pct: Math.round(burnRate * 100),
+      remaining_pct: Math.round((1 - burnRate) * 100),
+      burn_stress: burnStress,
+      evidence_metric: 'Contingency: ' + Math.round(burnRate * 100) + '% burned at ' +
+        Math.round(si.actualPctComplete) + '% complete'
+    };
+  }
+
+  function runCostRiskAnalysis(si) {
+    if (!checkInputs(si, ['bac','cpi','ac','ev'])) return insufficientData('Cost_Risk_Analysis');
+    var eac = si.bac / si.cpi;
+    var uncertainty = Math.max(0.03, Math.abs(1 - si.cpi)) * 0.5;
+    var p80EAC = eac * (1 + uncertainty * 1.28);
+    var p80DeltaPct = ((p80EAC - si.bac) / si.bac) * 100;
+    var status = p80DeltaPct <= 5 ? 'Green' :
+                 p80DeltaPct <= 10 ? 'Yellow' :
+                 p80DeltaPct <= 20 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Cost_Risk_Analysis', status_color: status,
+      p80_eac: Math.round(p80EAC), p80_delta_pct: Math.round(p80DeltaPct * 10) / 10,
+      evidence_metric: 'CRA P80 EAC: $' + Math.round(p80EAC).toLocaleString() +
+        ' (+' + Math.round(p80DeltaPct * 10) / 10 + '% BAC)'
+    };
+  }
+
+  function runParametricCost(si) {
+    if (!checkInputs(si, ['bac','ev','ac','actualPctComplete'])) return insufficientData('Parametric_Cost');
+    var eacCPI = si.bac / si.cpi;
+    var eacParametric = si.ac + (si.bac - si.ev);
+    var parametricIndex = eacParametric > 0 ? eacCPI / eacParametric : null;
+    if (!parametricIndex) return insufficientData('Parametric_Cost');
+    parametricIndex = Math.round(parametricIndex * 1000) / 1000;
+    var status = Math.abs(parametricIndex - 1) <= 0.03 ? 'Green' :
+                 Math.abs(parametricIndex - 1) <= 0.08 ? 'Yellow' :
+                 Math.abs(parametricIndex - 1) <= 0.15 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Parametric_Cost', status_color: status,
+      parametric_index: parametricIndex,
+      evidence_metric: 'Parametric index: ' + parametricIndex +
+        ' (CPI-EAC vs BAC-EAC divergence)'
+    };
+  }
+
+  /* ---------- Cat 4 — Doc / Risk extensions ---------- */
+
+  function runRFIVelocity(si) {
+    if (!checkInputs(si, ['rfiCount','rfiPeriodDays'])) return insufficientData('RFI_Velocity');
+    var rfiPerWeek = (si.rfiCount / si.rfiPeriodDays) * 7;
+    rfiPerWeek = Math.round(rfiPerWeek * 10) / 10;
+    var status = rfiPerWeek <= 2 ? 'Green' :
+                 rfiPerWeek <= 4 ? 'Yellow' :
+                 rfiPerWeek <= 8 ? 'Amber' : 'Red';
+    return {
+      method_class: 'RFI_Velocity', status_color: status,
+      rfi_per_week: rfiPerWeek, total_rfis: si.rfiCount,
+      evidence_metric: si.rfiCount + ' RFIs over ' + si.rfiPeriodDays +
+        ' days (' + rfiPerWeek + '/week)'
+    };
+  }
+
+  function runSubmittalRejection(si) {
+    if (!checkInputs(si, ['submittalsTotal','submittalsRejected']))
+      return insufficientData('Submittal_Rejection');
+    var rejectionRate = si.submittalsTotal > 0 ?
+      si.submittalsRejected / si.submittalsTotal : null;
+    if (rejectionRate === null) return insufficientData('Submittal_Rejection');
+    rejectionRate = Math.round(rejectionRate * 1000) / 1000;
+    var status = rejectionRate <= 0.05 ? 'Green' :
+                 rejectionRate <= 0.15 ? 'Yellow' :
+                 rejectionRate <= 0.25 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Submittal_Rejection', status_color: status,
+      rejection_rate: rejectionRate,
+      rejected: si.submittalsRejected, total: si.submittalsTotal,
+      evidence_metric: si.submittalsRejected + ' of ' + si.submittalsTotal +
+        ' submittals rejected (' + Math.round(rejectionRate * 100) + '%)'
+    };
+  }
+
+  function runCOFrequency(si) {
+    if (!checkInputs(si, ['changeOrderCount','baselineContractSum','revisedContractSum']))
+      return insufficientData('CO_Frequency');
+    var scopeGrowth = si.baselineContractSum > 0 ?
+      ((si.revisedContractSum - si.baselineContractSum) / si.baselineContractSum) * 100 : 0;
+    var coRate = si.changeOrderCount;
+    var status = (scopeGrowth <= 5 && coRate <= 3) ? 'Green' :
+                 (scopeGrowth <= 10 && coRate <= 6) ? 'Yellow' :
+                 (scopeGrowth <= 20 && coRate <= 10) ? 'Amber' : 'Red';
+    return {
+      method_class: 'CO_Frequency', status_color: status,
+      co_count: coRate, scope_growth_pct: Math.round(scopeGrowth * 10) / 10,
+      evidence_metric: coRate + ' change orders — scope growth: +' +
+        Math.round(scopeGrowth * 10) / 10 + '%'
+    };
+  }
+
+  function runDisputeEscalation(si) {
+    if (!checkInputs(si, ['docRiskScore'])) return insufficientData('Dispute_Escalation');
+    var rfiWeight = si.rfiCount ? Math.min(si.rfiCount / 20, 1) * 0.3 : 0;
+    var coWeight = si.changeOrderCount ? Math.min(si.changeOrderCount / 10, 1) * 0.3 : 0;
+    var docWeight = si.docRiskScore * 0.4;
+    var escalationIndex = rfiWeight + coWeight + docWeight;
+    escalationIndex = Math.round(escalationIndex * 100) / 100;
+    var status = escalationIndex <= 0.20 ? 'Green' :
+                 escalationIndex <= 0.40 ? 'Yellow' :
+                 escalationIndex <= 0.65 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Dispute_Escalation', status_color: status,
+      escalation_index: escalationIndex,
+      evidence_metric: 'Dispute escalation index: ' + escalationIndex +
+        ' (doc risk + RFI velocity + CO frequency combined)'
+    };
+  }
+
+  function runSpecConflictDensity(si) {
+    if (!checkInputs(si, ['docRiskScore','rfiCount'])) return insufficientData('Spec_Conflict_Density');
+    var conflictDensity = si.rfiCount > 0 ?
+      (si.docRiskScore * si.rfiCount) / Math.sqrt(si.rfiCount) : si.docRiskScore;
+    conflictDensity = Math.min(1, Math.round(conflictDensity * 100) / 100);
+    var status = conflictDensity <= 0.15 ? 'Green' :
+                 conflictDensity <= 0.35 ? 'Yellow' :
+                 conflictDensity <= 0.60 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Spec_Conflict_Density', status_color: status,
+      conflict_density: conflictDensity,
+      evidence_metric: 'Spec conflict density: ' + conflictDensity +
+        ' (doc risk weighted by RFI volume)'
+    };
+  }
+
+  /* ---------- Cat 5 — System dynamics extensions ---------- */
+
+  function runSensitivityAnalysis(si) {
+    if (!checkInputs(si, ['bac','ev','ac','pv','cpi','spi']))
+      return insufficientData('Sensitivity_Analysis');
+    var eacBase = si.bac / si.cpi;
+    var deltaCPI = 0.05;
+    var eacHighCPI = si.bac / (si.cpi + deltaCPI);
+    var eacLowCPI = si.bac / (si.cpi - deltaCPI);
+    var cpiSensitivity = Math.abs(eacLowCPI - eacHighCPI) / eacBase;
+    var spiSensitivity = Math.abs(si.spi - 1.0) * 0.5;
+    var docSensitivity = si.docRiskScore || 0;
+    var drivers = [
+      { name: 'CPI', sensitivity: cpiSensitivity },
+      { name: 'SPI', sensitivity: spiSensitivity },
+      { name: 'DocRisk', sensitivity: docSensitivity }
+    ].sort(function(a,b) { return b.sensitivity - a.sensitivity; });
+    var topDriver = drivers[0];
+    var maxSensitivity = topDriver.sensitivity;
+    var status = maxSensitivity <= 0.10 ? 'Green' :
+                 maxSensitivity <= 0.20 ? 'Yellow' :
+                 maxSensitivity <= 0.35 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Sensitivity_Analysis', status_color: status,
+      top_driver: topDriver.name,
+      top_sensitivity: Math.round(maxSensitivity * 100),
+      drivers: drivers,
+      evidence_metric: 'Top risk driver: ' + topDriver.name +
+        ' (sensitivity: ' + Math.round(maxSensitivity * 100) + '%)'
+    };
+  }
+
+  function runTornadoDiagram(si) {
+    if (!checkInputs(si, ['cpi','spi','docRiskScore','actualPctComplete','plannedPctComplete']))
+      return insufficientData('Tornado_Diagram');
+    var risks = [
+      { name: 'Cost Performance', impact: Math.abs(1 - si.cpi) * 100 },
+      { name: 'Schedule Performance', impact: Math.abs(1 - si.spi) * 100 },
+      { name: 'Document Risk', impact: si.docRiskScore * 100 },
+      { name: 'Progress Variance', impact: Math.abs(si.actualPctComplete - si.plannedPctComplete) }
+    ].sort(function(a,b) { return b.impact - a.impact; });
+    var topRisk = risks[0];
+    var compositeScore = risks.reduce(function(sum, r) { return sum + r.impact; }, 0) / risks.length;
+    var status = compositeScore <= 5 ? 'Green' :
+                 compositeScore <= 10 ? 'Yellow' :
+                 compositeScore <= 20 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Tornado_Diagram', status_color: status,
+      top_risk: topRisk.name,
+      top_impact: Math.round(topRisk.impact * 10) / 10,
+      composite_score: Math.round(compositeScore * 10) / 10,
+      risks: risks,
+      evidence_metric: 'Top risk: ' + topRisk.name +
+        ' (' + Math.round(topRisk.impact * 10) / 10 + '% impact)'
+    };
+  }
+
+  function runScenarioModeling(si) {
+    if (!checkInputs(si, ['bac','ev','ac','cpi','spi'])) return insufficientData('Scenario_Modeling');
+    var remainingWork = si.bac - si.ev;
+    var optimisticEAC = si.ac + remainingWork * 1.00;
+    var realisticEAC = si.ac + remainingWork / si.cpi;
+    var pessimisticEAC = si.ac + remainingWork / Math.min(si.cpi, si.spi);
+    var scenarioRange = (pessimisticEAC - optimisticEAC) / si.bac * 100;
+    var status = pessimisticEAC <= si.bac * 1.05 ? 'Green' :
+                 pessimisticEAC <= si.bac * 1.10 ? 'Yellow' :
+                 pessimisticEAC <= si.bac * 1.20 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Scenario_Modeling', status_color: status,
+      optimistic_eac: Math.round(optimisticEAC),
+      realistic_eac: Math.round(realisticEAC),
+      pessimistic_eac: Math.round(pessimisticEAC),
+      scenario_range_pct: Math.round(scenarioRange * 10) / 10,
+      evidence_metric: 'Scenarios: best $' + Math.round(optimisticEAC/1000) + 'k / ' +
+        'likely $' + Math.round(realisticEAC/1000) + 'k / ' +
+        'worst $' + Math.round(pessimisticEAC/1000) + 'k'
+    };
+  }
+
+  function runReworkFeedback(si) {
+    if (!checkInputs(si, ['cpi'])) return insufficientData('Rework_Feedback');
+    var rfiContrib = si.rfiCount ? Math.min(si.rfiCount / 30, 1) * 0.3 : 0;
+    var coContrib = si.changeOrderCount ? Math.min(si.changeOrderCount / 15, 1) * 0.3 : 0;
+    var cpiContrib = Math.max(0, (1 - si.cpi)) * 0.4;
+    var reworkIndex = rfiContrib + coContrib + cpiContrib;
+    reworkIndex = Math.round(reworkIndex * 100) / 100;
+    var status = reworkIndex <= 0.10 ? 'Green' :
+                 reworkIndex <= 0.25 ? 'Yellow' :
+                 reworkIndex <= 0.45 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Rework_Feedback', status_color: status,
+      rework_index: reworkIndex,
+      evidence_metric: 'Rework feedback index: ' + reworkIndex +
+        ' (CPI degradation + RFI + CO combined)'
+    };
+  }
+
+  function runDiscreteEventSim(si) {
+    if (!checkInputs(si, ['spi','actualPctComplete','plannedPctComplete','cpi']))
+      return insufficientData('Discrete_Event_Sim');
+    var progressRatio = si.plannedPctComplete > 0 ?
+      si.actualPctComplete / si.plannedPctComplete : 1;
+    var interruptionRate = Math.max(0, 1 - progressRatio) +
+                          Math.max(0, 1 - si.spi) * 0.5;
+    var throughputIndex = 1 / (1 + interruptionRate);
+    throughputIndex = Math.round(throughputIndex * 1000) / 1000;
+    var status = throughputIndex >= 0.92 ? 'Green' :
+                 throughputIndex >= 0.85 ? 'Yellow' :
+                 throughputIndex >= 0.75 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Discrete_Event_Sim', status_color: status,
+      throughput_index: throughputIndex,
+      interruption_rate: Math.round(interruptionRate * 100),
+      evidence_metric: 'DES throughput: ' + throughputIndex +
+        ' (' + Math.round(interruptionRate * 100) + '% interruption rate)'
+    };
+  }
+
+  /* ---------- Cat 6 — Synthesis extensions (consume the project) ---------- */
+
+  function voteBucket(status) {
+    if (!status) return null;
+    return status.indexOf('Red') >= 0 ? 'Red' :
+           status === 'Amber' ? 'Amber' :
+           status === 'Yellow' ? 'Yellow' : 'Green';
+  }
+
+  function runWeightedVoting(project) {
+    project = project || {};
+    var s = project.signals || {};
+    var sim = (project.simulationSignals && project.simulationSignals.signal_array) || [];
+    var votes = { Green: 0, Yellow: 0, Amber: 0, Red: 0 };
+    var weights = { cat1: 1.5, cat2: 1.2, cat3: 1.2, cat4: 1.0,
+                    cat5: 0.8, cat6: 1.0, cat7: 0.6, cat9: 1.5 };
+    function addVote(status, catWeight) {
+      var b = voteBucket(status);
+      if (!b) return;
+      votes[b] += catWeight;
+    }
+    if (s.mc) addVote(s.mc.status, weights.cat1);
+    if (s.cusum) addVote(s.cusum.status, weights.cat1);
+    if (s.doc) addVote(s.doc.status, weights.cat4);
+    sim.forEach(function(m) { addVote(m.status_color, weights.cat7); });
+    if (s.decision) addVote(s.decision.state, weights.cat9);
+    var total = Object.keys(votes).reduce(function(a,k){return a+votes[k];},0);
+    if (total === 0) return insufficientData('Weighted_Voting');
+    var dominant = Object.keys(votes).reduce(function(a, b) {
+      return votes[a] > votes[b] ? a : b;
+    });
+    var dominantPct = Math.round((votes[dominant] / total) * 100);
+    return {
+      method_class: 'Weighted_Voting', status_color: dominant,
+      votes: votes, dominant_pct: dominantPct,
+      evidence_metric: 'Weighted vote: ' + dominant + ' (' + dominantPct + '% of weighted signals)'
+    };
+  }
+
+  function runMajorityRules(project) {
+    project = project || {};
+    var s = project.signals || {};
+    var sim = (project.simulationSignals && project.simulationSignals.signal_array) || [];
+    var counts = { Green: 0, Yellow: 0, Amber: 0, Red: 0 };
+    function count(status) {
+      var b = voteBucket(status);
+      if (!b) return;
+      counts[b]++;
+    }
+    if (s.mc) count(s.mc.status);
+    if (s.cusum) count(s.cusum.status);
+    if (s.doc) count(s.doc.status);
+    sim.forEach(function(m) { count(m.status_color); });
+    var total = Object.keys(counts).reduce(function(a,k){return a+counts[k];},0);
+    if (total === 0) return insufficientData('Majority_Rules');
+    var majority = Object.keys(counts).reduce(function(a, b) {
+      return counts[a] > counts[b] ? a : b;
+    });
+    var majorityPct = Math.round((counts[majority] / total) * 100);
+    return {
+      method_class: 'Majority_Rules', status_color: majority,
+      counts: counts, majority_pct: majorityPct, total_votes: total,
+      evidence_metric: majority + ' by majority (' + counts[majority] +
+        ' of ' + total + ' modules, ' + majorityPct + '%)'
+    };
+  }
+
+  function runWorstNofM(project) {
+    project = project || {};
+    var s = project.signals || {};
+    var sim = (project.simulationSignals && project.simulationSignals.signal_array) || [];
+    var allStatuses = [];
+    if (s.mc) allStatuses.push(s.mc.status);
+    if (s.cusum) allStatuses.push(s.cusum.status);
+    if (s.doc) allStatuses.push(s.doc.status);
+    sim.forEach(function(m) { if (m.status_color) allStatuses.push(m.status_color); });
+    if (!allStatuses.length) return insufficientData('Worst_N_of_M');
+    var redCount = allStatuses.filter(function(st) { return st && st.indexOf('Red') >= 0; }).length;
+    var amberCount = allStatuses.filter(function(st) { return st === 'Amber'; }).length;
+    var M = allStatuses.length;
+    var status = redCount >= Math.ceil(M * 0.3) ? 'Red' :
+                 amberCount >= Math.ceil(M * 0.4) ? 'Amber' :
+                 redCount >= 1 ? 'Yellow' : 'Green';
+    return {
+      method_class: 'Worst_N_of_M', status_color: status,
+      red_count: redCount, amber_count: amberCount, total_modules: M,
+      evidence_metric: redCount + ' Red + ' + amberCount + ' Amber of ' + M + ' total modules'
+    };
+  }
+
+  /* ---------- Cat 7 — Evidence combination extensions ---------- */
+
+  function runPythagoreanFuzzy(si) {
+    if (!checkInputs(si, ['cpi','spi','docRiskScore'])) return insufficientData('Pythagorean_Fuzzy');
+    var evmMin = Math.min(si.cpi, si.spi);
+    var mu_g = Math.min(1, Math.max(0, (evmMin - 0.85) / 0.15));
+    var nu_g = Math.min(1, Math.max(0, (0.95 - evmMin) / 0.15));
+    if (mu_g * mu_g + nu_g * nu_g > 1) {
+      var norm = Math.sqrt(mu_g * mu_g + nu_g * nu_g);
+      mu_g /= norm; nu_g /= norm;
+    }
+    var pi_g = Math.sqrt(Math.max(0, 1 - mu_g * mu_g - nu_g * nu_g));
+    var docRisk = si.docRiskScore || 0;
+    var adjustedMu = mu_g * (1 - docRisk * 0.3);
+    var adjustedNu = Math.min(1, nu_g + docRisk * 0.3);
+    var score = adjustedMu - adjustedNu;
+    var status = score >= 0.3 ? 'Green' :
+                 score >= 0.0 ? 'Yellow' :
+                 score >= -0.3 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Pythagorean_Fuzzy', status_color: status,
+      membership: Math.round(adjustedMu * 100) / 100,
+      non_membership: Math.round(adjustedNu * 100) / 100,
+      hesitancy: Math.round(pi_g * 100) / 100,
+      evidence_metric: 'PFS: μ=' + Math.round(adjustedMu*100)/100 +
+        ' ν=' + Math.round(adjustedNu*100)/100 +
+        ' π=' + Math.round(pi_g*100)/100
+    };
+  }
+
+  function runPictureFuzzy(si) {
+    if (!checkInputs(si, ['cpi','spi','docRiskScore'])) return insufficientData('Picture_Fuzzy');
+    var evmMin = Math.min(si.cpi, si.spi);
+    var positive = Math.max(0, Math.min(0.95, (evmMin - 0.85) / 0.15));
+    var negative = Math.max(0, Math.min(0.95, (0.95 - evmMin) / 0.15)) *
+                   (1 + si.docRiskScore * 0.5);
+    negative = Math.min(0.95, negative);
+    var neutral = Math.max(0, 0.6 - positive - negative) * 0.3;
+    var refusal = Math.max(0, 1 - positive - neutral - negative);
+    var score = positive - negative;
+    var status = score >= 0.30 ? 'Green' :
+                 score >= 0.00 ? 'Yellow' :
+                 score >= -0.30 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Picture_Fuzzy', status_color: status,
+      positive: Math.round(positive * 100) / 100,
+      neutral: Math.round(neutral * 100) / 100,
+      negative: Math.round(negative * 100) / 100,
+      refusal: Math.round(refusal * 100) / 100,
+      evidence_metric: 'PicFS: +' + Math.round(positive*100)/100 +
+        ' 0' + Math.round(neutral*100)/100 +
+        ' -' + Math.round(negative*100)/100 +
+        ' r' + Math.round(refusal*100)/100
+    };
+  }
+
+  function runHesitantFuzzy(si) {
+    if (!checkInputs(si, ['cpi','spi'])) return insufficientData('Hesitant_Fuzzy');
+    var evmMin = Math.min(si.cpi, si.spi);
+    var evmMax = Math.max(si.cpi, si.spi);
+    var memberships = [
+      Math.max(0, Math.min(1, (evmMin - 0.85) / 0.15)),
+      Math.max(0, Math.min(1, (evmMax - 0.85) / 0.15)),
+      Math.max(0, Math.min(1, ((evmMin + evmMax) / 2 - 0.85) / 0.15))
+    ];
+    var score = memberships.reduce(function(a,b){return a+b;},0) / memberships.length;
+    var hesitancy = Math.max.apply(null, memberships) - Math.min.apply(null, memberships);
+    var status = score >= 0.7 ? 'Green' :
+                 score >= 0.5 ? 'Yellow' :
+                 score >= 0.3 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Hesitant_Fuzzy', status_color: status,
+      memberships: memberships.map(function(m){return Math.round(m*100)/100;}),
+      average_membership: Math.round(score * 100) / 100,
+      hesitancy_degree: Math.round(hesitancy * 100) / 100,
+      evidence_metric: 'HFS: avg membership ' + Math.round(score*100)/100 +
+        ', hesitancy ' + Math.round(hesitancy*100)/100
+    };
+  }
+
+  function runType2Fuzzy(si) {
+    if (!checkInputs(si, ['cpi','spi'])) return insufficientData('Type2_Fuzzy');
+    var evmMin = Math.min(si.cpi, si.spi);
+    var primaryMembership = Math.max(0, Math.min(1, (evmMin - 0.85) / 0.15));
+    var uncertainty = Math.abs(si.cpi - si.spi) * 2;
+    var lowerMembership = Math.max(0, primaryMembership - uncertainty * 0.5);
+    var upperMembership = Math.min(1, primaryMembership + uncertainty * 0.5);
+    var centroid = (lowerMembership + upperMembership) / 2;
+    var footprint = upperMembership - lowerMembership;
+    var status = centroid >= 0.7 && footprint <= 0.2 ? 'Green' :
+                 centroid >= 0.5 ? 'Yellow' :
+                 centroid >= 0.3 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Type2_Fuzzy', status_color: status,
+      lower_membership: Math.round(lowerMembership * 100) / 100,
+      upper_membership: Math.round(upperMembership * 100) / 100,
+      centroid: Math.round(centroid * 100) / 100,
+      footprint_of_uncertainty: Math.round(footprint * 100) / 100,
+      evidence_metric: 'T2FS: centroid ' + Math.round(centroid*100)/100 +
+        ', FOU ' + Math.round(footprint*100)/100
+    };
+  }
+
+  function runMaximumEntropy(si) {
+    if (!checkInputs(si, ['cpi','spi','docRiskScore'])) return insufficientData('Maximum_Entropy');
+    var evmMin = Math.min(si.cpi, si.spi);
+    var rawProbs = [
+      Math.max(0.01, evmMin >= 0.95 ? 0.70 : evmMin >= 0.90 ? 0.20 : 0.05),
+      Math.max(0.01, evmMin >= 0.95 ? 0.20 : evmMin >= 0.90 ? 0.50 : 0.20),
+      Math.max(0.01, evmMin >= 0.95 ? 0.07 : evmMin >= 0.90 ? 0.25 : 0.60),
+      Math.max(0.01, evmMin >= 0.95 ? 0.02 : evmMin >= 0.90 ? 0.05 : 0.15)
+    ];
+    var sum = rawProbs.reduce(function(a,b){return a+b;},0);
+    var probs = rawProbs.map(function(p){return p/sum;});
+    var docAdjust = si.docRiskScore || 0;
+    probs[2] = Math.min(0.95, probs[2] + docAdjust * 0.2);
+    probs[3] = Math.min(0.95, probs[3] + docAdjust * 0.1);
+    sum = probs.reduce(function(a,b){return a+b;},0);
+    probs = probs.map(function(p){return p/sum;});
+    var entropy = -probs.reduce(function(h,p){return h + (p > 0 ? p * Math.log2(p) : 0);}, 0);
+    var maxEntropy = Math.log2(4);
+    var normalizedEntropy = entropy / maxEntropy;
+    var labels = ['Green','Yellow','Amber','Red'];
+    var dominant = labels[probs.indexOf(Math.max.apply(null, probs))];
+    return {
+      method_class: 'Maximum_Entropy', status_color: dominant,
+      probabilities: { Green: Math.round(probs[0]*100), Yellow: Math.round(probs[1]*100),
+                       Amber: Math.round(probs[2]*100), Red: Math.round(probs[3]*100) },
+      entropy: Math.round(normalizedEntropy * 100) / 100,
+      evidence_metric: 'MaxEnt: ' + dominant + ' (entropy ' +
+        Math.round(normalizedEntropy*100)/100 + ')'
+    };
+  }
+
+  function runPossibilityTheory(si) {
+    if (!checkInputs(si, ['cpi','spi','docRiskScore'])) return insufficientData('Possibility_Theory');
+    var evmMin = Math.min(si.cpi, si.spi);
+    var docRisk = si.docRiskScore || 0;
+    var possibility = {
+      Green: Math.min(1, Math.max(0, (evmMin - 0.85) / 0.10) * (1 - docRisk * 0.5)),
+      Amber: Math.min(1, Math.max(0, 1 - (evmMin - 0.88) / 0.10) * (1 + docRisk * 0.3)),
+      Red: Math.min(1, Math.max(0, (0.92 - evmMin) / 0.10) + docRisk * 0.4)
+    };
+    var necessity = {
+      Green: Math.max(0, possibility.Green - 0.3),
+      Amber: Math.max(0, possibility.Amber - 0.3),
+      Red: Math.max(0, possibility.Red - 0.3)
+    };
+    var dominant = Object.keys(possibility).reduce(function(a, b) {
+      return possibility[a] > possibility[b] ? a : b;
+    });
+    return {
+      method_class: 'Possibility_Theory', status_color: dominant,
+      possibility: { Green: Math.round(possibility.Green*100)/100,
+                     Amber: Math.round(possibility.Amber*100)/100,
+                     Red: Math.round(possibility.Red*100)/100 },
+      necessity: { Green: Math.round(necessity.Green*100)/100,
+                   Amber: Math.round(necessity.Amber*100)/100,
+                   Red: Math.round(necessity.Red*100)/100 },
+      evidence_metric: 'Possibility: ' + dominant +
+        ' (Π=' + Math.round(possibility[dominant]*100)/100 +
+        ', N=' + Math.round(necessity[dominant]*100)/100 + ')'
+    };
+  }
+
+  function runSphericalFuzzy(si) {
+    if (!checkInputs(si, ['cpi','spi','docRiskScore'])) return insufficientData('Spherical_Fuzzy');
+    var evmMin = Math.min(si.cpi, si.spi);
+    var mu = Math.max(0, Math.min(0.95, (evmMin - 0.82) / 0.18));
+    var nu = Math.max(0, Math.min(0.95, (0.98 - evmMin) / 0.18)) *
+             (1 + (si.docRiskScore || 0) * 0.5);
+    nu = Math.min(0.95, nu);
+    var constraint = mu * mu + nu * nu;
+    if (constraint > 1) { var sc = Math.sqrt(constraint); mu /= sc; nu /= sc; }
+    var pi = Math.sqrt(Math.max(0, 1 - mu * mu - nu * nu));
+    var score = mu - nu;
+    var status = score >= 0.4 ? 'Green' :
+                 score >= 0.1 ? 'Yellow' :
+                 score >= -0.2 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Spherical_Fuzzy', status_color: status,
+      mu: Math.round(mu*100)/100, nu: Math.round(nu*100)/100, pi: Math.round(pi*100)/100,
+      score: Math.round(score*100)/100,
+      evidence_metric: 'SFS: μ=' + Math.round(mu*100)/100 +
+        ' ν=' + Math.round(nu*100)/100 +
+        ' π=' + Math.round(pi*100)/100
+    };
+  }
+
+  function runFermateanFuzzy(si) {
+    if (!checkInputs(si, ['cpi','spi'])) return insufficientData('Fermatean_Fuzzy');
+    var evmMin = Math.min(si.cpi, si.spi);
+    var mu = Math.max(0, Math.min(0.99, (evmMin - 0.80) / 0.20));
+    var nu = Math.max(0, Math.min(0.99, (1.00 - evmMin) / 0.20));
+    while (mu*mu*mu + nu*nu*nu > 1) { mu *= 0.95; nu *= 0.95; }
+    var pi = Math.pow(Math.max(0, 1 - Math.pow(mu,3) - Math.pow(nu,3)), 1/3);
+    var score = mu - nu;
+    var status = score >= 0.35 ? 'Green' :
+                 score >= 0.05 ? 'Yellow' :
+                 score >= -0.25 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Fermatean_Fuzzy', status_color: status,
+      mu: Math.round(mu*100)/100, nu: Math.round(nu*100)/100, pi: Math.round(pi*100)/100,
+      evidence_metric: 'FFS: μ=' + Math.round(mu*100)/100 +
+        ' ν=' + Math.round(nu*100)/100 +
+        ' π=' + Math.round(pi*100)/100
+    };
+  }
+
+  function runMARCOS(si) {
+    if (!checkInputs(si, ['cpi','spi','docRiskScore'])) return insufficientData('MARCOS');
+    var criteria = [
+      { value: si.cpi, ideal: 1.05, anti: 0.80, weight: 0.40 },
+      { value: si.spi, ideal: 1.05, anti: 0.80, weight: 0.35 },
+      { value: 1 - (si.docRiskScore || 0), ideal: 1.00, anti: 0.30, weight: 0.25 }
+    ];
+    var utilityIdeal = criteria.reduce(function(sum, c) {
+      var range = c.ideal - c.anti;
+      var norm = range > 0 ? (c.value - c.anti) / range : 0.5;
+      norm = Math.max(0, Math.min(1, norm));
+      return sum + norm * c.weight;
+    }, 0);
+    var utilityAnti = 1 - utilityIdeal;
+    var f_ideal = utilityIdeal / (utilityIdeal + utilityAnti);
+    var f_anti = utilityAnti / (utilityIdeal + utilityAnti);
+    var marcosScore = (f_ideal + f_anti) / (1 + (1 - f_ideal) / f_ideal + (1 - f_anti) / f_anti);
+    marcosScore = Math.round(marcosScore * 1000) / 1000;
+    var status = marcosScore >= 0.65 ? 'Green' :
+                 marcosScore >= 0.50 ? 'Yellow' :
+                 marcosScore >= 0.35 ? 'Amber' : 'Red';
+    return {
+      method_class: 'MARCOS', status_color: status,
+      marcos_score: marcosScore,
+      utility_ideal: Math.round(utilityIdeal * 100) / 100,
+      evidence_metric: 'MARCOS score: ' + marcosScore +
+        ' (utility vs ideal: ' + Math.round(utilityIdeal*100)/100 + ')'
+    };
+  }
+
+  function runCRITIC_TOPSIS(si) {
+    if (!checkInputs(si, ['cpi','spi','docRiskScore'])) return insufficientData('CRITIC_TOPSIS');
+    var criteria = [si.cpi, si.spi, 1 - (si.docRiskScore || 0)];
+    var mean = criteria.reduce(function(a,b){return a+b;},0) / criteria.length;
+    var stddev = Math.sqrt(criteria.reduce(function(s,v){
+      return s + Math.pow(v - mean, 2);
+    }, 0) / criteria.length);
+    var weights = criteria.map(function(v) {
+      return stddev > 0 ? Math.abs(v - mean) / stddev : 1/3;
+    });
+    var wSum = weights.reduce(function(a,b){return a+b;},0);
+    weights = weights.map(function(w){return w/wSum;});
+    var ideal = [1.05, 1.05, 1.00];
+    var antiIdeal = [0.80, 0.80, 0.30];
+    var dIdeal = Math.sqrt(criteria.reduce(function(s,v,i){
+      return s + weights[i] * Math.pow(v - ideal[i], 2);
+    }, 0));
+    var dAnti = Math.sqrt(criteria.reduce(function(s,v,i){
+      return s + weights[i] * Math.pow(v - antiIdeal[i], 2);
+    }, 0));
+    var topsisScore = dAnti / (dIdeal + dAnti + 0.0001);
+    topsisScore = Math.round(topsisScore * 1000) / 1000;
+    var status = topsisScore >= 0.65 ? 'Green' :
+                 topsisScore >= 0.50 ? 'Yellow' :
+                 topsisScore >= 0.35 ? 'Amber' : 'Red';
+    return {
+      method_class: 'CRITIC_TOPSIS', status_color: status,
+      topsis_score: topsisScore,
+      distance_ideal: Math.round(dIdeal*1000)/1000,
+      distance_anti: Math.round(dAnti*1000)/1000,
+      evidence_metric: 'CRITIC-TOPSIS: ' + topsisScore +
+        ' (d+ ' + Math.round(dIdeal*1000)/1000 +
+        ', d- ' + Math.round(dAnti*1000)/1000 + ')'
+    };
+  }
+
+  function runHypersoftSets(si) {
+    if (!checkInputs(si, ['cpi','spi','docRiskScore'])) return insufficientData('Hypersoft_Sets');
+    var attributes = {
+      cost: si.cpi < 0.90 ? 'poor' : si.cpi < 0.95 ? 'fair' : 'good',
+      schedule: si.spi < 0.90 ? 'poor' : si.spi < 0.95 ? 'fair' : 'good',
+      risk: (si.docRiskScore||0) > 0.70 ? 'high' : (si.docRiskScore||0) > 0.30 ? 'medium' : 'low'
+    };
+    var combinations = {
+      'good-good-low': 0.90, 'good-good-medium': 0.75, 'good-good-high': 0.55,
+      'good-fair-low': 0.70, 'good-fair-medium': 0.55, 'good-fair-high': 0.40,
+      'fair-good-low': 0.70, 'fair-good-medium': 0.55, 'fair-good-high': 0.40,
+      'fair-fair-low': 0.55, 'fair-fair-medium': 0.40, 'fair-fair-high': 0.30,
+      'good-poor-low': 0.50, 'poor-good-low': 0.50, 'poor-poor-low': 0.30,
+      'poor-fair-low': 0.35, 'fair-poor-low': 0.35,
+      'good-poor-medium': 0.35, 'poor-good-medium': 0.35,
+      'poor-poor-medium': 0.20, 'poor-poor-high': 0.10,
+      'fair-poor-high': 0.20, 'poor-fair-high': 0.20,
+      'good-poor-high': 0.25, 'poor-good-high': 0.25
+    };
+    var key = attributes.cost + '-' + attributes.schedule + '-' + attributes.risk;
+    var score = combinations[key] !== undefined ? combinations[key] : 0.35;
+    var status = score >= 0.70 ? 'Green' :
+                 score >= 0.50 ? 'Yellow' :
+                 score >= 0.30 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Hypersoft_Sets', status_color: status,
+      attribute_combination: key, score: score,
+      evidence_metric: 'Hypersoft [' + key + ']: score ' + score
+    };
+  }
+
+  /* ---------- Cat 9 — Governance extensions ---------- */
+
+  function runFARThreshold(si) {
+    if (!checkInputs(si, ['bac','cpi','ev','ac'])) return insufficientData('FAR_Threshold');
+    var eac = si.bac / si.cpi;
+    var overrunPct = ((eac - si.bac) / si.bac) * 100;
+    var far34Threshold = 25;
+    var distanceToThreshold = far34Threshold - overrunPct;
+    var status = overrunPct <= 5 ? 'Green' :
+                 overrunPct <= 15 ? 'Yellow' :
+                 overrunPct <= 25 ? 'Amber' : 'Red';
+    return {
+      method_class: 'FAR_Threshold', status_color: status,
+      overrun_pct: Math.round(overrunPct * 10) / 10,
+      far34_threshold_pct: far34Threshold,
+      distance_to_threshold: Math.round(distanceToThreshold * 10) / 10,
+      far_reporting_required: overrunPct >= far34Threshold,
+      evidence_metric: 'FAR Part 34: ' + Math.round(overrunPct*10)/10 +
+        '% overrun — threshold ' + far34Threshold + '% (' +
+        (overrunPct >= far34Threshold ? 'REPORTING REQUIRED' :
+         Math.round(distanceToThreshold*10)/10 + '% headroom') + ')'
+    };
+  }
+
+  function runOMBA11Check(si) {
+    if (!checkInputs(si, ['bac','cpi','actualPctComplete'])) return insufficientData('OMB_A11_Check');
+    var cpiBelow90 = si.cpi < 0.90;
+    var majorProgram = si.bac >= 10000000;
+    var reportingTriggered = cpiBelow90 && majorProgram;
+    var eac = si.bac / si.cpi;
+    var projectedOverrun = eac - si.bac;
+    var status = !cpiBelow90 ? 'Green' :
+                 si.cpi >= 0.92 ? 'Yellow' :
+                 si.cpi >= 0.88 ? 'Amber' : 'Red';
+    return {
+      method_class: 'OMB_A11_Check', status_color: status,
+      cpi_below_90: cpiBelow90,
+      major_program: majorProgram,
+      reporting_triggered: reportingTriggered,
+      projected_overrun: Math.round(projectedOverrun),
+      evidence_metric: 'OMB A-11: CPI ' + si.cpi +
+        (reportingTriggered ? ' — MANDATORY REPORTING TRIGGERED' :
+         cpiBelow90 ? ' — below threshold, monitor' : ' — within threshold')
+    };
+  }
+
+  function runEVMReportingThreshold(si) {
+    if (!checkInputs(si, ['bac','cpi','spi'])) return insufficientData('EVM_Reporting_Threshold');
+    var cpiBreached = si.cpi < 0.90;
+    var spiBreached = si.spi < 0.90;
+    var bothBreached = cpiBreached && spiBreached;
+    var eac = si.bac / si.cpi;
+    var eacDeltaPct = ((eac - si.bac) / si.bac) * 100;
+    var status = (!cpiBreached && !spiBreached) ? 'Green' :
+                 (cpiBreached !== spiBreached) ? 'Yellow' :
+                 bothBreached && eacDeltaPct <= 15 ? 'Amber' : 'Red';
+    return {
+      method_class: 'EVM_Reporting_Threshold', status_color: status,
+      cpi_breached: cpiBreached, spi_breached: spiBreached,
+      both_breached: bothBreached,
+      eac_delta_pct: Math.round(eacDeltaPct * 10) / 10,
+      evidence_metric: 'EVM threshold: CPI ' + (cpiBreached ? 'BREACHED' : 'ok') +
+        ', SPI ' + (spiBreached ? 'BREACHED' : 'ok') +
+        ', EAC +' + Math.round(eacDeltaPct*10)/10 + '%'
+    };
+  }
+
+  function runContractModFrequency(si) {
+    if (!checkInputs(si, ['changeOrderCount','baselineContractSum','revisedContractSum']))
+      return insufficientData('Contract_Mod_Frequency');
+    var scopeGrowthPct = si.baselineContractSum > 0 ?
+      ((si.revisedContractSum - si.baselineContractSum) / si.baselineContractSum) * 100 : 0;
+    var riskLevel = si.changeOrderCount >= 10 || scopeGrowthPct >= 20 ? 'Red' :
+                    si.changeOrderCount >= 6 || scopeGrowthPct >= 10 ? 'Amber' :
+                    si.changeOrderCount >= 3 || scopeGrowthPct >= 5 ? 'Yellow' : 'Green';
+    return {
+      method_class: 'Contract_Mod_Frequency', status_color: riskLevel,
+      co_count: si.changeOrderCount,
+      scope_growth_pct: Math.round(scopeGrowthPct * 10) / 10,
+      evidence_metric: si.changeOrderCount + ' contract modifications — ' +
+        Math.round(scopeGrowthPct*10)/10 + '% scope growth — ' +
+        (riskLevel === 'Red' ? 'contracting officer review required' :
+         riskLevel === 'Amber' ? 'elevated modification frequency' : 'within normal range')
+    };
+  }
+
+  /* ===========================================================
+     runAll — runs the original 13 client-side models PLUS every
+     new active Stage-2 module. DST (Module 10) still runs
+     separately in signals.js after the core package is assembled.
+     Conservative Dominance and ABM Governance live in the main
+     signal pipeline / decision.js — they consume signals.
+
+     Modules that lack their required inputs return an
+     insufficient_data stub; those are filtered out here so the
+     spider / ensemble only count modules that actually computed.
+     =========================================================== */
+  function runAll(input, existingSignals, project) {
     var si = (input && input.signalInputs) ? input.signalInputs : (input || {});
     var es = existingSignals || {};
-    return [
-      runPERT(si),                  // Module 04
-      runLOB(si),                   // Module 05
-      runCCPM(si),                  // Module 06
-      runRCF(si),                   // Module 07
-      runDSM(si),                   // Module 08
-      runRoughSets(es),             // Module 11
-      runNeutrosophic(es),          // Module 12
-      runIntervalFuzzy(es),         // Module 13
-      runZNumbers(es),              // Module 14
-      runPLTS(es),                  // Module 15
-      runPlithogenic(es),           // Module 16
-      runBRB(es),                   // Module 17
-      runQuantumProbability(es)     // Module 18
+
+    var results = [
+      // Original 13 client-side models (always present when signals exist).
+      runPERT(si),                  // Cat 2.1
+      runLOB(si),                   // Cat 2.2
+      runCCPM(si),                  // Cat 2.3
+      runRCF(si),                   // Cat 3.1
+      runDSM(si),                   // Cat 3.2 (+ aliased to Cat 5.1)
+      runRoughSets(es),             // Cat 7.2
+      runNeutrosophic(es),          // Cat 7.3
+      runIntervalFuzzy(es),         // Cat 7.4
+      runZNumbers(es),              // Cat 7.5
+      runPLTS(es),                  // Cat 7.6
+      runPlithogenic(es),           // Cat 7.7
+      runBRB(es),                   // Cat 7.8
+      runQuantumProbability(es),    // Cat 7.9
+
+      // Cat 1 EVM extensions
+      runBayesianEAC(si), runKalmanFilter(si), runARIMAForecast(si),
+      runEarnedSchedule(si), runTCPI(si), runVAC(si),
+      runBudgetExecutionRate(si), runRegressionToMean(si), runICERatio(si),
+
+      // Cat 2 schedule extensions
+      runScheduleCompression(si), runFloatConsumption(si), runSCurveDeviation(si),
+      runScheduleRiskAnalysis(si), runCriticalPathIndex(si),
+
+      // Cat 3 cost extensions
+      runContingencyBurnRate(si), runCostRiskAnalysis(si), runParametricCost(si),
+
+      // Cat 4 doc / risk extensions
+      runRFIVelocity(si), runSubmittalRejection(si), runCOFrequency(si),
+      runDisputeEscalation(si), runSpecConflictDensity(si),
+
+      // Cat 5 dynamics extensions
+      runSensitivityAnalysis(si), runTornadoDiagram(si), runScenarioModeling(si),
+      runReworkFeedback(si), runDiscreteEventSim(si),
+
+      // Cat 6 synthesis extensions (consume the assembled project)
+      runWeightedVoting(project), runMajorityRules(project), runWorstNofM(project),
+
+      // Cat 7 evidence extensions
+      runPythagoreanFuzzy(si), runPictureFuzzy(si), runHesitantFuzzy(si),
+      runType2Fuzzy(si), runMaximumEntropy(si), runPossibilityTheory(si),
+      runSphericalFuzzy(si), runFermateanFuzzy(si), runMARCOS(si),
+      runCRITIC_TOPSIS(si), runHypersoftSets(si),
+
+      // Cat 9 governance extensions
+      runFARThreshold(si), runOMBA11Check(si), runEVMReportingThreshold(si),
+      runContractModFrequency(si)
     ];
+
+    return results.filter(function (r) {
+      return r && !r.insufficient_data && r.status_color !== null;
+    });
   }
 
   window.LinSimulations = {
     runAll,
+    checkInputs, insufficientData,
     runPERT, runLOB, runCCPM, runRCF, runDSM,
     runDST, runRoughSets, runNeutrosophic, runIntervalFuzzy,
     runZNumbers, runPLTS, runPlithogenic, runBRB, runQuantumProbability,
+    // Stage-2 full-89 modules
+    runBayesianEAC, runKalmanFilter, runARIMAForecast, runEarnedSchedule,
+    runTCPI, runVAC, runBudgetExecutionRate, runRegressionToMean, runICERatio,
+    runScheduleCompression, runFloatConsumption, runSCurveDeviation,
+    runScheduleRiskAnalysis, runCriticalPathIndex,
+    runContingencyBurnRate, runCostRiskAnalysis, runParametricCost,
+    runRFIVelocity, runSubmittalRejection, runCOFrequency,
+    runDisputeEscalation, runSpecConflictDensity,
+    runSensitivityAnalysis, runTornadoDiagram, runScenarioModeling,
+    runReworkFeedback, runDiscreteEventSim,
+    runWeightedVoting, runMajorityRules, runWorstNofM,
+    runPythagoreanFuzzy, runPictureFuzzy, runHesitantFuzzy, runType2Fuzzy,
+    runMaximumEntropy, runPossibilityTheory, runSphericalFuzzy,
+    runFermateanFuzzy, runMARCOS, runCRITIC_TOPSIS, runHypersoftSets,
+    runFARThreshold, runOMBA11Check, runEVMReportingThreshold, runContractModFrequency,
     sampleTriangular
   };
 })();

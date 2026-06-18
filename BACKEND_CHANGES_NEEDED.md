@@ -401,3 +401,49 @@ executive_brief
 ```
 
 **Retention:** the front end keeps at most 24 periods; the back end stores everything written and never deletes.
+
+## Fix 9 - 11 new document types + full-89 signalInputs merge
+
+The frontend dropdown (`signals.js` → `DOC_TYPE_GROUPS`, new "Compliance &
+Performance Documents" optgroup) now offers 11 additional document types. The
+Stage-2 simulation modules (`simulations.js` → `LinSimulations.runAll`) read
+their inputs straight off `signalInputs`, so `extractsignals` must extract the
+new fields and `Code.gs` `extractionFieldsFor_()` must handle these doc types:
+
+- `safety_report`: osha_recordable_incidents, total_manhours, incident_rate, report_period
+- `quality_audit_report`: total_findings, critical_findings, deficiency_count, audit_score, audit_date
+- `environmental_report`: permit_conditions_total, violations, compliance_rate, report_date
+- `ncr_log`: ncr_issued, ncr_closed, ncr_open, ncr_overdue, report_period
+- `subcontractor_report`: scheduled_deliveries, on_time_deliveries, compliance_score
+- `procurement_log`: long_lead_items_total, on_schedule, at_risk, delayed, report_date
+- `lookahead_schedule`: activities_planned, activities_constrained, constraint_rate, lookahead_weeks
+- `resource_report`: planned_labor_hours, actual_labor_hours, planned_equipment_days, actual_equipment_days
+- `cost_report`: indirect_cost_plan, indirect_cost_actual, material_cost_baseline, material_cost_current
+- `past_performance_report`: overall_rating, schedule_rating, cost_rating, quality_rating
+- `historical_data`: analogous_overrun_pct, analogous_project_type, completion_year
+- `field_report` (update): add weather_days_lost, float_remaining to existing fields
+
+**Also merge these into `signalInputs`** (camelCase keys the frontend modules read):
+
+- rfiCount, rfiPeriodDays (from rfi docs — count ingested RFIs)
+- submittalsTotal, submittalsRejected (from submittal docs)
+- changeOrderCount, baselineContractSum, revisedContractSum (from change_order docs)
+- totalFloat, consumedFloat (from time_phased_schedule)
+- originalContingency, remainingContingency (from pay_application)
+- oshaIncidentRate, totalManhours (from safety_report)
+- qualityAuditScore, totalFindings (from quality_audit_report)
+- environmentalComplianceRate (from environmental_report)
+- ncrIssued, ncrClosed, ncrOpen (from ncr_log)
+- subcontractorComplianceScore (from subcontractor_report)
+- longLeadItemsTotal, longLeadAtRisk, longLeadDelayed (from procurement_log)
+- activitiesPlanned, activitiesConstrained (from lookahead_schedule)
+- plannedLaborHours, actualLaborHours (from resource_report)
+- indirectCostPlan, indirectCostActual, materialCostBaseline, materialCostCurrent (from cost_report)
+- overallRating, scheduleRating, costRating (from past_performance_report)
+- analogousOverrunPct (from historical_data)
+- weatherDaysLost, floatRemaining (from field_report)
+
+These feed the 15 currently-inactive modules (Cat 2.7-2.9, 3.4-3.6, 3.8, 3.10,
+4.4-4.5, 4.8-4.9, 9.6-9.9). Until the backend supplies them, those modules
+return the standard `insufficient_data` stub and are excluded from the
+spider / ensemble counts — no fabricated statuses.

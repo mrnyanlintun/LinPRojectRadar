@@ -792,6 +792,38 @@ body[data-theme="light"] .sw-axis { stroke: rgba(15,23,42,0.14); }
 }
 .sw-history-pill:hover, .sw-history-pill.active { color: var(--text); border-color: var(--phosphor); background: color-mix(in srgb, var(--phosphor) 10%, transparent); }
 
+/* ---------- 89-module signal web ---------- */
+.sw-mod-svg { max-height: 560px; }
+.sw-ring-outer { stroke: rgba(255,255,255,0.12); }
+body[data-theme="light"] .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
+.sw-mod-band { fill: none; stroke-width: 13; opacity: .15; stroke-linecap: round; }
+.sw-mod-spoke { stroke-width: 1; opacity: .35; }
+.sw-mod-label { font-family: var(--font-mono); font-size: 8px; fill: var(--faint); dominant-baseline: middle; }
+.sw-mod-svg .sw-dot { stroke: var(--surface); stroke-width: .6; transition: r .12s ease; }
+.sw-mod-svg .sw-dot:hover { r: 5px; }
+.sw-mod-svg .sw-web-current { fill: rgba(78,160,255,0.07); stroke: rgba(78,160,255,0.45); stroke-width: 1; }
+
+/* ---------- Ensemble analysis panel ---------- */
+.ens-panel { margin-bottom: 18px; }
+.ens-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 10px; }
+@media (max-width: 720px) { .ens-grid { grid-template-columns: 1fr; } }
+.ens-chart-title, .ens-consensus .ens-chart-title {
+  font-family: var(--font-mono); font-size: 10.5px; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .08em; margin: 0 0 6px;
+}
+.ens-scatter { display: block; width: 100%; height: auto; max-height: 340px; }
+.ens-bars { display: block; width: 100%; height: auto; max-height: 340px; }
+.ens-col-line { stroke: var(--line); stroke-width: .4; }
+.ens-col-label { font-family: var(--font-mono); font-size: 5px; fill: var(--faint); }
+.ens-bar-count { font-family: var(--font-mono); font-size: 5.5px; fill: var(--text); }
+.ens-trend { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 2; }
+.ens-consensus { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+.ens-stack { display: flex; width: 100%; height: 32px; border-radius: 5px; overflow: hidden; border: 1px solid var(--line); }
+.ens-seg { display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: #0b1220; min-width: 0; }
+.ens-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
+.ens-leg { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); }
+.ens-leg i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
 /* ---------- Phase 1: empty / awaiting-ingest states ---------- */
 .state-empty { color: var(--muted); }
 .blip-empty .blip-label { fill: var(--muted); font-style: italic; }
