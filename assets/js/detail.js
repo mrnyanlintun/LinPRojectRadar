@@ -358,36 +358,63 @@
     return bits.join(", ");
   }
 
-  function buildBriefPrompt(project) {
-    const s = (project && project.signals) || {};
-    // Guard: refuse to send a chat request when the project has nothing
-    // worth briefing on. We require either the assembled decision package
-    // or one of the four core signal classes (evm/mc/cusum/doc). Returning
-    // null tells refreshBrief to show the explicit "no signals yet" state
-    // instead of POSTing a hollow prompt to the backend.
-    const hasCore = !!(s.evm || s.mc || s.cusum || s.doc);
-    if (!hasCore && !s.decision) return null;
+  // Locate the snapshot the brief should reflect. Prefer current reporting
+  // period; fall back to the most recent stored snapshot. Returns null when
+  // no usable snapshot exists — callers show the 'run signal extraction'
+  // state instead of POSTing a hollow prompt or calling the AI on nothing.
+  function briefSnapshot(project) {
+    if (!project || !Array.isArray(project.history) || !project.history.length) return null;
+    const period = (project.reportingPeriod) || new Date().toISOString().substring(0, 7);
+    const match = project.history.find((h) => h && h.period === period);
+    const fallback = project.history[project.history.length - 1];
+    const snap = match || fallback;
+    if (!snap || !Array.isArray(snap.module_log) || !snap.module_log.length) return null;
+    return snap;
+  }
 
-    // Short prompt only. Match Ask Lin's payload size profile — the previous
-    // 3KB structured prompt caused 'Failed to fetch' against the Apps Script
-    // endpoint. Backend already has the project context via `id`; we just
-    // give Lin a short digest and the briefing rules.
-    const digest = briefSignalsDigest(project);
-    const state = resolveBriefState(project) || "unknown";
-    console.log("[brief] decision packet for " + project.id + ":", project.signals && project.signals.decision);
-    console.log("[brief] resolved governance state for " + project.id + ":", state);
-    return "Executive brief for project " + project.id +
-      " (" + project.name + "). Overall governance state: " + state + ". " +
-      "Signal summary: " + digest + ". " +
-      "Write 4-6 sentences for a program director. Use 5-status vocabulary: " +
-      "Complete=milestone achieved, Green=on track, Yellow=early warning, " +
-      "Amber=significant risk, Red=critical. Phrase as 'in the amber zone' " +
-      "or 'showing early warning signs', not bare RAG words. Lead with overall " +
-      "health, name the top concern, state recommended action and who takes it, " +
-      "note whether evidence agrees. The recommended action MUST be consistent " +
-      "with the concerns — do not say 'routine monitoring' if any concern is " +
-      "present. Only mention signal classes that the summary reports. No module " +
-      "numbers, no metric values, no bullet points, no preamble.";
+  function buildBriefPrompt(project) {
+    const snapshot = briefSnapshot(project);
+    if (!snapshot) {
+      console.log("[brief] no stored snapshot for " + (project && project.id) + " — skipping chat call");
+      return null;
+    }
+
+    const logLines = snapshot.module_log.map((m) => {
+      let line = m.module + " " + m.name + ": " + (m.status || "no reading");
+      if (m.evidence_metric) line += " — " + m.evidence_metric;
+      return line;
+    });
+
+    const ag = snapshot.evidence_agreement || {};
+    const confidence = ag.confidence
+      ? ag.confidence + " confidence (" + (ag.methods_agreeing || 0) + " of " + (ag.methods_checked || 0) + " evidence methods agree)"
+      : "agreement not computed";
+
+    const gov = snapshot.governance || {};
+    const computedDay = (snapshot.computed_at || "").substring(0, 10) || "unknown date";
+
+    console.log("[brief] using stored snapshot for " + project.id + " (period " + snapshot.period + ", " + snapshot.total_modules + " modules)");
+
+    return "You are briefing a senior program director before a governance meeting. " +
+      "Write a 4-6 sentence executive brief about project " +
+      snapshot.project_id + " (" + (snapshot.project_name || "unnamed") + ", " + (snapshot.sector || "unknown") + " sector).\n\n" +
+      "This brief is based on a stored computational log from " + computedDay + ". " +
+      "The platform ran " + snapshot.total_modules + " signal models simultaneously — " +
+      "computational analysis no human reviewer could complete in real time. " +
+      "The stored results are:\n\n" + logLines.join("\n") + "\n\n" +
+      "Overall governance state: " + (gov.state || "unknown") + "\n" +
+      "Conflict classification: " + (gov.conflict || "none") + "\n" +
+      "Recommended authority: " + (gov.authority || "unknown") + "\n" +
+      "Evidence agreement: " + confidence + "\n\n" +
+      "The brief must:\n" +
+      "1. State the overall project health clearly in the first sentence.\n" +
+      "2. Identify the one or two most critical concerns from the log.\n" +
+      "3. State the recommended action and who should take it.\n" +
+      "4. Note whether the evidence methods agree or diverge — and what that means.\n" +
+      "5. Use plain English — no module numbers, no metric values, no jargon.\n" +
+      "6. Use 5-level status language: Complete, on track, early warning, significant risk, critical.\n" +
+      "7. Written as if speaking directly to the program director.\n" +
+      "Start immediately with the project status. No preamble.";
   }
 
   // Scripted fallback when the chat endpoint fails. Same pattern as Ask Lin's
@@ -476,11 +503,21 @@
   }
 
   function briefFooter(brief) {
-    if (!brief || !brief.generated_at) return "";
-    let when = brief.generated_at;
-    try { when = (window.LinTZ && LinTZ.format) ? LinTZ.format(brief.generated_at) : new Date(brief.generated_at).toLocaleString(); }
-    catch (e) {}
-    return `<div class="eb-foot">Generated: ${esc(when)} · 19 signals analysed</div>`;
+    if (!brief) return "";
+    const snap = brief.snapshot || null;
+    const computedAt = (snap && snap.computed_at) || brief.generated_at || null;
+    if (!computedAt) return "";
+    let when = computedAt;
+    try {
+      const d = new Date(computedAt);
+      when = d.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+    } catch (e) {}
+    const total = (snap && snap.total_modules) || 19;
+    const ag = snap && snap.evidence_agreement;
+    const conf = ag && ag.confidence ? ag.confidence + " confidence" : null;
+    const parts = ["Generated from stored log", when, total + " modules"];
+    if (conf) parts.push(conf);
+    return `<div class="eb-foot">${esc(parts.join(" · "))}</div>`;
   }
 
   function briefBodyHtml(state, brief, errMsg) {
@@ -491,7 +528,7 @@
       </div>`;
     }
     if (state === "skipped") {
-      return `<div class="eb-body eb-skipped">No signal data yet for this project. Ingest a document to generate a brief.</div>`;
+      return `<div class="eb-body eb-skipped">Run signal extraction first to generate the stored log. Upload project documents to populate.</div>`;
     }
     if (state === "error") {
       return `<div class="eb-body eb-error" role="alert">Brief unavailable: ${esc(errMsg || "unknown error")}</div>`;
@@ -574,7 +611,8 @@
       console.log("[brief] chat response for " + project.id + ":", answer);
       const text = String(answer || "").trim();
       if (!text) throw new Error("empty brief returned");
-      const brief = { text, generated_at: new Date().toISOString(), period };
+      const snap = briefSnapshot(project);
+      const brief = { text, generated_at: new Date().toISOString(), period, snapshot: snap };
       project.executiveBrief = brief;
       setBriefState(root, "ready", project, brief);
       // Persist — non-blocking. Save failure leaves the brief in memory so
@@ -592,7 +630,8 @@
       // Regenerate button still lets them retry the live call.
       try {
         const text = scriptedBrief(project);
-        const brief = { text, generated_at: new Date().toISOString(), period, source: "scripted" };
+        const snap = briefSnapshot(project);
+        const brief = { text, generated_at: new Date().toISOString(), period, source: "scripted", snapshot: snap };
         project.executiveBrief = brief;
         setBriefState(root, "ready", project, brief);
       } catch (e2) {

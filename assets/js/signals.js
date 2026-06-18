@@ -312,11 +312,116 @@
         if (key) snapshot.module_results[key] = sig;
       });
     }
+    // Attach the rich module_log + agreement stats. This is what the
+    // executive brief reads — the stored computational log, not live signals.
+    return augmentSnapshot(project, snapshot);
+  }
+
+  /* Module metadata for the rich `module_log` array carried on the snapshot.
+     Drives the executive-brief prompt and the audit trail — the stored log is
+     the source of truth for the 19 models the platform ran simultaneously. */
+  const SIM_MODULE_MAP = {
+    PERT_Network_Criticality:    { module: "M04", name: "PERT Network Criticality",     tier: "simulation" },
+    Line_of_Balance_Velocity:    { module: "M05", name: "Line of Balance",              tier: "simulation" },
+    CCPM_Buffer_Health:          { module: "M06", name: "CCPM Buffer Health",           tier: "simulation" },
+    Reference_Class_Forecasting: { module: "M07", name: "Reference Class Forecasting",  tier: "simulation" },
+    DSM_Rework_Propagation:      { module: "M08", name: "DSM Rework Propagation",       tier: "simulation" }
+  };
+  const EVIDENCE_MODULE_MAP = {
+    DST_Evidence_Combination:    { module: "M10", name: "Dempster-Shafer",     tier: "evidence" },
+    Rough_Sets_Classification:   { module: "M11", name: "Rough Sets",          tier: "evidence" },
+    Neutrosophic_Logic:          { module: "M12", name: "Neutrosophic Logic",  tier: "evidence" },
+    Interval_Fuzzy_Sets:         { module: "M13", name: "Interval Fuzzy Sets", tier: "evidence" },
+    Z_Numbers:                   { module: "M14", name: "Z-numbers",           tier: "evidence" },
+    PLTS:                        { module: "M15", name: "PLTS",                tier: "evidence" },
+    Plithogenic_Sets:            { module: "M16", name: "Plithogenic Sets",    tier: "evidence" },
+    Belief_Rule_Base:            { module: "M17", name: "Belief Rule Base",    tier: "evidence" },
+    Quantum_Probability:         { module: "M18", name: "Quantum Probability", tier: "evidence" }
+  };
+
+  function buildModuleLog(project) {
+    const s = project.signals || {};
+    const sim = (project.simulationSignals && project.simulationSignals.signal_array) || [];
+    const log = [];
+
+    if (s.mc) log.push({
+      module: "M01", name: "Monte Carlo EAC Forecast", tier: "signal_generator",
+      status: s.mc.status,
+      p50: s.mc.p50, p80: s.mc.p80,
+      p80_delta_pct: s.mc.p80DeltaPct != null ? s.mc.p80DeltaPct : s.mc.p80eacOverrunPct,
+      p_delay: s.mc.pDelay != null ? s.mc.pDelay : s.mc.pMilestoneDelay,
+      iterations: s.mc.iterations || 5000
+    });
+    if (s.cusum) log.push({
+      module: "M02", name: "CUSUM Anomaly Monitor", tier: "signal_generator",
+      status: s.cusum.status, breached: !!s.cusum.breached,
+      peak: s.cusum.peak != null ? s.cusum.peak : s.cusum.drift,
+      decision_h: s.cusum.h != null ? s.cusum.h : s.cusum.threshold,
+      breach_period: s.cusum.breachPeriod != null ? s.cusum.breachPeriod : s.cusum.breachIndex
+    });
+    if (s.doc) log.push({
+      module: "M03", name: "Document Risk Extraction", tier: "signal_generator",
+      status: s.doc.status, score: s.doc.score, source: s.doc.source || null
+    });
+
+    if (s.decision) log.push({
+      module: "M09", name: "Conservative Dominance", tier: "synthesis",
+      status: s.decision.state, conflict: s.decision.conflict || null
+    });
+
+    sim.forEach((m) => {
+      const meta = SIM_MODULE_MAP[m.method_class] || EVIDENCE_MODULE_MAP[m.method_class];
+      if (!meta) return;
+      log.push(Object.assign({}, meta, {
+        status: m.status_color || m.status || null,
+        evidence_metric: m.evidence_metric || null,
+        raw: m
+      }));
+    });
+
+    if (s.decision) log.push({
+      module: "M19", name: "ABM Governance Layer", tier: "governance",
+      status: s.decision.state,
+      authority: s.decision.authority || null,
+      action: s.decision.action || null,
+      fairness_gate: s.decision.fairnessGate || false,
+      documentation: s.decision.documentation || null
+    });
+
+    // Stable M01..M19 order regardless of which order things were pushed.
+    log.sort((a, b) => String(a.module).localeCompare(String(b.module)));
+    return log;
+  }
+
+  function computeAgreement(moduleLog, governanceState) {
+    const evidence = moduleLog.filter((m) => m.tier === "evidence");
+    if (!evidence.length || !governanceState) {
+      return { methods_checked: evidence.length, methods_agreeing: 0, confidence: "LOW" };
+    }
+    const baseline = String(governanceState).toLowerCase().replace("-review", "");
+    const agreeCount = evidence.filter((m) => {
+      const st = String(m.status || "").toLowerCase();
+      return st && st.indexOf(baseline) >= 0;
+    }).length;
+    const confidence = agreeCount >= 8 ? "HIGH" : agreeCount >= 5 ? "MODERATE" : "LOW";
+    return { methods_checked: evidence.length, methods_agreeing: agreeCount, confidence };
+  }
+
+  function augmentSnapshot(project, snapshot) {
+    if (!snapshot) return snapshot;
+    const moduleLog = buildModuleLog(project);
+    const governanceState = (snapshot.governance && snapshot.governance.state) || null;
+    snapshot.project_id = project.id;
+    snapshot.project_name = project.name;
+    snapshot.sector = project.sector;
+    snapshot.module_log = moduleLog;
+    snapshot.total_modules = moduleLog.length;
+    snapshot.evidence_agreement = computeAgreement(moduleLog, governanceState);
     return snapshot;
   }
 
   function persistHistorySnapshot(project, at) {
-    const snapshot = buildHistorySnapshot(project, at);
+    const snapshot = augmentSnapshot(project, buildHistorySnapshot(project, at));
     if (!snapshot) return null;
     project.history = Array.isArray(project.history) ? project.history : [];
     project.history = project.history.filter((h) => h && h.period !== snapshot.period);
@@ -939,6 +1044,9 @@
     ingestFormHtml, wireIngestForm,
     renderSignalsPanel,
     buildHistorySnapshot,
+    persistHistorySnapshot,
+    buildModuleLog,
+    augmentSnapshot,
     ensureSimulations,
     runModels,
     DOC_TYPES, DOC_TYPE_LABEL
