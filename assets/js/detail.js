@@ -261,6 +261,7 @@
          </div>
        </div>
         ${signalWebHtml(p)}
+        ${executiveBriefHtml(p)}
         <div class="detail-grid">
          <section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>
          <section class="panel detail-decision" aria-label="PCEIF governance decision (project detail)"></section>
@@ -291,6 +292,181 @@
     wireBack(root);
     wireReset(root);
     wireSignalWeb(root, id);
+    wireBrief(root, p);
+    // Kick off the brief AFTER the spider chart + evidence backfill have run,
+    // so the prompt sees a fully-populated simulationSignals array. Cached
+    // briefs for the current reporting period render without a chat call.
+    refreshBrief(root, p);
+  }
+
+  /* ============================================================
+     Executive brief — Lin-generated 4-6 sentence summary of the
+     full 19-module signal package, written for a PM / program
+     director. Cached per reporting period on project.executiveBrief
+     and persisted via LinStore.saveProject so a reload renders the
+     same brief without re-calling the chat endpoint.
+     ============================================================ */
+
+  function briefCurrentPeriod(project) {
+    const snap = currentSnapshot(project);
+    return (snap && snap.period) || project.reportingPeriod || null;
+  }
+
+  function briefForPeriod(project, period) {
+    const b = project && project.executiveBrief;
+    if (!b || !b.text) return null;
+    if (period && b.period && b.period !== period) return null;
+    return b;
+  }
+
+  function buildBriefPrompt(project) {
+    const s = (project && project.signals) || {};
+    const sim = (project.simulationSignals && project.simulationSignals.signal_array) || [];
+    const lines = [];
+
+    if (s.evm) {
+      const cpi = Number(s.evm.cpi);
+      const spi = Number(s.evm.spi);
+      lines.push("Cost performance: " + (cpi >= 0.95 ? "on budget" : cpi >= 0.90 ? "slightly over budget" : "over budget"));
+      lines.push("Schedule performance: " + (spi >= 0.95 ? "on schedule" : spi >= 0.90 ? "slightly behind" : "behind schedule"));
+    }
+    if (s.mc) lines.push("Probabilistic forecast: " + (s.mc.status || "no reading"));
+    if (s.cusum) lines.push("Trend detection: " + (s.cusum.breached ? "sustained drift detected" : "no sustained drift"));
+    if (s.doc) {
+      const score = Number(s.doc.score);
+      lines.push("Document risk: " + (score < 0.30 ? "clean" : score < 0.70 ? "elevated" : "high"));
+    }
+
+    sim.forEach((m) => {
+      const name = String(m.method_class || "").replace(/_/g, " ");
+      const color = m.status_color || m.status || "no reading";
+      const metric = m.evidence_metric ? " — " + m.evidence_metric : "";
+      if (name) lines.push(name + ": " + color + metric);
+    });
+
+    if (s.decision) {
+      if (s.decision.state) lines.push("Governance recommendation: " + s.decision.state);
+      if (s.decision.conflict) lines.push("Conflict classification: " + s.decision.conflict);
+      if (s.decision.authority) lines.push("Authority: " + s.decision.authority);
+    }
+
+    const sectorLabel = SECTOR_LABEL[project.sector] || project.sector || "unknown";
+    return "Write a 4-6 sentence executive brief for a program director about project " +
+      project.id + " (" + project.name + ", " + sectorLabel + " sector). " +
+      "Based on these signal readings:\n" + lines.join("\n") + "\n\n" +
+      "The brief must:\n" +
+      "1. State the overall project health in plain English\n" +
+      "2. Identify the one or two most important concerns\n" +
+      "3. State what action is recommended and who should take it\n" +
+      "4. Note if the evidence methods agree or disagree\n" +
+      "5. No bullet points, no headers, no module numbers, no metric values\n" +
+      "6. Written as if briefing a senior official before a governance meeting\n" +
+      "Start directly with the project status — no preamble.";
+  }
+
+  function briefAccentClass(project) {
+    const snap = currentSnapshot(project);
+    const overall = snap && snap.governance && snap.governance.state;
+    const cls = String(overall || "").toLowerCase().replace("-review", "");
+    return cls || "none";
+  }
+
+  function briefFooter(brief) {
+    if (!brief || !brief.generated_at) return "";
+    let when = brief.generated_at;
+    try { when = (window.LinTZ && LinTZ.format) ? LinTZ.format(brief.generated_at) : new Date(brief.generated_at).toLocaleString(); }
+    catch (e) {}
+    return `<div class="eb-foot">Generated: ${esc(when)} · 19 signals analysed</div>`;
+  }
+
+  function briefBodyHtml(state, brief) {
+    if (state === "loading") {
+      return `<div class="eb-body eb-loading" aria-live="polite">
+        <span class="eb-shimmer"></span>
+        <span class="eb-status">Analysing 19 signal modules…</span>
+      </div>`;
+    }
+    if (state === "error") {
+      return `<div class="eb-body eb-error" role="alert">Brief unavailable — check connection.</div>`;
+    }
+    return `<div class="eb-body">${esc(brief && brief.text ? brief.text : "")}</div>`;
+  }
+
+  function executiveBriefHtml(project) {
+    const period = briefCurrentPeriod(project);
+    const cached = briefForPeriod(project, period);
+    const accent = briefAccentClass(project);
+    const state = cached ? "ready" : "loading";
+    return `<section class="panel eb-panel eb-accent-${esc(accent)}" aria-label="Executive brief">
+      <div class="eb-head">
+        <div>
+          <p class="eyebrow eb-eyebrow">Executive brief</p>
+          <p class="kn-sub eb-sub">Generated from 19-module signal analysis</p>
+        </div>
+        <button type="button" class="btn small eb-regen" data-eb-regen="${esc(project.id)}" aria-label="Regenerate brief">Regenerate ↺</button>
+      </div>
+      ${briefBodyHtml(state, cached)}
+      ${cached ? briefFooter(cached) : ""}
+    </section>`;
+  }
+
+  function setBriefState(root, state, project, brief) {
+    const panel = root.querySelector(".eb-panel");
+    if (!panel) return;
+    const old = panel.querySelector(".eb-body");
+    if (old) old.remove();
+    const oldFoot = panel.querySelector(".eb-foot");
+    if (oldFoot) oldFoot.remove();
+    panel.insertAdjacentHTML("beforeend", briefBodyHtml(state, brief));
+    if (state === "ready" && brief) panel.insertAdjacentHTML("beforeend", briefFooter(brief));
+    if (project) {
+      const accent = briefAccentClass(project);
+      panel.className = panel.className.replace(/\beb-accent-\S+/g, "").trim() + " eb-accent-" + accent;
+    }
+  }
+
+  async function refreshBrief(root, project, opts) {
+    if (!project || !window.LinStore || typeof LinStore.chat !== "function") {
+      setBriefState(root, "error", project, null);
+      return;
+    }
+    const force = !!(opts && opts.force);
+    const period = briefCurrentPeriod(project);
+    const cached = briefForPeriod(project, period);
+    if (cached && !force) {
+      setBriefState(root, "ready", project, cached);
+      return;
+    }
+    setBriefState(root, "loading", project, null);
+    try {
+      const prompt = buildBriefPrompt(project);
+      const answer = await LinStore.chat(prompt, project.id);
+      const text = String(answer || "").trim();
+      if (!text) throw new Error("empty brief");
+      const brief = { text, generated_at: new Date().toISOString(), period };
+      project.executiveBrief = brief;
+      setBriefState(root, "ready", project, brief);
+      // Persist — non-blocking. Save failure leaves the brief in memory so
+      // the user still sees it this session; next reload will refetch.
+      if (LinStore.saveProject) {
+        LinStore.saveProject(project).catch(() => { /* non-fatal */ });
+      }
+    } catch (e) {
+      setBriefState(root, "error", project, null);
+    }
+  }
+
+  function wireBrief(root, project) {
+    root.querySelectorAll("[data-eb-regen]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const period = briefCurrentPeriod(project);
+        // Force regeneration: drop the cached entry for this period.
+        if (project.executiveBrief && (!project.executiveBrief.period || project.executiveBrief.period === period)) {
+          project.executiveBrief = null;
+        }
+        refreshBrief(root, project, { force: true });
+      });
+    });
   }
 
   function wireBack(root) {

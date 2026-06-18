@@ -298,3 +298,31 @@ update.
 5. **Manual overrides:** in `overwriteSignal_()`, append a source-log entry for
    the overridden field with `docType: "manual_override"`, `fileName: null`, the
    current timestamp, and the PM-provided reason (or `"Manual override by PM"`).
+
+---
+
+## Fix 6 - Lin chat system prompt: executive-brief mode
+
+**Context:** the Project Detail page now generates a 4-6 sentence executive
+brief from the 19-module signal package by POSTing a structured prompt to
+`?action=chat`. The frontend prompt already carries the rules, but the Lin
+system prompt should be updated to reinforce them so the response style is
+consistent across reporting periods.
+
+**Required system-prompt additions for `action=chat`:**
+
+When the prompt asks for an "executive brief for a program director", Lin must:
+
+- Write as if briefing a senior official before a governance meeting.
+- 4-6 sentences maximum.
+- Lead with the overall health state in plain English.
+- Name the single most important concern.
+- State the recommended action and who takes it.
+- Note the confidence level (do the 19 methods agree or disagree?).
+- Never mention module numbers (no "Module 09", "M10", "DST", etc).
+- Never read out metric values (no "CPI 0.92", no "P80 EAC +7%").
+- No bullet points, no headers, no preamble.
+
+**Persistence:** the client also writes the generated brief to
+`project.executiveBrief = { text, generated_at, period }`. `save_()` already
+persists the whole project; confirm it does not whitelist this field out.
