@@ -26,7 +26,13 @@
 (function () {
   "use strict";
 
-  const CACHE_KEY = "lpr-cache-list-v2";
+  // Bump CACHE_VERSION whenever the persisted project shape changes in a way
+  // that older cached payloads could no longer be safely rendered. The 5-status
+  // engine churn from PR #65 left some clients holding cached projects whose
+  // signals object only had partial 3-state values; bumping to v3 forces a
+  // fresh fetch and clears any stale partial payload.
+  const CACHE_VERSION = "v3";
+  const CACHE_KEY = "lpr-cache-list-" + CACHE_VERSION;
   const url = () => (window.LIN_API_URL || "").trim();
   const configured = () => url() && !/PASTE_/.test(url());
 

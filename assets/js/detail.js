@@ -39,15 +39,17 @@
     if (s === "complete" || s === "blue") return "Complete";
     return null;
   }
+  // Inverted scale: a healthy project draws a FULL web (outer ring), a
+  // troubled project collapses INWARD. Complete = milestone reached = pinned
+  // at the outer ring. Red = critical = pinned near the centre. Null falls
+  // to a tiny ring just off-centre so the 19-sided polygon stays closed.
   function statusToRadius(status) {
     const s = normalizeStatus(status);
-    if (s === "Red") return 1.00;
-    if (s === "Amber") return 0.70;
-    if (s === "Yellow") return 0.45;
-    if (s === "Green") return 0.25;
-    if (s === "Complete") return 0.10;
-    // No-data axes sit on a tiny ring just off-centre instead of exactly 0 so
-    // the 19-sided polygon closes cleanly (no collapse-to-centre starburst).
+    if (s === "Complete") return 1.00;
+    if (s === "Green") return 0.80;
+    if (s === "Yellow") return 0.60;
+    if (s === "Amber") return 0.35;
+    if (s === "Red") return 0.10;
     return 0.05;
   }
   function statusClass(status) {
@@ -172,6 +174,17 @@
     if (previous) ensureEvidenceModules(project, previous);
     const statuses = moduleStatuses(selected);
     const previousStatuses = previous ? moduleStatuses(previous) : null;
+    // Diagnostic: surface which axes are still null after backfill. A
+    // well-formed project should have all 19 populated; M10-M18 nulls here
+    // mean the LinSimulations runner errored or returned no status.
+    try {
+      const missing = MODULES
+        .map((m, i) => statuses[i] ? null : (m[0] + " (" + MODULE_KEYS[i] + ")"))
+        .filter(Boolean);
+      if (missing.length) {
+        console.log("[spider] " + project.id + " — " + missing.length + " axis still null after backfill:", missing);
+      }
+    } catch (e) { /* logging is non-fatal */ }
     const axis = MODULES.map((m, i) => {
       const p = pointFor(i, 1, 150);
       return `<line class="sw-axis" x1="210" y1="190" x2="${p.ax.toFixed(1)}" y2="${p.ay.toFixed(1)}"></line>`;
@@ -202,18 +215,20 @@
           ${previous ? `<p class="kn-sub sw-vs"><span class="sw-prev-key"></span> vs ${esc(periodLabel(previous.period))}</p>` : ""}
         </div>
         <div class="sw-legend" aria-label="Signal web legend">
-          <span><i class="sw-complete"></i>Complete</span>
-          <span><i class="sw-green"></i>Green</span>
-          <span><i class="sw-yellow"></i>Yellow</span>
-          <span><i class="sw-amber"></i>Amber</span>
-          <span><i class="sw-red"></i>Red</span>
+          <span><i class="sw-complete"></i>Complete — milestone achieved</span>
+          <span><i class="sw-green"></i>Green — on track</span>
+          <span><i class="sw-yellow"></i>Yellow — early warning</span>
+          <span><i class="sw-amber"></i>Amber — significant risk</span>
+          <span><i class="sw-red"></i>Red — critical</span>
         </div>
       </div>
       <svg class="signal-web-svg" viewBox="0 0 420 380" role="img" aria-label="19 module signal web">
-        <circle class="sw-ring sw-ring-green" cx="210" cy="190" r="37.5"></circle>
-        <circle class="sw-ring sw-ring-yellow" cx="210" cy="190" r="67.5"></circle>
-        <circle class="sw-ring sw-ring-amber" cx="210" cy="190" r="105"></circle>
-        <circle class="sw-ring sw-ring-red" cx="210" cy="190" r="150"></circle>
+        <circle class="sw-ring sw-ring-red" cx="210" cy="190" r="52.5"></circle>
+        <circle class="sw-ring sw-ring-amber" cx="210" cy="190" r="90"></circle>
+        <circle class="sw-ring sw-ring-green" cx="210" cy="190" r="135"></circle>
+        <text class="sw-ring-label sw-ring-label-green" x="210" y="50" text-anchor="middle">Healthy</text>
+        <text class="sw-ring-label sw-ring-label-amber" x="210" y="95" text-anchor="middle">Watch</text>
+        <text class="sw-ring-label sw-ring-label-red" x="210" y="132" text-anchor="middle">Escalate</text>
         ${axis}
         ${previousStatuses ? `<polygon class="sw-web-prev" points="${polygonPoints(previousStatuses)}"></polygon>` : ""}
         <polygon class="sw-web-current" points="${polygonPoints(statuses)}"></polygon>
