@@ -217,8 +217,35 @@
     };
   }
 
+  /* Ensure modules 04-08 and 10-18 have results when project.signals exists.
+     These depend on existingSignals (the assembled signal package), so they
+     must run AFTER MC/CUSUM/Doc. If a project was saved before this code
+     shipped — or simulationSignals never got persisted — compute on-the-fly
+     so the spider chart's 19 axes all carry a status. */
+  function ensureSimulations(project) {
+    if (!project || !project.signals || !window.LinSimulations) return;
+    const arr = project.simulationSignals && project.simulationSignals.signal_array;
+    if (Array.isArray(arr) && arr.length) return;
+    const si = project.signalInputs || {};
+    try {
+      const simResults = LinSimulations.runAll(si, project.signals);
+      const dstResult = LinSimulations.runDST(si, project.signals);
+      const all = simResults.concat([dstResult]);
+      project.simulationSignals = {
+        signal_metadata: {
+          project_id: project.id,
+          reporting_period: project.reportingPeriod || null,
+          signal_inputs_snapshot: Object.assign({}, si),
+          computed_inline: true
+        },
+        signal_array: all
+      };
+    } catch (e) { /* non-fatal — chart will fall back to greys */ }
+  }
+
   function buildHistorySnapshot(project, at) {
     if (!project || !project.signals) return null;
+    ensureSimulations(project);
     const now = at || new Date();
     const period = now.toISOString().substring(0, 7);
     const si = project.signalInputs || {};
@@ -912,6 +939,7 @@
     ingestFormHtml, wireIngestForm,
     renderSignalsPanel,
     buildHistorySnapshot,
+    ensureSimulations,
     runModels,
     DOC_TYPES, DOC_TYPE_LABEL
   };
