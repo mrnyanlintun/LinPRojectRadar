@@ -304,10 +304,17 @@ def _set_archived(pid, flag):
 @app.post("/chat")
 def chat(body: dict):
     q = body.get("question", "")
+    # Honour a client-supplied max_tokens (the executive brief asks for 1200 to
+    # fit its 4-section format), clamped to a sane range; default stays at 400.
+    try:
+        mt = int(body.get("max_tokens") or 400)
+    except (TypeError, ValueError):
+        mt = 400
+    mt = max(200, min(2000, mt))
     answer = openai_chat(
         [{"role": "system", "content": "You are Lin, a concise governance/PM assistant for a synthetic AEC demo."},
          {"role": "user", "content": q}],
-        max_tokens=400,
+        max_tokens=mt,
     )
     if answer is None:
         answer = "AI is not configured on this backend (set OPENAI_API_KEY)."

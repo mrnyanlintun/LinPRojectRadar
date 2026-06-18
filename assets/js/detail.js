@@ -797,26 +797,108 @@
 
     console.log("[brief] using stored category snapshot for " + project.id + " (period " + snapshot.period + ", " + totalModules + " modules across " + cats.filter((c) => !c.parked).length + " categories)");
 
-    return "You are briefing a senior program director before a governance meeting. " +
-      "Write a 4-6 sentence executive brief about " +
-      (snapshot.project_name || project.name) + " (Project " + snapshot.project_id + ", " + (snapshot.sector || "unknown") + " sector).\n\n" +
-      "This brief is based on a stored computational log from " + computedDay + ". " +
-      "The platform computed " + totalModules + " signal modules across 9 analytical categories. " +
+    const stateName = gov.state || resolveBriefState(project) || "unknown";
+    const toneGuide =
+      "Match the tone to the governance state (" + stateName + "): " +
+      "Green = routine and reassuring; Yellow = attentive but not alarming; " +
+      "Amber = concerned but measured; Red = urgent but professional. " +
+      "Only a Red state may use 48-hour escalation or recovery-plan language — never for any other state.";
+
+    return "You are briefing a senior program director before a governance meeting about " +
+      (snapshot.project_name || project.name) + " (Project " + snapshot.project_id + ", " + (snapshot.sector || "unknown") + " sector). " +
+      "The platform computed " + totalModules + " signal modules across 9 analytical categories from a stored log dated " + computedDay + ". " +
       "No human reviewer could complete this analysis in real time.\n\n" +
-      "Category results:\n" + catSummary +
-      "\n\nOverall governance: " + (gov.state || "unknown") +
-      "\nAuthority: " + (gov.authority || "unknown") +
-      "\nRecommended action: " + (gov.action || "unknown") +
+      "Category results (status + worst-performing model):\n" + catSummary +
+      "\n\nOverall governance state: " + (gov.state || "unknown") +
+      "\nNamed authority: " + (gov.authority || "unknown") +
+      "\nRecommended action on file: " + (gov.action || "unknown") +
       "\nEvidence agreement: " + confText +
-      "\n\nBrief requirements:\n" +
-      "1. First sentence: overall project health in plain English\n" +
-      "2. Second/third sentence: the one or two most critical category concerns\n" +
-      "3. Fourth sentence: recommended action and who takes it\n" +
-      "4. Fifth sentence: confidence level — do the evidence methods agree?\n" +
-      "5. No module numbers, no metric values, no jargon\n" +
-      "6. Use: on track / early warning / significant risk / critical failure\n" +
-      "7. Speak directly to the program director\n" +
-      "Start immediately with the project status.";
+      "\n\n" + toneGuide + "\n\n" +
+      "Write a STRUCTURED executive brief with EXACTLY these four sections, each introduced by its '### ' header line verbatim:\n\n" +
+      "### Overall Status\n" +
+      "2-3 sentences: the overall project health, the governance state in plain English, and a one-line summary of the single most critical concern.\n\n" +
+      "### Category Analysis\n" +
+      "One line per category THAT HAS DATA above — each a single plain-English sentence with NO module numbers and NO metric values — using exactly these labels:\n" +
+      "Cost Performance (Cat 1): ...\n" +
+      "Schedule Simulation (Cat 2): ...\n" +
+      "Cost Simulation (Cat 3): ...\n" +
+      "Document & Risk (Cat 4): ...\n" +
+      "System Dynamics (Cat 5): ...\n" +
+      "Signal Synthesis (Cat 6): ...\n" +
+      "Evidence Combination (Cat 7): ... (state the confidence level)\n" +
+      "Portfolio Analysis (Cat 8): ... (only if portfolio data is present)\n" +
+      "Skip every category that has no data above. Do not invent categories or values.\n\n" +
+      "### Conclusion\n" +
+      "2-3 sentences synthesising the category findings: whether the evidence methods agree or diverge, and the overall confidence level.\n\n" +
+      "### Recommendations\n" +
+      "3-5 bullet points, each line starting with '- ', each naming WHO should do WHAT by WHEN, appropriate to the " + stateName + " state. " +
+      "Do NOT recommend a 48-hour escalation or a recovery plan unless the state is Red.\n\n" +
+      "Output ONLY the four sections with the exact '### ' headers above — no preamble and no closing remarks.";
+  }
+
+  // Friendly category labels used by the structured brief (Section 2).
+  const BRIEF_CAT_LABEL = {
+    "Cat 1": "Cost Performance (Cat 1)", "Cat 2": "Schedule Simulation (Cat 2)",
+    "Cat 3": "Cost Simulation (Cat 3)", "Cat 4": "Document & Risk (Cat 4)",
+    "Cat 5": "System Dynamics (Cat 5)", "Cat 6": "Signal Synthesis (Cat 6)",
+    "Cat 7": "Evidence Combination (Cat 7)", "Cat 8": "Portfolio Analysis (Cat 8)",
+    "Cat 9": "Governance & Compliance (Cat 9)"
+  };
+
+  /* Parse the structured 4-section brief into its parts. Returns null when the
+     text has no recognisable '### ' / bold / bare section headers, so the caller
+     can fall back to rendering the brief as a single plain paragraph. */
+  function parseBrief(text) {
+    if (!text) return null;
+    const lines = String(text).replace(/\r/g, "").split("\n");
+    const out = { overall: [], categories: [], conclusion: [], recommendations: [] };
+    function headerKey(line) {
+      const isHash = /^#{1,6}\s/.test(line);
+      let h = line.replace(/^#{1,6}\s*/, "").replace(/\*\*/g, "").trim().replace(/:\s*$/, "").toLowerCase();
+      const known = (h === "overall status" || h === "category analysis" ||
+                     h === "conclusion" || h === "recommendations" || h === "recommendation");
+      if (!isHash && !known) return null;
+      if (h.indexOf("overall") >= 0) return "overall";
+      if (h.indexOf("category") >= 0) return "categories";
+      if (h.indexOf("conclusion") >= 0) return "conclusion";
+      if (h.indexOf("recommendation") >= 0) return "recommendations";
+      return null;
+    }
+    let cur = null, seen = false;
+    lines.forEach((raw) => {
+      const line = raw.trim();
+      const key = headerKey(line);
+      if (key) { cur = key; seen = true; return; }
+      if (!cur || !line) return;
+      out[cur].push(line);
+    });
+    if (!seen) return null;
+    const stripBullet = (s) => s.replace(/^[-*•▸]\s*/, "").replace(/^\d+[.)]\s*/, "").trim();
+    return {
+      overall: out.overall.join(" ").trim(),
+      categories: out.categories.map(stripBullet).filter(Boolean),
+      conclusion: out.conclusion.join(" ").trim(),
+      recommendations: out.recommendations.map(stripBullet).filter(Boolean)
+    };
+  }
+
+  function briefSectionsHtml(parsed) {
+    const section = (head, inner) => inner
+      ? `<div class="eb-section"><p class="eb-sec-head">${esc(head)}</p>${inner}</div>` : "";
+    const catItems = parsed.categories.map((c) => {
+      const idx = c.indexOf(":");
+      if (idx > 0) {
+        return `<li><span class="eb-cat-label">${esc(c.slice(0, idx + 1))}</span> ${esc(c.slice(idx + 1).trim())}</li>`;
+      }
+      return `<li>${esc(c)}</li>`;
+    }).join("");
+    const recItems = parsed.recommendations.map((r) => `<li>${esc(r)}</li>`).join("");
+    return `<div class="eb-body eb-structured">` +
+      section("Overall Status", parsed.overall ? `<p class="eb-sec-overall">${esc(parsed.overall)}</p>` : "") +
+      section("Category Analysis", catItems ? `<ul class="eb-cats">${catItems}</ul>` : "") +
+      section("Conclusion", parsed.conclusion ? `<p class="eb-sec-conclusion">${esc(parsed.conclusion)}</p>` : "") +
+      section("Recommendations", recItems ? `<ul class="eb-recs">${recItems}</ul>` : "") +
+      `</div>`;
   }
 
   // Scripted fallback when the chat endpoint fails. Same pattern as Ask Lin's
@@ -861,39 +943,87 @@
       else state = "Green";
     }
 
-    const stateWord = state === "Red-review" || state === "Red" ? "in the red zone — critical failure"
-                    : state === "Amber"   ? "in the amber zone — significant risk"
-                    : state === "Yellow"  ? "showing early warning signs"
-                    : state === "Complete" ? "showing the milestone as achieved"
-                    : state === "Green"   ? "on track"
+    const stKey = String(state).toLowerCase().replace("-review", "");
+    const stateWord = stKey === "red" ? "in the red zone — critical failure"
+                    : stKey === "amber"   ? "in the amber zone — significant risk"
+                    : stKey === "yellow"  ? "showing early-warning signs"
+                    : stKey === "complete" ? "showing the milestone as achieved"
+                    : stKey === "green"   ? "on track"
                     : "in an unsettled state";
-    const lead = "Project " + project.id + " is " + stateWord + ".";
 
-    const concernLine = concerns.length
-      ? "The most pressing concerns are that " + concerns.slice(0, 2).join(" and ") + "."
-      : "No single concern dominates the signal package.";
+    // Section 1 — Overall Status
+    const overall = "Project " + project.id + " is " + stateWord + ". " + (concerns.length
+      ? "The most pressing concern is that " + concerns[0] + "."
+      : "No single concern dominates the signal package.");
 
-    // Action picks its branch from the CONCERNS as well as the state, so it
-    // can never read "Routine monitoring" while concerns are listed.
-    let action;
-    const hasCritical = concerns.some((c) => c.indexOf("over budget") >= 0 || c.indexOf("schedule is behind") >= 0 || c.indexOf("sustained drift") >= 0 || c.indexOf("high") >= 0);
-    if (state === "Red-review" || state === "Red" || (hasCritical && concerns.length >= 2)) {
-      action = "The recommendation is for " + authority + " to convene a recovery review within 48 hours.";
-    } else if (state === "Amber" || hasCritical) {
-      action = "The recommendation is for " + authority + " to open a weekly review loop and tighten the recovery plan.";
-    } else if (state === "Yellow" || concerns.length === 1) {
-      action = "The recommendation is for the project manager to schedule a weekly check-in and investigate the early-warning variance before the next cycle.";
-    } else if (state === "Complete") {
-      action = "The recommendation is to begin closeout documentation.";
+    // Section 2 — Category Analysis, from the stored category snapshot.
+    const snap = briefSnapshot(project);
+    const catLines = [];
+    if (snap && snap.categories) {
+      Object.keys(snap.categories).forEach((k) => {
+        const c = snap.categories[k];
+        if (!c || c.parked || !c.status) return;
+        const label = BRIEF_CAT_LABEL[c.num] || ((c.num ? c.num + " " : "") + (c.name || ""));
+        const cs = String(c.status).toLowerCase().replace("-review", "");
+        const phrase = cs === "red" ? "the models flag critical concern in this area"
+                     : cs === "amber" ? "the models show meaningful risk that warrants attention"
+                     : cs === "yellow" ? "early-warning signs are present"
+                     : cs === "complete" ? "this area reads as complete"
+                     : cs === "green" ? "the models show this area on track"
+                     : "the signal is mixed";
+        catLines.push(label + ": " + phrase + ".");
+      });
+    }
+    const categoryBlock = catLines.length ? catLines.join("\n") : "No category has computed data yet.";
+
+    // Section 3 — Conclusion
+    const conf = snap && snap.summary && snap.summary.evidence_agreement;
+    const conclusion = conf && conf.methods_checked
+      ? (conf.methods_agreeing + " of " + conf.methods_checked + " evidence methods agree, indicating " +
+         String(conf.confidence || "moderate").toLowerCase() + " confidence in this assessment.")
+      : (conflict
+          ? "The evidence methods classify this as " + conflict.toLowerCase() + ", and broadly converge on the assessment."
+          : "The evidence methods broadly agree on this assessment.");
+
+    // Section 4 — Recommendations. 48-hour / recovery language ONLY for Red.
+    let recs;
+    if (stKey === "red") {
+      recs = [
+        authority + " to convene a recovery review within 48 hours",
+        "Controls lead to validate the cost and schedule baseline against the latest pay application this week",
+        "PM to brief the program director on the recovery plan before the next reporting cycle"
+      ];
+    } else if (stKey === "amber") {
+      recs = [
+        "PM to review the flagged cost/schedule trend with the controls lead before the next reporting cycle closes",
+        "Controls lead to verify EV figures against the latest pay application",
+        concerns.some((c) => c.indexOf("document") >= 0)
+          ? "PM to follow up the elevated document-risk signals with the project team this cycle"
+          : "Document risk signals are clean — no contractor action required"
+      ];
+    } else if (stKey === "yellow") {
+      recs = [
+        "PM to schedule a weekly check-in and investigate the early-warning variance before the next cycle",
+        "Controls lead to confirm the latest EV/AC inputs are current"
+      ];
+    } else if (stKey === "complete") {
+      recs = [
+        "PM to begin closeout documentation",
+        "Controls lead to reconcile the final cost and schedule figures"
+      ];
     } else {
-      action = "Routine monthly monitoring is appropriate this cycle.";
+      recs = [
+        "PM to maintain routine monthly monitoring this cycle",
+        "No escalation required — signals are within normal ranges"
+      ];
     }
 
-    const conflictLine = conflict
-      ? "The evidence methods classify this as " + conflict.toLowerCase() + "."
-      : "The evidence methods broadly agree on the assessment.";
-
-    return [lead, concernLine, action, conflictLine].join(" ");
+    return [
+      "### Overall Status", overall,
+      "### Category Analysis", categoryBlock,
+      "### Conclusion", conclusion,
+      "### Recommendations", recs.map((r) => "- " + r).join("\n")
+    ].join("\n");
   }
 
   function briefAccentClass(project) {
@@ -926,7 +1056,7 @@
     if (state === "loading") {
       return `<div class="eb-body eb-loading" aria-live="polite">
         <span class="eb-shimmer"></span>
-        <span class="eb-status">Analysing 19 signal modules…</span>
+        <span class="eb-status">Analysing signals across 9 categories…</span>
       </div>`;
     }
     if (state === "skipped") {
@@ -935,7 +1065,14 @@
     if (state === "error") {
       return `<div class="eb-body eb-error" role="alert">Brief unavailable: ${esc(errMsg || "unknown error")}</div>`;
     }
-    return `<div class="eb-body">${esc(brief && brief.text ? brief.text : "")}</div>`;
+    // Ready: render the structured 4 sections when the brief follows the format,
+    // otherwise fall back to the brief text as a single paragraph.
+    const text = (brief && brief.text) ? brief.text : "";
+    const parsed = parseBrief(text);
+    if (parsed && (parsed.overall || parsed.categories.length || parsed.conclusion || parsed.recommendations.length)) {
+      return briefSectionsHtml(parsed);
+    }
+    return `<div class="eb-body">${esc(text)}</div>`;
   }
 
   function executiveBriefHtml(project) {
@@ -953,7 +1090,7 @@
       <div class="eb-head">
         <div>
           <p class="eyebrow eb-eyebrow">Executive brief</p>
-          <p class="kn-sub eb-sub">Generated from 19-module signal analysis</p>
+          <p class="kn-sub eb-sub">Structured analysis across 9 signal categories</p>
         </div>
         <button type="button" class="btn small eb-regen" data-eb-regen="${esc(projectId)}" aria-label="Regenerate brief">Regenerate ↺</button>
       </div>
@@ -1006,7 +1143,8 @@
       // 15s timeout — if the chat hangs the user gets an actionable error +
       // a working Regenerate button instead of a spinning shimmer forever.
       const TIMEOUT_MS = 15000;
-      const chatP = LinStore.chat(prompt, project.id);
+      // 1200 tokens to fit the longer 4-section structured brief.
+      const chatP = LinStore.chat(prompt, project.id, { max_tokens: 1200 });
       const timeoutP = new Promise((_, reject) =>
         setTimeout(() => reject(new Error("chat timed out after 15s")), TIMEOUT_MS));
       const answer = await Promise.race([chatP, timeoutP]);
