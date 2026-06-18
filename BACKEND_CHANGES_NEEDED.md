@@ -616,3 +616,31 @@ built):
 - Returns the 5 Cat 8 module results.
 - Requires the `portfolio` array to contain **at least 2** projects with signal
   data (the frontend short-circuits below that and never calls the endpoint).
+
+---
+
+## Fix 12 — `chat` action must honour `max_tokens` (longer executive brief)
+
+The executive brief was restructured into a longer **4-section** format (Overall
+Status · Category Analysis · Conclusion · Recommendations). The frontend now
+sends a `max_tokens` hint on the brief's chat call:
+
+```json
+{ "action": "chat", "question": "…structured brief prompt…", "id": "06", "max_tokens": 1200 }
+```
+
+**Change in `Code.gs`:** in the `chat` action handler, read `max_tokens` from the
+request body and pass it through to the OpenAI/Groq call, clamped to a sane range,
+defaulting to the current value when absent:
+
+```javascript
+// inside the chat action handler, before the model call
+var maxTokens = Number(body.max_tokens) || 400;
+maxTokens = Math.max(200, Math.min(2000, maxTokens));
+// …pass maxTokens as the max_tokens / max_completion_tokens parameter…
+```
+
+Without this, the model truncates the brief mid-Recommendations. (The repo's
+reference `backend/main.py` `/chat` already does this clamp — mirror it in
+`Code.gs`, which is the production backend.) Other `chat` callers omit
+`max_tokens` and keep the 400 default, so nothing else changes.

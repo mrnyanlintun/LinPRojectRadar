@@ -234,9 +234,12 @@
      chat: explanatory assistant answer; analyze: document risk summary +
      optional spec-comparison verdict. Both return the backend payload; callers
      fall back gracefully on error. */
-  async function chat(question, id) {
+  async function chat(question, id, opts) {
     const body = { action: "chat", question };
     if (id) body.id = id;
+    // Optional generation controls (e.g. the executive brief asks for more
+    // tokens to fit its 4-section format). Backend honours max_tokens.
+    if (opts && opts.max_tokens) body.max_tokens = opts.max_tokens;
     const j = await apiPost(body);
     return j.answer;
   }
