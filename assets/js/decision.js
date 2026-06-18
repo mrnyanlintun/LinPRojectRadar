@@ -104,30 +104,18 @@ function deriveHealthState(project) {
   const s = signalStatuses(project);
   const reds = countStatus(s, "red");
   const ambers = countStatus(s, "amber");
-  const yellows = countStatus(s, "yellow") + countStatus(s, "light-amber");
-  const completes = countStatus(s, "complete") + countStatus(s, "blue");
-  const greens = countStatus(s, "green");
-  const total = Object.keys(s).length;
 
-  // Red dominates — two or more red signals, or breached trend rule plus red forecast.
+  if (reds === 0 && ambers === 0) return "Green";
   if (reds >= 2 || (project.signals.cusum.breached && s.mc === "red"))
     return "Red-review";
-  if (reds >= 1) return "Red-review";
-  if (ambers >= 1) return "Amber";
-  if (yellows >= 1) return "Yellow";
-  // Complete — every class either Complete or Green, and at least one Complete.
-  if (completes >= 1 && (completes + greens) === total) return "Complete";
-  return "Green";
+  return "Amber";
 }
 
-/* Map the legacy 3-state deriveHealthState return ("Green" | "Amber" |
-   "Red-review") onto the 5-status display label set used by the UI. The
-   conservative-dominance rule above is the source of truth; this is just a
-   relabelling helper for renderers that want a 5-state badge. */
+/* Display-label helper. Returns deriveHealthState as-is — kept as a stable
+   hook for the UI so renderers can adopt new labels later without breaking
+   the core 3-state engine. */
 function deriveHealthStateLabel(project) {
-  const raw = deriveHealthState(project);
-  if (raw === "Red-review") return "Red";
-  return raw;
+  return deriveHealthState(project);
 }
 
 /* ------------------------------------------------------------
@@ -151,18 +139,10 @@ function deriveDecision(project) {
 
   let action, authority, documentation;
 
-  if (healthState === "Complete") {
-    action = "Closeout documentation";
-    authority = "Project manager / Controls lead";
-    documentation = "Closeout sign-off, commissioning record, archive";
-  } else if (healthState === "Green") {
+  if (healthState === "Green") {
     action = "Routine monitoring";
     authority = "Project manager / Controls lead";
     documentation = "Monthly signal log entry";
-  } else if (healthState === "Yellow") {
-    action = "PM weekly check-in — early-warning band, investigate variance before next cycle";
-    authority = "Project manager";
-    documentation = "Weekly check-in note, follow-up date";
   } else if (healthState === "Red-review") {
     action = fairnessGateRequired
       ? "Request contractor explanation and recovery-plan review — fairness gate required before any formal action"
