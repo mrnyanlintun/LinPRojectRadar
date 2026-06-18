@@ -688,3 +688,20 @@ Other useful real values, when present in their source documents:
 `activitiesConstrained` (Look-Ahead Schedule), `qualityAuditScore`
 (Quality Audit), `oshaIncidentRate` (Safety Report), `environmentalComplianceRate`
 (Environmental Report), `subcontractorComplianceScore` (Subcontractor report).
+
+---
+
+## Fix 14 — Auth (Stage 1 Google sign-in) — no backend change for the demo
+
+Stage 1 adds **Google OAuth sign-in** on the frontend (`assets/js/auth.js`,
+`config.js` `LIN_GOOGLE_CLIENT_ID` / `LIN_AUTHORIZED_EMAIL`). The Google ID-token
+JWT is decoded **client-side** for the `email` claim and gated against the single
+authorized address; a short session (8h) is kept in `localStorage`. The Apps
+Script (`Code.gs`) backend needs **no change** for the demo.
+
+**Production (Stage 2):** the FastAPI backend must **verify the Google JWT
+signature server-side** on every request — validate the token against Google's
+public keys (`aud` = `LIN_GOOGLE_CLIENT_ID`, `iss` = `accounts.google.com`,
+unexpired) and authorize the `email` claim — rather than trusting the
+client-side decode. Send the credential as an `Authorization: Bearer <id_token>`
+header (or in the POST body) and reject unauthenticated/unauthorized calls.
