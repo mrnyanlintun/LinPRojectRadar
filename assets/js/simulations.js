@@ -1248,13 +1248,17 @@
     var status = burnStress <= 1.0 ? 'Green' :
                  burnStress <= 1.3 ? 'Yellow' :
                  burnStress <= 1.6 ? 'Amber' : 'Red';
+    var isDerived = si.sources && (
+      (si.sources['originalContingency'] && si.sources['originalContingency'].docType === 'derived') ||
+      (si.sources['remainingContingency'] && si.sources['remainingContingency'].docType === 'derived'));
     return {
       method_class: 'Contingency_Burn_Rate', status_color: status,
       burn_rate_pct: Math.round(burnRate * 100),
       remaining_pct: Math.round((1 - burnRate) * 100),
       burn_stress: burnStress,
       evidence_metric: 'Contingency: ' + Math.round(burnRate * 100) + '% burned at ' +
-        Math.round(si.actualPctComplete) + '% complete'
+        Math.round(si.actualPctComplete) + '% complete' +
+        (isDerived ? ' — estimated, upload Pay Application contingency detail for precise figures' : '')
     };
   }
 
@@ -1296,17 +1300,28 @@
   /* ---------- Cat 4 — Doc / Risk extensions ---------- */
 
   function runRFIVelocity(si) {
-    if (!checkInputs(si, ['rfiCount','rfiPeriodDays'])) return insufficientData('RFI_Velocity');
-    var rfiPerWeek = (si.rfiCount / si.rfiPeriodDays) * 7;
+    var count = si.rfiCount != null ? si.rfiCount : (si.rfiNumber != null ? si.rfiNumber : null);
+    var days = si.rfiPeriodDays != null ? si.rfiPeriodDays : 30;
+    if (count == null) return insufficientData('RFI_Velocity');
+    var isDerived = si.sources && si.sources['rfiPeriodDays'] &&
+                    si.sources['rfiPeriodDays'].docType === 'derived';
+    var rfiPerWeek = days > 0 ? (count / days) * 7 : 0;
     rfiPerWeek = Math.round(rfiPerWeek * 10) / 10;
     var status = rfiPerWeek <= 2 ? 'Green' :
                  rfiPerWeek <= 4 ? 'Yellow' :
                  rfiPerWeek <= 8 ? 'Amber' : 'Red';
+    var responseNote = '';
+    if (si.rfiResponseTimeDays != null) {
+      responseNote = ', avg response ' + si.rfiResponseTimeDays + ' days' +
+        (si.rfiResponseTimeDays > 14 ? ' — slow response indicates dispute risk' : '');
+    }
     return {
       method_class: 'RFI_Velocity', status_color: status,
-      rfi_per_week: rfiPerWeek, total_rfis: si.rfiCount,
-      evidence_metric: si.rfiCount + ' RFIs over ' + si.rfiPeriodDays +
-        ' days (' + rfiPerWeek + '/week)'
+      rfi_per_week: rfiPerWeek, total_rfis: count, period_days: days,
+      response_time_days: si.rfiResponseTimeDays != null ? si.rfiResponseTimeDays : null,
+      evidence_metric: count + ' RFIs over ' + days + ' days (' + rfiPerWeek + '/week)' +
+        responseNote +
+        (isDerived ? ' — assumed 30-day period, upload RFI log for precise velocity' : '')
     };
   }
 
@@ -1320,12 +1335,15 @@
     var status = rejectionRate <= 0.05 ? 'Green' :
                  rejectionRate <= 0.15 ? 'Yellow' :
                  rejectionRate <= 0.25 ? 'Amber' : 'Red';
+    var isDerived = si.sources && si.sources['submittalsTotal'] &&
+                    si.sources['submittalsTotal'].docType === 'derived';
     return {
       method_class: 'Submittal_Rejection', status_color: status,
       rejection_rate: rejectionRate,
       rejected: si.submittalsRejected, total: si.submittalsTotal,
       evidence_metric: si.submittalsRejected + ' of ' + si.submittalsTotal +
-        ' submittals rejected (' + Math.round(rejectionRate * 100) + '%)'
+        ' submittals rejected (' + Math.round(rejectionRate * 100) + '%)' +
+        (isDerived ? ' — estimated from doc risk, upload Submittal Register for precise figures' : '')
     };
   }
 
@@ -1338,11 +1356,15 @@
     var status = (scopeGrowth <= 5 && coRate <= 3) ? 'Green' :
                  (scopeGrowth <= 10 && coRate <= 6) ? 'Yellow' :
                  (scopeGrowth <= 20 && coRate <= 10) ? 'Amber' : 'Red';
+    var isDerived = si.sources && (
+      (si.sources['changeOrderCount'] && si.sources['changeOrderCount'].docType === 'derived') ||
+      (si.sources['baselineContractSum'] && si.sources['baselineContractSum'].docType === 'derived'));
     return {
       method_class: 'CO_Frequency', status_color: status,
       co_count: coRate, scope_growth_pct: Math.round(scopeGrowth * 10) / 10,
       evidence_metric: coRate + ' change orders — scope growth: +' +
-        Math.round(scopeGrowth * 10) / 10 + '%'
+        Math.round(scopeGrowth * 10) / 10 + '%' +
+        (isDerived ? ' — estimated, upload Change Order log for precise figures' : '')
     };
   }
 
@@ -1969,14 +1991,237 @@
     var riskLevel = si.changeOrderCount >= 10 || scopeGrowthPct >= 20 ? 'Red' :
                     si.changeOrderCount >= 6 || scopeGrowthPct >= 10 ? 'Amber' :
                     si.changeOrderCount >= 3 || scopeGrowthPct >= 5 ? 'Yellow' : 'Green';
+    var isDerived = si.sources && (
+      (si.sources['changeOrderCount'] && si.sources['changeOrderCount'].docType === 'derived') ||
+      (si.sources['baselineContractSum'] && si.sources['baselineContractSum'].docType === 'derived'));
     return {
       method_class: 'Contract_Mod_Frequency', status_color: riskLevel,
       co_count: si.changeOrderCount,
       scope_growth_pct: Math.round(scopeGrowthPct * 10) / 10,
       evidence_metric: si.changeOrderCount + ' contract modifications — ' +
         Math.round(scopeGrowthPct*10)/10 + '% scope growth — ' +
-        (riskLevel === 'Red' ? 'contracting officer review required' :
-         riskLevel === 'Amber' ? 'elevated modification frequency' : 'within normal range')
+        (riskLevel === 'Red' ? 'contracting officer review merits consideration' :
+         riskLevel === 'Amber' ? 'elevated modification frequency' : 'within normal range') +
+        (isDerived ? ' — estimated, upload Change Order log for precise figures' : '')
+    };
+  }
+
+  /* ---------- modules fed by derived fields (Code.gs v10.18) ---------- */
+
+  // Cat 2.8 — Look-Ahead Schedule Health
+  function runLookaheadHealth(si) {
+    if (!checkInputs(si, ['activitiesPlanned','activitiesConstrained']))
+      return insufficientData('Lookahead_Health');
+    var constraintRate = si.activitiesPlanned > 0 ?
+      si.activitiesConstrained / si.activitiesPlanned : 0;
+    var isDerived = si.sources && si.sources['activitiesPlanned'] &&
+                    si.sources['activitiesPlanned'].docType === 'derived';
+    var status = constraintRate <= 0.10 ? 'Green' :
+                 constraintRate <= 0.25 ? 'Yellow' :
+                 constraintRate <= 0.40 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Lookahead_Health', status_color: status,
+      constraint_rate: Math.round(constraintRate * 100),
+      constrained: si.activitiesConstrained, planned: si.activitiesPlanned,
+      evidence_metric: si.activitiesConstrained + ' of ' + si.activitiesPlanned +
+        ' planned activities constrained (' + Math.round(constraintRate * 100) + '%)' +
+        (isDerived ? ' — estimated, upload Look-Ahead Schedule for precise figures' : '')
+    };
+  }
+
+  // Cat 4.5 — Weather Day Impact
+  function runWeatherImpact(si) {
+    if (!checkInputs(si, ['weatherDaysLost'])) return insufficientData('Weather_Impact');
+    var isDerived = si.sources && si.sources['weatherDaysLost'] &&
+                    si.sources['weatherDaysLost'].docType === 'derived';
+    var float = si.floatRemaining != null ? si.floatRemaining :
+                (si.totalFloat != null ? (si.totalFloat - (si.consumedFloat || 0)) : null);
+    var weatherRatio = (float != null && float > 0) ? si.weatherDaysLost / float :
+                       (si.weatherDaysLost > 0 ? 1.0 : 0);
+    var status = si.weatherDaysLost === 0 ? 'Green' :
+                 weatherRatio <= 0.20 ? 'Yellow' :
+                 weatherRatio <= 0.50 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Weather_Impact', status_color: status,
+      weather_days_lost: si.weatherDaysLost, float_remaining: float,
+      weather_ratio: Math.round(weatherRatio * 100),
+      evidence_metric: si.weatherDaysLost + ' weather days lost' +
+        (float != null ? ', ' + Math.round(weatherRatio * 100) + '% of available float consumed' : '') +
+        (isDerived ? ' — estimated, upload Field Report for precise figures' : '')
+    };
+  }
+
+  // Cat 9.6 — Quality Compliance Index
+  function runQualityCompliance(si) {
+    if (!checkInputs(si, ['qualityDeficienciesNoted']))
+      return insufficientData('Quality_Compliance');
+    var isDerived = si.sources && si.sources['qualityDeficienciesNoted'] &&
+                    si.sources['qualityDeficienciesNoted'].docType === 'derived';
+    var inspected = si.itemsInspected != null ? si.itemsInspected : 20;
+    var failed = si.itemsFailed != null ? si.itemsFailed : si.qualityDeficienciesNoted;
+    var passRate = inspected > 0 ? (inspected - failed) / inspected : 1;
+    var auditScore = si.qualityAuditScore != null ? si.qualityAuditScore : (passRate * 100);
+    var status = auditScore >= 85 ? 'Green' :
+                 auditScore >= 70 ? 'Yellow' :
+                 auditScore >= 55 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Quality_Compliance', status_color: status,
+      quality_score: Math.round(auditScore), pass_rate: Math.round(passRate * 100),
+      deficiencies: si.qualityDeficienciesNoted,
+      evidence_metric: 'Quality compliance: ' + Math.round(auditScore) + '/100 — ' +
+        si.qualityDeficienciesNoted + ' deficiencies noted' +
+        (isDerived ? ' — estimated from field observations, upload Quality Audit for precise score' : '')
+    };
+  }
+
+  // Cat 9.7 — Safety Performance Index
+  function runSafetyPerformance(si) {
+    if (!checkInputs(si, ['safetyIncidentsDiscussed']))
+      return insufficientData('Safety_Performance');
+    var isDerived = si.sources && si.sources['safetyIncidentsDiscussed'] &&
+                    si.sources['safetyIncidentsDiscussed'].docType === 'derived';
+    var incidentRate = si.oshaIncidentRate != null ? si.oshaIncidentRate :
+                       si.safetyIncidentsDiscussed * 10;
+    var industryBenchmark = 3.0;
+    var safetyIndex = incidentRate > 0 ? industryBenchmark / incidentRate : 1;
+    safetyIndex = Math.min(2, Math.round(safetyIndex * 100) / 100);
+    var status = incidentRate <= industryBenchmark ? 'Green' :
+                 incidentRate <= industryBenchmark * 2 ? 'Yellow' :
+                 incidentRate <= industryBenchmark * 5 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Safety_Performance', status_color: status,
+      incident_rate: Math.round(incidentRate * 10) / 10,
+      industry_benchmark: industryBenchmark, safety_index: safetyIndex,
+      incidents_discussed: si.safetyIncidentsDiscussed,
+      evidence_metric: 'Safety: ' + si.safetyIncidentsDiscussed + ' incidents in OAC records' +
+        (si.oshaIncidentRate != null ? ', OSHA rate ' + Math.round(si.oshaIncidentRate * 10) / 10 : '') +
+        (isDerived ? ' — estimated from meeting records, upload Safety Report for OSHA rate' : '')
+    };
+  }
+
+  // Cat 9.8 — Environmental Compliance Rate
+  function runEnvironmentalCompliance(si) {
+    if (!checkInputs(si, ['environmentalIssuesDiscussed']))
+      return insufficientData('Environmental_Compliance');
+    var isDerived = si.sources && si.sources['environmentalIssuesDiscussed'] &&
+                    si.sources['environmentalIssuesDiscussed'].docType === 'derived';
+    var complianceRate = si.environmentalComplianceRate != null ?
+      si.environmentalComplianceRate :
+      Math.max(50, 100 - (si.environmentalIssuesDiscussed * 5));
+    complianceRate = Math.min(100, Math.round(complianceRate * 10) / 10);
+    var status = complianceRate >= 95 ? 'Green' :
+                 complianceRate >= 85 ? 'Yellow' :
+                 complianceRate >= 70 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Environmental_Compliance', status_color: status,
+      compliance_rate: complianceRate, issues_discussed: si.environmentalIssuesDiscussed,
+      violations: si.environmentalViolations || 0,
+      evidence_metric: 'Environmental compliance: ' + complianceRate + '%' +
+        (si.environmentalViolations ? ', ' + si.environmentalViolations + ' violations recorded' : '') +
+        (isDerived ? ' — estimated from meeting records, upload Environmental Report for permit data' : '')
+    };
+  }
+
+  // Cat 4.8 — Subcontractor Performance (derived from OAC + NCR + RFI + doc risk)
+  function runSubcontractorPerformance(si) {
+    if (si.subcontractorComplianceScore == null &&
+        si.subcontractorIssuesDiscussed == null && si.docRiskScore == null)
+      return insufficientData('Subcontractor_Performance');
+    // Score is normally derived in signals.js before runAll; derive on demand
+    // as a safety net when that path didn't run.
+    if (si.subcontractorComplianceScore == null &&
+        typeof window !== 'undefined' && window.LinSignals && window.LinSignals.deriveExtendedFields) {
+      si = window.LinSignals.deriveExtendedFields(si);
+    }
+    var score = si.subcontractorComplianceScore;
+    if (score == null) return insufficientData('Subcontractor_Performance');
+    var isDerived = si.sources && si.sources['subcontractorComplianceScore'] &&
+                    si.sources['subcontractorComplianceScore'].docType === 'derived';
+    var scorePct = Math.round(score * 100);
+    var status = scorePct >= 85 ? 'Green' :
+                 scorePct >= 70 ? 'Yellow' :
+                 scorePct >= 55 ? 'Amber' : 'Red';
+    var signals = [];
+    if (si.subcontractorIssuesDiscussed > 0)
+      signals.push(si.subcontractorIssuesDiscussed + ' issues in OAC minutes');
+    if (si.outstandingActionItems > 0)
+      signals.push(si.outstandingActionItems + ' outstanding action items');
+    if (si.ncrOpen > 0) signals.push(si.ncrOpen + ' open NCRs');
+    if (si.docRiskScore > 0.30)
+      signals.push('elevated document risk (' + Math.round(si.docRiskScore * 100) + '%)');
+    return {
+      method_class: 'Subcontractor_Performance', status_color: status,
+      compliance_score: scorePct, signals_contributing: signals,
+      evidence_metric: 'Subcontractor compliance: ' + scorePct + '%' +
+        (signals.length ? ' — ' + signals.join(', ') : '') +
+        (isDerived ? ' — derived from meeting records and correspondence' :
+                     ' — from subcontractor performance report')
+    };
+  }
+
+  // Cat 3.5 — Material Cost Variance (derived material baseline vs current)
+  function runMaterialCostVariance(si) {
+    if (!checkInputs(si, ['materialCostBaseline','materialCostCurrent']))
+      return insufficientData('Material_Cost_Variance');
+    var pct = si.actualPctComplete != null ? si.actualPctComplete / 100 : null;
+    var expected = pct != null ? si.materialCostBaseline * pct : si.materialCostBaseline;
+    var variance = expected > 0 ? (si.materialCostCurrent - expected) / expected : 0;
+    variance = Math.round(variance * 1000) / 1000;
+    var isDerived = si.sources && si.sources['materialCostBaseline'] &&
+                    si.sources['materialCostBaseline'].docType === 'derived';
+    var status = Math.abs(variance) <= 0.05 ? 'Green' :
+                 Math.abs(variance) <= 0.12 ? 'Yellow' :
+                 Math.abs(variance) <= 0.20 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Material_Cost_Variance', status_color: status,
+      variance_pct: Math.round(variance * 100),
+      evidence_metric: 'Material cost variance: ' + (variance >= 0 ? '+' : '') +
+        Math.round(variance * 100) + '% vs expected at current progress' +
+        (isDerived ? ' — estimated (40% of BAC/AC), upload Cost Report for precise figures' : '')
+    };
+  }
+
+  // Cat 3.6 — Overhead Absorption Rate (derived indirect plan vs actual)
+  function runOverheadAbsorption(si) {
+    if (!checkInputs(si, ['indirectCostPlan','indirectCostActual']))
+      return insufficientData('Overhead_Absorption');
+    var pct = si.actualPctComplete != null ? si.actualPctComplete / 100 : null;
+    var planned = pct != null ? si.indirectCostPlan * pct : si.indirectCostPlan;
+    var absorption = planned > 0 ? si.indirectCostActual / planned : 1;
+    absorption = Math.round(absorption * 1000) / 1000;
+    var isDerived = si.sources && si.sources['indirectCostPlan'] &&
+                    si.sources['indirectCostPlan'].docType === 'derived';
+    var status = absorption <= 1.05 ? 'Green' :
+                 absorption <= 1.15 ? 'Yellow' :
+                 absorption <= 1.30 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Overhead_Absorption', status_color: status,
+      absorption_ratio: absorption,
+      evidence_metric: 'Overhead absorption: ' + Math.round(absorption * 100) +
+        '% of planned indirect cost at current progress' +
+        (isDerived ? ' — estimated (12% overhead), upload Cost Report for precise figures' : '')
+    };
+  }
+
+  // Cat 3.10 — Inflation Adjustment Index (material escalation proxy)
+  function runInflationAdjustment(si) {
+    if (!checkInputs(si, ['materialCostBaseline','materialCostCurrent']))
+      return insufficientData('Inflation_Adjustment');
+    var pct = si.actualPctComplete != null ? si.actualPctComplete / 100 : null;
+    var expected = pct != null ? si.materialCostBaseline * pct : si.materialCostBaseline;
+    var escalation = expected > 0 ? Math.max(0, (si.materialCostCurrent - expected) / expected) : 0;
+    escalation = Math.round(escalation * 1000) / 1000;
+    var isDerived = si.sources && si.sources['materialCostBaseline'] &&
+                    si.sources['materialCostBaseline'].docType === 'derived';
+    var status = escalation <= 0.04 ? 'Green' :
+                 escalation <= 0.08 ? 'Yellow' :
+                 escalation <= 0.15 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Inflation_Adjustment', status_color: status,
+      escalation_pct: Math.round(escalation * 100),
+      evidence_metric: 'Material escalation proxy: +' + Math.round(escalation * 100) +
+        '% above progress-adjusted baseline' +
+        (isDerived ? ' — estimated, upload Cost Report / price index for precise figures' : '')
     };
   }
 
@@ -2027,14 +2272,20 @@
       function () { return runSCurveDeviation(si); }, function () { return runScheduleRiskAnalysis(si); },
       function () { return runCriticalPathIndex(si); },
 
+      // Cat 2 extension (derived)
+      function () { return runLookaheadHealth(si); },
+
       // Cat 3 cost extensions
       function () { return runContingencyBurnRate(si); }, function () { return runCostRiskAnalysis(si); },
       function () { return runParametricCost(si); },
+      function () { return runMaterialCostVariance(si); }, function () { return runOverheadAbsorption(si); },
+      function () { return runInflationAdjustment(si); },
 
       // Cat 4 doc / risk extensions
       function () { return runRFIVelocity(si); }, function () { return runSubmittalRejection(si); },
       function () { return runCOFrequency(si); }, function () { return runDisputeEscalation(si); },
       function () { return runSpecConflictDensity(si); },
+      function () { return runWeatherImpact(si); }, function () { return runSubcontractorPerformance(si); },
 
       // Cat 5 dynamics extensions
       function () { return runSensitivityAnalysis(si); }, function () { return runTornadoDiagram(si); },
@@ -2055,7 +2306,9 @@
 
       // Cat 9 governance extensions
       function () { return runFARThreshold(si); }, function () { return runOMBA11Check(si); },
-      function () { return runEVMReportingThreshold(si); }, function () { return runContractModFrequency(si); }
+      function () { return runEVMReportingThreshold(si); }, function () { return runContractModFrequency(si); },
+      function () { return runQualityCompliance(si); }, function () { return runSafetyPerformance(si); },
+      function () { return runEnvironmentalCompliance(si); }
     ];
 
     var results = [];
@@ -2092,6 +2345,10 @@
     runMaximumEntropy, runPossibilityTheory, runSphericalFuzzy,
     runFermateanFuzzy, runMARCOS, runCRITIC_TOPSIS, runHypersoftSets,
     runFARThreshold, runOMBA11Check, runEVMReportingThreshold, runContractModFrequency,
+    // Derived-field modules (Code.gs v10.18)
+    runLookaheadHealth, runWeatherImpact, runQualityCompliance, runSafetyPerformance,
+    runEnvironmentalCompliance, runSubcontractorPerformance,
+    runMaterialCostVariance, runOverheadAbsorption, runInflationAdjustment,
     sampleTriangular
   };
 })();

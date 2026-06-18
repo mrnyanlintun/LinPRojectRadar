@@ -771,6 +771,21 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .eb-foot { margin-top: 14px; font-size: 11px; color: var(--faint); font-family: var(--font-mono); letter-spacing: .04em; }
 .eb-regen { white-space: nowrap; }
 
+/* ---------- derived-estimate [est.] badge ---------- */
+.badge-est {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--faint);
+  background: rgba(100,116,139,0.2);
+  border: 1px solid rgba(100,116,139,0.3);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  vertical-align: middle;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 /* ---------- structured 4-section executive brief ---------- */
 .eb-body.eb-structured { white-space: normal; }
 .eb-section { margin-top: 16px; }

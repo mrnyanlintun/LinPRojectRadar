@@ -644,3 +644,47 @@ Without this, the model truncates the brief mid-Recommendations. (The repo's
 reference `backend/main.py` `/chat` already does this clamp — mirror it in
 `Code.gs`, which is the production backend.) Other `chat` callers omit
 `max_tokens` and keep the 400 default, so nothing else changes.
+
+---
+
+## Fix 13 — Derived signalInputs + new extraction fields (Code.gs v10.18)
+
+The frontend now **derives** ~15 extended signalInputs from the figures we
+already extract (BAC, AC, CPI, SPI, doc-risk, RFI, %-complete) using
+industry-standard ratios — see `signals.js` `deriveExtendedFields()`. Each
+derived value is tagged in `si.sources[key] = { docType: 'derived', … }` and the
+UI shows an `[est.]` badge; the modules note "estimated" in their evidence
+metric. This activates ~14 previously-inactive modules (Cat 2.8, 3.5, 3.6, 3.10,
+4.5, 4.8, 9.6, 9.7, 9.8 plus richer 3.3 / 4.2 / 4.3 / 4.6 / 9.5) from the
+existing document set, with no backend change required for the estimates.
+
+To **replace estimates with exact figures**, `Code.gs` v10.18 should extract the
+real values where the documents contain them. In particular, **OAC minutes**
+should additionally extract:
+
+```
+case 'oac_minutes': extract additionally:
+  - subcontractor_issues_discussed   (count of subcontractor issues raised)
+  - outstanding_action_items         (count of open action items)
+  - subcontractor_disputes           (count of dispute items)
+  - safety_incidents_discussed
+  - environmental_issues_discussed
+  - quality_issues_discussed
+```
+
+Merge into `signalInputs` (camelCase) as: `subcontractorIssuesDiscussed`,
+`outstandingActionItems`, `subcontractorDisputes`, `safetyIncidentsDiscussed`,
+`environmentalIssuesDiscussed`, `qualityDeficienciesNoted`. These feed **Cat 4.8**
+(subcontractor), **9.7** (safety), and **9.8** (environmental) without requiring
+dedicated reports. When a real value is supplied the frontend uses it instead of
+the derived estimate (the derivation only fires when the field is absent), and
+the `[est.]` badge disappears for that field.
+
+Other useful real values, when present in their source documents:
+`materialCostBaseline` / `materialCostCurrent` / `indirectCostPlan` /
+`indirectCostActual` (Cost Report), `originalContingency` / `remainingContingency`
+(Pay Application), `rfiNumber` / `rfiResponseTimeDays` (RFI log),
+`weatherDaysLost` / `floatRemaining` (Field Report), `activitiesPlanned` /
+`activitiesConstrained` (Look-Ahead Schedule), `qualityAuditScore`
+(Quality Audit), `oshaIncidentRate` (Safety Report), `environmentalComplianceRate`
+(Environmental Report), `subcontractorComplianceScore` (Subcontractor report).
