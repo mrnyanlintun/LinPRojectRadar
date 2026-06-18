@@ -31,8 +31,13 @@ const DATA_BOUNDARY =
    1. Signal status extraction
    ------------------------------------------------------------ */
 function signalStatuses(project) {
-  const s = project.signals;
-  return { evm: s.evm.status, mc: s.mc.status, cusum: s.cusum.status, doc: s.doc.status };
+  const s = (project && project.signals) || {};
+  return {
+    evm:   s.evm   ? s.evm.status   : null,
+    mc:    s.mc    ? s.mc.status    : null,
+    cusum: s.cusum ? s.cusum.status : null,
+    doc:   s.doc   ? s.doc.status   : null
+  };
 }
 
 function countStatus(statuses, level) {
@@ -104,10 +109,10 @@ function deriveHealthState(project) {
   const s = signalStatuses(project);
   const reds = countStatus(s, "red");
   const ambers = countStatus(s, "amber");
+  const cusumBreached = !!(project && project.signals && project.signals.cusum && project.signals.cusum.breached);
 
   if (reds === 0 && ambers === 0) return "Green";
-  if (reds >= 2 || (project.signals.cusum.breached && s.mc === "red"))
-    return "Red-review";
+  if (reds >= 2 || (cusumBreached && s.mc === "red")) return "Red-review";
   return "Amber";
 }
 
