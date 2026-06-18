@@ -529,7 +529,7 @@
       num: "19",
       title: "ABM — Agent-Based Governance Layer",
       method: "deriveDecision / deriveHealthState / classifyConflict (decision.js — called live, not duplicated)",
-      explain: "The governance layer is modeled as agents: each authority role (PM, controls lead, program director) holds explicit decision rules over the signal package. Those rules ARE the pure functions in decision.js — this module surfaces them. The mapping (health state × conflict × fairness sensitivity) → recommended action, authority, and documentation is the same logic that drives the decision card on the radar page.",
+      explain: "The governance layer is modeled as agents: each authority role (PM, controls lead, program director) holds explicit decision rules over the signal package. Those rules ARE the pure functions in decision.js, this module surfaces them. The mapping (health state × conflict × fairness sensitivity) → recommended action, authority, and documentation is the same logic that drives the decision card on the radar page. Authority matrix: Green → PM/Controls (monthly). Amber → PM + Controls Lead (weekly). Red-review → Program Director / PMO Lead (48 hours). Critical → Contracting Officer (immediate). Authority level reflects delegated authority limits and OMB Circular A-11 / FAR Part 34 reporting requirements.",
       rule: `Rule fired: red-review requires ≥2 red signals or CUSUM breach + red forecast; fairness-sensitive red-reviews additionally require the contractor fairness gate (currently: ${gates.length ? gates.map(({ p }) => p.id).join(", ") : "none"}).`,
       charts:
         `<p class="mod-chart-label">Derived state distribution — portfolio overview</p>` +
