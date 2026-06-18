@@ -1995,55 +1995,76 @@
     var si = (input && input.signalInputs) ? input.signalInputs : (input || {});
     var es = existingSignals || {};
 
-    var results = [
+    // Each model is a thunk so a single runner throwing on a malformed input
+    // can't abort the whole batch (which previously left simulationSignals empty
+    // and every non-core module reading "No data"). One failure is skipped; the
+    // rest still compute.
+    var runners = [
       // Original 13 client-side models (always present when signals exist).
-      runPERT(si),                  // Cat 2.1
-      runLOB(si),                   // Cat 2.2
-      runCCPM(si),                  // Cat 2.3
-      runRCF(si),                   // Cat 3.1
-      runDSM(si),                   // Cat 3.2 (+ aliased to Cat 5.1)
-      runRoughSets(es),             // Cat 7.2
-      runNeutrosophic(es),          // Cat 7.3
-      runIntervalFuzzy(es),         // Cat 7.4
-      runZNumbers(es),              // Cat 7.5
-      runPLTS(es),                  // Cat 7.6
-      runPlithogenic(es),           // Cat 7.7
-      runBRB(es),                   // Cat 7.8
-      runQuantumProbability(es),    // Cat 7.9
+      function () { return runPERT(si); },                  // Cat 2.1
+      function () { return runLOB(si); },                   // Cat 2.2
+      function () { return runCCPM(si); },                  // Cat 2.3
+      function () { return runRCF(si); },                   // Cat 3.1
+      function () { return runDSM(si); },                   // Cat 3.2 (+ aliased to Cat 5.1)
+      function () { return runRoughSets(es); },             // Cat 7.2
+      function () { return runNeutrosophic(es); },          // Cat 7.3
+      function () { return runIntervalFuzzy(es); },         // Cat 7.4
+      function () { return runZNumbers(es); },              // Cat 7.5
+      function () { return runPLTS(es); },                  // Cat 7.6
+      function () { return runPlithogenic(es); },           // Cat 7.7
+      function () { return runBRB(es); },                   // Cat 7.8
+      function () { return runQuantumProbability(es); },    // Cat 7.9
 
       // Cat 1 EVM extensions
-      runBayesianEAC(si), runKalmanFilter(si), runARIMAForecast(si),
-      runEarnedSchedule(si), runTCPI(si), runVAC(si),
-      runBudgetExecutionRate(si), runRegressionToMean(si), runICERatio(si),
+      function () { return runBayesianEAC(si); }, function () { return runKalmanFilter(si); },
+      function () { return runARIMAForecast(si); }, function () { return runEarnedSchedule(si); },
+      function () { return runTCPI(si); }, function () { return runVAC(si); },
+      function () { return runBudgetExecutionRate(si); }, function () { return runRegressionToMean(si); },
+      function () { return runICERatio(si); },
 
       // Cat 2 schedule extensions
-      runScheduleCompression(si), runFloatConsumption(si), runSCurveDeviation(si),
-      runScheduleRiskAnalysis(si), runCriticalPathIndex(si),
+      function () { return runScheduleCompression(si); }, function () { return runFloatConsumption(si); },
+      function () { return runSCurveDeviation(si); }, function () { return runScheduleRiskAnalysis(si); },
+      function () { return runCriticalPathIndex(si); },
 
       // Cat 3 cost extensions
-      runContingencyBurnRate(si), runCostRiskAnalysis(si), runParametricCost(si),
+      function () { return runContingencyBurnRate(si); }, function () { return runCostRiskAnalysis(si); },
+      function () { return runParametricCost(si); },
 
       // Cat 4 doc / risk extensions
-      runRFIVelocity(si), runSubmittalRejection(si), runCOFrequency(si),
-      runDisputeEscalation(si), runSpecConflictDensity(si),
+      function () { return runRFIVelocity(si); }, function () { return runSubmittalRejection(si); },
+      function () { return runCOFrequency(si); }, function () { return runDisputeEscalation(si); },
+      function () { return runSpecConflictDensity(si); },
 
       // Cat 5 dynamics extensions
-      runSensitivityAnalysis(si), runTornadoDiagram(si), runScenarioModeling(si),
-      runReworkFeedback(si), runDiscreteEventSim(si),
+      function () { return runSensitivityAnalysis(si); }, function () { return runTornadoDiagram(si); },
+      function () { return runScenarioModeling(si); }, function () { return runReworkFeedback(si); },
+      function () { return runDiscreteEventSim(si); },
 
       // Cat 6 synthesis extensions (consume the assembled project)
-      runWeightedVoting(project), runMajorityRules(project), runWorstNofM(project),
+      function () { return runWeightedVoting(project); }, function () { return runMajorityRules(project); },
+      function () { return runWorstNofM(project); },
 
       // Cat 7 evidence extensions
-      runPythagoreanFuzzy(si), runPictureFuzzy(si), runHesitantFuzzy(si),
-      runType2Fuzzy(si), runMaximumEntropy(si), runPossibilityTheory(si),
-      runSphericalFuzzy(si), runFermateanFuzzy(si), runMARCOS(si),
-      runCRITIC_TOPSIS(si), runHypersoftSets(si),
+      function () { return runPythagoreanFuzzy(si); }, function () { return runPictureFuzzy(si); },
+      function () { return runHesitantFuzzy(si); }, function () { return runType2Fuzzy(si); },
+      function () { return runMaximumEntropy(si); }, function () { return runPossibilityTheory(si); },
+      function () { return runSphericalFuzzy(si); }, function () { return runFermateanFuzzy(si); },
+      function () { return runMARCOS(si); }, function () { return runCRITIC_TOPSIS(si); },
+      function () { return runHypersoftSets(si); },
 
       // Cat 9 governance extensions
-      runFARThreshold(si), runOMBA11Check(si), runEVMReportingThreshold(si),
-      runContractModFrequency(si)
+      function () { return runFARThreshold(si); }, function () { return runOMBA11Check(si); },
+      function () { return runEVMReportingThreshold(si); }, function () { return runContractModFrequency(si); }
     ];
+
+    var results = [];
+    for (var i = 0; i < runners.length; i++) {
+      try {
+        var r = runners[i]();
+        if (r) results.push(r);
+      } catch (e) { /* one model failing must not void the batch */ }
+    }
 
     return results.filter(function (r) {
       return r && !r.insufficient_data && r.status_color !== null;
