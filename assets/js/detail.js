@@ -798,25 +798,43 @@
     console.log("[brief] using stored category snapshot for " + project.id + " (period " + snapshot.period + ", " + totalModules + " modules across " + cats.filter((c) => !c.parked).length + " categories)");
 
     const stateName = gov.state || resolveBriefState(project) || "unknown";
-    const toneGuide =
-      "Match the tone to the governance state (" + stateName + "): " +
-      "Green = routine and reassuring; Yellow = attentive but not alarming; " +
-      "Amber = concerned but measured; Red = urgent but professional. " +
-      "Only a Red state may use 48-hour escalation or recovery-plan language — never for any other state.";
 
-    return "You are briefing a senior program director before a governance meeting about " +
-      (snapshot.project_name || project.name) + " (Project " + snapshot.project_id + ", " + (snapshot.sector || "unknown") + " sector). " +
-      "The platform computed " + totalModules + " signal modules across 9 analytical categories from a stored log dated " + computedDay + ". " +
-      "No human reviewer could complete this analysis in real time.\n\n" +
-      "Category results (status + worst-performing model):\n" + catSummary +
+    // PCEIF is a prediction + advisory platform: it presents evidence and
+    // surfaces recommendations — it does not issue commands. The PM is the
+    // decision-maker; the platform is the advisor. The persona below sets that
+    // diplomatic, advisory tone for the whole brief.
+    const advisor =
+      "You are a senior project controls advisor writing an evidence-based briefing for a program director. " +
+      "Your role is to present findings from computational analysis and offer considered recommendations — not to command action. " +
+      "PCEIF is a prediction and advisory platform: it presents evidence and surfaces recommendations; it does not issue commands or directives. " +
+      "The program director is the decision-maker; you are the advisor.\n\n" +
+      "Tone:\n" +
+      "- DIPLOMATIC: present findings as evidence, not verdicts.\n" +
+      "- ADVISORY: suggest, recommend, consider — never command or direct.\n" +
+      "- RESPECTFUL: the program director is the decision-maker — acknowledge their judgment.\n" +
+      "- MEASURED: match urgency to the evidence — never amplify beyond what the data supports.\n" +
+      "- PRECISE: be specific about what the models found, and deferential about what must happen — that is the PM's call.\n\n" +
+      "USE phrasing such as: 'The computational analysis suggests…', 'The evidence indicates…', " +
+      "'The models collectively point to…', 'It may be worth considering…', 'The data supports a closer look at…', " +
+      "'The program director may wish to review…', 'The signals are consistent with…', 'One area that warrants attention is…'.\n" +
+      "AVOID: 'You must…' / 'The PM must…', 'Immediate action required', 'Recovery plan required', " +
+      "'Escalate immediately', 'Critical failure', and any commanding or alarming language. " +
+      "Stay diplomatic even for a Red state — for example: 'The evidence across multiple analytical methods consistently points to " +
+      "significant cost and schedule pressure. The program director may wish to consider bringing the controls lead into a focused review " +
+      "before the next reporting cycle closes.' — and NOT 'This project is in critical failure. Recovery plan required within 48 hours.'\n\n" +
+      "This is advice from a trusted analytical system to a senior professional. Treat the reader accordingly.\n\n";
+
+    return advisor +
+      "Briefing subject: " + (snapshot.project_name || project.name) + " (Project " + snapshot.project_id + ", " + (snapshot.sector || "unknown") + " sector). " +
+      "The platform computed " + totalModules + " signal modules across 9 analytical categories from a stored log dated " + computedDay + ".\n\n" +
+      "Computed results (internal context — present these as evidence, never quote the raw metrics or module names):\n" + catSummary +
       "\n\nOverall governance state: " + (gov.state || "unknown") +
       "\nNamed authority: " + (gov.authority || "unknown") +
       "\nRecommended action on file: " + (gov.action || "unknown") +
       "\nEvidence agreement: " + confText +
-      "\n\n" + toneGuide + "\n\n" +
-      "Write a STRUCTURED executive brief with EXACTLY these four sections, each introduced by its '### ' header line verbatim:\n\n" +
+      "\n\nWrite the briefing with EXACTLY these four sections, each introduced by its '### ' header line verbatim:\n\n" +
       "### Overall Status\n" +
-      "2-3 sentences: the overall project health, the governance state in plain English, and a one-line summary of the single most critical concern.\n\n" +
+      "2-3 sentences: a diplomatic summary of overall project health and the most salient consideration, framed as evidence rather than a verdict.\n\n" +
       "### Category Analysis\n" +
       "One line per category THAT HAS DATA above — each a single plain-English sentence with NO module numbers and NO metric values — using exactly these labels:\n" +
       "Cost Performance (Cat 1): ...\n" +
@@ -829,10 +847,12 @@
       "Portfolio Analysis (Cat 8): ... (only if portfolio data is present)\n" +
       "Skip every category that has no data above. Do not invent categories or values.\n\n" +
       "### Conclusion\n" +
-      "2-3 sentences synthesising the category findings: whether the evidence methods agree or diverge, and the overall confidence level.\n\n" +
+      "2-3 sentences synthesising the findings: whether the evidence methods agree or diverge, and the overall confidence level.\n\n" +
       "### Recommendations\n" +
-      "3-5 bullet points, each line starting with '- ', each naming WHO should do WHAT by WHEN, appropriate to the " + stateName + " state. " +
-      "Do NOT recommend a 48-hour escalation or a recovery plan unless the state is Red.\n\n" +
+      "3-5 bullet points, each line starting with '- ', each phrased as ADVICE the program director may choose to act on — openers like " +
+      "'Consider reviewing…', 'It may be helpful to…', 'The data supports exploring…', 'The program director may wish to…'. " +
+      "You may name who could be involved and a sensible horizon, but never command, never set an ultimatum, and never use " +
+      "48-hour or recovery-plan language — not even for a Red state.\n\n" +
       "Output ONLY the four sections with the exact '### ' headers above — no preamble and no closing remarks.";
   }
 
@@ -911,7 +931,6 @@
     const s = (project && project.signals) || {};
     const d = s.decision || {};
     const conflict = d.conflict || "";
-    const authority = d.authority || "the project manager";
 
     const concerns = [];
     if (s.evm) {
@@ -944,17 +963,22 @@
     }
 
     const stKey = String(state).toLowerCase().replace("-review", "");
-    const stateWord = stKey === "red" ? "in the red zone — critical failure"
-                    : stKey === "amber"   ? "in the amber zone — significant risk"
-                    : stKey === "yellow"  ? "showing early-warning signs"
-                    : stKey === "complete" ? "showing the milestone as achieved"
-                    : stKey === "green"   ? "on track"
-                    : "in an unsettled state";
 
-    // Section 1 — Overall Status
-    const overall = "Project " + project.id + " is " + stateWord + ". " + (concerns.length
-      ? "The most pressing concern is that " + concerns[0] + "."
-      : "No single concern dominates the signal package.");
+    // Section 1 — Overall Status (evidence-framed, never a verdict).
+    const statePhrase = stKey === "red"
+        ? "The evidence across multiple analytical methods consistently points to significant cost and schedule pressure on Project " + project.id + "."
+      : stKey === "amber"
+        ? "The computational analysis indicates meaningful risk on Project " + project.id + " that may warrant a closer look."
+      : stKey === "yellow"
+        ? "The signals on Project " + project.id + " are consistent with early-warning variance worth monitoring."
+      : stKey === "complete"
+        ? "The analysis indicates Project " + project.id + " is reading as complete on the tracked measures."
+      : stKey === "green"
+        ? "The evidence indicates Project " + project.id + " is tracking within expected ranges."
+        : "The current evidence for Project " + project.id + " is mixed.";
+    const overall = statePhrase + " " + (concerns.length
+      ? "One area that warrants attention is that " + concerns[0] + "."
+      : "No single area stands out as a concern in the current signal package.");
 
     // Section 2 — Category Analysis, from the stored category snapshot.
     const snap = briefSnapshot(project);
@@ -965,12 +989,12 @@
         if (!c || c.parked || !c.status) return;
         const label = BRIEF_CAT_LABEL[c.num] || ((c.num ? c.num + " " : "") + (c.name || ""));
         const cs = String(c.status).toLowerCase().replace("-review", "");
-        const phrase = cs === "red" ? "the models flag critical concern in this area"
-                     : cs === "amber" ? "the models show meaningful risk that warrants attention"
-                     : cs === "yellow" ? "early-warning signs are present"
+        const phrase = cs === "red" ? "the evidence points to significant pressure in this area"
+                     : cs === "amber" ? "the analysis indicates meaningful risk worth a closer look"
+                     : cs === "yellow" ? "early-warning signs are present and worth monitoring"
                      : cs === "complete" ? "this area reads as complete"
-                     : cs === "green" ? "the models show this area on track"
-                     : "the signal is mixed";
+                     : cs === "green" ? "the signals are consistent with this area tracking well"
+                     : "the signal here is mixed";
         catLines.push(label + ": " + phrase + ".");
       });
     }
@@ -982,39 +1006,40 @@
       ? (conf.methods_agreeing + " of " + conf.methods_checked + " evidence methods agree, indicating " +
          String(conf.confidence || "moderate").toLowerCase() + " confidence in this assessment.")
       : (conflict
-          ? "The evidence methods classify this as " + conflict.toLowerCase() + ", and broadly converge on the assessment."
+          ? "The evidence methods read this as " + conflict.toLowerCase() + ", and broadly converge on the assessment."
           : "The evidence methods broadly agree on this assessment.");
 
-    // Section 4 — Recommendations. 48-hour / recovery language ONLY for Red.
+    // Section 4 — Recommendations. Advisory throughout — never command, and no
+    // 48-hour / recovery-plan / "critical" language, even for a Red state.
     let recs;
     if (stKey === "red") {
       recs = [
-        authority + " to convene a recovery review within 48 hours",
-        "Controls lead to validate the cost and schedule baseline against the latest pay application this week",
-        "PM to brief the program director on the recovery plan before the next reporting cycle"
+        "The program director may wish to consider bringing the controls lead into a focused review before the next reporting cycle closes",
+        "It may be helpful to validate the cost and schedule baseline against the latest pay application",
+        "The data supports a closer look at the most pressured areas together with the project team"
       ];
     } else if (stKey === "amber") {
       recs = [
-        "PM to review the flagged cost/schedule trend with the controls lead before the next reporting cycle closes",
-        "Controls lead to verify EV figures against the latest pay application",
+        "Consider reviewing the cost and schedule trend with the controls lead before the next reporting cycle closes",
+        "It may be worth verifying the earned-value figures against the latest pay application",
         concerns.some((c) => c.indexOf("document") >= 0)
-          ? "PM to follow up the elevated document-risk signals with the project team this cycle"
-          : "Document risk signals are clean — no contractor action required"
+          ? "The data supports a closer look at the elevated document-risk signals with the project team"
+          : "The document-risk signals appear clean — no further action seems indicated there"
       ];
     } else if (stKey === "yellow") {
       recs = [
-        "PM to schedule a weekly check-in and investigate the early-warning variance before the next cycle",
-        "Controls lead to confirm the latest EV/AC inputs are current"
+        "Consider a brief check-in to monitor the early-warning variance over the coming cycle",
+        "It may be helpful to confirm the latest earned-value inputs are current"
       ];
     } else if (stKey === "complete") {
       recs = [
-        "PM to begin closeout documentation",
-        "Controls lead to reconcile the final cost and schedule figures"
+        "Consider initiating closeout documentation when convenient",
+        "It may be helpful to reconcile the final cost and schedule figures"
       ];
     } else {
       recs = [
-        "PM to maintain routine monthly monitoring this cycle",
-        "No escalation required — signals are within normal ranges"
+        "The signals are within expected ranges; routine monitoring appears sufficient this cycle",
+        "No escalation appears warranted based on the current evidence"
       ];
     }
 
