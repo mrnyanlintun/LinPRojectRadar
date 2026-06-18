@@ -520,6 +520,99 @@
     </section>`;
   }
 
+  /* ============================================================
+     Uploaded Documents — one row per `signals_extracted` event on
+     the project. Reuses LinSignals.DOC_TYPE_LABEL for friendly type
+     names and the selected LinTZ zone for the upload timestamp.
+     ============================================================ */
+  function uploadedDocEvents(project) {
+    const evs = (project && Array.isArray(project.events)) ? project.events : [];
+    return evs.filter((e) => {
+      const t = (e && (e.type || e.event || e.kind)) || "";
+      return t === "signals_extracted";
+    });
+  }
+  function fmtDocType(dt) {
+    if (!dt) return "Document";
+    const map = (window.LinSignals && LinSignals.DOC_TYPE_LABEL) || {};
+    if (map[dt]) return map[dt];
+    // generic snake_case → Title Case fallback for unmapped types
+    return String(dt).replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+  // "Jun 16, 2026 14:32 EDT" in the user's selected timezone.
+  function fmtUploadTime(iso) {
+    const d = iso instanceof Date ? iso : new Date(iso);
+    if (!iso || isNaN(d)) return "—";
+    const zone = (window.LinTZ && LinTZ.get && LinTZ.get()) || "America/New_York";
+    try {
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: zone, hour12: false,
+        month: "short", day: "numeric", year: "numeric",
+        hour: "2-digit", minute: "2-digit", timeZoneName: "short"
+      }).formatToParts(d);
+      const g = (t) => { const x = parts.find((pp) => pp.type === t); return x ? x.value : ""; };
+      return `${g("month")} ${g("day")}, ${g("year")} ${g("hour")}:${g("minute")} ${g("timeZoneName")}`;
+    } catch (e) { return window.LinTZ ? LinTZ.format(d) : d.toISOString(); }
+  }
+  function uploadedDocFields(e) {
+    const src = e.applied != null ? e.applied : (e.fields != null ? e.fields : e.field);
+    if (Array.isArray(src)) return src.filter(Boolean);
+    if (src == null || src === "") return [];
+    return [src];
+  }
+  // Partial when the extraction recorded missing fields (or applied none).
+  function uploadedDocIsPartial(e, fields) {
+    const missing = e.missing != null ? e.missing : e.missingFields;
+    if (Array.isArray(missing) && missing.length) return true;
+    if (e.partial === true || e.readyToRun === false) return true;
+    return (fields || []).length === 0;
+  }
+  function uploadedDocsPanelHtml(project) {
+    const evs = uploadedDocEvents(project).slice().reverse(); // newest first
+    const rows = evs.map((e) => {
+      const fields = uploadedDocFields(e);
+      const partial = uploadedDocIsPartial(e, fields);
+      const fileName = e.fileName || e.file || e.name || "—";
+      const at = e.at || e.timestamp || e.recordedAt || e.time || "";
+      const fieldList = fields.length ? fields.join(", ") : "—";
+      const pill = partial
+        ? `<span class="pill pill-amber up-pill" title="Some expected fields were missing">partial</span>`
+        : `<span class="pill pill-green up-pill" title="All expected fields extracted">✓</span>`;
+      return `<tr class="up-row">
+          <td class="up-type">${esc(fmtDocType(e.docType))}</td>
+          <td class="up-file">${esc(fileName)}</td>
+          <td class="up-time">${esc(fmtUploadTime(at))}</td>
+          <td class="up-fields">${esc(fieldList)}</td>
+          <td class="up-status">${pill}</td>
+        </tr>`;
+    }).join("");
+    const body = evs.length
+      ? `<table class="up-table"><thead><tr>
+           <th>Type</th><th>File</th><th>Uploaded</th><th>Fields extracted</th><th aria-label="Status"></th>
+         </tr></thead><tbody>${rows}</tbody></table>`
+      : `<p class="kn-sub up-empty">No documents uploaded. Use the Upload panel to add project documents.</p>`;
+    return `<section class="panel detail-uploads" aria-label="Uploaded documents">
+        <p class="eyebrow">Uploaded Documents — ${evs.length} ${evs.length === 1 ? "document" : "documents"}</p>
+        ${body}
+      </section>`;
+  }
+  // Compact "what's already on file" note for the ingest panel, so the PM can
+  // see existing documents before uploading again.
+  function ingestUploadedNoteHtml(project) {
+    const evs = uploadedDocEvents(project);
+    if (!evs.length) return "";
+    const seen = {};
+    const items = [];
+    evs.slice().reverse().forEach((e) => {
+      const fn = e.fileName || e.file || e.name || "";
+      const key = (e.docType || "") + "|" + fn;
+      if (seen[key]) return;
+      seen[key] = true;
+      items.push(esc(fmtDocType(e.docType)) + (fn ? ` <span class="up-note-file">(${esc(fn)})</span>` : ""));
+    });
+    return `<p class="kn-sub up-note"><strong>Already uploaded (${items.length}):</strong> ${items.join(" · ")}</p>`;
+  }
+
   function render(id) {
     const root = document.getElementById("detail-root");
     if (!root) return;
@@ -557,6 +650,7 @@
         ${executiveBriefHtml(p)}
         ${signalWebHtml(p)}
         ${ensembleHtml(p)}
+        ${uploadedDocsPanelHtml(p)}
         <div class="detail-grid">
          <section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>
          <section class="panel detail-decision" aria-label="PCEIF governance decision (project detail)"></section>
@@ -565,6 +659,7 @@
          <details class="kn-topic"${populated ? "" : " open"}>
            <summary>Ingest to this project (${esc(p.id)}) — populate signals / document-risk</summary>
            <p class="kn-sub" style="margin-top:8px">Pre-scoped to this project. Populate runs the real Monte Carlo + CUSUM; document-risk uses the transparent keyword rules with mandatory Approve/Reject.</p>
+           ${ingestUploadedNoteHtml(p)}
            <div class="detail-ingest-form"></div>
          </details>
        </section>

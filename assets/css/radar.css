@@ -444,6 +444,27 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 @media (max-width: 940px) { .detail-grid { grid-template-columns: 1fr; } }
 .detail-mods-h { font-family: var(--font-display); font-size: 17px; margin: 4px 0 12px; }
 
+/* ---------- Uploaded Documents panel (project detail) ---------- */
+.detail-uploads { margin-bottom: 18px; }
+.up-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+.up-table th {
+  text-align: left; font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted); font-weight: 600;
+  padding: 4px 10px 6px; border-bottom: 1px solid var(--line); white-space: nowrap;
+}
+.up-table td { padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 13px; }
+.up-row:last-child td { border-bottom: none; }
+.up-type { font-weight: 600; }
+.up-file { font-family: var(--font-mono); font-size: 12px; color: var(--muted); word-break: break-all; }
+.up-time { font-family: var(--font-mono); font-size: 11.5px; color: var(--faint); white-space: nowrap; }
+.up-fields { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); }
+.up-status { text-align: center; }
+.up-pill { display: inline-block; }
+.up-empty { margin: 6px 0 0; }
+.up-note { margin: 8px 0 0; padding: 7px 10px; border-left: 2px solid var(--phosphor);
+  background: color-mix(in srgb, var(--phosphor) 6%, transparent); border-radius: 0 4px 4px 0; }
+.up-note-file { font-family: var(--font-mono); font-size: 11px; color: var(--faint); }
+
 /* ---------- manage projects rows ---------- */
 .pr-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 
