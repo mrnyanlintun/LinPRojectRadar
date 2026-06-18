@@ -326,3 +326,43 @@ When the prompt asks for an "executive brief for a program director", Lin must:
 **Persistence:** the client also writes the generated brief to
 `project.executiveBrief = { text, generated_at, period }`. `save_()` already
 persists the whole project; confirm it does not whitelist this field out.
+
+---
+
+## Fix 8 - History endpoint + chat-with-snapshot
+
+The frontend now persists a rich category snapshot per reporting period on
+`project.history`. It is the audit-trail artefact that drives the spider web,
+the signal ledger, the Signals page, and the executive brief.
+
+**Required backend endpoints:**
+
+1. **POST `?action=savehistory`** — body `{ id, snapshot: { ...full snapshot... } }`.
+   - Save to `_history/<period>_snapshot.json` inside the project folder.
+   - Append `{ event: "snapshot_saved", period, at }` to `project.events`.
+   - Return `{ ok: true, period, snapshot_id }`.
+   - Idempotent on `period` — re-saving the same period replaces the file.
+
+2. **GET `?action=gethistory&id=<id>`** — already exists in spec from Fix 5; behaviour now extended:
+   - Read every JSON file in `_history/` and return them sorted by `period` ascending.
+   - Return `{ ok: true, history: [ ... ] }`.
+
+3. **POST `?action=chat` (updated)** — body may now include an optional `snapshot` field:
+   - If `snapshot` is present, use `snapshot.summary` (plus `snapshot.categories` rollups) as the project context for the prompt, instead of reading `project.json` from Drive.
+   - This keeps the brief grounded in the stored computational log instead of refetching live signals and reduces Drive reads to one write per period.
+   - Snapshot context shape: `{ categories, summary, governance }`.
+
+**Snapshot field reference (must be persisted verbatim):**
+
+```
+period, computed_at, project_id, project_name, sector,
+signal_inputs { bac, ev, ac, pv, cpi, spi, doc_risk_score,
+                baseline_start, baseline_end },
+categories { cat1..cat9: { id, num, name, status, parked, modules[] } },
+summary { total_modules, by_status, by_category, evidence_agreement {
+          methods_checked, methods_agreeing, confidence } },
+governance { state, conflict, authority, action, documentation, fairness_gate },
+executive_brief
+```
+
+**Retention:** the front end keeps at most 24 periods; the back end stores everything written and never deletes.

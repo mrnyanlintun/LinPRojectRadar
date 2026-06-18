@@ -448,8 +448,10 @@
 
   /* ---------- signal ledger ---------- */
   function statusPill(status) {
-    const map = { green: "Green", amber: "Amber", red: "Red" };
-    return `<span class="pill pill-${esc(status)}">${esc(map[status] || status)}</span>`;
+    if (!status) return `<span class="pill pill-none">No data</span>`;
+    const key = String(status).toLowerCase().replace("-review", "");
+    const label = { green: "Green", amber: "Amber", red: "Red", yellow: "Yellow", complete: "Complete" }[key] || status;
+    return `<span class="pill pill-${esc(key)}">${esc(label)}</span>`;
   }
 
   /* Summarize the fourteen client-side simulation models (PERT/LOB/CCPM/RCF/DSM + DST/RoughSets/Neutrosophic/IFS + Z/PLTS/Plithogenic/BRB/Quantum)
@@ -531,19 +533,57 @@
          <span class="conflict-value">${esc(conflict)}</span>
        </div>
        <div class="signal-rows">` +
-      rows.map((r) => `
-        <div class="signal-row">
-          <div class="sig-top">
-            <span class="sig-name">${esc(r.name)}</span>
-            ${statusPill(r.status)}
-          </div>
-          <div class="sig-metric">${esc(r.metric)}</div>
-          <div class="sig-meta"><span class="sig-method">${esc(r.method)}</span></div>
-          <div class="sig-detail">${r.detail}</div>
-        </div>`).join("") +
-      simLedgerRow(p) +
+      categoryLedgerHtml(p) +
       `</div>`;
+    wireCategoryLedger(root);
   }
+
+  /* 9-category signal ledger. Each row = one category; the row pill is the
+     worst-status-wins category status. Click expands the per-module list.
+     Cat 9 (Governance) is open by default; Cat 8 (ML & AI) is parked and
+     shows the Stage 2 placeholder instead of an expand control. */
+  function categoryLedgerHtml(p) {
+    if (!window.LIN_CATEGORIES) return "";
+    return LIN_CATEGORIES.map((cat) => {
+      const status = window.getCategoryStatus ? getCategoryStatus(cat.id, p) : null;
+      const open = cat.id === "cat9" ? " open" : "";
+      const desc = esc(cat.description);
+      const rowPill = cat.parked ? `<span class="pill pill-parked">Stage 2</span>` : statusPill(status);
+
+      if (cat.parked) {
+        return `<div class="cat-row cat-row-parked" data-cat="${esc(cat.id)}">
+          <div class="cat-row-head">
+            <span class="cat-row-num" style="color:${esc(cat.color)}">${esc(cat.num)}</span>
+            <span class="cat-row-name">${esc(cat.name)}</span>
+            ${rowPill}
+          </div>
+          <p class="cat-row-desc">${desc}</p>
+          <p class="cat-row-parked-note">ML & AI — available in Stage 2. Modules listed for reference: ${esc(cat.modules.map((m) => m.name).join(", "))}.</p>
+        </div>`;
+      }
+
+      const modRows = cat.modules.map((m) => {
+        const st = window.getModuleStatus ? getModuleStatus(m.method_class, p) : null;
+        return `<div class="cat-mod-row">
+          <span class="cat-mod-num">${esc(m.num)}</span>
+          <span class="cat-mod-name">${esc(m.name)}</span>
+          ${statusPill(st)}
+        </div>`;
+      }).join("");
+
+      return `<details class="cat-row" data-cat="${esc(cat.id)}"${open}>
+        <summary class="cat-row-head">
+          <span class="cat-row-num" style="color:${esc(cat.color)}">${esc(cat.num)}</span>
+          <span class="cat-row-name">${esc(cat.name)}</span>
+          ${rowPill}
+        </summary>
+        <p class="cat-row-desc">${desc}</p>
+        <div class="cat-mod-list">${modRows}</div>
+      </details>`;
+    }).join("");
+  }
+
+  function wireCategoryLedger(/* root */) { /* details/summary handles toggling natively */ }
 
   /* 6th ledger row — only when the simulation models have run for this project. */
   function simLedgerRow(p) {

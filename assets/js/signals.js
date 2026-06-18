@@ -325,6 +325,116 @@
     return snapshot;
   }
 
+  /* ---------- category snapshot ----------
+     Rolls every signal up the 9-category structure (see categories.js)
+     and stores the result on project.history. The spider web (9 axes),
+     the signal ledger, the Signals page, and the executive brief all
+     read this stored object — it is the audit-trail artefact, not a
+     view derived on demand. */
+  function buildCategorySnapshot(project) {
+    if (!project || !window.LIN_CATEGORIES || typeof window.getCategoryStatus !== "function") return null;
+    const s = project.signals || {};
+    const sim = (project.simulationSignals && project.simulationSignals.signal_array) || [];
+    const si = project.signalInputs || {};
+
+    const period =
+      (si.docDate && String(si.docDate).substring(0, 7)) ||
+      (si.workPeriodTo && String(si.workPeriodTo).substring(0, 7)) ||
+      new Date().toISOString().substring(0, 7);
+
+    const categoryResults = {};
+    LIN_CATEGORIES.forEach((cat) => {
+      const moduleResults = cat.modules.map((m) => {
+        const status = window.getModuleStatus(m.method_class, project);
+        const simResult = sim.find((r) => r.method_class === m.method_class) || null;
+        return {
+          id: m.id, num: m.num, name: m.name, method_class: m.method_class,
+          status: status || null,
+          evidence_metric: simResult ? (simResult.evidence_metric || null) : null,
+          raw: simResult
+        };
+      });
+      categoryResults[cat.id] = {
+        id: cat.id, num: cat.num, name: cat.name,
+        status: window.getCategoryStatus(cat.id, project),
+        parked: !!cat.parked,
+        modules: moduleResults
+      };
+    });
+
+    const allModules = [];
+    Object.keys(categoryResults).forEach((cid) => {
+      const c = categoryResults[cid];
+      if (c.parked) return;
+      c.modules.forEach((m) => { if (m.status) allModules.push(m); });
+    });
+
+    const byStatus = { Complete: 0, Green: 0, Yellow: 0, Amber: 0, Red: 0, Unknown: 0 };
+    allModules.forEach((m) => {
+      const v = String(m.status || "");
+      const lc = v.toLowerCase();
+      if (lc.indexOf("red") >= 0)      byStatus.Red++;
+      else if (lc === "amber" || lc === "orange") byStatus.Amber++;
+      else if (lc === "yellow" || lc === "light-amber") byStatus.Yellow++;
+      else if (lc === "green")         byStatus.Green++;
+      else if (lc === "complete" || lc === "blue") byStatus.Complete++;
+      else                             byStatus.Unknown++;
+    });
+
+    const evidenceMethods = (categoryResults.cat7 && categoryResults.cat7.modules) || [];
+    const govState = s.decision ? s.decision.state : null;
+    const baseline = String(govState || "").toLowerCase().replace("-review", "");
+    const agreeing = baseline
+      ? evidenceMethods.filter((m) => m.status && String(m.status).toLowerCase().indexOf(baseline) >= 0).length
+      : 0;
+    const confidence = agreeing >= 7 ? "HIGH" : agreeing >= 4 ? "MODERATE" : "LOW";
+
+    const byCategory = {};
+    Object.keys(categoryResults).forEach((cid) => { byCategory[cid] = categoryResults[cid].status; });
+
+    const snapshot = {
+      period,
+      computed_at: new Date().toISOString(),
+      project_id: project.id,
+      project_name: project.name,
+      sector: project.sector,
+      signal_inputs: {
+        bac: si.bac, ev: si.ev, ac: si.ac, pv: si.pv,
+        cpi: si.cpi, spi: si.spi,
+        doc_risk_score: si.docRiskScore,
+        baseline_start: si.baselineStart,
+        baseline_end: si.baselineEnd
+      },
+      categories: categoryResults,
+      summary: {
+        total_modules: allModules.length,
+        by_status: byStatus,
+        by_category: byCategory,
+        evidence_agreement: {
+          methods_checked: evidenceMethods.length,
+          methods_agreeing: agreeing,
+          confidence
+        }
+      },
+      governance: {
+        state: s.decision ? s.decision.state : null,
+        conflict: s.decision ? s.decision.conflict : null,
+        authority: s.decision ? s.decision.authority : null,
+        action: s.decision ? s.decision.action : null,
+        documentation: s.decision ? s.decision.documentation : null,
+        fairness_gate: s.decision ? !!s.decision.fairnessGate : false
+      },
+      executive_brief: null
+    };
+
+    project.history = Array.isArray(project.history) ? project.history : [];
+    project.history = project.history.filter((h) => h && h.period !== period);
+    project.history.push(snapshot);
+    if (project.history.length > 24) project.history = project.history.slice(-24);
+
+    return snapshot;
+  }
+
   /* ---------- run the EXISTING models from extracted signalInputs ----------
      Same path the old manual form used (LinSim.buildSignals + saveProject),
      fed from extracted cpi/spi/bac/doc-risk. fairnessSensitive is left
@@ -391,6 +501,7 @@
       } catch (e) { /* simulations are non-fatal — never block the core run */ }
     }
     persistHistorySnapshot(project);
+    try { buildCategorySnapshot(project); } catch (e) { /* non-fatal — keeps the legacy snapshot path working */ }
     const builtSignals = project.signals;
     await LinStore.saveProject(project);
     // saveProject reconciles the in-memory mirror with the backend's echoed
@@ -939,6 +1050,8 @@
     ingestFormHtml, wireIngestForm,
     renderSignalsPanel,
     buildHistorySnapshot,
+    persistHistorySnapshot,
+    buildCategorySnapshot,
     ensureSimulations,
     runModels,
     DOC_TYPES, DOC_TYPE_LABEL
