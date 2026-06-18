@@ -797,11 +797,17 @@ body[data-theme="light"] .sw-axis { stroke: rgba(15,23,42,0.14); }
 .sw-ring-outer { stroke: rgba(255,255,255,0.12); }
 body[data-theme="light"] .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .sw-mod-band { fill: none; stroke-width: 13; opacity: .15; stroke-linecap: round; }
+.sw-mod-band-parked { stroke: #64748b; opacity: .15; }
+.sw-mod-band-label { font-family: var(--font-mono); font-size: 8px; fill: #64748b; letter-spacing: .04em; dominant-baseline: middle; }
 .sw-mod-spoke { stroke-width: 1; opacity: .35; }
-.sw-mod-label { font-family: var(--font-mono); font-size: 8px; fill: var(--faint); dominant-baseline: middle; }
+.sw-mod-label { font-family: var(--font-mono); font-size: 7px; fill: var(--faint); dominant-baseline: middle; }
+.sw-mod-label-parked { fill: #64748b; }
+.sw-mod-svg .sw-axis-parked { stroke: #64748b; stroke-dasharray: 2 3; opacity: .5; }
 .sw-mod-svg .sw-dot { stroke: var(--surface); stroke-width: .6; transition: r .12s ease; }
 .sw-mod-svg .sw-dot:hover { r: 5px; }
-.sw-mod-svg .sw-web-current { fill: rgba(78,160,255,0.07); stroke: rgba(78,160,255,0.45); stroke-width: 1; }
+/* The filled web polygon — closed shape through all 89 module points. */
+.sw-mod-svg .sw-web-current { fill: rgba(78,160,255,0.08); stroke: #4ea0ff; stroke-width: 1.5; }
+.sw-footnote { font-family: var(--font-mono); font-size: 10px; color: #64748b; margin: 4px 0 0; }
 
 /* ---------- Ensemble analysis panel ---------- */
 .ens-panel { margin-bottom: 18px; }

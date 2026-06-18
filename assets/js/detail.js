@@ -207,6 +207,7 @@
      the category colour.
      ============================================================ */
   const MOD_CX = 250, MOD_CY = 250, MOD_OUTER = 200;
+  const PARKED_GREY = "#64748b"; // Cat 8 (ML/AI) parked-status grey
   const DOT_COLOR = {
     Complete: "#4ea0ff", Green: "#3fcaa6", Yellow: "#f0c040",
     Amber: "#e2b13c", Red: "#e0556b", none: "#26344f"
@@ -254,16 +255,21 @@
   function buildModuleAxes(project) {
     const cats = LIN_CATEGORIES;
     const moduleCount = cats.reduce((n, c) => n + c.modules.length, 0);
-    const gaps = Math.max(0, cats.length - 1);
+    // One padding gap before EVERY cluster — including the first, which seats a
+    // gap at the top (12 o'clock). Without it the last Cat 9 label and the first
+    // Cat 1 label collide where the ring wraps. (Fixes top-of-chart overlap.)
+    const gaps = cats.length;
     const totalSlots = moduleCount + gaps;
     const axes = [];
     const bands = [];
     let slot = 0;
-    cats.forEach((cat, ci) => {
-      if (ci > 0) slot += 1; // gap between clusters
+    cats.forEach((cat) => {
+      slot += 1; // cluster-separating gap (the first one lands at the top)
       const startSlot = slot;
       cat.modules.forEach((m) => {
         const angle = -Math.PI / 2 + (Math.PI * 2 * slot) / totalSlots;
+        // Parked categories (Cat 8 ML) never compute — axes still render, but
+        // they carry no status (grey dot at the near-centre ring).
         const status = (cat.parked || m.active === false) ? null
           : (window.getModuleStatus ? getModuleStatus(m.method_class, project) : null);
         axes.push({ cat, module: m, angle, status });
@@ -272,8 +278,11 @@
       const endSlot = slot - 1;
       bands.push({
         color: cat.color,
+        parked: !!cat.parked,
+        num: cat.num,
         a0: -Math.PI / 2 + (Math.PI * 2 * (startSlot - 0.45)) / totalSlots,
-        a1: -Math.PI / 2 + (Math.PI * 2 * (endSlot + 0.45)) / totalSlots
+        a1: -Math.PI / 2 + (Math.PI * 2 * (endSlot + 0.45)) / totalSlots,
+        amid: -Math.PI / 2 + (Math.PI * 2 * ((startSlot + endSlot) / 2)) / totalSlots
       });
     });
     return { axes, bands };
@@ -291,12 +300,30 @@
     if (!window.LIN_CATEGORIES) return "";
     if (!window.hasSignals || !hasSignals(project)) return "";
 
+    // Compute the snapshot FIRST. currentSnapshot → buildHistorySnapshot →
+    // ensureSimulations runs runAll()/runDST() and populates
+    // project.simulationSignals.signal_array. getModuleStatus (called below via
+    // buildModuleAxes) reads that array for every non-core module, so it must
+    // exist before we build the axes — otherwise only the handful of core EVM /
+    // decision signals resolve and the rest fall back to "no data".
+    const cur = currentSnapshot(project);
+    const overall = cur && cur.governance && cur.governance.state;
+
     const { axes, bands } = buildModuleAxes(project);
 
-    // Category colour bands behind each cluster (subtle grouping).
-    const bandPaths = bands.map((b) =>
-      `<path class="sw-mod-band" d="${bandArcPath(b, 1.04)}" stroke="${esc(b.color)}"></path>`
-    ).join("");
+    // Category colour bands behind each cluster (subtle grouping). Parked
+    // categories (Cat 8 ML) render a clearly grey band to signal "no compute".
+    const bandPaths = bands.map((b) => {
+      const cls = b.parked ? "sw-mod-band sw-mod-band-parked" : "sw-mod-band";
+      return `<path class="${cls}" d="${bandArcPath(b, 1.04)}" stroke="${esc(b.color)}"></path>`;
+    }).join("");
+
+    // Parked-category arc labels (Cat 8 ML*) — the asterisk ties to the footnote.
+    const bandLabels = bands.filter((b) => b.parked).map((b) => {
+      const lp = modPoint(b.amid, 1.22);
+      const anchor = Math.abs(lp.x - MOD_CX) < 10 ? "middle" : (lp.x > MOD_CX ? "start" : "end");
+      return `<text class="sw-mod-band-label" x="${lp.x.toFixed(1)}" y="${lp.y.toFixed(1)}" text-anchor="${anchor}">${esc(b.num)} ML*</text>`;
+    }).join("");
 
     // Axis spokes.
     const axisLines = axes.map((a) => {
@@ -313,29 +340,31 @@
 
     // Dots + labels.
     const nodes = axes.map((a) => {
-      const active = !(a.cat.parked || a.module.active === false);
+      const parked = a.cat.parked === true;
+      const active = !(parked || a.module.active === false);
       const norm = active ? normalizeStatus(a.status) : null;
       const rf = moduleToRadius(a.module, a.status);
       const dp = modPoint(a.angle, rf);
-      const color = active ? (DOT_COLOR[norm] || DOT_COLOR.none) : DOT_COLOR.none;
+      // Parked (Cat 8) plots a clearly grey dot; active-no-data uses the dim
+      // navy ring; computed modules take their status colour.
+      const color = parked ? PARKED_GREY : (active ? (DOT_COLOR[norm] || DOT_COLOR.none) : DOT_COLOR.none);
       const dotR = active && norm ? 3.2 : 1.6;
       const lp = modPoint(a.angle, 1.09);
       const anchor = Math.abs(lp.x - MOD_CX) < 10 ? "middle" : (lp.x > MOD_CX ? "start" : "end");
       const ev = active ? moduleEvidence(a.module, project) : null;
-      const statusLabel = a.cat.parked ? "Stage 2 (parked)"
+      const statusLabel = parked ? "Stage 2 (parked)"
         : a.module.active === false ? "Inactive — needs document data"
         : (norm || "No data");
       const title = a.module.num + " " + a.module.name + " — " + statusLabel +
         (ev ? " — " + ev : "");
+      const labelCls = parked ? "sw-mod-label sw-mod-label-parked" : "sw-mod-label";
       return `<line class="sw-mod-spoke" x1="${MOD_CX}" y1="${MOD_CY}" x2="${dp.x.toFixed(1)}" y2="${dp.y.toFixed(1)}" stroke="${esc(color)}"></line>
         <circle class="sw-dot" cx="${dp.x.toFixed(1)}" cy="${dp.y.toFixed(1)}" r="${dotR}" fill="${esc(color)}">
           <title>${esc(title)}</title>
         </circle>
-        <text class="sw-mod-label" x="${lp.x.toFixed(1)}" y="${lp.y.toFixed(1)}" text-anchor="${anchor}">${esc(a.module.num)}</text>`;
+        <text class="${labelCls}" x="${lp.x.toFixed(1)}" y="${lp.y.toFixed(1)}" text-anchor="${anchor}">${esc(a.module.num)}</text>`;
     }).join("");
 
-    const cur = currentSnapshot(project);
-    const overall = cur && cur.governance && cur.governance.state;
     const activeCount = axes.filter((a) => a.status && normalizeStatus(a.status)).length;
 
     return `<section class="panel signal-web-panel">
@@ -362,10 +391,12 @@
         ${axisLines}
         <polygon class="sw-web-current" points="${polyPoints}"></polygon>
         ${nodes}
+        ${bandLabels}
         <circle class="sw-center sw-${statusClass(overall)}" cx="${MOD_CX}" cy="${MOD_CY}" r="5">
           <title>Overall governance state: ${esc(normalizeStatus(overall) || overall || "No data")}</title>
         </circle>
       </svg>
+      <p class="sw-footnote">* Cat 8 ML/AI — available in Stage 2</p>
     </section>`;
   }
 
