@@ -46,7 +46,9 @@
     if (s === "Yellow") return 0.45;
     if (s === "Green") return 0.25;
     if (s === "Complete") return 0.10;
-    return 0; // no data — plot at centre so the 19-sided polygon stays closed
+    // No-data axes sit on a tiny ring just off-centre instead of exactly 0 so
+    // the 19-sided polygon closes cleanly (no collapse-to-centre starburst).
+    return 0.05;
   }
   function statusClass(status) {
     const s = normalizeStatus(status);
@@ -88,6 +90,45 @@
     const results = (snapshot && snapshot.module_results) || {};
     return MODULE_KEYS.map((key) => statusFromResult(results[key]));
   }
+
+  /* Backfill the M10-M18 evidence-combination methods on the fly when the
+     persisted simulationSignals is missing them. Spider-web renders read
+     module_results — if DST / Rough Sets / Neutrosophic etc never ran (or
+     the persisted copy lost them on reload) those axes show as "no data"
+     even when project.signals has the EVM / Monte Carlo / CUSUM / Doc inputs
+     they depend on. Compute them client-side from window.LinSimulations and
+     graft the results onto the snapshot we're about to render. */
+  function ensureEvidenceModules(project, snapshot) {
+    if (!project || !snapshot || !snapshot.module_results) return;
+    const s = project.signals;
+    if (!s) return;
+    // Evidence methods need EVM-derived signals — at least one of these must
+    // exist or every run() will return a "no data" stub.
+    if (!s.evm && !s.mc && !s.cusum && !s.doc) return;
+    if (!window.LinSimulations) return;
+    const results = snapshot.module_results;
+    const runners = [
+      { key: "m10_dst",            fn: "runDST",                cls: "DST_Evidence_Combination",   needsInputs: true },
+      { key: "m11_rough_sets",     fn: "runRoughSets",          cls: "Rough_Sets_Classification" },
+      { key: "m12_neutrosophic",   fn: "runNeutrosophic",       cls: "Neutrosophic_Logic" },
+      { key: "m13_interval_fuzzy", fn: "runIntervalFuzzy",      cls: "Interval_Fuzzy_Sets" },
+      { key: "m14_z_numbers",      fn: "runZNumbers",           cls: "Z_Numbers" },
+      { key: "m15_plts",           fn: "runPLTS",               cls: "PLTS" },
+      { key: "m16_plithogenic",    fn: "runPlithogenic",        cls: "Plithogenic_Sets" },
+      { key: "m17_brb",            fn: "runBRB",                cls: "Belief_Rule_Base" },
+      { key: "m18_quantum",        fn: "runQuantumProbability", cls: "Quantum_Probability" }
+    ];
+    const si = project.signalInputs || {};
+    runners.forEach((r) => {
+      if (statusFromResult(results[r.key])) return; // already populated
+      const fn = LinSimulations[r.fn];
+      if (typeof fn !== "function") return;
+      try {
+        const out = r.needsInputs ? fn(si, s) : fn(s);
+        if (out) results[r.key] = out;
+      } catch (e) { /* non-fatal — axis stays at the no-data ring */ }
+    });
+  }
   function metricFor(snapshot, key) {
     const r = snapshot && snapshot.module_results && snapshot.module_results[key];
     if (!r) return "No data";
@@ -127,6 +168,8 @@
     const selected = all.find((h) => h.period === chosenPeriod) || cur;
     const selectedIndex = all.findIndex((h) => h.period === selected.period);
     const previous = selectedIndex > 0 ? all[selectedIndex - 1] : null;
+    ensureEvidenceModules(project, selected);
+    if (previous) ensureEvidenceModules(project, previous);
     const statuses = moduleStatuses(selected);
     const previousStatuses = previous ? moduleStatuses(previous) : null;
     const axis = MODULES.map((m, i) => {
