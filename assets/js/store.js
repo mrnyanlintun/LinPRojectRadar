@@ -156,11 +156,6 @@
     } finally { loading(false); }
   }
 
-  async function save(id, patch) {
-    const current = getCached(id) || await getProject(id) || { id };
-    return saveProject(Object.assign({}, current, patch || {}, { id }));
-  }
-
   // Archive uses the backend endpoint (it moves the Drive folder to 00_Archive),
   // then we drop it from the in-memory active mirror + cache.
   async function archiveProject(id) {
@@ -240,20 +235,6 @@
       return j.results || j.files || [];
     } catch (e) { lastError = e; throw e; }
   }
-  async function getHistory(id) {
-    if (!configured()) {
-      const p = getCached(id);
-      return (p && Array.isArray(p.history)) ? p.history : [];
-    }
-    try {
-      const j = await apiGet("?action=gethistory&id=" + encodeURIComponent(id));
-      return j.history || [];
-    } catch (e) {
-      lastError = e;
-      const p = getCached(id);
-      return (p && Array.isArray(p.history)) ? p.history : [];
-    }
-  }
   async function ingestCorpus({ id, name, docType, mimeType, dataBase64, masterFormatSections }) {
     if (!configured()) throw new Error("Project store not configured (LIN_API_URL).");
     const body = { action: "ingestcorpus", id, name, docType, mimeType, dataBase64 };
@@ -323,9 +304,9 @@
   }
 
   window.LinStore = {
-    load, listProjects, getProject, createProject, saveProject, save,
+    load, listProjects, getProject, createProject, saveProject,
     archiveProject, restoreProject, listArchived, chat, analyze,
-    listCorpus, listAuditResults, getHistory, ingestCorpus, runAudit, saveAuditResult,
+    listCorpus, listAuditResults, ingestCorpus, runAudit, saveAuditResult,
     extractSignals, overwriteSignal, resetSignals,
     // sync mirror accessors used by render code
     cachedActive, cachedArchived, getCached, listActive: cachedActive,
