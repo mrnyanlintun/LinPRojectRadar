@@ -48,7 +48,7 @@ docker run -p 8080:8080 --env-file .env lpr-backend
 ## Deploy
 
 - **Cloud Run:** `gcloud run deploy lpr-backend --source backend --region <r> --set-env-vars OPENAI_API_KEY=...` (container listens on `$PORT`).
-- **Render:** `render.yaml` is a Blueprint — set `OPENAI_API_KEY` (and `HF_API_KEY`) as dashboard secrets; health check is `/health`.
+- **Render:** `render.yaml` is a Blueprint — set `OPENAI_API_KEY` as a dashboard secret; health check is `/health`.
 
 ## Notes
 

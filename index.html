@@ -2,6 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <!-- Content Security Policy.
+       Defence-in-depth against XSS, clickjacking, and supply-chain script injection.
+       - 'unsafe-inline' is required for the existing inline <style>/<script> blocks
+         and for the dynamic innerHTML templates used throughout the app.
+       - script-src CDN list covers PDF.js, SheetJS (cdnjs) and is forward-compatible
+         with jsdelivr/esm.sh/unpkg if they're added later.
+       - connect-src allows the Google Apps Script backend (LIN_API_URL) and OpenAI.
+       - frame-ancestors 'none' is a hard clickjacking block. -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://unpkg.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data: https:;
+    connect-src 'self' https://script.google.com https://api.openai.com;
+    frame-ancestors 'none';
+  " />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lin Project Radar</title>
   <meta name="description" content="Synthetic demonstration of the PCEIF signal-to-action governance workflow for public AEC capital programs. Doctor of Engineering praxis, GWU." />

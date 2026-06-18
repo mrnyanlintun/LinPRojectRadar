@@ -13,7 +13,7 @@ import threading
 import time
 from typing import Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from dotenv import load_dotenv
@@ -64,6 +64,29 @@ def _store(db):
 
 def _find(db, pid):
     return next((p for p in db["projects"] if p.get("id") == pid), None)
+
+
+# ---------------------------------------------------------------- security
+_PROJECT_ID_RE = re.compile(r"^\d{2}$")
+
+
+def validate_project_id(pid) -> str:
+    """Path-traversal defence.
+
+    Project ids are server-generated as ``str(seq).zfill(2)``, so a valid id
+    is always two ASCII digits. Anything else (``..``, ``/etc/passwd``, an
+    empty string, ``None``) is rejected with a 400 before it can be joined
+    onto a filesystem path. Apply at the top of every route handler that uses
+    an id as a path segment.
+
+    Note: when ``seq`` grows past 99 the generator will start producing
+    three-digit ids and this validator will reject them, which is the
+    intended canary signal to widen the regex.
+    """
+    s = str(pid) if pid is not None else ""
+    if not _PROJECT_ID_RE.match(s):
+        raise HTTPException(status_code=400, detail=f"Invalid project id: {pid!r}")
+    return s
 
 
 # ---------------------------------------------------------------- OpenAI
@@ -209,8 +232,9 @@ def list_archived():
 
 @app.get("/get")
 def get_project(id: str):
+    pid = validate_project_id(id)
     db = _load()
-    p = _find(db, id)
+    p = _find(db, pid)
     return {"ok": bool(p), "project": p}
 
 
@@ -234,10 +258,11 @@ def create_project(body: dict):
 
 @app.post("/save")
 def save_project(body: dict):
+    incoming = body.get("project") or body
+    pid = validate_project_id(incoming.get("id"))
     with _lock:
         db = _load()
-        incoming = body.get("project") or body
-        p = _find(db, incoming.get("id"))
+        p = _find(db, pid)
         if p is None:
             db["projects"].append(incoming)
             saved = incoming
@@ -250,12 +275,12 @@ def save_project(body: dict):
 
 @app.post("/archive")
 def archive_project(body: dict):
-    return _set_archived(body.get("id"), True)
+    return _set_archived(validate_project_id(body.get("id")), True)
 
 
 @app.post("/restore")
 def restore_project(body: dict):
-    return _set_archived(body.get("id"), False)
+    return _set_archived(validate_project_id(body.get("id")), False)
 
 
 def _set_archived(pid, flag):
@@ -302,6 +327,10 @@ def analyze(body: dict):
 
 @app.post("/extractsignals")
 def extractsignals(body: dict):
+    # /extractsignals does not currently persist by id, but we still validate
+    # to fail closed and keep the contract uniform across project routes.
+    if body.get("id") is not None:
+        validate_project_id(body.get("id"))
     doc_type = body.get("docType", "")
     text = body.get("text")
     data_b64 = body.get("dataBase64")
@@ -368,9 +397,10 @@ def extractsignals(body: dict):
 
 @app.post("/overwritesignal")
 def overwritesignal(body: dict):
+    pid = validate_project_id(body.get("id"))
     with _lock:
         db = _load()
-        p = _find(db, body.get("id"))
+        p = _find(db, pid)
         field, value = body.get("field"), body.get("value")
         si = (p.get("signalInputs") if p else None) or {}
         old = si.get(field)
@@ -388,9 +418,10 @@ def overwritesignal(body: dict):
 
 @app.post("/resetsignals")
 def resetsignals(body: dict):
+    pid = validate_project_id(body.get("id"))
     with _lock:
         db = _load()
-        p = _find(db, body.get("id"))
+        p = _find(db, pid)
         if p:
             for k in ("signals", "signalInputs", "simulationSignals"):
                 p.pop(k, None)
@@ -412,11 +443,11 @@ def tts(body: dict):
 
 @app.post("/ingestcorpus")
 def ingestcorpus(body: dict):
-    pid = body.get("id")
+    pid = validate_project_id(body.get("id"))
     name = body.get("name", "corpus.pdf")
     doc_type = body.get("docType", "")
     sections = body.get("masterFormatSections") or []
-    db_dir = os.path.join(CORPUS_DIR, str(pid))
+    db_dir = os.path.join(CORPUS_DIR, pid)
     os.makedirs(db_dir, exist_ok=True)
 
     file_bytes = None
@@ -465,7 +496,8 @@ def ingestcorpus(body: dict):
 
 @app.get("/listcorpus")
 def listcorpus(id: str):
-    idx_path = os.path.join(CORPUS_DIR, str(id), "corpus_index.json")
+    pid = validate_project_id(id)
+    idx_path = os.path.join(CORPUS_DIR, pid, "corpus_index.json")
     if not os.path.exists(idx_path):
         return {"ok": True, "corpus": []}
     with open(idx_path, "r", encoding="utf-8") as f:
@@ -474,7 +506,7 @@ def listcorpus(id: str):
 
 @app.post("/audit")
 def audit(body: dict):
-    pid = body.get("id")
+    pid = validate_project_id(body.get("id"))
     review_type = body.get("reviewType", "material_submittal")
     submission_b64 = body.get("submissionBase64")
 
@@ -486,7 +518,7 @@ def audit(body: dict):
             submittal_text = ""
 
     # Item 23 — retrieve relevant corpus chunks
-    req_path = os.path.join(CORPUS_DIR, str(pid), "requirements_db.json")
+    req_path = os.path.join(CORPUS_DIR, pid, "requirements_db.json")
     context = ""
     if os.path.exists(req_path):
         try:
