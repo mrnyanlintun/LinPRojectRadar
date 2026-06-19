@@ -289,7 +289,7 @@
     const mc = mcReal.mc;
     return panel("01", "Hybrid Dynamic Simulation", st,
       note("Probabilistic estimate at completion from 5,000 iterations of the project's cost and schedule performance indices. P50 and P80 bound the realistic cost exposure range. P80 is the planning-conservative figure used for contingency and escalation decisions.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="histogram3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="histogram3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Cost Performance Index (CPI)", e.cpi.toFixed(2), cpiS) +
         metricBox("Schedule Performance Index (SPI)", e.spi.toFixed(2), spiS) +
@@ -320,7 +320,7 @@
     const r = cuReal.cu;
     return panel("02", "Statistical Process Control (SPC) / Cumulative Sum Control Chart (CUSUM) Anomaly Monitor", st,
       note("Cumulative Sum Control Chart monitoring the Schedule Performance Index across reporting periods. Detects sustained drift that single-period variance would mask. A breach means the pattern is systemic and requires explanation before the next reporting cycle closes.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="cusum3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="cusum3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Peak CUSUM", r.maxStat.toFixed(2), st) +
         metricBox("Decision H", r.H.toFixed(2), "green") +
@@ -386,7 +386,7 @@
     ];
     return panel("1.4", "Bayesian EAC", st,
       note("Bayesian update combining a reference-class-forecasting prior with the EVM-derived likelihood. Produces a posterior estimate more stable than raw EVM but responsive to sustained underperformance. Displayed as three overlapping 3D distributions — drag to separate them.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="bayesian3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="bayesian3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Prior EAC", "$" + (priorEAC/1e6).toFixed(1) + "M", "green") +
         metricBox("Likelihood EAC", "$" + (likelihoodEAC/1e6).toFixed(1) + "M", bayesS) +
@@ -421,7 +421,7 @@
     ];
     return panel("1.5", "Kalman Filter SPI Smoother", st,
       note("Noise-filtered SPI trend using a Kalman smoother. Separates genuine schedule drift from reporting artefacts. The smoothed line (solid) and raw series (dashed) are shown in 3D space — drag to compare planes.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="kalman3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="kalman3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Raw SPI", spi.toFixed(3), spiS) +
         metricBox("Smoothed SPI", smoothed.toFixed(3), spiS) +
@@ -452,7 +452,7 @@
     ];
     return panel("1.6", "ARIMA CPI Forecast", st,
       note("ARIMA(1,1,1) time-series forecast of CPI for the next 3 reporting periods. Blue = historical, amber dashed = forecast, shaded band = 80% confidence interval. Drag to tilt the ribbon into view.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="arima3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="arima3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Current CPI", cpi.toFixed(3), st) +
         metricBox("3-period forecast", forecastCPI.toFixed(3), forecastS) +
@@ -487,7 +487,7 @@
     ];
     return panel("1.7", "Earned Schedule", st,
       note("Time-based schedule performance. SPI(t) = ES ÷ AT where ES is the time at which the planned value equalled current earned value, and AT is actual time elapsed. Removes the mathematical recovery artefact of cost-ratio SPI. Dual S-curves shown in 3D — amber lines show the ES gap.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="es3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="es3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("SPI(t)", spiT.toFixed(3), spiTS) +
         metricBox("Time delay", delayWeeks.toFixed(1) + " wks", st) +
@@ -559,7 +559,7 @@
     ];
     return panel("1.9", "Variance at Completion (VAC)", st,
       note("Projected final cost overrun: VAC = BAC − EAC. Shown as 3D concentric arc rings — BAC (blue full ring), EV earned (green partial), AC spent (amber partial), and overrun exposure (red arc). Drag to rotate and separate the rings.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="vac3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="vac3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("BAC", "$" + (bac/1e6).toFixed(1) + "M", "green") +
         metricBox("EAC (CPI)", "$" + (eac/1e6).toFixed(1) + "M", vacS) +
@@ -596,7 +596,7 @@
     ];
     return panel("1.10", "Budget Execution Rate", st,
       note("Rate of budget consumption versus the planned expenditure S-curve. Detects under-spend (deferred costs, optimistic closings) and over-spend (front-loading, acceleration). 3D dual surfaces — planned behind, actual in front, amber curtains show the gap.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="ber3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="ber3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("BER", ber.toFixed(3), berS) +
         metricBox("Planned %", (plannedPct*100).toFixed(1) + "%", "green") +
@@ -631,7 +631,7 @@
     ];
     return panel("1.11", "Regression to Mean CPI", st,
       note("Statistical regression predicting CPI convergence toward the long-run project mean. Red line = historical CPI, blue dashed = predicted convergence path, green dashed = long-run mean. Drag to view the convergence trajectory.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="rtm3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="rtm3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Current CPI", cpi.toFixed(3), st) +
         metricBox("Long-run mean", longRunMean.toFixed(3), longRunMean>=0.95?"green":"amber") +
@@ -667,7 +667,7 @@
     ];
     return panel("1.12", "ICE Ratio", st,
       note("Independent Cost Estimate ratio: contractor EAC ÷ ICE. A ratio < 0.90 triggers formal reconciliation under OMB Circular A-11. Arc rings show BAC (inner blue), contractor EAC (amber middle), and ICE range (outer red arc). White dot = ICE point estimate. Drag to rotate.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="ice3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="ice3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("ICE EAC", "$" + (iceEAC/1e6).toFixed(1) + "M", ratioS) +
         metricBox("Contractor EAC", "$" + (contractorEAC/1e6).toFixed(1) + "M", cpi<0.90?"red":cpi<0.95?"amber":"green") +
@@ -778,7 +778,46 @@
       'analogous3d':   {thisSize:si.buildingSize||92000, thisCost:si.costPerSqft||334, meanCost:313, peers:null},
       'parametric3d':  {history:cpiHist.map(function(v){return v*1.018;}), models:null, consensus:si.parametricIndex||0.947},
       'inflation3d':   {periods:['Q1','Q2','Q3','Q4','Q5','Q6'],
-                        nominal:null, adjusted:null, inflationPct:si.inflationPct||5.9}
+                        nominal:null, adjusted:null, inflationPct:si.inflationPct||5.9},
+      // Cat 4-12 chart data (renderers use synthetic/demo values; key presence enables wiring)
+      '41': {},
+      '42': {},
+      '43': {},
+      '44': {},
+      '45': {},
+      '46': {},
+      '47': {},
+      '48': {},
+      '49': {},
+      '410': {},
+      '51': {},
+      '52': {},
+      '53': {},
+      '54': {},
+      '55': {},
+      '56': {},
+      '57': {},
+      '58': {},
+      '61': {},
+      '62': {},
+      '63': {},
+      '64': {},
+      '71': {},
+      '72_78': {},
+      '79_720': {},
+      '81': {},
+      '82': {},
+      '83': {},
+      '84': {},
+      '85': {},
+      '91': {},
+      '92_99': {},
+      '101': {},
+      '102_107': {},
+      '111': {},
+      '112_117': {},
+      '121': {},
+      '122_125': {}
     };
 
     root.querySelectorAll('.dd-chart-canvas').forEach(function(canvas) {
@@ -799,7 +838,7 @@
     const fore = (sci*0.997).toFixed(3);
     return panel("2.4", "Schedule Compression Index", st,
       note("Schedule Compression Index (SCI) tracks the ratio of schedule performance vs. baseline. Values below 1.0 indicate schedule compression is accumulating — work is being re-sequenced or accelerated at the expense of float.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="sci3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="sci3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("SCI", sci.toFixed(3), st) +
         metricBox("Baseline", "1.000", "green") +
@@ -821,7 +860,7 @@
     const weeksLeft = totalFloat > 0 ? (totalFloat / Number(burnRate)).toFixed(1) : '0';
     return panel("2.5", "Float Consumption Rate", st,
       note("Total float depletes as activities drift and constraints bind. At the current consumption rate this project will exhaust its schedule reserve before the scheduled completion date.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="float3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="float3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Float left", totalFloat + "d", st) +
         metricBox("Burn rate", burnRate + "d/wk", st) +
@@ -843,7 +882,7 @@
     const st = gap < -10 ? 'red' : gap < -5 ? 'amber' : 'green';
     return panel("2.6", "S-Curve Deviation", st,
       note("Planned vs. actual progress S-curve. The vertical gap at the current date quantifies schedule lag as a percentage of total scope. The area between curves represents the cumulative schedule slip.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="scurve3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="scurve3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Planned", planned.toFixed(0) + "%", "green") +
         metricBox("Actual", actual.toFixed(0) + "%", st) +
@@ -865,7 +904,7 @@
     const st = slipping / total >= 0.75 ? 'red' : slipping > 0 ? 'amber' : 'green';
     return panel("2.7", "Milestone Trend Analysis", st,
       note("MTA fan chart — each milestone is tracked across reporting periods. An upward slope indicates slipping forecast dates. All lines should be horizontal for on-schedule delivery.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="mta3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="mta3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Milestones", String(total), "green") +
         metricBox("Slipping", String(slipping) + " of " + String(total), st) +
@@ -887,7 +926,7 @@
     const st = rate >= 40 ? 'red' : rate >= 20 ? 'amber' : 'green';
     return panel("2.8", "Look-Ahead Schedule Health", st,
       note("Constraint rate in the 6-week look-ahead window. Activities constrained by resource, approval, or predecessor issues before they start are early indicators of imminent delay.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="lookahead3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="lookahead3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Planned", String(total) + " activities", "green") +
         metricBox("Constrained", String(constrained), st) +
@@ -909,7 +948,7 @@
     const st = rli < 0.90 ? 'red' : rli < 0.97 ? 'amber' : 'green';
     return panel("2.9", "Resource Loading Index", st,
       note("Planned vs. actual labor hours. Dual area surface — planned (back, dashed) vs. actual (front, solid). Under-loading indicates schedule risk from resource constraints; over-loading indicates future recovery risk.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="resource3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="resource3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Labor plan", Math.round(planned).toLocaleString() + "h", "green") +
         metricBox("Labor actual", Math.round(actual).toLocaleString() + "h", st) +
@@ -931,7 +970,7 @@
     const st = p80 > 20 ? 'red' : p80 > 10 ? 'amber' : 'green';
     return panel("2.10", "Schedule Risk P80", st,
       note("5,000-iteration schedule network simulation. The P50 and P80 planes slice through the delay distribution. P80 is the planning-conservative schedule risk estimate used for milestone contingency.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="schedp80"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="schedp80"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("P50", "+" + p50.toFixed(1) + "d", st) +
         metricBox("P80", "+" + p80.toFixed(1) + "d", st) +
@@ -955,7 +994,7 @@
     const fore = (cpiSched * 0.995).toFixed(3);
     return panel("2.11", "Critical Path Index", st,
       note("Critical path schedule performance ratio vs. baseline. Near-critical paths (blue) track activities within 10% of the critical path duration — these are the successor risks if the critical path recovers.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="cpisched3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="cpisched3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("CPI (sched)", cpiSched.toFixed(3), st) +
         metricBox("Trend", "Declining", st) +
@@ -1213,7 +1252,7 @@
     const st = simCls(s.status_color);
     return panel("04", "PERT — Network Criticality", st,
       note("Program Evaluation and Review Technique (PERT). Stochastic network analysis quantifying schedule risk across the critical path. The P80 duration is the planning-conservative milestone estimate. The Path Criticality Index identifies which path has the least float and highest probability of driving project completion.") +
-      '<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="pert3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>' +
+      '<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="pert3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>' +
       `<div class="dd-grid">${
         metricBox("P50 Duration", s.p50_duration_days + "d", "green") +
         metricBox("P80 Duration", s.p80_duration_days + "d", st) +
@@ -1232,7 +1271,7 @@
     const st = simCls(s.status_color);
     return panel("05", "LOB — Production Velocity", st,
       note("Line of Balance (LOB). Production velocity analysis for sequential operations. Monitors the time buffer between lead and follow-on crews. Buffer erosion is a leading schedule indicator — it appears before the delay reaches the critical path and before it registers in the SPI.") +
-      '<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="lob2d" data-nodrag="1"></canvas><p class="dd-canvas-hint">2D view</p></div>' +
+      '<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="lob2d" data-nodrag="1"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · 2D view</p></div>' +
       `<div class="dd-grid">${
         metricBox("Min Buffer (days)", s.minimum_buffer_days.toFixed(1), st) +
         metricBox("Critical Unit", String(s.critical_unit_index), st) +
@@ -1251,7 +1290,7 @@
     const st = simCls(s.status_color);
     return panel("06", "CCPM — Buffer Health", st,
       note("Critical Chain Project Management (CCPM). Tracks the rate at which the project buffer is being consumed against the rate of chain completion. A project burning buffer faster than it is completing work is on a trajectory toward delay, regardless of what the current SPI reports.") +
-      '<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="ccpm3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>' +
+      '<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="ccpm3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>' +
       `<div class="dd-grid">${
         metricBox("Chain Complete %", s.pct_chain_complete + "%", "green") +
         metricBox("Buffer Consumed %", s.pct_buffer_consumed + "%", st) +
@@ -1781,7 +1820,7 @@
     const st = overrunPct > 15 ? 'red' : overrunPct > 8 ? 'amber' : 'green';
     return panel("3.1", "Reference Class Forecast", st,
       note("Outside-view cost prior from comparable infrastructure projects. RCF P80 is the 80th-percentile outcome drawn from historical analogous project overruns — it is the benchmark against which all bottom-up estimates are pressure-tested.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="rcf3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="rcf3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("BAC", "$" + (bac/1e6).toFixed(1) + "M", "green") +
         metricBox("RCF P80", "$" + (rcfP80/1e6).toFixed(1) + "M", st) +
@@ -1802,7 +1841,7 @@
     const st = multiplier > 2.5 ? 'red' : multiplier > 1.5 ? 'amber' : 'green';
     return panel("3.2", "DSM Rework Propagation", st,
       note("Design Structure Matrix — rework burden from scope changes propagated across disciplines. Off-diagonal cells show the rework flow intensity between each discipline pair. The overall multiplier is the ratio of total rework-hours to the original trigger event hours.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="dsm3d" data-nodrag="1"></canvas><p class="dd-canvas-hint">2D view</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="dsm3d" data-nodrag="1"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · 2D view</p></div>` +
       `<div class="dd-grid">${
         metricBox("Rework mult", multiplier.toFixed(1) + "×", st) +
         metricBox("Impacted", impacted + " trades", st) +
@@ -1826,7 +1865,7 @@
     const st = burnedPct > 75 ? 'red' : burnedPct > 50 ? 'amber' : 'green';
     return panel("3.3", "Contingency Burn Rate", st,
       note("Contingency drawdown against project completion. The 80% threshold line marks the critical depletion point — consuming 80% of contingency before 80% completion leaves insufficient reserve for delivery risks in the later, higher-risk phases.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="contingency3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="contingency3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Burned", burnedPct + "%", st) +
         metricBox("Completion", completion + "%", "green") +
@@ -1847,7 +1886,7 @@
     const fore = (lpi * 0.987).toFixed(3);
     return panel("3.4", "Labor Productivity Index", st,
       note("LPI tracks the ratio of earned output hours to actual hours worked. An LPI below 1.00 indicates productivity is declining — more hours are being consumed per unit of output than planned. The uncertainty band reflects measurement variation across reporting periods.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="labor3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="labor3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("LPI", lpi.toFixed(3), st) +
         metricBox("Baseline", "1.000", "green") +
@@ -1869,7 +1908,7 @@
     const st = worstVar > 12 ? 'red' : worstVar > 6 ? 'amber' : 'green';
     return panel("3.5", "Material Cost Variance", st,
       note("Planned vs. actual material cost by trade. Each trade pair shows the planned bar (grey, back) against the actual bar (colored, front). Positive variance = cost overrun; negative = under-spend.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="material3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="material3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Structural", "+" + structVar.toFixed(1) + "%", structVar > 10 ? 'red' : 'amber') +
         metricBox("MEP", "+" + mepVar.toFixed(1) + "%", mepVar > 8 ? 'amber' : 'green') +
@@ -1891,7 +1930,7 @@
     const st = rate < 0.92 ? 'red' : rate < 0.97 ? 'amber' : 'green';
     return panel("3.6", "Overhead Absorption Rate", st,
       note("Overhead absorption — the ratio of overheads actually recovered through charged work vs. the planned overhead recovery rate. Under-absorption means indirect costs accumulate as unrecovered overhead, eroding the margin.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="overhead3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="overhead3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Rate", Math.round(rate * 100) + "%", st) +
         metricBox("Target", Math.round(target * 100) + "%", "green") +
@@ -1916,7 +1955,7 @@
     const st = vsBAC > 12 ? 'red' : vsBAC > 6 ? 'amber' : 'green';
     return panel("3.7", "Cost Risk P80", st,
       note("5,000-iteration cost risk simulation. Blue bars are below BAC (within estimate); amber bars exceed BAC; red bars exceed BAC + 1σ. P50 and P80 planes intersect the distribution at the median and 80th-percentile outcomes.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="costrisk3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="costrisk3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("P50", "$" + (p50/1e6).toFixed(1) + "M", st) +
         metricBox("P80", "$" + (p80/1e6).toFixed(1) + "M", st) +
@@ -1938,7 +1977,7 @@
     const st = premium > 8 ? 'red' : premium > 4 ? 'amber' : 'green';
     return panel("3.8", "Analogous Estimate Ratio", st,
       note("This project vs. 6 comparable healthcare / infrastructure facilities by building size (X) and $/sqft (Y). Red dot = this project. Blue dots = peer group. Dashed line = peer mean. Project sits above peer mean, indicating a cost premium vs. analogous comparators.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="analogous3d" data-nodrag="1"></canvas><p class="dd-canvas-hint">2D view</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="analogous3d" data-nodrag="1"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · 2D view</p></div>` +
       `<div class="dd-grid">${
         metricBox("This proj", "$" + thisCost + "/sqft", st) +
         metricBox("Peer mean", "$" + meanCost + "/sqft", "green") +
@@ -1958,7 +1997,7 @@
     const st = consensus < 0.93 ? 'red' : consensus < 0.97 ? 'amber' : 'green';
     return panel("3.9", "Parametric Cost Index", st,
       note("Three parametric cost models (RS Means, ENR Construction Cost Index, CBRE Build Cost) tracked across reporting periods. Each model runs at a slightly different Z offset to show convergence or divergence. The consensus index is the model-weighted average.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="parametric3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="parametric3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Consensus", consensus.toFixed(3), st) +
         metricBox("Spread", "±0.012", "green") +
@@ -1980,7 +2019,7 @@
     const st = inflationPct > 6 ? 'red' : inflationPct > 3 ? 'amber' : 'green';
     return panel("3.10", "Inflation Adjustment", st,
       note("Nominal vs. inflation-adjusted cost surfaces across 6 quarters. Red surface = nominal cost (what invoices show). Blue surface = real cost (inflation-stripped). The amber bracket at the final period shows the cumulative inflation gap — the portion of cost growth attributable to price-level changes rather than scope or productivity.") +
-      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="inflation3d" data-nodrag="1"></canvas><p class="dd-canvas-hint">2D view</p></div>` +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="inflation3d" data-nodrag="1"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · 2D view</p></div>` +
       `<div class="dd-grid">${
         metricBox("Inflation", "+" + inflationPct.toFixed(1) + "%", st) +
         metricBox("Real cost", "$" + realCost.toFixed(2) + "M", "green") +
@@ -1993,6 +2032,46 @@
       ], st) +
       rule("GREEN if inflation adjustment <= 3%; AMBER if 3–6%; RED if > 6%. Inflation contribution above 6% requires re-baselining the cost forecast with updated escalation factors."));
   }
+
+  /* ---- Cat 4-12 panel functions ---- */
+  function m4_1(p){return panel("4.1","Document Risk Score","amber",note("2D radar — 6 NLP dimensions. Composite risk score 0.45.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"41\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Score","0.45","amber")+metricBox("Threshold","0.70","amber")+metricBox("Trend","Rising","amber")+'</div>');}
+  function m4_2(p){return panel("4.2","RFI Velocity","red",note("RFI rate 3.2/week — above 2.5/week threshold. Response time 18 days.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"42\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Rate","3.2/wk","red")+metricBox("Threshold","2.5/wk","red")+metricBox("Resp time","18 days","red")+'</div>');}
+  function m4_3(p){return panel("4.3","Submittal Rejection Rate","amber",note("Rejection rate peaked at 15%. Currently 13% — above 10% threshold.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"43\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Current","13%","amber")+metricBox("Peak","15%","amber")+metricBox("Threshold","10%","amber")+'</div>');}
+  function m4_4(p){return panel("4.4","NCR Rate","red",note("2D histogram — non-conformance reports trending upward. M6: 6 NCRs.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"44\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("M6 NCRs","6","red")+metricBox("Threshold","4","red")+metricBox("Trend","Rising","red")+'</div>');}
+  function m4_5(p){return panel("4.5","Weather Day Impact","amber",note("Lost 5 weather days vs 3-day buffer remaining. Buffer eroding.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"45\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Lost","5 days","amber")+metricBox("Buffer left","3 days","amber")+metricBox("Risk","Amber","amber")+'</div>');}
+  function m4_6(p){return panel("4.6","Change Order Frequency","amber",note("1 CO issued — $380k cumulative. Frequency and value both trending up.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"46\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Count","1 CO","amber")+metricBox("Cumulative","$380k","amber")+metricBox("Trend","Rising","amber")+'</div>');}
+  function m4_7(p){return panel("4.7","Dispute Escalation Index","amber",note("Escalation index 0.38 — above 0.30 threshold. Trend rising.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"47\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Index","0.38","amber")+metricBox("Threshold","0.30","amber")+metricBox("Trend","Rising","amber")+'</div>');}
+  function m4_8(p){return panel("4.8","Subcontractor Performance","amber",note("2D radar — 3 subs across 5 dimensions. Mech trailing on schedule/cost.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"48\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Elec","70%","amber")+metricBox("Mech","58%","amber")+metricBox("Civil","78%","amber")+'</div>');}
+  function m4_9(p){return panel("4.9","Procurement Lead Time","amber",note("3D dot plot — steel +7d, HVAC +12d vs planned. Concrete on schedule.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"49\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Steel","+7d","amber")+metricBox("HVAC","+12d","amber")+metricBox("Concrete","−1d","amber")+'</div>');}
+  function m4_10(p){return panel("4.10","Spec Conflict Index","amber",note("Chord diagram — MEP–Struct conflict 0.8. Arch–MEP 0.5.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"410\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("MEP–Struct","0.8","amber")+metricBox("Arch–MEP","0.5","amber")+metricBox("Status","Amber","amber")+'</div>');}
+  function m5_1(p){return panel("5.1","DSM Propagation","amber",note("3D cascade — Arch scope change propagates through 4 downstream disciplines.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"51\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Rework mult","2.8×","amber")+metricBox("Depth","3 levels","amber")+metricBox("Impacted","4 trades","amber")+'</div>');}
+  function m5_2(p){return panel("5.2","Sensitivity Analysis","amber",note("3D tornado — labor rate ±12.4% has largest EAC impact.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"52\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Top driver","Labor rate","amber")+metricBox("Impact","±12.4%","amber")+metricBox("Vars tested","5","amber")+'</div>');}
+  function m5_3(p){return panel("5.3","Tornado Ranking","amber",note("2D horizontal — ranked EAC drivers. Labor rate dominates at +12.4%.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"53\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("#1 driver","Labor","amber")+metricBox("Impact","+12.4%","amber")+metricBox("#2","Materials","amber")+'</div>');}
+  function m5_4(p){return panel("5.4","Scenario Modeling","amber",note("3D overlapping distributions — optimistic / base / pessimistic EAC.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"54\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Optimistic","$25.8M","amber")+metricBox("Base","$27.1M","amber")+metricBox("Pessimistic","$28.6M","amber")+'</div>');}
+  function m5_5(p){return panel("5.5","Rework Feedback Loop","amber",note("3D spiral — each loop = feedback cycle. Amplification 1.35× after 4 loops.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"55\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Amplification","1.35×","amber")+metricBox("Loops","4","amber")+metricBox("Trend","Growing","amber")+'</div>');}
+  function m5_6(p){return panel("5.6","Queueing Bottleneck","amber",note("3D area — 3 queue types growing over 6 periods. Submittal Q deepest.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"56\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("RFI queue","10 items","amber")+metricBox("Submittal Q","11 items","amber")+metricBox("Trend","Growing","amber")+'</div>');}
+  function m5_7(p){return panel("5.7","Agent-Based Supply Chain","amber",note("3D network — disrupted supply paths shown in red dashed. Steel + HVAC.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"57\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Disrupted","2 paths","amber")+metricBox("Steel","+7d","amber")+metricBox("HVAC","+12d","amber")+'</div>');}
+  function m5_8(p){return panel("5.8","Discrete Event Simulation","amber",note("2D Gantt — planned vs simulated actuals. Steel +2W, MEP +3W, Comm +2W.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"58\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Steel","+2W","amber")+metricBox("MEP rough","+3W","amber")+metricBox("Commissioning","+2W","amber")+'</div>');}
+  function m6_1(p){return panel("6.1","Conservative Dominance","red",note("Worst signal wins. 2× Red → Red-review. Deterministic, auditable.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"61\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Result","Red-review","red")+metricBox("Rule","Worst wins","red")+metricBox("Signals","2R 2A","red")+'</div>');}
+  function m6_2(p){return panel("6.2","Weighted Voting","red",note("Weighted aggregate of all signal scores. Score 0.719 → Red.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"62\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Score","0.719","red")+metricBox("Top weight","EVM 35%","red")+metricBox("Result","Red","red")+'</div>');}
+  function m6_3(p){return panel("6.3","Majority Rules","red",note("Signal majority vote. 2R 2A tie — conservative dominance applies.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"63\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Red","2 votes","red")+metricBox("Amber","2 votes","red")+metricBox("Result","Red (tie)","red")+'</div>');}
+  function m6_4(p){return panel("6.4","Worst-N-of-M","red",note("Worst 2 of 6 signals above threshold → Red-review.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"64\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Threshold","0.70","red")+metricBox("Worst 2","MC + CUSUM","red")+metricBox("Result","Red-review","red")+'</div>');}
+  function m7_1(p){return panel("7.1","Dempster-Shafer Theory","red",note("Belief masses: Red 0.52, Amber 0.28, Conflict 0.12.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"71\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Bel(Red)","0.52","red")+metricBox("Bel(Amb)","0.28","red")+metricBox("Conflict","0.12","red")+'</div>');}
+  function m7_2(p){return panel("7.2–7.8","Evidence Methods (Rough Sets → BRB)","red",note("7 uncertainty methods compared. All converge on Red with varying confidence.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"72_78\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Methods","7","red")+metricBox("Agree Red","6 of 7","red")+metricBox("Avg conf","0.73","red")+'</div>');}
+  function m7_3(p){return panel("7.9–7.20","Advanced Methods Comparison","red",note("12 advanced methods. 10 of 12 agree Red. Confidence range 0.52–0.89.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"79_720\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Methods","12","red")+metricBox("Agree Red","10 of 12","red")+metricBox("Avg conf","0.72","red")+'</div>');}
+  function m8_1(p){return panel("8.1","Isolation Forest","amber",note("3D scatter — Project 06 anomaly score 74%, above 60% threshold.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"81\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Score","74%","amber")+metricBox("Threshold","60%","amber")+metricBox("Result","Anomaly","amber")+'</div>');}
+  function m8_2(p){return panel("8.2","Portfolio Outlier","red",note("2D scatter — Project 06 at 12th percentile across 9 projects.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"82\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Percentile","12th","red")+metricBox("CPI","0.929","red")+metricBox("SPI","0.911","red")+'</div>');}
+  function m8_3(p){return panel("8.3","Trajectory Classifier","red",note("Declining trajectory — boundary crossed at M5.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"83\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Class","Declining","red")+metricBox("Boundary","CPI<0.93","red")+metricBox("Crossed","M5","red")+'</div>');}
+  function m8_4(p){return panel("8.4","Cross-project Pattern","amber",note("Heatmap — Project 06 consistently underperforms on cost and risk.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"84\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Projects","9","amber")+metricBox("Metrics","5","amber")+metricBox("P06 rank","Bottom 2","amber")+'</div>');}
+  function m8_5(p){return panel("8.5","Composite Anomaly Score","red",note("Arc rings — 4 component scores aggregate to 68% composite anomaly.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"85\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Composite","68%","red")+metricBox("Top signal","Portfolio","red")+metricBox("Result","Red","red")+'</div>');}
+  function m9_1(p){return panel("9.1","ABM Governance Layer","red",note("Authority matrix decision tree. Signal → synthesis → authority → action.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"91\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Result","Red-review","red")+metricBox("Authority","Prog Director","red")+metricBox("Deadline","48hrs","red")+'</div>');}
+  function m9_2(p){return panel("9.2–9.9","Compliance Modules","amber",note("FAR, OMB, EVM reporting, quality, safety, environmental, contractor score.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"92_99\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Compliant","3 of 8","amber")+metricBox("Amber","4 of 8","amber")+metricBox("Red","1 of 8","amber")+'</div>');}
+  function m10_1(p){return panel("10.1","Missing Data Index","amber",note("Field completeness heatmap across 5 document types and 8 key fields.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"101\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Complete","73%","amber")+metricBox("Missing","27 fields","amber")+metricBox("Worst","Field Rpt","amber")+'</div>');}
+  function m10_2(p){return panel("10.2–10.7","Data Quality Modules","amber",note("Timeliness, reliability, audit trail, completeness, consistency, frequency.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"102_107\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Audit trail","100%","amber")+metricBox("Timeliness","0.58","amber")+metricBox("Overall","Amber","amber")+'</div>');}
+  function m11_1(p){return panel("11.1","Multi-Objective Optimization","red",note("3D Pareto surface — current solution dominated, optimal exists at higher cost tolerance.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"111\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Current","Dominated","red")+metricBox("Gap","11.2%","red")+metricBox("Action","Escalate","red")+'</div>');}
+  function m11_2(p){return panel("11.2–11.7","Optimization Modules","red",note("LP, constraint satisfaction, what-if, sensitivity, Pareto, regret minimization.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"112_117\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("LP req CPI","1.076","red")+metricBox("Constraints","2 violated","red")+metricBox("Recommend","Escalate","red")+'</div>');}
+  function m12_1(p){return panel("12.1","Interface Density Network","amber",note("3D network — Controls node is central hub with highest interface density.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"121\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Interfaces","8","amber")+metricBox("High density","Controls","amber")+metricBox("Status","Amber","amber")+'</div>');}
+  function m12_2(p){return panel("12.2–12.5","Dependency, Trace, Config, Integration","amber",note("Conditional modules — require interface control documents (ICD) to activate. Only 12.4 (Config Change Impact) activates from change-order data.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"122_125\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Active","12.4 only","amber")+metricBox("Waiting","ICD upload","amber")+metricBox("Status","Conditional","amber")+'</div>');}
 
   function simModules(project) {
     const payload = project.simulationSignals;
@@ -2087,6 +2166,14 @@
       m2_8(project) + m2_9(project) + m2_10(project) + m2_11(project) +
       m3_1(project) + m3_2(project) + m3_3(project) + m3_4(project) + m3_5(project) +
       m3_6(project) + m3_7(project) + m3_8(project) + m3_9(project) + m3_10(project) +
+      m4_1(project) + m4_2(project) + m4_3(project) + m4_4(project) + m4_5(project) +
+      m4_6(project) + m4_7(project) + m4_8(project) + m4_9(project) + m4_10(project) +
+      m5_1(project) + m5_2(project) + m5_3(project) + m5_4(project) + m5_5(project) +
+      m5_6(project) + m5_7(project) + m5_8(project) + m6_1(project) + m6_2(project) +
+      m6_3(project) + m6_4(project) + m7_1(project) + m7_2(project) + m7_3(project) +
+      m8_1(project) + m8_2(project) + m8_3(project) + m8_4(project) + m8_5(project) +
+      m9_1(project) + m9_2(project) + m10_1(project) + m10_2(project) + m11_1(project) +
+      m11_2(project) + m12_1(project) + m12_2(project) +
       sims.low +
       m10(project) +                                              // displays as Module 09 (Conservative Dominance)
       sims.dst +                                                  // displays as Module 10 (DST)
