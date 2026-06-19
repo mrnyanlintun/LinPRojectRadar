@@ -101,7 +101,10 @@
     auditResult: null,        // {items[], summary{}, csvContent, csvName}
     drafts: {},               // Item 17: contractor-response drafts keyed by row index
     pastAuditCache: {},       // keyed by audit_id → full audit payload (survives page reload via localStorage)
-    expandedAudit: null       // audit_id of the row expanded in Past Audits
+    expandedAudit: null,      // audit_id of the row expanded in Past Audits
+
+    /* Auto-expand AUDIT RESULTS the first time a fresh result arrives */
+    resultsOpen: false
   };
 
   /* ---------- helpers ---------- */
@@ -280,13 +283,13 @@
     }).join("");
   }
 
-  function sectionAHtml() {
+  /* CORPUS DOCUMENTS body: upload card + corpus list. Wrapped in a single
+     collapsible by renderAuditorPage; the section <h2>/intro paragraph live
+     inside the body so the collapse header stays terse. */
+  function corpusBodyHtml() {
     const canUpload = !!(state.projectId && state.pickFile && !state.uploadBusy);
     const msg = state.uploadMsg;
-    return `<section class="panel aud-panel ${state.projectId ? "" : "is-muted"}">
-      <p class="eyebrow">Section A · Corpus</p>
-      <h2 class="kn-h">User Requirements</h2>
-      <p class="kn-sub">Upload the reference documents this project will be audited against. Stored in the project folder and reused automatically in every future audit.</p>
+    return `<p class="kn-sub">Reference documents this project is audited against. Stored in the project folder and reused automatically in every future audit.</p>
 
       <div class="aud-card">
         <div class="aud-upload-row">
@@ -307,8 +310,65 @@
       <div class="aud-corpus-block">
         <p class="eyebrow" style="margin-top:18px">Uploaded references</p>
         ${corpusListHtml()}
-      </div>
-    </section>`;
+      </div>`;
+  }
+
+  function corpusCountBadge() {
+    if (!state.projectId) return "no project selected";
+    if (state.corpusLoading) return "loading…";
+    const n = state.corpus.length;
+    return n + " reference file" + (n === 1 ? "" : "s");
+  }
+
+  /* Render a single item row, indexed by its absolute position in items[] so the
+     draft-row buttons and state.drafts mapping keep working unchanged. */
+  function itemRowHtml(it, i) {
+    const sk = statusKey(it.status);
+    const statusLabel = it.status || "—";
+    const needsDraft = sk === "rejected" || sk === "remark";
+    const draft = state.drafts[i];
+    const draftBtn = needsDraft
+      ? `<button class="aud-draft-btn" data-row="${i}">${draft && draft.loading ? "Drafting…" : "Draft contractor response"}</button>`
+      : "";
+    const draftRow = (needsDraft && draft && (draft.text || draft.loading || draft.error))
+      ? `<tr class="aud-draft-row"><td colspan="5">
+          <div class="aud-draft">
+            <p class="aud-draft-label kn-sub">Draft response request (for contractor fairness gate) — requires human review before sending</p>
+            ${draft.loading ? `<p class="kn-sub">Drafting with AI…</p>`
+              : draft.error ? `<p class="aud-msg warn">${esc(draft.error)}</p>`
+              : `<textarea class="aud-draft-text" rows="5" readonly>${esc(draft.text)}</textarea>`}
+          </div></td></tr>`
+      : "";
+    return `<tr>
+      <td class="aud-num">${i + 1}</td>
+      <td>${esc(it.item || it.itemSubmitted || it.submittedItem || "—")}</td>
+      <td>${esc(it.remark || it.comment || it.note || "—")}</td>
+      <td class="aud-cite">${esc(it.citation || it.reference || "—")}</td>
+      <td><span class="aud-status aud-status-${sk}">${esc(statusLabel)}</span>${draftBtn ? `<div class="aud-draft-actions">${draftBtn}</div>` : ""}</td>
+    </tr>${draftRow}`;
+  }
+
+  /* Group items by verdict, build one nested collapsible per non-empty bucket. */
+  function resultsByVerdictHtml(items) {
+    if (!items.length) return `<p class="kn-sub">The audit returned no line items.</p>`;
+    const buckets = [
+      { key: "approved",          label: "Approved" },
+      { key: "approved-as-noted", label: "Approved as Noted" },
+      { key: "rejected",          label: "Rejected" },
+      { key: "remark",            label: "Remark" }
+    ];
+    const cs = window.collapsibleSection || function (id, title, body) { return body; };
+    return buckets.map((b, bi) => {
+      const rows = items.map((it, i) => statusKey(it.status) === b.key ? itemRowHtml(it, i) : "").filter(Boolean).join("");
+      const count = rows ? items.filter((it) => statusKey(it.status) === b.key).length : 0;
+      const body = count
+        ? `<div class="aud-table-wrap"><table class="aud-table">
+            <thead><tr><th>#</th><th>Item Submitted</th><th>Remark</th><th>Citation</th><th>Status</th></tr></thead>
+            <tbody>${rows}</tbody></table></div>`
+        : `<p class="kn-sub">No items in this bucket.</p>`;
+      const badge = `<span class="aud-status aud-status-${b.key}">${count}</span>`;
+      return cs("aud-bucket-" + b.key, b.label, body, false, badge);
+    }).join("");
   }
 
   function resultsHtml() {
@@ -327,33 +387,6 @@
     const apN  = sum.approvedAsNoted ?? items.filter((i) => statusKey(i.status) === "approved-as-noted").length;
     const rj   = sum.rejected        ?? items.filter((i) => statusKey(i.status) === "rejected").length;
     const rm   = sum.remarks         ?? items.filter((i) => statusKey(i.status) === "remark").length;
-    const csvName = r.csvName || r.filename || ("audit_" + state.reviewType + "_" + Date.now() + ".csv");
-
-    const rows = items.map((it, i) => {
-      const sk = statusKey(it.status);
-      const statusLabel = it.status || "—";
-      const needsDraft = sk === "rejected" || sk === "remark";
-      const draft = state.drafts[i];
-      const draftBtn = needsDraft
-        ? `<button class="aud-draft-btn" data-row="${i}">${draft && draft.loading ? "Drafting…" : "Draft contractor response"}</button>`
-        : "";
-      const draftRow = (needsDraft && draft && (draft.text || draft.loading || draft.error))
-        ? `<tr class="aud-draft-row"><td colspan="5">
-            <div class="aud-draft">
-              <p class="aud-draft-label kn-sub">Draft response request (for contractor fairness gate) — requires human review before sending</p>
-              ${draft.loading ? `<p class="kn-sub">Drafting with AI…</p>`
-                : draft.error ? `<p class="aud-msg warn">${esc(draft.error)}</p>`
-                : `<textarea class="aud-draft-text" rows="5" readonly>${esc(draft.text)}</textarea>`}
-            </div></td></tr>`
-        : "";
-      return `<tr>
-        <td class="aud-num">${i + 1}</td>
-        <td>${esc(it.item || it.itemSubmitted || it.submittedItem || "—")}</td>
-        <td>${esc(it.remark || it.comment || it.note || "—")}</td>
-        <td class="aud-cite">${esc(it.citation || it.reference || "—")}</td>
-        <td><span class="aud-status aud-status-${sk}">${esc(statusLabel)}</span>${draftBtn ? `<div class="aud-draft-actions">${draftBtn}</div>` : ""}</td>
-      </tr>${draftRow}`;
-    }).join("");
 
     return `<div class="aud-result">
       <div class="aud-summary">
@@ -364,12 +397,7 @@
         <span class="aud-status aud-status-remark">${rm} Remarks</span>
       </div>
 
-      ${items.length
-        ? `<div class="aud-table-wrap"><table class="aud-table">
-            <thead><tr><th>#</th><th>Item Submitted</th><th>Remark</th><th>Citation</th><th>Status</th></tr></thead>
-            <tbody>${rows}</tbody>
-          </table></div>`
-        : `<p class="kn-sub">The audit returned no line items.</p>`}
+      ${resultsByVerdictHtml(items)}
 
       <div class="aud-download-row">
         <button class="btn primary aud-download" id="aud-export-xlsx">Export XLSX</button>
@@ -378,17 +406,17 @@
     </div>`;
   }
 
-  function sectionBHtml() {
+  /* UPLOAD SUBMISSION body — review type + submission upload + run audit. The
+     results block lives in its own collapsible (audit-results) so that one can
+     auto-expand after a run without forcing this panel open as well. */
+  function submissionBodyHtml() {
     const hasProject = !!state.projectId;
     const hasCorpus = state.corpus.length > 0;
     const canRun = !!(hasProject && hasCorpus && state.submission && !state.auditing);
     const emptyCorpusMsg = hasProject && !state.corpusLoading && !hasCorpus
-      ? `<p class="aud-msg warn">No reference documents found for this project. Upload specifications, codes, or user requirements in User Requirements above before running an audit.</p>`
+      ? `<p class="aud-msg warn">No reference documents found for this project. Upload specifications, codes, or user requirements in CORPUS DOCUMENTS above before running an audit.</p>`
       : "";
-    return `<section class="panel aud-panel ${hasProject ? "" : "is-muted"}">
-      <p class="eyebrow">Section B · Audit</p>
-      <h2 class="kn-h">Technical Audit</h2>
-      <p class="kn-sub">Upload a submission to audit it against all reference documents in this project's corpus. Results are saved to the project folder.</p>
+    return `<p class="kn-sub">Upload a submission to audit it against all reference documents in this project's corpus. Results are saved to the project folder.</p>
       <p class="aud-illus" role="note">Audit findings are AI-assisted and require named human review and sign-off before any formal action is taken.</p>
 
       <div class="aud-step">
@@ -414,9 +442,22 @@
           <button class="btn primary" id="aud-run" ${canRun ? "" : "disabled"}>${state.auditing ? "Running…" : "Run Audit"}</button>
         </div>
         ${emptyCorpusMsg}
-        ${resultsHtml()}
-      </div>
-    </section>`;
+      </div>`;
+  }
+
+  function resultsCountBadge() {
+    if (state.auditing) return "running…";
+    if (!state.auditResult) return "not run yet";
+    const items = Array.isArray(state.auditResult.items) ? state.auditResult.items
+                : (Array.isArray(state.auditResult.results) ? state.auditResult.results : []);
+    return items.length + " item" + (items.length === 1 ? "" : "s");
+  }
+
+  function historyCountBadge() {
+    if (!state.projectId) return "no project selected";
+    if (state.pastLoading) return "loading…";
+    const n = state.pastAudits.length;
+    return n + " previous audit" + (n === 1 ? "" : "s");
   }
 
   function historyHtml() {
@@ -471,32 +512,20 @@
       </table></div>`;
   }
 
-  function historySectionHtml() {
-    return `<section class="panel aud-panel ${state.projectId ? "" : "is-muted"}">
-      <p class="eyebrow">Audit history</p>
-      <h2 class="kn-h">Audit History</h2>
-      ${historyHtml()}
-    </section>`;
-  }
-
   function renderAuditorPage() {
     const root = document.getElementById("auditor-root");
     if (!root) return;
     loadAuditCache(); // merge localStorage cache into state.pastAuditCache
-    const cs = window.collapsibleSection || function (id, t, c) { return c; };
-    const corpusN = state.corpus.length;
-    const histN = state.pastAudits.length;
-    // Auto-expand the audit section while/after an audit runs.
-    const auditOpen = !!(state.auditResult || state.auditing || state.auditError);
+    const cs = window.collapsibleSection || function (id, title, body) { return body; };
+    const corpus = cs("aud-corpus", "CORPUS DOCUMENTS", corpusBodyHtml(), true, corpusCountBadge());
+    const submission = cs("aud-submission-sec", "UPLOAD SUBMISSION", submissionBodyHtml(), false);
+    /* Results — auto-expands the first time a fresh result lands (see run handler). */
+    const results = cs("aud-results", "AUDIT RESULTS", resultsHtml() || "<p class=\"kn-sub\">No audit run yet.</p>",
+                       !!state.resultsOpen, resultsCountBadge());
+    const history = cs("aud-history", "AUDIT HISTORY", historyHtml(), false, historyCountBadge());
     root.innerHTML =
       topPickerHtml() +
-      `<div class="aud-stack">` +
-        cs("aud-corpus", "Corpus Documents", sectionAHtml(), true,
-           corpusN ? (corpusN + " reference file" + (corpusN === 1 ? "" : "s")) : "") +
-        cs("aud-run", "Upload Submission &amp; Audit Results", sectionBHtml(), auditOpen, "") +
-        cs("aud-history", "Audit History", historySectionHtml(), false,
-           histN ? (histN + " previous") : "") +
-      `</div>`;
+      `<div class="aud-stack">${corpus}${submission}${results}${history}</div>`;
     wire(root);
   }
 
@@ -603,6 +632,7 @@
         });
         const payload = resp.audit || resp.result || resp;
         state.auditResult = payload || { items: [], summary: {} };
+        state.resultsOpen = true;     // auto-expand AUDIT RESULTS after a fresh run
         // Persist to Drive (non-fatal) and cache locally for View/Export XLSX.
         const auditId = "audit_" + Date.now();
         const auditPayload = Object.assign({ audit_id: auditId, run_at: new Date().toISOString(),

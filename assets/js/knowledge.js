@@ -1594,12 +1594,40 @@
     function navHtml() {
       return CATEGORY_NAV.map((g) => g.category ? categoryGroup(g) : flatNavBtn(g.id)).join("");
     }
+    /* Split the article body on <h3>…</h3> headings and wrap each section
+       in the shared collapsibleSection() pattern. The lead intro that sits
+       before the first <h3> becomes an "Overview" panel open by default; all
+       <h3> sections collapse closed. Topics with no <h3> are returned as-is. */
+    function wrapArticleSections(html, topicId) {
+      if (!window.collapsibleSection) return html;
+      const parts = String(html || "").split(/(<h3[^>]*>[\s\S]*?<\/h3>)/i);
+      if (parts.length < 3) return html;
+      const overview = parts[0] || "";
+      let out = "";
+      const safeOverview = overview.trim();
+      if (safeOverview) {
+        out += window.collapsibleSection(
+          "kn-" + topicId + "-overview", "Overview", overview, true);
+      }
+      for (let i = 1; i < parts.length; i += 2) {
+        const headingMatch = parts[i].match(/<h3[^>]*>([\s\S]*?)<\/h3>/i);
+        const titleHtml = headingMatch ? headingMatch[1] : ("Section " + ((i + 1) / 2));
+        const titleText = titleHtml.replace(/<[^>]+>/g, "").trim() || ("Section " + ((i + 1) / 2));
+        const body = parts[i + 1] || "";
+        const sectionId = "kn-" + topicId + "-sec" + ((i + 1) / 2);
+        out += window.collapsibleSection(sectionId, esc(titleText), body, false);
+      }
+      return out;
+    }
+
     function contentHtml() {
       const t = lookupTopic(selectedId) || LIBRARY[0];
+      const built = t.build ? t.build() : "";
+      const body = wrapArticleSections(built, t.id || "topic");
       return `<article class="kn-article">
         <p class="eyebrow">${esc(t.eyebrow || "Knowledge Library")}</p>
         <h2 class="kn-h kn-h-art">${esc(t.title)}</h2>
-        ${t.build ? t.build() : ""}
+        ${body}
       </article>`;
     }
     function paint() {
