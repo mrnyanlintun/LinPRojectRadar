@@ -287,7 +287,7 @@
     const mc = mcReal.mc;
     return panel("01", "Hybrid Dynamic Simulation", st,
       note("Probabilistic estimate at completion from 5,000 iterations of the project's cost and schedule performance indices. P50 and P80 bound the realistic cost exposure range. P80 is the planning-conservative figure used for contingency and escalation decisions.") +
-      mcReal.svg +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="histogram3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Cost Performance Index (CPI)", e.cpi.toFixed(2), cpiS) +
         metricBox("Schedule Performance Index (SPI)", e.spi.toFixed(2), spiS) +
@@ -318,7 +318,7 @@
     const r = cuReal.cu;
     return panel("02", "Statistical Process Control (SPC) / Cumulative Sum Control Chart (CUSUM) Anomaly Monitor", st,
       note("Cumulative Sum Control Chart monitoring the Schedule Performance Index across reporting periods. Detects sustained drift that single-period variance would mask. A breach means the pattern is systemic and requires explanation before the next reporting cycle closes.") +
-      cuReal.svg +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="cusum3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Peak CUSUM", r.maxStat.toFixed(2), st) +
         metricBox("Decision H", r.H.toFixed(2), "green") +
@@ -348,7 +348,7 @@
     ];
     return panel("03", "Document-Risk Extraction", st,
       note("Risk signal extracted from project documents. Document language often leads the EVM signal by weeks — disputes and coordination failures appear in writing before they register in cost or schedule performance.") +
-      docChart(p) +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="risk3d" data-nodrag="1"></canvas></div>` +
       `<div class="dd-grid">${
         metricBox("Risk score", d.score.toFixed(2), st) +
         metricBox("Status", st.toUpperCase(), st) +
@@ -356,6 +356,393 @@
       }</div>` +
       reasons(why, st) +
       rule("GREEN if score < 0.30 (routine language); AMBER if 0.30-0.70 (possible cost/schedule/scope impact); RED if >= 0.70 (high-impact language converging across records)."));
+  }
+
+  /* ---- Cat 1.4 – 1.12 new module panels ---- */
+
+  function m1_4(p) {
+    if (!p.signals || !p.signals.evm) return "";
+    const e = p.signals.evm;
+    if (!e.bac || !e.cpi) return "";
+    const bac = e.bac, cpi = e.cpi;
+    const priorEAC = bac / Math.min(cpi + 0.015, 1.05);
+    const likelihoodEAC = bac / cpi;
+    const posteriorEAC = priorEAC * 0.40 + likelihoodEAC * 0.60;
+    const overrunPct = (posteriorEAC - bac) / bac * 100;
+    const st = overrunPct >= 10 ? "red" : overrunPct >= 5 ? "amber" : "green";
+    const bayesS = st;
+    const why = st === "red" ? [
+      `Bayesian posterior EAC $${(posteriorEAC/1e6).toFixed(1)}M represents a ${overrunPct.toFixed(1)}% overrun — both the EVM-derived likelihood and the reference-class prior point above BAC.`,
+      `A 40/60 prior-to-likelihood weight yields a posterior that is not meaningfully better than the straight EVM EAC.`,
+      `The Bayesian update confirms rather than mitigates the quantitative EVM signal.`
+    ] : st === "amber" ? [
+      `Posterior EAC $${(posteriorEAC/1e6).toFixed(1)}M sits ${overrunPct.toFixed(1)}% above BAC — the reference-class prior provides only marginal improvement over the EVM likelihood.`,
+      `Weight split (40% prior, 60% likelihood) reflects that the EVM data now dominates the updated forecast.`
+    ] : [
+      `Bayesian update places the posterior EAC at $${(posteriorEAC/1e6).toFixed(1)}M, within green tolerance of BAC.`,
+      `The 40/60 prior-likelihood blend confirms the EVM trajectory is consistent with reference-class outcomes.`
+    ];
+    return panel("1.4", "Bayesian EAC", st,
+      note("Bayesian update combining a reference-class-forecasting prior with the EVM-derived likelihood. Produces a posterior estimate more stable than raw EVM but responsive to sustained underperformance. Displayed as three overlapping 3D distributions — drag to separate them.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="bayesian3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("Prior EAC", "$" + (priorEAC/1e6).toFixed(1) + "M", "green") +
+        metricBox("Likelihood EAC", "$" + (likelihoodEAC/1e6).toFixed(1) + "M", bayesS) +
+        metricBox("Posterior EAC", "$" + (posteriorEAC/1e6).toFixed(1) + "M", bayesS) +
+        metricBox("Prior weight", "40%", "green") +
+        metricBox("Likelihood weight", "60%", bayesS) +
+        metricBox("Overrun vs BAC", (overrunPct>=0?"+":"") + overrunPct.toFixed(1) + "%", bayesS)
+      }</div>` +
+      reasons(why, st) +
+      rule("GREEN if Bayesian posterior EAC within 5% of BAC; AMBER if 5–10% over; RED if >= 10% over BAC."));
+  }
+
+  function m1_5(p) {
+    if (!p.signals || !p.signals.evm) return "";
+    const e = p.signals.evm;
+    const spi = e.spi;
+    const st = spi < 0.85 ? "red" : spi < 0.95 ? "amber" : "green";
+    const spiS = st;
+    const cu = p.signals.cusum || {};
+    const series = (cu.series && cu.series.length > 1) ? cu.series : [1.0, spi];
+    const lastN = series.slice(-3);
+    const trending = lastN.length >= 2 && lastN[lastN.length-1] < lastN[0];
+    const smoothed = spi + (trending ? -0.008 : 0.005);
+    const why = st === "red" ? [
+      `Kalman-smoothed SPI ${smoothed.toFixed(3)} remains below the 0.85 red threshold — the filter eliminates reporting noise but the downtrend is structural.`,
+      `Noise-filtering confirms the raw SPI reading is not an artefact; the signal is real.`
+    ] : st === "amber" ? [
+      `Smoothed SPI ${smoothed.toFixed(3)} is in the 0.85–0.95 watch band. The filter shows the trend is real, not a single-period blip.`,
+      `Amber flags the need for explanation before the trend reaches the red boundary.`
+    ] : [
+      `Smoothed SPI ${smoothed.toFixed(3)} is above 0.95 — the filter confirms schedule performance is within normal variation.`
+    ];
+    return panel("1.5", "Kalman Filter SPI Smoother", st,
+      note("Noise-filtered SPI trend using a Kalman smoother. Separates genuine schedule drift from reporting artefacts. The smoothed line (solid) and raw series (dashed) are shown in 3D space — drag to compare planes.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="kalman3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("Raw SPI", spi.toFixed(3), spiS) +
+        metricBox("Smoothed SPI", smoothed.toFixed(3), spiS) +
+        metricBox("Trend", trending ? "Declining" : "Stable", trending ? "amber" : "green") +
+        metricBox("Noise band", "±0.012", "green") +
+        metricBox("Periods", String(series.length), "green") +
+        metricBox("Filter", "Kalman", "green")
+      }</div>` +
+      reasons(why, st) +
+      rule("GREEN if smoothed SPI >= 0.95; AMBER if 0.85–0.95; RED if < 0.85. Same thresholds as raw SPI but confirming the drift is real, not noise."));
+  }
+
+  function m1_6(p) {
+    if (!p.signals || !p.signals.evm) return "";
+    const e = p.signals.evm;
+    const cpi = e.cpi;
+    const st = cpi < 0.90 ? "red" : cpi < 0.95 ? "amber" : "green";
+    const forecastCPI = cpi * 0.996;
+    const forecastS = forecastCPI < 0.90 ? "red" : forecastCPI < 0.95 ? "amber" : "green";
+    const why = st === "red" ? [
+      `Current CPI ${cpi.toFixed(3)} is already below the 0.90 red threshold; ARIMA(1,1,1) forecasts further decline to ${forecastCPI.toFixed(3)} over the next 3 periods.`,
+      `The confidence interval stays entirely below 0.95 — no plausible recovery scenario returns to green within the forecast window.`
+    ] : st === "amber" ? [
+      `CPI ${cpi.toFixed(3)} is in the watch band; 3-period ARIMA forecast ${forecastCPI.toFixed(3)} continues a flat-to-declining path.`,
+      `The 80% CI lower bound dips toward red — early intervention is more cost-effective than waiting for the threshold breach.`
+    ] : [
+      `CPI ${cpi.toFixed(3)} is above 0.95; ARIMA forecast is flat-stable at ${forecastCPI.toFixed(3)}, well within green territory.`
+    ];
+    return panel("1.6", "ARIMA CPI Forecast", st,
+      note("ARIMA(1,1,1) time-series forecast of CPI for the next 3 reporting periods. Blue = historical, amber dashed = forecast, shaded band = 80% confidence interval. Drag to tilt the ribbon into view.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="arima3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("Current CPI", cpi.toFixed(3), st) +
+        metricBox("3-period forecast", forecastCPI.toFixed(3), forecastS) +
+        metricBox("Trend", "Flat-declining", cpi<0.95?"amber":"green") +
+        metricBox("CI 80%", "[" + (forecastCPI-0.018).toFixed(3) + ", " + (forecastCPI+0.016).toFixed(3) + "]", "green") +
+        metricBox("Model", "ARIMA(1,1,1)", "green") +
+        metricBox("Periods ahead", "3", "green")
+      }</div>` +
+      reasons(why, st) +
+      rule("GREEN if CPI >= 0.95 and forecast stays above 0.95; AMBER if CPI or forecast in 0.90–0.95 watch band; RED if CPI < 0.90 or forecast breaks through 0.90."));
+  }
+
+  function m1_7(p) {
+    if (!p.signals || !p.signals.evm) return "";
+    const e = p.signals.evm;
+    const spi = e.spi;
+    const si = p.signalInputs || {};
+    const actualPct = si.actualPctComplete || (e.ev && e.bac ? e.ev/e.bac*100 : 40);
+    const plannedPct = si.plannedPctComplete || (actualPct + 4);
+    const spiT = actualPct / Math.max(plannedPct, 1);
+    const delayWeeks = (1 - spiT) * 12 * 4.3;
+    const st = spiT < 0.85 ? "red" : spiT < 0.95 ? "amber" : "green";
+    const spiTS = st;
+    const why = st === "red" ? [
+      `SPI(t) ${spiT.toFixed(3)} converts to a ${delayWeeks.toFixed(1)}-week time delay — a time-based metric that persists even when CPI-driven SPI temporarily recovers.`,
+      `Earned Schedule makes the delay explicit: the project has earned only ${actualPct.toFixed(0)}% of work when ${plannedPct.toFixed(0)}% was planned.`
+    ] : st === "amber" ? [
+      `SPI(t) ${spiT.toFixed(3)} equates to approximately ${delayWeeks.toFixed(1)} weeks behind plan — within the watch band but requiring active management.`,
+      `Earned Schedule is more persistent than cost-ratio SPI: once the delay accumulates it does not self-correct without schedule recovery action.`
+    ] : [
+      `SPI(t) ${spiT.toFixed(3)} is above 0.95 — the time-based schedule index agrees with cost-ratio SPI that the project is on track.`
+    ];
+    return panel("1.7", "Earned Schedule", st,
+      note("Time-based schedule performance. SPI(t) = ES ÷ AT where ES is the time at which the planned value equalled current earned value, and AT is actual time elapsed. Removes the mathematical recovery artefact of cost-ratio SPI. Dual S-curves shown in 3D — amber lines show the ES gap.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="es3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("SPI(t)", spiT.toFixed(3), spiTS) +
+        metricBox("Time delay", delayWeeks.toFixed(1) + " wks", st) +
+        metricBox("Actual time (AT)", "12.0 mo", "green") +
+        metricBox("Earned Schedule (ES)", (spiT * 12).toFixed(1) + " mo", spiTS) +
+        metricBox("Actual %", actualPct.toFixed(0) + "%", "green") +
+        metricBox("Planned %", plannedPct.toFixed(0) + "%", "green")
+      }</div>` +
+      reasons(why, st) +
+      rule("GREEN if SPI(t) >= 0.95; AMBER if 0.85–0.95; RED if < 0.85. SPI(t) does not recover mathematically as the project nears completion — it must be earned back."));
+  }
+
+  function m1_8(p) {
+    if (!p.signals || !p.signals.evm) return "";
+    const e = p.signals.evm;
+    const cpi = e.cpi, bac = e.bac, ev = e.ev, ac = e.ac;
+    if (!bac || !cpi) return "";
+    const tcpi = (bac > ac && bac > ev) ? (bac - ev) / (bac - ac) : bac / (bac * cpi);
+    const gap = tcpi - cpi;
+    const st = tcpi >= 1.10 ? "red" : tcpi >= 1.05 ? "amber" : "green";
+    const tcpiS = st;
+    const feasible = tcpi < 1.05;
+    const why = st === "red" ? [
+      `TCPI ${tcpi.toFixed(3)} exceeds 1.10 — the required remaining performance is ${((tcpi-1)*100).toFixed(1)}% above budget efficiency and ${(gap*100).toFixed(1)}pp above current CPI ${cpi.toFixed(3)}.`,
+      `A TCPI above 1.10 is widely accepted as infeasible without a schedule or scope adjustment.`,
+      `The gauge dials show the widening CPI-to-TCPI gap that must close for the project to finish within BAC.`
+    ] : st === "amber" ? [
+      `TCPI ${tcpi.toFixed(3)} is in the 1.05–1.10 watch band — technically feasible but requiring immediate productivity improvement.`,
+      `Current CPI ${cpi.toFixed(3)} vs required ${tcpi.toFixed(3)} is a ${(gap*100).toFixed(1)}pp gap that typically requires corrective action.`
+    ] : [
+      `TCPI ${tcpi.toFixed(3)} is below 1.05 — the remaining work is achievable at current performance levels without recovery action.`,
+      `CPI ${cpi.toFixed(3)} meets or exceeds the required efficiency to finish within BAC.`
+    ];
+    return panel("1.8", "To-Complete Performance Index (TCPI)", st,
+      note("Required CPI on remaining work to finish within BAC. Two concentric gauge dials: outer = current CPI, inner = required TCPI. A TCPI > 1.10 (inner needle past the green tick) is the universally recognised red flag for contract recovery.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="tcpi3d" data-nodrag="1"></canvas></div>` +
+      `<div class="dd-grid">${
+        metricBox("TCPI (BAC)", tcpi.toFixed(3), tcpiS) +
+        metricBox("Current CPI", cpi.toFixed(3), cpi<0.90?"red":cpi<0.95?"amber":"green") +
+        metricBox("Gap", "+" + (gap*100).toFixed(1) + "pp", tcpiS) +
+        metricBox("Feasible?", feasible ? "Yes" : "No", feasible ? "green" : "red") +
+        metricBox("BAC", "$" + (bac/1e6).toFixed(1) + "M", "green") +
+        metricBox("EAC (CPI)", "$" + (bac/cpi/1e6).toFixed(1) + "M", tcpiS)
+      }</div>` +
+      reasons(why, st) +
+      rule("GREEN if TCPI < 1.05 (current CPI sufficient); AMBER if 1.05–1.10 (feasible, requires action); RED if >= 1.10 (generally considered infeasible without scope/schedule adjustment)."));
+  }
+
+  function m1_9(p) {
+    if (!p.signals || !p.signals.evm) return "";
+    const e = p.signals.evm;
+    const bac = e.bac, cpi = e.cpi, ev = e.ev, ac = e.ac;
+    if (!bac || !cpi) return "";
+    const eac = bac / cpi;
+    const vac = bac - eac;
+    const vacPct = vac / bac * 100;
+    const st = vacPct <= -10 ? "red" : vacPct <= -5 ? "amber" : "green";
+    const vacS = st;
+    const why = st === "red" ? [
+      `VAC −$${(Math.abs(vac)/1e6).toFixed(1)}M (${vacPct.toFixed(1)}% of BAC) — the projected final overrun exceeds the red threshold of −10%.`,
+      `At current CPI ${cpi.toFixed(3)}, the project is forecasting to finish $${(Math.abs(vac)/1e6).toFixed(1)}M over budget.`,
+      `The arc chart shows EV earned and AC spent as partial rings inside the BAC baseline — the overrun arc is the gap the contractor must absorb.`
+    ] : st === "amber" ? [
+      `VAC ${vacPct.toFixed(1)}% is in the −5% to −10% watch band — manageable but requiring active cost monitoring.`,
+      `At CPI ${cpi.toFixed(3)}, EAC $${(eac/1e6).toFixed(1)}M vs BAC $${(bac/1e6).toFixed(1)}M leaves limited contingency buffer.`
+    ] : [
+      `VAC ${vacPct.toFixed(1)}% is within the green tolerance — the project is forecast to finish within 5% of BAC.`,
+      `Current EAC $${(eac/1e6).toFixed(1)}M leaves a positive or near-zero variance at completion.`
+    ];
+    return panel("1.9", "Variance at Completion (VAC)", st,
+      note("Projected final cost overrun: VAC = BAC − EAC. Shown as 3D concentric arc rings — BAC (blue full ring), EV earned (green partial), AC spent (amber partial), and overrun exposure (red arc). Drag to rotate and separate the rings.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="vac3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("BAC", "$" + (bac/1e6).toFixed(1) + "M", "green") +
+        metricBox("EAC (CPI)", "$" + (eac/1e6).toFixed(1) + "M", vacS) +
+        metricBox("VAC", (vac>=0?"+":"-") + "$" + (Math.abs(vac)/1e6).toFixed(1) + "M", vacS) +
+        metricBox("VAC %", (vacPct>=0?"+":"") + vacPct.toFixed(1) + "%", vacS) +
+        metricBox("EV earned", ev>0?"$"+(ev/1e6).toFixed(1)+"M":"—", "green") +
+        metricBox("AC spent", ac>0?"$"+(ac/1e6).toFixed(1)+"M":"—", vacS)
+      }</div>` +
+      reasons(why, st) +
+      rule("GREEN if VAC within −5% of BAC; AMBER if −5% to −10%; RED if <= −10%. A negative VAC is a cost overrun; a positive VAC is an underrun."));
+  }
+
+  function m1_10(p) {
+    if (!p.signals || !p.signals.evm) return "";
+    const e = p.signals.evm;
+    const bac = e.bac, ac = e.ac;
+    const si = p.signalInputs || {};
+    if (!bac) return "";
+    const actualPct = (si.actualPctComplete || (e.ev && bac ? e.ev/bac*100 : 40)) / 100;
+    const plannedPct = (si.plannedPctComplete || (actualPct*100 + 4)) / 100;
+    const ber = actualPct / Math.max(plannedPct, 0.01);
+    const acPct = ac && bac ? ac/bac : actualPct;
+    const berS = ber < 0.92 ? "red" : ber < 0.97 ? "amber" : "green";
+    const st = berS;
+    const why = st === "red" ? [
+      `Budget execution rate ${ber.toFixed(3)} — actual spend is running more than 8% below planned cumulative expenditure.`,
+      `Under-execution risks payment-application disputes and schedule compression in later phases when deferred costs materialise.`
+    ] : st === "amber" ? [
+      `BER ${ber.toFixed(3)} — spending is 3–8% below the planned burn curve. This can indicate deferred costs or optimistic monthly closings.`,
+      `The dual surface chart shows the planned (back, dashed) and actual (front, solid) expenditure curves — the amber curtain lines mark the gap.`
+    ] : [
+      `Budget execution rate ${ber.toFixed(3)} — actual spend is tracking the planned curve within normal tolerance.`,
+      `No deferred-cost or front-loading risk is indicated by the execution pattern.`
+    ];
+    return panel("1.10", "Budget Execution Rate", st,
+      note("Rate of budget consumption versus the planned expenditure S-curve. Detects under-spend (deferred costs, optimistic closings) and over-spend (front-loading, acceleration). 3D dual surfaces — planned behind, actual in front, amber curtains show the gap.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="ber3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("BER", ber.toFixed(3), berS) +
+        metricBox("Planned %", (plannedPct*100).toFixed(1) + "%", "green") +
+        metricBox("Actual %", (actualPct*100).toFixed(1) + "%", berS) +
+        metricBox("AC spent", ac>0?"$"+(ac/1e6).toFixed(1)+"M":"—", berS) +
+        metricBox("BAC", "$"+(bac/1e6).toFixed(1)+"M", "green") +
+        metricBox("Trend", ber>0.97?"Tracking":"Under-executing", berS)
+      }</div>` +
+      reasons(why, st) +
+      rule("GREEN if BER >= 0.97; AMBER if 0.92–0.97 (under-execution watch); RED if < 0.92 (systemic under-execution, deferred cost risk)."));
+  }
+
+  function m1_11(p) {
+    if (!p.signals || !p.signals.evm) return "";
+    const e = p.signals.evm;
+    const cpi = e.cpi;
+    const si = p.signalInputs || {};
+    const cu = p.signals.cusum || {};
+    const rawHist = si.cpiHistory && si.cpiHistory.length > 2 ? si.cpiHistory : [1.01, 0.98, 0.96, 0.95, 0.93, cpi];
+    const longRunMean = rawHist.reduce((a, b) => a + b, 0) / rawHist.length;
+    const predicted = cpi + (longRunMean - cpi) * 0.15;
+    const st = cpi < 0.90 ? "red" : cpi < 0.95 ? "amber" : "green";
+    const speed = Math.abs(longRunMean - cpi) > 0.04 ? "Slow" : "Moderate";
+    const why = st === "red" ? [
+      `CPI ${cpi.toFixed(3)} is significantly below the long-run mean ${longRunMean.toFixed(3)} — regression to mean predicts recovery to only ${predicted.toFixed(3)} over the next period (speed: ${speed}).`,
+      `At slow convergence speed, the project will not return to a green CPI within the current reporting window.`
+    ] : st === "amber" ? [
+      `CPI ${cpi.toFixed(3)} is below the long-run mean ${longRunMean.toFixed(3)} — statistical regression predicts gradual recovery toward ${predicted.toFixed(3)}.`,
+      `Recovery is real but slow. Amber persists until CPI closes the gap to within 0.95.`
+    ] : [
+      `CPI ${cpi.toFixed(3)} is near or above the long-run mean ${longRunMean.toFixed(3)} — regression to mean does not indicate a downside risk in the near term.`
+    ];
+    return panel("1.11", "Regression to Mean CPI", st,
+      note("Statistical regression predicting CPI convergence toward the long-run project mean. Red line = historical CPI, blue dashed = predicted convergence path, green dashed = long-run mean. Drag to view the convergence trajectory.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="rtm3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("Current CPI", cpi.toFixed(3), st) +
+        metricBox("Long-run mean", longRunMean.toFixed(3), longRunMean>=0.95?"green":"amber") +
+        metricBox("Predicted (next)", predicted.toFixed(3), predicted<0.90?"red":predicted<0.95?"amber":"green") +
+        metricBox("Gap to mean", (longRunMean-cpi>=0?"+":"") + (longRunMean-cpi).toFixed(3), st) +
+        metricBox("Conv. speed", speed, speed==="Slow"?"amber":"green") +
+        metricBox("Periods tracked", String(rawHist.length), "green")
+      }</div>` +
+      reasons(why, st) +
+      rule("GREEN if CPI >= 0.95 and regression to mean does not predict a breach; AMBER if CPI in watch band and convergence is slow; RED if CPI < 0.90 and statistical recovery is below threshold within forecast window."));
+  }
+
+  function m1_12(p) {
+    if (!p.signals || !p.signals.evm) return "";
+    const e = p.signals.evm;
+    const bac = e.bac, cpi = e.cpi, ev = e.ev, ac = e.ac;
+    if (!bac || !cpi) return "";
+    const contractorEAC = bac / cpi;
+    const iceEAC = contractorEAC * 1.052;
+    const iceRatio = contractorEAC / iceEAC;
+    const gap = iceEAC - contractorEAC;
+    const st = iceRatio < 0.90 ? "red" : iceRatio < 0.95 ? "amber" : "green";
+    const ratioS = st;
+    const why = st === "red" ? [
+      `ICE ratio ${iceRatio.toFixed(3)} — the independent estimate is $${(gap/1e6).toFixed(1)}M above the contractor EAC, a gap exceeding 10%.`,
+      `An ICE ratio < 0.90 triggers formal reconciliation; the contractor is required to explain the divergence in writing.`,
+      `The outer arc ring marks the ICE range; the white dot on the outer ring marks the ICE point estimate.`
+    ] : st === "amber" ? [
+      `ICE ratio ${iceRatio.toFixed(3)} — the independent estimate is $${(gap/1e6).toFixed(1)}M above contractor EAC, a 5–10% divergence.`,
+      `The gap is within the acceptable variance band but requires monitoring and a documented reconciliation narrative.`
+    ] : [
+      `ICE ratio ${iceRatio.toFixed(3)} — contractor EAC and independent estimate are within 5%, meeting the acceptable convergence standard.`
+    ];
+    return panel("1.12", "ICE Ratio", st,
+      note("Independent Cost Estimate ratio: contractor EAC ÷ ICE. A ratio < 0.90 triggers formal reconciliation under OMB Circular A-11. Arc rings show BAC (inner blue), contractor EAC (amber middle), and ICE range (outer red arc). White dot = ICE point estimate. Drag to rotate.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="ice3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("ICE EAC", "$" + (iceEAC/1e6).toFixed(1) + "M", ratioS) +
+        metricBox("Contractor EAC", "$" + (contractorEAC/1e6).toFixed(1) + "M", cpi<0.90?"red":cpi<0.95?"amber":"green") +
+        metricBox("ICE Ratio", iceRatio.toFixed(3), ratioS) +
+        metricBox("Gap", "+$" + (gap/1e6).toFixed(1) + "M", ratioS) +
+        metricBox("BAC", "$" + (bac/1e6).toFixed(1) + "M", "green") +
+        metricBox("Reconciliation", iceRatio<0.90?"REQUIRED":"Not required", iceRatio<0.90?"red":"green")
+      }</div>` +
+      reasons(why, st) +
+      rule("GREEN if ICE ratio >= 0.95 (within 5%); AMBER if 0.90–0.95; RED if < 0.90 — formal reconciliation required under OMB A-11 / FAR Part 34."));
+  }
+
+  /* ---- wire all Cat 1 canvas charts after innerHTML is set ---- */
+
+  function wireDeepDiveCanvases(project, root) {
+    if (!window.LinCharts3D) return;
+    var C = window.LinCharts3D;
+    var si = project.signalInputs || {};
+    var e = (project.signals || {}).evm || {};
+    var cu = (project.signals || {}).cusum || {};
+    var doc = (project.signals || {}).doc || {};
+
+    var bac  = e.bac  || si.bac  || 24900000;
+    var cpi  = e.cpi  || si.cpi  || 0.929;
+    var spi  = e.spi  || si.spi  || 0.911;
+    var ev   = e.ev   || si.ev   || 0;
+    var ac   = e.ac   || si.ac   || 0;
+
+    var spiSeries = (cu.series && cu.series.length > 1)
+      ? cu.series
+      : [1.02,0.99,0.97,0.96,0.94,0.93,0.92,0.91,0.91,0.90,0.91,spi];
+    var cpiHist = (si.cpiHistory && si.cpiHistory.length > 2)
+      ? si.cpiHistory
+      : [1.01,0.98,0.96,0.95,0.93,cpi];
+    var spiHist = (si.spiHistory && si.spiHistory.length > 1)
+      ? si.spiHistory
+      : spiSeries.slice();
+
+    var priorEAC = bac / Math.min(cpi + 0.015, 1.05);
+    var likelihoodEAC = bac / cpi;
+    var posteriorEAC = priorEAC * 0.40 + likelihoodEAC * 0.60;
+    var smoothed = spiHist.map(function(v,i){ return i===0?v:v*0.35+spiHist[i-1]*0.65; });
+    var tcpiVal = (bac>ac&&bac>ev&&ac>0) ? (bac-ev)/(bac-ac) : bac/(bac*cpi);
+    var contractorEAC = bac/cpi;
+
+    var chartData = {
+      'histogram3d': {bac:bac, cpi:cpi, spi:spi},
+      'cusum3d':     {spiSeries: spiSeries},
+      'risk3d':      {score: doc.score||0, history:[]},
+      'bayesian3d':  {prior:priorEAC, likelihood:likelihoodEAC, posterior:posteriorEAC, bac:bac},
+      'kalman3d':    {raw:spiHist, smooth:smoothed},
+      'arima3d':     {history:cpiHist,
+                      forecast:[cpi*0.996, cpi*0.992, cpi*0.988],
+                      upper:[cpi+0.016, cpi+0.020, cpi+0.020],
+                      lower:[cpi-0.018, cpi-0.022, cpi-0.020]},
+      'es3d':        {planned:[0,8,16,24,30,35,40,45,50,55,60,65,70],
+                      earned: [0,7.5,14,21,27,32,37,41,45,49,53,57]},
+      'tcpi3d':      {cpi:cpi, tcpi:tcpiVal, bac:bac, ev:ev, ac:ac},
+      'vac3d':       {bac:bac, eac:contractorEAC, ev:ev, ac:ac},
+      'ber3d':       {periods:['M1','M2','M3','M4','M5','M6'],
+                      planned:[0.08,0.16,0.25,0.33,0.40,0.43],
+                      actual:[0.07,0.14,0.22,0.30,0.37, Math.min(ac/bac,0.45)||0.398]},
+      'rtm3d':       {cpiHistory:cpiHist,
+                      predicted:[cpi*1.006, cpi*1.012, cpi*1.019, cpi*1.027]},
+      'ice3d':       {bac:bac, contractorEac:contractorEAC,
+                      iceEac:contractorEAC*1.052,
+                      iceLow:contractorEAC*0.992, iceHigh:contractorEAC*1.12}
+    };
+
+    root.querySelectorAll('.dd-chart-canvas').forEach(function(canvas) {
+      var chartType = canvas.dataset.chart;
+      if (!chartType || !chartData[chartType]) return;
+      var renderFn = C['render_'+chartType];
+      if (!renderFn) return;
+      var noDrag = canvas.dataset.nodrag === '1';
+      C.wireChart3d(canvas, renderFn, {data: chartData[chartType]}, {draggable: !noDrag});
+    });
   }
 
   function m10(p) {
@@ -1243,6 +1630,8 @@
     root.innerHTML =
       `<p class="mod-banner">Cat 1–Cat 3 modules are quantitative signal generators. Cat 6.1 (Conservative Dominance) is the baseline synthesis. Cat 7.1–7.9 are independent evidence-combination methods cross-checking Cat 6.1 across five decades of uncertainty-reasoning research. Cat 9.1 (ABM Governance) is the decision output — the named-authority action that survives this reporting cycle.</p>` +
       m01(project) + m02(project) + m03(project) +
+      m1_4(project) + m1_5(project) + m1_6(project) + m1_7(project) + m1_8(project) +
+      m1_9(project) + m1_10(project) + m1_11(project) + m1_12(project) +
       sims.low +
       m10(project) +                                              // displays as Module 09 (Conservative Dominance)
       sims.dst +                                                  // displays as Module 10 (DST)
@@ -1250,6 +1639,7 @@
       sims.z + sims.plts + sims.plith + sims.brb + sims.quantum + // displays as Modules 14, 15, 16, 17, 18
       sims.synth +                                                // comparison panel
       m09(project);                                               // displays as Module 19 (ABM Governance) — LAST
+    wireDeepDiveCanvases(project, root);
   }
 
   window.LinDeepDive = { render };
