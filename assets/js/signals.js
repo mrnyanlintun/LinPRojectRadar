@@ -1070,7 +1070,7 @@
     const projectField = fixedId
       ? `<input type="hidden" class="dz-project" value="${esc(fixedId)}" />`
       : `<label class="rationale-label">Project
-           <select class="dz-project ig-input">${projectOptions(null)}</select></label>`;
+           <select id="manage-project-select" class="dz-project ig-input">${projectOptions(null)}</select></label>`;
     return `
       <div class="doc-type-reference">
         <div class="dtr-title">Supported document types</div>
@@ -1108,7 +1108,6 @@
     const input = container.querySelector(".dz-input");
     const queue = container.querySelector(".dz-queue");
     const browse = container.querySelector(".dz-browse");
-    const projectEl = container.querySelector(".dz-project");
     if (!dz || !input || !queue) return;
 
     browse.addEventListener("click", () => input.click());
@@ -1126,19 +1125,110 @@
       handleFiles(e.dataTransfer && e.dataTransfer.files);
     });
 
-    function setError(item, file, msg) {
+    // CORS-safe POST with 45s timeout — text/plain bypasses preflight for Apps Script.
+    function postJSON(payload) {
+      var controller = new AbortController();
+      var timer = setTimeout(function () { controller.abort(); }, 45000);
+      return fetch(window.LIN_API_URL || "", {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      })
+        .then(function (r) { return r.text(); })
+        .then(function (t) {
+          try { return JSON.parse(t); }
+          catch (e) { throw new Error("Bad response: " + t.substring(0, 120)); }
+        })
+        .finally(function () { clearTimeout(timer); });
+    }
+
+    function fileToBase64(file) {
+      return new Promise(function (resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          var raw = e.target.result;
+          resolve(raw.indexOf(",") !== -1 ? raw.split(",")[1] : raw);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function setError(item, file, msg, retryFn) {
       item.className = "dz-item dz-error";
       item.innerHTML = `<span class="dz-item-name">${esc(file.name)}</span>` +
         `<span class="dz-item-error">✗ ${esc(msg)}</span>`;
+      if (retryFn) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "dz-item-retry btn small";
+        btn.textContent = "Retry";
+        btn.addEventListener("click", retryFn);
+        item.appendChild(btn);
+      }
     }
 
-    async function extractOne(id, docType, payload, file, item) {
-      item.className = "dz-item dz-extracting";
+    async function processOne(id, file) {
+      const item = document.createElement("div");
+      item.className = "dz-item dz-identifying";
       item.innerHTML = `<span class="dz-item-name">${esc(file.name)}</span>` +
-        `<span class="dz-item-type">${esc(DOC_TYPE_LABEL[docType] || docType)}</span>` +
-        `<span class="dz-item-status">Extracting…</span>`;
+        `<span class="dz-item-status">⟳ Identifying…</span>`;
+      queue.appendChild(item);
+
+      if (file.size > 20 * 1024 * 1024) {
+        setError(item, file, "File too large — max 20 MB");
+        return;
+      }
+
+      let base64;
+      try { base64 = await fileToBase64(file); }
+      catch (e) { setError(item, file, "Couldn't read file"); return; }
+
+      if (base64.length > 5000000) {
+        setError(item, file, "File too large — maximum ~3 MB. Please compress the PDF.");
+        return;
+      }
+
+      // Step 1: identify document type via identifyOnly action.
+      let ident;
       try {
-        const resp = await LinStore.extractSignals(Object.assign({ id, docType }, payload));
+        ident = await postJSON({
+          action: "identifyOnly",
+          id,
+          dataBase64: base64,
+          mimeType: file.type || "application/pdf",
+          fileName: file.name
+        });
+        if (!ident.ok) throw new Error(ident.error || "identify failed");
+      } catch (e) {
+        setError(item, file, "Could not identify: " + (e.message || "Network error"),
+          function () { item.remove(); processOne(id, file); });
+        return;
+      }
+
+      const docType = ident.docType || "monthly_report";
+      const confPct = ident.confidence ? Math.round(ident.confidence * 100) + "%" : "";
+      item.className = "dz-item dz-identified";
+      item.innerHTML = `<span class="dz-item-name">${esc(file.name)}</span>` +
+        `<span class="dz-item-type">${esc(DOC_TYPE_LABEL[docType] || docType)}${confPct ? " · " + esc(confPct) : ""}</span>` +
+        `<span class="dz-item-status">⟳ Extracting…</span>`;
+
+      // Step 2: extract signals immediately — no user confirmation.
+      try {
+        const extractPayload = {
+          action: "extractsignals",
+          id,
+          docType,
+          dataBase64: base64,
+          mimeType: file.type || "application/pdf",
+          fileName: file.name
+        };
+        if (ident.storedFileId) extractPayload.storedFileId = ident.storedFileId;
+        const resp = await postJSON(extractPayload);
+        if (!resp.ok) throw new Error(resp.error || "extract failed");
+
+        // Merge into client-side signal cache and run models so project charts update.
         const si = mergeComputed(resp);
         const appliedKeys = (resp.applied && resp.applied.length)
           ? resp.applied.slice()
@@ -1151,9 +1241,9 @@
         const dates = extractDates(resp, si);
         cache[id] = { signalInputs: si, missing, readyToRun: resp.readyToRun, dates };
         const project = LinStore.getCached(id);
-        let ran = false;
-        if ((hasIndex(si.cpi) || hasIndex(si.spi)) && project) ran = await runModels(project, si);
+        if ((hasIndex(si.cpi) || hasIndex(si.spi)) && project) await runModels(project, si);
         await refreshProject(id);
+
         const fieldCount = appliedKeys.length;
         const bits = [fieldCount + " field" + (fieldCount === 1 ? "" : "s")];
         const cpi = fmtNum(si.cpi), spi = fmtNum(si.spi);
@@ -1161,72 +1251,31 @@
         if (spi != null) bits.push("SPI " + spi);
         item.className = "dz-item dz-done";
         item.innerHTML = `<span class="dz-item-name">${esc(file.name)}</span>` +
-          `<span class="dz-item-type">${esc(DOC_TYPE_LABEL[docType] || docType)}</span>` +
           `<span class="dz-item-result">✓ ${esc(bits.join(" · "))}</span>`;
         if (window.LinApp) LinApp.refresh();
         if (onResult) onResult(id);
       } catch (e) {
-        console.error('[dropzone] extractOne error:', e);
-        setError(item, file, (e && e.message) ? e.message : "Network error — check API URL and console");
-      }
-    }
-
-    function renderConfirm(item, id, payload, file, docType, confidence, period) {
-      item.className = "dz-item dz-identified";
-      const confTxt = confidence > 0 ? Math.round(confidence * 100) + "% confident" : "needs confirmation";
-      item.innerHTML = `<span class="dz-item-name">${esc(file.name)}</span>` +
-        `<select class="dz-item-override ig-input">${docTypeOptionsHtml(docType)}</select>` +
-        `<span class="dz-item-conf">${esc(confTxt)}${period ? " · " + esc(period) : ""}</span>` +
-        `<button type="button" class="dz-item-confirm btn small">Extract</button>`;
-      item.querySelector(".dz-item-confirm").addEventListener("click", () => {
-        const chosen = item.querySelector(".dz-item-override").value;
-        extractOne(id, chosen, payload, file, item);
-      });
-    }
-
-    async function processOne(id, file) {
-      const item = document.createElement("div");
-      item.className = "dz-item dz-identifying";
-      item.innerHTML = `<span class="dz-item-name">${esc(file.name)}</span>` +
-        `<span class="dz-item-status">Identifying…</span>`;
-      queue.appendChild(item);
-
-      console.log('[dropzone] API URL:', typeof LIN_API_URL !== 'undefined' ? LIN_API_URL : 'UNDEFINED');
-      console.log('[dropzone] file:', file.name, 'size:', file.size, 'bytes', 'type:', file.type);
-
-      if (file.size > 20 * 1024 * 1024) {
-        setError(item, file, 'File too large — max 20 MB');
-        return;
-      }
-
-      let payload;
-      try { payload = await buildFilePayload(file); }
-      catch (e) { setError(item, file, "Couldn't read file"); return; }
-      const payloadStr = JSON.stringify(payload);
-      console.log('[dropzone] payload size:', payloadStr.length, 'chars', 'has text:', !!payload.text, 'has base64:', !!payload.dataBase64);
-      if ((payload.dataBase64 || "").length > 5000000) {
-        setError(item, file, "File too large — maximum 3MB. Please compress the PDF.");
-        return;
-      }
-      // Identify (graceful: if the endpoint is unavailable, hold for manual pick).
-      let ident = null;
-      try { ident = await LinStore.identifyDocument(Object.assign({ id }, payload)); }
-      catch (e) { ident = null; }
-      const docType = (ident && (ident.docType || ident.doc_type)) || "monthly_report";
-      const confidence = (ident && ident.confidence != null) ? Number(ident.confidence) : 0;
-      const period = ident && (ident.suggestedPeriod || ident.suggested_period || ident.period);
-      // Auto-confirm high-confidence matches; otherwise let the PM confirm/override.
-      if (confidence >= 0.85 && (ident.docType || ident.doc_type)) {
-        await extractOne(id, docType, payload, file, item);
-      } else {
-        renderConfirm(item, id, payload, file, docType, confidence, period);
+        console.error("[dropzone] extract error:", e);
+        setError(item, file, (e && e.message) || "Network error — check console",
+          function () { item.remove(); processOne(id, file); });
       }
     }
 
     async function handleFiles(fileList) {
       const files = [].slice.call(fileList || []);
       if (!files.length) return;
-      const id = projectEl ? projectEl.value : "";
+
+      // Re-read the project select live at drop time (list may have loaded after render).
+      const projectEl = container.querySelector(".dz-project");
+      let id = projectEl ? projectEl.value : "";
+      // Refresh options if select is empty (projects loaded after initial render).
+      if (projectEl && projectEl.tagName === "SELECT" && projectEl.options.length <= 1) {
+        projectEl.innerHTML = `<option value="">Select project…</option>` +
+          ((LinStore.cachedActive && LinStore.cachedActive()) || [])
+            .map(function (p) { return `<option value="${esc(p.id)}">${esc(p.id)} — ${esc(p.name)}</option>`; })
+            .join("");
+        id = projectEl.value;
+      }
       if (!id) {
         const note = document.createElement("div");
         note.className = "dz-item dz-error";
@@ -1234,7 +1283,11 @@
         queue.appendChild(note);
         return;
       }
-      for (const file of files) { await processOne(id, file); } // sequential — keeps backend load sane
+      for (let i = 0; i < files.length; i++) {
+        await processOne(id, files[i]);
+        if (i < files.length - 1) await new Promise(function (r) { setTimeout(r, 400); });
+      }
+      try { if (typeof refreshProject === "function") await refreshProject(id); } catch (e) {}
     }
   }
 
