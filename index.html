@@ -467,6 +467,26 @@
           </div>
         </section>
 
+        <!-- Section 4b — Capabilities -->
+        <section class="panel about-section about-section-wide">
+          <h2 class="about-h">Capabilities</h2>
+          <div class="about-table-wrap">
+            <table class="about-table">
+              <thead><tr><th>Capability</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td>Drag-and-drop ingest</td><td>Multi-file document upload with AI type identification — drop any combination of PDFs and Lin classifies, extracts, and runs models automatically</td></tr>
+                <tr><td>3D module charts</td><td>Zoom / pan / rotate 3D canvas charts for all 12 categories — 38 chart types including scatter, network, line, Pareto, and flat 2D donuts</td></tr>
+                <tr><td>Force network visualization</td><td>108-module signal network rendered in 3D — inner ring generators, outer ring synthesis / evidence / governance, live status colour-coded from project data</td></tr>
+                <tr><td>Portfolio ML anomaly detection</td><td>Cat 8 — Isolation Forest, outlier ranking, trajectory classification, cross-project pattern detection, composite anomaly score</td></tr>
+                <tr><td>Evidence combination</td><td>Cat 7 — 20 independent uncertainty-reasoning frameworks (Dempster-Shafer, Rough Sets, Neutrosophic, Z-numbers, Plithogenic, Quantum Probability, and 14 others)</td></tr>
+                <tr><td>Executive brief</td><td>Grouped-status AI summary: Recommendation, Signal Pattern by status tier, Key Drivers with actual values, Required Actions with named authority</td></tr>
+                <tr><td>Decision optimization</td><td>Cat 11 — multi-objective optimization, LP feasibility, constraint satisfaction, what-if scenarios, regret minimization</td></tr>
+                <tr><td>Conditional SE modules</td><td>Cat 12 — interface density, dependency mapping, requirements traceability, config change impact — activate on interface control document upload</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
         <!-- Section 5 — Version -->
         <section class="panel about-section">
           <h2 class="about-h">Version</h2>
@@ -476,6 +496,7 @@
                 <tr><td>Version</td><td>v1.0-praxis-demo</td></tr>
                 <tr><td>Backend</td><td>v10.18+</td></tr>
                 <tr><td>Framework</td><td>PCEIF Layer 1 + Layer 2</td></tr>
+                <tr><td>Last updated</td><td id="about-date">—</td></tr>
                 <tr><td>Institution</td><td>George Washington University</td></tr>
                 <tr><td>Program</td><td>Doctor of Engineering — Engineering Management</td></tr>
                 <tr><td>Author</td><td>Nyan Lin Tun</td></tr>
@@ -509,6 +530,13 @@
     </footer>
 
   </div>
+
+  <script>
+    (function() {
+      var el = document.getElementById('about-date');
+      if (el) el.textContent = new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'});
+    })();
+  </script>
 
   <!-- PDF.js: client-side PDF→text extraction before upload (Apps Script byte
        parsing is unreliable for ReportLab PDFs). Used by signals.js. -->

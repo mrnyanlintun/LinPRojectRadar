@@ -1166,7 +1166,8 @@
         if (window.LinApp) LinApp.refresh();
         if (onResult) onResult(id);
       } catch (e) {
-        setError(item, file, (e && e.message) ? e.message : "Could not extract — insufficient data");
+        console.error('[dropzone] extractOne error:', e);
+        setError(item, file, (e && e.message) ? e.message : "Network error — check API URL and console");
       }
     }
 
@@ -1190,9 +1191,19 @@
         `<span class="dz-item-status">Identifying…</span>`;
       queue.appendChild(item);
 
+      console.log('[dropzone] API URL:', typeof LIN_API_URL !== 'undefined' ? LIN_API_URL : 'UNDEFINED');
+      console.log('[dropzone] file:', file.name, 'size:', file.size, 'bytes', 'type:', file.type);
+
+      if (file.size > 20 * 1024 * 1024) {
+        setError(item, file, 'File too large — max 20 MB');
+        return;
+      }
+
       let payload;
       try { payload = await buildFilePayload(file); }
       catch (e) { setError(item, file, "Couldn't read file"); return; }
+      const payloadStr = JSON.stringify(payload);
+      console.log('[dropzone] payload size:', payloadStr.length, 'chars', 'has text:', !!payload.text, 'has base64:', !!payload.dataBase64);
       if ((payload.dataBase64 || "").length > 5000000) {
         setError(item, file, "File too large — maximum 3MB. Please compress the PDF.");
         return;

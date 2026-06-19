@@ -410,7 +410,7 @@
       { lab: "Governance Synthesis", mods: ["03 Doc Risk", "04 Synthesis", "05 ABM"], color: "var(--phosphor)", x: 30, y: 116 },
       { lab: "Extended Simulation", mods: ["06 PERT", "07 LOB", "08 CCPM", "09 RCF", "10 DSM"], color: "var(--radar-amber)", x: 30, y: 222 },
     ];
-    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="auto" class="kn-svg" role="img" aria-label="Signal stack of 9 categories feeding the governance decision">`;
+    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="auto" class="kn-svg" role="img" aria-label="Signal stack of 12 categories feeding the governance decision">`;
     groups.forEach((g) => {
       const bx = g.x, by = g.y, bw = 360, bh = 64;
       out += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="9" fill="var(--surface-soft)" stroke="${g.color}" stroke-width="1.5"></rect>`;
@@ -649,7 +649,7 @@ Named Human Approval → Audit Record</pre>
     },
     {
       id: "stack",
-      title: "3. The Signal Stack: 9 Categories · 19 Active Modules",
+      title: "3. The Signal Stack: 12 Categories · 108 Analytical Modules",
       eyebrow: "Architecture",
       build: () => `
         <p class="kn-lead">The signal stack splits into five tiers. The first two compute and govern; the next three extend coverage to specialised construction and design risks, then layer multiple evidence-combination and uncertainty-reasoning frameworks across the result.</p>
