@@ -461,8 +461,8 @@
   /* ---------- 1.9 VAC — 3D concentric arc rings ---------- */
   function render_vac3d(ctx, W, H, m, rx, ry) {
     var d=m.data;
-    var cx=W/2,cy=H/2+8,fov=Math.min(W,H)*0.9;
-    function t(pt){return proj(rX(rY(pt,ry),rx),fov,cx,cy);}
+    var cx=W/2,cy=H/2+8;
+    function t(pt){return {x:cx+pt.x, y:cy+pt.z, s:1};}  // flat 2D donut (rings read top-down, not tilted)
     ctx.clearRect(0,0,W,H);
     var eac=d.eac||(d.bac/0.929);
     var vac=d.bac-eac;
@@ -616,8 +616,8 @@
   /* ---------- 1.12 ICE Ratio — 3D arc rings ---------- */
   function render_ice3d(ctx, W, H, m, rx, ry) {
     var d=m.data;
-    var cx=W/2,cy=H/2+8,fov=Math.min(W,H)*0.9;
-    function t(pt){return proj(rX(rY(pt,ry),rx),fov,cx,cy);}
+    var cx=W/2,cy=H/2+8;
+    function t(pt){return {x:cx+pt.x, y:cy+pt.z, s:1};}  // flat 2D donut (rings read top-down, not tilted)
     ctx.clearRect(0,0,W,H);
     var maxV=d.iceHigh*1.1;
     var rings2=[
@@ -1052,6 +1052,7 @@
     var cx=W/2,cy=H/2+8,fov=Math.min(W,H)*0.9;
     function t(p){return proj(rX(rY(p,ry),rx),fov,cx,cy);}
     ctx.clearRect(0,0,W,H);
+    t = function(p){return {x:cx+p.x, y:cy+p.z, s:1};};  // flat 2D donut (rings read top-down, not tilted)
     var total=d.total||10, onTrack=d.onTrack||6, constrained=d.constrained||4;
     var rings=[
       {R:72,lw:16,col:'#3fcaa6',label:'Total planned',  val:total+' activities',  pct:1.0},
@@ -2334,8 +2335,8 @@
 
   // ═══ CAT 7 — Evidence Combination (grouped) ═══════════════════
   function render_71(ctx,W,H,m,rx,ry){ // DST — arc rings belief masses
-    var cx=W/2,cy=H/2+8,fov=Math.min(W,H)*0.9;
-    function t(p){return prj(rX(rY(p,ry),rx),fov,cx,cy);}
+    var cx=W/2,cy=H/2+8;
+    function t(p){return {x:cx+p.x, y:cy+p.z, s:1};}  // flat 2D donut (rings read top-down, not tilted)
     ctx.clearRect(0,0,W,H);
     var masses=[{label:'Belief: Red',val:0.52,col:'#e0556b',R:72,lw:14},{label:'Belief: Amber',val:0.28,col:'#e2b13c',R:52,lw:14},{label:'Belief: Green',val:0.08,col:'#3fcaa6',R:32,lw:14},{label:'Conflict mass',val:0.12,col:'#64748b',R:16,lw:8}];
     var startA=-Math.PI/2;
@@ -2515,8 +2516,8 @@
     aL(ctx,14,14,'P06 row highlighted — consistent underperformer','#64748b');
   }
   function render_85(ctx,W,H,m,rx,ry){ // Anomaly Score — arc rings
-    var cx=W/2,cy=H/2+8,fov=Math.min(W,H)*0.9;
-    function t(p){return prj(rX(rY(p,ry),rx),fov,cx,cy);}
+    var cx=W/2,cy=H/2+8;
+    function t(p){return {x:cx+p.x, y:cy+p.z, s:1};}  // flat 2D donut (rings read top-down, not tilted)
     ctx.clearRect(0,0,W,H);
     var components=[{label:'Isolation Forest',score:0.74,R:72,lw:14,col:'#e0556b'},{label:'Portfolio outlier',score:0.82,R:52,lw:14,col:'#e0556b'},{label:'Trajectory',score:0.68,R:32,lw:12,col:'#e2b13c'},{label:'Cross-project',score:0.60,R:16,lw:10,col:'#e2b13c'}];
     var startA=-Math.PI/2;
