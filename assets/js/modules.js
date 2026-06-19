@@ -686,9 +686,38 @@
          <p class="kn-sub">Create a project and populate its signals on Manage Projects to see the nineteen signal modules across the portfolio. Empty projects are shown on the radar in an awaiting-ingest state, not charted here.</p></section>`;
       return;
     }
-    root.innerHTML = BANNER + emptyNote + moduleCardsHtml(populated);
+    const forcenetHtml = `<div class="forcenet-wrap">
+      <div class="forcenet-header">
+        <span class="forcenet-title">108-Module Signal Network</span>
+        <span class="forcenet-sub">Click any category node to focus · drag to rotate · scroll to zoom</span>
+        <div class="forcenet-controls">
+          <button id="fn-btn-all" class="active">All</button>
+          <button id="fn-btn-reset" title="Reset view">⌂ Reset</button>
+          <div id="fn-cat-btns"></div>
+        </div>
+      </div>
+      <canvas id="fn-canvas"></canvas>
+      <div id="fn-tooltip">
+        <div class="fn-tt-cat"></div>
+        <div class="fn-tt-num"></div>
+        <div class="fn-tt-name"></div>
+        <div class="fn-tt-status"></div>
+        <div class="fn-tt-metric"></div>
+      </div>
+      <div class="forcenet-footer">
+        <div class="fn-leg"><span class="fn-ld" style="background:#4ea0ff"></span>Complete</div>
+        <div class="fn-leg"><span class="fn-ld" style="background:#3fcaa6"></span>Green</div>
+        <div class="fn-leg"><span class="fn-ld" style="background:#f0c040"></span>Yellow</div>
+        <div class="fn-leg"><span class="fn-ld" style="background:#e2b13c"></span>Amber</div>
+        <div class="fn-leg"><span class="fn-ld" style="background:#e0556b"></span>Red</div>
+        <div class="fn-leg"><span class="fn-ld" style="background:#26344f"></span>No data</div>
+        <span id="fn-stat"></span>
+      </div>
+    </div>`;
+    root.innerHTML = BANNER + emptyNote + forcenetHtml + moduleCardsHtml(populated);
     root.querySelectorAll("[data-open]").forEach((b) =>
       b.addEventListener("click", () => LinApp.openDetail(b.dataset.open)));
+    if (window.LinForceNet) LinForceNet.init();
   }
 
   /* All nineteen modules computed for ONE project (Project Detail page).

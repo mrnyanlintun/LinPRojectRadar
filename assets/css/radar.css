@@ -1103,6 +1103,56 @@ body[data-theme="light"] .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .sphere3d-canvas:active, .scatter3d-canvas:active { cursor: grabbing; }
 .sphere3d-panel .sw-footnote { padding: 10px 18px; border-top: 1px solid var(--line); margin-top: 0; }
 
+/* ---- Force Network hero ---- */
+.forcenet-wrap {
+  border: 1px solid var(--line); border-radius: 14px;
+  overflow: hidden; background: var(--surface, #0f1729); margin-bottom: 24px; position: relative;
+}
+.forcenet-header {
+  display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+  border-bottom: 1px solid var(--line); background: var(--surface-2, #131d33); flex-wrap: wrap;
+}
+.forcenet-title {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--phosphor, #e9a23b);
+}
+.forcenet-sub { font-size: 11px; color: var(--faint, #64748b); }
+.forcenet-controls { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; align-items: center; }
+#fn-btn-all, #fn-btn-reset {
+  font-family: var(--font-mono); font-size: 9px; border-radius: 4px;
+  padding: 4px 9px; cursor: pointer; background: transparent;
+  border: 1px solid var(--line); color: var(--muted);
+}
+#fn-btn-all.active, #fn-btn-all:hover, #fn-btn-reset:hover {
+  border-color: var(--phosphor, #e9a23b); color: var(--phosphor, #e9a23b);
+}
+#fn-cat-btns { display: flex; flex-wrap: wrap; gap: 3px; }
+.fn-cbtn {
+  font-family: var(--font-mono); font-size: 9px; border-radius: 4px;
+  padding: 4px 9px; cursor: pointer; transition: .15s; border: 1px solid; background: transparent;
+}
+.fn-cbtn:hover, .fn-cbtn.active { opacity: 1 !important; font-weight: 700; }
+#fn-canvas { display: block; width: 100%; height: 500px; cursor: grab; }
+#fn-canvas:active { cursor: grabbing; }
+#fn-tooltip {
+  position: absolute; background: var(--surface-2, #131d33); border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px 13px; min-width: 190px; max-width: 240px;
+  pointer-events: none; display: none; z-index: 20; box-shadow: 0 6px 20px rgba(0,0,0,.5);
+  font-size: 11px;
+}
+.fn-tt-cat { font-family: var(--font-mono); font-size: 8px; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 2px; }
+.fn-tt-num { font-family: var(--font-mono); font-size: 9px; color: var(--muted); }
+.fn-tt-name { font-size: 12px; font-weight: 600; margin: 3px 0 5px; }
+.fn-tt-status { font-family: var(--font-mono); font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-bottom: 5px; }
+.fn-tt-metric { font-size: 10px; color: var(--muted); line-height: 1.5; }
+.forcenet-footer {
+  display: flex; align-items: center; gap: 12px; padding: 8px 18px;
+  border-top: 1px solid var(--line); background: var(--surface-2, #131d33); flex-wrap: wrap;
+}
+.fn-leg { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--faint, #64748b); }
+.fn-ld { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+#fn-stat { font-family: var(--font-mono); font-size: 9px; color: var(--faint, #64748b); margin-left: auto; }
+
 /* ---------- Phase 1: empty / awaiting-ingest states ---------- */
 .state-empty { color: var(--muted); }
 .blip-empty .blip-label { fill: var(--muted); font-style: italic; }
