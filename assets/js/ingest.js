@@ -135,12 +135,9 @@
 
     const active = LinStore.cachedActive();
     const archived = LinStore.cachedArchived();
+    const cs = window.collapsibleSection || function (id, t, c) { return c; };
 
-    root.innerHTML =
-      `<div class="kn-grid">
-        <section class="panel">
-          <p class="eyebrow">Create project</p>
-          <h2 class="kn-h">New project</h2>
+    const createPanel = `<section class="panel">
           <p class="kn-sub">Give your project a name and sector. Upload documents to get started.</p>
           <label class="rationale-label" for="np-name">Project name</label>
           <input id="np-name" class="ig-input" maxlength="80" placeholder="e.g. Terminal B Expansion" />
@@ -152,24 +149,24 @@
           </select>
           <div class="dc-actions"><button id="np-create" class="btn primary">Create project</button></div>
           <p id="np-msg" class="kn-sub" aria-live="polite"></p>
-        </section>
-        <section class="panel">
-          <p class="eyebrow">Active (${active.length})</p>
-          ${active.map(rowFor).join("") || `<p class="pr-empty">No active projects.</p>`}
-          <p class="eyebrow" style="margin-top:16px">Archived</p>
-          <div id="archived-list"><p class="pr-empty">Loading archived projects…</p></div>
-        </section>
-      </div>
+        </section>`;
+    const uploadPanel = `<section class="panel" id="signals-panel">
+          <p class="kn-sub">Upload a contract, pay application, schedule, or RFI. The system reads the figures and updates the project signals automatically.</p>
+          ${LinSignals.ingestFormHtml(null)}
+          <div id="signals-detail" class="ds-detail-wrap"></div>
+        </section>`;
 
-      <section class="panel" style="margin-top:18px" id="signals-panel">
-        <p class="eyebrow">Upload a Document</p>
-        <h2 class="kn-h">Upload a Document</h2>
-        <p class="kn-sub">Upload a contract, pay application, schedule, or RFI. The system reads the figures and updates the project signals automatically.</p>
-        ${LinSignals.ingestFormHtml(null)}
-        <div id="signals-detail" class="ds-detail-wrap"></div>
-      </section>
-
-      <section class="panel" style="margin-top:18px">
+    root.innerHTML =
+      cs("mng-create", "Create New Project", createPanel, false) +
+      `<section class="panel">
+        <p class="eyebrow">Active (${active.length})</p>
+        ${active.map(rowFor).join("") || `<p class="pr-empty">No active projects.</p>`}
+      </section>` +
+      cs("mng-archived", "Archived Projects",
+         `<div id="archived-list"><p class="pr-empty">Loading archived projects…</p></div>`,
+         false, archived.length ? (archived.length + " project" + (archived.length === 1 ? "" : "s")) : "") +
+      cs("mng-upload", "Upload Documents", uploadPanel, false) +
+      `<section class="panel" style="margin-top:18px">
         <p class="eyebrow">Recent Activity</p>
         <div id="ingest-log"></div>
       </section>`;
