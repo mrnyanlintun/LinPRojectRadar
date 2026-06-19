@@ -628,6 +628,27 @@
             <p class="eyebrow">Portfolio analysis</p>
             <p class="kn-sub">Cat 8 ML/AI runs per project on the Project Detail page using portfolio-wide signal comparison. Modules: ${esc(cat.modules.map((m) => m.num + " " + m.name).join(", "))}.</p>
           </section></div>`;
+      } else if (catSlot[cat.id] === undefined && cat.modules.length > 0) {
+        // Cat 10/11/12: render cards directly from category module definitions
+        const modCards = cat.modules.map((m) => {
+          const isConditional = cat.conditional || !m.active;
+          const badge = isConditional
+            ? `<span class="badge-conditional">Conditional</span>`
+            : "";
+          const note = isConditional
+            ? `<p class="kn-sub" style="margin-top:4px">Activates when interface/requirements documents are uploaded</p>`
+            : "";
+          return `<section class="panel mod-card" aria-label="${esc(cat.num + "." + m.num)}: ${esc(m.name)}">
+            <div class="mod-head">
+              <span class="mod-num">CAT ${esc(m.num)}</span>
+              <h2>${esc(m.name)}</h2>
+              ${badge}
+            </div>
+            <p class="mod-method">${esc(m.method_class.replace(/_/g, " "))}</p>
+            ${note}
+          </section>`;
+        }).join("");
+        inner = `<div class="sig-cat-body">${desc}${modCards}</div>`;
       } else {
         const cards = (catSlot[cat.id] || []).map(cardHtml).join("");
         inner = `<div class="sig-cat-body">${desc}${cards}</div>`;
