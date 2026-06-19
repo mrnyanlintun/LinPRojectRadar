@@ -384,8 +384,8 @@
         </div>
       </div>
       <div class="chart3d-controls">
-        <button class="chart3d-btn active" data-scatter-view="free">Free rotate</button>
-        <button class="chart3d-btn" data-scatter-view="front">Front</button>
+        <button class="chart3d-btn" data-scatter-view="free">Free rotate</button>
+        <button class="chart3d-btn active" data-scatter-view="front">Front</button>
         <button class="chart3d-btn" data-scatter-view="side">Side</button>
         <button class="chart3d-btn" data-scatter-view="top">Top</button>
       </div>
@@ -393,6 +393,7 @@
         <canvas class="scatter3d-canvas"></canvas>
         <div class="scatter3d-tooltip" style="display:none;position:absolute;pointer-events:none;z-index:10;background:var(--surface-2,#131d33);border:1px solid var(--line,#26344f);border-radius:8px;padding:8px 12px;font-size:11px;white-space:nowrap"></div>
       </div>
+      <div class="scatter-legend"></div>
     </section>`;
   }
 
@@ -1349,7 +1350,7 @@
           x: (catIdx-5.5)*55 + xJitter,
           y: SY[statusKey] + (((idx*11)%20) - 10),
           z: zSpread,
-          num: m.num, name: m.name, bucket, evidence, color: cat.color, catIdx
+          num: m.num, name: m.name, bucket, evidence, color: cat.color, catId: cat.id, catIdx
         });
       });
     });
@@ -1359,8 +1360,9 @@
     const activeTotal = Object.values(counts).reduce((n,v)=>n+v,0);
     if (!activeTotal) return;
 
-    var rotX=0.4, rotY=0.3, autoRotate=true, dragging=false, lastX=0, lastY=0;
+    var rotX=0.05, rotY=0.0, autoRotate=false, dragging=false, lastX=0, lastY=0;
     var hoverIdx=-1, projectedPts=[];
+    const filteredCats=new Set();
 
     function rxf(p,a){return{x:p.x,y:p.y*Math.cos(a)-p.z*Math.sin(a),z:p.y*Math.sin(a)+p.z*Math.cos(a)};}
     function ryf(p,a){return{x:p.x*Math.cos(a)+p.z*Math.sin(a),y:p.y,z:-p.x*Math.sin(a)+p.z*Math.cos(a)};}
@@ -1390,20 +1392,15 @@
         ctx.strokeStyle="rgba(38,52,79,0.5)";ctx.lineWidth=0.5;ctx.stroke();
       }
 
-      [{label:"Complete",y:-120,color:"#4ea0ff"},{label:"Green",y:-80,color:"#3fcaa6"},
-       {label:"Yellow",y:-30,color:"#f0c040"},{label:"Amber",y:40,color:"#e2b13c"},{label:"Red",y:100,color:"#e0556b"}
-      ].forEach((l)=>{
-        const p=rxf(ryf({x:-350,y:l.y,z:0},rotY),rotX), pp=proj(p);
-        if(pp.x<0||pp.x>CW) return;
-        ctx.font="9px SFMono-Regular,ui-monospace,monospace";
-        ctx.fillStyle=l.color;ctx.globalAlpha=0.7;ctx.fillText(l.label,pp.x-10,pp.y);ctx.globalAlpha=1;
-      });
-
+      // Fix 6: X axis labels — 10px, "Cat N", category color, centered
       LIN_CATEGORIES.forEach((cat,i)=>{
         const p=rxf(ryf({x:(i-5.5)*55,y:GRID_Y+14,z:0},rotY),rotX), pp=proj(p);
-        ctx.font="8px SFMono-Regular,ui-monospace,monospace";
-        ctx.fillStyle=cat.color||"#64748b";ctx.globalAlpha=0.8;
-        ctx.fillText("C"+(i+1),pp.x-6,pp.y);ctx.globalAlpha=1;
+        ctx.font="10px SFMono-Regular,ui-monospace,monospace";
+        ctx.fillStyle=cat.color||"#64748b";
+        ctx.globalAlpha=filteredCats.size===0||filteredCats.has(cat.id)?0.9:0.25;
+        ctx.textAlign="center";
+        ctx.fillText("Cat "+(i+1),pp.x,pp.y);
+        ctx.textAlign="left";ctx.globalAlpha=1;
       });
 
       projectedPts=scatterData.map((d,i)=>{
@@ -1411,18 +1408,23 @@
       }).sort((a,b)=>a.pz-b.pz);
 
       projectedPts.forEach((s)=>{
-        const d=s.d, col=d.bucket!=="none"?(d.color||"#4ea0ff"):"#26344f";
+        const d=s.d;
+        const catFocused=filteredCats.size===0||filteredCats.has(d.catId);
+        // Fix 5: dot = status color, stem = category color
+        const dotCol=DOT[d.bucket]||DOT.none;
+        const stemCol=d.color||"#4ea0ff";
         const dotR=Math.max(2.5,5*s.pp.scale), isHover=s.i===hoverIdx;
         const shadow=rxf(ryf({x:d.x,y:GRID_Y,z:d.z},rotY),rotX), sp=proj(shadow);
-        ctx.beginPath();ctx.arc(sp.x,sp.y,dotR*0.6,0,Math.PI*2);ctx.fillStyle="rgba(0,0,0,0.3)";ctx.fill();
+        ctx.beginPath();ctx.arc(sp.x,sp.y,dotR*0.6,0,Math.PI*2);
+        ctx.fillStyle="rgba(0,0,0,0.25)";ctx.globalAlpha=catFocused?1:0.1;ctx.fill();
         ctx.beginPath();ctx.moveTo(s.pp.x,s.pp.y);ctx.lineTo(sp.x,sp.y);
-        ctx.strokeStyle=col+"40";ctx.lineWidth=0.7;ctx.stroke();
+        ctx.strokeStyle=stemCol+"55";ctx.lineWidth=0.7;ctx.globalAlpha=catFocused?0.9:0.08;ctx.stroke();
         const r=isHover?dotR*1.4:dotR;
         ctx.beginPath();ctx.arc(s.pp.x,s.pp.y,r,0,Math.PI*2);
         if(d.bucket!=="none"){
           const g=ctx.createRadialGradient(s.pp.x-r*0.3,s.pp.y-r*0.3,0,s.pp.x,s.pp.y,r);
-          g.addColorStop(0,col);g.addColorStop(1,col+"80");ctx.fillStyle=g;ctx.globalAlpha=0.9;
-        } else {ctx.fillStyle="#26344f";ctx.globalAlpha=0.25;}
+          g.addColorStop(0,dotCol);g.addColorStop(1,dotCol+"80");ctx.fillStyle=g;ctx.globalAlpha=catFocused?0.9:0.08;
+        } else {ctx.fillStyle=DOT.none;ctx.globalAlpha=catFocused?0.2:0.04;}
         ctx.fill();ctx.globalAlpha=1;
       });
 
@@ -1430,13 +1432,28 @@
       ctx.fillText("108-MODULE ENSEMBLE SCATTER",14,22);
       ctx.font="12px -apple-system,sans-serif";ctx.fillStyle="#9fb0cc";
       ctx.fillText(activeTotal+" active · "+counts.Red+" Red · "+counts.Amber+" Amber · "+counts.Green+" Green",14,40);
+
+      // Fix 2: Y axis status labels as screen-space overlay — drawn last, anchored to left
+      [{label:"Complete",y:SY.Complete,color:"#4ea0ff"},{label:"Green",y:SY.Green,color:"#3fcaa6"},
+       {label:"Yellow",y:SY.Yellow,color:"#f0c040"},{label:"Amber",y:SY.Amber,color:"#e2b13c"},
+       {label:"Red",y:SY.Red,color:"#e0556b"}
+      ].forEach((lb)=>{
+        const pp=proj(rxf(ryf({x:-320,y:lb.y,z:0},rotY),rotX));
+        ctx.font="10px SFMono-Regular,ui-monospace,monospace";
+        ctx.fillStyle=lb.color;ctx.globalAlpha=0.85;
+        ctx.textAlign="right";
+        ctx.fillText(lb.label,pp.x-6,pp.y+4);
+        ctx.beginPath();ctx.moveTo(pp.x,pp.y);ctx.lineTo(pp.x+20,pp.y);
+        ctx.strokeStyle=lb.color+"33";ctx.lineWidth=0.5;ctx.stroke();
+        ctx.textAlign="left";ctx.globalAlpha=1;
+      });
       ctx.restore();
     }
 
     function animate(){if(autoRotate&&!dragging) rotY+=0.002;draw();requestAnimationFrame(animate);}
 
     canvas.addEventListener("mousedown",(e)=>{dragging=true;autoRotate=false;lastX=e.clientX;lastY=e.clientY;});
-    window.addEventListener("mouseup",()=>{if(dragging){dragging=false;autoRotate=true;}});
+    window.addEventListener("mouseup",()=>{if(dragging) dragging=false;});
     canvas.addEventListener("mousemove",(e)=>{
       if(dragging){rotY+=(e.clientX-lastX)*0.005;rotX+=(e.clientY-lastY)*0.005;lastX=e.clientX;lastY=e.clientY;return;}
       const rect=canvas.getBoundingClientRect(), mx=e.clientX-rect.left, my=e.clientY-rect.top;
@@ -1450,7 +1467,7 @@
       const tt=root.querySelector(".scatter3d-tooltip");
       if(tt){
         if(hit>=0){
-          const d=scatterData[hit], col=d.bucket!=="none"?(d.color||"#4ea0ff"):DOT.none;
+          const d=scatterData[hit], col=DOT[d.bucket]||DOT.none;
           tt.style.display="block";tt.style.left=(e.clientX-rect.left+14)+"px";tt.style.top=(e.clientY-rect.top-10)+"px";
           tt.innerHTML=`<div style="font-family:var(--font-mono,monospace);font-size:10px;color:#e9a23b;margin-bottom:3px">${esc(d.num)} ${esc(d.name)}</div><div style="font-size:12px;font-weight:600;color:${esc(col)}">${esc(d.bucket==="none"?"No data":d.bucket)}</div>${d.evidence?`<div style="font-size:11px;color:#9fb0cc;margin-top:2px">${esc(d.evidence)}</div>`:""}`;
         } else {tt.style.display="none";}
@@ -1464,11 +1481,31 @@
         btn.classList.add("active");
         const v=btn.dataset.scatterView;
         if(v==="free"){autoRotate=true;}
-        else if(v==="front"){autoRotate=false;rotY=0;rotX=0.1;}
+        else if(v==="front"){autoRotate=false;rotY=0.0;rotX=0.05;}
         else if(v==="side"){autoRotate=false;rotY=Math.PI/2;rotX=0.1;}
         else if(v==="top"){autoRotate=false;rotX=Math.PI/2;rotY=0;}
       });
     });
+    // Fix 3: category legend pills
+    const legendEl=root.querySelector(".scatter-legend");
+    if(legendEl){
+      LIN_CATEGORIES.forEach((cat,ci)=>{
+        const pill=document.createElement("span");
+        pill.className="scatter-legend-pill";
+        pill.dataset.cat=cat.id;
+        pill.style.borderColor=(cat.color||"#4ea0ff")+"55";
+        pill.innerHTML=`<span class="slp-dot" style="background:${esc(cat.color||'#4ea0ff')}"></span><span class="slp-label">Cat ${ci+1}</span>`;
+        pill.title=cat.name||"";
+        pill.addEventListener("click",()=>{
+          if(filteredCats.has(cat.id)){filteredCats.delete(cat.id);pill.classList.remove("active");}
+          else{filteredCats.add(cat.id);pill.classList.add("active");}
+          legendEl.querySelectorAll(".scatter-legend-pill").forEach((p)=>{
+            p.classList.toggle("dimmed",filteredCats.size>0&&!filteredCats.has(p.dataset.cat));
+          });
+        });
+        legendEl.appendChild(pill);
+      });
+    }
     animate();
   }
 

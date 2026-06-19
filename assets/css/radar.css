@@ -1103,6 +1103,20 @@ body[data-theme="light"] .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .sphere3d-canvas:active, .scatter3d-canvas:active { cursor: grabbing; }
 .sphere3d-panel .sw-footnote { padding: 10px 18px; border-top: 1px solid var(--line); margin-top: 0; }
 
+/* ---- Scatter category legend ---- */
+.scatter-legend { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 18px; border-top: 1px solid var(--line); background: var(--surface-2, #131d33); }
+.scatter-legend-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--font-mono); font-size: 10px; color: var(--muted);
+  border: 1px solid transparent; border-radius: 20px;
+  padding: 3px 8px; cursor: pointer; user-select: none;
+  transition: opacity .15s, border-color .15s;
+}
+.scatter-legend-pill:hover { color: var(--text); }
+.scatter-legend-pill.active { color: var(--text); background: rgba(255,255,255,.04); }
+.scatter-legend-pill.dimmed { opacity: .3; }
+.slp-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
 /* ---- Force Network hero ---- */
 .forcenet-wrap {
   border: 1px solid var(--line); border-radius: 14px;
