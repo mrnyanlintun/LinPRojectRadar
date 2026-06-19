@@ -1009,6 +1009,53 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
   content: "▸"; position: absolute; left: 2px; top: 4px; color: var(--accent); font-size: 12px;
 }
 
+/* ---------- grouped-status executive brief (Recommendation-led) ---------- */
+.eb-rec {
+  margin: 0; font-size: 15px; line-height: 1.65; color: var(--text);
+  padding: 12px 14px; border-radius: var(--radius-md, 10px);
+  background: var(--surface-soft); border: 1px solid var(--line);
+}
+.eb-rec-status {
+  display: inline-block; font-family: var(--font-mono); font-weight: 700;
+  font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 5px; margin-right: 6px;
+  border: 1px solid var(--line); color: var(--muted);
+}
+.eb-rec-status.status-red   { color: var(--alarm-red);  border-color: color-mix(in srgb, var(--alarm-red) 55%, transparent);  background: color-mix(in srgb, var(--alarm-red) 12%, transparent); }
+.eb-rec-status.status-amber { color: var(--radar-amber); border-color: color-mix(in srgb, var(--radar-amber) 50%, transparent); background: color-mix(in srgb, var(--radar-amber) 12%, transparent); }
+.eb-rec-status.status-green { color: var(--clear-green); border-color: color-mix(in srgb, var(--clear-green) 45%, transparent); background: color-mix(in srgb, var(--clear-green) 12%, transparent); }
+
+.eb-pattern { list-style: none; margin: 0; padding: 0; }
+.eb-pattern li.eb-group {
+  position: relative; padding: 5px 0 5px 18px; font-size: 13.5px; line-height: 1.55; color: var(--ink-dim); margin-bottom: 4px;
+}
+.eb-group-dot {
+  position: absolute; left: 2px; top: 9px; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--faint); display: inline-block;
+}
+.eb-group-dot.status-red   { background: var(--alarm-red); }
+.eb-group-dot.status-amber { background: var(--radar-amber); }
+.eb-group-dot.status-green { background: var(--clear-green); }
+.eb-group-head { color: var(--text); font-weight: 700; font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .04em; }
+.eb-group-body { color: var(--ink-dim); }
+.eb-pattern li.eb-group-cont { padding-left: 18px; color: var(--muted); }
+
+.eb-drivers { list-style: none; margin: 0; padding: 0; }
+.eb-drivers li {
+  position: relative; padding: 4px 0 4px 18px; font-size: 13.5px; line-height: 1.55;
+  color: var(--text); font-family: var(--font-mono);
+}
+.eb-drivers li::before {
+  content: "›"; position: absolute; left: 4px; top: 4px; color: var(--accent); font-size: 13px; font-weight: 700;
+}
+.eb-actions { list-style: none; margin: 0; padding: 0; }
+.eb-actions li {
+  position: relative; padding: 4px 0 4px 18px; font-size: 13.5px; line-height: 1.55; color: var(--muted);
+}
+.eb-actions li::before {
+  content: "▸"; position: absolute; left: 2px; top: 4px; color: var(--accent); font-size: 12px;
+}
+
 /* ---------- project detail signal web ---------- */
 .signal-web-panel { margin-bottom: 18px; }
 .sw-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
@@ -2003,3 +2050,70 @@ body { overflow-x: hidden; max-width: 100vw; }
 @media (max-width: 480px) {
   .synthetic-badge { display: none; }
 }
+
+/* ============================================================
+   Drag-and-drop multi-file ingest (Manage Projects)
+   ============================================================ */
+.doc-type-reference {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 10px);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+.dtr-title {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--faint); margin-bottom: 10px;
+}
+.dtr-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.dtr-pill {
+  font-size: 10px; padding: 3px 9px; border-radius: 5px;
+  background: var(--surface); color: var(--ink-dim);
+  border: 1px solid var(--line); user-select: none;
+}
+.dtr-note { font-size: 10px; color: var(--faint); }
+
+.dz-project-row { margin-bottom: 12px; }
+
+.dropzone {
+  border: 2px dashed var(--line-strong);
+  border-radius: 14px;
+  padding: 32px 24px;
+  text-align: center;
+  transition: border-color .2s, background .2s;
+  cursor: pointer;
+  background: var(--surface);
+}
+.dropzone.dragover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.dz-icon { font-size: 28px; color: var(--faint); margin-bottom: 8px; line-height: 1; }
+.dz-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; color: var(--text); }
+.dz-sub { font-size: 11px; color: var(--faint); margin-bottom: 14px; }
+.dz-browse {
+  font-family: var(--mono, ui-monospace, monospace); font-size: 11px; padding: 7px 16px;
+  border-radius: 6px; border: 1px solid var(--accent);
+  color: var(--accent); background: transparent; cursor: pointer;
+}
+.dz-browse:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+.dz-queue { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.dz-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface-soft);
+  font-size: 12px;
+}
+.dz-item-name { font-family: var(--mono, ui-monospace, monospace); font-size: 10px; color: var(--ink-dim); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dz-item-type { font-size: 11px; font-weight: 600; color: var(--accent); }
+.dz-item-conf { font-family: var(--mono, ui-monospace, monospace); font-size: 9px; color: var(--faint); }
+.dz-item-status { font-family: var(--mono, ui-monospace, monospace); font-size: 10px; color: var(--faint); }
+.dz-item-result { font-family: var(--mono, ui-monospace, monospace); font-size: 10px; color: var(--clear-green); }
+.dz-item-error { font-family: var(--mono, ui-monospace, monospace); font-size: 10px; color: var(--alarm-red); }
+.dz-item-override { font-size: 11px; max-width: 220px; }
+.dz-item-confirm { flex: none; }
+.dz-identifying, .dz-extracting { opacity: 0.7; }
+.dz-done { border-color: color-mix(in srgb, var(--clear-green) 35%, var(--line)); }
+.dz-error { border-color: color-mix(in srgb, var(--alarm-red) 35%, var(--line)); }
