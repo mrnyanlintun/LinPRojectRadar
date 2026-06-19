@@ -635,6 +635,24 @@
       : "Awaiting ingest";
     const stateKey = populated ? String(state).toLowerCase().replace("-review", "") : "empty";
 
+    // ---- collapsible-section badges ----
+    const cs = (window.collapsibleSection) || function (id, t, c) { return c; };
+    const pillBadge = (st) => {
+      const norm = normalizeStatus(st);
+      if (!norm) return `<span class="pill pill-none">No data</span>`;
+      const map = { Green: "green", Complete: "green", Yellow: "amber", Amber: "amber", Red: "red" };
+      return `<span class="pill pill-${map[norm] || "none"}">${esc(norm)}</span>`;
+    };
+    let overallState = null;
+    try { const c = currentSnapshot(p); overallState = (c && c.governance && c.governance.state) || resolveBriefState(p); }
+    catch (e) { try { overallState = resolveBriefState(p); } catch (e2) {} }
+    const simArr = (p.simulationSignals && p.simulationSignals.signal_array) || [];
+    const ensActive = simArr.filter((r) => r && r.status_color && normalizeStatus(r.status_color)).length;
+    const ensEst = simArr.filter((r) => r && /\b(estimated|derived|assumed)\b/i.test(String(r.evidence_metric || ""))).length;
+    const uploadCount = (typeof uploadedDocEvents === "function") ? uploadedDocEvents(p).length : 0;
+    const inputFieldCount = Object.keys(p.signalInputs || {})
+      .filter((k) => k !== "sources" && p.signalInputs[k] != null && p.signalInputs[k] !== "").length;
+
     root.innerHTML =
       `<div class="detail-head">
          <button class="btn detail-back" data-back>← Back to Portfolio</button>
@@ -652,14 +670,12 @@
            <span class="detail-reset-msg kn-sub" aria-live="polite"></span>
          </div>
        </div>
-        ${executiveBriefHtml(p)}
-        ${signalWebHtml(p)}
-        ${ensembleHtml(p)}
-        ${uploadedDocsPanelHtml(p)}
-        <div class="detail-grid">
-         <section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>
-         <section class="panel detail-decision" aria-label="PCEIF governance decision (project detail)"></section>
-       </div>
+        ${cs("d-brief", "Executive Brief", executiveBriefHtml(p), true, "")}
+        ${cs("d-web", "Signal Web", signalWebHtml(p), true, "89 modules")}
+        ${cs("d-ensemble", "Ensemble Analysis", ensembleHtml(p), false, `${ensActive} active · ${ensEst} est.`)}
+        ${cs("d-uploads", "Uploaded Documents", uploadedDocsPanelHtml(p), false, `${uploadCount} document${uploadCount === 1 ? "" : "s"}`)}
+        ${cs("d-ledger", "Signal Inputs", `<section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>`, false, pillBadge(overallState))}
+        ${cs("d-decision", "Governance Decision", `<section class="panel detail-decision" aria-label="PCEIF governance decision (project detail)"></section>`, false, pillBadge(overallState))}
        <section class="panel detail-ingest" aria-label="Ingest to this project">
          <details class="kn-topic"${populated ? "" : " open"}>
            <summary>Ingest to this project (${esc(p.id)}) — populate signals / document-risk</summary>
@@ -668,9 +684,8 @@
            <div class="detail-ingest-form"></div>
          </details>
        </section>
-       <h2 class="detail-mods-h">Signal stack — 9 categories — computed for ${esc(p.id)}</h2>
-       <div class="detail-modules"></div>
-       <section class="panel detail-signals" aria-label="Extracted signals detail"></section>`;
+       ${cs("d-stack", "Signal Stack — 9 Categories", `<div class="detail-modules"></div>`, false, "")}
+       ${cs("d-signals", "Extracted Signal Inputs", `<section class="panel detail-signals" aria-label="Extracted signals detail"></section>`, false, `${inputFieldCount} field${inputFieldCount === 1 ? "" : "s"}`)}`;
 
     // Reuse the shared renderers, scoped to this page's containers.
     LinApp.renderLedger(p, root.querySelector(".detail-ledger"));
