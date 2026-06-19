@@ -74,7 +74,7 @@
     var cats = (window.LIN_CATEGORIES && window.LIN_CATEGORIES.length) ? window.LIN_CATEGORIES : null;
     if (cats) {
       cats.forEach(function (cat) {
-        var short = "Cat " + cat.num;
+        var short = cat.num; // cat.num is already "Cat 1", "Cat 10", etc.
         var fallbackNames = NAMES_FALLBACK[cat.id] || [];
         var d = {id: cat.id, name: cat.name, short: short, color: cat.color, count: cat.modules.length};
         CATS_DATA.push(d);
@@ -165,8 +165,8 @@
   function rotY(p, a) { return {x:p.x*Math.cos(a)+p.z*Math.sin(a), y:p.y, z:-p.x*Math.sin(a)+p.z*Math.cos(a)}; }
 
   var cv = null, ctx = null;
-  var RX = 0.05, RY = 1.57, ZOOM = 1.0;
-  var DEFAULT_RX = 0.05, DEFAULT_RY = 1.57, DEFAULT_ZOOM = 1.0;
+  var RX = 0.28, RY = 0.42, ZOOM = 1.0;
+  var DEFAULT_RX = 0.28, DEFAULT_RY = 0.42, DEFAULT_ZOOM = 1.0;
   var autoR = false, dragging = false, lastX, lastY;
   var focusCat = null, hovered = null, hoveredCat = null;
   var rafRunning = false;
