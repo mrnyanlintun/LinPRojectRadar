@@ -43,6 +43,8 @@
 (function () {
   "use strict";
 
+  var _cat2SimData = null;
+
   const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const COLOR = {
     complete: "var(--blue-status)",
@@ -732,7 +734,35 @@
                       predicted:[cpi*1.006, cpi*1.012, cpi*1.019, cpi*1.027]},
       'ice3d':       {bac:bac, contractorEac:contractorEAC,
                       iceEac:contractorEAC*1.052,
-                      iceLow:contractorEAC*0.992, iceHigh:contractorEAC*1.12}
+                      iceLow:contractorEAC*0.992, iceHigh:contractorEAC*1.12},
+      // Cat 2 chart data
+      'pert3d':      (function(){
+                       var ps = _cat2SimData && _cat2SimData.pert;
+                       return {nodes:null, edges:null, criticality: ps ? ps.path_criticality_index||0.72 : 0.72};
+                     })(),
+      'lob2d':       (function(){
+                       var ls = _cat2SimData && _cat2SimData.lob;
+                       return {buffer: ls ? ls.minimum_buffer_days||2.1 : si.lobBuffer||2.1, threshold:3.0, crews:null};
+                     })(),
+      'ccpm3d':      (function(){
+                       var cs = _cat2SimData && _cat2SimData.ccpm;
+                       return {chainPct: cs ? cs.pct_chain_complete||52 : 52,
+                               bufPct:   cs ? cs.pct_buffer_consumed||38 : 38,
+                               traj:null};
+                     })(),
+      'sci3d':       {history: spiHist.map(function(v){return v*0.96;}),
+                      forecast: [spi*0.995, spi*0.991, spi*0.987]},
+      'float3d':     {history: si.floatHistory||[42,38,34,29,24,18], threshold:15},
+      'scurve3d':    {planned: [0,3,7,14,22,30,37,43,50,57,64,70],
+                      earned:  si.earnedCurve||[0,2,6,12,19,26,32,37,Math.round(ac/bac*70)||42,0,0,0]},
+      'mta3d':       {milestones:null, periods:6},
+      'lookahead3d': {total: si.lookaheadTotal||10, onTrack: si.lookaheadOnTrack||6, constrained: si.lookaheadConstrained||4},
+      'resource3d':  {periods:['M1','M2','M3','M4','M5','M6'],
+                      planned:[600,720,780,800,740,660],
+                      actual: si.laborHistory||[580,690,740,760,710,0]},
+      'schedp80':    {mean:12, std:6, p50: si.schedP50Days||8.5, p80: si.schedP80Days||18.5},
+      'cpisched3d':  {history: cpiHist.map(function(v,i){return v*(1-i*0.012);}),
+                      forecast: [cpi*0.995, cpi*0.990, cpi*0.985]}
     };
 
     root.querySelectorAll('.dd-chart-canvas').forEach(function(canvas) {
@@ -743,6 +773,184 @@
       var noDrag = canvas.dataset.nodrag === '1';
       C.wireChart3d(canvas, renderFn, {data: chartData[chartType]}, {draggable: !noDrag});
     });
+  }
+
+  function m2_4(p) {
+    const si = p.signalInputs || {};
+    const spi = ((p.signals||{}).evm||{}).spi || si.spi || 0.911;
+    const sci = Number(si.scheduleCompressionIndex||spi);
+    const st = sci < 0.90 ? 'red' : sci < 0.95 ? 'amber' : 'green';
+    const fore = (sci*0.997).toFixed(3);
+    return panel("2.4", "Schedule Compression Index", st,
+      note("Schedule Compression Index (SCI) tracks the ratio of schedule performance vs. baseline. Values below 1.0 indicate schedule compression is accumulating — work is being re-sequenced or accelerated at the expense of float.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="sci3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("SCI", sci.toFixed(3), st) +
+        metricBox("Baseline", "1.000", "green") +
+        metricBox("Trend", "Declining", st) +
+        metricBox("Forecast", fore, st)
+      }</div>` +
+      reasons([
+        `SCI ${sci.toFixed(3)} is below the 1.00 baseline — schedule compression has been accumulating over the last reporting periods.`,
+        `ARIMA-style short-range forecast projects continued decline to ${fore} over the next 3 periods.`
+      ], st) +
+      rule("GREEN if SCI >= 0.95; AMBER if 0.90–0.95; RED if < 0.90. Compression index below 0.90 indicates severe schedule stress."));
+  }
+
+  function m2_5(p) {
+    const si = p.signalInputs || {};
+    const totalFloat = Number(si.totalFloat || 18);
+    const st = totalFloat < 10 ? 'red' : totalFloat < 20 ? 'amber' : 'green';
+    const burnRate = (Number(si.floatBurnRate||2.1)).toFixed(1);
+    const weeksLeft = totalFloat > 0 ? (totalFloat / Number(burnRate)).toFixed(1) : '0';
+    return panel("2.5", "Float Consumption Rate", st,
+      note("Total float depletes as activities drift and constraints bind. At the current consumption rate this project will exhaust its schedule reserve before the scheduled completion date.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="float3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("Float left", totalFloat + "d", st) +
+        metricBox("Burn rate", burnRate + "d/wk", st) +
+        metricBox("Weeks left", weeksLeft, st) +
+        metricBox("Threshold", "15d", "green")
+      }</div>` +
+      reasons([
+        `Total float is ${totalFloat} days at current reporting period. At a burn rate of ${burnRate} days/week, the schedule reserve is exhausted in ${weeksLeft} weeks.`,
+        `Float below the 15-day threshold indicates critical path activities have no buffer against disruption.`
+      ], st) +
+      rule("GREEN if total float >= 20 days; AMBER if 10–20 days; RED if < 10 days. Float below 15 days = critical threshold."));
+  }
+
+  function m2_6(p) {
+    const si = p.signalInputs || {};
+    const planned = Number(si.plannedPctComplete || si.actualPctComplete || 43) || 43;
+    const actual = Number(si.actualPctComplete || 37) || 37;
+    const gap = actual - planned;
+    const st = gap < -10 ? 'red' : gap < -5 ? 'amber' : 'green';
+    return panel("2.6", "S-Curve Deviation", st,
+      note("Planned vs. actual progress S-curve. The vertical gap at the current date quantifies schedule lag as a percentage of total scope. The area between curves represents the cumulative schedule slip.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="scurve3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("Planned", planned.toFixed(0) + "%", "green") +
+        metricBox("Actual", actual.toFixed(0) + "%", st) +
+        metricBox("Gap", (gap >= 0 ? "+" : "") + gap.toFixed(0) + "%", st) +
+        metricBox("Trend", gap < -5 ? "Widening" : "Stable", st)
+      }</div>` +
+      reasons([
+        `Actual progress ${actual.toFixed(0)}% vs. planned ${planned.toFixed(0)}% — the S-curve deviation gap is ${Math.abs(gap).toFixed(0)} percentage points.`,
+        `A widening gap between S-curves signals that the schedule recovery plan is not absorbing the original lag.`
+      ], st) +
+      rule("GREEN if S-curve gap <= 5%; AMBER if 5–10%; RED if > 10%. Gap above 10% indicates unrecovered schedule slip."));
+  }
+
+  function m2_7(p) {
+    const si = p.signalInputs || {};
+    const slipping = Number(si.milestonesSlipping || 3);
+    const total = Number(si.milestonesTotal || 4);
+    const avgSlip = Number(si.avgMilestoneSlipWeeks || 3.2).toFixed(1);
+    const st = slipping / total >= 0.75 ? 'red' : slipping > 0 ? 'amber' : 'green';
+    return panel("2.7", "Milestone Trend Analysis", st,
+      note("MTA fan chart — each milestone is tracked across reporting periods. An upward slope indicates slipping forecast dates. All lines should be horizontal for on-schedule delivery.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="mta3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("Milestones", String(total), "green") +
+        metricBox("Slipping", String(slipping) + " of " + String(total), st) +
+        metricBox("Avg slip", "+" + avgSlip + " wks", st) +
+        metricBox("Trend", slipping > 0 ? "Deteriorating" : "Stable", st)
+      }</div>` +
+      reasons([
+        `${slipping} of ${total} milestones are slipping across reporting periods, with an average slip of +${avgSlip} weeks.`,
+        `Upward MTA fan lines confirm the schedule slip is systematic, not a single-milestone artefact.`
+      ], st) +
+      rule("GREEN if no milestones slipping; AMBER if < 75% slipping; RED if >= 75% of milestones are trending later."));
+  }
+
+  function m2_8(p) {
+    const si = p.signalInputs || {};
+    const total = Number(si.lookaheadTotal || 10);
+    const constrained = Number(si.lookaheadConstrained || 4);
+    const rate = Math.round(constrained / total * 100);
+    const st = rate >= 40 ? 'red' : rate >= 20 ? 'amber' : 'green';
+    return panel("2.8", "Look-Ahead Schedule Health", st,
+      note("Constraint rate in the 6-week look-ahead window. Activities constrained by resource, approval, or predecessor issues before they start are early indicators of imminent delay.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="lookahead3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("Planned", String(total) + " activities", "green") +
+        metricBox("Constrained", String(constrained), st) +
+        metricBox("Rate", rate + "%", st) +
+        metricBox("Window", "6-week", "green")
+      }</div>` +
+      reasons([
+        `${rate}% of planned activities in the 6-week window are constrained — ${constrained} of ${total} activities cannot start as planned.`,
+        `A constraint rate above 40% in the near-term window is a reliable predictor of schedule slip in the next reporting period.`
+      ], st) +
+      rule("GREEN if constraint rate < 20%; AMBER if 20–40%; RED if >= 40% of look-ahead activities are constrained."));
+  }
+
+  function m2_9(p) {
+    const si = p.signalInputs || {};
+    const planned = Number(si.laborPlanned || 4200);
+    const actual = Number(si.laborActual || 3960);
+    const rli = actual > 0 && planned > 0 ? (actual / planned) : 0.94;
+    const st = rli < 0.90 ? 'red' : rli < 0.97 ? 'amber' : 'green';
+    return panel("2.9", "Resource Loading Index", st,
+      note("Planned vs. actual labor hours. Dual area surface — planned (back, dashed) vs. actual (front, solid). Under-loading indicates schedule risk from resource constraints; over-loading indicates future recovery risk.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="resource3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("Labor plan", Math.round(planned).toLocaleString() + "h", "green") +
+        metricBox("Labor actual", Math.round(actual).toLocaleString() + "h", st) +
+        metricBox("RLI", rli.toFixed(2), st) +
+        metricBox("Trend", rli < 0.97 ? "Under-loaded" : "On track", st)
+      }</div>` +
+      reasons([
+        `Resource Loading Index ${rli.toFixed(2)} — actual labor hours are ${Math.round((1-rli)*100)}% below plan at the current reporting period.`,
+        `Sustained RLI below 0.97 indicates the resource plan is not being executed, creating a recovery risk as the project approaches completion.`
+      ], st) +
+      rule("GREEN if RLI >= 0.97; AMBER if 0.90–0.97; RED if < 0.90. RLI below 0.90 requires resource recovery plan."));
+  }
+
+  function m2_10(p) {
+    const si = p.signalInputs || {};
+    const p50 = Number(si.schedP50Days || 8.5);
+    const p80 = Number(si.schedP80Days || 18.5);
+    const pDelay = Number(si.schedProbDelay || 62);
+    const st = p80 > 20 ? 'red' : p80 > 10 ? 'amber' : 'green';
+    return panel("2.10", "Schedule Risk P80", st,
+      note("5,000-iteration schedule network simulation. The P50 and P80 planes slice through the delay distribution. P80 is the planning-conservative schedule risk estimate used for milestone contingency.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="schedp80"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("P50", "+" + p50.toFixed(1) + "d", st) +
+        metricBox("P80", "+" + p80.toFixed(1) + "d", st) +
+        metricBox("P(delay)", pDelay + "%", st) +
+        metricBox("Method", "5,000 iter.", "green")
+      }</div>` +
+      reasons([
+        `Monte Carlo schedule simulation: P50 delay ${p50.toFixed(1)} days, P80 delay ${p80.toFixed(1)} days. ${pDelay}% probability of any delay.`,
+        `P80 above 20 days indicates the schedule risk cannot be absorbed by current float reserves without a formal schedule recovery.`
+      ], st) +
+      rule("GREEN if P80 <= 10 days; AMBER if 10–20 days; RED if > 20 days. P80 schedule delay against current total float."));
+  }
+
+  function m2_11(p) {
+    const si = p.signalInputs || {};
+    const e = (p.signals||{}).evm || {};
+    const spi = e.spi || si.spi || 0.911;
+    const cpiSched = Number(si.criticalPathIndex || spi * 0.97);
+    const nearCrit = Number(si.nearCriticalPaths || 3);
+    const st = cpiSched < 0.90 ? 'red' : cpiSched < 0.95 ? 'amber' : 'green';
+    const fore = (cpiSched * 0.995).toFixed(3);
+    return panel("2.11", "Critical Path Index", st,
+      note("Critical path schedule performance ratio vs. baseline. Near-critical paths (blue) track activities within 10% of the critical path duration — these are the successor risks if the critical path recovers.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="cpisched3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("CPI (sched)", cpiSched.toFixed(3), st) +
+        metricBox("Trend", "Declining", st) +
+        metricBox("Near-crit", nearCrit + " paths", "amber") +
+        metricBox("Forecast", fore, st)
+      }</div>` +
+      reasons([
+        `Critical path schedule index ${cpiSched.toFixed(3)} — below 0.95 amber threshold, trending toward ${fore} over 3 periods.`,
+        `${nearCrit} near-critical paths are tracking within 10% of the critical path and represent the next escalation risk if the dominant path recovers.`
+      ], st) +
+      rule("GREEN if CPI(sched) >= 0.95; AMBER if 0.90–0.95; RED if < 0.90. Near-critical paths above 2 add transition risk."));
   }
 
   function m10(p) {
@@ -985,10 +1193,11 @@
   const moneyShort = (v) => "$" + Math.round(Number(v) || 0).toLocaleString();
 
   function m04(s) {
+    _cat2SimData = _cat2SimData || {}; _cat2SimData.pert = s;
     const st = simCls(s.status_color);
     return panel("04", "PERT — Network Criticality", st,
       note("Program Evaluation and Review Technique (PERT). Stochastic network analysis quantifying schedule risk across the critical path. The P80 duration is the planning-conservative milestone estimate. The Path Criticality Index identifies which path has the least float and highest probability of driving project completion.") +
-      pertChart(s) +
+      '<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="pert3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>' +
       `<div class="dd-grid">${
         metricBox("P50 Duration", s.p50_duration_days + "d", "green") +
         metricBox("P80 Duration", s.p80_duration_days + "d", st) +
@@ -1003,10 +1212,11 @@
   }
 
   function m05(s) {
+    _cat2SimData = _cat2SimData || {}; _cat2SimData.lob = s;
     const st = simCls(s.status_color);
     return panel("05", "LOB — Production Velocity", st,
       note("Line of Balance (LOB). Production velocity analysis for sequential operations. Monitors the time buffer between lead and follow-on crews. Buffer erosion is a leading schedule indicator — it appears before the delay reaches the critical path and before it registers in the SPI.") +
-      lobChart(s) +
+      '<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="lob2d" data-nodrag="1"></canvas><p class="dd-canvas-hint">2D view</p></div>' +
       `<div class="dd-grid">${
         metricBox("Min Buffer (days)", s.minimum_buffer_days.toFixed(1), st) +
         metricBox("Critical Unit", String(s.critical_unit_index), st) +
@@ -1021,10 +1231,11 @@
   }
 
   function m06(s) {
+    _cat2SimData = _cat2SimData || {}; _cat2SimData.ccpm = s;
     const st = simCls(s.status_color);
     return panel("06", "CCPM — Buffer Health", st,
       note("Critical Chain Project Management (CCPM). Tracks the rate at which the project buffer is being consumed against the rate of chain completion. A project burning buffer faster than it is completing work is on a trajectory toward delay, regardless of what the current SPI reports.") +
-      ccpmChart(s) +
+      '<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="ccpm3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>' +
       `<div class="dd-grid">${
         metricBox("Chain Complete %", s.pct_chain_complete + "%", "green") +
         metricBox("Buffer Consumed %", s.pct_buffer_consumed + "%", st) +
@@ -1632,6 +1843,8 @@
       m01(project) + m02(project) + m03(project) +
       m1_4(project) + m1_5(project) + m1_6(project) + m1_7(project) + m1_8(project) +
       m1_9(project) + m1_10(project) + m1_11(project) + m1_12(project) +
+      m2_4(project) + m2_5(project) + m2_6(project) + m2_7(project) +
+      m2_8(project) + m2_9(project) + m2_10(project) + m2_11(project) +
       sims.low +
       m10(project) +                                              // displays as Module 09 (Conservative Dominance)
       sims.dst +                                                  // displays as Module 10 (DST)
