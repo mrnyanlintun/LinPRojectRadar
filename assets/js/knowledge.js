@@ -538,30 +538,80 @@
       title: "1. What is PCEIF",
       eyebrow: "Framework foundation",
       build: () => `
-        <p class="kn-lead">PCEIF, the <strong>Public Capital EVM Intelligence Framework</strong>, converts the multi-model signals that a public capital program already generates into a structured, accountable governance action with a named authority and a documented audit trail.</p>
+        <p class="kn-lead">PCEIF, the <strong>Public Capital EVM Intelligence Framework</strong>, converts the signals that a public capital program already generates into a structured, accountable governance action with a named authority and a documented audit trail — using 108 analytical modules across 12 categories.</p>
 
         <h3>The problem it solves</h3>
         <p>Standard Earned Value Management produces excellent data. It does not produce a decision. A PM looking at CPI 0.88 in period 4 has no structured path to a defensible escalation: who must act, on what timeframe, with what documentation, under whose authority. The data exists; the governance link is missing.</p>
         <p>PCEIF closes that gap. Signals trigger an explicit rule set; the rule set returns a specific action, a specific authority, and the documentation required. The PM still records the decision, the framework simply makes the recommendation traceable.</p>
 
         <h3>Two-layer architecture</h3>
-        <p>Nineteen signal modules feed two layers of governance. Cat 1.1–Cat 3.2 generate signals. Cat 6.1 synthesizes them into a baseline state. Cat 7.1–Cat 7.9 quantify confidence by cross-checking the baseline through nine independent evidence-combination methods. Cat 9.1 produces the governance decision card with a named authority and required documentation.</p>
+        <p>108 analytical modules across 12 categories feed two layers of governance. Cat 1–5 generate signals. Cat 6 synthesizes them into a baseline state. Cat 7 quantifies confidence through twenty independent evidence-combination methods. Cat 9 produces the governance decision card. Cat 10 assesses data integrity. Cat 11 identifies the optimal decision pathway. Cat 12 (conditional) addresses systems-engineering complexity.</p>
         <ul class="kn-list">
           <li><strong>Layer 1, Agency Governance.</strong> Sets the policy framework: the authority matrix, escalation thresholds, fairness rules, audit requirements. Established by the program owner; not changed per project.</li>
           <li><strong>Layer 2, PM Decision Architecture.</strong> Takes that policy and the project's signal package and surfaces, for each reporting cycle, the specific action the PM should record (or override, with rationale).</li>
         </ul>
 
         <h3>Signal-to-action mechanism</h3>
-        ${svgPceifFlow()}
+        <pre class="kn-flow">Documents + Schedule + Cost Data
+        ↓
+Cat 1–5: Signal Generation (57 modules)
+        ↓
+Cat 6: Signal Synthesis (4 modules) — Conservative Dominance baseline
+        ↓
+Cat 7: Evidence Combination (20 modules) — Confidence quantification
+        ↓
+Cat 8: ML & AI Pattern Detection (5 modules) — Portfolio anomaly detection
+        ↓
+Cat 10: Data Integrity (7 modules) — Input quality assessment
+        ↓
+Cat 11: Decision Optimization (7 modules) — Optimal action selection
+        ↓
+Cat 9: Governance & Compliance (9 modules) — Named authority + audit trail
+        ↓
+Cat 12: Systems Engineering (5 modules, conditional) — Interface complexity
+        ↓
+Named Human Approval → Audit Record</pre>
 
         <h3>What's different from standard EVM</h3>
         <ul class="kn-list">
           <li><strong>Standard EVM:</strong> compute CPI / SPI → report to management.</li>
-          <li><strong>PCEIF:</strong> compute 19 signal classes → detect conflict → classify the conflict → surface the action, authority, and documentation, <em>before</em> the next reporting cycle closes.</li>
+          <li><strong>PCEIF:</strong> run 108 analytical modules → detect conflict → classify state → surface the action, authority, and documentation, <em>before</em> the next reporting cycle closes.</li>
         </ul>
 
         <h3>The role of AI</h3>
-        <p>AI explains and summarizes. It does <strong>not</strong> make governance decisions. Every recommended action requires a named human approval before it is recorded; the AI's job is to make that approval well-informed, not to replace it. This is a design constraint, not a performance limitation.</p>
+        <p>AI (Claude API, Anthropic) explains and summarizes using keyword-matched retrieval from the knowledge library. It does <strong>not</strong> make governance decisions. Every recommended action requires a named human approval before it is recorded; the AI's job is to make that approval well-informed, not to replace it. This is a design constraint, not a performance limitation.</p>
+      `,
+    },
+    {
+      id: "why-108-modules",
+      title: "1b. Why 108 Analytical Modules",
+      eyebrow: "Framework depth",
+      build: () => `
+        <p class="kn-lead">Public capital projects are complex adaptive systems. A single EVM index (CPI or SPI) captures cost and schedule performance but misses the systemic, probabilistic, and qualitative dimensions that determine whether a project will succeed. PCEIF addresses this through four principles.</p>
+
+        <h3>1. No human can compute 108 analyses simultaneously</h3>
+        <p>A senior PM reviewing a monthly report might check CPI, SPI, and open RFIs. PCEIF runs 108 analytical methods in milliseconds — probabilistic forecasts, anomaly detection, uncertainty reasoning, optimization, data integrity checks, and governance compliance — all before the PM opens their laptop. The platform does not replace human judgment; it gives the PM a complete evidence package to exercise that judgment.</p>
+
+        <h3>2. Convergence equals confidence</h3>
+        <p>When 90 of 108 methods agree on a Red classification, the PM can act with high confidence. When methods diverge — some showing Amber, others Red — the divergence itself is the finding: the project is in an ambiguous state that requires investigation before action. No single method can surface that ambiguity.</p>
+
+        <h3>3. Each category adds a genuinely distinct lens</h3>
+        <p>The 12 categories are not redundant:</p>
+        <ul class="kn-list">
+          <li><strong>Cat 1 (EVM)</strong> — shows what <em>is</em> happening.</li>
+          <li><strong>Cat 2–3 (Simulation)</strong> — shows what <em>will</em> happen.</li>
+          <li><strong>Cat 4 (Documents)</strong> — shows what <em>is being said</em>.</li>
+          <li><strong>Cat 5 (Dynamics)</strong> — shows how components <em>interact</em>.</li>
+          <li><strong>Cat 6–7 (Synthesis)</strong> — shows what the evidence <em>collectively means</em>.</li>
+          <li><strong>Cat 8 (ML/AI)</strong> — shows how this project <em>compares to the portfolio</em>.</li>
+          <li><strong>Cat 9 (Governance)</strong> — shows what <em>action is required</em>.</li>
+          <li><strong>Cat 10 (Data Integrity)</strong> — shows how much to <em>trust the signals</em>.</li>
+          <li><strong>Cat 11 (Optimization)</strong> — shows what the <em>best decision</em> is.</li>
+          <li><strong>Cat 12 (Systems Engineering)</strong> — shows complexity risk <em>invisible to EVM</em>.</li>
+        </ul>
+
+        <h3>4. The 108-module claim is technically honest</h3>
+        <p>103 modules are fully executable from standard project documents available in any public capital program. 5 systems-engineering modules activate when interface control documents are uploaded. No module produces a fake or hardcoded output — every status derives from real extracted data or returns "Insufficient data" with a specific explanation of what is missing.</p>
       `,
     },
     {
@@ -579,6 +629,7 @@
 
         <h3>3. Yellow provides an early warning band</h3>
         <p>The gap between Green (all good) and Amber (significant risk) is too wide. A project moving from Green to Amber has often already been in trouble for 2-3 reporting periods. Yellow captures the early warning zone — minor variance, still recoverable, but requiring PM attention before the next cycle. This is the band where early intervention prevents escalation.</p>
+        <p>With 108 modules producing outputs, a three-state RAG system collapses too much information. The Yellow state — early warning, minor variance — is particularly important: it surfaces the inflection point where a project is leaving the Green zone but has not yet reached Amber. In a 108-module system, Yellow consensus across multiple categories is a meaningful signal that warrants PM attention before the next reporting cycle, not after.</p>
 
         <h3>The five-status authority matrix</h3>
         <table class="kn-table">
@@ -1453,6 +1504,7 @@
      the real per-method articles in CAT8_TOPICS. */
   const CATEGORY_NAV = [
     { id: "pceif" },
+    { id: "why-108-modules" },
     { id: "five-status" },
     { id: "how-categories-advise-pm" },
     { category: "cat1", num: "Cat 1", name: "Quantitative EVM",
@@ -1526,31 +1578,31 @@
       id: "cat10-overview",
       title: "Cat 10 — Data Integrity & Information Quality",
       eyebrow: "Cat 10 · data quality of the inputs",
-      body: "Every analytical output in PCEIF is only as good as its inputs. Cat 10 measures the quality, completeness, timeliness and consistency of the data driving all 107 other modules. A project with perfect EVM figures but stale data and estimated fields should be treated with lower confidence than one with fresh, directly measured inputs. Cat 10 quantifies that confidence.",
+      body: "Every analytical output in PCEIF is only as good as its inputs. A CPI derived from an unverified pay application is less reliable than one from an audited schedule of values. A document risk score estimated from proxy signals is less precise than one extracted directly from RFI logs. Cat 10 makes this uncertainty explicit — it does not hide it.",
       modules: [
-        ["10.1 Missing Data Index", "How many of the 11 core fields are populated. Missing inputs cascade — a Cat 1 module that returns insufficient data because BAC was never uploaded silently shrinks the active-module count, and Cat 10.1 surfaces that fact directly so the PM does not interpret the smaller signal pool as fewer findings."],
-        ["10.2 Data Timeliness Score", "Days since the last document upload. The longer the gap, the more the live state has drifted from what the models can see. Beyond 60 days the score turns Amber; beyond 90 it turns Red — that is the threshold at which the PM should require a fresh pay-app or schedule update before relying on Cat 9's recommendation."],
-        ["10.3 Source Reliability Weighting", "Average reliability across the document types that supplied each input field. Pay applications and contracts are high-reliability (0.85-0.95); RFIs and meeting minutes are mid (0.55-0.70); fields derived from other fields are low (0.40). A package dominated by low-reliability sources is acted on with caution even when every individual signal is Green."],
-        ["10.4 Audit Trail Completeness", "Whether the canonical lifecycle events (project created, signals extracted, decision recorded) are present in the project log. A project with no decision_recorded event has nothing surviving the reporting cycle — that is itself a governance finding even when the live signals look fine."],
-        ["10.5 Information Completeness Ratio", "The split across all 19 inputs the stack can consume: measured (came from a document), estimated (derived), and missing. A high estimated count is the operational signal that more documents are needed — derived fields are the model filling in for absent evidence."],
-        ["10.6 Cross-document Consistency Score", "Recomputes CPI, SPI and % complete from EV/AC/PV/BAC and checks the live values against the recomputed ones. A divergence above the rounding tolerance means uploaded documents disagree with each other — the PM is sent to reconcile before any signal is acted on."],
-        ["10.7 Reporting Frequency Index", "Average interval between document uploads. A 14-day cadence is high-frequency healthy reporting; a 30-day cadence matches a normal monthly cycle; gaps beyond 60 days signal a project drifting out of measurement contact."]
+        ["10.1 Missing Data Index", "Counts how many of the 11 core signal fields are populated. A project with 6 of 11 fields missing may still generate a governance recommendation, but Cat 10.1 flags that the recommendation rests on incomplete information."],
+        ["10.2 Data Timeliness Score", "Measures days since the most recent document upload. Data older than 60 days warrants a Yellow flag — the signals may not reflect current project conditions. Data older than 90 days warrants Amber."],
+        ["10.3 Source Reliability Weighting", "Each document type carries a reliability weight based on its verification status. Verified pay applications (0.90) outweigh estimated fields derived from proxy calculations (0.40). The weighted average across all populated fields gives the overall source reliability score."],
+        ["10.4 Audit Trail Completeness", "Checks whether the required governance events are recorded — project creation, document uploads, signal extractions, and decision records. A project with signals but no decision record has an incomplete audit trail."],
+        ["10.5 Information Completeness Ratio", "Distinguishes between measured fields (from actual documents) and estimated fields (derived from proxy calculations). A project with 80% measured fields has higher information quality than one with 40% measured."],
+        ["10.6 Cross-document Consistency Score", "Checks whether figures across uploaded documents are internally consistent. If the CPI stored in signalInputs does not match EV/AC, or if the percentage complete in the pay application conflicts with the schedule, this module flags the inconsistency."],
+        ["10.7 Reporting Frequency Index", "Measures the average interval between document uploads. Projects with infrequent updates accumulate stale data — a 90-day gap between pay applications means the portfolio is making decisions on two-month-old cost performance data."]
       ],
-      pmReading: "Read Cat 10 BEFORE Cat 6 (Conservative Dominance). If Cat 10 says the inputs are weak, you should down-weight every downstream finding — Cat 6's worst-signal-wins logic is only as trustworthy as the signals it consumed."
+      pmReading: "High Cat 10 status means the evidence base is current, measured, complete and internally consistent — act on the Cat 9 recommendation with confidence. Low Cat 10 status means the evidence base has gaps — seek additional documents before recording a formal governance action."
     },
     "cat11-overview": {
       id: "cat11-overview",
       title: "Cat 11 — Decision Optimization",
       eyebrow: "Cat 11 · choosing under constraints",
-      body: "Cat 5 explains how the system behaves. Cat 11 selects the optimal action under constraints. These methods answer the PM's fundamental question: given everything the models have found, what is the best decision? Multi-objective optimization balances cost, schedule and risk simultaneously. Regret minimization identifies the decision that minimizes the worst possible outcome under uncertainty.",
+      body: "Cat 5 (System Dynamics) explains how project components interact and how disturbances propagate. Cat 11 takes the current signal state as given and asks: what is the optimal decision? These are fundamentally different questions. Cat 5 is diagnostic; Cat 11 is prescriptive.",
       modules: [
-        ["11.1 Multi-Objective Optimization", "Balances three normalized objectives (CPI, SPI, document-risk) into a single Pareto score and names the binding constraint — the objective with the lowest score, the one improvement effort should target first."],
-        ["11.2 Linear Programming", "Given remaining work and remaining budget, computes the CPI required to land the project on budget. If the required CPI exceeds 1.20 the LP is infeasible — a recovery plan, not a productivity push, is the correct response."],
-        ["11.3 Constraint Satisfaction Analysis", "Tests four hard constraints (CPI ≥ 0.90, SPI ≥ 0.90, document risk < 0.70, FAR overrun threshold) and reports which are satisfied. A violated constraint is a named-authority escalation trigger under PCEIF's Layer 1 policy."],
-        ["11.4 What-If Scenario Matrix", "Four EAC scenarios — Optimistic (CPI recovers to 1.0), Base (current CPI continues), Pessimistic (5% degradation), Recovery (5% improvement) — with the spread expressed as % of BAC. A wide spread is a contingency call; a narrow one means the forecast is stable."],
-        ["11.5 Decision Sensitivity Matrix", "Quantifies how much each input variable changes the governance recommendation. The top driver is what the PM should track most closely — a small move there flips the decision faster than a large move elsewhere."],
-        ["11.6 Pareto Frontier Analysis", "Names whether the project is Pareto-efficient (all objectives met), Pareto-dominated (multiple objectives failing), or in the trade-off zone where improving one objective hurts another."],
-        ["11.7 Regret Minimization Index", "Minimax-regret across three actions (monitor / investigate / escalate) under three future states (improves / stable / worsens). Picks the action that minimizes worst-case regret, then over-rides to escalate when CPI or SPI breach the FAR threshold."]
+        ["11.1 Multi-Objective Optimization", "Public capital projects have three competing objectives: minimize cost overrun, minimize schedule delay, minimize risk. These objectives often trade off — accelerating schedule increases cost; reducing scope reduces risk but may miss requirements. Cat 11.1 finds the Pareto-efficient position given the current signal state."],
+        ["11.2 Linear Programming", "Given remaining work, remaining budget, and current cost performance, linear programming determines whether completing the project within budget is feasible and what CPI is required. It answers: is recovery possible?"],
+        ["11.3 Constraint Satisfaction Analysis", "Checks whether the project satisfies four governance constraints: cost (CPI ≥ 0.90), schedule (SPI ≥ 0.90), document risk (score < 0.70), and FAR reporting threshold (overrun < 25%). Violated constraints require specific governance responses under federal acquisition regulations."],
+        ["11.4 What-If Scenario Matrix", "Projects four futures: optimistic (CPI recovers to 1.0), base (current CPI continues), pessimistic (CPI degrades 5%), and recovery (CPI improves 5%). The range across scenarios quantifies decision uncertainty."],
+        ["11.5 Decision Sensitivity Matrix", "Identifies which input variable most affects the governance recommendation. If cost performance accounts for 70% of decision sensitivity, a small CPI change changes the recommendation significantly — the PM should focus verification efforts there first."],
+        ["11.6 Pareto Frontier Analysis", "Determines whether the project is Pareto-efficient (all objectives met), Pareto-dominated (multiple objectives failing simultaneously, suggesting systemic problems), or in a trade-off zone (improving one objective requires accepting degradation in another)."],
+        ["11.7 Regret Minimization Index", "Applies minimax regret theory to the PM's decision under uncertainty. Given three possible futures (improvement, stability, deterioration) and three possible decisions (monitor, investigate, escalate), which decision minimizes the worst-case regret? This is the most theoretically grounded decision-theoretic module in PCEIF."]
       ],
       pmReading: "Cat 11 is read AFTER Cat 6 and Cat 7 — it does not replace the conservative-dominance classification or the evidence-combination cross-check, it operationalises them. The PM reads Cat 6/7 to understand the state, then reads Cat 11 to choose the action."
     },
@@ -1558,15 +1610,15 @@
       id: "cat12-overview",
       title: "Cat 12 — Systems Engineering (Conditional)",
       eyebrow: "Cat 12 · interface complexity & traceability",
-      body: "The most novel category in PCEIF — very few EVM platforms address systems engineering complexity. Interface density, dependency mapping, and requirements traceability surface risks that are invisible to cost and schedule analysis alone. A project can be on time and budget while accumulating interface complexity that will cause late-stage integration failures. Cat 12 activates when interface control documents, requirements specifications, and system architecture documents are uploaded.",
+      body: "EVM measures cost and schedule performance against a baseline. It does not measure how complex the interfaces between project components are, how many dependencies could cascade into failures, or how well requirements are being traced through design and construction. A project can be on time and budget while accumulating integration risk that will surface as expensive rework in the final 20% of delivery — long after EVM would have flagged it.",
       modules: [
-        ["12.1 Interface Density Index", "Interfaces per component. High density means more places things can go wrong at integration time — every additional interface adds one more potential miscommunication. Activates with an interface control document (ICD)."],
-        ["12.2 Dependency Mapping Score", "Captures structural dependencies between subsystems so a change to one component can be propagated through the network. Activates with a system architecture document."],
-        ["12.3 Requirements Traceability Coverage", "Share of requirements that have a documented verification artefact. Low coverage is a late-stage acceptance-test risk. Activates with a requirements specification."],
-        ["12.4 Configuration Change Impact", "Configuration-item impact from accumulated change orders. Partially derivable from change-order counts even without a full configuration-items document — that partial form is the one populated today."],
-        ["12.5 Integration Complexity Index", "Composite of interface density × dependency depth. Activates when both ICD and dependency mapping are uploaded."]
+        ["12.1 Interface Density Index", "Measures the ratio of interfaces to components. High interface density means more coordination overhead, more opportunities for specification conflicts, and higher integration risk. Activates when interface control documents are uploaded."],
+        ["12.2 Dependency Mapping Score", "Maps critical dependencies between work packages. A high dependency count with few mitigation plans signals integration risk. Activates when system architecture documents are available."],
+        ["12.3 Requirements Traceability Coverage", "Measures what percentage of documented requirements have been verified through design and construction. Low traceability coverage in late project phases is a strong predictor of commissioning failures."],
+        ["12.4 Configuration Change Impact", "Partially derivable from change order data — measures the cumulative impact of configuration changes on the system baseline. A high number of approved changes to the configuration baseline increases integration risk even when individual changes appear minor."],
+        ["12.5 Integration Complexity Index", "Composite measure combining interface density, dependency count, and configuration change impact into a single integration risk score."]
       ],
-      pmReading: "Cat 12 is the most novel and the most demanding — until the systems-engineering docs are uploaded the modules render as a grey conditional band on the spider web. That grey band is itself a finding: it tells the PM the program's systems-engineering posture is not yet visible to the analytics."
+      pmReading: "Upload any of: interface control documents, system architecture diagrams, requirements specifications, or design basis reports. The platform will automatically extract the relevant fields and activate the applicable modules. Until then, Cat 12 renders as a grey conditional band on the spider web — that band is itself a finding: the program's systems-engineering posture is not yet visible to the analytics."
     }
   };
   function catOverviewBody(t) {
@@ -1600,7 +1652,22 @@
         <li><strong>Cat 11 Decision Optimization</strong> — given everything the models found, what is the BEST action under constraints (multi-objective, LP, regret minimization).</li>
         <li><strong>Cat 12 Systems Engineering</strong> — interface complexity, dependency mapping, requirements traceability. CONDITIONAL — activates when interface / requirements / system architecture docs are uploaded.</li>
       </ul>
-      <p>The PM reads the categories top-down to GENERATE the picture (with Cat 10 verifying that what was generated stands on solid inputs), then bottom-up (start at Cat 9 / Cat 11) to ACT on it. The decision is whatever Cat 9 records — the rest of the stack is the evidence supporting that decision.</p>
+      <h3>Five-step PM decision protocol</h3>
+      <ol class="kn-list kn-list-num">
+        <li><strong>Read Cat 9 (Governance)</strong> — this is the recommended action.</li>
+        <li><strong>Check Cat 6 (Conservative Dominance)</strong> — this is the baseline state.</li>
+        <li><strong>Check Cat 10 (Data Integrity)</strong> — how much to trust the signals.</li>
+        <li><strong>Count how many of Cat 7 (20 evidence methods) agree with Cat 6:</strong>
+          <ul class="kn-list" style="margin-top:6px">
+            <li>16–20 agree: HIGH CONFIDENCE — act on Cat 9 recommendation.</li>
+            <li>10–15 agree: MODERATE CONFIDENCE — act but document uncertainty.</li>
+            <li>&lt;10 agree: LOW CONFIDENCE — investigate before acting.</li>
+          </ul>
+        </li>
+        <li><strong>Read Cat 11 (Optimization)</strong> for the recommended decision pathway.</li>
+        <li><strong>Record decision</strong> with rationale, authority, and confidence level.</li>
+      </ol>
+      <p>The PM reads the categories top-down to GENERATE the picture (with Cat 10 verifying that what was generated stands on solid inputs), then bottom-up (start at Cat 9 / Cat 11) to ACT on it. The decision is whatever Cat 9 records — the rest of the 108-module stack is the evidence supporting that decision.</p>
     `
   };
 

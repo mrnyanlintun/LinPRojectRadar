@@ -399,17 +399,20 @@
           <p class="about-note">All project data on this site is synthetic. No real project, agency, employer, contractor, or vendor is referenced.</p>
         </section>
 
-        <!-- Section 2 — How it works -->
+        <!-- Section 2 — Platform -->
         <section class="panel about-section">
-          <h2 class="about-h">How it works</h2>
-          <p>Three signals feed the framework:</p>
-          <ol class="about-list about-list-num">
-            <li>Probabilistic EVM forecasting (Monte Carlo simulation)</li>
-            <li>Statistical anomaly detection (CUSUM control chart)</li>
-            <li>Document-risk extraction (keyword and rule-based NLP)</li>
-          </ol>
-          <p>These feed a 10-module signal stack. Modules 01–05 compute the EVM analysis, anomaly detection, document risk, signal synthesis, and governance decision. Modules 06–10 extend the analysis with PERT network criticality, Line of Balance production velocity, CCPM buffer health, Reference Class Forecasting cost prior, and Design Structure Matrix rework propagation.</p>
-          <p>The governance layer (Module 05) maps the signal package to a conflict classification, a recommended action, a named authority, and required documentation — using the PCEIF authority matrix.</p>
+          <h2 class="about-h">Platform</h2>
+          <div class="about-table-wrap">
+            <table class="about-table">
+              <tbody>
+                <tr><td>Framework</td><td>PCEIF — Public Capital EVM Intelligence Framework</td></tr>
+                <tr><td>Modules</td><td>108 analytical modules across 12 categories</td></tr>
+                <tr><td>Classification</td><td>5-status: Complete / Green / Yellow / Amber / Red</td></tr>
+                <tr><td>Active modules</td><td>103 from standard project documents</td></tr>
+                <tr><td>Conditional modules</td><td>5 systems-engineering modules (Cat 12) — activate on interface documents</td></tr>
+              </tbody>
+            </table>
+          </div>
         </section>
 
         <!-- Section 3 — Architecture -->
@@ -417,25 +420,29 @@
           <h2 class="about-h">Technical architecture</h2>
           <div class="about-arch">
             <div class="about-arch-layer" style="--layer-color: var(--phosphor)">
-              <div class="about-arch-label">Layer 1 — Presentation (GitHub Pages)</div>
-              <p>Static site. Vanilla JavaScript, HTML5, CSS3. No framework. All quantitative computation runs client-side in the browser: Monte Carlo (5,000 iterations), CUSUM, governance rules, simulation models.</p>
+              <div class="about-arch-label">Frontend — GitHub Pages (static)</div>
+              <p>Vanilla JavaScript, HTML5, CSS3. No framework. All 108 analytical modules run client-side in the browser.</p>
             </div>
             <div class="about-arch-layer" style="--layer-color: var(--clear-green)">
-              <div class="about-arch-label">Layer 2 — Application / API (Google Apps Script)</div>
-              <p>Single <code>/exec</code> endpoint. Serverless Web App running as the owner. Routes requests, holds API keys in Script Properties, brokers persistence and AI. The browser never holds an API key.</p>
+              <div class="about-arch-label">Backend — Google Apps Script Web App</div>
+              <p>Single <code>/exec</code> endpoint. Serverless, running as the owner. Routes requests, holds API keys in Script Properties, brokers persistence and AI. The browser never holds an API key.</p>
               <p class="about-endpoints">Endpoints: health, list, get, create, save, archive, restore, chat, analyze, extractsignals, overwritesignal, resetsignals, tts, ingestcorpus, audit</p>
             </div>
             <div class="about-arch-layer" style="--layer-color: var(--radar-amber)">
-              <div class="about-arch-label">Layer 3 — Persistence (Google Drive)</div>
+              <div class="about-arch-label">Persistence — Google Drive</div>
               <p>File-based store. Each project is a numbered folder containing <code>project.json</code>. No SQL database. Archived projects retained and restorable.</p>
             </div>
             <div class="about-arch-layer" style="--layer-color: var(--alarm-red)">
-              <div class="about-arch-label">Layer 4 — External AI (OpenAI)</div>
-              <p>All AI calls are server-side via Apps Script. Chat and document analysis: <code>gpt-4.1</code>. Text-to-speech: <code>tts-1</code>, onyx voice.</p>
+              <div class="about-arch-label">AI Engine — Anthropic Claude API</div>
+              <p>All AI calls are server-side via Apps Script. Signal extraction, Lin chat, document identification: <code>claude-sonnet-4-6</code>. Technical auditor, executive brief: <code>claude-opus-4-8</code>. Knowledge retrieval: keyword-matched retrieval from the knowledge library.</p>
             </div>
-            <div class="about-arch-layer about-arch-layer-muted">
-              <div class="about-arch-label">Stage 2 backend (scaffolded, not yet live)</div>
-              <p>Python 3.11, FastAPI. Scaffolded in <code>/backend</code>. Will replace Apps Script post-praxis. Deploy target: Render or GCP Cloud Run.</p>
+            <div class="about-arch-layer" style="--layer-color: var(--muted)">
+              <div class="about-arch-label">Speech — OpenAI TTS-1</div>
+              <p>Text-to-speech via <code>tts-1</code>, onyx voice. Server-side via Apps Script.</p>
+            </div>
+            <div class="about-arch-layer" style="--layer-color: var(--muted)">
+              <div class="about-arch-label">Auth — Google OAuth 2.0</div>
+              <p>Stage 1 — single authorized user. Google Sign-In via Apps Script session.</p>
             </div>
           </div>
         </section>
@@ -445,41 +452,44 @@
           <h2 class="about-h">Tech stack</h2>
           <div class="about-table-wrap">
             <table class="about-table">
-              <thead><tr><th>Layer</th><th>Technology</th></tr></thead>
+              <thead><tr><th>Component</th><th>Technology</th></tr></thead>
               <tbody>
-                <tr><td>Frontend</td><td>Vanilla JavaScript, HTML5, CSS3</td></tr>
-                <tr><td>Hosting</td><td>GitHub Pages (static)</td></tr>
-                <tr><td>Backend</td><td>Google Apps Script (V8 JavaScript runtime)</td></tr>
-                <tr><td>API pattern</td><td>Single /exec endpoint, POST with text/plain</td></tr>
-                <tr><td>Persistence</td><td>Google Drive, file-based (project.json per project)</td></tr>
-                <tr><td>AI — chat + analysis</td><td>OpenAI gpt-4.1</td></tr>
-                <tr><td>AI — speech</td><td>OpenAI tts-1, onyx voice</td></tr>
+                <tr><td>Frontend</td><td>Vanilla JavaScript, HTML5, CSS3 — GitHub Pages (static)</td></tr>
+                <tr><td>Backend</td><td>Google Apps Script Web App (single /exec endpoint)</td></tr>
+                <tr><td>Persistence</td><td>Google Drive — file-based, JSON per project</td></tr>
+                <tr><td>AI — signal extraction, chat, doc ID</td><td>Anthropic claude-sonnet-4-6</td></tr>
+                <tr><td>AI — auditor, brief</td><td>Anthropic claude-opus-4-8</td></tr>
+                <tr><td>Speech</td><td>OpenAI tts-1, onyx voice</td></tr>
                 <tr><td>PDF extraction</td><td>PDF.js (client-side, browser)</td></tr>
-                <tr><td>Stage 2 backend</td><td>Python 3.11, FastAPI (scaffolded)</td></tr>
+                <tr><td>Auth</td><td>Google OAuth 2.0 (Stage 1 — single authorized user)</td></tr>
               </tbody>
             </table>
           </div>
         </section>
 
-        <!-- Section 5 — Interactions -->
-        <section class="panel about-section about-section-wide">
-          <h2 class="about-h">How the layers talk</h2>
-          <ul class="about-list about-flow-list">
-            <li><strong>Browser → Apps Script:</strong> <code>fetch()</code> POST with <code>text/plain</code> content type. No CORS preflight.</li>
-            <li><strong>Apps Script → Google Drive:</strong> DriveApp API + UrlFetchApp with Drive REST API for file writes.</li>
-            <li><strong>Apps Script → OpenAI:</strong> UrlFetchApp to <code>api.openai.com</code>. API key stored in Script Properties.</li>
-            <li><strong>Browser → GitHub Pages:</strong> Static file hosting. No server-side rendering.</li>
-            <li><strong>PDF extraction:</strong> PDF.js runs in the browser, extracts text, sends as plain text to Apps Script.</li>
-          </ul>
+        <!-- Section 5 — Version -->
+        <section class="panel about-section">
+          <h2 class="about-h">Version</h2>
+          <div class="about-table-wrap">
+            <table class="about-table">
+              <tbody>
+                <tr><td>Version</td><td>v1.0-praxis-demo</td></tr>
+                <tr><td>Backend</td><td>v10.18+</td></tr>
+                <tr><td>Framework</td><td>PCEIF Layer 1 + Layer 2</td></tr>
+                <tr><td>Institution</td><td>George Washington University</td></tr>
+                <tr><td>Program</td><td>Doctor of Engineering — Engineering Management</td></tr>
+                <tr><td>Author</td><td>Nyan Lin Tun</td></tr>
+              </tbody>
+            </table>
+          </div>
         </section>
 
-        <!-- Section 6 — Praxis context -->
+        <!-- Section 6 — Disclaimer -->
         <section class="panel about-section about-section-wide">
-          <h2 class="about-h">Doctoral research context</h2>
-          <p>This platform is the demonstration artifact for a Doctor of Engineering praxis: <em>"From Signal to Action: A Multi-Model AI Governance Framework for Predictive Project Controls in U.S. Public Capital Programs."</em></p>
-          <p>The research validates PCEIF through an expert scenario protocol measuring decision consistency before and after framework application. The platform demonstrates the framework — it is not a validated production system and does not issue contractual direction or diagnose live projects.</p>
+          <h2 class="about-h">Disclaimer</h2>
+          <p>This platform is a demonstration artifact for a Doctor of Engineering praxis. All project data is synthetic. No real project, agency, employer, contractor, or vendor is referenced. AI explains and summarizes — governance decisions require named human approval. The platform is not a validated production system.</p>
           <ul class="about-list">
-            <li><strong>Framework:</strong> Design Science Research (DSR) methodology (Hevner, Peffers)</li>
+            <li><strong>Research framework:</strong> Design Science Research (DSR) methodology (Hevner, Peffers)</li>
             <li><strong>Institution:</strong> The George Washington University, School of Engineering and Applied Science</li>
           </ul>
         </section>
