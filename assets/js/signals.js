@@ -1126,10 +1126,42 @@
       handleFiles(e.dataTransfer && e.dataTransfer.files);
     });
 
-    function setError(item, file, msg) {
+    function setError(item, file, msg, retryFn) {
       item.className = "dz-item dz-error";
       item.innerHTML = `<span class="dz-item-name">${esc(file.name)}</span>` +
         `<span class="dz-item-error">✗ ${esc(msg)}</span>`;
+      if (retryFn) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "dz-item-retry";
+        btn.textContent = "Retry";
+        btn.addEventListener("click", function() { item.remove(); retryFn(); });
+        item.appendChild(btn);
+      }
+    }
+
+    // Promise wrapper with a hard timeout (Apps Script can be slow).
+    function withTimeout(promise, ms) {
+      return new Promise(function(resolve, reject) {
+        var t = setTimeout(function() {
+          reject(new Error("Request timed out after " + (ms / 1000) + "s"));
+        }, ms);
+        promise.then(function(v) { clearTimeout(t); resolve(v); },
+                     function(e) { clearTimeout(t); reject(e); });
+      });
+    }
+
+    // Identify with up to 2 retries, 1.5s between attempts, 30s timeout each.
+    async function identifyWithRetry(id, payload) {
+      const MAX = 2;
+      for (let i = 0; i <= MAX; i++) {
+        try {
+          return await withTimeout(LinStore.identifyDocument(Object.assign({ id }, payload)), 30000);
+        } catch (e) {
+          if (i === MAX) throw e;
+          await new Promise(function(r) { setTimeout(r, 1500); });
+        }
+      }
     }
 
     async function extractOne(id, docType, payload, file, item) {
@@ -1138,7 +1170,7 @@
         `<span class="dz-item-type">${esc(DOC_TYPE_LABEL[docType] || docType)}</span>` +
         `<span class="dz-item-status">Extracting…</span>`;
       try {
-        const resp = await LinStore.extractSignals(Object.assign({ id, docType }, payload));
+        const resp = await withTimeout(LinStore.extractSignals(Object.assign({ id, docType }, payload)), 30000);
         const si = mergeComputed(resp);
         const appliedKeys = (resp.applied && resp.applied.length)
           ? resp.applied.slice()
@@ -1166,22 +1198,10 @@
         if (window.LinApp) LinApp.refresh();
         if (onResult) onResult(id);
       } catch (e) {
-        console.error('[dropzone] extractOne error:', e);
-        setError(item, file, (e && e.message) ? e.message : "Network error — check API URL and console");
+        console.error("[dropzone] extractOne error:", e);
+        const msg = (e && e.message) ? e.message : "Network error — check API URL and console";
+        setError(item, file, msg, function() { extractOne(id, docType, payload, file, item); });
       }
-    }
-
-    function renderConfirm(item, id, payload, file, docType, confidence, period) {
-      item.className = "dz-item dz-identified";
-      const confTxt = confidence > 0 ? Math.round(confidence * 100) + "% confident" : "needs confirmation";
-      item.innerHTML = `<span class="dz-item-name">${esc(file.name)}</span>` +
-        `<select class="dz-item-override ig-input">${docTypeOptionsHtml(docType)}</select>` +
-        `<span class="dz-item-conf">${esc(confTxt)}${period ? " · " + esc(period) : ""}</span>` +
-        `<button type="button" class="dz-item-confirm btn small">Extract</button>`;
-      item.querySelector(".dz-item-confirm").addEventListener("click", () => {
-        const chosen = item.querySelector(".dz-item-override").value;
-        extractOne(id, chosen, payload, file, item);
-      });
     }
 
     async function processOne(id, file) {
@@ -1191,36 +1211,46 @@
         `<span class="dz-item-status">Identifying…</span>`;
       queue.appendChild(item);
 
-      console.log('[dropzone] API URL:', typeof LIN_API_URL !== 'undefined' ? LIN_API_URL : 'UNDEFINED');
-      console.log('[dropzone] file:', file.name, 'size:', file.size, 'bytes', 'type:', file.type);
+      console.log("[dropzone] API URL:", typeof LIN_API_URL !== "undefined" ? LIN_API_URL : "UNDEFINED");
+      console.log("[dropzone] file:", file.name, "size:", file.size, "bytes", "type:", file.type);
 
       if (file.size > 20 * 1024 * 1024) {
-        setError(item, file, 'File too large — max 20 MB');
+        setError(item, file, "File too large — max 20 MB");
         return;
       }
 
       let payload;
       try { payload = await buildFilePayload(file); }
       catch (e) { setError(item, file, "Couldn't read file"); return; }
-      const payloadStr = JSON.stringify(payload);
-      console.log('[dropzone] payload size:', payloadStr.length, 'chars', 'has text:', !!payload.text, 'has base64:', !!payload.dataBase64);
+      console.log("[dropzone] payload:", JSON.stringify(payload).length, "chars",
+        "| text:", !!payload.text, "| base64:", !!payload.dataBase64);
       if ((payload.dataBase64 || "").length > 5000000) {
-        setError(item, file, "File too large — maximum 3MB. Please compress the PDF.");
+        setError(item, file, "File too large — maximum 3 MB. Please compress the PDF.");
         return;
       }
-      // Identify (graceful: if the endpoint is unavailable, hold for manual pick).
+
+      // Identify with retry+timeout; on failure show error+retry (no dropdown fallback).
       let ident = null;
-      try { ident = await LinStore.identifyDocument(Object.assign({ id }, payload)); }
-      catch (e) { ident = null; }
+      try {
+        ident = await identifyWithRetry(id, payload);
+      } catch (e) {
+        console.error("[dropzone] identify failed:", e);
+        const msg = (e && e.message) ? e.message : "Failed to identify — check network";
+        setError(item, file, msg, function() { processOne(id, file); });
+        return;
+      }
+
       const docType = (ident && (ident.docType || ident.doc_type)) || "monthly_report";
       const confidence = (ident && ident.confidence != null) ? Number(ident.confidence) : 0;
-      const period = ident && (ident.suggestedPeriod || ident.suggested_period || ident.period);
-      // Auto-confirm high-confidence matches; otherwise let the PM confirm/override.
-      if (confidence >= 0.85 && (ident.docType || ident.doc_type)) {
-        await extractOne(id, docType, payload, file, item);
-      } else {
-        renderConfirm(item, id, payload, file, docType, confidence, period);
-      }
+
+      // Show identified type, then auto-extract immediately — no user confirmation needed.
+      item.className = "dz-item dz-identified";
+      item.innerHTML = `<span class="dz-item-name">${esc(file.name)}</span>` +
+        `<span class="dz-item-type">${esc(DOC_TYPE_LABEL[docType] || docType)}</span>` +
+        `<span class="dz-item-conf">${Math.round(confidence * 100)}%</span>` +
+        `<span class="dz-item-status">Extracting…</span>`;
+
+      await extractOne(id, docType, payload, file, item);
     }
 
     async function handleFiles(fileList) {
@@ -1234,7 +1264,11 @@
         queue.appendChild(note);
         return;
       }
-      for (const file of files) { await processOne(id, file); } // sequential — keeps backend load sane
+      for (let i = 0; i < files.length; i++) {
+        await processOne(id, files[i]);
+        // Brief pause between files — avoids Apps Script rate limiting.
+        if (i < files.length - 1) await new Promise(function(r) { setTimeout(r, 500); });
+      }
     }
   }
 
