@@ -483,12 +483,19 @@
     const root = document.getElementById("auditor-root");
     if (!root) return;
     loadAuditCache(); // merge localStorage cache into state.pastAuditCache
+    const cs = window.collapsibleSection || function (id, t, c) { return c; };
+    const corpusN = state.corpus.length;
+    const histN = state.pastAudits.length;
+    // Auto-expand the audit section while/after an audit runs.
+    const auditOpen = !!(state.auditResult || state.auditing || state.auditError);
     root.innerHTML =
       topPickerHtml() +
       `<div class="aud-stack">` +
-        sectionAHtml() +
-        sectionBHtml() +
-        historySectionHtml() +
+        cs("aud-corpus", "Corpus Documents", sectionAHtml(), true,
+           corpusN ? (corpusN + " reference file" + (corpusN === 1 ? "" : "s")) : "") +
+        cs("aud-run", "Upload Submission &amp; Audit Results", sectionBHtml(), auditOpen, "") +
+        cs("aud-history", "Audit History", historySectionHtml(), false,
+           histN ? (histN + " previous") : "") +
       `</div>`;
     wire(root);
   }
