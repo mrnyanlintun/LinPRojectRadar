@@ -514,6 +514,9 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .mod-cat-desc { font-size: 12px; color: var(--muted); flex: 1; min-width: 220px; }
 .mod-card-parked { opacity: .65; border-style: dashed; }
 .mod-card-parked p { color: var(--muted); margin: 6px 0; }
+/* ---- Module cards: no-data and conditional states ---- */
+.mod-card.no-data { opacity: 0.45; }
+.mod-card.no-data .mod-num { color: var(--faint); }
 .badge-conditional { font-family: var(--mono); font-size: 9px; color: var(--ink-faint); background: rgba(100,116,139,0.15); border: 1px solid rgba(100,116,139,0.3); border-radius: 5px; padding: 2px 7px; letter-spacing: .06em; }
 .mod-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .mod-num { font-family: var(--font-mono); font-size: 11px; letter-spacing: .16em; color: var(--eyebrow); }
