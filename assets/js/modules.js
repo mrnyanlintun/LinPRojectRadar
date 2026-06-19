@@ -720,12 +720,54 @@
     if (window.LinForceNet) LinForceNet.init();
   }
 
+  /* All 108 modules organized by category for ONE project (Project Detail page).
+     Uses LIN_CATEGORIES to show every module with collapsible sections. */
+  function projectModuleCardsHtml(project) {
+    if (!window.LIN_CATEGORIES) return '';
+    return LIN_CATEGORIES.map(function(cat) {
+      var total = cat.modules.length;
+      var activeN = cat.modules.filter(function(m) { return m.active !== false; }).length;
+      var badge = '[' + total + ' modules · ' + activeN + ' active]';
+      var desc = '<p class="sig-cat-desc kn-sub">' + esc(cat.description) + '</p>';
+
+      var modCards = cat.modules.map(function(m) {
+        var isActive = m.active !== false && !cat.conditional;
+        var statusCls = isActive ? '' : ' no-data';
+        var badgeHtml = !isActive
+          ? '<span class="badge-conditional">No data</span>'
+          : '';
+        var noteHtml = !isActive
+          ? '<p class="kn-sub" style="margin-top:4px">Activates when relevant inputs are available</p>'
+          : '';
+        return '<section class="panel mod-card' + statusCls + '" aria-label="' + esc(cat.num + '.' + m.num) + ': ' + esc(m.name) + '">' +
+          '<div class="mod-head">' +
+          '<span class="mod-num">CAT ' + esc(String(m.num)) + '</span>' +
+          '<h2>' + esc(m.name) + '</h2>' +
+          badgeHtml +
+          '</div>' +
+          '<p class="mod-method">' + esc(m.method_class.replace(/_/g, ' ')) + '</p>' +
+          (m.description ? '<p class="mod-explain">' + esc(m.description) + '</p>' : '') +
+          noteHtml +
+          '</section>';
+      }).join('');
+
+      var inner = '<div class="sig-cat-body">' + desc + modCards + '</div>';
+      var open = cat.id === 'cat1' || cat.id === 'cat9';
+      var title = esc(cat.num) + ' — ' + esc(cat.name);
+      if (window.collapsibleSection) {
+        return window.collapsibleSection('proj-mod-' + cat.id, title, inner, open, badge);
+      }
+      return '<div class="mod-cat-head"><span class="mod-cat-num">' + esc(cat.num) + '</span>' +
+        '<span class="mod-cat-name">' + esc(cat.name) + '</span></div>' + inner;
+    }).join('');
+  }
+
   /* All nineteen modules computed for ONE project (Project Detail page).
      Same builders, single-project array — no duplicated rules anywhere;
      the ABM governance module (09) still calls decision.js live. */
   function renderProjectModules(project, root) {
     if (!root) return;
-    root.innerHTML = BANNER + moduleCardsHtml([project]);
+    root.innerHTML = BANNER + projectModuleCardsHtml(project);
   }
 
   window.LinModules = { renderModulesPage, renderProjectModules };
