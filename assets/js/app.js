@@ -930,7 +930,7 @@
   const PORTFOLIO_SUMMARY_KEY = "lin-portfolio-summary";
 
   function summarisableProjects() {
-    return (window.LIN_PROJECTS || []).filter((p) => window.hasSignals && hasSignals(p));
+    return (window.LIN_PROJECTS || []).filter((p) => p && p.id);
   }
 
   function renderPortfolioSummary(text, projectCount, when) {
@@ -967,8 +967,8 @@
     const projects = summarisableProjects();
     const el = document.getElementById("portfolio-summary-text");
     if (!el) return;
-    if (projects.length < 2) {
-      el.innerHTML = '<div class="brief-loading">Populate at least 2 projects with signals to generate a portfolio summary.</div>';
+    if (projects.length < 1) {
+      el.innerHTML = '<div class="brief-loading">Add at least 1 project to generate a portfolio summary.</div>';
       return;
     }
     if (!window.LinStore || typeof LinStore.chat !== "function") {
