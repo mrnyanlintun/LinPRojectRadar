@@ -558,7 +558,7 @@
            <div class="detail-ingest-form"></div>
          </details>
        </section>
-       ${cs("d-stack", "Signal Stack — " + totalCats + " Categories", `<div class="detail-modules"></div>`, false, "")}
+       ${cs("d-stack", "Signal Stack — " + totalCats + " Categories", `<div class="detail-modules"></div>`, true, "")}
        ${cs("d-signals", "Extracted Signal Inputs", `<section class="panel detail-signals" aria-label="Extracted signals detail"></section>`, false, `${inputFieldCount} field${inputFieldCount === 1 ? "" : "s"}`)}`;
 
     // Reuse the shared renderers, scoped to this page's containers.

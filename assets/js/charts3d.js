@@ -1182,6 +1182,365 @@
     ctx.font='8px SFMono-Regular,monospace';ctx.fillStyle='#4ea0ff66';ctx.fillText('Near-critical paths in blue',12,H-12);
   }
 
+  /* ---------- Cat 3 helper ---------- */
+  function gauss3(x, mu, sig) { return Math.exp(-0.5 * Math.pow((x - mu) / sig, 2)); }
+
+  /* ---------- 3.1 Reference Class Forecast — 3D histogram ---------- */
+  function render_rcf3d(ctx, W, H, m, rx, ry) {
+    var d=m.data||{};
+    var cx=W/2,cy=H/2+5,fov=Math.min(W,H)*0.85;
+    function t(p){return proj(rX(rY(p,ry),rx),fov,cx,cy);}
+    ctx.clearRect(0,0,W,H);
+    var bac=d.bac||24900000,rcfP80=d.rcfP80||28400000;
+    var mean=rcfP80*0.94,sig=1800000,bars=32,minV=bac*0.9,maxV=rcfP80*1.1,bw=4.2,depth=14;
+    var heights=[];
+    for(var i=0;i<bars;i++){heights.push(gauss3(minV+(i+0.5)*(maxV-minV)/bars,mean,sig));}
+    var maxH=Math.max.apply(null,heights)||1;
+    heights.forEach(function(h,bi){
+      (function(idx){
+        var xval=minV+(idx+0.5)*(maxV-minV)/bars;
+        var xpos=(idx/bars-0.5)*bw*bars;
+        var col=xval>bac?'#e0556b':'#4ea0ff';
+        var bh=h/maxH*85,yT=55-bh,yB=55;
+        function c3(dx,dy,dz){return t({x:xpos+dx,y:dy,z:dz});}
+        var pts=[c3(-bw/2,yT,-depth/2),c3(bw/2,yT,-depth/2),c3(bw/2,yT,depth/2),c3(-bw/2,yT,depth/2),
+                 c3(-bw/2,yB,-depth/2),c3(bw/2,yB,-depth/2),c3(bw/2,yB,depth/2),c3(-bw/2,yB,depth/2)];
+        if(!pts.every(function(p){return isFinite(p.x);}))return;
+        function face(idxA,alpha){ctx.beginPath();ctx.moveTo(pts[idxA[0]].x,pts[idxA[0]].y);idxA.forEach(function(j){ctx.lineTo(pts[j].x,pts[j].y);});ctx.closePath();ctx.fillStyle=col;ctx.globalAlpha=alpha;ctx.fill();ctx.strokeStyle='rgba(10,15,28,0.3)';ctx.lineWidth=0.3;ctx.stroke();ctx.globalAlpha=1;}
+        face([0,1,2,3],0.88);face([4,5,1,0],0.65);face([5,6,2,1],0.45);
+      })(bi);
+    });
+    var bacIdx=Math.round((bac-minV)/(maxV-minV)*bars);
+    var bacX=(bacIdx/bars-0.5)*bw*bars;
+    var bl1=t({x:bacX,y:-40,z:-depth/2}),bl2=t({x:bacX,y:55,z:-depth/2});
+    if(isFinite(bl1.x)){ctx.beginPath();ctx.moveTo(bl1.x,bl1.y);ctx.lineTo(bl2.x,bl2.y);ctx.strokeStyle='#4ea0ff';ctx.lineWidth=1.5;ctx.stroke();pillDraw(ctx,bl1.x,bl1.y-6,'BAC $'+(bac/1e6).toFixed(1)+'M','#4ea0ff');}
+    var p80Idx=Math.round((rcfP80-minV)/(maxV-minV)*bars);
+    var p80X=(p80Idx/bars-0.5)*bw*bars;
+    var pl1=t({x:p80X,y:-40,z:-depth/2}),pl2=t({x:p80X,y:55,z:-depth/2});
+    if(isFinite(pl1.x)){ctx.beginPath();ctx.moveTo(pl1.x,pl1.y);ctx.lineTo(pl2.x,pl2.y);ctx.strokeStyle='#e0556b';ctx.lineWidth=1.5;ctx.stroke();pillDraw(ctx,pl1.x,pl1.y-22,'RCF P80 $'+(rcfP80/1e6).toFixed(1)+'M','#e0556b');}
+  }
+
+  /* ---------- 3.2 DSM Rework Propagation — 3D heat matrix (2D, no drag) ---------- */
+  function render_dsm3d(ctx, W, H, m, rx, ry) {
+    var d=m.data||{};
+    var cx=W/2,cy=H/2,fov=Math.min(W,H)*0.85;
+    function t(p){return proj(rX(rY(p,ry),rx),fov,cx,cy);}
+    ctx.clearRect(0,0,W,H);
+    var disciplines=d.disciplines||['Arch','Struct','MEP','Civil','Interior'];
+    var n=disciplines.length;
+    var rework=d.rework||[[0,0.8,0.6,0.3,0.4],[0.2,0,0.9,0.5,0.3],[0.1,0.3,0,0.7,0.8],[0.1,0.2,0.4,0,0.5],[0.2,0.1,0.5,0.3,0]];
+    var multiplier=d.multiplier||2.8;
+    var cellSize=28,depth=12;
+    var offsetX=-(n*cellSize)/2+cellSize/2;
+    var offsetZ=-(n*cellSize)/2+cellSize/2;
+    for(var row=0;row<n;row++){
+      for(var col2=0;col2<n;col2++){
+        if(row===col2)continue;
+        var v=rework[row][col2];
+        var xpos=offsetX+col2*cellSize;
+        var zpos=offsetZ+row*cellSize;
+        var bh=v*60,yT=40-bh,yB=40;
+        var col=v>0.7?'#e0556b':v>0.4?'#e2b13c':'#4ea0ff';
+        var pts=[t({x:xpos-cellSize/2+2,y:yT,z:zpos-depth/2}),t({x:xpos+cellSize/2-2,y:yT,z:zpos-depth/2}),t({x:xpos+cellSize/2-2,y:yT,z:zpos+depth/2}),t({x:xpos-cellSize/2+2,y:yT,z:zpos+depth/2}),
+                 t({x:xpos-cellSize/2+2,y:yB,z:zpos-depth/2}),t({x:xpos+cellSize/2-2,y:yB,z:zpos-depth/2}),t({x:xpos+cellSize/2-2,y:yB,z:zpos+depth/2}),t({x:xpos-cellSize/2+2,y:yB,z:zpos+depth/2})];
+        if(!pts.every(function(p){return isFinite(p.x);}))continue;
+        (function(colr,ps){
+          function face2(idx,alpha){ctx.beginPath();ctx.moveTo(ps[idx[0]].x,ps[idx[0]].y);idx.forEach(function(j){ctx.lineTo(ps[j].x,ps[j].y);});ctx.closePath();ctx.fillStyle=colr;ctx.globalAlpha=alpha;ctx.fill();ctx.strokeStyle='rgba(10,15,28,0.3)';ctx.lineWidth=0.3;ctx.stroke();ctx.globalAlpha=1;}
+          face2([0,1,2,3],0.88);face2([4,5,1,0],0.65);face2([5,6,2,1],0.45);
+        })(col,pts);
+      }
+    }
+    for(var i=0;i<n;i++){
+      var xlp=t({x:offsetX+i*cellSize,y:48,z:offsetZ-cellSize});
+      var zlp=t({x:offsetX-cellSize,y:48,z:offsetZ+i*cellSize});
+      if(isFinite(xlp.x)){ctx.font='7px SFMono-Regular,monospace';ctx.fillStyle='#64748b';ctx.textAlign='center';ctx.fillText(disciplines[i],xlp.x,xlp.y);}
+      if(isFinite(zlp.x)){ctx.textAlign='right';ctx.fillText(disciplines[i],zlp.x,zlp.y);ctx.textAlign='left';}
+    }
+    pillDraw(ctx,W/2,16,'Multiplier '+multiplier+'x','#e0556b');
+  }
+
+  /* ---------- 3.3 Contingency Burn Rate — 3D area + threshold ---------- */
+  function render_contingency3d(ctx, W, H, m, rx, ry) {
+    var d=m.data||{};
+    var cx=W/2,cy=H/2+5,fov=Math.min(W,H)*0.85;
+    function t(p){return proj(rX(rY(p,ry),rx),fov,cx,cy);}
+    ctx.clearRect(0,0,W,H);
+    var total=d.total||1800000;
+    var history=d.history||[0,180000,420000,720000,1080000,1224000];
+    var n=history.length,xSpan=120,base=55;
+    var pcts=history.map(function(v){return v/total;});
+    for(var i=0;i<n-1;i++){
+      var x1=(i/(n-1)-0.5)*xSpan,x2=((i+1)/(n-1)-0.5)*xSpan;
+      var y1=base-pcts[i]*90,y2=base-pcts[i+1]*90;
+      var col=pcts[i+1]>0.75?'#e0556b':pcts[i+1]>0.50?'#e2b13c':'#4ea0ff';
+      var pts=[t({x:x1,y:y1,z:12}),t({x:x2,y:y2,z:12}),t({x:x2,y:base,z:12}),t({x:x1,y:base,z:12})];
+      if(!pts.every(function(p){return isFinite(p.x);}))continue;
+      ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);pts.forEach(function(p){ctx.lineTo(p.x,p.y);});ctx.closePath();ctx.fillStyle=col+'30';ctx.fill();
+      ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);ctx.lineTo(pts[1].x,pts[1].y);ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.stroke();
+      ctx.beginPath();ctx.arc(pts[1].x,pts[1].y,3,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+    }
+    for(var i=0;i<n-1;i++){
+      var x1=(i/(n-1)-0.5)*xSpan,x2=((i+1)/(n-1)-0.5)*xSpan;
+      var r1=base-pcts[i]*90,r2=base-pcts[i+1]*90;
+      var pts=[t({x:x1,y:base-90,z:-15}),t({x:x2,y:base-90,z:-15}),t({x:x2,y:r2,z:-15}),t({x:x1,y:r1,z:-15})];
+      if(!pts.every(function(p){return isFinite(p.x);}))continue;
+      ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);pts.forEach(function(p){ctx.lineTo(p.x,p.y);});ctx.closePath();ctx.fillStyle='rgba(63,202,166,0.08)';ctx.fill();
+      ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);ctx.lineTo(pts[1].x,pts[1].y);ctx.strokeStyle='rgba(63,202,166,0.4)';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.stroke();ctx.setLineDash([]);
+    }
+    var tp1=t({x:-xSpan/2,y:base-0.80*90,z:-20}),tp2=t({x:xSpan/2,y:base-0.80*90,z:-20});
+    if(isFinite(tp1.x)){ctx.beginPath();ctx.moveTo(tp1.x,tp1.y);ctx.lineTo(tp2.x,tp2.y);ctx.strokeStyle='#e0556b88';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.stroke();ctx.setLineDash([]);ctx.font='8px SFMono-Regular,monospace';ctx.fillStyle='#e0556b';ctx.fillText('80% threshold',tp1.x+4,tp1.y-4);}
+    var burned=Math.round(pcts[n-1]*100);
+    var lp=t({x:xSpan/4,y:base-pcts[n-1]*90,z:12});
+    if(isFinite(lp.x)) pillDraw(ctx,lp.x,lp.y-14,burned+'% burned',burned>75?'#e0556b':burned>50?'#e2b13c':'#4ea0ff');
+  }
+
+  /* ---------- 3.4 Labor Productivity Index — 3D line + band + forecast ---------- */
+  function render_labor3d(ctx, W, H, m, rx, ry) {
+    var d=m.data||{};
+    var cx=W/2,cy=H/2,fov=Math.min(W,H)*0.85;
+    function t(p){return proj(rX(rY(p,ry),rx),fov,cx,cy);}
+    ctx.clearRect(0,0,W,H);
+    var history=d.history||[1.02,0.99,0.97,0.94,0.92,0.90,0.88];
+    var fore=d.forecast||[0.88,0.87,0.86];
+    var lpi=d.lpi||(history[history.length-1]);
+    var xSpan=120,n=history.length,total=n+fore.length;
+    function yv(v){return 50-(v-0.82)/0.26*90;}
+    for(var i=0;i<n-1;i++){
+      var x1=(i/(total-1)-0.5)*xSpan,x2=((i+1)/(total-1)-0.5)*xSpan;
+      var y1=yv(history[i]),y2=yv(history[i+1]),band=4;
+      var pts=[t({x:x1,y:y1-band,z:0}),t({x:x2,y:y2-band,z:0}),t({x:x2,y:y2+band,z:0}),t({x:x1,y:y1+band,z:0})];
+      if(!pts.every(function(p){return isFinite(p.x);}))continue;
+      ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);pts.forEach(function(p){ctx.lineTo(p.x,p.y);});ctx.closePath();ctx.fillStyle='rgba(226,177,60,0.1)';ctx.fill();
+    }
+    var bp1=t({x:-xSpan/2,y:yv(1.0),z:-20}),bp2=t({x:xSpan/2,y:yv(1.0),z:-20});
+    if(isFinite(bp1.x)){ctx.beginPath();ctx.moveTo(bp1.x,bp1.y);ctx.lineTo(bp2.x,bp2.y);ctx.strokeStyle='rgba(63,202,166,0.4)';ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.stroke();ctx.setLineDash([]);ctx.font='8px SFMono-Regular,monospace';ctx.fillStyle='#3fcaa6';ctx.fillText('Baseline 1.0',bp1.x,bp1.y-4);}
+    for(var i=0;i<n-1;i++){
+      var x1=(i/(total-1)-0.5)*xSpan,x2=((i+1)/(total-1)-0.5)*xSpan;
+      var p1=t({x:x1,y:yv(history[i]),z:0}),p2=t({x:x2,y:yv(history[i+1]),z:0});
+      if(!isFinite(p1.x))continue;
+      ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.strokeStyle='#e2b13c';ctx.lineWidth=2.5;ctx.stroke();
+      ctx.beginPath();ctx.arc(p2.x,p2.y,3,0,Math.PI*2);ctx.fillStyle='#e2b13c';ctx.fill();
+    }
+    var allF=[history[n-1]].concat(fore);
+    for(var i=0;i<allF.length-1;i++){
+      var xi=(n-1+i)/(total-1),xi2=(n+i)/(total-1);
+      var p1=t({x:(xi-0.5)*xSpan,y:yv(allF[i]),z:0}),p2=t({x:(xi2-0.5)*xSpan,y:yv(allF[i+1]),z:0});
+      if(!isFinite(p1.x))continue;
+      ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.strokeStyle='#e2b13c';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.stroke();ctx.setLineDash([]);
+    }
+    var lp=t({x:((n-1)/(total-1)-0.5)*xSpan,y:yv(history[n-1]),z:0});
+    if(isFinite(lp.x)) pillDraw(ctx,lp.x,lp.y-16,'LPI '+lpi.toFixed(2),'#e2b13c');
+  }
+
+  /* ---------- 3.5 Material Cost Variance — 3D paired bars by trade ---------- */
+  function render_material3d(ctx, W, H, m, rx, ry) {
+    var d=m.data||{};
+    var cx=W/2,cy=H/2,fov=Math.min(W,H)*0.85;
+    function t(p){return proj(rX(rY(p,ry),rx),fov,cx,cy);}
+    ctx.clearRect(0,0,W,H);
+    var trades=d.trades||[
+      {name:'Structural',planned:1200000,actual:1380000,col:'#e0556b',x:-75},
+      {name:'MEP',       planned:2100000,actual:2310000,col:'#e2b13c',x:-25},
+      {name:'Finishes',  planned:800000, actual:820000, col:'#f0c040',x:25},
+      {name:'Civil',     planned:600000, actual:588000, col:'#3fcaa6',x:75}
+    ];
+    var maxV=d.maxV||2500000,bw=26,depth=16,base=55;
+    trades.forEach(function(tr){
+      var ph=tr.planned/maxV*85,pyT=base-ph;
+      var ppts=[t({x:tr.x-bw/2,y:pyT,z:-depth}),t({x:tr.x+bw/2,y:pyT,z:-depth}),t({x:tr.x+bw/2,y:pyT,z:0}),t({x:tr.x-bw/2,y:pyT,z:0}),
+                t({x:tr.x-bw/2,y:base, z:-depth}),t({x:tr.x+bw/2,y:base, z:-depth}),t({x:tr.x+bw/2,y:base, z:0}),t({x:tr.x-bw/2,y:base, z:0})];
+      if(!ppts.every(function(p){return isFinite(p.x);}))return;
+      (function(ps){
+        function faceP(idx,alpha){ctx.beginPath();ctx.moveTo(ps[idx[0]].x,ps[idx[0]].y);idx.forEach(function(j){ctx.lineTo(ps[j].x,ps[j].y);});ctx.closePath();ctx.fillStyle='rgba(159,176,204,0.3)';ctx.globalAlpha=alpha;ctx.fill();ctx.strokeStyle='rgba(38,52,79,0.5)';ctx.lineWidth=0.4;ctx.stroke();ctx.globalAlpha=1;}
+        faceP([0,1,2,3],0.8);faceP([4,5,1,0],0.6);faceP([5,6,2,1],0.4);
+      })(ppts);
+      var ah=tr.actual/maxV*85,ayT=base-ah;
+      var apts=[t({x:tr.x-bw/2,y:ayT,z:0}),t({x:tr.x+bw/2,y:ayT,z:0}),t({x:tr.x+bw/2,y:ayT,z:depth}),t({x:tr.x-bw/2,y:ayT,z:depth}),
+                t({x:tr.x-bw/2,y:base, z:0}),t({x:tr.x+bw/2,y:base, z:0}),t({x:tr.x+bw/2,y:base, z:depth}),t({x:tr.x-bw/2,y:base, z:depth})];
+      if(!apts.every(function(p){return isFinite(p.x);}))return;
+      (function(ps,col,name,planned,actual){
+        function faceA(idx,alpha){ctx.beginPath();ctx.moveTo(ps[idx[0]].x,ps[idx[0]].y);idx.forEach(function(j){ctx.lineTo(ps[j].x,ps[j].y);});ctx.closePath();ctx.fillStyle=col;ctx.globalAlpha=alpha;ctx.fill();ctx.strokeStyle='rgba(10,15,28,0.3)';ctx.lineWidth=0.4;ctx.stroke();ctx.globalAlpha=1;}
+        faceA([0,1,2,3],0.88);faceA([4,5,1,0],0.65);faceA([5,6,2,1],0.45);
+        var variance=((actual-planned)/planned*100).toFixed(1);
+        var lp=t({x:ps[0].x-(ps[0].x-ps[1].x)/2,y:ayT-10,z:0});
+        if(isFinite(ps[0].x)){ctx.font='bold 9px SFMono-Regular,monospace';ctx.fillStyle=col;ctx.textAlign='center';ctx.fillText((variance>0?'+':'')+variance+'%',(ps[0].x+ps[1].x)/2,(ps[0].y+ps[1].y)/2-8);ctx.font='7px SFMono-Regular,monospace';ctx.fillStyle='#64748b';ctx.fillText(name,(ps[0].x+ps[1].x)/2,(ps[0].y+ps[1].y)/2+2);ctx.textAlign='left';}
+      })(apts,tr.col,tr.name,tr.planned,tr.actual);
+    });
+    ctx.font='8px SFMono-Regular,monospace';ctx.fillStyle='#64748b';ctx.fillText('Grey = planned  ·  Colored = actual',14,H-12);
+  }
+
+  /* ---------- 3.6 Overhead Absorption Rate — concentric gauge dials ---------- */
+  function render_overhead3d(ctx, W, H, m, rx, ry) {
+    var d=m.data||{};
+    ctx.clearRect(0,0,W,H);
+    var cx=W/2,cy=H/2+20;
+    var rate=d.rate||0.941, target=d.target||1.00, prior=d.prior||0.960;
+    var gauges=[
+      {label:'Absorption Rate',val:rate,   min:0.7,max:1.1,R:74,col:'#e2b13c',lw:12},
+      {label:'Target',         val:target, min:0.7,max:1.1,R:52,col:'#3fcaa6',lw:12},
+      {label:'Prior Period',   val:prior,  min:0.7,max:1.1,R:30,col:'#4ea0ff',lw:12}
+    ];
+    var startA=Math.PI*0.75,endA=Math.PI*2.25;
+    gauges.forEach(function(g){
+      var range=g.max-g.min;
+      var valA=startA+(g.val-g.min)/range*(endA-startA);
+      ctx.beginPath();ctx.arc(cx,cy,g.R,startA,endA);ctx.strokeStyle='rgba(38,52,79,0.6)';ctx.lineWidth=g.lw;ctx.stroke();
+      ctx.beginPath();ctx.arc(cx,cy,g.R,startA,valA);ctx.strokeStyle=g.col;ctx.lineWidth=g.lw;ctx.lineCap='round';ctx.stroke();ctx.lineCap='butt';
+      var okA=startA+(1.0-g.min)/range*(endA-startA);
+      ctx.beginPath();ctx.arc(cx,cy,g.R,okA-0.03,okA+0.03);ctx.strokeStyle='#3fcaa6';ctx.lineWidth=g.lw+4;ctx.stroke();
+      ctx.beginPath();ctx.arc(cx+g.R*Math.cos(valA),cy+g.R*Math.sin(valA),5,0,Math.PI*2);ctx.fillStyle=g.col;ctx.fill();
+      ctx.font='8px SFMono-Regular,monospace';ctx.fillStyle=g.col;ctx.textAlign='center';
+      ctx.fillText(g.label+' '+g.val.toFixed(3),cx,cy-(g.R===74?88:g.R===52?68:48));ctx.textAlign='left';
+    });
+    ctx.textAlign='center';ctx.font='bold 11px SFMono-Regular,monospace';ctx.fillStyle='#e2b13c';
+    ctx.fillText(Math.round(rate*100)+'%',cx,cy+6);ctx.font='8px SFMono-Regular,monospace';ctx.fillStyle='#64748b';
+    ctx.fillText('Overhead absorption',cx,cy+20);ctx.textAlign='left';
+  }
+
+  /* ---------- 3.7 Cost Risk P80 — 3D histogram ---------- */
+  function render_costrisk3d(ctx, W, H, m, rx, ry) {
+    var d=m.data||{};
+    var cx=W/2,cy=H/2+5,fov=Math.min(W,H)*0.85;
+    function t(p){return proj(rX(rY(p,ry),rx),fov,cx,cy);}
+    ctx.clearRect(0,0,W,H);
+    var bac=d.bac||24900000,mean=d.mean||27400000,sig=d.sig||900000;
+    var bars=34,minV=bac*0.95,maxV=mean+sig*2.5,bw=4,depth=14;
+    var p50val=d.p50||mean-sig*0.1, p80val=d.p80||mean+sig*0.42;
+    var heights=[];
+    for(var i=0;i<bars;i++){heights.push(gauss3(minV+(i+0.5)*(maxV-minV)/bars,mean,sig));}
+    var maxH=Math.max.apply(null,heights)||1;
+    heights.forEach(function(h,bi){
+      (function(idx){
+        var xval=minV+(idx+0.5)*(maxV-minV)/bars;
+        var xpos=(idx/bars-0.5)*bw*bars;
+        var col=xval>bac+sig?'#e0556b':xval>bac?'#e2b13c':'#4ea0ff';
+        var bh=h/maxH*88,yT=55-bh,yB=55;
+        function c3(dx,dy,dz){return t({x:xpos+dx,y:dy,z:dz});}
+        var pts=[c3(-bw/2,yT,-depth/2),c3(bw/2,yT,-depth/2),c3(bw/2,yT,depth/2),c3(-bw/2,yT,depth/2),
+                 c3(-bw/2,yB,-depth/2),c3(bw/2,yB,-depth/2),c3(bw/2,yB,depth/2),c3(-bw/2,yB,depth/2)];
+        if(!pts.every(function(p){return isFinite(p.x);}))return;
+        function face(idxA,alpha){ctx.beginPath();ctx.moveTo(pts[idxA[0]].x,pts[idxA[0]].y);idxA.forEach(function(j){ctx.lineTo(pts[j].x,pts[j].y);});ctx.closePath();ctx.fillStyle=col;ctx.globalAlpha=alpha;ctx.fill();ctx.strokeStyle='rgba(10,15,28,0.3)';ctx.lineWidth=0.3;ctx.stroke();ctx.globalAlpha=1;}
+        face([0,1,2,3],0.88);face([4,5,1,0],0.65);face([5,6,2,1],0.45);
+      })(bi);
+    });
+    [{label:'P50 $'+(p50val/1e6).toFixed(1)+'M',val:p50val,col:'#3fcaa6'},{label:'P80 $'+(p80val/1e6).toFixed(1)+'M',val:p80val,col:'#e0556b'}].forEach(function(mk){
+      var xp=((mk.val-minV)/(maxV-minV)*bars-0.5)*bw;
+      var pl1=t({x:xp,y:-38,z:-depth/2}),pl2=t({x:xp,y:55,z:-depth/2});
+      if(!isFinite(pl1.x))return;
+      ctx.beginPath();ctx.moveTo(pl1.x,pl1.y);ctx.lineTo(pl2.x,pl2.y);ctx.strokeStyle=mk.col;ctx.lineWidth=1.5;ctx.stroke();
+      pillDraw(ctx,pl1.x,pl1.y-6,mk.label,mk.col);
+    });
+  }
+
+  /* ---------- 3.8 Analogous Estimate — 3D scatter, no drag ---------- */
+  function render_analogous3d(ctx, W, H, m, rx, ry) {
+    var d=m.data||{};
+    var cx=W/2,cy=H/2,fov=Math.min(W,H)*0.85;
+    function t(p){return proj(rX(rY(p,ry),rx),fov,cx,cy);}
+    ctx.clearRect(0,0,W,H);
+    var peers=d.peers||[
+      {name:'Proj A',size:85000,cost:312,type:0,col:'#4ea0ff',current:false},
+      {name:'Proj B',size:72000,cost:298,type:1,col:'#4ea0ff',current:false},
+      {name:'Proj C',size:95000,cost:325,type:0,col:'#4ea0ff',current:false},
+      {name:'Proj D',size:110000,cost:340,type:2,col:'#4ea0ff',current:false},
+      {name:'Proj E',size:68000,cost:289,type:1,col:'#4ea0ff',current:false},
+      {name:'Proj F',size:88000,cost:318,type:0,col:'#4ea0ff',current:false},
+      {name:'THIS',  size:d.thisSize||92000,cost:d.thisCost||334,type:0,col:'#e0556b',current:true}
+    ];
+    var minSize=60000,maxSize=120000,minCost=280,maxCost=350;
+    var meanCost=d.meanCost||313;
+    peers.forEach(function(pr){
+      var x=(pr.size-minSize)/(maxSize-minSize)*120-60;
+      var y=-(pr.cost-minCost)/(maxCost-minCost)*80+30;
+      var z=pr.type*20-20;
+      var pp=t({x:x,y:y,z:z});
+      if(!isFinite(pp.x))return;
+      var fp=t({x:x,y:30,z:z});
+      if(isFinite(fp.x)){ctx.beginPath();ctx.moveTo(pp.x,pp.y);ctx.lineTo(fp.x,fp.y);ctx.strokeStyle=pr.col+'44';ctx.lineWidth=0.7;ctx.stroke();}
+      var r2=pr.current?7:4;
+      ctx.beginPath();ctx.arc(pp.x,pp.y,r2,0,Math.PI*2);ctx.fillStyle=pr.col;ctx.globalAlpha=pr.current?1:0.65;ctx.fill();ctx.globalAlpha=1;
+      if(pr.current){ctx.beginPath();ctx.arc(pp.x,pp.y,r2+4,0,Math.PI*2);ctx.strokeStyle='#e0556b88';ctx.lineWidth=1.5;ctx.stroke();pillDraw(ctx,pp.x,pp.y-18,'THIS PROJECT','#e0556b');}
+    });
+    var pl1=t({x:-60,y:-(meanCost-minCost)/(maxCost-minCost)*80+30,z:-30});
+    var pl2=t({x:60,y:-(meanCost-minCost)/(maxCost-minCost)*80+30,z:-30});
+    if(isFinite(pl1.x)){ctx.beginPath();ctx.moveTo(pl1.x,pl1.y);ctx.lineTo(pl2.x,pl2.y);ctx.strokeStyle='rgba(63,202,166,0.4)';ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.stroke();ctx.setLineDash([]);ctx.font='8px SFMono-Regular,monospace';ctx.fillStyle='#3fcaa6';ctx.fillText('Peer mean $'+meanCost+'/sqft',pl2.x+5,pl2.y);}
+    ctx.font='8px SFMono-Regular,monospace';ctx.fillStyle='#64748b';ctx.fillText('X: building size  Y: $/sqft  Z: project type',14,H-12);
+  }
+
+  /* ---------- 3.9 Parametric Cost Index — 3D multi-line ---------- */
+  function render_parametric3d(ctx, W, H, m, rx, ry) {
+    var d=m.data||{};
+    var cx=W/2,cy=H/2,fov=Math.min(W,H)*0.85;
+    function t(p){return proj(rX(rY(p,ry),rx),fov,cx,cy);}
+    ctx.clearRect(0,0,W,H);
+    var history=d.history||[1.00,1.01,0.99,0.98,0.97,0.95,0.947];
+    var models=d.models||['RS Means','ENR Index','CBRE Model'];
+    var offsets=[-15,0,15];
+    var consensus=d.consensus||0.947;
+    var xSpan=110,n=history.length;
+    function yv(v){return 50-(v-0.90)/0.14*85;}
+    var modelOffsets=[-0.010, 0, 0.010];
+    models.forEach(function(model,mi){
+      var zOff=offsets[mi];
+      var col=['#4ea0ff','#e2b13c','#9b6dff'][mi];
+      var modelHist=history.map(function(v,i){return v+modelOffsets[mi];});
+      for(var i=0;i<n-1;i++){
+        var x1=(i/(n-1)-0.5)*xSpan,x2=((i+1)/(n-1)-0.5)*xSpan;
+        var p1=t({x:x1,y:yv(modelHist[i]),z:zOff}),p2=t({x:x2,y:yv(modelHist[i+1]),z:zOff});
+        if(!isFinite(p1.x))continue;
+        ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.strokeStyle=col;ctx.lineWidth=1.8;ctx.stroke();
+        ctx.beginPath();ctx.arc(p2.x,p2.y,2.5,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+      }
+      var lp=t({x:((n-1)/(n-1)-0.5)*xSpan+8,y:yv(modelHist[n-1]),z:zOff});
+      if(isFinite(lp.x)){ctx.font='8px SFMono-Regular,monospace';ctx.fillStyle=col;ctx.fillText(model,lp.x,lp.y);}
+    });
+    var bp1=t({x:-xSpan/2,y:yv(1.0),z:-20}),bp2=t({x:xSpan/2,y:yv(1.0),z:-20});
+    if(isFinite(bp1.x)){ctx.beginPath();ctx.moveTo(bp1.x,bp1.y);ctx.lineTo(bp2.x,bp2.y);ctx.strokeStyle='rgba(63,202,166,0.4)';ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.stroke();ctx.setLineDash([]);}
+    pillDraw(ctx,W/2,18,'Consensus index '+consensus,'#e2b13c');
+  }
+
+  /* ---------- 3.10 Inflation Adjustment — dual area surfaces (2D, no drag) ---------- */
+  function render_inflation3d(ctx, W, H, m, rx, ry) {
+    var d=m.data||{};
+    var cx=W/2,cy=H/2+5,fov=Math.min(W,H)*0.85;
+    function t(p){return proj(rX(rY(p,ry),rx),fov,cx,cy);}
+    ctx.clearRect(0,0,W,H);
+    var periods=d.periods||['Q1','Q2','Q3','Q4','Q5','Q6'];
+    var nominal= d.nominal||[4200000,4380000,4520000,4710000,4890000,5040000];
+    var adjusted=d.adjusted||[4200000,4310000,4390000,4520000,4650000,4760000];
+    var n=periods.length,xSpan=120,maxV=d.maxV||5200000,base=55;
+    for(var i=0;i<n-1;i++){
+      var x1=(i/(n-1)-0.5)*xSpan,x2=((i+1)/(n-1)-0.5)*xSpan;
+      var y1=base-nominal[i]/maxV*90,y2=base-nominal[i+1]/maxV*90;
+      var pts=[t({x:x1,y:y1,z:-15}),t({x:x2,y:y2,z:-15}),t({x:x2,y:base,z:-15}),t({x:x1,y:base,z:-15})];
+      if(!pts.every(function(p){return isFinite(p.x);}))continue;
+      ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);pts.forEach(function(p){ctx.lineTo(p.x,p.y);});ctx.closePath();ctx.fillStyle='rgba(224,85,107,0.12)';ctx.fill();
+      ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);ctx.lineTo(pts[1].x,pts[1].y);ctx.strokeStyle='#e0556b';ctx.lineWidth=2;ctx.stroke();
+      ctx.beginPath();ctx.arc(pts[1].x,pts[1].y,3,0,Math.PI*2);ctx.fillStyle='#e0556b';ctx.fill();
+    }
+    for(var i=0;i<n-1;i++){
+      var x1=(i/(n-1)-0.5)*xSpan,x2=((i+1)/(n-1)-0.5)*xSpan;
+      var y1=base-adjusted[i]/maxV*90,y2=base-adjusted[i+1]/maxV*90;
+      var pts=[t({x:x1,y:y1,z:12}),t({x:x2,y:y2,z:12}),t({x:x2,y:base,z:12}),t({x:x1,y:base,z:12})];
+      if(!pts.every(function(p){return isFinite(p.x);}))continue;
+      ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);pts.forEach(function(p){ctx.lineTo(p.x,p.y);});ctx.closePath();ctx.fillStyle='rgba(78,160,255,0.15)';ctx.fill();
+      ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);ctx.lineTo(pts[1].x,pts[1].y);ctx.strokeStyle='#4ea0ff';ctx.lineWidth=2;ctx.stroke();
+      ctx.beginPath();ctx.arc(pts[1].x,pts[1].y,3,0,Math.PI*2);ctx.fillStyle='#4ea0ff';ctx.fill();
+      var lp=t({x:x1,y:base+8,z:0});
+      if(isFinite(lp.x)){ctx.font='8px SFMono-Regular,monospace';ctx.fillStyle='#64748b';ctx.textAlign='center';ctx.fillText(periods[i],lp.x,lp.y);ctx.textAlign='left';}
+    }
+    var lastX=((n-1)/(n-1)-0.5)*xSpan;
+    var gp1=t({x:lastX,y:base-nominal[n-1]/maxV*90,z:-15});
+    var gp2=t({x:lastX,y:base-adjusted[n-1]/maxV*90,z:12});
+    if(isFinite(gp1.x)&&isFinite(gp2.x)){
+      ctx.beginPath();ctx.moveTo(gp1.x,gp1.y);ctx.lineTo(gp2.x,gp2.y);ctx.strokeStyle='#e2b13c';ctx.lineWidth=1.5;ctx.stroke();
+      var infPct=d.inflationPct||5.9;
+      pillDraw(ctx,(gp1.x+gp2.x)/2+22,(gp1.y+gp2.y)/2,'Inflation +'+infPct+'%','#e2b13c');
+    }
+    ctx.font='8px SFMono-Regular,monospace';ctx.fillStyle='#e0556b';ctx.fillText('── Nominal',14,14);
+    ctx.fillStyle='#4ea0ff';ctx.fillText('── Real (adjusted)',14,26);
+  }
+
   window.LinCharts3D = {
     rX: rX, rY: rY, proj: proj,
     pillDraw:          pillDraw,
@@ -1208,6 +1567,16 @@
     render_resource3d:  render_resource3d,
     render_schedp80:    render_schedp80,
     render_cpisched3d:  render_cpisched3d,
-    wireChart3d:        wireChart3d
+    wireChart3d:        wireChart3d,
+    render_rcf3d:         render_rcf3d,
+    render_dsm3d:         render_dsm3d,
+    render_contingency3d: render_contingency3d,
+    render_labor3d:       render_labor3d,
+    render_material3d:    render_material3d,
+    render_overhead3d:    render_overhead3d,
+    render_costrisk3d:    render_costrisk3d,
+    render_analogous3d:   render_analogous3d,
+    render_parametric3d:  render_parametric3d,
+    render_inflation3d:   render_inflation3d
   };
 })();

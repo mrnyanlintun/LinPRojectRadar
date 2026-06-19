@@ -762,7 +762,23 @@
                       actual: si.laborHistory||[580,690,740,760,710,0]},
       'schedp80':    {mean:12, std:6, p50: si.schedP50Days||8.5, p80: si.schedP80Days||18.5},
       'cpisched3d':  {history: cpiHist.map(function(v,i){return v*(1-i*0.012);}),
-                      forecast: [cpi*0.995, cpi*0.990, cpi*0.985]}
+                      forecast: [cpi*0.995, cpi*0.990, cpi*0.985]},
+      // Cat 3 chart data
+      'rcf3d':         {bac:bac, rcfP80:bac*((si.rcfOverrunPct||0.142)+1)},
+      'dsm3d':         {disciplines:null, rework:null, multiplier:si.dsmMultiplier||2.8},
+      'contingency3d': {total:si.contingencyTotal||1800000,
+                        history:si.contingencyHistory||[0,180000,420000,720000,1080000,1224000]},
+      'labor3d':       {history:si.lpiHistory||[1.02,0.99,0.97,0.94,0.92,0.90,0.88],
+                        forecast:[(si.lpi||0.88),(si.lpi||0.88)*0.987,(si.lpi||0.88)*0.977],
+                        lpi:si.lpi||0.88},
+      'material3d':    {trades:null, maxV:2500000},
+      'overhead3d':    {rate:si.overheadRate||0.941, target:1.00, prior:si.priorOverheadRate||0.960},
+      'costrisk3d':    {bac:bac, mean:bac*(si.costRiskMeanMult||1.10), sig:bac*0.036,
+                        p50:bac*(si.costP50Mult||1.089), p80:bac*(si.costP80Mult||1.101)},
+      'analogous3d':   {thisSize:si.buildingSize||92000, thisCost:si.costPerSqft||334, meanCost:313, peers:null},
+      'parametric3d':  {history:cpiHist.map(function(v){return v*1.018;}), models:null, consensus:si.parametricIndex||0.947},
+      'inflation3d':   {periods:['Q1','Q2','Q3','Q4','Q5','Q6'],
+                        nominal:null, adjusted:null, inflationPct:si.inflationPct||5.9}
     };
 
     root.querySelectorAll('.dd-chart-canvas').forEach(function(canvas) {
@@ -1754,6 +1770,230 @@
     </section>`;
   }
 
+  /* ---- Cat 3 panel functions (cost simulation) ---- */
+
+  function m3_1(p) {
+    const si = p.signalInputs || {};
+    const e = (p.signals || {}).evm || {};
+    const bac = e.bac || si.bac || 24900000;
+    const rcfP80 = bac * ((si.rcfOverrunPct || 0.142) + 1);
+    const overrunPct = Math.round((rcfP80 / bac - 1) * 100);
+    const st = overrunPct > 15 ? 'red' : overrunPct > 8 ? 'amber' : 'green';
+    return panel("3.1", "Reference Class Forecast", st,
+      note("Outside-view cost prior from comparable infrastructure projects. RCF P80 is the 80th-percentile outcome drawn from historical analogous project overruns — it is the benchmark against which all bottom-up estimates are pressure-tested.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="rcf3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("BAC", "$" + (bac/1e6).toFixed(1) + "M", "green") +
+        metricBox("RCF P80", "$" + (rcfP80/1e6).toFixed(1) + "M", st) +
+        metricBox("Prior", "+" + overrunPct + "%", st) +
+        metricBox("Method", "Ref Class", "green")
+      }</div>` +
+      reasons([
+        `RCF P80 is $${(rcfP80/1e6).toFixed(1)}M — ${overrunPct}% above BAC. Outside-view priors from comparable infrastructure projects indicate systematic underestimation at this stage of delivery.`,
+        `The reference class histogram shows the right tail extends well above BAC, consistent with the Flyvbjerg et al. findings on megaproject cost overruns.`
+      ], st) +
+      rule("GREEN if RCF P80 within 8% of BAC; AMBER if 8–15%; RED if > 15%. RCF P80 above BAC indicates the estimate has not absorbed the historical outside-view overrun premium."));
+  }
+
+  function m3_2(p) {
+    const si = p.signalInputs || {};
+    const multiplier = si.dsmMultiplier || 2.8;
+    const impacted = si.dsmImpactedTrades || 4;
+    const st = multiplier > 2.5 ? 'red' : multiplier > 1.5 ? 'amber' : 'green';
+    return panel("3.2", "DSM Rework Propagation", st,
+      note("Design Structure Matrix — rework burden from scope changes propagated across disciplines. Off-diagonal cells show the rework flow intensity between each discipline pair. The overall multiplier is the ratio of total rework-hours to the original trigger event hours.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="dsm3d" data-nodrag="1"></canvas><p class="dd-canvas-hint">2D view</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("Rework mult", multiplier.toFixed(1) + "×", st) +
+        metricBox("Impacted", impacted + " trades", st) +
+        metricBox("Trigger", si.dsmTrigger || "Arch change", "amber") +
+        metricBox("Method", "DSM", "green")
+      }</div>` +
+      reasons([
+        `DSM rework multiplier ${multiplier.toFixed(1)}× — every hour of rework at the triggering discipline propagates ${multiplier.toFixed(1)} hours of consequential rework across ${impacted} downstream trades.`,
+        `High off-diagonal intensity in the structural/MEP/interior block indicates tightly coupled dependencies that amplify any scope change.`
+      ], st) +
+      rule("GREEN if multiplier <= 1.5×; AMBER if 1.5–2.5×; RED if > 2.5×. DSM multiplier above 2.5× indicates highly coupled design disciplines — scope changes carry significant downstream cost consequences."));
+  }
+
+  function m3_3(p) {
+    const si = p.signalInputs || {};
+    const total = si.contingencyTotal || 1800000;
+    const burned = si.contingencyBurned || 1224000;
+    const burnedPct = Math.round(burned / total * 100);
+    const completion = si.pctComplete || si.percentComplete || 37;
+    const burnRate = burnedPct > 0 && completion > 0 ? (burnedPct / completion).toFixed(2) : '1.84';
+    const st = burnedPct > 75 ? 'red' : burnedPct > 50 ? 'amber' : 'green';
+    return panel("3.3", "Contingency Burn Rate", st,
+      note("Contingency drawdown against project completion. The 80% threshold line marks the critical depletion point — consuming 80% of contingency before 80% completion leaves insufficient reserve for delivery risks in the later, higher-risk phases.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="contingency3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("Burned", burnedPct + "%", st) +
+        metricBox("Completion", completion + "%", "green") +
+        metricBox("Burn rate", burnRate + "×", st) +
+        metricBox("Threshold", "80%", "green")
+      }</div>` +
+      reasons([
+        `${burnedPct}% of contingency consumed at ${completion}% project completion — burning ${burnRate}× faster than the planned straight-line depletion rate.`,
+        `At this rate the contingency is exhausted before project completion, eliminating the financial buffer for late-stage delivery risks.`
+      ], st) +
+      rule("GREEN if contingency burned <= 50%; AMBER if 50–75%; RED if > 75% burned. Burn rate above 1.5× at any completion point requires a formal contingency replenishment or scope reduction plan."));
+  }
+
+  function m3_4(p) {
+    const si = p.signalInputs || {};
+    const lpi = si.lpi || 0.88;
+    const st = lpi < 0.90 ? 'red' : lpi < 0.95 ? 'amber' : 'green';
+    const fore = (lpi * 0.987).toFixed(3);
+    return panel("3.4", "Labor Productivity Index", st,
+      note("LPI tracks the ratio of earned output hours to actual hours worked. An LPI below 1.00 indicates productivity is declining — more hours are being consumed per unit of output than planned. The uncertainty band reflects measurement variation across reporting periods.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="labor3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("LPI", lpi.toFixed(3), st) +
+        metricBox("Baseline", "1.000", "green") +
+        metricBox("Trend", "Declining", st) +
+        metricBox("Forecast", fore, st)
+      }</div>` +
+      reasons([
+        `LPI ${lpi.toFixed(3)} — productivity has declined from baseline 1.00 over ${si.lpiPeriods || 7} reporting periods, trending to ${fore} in the next period.`,
+        `Sustained LPI below 0.90 cannot be recovered without either a schedule extension or a significant uplift in crew productivity — both carry cost implications.`
+      ], st) +
+      rule("GREEN if LPI >= 0.95; AMBER if 0.90–0.95; RED if < 0.90. LPI below 0.90 for 3+ consecutive periods requires a formal productivity recovery plan."));
+  }
+
+  function m3_5(p) {
+    const si = p.signalInputs || {};
+    const structVar = si.structuralVariance || 15.0;
+    const mepVar = si.mepVariance || 10.0;
+    const worstVar = Math.max(structVar, mepVar);
+    const st = worstVar > 12 ? 'red' : worstVar > 6 ? 'amber' : 'green';
+    return panel("3.5", "Material Cost Variance", st,
+      note("Planned vs. actual material cost by trade. Each trade pair shows the planned bar (grey, back) against the actual bar (colored, front). Positive variance = cost overrun; negative = under-spend.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="material3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("Structural", "+" + structVar.toFixed(1) + "%", structVar > 10 ? 'red' : 'amber') +
+        metricBox("MEP", "+" + mepVar.toFixed(1) + "%", mepVar > 8 ? 'amber' : 'green') +
+        metricBox("Civil", si.civilVariance !== undefined ? (si.civilVariance >= 0 ? "+" : "") + si.civilVariance.toFixed(1) + "%" : "−2.0%", "green") +
+        metricBox("Finishes", si.finishesVariance !== undefined ? (si.finishesVariance >= 0 ? "+" : "") + si.finishesVariance.toFixed(1) + "%" : "+2.5%", "green")
+      }</div>` +
+      reasons([
+        `Structural materials +${structVar.toFixed(1)}%, MEP +${mepVar.toFixed(1)}% — the two highest-value trades are both running above plan, compounding the overall cost variance.`,
+        `Civil and finishes are near target; the cost overrun is concentrated in structural and MEP where supply-chain volatility has outpaced the estimate contingency.`
+      ], st) +
+      rule("GREEN if no trade variance > 6%; AMBER if any trade 6–12%; RED if any trade > 12%. Structural or MEP variance above 10% requires formal cost forecast revision."));
+  }
+
+  function m3_6(p) {
+    const si = p.signalInputs || {};
+    const rate = si.overheadRate || 0.941;
+    const target = 1.00;
+    const gap = Math.round((target - rate) * 100);
+    const st = rate < 0.92 ? 'red' : rate < 0.97 ? 'amber' : 'green';
+    return panel("3.6", "Overhead Absorption Rate", st,
+      note("Overhead absorption — the ratio of overheads actually recovered through charged work vs. the planned overhead recovery rate. Under-absorption means indirect costs accumulate as unrecovered overhead, eroding the margin.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="overhead3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("Rate", Math.round(rate * 100) + "%", st) +
+        metricBox("Target", Math.round(target * 100) + "%", "green") +
+        metricBox("Gap", "−" + gap + "%", st) +
+        metricBox("Trend", rate < (si.priorOverheadRate || 0.960) ? "Declining" : "Stable", st)
+      }</div>` +
+      reasons([
+        `Overhead absorption ${Math.round(rate * 100)}% vs. target ${Math.round(target * 100)}% — a ${gap}% under-absorption gap means indirect costs are not being fully recovered through the current workload mix.`,
+        `Three consecutive periods below target indicates a structural under-utilisation of indirect resources, not a transient timing issue.`
+      ], st) +
+      rule("GREEN if absorption rate >= 97%; AMBER if 92–97%; RED if < 92%. Under-absorption below 92% for 2+ periods requires an overhead recovery plan or rate revision."));
+  }
+
+  function m3_7(p) {
+    const si = p.signalInputs || {};
+    const e = (p.signals || {}).evm || {};
+    const bac = e.bac || si.bac || 24900000;
+    const p50 = bac * (si.costP50Mult || 1.089);
+    const p80 = bac * (si.costP80Mult || 1.101);
+    const pDelay = si.costProbOverrun || 72;
+    const vsBAC = Math.round((p80 / bac - 1) * 100);
+    const st = vsBAC > 12 ? 'red' : vsBAC > 6 ? 'amber' : 'green';
+    return panel("3.7", "Cost Risk P80", st,
+      note("5,000-iteration cost risk simulation. Blue bars are below BAC (within estimate); amber bars exceed BAC; red bars exceed BAC + 1σ. P50 and P80 planes intersect the distribution at the median and 80th-percentile outcomes.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="costrisk3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("P50", "$" + (p50/1e6).toFixed(1) + "M", st) +
+        metricBox("P80", "$" + (p80/1e6).toFixed(1) + "M", st) +
+        metricBox("vs BAC", "+" + vsBAC + "%", st) +
+        metricBox("P(overrun)", pDelay + "%", st)
+      }</div>` +
+      reasons([
+        `Monte Carlo cost simulation: P50 $${(p50/1e6).toFixed(1)}M, P80 $${(p80/1e6).toFixed(1)}M — ${vsBAC}% above BAC. ${pDelay}% probability of any cost overrun.`,
+        `The long right tail in the distribution is driven by material and labor variance risk — the distribution is positively skewed, consistent with the reference class prior.`
+      ], st) +
+      rule("GREEN if P80 within 6% of BAC; AMBER if 6–12%; RED if > 12% above BAC. P80 above BAC by more than 10% requires a formal cost-at-completion revision."));
+  }
+
+  function m3_8(p) {
+    const si = p.signalInputs || {};
+    const thisCost = si.costPerSqft || 334;
+    const meanCost = 313;
+    const premium = Math.round((thisCost - meanCost) / meanCost * 100);
+    const st = premium > 8 ? 'red' : premium > 4 ? 'amber' : 'green';
+    return panel("3.8", "Analogous Estimate Ratio", st,
+      note("This project vs. 6 comparable healthcare / infrastructure facilities by building size (X) and $/sqft (Y). Red dot = this project. Blue dots = peer group. Dashed line = peer mean. Project sits above peer mean, indicating a cost premium vs. analogous comparators.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="analogous3d" data-nodrag="1"></canvas><p class="dd-canvas-hint">2D view</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("This proj", "$" + thisCost + "/sqft", st) +
+        metricBox("Peer mean", "$" + meanCost + "/sqft", "green") +
+        metricBox("Premium", "+" + premium + "%", st) +
+        metricBox("Peers", "6 projects", "green")
+      }</div>` +
+      reasons([
+        `This project at $${thisCost}/sqft is ${premium}% above the peer mean of $${meanCost}/sqft across 6 comparable facilities of similar size and type.`,
+        `Cost premium above peer mean for comparable typologies is consistent with the RCF outside-view prior and reinforces the upside risk in the current BAC.`
+      ], st) +
+      rule("GREEN if within 4% of peer mean; AMBER if 4–8%; RED if > 8% above peer mean. Consistent premium vs. analogous projects indicates the estimate baseline requires re-anchoring."));
+  }
+
+  function m3_9(p) {
+    const si = p.signalInputs || {};
+    const consensus = si.parametricIndex || 0.947;
+    const st = consensus < 0.93 ? 'red' : consensus < 0.97 ? 'amber' : 'green';
+    return panel("3.9", "Parametric Cost Index", st,
+      note("Three parametric cost models (RS Means, ENR Construction Cost Index, CBRE Build Cost) tracked across reporting periods. Each model runs at a slightly different Z offset to show convergence or divergence. The consensus index is the model-weighted average.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="parametric3d"></canvas><p class="dd-canvas-hint">drag to rotate</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("Consensus", consensus.toFixed(3), st) +
+        metricBox("Spread", "±0.012", "green") +
+        metricBox("Trend", "Declining", st) +
+        metricBox("Models", "3", "green")
+      }</div>` +
+      reasons([
+        `Consensus parametric index ${consensus.toFixed(3)} — all three models (RS Means, ENR, CBRE) are converging below 1.00, indicating the project's cost performance is deteriorating relative to the parametric benchmark.`,
+        `A declining multi-model consensus below 0.95 provides independent confirmation of the EVM CPI trend, reducing the probability of a data artefact.`
+      ], st) +
+      rule("GREEN if consensus index >= 0.97; AMBER if 0.93–0.97; RED if < 0.93. Three-model convergence below 0.95 is a high-confidence signal of systemic cost underperformance."));
+  }
+
+  function m3_10(p) {
+    const si = p.signalInputs || {};
+    const inflationPct = si.inflationPct || 5.9;
+    const realCost = si.realCostM || 4.76;
+    const nominalCost = si.nominalCostM || 5.04;
+    const st = inflationPct > 6 ? 'red' : inflationPct > 3 ? 'amber' : 'green';
+    return panel("3.10", "Inflation Adjustment", st,
+      note("Nominal vs. inflation-adjusted cost surfaces across 6 quarters. Red surface = nominal cost (what invoices show). Blue surface = real cost (inflation-stripped). The amber bracket at the final period shows the cumulative inflation gap — the portion of cost growth attributable to price-level changes rather than scope or productivity.") +
+      `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="inflation3d" data-nodrag="1"></canvas><p class="dd-canvas-hint">2D view</p></div>` +
+      `<div class="dd-grid">${
+        metricBox("Inflation", "+" + inflationPct.toFixed(1) + "%", st) +
+        metricBox("Real cost", "$" + realCost.toFixed(2) + "M", "green") +
+        metricBox("Nominal", "$" + nominalCost.toFixed(2) + "M", st) +
+        metricBox("Gap", "$" + (nominalCost - realCost).toFixed(2) + "M", st)
+      }</div>` +
+      reasons([
+        `Cumulative inflation impact +${inflationPct.toFixed(1)}% — $${(nominalCost - realCost).toFixed(2)}M of the nominal cost growth is attributable to price-level increases rather than scope change or productivity loss.`,
+        `Inflation-adjusted (real) cost is $${realCost.toFixed(2)}M vs. nominal $${nominalCost.toFixed(2)}M. Inflation contribution must be excluded from the scope/productivity variance to correctly diagnose the root cause of cost overruns.`
+      ], st) +
+      rule("GREEN if inflation adjustment <= 3%; AMBER if 3–6%; RED if > 6%. Inflation contribution above 6% requires re-baselining the cost forecast with updated escalation factors."));
+  }
+
   function simModules(project) {
     const payload = project.simulationSignals;
     const baseArr = payload && Array.isArray(payload.signal_array) ? payload.signal_array : null;
@@ -1845,6 +2085,8 @@
       m1_9(project) + m1_10(project) + m1_11(project) + m1_12(project) +
       m2_4(project) + m2_5(project) + m2_6(project) + m2_7(project) +
       m2_8(project) + m2_9(project) + m2_10(project) + m2_11(project) +
+      m3_1(project) + m3_2(project) + m3_3(project) + m3_4(project) + m3_5(project) +
+      m3_6(project) + m3_7(project) + m3_8(project) + m3_9(project) + m3_10(project) +
       sims.low +
       m10(project) +                                              // displays as Module 09 (Conservative Dominance)
       sims.dst +                                                  // displays as Module 10 (DST)

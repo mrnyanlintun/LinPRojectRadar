@@ -752,7 +752,7 @@
       }).join('');
 
       var inner = '<div class="sig-cat-body">' + desc + modCards + '</div>';
-      var open = cat.id === 'cat1' || cat.id === 'cat9';
+      var open = true;
       var title = esc(cat.num) + ' — ' + esc(cat.name);
       if (window.collapsibleSection) {
         return window.collapsibleSection('proj-mod-' + cat.id, title, inner, open, badge);
