@@ -1085,6 +1085,24 @@ body[data-theme="light"] .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .ens-leg { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); }
 .ens-leg i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
 
+/* ---- 3D canvas chart shared controls ---- */
+.chart3d-controls {
+  display: flex; gap: 8px; padding: 10px 18px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--line); background: var(--surface-2, #131d33);
+}
+.chart3d-btn {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em;
+  color: var(--muted); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 6px; padding: 5px 12px; cursor: pointer; transition: border-color .15s, color .15s;
+}
+.chart3d-btn:hover, .chart3d-btn.active {
+  color: var(--text); border-color: var(--phosphor, #e9a23b);
+}
+.chart3d-wrap { position: relative; }
+.sphere3d-canvas, .scatter3d-canvas { display: block; width: 100%; cursor: grab; }
+.sphere3d-canvas:active, .scatter3d-canvas:active { cursor: grabbing; }
+.sphere3d-panel .sw-footnote { padding: 10px 18px; border-top: 1px solid var(--line); margin-top: 0; }
+
 /* ---------- Phase 1: empty / awaiting-ingest states ---------- */
 .state-empty { color: var(--muted); }
 .blip-empty .blip-label { fill: var(--muted); font-style: italic; }

@@ -305,98 +305,21 @@
   function signalWebHtml(project) {
     if (!window.LIN_CATEGORIES) return "";
     if (!window.hasSignals || !hasSignals(project)) return "";
-
-    // Compute the snapshot FIRST. currentSnapshot → buildHistorySnapshot →
-    // ensureSimulations runs runAll()/runDST() and populates
-    // project.simulationSignals.signal_array. getModuleStatus (called below via
-    // buildModuleAxes) reads that array for every non-core module, so it must
-    // exist before we build the axes — otherwise only the handful of core EVM /
-    // decision signals resolve and the rest fall back to "no data".
     const cur = currentSnapshot(project);
-    const overall = cur && cur.governance && cur.governance.state;
-
-    const { axes, bands } = buildModuleAxes(project);
-
-    // Category colour bands behind each cluster (subtle grouping). Parked
-    // categories (Cat 8 ML, when off) render a clearly grey band to signal "no
-    // compute"; conditional categories (Cat 12 Systems Engineering) reuse the
-    // same grey treatment until they activate.
-    const bandPaths = bands.map((b) => {
-      const cls = (b.parked || b.conditional)
-        ? "sw-mod-band sw-mod-band-parked"
-        : "sw-mod-band";
-      return `<path class="${cls}" d="${bandArcPath(b, 1.04)}" stroke="${esc(b.color)}"></path>`;
-    }).join("");
-
-    // Arc labels — Cat 8 ML stays labelled; Cat 12 surfaces "conditional" so
-    // the user knows what unlocks it.
-    const bandLabels = bands.filter((b) => b.ml || b.conditional).map((b) => {
-      const lp = modPoint(b.amid, 1.22);
-      const anchor = Math.abs(lp.x - MOD_CX) < 10 ? "middle" : (lp.x > MOD_CX ? "start" : "end");
-      const tag = b.ml ? "ML" : "conditional";
-      return `<text class="sw-mod-band-label" x="${lp.x.toFixed(1)}" y="${lp.y.toFixed(1)}" text-anchor="${anchor}">${esc(b.num)} ${tag}</text>`;
-    }).join("");
-
-    // Axis spokes. Conditional modules (Cat 12 inactive) treat the axis as
-    // parked so it visually matches the grey conditional band overhead.
-    const axisLines = axes.map((a) => {
-      const tip = modPoint(a.angle, 1.0);
-      const isParked = a.cat.parked || a.cat.conditional || a.module.active === false;
-      const parked = isParked ? " sw-axis-parked" : "";
-      return `<line class="sw-axis${parked}" x1="${MOD_CX}" y1="${MOD_CY}" x2="${tip.x.toFixed(1)}" y2="${tip.y.toFixed(1)}"></line>`;
-    }).join("");
-
-    // Web polygon connecting every module's plotted point.
-    const polyPoints = axes.map((a) => {
-      const p = modPoint(a.angle, moduleToRadius(a.module, a.status));
-      return p.x.toFixed(1) + "," + p.y.toFixed(1);
-    }).join(" ");
-
-    // Dots + labels.
-    const nodes = axes.map((a) => {
-      const parked = a.cat.parked === true;
-      const conditional = a.cat.conditional === true;
-      const active = !(parked || conditional || a.module.active === false);
-      const norm = active ? normalizeStatus(a.status) : null;
-      const rf = moduleToRadius(a.module, a.status);
-      const dp = modPoint(a.angle, rf);
-      // Parked (legacy Cat 8) and conditional (Cat 12) both plot a grey dot;
-      // active-no-data uses the dim navy ring; computed modules take their
-      // status colour.
-      const dimDot = parked || conditional;
-      const color = dimDot ? PARKED_GREY : (active ? (DOT_COLOR[norm] || DOT_COLOR.none) : DOT_COLOR.none);
-      const dotR = active && norm ? 3.2 : 1.6;
-      const lp = modPoint(a.angle, 1.09);
-      const anchor = Math.abs(lp.x - MOD_CX) < 10 ? "middle" : (lp.x > MOD_CX ? "start" : "end");
-      const ev = active ? moduleEvidence(a.module, project) : null;
-      const statusLabel = parked ? "Stage 2 (parked)"
-        : conditional ? "Conditional — upload required docs to activate"
-        : a.module.active === false ? "Inactive — needs document data"
-        : (norm || "No data");
-      const title = a.module.num + " " + a.module.name + " — " + statusLabel +
-        (ev ? " — " + ev : "");
-      const labelCls = dimDot ? "sw-mod-label sw-mod-label-parked" : "sw-mod-label";
-      return `<line class="sw-mod-spoke" x1="${MOD_CX}" y1="${MOD_CY}" x2="${dp.x.toFixed(1)}" y2="${dp.y.toFixed(1)}" stroke="${esc(color)}"></line>
-        <circle class="sw-dot" cx="${dp.x.toFixed(1)}" cy="${dp.y.toFixed(1)}" r="${dotR}" fill="${esc(color)}">
-          <title>${esc(title)}</title>
-        </circle>
-        <text class="${labelCls}" x="${lp.x.toFixed(1)}" y="${lp.y.toFixed(1)}" text-anchor="${anchor}">${esc(a.module.num)}</text>`;
-    }).join("");
-
-    const activeCount = axes.filter((a) => a.status && normalizeStatus(a.status)).length;
-    // Count computed modules whose result leaned on a derived [est.] field.
     const simArr = (project.simulationSignals && project.simulationSignals.signal_array) || [];
-    const estCount = simArr.filter((r) =>
-      r && r.status_color && /\b(estimated|derived|assumed)\b/i.test(String(r.evidence_metric || ""))).length;
     const totalModules = LIN_CATEGORIES.reduce((n, c) => n + c.modules.length, 0);
-
-    return `<section class="panel signal-web-panel">
+    const activeCount = simArr.filter((r) => r && r.status_color && normalizeStatus(r.status_color)).length;
+    const counts = { Red: 0, Amber: 0, Yellow: 0, Green: 0, Complete: 0 };
+    simArr.forEach((r) => {
+      if (r && r.status_color) { const n = normalizeStatus(r.status_color); if (n && counts[n] != null) counts[n]++; }
+    });
+    return `<section class="panel signal-web-panel sphere3d-panel">
       <div class="sw-head">
         <div>
-          <p class="eyebrow">Signal Web — ${esc(periodTitle(cur && cur.period))}</p>
-          <p class="kn-sub sw-vs">${totalModules}-module view · ${activeCount} active modules · ${estCount} estimated</p>
+          <p class="eyebrow">Signal Sphere — ${esc(periodTitle(cur && cur.period))}</p>
+          <p class="kn-sub sw-vs">${totalModules}-module sphere · ${activeCount} active · drag to rotate · scroll to zoom</p>
         </div>
-        <div class="sw-legend" aria-label="Signal web legend">
+        <div class="sw-legend" aria-label="Signal sphere legend">
           <span><i class="sw-complete"></i>Complete</span>
           <span><i class="sw-green"></i>Green</span>
           <span><i class="sw-yellow"></i>Yellow</span>
@@ -405,20 +328,18 @@
           <span><i class="sw-none"></i>No data</span>
         </div>
       </div>
-      <svg class="signal-web-svg sw-mod-svg" viewBox="0 0 500 500" role="img" aria-label="${totalModules} module signal web">
-        <circle class="sw-ring sw-ring-red"   cx="${MOD_CX}" cy="${MOD_CY}" r="${(MOD_OUTER*0.40).toFixed(1)}"></circle>
-        <circle class="sw-ring sw-ring-amber" cx="${MOD_CX}" cy="${MOD_CY}" r="${(MOD_OUTER*0.65).toFixed(1)}"></circle>
-        <circle class="sw-ring sw-ring-green" cx="${MOD_CX}" cy="${MOD_CY}" r="${(MOD_OUTER*0.85).toFixed(1)}"></circle>
-        <circle class="sw-ring sw-ring-outer" cx="${MOD_CX}" cy="${MOD_CY}" r="${MOD_OUTER}"></circle>
-        ${bandPaths}
-        ${axisLines}
-        <polygon class="sw-web-current" points="${polyPoints}"></polygon>
-        ${nodes}
-        ${bandLabels}
-        <circle class="sw-center sw-${statusClass(overall)}" cx="${MOD_CX}" cy="${MOD_CY}" r="5">
-          <title>Overall governance state: ${esc(normalizeStatus(overall) || overall || "No data")}</title>
-        </circle>
-      </svg>
+      <div class="chart3d-controls">
+        <button class="chart3d-btn active" data-sphere-view="free">Free rotate</button>
+        <button class="chart3d-btn" data-sphere-view="top">Top</button>
+        <button class="chart3d-btn" data-sphere-view="cost">Cost cluster</button>
+        <button class="chart3d-btn" data-sphere-view="evidence">Evidence cluster</button>
+        <button class="chart3d-btn" data-sphere-view="gov">Governance</button>
+      </div>
+      <div class="chart3d-wrap">
+        <canvas class="sphere3d-canvas"></canvas>
+        <div class="chart3d-tooltip" style="display:none;position:absolute;pointer-events:none;z-index:10;background:var(--surface-2,#131d33);border:1px solid var(--line,#26344f);border-radius:8px;padding:8px 12px;font-size:11px;white-space:nowrap"></div>
+      </div>
+      <p class="sw-footnote">${totalModules} modules · ${counts.Red} Red · ${counts.Amber} Amber · ${counts.Green} Green</p>
     </section>`;
   }
 
@@ -451,95 +372,26 @@
   function ensembleHtml(project) {
     if (!window.LIN_CATEGORIES) return "";
     if (!window.hasSignals || !hasSignals(project)) return "";
-    const { counts, rows } = ensembleTally(project);
-    const activeTotal = ENSEMBLE_STATES.reduce((n, k) => n + counts[k], 0);
-    if (!activeTotal) return ""; // nothing computed yet
-
-    // All charts draw in numeric user-units inside a 0..100 wide viewBox with
-    // preserveAspectRatio="none", so x can stretch to the panel width.
-
-    // SVG charts use uniform scaling so dots stay circular and text is not
-    // stretched. The consensus bar is plain HTML (text never distorts).
-
-    // ---- Chart 1: scatter (6 columns incl. No data, one row per module) ----
-    const cols = ENSEMBLE_STATES.concat(["none"]);
-    const colLabel = { Complete: "Complete", Green: "Green", Yellow: "Yellow", Amber: "Amber", Red: "Red", none: "No data" };
-    const SW = 120, SH = 150;
-    const colW = SW / cols.length;
-    const totalModulesForScatter = rows.length || 1;
-    const scatterDots = rows.map((r) => {
-      const ci = cols.indexOf(r.bucket);
-      const cx = (ci + 0.5) * colW;
-      const cy = 16 + (r.index / totalModulesForScatter) * (SH - 22);
-      const fill = r.bucket === "none" ? DOT_COLOR.none : DOT_COLOR[r.bucket];
-      const rad = r.bucket === "none" ? 1.3 : 2.1;
-      return `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${rad}" fill="${esc(fill)}"><title>${esc(r.num + " " + r.name + " — " + colLabel[r.bucket])}</title></circle>`;
-    }).join("");
-    const scatterGrid = cols.map((c, i) =>
-      (i ? `<line class="ens-col-line" x1="${(i * colW).toFixed(2)}" y1="14" x2="${(i * colW).toFixed(2)}" y2="${SH}"></line>` : "") +
-      `<text x="${((i + 0.5) * colW).toFixed(2)}" y="9" text-anchor="middle" class="ens-col-label">${esc(colLabel[c])}</text>`
-    ).join("");
-
-    // ---- Chart 2: distribution bar ----
-    const maxCount = Math.max(1, ...ENSEMBLE_STATES.map((k) => counts[k]));
-    const BW = 120, BH = 150, barTop = 22, barBottom = 122;
-    const bW = BW / ENSEMBLE_STATES.length;
-    const barBody = ENSEMBLE_STATES.map((k, i) => {
-      const h = (counts[k] / maxCount) * (barBottom - barTop);
-      const x = i * bW, y = barBottom - h;
-      const pct = activeTotal ? Math.round((counts[k] / activeTotal) * 100) : 0;
-      return `<rect x="${(x + bW * 0.18).toFixed(2)}" y="${y.toFixed(1)}" width="${(bW * 0.64).toFixed(2)}" height="${h.toFixed(1)}" fill="${esc(DOT_COLOR[k])}" rx="1.5"></rect>
-        <text x="${(x + bW * 0.5).toFixed(2)}" y="${(y - 4).toFixed(1)}" text-anchor="middle" class="ens-bar-count">${counts[k]} · ${pct}%</text>
-        <text x="${(x + bW * 0.5).toFixed(2)}" y="${barBottom + 14}" text-anchor="middle" class="ens-col-label">${esc(k)}</text>`;
-    }).join("");
-    const trendPts = ENSEMBLE_STATES.map((k, i) => {
-      const h = (counts[k] / maxCount) * (barBottom - barTop);
-      return `${(i * bW + bW * 0.5).toFixed(2)},${(barBottom - h).toFixed(1)}`;
-    });
-    const trendLine = `<polyline class="ens-trend" points="${trendPts.join(" ")}"></polyline>`;
-
-    // ---- Chart 3: consensus stacked bar (HTML) ----
-    const segs = ENSEMBLE_STATES.map((k) => {
-      const w = (counts[k] / activeTotal) * 100;
-      if (w <= 0) return "";
-      const pct = Math.round(w);
-      return `<div class="ens-seg" style="width:${w.toFixed(2)}%;background:${esc(DOT_COLOR[k])}" title="${esc(k)}: ${counts[k]} (${pct}%)">${w >= 8 ? pct + "%" : ""}</div>`;
-    }).join("");
-    const legend = ENSEMBLE_STATES.map((k) =>
-      `<span class="ens-leg"><i style="background:${esc(DOT_COLOR[k])}"></i>${esc(k)}: ${counts[k]} (${Math.round((counts[k] / activeTotal) * 100)}%)</span>`
-    ).join("");
-
-    const totalModulesForEns = LIN_CATEGORIES.reduce((n, c) => n + c.modules.length, 0);
-    return `<section class="panel ens-panel" aria-label="Ensemble analysis">
+    const { counts } = ensembleTally(project);
+    const activeTotal = ["Complete","Green","Yellow","Amber","Red"].reduce((n, k) => n + counts[k], 0);
+    if (!activeTotal) return "";
+    const totalModules = LIN_CATEGORIES.reduce((n, c) => n + c.modules.length, 0);
+    return `<section class="panel ens-panel scatter3d-panel" aria-label="Ensemble analysis">
       <div class="sw-head">
         <div>
-          <p class="eyebrow">Ensemble analysis — ${activeTotal} active modules (${totalModulesForEns} total)</p>
-          <p class="kn-sub sw-vs">Individual model outputs · distribution · consensus</p>
+          <p class="eyebrow">Ensemble Scatter — ${activeTotal} active modules (${totalModules} total)</p>
+          <p class="kn-sub sw-vs">108 modules in 3D · X = category · Y = status severity · drag to rotate</p>
         </div>
       </div>
-
-      <div class="ens-grid">
-        <div class="ens-chart">
-          <p class="ens-chart-title">Individual model outputs</p>
-          <svg class="ens-scatter" viewBox="0 0 ${SW} ${SH}" role="img" aria-label="Per-module status scatter">
-            ${scatterGrid}
-            ${scatterDots}
-          </svg>
-        </div>
-
-        <div class="ens-chart">
-          <p class="ens-chart-title">Ensemble distribution</p>
-          <svg class="ens-bars" viewBox="0 0 ${BW} ${BH}" role="img" aria-label="Ensemble distribution bars">
-            ${barBody}
-            ${trendLine}
-          </svg>
-        </div>
+      <div class="chart3d-controls">
+        <button class="chart3d-btn active" data-scatter-view="free">Free rotate</button>
+        <button class="chart3d-btn" data-scatter-view="front">Front</button>
+        <button class="chart3d-btn" data-scatter-view="side">Side</button>
+        <button class="chart3d-btn" data-scatter-view="top">Top</button>
       </div>
-
-      <div class="ens-consensus">
-        <p class="ens-chart-title">Consensus</p>
-        <div class="ens-stack">${segs}</div>
-        <div class="ens-legend">${legend}</div>
+      <div class="chart3d-wrap">
+        <canvas class="scatter3d-canvas"></canvas>
+        <div class="scatter3d-tooltip" style="display:none;position:absolute;pointer-events:none;z-index:10;background:var(--surface-2,#131d33);border:1px solid var(--line,#26344f);border-radius:8px;padding:8px 12px;font-size:11px;white-space:nowrap"></div>
       </div>
     </section>`;
   }
@@ -723,6 +575,8 @@
     wireBack(root);
     wireReset(root);
     wireSignalWeb(root, id);
+    wireSignalSphere(root, p);
+    wireEnsembleScatter(root, p);
     wireBrief(root, p);
     // Kick off the brief AFTER the spider chart + evidence backfill have run,
     // so the prompt sees a fully-populated simulationSignals array. Cached
@@ -1301,6 +1155,321 @@
         selectedHistoryPeriod[projectId] = btn.dataset.historyPeriod;
         render(projectId);
       }));
+  }
+
+  function wireSignalSphere(root, project) {
+    const canvas = root.querySelector(".sphere3d-canvas");
+    if (!canvas || !window.LIN_CATEGORIES) return;
+    const wrap = canvas.parentElement;
+    const dpr = window.devicePixelRatio || 1;
+    function resize() {
+      const w = wrap.clientWidth || 800;
+      canvas.width = w * dpr;
+      canvas.height = 480 * dpr;
+      canvas.style.width = w + "px";
+      canvas.style.height = "480px";
+    }
+    resize();
+    const ctx = canvas.getContext("2d");
+    const DOT = { Complete: "#4ea0ff", Green: "#3fcaa6", Yellow: "#f0c040", Amber: "#e2b13c", Red: "#e0556b", none: "#1b2740" };
+    const SR = { Complete: 1.0, Green: 0.85, Yellow: 0.65, Amber: 0.40, Red: 0.15 };
+    const R = 160;
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+
+    const moduleList = [];
+    LIN_CATEGORIES.forEach((cat) => {
+      cat.modules.forEach((m) => {
+        const active = !(cat.parked || cat.conditional || m.active === false);
+        const status = active && window.getModuleStatus ? getModuleStatus(m.method_class, project) : null;
+        const norm = active ? normalizeStatus(status) : null;
+        const evidence = active ? moduleEvidence(m, project) : null;
+        moduleList.push({ cat, module: m, status: norm, evidence, catColor: cat.color });
+      });
+    });
+
+    const pts = moduleList.map((ml, i) => {
+      const yUnit = 1 - (i / (moduleList.length - 1)) * 2;
+      const r = Math.sqrt(Math.max(0, 1 - yUnit * yUnit));
+      const theta = goldenAngle * i;
+      const rad = ml.status ? (SR[ml.status] || 0.05) : 0.05;
+      return { bx: r * Math.cos(theta) * rad, by: yUnit * rad, bz: r * Math.sin(theta) * rad,
+               sx: r * Math.cos(theta), sy: yUnit, sz: r * Math.sin(theta), ml, i };
+    });
+
+    const catLabels = LIN_CATEGORIES.map((cat) => {
+      let sx = 0, sy = 0, sz = 0, n = 0;
+      pts.forEach((pt) => { if (pt.ml.cat.id === cat.id) { sx += pt.sx; sy += pt.sy; sz += pt.sz; n++; } });
+      if (!n) return null;
+      const len = Math.sqrt((sx/n)*(sx/n) + (sy/n)*(sy/n) + (sz/n)*(sz/n)) || 1;
+      return { label: cat.num + " " + cat.name.split(" ").slice(0, 2).join(" "), color: cat.color,
+               bx: sx/n/len*1.22, by: sy/n/len*1.22, bz: sz/n/len*1.22 };
+    }).filter(Boolean);
+
+    var rotX = 0.3, rotY = 0, zoom = 1;
+    var autoRotate = true, dragging = false, lastX = 0, lastY = 0;
+    var hoverIdx = -1, projectedPts = [];
+
+    function rxf(p, a) { return { x: p.x, y: p.y*Math.cos(a)-p.z*Math.sin(a), z: p.y*Math.sin(a)+p.z*Math.cos(a) }; }
+    function ryf(p, a) { return { x: p.x*Math.cos(a)+p.z*Math.sin(a), y: p.y, z: -p.x*Math.sin(a)+p.z*Math.cos(a) }; }
+    function proj(p) {
+      const CW = canvas.width/dpr, CH = canvas.height/dpr;
+      const fov = 400*zoom, z = p.z+fov, scale = fov/Math.max(z,1);
+      return { x: CW/2+p.x*scale, y: CH/2+p.y*scale, scale };
+    }
+
+    function draw() {
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0,0,W,H);
+      ctx.save(); ctx.scale(dpr,dpr);
+      const CW = W/dpr, CH = H/dpr;
+      const grad = ctx.createRadialGradient(CW/2,CH/2,0,CW/2,CH/2,R*1.5);
+      grad.addColorStop(0,"rgba(15,23,42,0.3)"); grad.addColorStop(1,"transparent");
+      ctx.fillStyle=grad; ctx.fillRect(0,0,CW,CH);
+
+      for (let ring=1;ring<=5;ring++) {
+        const a=(ring/6)*Math.PI, ringR=Math.sin(a)*R, ringY=-Math.cos(a)*R;
+        ctx.beginPath();
+        for (let s=0;s<=60;s++) {
+          const ang=(s/60)*Math.PI*2;
+          const pr=rxf(ryf({x:ringR*Math.cos(ang),y:ringY,z:ringR*Math.sin(ang)},rotY),rotX);
+          const pp=proj(pr); s===0?ctx.moveTo(pp.x,pp.y):ctx.lineTo(pp.x,pp.y);
+        }
+        ctx.strokeStyle="rgba(38,52,79,0.4)"; ctx.lineWidth=0.5; ctx.stroke();
+      }
+
+      projectedPts = pts.map((pt) => {
+        const pr=rxf(ryf({x:pt.bx*R,y:pt.by*R,z:pt.bz*R},rotY),rotX);
+        const pp=proj(pr); return {pt,pp,pz:pr.z};
+      }).sort((a,b)=>a.pz-b.pz);
+
+      projectedPts.forEach((s) => {
+        if (!s.pt.ml.status) return;
+        const col=DOT[s.pt.ml.status]||DOT.none;
+        ctx.beginPath(); ctx.moveTo(CW/2,CH/2); ctx.lineTo(s.pp.x,s.pp.y);
+        ctx.strokeStyle=col+"20"; ctx.lineWidth=0.7; ctx.stroke();
+      });
+
+      projectedPts.forEach((s) => {
+        const ml=s.pt.ml, col=ml.status?(DOT[ml.status]||DOT.none):DOT.none;
+        const dotR=ml.status?Math.max(2,4*s.pp.scale):Math.max(1,2*s.pp.scale);
+        const isHover=s.pt.i===hoverIdx;
+        ctx.beginPath(); ctx.arc(s.pp.x,s.pp.y,isHover?dotR*1.6:dotR,0,Math.PI*2);
+        ctx.fillStyle=col; ctx.globalAlpha=ml.status?0.9:0.28; ctx.fill();
+        if (isHover) { ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.globalAlpha=0.5; ctx.stroke(); }
+        ctx.globalAlpha=1;
+      });
+
+      catLabels.forEach((l) => {
+        const pr=rxf(ryf({x:l.bx*R,y:l.by*R,z:l.bz*R},rotY),rotX);
+        if (pr.z<-40) return;
+        const pp=proj(pr);
+        ctx.font="9px SFMono-Regular,ui-monospace,monospace";
+        ctx.fillStyle=l.color; ctx.globalAlpha=0.75; ctx.fillText(l.label,pp.x,pp.y); ctx.globalAlpha=1;
+      });
+
+      ctx.beginPath(); ctx.arc(CW/2,CH/2,4,0,Math.PI*2);
+      ctx.fillStyle="#e9a23b"; ctx.globalAlpha=0.85; ctx.fill(); ctx.globalAlpha=1;
+      ctx.restore();
+    }
+
+    function animate() { if(autoRotate&&!dragging) rotY+=0.003; draw(); requestAnimationFrame(animate); }
+
+    canvas.addEventListener("mousedown",(e)=>{dragging=true;lastX=e.clientX;lastY=e.clientY;});
+    window.addEventListener("mouseup",()=>{if(dragging){dragging=false;autoRotate=true;}});
+    canvas.addEventListener("mousemove",(e)=>{
+      if(dragging){rotY+=(e.clientX-lastX)*0.006;rotX+=(e.clientY-lastY)*0.006;lastX=e.clientX;lastY=e.clientY;return;}
+      const rect=canvas.getBoundingClientRect(), mx=e.clientX-rect.left, my=e.clientY-rect.top;
+      let hit=-1;
+      for(let k=projectedPts.length-1;k>=0;k--){
+        const s=projectedPts[k], dotR=s.pt.ml.status?Math.max(2,4*s.pp.scale):Math.max(1,2*s.pp.scale);
+        const dx=s.pp.x-mx, dy=s.pp.y-my;
+        if(dx*dx+dy*dy<(dotR*1.6+4)*(dotR*1.6+4)){hit=s.pt.i;break;}
+      }
+      hoverIdx=hit;
+      const tt=root.querySelector(".chart3d-tooltip");
+      if(tt){
+        if(hit>=0){
+          const ml=pts[hit].ml, col=DOT[ml.status]||DOT.none;
+          tt.style.display="block"; tt.style.left=(e.clientX-rect.left+14)+"px"; tt.style.top=(e.clientY-rect.top-10)+"px";
+          tt.innerHTML=`<div style="font-family:var(--font-mono,monospace);font-size:10px;color:#e9a23b;margin-bottom:3px">${esc(ml.module.num)} ${esc(ml.module.name)}</div><div style="font-size:12px;font-weight:600;color:${esc(col)}">${esc(ml.status||"No data")}</div>${ml.evidence?`<div style="font-size:11px;color:#9fb0cc;margin-top:2px">${esc(ml.evidence)}</div>`:""}`;
+        } else { tt.style.display="none"; }
+      }
+    });
+    canvas.addEventListener("mouseleave",()=>{hoverIdx=-1;const tt=root.querySelector(".chart3d-tooltip");if(tt)tt.style.display="none";});
+    canvas.addEventListener("wheel",(e)=>{e.preventDefault();zoom=Math.max(0.5,Math.min(3,zoom-e.deltaY*0.001));},{passive:false});
+
+    root.querySelectorAll("[data-sphere-view]").forEach((btn)=>{
+      btn.addEventListener("click",()=>{
+        root.querySelectorAll("[data-sphere-view]").forEach((b)=>b.classList.remove("active"));
+        btn.classList.add("active");
+        const v=btn.dataset.sphereView;
+        if(v==="free"){autoRotate=true;}
+        else if(v==="top"){autoRotate=false;rotX=Math.PI/2;rotY=0;}
+        else if(v==="cost"){autoRotate=false;rotX=0.3;rotY=0.5;}
+        else if(v==="evidence"){autoRotate=false;rotX=0.3;rotY=-1.2;}
+        else if(v==="gov"){autoRotate=false;rotX=0.3;rotY=2.0;}
+      });
+    });
+    animate();
+  }
+
+  function wireEnsembleScatter(root, project) {
+    const canvas = root.querySelector(".scatter3d-canvas");
+    if (!canvas || !window.LIN_CATEGORIES) return;
+    if (!window.hasSignals || !hasSignals(project)) return;
+    const wrap = canvas.parentElement;
+    const dpr = window.devicePixelRatio || 1;
+    function resize() {
+      const w = wrap.clientWidth || 800;
+      canvas.width = w * dpr;
+      canvas.height = 420 * dpr;
+      canvas.style.width = w + "px";
+      canvas.style.height = "420px";
+    }
+    resize();
+    const ctx = canvas.getContext("2d");
+    const DOT = { Complete: "#4ea0ff", Green: "#3fcaa6", Yellow: "#f0c040", Amber: "#e2b13c", Red: "#e0556b", none: "#26344f" };
+    const SY = { Complete: -120, Green: -80, Yellow: -30, Amber: 40, Red: 100, none: 0 };
+    const GRID_Y = 120;
+
+    const scatterData = [];
+    let idx = 0;
+    LIN_CATEGORIES.forEach((cat, catIdx) => {
+      cat.modules.forEach((m) => {
+        idx++;
+        const active = !(cat.parked || cat.conditional || m.active === false);
+        const status = active && window.getModuleStatus ? getModuleStatus(m.method_class, project) : null;
+        const norm = active ? normalizeStatus(status) : null;
+        const bucket = norm || "none";
+        const evidence = active ? moduleEvidence(m, project) : null;
+        const statusKey = bucket === "none" ? "none" : bucket;
+        const zSpread = ((idx*13+7)%60) - 30;
+        const xJitter = ((idx*7+3)%40) - 20;
+        scatterData.push({
+          x: (catIdx-5.5)*55 + xJitter,
+          y: SY[statusKey] + (((idx*11)%20) - 10),
+          z: zSpread,
+          num: m.num, name: m.name, bucket, evidence, color: cat.color, catIdx
+        });
+      });
+    });
+
+    const counts = { Red:0, Amber:0, Yellow:0, Green:0, Complete:0 };
+    scatterData.forEach((d)=>{ if(d.bucket!=="none"&&counts[d.bucket]!=null) counts[d.bucket]++; });
+    const activeTotal = Object.values(counts).reduce((n,v)=>n+v,0);
+    if (!activeTotal) return;
+
+    var rotX=0.4, rotY=0.3, autoRotate=true, dragging=false, lastX=0, lastY=0;
+    var hoverIdx=-1, projectedPts=[];
+
+    function rxf(p,a){return{x:p.x,y:p.y*Math.cos(a)-p.z*Math.sin(a),z:p.y*Math.sin(a)+p.z*Math.cos(a)};}
+    function ryf(p,a){return{x:p.x*Math.cos(a)+p.z*Math.sin(a),y:p.y,z:-p.x*Math.sin(a)+p.z*Math.cos(a)};}
+    function proj(p){
+      const CW=canvas.width/dpr, CH=canvas.height/dpr, cx=CW/2, cy=CH/2+30, fov=500;
+      const z=p.z+fov, scale=fov/Math.max(z,1);
+      return{x:cx+p.x*scale,y:cy+p.y*scale,scale};
+    }
+
+    function draw() {
+      const W=canvas.width, H=canvas.height;
+      ctx.clearRect(0,0,W,H); ctx.save(); ctx.scale(dpr,dpr);
+      const CW=W/dpr, CH=H/dpr;
+
+      for(let gx=-6;gx<=6;gx++){
+        const p1=rxf(ryf({x:gx*55,y:GRID_Y,z:-180},rotY),rotX);
+        const p2=rxf(ryf({x:gx*55,y:GRID_Y,z:180},rotY),rotX);
+        const pp1=proj(p1),pp2=proj(p2);
+        ctx.beginPath();ctx.moveTo(pp1.x,pp1.y);ctx.lineTo(pp2.x,pp2.y);
+        ctx.strokeStyle="rgba(38,52,79,0.5)";ctx.lineWidth=0.5;ctx.stroke();
+      }
+      for(let gz=-3;gz<=3;gz++){
+        const p3=rxf(ryf({x:-330,y:GRID_Y,z:gz*60},rotY),rotX);
+        const p4=rxf(ryf({x:330,y:GRID_Y,z:gz*60},rotY),rotX);
+        const pp3=proj(p3),pp4=proj(p4);
+        ctx.beginPath();ctx.moveTo(pp3.x,pp3.y);ctx.lineTo(pp4.x,pp4.y);
+        ctx.strokeStyle="rgba(38,52,79,0.5)";ctx.lineWidth=0.5;ctx.stroke();
+      }
+
+      [{label:"Complete",y:-120,color:"#4ea0ff"},{label:"Green",y:-80,color:"#3fcaa6"},
+       {label:"Yellow",y:-30,color:"#f0c040"},{label:"Amber",y:40,color:"#e2b13c"},{label:"Red",y:100,color:"#e0556b"}
+      ].forEach((l)=>{
+        const p=rxf(ryf({x:-350,y:l.y,z:0},rotY),rotX), pp=proj(p);
+        if(pp.x<0||pp.x>CW) return;
+        ctx.font="9px SFMono-Regular,ui-monospace,monospace";
+        ctx.fillStyle=l.color;ctx.globalAlpha=0.7;ctx.fillText(l.label,pp.x-10,pp.y);ctx.globalAlpha=1;
+      });
+
+      LIN_CATEGORIES.forEach((cat,i)=>{
+        const p=rxf(ryf({x:(i-5.5)*55,y:GRID_Y+14,z:0},rotY),rotX), pp=proj(p);
+        ctx.font="8px SFMono-Regular,ui-monospace,monospace";
+        ctx.fillStyle=cat.color||"#64748b";ctx.globalAlpha=0.8;
+        ctx.fillText("C"+(i+1),pp.x-6,pp.y);ctx.globalAlpha=1;
+      });
+
+      projectedPts=scatterData.map((d,i)=>{
+        const pr=rxf(ryf(d,rotY),rotX), pp=proj(pr); return{d,pp,pz:pr.z,i};
+      }).sort((a,b)=>a.pz-b.pz);
+
+      projectedPts.forEach((s)=>{
+        const d=s.d, col=d.bucket!=="none"?(d.color||"#4ea0ff"):"#26344f";
+        const dotR=Math.max(2.5,5*s.pp.scale), isHover=s.i===hoverIdx;
+        const shadow=rxf(ryf({x:d.x,y:GRID_Y,z:d.z},rotY),rotX), sp=proj(shadow);
+        ctx.beginPath();ctx.arc(sp.x,sp.y,dotR*0.6,0,Math.PI*2);ctx.fillStyle="rgba(0,0,0,0.3)";ctx.fill();
+        ctx.beginPath();ctx.moveTo(s.pp.x,s.pp.y);ctx.lineTo(sp.x,sp.y);
+        ctx.strokeStyle=col+"40";ctx.lineWidth=0.7;ctx.stroke();
+        const r=isHover?dotR*1.4:dotR;
+        ctx.beginPath();ctx.arc(s.pp.x,s.pp.y,r,0,Math.PI*2);
+        if(d.bucket!=="none"){
+          const g=ctx.createRadialGradient(s.pp.x-r*0.3,s.pp.y-r*0.3,0,s.pp.x,s.pp.y,r);
+          g.addColorStop(0,col);g.addColorStop(1,col+"80");ctx.fillStyle=g;ctx.globalAlpha=0.9;
+        } else {ctx.fillStyle="#26344f";ctx.globalAlpha=0.25;}
+        ctx.fill();ctx.globalAlpha=1;
+      });
+
+      ctx.font="10px SFMono-Regular,ui-monospace,monospace";ctx.fillStyle="#64748b";
+      ctx.fillText("108-MODULE ENSEMBLE SCATTER",14,22);
+      ctx.font="12px -apple-system,sans-serif";ctx.fillStyle="#9fb0cc";
+      ctx.fillText(activeTotal+" active · "+counts.Red+" Red · "+counts.Amber+" Amber · "+counts.Green+" Green",14,40);
+      ctx.restore();
+    }
+
+    function animate(){if(autoRotate&&!dragging) rotY+=0.002;draw();requestAnimationFrame(animate);}
+
+    canvas.addEventListener("mousedown",(e)=>{dragging=true;autoRotate=false;lastX=e.clientX;lastY=e.clientY;});
+    window.addEventListener("mouseup",()=>{if(dragging){dragging=false;autoRotate=true;}});
+    canvas.addEventListener("mousemove",(e)=>{
+      if(dragging){rotY+=(e.clientX-lastX)*0.005;rotX+=(e.clientY-lastY)*0.005;lastX=e.clientX;lastY=e.clientY;return;}
+      const rect=canvas.getBoundingClientRect(), mx=e.clientX-rect.left, my=e.clientY-rect.top;
+      let hit=-1;
+      for(let k=projectedPts.length-1;k>=0;k--){
+        const s=projectedPts[k], dotR=Math.max(2.5,5*s.pp.scale);
+        const dx=s.pp.x-mx, dy=s.pp.y-my;
+        if(dx*dx+dy*dy<(dotR*1.4+5)*(dotR*1.4+5)){hit=s.i;break;}
+      }
+      hoverIdx=hit;
+      const tt=root.querySelector(".scatter3d-tooltip");
+      if(tt){
+        if(hit>=0){
+          const d=scatterData[hit], col=d.bucket!=="none"?(d.color||"#4ea0ff"):DOT.none;
+          tt.style.display="block";tt.style.left=(e.clientX-rect.left+14)+"px";tt.style.top=(e.clientY-rect.top-10)+"px";
+          tt.innerHTML=`<div style="font-family:var(--font-mono,monospace);font-size:10px;color:#e9a23b;margin-bottom:3px">${esc(d.num)} ${esc(d.name)}</div><div style="font-size:12px;font-weight:600;color:${esc(col)}">${esc(d.bucket==="none"?"No data":d.bucket)}</div>${d.evidence?`<div style="font-size:11px;color:#9fb0cc;margin-top:2px">${esc(d.evidence)}</div>`:""}`;
+        } else {tt.style.display="none";}
+      }
+    });
+    canvas.addEventListener("mouseleave",()=>{hoverIdx=-1;const tt=root.querySelector(".scatter3d-tooltip");if(tt)tt.style.display="none";});
+
+    root.querySelectorAll("[data-scatter-view]").forEach((btn)=>{
+      btn.addEventListener("click",()=>{
+        root.querySelectorAll("[data-scatter-view]").forEach((b)=>b.classList.remove("active"));
+        btn.classList.add("active");
+        const v=btn.dataset.scatterView;
+        if(v==="free"){autoRotate=true;}
+        else if(v==="front"){autoRotate=false;rotY=0;rotX=0.1;}
+        else if(v==="side"){autoRotate=false;rotY=Math.PI/2;rotX=0.1;}
+        else if(v==="top"){autoRotate=false;rotX=Math.PI/2;rotY=0;}
+      });
+    });
+    animate();
   }
 
   window.LinDetail = { render };
