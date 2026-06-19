@@ -1042,6 +1042,192 @@
   }
 
   /* ===========================================================
+     Drag-and-drop multi-file ingest (Manage Projects page)
+     -----------------------------------------------------------
+     Drop any combination of documents. Each file is (1) identified
+     via the identifyOnly endpoint, (2) auto-extracted when the
+     classifier is >85% confident or held for a one-click confirm /
+     type override otherwise, then (3) extracted + models run. All
+     file-processing helpers above (PDF→text, base64, runModels,
+     refreshProject) are reused unchanged.
+     =========================================================== */
+
+  // The 15 supported document types, shown as a non-interactive reference panel.
+  const DROPZONE_REFERENCE = [
+    "Pay Application", "Monthly Progress Report", "RFI Log", "OAC Meeting Minutes",
+    "Schedule Update", "Change Order", "Field Report", "Inspection Report",
+    "NCR Log", "Subcontractor Report", "Procurement Log", "Lookahead Schedule",
+    "Resource Report", "Cost Report", "Past Performance Report"
+  ];
+
+  function docTypeOptionsHtml(selected) {
+    return DOC_TYPE_GROUPS.map((g) => `<optgroup label="${esc(g.label)}">${
+      g.types.map(([v, l]) => `<option value="${v}"${v === selected ? " selected" : ""}>${esc(l)}</option>`).join("")
+    }</optgroup>`).join("");
+  }
+
+  function dropzoneHtml(fixedId) {
+    const projectField = fixedId
+      ? `<input type="hidden" class="dz-project" value="${esc(fixedId)}" />`
+      : `<label class="rationale-label">Project
+           <select class="dz-project ig-input">${projectOptions(null)}</select></label>`;
+    return `
+      <div class="doc-type-reference">
+        <div class="dtr-title">Supported document types</div>
+        <div class="dtr-grid">${DROPZONE_REFERENCE.map((t) => `<span class="dtr-pill">${esc(t)}</span>`).join("")}</div>
+        <p class="dtr-note">Upload any combination — Lin identifies each document automatically.</p>
+      </div>
+      <div class="dz-project-row">${projectField}</div>
+      <div class="dropzone">
+        <div class="dz-icon" aria-hidden="true">↑</div>
+        <div class="dz-title">Drop documents here</div>
+        <div class="dz-sub">PDF · multiple files at once · Lin identifies type automatically</div>
+        <button type="button" class="dz-browse">Browse files</button>
+        <input type="file" class="dz-input" multiple accept="${ACCEPT}" hidden />
+      </div>
+      <div class="dz-queue" aria-live="polite"></div>`;
+  }
+
+  // Build the upload payload once per file: born-digital PDFs go as `text`
+  // (client-side PDF.js), everything else as base64 — same rule as the form.
+  async function buildFilePayload(file) {
+    const payload = { mimeType: file.type || "application/octet-stream", fileName: file.name };
+    if (isPdf(file) && typeof pdfjsLib !== "undefined") {
+      const text = await extractPDFText(file);
+      if (text && text.trim().length > 200) payload.text = text;
+      else payload.dataBase64 = await readFileAsBase64(file);
+    } else {
+      payload.dataBase64 = await readFileAsBase64(file);
+    }
+    return payload;
+  }
+
+  function wireDropzone(container, onResult) {
+    if (!container) return;
+    const dz = container.querySelector(".dropzone");
+    const input = container.querySelector(".dz-input");
+    const queue = container.querySelector(".dz-queue");
+    const browse = container.querySelector(".dz-browse");
+    const projectEl = container.querySelector(".dz-project");
+    if (!dz || !input || !queue) return;
+
+    browse.addEventListener("click", () => input.click());
+    input.addEventListener("change", (e) => { handleFiles(e.target.files); input.value = ""; });
+    ["dragenter", "dragover"].forEach((ev) =>
+      dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add("dragover"); }));
+    dz.addEventListener("dragleave", (e) => {
+      e.preventDefault();
+      if (dz.contains(e.relatedTarget)) return;
+      dz.classList.remove("dragover");
+    });
+    dz.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dz.classList.remove("dragover");
+      handleFiles(e.dataTransfer && e.dataTransfer.files);
+    });
+
+    function setError(item, file, msg) {
+      item.className = "dz-item dz-error";
+      item.innerHTML = `<span class="dz-item-name">${esc(file.name)}</span>` +
+        `<span class="dz-item-error">✗ ${esc(msg)}</span>`;
+    }
+
+    async function extractOne(id, docType, payload, file, item) {
+      item.className = "dz-item dz-extracting";
+      item.innerHTML = `<span class="dz-item-name">${esc(file.name)}</span>` +
+        `<span class="dz-item-type">${esc(DOC_TYPE_LABEL[docType] || docType)}</span>` +
+        `<span class="dz-item-status">Extracting…</span>`;
+      try {
+        const resp = await LinStore.extractSignals(Object.assign({ id, docType }, payload));
+        const si = mergeComputed(resp);
+        const appliedKeys = (resp.applied && resp.applied.length)
+          ? resp.applied.slice()
+          : FIELD_ROWS.map((r) => r.key).filter((k) => si[k] != null && si[k] !== "");
+        ["cpi", "spi"].forEach((k) => {
+          if (si[k] != null && si[k] !== "" && !appliedKeys.includes(k)) appliedKeys.push(k);
+        });
+        appendExtractedSources(si, appliedKeys, docType, file.name);
+        const missing = resp.missing || [];
+        const dates = extractDates(resp, si);
+        cache[id] = { signalInputs: si, missing, readyToRun: resp.readyToRun, dates };
+        const project = LinStore.getCached(id);
+        let ran = false;
+        if ((hasIndex(si.cpi) || hasIndex(si.spi)) && project) ran = await runModels(project, si);
+        await refreshProject(id);
+        const fieldCount = appliedKeys.length;
+        const bits = [fieldCount + " field" + (fieldCount === 1 ? "" : "s")];
+        const cpi = fmtNum(si.cpi), spi = fmtNum(si.spi);
+        if (cpi != null) bits.push("CPI " + cpi);
+        if (spi != null) bits.push("SPI " + spi);
+        item.className = "dz-item dz-done";
+        item.innerHTML = `<span class="dz-item-name">${esc(file.name)}</span>` +
+          `<span class="dz-item-type">${esc(DOC_TYPE_LABEL[docType] || docType)}</span>` +
+          `<span class="dz-item-result">✓ ${esc(bits.join(" · "))}</span>`;
+        if (window.LinApp) LinApp.refresh();
+        if (onResult) onResult(id);
+      } catch (e) {
+        setError(item, file, (e && e.message) ? e.message : "Could not extract — insufficient data");
+      }
+    }
+
+    function renderConfirm(item, id, payload, file, docType, confidence, period) {
+      item.className = "dz-item dz-identified";
+      const confTxt = confidence > 0 ? Math.round(confidence * 100) + "% confident" : "needs confirmation";
+      item.innerHTML = `<span class="dz-item-name">${esc(file.name)}</span>` +
+        `<select class="dz-item-override ig-input">${docTypeOptionsHtml(docType)}</select>` +
+        `<span class="dz-item-conf">${esc(confTxt)}${period ? " · " + esc(period) : ""}</span>` +
+        `<button type="button" class="dz-item-confirm btn small">Extract</button>`;
+      item.querySelector(".dz-item-confirm").addEventListener("click", () => {
+        const chosen = item.querySelector(".dz-item-override").value;
+        extractOne(id, chosen, payload, file, item);
+      });
+    }
+
+    async function processOne(id, file) {
+      const item = document.createElement("div");
+      item.className = "dz-item dz-identifying";
+      item.innerHTML = `<span class="dz-item-name">${esc(file.name)}</span>` +
+        `<span class="dz-item-status">Identifying…</span>`;
+      queue.appendChild(item);
+
+      let payload;
+      try { payload = await buildFilePayload(file); }
+      catch (e) { setError(item, file, "Couldn't read file"); return; }
+      if ((payload.dataBase64 || "").length > 5000000) {
+        setError(item, file, "File too large — maximum 3MB. Please compress the PDF.");
+        return;
+      }
+      // Identify (graceful: if the endpoint is unavailable, hold for manual pick).
+      let ident = null;
+      try { ident = await LinStore.identifyDocument(Object.assign({ id }, payload)); }
+      catch (e) { ident = null; }
+      const docType = (ident && (ident.docType || ident.doc_type)) || "monthly_report";
+      const confidence = (ident && ident.confidence != null) ? Number(ident.confidence) : 0;
+      const period = ident && (ident.suggestedPeriod || ident.suggested_period || ident.period);
+      // Auto-confirm high-confidence matches; otherwise let the PM confirm/override.
+      if (confidence >= 0.85 && (ident.docType || ident.doc_type)) {
+        await extractOne(id, docType, payload, file, item);
+      } else {
+        renderConfirm(item, id, payload, file, docType, confidence, period);
+      }
+    }
+
+    async function handleFiles(fileList) {
+      const files = [].slice.call(fileList || []);
+      if (!files.length) return;
+      const id = projectEl ? projectEl.value : "";
+      if (!id) {
+        const note = document.createElement("div");
+        note.className = "dz-item dz-error";
+        note.innerHTML = `<span class="dz-item-error">Select a project above before dropping documents.</span>`;
+        queue.appendChild(note);
+        return;
+      }
+      for (const file of files) { await processOne(id, file); } // sequential — keeps backend load sane
+    }
+  }
+
+  /* ===========================================================
      Change 2 — signals detail panel (extracted / missing / audit)
      =========================================================== */
   function signalEvents(project) {
@@ -1348,6 +1534,7 @@
 
   window.LinSignals = {
     ingestFormHtml, wireIngestForm,
+    dropzoneHtml, wireDropzone,
     renderSignalsPanel,
     buildHistorySnapshot,
     persistHistorySnapshot,

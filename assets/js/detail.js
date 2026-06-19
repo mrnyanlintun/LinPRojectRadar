@@ -550,23 +550,14 @@
         ${cs("d-uploads", "Uploaded Documents", uploadedDocsPanelHtml(p), false, `${uploadCount} document${uploadCount === 1 ? "" : "s"}`)}
         ${cs("d-ledger", "Signal Inputs", `<section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>`, false, pillBadge(overallState))}
         ${cs("d-decision", "Governance Decision", `<section class="panel detail-decision" aria-label="PCEIF governance decision (project detail)"></section>`, false, pillBadge(overallState))}
-       <section class="panel detail-ingest" aria-label="Ingest to this project">
-         <details class="kn-topic"${populated ? "" : " open"}>
-           <summary>Ingest to this project (${esc(p.id)}) — populate signals / document-risk</summary>
-           <p class="kn-sub" style="margin-top:8px">Pre-scoped to this project. Populate runs the real Monte Carlo + CUSUM; document-risk uses the transparent keyword rules with mandatory Approve/Reject.</p>
-           ${ingestUploadedNoteHtml(p)}
-           <div class="detail-ingest-form"></div>
-         </details>
-       </section>
        ${cs("d-stack", "Signal Stack — " + totalCats + " Categories", `<div class="detail-modules"></div>`, true, "")}
        ${cs("d-signals", "Extracted Signal Inputs", `<section class="panel detail-signals" aria-label="Extracted signals detail"></section>`, false, `${inputFieldCount} field${inputFieldCount === 1 ? "" : "s"}`)}`;
 
     // Reuse the shared renderers, scoped to this page's containers.
     LinApp.renderLedger(p, root.querySelector(".detail-ledger"));
     LinApp.renderDecisionCard(p, root.querySelector(".detail-decision"));
-    // Pre-scoped ingest — same shared logic and event log as Manage Projects.
-    LinIngest.renderScopedIngest(p.id, root.querySelector(".detail-ingest-form"),
-      (id) => render(id)); // on approve: re-render detail so ledger/deep dive reflect the delta
+    // Document ingestion lives on the Manage Projects page only; the detail page
+    // is read-only — it shows what has already been processed.
     // HUD-depth per-project deep dive (chart + why-grid + reasoning + rule)
     LinDeepDive.render(p, root.querySelector(".detail-modules"));
     // Signals detail panel (extracted values, missing docs, audit trail) — sits
@@ -662,6 +653,56 @@
     return null;
   }
 
+  // Group every category by its computed status (Red / Amber / Green /
+  // Conditional-or-no-data) so the brief can describe a SIGNAL PATTERN rather
+  // than list each category individually.
+  function briefCategoryGroups(project) {
+    const groups = { Red: [], Amber: [], Green: [], Conditional: [] };
+    const snap = briefSnapshot(project);
+    if (snap && snap.categories) {
+      Object.keys(snap.categories).forEach((k) => {
+        const c = snap.categories[k];
+        const num = c && c.num;
+        if (!num) return;
+        if (c.parked || !c.status) { groups.Conditional.push(num); return; }
+        const s = String(c.status).toLowerCase();
+        if (s.indexOf("red") >= 0) groups.Red.push(num);
+        else if (s.indexOf("amber") >= 0 || s.indexOf("yellow") >= 0) groups.Amber.push(num);
+        else if (s.indexOf("green") >= 0 || s.indexOf("complete") >= 0) groups.Green.push(num);
+        else groups.Conditional.push(num);
+      });
+    }
+    return groups;
+  }
+
+  // The 3-6 specific computed values that most explain the overall status —
+  // actual numbers, never generic text. Each is { label, value, status }.
+  function briefKeySignals(project) {
+    const s = (project && project.signals) || {};
+    const si = (project && project.signalInputs) || {};
+    const evm = s.evm || {}, mc = s.mc || {};
+    const out = [];
+    const bac = Number(evm.bac != null ? evm.bac : si.bac);
+    if (Number.isFinite(bac) && bac > 0 && Number.isFinite(Number(mc.p80))) {
+      const pct = Math.round((Number(mc.p80) / bac - 1) * 100);
+      out.push({ label: "P80 EAC vs BAC", value: (pct >= 0 ? "+" : "") + pct + "%", status: pct > 10 ? "Red" : pct > 5 ? "Amber" : "Green" });
+    }
+    if (Number.isFinite(Number(evm.cpi))) out.push({ label: "CPI", value: Number(evm.cpi).toFixed(3), status: evm.cpi < 0.90 ? "Red" : evm.cpi < 0.95 ? "Amber" : "Green" });
+    if (Number.isFinite(Number(evm.spi))) out.push({ label: "SPI", value: Number(evm.spi).toFixed(3), status: evm.spi < 0.90 ? "Red" : evm.spi < 0.95 ? "Amber" : "Green" });
+    if (s.cusum) out.push({ label: "Schedule drift (CUSUM)", value: s.cusum.breached ? "breach detected" : "in control", status: s.cusum.breached ? "Red" : "Green" });
+    const ctot = Number(si.contingencyTotal), cburn = Number(si.contingencyBurned);
+    const comp = Number(si.actualPctComplete != null ? si.actualPctComplete : si.pctComplete);
+    if (Number.isFinite(ctot) && ctot > 0 && Number.isFinite(cburn)) {
+      const bp = Math.round(cburn / ctot * 100);
+      out.push({ label: "Contingency burned", value: bp + "%" + (Number.isFinite(comp) ? " at " + Math.round(comp) + "% complete" : ""), status: bp > 75 ? "Red" : bp > 50 ? "Amber" : "Green" });
+    }
+    if (s.doc && Number.isFinite(Number(s.doc.score))) {
+      const ds = Number(s.doc.score);
+      out.push({ label: "Document risk", value: ds.toFixed(2), status: ds >= 0.70 ? "Red" : ds >= 0.40 ? "Amber" : "Green" });
+    }
+    return out.slice(0, 6);
+  }
+
   function buildBriefPrompt(project) {
     const snapshot = briefSnapshot(project);
     if (!snapshot || !snapshot.categories) {
@@ -719,35 +760,47 @@
       "before the next reporting cycle closes.' — and NOT 'This project is in critical failure. Recovery plan required within 48 hours.'\n\n" +
       "This is advice from a trusted analytical system to a senior professional. Treat the reader accordingly.\n\n";
 
+    const groups = briefCategoryGroups(project);
+    const keySignals = briefKeySignals(project);
+    const groupLine = (label, arr) => label + " (" + arr.length + " categor" + (arr.length === 1 ? "y" : "ies") + "): " + (arr.length ? arr.join(", ") : "none");
+    const groupsText = [
+      groupLine("RED", groups.Red),
+      groupLine("AMBER", groups.Amber),
+      groupLine("GREEN", groups.Green),
+      groupLine("CONDITIONAL / NO DATA", groups.Conditional)
+    ].join("\n");
+    const signalsText = keySignals.length
+      ? keySignals.map((k) => "- " + k.label + ": " + k.value + " (" + k.status + ")").join("\n")
+      : "- (no computed key signals available yet)";
+
     return advisor +
       "Briefing subject: " + (snapshot.project_name || project.name) + " (Project " + snapshot.project_id + ", " + (snapshot.sector || "unknown") + " sector). " +
       "The platform computed " + totalModules + " signal modules across " + LIN_CATEGORIES.length + " analytical categories from a stored log dated " + computedDay + ".\n\n" +
-      "Computed results (internal context — present these as evidence, never quote the raw metrics or module names):\n" + catSummary +
+      "Category statuses grouped by colour (internal context — use these groupings, do NOT re-list each category individually):\n" + groupsText +
+      "\n\nComputed key signal values (internal context — quote these ACTUAL numbers in Key Drivers):\n" + signalsText +
+      "\n\nPer-category worst module (internal context — do NOT quote raw module names or metrics):\n" + catSummary +
       "\n\nOverall governance state: " + (gov.state || "unknown") +
       "\nNamed authority: " + (gov.authority || "unknown") +
       "\nRecommended action on file: " + (gov.action || "unknown") +
       "\nEvidence agreement: " + confText +
-      "\n\nWrite the briefing with EXACTLY these four sections, each introduced by its '### ' header line verbatim:\n\n" +
-      "### Overall Status\n" +
-      "2-3 sentences: a diplomatic summary of overall project health and the most salient consideration, framed as evidence rather than a verdict.\n\n" +
-      "### Category Analysis\n" +
-      "One line per category THAT HAS DATA above — each a single plain-English sentence with NO module numbers and NO metric values — using exactly these labels:\n" +
-      "Cost Performance (Cat 1): ...\n" +
-      "Schedule Simulation (Cat 2): ...\n" +
-      "Cost Simulation (Cat 3): ...\n" +
-      "Document & Risk (Cat 4): ...\n" +
-      "System Dynamics (Cat 5): ...\n" +
-      "Signal Synthesis (Cat 6): ...\n" +
-      "Evidence Combination (Cat 7): ... (state the confidence level)\n" +
-      "Portfolio Analysis (Cat 8): ... (only if portfolio data is present)\n" +
-      "Skip every category that has no data above. Do not invent categories or values.\n\n" +
-      "### Conclusion\n" +
-      "2-3 sentences synthesising the findings: whether the evidence methods agree or diverge, and the overall confidence level.\n\n" +
-      "### Recommendations\n" +
-      "3-5 bullet points, each line starting with '- ', each phrased as ADVICE the program director may choose to act on — openers like " +
-      "'Consider reviewing…', 'It may be helpful to…', 'The data supports exploring…', 'The program director may wish to…'. " +
-      "You may name who could be involved and a sensible horizon, but never command, never set an ultimatum, and never use " +
-      "48-hour or recovery-plan language — not even for a Red state.\n\n" +
+      "\n\nWrite the briefing with EXACTLY these four sections, each introduced by its '### ' header line verbatim. " +
+      "LEAD WITH THE RECOMMENDATION — the first thing the reader sees is what to do, not a data summary. " +
+      "Do NOT mention category numbers except when grouping them in Signal Pattern; a program director does not think in Cat 1-12.\n\n" +
+      "### Recommendation\n" +
+      "Begin with the overall status in CAPS followed by ' · ' and a single short action clause (e.g. 'RED-REVIEW · bring the controls lead into a focused review this cycle'). " +
+      "Then ONE sentence beginning 'The evidence suggests…' that frames the overall picture. Diplomatic and advisory — never a command.\n\n" +
+      "### Signal Pattern\n" +
+      "Group the categories by status. For each non-empty group, output a line starting with '● ' then the status word in CAPS and the count in parentheses, " +
+      "then on the SAME line ' — ' followed by a 2-3 sentence synthesis of what those categories have in common and what they indicate. " +
+      "List the grouped Cat numbers inside the synthesis once. Order groups RED, then AMBER, then GREEN, then CONDITIONAL / NO DATA. Skip empty groups. " +
+      "Do NOT write one line per category — synthesise the group.\n\n" +
+      "### Key Drivers\n" +
+      "3-4 bullet points, each line starting with '- ', each naming a SPECIFIC computed signal value from the list above (e.g. '- CPI 0.929 indicates…', " +
+      "'- P80 EAC is +10% above BAC…'). Use the actual numbers. These are the signals that most explain the overall status.\n\n" +
+      "### Required Actions\n" +
+      "2-4 bullet points, each line starting with '- ', each a specific advisory action that NAMES a plausible authority (e.g. controls lead, program director) " +
+      "and a sensible horizon (e.g. 'before the next reporting cycle closes'). Use diplomatic advisory language throughout — 'the evidence suggests', " +
+      "'the program director may wish to' — never an imperative command, never an ultimatum, and never 48-hour or recovery-plan language, not even for a Red state.\n\n" +
       "Output ONLY the four sections with the exact '### ' headers above — no preamble and no closing remarks.";
   }
 
@@ -766,17 +819,19 @@
   function parseBrief(text) {
     if (!text) return null;
     const lines = String(text).replace(/\r/g, "").split("\n");
-    const out = { overall: [], categories: [], conclusion: [], recommendations: [] };
+    const out = { recommendation: [], pattern: [], drivers: [], actions: [] };
     function headerKey(line) {
       const isHash = /^#{1,6}\s/.test(line);
       let h = line.replace(/^#{1,6}\s*/, "").replace(/\*\*/g, "").trim().replace(/:\s*$/, "").toLowerCase();
-      const known = (h === "overall status" || h === "category analysis" ||
-                     h === "conclusion" || h === "recommendations" || h === "recommendation");
+      // New headers + legacy headers (so old cached briefs still render).
+      const known = (h === "recommendation" || h === "signal pattern" || h === "key drivers" ||
+                     h === "required actions" || h === "overall status" || h === "category analysis" ||
+                     h === "conclusion" || h === "recommendations");
       if (!isHash && !known) return null;
-      if (h.indexOf("overall") >= 0) return "overall";
-      if (h.indexOf("category") >= 0) return "categories";
-      if (h.indexOf("conclusion") >= 0) return "conclusion";
-      if (h.indexOf("recommendation") >= 0) return "recommendations";
+      if (h === "recommendation" || h.indexOf("overall") >= 0) return "recommendation";
+      if (h.indexOf("signal pattern") >= 0 || h.indexOf("category") >= 0) return "pattern";
+      if (h.indexOf("key driver") >= 0 || h.indexOf("conclusion") >= 0) return "drivers";
+      if (h.indexOf("required action") >= 0 || h.indexOf("recommendation") >= 0) return "actions";
       return null;
     }
     let cur = null, seen = false;
@@ -790,29 +845,64 @@
     if (!seen) return null;
     const stripBullet = (s) => s.replace(/^[-*•▸]\s*/, "").replace(/^\d+[.)]\s*/, "").trim();
     return {
-      overall: out.overall.join(" ").trim(),
-      categories: out.categories.map(stripBullet).filter(Boolean),
-      conclusion: out.conclusion.join(" ").trim(),
-      recommendations: out.recommendations.map(stripBullet).filter(Boolean)
+      recommendation: out.recommendation.join(" ").trim(),
+      pattern: out.pattern.slice(),                                   // keep raw lines (● group rows + synthesis)
+      drivers: out.drivers.map(stripBullet).filter(Boolean),
+      actions: out.actions.map(stripBullet).filter(Boolean)
     };
+  }
+
+  // Map a leading status word to a normalized status key for colour-coding.
+  function statusKeyFromText(s) {
+    const t = String(s || "").toLowerCase();
+    if (t.indexOf("red") >= 0) return "red";
+    if (t.indexOf("amber") >= 0 || t.indexOf("yellow") >= 0) return "amber";
+    if (t.indexOf("green") >= 0 || t.indexOf("complete") >= 0) return "green";
+    if (t.indexOf("conditional") >= 0 || t.indexOf("no data") >= 0) return "none";
+    return "none";
   }
 
   function briefSectionsHtml(parsed) {
     const section = (head, inner) => inner
       ? `<div class="eb-section"><p class="eb-sec-head">${esc(head)}</p>${inner}</div>` : "";
-    const catItems = parsed.categories.map((c) => {
-      const idx = c.indexOf(":");
-      if (idx > 0) {
-        return `<li><span class="eb-cat-label">${esc(c.slice(0, idx + 1))}</span> ${esc(c.slice(idx + 1).trim())}</li>`;
+
+    // Recommendation — lead block. First " · "-delimited token is the status.
+    let recHtml = "";
+    if (parsed.recommendation) {
+      const rec = parsed.recommendation;
+      const dot = rec.indexOf("·");
+      if (dot > 0) {
+        const statusPart = rec.slice(0, dot).trim();
+        const rest = rec.slice(dot + 1).trim();
+        const k = statusKeyFromText(statusPart);
+        recHtml = `<p class="eb-rec"><span class="eb-rec-status status-${esc(k)}">${esc(statusPart)}</span> ${esc(rest)}</p>`;
+      } else {
+        recHtml = `<p class="eb-rec">${esc(rec)}</p>`;
       }
-      return `<li>${esc(c)}</li>`;
+    }
+
+    // Signal Pattern — group rows (● STATUS (n) — synthesis) with coloured dots.
+    const patItems = parsed.pattern.map((raw) => {
+      const line = raw.replace(/^[●○•*-]\s*/, "").trim();
+      const dash = line.indexOf("—") >= 0 ? line.indexOf("—") : line.indexOf(" - ");
+      const head = dash > 0 ? line.slice(0, dash).trim() : line;
+      const body = dash > 0 ? line.slice(dash + 1).replace(/^[—-]\s*/, "").trim() : "";
+      const k = statusKeyFromText(head);
+      if (/^[●○•*-]/.test(raw) || /\((\d+)\s*categor/i.test(head)) {
+        return `<li class="eb-group"><span class="eb-group-dot status-${esc(k)}"></span>` +
+          `<span class="eb-group-head">${esc(head)}</span>${body ? ` <span class="eb-group-body">${esc(body)}</span>` : ""}</li>`;
+      }
+      return `<li class="eb-group eb-group-cont">${esc(line)}</li>`;
     }).join("");
-    const recItems = parsed.recommendations.map((r) => `<li>${esc(r)}</li>`).join("");
+
+    const driverItems = parsed.drivers.map((d) => `<li>${esc(d)}</li>`).join("");
+    const actionItems = parsed.actions.map((a) => `<li>${esc(a)}</li>`).join("");
+
     return `<div class="eb-body eb-structured">` +
-      section("Overall Status", parsed.overall ? `<p class="eb-sec-overall">${esc(parsed.overall)}</p>` : "") +
-      section("Category Analysis", catItems ? `<ul class="eb-cats">${catItems}</ul>` : "") +
-      section("Conclusion", parsed.conclusion ? `<p class="eb-sec-conclusion">${esc(parsed.conclusion)}</p>` : "") +
-      section("Recommendations", recItems ? `<ul class="eb-recs">${recItems}</ul>` : "") +
+      section("Recommendation", recHtml) +
+      section("Signal Pattern", patItems ? `<ul class="eb-pattern">${patItems}</ul>` : "") +
+      section("Key Drivers", driverItems ? `<ul class="eb-drivers">${driverItems}</ul>` : "") +
+      section("Required Actions", actionItems ? `<ul class="eb-actions">${actionItems}</ul>` : "") +
       `</div>`;
   }
 
@@ -859,90 +949,83 @@
 
     const stKey = String(state).toLowerCase().replace("-review", "");
 
-    // Section 1 — Overall Status (evidence-framed, never a verdict).
-    const statePhrase = stKey === "red"
-        ? "The evidence across multiple analytical methods consistently points to significant cost and schedule pressure on Project " + project.id + "."
+    // Group categories by status and pull the actual computed key signals.
+    const groups = briefCategoryGroups(project);
+    const keySignals = briefKeySignals(project);
+
+    // ── Recommendation (lead): status + one action clause + an evidence line.
+    const actionClause = stKey === "red" ? "bring the controls lead into a focused review this cycle"
+      : stKey === "amber" ? "review the cost and schedule trend with the controls lead this cycle"
+      : stKey === "yellow" ? "keep a light watch on the early-warning variance"
+      : stKey === "complete" ? "begin closeout reconciliation when convenient"
+      : "maintain routine monitoring";
+    const evidenceLine = stKey === "red"
+        ? "The evidence suggests significant cost and schedule pressure that warrants a focused look before the next reporting cycle closes."
       : stKey === "amber"
-        ? "The computational analysis indicates meaningful risk on Project " + project.id + " that may warrant a closer look."
+        ? "The evidence suggests meaningful risk that may warrant a closer look this cycle."
       : stKey === "yellow"
-        ? "The signals on Project " + project.id + " are consistent with early-warning variance worth monitoring."
+        ? "The evidence suggests early-warning variance worth monitoring."
       : stKey === "complete"
-        ? "The analysis indicates Project " + project.id + " is reading as complete on the tracked measures."
-      : stKey === "green"
-        ? "The evidence indicates Project " + project.id + " is tracking within expected ranges."
-        : "The current evidence for Project " + project.id + " is mixed.";
-    const overall = statePhrase + " " + (concerns.length
-      ? "One area that warrants attention is that " + concerns[0] + "."
-      : "No single area stands out as a concern in the current signal package.");
+        ? "The evidence suggests the tracked measures are reading as complete."
+        : "The evidence suggests the project is tracking within expected ranges.";
+    const recommendation = String(state).toUpperCase() + " · " + actionClause + "\n" + evidenceLine;
 
-    // Section 2 — Category Analysis, from the stored category snapshot.
-    const snap = briefSnapshot(project);
-    const catLines = [];
-    if (snap && snap.categories) {
-      Object.keys(snap.categories).forEach((k) => {
-        const c = snap.categories[k];
-        if (!c || c.parked || !c.status) return;
-        const label = BRIEF_CAT_LABEL[c.num] || ((c.num ? c.num + " " : "") + (c.name || ""));
-        const cs = String(c.status).toLowerCase().replace("-review", "");
-        const phrase = cs === "red" ? "the evidence points to significant pressure in this area"
-                     : cs === "amber" ? "the analysis indicates meaningful risk worth a closer look"
-                     : cs === "yellow" ? "early-warning signs are present and worth monitoring"
-                     : cs === "complete" ? "this area reads as complete"
-                     : cs === "green" ? "the signals are consistent with this area tracking well"
-                     : "the signal here is mixed";
-        catLines.push(label + ": " + phrase + ".");
-      });
-    }
-    const categoryBlock = catLines.length ? catLines.join("\n") : "No category has computed data yet.";
+    // ── Signal Pattern: one ● line per non-empty status group.
+    const phraseFor = {
+      Red: "the evidence points to significant pressure concentrated in these areas",
+      Amber: "the analysis indicates meaningful risk worth a closer look",
+      Green: "the signals are consistent with these areas tracking well",
+      Conditional: "these areas are awaiting data or are conditional on further inputs"
+    };
+    const patternLines = [];
+    [["Red", "RED"], ["Amber", "AMBER"], ["Green", "GREEN"], ["Conditional", "CONDITIONAL / NO DATA"]].forEach((g) => {
+      const arr = groups[g[0]];
+      if (!arr.length) return;
+      patternLines.push("● " + g[1] + " (" + arr.length + " categor" + (arr.length === 1 ? "y" : "ies") + ") — " +
+        arr.join(", ") + ": " + phraseFor[g[0]] + ".");
+    });
+    const patternBlock = patternLines.length ? patternLines.join("\n") : "No category has computed data yet.";
 
-    // Section 3 — Conclusion
-    const conf = snap && snap.summary && snap.summary.evidence_agreement;
-    const conclusion = conf && conf.methods_checked
-      ? (conf.methods_agreeing + " of " + conf.methods_checked + " evidence methods agree, indicating " +
-         String(conf.confidence || "moderate").toLowerCase() + " confidence in this assessment.")
-      : (conflict
-          ? "The evidence methods read this as " + conflict.toLowerCase() + ", and broadly converge on the assessment."
-          : "The evidence methods broadly agree on this assessment.");
+    // ── Key Drivers: the actual computed signal values.
+    const driverLines = keySignals.length
+      ? keySignals.map((k) => "- " + k.label + ": " + k.value + " (" + k.status + ")")
+      : ["- No computed key signals are available yet."];
 
-    // Section 4 — Recommendations. Advisory throughout — never command, and no
-    // 48-hour / recovery-plan / "critical" language, even for a Red state.
-    let recs;
+    // ── Required Actions: advisory, named authority + horizon, never a command.
+    let actions;
     if (stKey === "red") {
-      recs = [
-        "The program director may wish to consider bringing the controls lead into a focused review before the next reporting cycle closes",
+      actions = [
+        "The program director may wish to bring the controls lead into a focused review before the next reporting cycle closes",
         "It may be helpful to validate the cost and schedule baseline against the latest pay application",
         "The data supports a closer look at the most pressured areas together with the project team"
       ];
     } else if (stKey === "amber") {
-      recs = [
+      actions = [
         "Consider reviewing the cost and schedule trend with the controls lead before the next reporting cycle closes",
-        "It may be worth verifying the earned-value figures against the latest pay application",
-        concerns.some((c) => c.indexOf("document") >= 0)
-          ? "The data supports a closer look at the elevated document-risk signals with the project team"
-          : "The document-risk signals appear clean — no further action seems indicated there"
+        "It may be worth verifying the earned-value figures against the latest pay application"
       ];
     } else if (stKey === "yellow") {
-      recs = [
+      actions = [
         "Consider a brief check-in to monitor the early-warning variance over the coming cycle",
         "It may be helpful to confirm the latest earned-value inputs are current"
       ];
     } else if (stKey === "complete") {
-      recs = [
+      actions = [
         "Consider initiating closeout documentation when convenient",
         "It may be helpful to reconcile the final cost and schedule figures"
       ];
     } else {
-      recs = [
+      actions = [
         "The signals are within expected ranges; routine monitoring appears sufficient this cycle",
         "No escalation appears warranted based on the current evidence"
       ];
     }
 
     return [
-      "### Overall Status", overall,
-      "### Category Analysis", categoryBlock,
-      "### Conclusion", conclusion,
-      "### Recommendations", recs.map((r) => "- " + r).join("\n")
+      "### Recommendation", recommendation,
+      "### Signal Pattern", patternBlock,
+      "### Key Drivers", driverLines.join("\n"),
+      "### Required Actions", actions.map((a) => "- " + a).join("\n")
     ].join("\n");
   }
 
@@ -989,7 +1072,7 @@
     // otherwise fall back to the brief text as a single paragraph.
     const text = (brief && brief.text) ? brief.text : "";
     const parsed = parseBrief(text);
-    if (parsed && (parsed.overall || parsed.categories.length || parsed.conclusion || parsed.recommendations.length)) {
+    if (parsed && (parsed.recommendation || parsed.pattern.length || parsed.drivers.length || parsed.actions.length)) {
       return briefSectionsHtml(parsed);
     }
     return `<div class="eb-body">${esc(text)}</div>`;
@@ -1009,8 +1092,8 @@
     return `<section class="panel eb-panel eb-accent-${esc(accent)}" aria-label="Executive brief" data-eb-id="${esc(projectId)}">
       <div class="eb-head">
         <div>
-          <p class="eyebrow eb-eyebrow">Executive brief</p>
-          <p class="kn-sub eb-sub">Structured analysis across ${LIN_CATEGORIES.length} signal categories</p>
+          <p class="eyebrow eb-eyebrow">Executive brief${project && project.name ? " — " + esc(project.name) : ""}</p>
+          <p class="kn-sub eb-sub">${period ? "Reporting period: " + esc(period) + " · " : ""}grouped analysis across ${LIN_CATEGORIES.length} signal categories</p>
         </div>
         <button type="button" class="btn small eb-regen" data-eb-regen="${esc(projectId)}" aria-label="Regenerate brief">Regenerate ↺</button>
       </div>

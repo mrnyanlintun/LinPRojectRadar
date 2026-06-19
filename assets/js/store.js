@@ -315,6 +315,16 @@
     const j = await apiPost(body);
     return j;
   }
+  // identifyOnly classifies one uploaded document WITHOUT extracting signals —
+  // returns { docType, confidence, suggestedPeriod } so the drag-and-drop ingest
+  // can auto-confirm high-confidence matches and let the PM override the rest.
+  async function identifyDocument({ id, dataBase64, text, mimeType, fileName }) {
+    if (!configured()) throw new Error("Project store not configured (LIN_API_URL).");
+    const body = { action: "identifyOnly", id, mimeType, fileName };
+    if (text != null) body.text = text; else body.dataBase64 = dataBase64;
+    const j = await apiPost(body);
+    return j;
+  }
   async function overwriteSignal({ id, field, value, reason }) {
     if (!configured()) throw new Error("Project store not configured (LIN_API_URL).");
     const j = await apiPost({ action: "overwritesignal", id, field, value, reason });
@@ -342,7 +352,7 @@
     load, listProjects, getProject, createProject, saveProject,
     archiveProject, restoreProject, listArchived, chat, analyze,
     listCorpus, listAuditResults, ingestCorpus, runAudit, saveAuditResult,
-    extractSignals, overwriteSignal, resetSignals,
+    extractSignals, identifyDocument, overwriteSignal, resetSignals,
     // generic POST passthrough (used by the Cat 8 portfolioanalyze call)
     post: apiPost,
     // sync mirror accessors used by render code

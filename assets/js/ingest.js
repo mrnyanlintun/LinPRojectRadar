@@ -158,10 +158,11 @@
        inside the body so it shows when the user expands the section. */
     const archivedBody = `<div id="archived-list"><p class="pr-empty">Loading archived projects…</p></div>`;
 
-    /* UPLOAD DOCUMENTS — collapsed by default. Same ingest form as before. */
+    /* UPLOAD DOCUMENTS — collapsed by default. Drag-and-drop multi-file ingest:
+       drop any combination, Lin identifies each document type automatically. */
     const uploadBody =
-      `<p class="kn-sub">Upload a contract, pay application, schedule, or RFI. The system reads the figures and updates the project signals automatically.</p>
-       ${LinSignals.ingestFormHtml(null)}
+      `<p class="kn-sub">Drop one or more documents below. Lin identifies each document type automatically and extracts the signals — no need to label them first.</p>
+       ${LinSignals.dropzoneHtml(null)}
        <div id="signals-detail" class="ds-detail-wrap"></div>`;
 
     root.innerHTML =
@@ -177,9 +178,9 @@
       </section>`;
 
     renderLog();
-    // document-driven signal extraction (replaces the manual CPI/SPI/BAC form);
-    // on result, render the signals detail panel (extracted / missing / audit).
-    LinSignals.wireIngestForm(root.querySelector("#signals-panel"), (id) => {
+    // drag-and-drop multi-file ingest (identify → auto-confirm/override → extract);
+    // on each result, render the signals detail panel (extracted / missing / audit).
+    LinSignals.wireDropzone(root.querySelector("#signals-panel"), (id) => {
       const panel = root.querySelector("#signals-detail");
       if (panel) LinSignals.renderSignalsPanel(panel, LinStore.getCached(id));
     });
@@ -207,8 +208,14 @@
       b.addEventListener("click", () => LinApp.openDetail(b.dataset.detail)));
     root.querySelectorAll("[data-populate]").forEach((b) =>
       b.addEventListener("click", () => {
-        root.querySelector("#populate-panel .ps-project").value = b.dataset.populate;
-        root.querySelector("#populate-panel").scrollIntoView({ block: "start" });
+        // Expand the UPLOAD DOCUMENTS section, pre-select this project in the
+        // dropzone, and scroll it into view.
+        const section = document.getElementById("section-mg-upload");
+        if (window.toggleSection && section && !section.classList.contains("open")) toggleSection("mg-upload");
+        const sel = root.querySelector(".dz-project");
+        if (sel) sel.value = b.dataset.populate;
+        const panel = root.querySelector("#signals-panel");
+        if (panel) panel.scrollIntoView({ block: "start" });
       }));
 
     // async: load the archived list from the backend and wire Restore
