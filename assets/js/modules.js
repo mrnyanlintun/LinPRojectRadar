@@ -617,21 +617,32 @@
       return Object.values(catSlot).filter(Boolean).flat().map(cardHtml).join("");
     }
     return LIN_CATEGORIES.map((cat) => {
-      const head =
-        `<div class="mod-cat-head" style="--cat-color:${esc(cat.color)}">
+      const total = cat.modules.length;
+      const activeN = cat.modules.filter((m) => m.active).length;
+      const badge = activeN + "/" + total + " active";
+      const desc = `<p class="sig-cat-desc kn-sub">${esc(cat.description)}</p>`;
+      let inner;
+      if (cat.id === "cat8") {
+        inner = `<div class="sig-cat-body">${desc}
+          <section class="panel mod-card">
+            <p class="eyebrow">Portfolio analysis</p>
+            <p class="kn-sub">Cat 8 ML/AI runs per project on the Project Detail page using portfolio-wide signal comparison. Modules: ${esc(cat.modules.map((m) => m.num + " " + m.name).join(", "))}.</p>
+          </section></div>`;
+      } else {
+        const cards = (catSlot[cat.id] || []).map(cardHtml).join("");
+        inner = `<div class="sig-cat-body">${desc}${cards}</div>`;
+      }
+      const open = cat.id === "cat9";          // Governance always open by default
+      const title = esc(cat.num) + " — " + esc(cat.name);
+      if (window.collapsibleSection) {
+        return window.collapsibleSection("sig-" + cat.id, title, inner, open, badge);
+      }
+      // Defensive fallback: original (non-collapsible) layout.
+      return `<div class="mod-cat-head" style="--cat-color:${esc(cat.color)}">
           <span class="mod-cat-num">${esc(cat.num)}</span>
           <span class="mod-cat-name">${esc(cat.name)}</span>
           <span class="mod-cat-desc">${esc(cat.description)}</span>
-        </div>`;
-      if (cat.id === "cat8") {
-        return head + `<section class="panel mod-card mod-card-parked">
-          <p class="eyebrow">Stage 2 — parked</p>
-          <p>${esc(cat.description)}</p>
-          <p class="kn-sub">Planned modules: ${esc(cat.modules.map((m) => m.num + " " + m.name).join(", "))}.</p>
-        </section>`;
-      }
-      const cards = (catSlot[cat.id] || []).map(cardHtml).join("");
-      return head + cards;
+        </div>` + inner;
     }).join("");
   }
 

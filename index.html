@@ -321,6 +321,16 @@
       </div>
       <p class="radar-note">Center = on baseline · outer rim = high drift. Sectors: Design / Construction / Hybrid delivery. Select a blip (or a list row below) to open its Project Detail; the list is an equivalent keyboard control path.</p>
 
+      <!-- Portfolio AI executive summary (below the radar, above the list) -->
+      <section class="portfolio-summary-panel" id="portfolio-summary" aria-label="Portfolio executive summary">
+        <div class="portfolio-summary-header">
+          <span class="portfolio-summary-title">Portfolio Executive Summary</span>
+          <button type="button" class="btn small" id="portfolio-summary-generate">Generate ↺</button>
+        </div>
+        <div id="portfolio-summary-text"></div>
+        <div class="brief-footer" id="portfolio-summary-foot"></div>
+      </section>
+
       <div class="fallback">
         <h3 id="list-heading">Projects (list view)</h3>
         <ul id="project-list" aria-labelledby="list-heading"></ul>

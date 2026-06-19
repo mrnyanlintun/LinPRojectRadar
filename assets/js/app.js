@@ -894,6 +894,152 @@
     renderDecisionCard
   };
 
+  /* ---------- shared collapsible section (Project Detail + Signals page) ---------- */
+  window.toggleSection = function (id) {
+    var body = document.getElementById("body-" + id);
+    var arrow = document.getElementById("arrow-" + id);
+    var section = document.getElementById("section-" + id);
+    if (!body) return;
+    if (body.style.display === "none") {
+      body.style.display = "block";
+      if (arrow) arrow.textContent = "▲";
+      if (section) section.classList.add("open");
+    } else {
+      body.style.display = "none";
+      if (arrow) arrow.textContent = "▼";
+      if (section) section.classList.remove("open");
+    }
+  };
+  window.collapsibleSection = function (id, title, content, defaultOpen, badgeHtml) {
+    var openCls = defaultOpen ? " open" : "";
+    var toggle = "toggleSection('" + id + "')";
+    return '<div class="collapse-section' + openCls + '" id="section-' + id + '">' +
+      '<div class="collapse-header" role="button" tabindex="0" onclick="' + toggle + '" ' +
+        'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + toggle + ';}">' +
+        '<span class="collapse-title">' + title + '</span>' +
+        (badgeHtml ? '<span class="collapse-badge">' + badgeHtml + '</span>' : '') +
+        '<span class="collapse-arrow" id="arrow-' + id + '">' + (defaultOpen ? '▲' : '▼') + '</span>' +
+      '</div>' +
+      '<div class="collapse-body" id="body-' + id + '" style="' + (defaultOpen ? '' : 'display:none') + '">' +
+        content +
+      '</div>' +
+    '</div>';
+  };
+
+  /* ---------- Portfolio AI executive summary ---------- */
+  const PORTFOLIO_SUMMARY_KEY = "lin-portfolio-summary";
+
+  function summarisableProjects() {
+    return (window.LIN_PROJECTS || []).filter((p) => window.hasSignals && hasSignals(p));
+  }
+
+  function renderPortfolioSummary(text, projectCount, when) {
+    const el = document.getElementById("portfolio-summary-text");
+    if (!el) return;
+    const sections = String(text || "").split(/\n\n+/);
+    const html = sections.map((section) => {
+      const lines = section.trim().split("\n");
+      const header = (lines[0] || "").replace(/\*\*/g, "").replace(/^#+\s*/, "").trim();
+      const isHeader = /^(PROJECT STATUS AT A GLANCE|PORTFOLIO[- ]LEVEL RECOMMENDATIONS|OVERALL PORTFOLIO HEALTH)/i.test(header);
+      if (isHeader) {
+        const bodyLines = lines.slice(1).map((line) => {
+          line = line.trim();
+          if (!line) return "";
+          if (/^[•\-*]/.test(line)) return "<li>" + esc(line.replace(/^[•\-*]\s*/, "")) + "</li>";
+          return '<p class="brief-line">' + esc(line) + "</p>";
+        });
+        const hasLi = bodyLines.some((l) => l.indexOf("<li>") === 0);
+        const bodyHtml = hasLi ? '<ul class="brief-list">' + bodyLines.join("") + "</ul>" : bodyLines.join("");
+        return '<div class="brief-section"><div class="brief-section-header">' + esc(header) + "</div>" + bodyHtml + "</div>";
+      }
+      return '<p class="brief-line">' + esc(section.trim()) + "</p>";
+    }).join("");
+    el.innerHTML = html;
+    const foot = document.getElementById("portfolio-summary-foot");
+    if (foot) {
+      let dateStr = "";
+      try { dateStr = new Date(when || Date.now()).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" }); } catch (e) {}
+      foot.textContent = "Generated from " + projectCount + " projects · " + dateStr + (when ? " · cached" : "");
+    }
+  }
+
+  function generatePortfolioSummary() {
+    const projects = summarisableProjects();
+    const el = document.getElementById("portfolio-summary-text");
+    if (!el) return;
+    if (projects.length < 2) {
+      el.innerHTML = '<div class="brief-loading">Populate at least 2 projects with signals to generate a portfolio summary.</div>';
+      return;
+    }
+    if (!window.LinStore || typeof LinStore.chat !== "function") {
+      el.innerHTML = '<span style="color:var(--faint)">Summary unavailable — chat endpoint not configured.</span>';
+      return;
+    }
+    const projectLines = projects.map((p) => {
+      const s = p.signals || {};
+      const state = (s.decision && s.decision.state) || p.status || "unknown";
+      const si = p.signalInputs || {};
+      const cpi = Number(si.cpi), spi = Number(si.spi);
+      return p.id + " " + p.name + " (" + (p.sector || "unknown") + "): state=" + state +
+        (Number.isFinite(cpi) ? ", cost performance " + (cpi >= 0.95 ? "on budget" : cpi >= 0.90 ? "slightly over" : "over budget") : "") +
+        (Number.isFinite(spi) ? ", schedule " + (spi >= 0.95 ? "on track" : spi >= 0.90 ? "slightly behind" : "behind") : "");
+    }).join("\n");
+    const redCount = projects.filter((p) => p.signals && p.signals.decision && String(p.signals.decision.state || "").indexOf("Red") >= 0).length;
+    const amberCount = projects.filter((p) => p.signals && p.signals.decision && p.signals.decision.state === "Amber").length;
+
+    const prompt = "You are a senior program controls advisor writing a portfolio-level executive summary for a program director." +
+      "\n\nPortfolio: " + projects.length + " active projects. " + redCount + " in red-review, " + amberCount + " amber, " +
+      (projects.length - redCount - amberCount) + " green or better." +
+      "\n\nProject signals:\n" + projectLines +
+      "\n\nWrite a portfolio executive summary with exactly three sections:\n\n" +
+      "PROJECT STATUS AT A GLANCE\n" +
+      "One bullet per project. One sentence each. Plain English. No metric values. No module numbers. " +
+      'Format: "Project [ID] — [Name]: [one sentence]"\n\n' +
+      "PORTFOLIO-LEVEL RECOMMENDATIONS\n" +
+      "3-5 bullet points. Advisory tone — suggest, recommend, consider. Portfolio-level observations only, not project-specific actions. Look for patterns across projects.\n\n" +
+      "OVERALL PORTFOLIO HEALTH\n" +
+      "One sentence. Diplomatic. Evidence-based.\n\n" +
+      "Rules:\n- Never say 'you must' or issue commands.\n" +
+      "- Use phrasing like 'the evidence suggests', 'it may be worth considering', 'the data indicates'.\n" +
+      "- Match urgency to the actual signal state.\n" +
+      "- One line per project only in the status section.\n" +
+      "- Start each section with the exact header text shown above (no numbering, no markdown).";
+
+    el.innerHTML = '<div class="brief-loading">Analysing ' + projects.length + " projects…</div>";
+    LinStore.chat(prompt, undefined, { max_tokens: 1000 }).then((answer) => {
+      const text = String(answer || "").trim();
+      if (!text) throw new Error("empty summary");
+      renderPortfolioSummary(text, projects.length, null);
+      try {
+        localStorage.setItem(PORTFOLIO_SUMMARY_KEY, JSON.stringify({
+          text: text, generated_at: new Date().toISOString(), project_count: projects.length
+        }));
+      } catch (e) { /* non-fatal */ }
+    }).catch((err) => {
+      console.error("[portfolio-summary] chat failed:", err);
+      el.innerHTML = '<span style="color:var(--faint)">Summary unavailable — check connection, then press Generate.</span>';
+    });
+  }
+
+  function initPortfolioSummary() {
+    const el = document.getElementById("portfolio-summary-text");
+    if (!el) return;
+    const btn = document.getElementById("portfolio-summary-generate");
+    if (btn && !btn.dataset.wired) {
+      btn.dataset.wired = "1";
+      btn.addEventListener("click", generatePortfolioSummary);
+    }
+    let cached = null;
+    try { cached = JSON.parse(localStorage.getItem(PORTFOLIO_SUMMARY_KEY) || "null"); } catch (e) {}
+    if (cached && cached.text) {
+      renderPortfolioSummary(cached.text, cached.project_count || summarisableProjects().length, cached.generated_at);
+    } else if (summarisableProjects().length >= 2) {
+      generatePortfolioSummary();
+    } else {
+      el.innerHTML = '<div class="brief-loading">Populate at least 2 projects with signals to generate a portfolio summary.</div>';
+    }
+  }
+
   /* ---------- init ---------- */
   async function init() {
     document.querySelectorAll("[data-set-theme]").forEach((b) =>
@@ -934,6 +1080,7 @@
     buildRadar();
     buildFallbackList();
     renderDecisionLog();
+    initPortfolioSummary();
 
     // default selection: first project in the portfolio (may be empty →
     // shows the awaiting-ingest state, not a fabricated status).
