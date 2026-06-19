@@ -464,6 +464,10 @@
     if (!cv) return;
     ctx = cv.getContext("2d");
 
+    RX = DEFAULT_RX; RY = DEFAULT_RY; ZOOM = DEFAULT_ZOOM;
+    autoR = false;
+    focusCat = null;
+
     buildModules();
     buildLayout();
     resizeCanvas();
