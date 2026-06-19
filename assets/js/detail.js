@@ -199,12 +199,12 @@
   }
 
   /* ============================================================
-     89-axis module spider web. One axis per defined module across
-     all 9 categories. Active modules plot at a status radius
-     (healthy = near the rim); inactive / parked / no-data modules
-     sit on a tiny grey ring just off-centre. Category clusters are
-     separated by a small angular gap and backed by a faint arc in
-     the category colour.
+     108-axis module spider web. One axis per defined module across
+     all 12 categories. Active modules plot at a status radius
+     (healthy = near the rim); inactive / parked / conditional /
+     no-data modules sit on a tiny grey ring just off-centre.
+     Category clusters are separated by a small angular gap and
+     backed by a faint arc in the category colour.
      ============================================================ */
   const MOD_CX = 250, MOD_CY = 250, MOD_OUTER = 200;
   const PARKED_GREY = "#64748b"; // Cat 8 (ML/AI) parked-status grey
@@ -250,14 +250,17 @@
     return null;
   }
 
-  // Flatten the 89 modules into axis entries with angles, leaving a one-slot
-  // gap between categories so the clusters read as distinct petals.
+  // Flatten the 108 modules into axis entries with angles, leaving a one-slot
+  // gap between categories so the clusters read as distinct petals. Cat 12 is
+  // conditional — its modules only resolve to a status when interface /
+  // requirements / system architecture docs are uploaded; otherwise they
+  // render as a grey conditional band the same way parked Cat 8 used to.
   function buildModuleAxes(project) {
     const cats = LIN_CATEGORIES;
     const moduleCount = cats.reduce((n, c) => n + c.modules.length, 0);
     // One padding gap before EVERY cluster — including the first, which seats a
-    // gap at the top (12 o'clock). Without it the last Cat 9 label and the first
-    // Cat 1 label collide where the ring wraps. (Fixes top-of-chart overlap.)
+    // gap at the top (12 o'clock). Without it the last category's label and
+    // the first Cat 1 label collide where the ring wraps.
     const gaps = cats.length;
     const totalSlots = moduleCount + gaps;
     const axes = [];
@@ -269,7 +272,8 @@
       cat.modules.forEach((m) => {
         const angle = -Math.PI / 2 + (Math.PI * 2 * slot) / totalSlots;
         // Parked categories never compute; inactive modules need document data.
-        // Everything else (incl. active Cat 8 ML) resolves via getModuleStatus.
+        // Everything else (incl. active Cat 8 ML, conditional Cat 12) resolves
+        // via getModuleStatus — Cat 12 stubs return null until activated.
         const status = (cat.parked || m.active === false) ? null
           : (window.getModuleStatus ? getModuleStatus(m.method_class, project) : null);
         axes.push({ cat, module: m, angle, status });
@@ -279,6 +283,7 @@
       bands.push({
         color: cat.color,
         parked: !!cat.parked,
+        conditional: !!cat.conditional,
         ml: cat.id === "cat8", // ML category keeps a labelled grey arc band
         num: cat.num,
         a0: -Math.PI / 2 + (Math.PI * 2 * (startSlot - 0.45)) / totalSlots,
@@ -313,24 +318,31 @@
     const { axes, bands } = buildModuleAxes(project);
 
     // Category colour bands behind each cluster (subtle grouping). Parked
-    // categories (Cat 8 ML) render a clearly grey band to signal "no compute".
+    // categories (Cat 8 ML, when off) render a clearly grey band to signal "no
+    // compute"; conditional categories (Cat 12 Systems Engineering) reuse the
+    // same grey treatment until they activate.
     const bandPaths = bands.map((b) => {
-      const cls = b.parked ? "sw-mod-band sw-mod-band-parked" : "sw-mod-band";
+      const cls = (b.parked || b.conditional)
+        ? "sw-mod-band sw-mod-band-parked"
+        : "sw-mod-band";
       return `<path class="${cls}" d="${bandArcPath(b, 1.04)}" stroke="${esc(b.color)}"></path>`;
     }).join("");
 
-    // ML-category arc label (Cat 8 ML) — keeps the grey band identifiable now
-    // that Cat 8 is active (portfolio analysis), without the Stage-2 asterisk.
-    const bandLabels = bands.filter((b) => b.ml).map((b) => {
+    // Arc labels — Cat 8 ML stays labelled; Cat 12 surfaces "conditional" so
+    // the user knows what unlocks it.
+    const bandLabels = bands.filter((b) => b.ml || b.conditional).map((b) => {
       const lp = modPoint(b.amid, 1.22);
       const anchor = Math.abs(lp.x - MOD_CX) < 10 ? "middle" : (lp.x > MOD_CX ? "start" : "end");
-      return `<text class="sw-mod-band-label" x="${lp.x.toFixed(1)}" y="${lp.y.toFixed(1)}" text-anchor="${anchor}">${esc(b.num)} ML</text>`;
+      const tag = b.ml ? "ML" : "conditional";
+      return `<text class="sw-mod-band-label" x="${lp.x.toFixed(1)}" y="${lp.y.toFixed(1)}" text-anchor="${anchor}">${esc(b.num)} ${tag}</text>`;
     }).join("");
 
-    // Axis spokes.
+    // Axis spokes. Conditional modules (Cat 12 inactive) treat the axis as
+    // parked so it visually matches the grey conditional band overhead.
     const axisLines = axes.map((a) => {
       const tip = modPoint(a.angle, 1.0);
-      const parked = (a.cat.parked || a.module.active === false) ? " sw-axis-parked" : "";
+      const isParked = a.cat.parked || a.cat.conditional || a.module.active === false;
+      const parked = isParked ? " sw-axis-parked" : "";
       return `<line class="sw-axis${parked}" x1="${MOD_CX}" y1="${MOD_CY}" x2="${tip.x.toFixed(1)}" y2="${tip.y.toFixed(1)}"></line>`;
     }).join("");
 
@@ -343,23 +355,27 @@
     // Dots + labels.
     const nodes = axes.map((a) => {
       const parked = a.cat.parked === true;
-      const active = !(parked || a.module.active === false);
+      const conditional = a.cat.conditional === true;
+      const active = !(parked || conditional || a.module.active === false);
       const norm = active ? normalizeStatus(a.status) : null;
       const rf = moduleToRadius(a.module, a.status);
       const dp = modPoint(a.angle, rf);
-      // Parked (Cat 8) plots a clearly grey dot; active-no-data uses the dim
-      // navy ring; computed modules take their status colour.
-      const color = parked ? PARKED_GREY : (active ? (DOT_COLOR[norm] || DOT_COLOR.none) : DOT_COLOR.none);
+      // Parked (legacy Cat 8) and conditional (Cat 12) both plot a grey dot;
+      // active-no-data uses the dim navy ring; computed modules take their
+      // status colour.
+      const dimDot = parked || conditional;
+      const color = dimDot ? PARKED_GREY : (active ? (DOT_COLOR[norm] || DOT_COLOR.none) : DOT_COLOR.none);
       const dotR = active && norm ? 3.2 : 1.6;
       const lp = modPoint(a.angle, 1.09);
       const anchor = Math.abs(lp.x - MOD_CX) < 10 ? "middle" : (lp.x > MOD_CX ? "start" : "end");
       const ev = active ? moduleEvidence(a.module, project) : null;
       const statusLabel = parked ? "Stage 2 (parked)"
+        : conditional ? "Conditional — upload required docs to activate"
         : a.module.active === false ? "Inactive — needs document data"
         : (norm || "No data");
       const title = a.module.num + " " + a.module.name + " — " + statusLabel +
         (ev ? " — " + ev : "");
-      const labelCls = parked ? "sw-mod-label sw-mod-label-parked" : "sw-mod-label";
+      const labelCls = dimDot ? "sw-mod-label sw-mod-label-parked" : "sw-mod-label";
       return `<line class="sw-mod-spoke" x1="${MOD_CX}" y1="${MOD_CY}" x2="${dp.x.toFixed(1)}" y2="${dp.y.toFixed(1)}" stroke="${esc(color)}"></line>
         <circle class="sw-dot" cx="${dp.x.toFixed(1)}" cy="${dp.y.toFixed(1)}" r="${dotR}" fill="${esc(color)}">
           <title>${esc(title)}</title>
@@ -372,12 +388,13 @@
     const simArr = (project.simulationSignals && project.simulationSignals.signal_array) || [];
     const estCount = simArr.filter((r) =>
       r && r.status_color && /\b(estimated|derived|assumed)\b/i.test(String(r.evidence_metric || ""))).length;
+    const totalModules = LIN_CATEGORIES.reduce((n, c) => n + c.modules.length, 0);
 
     return `<section class="panel signal-web-panel">
       <div class="sw-head">
         <div>
           <p class="eyebrow">Signal Web — ${esc(periodTitle(cur && cur.period))}</p>
-          <p class="kn-sub sw-vs">89-module view · ${activeCount} active modules · ${estCount} estimated</p>
+          <p class="kn-sub sw-vs">${totalModules}-module view · ${activeCount} active modules · ${estCount} estimated</p>
         </div>
         <div class="sw-legend" aria-label="Signal web legend">
           <span><i class="sw-complete"></i>Complete</span>
@@ -388,7 +405,7 @@
           <span><i class="sw-none"></i>No data</span>
         </div>
       </div>
-      <svg class="signal-web-svg sw-mod-svg" viewBox="0 0 500 500" role="img" aria-label="89 module signal web">
+      <svg class="signal-web-svg sw-mod-svg" viewBox="0 0 500 500" role="img" aria-label="${totalModules} module signal web">
         <circle class="sw-ring sw-ring-red"   cx="${MOD_CX}" cy="${MOD_CY}" r="${(MOD_OUTER*0.40).toFixed(1)}"></circle>
         <circle class="sw-ring sw-ring-amber" cx="${MOD_CX}" cy="${MOD_CY}" r="${(MOD_OUTER*0.65).toFixed(1)}"></circle>
         <circle class="sw-ring sw-ring-green" cx="${MOD_CX}" cy="${MOD_CY}" r="${(MOD_OUTER*0.85).toFixed(1)}"></circle>
@@ -406,7 +423,7 @@
   }
 
   /* ============================================================
-     Ensemble analysis panel — three views of the 89-module output:
+     Ensemble analysis panel — three views of the 108-module output:
        1) per-module scatter across status columns
        2) ensemble distribution bar (count per status + trend line)
        3) consensus stacked bar (single proportional bar)
@@ -444,15 +461,16 @@
     // SVG charts use uniform scaling so dots stay circular and text is not
     // stretched. The consensus bar is plain HTML (text never distorts).
 
-    // ---- Chart 1: scatter (6 columns incl. No data, 89 rows) ----
+    // ---- Chart 1: scatter (6 columns incl. No data, one row per module) ----
     const cols = ENSEMBLE_STATES.concat(["none"]);
     const colLabel = { Complete: "Complete", Green: "Green", Yellow: "Yellow", Amber: "Amber", Red: "Red", none: "No data" };
     const SW = 120, SH = 150;
     const colW = SW / cols.length;
+    const totalModulesForScatter = rows.length || 1;
     const scatterDots = rows.map((r) => {
       const ci = cols.indexOf(r.bucket);
       const cx = (ci + 0.5) * colW;
-      const cy = 16 + (r.index / 89) * (SH - 22);
+      const cy = 16 + (r.index / totalModulesForScatter) * (SH - 22);
       const fill = r.bucket === "none" ? DOT_COLOR.none : DOT_COLOR[r.bucket];
       const rad = r.bucket === "none" ? 1.3 : 2.1;
       return `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${rad}" fill="${esc(fill)}"><title>${esc(r.num + " " + r.name + " — " + colLabel[r.bucket])}</title></circle>`;
@@ -491,10 +509,11 @@
       `<span class="ens-leg"><i style="background:${esc(DOT_COLOR[k])}"></i>${esc(k)}: ${counts[k]} (${Math.round((counts[k] / activeTotal) * 100)}%)</span>`
     ).join("");
 
+    const totalModulesForEns = LIN_CATEGORIES.reduce((n, c) => n + c.modules.length, 0);
     return `<section class="panel ens-panel" aria-label="Ensemble analysis">
       <div class="sw-head">
         <div>
-          <p class="eyebrow">Ensemble analysis — ${activeTotal} active models</p>
+          <p class="eyebrow">Ensemble analysis — ${activeTotal} active modules (${totalModulesForEns} total)</p>
           <p class="kn-sub sw-vs">Individual model outputs · distribution · consensus</p>
         </div>
       </div>
@@ -652,6 +671,8 @@
     const uploadCount = (typeof uploadedDocEvents === "function") ? uploadedDocEvents(p).length : 0;
     const inputFieldCount = Object.keys(p.signalInputs || {})
       .filter((k) => k !== "sources" && p.signalInputs[k] != null && p.signalInputs[k] !== "").length;
+    const totalCats = LIN_CATEGORIES.length;
+    const totalModulesForBadge = LIN_CATEGORIES.reduce((n, c) => n + c.modules.length, 0);
 
     root.innerHTML =
       `<div class="detail-head">
@@ -671,7 +692,7 @@
          </div>
        </div>
         ${cs("d-brief", "Executive Brief", executiveBriefHtml(p), true, "")}
-        ${cs("d-web", "Signal Web", signalWebHtml(p), true, "89 modules")}
+        ${cs("d-web", "Signal Web", signalWebHtml(p), true, totalModulesForBadge + " modules")}
         ${cs("d-ensemble", "Ensemble Analysis", ensembleHtml(p), false, `${ensActive} active · ${ensEst} est.`)}
         ${cs("d-uploads", "Uploaded Documents", uploadedDocsPanelHtml(p), false, `${uploadCount} document${uploadCount === 1 ? "" : "s"}`)}
         ${cs("d-ledger", "Signal Inputs", `<section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>`, false, pillBadge(overallState))}
@@ -684,7 +705,7 @@
            <div class="detail-ingest-form"></div>
          </details>
        </section>
-       ${cs("d-stack", "Signal Stack — 9 Categories", `<div class="detail-modules"></div>`, false, "")}
+       ${cs("d-stack", "Signal Stack — " + totalCats + " Categories", `<div class="detail-modules"></div>`, false, "")}
        ${cs("d-signals", "Extracted Signal Inputs", `<section class="panel detail-signals" aria-label="Extracted signals detail"></section>`, false, `${inputFieldCount} field${inputFieldCount === 1 ? "" : "s"}`)}`;
 
     // Reuse the shared renderers, scoped to this page's containers.
@@ -845,7 +866,7 @@
 
     return advisor +
       "Briefing subject: " + (snapshot.project_name || project.name) + " (Project " + snapshot.project_id + ", " + (snapshot.sector || "unknown") + " sector). " +
-      "The platform computed " + totalModules + " signal modules across 9 analytical categories from a stored log dated " + computedDay + ".\n\n" +
+      "The platform computed " + totalModules + " signal modules across " + LIN_CATEGORIES.length + " analytical categories from a stored log dated " + computedDay + ".\n\n" +
       "Computed results (internal context — present these as evidence, never quote the raw metrics or module names):\n" + catSummary +
       "\n\nOverall governance state: " + (gov.state || "unknown") +
       "\nNamed authority: " + (gov.authority || "unknown") +
@@ -1100,7 +1121,7 @@
     if (state === "loading") {
       return `<div class="eb-body eb-loading" aria-live="polite">
         <span class="eb-shimmer"></span>
-        <span class="eb-status">Analysing signals across 9 categories…</span>
+        <span class="eb-status">Analysing signals across ${LIN_CATEGORIES.length} categories…</span>
       </div>`;
     }
     if (state === "skipped") {
@@ -1134,7 +1155,7 @@
       <div class="eb-head">
         <div>
           <p class="eyebrow eb-eyebrow">Executive brief</p>
-          <p class="kn-sub eb-sub">Structured analysis across 9 signal categories</p>
+          <p class="kn-sub eb-sub">Structured analysis across ${LIN_CATEGORIES.length} signal categories</p>
         </div>
         <button type="button" class="btn small eb-regen" data-eb-regen="${esc(projectId)}" aria-label="Regenerate brief">Regenerate ↺</button>
       </div>

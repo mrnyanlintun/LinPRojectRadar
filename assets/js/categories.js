@@ -1,20 +1,25 @@
 /* ============================================================
    lin-project-radar — categories.js
    ------------------------------------------------------------
-   The full 89-module definition across 9 analytical categories.
-   Drives the spider web (89 axes), the ensemble panel, the
+   The full 108-module definition across 12 analytical categories.
+   Drives the spider web (108 axes), the ensemble panel, the
    signal ledger, the Signals page, and the stored snapshot the
    executive brief reads from.
 
    Every module carries: id, num, name, method_class, active
    (true/false) and required (input keys it needs to compute).
 
-   Active now: 80 · Still need new doc data: 9.
-
    Cat 8 (ML & AI) is active — its 5 modules compute via the
    portfolioanalyze endpoint. Many Cat 2-9 modules now compute
    from fields derived from the existing document set (see
    signals.js deriveExtendedFields), tagged [est.] in the UI.
+
+   Cat 10 (Data Integrity) and Cat 11 (Decision Optimization)
+   are fully active — they derive from existing signalInputs
+   and the project audit trail. Cat 12 (Systems Engineering) is
+   defined but conditional: it activates only when interface
+   control / requirements / system architecture docs are
+   uploaded (see the `conditional` flag).
 
    Globals (no ES modules) so the site runs from file:// too.
    Loaded BEFORE the modules that consume it (categories.js
@@ -174,6 +179,47 @@ window.LIN_CATEGORIES = [
       { id: 'cat9_8', num: '9.8', name: 'Environmental Compliance Rate', method_class: 'Environmental_Compliance', active: true, required: ['environmentalIssuesDiscussed'] },
       { id: 'cat9_9', num: '9.9', name: 'Contractor Performance Score', method_class: 'Contractor_Performance', active: false, required: ['overallRating','scheduleRating','costRating'] }
     ]
+  },
+  {
+    id: 'cat10', num: 'Cat 10', name: 'Data Integrity & Information Quality',
+    color: '#06b6d4',
+    description: 'Measures the quality, completeness, timeliness and reliability of the data driving all other modules. Every analytical output is only as good as its inputs — Cat 10 quantifies that.',
+    modules: [
+      { id: 'cat10_1', num: '10.1', name: 'Missing Data Index', method_class: 'Missing_Data_Index', active: true, required: ['bac'] },
+      { id: 'cat10_2', num: '10.2', name: 'Data Timeliness Score', method_class: 'Data_Timeliness_Score', active: true, required: ['docDate'] },
+      { id: 'cat10_3', num: '10.3', name: 'Source Reliability Weighting', method_class: 'Source_Reliability_Weighting', active: true, required: ['bac'] },
+      { id: 'cat10_4', num: '10.4', name: 'Audit Trail Completeness', method_class: 'Audit_Trail_Completeness', active: true, required: ['bac'] },
+      { id: 'cat10_5', num: '10.5', name: 'Information Completeness Ratio', method_class: 'Information_Completeness_Ratio', active: true, required: ['bac'] },
+      { id: 'cat10_6', num: '10.6', name: 'Cross-document Consistency Score', method_class: 'Cross_Doc_Consistency', active: true, required: ['ev','ac'] },
+      { id: 'cat10_7', num: '10.7', name: 'Reporting Frequency Index', method_class: 'Reporting_Frequency_Index', active: true, required: ['docDate'] }
+    ]
+  },
+  {
+    id: 'cat11', num: 'Cat 11', name: 'Decision Optimization',
+    color: '#10b981',
+    description: 'Selects the best action under constraints — distinct from Cat 5 which explains system behavior. Cat 11 answers: given the current signal state, what is the optimal decision pathway?',
+    modules: [
+      { id: 'cat11_1', num: '11.1', name: 'Multi-Objective Optimization', method_class: 'Multi_Objective_Optimization', active: true, required: ['cpi','spi','docRiskScore'] },
+      { id: 'cat11_2', num: '11.2', name: 'Linear Programming', method_class: 'Linear_Programming', active: true, required: ['bac','ev','ac','cpi'] },
+      { id: 'cat11_3', num: '11.3', name: 'Constraint Satisfaction Analysis', method_class: 'Constraint_Satisfaction', active: true, required: ['cpi','spi','bac'] },
+      { id: 'cat11_4', num: '11.4', name: 'What-If Scenario Matrix', method_class: 'WhatIf_Scenario_Matrix', active: true, required: ['bac','ev','ac','cpi','spi'] },
+      { id: 'cat11_5', num: '11.5', name: 'Decision Sensitivity Matrix', method_class: 'Decision_Sensitivity_Matrix', active: true, required: ['cpi','spi','docRiskScore'] },
+      { id: 'cat11_6', num: '11.6', name: 'Pareto Frontier Analysis', method_class: 'Pareto_Frontier', active: true, required: ['cpi','spi','docRiskScore'] },
+      { id: 'cat11_7', num: '11.7', name: 'Regret Minimization Index', method_class: 'Regret_Minimization', active: true, required: ['cpi','spi','bac'] }
+    ]
+  },
+  {
+    id: 'cat12', num: 'Cat 12', name: 'Systems Engineering',
+    color: '#a855f7',
+    description: 'Interface complexity, dependency mapping, and requirements traceability. Activates when interface control documents and requirements specifications are uploaded. Most novel category — very few EVM platforms address systems engineering complexity.',
+    conditional: true,
+    modules: [
+      { id: 'cat12_1', num: '12.1', name: 'Interface Density Index', method_class: 'Interface_Density', active: false, required: ['interfaceCount','totalComponents'] },
+      { id: 'cat12_2', num: '12.2', name: 'Dependency Mapping Score', method_class: 'Dependency_Mapping', active: false, required: ['dependencyCount','criticalDependencies'] },
+      { id: 'cat12_3', num: '12.3', name: 'Requirements Traceability Coverage', method_class: 'Requirements_Traceability', active: false, required: ['requirementsTotal','requirementsVerified'] },
+      { id: 'cat12_4', num: '12.4', name: 'Configuration Change Impact', method_class: 'Config_Change_Impact', active: false, required: ['changeOrderCount','configurationItems'] },
+      { id: 'cat12_5', num: '12.5', name: 'Integration Complexity Index', method_class: 'Integration_Complexity', active: false, required: ['interfaceCount','dependencyCount'] }
+    ]
   }
 ];
 
@@ -213,15 +259,45 @@ window.getModuleStatus = function (methodClass, project) {
     case "Trajectory_Classifier":
     case "Cross_Project_Pattern":
     case "Anomaly_Score":          return findSim(methodClass);
+    // Cat 10 — Data Integrity & Information Quality (compute from existing
+    // signalInputs + the project audit trail).
+    case "Missing_Data_Index":
+    case "Data_Timeliness_Score":
+    case "Source_Reliability_Weighting":
+    case "Audit_Trail_Completeness":
+    case "Information_Completeness_Ratio":
+    case "Cross_Doc_Consistency":
+    case "Reporting_Frequency_Index":
+    // Cat 11 — Decision Optimization (compute from existing signalInputs).
+    case "Multi_Objective_Optimization":
+    case "Linear_Programming":
+    case "Constraint_Satisfaction":
+    case "WhatIf_Scenario_Matrix":
+    case "Decision_Sensitivity_Matrix":
+    case "Pareto_Frontier":
+    case "Regret_Minimization":
+    // Cat 12 — Systems Engineering (conditional; mostly returns null until
+    // interface / requirements / system architecture docs are uploaded).
+    case "Interface_Density":
+    case "Dependency_Mapping":
+    case "Requirements_Traceability":
+    case "Config_Change_Impact":
+    case "Integration_Complexity": return findSim(methodClass);
     default:                       return findSim(methodClass);
   }
 };
 
 /* Worst-status-wins per category. Returns null for parked categories or
-   categories whose modules haven't been computed yet. */
+   categories whose modules haven't been computed yet. Conditional categories
+   (Cat 12) only surface when at least one of their modules has data — until
+   then they render as a grey/inactive band on the spider web. */
 window.getCategoryStatus = function (catId, project) {
   const cat = LIN_CATEGORIES.find((c) => c.id === catId);
   if (!cat || cat.parked) return null;
+  if (cat.conditional) {
+    const hasAnyData = cat.modules.some((m) => getModuleStatus(m.method_class, project) != null);
+    if (!hasAnyData) return null;
+  }
   const statuses = cat.modules
     .map((m) => getModuleStatus(m.method_class, project))
     .filter(Boolean)

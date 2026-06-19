@@ -910,7 +910,8 @@
   }
 
   /* ===========================================================
-     Stage-2 full-89 module calculations.
+     Stage-2 full-108 module calculations (108 = 89 baseline + Cat
+     10/11/12 from the v3 module-set bump in signals.js).
      ------------------------------------------------------------
      These run from the project's signalInputs (si) directly —
      cpi / spi / docRiskScore plus any extracted document data.
@@ -2226,6 +2227,527 @@
   }
 
   /* ===========================================================
+     Cat 10 — Data Integrity & Information Quality
+     ---------------------------------------------------------
+     Quantifies the QUALITY of the inputs the other 100 modules
+     consume. Every signal is only as good as its source data, so
+     these modules surface the confidence the governance layer
+     should place in the rest of the stack.
+     =========================================================== */
+
+  // Cat 10.1 — Missing Data Index
+  function runMissingDataIndex(si) {
+    var coreFields = ['bac','ev','ac','pv','cpi','spi','docRiskScore',
+                      'actualPctComplete','plannedPctComplete',
+                      'baselineStart','baselineEnd'];
+    var present = coreFields.filter(function (f) {
+      return si[f] !== null && si[f] !== undefined;
+    }).length;
+    var missingRatio = 1 - (present / coreFields.length);
+    var missingCount = coreFields.length - present;
+    var status = missingRatio <= 0.10 ? 'Green' :
+                 missingRatio <= 0.25 ? 'Yellow' :
+                 missingRatio <= 0.45 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Missing_Data_Index', status_color: status,
+      missing_count: missingCount, total_fields: coreFields.length,
+      completeness_pct: Math.round((1 - missingRatio) * 100),
+      evidence_metric: missingCount + ' of ' + coreFields.length +
+        ' core fields missing (' + Math.round((1 - missingRatio) * 100) + '% complete)'
+    };
+  }
+
+  // Cat 10.2 — Data Timeliness Score
+  function runDataTimeliness(si) {
+    if (!si.docDate) return insufficientData('Data_Timeliness_Score');
+    var docDate = new Date(si.docDate);
+    var now = new Date();
+    var daysSinceDoc = Math.floor((now - docDate) / 86400000);
+    var status = daysSinceDoc <= 30 ? 'Green' :
+                 daysSinceDoc <= 60 ? 'Yellow' :
+                 daysSinceDoc <= 90 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Data_Timeliness_Score', status_color: status,
+      days_since_last_doc: daysSinceDoc,
+      last_doc_date: si.docDate,
+      evidence_metric: 'Last document: ' + si.docDate +
+        ' (' + daysSinceDoc + ' days ago' +
+        (daysSinceDoc > 60 ? ' — data may be stale' : '') + ')'
+    };
+  }
+
+  // Cat 10.3 — Source Reliability Weighting
+  function runSourceReliability(si) {
+    if (!si.sources || Object.keys(si.sources).length === 0)
+      return insufficientData('Source_Reliability_Weighting');
+    var sourceWeights = {
+      'pay_application': 0.90, 'contract_value': 0.95,
+      'schedule_of_values': 0.85, 'time_phased_schedule': 0.80,
+      'monthly_report': 0.75, 'change_order': 0.90,
+      'rfi': 0.65, 'submittal': 0.65, 'field_report': 0.60,
+      'oac_minutes': 0.55, 'inspection_report': 0.70,
+      'derived': 0.40
+    };
+    var weights = [];
+    Object.keys(si.sources).forEach(function (key) {
+      var src = si.sources[key];
+      var docType = Array.isArray(src) ? src[src.length - 1].docType : src.docType;
+      if (docType) weights.push(sourceWeights[docType] || 0.50);
+    });
+    if (!weights.length) return insufficientData('Source_Reliability_Weighting');
+    var avgReliability = weights.reduce(function (a, b) { return a + b; }, 0) / weights.length;
+    avgReliability = Math.round(avgReliability * 100) / 100;
+    var derivedCount = Object.keys(si.sources).filter(function (k) {
+      var src = si.sources[k];
+      var dt = Array.isArray(src) ? src[src.length - 1].docType : src.docType;
+      return dt === 'derived';
+    }).length;
+    var status = avgReliability >= 0.80 ? 'Green' :
+                 avgReliability >= 0.65 ? 'Yellow' :
+                 avgReliability >= 0.50 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Source_Reliability_Weighting', status_color: status,
+      avg_reliability: avgReliability,
+      derived_fields: derivedCount,
+      total_sources: weights.length,
+      evidence_metric: 'Avg source reliability: ' + Math.round(avgReliability * 100) + '%' +
+        (derivedCount > 0 ? ' (' + derivedCount + ' estimated fields)' : ' — all measured')
+    };
+  }
+
+  // Cat 10.4 — Audit Trail Completeness
+  function runAuditTrailCompleteness(si, project) {
+    var events = (project && project.events) ? project.events : [];
+    var requiredEvents = ['project_created', 'signals_extracted'];
+    var presentEvents = requiredEvents.filter(function (e) {
+      return events.some(function (ev) {
+        // Recognise the live "simulation_run" event as evidence of extraction.
+        if (e === 'signals_extracted' && ev.event === 'simulation_run') return true;
+        return ev.event === e;
+      });
+    });
+    var completeness = presentEvents.length / requiredEvents.length;
+    var totalEvents = events.length;
+    var hasDecisionRecord = events.some(function (e) { return e.event === 'decision_recorded'; });
+    var status = completeness >= 1.0 && totalEvents >= 3 ? 'Green' :
+                 completeness >= 0.75 ? 'Yellow' :
+                 completeness >= 0.50 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Audit_Trail_Completeness', status_color: status,
+      completeness_pct: Math.round(completeness * 100),
+      total_events: totalEvents,
+      has_decision_record: hasDecisionRecord,
+      evidence_metric: Math.round(completeness * 100) + '% audit trail completeness — ' +
+        totalEvents + ' events recorded' +
+        (hasDecisionRecord ? ', decision record present' : ', no decision record yet')
+    };
+  }
+
+  // Cat 10.5 — Information Completeness Ratio
+  function runInfoCompletenessRatio(si) {
+    var allFields = ['bac','ev','ac','pv','cpi','spi','docRiskScore',
+                     'actualPctComplete','plannedPctComplete',
+                     'baselineStart','baselineEnd','workPeriodFrom','workPeriodTo',
+                     'totalFloat','consumedFloat','originalContingency',
+                     'rfiCount','changeOrderCount','subcontractorComplianceScore'];
+    var measured = allFields.filter(function (f) {
+      if (si[f] === null || si[f] === undefined) return false;
+      var src = si.sources && si.sources[f];
+      if (!src) return true;
+      var dt = Array.isArray(src) ? src[src.length - 1].docType : src.docType;
+      return dt !== 'derived';
+    }).length;
+    var estimated = allFields.filter(function (f) {
+      if (si[f] === null || si[f] === undefined) return false;
+      var src = si.sources && si.sources[f];
+      if (!src) return false;
+      var dt = Array.isArray(src) ? src[src.length - 1].docType : src.docType;
+      return dt === 'derived';
+    }).length;
+    var missing = allFields.length - measured - estimated;
+    var ratio = measured / allFields.length;
+    var status = ratio >= 0.75 ? 'Green' :
+                 ratio >= 0.55 ? 'Yellow' :
+                 ratio >= 0.35 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Information_Completeness_Ratio', status_color: status,
+      measured: measured, estimated: estimated, missing: missing,
+      total: allFields.length,
+      completeness_ratio: Math.round(ratio * 100),
+      evidence_metric: measured + ' measured + ' + estimated + ' estimated + ' +
+        missing + ' missing of ' + allFields.length + ' fields (' +
+        Math.round(ratio * 100) + '% from documents)'
+    };
+  }
+
+  // Cat 10.6 — Cross-document Consistency Score
+  function runCrossDocConsistency(si) {
+    if (!checkInputs(si, ['ev','ac'])) return insufficientData('Cross_Doc_Consistency');
+    var inconsistencies = 0;
+    var checks = 0;
+    // CPI derivation check
+    if (si.cpi !== null && si.cpi !== undefined && si.ev !== null && si.ac !== null && si.ac !== 0) {
+      var derivedCPI = Math.round((si.ev / si.ac) * 1000) / 1000;
+      if (Math.abs(derivedCPI - si.cpi) > 0.005) inconsistencies++;
+      checks++;
+    }
+    // SPI derivation check
+    if (si.spi !== null && si.spi !== undefined && si.ev !== null && si.pv !== null && si.pv !== 0) {
+      var derivedSPI = Math.round((si.ev / si.pv) * 1000) / 1000;
+      if (Math.abs(derivedSPI - si.spi) > 0.005) inconsistencies++;
+      checks++;
+    }
+    // % complete consistency
+    if (si.actualPctComplete !== null && si.actualPctComplete !== undefined &&
+        si.ev !== null && si.bac !== null && si.bac !== 0) {
+      var derivedPct = Math.round((si.ev / si.bac) * 1000) / 10;
+      if (Math.abs(derivedPct - si.actualPctComplete) > 5) inconsistencies++;
+      checks++;
+    }
+    if (checks === 0) return insufficientData('Cross_Doc_Consistency');
+    var consistencyScore = (checks - inconsistencies) / checks;
+    var status = consistencyScore >= 1.0 ? 'Green' :
+                 consistencyScore >= 0.67 ? 'Yellow' :
+                 consistencyScore >= 0.33 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Cross_Doc_Consistency', status_color: status,
+      consistency_score: Math.round(consistencyScore * 100),
+      inconsistencies: inconsistencies, checks_performed: checks,
+      evidence_metric: (checks - inconsistencies) + ' of ' + checks +
+        ' cross-document checks consistent (' +
+        Math.round(consistencyScore * 100) + '%)' +
+        (inconsistencies > 0 ? ' — verify figures across uploaded documents' : '')
+    };
+  }
+
+  // Cat 10.7 — Reporting Frequency Index
+  function runReportingFrequency(si, project) {
+    var events = (project && project.events) ? project.events : [];
+    // simulation_run is the canonical extraction-tracked event today; if
+    // dedicated 'signals_extracted' events appear later they fold in cleanly.
+    var extractEvents = events.filter(function (e) {
+      return e.event === 'signals_extracted' || e.event === 'simulation_run';
+    });
+    if (extractEvents.length < 2) {
+      return {
+        method_class: 'Reporting_Frequency_Index', status_color: 'Yellow',
+        uploads: extractEvents.length, expected_per_month: 4,
+        evidence_metric: extractEvents.length + ' document upload(s) recorded — ' +
+          (extractEvents.length === 0 ? 'no documents uploaded yet' : 'upload more documents for frequency analysis')
+      };
+    }
+    var dates = extractEvents.map(function (e) { return new Date(e.at); }).sort(function (a, b) { return a - b; });
+    var intervals = [];
+    for (var i = 1; i < dates.length; i++) {
+      intervals.push((dates[i] - dates[i - 1]) / 86400000);
+    }
+    var avgInterval = intervals.reduce(function (a, b) { return a + b; }, 0) / intervals.length;
+    var status = avgInterval <= 14 ? 'Green' :
+                 avgInterval <= 30 ? 'Yellow' :
+                 avgInterval <= 60 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Reporting_Frequency_Index', status_color: status,
+      avg_interval_days: Math.round(avgInterval),
+      uploads: extractEvents.length,
+      evidence_metric: Math.round(avgInterval) + ' day avg interval between document uploads — ' +
+        (avgInterval <= 14 ? 'high frequency reporting' :
+         avgInterval <= 30 ? 'monthly reporting cycle' :
+         avgInterval <= 60 ? 'infrequent updates' : 'reporting gap — data may be stale')
+    };
+  }
+
+  /* ===========================================================
+     Cat 11 — Decision Optimization
+     ---------------------------------------------------------
+     Cat 5 explains how the system behaves; Cat 11 selects the
+     best action under constraints. Multi-objective, LP, regret-
+     minimization etc — answer the PM's "what should I do?".
+     =========================================================== */
+
+  // Cat 11.1 — Multi-Objective Optimization
+  function runMultiObjectiveOptimization(si) {
+    if (!checkInputs(si, ['cpi','spi','docRiskScore']))
+      return insufficientData('Multi_Objective_Optimization');
+    var normCPI = Math.min(1, Math.max(0, (si.cpi - 0.80) / 0.25));
+    var normSPI = Math.min(1, Math.max(0, (si.spi - 0.80) / 0.25));
+    var normRisk = 1 - (si.docRiskScore || 0);
+    var paretoScore = Math.round(((normCPI + normSPI + normRisk) / 3) * 100) / 100;
+    var objectives = [
+      { name: 'Cost performance', score: normCPI },
+      { name: 'Schedule performance', score: normSPI },
+      { name: 'Document risk', score: normRisk }
+    ].sort(function (a, b) { return a.score - b.score; });
+    var bindingConstraint = objectives[0];
+    var status = paretoScore >= 0.75 ? 'Green' :
+                 paretoScore >= 0.55 ? 'Yellow' :
+                 paretoScore >= 0.35 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Multi_Objective_Optimization', status_color: status,
+      pareto_score: paretoScore,
+      binding_constraint: bindingConstraint.name,
+      objectives: objectives,
+      evidence_metric: 'Multi-objective score: ' + Math.round(paretoScore * 100) + '% — ' +
+        'binding constraint: ' + bindingConstraint.name +
+        ' (score ' + Math.round(bindingConstraint.score * 100) + '%)'
+    };
+  }
+
+  // Cat 11.2 — Linear Programming
+  function runLinearProgramming(si) {
+    if (!checkInputs(si, ['bac','ev','ac','cpi']))
+      return insufficientData('Linear_Programming');
+    var remainingWork = si.bac - si.ev;
+    var remainingBudget = si.bac - si.ac;
+    if (remainingBudget <= 0) return {
+      method_class: 'Linear_Programming', status_color: 'Red',
+      feasible: false,
+      evidence_metric: 'No feasible solution — budget exhausted before project completion'
+    };
+    var requiredCPI = remainingWork / remainingBudget;
+    var lpFeasible = requiredCPI <= 1.20;
+    var lpOptimal = requiredCPI <= 1.00;
+    var lpScore = lpFeasible ? Math.min(1, 1.0 / requiredCPI) : 0;
+    var status = lpOptimal ? 'Green' :
+                 requiredCPI <= 1.05 ? 'Yellow' :
+                 requiredCPI <= 1.15 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Linear_Programming', status_color: status,
+      required_cpi_to_complete: Math.round(requiredCPI * 1000) / 1000,
+      feasible: lpFeasible,
+      optimal: lpOptimal,
+      lp_score: Math.round(lpScore * 100) / 100,
+      evidence_metric: 'LP: requires CPI ' + (Math.round(requiredCPI * 1000) / 1000) +
+        ' to complete within budget — ' +
+        (lpOptimal ? 'achievable at current performance' :
+         lpFeasible ? 'requires productivity improvement' : 'budget infeasible — recovery plan needed')
+    };
+  }
+
+  // Cat 11.3 — Constraint Satisfaction Analysis
+  function runConstraintSatisfaction(si) {
+    if (!checkInputs(si, ['cpi','spi','bac']))
+      return insufficientData('Constraint_Satisfaction');
+    var constraints = [
+      { name: 'Cost constraint (CPI ≥ 0.90)', satisfied: si.cpi >= 0.90, value: si.cpi, threshold: 0.90 },
+      { name: 'Schedule constraint (SPI ≥ 0.90)', satisfied: si.spi >= 0.90, value: si.spi, threshold: 0.90 },
+      { name: 'Document risk (score < 0.70)', satisfied: (si.docRiskScore || 0) < 0.70, value: si.docRiskScore || 0, threshold: 0.70 },
+      { name: 'FAR threshold (overrun < 25%)', satisfied: si.cpi > 0.80, value: si.cpi, threshold: 0.80 }
+    ];
+    var satisfied = constraints.filter(function (c) { return c.satisfied; }).length;
+    var violated = constraints.filter(function (c) { return !c.satisfied; });
+    var satisfactionRate = satisfied / constraints.length;
+    var status = satisfactionRate >= 1.0 ? 'Green' :
+                 satisfactionRate >= 0.75 ? 'Yellow' :
+                 satisfactionRate >= 0.50 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Constraint_Satisfaction', status_color: status,
+      satisfied: satisfied, total: constraints.length,
+      violated_constraints: violated.map(function (c) { return c.name; }),
+      satisfaction_rate: Math.round(satisfactionRate * 100),
+      evidence_metric: satisfied + ' of ' + constraints.length + ' constraints satisfied' +
+        (violated.length > 0 ? ' — violated: ' + violated.map(function (c) { return c.name; }).join(', ') : ' — all constraints met')
+    };
+  }
+
+  // Cat 11.4 — What-If Scenario Matrix
+  function runWhatIfMatrix(si) {
+    if (!checkInputs(si, ['bac','ev','ac','cpi','spi']))
+      return insufficientData('WhatIf_Scenario_Matrix');
+    var remaining = si.bac - si.ev;
+    var scenarios = [
+      { name: 'Optimistic (CPI recovers to 1.0)', eac: si.ac + remaining * 1.00, cpi: 1.00 },
+      { name: 'Base (current CPI continues)', eac: si.bac / si.cpi, cpi: si.cpi },
+      { name: 'Pessimistic (CPI degrades 5%)', eac: si.bac / (si.cpi * 0.95), cpi: si.cpi * 0.95 },
+      { name: 'Recovery (CPI improves 5%)', eac: si.bac / (si.cpi * 1.05), cpi: si.cpi * 1.05 }
+    ];
+    var baseEAC = scenarios[1].eac;
+    var range = scenarios[2].eac - scenarios[0].eac;
+    var rangePct = Math.round((range / si.bac) * 100);
+    var status = rangePct <= 5 ? 'Green' :
+                 rangePct <= 10 ? 'Yellow' :
+                 rangePct <= 20 ? 'Amber' : 'Red';
+    return {
+      method_class: 'WhatIf_Scenario_Matrix', status_color: status,
+      scenarios: scenarios.map(function (s) {
+        return {
+          name: s.name, eac: Math.round(s.eac),
+          delta_pct: Math.round(((s.eac - si.bac) / si.bac) * 100 * 10) / 10
+        };
+      }),
+      scenario_range_pct: rangePct,
+      base_eac: Math.round(baseEAC),
+      evidence_metric: 'Scenario range: ' + rangePct + '% of BAC — ' +
+        'base EAC $' + Math.round(baseEAC / 1000) + 'k, ' +
+        'worst $' + Math.round(scenarios[2].eac / 1000) + 'k, ' +
+        'best $' + Math.round(scenarios[0].eac / 1000) + 'k'
+    };
+  }
+
+  // Cat 11.5 — Decision Sensitivity Matrix
+  function runDecisionSensitivity(si) {
+    if (!checkInputs(si, ['cpi','spi','docRiskScore']))
+      return insufficientData('Decision_Sensitivity_Matrix');
+    var cpiImpact = Math.abs(1 - si.cpi) * 100;
+    var spiImpact = Math.abs(1 - si.spi) * 100;
+    var riskImpact = (si.docRiskScore || 0) * 50;
+    var total = cpiImpact + spiImpact + riskImpact || 1;
+    var sensitivity = [
+      { driver: 'Cost performance (CPI)', impact: cpiImpact, pct: Math.round(cpiImpact / total * 100) },
+      { driver: 'Schedule performance (SPI)', impact: spiImpact, pct: Math.round(spiImpact / total * 100) },
+      { driver: 'Document risk', impact: riskImpact, pct: Math.round(riskImpact / total * 100) }
+    ].sort(function (a, b) { return b.impact - a.impact; });
+    var topDriver = sensitivity[0];
+    var maxImpact = topDriver.impact;
+    var status = maxImpact <= 3 ? 'Green' :
+                 maxImpact <= 7 ? 'Yellow' :
+                 maxImpact <= 12 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Decision_Sensitivity_Matrix', status_color: status,
+      top_driver: topDriver.driver,
+      top_driver_pct: topDriver.pct,
+      sensitivity_matrix: sensitivity,
+      evidence_metric: 'Decision most sensitive to: ' + topDriver.driver +
+        ' (' + topDriver.pct + '% of decision weight) — ' +
+        'a small change here most changes the governance recommendation'
+    };
+  }
+
+  // Cat 11.6 — Pareto Frontier Analysis
+  function runParetoFrontier(si) {
+    if (!checkInputs(si, ['cpi','spi','docRiskScore']))
+      return insufficientData('Pareto_Frontier');
+    var costOk = si.cpi >= 0.95;
+    var schedOk = si.spi >= 0.95;
+    var riskOk = (si.docRiskScore || 0) < 0.30;
+    var dominated = !costOk && !schedOk;
+    var paretoEfficient = costOk && schedOk && riskOk;
+    var tradeoffRequired = (costOk !== schedOk) || (!riskOk && (costOk || schedOk));
+    var paretoScore = ((costOk ? 1 : si.cpi / 0.95) +
+                       (schedOk ? 1 : si.spi / 0.95) +
+                       (riskOk ? 1 : (1 - (si.docRiskScore || 0) / 0.30))) / 3;
+    paretoScore = Math.round(Math.min(1, paretoScore) * 100) / 100;
+    var status = paretoEfficient ? 'Green' :
+                 tradeoffRequired ? 'Yellow' :
+                 !dominated ? 'Amber' : 'Red';
+    return {
+      method_class: 'Pareto_Frontier', status_color: status,
+      pareto_efficient: paretoEfficient,
+      dominated: dominated,
+      tradeoff_required: tradeoffRequired,
+      pareto_score: paretoScore,
+      evidence_metric: paretoEfficient ? 'Project is Pareto-efficient — all objectives met simultaneously' :
+        dominated ? 'Project is Pareto-dominated — multiple objectives failing simultaneously' :
+        tradeoffRequired ? 'Trade-off required — improving one objective may affect another' :
+        'Partial Pareto efficiency — some objectives met'
+    };
+  }
+
+  // Cat 11.7 — Regret Minimization Index
+  function runRegretMinimization(si) {
+    if (!checkInputs(si, ['cpi','spi','bac']))
+      return insufficientData('Regret_Minimization');
+    var futureStates = { improves: 0.3, stable: 0.4, worsens: 0.3 };
+    var regretMatrix = {
+      monitor:     { improves: 0,  stable: 5, worsens: 30 },
+      investigate: { improves: 5,  stable: 0, worsens: 10 },
+      escalate:    { improves: 15, stable: 8, worsens: 0 }
+    };
+    var expectedRegret = {};
+    Object.keys(regretMatrix).forEach(function (decision) {
+      var regrets = regretMatrix[decision];
+      expectedRegret[decision] = Math.round(
+        regrets.improves * futureStates.improves +
+        regrets.stable * futureStates.stable +
+        regrets.worsens * futureStates.worsens
+      );
+    });
+    var minRegret = Math.min.apply(null, Object.keys(expectedRegret).map(function (k) { return expectedRegret[k]; }));
+    var recommended = Object.keys(expectedRegret).filter(function (d) {
+      return expectedRegret[d] === minRegret;
+    })[0];
+    // Signal-state override: the regret matrix says monitor by default, but the
+    // governance layer must escalate when CPI/SPI breach the FAR thresholds.
+    if (si.cpi < 0.88 || si.spi < 0.88) recommended = 'escalate';
+    else if (si.cpi < 0.95 || si.spi < 0.95) recommended = 'investigate';
+    var status = recommended === 'monitor' ? 'Green' :
+                 recommended === 'investigate' ? 'Amber' : 'Red';
+    return {
+      method_class: 'Regret_Minimization', status_color: status,
+      recommended_action: recommended,
+      expected_regret: expectedRegret,
+      min_regret_score: minRegret,
+      evidence_metric: 'Minimax regret recommends: ' + recommended +
+        ' (expected regret score ' + minRegret + '/30) — ' +
+        'this decision minimizes worst-case outcome under uncertain future states'
+    };
+  }
+
+  /* ===========================================================
+     Cat 12 — Systems Engineering (conditional)
+     ---------------------------------------------------------
+     Activates when interface control / requirements / system
+     architecture documents are uploaded. Until then the modules
+     return a null-status conditional stub so the spider web
+     renders them as a grey band and the ensemble panel excludes
+     them from the active count.
+     =========================================================== */
+
+  function conditionalSE(methodClass, msg) {
+    return {
+      method_class: methodClass, status_color: null, conditional: true,
+      evidence_metric: msg
+    };
+  }
+
+  function runInterfaceDensity(si) {
+    if (si.interfaceCount === null || si.interfaceCount === undefined)
+      return conditionalSE('Interface_Density',
+        'Requires interface control documents — upload ICD or system architecture docs to activate');
+    var density = si.interfaceCount / Math.max(1, si.totalComponents || 10);
+    var status = density <= 0.3 ? 'Green' :
+                 density <= 0.6 ? 'Yellow' :
+                 density <= 1.0 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Interface_Density', status_color: status,
+      density: Math.round(density * 100) / 100,
+      evidence_metric: 'Interface density: ' + (Math.round(density * 100) / 100) + ' interfaces per component'
+    };
+  }
+
+  function runDependencyMapping(si) {
+    return conditionalSE('Dependency_Mapping',
+      'Requires dependency mapping document — upload system architecture to activate');
+  }
+
+  function runRequirementsTraceability(si) {
+    return conditionalSE('Requirements_Traceability',
+      'Requires requirements specification — upload requirements document to activate');
+  }
+
+  function runConfigChangeImpact(si) {
+    if (si.changeOrderCount !== null && si.changeOrderCount !== undefined && si.changeOrderCount > 0) {
+      var impact = Math.min(1, si.changeOrderCount / 10);
+      var status = impact <= 0.2 ? 'Green' :
+                   impact <= 0.5 ? 'Yellow' :
+                   impact <= 0.8 ? 'Amber' : 'Red';
+      return {
+        method_class: 'Config_Change_Impact', status_color: status,
+        change_order_count: si.changeOrderCount,
+        impact_score: Math.round(impact * 100) / 100,
+        evidence_metric: si.changeOrderCount + ' change orders — configuration impact score ' +
+          Math.round(impact * 100) + '%'
+      };
+    }
+    return conditionalSE('Config_Change_Impact',
+      'Requires configuration items document — partially derivable from change orders');
+  }
+
+  function runIntegrationComplexity(si) {
+    return conditionalSE('Integration_Complexity',
+      'Requires interface and dependency documents to activate');
+  }
+
+  /* ===========================================================
      runAll — runs the original 13 client-side models PLUS every
      new active Stage-2 module. DST (Module 10) still runs
      separately in signals.js after the core package is assembled.
@@ -2235,6 +2757,9 @@
      Modules that lack their required inputs return an
      insufficient_data stub; those are filtered out here so the
      spider / ensemble only count modules that actually computed.
+     Cat 12 conditional modules return status_color:null and are
+     kept in the array (passed through the filter) so the spider
+     web can render them as a greyed-out conditional band.
      =========================================================== */
   function runAll(input, existingSignals, project) {
     var si = (input && input.signalInputs) ? input.signalInputs : (input || {});
@@ -2308,7 +2833,35 @@
       function () { return runFARThreshold(si); }, function () { return runOMBA11Check(si); },
       function () { return runEVMReportingThreshold(si); }, function () { return runContractModFrequency(si); },
       function () { return runQualityCompliance(si); }, function () { return runSafetyPerformance(si); },
-      function () { return runEnvironmentalCompliance(si); }
+      function () { return runEnvironmentalCompliance(si); },
+
+      // Cat 10 — Data Integrity (project arg needed for audit-trail / frequency)
+      function () { return runMissingDataIndex(si); },
+      function () { return runDataTimeliness(si); },
+      function () { return runSourceReliability(si); },
+      function () { return runAuditTrailCompleteness(si, project); },
+      function () { return runInfoCompletenessRatio(si); },
+      function () { return runCrossDocConsistency(si); },
+      function () { return runReportingFrequency(si, project); },
+
+      // Cat 11 — Decision Optimization
+      function () { return runMultiObjectiveOptimization(si); },
+      function () { return runLinearProgramming(si); },
+      function () { return runConstraintSatisfaction(si); },
+      function () { return runWhatIfMatrix(si); },
+      function () { return runDecisionSensitivity(si); },
+      function () { return runParetoFrontier(si); },
+      function () { return runRegretMinimization(si); },
+
+      // Cat 12 — Systems Engineering (conditional). These return either a
+      // computed status or a conditional stub (status_color === null with
+      // conditional:true) that survives the filter below so the spider can
+      // render a "needs more docs" band.
+      function () { return runInterfaceDensity(si); },
+      function () { return runDependencyMapping(si); },
+      function () { return runRequirementsTraceability(si); },
+      function () { return runConfigChangeImpact(si); },
+      function () { return runIntegrationComplexity(si); }
     ];
 
     var results = [];
@@ -2320,7 +2873,12 @@
     }
 
     return results.filter(function (r) {
-      return r && !r.insufficient_data && r.status_color !== null;
+      if (!r) return false;
+      if (r.insufficient_data) return false;
+      // Cat 12 conditional stubs are kept (status_color === null + conditional)
+      // so consumers can render them as a distinct grey band.
+      if (r.status_color === null && !r.conditional) return false;
+      return true;
     });
   }
 
@@ -2330,7 +2888,7 @@
     runPERT, runLOB, runCCPM, runRCF, runDSM,
     runDST, runRoughSets, runNeutrosophic, runIntervalFuzzy,
     runZNumbers, runPLTS, runPlithogenic, runBRB, runQuantumProbability,
-    // Stage-2 full-89 modules
+    // Stage-2 modules (full 108-module rollout)
     runBayesianEAC, runKalmanFilter, runARIMAForecast, runEarnedSchedule,
     runTCPI, runVAC, runBudgetExecutionRate, runRegressionToMean, runICERatio,
     runScheduleCompression, runFloatConsumption, runSCurveDeviation,
@@ -2349,6 +2907,16 @@
     runLookaheadHealth, runWeatherImpact, runQualityCompliance, runSafetyPerformance,
     runEnvironmentalCompliance, runSubcontractorPerformance,
     runMaterialCostVariance, runOverheadAbsorption, runInflationAdjustment,
+    // Cat 10 — Data Integrity & Information Quality
+    runMissingDataIndex, runDataTimeliness, runSourceReliability,
+    runAuditTrailCompleteness, runInfoCompletenessRatio,
+    runCrossDocConsistency, runReportingFrequency,
+    // Cat 11 — Decision Optimization
+    runMultiObjectiveOptimization, runLinearProgramming, runConstraintSatisfaction,
+    runWhatIfMatrix, runDecisionSensitivity, runParetoFrontier, runRegretMinimization,
+    // Cat 12 — Systems Engineering (conditional)
+    runInterfaceDensity, runDependencyMapping, runRequirementsTraceability,
+    runConfigChangeImpact, runIntegrationComplexity,
     sampleTriangular
   };
 })();
