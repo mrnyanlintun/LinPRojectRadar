@@ -18,8 +18,10 @@
 
   // Bump when runAll()'s module set grows so projects carrying an older,
   // shorter signal_array get recomputed instead of short-circuiting on a
-  // non-empty-but-stale array. v2 = the full 89-module rollout.
-  const SIM_MODULE_SET_VERSION = 2;
+  // non-empty-but-stale array. v2 = the full 89-module rollout; v3 adds
+  // Cat 10 (Data Integrity), Cat 11 (Decision Optimization), and the Cat 12
+  // (Systems Engineering, conditional) module set — 108 modules total.
+  const SIM_MODULE_SET_VERSION = 3;
 
   const esc = (s) => String(s == null ? "" : s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")

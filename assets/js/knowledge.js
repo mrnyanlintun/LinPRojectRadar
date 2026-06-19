@@ -1475,6 +1475,12 @@
                  "stage2:cross-project", "stage2:anomaly-score"] },
     { category: "cat9", num: "Cat 9", name: "Governance & Compliance",
       children: ["module19"] },
+    { category: "cat10", num: "Cat 10", name: "Data Integrity & Information Quality",
+      children: ["cat10-overview"] },
+    { category: "cat11", num: "Cat 11", name: "Decision Optimization",
+      children: ["cat11-overview"] },
+    { category: "cat12", num: "Cat 12", name: "Systems Engineering",
+      children: ["cat12-overview"] },
     { id: "fairness" },
     { id: "decision" }
   ];
@@ -1512,12 +1518,74 @@
     return `<p class="kn-sub">${CAT8_OVERVIEW}</p><p class="kn-lead">${t.body}</p>`;
   }
 
+  // Cat 10 / 11 / 12 — category-level articles. Individual modules are not
+  // (yet) carved into per-method articles; the overview surfaces the entire
+  // category's purpose, module list, and PM reading instructions.
+  const CAT_OVERVIEW_TOPICS = {
+    "cat10-overview": {
+      id: "cat10-overview",
+      title: "Cat 10 — Data Integrity & Information Quality",
+      eyebrow: "Cat 10 · data quality of the inputs",
+      body: "Every analytical output in PCEIF is only as good as its inputs. Cat 10 measures the quality, completeness, timeliness and consistency of the data driving all 107 other modules. A project with perfect EVM figures but stale data and estimated fields should be treated with lower confidence than one with fresh, directly measured inputs. Cat 10 quantifies that confidence.",
+      modules: [
+        ["10.1 Missing Data Index", "How many of the 11 core fields are populated. Missing inputs cascade — a Cat 1 module that returns insufficient data because BAC was never uploaded silently shrinks the active-module count, and Cat 10.1 surfaces that fact directly so the PM does not interpret the smaller signal pool as fewer findings."],
+        ["10.2 Data Timeliness Score", "Days since the last document upload. The longer the gap, the more the live state has drifted from what the models can see. Beyond 60 days the score turns Amber; beyond 90 it turns Red — that is the threshold at which the PM should require a fresh pay-app or schedule update before relying on Cat 9's recommendation."],
+        ["10.3 Source Reliability Weighting", "Average reliability across the document types that supplied each input field. Pay applications and contracts are high-reliability (0.85-0.95); RFIs and meeting minutes are mid (0.55-0.70); fields derived from other fields are low (0.40). A package dominated by low-reliability sources is acted on with caution even when every individual signal is Green."],
+        ["10.4 Audit Trail Completeness", "Whether the canonical lifecycle events (project created, signals extracted, decision recorded) are present in the project log. A project with no decision_recorded event has nothing surviving the reporting cycle — that is itself a governance finding even when the live signals look fine."],
+        ["10.5 Information Completeness Ratio", "The split across all 19 inputs the stack can consume: measured (came from a document), estimated (derived), and missing. A high estimated count is the operational signal that more documents are needed — derived fields are the model filling in for absent evidence."],
+        ["10.6 Cross-document Consistency Score", "Recomputes CPI, SPI and % complete from EV/AC/PV/BAC and checks the live values against the recomputed ones. A divergence above the rounding tolerance means uploaded documents disagree with each other — the PM is sent to reconcile before any signal is acted on."],
+        ["10.7 Reporting Frequency Index", "Average interval between document uploads. A 14-day cadence is high-frequency healthy reporting; a 30-day cadence matches a normal monthly cycle; gaps beyond 60 days signal a project drifting out of measurement contact."]
+      ],
+      pmReading: "Read Cat 10 BEFORE Cat 6 (Conservative Dominance). If Cat 10 says the inputs are weak, you should down-weight every downstream finding — Cat 6's worst-signal-wins logic is only as trustworthy as the signals it consumed."
+    },
+    "cat11-overview": {
+      id: "cat11-overview",
+      title: "Cat 11 — Decision Optimization",
+      eyebrow: "Cat 11 · choosing under constraints",
+      body: "Cat 5 explains how the system behaves. Cat 11 selects the optimal action under constraints. These methods answer the PM's fundamental question: given everything the models have found, what is the best decision? Multi-objective optimization balances cost, schedule and risk simultaneously. Regret minimization identifies the decision that minimizes the worst possible outcome under uncertainty.",
+      modules: [
+        ["11.1 Multi-Objective Optimization", "Balances three normalized objectives (CPI, SPI, document-risk) into a single Pareto score and names the binding constraint — the objective with the lowest score, the one improvement effort should target first."],
+        ["11.2 Linear Programming", "Given remaining work and remaining budget, computes the CPI required to land the project on budget. If the required CPI exceeds 1.20 the LP is infeasible — a recovery plan, not a productivity push, is the correct response."],
+        ["11.3 Constraint Satisfaction Analysis", "Tests four hard constraints (CPI ≥ 0.90, SPI ≥ 0.90, document risk < 0.70, FAR overrun threshold) and reports which are satisfied. A violated constraint is a named-authority escalation trigger under PCEIF's Layer 1 policy."],
+        ["11.4 What-If Scenario Matrix", "Four EAC scenarios — Optimistic (CPI recovers to 1.0), Base (current CPI continues), Pessimistic (5% degradation), Recovery (5% improvement) — with the spread expressed as % of BAC. A wide spread is a contingency call; a narrow one means the forecast is stable."],
+        ["11.5 Decision Sensitivity Matrix", "Quantifies how much each input variable changes the governance recommendation. The top driver is what the PM should track most closely — a small move there flips the decision faster than a large move elsewhere."],
+        ["11.6 Pareto Frontier Analysis", "Names whether the project is Pareto-efficient (all objectives met), Pareto-dominated (multiple objectives failing), or in the trade-off zone where improving one objective hurts another."],
+        ["11.7 Regret Minimization Index", "Minimax-regret across three actions (monitor / investigate / escalate) under three future states (improves / stable / worsens). Picks the action that minimizes worst-case regret, then over-rides to escalate when CPI or SPI breach the FAR threshold."]
+      ],
+      pmReading: "Cat 11 is read AFTER Cat 6 and Cat 7 — it does not replace the conservative-dominance classification or the evidence-combination cross-check, it operationalises them. The PM reads Cat 6/7 to understand the state, then reads Cat 11 to choose the action."
+    },
+    "cat12-overview": {
+      id: "cat12-overview",
+      title: "Cat 12 — Systems Engineering (Conditional)",
+      eyebrow: "Cat 12 · interface complexity & traceability",
+      body: "The most novel category in PCEIF — very few EVM platforms address systems engineering complexity. Interface density, dependency mapping, and requirements traceability surface risks that are invisible to cost and schedule analysis alone. A project can be on time and budget while accumulating interface complexity that will cause late-stage integration failures. Cat 12 activates when interface control documents, requirements specifications, and system architecture documents are uploaded.",
+      modules: [
+        ["12.1 Interface Density Index", "Interfaces per component. High density means more places things can go wrong at integration time — every additional interface adds one more potential miscommunication. Activates with an interface control document (ICD)."],
+        ["12.2 Dependency Mapping Score", "Captures structural dependencies between subsystems so a change to one component can be propagated through the network. Activates with a system architecture document."],
+        ["12.3 Requirements Traceability Coverage", "Share of requirements that have a documented verification artefact. Low coverage is a late-stage acceptance-test risk. Activates with a requirements specification."],
+        ["12.4 Configuration Change Impact", "Configuration-item impact from accumulated change orders. Partially derivable from change-order counts even without a full configuration-items document — that partial form is the one populated today."],
+        ["12.5 Integration Complexity Index", "Composite of interface density × dependency depth. Activates when both ICD and dependency mapping are uploaded."]
+      ],
+      pmReading: "Cat 12 is the most novel and the most demanding — until the systems-engineering docs are uploaded the modules render as a grey conditional band on the spider web. That grey band is itself a finding: it tells the PM the program's systems-engineering posture is not yet visible to the analytics."
+    }
+  };
+  function catOverviewBody(t) {
+    var modList = (t.modules || []).map(function (m) {
+      return '<li><strong>' + esc(m[0]) + '</strong> — ' + esc(m[1]) + '</li>';
+    }).join("");
+    return '<p class="kn-lead">' + esc(t.body) + '</p>' +
+           '<h3>Modules in this category</h3>' +
+           '<ul class="kn-list">' + modList + '</ul>' +
+           '<h3>How the PM reads this category</h3>' +
+           '<p>' + esc(t.pmReading) + '</p>';
+  }
+
   const CATEGORIES_ADVISE_PM_TOPIC = {
     id: "how-categories-advise-pm",
     title: "How the Categories Advise the PM",
     eyebrow: "Reading the categories",
     build: () => `
-      <p class="kn-lead">The nine categories each answer a different governance question. Reading them together tells the PM where to spend attention this reporting cycle.</p>
+      <p class="kn-lead">The twelve categories each answer a different governance question. Reading them together tells the PM where to spend attention this reporting cycle.</p>
       <ul class="kn-list">
         <li><strong>Cat 1 Quantitative EVM</strong> — what is happening NOW (cost / schedule indices).</li>
         <li><strong>Cat 2 Schedule Simulation</strong> — WHEN will problems appear (time-based leading indicators).</li>
@@ -1525,11 +1593,14 @@
         <li><strong>Cat 4 Document & Risk Signals</strong> — qualitative early warning from project records, BEFORE EVM shows the slip.</li>
         <li><strong>Cat 5 System Dynamics</strong> — how the components AMPLIFY each other (rework propagation).</li>
         <li><strong>Cat 6 Signal Synthesis</strong> — the BASELINE classification (conservative dominance) — the worst single signal wins.</li>
-        <li><strong>Cat 7 Evidence Combination</strong> — HOW CONFIDENT is the classification (nine independent uncertainty-reasoning methods cross-check the baseline).</li>
+        <li><strong>Cat 7 Evidence Combination</strong> — HOW CONFIDENT is the classification (twenty independent uncertainty-reasoning methods cross-check the baseline).</li>
         <li><strong>Cat 8 ML & AI</strong> — portfolio-wide anomaly detection: how unusual is this project versus the whole program (Isolation Forest, outlier ranking, trajectory, cross-project patterns, composite score).</li>
-        <li><strong>Cat 9 Governance & Compliance</strong> — the named authority, required action, and audit trail. ALWAYS LAST.</li>
+        <li><strong>Cat 9 Governance & Compliance</strong> — the named authority, required action, and audit trail.</li>
+        <li><strong>Cat 10 Data Integrity</strong> — how trustworthy ARE the inputs. Missing data, stale data, low-reliability sources — Cat 10 surfaces the quality of the signal package the other categories consumed.</li>
+        <li><strong>Cat 11 Decision Optimization</strong> — given everything the models found, what is the BEST action under constraints (multi-objective, LP, regret minimization).</li>
+        <li><strong>Cat 12 Systems Engineering</strong> — interface complexity, dependency mapping, requirements traceability. CONDITIONAL — activates when interface / requirements / system architecture docs are uploaded.</li>
       </ul>
-      <p>The PM reads the categories top-down to GENERATE the picture, then bottom-up (start at Cat 9) to ACT on it. The decision is whatever Cat 9 records — the rest of the stack is the evidence supporting that decision.</p>
+      <p>The PM reads the categories top-down to GENERATE the picture (with Cat 10 verifying that what was generated stands on solid inputs), then bottom-up (start at Cat 9 / Cat 11) to ACT on it. The decision is whatever Cat 9 records — the rest of the stack is the evidence supporting that decision.</p>
     `
   };
 
@@ -1549,6 +1620,10 @@
           eyebrow: "Cat 8 — ML & AI Pattern Detection",
           build: () => cat8TopicBody(t)
         });
+      }
+      if (CAT_OVERVIEW_TOPICS[id]) {
+        const t = CAT_OVERVIEW_TOPICS[id];
+        return Object.assign({}, t, { build: () => catOverviewBody(t) });
       }
       if (id === "how-categories-advise-pm") return CATEGORIES_ADVISE_PM_TOPIC;
       return LIBRARY.find((x) => x.id === id) || null;
@@ -1574,8 +1649,10 @@
     }
 
     function categoryGroup(g) {
+      // Cat 8 stage-2 topics and Cat 10/11/12 category overviews render as
+      // simple flat buttons (no Cat X.Y CAT_LABEL_BY_ID rewriting).
       const childButtons = (g.children || []).map((cid) =>
-        CAT8_TOPICS[cid] ? flatNavBtn(cid) : modNavBtn(cid)
+        (CAT8_TOPICS[cid] || CAT_OVERVIEW_TOPICS[cid]) ? flatNavBtn(cid) : modNavBtn(cid)
       ).join("");
       const open = g.children && g.children.some((c) => c === selectedId);
       const parkedTag = g.parked ? `<span class="kn-nav-cat-parked">Stage 2</span>` : "";
