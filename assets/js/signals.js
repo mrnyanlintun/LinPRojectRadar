@@ -1214,34 +1214,62 @@
         };
         if (ident.storedFileId) extractPayload.storedFileId = ident.storedFileId;
         const resp = await postJSON(extractPayload);
-        if (!resp.ok) throw new Error(resp.error || "extract failed");
+        // Full response, logged before any success/failure decision, so a shape
+        // change or a no-field document type is diagnosable from the console.
+        console.log("[upload] extractsignals response:", resp);
 
-        // Merge into client-side signal cache and run models so project charts update.
-        const si = mergeComputed(resp);
-        const appliedKeys = (resp.applied && resp.applied.length)
-          ? resp.applied.slice()
-          : FIELD_ROWS.map((r) => r.key).filter((k) => si[k] != null && si[k] !== "");
-        ["cpi", "spi"].forEach((k) => {
-          if (si[k] != null && si[k] !== "" && !appliedKeys.includes(k)) appliedKeys.push(k);
-        });
-        appendExtractedSources(si, appliedKeys, docType, file.name);
-        const missing = resp.missing || [];
-        const dates = extractDates(resp, si);
-        cache[id] = { signalInputs: si, missing, readyToRun: resp.readyToRun, dates };
-        const project = LinStore.getCached(id);
-        if ((hasIndex(si.cpi) || hasIndex(si.spi)) && project) await runModels(project, si);
-        await refreshProject(id);
+        // A response is a FAILURE only when the backend explicitly says ok:false
+        // (or the fetch / JSON-parse threw — handled by the catch). A valid
+        // response that applied no CPI/SPI-relevant fields (e.g. a Cost Report or
+        // Environmental Report) still succeeded — it applied its own fields.
+        if (resp && resp.ok === false) throw new Error(resp.error || "extract failed");
 
-        const fieldCount = appliedKeys.length;
-        const bits = [fieldCount + " field" + (fieldCount === 1 ? "" : "s")];
-        const cpi = fmtNum(si.cpi), spi = fmtNum(si.spi);
-        if (cpi != null) bits.push("CPI " + cpi);
-        if (spi != null) bits.push("SPI " + spi);
+        // resp.applied is authoritative for the field count; fall back to 0.
+        const applied = Array.isArray(resp && resp.applied) ? resp.applied : [];
+        let appliedCount = applied.length;
+
+        // Secondary client-side work (merge into the cache, run models, refresh the
+        // project view). NON-FATAL: a failure here must NOT turn a successful
+        // extract into an error — the document was processed server-side regardless.
+        let si = null;
+        try {
+          si = mergeComputed(resp);
+          const appliedKeys = applied.length
+            ? applied.slice()
+            : FIELD_ROWS.map((r) => r.key).filter((k) => si[k] != null && si[k] !== "");
+          ["cpi", "spi"].forEach((k) => {
+            if (si[k] != null && si[k] !== "" && !appliedKeys.includes(k)) appliedKeys.push(k);
+          });
+          appliedCount = appliedKeys.length;
+          appendExtractedSources(si, appliedKeys, docType, file.name);
+          const missing = (resp && resp.missing) || [];
+          const dates = extractDates(resp, si);
+          cache[id] = { signalInputs: si, missing, readyToRun: resp && resp.readyToRun, dates };
+          const project = LinStore.getCached(id);
+          if ((hasIndex(si.cpi) || hasIndex(si.spi)) && project) await runModels(project, si);
+          await refreshProject(id);
+        } catch (postErr) {
+          console.warn("[upload] post-extract processing failed (extract itself succeeded):", postErr);
+        }
+
+        // Success — show what was applied. Zero fields is still a success.
+        let resultText;
+        if (appliedCount > 0) {
+          const bits = [appliedCount + " field" + (appliedCount === 1 ? "" : "s")];
+          if (si) {
+            const cpi = fmtNum(si.cpi), spi = fmtNum(si.spi);
+            if (cpi != null) bits.push("CPI " + cpi);
+            if (spi != null) bits.push("SPI " + spi);
+          }
+          resultText = "✓ extracted " + bits.join(" · ");
+        } else {
+          resultText = "✓ processed (no signal fields in this document type)";
+        }
         item.className = "dz-item dz-done";
         item.innerHTML = `<span class="dz-item-name">${esc(file.name)}</span>` +
-          `<span class="dz-item-result">✓ ${esc(bits.join(" · "))}</span>`;
-        if (window.LinApp) LinApp.refresh();
-        if (onResult) onResult(id);
+          `<span class="dz-item-result">${esc(resultText)}</span>`;
+        try { if (window.LinApp) LinApp.refresh(); } catch (e) { /* non-fatal */ }
+        try { if (onResult) onResult(id); } catch (e) { /* non-fatal */ }
       } catch (e) {
         console.error("[dropzone] extract error:", e);
         setError(item, file, (e && e.message) || "Network error — check console",
