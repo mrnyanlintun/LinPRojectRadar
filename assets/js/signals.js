@@ -1045,11 +1045,11 @@
      Drag-and-drop multi-file ingest (Manage Projects page)
      -----------------------------------------------------------
      Drop any combination of documents. Each file is (1) identified
-     via the identifyOnly endpoint, (2) auto-extracted when the
-     classifier is >85% confident or held for a one-click confirm /
-     type override otherwise, then (3) extracted + models run. All
-     file-processing helpers above (PDF→text, base64, runModels,
-     refreshProject) are reused unchanged.
+     via the identifyOnly endpoint, then (2) auto-extracted immediately
+     with the identified docType — no confirmation or type-override
+     step — and the models are run on the extracted signals. The file
+     is read as base64 once and reused across both calls (storedFileId
+     lets the backend skip re-uploading on extract).
      =========================================================== */
 
   // The 15 supported document types, shown as a non-interactive reference panel.
@@ -1059,12 +1059,6 @@
     "NCR Log", "Subcontractor Report", "Procurement Log", "Lookahead Schedule",
     "Resource Report", "Cost Report", "Past Performance Report"
   ];
-
-  function docTypeOptionsHtml(selected) {
-    return DOC_TYPE_GROUPS.map((g) => `<optgroup label="${esc(g.label)}">${
-      g.types.map(([v, l]) => `<option value="${v}"${v === selected ? " selected" : ""}>${esc(l)}</option>`).join("")
-    }</optgroup>`).join("");
-  }
 
   function dropzoneHtml(fixedId) {
     const projectField = fixedId
@@ -1086,20 +1080,6 @@
         <input type="file" class="dz-input" multiple accept="${ACCEPT}" hidden />
       </div>
       <div class="dz-queue" aria-live="polite"></div>`;
-  }
-
-  // Build the upload payload once per file: born-digital PDFs go as `text`
-  // (client-side PDF.js), everything else as base64 — same rule as the form.
-  async function buildFilePayload(file) {
-    const payload = { mimeType: file.type || "application/octet-stream", fileName: file.name };
-    if (isPdf(file) && typeof pdfjsLib !== "undefined") {
-      const text = await extractPDFText(file);
-      if (text && text.trim().length > 200) payload.text = text;
-      else payload.dataBase64 = await readFileAsBase64(file);
-    } else {
-      payload.dataBase64 = await readFileAsBase64(file);
-    }
-    return payload;
   }
 
   function wireDropzone(container, onResult) {
@@ -1128,7 +1108,8 @@
     // CORS-safe POST with 45s timeout — text/plain bypasses preflight for Apps Script.
     function postJSON(payload) {
       var controller = new AbortController();
-      var timer = setTimeout(function () { controller.abort(); }, 45000);
+      var timedOut = false;
+      var timer = setTimeout(function () { timedOut = true; controller.abort(); }, 45000);
       return fetch(window.LIN_API_URL || "", {
         method: "POST",
         headers: { "Content-Type": "text/plain" },
@@ -1139,6 +1120,13 @@
         .then(function (t) {
           try { return JSON.parse(t); }
           catch (e) { throw new Error("Bad response: " + t.substring(0, 120)); }
+        })
+        .catch(function (e) {
+          // Translate the browser's generic AbortError into a clear timeout message.
+          if (timedOut || (e && e.name === "AbortError")) {
+            throw new Error("Request timed out after 45s — try a smaller file or retry");
+          }
+          throw e;
         })
         .finally(function () { clearTimeout(timer); });
     }
@@ -1208,7 +1196,7 @@
       }
 
       const docType = ident.docType || "monthly_report";
-      const confPct = ident.confidence ? Math.round(ident.confidence * 100) + "%" : "";
+      const confPct = ident.confidence != null ? Math.round(ident.confidence * 100) + "%" : "";
       item.className = "dz-item dz-identified";
       item.innerHTML = `<span class="dz-item-name">${esc(file.name)}</span>` +
         `<span class="dz-item-type">${esc(DOC_TYPE_LABEL[docType] || docType)}${confPct ? " · " + esc(confPct) : ""}</span>` +
