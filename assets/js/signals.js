@@ -1218,11 +1218,14 @@
         // change or a no-field document type is diagnosable from the console.
         console.log("[upload] extractsignals response:", resp);
 
-        // A response is a FAILURE only when the backend explicitly says ok:false
-        // (or the fetch / JSON-parse threw — handled by the catch). A valid
-        // response that applied no CPI/SPI-relevant fields (e.g. a Cost Report or
-        // Environmental Report) still succeeded — it applied its own fields.
-        if (resp && resp.ok === false) throw new Error(resp.error || "extract failed");
+        // SUCCESS whenever the backend returned ok:true, OR returned an `applied`
+        // list with no error — a valid response that applied no CPI/SPI-relevant
+        // fields (e.g. a Cost Report or Environmental Report) still succeeded.
+        // FAILURE only on an explicit ok:false, a present error, or a response
+        // carrying neither ok:true nor an applied field. (A thrown fetch / JSON
+        // parse is handled by the outer catch.)
+        const ok = resp && (resp.ok === true || (!resp.error && resp.applied !== undefined));
+        if (!ok) throw new Error((resp && resp.error) || "extract failed");
 
         // resp.applied is authoritative for the field count; fall back to 0.
         const applied = Array.isArray(resp && resp.applied) ? resp.applied : [];
