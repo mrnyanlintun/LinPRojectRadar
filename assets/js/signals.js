@@ -1178,41 +1178,23 @@
         return;
       }
 
-      // Step 1: identify document type via identifyOnly action.
-      let ident;
-      try {
-        ident = await postJSON({
-          action: "identifyOnly",
-          id,
-          dataBase64: base64,
-          mimeType: file.type || "application/pdf",
-          fileName: file.name
-        });
-        if (!ident.ok) throw new Error(ident.error || "identify failed");
-      } catch (e) {
-        setError(item, file, "Could not identify: " + (e.message || "Network error"),
-          function () { item.remove(); processOne(id, file); });
-        return;
-      }
-
-      const docType = ident.docType || "monthly_report";
-      const confPct = ident.confidence != null ? Math.round(ident.confidence * 100) + "%" : "";
+      // Single call: extract everything AND infer the document type at once
+      // (docType:"auto"). No separate identifyOnly round-trip. The backend reads
+      // the document, names the type, and extracts every field in one pass.
       item.className = "dz-item dz-identified";
       item.innerHTML = `<span class="dz-item-name">${esc(file.name)}</span>` +
-        `<span class="dz-item-type">${esc(DOC_TYPE_LABEL[docType] || docType)}${confPct ? " · " + esc(confPct) : ""}</span>` +
-        `<span class="dz-item-status">⟳ Extracting…</span>`;
+        `<span class="dz-item-status">\u27f3 Extracting\u2026</span>`;
 
-      // Step 2: extract signals immediately — no user confirmation.
+      let docType = "auto";
       try {
         const extractPayload = {
           action: "extractsignals",
           id,
-          docType,
+          docType: "auto",
           dataBase64: base64,
           mimeType: file.type || "application/pdf",
           fileName: file.name
         };
-        if (ident.storedFileId) extractPayload.storedFileId = ident.storedFileId;
         const resp = await postJSON(extractPayload);
         // Full response, logged before any success/failure decision, so a shape
         // change or a no-field document type is diagnosable from the console.
@@ -1221,11 +1203,11 @@
         // SUCCESS whenever the backend returned ok:true, OR returned an `applied`
         // list with no error — a valid response that applied no CPI/SPI-relevant
         // fields (e.g. a Cost Report or Environmental Report) still succeeded.
-        // FAILURE only on an explicit ok:false, a present error, or a response
-        // carrying neither ok:true nor an applied field. (A thrown fetch / JSON
-        // parse is handled by the outer catch.)
         const ok = resp && (resp.ok === true || (!resp.error && resp.applied !== undefined));
         if (!ok) throw new Error((resp && resp.error) || "extract failed");
+
+        // The backend echoes which type it inferred — use it for labels/sources.
+        docType = resp.docType || docType;
 
         // resp.applied is authoritative for the field count; fall back to 0.
         const applied = Array.isArray(resp && resp.applied) ? resp.applied : [];
