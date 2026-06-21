@@ -74,6 +74,58 @@
     return null;
   }
 
+  // Map a raw per-module status string (from getModuleStatus) to a fill colour.
+  // Mirrors the worst-status-wins keyword logic getCategoryStatus uses, so a
+  // module dot's colour matches how the module cards read the same status.
+  function moduleFill(raw) {
+    if (!raw) return NO_DATA_FILL;
+    var s = String(raw).toLowerCase();
+    if (s.indexOf("red") >= 0) return STATUS_FILL.Red;
+    if (s.indexOf("amber") >= 0 || s.indexOf("orange") >= 0) return STATUS_FILL.Amber;
+    if (s.indexOf("yellow") >= 0 || s.indexOf("light-amber") >= 0) return STATUS_FILL.Yellow;
+    if (s.indexOf("green") >= 0) return STATUS_FILL.Green;
+    if (s.indexOf("complete") >= 0 || s.indexOf("blue") >= 0) return STATUS_FILL.Complete;
+    return NO_DATA_FILL;
+  }
+
+  // Lay this category's modules out as small dots in an arc around the node,
+  // avoiding the bottom wedge where the category label sits. One ring up to
+  // 12 modules; two concentric rings above that (Cat 7 = 20) so they stay
+  // legible. Dot count always equals the real module count (no-data included).
+  function buildDots(catObj, pos, project) {
+    var mods = (catObj && catObj.modules) || [];
+    var n = mods.length;
+    if (!n) return [];
+    var ARC_START = 153 * Math.PI / 180;   // lower-left, just below horizontal
+    var ARC_SWEEP = 234 * Math.PI / 180;   // sweep up and over to lower-right
+    var statusOf = function (m) {
+      try { return window.getModuleStatus ? window.getModuleStatus(m.method_class, project) : null; }
+      catch (e) { return null; }
+    };
+    var dots = [];
+    // phase shifts each dot within its angular step (0 = centred); the outer
+    // ring uses 0.5 so its dots interleave with the inner ring rather than
+    // stacking on the same radial spokes.
+    var place = function (count, radius, startIdx, phase) {
+      for (var j = 0; j < count; j++) {
+        var a = ARC_START + ((j + 0.5 + (phase || 0)) / count) * ARC_SWEEP;
+        dots.push({
+          x: pos.x + radius * Math.cos(a),
+          y: pos.y + radius * Math.sin(a),
+          fill: moduleFill(statusOf(mods[startIdx + j]))
+        });
+      }
+    };
+    if (n > 12) {
+      var inner = Math.ceil(n / 2);
+      place(inner, NODE_R + 12, 0, 0);
+      place(n - inner, NODE_R + 24, inner, 0.5);
+    } else {
+      place(n, NODE_R + 13, 0);
+    }
+    return dots;
+  }
+
   function render(container, project) {
     if (!container) return;
     var cats = window.LIN_CATEGORIES || [];
@@ -93,7 +145,8 @@
           name: SHORT_NAME[c.id] || c.name,
           pos: LAYOUT[c.id],
           status: st,
-          fill: st ? (STATUS_FILL[st] || NO_DATA_FILL) : NO_DATA_FILL
+          fill: st ? (STATUS_FILL[st] || NO_DATA_FILL) : NO_DATA_FILL,
+          dots: buildDots(c, LAYOUT[c.id], project)     // per-module dots, coloured by module status
         };
       });
     var nodeById = {};
@@ -147,7 +200,7 @@
 
     function cssSize() {
       var w = wrap.clientWidth || 720;
-      return { w: w, h: 440 };
+      return { w: w, h: 520 };   // taller to give the 108 module dots room at default zoom
     }
 
     function resize() {
@@ -226,6 +279,31 @@
         ctx.lineTo(ar.x2 - ar.ux * ah - px * aw, ar.y2 - ar.uy * ah - py * aw);
         ctx.closePath();
         ctx.fill();
+      });
+
+      // Module dots: thin connector spokes first (under the dots and nodes),
+      // then the dots themselves coloured by each module's own status.
+      nodes.forEach(function (n) {
+        if (!n.dots || !n.dots.length) return;
+        ctx.lineWidth = 0.6;
+        ctx.strokeStyle = hexToRgba(inkColor, 0.28);
+        n.dots.forEach(function (d) {
+          var dx = d.x - n.pos.x, dy = d.y - n.pos.y;
+          var len = Math.sqrt(dx * dx + dy * dy) || 1;
+          ctx.beginPath();
+          ctx.moveTo(n.pos.x + (dx / len) * NODE_R, n.pos.y + (dy / len) * NODE_R);
+          ctx.lineTo(d.x, d.y);
+          ctx.stroke();
+        });
+        n.dots.forEach(function (d) {
+          ctx.beginPath();
+          ctx.arc(d.x, d.y, 3.3, 0, Math.PI * 2);
+          ctx.fillStyle = d.fill;
+          ctx.fill();
+          ctx.lineWidth = 0.6;
+          ctx.strokeStyle = hexToRgba(inkColor, 0.5);
+          ctx.stroke();
+        });
       });
 
       // Nodes.

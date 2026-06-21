@@ -544,13 +544,13 @@
            <span class="detail-reset-msg kn-sub" aria-live="polite"></span>
          </div>
        </div>
+        ${cs("d-projnet", "Project Signal Network", `<div class="detail-projnet2d"></div>`, true, totalCats + " categories")}
         ${cs("d-brief", "Executive Brief", executiveBriefHtml(p), true, "")}
         ${cs("d-web", "Signal Web", signalWebHtml(p), true, totalModulesForBadge + " modules")}
         ${cs("d-ensemble", "Ensemble Analysis", ensembleHtml(p), false, `${ensActive} active · ${ensEst} est.`)}
         ${cs("d-uploads", "Uploaded Documents", uploadedDocsPanelHtml(p), false, `${uploadCount} document${uploadCount === 1 ? "" : "s"}`)}
         ${cs("d-ledger", "Signal Inputs", `<section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>`, false, pillBadge(overallState))}
         ${cs("d-decision", "Governance Decision", `<section class="panel detail-decision" aria-label="PCEIF governance decision (project detail)"></section>`, false, pillBadge(overallState))}
-       ${cs("d-projnet", "Project Signal Network", `<div class="detail-projnet2d"></div>`, true, totalCats + " categories")}
        ${cs("d-stack", "Signal Stack — " + totalCats + " Categories", `<div class="detail-modules"></div>`, true, "")}
        ${cs("d-signals", "Extracted Signal Inputs", `<section class="panel detail-signals" aria-label="Extracted signals detail"></section>`, false, `${inputFieldCount} field${inputFieldCount === 1 ? "" : "s"}`)}`;
 
