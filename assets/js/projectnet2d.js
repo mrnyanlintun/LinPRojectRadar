@@ -103,9 +103,12 @@
       catch (e) { return null; }
     };
     var dots = [];
-    var place = function (count, radius, startIdx) {
+    // phase shifts each dot within its angular step (0 = centred); the outer
+    // ring uses 0.5 so its dots interleave with the inner ring rather than
+    // stacking on the same radial spokes.
+    var place = function (count, radius, startIdx, phase) {
       for (var j = 0; j < count; j++) {
-        var a = ARC_START + ((j + 0.5) / count) * ARC_SWEEP;
+        var a = ARC_START + ((j + 0.5 + (phase || 0)) / count) * ARC_SWEEP;
         dots.push({
           x: pos.x + radius * Math.cos(a),
           y: pos.y + radius * Math.sin(a),
@@ -115,8 +118,8 @@
     };
     if (n > 12) {
       var inner = Math.ceil(n / 2);
-      place(inner, NODE_R + 12, 0);
-      place(n - inner, NODE_R + 24, inner);
+      place(inner, NODE_R + 12, 0, 0);
+      place(n - inner, NODE_R + 24, inner, 0.5);
     } else {
       place(n, NODE_R + 13, 0);
     }
