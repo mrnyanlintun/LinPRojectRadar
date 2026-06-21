@@ -253,6 +253,13 @@
       });
     }
 
+    // Tear down listeners from any previous render into this same container
+    // (detail.js re-renders on every project open / inline overwrite) so window
+    // listeners can't accumulate and fire against detached canvases.
+    if (typeof container.__projnet2dCleanup === "function") {
+      try { container.__projnet2dCleanup(); } catch (e) { /* non-fatal */ }
+    }
+
     // ── Interaction: scroll to zoom, drag to pan (no rotate) ──
     canvas.addEventListener("wheel", function (e) {
       e.preventDefault();
@@ -272,19 +279,37 @@
       dragging = true; lastX = e.clientX; lastY = e.clientY;
       canvas.style.cursor = "grabbing";
     });
-    window.addEventListener("mouseup", function () {
-      dragging = false; canvas.style.cursor = "grab";
-    });
-    canvas.addEventListener("mousemove", function (e) {
+    canvas.style.cursor = "grab";
+
+    // mousemove/mouseup live on window so a drag keeps tracking (and ends)
+    // even when the cursor leaves the canvas.
+    function onMouseMove(e) {
       if (!dragging) return;
       view.x += e.clientX - lastX;
       view.y += e.clientY - lastY;
       lastX = e.clientX; lastY = e.clientY;
       draw();
-    });
-    canvas.style.cursor = "grab";
+    }
+    function onMouseUp() {
+      if (!dragging) return;
+      dragging = false; canvas.style.cursor = "grab";
+    }
+    // A detached canvas means the detail page was re-rendered — self-clean and stop.
+    function onResize() {
+      if (!document.body.contains(canvas)) { cleanup(); return; }
+      resize();
+    }
+    function cleanup() {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("resize", onResize);
+      if (container.__projnet2dCleanup === cleanup) container.__projnet2dCleanup = null;
+    }
+    container.__projnet2dCleanup = cleanup;
 
-    window.addEventListener("resize", resize);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("resize", onResize);
     resize();
   }
 
