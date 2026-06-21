@@ -550,12 +550,16 @@
         ${cs("d-uploads", "Uploaded Documents", uploadedDocsPanelHtml(p), false, `${uploadCount} document${uploadCount === 1 ? "" : "s"}`)}
         ${cs("d-ledger", "Signal Inputs", `<section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>`, false, pillBadge(overallState))}
         ${cs("d-decision", "Governance Decision", `<section class="panel detail-decision" aria-label="PCEIF governance decision (project detail)"></section>`, false, pillBadge(overallState))}
+       ${cs("d-projnet", "Project Signal Network", `<div class="detail-projnet2d"></div>`, true, totalCats + " categories")}
        ${cs("d-stack", "Signal Stack — " + totalCats + " Categories", `<div class="detail-modules"></div>`, true, "")}
        ${cs("d-signals", "Extracted Signal Inputs", `<section class="panel detail-signals" aria-label="Extracted signals detail"></section>`, false, `${inputFieldCount} field${inputFieldCount === 1 ? "" : "s"}`)}`;
 
     // Reuse the shared renderers, scoped to this page's containers.
     LinApp.renderLedger(p, root.querySelector(".detail-ledger"));
     LinApp.renderDecisionCard(p, root.querySelector(".detail-decision"));
+    // 2D per-project signal network — flat node-link of the 12 categories,
+    // coloured by this project's computed category statuses (zoom + pan, no rotate).
+    if (window.LinProjectNet2D) LinProjectNet2D.render(root.querySelector(".detail-projnet2d"), p);
     // Document ingestion lives on the Manage Projects page only; the detail page
     // is read-only — it shows what has already been processed.
     // HUD-depth per-project deep dive (chart + why-grid + reasoning + rule)

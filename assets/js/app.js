@@ -1080,7 +1080,7 @@
     buildRadar();
     buildFallbackList();
     renderDecisionLog();
-    initPortfolioSummary();
+    // initPortfolioSummary(); // removed — portfolio executive summary deprecated (card removed from index.html)
 
     // default selection: first project in the portfolio (may be empty →
     // shows the awaiting-ingest state, not a fabricated status).

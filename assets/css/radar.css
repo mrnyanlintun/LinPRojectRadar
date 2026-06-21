@@ -1222,6 +1222,25 @@ body[data-theme="light"] .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .fn-ld { width: 7px; height: 7px; border-radius: 50%; flex: none; }
 #fn-stat { font-family: var(--font-mono); font-size: 9px; color: var(--faint, #64748b); margin-left: auto; }
 
+/* ---------- 2D project signal network (Project Detail page) ---------- */
+.projnet2d-panel { padding: 0; overflow: hidden; }
+.projnet2d-head { padding: 12px 18px; border-bottom: 1px solid var(--line); }
+.projnet2d-head .eyebrow { margin: 0 0 2px; }
+.projnet2d-awaiting { margin: 6px 0 0; font-size: 11px; color: var(--radar-amber, #e2b13c); }
+.projnet2d-legend {
+  display: flex; flex-wrap: wrap; gap: 12px; padding: 8px 18px;
+  border-bottom: 1px solid var(--line); background: var(--surface-2, #131d33);
+}
+.projnet2d-legend span { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--faint, #64748b); }
+.projnet2d-legend i { width: 9px; height: 9px; border-radius: 50%; flex: none; display: inline-block; }
+.projnet2d-wrap { position: relative; background: var(--surface, #0f1729); }
+.projnet2d-canvas { display: block; width: 100%; height: 440px; cursor: grab; color: var(--ink-dim, #c9d4e3); }
+.projnet2d-canvas:active { cursor: grabbing; }
+.projnet2d-foot {
+  padding: 8px 18px; border-top: 1px solid var(--line);
+  background: var(--surface-2, #131d33); font-family: var(--font-mono); font-size: 10px; margin: 0;
+}
+
 /* ---------- Phase 1: empty / awaiting-ingest states ---------- */
 .state-empty { color: var(--muted); }
 .blip-empty .blip-label { fill: var(--muted); font-style: italic; }
