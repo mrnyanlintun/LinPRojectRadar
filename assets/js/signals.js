@@ -105,6 +105,9 @@
   /* ---------- per-project module cache (latest extraction result) ---------- */
   // cache[id] = { signalInputs, missing, readyToRun }
   const cache = {};
+  // Drop a project's cached extraction so a post-reset UI doesn't re-show stale
+  // signal inputs in the detail panel. Called by the "Reset signals" handler.
+  function clearCache(id) { if (id != null) delete cache[id]; }
 
   /* ---------- PDF.js client-side text extraction ----------
      Apps Script's byte-level PDF parsing is unreliable for ReportLab-generated
@@ -1663,6 +1666,7 @@
     ensureSimulations,
     runModels,
     deriveExtendedFields,
-    DOC_TYPES, DOC_TYPE_LABEL
+    DOC_TYPES, DOC_TYPE_LABEL,
+    clearCache
   };
 })();
