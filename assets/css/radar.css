@@ -1281,7 +1281,7 @@ body[data-theme="light"] .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 
 /* ---------- full-width radar on Portfolio ---------- */
 .radar-panel-wide { width: 100%; }
-.radar-panel-wide .radar-wrap { max-width: 500px; margin: 0 auto; }
+.radar-panel-wide .radar-wrap { max-width: 700px; margin: 0 auto; }
 .portfolio-below { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; align-items: start; }
 .portfolio-below .log-panel { grid-column: 1 / -1; }
 @media (max-width: 940px) { .portfolio-below { grid-template-columns: 1fr; } }
