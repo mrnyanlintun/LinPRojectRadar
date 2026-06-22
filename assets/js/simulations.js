@@ -1007,12 +1007,12 @@
     return true;
   }
 
-  function insufficientData(methodClass) {
+  function insufficientData(methodClass, message) {
     return {
       method_class: methodClass,
       status_color: null,
       insufficient_data: true,
-      evidence_metric: 'Insufficient data — upload required documents'
+      evidence_metric: message || 'Insufficient data — upload required documents'
     };
   }
 
@@ -1039,7 +1039,7 @@
 
   function runKalmanFilter(si) {
     var history = si.spiHistory || (si.spi ? [si.spi] : null);
-    if (!history || history.length < 2) return insufficientData('Kalman_Filter');
+    if (!history || history.length < 2) return insufficientData('Kalman_Filter', 'Awaiting history (2 periods needed)');
     var Q = 0.01, R = 0.1;
     var x = history[0], P = 1.0;
     for (var i = 1; i < history.length; i++) {
@@ -1064,7 +1064,7 @@
 
   function runARIMAForecast(si) {
     var history = si.cpiHistory || (si.cpi ? [si.cpi] : null);
-    if (!history || history.length < 3) return insufficientData('ARIMA_Forecast');
+    if (!history || history.length < 3) return insufficientData('ARIMA_Forecast', 'Awaiting history (3 periods needed)');
     var diffs = [];
     for (var i = 1; i < history.length; i++) diffs.push(history[i] - history[i-1]);
     var phi = 0;
@@ -1172,7 +1172,7 @@
 
   function runRegressionToMean(si) {
     var history = si.cpiHistory || (si.cpi ? [si.cpi] : null);
-    if (!history || history.length < 2) return insufficientData('Regression_To_Mean');
+    if (!history || history.length < 2) return insufficientData('Regression_To_Mean', 'Awaiting history (2 periods needed)');
     var mean = history.reduce(function(a,b){return a+b;},0) / history.length;
     var current = history[history.length - 1];
     var deviation = current - mean;

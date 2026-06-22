@@ -184,15 +184,17 @@ def _compute(si: dict) -> dict:
     return {"cpi": cpi, "spi": spi}
 
 
-EXTRACT_FIELDS = ["bac", "ev", "ac", "pv", "actualPctComplete", "plannedPctComplete", "docRiskScore"]
+EXTRACT_FIELDS = ["bac", "ev", "ac", "pv", "actualPctComplete", "plannedPctComplete", "docRiskScore", "totalFloat", "consumedFloat"]
 
 
 def extract_signal_inputs(text: str, doc_type: str) -> dict:
     """OpenAI extraction with a regex fallback when the key is absent."""
     sys = ("You extract Earned Value figures from a construction document and return STRICT JSON "
            "with keys bac, ev, ac, pv, actualPctComplete, plannedPctComplete, docRiskScore, "
+           "totalFloat, consumedFloat, "
            "baselineStart, baselineEnd, workPeriodFrom, workPeriodTo. Use null when a value is not present. "
-           "Numbers only (no currency symbols). Dates as plain strings.")
+           "Numbers only (no currency symbols). Dates as plain strings. "
+           "totalFloat = total schedule float (days). consumedFloat = float already used (days).")
     out = openai_chat(
         [{"role": "system", "content": sys},
          {"role": "user", "content": f"Document type: {doc_type}\n\n{text[:12000]}"}],
@@ -376,7 +378,7 @@ def extractsignals(body: dict):
         # ask the vision model directly
         out = openai_chat(
             [{"role": "system", "content": "Extract EVM figures as STRICT JSON (bac, ev, ac, pv, "
-              "actualPctComplete, plannedPctComplete, docRiskScore). Numbers only; null when absent."}],
+              "actualPctComplete, plannedPctComplete, docRiskScore, totalFloat, consumedFloat). Numbers only; null when absent."}],
             image_b64=multimodal_b64, image_mime=mime, max_tokens=400,
         )
         if out:

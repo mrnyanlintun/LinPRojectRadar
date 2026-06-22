@@ -365,18 +365,20 @@
     function worldToScreen(wx, wy) { return { x: view.x + wx * view.scale, y: view.y + wy * view.scale }; }
     function colorSpan(text, color) { return '<span style="color:' + color + '">' + esc(text) + '</span>'; }
 
-    // "8 G · 1 Y · 1 A · 0 R  →  Green" — counts from the category's module dots
-    // (real statuses only; abstaining modules excluded), fused status from
-    // getCategoryStatus (read as-is — no recompute here).
+    // Vertical callout for a category bubble — one row per bucket, then fused status.
     function catCalloutHtml(n) {
       var c = { G: 0, Y: 0, A: 0, R: 0, none: 0 };
       (n.dots || []).forEach(function (d) { var b = statusBucket(d.status); if (b) c[b]++; else c.none++; });
-      var seg = colorSpan(c.G + " G", BUCKET_FILL.G) + " · " + colorSpan(c.Y + " Y", BUCKET_FILL.Y) +
-                " · " + colorSpan(c.A + " A", BUCKET_FILL.A) + " · " + colorSpan(c.R + " R", BUCKET_FILL.R);
-      var noData = c.none ? '<span class="pn2d-co-dim"> · ' + c.none + ' no-data</span>' : "";
       var fusedColor = n.status ? (STATUS_FILL[n.status] || inkColor) : inkColor;
-      return '<span class="pn2d-co-cat">' + esc(n.num) + '</span> ' + seg + noData +
-             '  →  ' + colorSpan(n.status || "No data", fusedColor);
+      var rows = '<div class="pn2d-co-row pn2d-co-cat">' + esc(n.num) + '</div>' +
+        '<div class="pn2d-co-row">' + colorSpan(c.G + "  G", BUCKET_FILL.G) + '</div>' +
+        '<div class="pn2d-co-row">' + colorSpan(c.Y + "  Y", BUCKET_FILL.Y) + '</div>' +
+        '<div class="pn2d-co-row">' + colorSpan(c.A + "  A", BUCKET_FILL.A) + '</div>' +
+        '<div class="pn2d-co-row">' + colorSpan(c.R + "  R", BUCKET_FILL.R) + '</div>' +
+        (c.none ? '<div class="pn2d-co-row pn2d-co-dim">' + c.none + '  no-data</div>' : '') +
+        '<div class="pn2d-co-row pn2d-co-divider"></div>' +
+        '<div class="pn2d-co-row">' + colorSpan("→ " + (n.status || "No data"), fusedColor) + '</div>';
+      return '<div class="pn2d-co-stack">' + rows + '</div>';
     }
 
     // "1.2 CUSUM — Green" (or "— No data").
