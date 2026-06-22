@@ -88,6 +88,22 @@
     return NO_DATA_FILL;
   }
 
+  // G/Y/A/R bucket for a raw module status (null/insufficient -> null, i.e. the
+  // module abstains and is excluded from the vote tally). Complete groups with
+  // Green, matching the footer/category aggregation.
+  function statusBucket(raw) {
+    if (!raw) return null;
+    var s = String(raw).toLowerCase();
+    if (s.indexOf("red") >= 0) return "R";
+    if (s.indexOf("amber") >= 0 || s.indexOf("orange") >= 0) return "A";
+    if (s.indexOf("yellow") >= 0 || s.indexOf("light-amber") >= 0) return "Y";
+    if (s.indexOf("green") >= 0) return "G";
+    if (s.indexOf("complete") >= 0 || s.indexOf("blue") >= 0) return "G";
+    return null;
+  }
+  var BUCKET_FILL = { G: STATUS_FILL.Green, Y: STATUS_FILL.Yellow, A: STATUS_FILL.Amber, R: STATUS_FILL.Red };
+  var BUCKET_WORD = { G: "Green", Y: "Yellow", A: "Amber", R: "Red" };
+
   // Lay this category's modules out as small dots in an arc around the node,
   // avoiding the bottom wedge where the category label sits. One ring up to
   // 12 modules; two concentric rings above that (Cat 7 = 20) so they stay
@@ -109,10 +125,13 @@
     var place = function (count, radius, startIdx, phase) {
       for (var j = 0; j < count; j++) {
         var a = ARC_START + ((j + 0.5 + (phase || 0)) / count) * ARC_SWEEP;
+        var m = mods[startIdx + j];
+        var raw = statusOf(m);
         dots.push({
           x: pos.x + radius * Math.cos(a),
           y: pos.y + radius * Math.sin(a),
-          fill: moduleFill(statusOf(mods[startIdx + j]))
+          fill: moduleFill(raw),
+          num: m && m.num, name: m && m.name, status: raw   // identity for the click callout
         });
       }
     };
@@ -197,6 +216,14 @@
 
     var view = { scale: 1, x: 0, y: 0 };
     var fitted = false;
+
+    // Floating one-line callout (NOT a modal/panel) — a div positioned over the
+    // canvas, anchored to the clicked bubble/dot. `active` tracks what's shown.
+    var callout = document.createElement("div");
+    callout.className = "projnet2d-callout";
+    callout.style.display = "none";
+    wrap.appendChild(callout);
+    var active = null; // { key, wx, wy } in world coords, or null when hidden
 
     function cssSize() {
       var w = wrap.clientWidth || 720;
@@ -329,6 +356,87 @@
         ctx.textBaseline = "top";
         ctx.fillText(n.name, n.pos.x, n.pos.y + NODE_R + 5);
       });
+
+      // Keep the callout pinned to its world anchor through zoom/pan.
+      positionCallout();
+    }
+
+    // ── Click callout (one floating line; no panel/modal) ──
+    function worldToScreen(wx, wy) { return { x: view.x + wx * view.scale, y: view.y + wy * view.scale }; }
+    function colorSpan(text, color) { return '<span style="color:' + color + '">' + esc(text) + '</span>'; }
+
+    // "8 G · 1 Y · 1 A · 0 R  →  Green" — counts from the category's module dots
+    // (real statuses only; abstaining modules excluded), fused status from
+    // getCategoryStatus (read as-is — no recompute here).
+    function catCalloutHtml(n) {
+      var c = { G: 0, Y: 0, A: 0, R: 0, none: 0 };
+      (n.dots || []).forEach(function (d) { var b = statusBucket(d.status); if (b) c[b]++; else c.none++; });
+      var seg = colorSpan(c.G + " G", BUCKET_FILL.G) + " · " + colorSpan(c.Y + " Y", BUCKET_FILL.Y) +
+                " · " + colorSpan(c.A + " A", BUCKET_FILL.A) + " · " + colorSpan(c.R + " R", BUCKET_FILL.R);
+      var noData = c.none ? '<span class="pn2d-co-dim"> · ' + c.none + ' no-data</span>' : "";
+      var fusedColor = n.status ? (STATUS_FILL[n.status] || inkColor) : inkColor;
+      return '<span class="pn2d-co-cat">' + esc(n.num) + '</span> ' + seg + noData +
+             '  →  ' + colorSpan(n.status || "No data", fusedColor);
+    }
+
+    // "1.2 CUSUM — Green" (or "— No data").
+    function modCalloutHtml(d) {
+      var label = (d.num ? d.num + " " : "") + (d.name || "Module");
+      var b = statusBucket(d.status);
+      var word = d.status ? (b ? BUCKET_WORD[b] : String(d.status)) : "No data";
+      var color = b ? BUCKET_FILL[b] : inkColor;
+      return '<span class="pn2d-co-cat">' + esc(label) + '</span> — ' + colorSpan(word, color);
+    }
+
+    function showCallout(key, wx, wy, html) {
+      active = { key: key, wx: wx, wy: wy };
+      callout.innerHTML = html;
+      callout.style.display = "block";
+      positionCallout();
+    }
+    function hideCallout() { active = null; callout.style.display = "none"; }
+    function positionCallout() {
+      if (!active) return;
+      var p = worldToScreen(active.wx, active.wy);
+      var s = cssSize();
+      var cw = callout.offsetWidth || 160, ch = callout.offsetHeight || 22;
+      var left = p.x + 12, top = p.y - ch - 8;          // upper-right of the anchor
+      if (left + cw > s.w - 4) left = p.x - cw - 12;     // flip left near the right edge
+      if (left < 4) left = 4;
+      if (top < 4) top = p.y + 14;                       // flip below if off the top
+      if (top + ch > s.h - 4) top = s.h - ch - 4;
+      callout.style.left = Math.round(left) + "px";
+      callout.style.top = Math.round(top) + "px";
+    }
+
+    // A click (mousedown+mouseup with no drag) toggles a callout for the bubble
+    // or dot under the cursor; clicking empty space or the same node hides it.
+    function handleClick(clientX, clientY) {
+      var rect = canvas.getBoundingClientRect();
+      var sx = clientX - rect.left, sy = clientY - rect.top;
+      // Dots first (small, sit around the bubble), then bubbles.
+      for (var ni = 0; ni < nodes.length; ni++) {
+        var n = nodes[ni], dots = n.dots || [];
+        for (var di = 0; di < dots.length; di++) {
+          var d = dots[di], ps = worldToScreen(d.x, d.y), rr = Math.max(7, 3.3 * view.scale);
+          if ((sx - ps.x) * (sx - ps.x) + (sy - ps.y) * (sy - ps.y) <= rr * rr) {
+            var mkey = "mod:" + n.id + ":" + di;
+            if (active && active.key === mkey) { hideCallout(); return; }
+            showCallout(mkey, d.x, d.y, modCalloutHtml(d));
+            return;
+          }
+        }
+      }
+      for (var k = 0; k < nodes.length; k++) {
+        var nn = nodes[k], nps = worldToScreen(nn.pos.x, nn.pos.y), nr = NODE_R * view.scale;
+        if ((sx - nps.x) * (sx - nps.x) + (sy - nps.y) * (sy - nps.y) <= nr * nr) {
+          var ckey = "cat:" + nn.id;
+          if (active && active.key === ckey) { hideCallout(); return; }
+          showCallout(ckey, nn.pos.x, nn.pos.y, catCalloutHtml(nn));
+          return;
+        }
+      }
+      hideCallout();   // empty space
     }
 
     // Tear down listeners from any previous render into this same container
@@ -352,9 +460,10 @@
       draw();
     }, { passive: false });
 
-    var dragging = false, lastX = 0, lastY = 0;
+    var dragging = false, lastX = 0, lastY = 0, pressX = 0, pressY = 0, movedDuringPress = false;
     canvas.addEventListener("mousedown", function (e) {
       dragging = true; lastX = e.clientX; lastY = e.clientY;
+      pressX = e.clientX; pressY = e.clientY; movedDuringPress = false;
       canvas.style.cursor = "grabbing";
     });
     canvas.style.cursor = "grab";
@@ -363,6 +472,9 @@
     // even when the cursor leaves the canvas.
     function onMouseMove(e) {
       if (!dragging) return;
+      if (!movedDuringPress && Math.abs(e.clientX - pressX) + Math.abs(e.clientY - pressY) > 4) {
+        movedDuringPress = true;
+      }
       view.x += e.clientX - lastX;
       view.y += e.clientY - lastY;
       lastX = e.clientX; lastY = e.clientY;
@@ -371,6 +483,8 @@
     function onMouseUp() {
       if (!dragging) return;
       dragging = false; canvas.style.cursor = "grab";
+      // A press with no real movement is a click → toggle the callout.
+      if (!movedDuringPress) handleClick(pressX, pressY);
     }
     // A detached canvas means the detail page was re-rendered — self-clean and stop.
     function onResize() {
