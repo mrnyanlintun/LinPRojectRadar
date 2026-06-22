@@ -261,20 +261,24 @@
     return si;
   }
 
-  function ensureSimulations(project) {
+  function ensureSimulations(project, force) {
     if (!project || !project.signals || !window.LinSimulations) return;
     const arr = project.simulationSignals && project.simulationSignals.signal_array;
     const meta = project.simulationSignals && project.simulationSignals.signal_metadata;
-    // Already current — a non-empty array stamped with this module-set version.
-    // Older/unstamped arrays (pre-89-module rollout) are recomputed below.
-    const current = Array.isArray(arr) && arr.length &&
-      meta && meta.module_set_version >= SIM_MODULE_SET_VERSION;
-    if (current) return;
     const si = deriveExtendedFields(resolveSimInputs(project));
-    // Diagnostic: confirm CPI/SPI/BAC actually reach runAll when it fires.
+    const fieldCount = Object.keys(si).filter(function(k) { return si[k] != null; }).length;
+    const storedFieldCount = (meta && meta.signal_inputs_field_count) || 0;
+    // Skip only when: not forced, array is non-empty, version is current, AND the field count
+    // has not grown since the last run. More fields available → more modules can compute → rerun.
+    const current = !force &&
+      Array.isArray(arr) && arr.length &&
+      meta && meta.module_set_version >= SIM_MODULE_SET_VERSION &&
+      fieldCount <= storedFieldCount;
+    if (current) return;
+    // Diagnostic: confirm full field set reaches runAll.
     console.log("[runAll] inputs:", {
       cpi: si.cpi, spi: si.spi, bac: si.bac, ev: si.ev, ac: si.ac, pv: si.pv,
-      docRiskScore: si.docRiskScore, fields: Object.keys(si)
+      docRiskScore: si.docRiskScore, fieldCount: fieldCount, fields: Object.keys(si)
     });
     try {
       const simResults = LinSimulations.runAll(si, project.signals, project);
@@ -285,6 +289,7 @@
           project_id: project.id,
           reporting_period: project.reportingPeriod || null,
           module_set_version: SIM_MODULE_SET_VERSION,
+          signal_inputs_field_count: fieldCount,
           signal_inputs_snapshot: Object.assign({}, si),
           computed_inline: true
         },
@@ -707,6 +712,7 @@
             reporting_period: now.toISOString().substring(0, 7),
             data_date: now.toISOString().substring(0, 10),
             module_set_version: SIM_MODULE_SET_VERSION,
+            signal_inputs_field_count: Object.keys(si).filter(function(k) { return si[k] != null; }).length,
             signal_inputs_snapshot: Object.assign({}, si)
           },
           signal_array: allResults
@@ -1017,7 +1023,11 @@
           status.textContent = readyToRun
             ? "CPI and SPI ready — running models…"
             : "CPI or SPI ready — running models…";
-          ran = await runModels(project, si);
+          // Merge into accumulated inputs so successive single-file uploads on the same project
+          // don't overwrite prior fields with null (each doc only carries its own field set).
+          const accSi = Object.assign({}, project.signalInputs || {});
+          Object.keys(si).forEach(function(k) { if (si[k] != null && si[k] !== "") accSi[k] = si[k]; });
+          ran = await runModels(project, accSi);
         }
         await refreshProject(id);
 
@@ -1288,7 +1298,13 @@
           const dates = extractDates(resp, si);
           cache[id] = { signalInputs: si, missing, readyToRun: resp && resp.readyToRun, dates };
           const project = LinStore.getCached(id);
-          if ((hasIndex(si.cpi) || hasIndex(si.spi)) && project) await runModels(project, si);
+          if ((hasIndex(si.cpi) || hasIndex(si.spi)) && project) {
+            // Merge this doc's non-null fields into the project's accumulated signalInputs so
+            // runModels sees the full multi-doc field set, not just this document's partial extract.
+            const accSi = Object.assign({}, project.signalInputs || {});
+            Object.keys(si).forEach(function(k) { if (si[k] != null && si[k] !== "") accSi[k] = si[k]; });
+            await runModels(project, accSi);
+          }
           await refreshProject(id);
         } catch (postErr) {
           console.warn("[upload] post-extract processing failed (extract itself succeeded):", postErr);
@@ -1348,6 +1364,16 @@
         if (i < files.length - 1) await new Promise(function (r) { setTimeout(r, 2500); });
       }
       try { if (typeof refreshProject === "function") await refreshProject(id); } catch (e) {}
+      // One final full recompute on the complete accumulated field set so the sim count
+      // reflects every field extracted across all docs in the batch, not just the last doc's subset.
+      try {
+        const finalProject = LinStore.getCached(id);
+        if (finalProject && finalProject.signals &&
+            (hasIndex((finalProject.signalInputs || {}).cpi) ||
+             hasIndex((finalProject.signalInputs || {}).spi))) {
+          await runModels(finalProject, resolveSimInputs(finalProject));
+        }
+      } catch (e) { /* non-fatal — batch already persisted */ }
     }
   }
 

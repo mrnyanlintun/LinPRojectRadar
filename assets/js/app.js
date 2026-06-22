@@ -524,6 +524,17 @@
   /* Summarize the fourteen client-side simulation models (PERT/LOB/CCPM/RCF/DSM + DST/RoughSets/Neutrosophic/IFS + Z/PLTS/Plithogenic/BRB/Quantum)
      for the Portfolio views. Returns null when none have run (graceful
      fallback — nothing is shown). */
+  // Total active modules across all categories — the consistent denominator for the sim pill.
+  // Computed once; falls back to 94 (the known active count) if categories aren't loaded yet.
+  function activeModuleTotal() {
+    if (window.LIN_CATEGORIES) {
+      return window.LIN_CATEGORIES.reduce(function(n, c) {
+        return n + (c.modules || []).filter(function(m) { return m.active !== false; }).length;
+      }, 0);
+    }
+    return 94;
+  }
+
   function simSummary(p) {
     const arr = p && p.simulationSignals && Array.isArray(p.simulationSignals.signal_array)
       ? p.simulationSignals.signal_array : null;
@@ -534,7 +545,9 @@
       if (c === "red") red++; else if (c === "amber") amber++; else green++;
     });
     const worst = red ? "red" : amber ? "amber" : "green";
-    return { red, amber, green, total: arr.length, worst, flagged: red + amber };
+    // Use the active-module total so every project shows /N out of the same denominator
+    // (not arr.length, which varied by which partial run last persisted).
+    return { red, amber, green, total: activeModuleTotal(), worst, flagged: red + amber };
   }
 
   function awaitingHtml(p, what) {
