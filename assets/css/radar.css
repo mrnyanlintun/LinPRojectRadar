@@ -1247,7 +1247,7 @@ body[data-theme="light"] .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .projnet2d-canvas:active { cursor: grabbing; }
 /* Floating click callout (one line; over the canvas, never a panel) */
 .projnet2d-callout {
-  position: absolute; z-index: 5; pointer-events: none; white-space: nowrap;
+  position: absolute; z-index: 5; pointer-events: none;
   font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; line-height: 1.4;
   padding: 4px 8px; border-radius: 6px;
   background: var(--surface-2, #131d33); border: 1px solid var(--line);
@@ -1255,6 +1255,9 @@ body[data-theme="light"] .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 }
 .projnet2d-callout .pn2d-co-cat { font-weight: 700; color: var(--ink, #e6edf6); }
 .projnet2d-callout .pn2d-co-dim { color: var(--faint, #64748b); }
+.projnet2d-callout .pn2d-co-stack { display: flex; flex-direction: column; gap: 1px; }
+.projnet2d-callout .pn2d-co-row { white-space: nowrap; }
+.projnet2d-callout .pn2d-co-divider { border-top: 1px solid var(--line, #2a3a5c); margin: 2px 0; }
 .projnet2d-foot {
   padding: 8px 18px; border-top: 1px solid var(--line);
   background: var(--surface-2, #131d33); font-family: var(--font-mono); font-size: 10px; margin: 0;

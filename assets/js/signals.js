@@ -517,7 +517,7 @@
     const self = portfolioVector(project);
     if (self && !portfolio.some((v) => v.id === project.id)) portfolio.push(self);
 
-    if (portfolio.length < 2) {
+    if (portfolio.length < 3) {
       return cat8Insufficient("Need 3+ projects with signal data for portfolio analysis");
     }
     if (!window.LinStore || !LinStore.post ||
