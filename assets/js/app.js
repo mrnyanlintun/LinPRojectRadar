@@ -239,9 +239,7 @@
       svg.appendChild(sweepG);
     }
 
-    // ── blips — two passes (collision jitter + label nudge) ──────────────
-    const BAND_EDGES = [R_MIN - 6, 0.34 * 180, 0.62 * 180, R_MAX + 2];
-
+    // ── blips — two passes (collision de-overlap + label nudge) ──────────
     const plots = LIN_PROJECTS.map((p) => {
       try {
         const ang = hashAngle(p);
@@ -254,21 +252,25 @@
       }
     });
 
-    // pass 1: dot collision jitter (deterministic by list order)
+    // pass 1: collision de-overlap (deterministic by list order). Keep each
+    // blip inside its true sector wedge (angle nudged at most ±8°, so the
+    // sector reading stays correct) and push it outward in radius until it
+    // clears every already-placed blip by MIN_SEP. The true radius is kept on
+    // q.trueR so a faint tick can show the original drift when nudged far.
+    const MIN_SEP = 34;               // ~2.2× the icon radius (ICON = 16)
+    const RADIUS_CAP = R_MAX + 48;    // stay within the SVG viewBox margin
     const placedDots = [];
     plots.forEach((q) => {
-      let pos = polar(q.ang, q.r);
-      const lo = Math.max(...BAND_EDGES.filter((e) => e < q.r)) + 3;
-      const hi = Math.min(...BAND_EDGES.filter((e) => e >= q.r)) - 3;
-      let tries = 0;
-      while (placedDots.some((d) => Math.hypot(d.x - pos.x, d.y - pos.y) < 12) && tries < 8) {
+      q.trueR = q.r;
+      let r = q.r, pos = polar(q.ang, r), tries = 0;
+      while (placedDots.some((d) => Math.hypot(d.x - pos.x, d.y - pos.y) < MIN_SEP) && tries < 12) {
         tries++;
-        const dir = tries % 2 ? 1 : -1;
-        const r2 = Math.min(hi, Math.max(lo, q.r + dir * 6 * Math.ceil(tries / 2)));
-        pos = polar(q.ang, r2);
+        r = Math.min(RADIUS_CAP, q.trueR + tries * 7);                          // push outward
+        const adeg = ((tries % 2) ? 1 : -1) * Math.min(8, Math.ceil(tries / 2) * 3); // small ± within ±8°
+        pos = polar(q.ang + adeg, r);
       }
-      q.x = pos.x; q.y = pos.y;
-      placedDots.push(pos);
+      q.x = pos.x; q.y = pos.y; q.r = r;
+      placedDots.push({ x: pos.x, y: pos.y });
     });
 
     // pass 2: label collision avoidance (sorted vertical pass)
@@ -345,6 +347,20 @@
       const titleEl = el("title");
       titleEl.textContent = `${p.id} — ${p.name}`;
       g.appendChild(titleEl);
+
+      // faint tick back toward the true drift radius when the de-overlap pass
+      // nudged this blip more than ~20px off its real radial position, so the
+      // original drift stays legible.
+      if (q.trueR != null && !empty) {
+        const tp = polar(q.ang, q.trueR);
+        if (Math.hypot(q.x - tp.x, q.y - tp.y) > 20) {
+          g.appendChild(el("line", {
+            x1: q.x, y1: q.y, x2: tp.x.toFixed(1), y2: tp.y.toFixed(1),
+            stroke: "var(--muted)", "stroke-width": "1", opacity: "0.3",
+            class: "blip-true-tick"
+          }));
+        }
+      }
 
       // ping ring — synced to sweep: fires when sweep reaches blip's angle
       const normAng = ((q.ang % 360) + 360) % 360;
@@ -447,15 +463,23 @@
         btn.className = "list-item";
         btn.setAttribute("data-id", p.id);
         const state = stateLabel(p);
+        // Colour the status word + the sim pill to the 5-status palette, reusing
+        // the canonical map (no second copy). "Awaiting ingest" rows have no
+        // normalized status → no inline colour → they stay muted via their class.
+        const norm = (hasSignals(p) && typeof normalizeStatusLabel === "function")
+          ? normalizeStatusLabel(state) : null;
+        const col = (norm && typeof PCEIF_STATUS_HEX !== "undefined") ? PCEIF_STATUS_HEX[norm] : null;
+        const stateStyle = col ? ` style="color:${col}"` : "";
+        const simStyle = col ? ` style="border-color:${col};color:${col}"` : "";
         const sum = simSummary(p);
         const simChip = sum
-          ? `<span class="li-sim state-${esc(sum.worst)}" title="Simulation models: ${esc(sum.red)} red, ${esc(sum.amber)} amber, ${esc(sum.green)} green">${esc(sum.flagged)}/${esc(sum.total)} sim</span>`
+          ? `<span class="li-sim state-${esc(sum.worst)}"${simStyle} title="Simulation models: ${esc(sum.red)} red, ${esc(sum.amber)} amber, ${esc(sum.green)} green">${esc(sum.flagged)}/${esc(sum.total)} sim</span>`
           : "";
         btn.innerHTML =
           `<span class="li-code">${esc(p.id)}</span>` +
           `<span class="li-name">${esc(p.name)}</span>` +
           simChip +
-          `<span class="li-state state-${esc(statusKey(p))}">${esc(state)}</span>`;
+          `<span class="li-state state-${esc(statusKey(p))}"${stateStyle}>${esc(state)}</span>`;
         btn.addEventListener("click", () => openDetail(p.id));
         li.appendChild(btn);
         ul.appendChild(li);
