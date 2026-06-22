@@ -38,7 +38,9 @@
   };
 
   const STATUS_COLOR = {
+    complete: "#4ea0ff",
     green: "var(--clear-green)",
+    yellow: "var(--yellow)",
     amber: "var(--radar-amber)",
     red:   "var(--alarm-red)"
   };
@@ -95,9 +97,11 @@
   // green near center, amber mid, red outer. Empty sits at a neutral mid-ring.
   function proxyHealth(p) {
     switch (statusKey(p)) {
-      case "green": return 85;   // inside green zone
-      case "amber": return 55;   // inside amber ring
-      case "red":   return 25;   // inside red-review ring
+      case "complete": return 92;  // finished — near centre
+      case "green":  return 85;  // inside green zone
+      case "yellow": return 70;  // early-warning, between green and amber
+      case "amber":  return 55;  // inside amber ring
+      case "red":    return 25;  // inside red-review ring
       default:      return 50;   // empty → neutral radius (rendered hollow/grey)
     }
   }
@@ -339,7 +343,9 @@
       });
 
       const color =
+        status === "complete" ? STATUS_COLOR.complete :
         status === "green" ? STATUS_COLOR.green :
+        status === "yellow" ? STATUS_COLOR.yellow :
         status === "amber" ? STATUS_COLOR.amber :
         status === "red"   ? STATUS_COLOR.red : "var(--muted)";
 

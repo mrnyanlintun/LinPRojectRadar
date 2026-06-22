@@ -1082,6 +1082,37 @@
     return `<div class="eb-body">${esc(text)}</div>`;
   }
 
+  // Deterministic flags block — rendered regardless of the LLM brief so a
+  // Green/Yellow project still surfaces EVERY Red module (with its category),
+  // the Red-review high-conflict advisory (project DST conflict K >= 0.55), and
+  // any active liability period. Reads the DST project fusion directly so the
+  // rollup can never hide a Red.
+  function briefFlagsHtml(project) {
+    let f = null;
+    try { f = window.getProjectFusion ? window.getProjectFusion(project) : null; } catch (e) { f = null; }
+    if (!f) return "";
+    const parts = [];
+    if (f.complete && f.liabilityUntil) {
+      const today = new Date().toISOString().slice(0, 10);
+      if (f.liabilityUntil >= today) {
+        parts.push('<p class="eb-flag eb-flag-info">In liability period (ends ' + esc(f.liabilityUntil) + ')</p>');
+      }
+    }
+    if (f.redReview) {
+      parts.push('<p class="eb-flag eb-flag-review">⚑ Red-review: high disagreement among categories (conflict ' +
+        Math.round((f.conflict || 0) * 100) + '%) — recommend named human review. This advisory does not change the fused status band.</p>');
+    }
+    const reds = f.redFlags || [];
+    if (reds.length) {
+      const items = reds.map((r) =>
+        '<li><span class="eb-flag-cat">' + esc(r.category) + '</span> ' + esc(r.module) + '</li>').join("");
+      parts.push('<div class="eb-flags-red"><p class="eb-flag eb-flag-red">⚑ Red modules (' + reds.length +
+        ') — flagged regardless of overall status:</p><ul class="eb-flag-list">' + items + '</ul></div>');
+    }
+    if (!parts.length) return "";
+    return '<div class="eb-flags" aria-label="Brief flags">' + parts.join("") + '</div>';
+  }
+
   function executiveBriefHtml(project) {
     // Every helper is wrapped — the card must ALWAYS render so the user
     // sees the loading shimmer (or the cached brief) regardless of whether
@@ -1092,6 +1123,8 @@
     try { cached = briefForPeriod(project, period); } catch (e) {}
     try { accent = briefAccentClass(project); } catch (e) {}
     try { projectId = (project && project.id) || ""; } catch (e) {}
+    let flags = "";
+    try { flags = briefFlagsHtml(project); } catch (e) {}
     const state = cached ? "ready" : "loading";
     return `<section class="panel eb-panel eb-accent-${esc(accent)}" aria-label="Executive brief" data-eb-id="${esc(projectId)}">
       <div class="eb-head">
@@ -1101,6 +1134,7 @@
         </div>
         <button type="button" class="btn small eb-regen" data-eb-regen="${esc(projectId)}" aria-label="Regenerate brief">Regenerate ↺</button>
       </div>
+      ${flags}
       ${briefBodyHtml(state, cached)}
       ${cached ? briefFooter(cached) : ""}
     </section>`;

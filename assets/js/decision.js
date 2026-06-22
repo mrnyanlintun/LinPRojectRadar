@@ -106,6 +106,18 @@ function classifyConflict(project) {
    Amber       — every other early-warning combination.
    ------------------------------------------------------------ */
 function deriveHealthState(project) {
+  // Primary path: Dempster-Shafer category->project fusion (5 states:
+  // Complete/Green/Yellow/Amber/Red). High disagreement surfaces as a separate
+  // "Red-review" advisory flag (getProjectFusion().redReview), NOT as the status
+  // band — no single Red hard-overrides. Falls back to the signal-class rule for
+  // sparse projects (signals present but few/no computed category modules).
+  try {
+    if (typeof window !== "undefined" && window.getProjectFusion) {
+      const f = window.getProjectFusion(project);
+      if (f && f.status) return f.status;
+    }
+  } catch (e) { /* fall through to the signal-class rule */ }
+
   const s = signalStatuses(project);
   const reds = countStatus(s, "red");
   const ambers = countStatus(s, "amber");
@@ -139,16 +151,24 @@ function deriveHealthStateLabel(project) {
 function deriveDecision(project) {
   const healthState = deriveHealthState(project);
   const conflictType = classifyConflict(project);
-  const fairnessGateRequired =
-    healthState === "Red-review" && project.fairnessSensitive === true;
+  // The fused "Red" band IS the escalation tier — it replaced the old
+  // "Red-review" STATUS (which the DST rollup no longer emits; high category
+  // disagreement is now a separate advisory flag). The signal-class fallback
+  // can still emit "Red-review" for sparse projects, so route both here.
+  const escalate = healthState === "Red" || healthState === "Red-review";
+  const fairnessGateRequired = escalate && project.fairnessSensitive === true;
 
   let action, authority, documentation;
 
-  if (healthState === "Green") {
+  if (healthState === "Complete") {
+    action = "Project complete — proceed to close-out and any liability-period monitoring";
+    authority = "Project manager / Controls lead";
+    documentation = "Close-out record; monitor through the defects-liability period where applicable";
+  } else if (healthState === "Green") {
     action = "Routine monitoring";
     authority = "Project manager / Controls lead";
     documentation = "Monthly signal log entry";
-  } else if (healthState === "Red-review") {
+  } else if (escalate) {
     action = fairnessGateRequired
       ? "Request contractor explanation and recovery-plan review — fairness gate required before any formal action"
       : "Recovery-plan review and management escalation";
@@ -158,7 +178,7 @@ function deriveDecision(project) {
     documentation =
       "Full signal package, assigned owner, rationale, response timeframe, audit record";
   } else {
-    // Amber sub-cases keyed to the conflict type
+    // Yellow / Amber early-warning sub-cases keyed to the conflict type
     if (conflictType === "Forecast ahead of status") {
       action = "Investigate forecast assumptions and mitigation options";
     } else if (conflictType === "Anomaly without narrative") {

@@ -222,9 +222,107 @@
   }
 
   /* ===========================================================
+     Shared Dempster-Shafer evidence fusion (5-state)
+     -----------------------------------------------------------
+     ONE combiner, reused by Module 7.1 (runDST below) AND the
+     status rollup in categories.js (module -> category -> project).
+     Mass vector: {Green, Yellow, Amber, Red, Unknown}.
+     =========================================================== */
+  var DST_STATES = ["Green", "Yellow", "Amber", "Red", "Unknown"];
+
+  // Belief mass for a single module/category status (the locked rollup table).
+  // Mirrors the worst-status keyword precedence so a fused colour matches how
+  // the cards read the same status. null/insufficient_data -> the source
+  // ABSTAINS (no mass added). Complete/blue is NOT a fused band — a completed
+  // source contributes best-case (Green) evidence to the fusion.
+  var DST_STATUS_MASS = {
+    Green:  { Green: 0.80, Yellow: 0.08, Amber: 0.06, Red: 0.04, Unknown: 0.02 },
+    Yellow: { Green: 0.10, Yellow: 0.70, Amber: 0.13, Red: 0.05, Unknown: 0.02 },
+    Amber:  { Green: 0.05, Yellow: 0.12, Amber: 0.70, Red: 0.11, Unknown: 0.02 },
+    Red:    { Green: 0.03, Yellow: 0.05, Amber: 0.14, Red: 0.76, Unknown: 0.02 }
+  };
+  function statusToMass(status) {
+    var s = String(status == null ? "" : status).toLowerCase();
+    if (!s) return null;
+    if (s.indexOf("red") >= 0) return DST_STATUS_MASS.Red;                       // red / red-review
+    // Yellow before Amber: "light-amber" contains the "amber" substring, so it
+    // must be matched here first to map (correctly) to Yellow.
+    if (s.indexOf("yellow") >= 0 || s.indexOf("light-amber") >= 0) return DST_STATUS_MASS.Yellow;
+    if (s.indexOf("amber") >= 0 || s.indexOf("orange") >= 0) return DST_STATUS_MASS.Amber;
+    if (s.indexOf("green") >= 0) return DST_STATUS_MASS.Green;
+    if (s.indexOf("complete") >= 0 || s.indexOf("blue") >= 0) return DST_STATUS_MASS.Green;
+    return null;                                                                  // unknown -> abstain
+  }
+
+  // Dempster's rule of combination for two mass vectors. Missing states default
+  // to 0. Returns the normalized combined mass + the conflict coefficient K.
+  function dstCombine(m1, m2) {
+    var combined = { Green: 0, Yellow: 0, Amber: 0, Red: 0, Unknown: 0 };
+    var K = 0;
+    DST_STATES.forEach(function (s1) {
+      DST_STATES.forEach(function (s2) {
+        var mass = (m1[s1] || 0) * (m2[s2] || 0);
+        if (s1 === s2) combined[s1] += mass;
+        else K += mass;
+      });
+    });
+    var norm = 1 - K;
+    if (norm <= 0) return { Green: 0.2, Yellow: 0.2, Amber: 0.2, Red: 0.2, Unknown: 0.2, conflict: 1 };
+    DST_STATES.forEach(function (s) { combined[s] = combined[s] / norm; });
+    combined.conflict = K;
+    return combined;
+  }
+
+  // Shafer discounting: scale a source's mass by alpha; the freed (1-alpha)
+  // belief flows to Unknown. Used to apply a Red source at 0.5 strength so it
+  // counts 1.5x overall (full once + half once) without auto-dominating.
+  function dstDiscount(m, alpha) {
+    var out = { Green: 0, Yellow: 0, Amber: 0, Red: 0, Unknown: 0 };
+    DST_STATES.forEach(function (s) { out[s] = alpha * (m[s] || 0); });
+    out.Unknown += (1 - alpha);
+    return out;
+  }
+
+  // Fuse an array of status strings into one belief distribution. null/abstaining
+  // statuses are excluded. A Red-dominant source is applied 1.5x (full + half).
+  // Returns { mass, status (max-belief among Green/Yellow/Amber/Red), conflict K }
+  // or null when no source contributes.
+  function dstFuse(statuses) {
+    var sources = [];
+    (statuses || []).forEach(function (st) {
+      var m = statusToMass(st);
+      if (m) sources.push({ mass: m, red: m === DST_STATUS_MASS.Red });
+    });
+    if (!sources.length) return null;
+    var result = null;
+    // Conflict K from the LAST genuine source combine. The Red 0.5-discount
+    // re-combine below is a weighting artifact, so its K is deliberately NOT
+    // recorded (it would inflate the value). Like runDST, this is a last-step
+    // (order-sensitive) K, not a cumulative measure — it feeds only the advisory
+    // redReview flag (K >= 0.55), never the fused band.
+    var lastK = 0;
+    sources.forEach(function (src) {
+      if (result) {
+        var c = dstCombine(result, src.mass);
+        lastK = c.conflict || 0;
+        result = c;
+      } else {
+        result = { Green: src.mass.Green, Yellow: src.mass.Yellow, Amber: src.mass.Amber, Red: src.mass.Red, Unknown: src.mass.Unknown, conflict: 0 };
+      }
+      // Weighted Red: re-combine the same Red source at 0.5 strength -> 1.5x total.
+      if (src.red) result = dstCombine(result, dstDiscount(src.mass, 0.5));
+    });
+    var bands = ["Green", "Yellow", "Amber", "Red"];
+    var status = bands.reduce(function (a, b) { return result[a] >= result[b] ? a : b; });
+    return { mass: result, status: status, conflict: lastK };
+  }
+
+  /* ===========================================================
      Module 10 — Dempster-Shafer Evidence Combination
      Combines signal evidence from the four primary classes into a
-     unified belief distribution over {Green, Amber, Red, Unknown}.
+     unified belief distribution. Now uses the shared dstCombine()
+     above (Yellow mass is 0 for these four sources, so the fused
+     output is identical to the original 4-state combiner).
      =========================================================== */
   function runDST(signalInputs, existingSignals) {
     var sources = [];
@@ -263,27 +361,9 @@
     else if (docScore < 0.70) sources.push({ Green: 0.10, Amber: 0.70, Red: 0.15, Unknown: 0.05 });
     else sources.push({ Green: 0.05, Amber: 0.15, Red: 0.75, Unknown: 0.05 });
 
-    function combine(m1, m2) {
-      var states = ["Green", "Amber", "Red", "Unknown"];
-      var combined = { Green: 0, Amber: 0, Red: 0, Unknown: 0 };
-      var K = 0;
-      states.forEach(function (s1) {
-        states.forEach(function (s2) {
-          var mass = m1[s1] * m2[s2];
-          if (s1 === s2) combined[s1] += mass;
-          else K += mass;
-        });
-      });
-      var norm = 1 - K;
-      if (norm <= 0) return { Green: 0.25, Amber: 0.25, Red: 0.25, Unknown: 0.25, conflict: 1 };
-      states.forEach(function (s) { combined[s] = combined[s] / norm; });
-      combined.conflict = K;
-      return combined;
-    }
-
     var result = sources[0];
     for (var i = 1; i < sources.length; i++) {
-      result = combine(result, sources[i]);
+      result = dstCombine(result, sources[i]);   // shared 5-state combiner (Yellow=0 here)
     }
 
     var decisionStates = ["Green", "Amber", "Red"];
@@ -2885,6 +2965,8 @@
   window.LinSimulations = {
     runAll,
     checkInputs, insufficientData,
+    // Shared Dempster-Shafer fusion helpers (used by runDST + the status rollup)
+    statusToMass, dstCombine, dstFuse,
     runPERT, runLOB, runCCPM, runRCF, runDSM,
     runDST, runRoughSets, runNeutrosophic, runIntervalFuzzy,
     runZNumbers, runPLTS, runPlithogenic, runBRB, runQuantumProbability,

@@ -50,14 +50,18 @@
   }
 
   function portfolioAnswer() {
-    const counts = { "Green": 0, "Amber": 0, "Red-review": 0 };
+    // 5-state fused bands (Complete/Green/Yellow/Amber/Red); the signal-class
+    // fallback may still emit "Red-review", which we fold into the Red tally.
+    const counts = { "Complete": 0, "Green": 0, "Yellow": 0, "Amber": 0, "Red": 0 };
     const reds = [], gated = [];
     let empty = 0;
     LIN_PROJECTS.forEach((p) => {
       if (!(window.hasSignals && hasSignals(p))) { empty++; return; }
       const d = deriveDecision(p);
-      counts[d.healthState] = (counts[d.healthState] || 0) + 1;
-      if (d.healthState === "Red-review") reds.push(p.id);
+      const isRed = d.healthState === "Red" || d.healthState === "Red-review";
+      const key = isRed ? "Red" : d.healthState;
+      counts[key] = (counts[key] || 0) + 1;
+      if (isRed) reds.push(p.id);
       if (d.fairnessGateRequired) gated.push(p.id);
     });
     const archived = (window.LIN_ARCHIVED || []).length;
@@ -66,8 +70,8 @@
       title: "Portfolio — live status",
       body: `${LIN_PROJECTS.length} active project(s): ${empty} awaiting ingest, ${populated} populated` +
         `${archived ? ` (+${archived} archived)` : ""}. ` +
-        `Of the populated: ${counts["Green"]} Green, ${counts["Amber"]} Amber, ${counts["Red-review"]} Red-review. ` +
-        `Red-review: ${reds.length ? reds.join(", ") : "none"}. ` +
+        `Of the populated: ${counts["Complete"]} Complete, ${counts["Green"]} Green, ${counts["Yellow"]} Yellow, ${counts["Amber"]} Amber, ${counts["Red"]} Red. ` +
+        `Red (escalation): ${reds.length ? reds.join(", ") : "none"}. ` +
         `Fairness gate required: ${gated.length ? gated.join(", ") : "none"}. ` +
         `(Computed live from the current synthetic data; empty projects are never given a fabricated status.)`
     };

@@ -303,6 +303,14 @@ window.getCategoryStatus = function (catId, project) {
     .filter(Boolean)
     .map((s) => String(s));
   if (!statuses.length) return null;
+  // Dempster-Shafer evidence fusion (Red weighted 1.5x) instead of
+  // worst-status-wins, so a single Red module can't sink a category full of
+  // greens. Uses the shared fuser in simulations.js. Falls back to keyword
+  // worst-wins only if that module hasn't loaded.
+  if (window.LinSimulations && LinSimulations.dstFuse) {
+    const fused = LinSimulations.dstFuse(statuses);
+    if (fused && fused.status) return fused.status;
+  }
   const has = (label) => statuses.some((s) => s.toLowerCase().indexOf(label) >= 0);
   if (has("red")) return "Red";
   if (has("amber") || has("orange")) return "Amber";
@@ -310,4 +318,78 @@ window.getCategoryStatus = function (catId, project) {
   if (has("green")) return "Green";
   if (has("complete") || has("blue")) return "Complete";
   return null;
+};
+
+/* ------------------------------------------------------------
+   Project-level rollup — fuse the 12 category statuses (again via
+   Dempster-Shafer, Red weighted 1.5x) into the project status.
+   Also surfaces: the conflict K (Red-review advisory when >= 0.55),
+   every currently-Red module + its category (so the brief can flag
+   them even on a Green project), and Complete + liability handling.
+   ------------------------------------------------------------ */
+function projectPercentComplete_(project) {
+  const si = (project && project.signalInputs) || {};
+  const v = si.actualPctComplete != null ? si.actualPctComplete : si.pctComplete;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+function projectCompletionDate_(project) {
+  const si = (project && project.signalInputs) || {};
+  if (si.baselineEnd) return si.baselineEnd;
+  if (project && project.signals && project.signals.evm && project.signals.evm.dataDate) {
+    return project.signals.evm.dataDate;
+  }
+  if (project && project.reportingPeriod) return project.reportingPeriod + "-01";
+  return null;
+}
+window.getProjectFusion = function (project) {
+  if (!project) return null;
+  const catStatuses = LIN_CATEGORIES
+    .map((c) => getCategoryStatus(c.id, project))
+    .filter(Boolean);
+
+  let fused = null;
+  if (window.LinSimulations && LinSimulations.dstFuse) fused = LinSimulations.dstFuse(catStatuses);
+
+  // Every Red module + its category — for the executive brief flags list, so a
+  // Green/Yellow project still surfaces its Red modules (nothing hidden by fusion).
+  const redFlags = [];
+  LIN_CATEGORIES.forEach((c) => {
+    if (c.parked) return;
+    (c.modules || []).forEach((m) => {
+      const st = window.getModuleStatus ? getModuleStatus(m.method_class, project) : null;
+      if (st && String(st).toLowerCase().indexOf("red") >= 0) {
+        redFlags.push({ category: c.num, categoryName: c.name, module: m.name, num: m.num });
+      }
+    });
+  });
+
+  const conflict = fused ? fused.conflict : 0;
+  const out = {
+    status: fused ? fused.status : null,   // Green / Yellow / Amber / Red (or null = awaiting)
+    mass: fused ? fused.mass : null,
+    conflict: conflict,
+    redReview: conflict >= 0.55,           // advisory flag only — does NOT override the band
+    redFlags: redFlags,
+    categoryStatuses: catStatuses
+  };
+
+  // Complete (blue) is a project-end flag set by actual % complete == 100,
+  // independent of DST. Construction/Hybrid then carry a 2-year liability tail.
+  const comp = projectPercentComplete_(project);
+  if (comp != null && comp >= 100) {
+    out.status = "Complete";
+    out.complete = true;
+    const completionDate = projectCompletionDate_(project);
+    out.completionDate = completionDate;
+    const sector = String(project.sector || "").toLowerCase();
+    if ((sector === "construction" || sector === "hybrid" || sector === "combined") && completionDate) {
+      const d = new Date(completionDate);
+      if (!isNaN(d.getTime())) {
+        d.setFullYear(d.getFullYear() + 2);
+        out.liabilityUntil = d.toISOString().slice(0, 10);
+      }
+    }
+  }
+  return out;
 };

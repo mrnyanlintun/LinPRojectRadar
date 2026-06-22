@@ -520,11 +520,14 @@
       catch (err) { console.error("[module19] skipped " + (p && p.id) + ":", err); }
       return acc;
     }, []);
-    const byState = { "Green": [], "Amber": [], "Red-review": [] };
+    const byState = { "Complete": [], "Green": [], "Yellow": [], "Amber": [], "Red": [], "Red-review": [] };
     decisions.forEach(({ p, d }) => (byState[d.healthState] || (byState[d.healthState] = [])).push({ p, d }));
     const gates = decisions.filter(({ d }) => d.fairnessGateRequired);
 
-    const stateColor = { "Green": "var(--clear-green)", "Amber": "var(--radar-amber)", "Red-review": "var(--alarm-red)" };
+    const stateColor = {
+      "Complete": "#4ea0ff", "Green": "var(--clear-green)", "Yellow": "var(--yellow)",
+      "Amber": "var(--radar-amber)", "Red": "var(--alarm-red)", "Red-review": "var(--alarm-red)"
+    };
     const rows = Object.entries(byState).map(([state, list]) => ({
       label: state, value: list.length, color: stateColor[state], note: `${list.length}`
     }));
