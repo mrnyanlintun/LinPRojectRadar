@@ -1245,6 +1245,16 @@ body[data-theme="light"] .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .projnet2d-wrap { position: relative; background: var(--surface, #0f1729); }
 .projnet2d-canvas { display: block; width: 100%; height: 440px; cursor: grab; color: var(--ink-dim, #c9d4e3); }
 .projnet2d-canvas:active { cursor: grabbing; }
+/* Floating click callout (one line; over the canvas, never a panel) */
+.projnet2d-callout {
+  position: absolute; z-index: 5; pointer-events: none; white-space: nowrap;
+  font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; line-height: 1.4;
+  padding: 4px 8px; border-radius: 6px;
+  background: var(--surface-2, #131d33); border: 1px solid var(--line);
+  color: var(--ink-dim, #c9d4e3); box-shadow: 0 4px 14px rgba(0, 0, 0, .45);
+}
+.projnet2d-callout .pn2d-co-cat { font-weight: 700; color: var(--ink, #e6edf6); }
+.projnet2d-callout .pn2d-co-dim { color: var(--faint, #64748b); }
 .projnet2d-foot {
   padding: 8px 18px; border-top: 1px solid var(--line);
   background: var(--surface-2, #131d33); font-family: var(--font-mono); font-size: 10px; margin: 0;
