@@ -1053,14 +1053,15 @@
     // by the second metric row and the regulatory-basis box. Pulled from the
     // PCEIF Layer 1 policy table; the strings here mirror exactly what the
     // Knowledge Library "Module 19" section explains in full.
-    const stateKey = d.healthState; // "Complete" | "Green" | "Yellow" | "Amber" | "Red-review"
+    const stateKey = d.healthState; // "Complete" | "Green" | "Yellow" | "Amber" | "Red" (| "Red-review" fallback)
+    const escalated = stateKey === "Red" || stateKey === "Red-review";
     const timeframe = stateKey === "Complete" ? "Closeout documentation"
                     : stateKey === "Green"    ? "Monthly reporting cycle"
                     : stateKey === "Yellow"   ? "Weekly check-in"
                     : stateKey === "Amber"    ? "Weekly review loop"
-                    : stateKey === "Red-review" ? "48 business hours"
+                    : escalated               ? "48 business hours"
                     : "Immediate";
-    const regulatoryBasis = stateKey === "Red-review"
+    const regulatoryBasis = escalated
       ? "FAR Part 34 / OMB Circular A-11"
       : stateKey === "Complete"
         ? "Closeout / sign-off authority"

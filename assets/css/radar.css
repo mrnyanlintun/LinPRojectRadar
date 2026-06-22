@@ -759,6 +759,15 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .eb-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
 .eb-eyebrow { font-family: var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--phosphor); margin: 0; font-size: 11px; }
 .eb-sub { margin: 4px 0 0; font-size: 12px; color: var(--faint); }
+/* Brief flags — Red modules / Red-review advisory / liability (deterministic) */
+.eb-flags { margin: 10px 0 4px; display: flex; flex-direction: column; gap: 6px; }
+.eb-flag { margin: 0; font-size: 12px; line-height: 1.5; }
+.eb-flag-info { color: #4ea0ff; }
+.eb-flag-review { color: var(--radar-amber); font-weight: 600; }
+.eb-flag-red { color: var(--alarm-red); font-weight: 600; }
+.eb-flag-list { margin: 4px 0 0; padding-left: 18px; font-size: 12px; color: var(--ink-dim); }
+.eb-flag-list li { margin: 1px 0; }
+.eb-flag-cat { font-family: var(--font-mono); font-size: 10px; color: var(--faint); margin-right: 4px; }
 .eb-body {
   margin-top: 12px;
   font-size: 15px;
