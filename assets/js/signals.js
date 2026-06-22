@@ -1157,6 +1157,65 @@
       }
     }
 
+    // Detect an Anthropic rate-limit (HTTP 429 / rate_limit_error). The backend
+    // reports it INSIDE the resolved response (e.g. "Auto extraction failed:
+    // Error: Claude PDF 429: {...rate_limit_error...}"), so check the response
+    // object/text as well as any thrown error.
+    function isRateLimited(x) {
+      if (x == null) return false;
+      let s;
+      if (typeof x === "string") s = x;
+      else if (x instanceof Error) s = x.message || "";
+      else { try { s = JSON.stringify(x); } catch (e) { s = String(x); } }
+      return /\b429\b/.test(s) || /rate[_\s-]?limit/i.test(s);
+    }
+
+    // Wait out a rate-limit window with a live countdown in the item's status span.
+    function rateLimitWait(item, ms) {
+      const statusEl = item.querySelector(".dz-item-status");
+      let remaining = Math.round(ms / 1000);
+      return new Promise(function (resolve) {
+        (function tick() {
+          if (statusEl) statusEl.textContent = "⏳ Rate limited — retrying in " + remaining + "s…";
+          if (remaining <= 0) return resolve();
+          remaining -= 1;
+          setTimeout(tick, 1000);
+        })();
+      });
+    }
+
+    // Extract with auto-retry on rate-limit errors. Up to 4 attempts; on a 429 it
+    // waits 20s / 40s / 60s before the next try (each clears the 60s token window).
+    // Returns the successful response. Throws on a non-rate-limit failure (→ the
+    // existing setError path) or when all 4 attempts are exhausted.
+    async function extractWithRetry(payload, item) {
+      const BACKOFF = [20000, 40000, 60000]; // before attempts 2, 3, 4
+      const MAX = 4;
+      for (let attempt = 1; attempt <= MAX; attempt++) {
+        let resp = null, threw = null;
+        try {
+          resp = await postJSON(payload);
+          // Full response, logged before any success/failure decision.
+          console.log("[upload] extractsignals response (attempt " + attempt + "):", resp);
+        } catch (e) { threw = e; }
+
+        if (!threw) {
+          // SUCCESS whenever the backend returned ok:true, OR an `applied` list with
+          // no error — a valid response with no CPI/SPI fields (Cost/Environmental
+          // report) still succeeded. (Success logic unchanged.)
+          const ok = resp && (resp.ok === true || (!resp.error && resp.applied !== undefined));
+          if (ok) return resp;
+        }
+        const limited = threw ? isRateLimited(threw) : isRateLimited(resp);
+        if (!limited) {                                   // non-rate-limit → fail as today
+          if (threw) throw threw;
+          throw new Error((resp && resp.error) || "extract failed");
+        }
+        if (attempt === MAX) throw new Error("Rate limited — wait a minute and Retry");
+        await rateLimitWait(item, BACKOFF[attempt - 1]);  // wait, then retry
+      }
+    }
+
     async function processOne(id, file) {
       const item = document.createElement("div");
       item.className = "dz-item dz-identifying";
@@ -1195,16 +1254,11 @@
           mimeType: file.type || "application/pdf",
           fileName: file.name
         };
-        const resp = await postJSON(extractPayload);
-        // Full response, logged before any success/failure decision, so a shape
-        // change or a no-field document type is diagnosable from the console.
-        console.log("[upload] extractsignals response:", resp);
-
-        // SUCCESS whenever the backend returned ok:true, OR returned an `applied`
-        // list with no error — a valid response that applied no CPI/SPI-relevant
-        // fields (e.g. a Cost Report or Environmental Report) still succeeded.
-        const ok = resp && (resp.ok === true || (!resp.error && resp.applied !== undefined));
-        if (!ok) throw new Error((resp && resp.error) || "extract failed");
+        // Extract with auto-retry on Anthropic rate-limit (429) errors. Returns the
+        // successful response; throws on a non-rate-limit failure or exhausted
+        // retries (handled by the outer catch → setError). The success gate lives
+        // inside extractWithRetry, unchanged.
+        const resp = await extractWithRetry(extractPayload, item);
 
         // The backend echoes which type it inferred — use it for labels/sources.
         docType = resp.docType || docType;
@@ -1286,7 +1340,9 @@
       }
       for (let i = 0; i < files.length; i++) {
         await processOne(id, files[i]);
-        if (i < files.length - 1) await new Promise(function (r) { setTimeout(r, 400); });
+        // 2.5s between files spreads a ~27-doc batch over ~70s so it stays under
+        // the Anthropic 30k-input-tokens/min rate limit (a 429 trips otherwise).
+        if (i < files.length - 1) await new Promise(function (r) { setTimeout(r, 2500); });
       }
       try { if (typeof refreshProject === "function") await refreshProject(id); } catch (e) {}
     }
