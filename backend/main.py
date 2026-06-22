@@ -24,7 +24,7 @@ from governance import PCEIFGovernanceRouter
 
 load_dotenv()
 
-API_VERSION = "lin-project-radar-backend-v2.0"
+API_VERSION = "lin-project-radar-backend-v2.1-reset-fullclear"
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4.1")
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 PROJECTS_PATH = os.path.join(DATA_DIR, "projects.json")
@@ -448,11 +448,25 @@ def resetsignals(body: dict):
         db = _load()
         p = _find(db, pid)
         if p:
+            # Fully clear ALL ingested signal data so the project returns to a true
+            # "Awaiting ingest" state — re-uploaded docs must not stack on stale
+            # data. Leaving history/events behind was the root cause of phantom
+            # CUSUM breaches (stale multi-period SPI series) and a docs table that
+            # kept showing prior uploads.
             for k in ("signals", "signalInputs", "simulationSignals"):
                 p.pop(k, None)
-            p.setdefault("events", []).append({"type": "signals_reset", "at": _now()})
+            p["history"] = []   # feeds CUSUM's multi-period SPI series
+            p["events"] = []    # signals_extracted (backs the Uploaded Documents table) + overwrite log
+            for k in ("documents", "uploadedDocuments", "docs"):
+                if k in p:
+                    p[k] = []
+            # NOTE: do NOT touch `corpus` — that is the Technical Auditor's reference
+            # store, unrelated to signal ingest.
+            p["status"] = None
+            p["reportingPeriod"] = None
+            p["derivedState"] = None
             _store(db)
-        return {"ok": bool(p), "project": p}
+        return {"ok": bool(p), "id": pid, "reset": bool(p), "project": p}
 
 
 @app.post("/simulate")

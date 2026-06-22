@@ -1218,16 +1218,31 @@
       if (msg) msg.textContent = "Resetting…";
       try {
         await LinStore.resetSignals(id);
-        // clear local model state so the page reflects the cleared project
-        const cached = LinStore.getCached(id);
-        if (cached) { delete cached.signals; delete cached.signalInputs; delete cached.simulationSignals; }
+        // Drop the dropzone's per-project extraction cache so the signals panel
+        // doesn't re-show stale inputs after the reset.
+        if (window.LinSignals && LinSignals.clearCache) LinSignals.clearCache(id);
+        // Re-fetch the (now-cleared) server copy; fall back to the cached copy.
         try {
           const fresh = await LinStore.getProject(id);
           if (fresh && window.LIN_PROJECTS) {
             const i = LIN_PROJECTS.findIndex((x) => x.id === id);
             if (i >= 0) LIN_PROJECTS[i] = fresh;
           }
-        } catch (e) { /* keep the cleared cached copy on fetch failure */ }
+        } catch (e) { /* keep the cached copy on fetch failure */ }
+        // Force the in-memory copy to a true "Awaiting ingest" state, so the UI is
+        // correct even if the backend reset is an older build that didn't clear
+        // history/events/documents (history feeds CUSUM; events backs the
+        // Uploaded Documents table). The server is the source of truth once its
+        // resetSignals_ is redeployed — this just keeps the screen honest meanwhile.
+        const p = LinStore.getCached(id);
+        if (p) {
+          p.signals = null; p.signalInputs = null; p.simulationSignals = null;
+          p.history = []; p.events = [];
+          ["documents", "uploadedDocuments", "docs"].forEach((k) => {
+            if (Array.isArray(p[k])) p[k] = [];
+          });
+          p.status = null; p.reportingPeriod = null; p.derivedState = null;
+        }
         if (window.LinApp) LinApp.refresh();
         render(id); // re-render → awaiting ingest
       } catch (e) {
