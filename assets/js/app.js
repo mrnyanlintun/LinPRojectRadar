@@ -917,6 +917,41 @@
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") setNavOpen(false); });
   }
 
+  /* ---------- "Recompute all signals" button ----------
+     Runs the full 94-module set for every ingested project from stored
+     signalInputs — no document re-upload, no extraction API calls.
+     Network: only GET (?action=get) and save (?action=save). */
+  (function wireRecomputeAll() {
+    const btn    = document.getElementById("recompute-all-btn");
+    const status = document.getElementById("recompute-all-status");
+    if (!btn || !status) return;
+    btn.addEventListener("click", async function () {
+      if (!window.LinSignals || !window.LinStore) return;
+      const projects = (LinStore.cachedActive ? LinStore.cachedActive() : []);
+      if (!projects.length) { status.textContent = "No ingested projects found."; return; }
+      btn.disabled = true;
+      let done = 0;
+      for (const p of projects) {
+        status.textContent = "Recomputing " + (done + 1) + " / " + projects.length + "…";
+        try {
+          const full = await LinStore.getProject(p.id);
+          if (!full || !full.signalInputs) { done++; continue; }
+          const si = LinSignals.deriveExtendedFields(LinSignals.resolveSimInputs(full));
+          const hasCpi = si.cpi != null && Number.isFinite(Number(si.cpi)) && Number(si.cpi) > 0;
+          const hasSpi = si.spi != null && Number.isFinite(Number(si.spi)) && Number(si.spi) > 0;
+          if (!hasCpi && !hasSpi) { done++; continue; }
+          await LinSignals.runModels(full, si);
+        } catch (e) {
+          console.warn("[recompute-all] project " + p.id + ":", e && e.message);
+        }
+        done++;
+      }
+      status.textContent = "Done — recomputed " + done + " project" + (done === 1 ? "" : "s") + ".";
+      btn.disabled = false;
+      if (window.LinApp) LinApp.refresh();
+    });
+  })();
+
   /* ---------- public API (used by ingest.js) ---------- */
   window.LinApp = {
     refresh() {
