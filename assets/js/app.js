@@ -337,7 +337,6 @@
       const empty = status === "empty";
       const g = el("g", {
         class: empty ? "blip blip-empty" : "blip",
-        tabindex: "0", role: "button",
         "aria-label": `${p.id} ${p.name}, ${stateLabel(p)}`,
         "data-id": p.id
       });
@@ -382,14 +381,6 @@
         g.appendChild(pingRing);
       }
 
-      // keyboard focus ring
-      const ring = el("circle", {
-        cx: q.x, cy: q.y, r: 12, fill: "none",
-        stroke: "var(--phosphor)", "stroke-width": "2",
-        class: "blip-ring", opacity: "0"
-      });
-      g.appendChild(ring);
-
       // hard-hat icon: nested <svg> positions it unambiguously in the parent
       // SVG's coordinate system via x/y/width/height attributes.
       const iconSvg = el("svg", {
@@ -427,16 +418,11 @@
 
       const choose = () => openDetail(p.id);
       g.addEventListener("click", choose);
-      g.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); choose(); }
-      });
-      // hover/focus: emphasize label and re-append so it paints on top
+      // hover: emphasize label and re-append so it paints on top
       const raise = () => { g.classList.add("hot"); svg.appendChild(g); };
       const lower = () => { g.classList.remove("hot"); };
       g.addEventListener("mouseenter", raise);
       g.addEventListener("mouseleave", lower);
-      g.addEventListener("focus", raise);
-      g.addEventListener("blur", lower);
 
       svg.appendChild(g);
      } catch (err) {
@@ -453,8 +439,6 @@
     document.querySelectorAll(".blip").forEach((b) => {
       const on = b.getAttribute("data-id") === selectedId;
       b.classList.toggle("selected", on);
-      const ring = b.querySelector(".blip-ring");
-      if (ring) ring.setAttribute("opacity", on ? "1" : "0");
     });
   }
 
@@ -476,11 +460,7 @@
           ? normalizeStatusLabel(state) : null;
         const col = (norm && typeof PCEIF_STATUS_HEX !== "undefined") ? PCEIF_STATUS_HEX[norm] : null;
         const stateStyle = col ? ` style="color:${col}"` : "";
-        const simStyle = col ? ` style="border-color:${col};color:${col}"` : "";
-        const sum = simSummary(p);
-        const simChip = sum
-          ? `<span class="li-sim state-${esc(sum.worst)}"${simStyle} title="Simulation models: ${esc(sum.red)} red, ${esc(sum.amber)} amber, ${esc(sum.green)} green">${esc(sum.flagged)}/${esc(sum.total)} sim</span>`
-          : "";
+        const simChip = "";
         btn.innerHTML =
           `<span class="li-code">${esc(p.id)}</span>` +
           `<span class="li-name">${esc(p.name)}</span>` +
