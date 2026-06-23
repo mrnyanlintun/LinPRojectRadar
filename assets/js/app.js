@@ -262,7 +262,7 @@
     // clears every already-placed blip by MIN_SEP. The true radius is kept on
     // q.trueR so a faint tick can show the original drift when nudged far.
     const MIN_SEP = 34;               // ~2.2× the icon radius (ICON = 16)
-    const RADIUS_CAP = R_MAX + 48;    // stay within the SVG viewBox margin
+    const RADIUS_CAP = R_MAX - 2;     // hard cap at outer ring edge
     const placedDots = [];
     plots.forEach((q) => {
       q.trueR = q.r;
@@ -485,8 +485,13 @@
           `<span class="li-code">${esc(p.id)}</span>` +
           `<span class="li-name">${esc(p.name)}</span>` +
           simChip +
-          `<span class="li-state state-${esc(statusKey(p))}"${stateStyle}>${esc(state)}</span>`;
-        btn.addEventListener("click", () => openDetail(p.id));
+          `<span class="li-state state-${esc(statusKey(p))}"${stateStyle}>${esc(state)}</span>` +
+          `<button class="btn small li-open" data-open="${esc(p.id)}" title="Open project detail">Open →</button>`;
+        btn.addEventListener("click", () => { selectProject(p.id); });
+        btn.querySelector(".li-open").addEventListener("click", (e) => {
+          e.stopPropagation();
+          openDetail(p.id);
+        });
         li.appendChild(btn);
         ul.appendChild(li);
       } catch (err) {
