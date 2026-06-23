@@ -776,7 +776,15 @@
           // copy hasn't caught up yet (eventual consistency / save↔get race).
           if (!hasSignals(fresh) && hasSignals(LIN_PROJECTS[i])) fresh.signals = LIN_PROJECTS[i].signals;
           if (!fresh.signalInputs && LIN_PROJECTS[i].signalInputs) fresh.signalInputs = LIN_PROJECTS[i].signalInputs;
-          if (!fresh.simulationSignals && LIN_PROJECTS[i].simulationSignals) fresh.simulationSignals = LIN_PROJECTS[i].simulationSignals;
+          // Never replace a larger in-memory sim array with a smaller server copy — the backend
+          // never writes simulationSignals, so a fresh GET always returns an absent or stale array.
+          const memArr   = LIN_PROJECTS[i].simulationSignals && LIN_PROJECTS[i].simulationSignals.signal_array;
+          const freshArr = fresh.simulationSignals && fresh.simulationSignals.signal_array;
+          const memLen   = Array.isArray(memArr)   ? memArr.length   : 0;
+          const freshLen = Array.isArray(freshArr) ? freshArr.length : 0;
+          if (!fresh.simulationSignals || memLen > freshLen) {
+            if (LIN_PROJECTS[i].simulationSignals) fresh.simulationSignals = LIN_PROJECTS[i].simulationSignals;
+          }
           if (!fresh.history && LIN_PROJECTS[i].history) fresh.history = LIN_PROJECTS[i].history;
           LIN_PROJECTS[i] = fresh;
         }
@@ -1297,14 +1305,9 @@
           const missing = (resp && resp.missing) || [];
           const dates = extractDates(resp, si);
           cache[id] = { signalInputs: si, missing, readyToRun: resp && resp.readyToRun, dates };
-          const project = LinStore.getCached(id);
-          if ((hasIndex(si.cpi) || hasIndex(si.spi)) && project) {
-            // Merge this doc's non-null fields into the project's accumulated signalInputs so
-            // runModels sees the full multi-doc field set, not just this document's partial extract.
-            const accSi = Object.assign({}, project.signalInputs || {});
-            Object.keys(si).forEach(function(k) { if (si[k] != null && si[k] !== "") accSi[k] = si[k]; });
-            await runModels(project, accSi);
-          }
+          // Do NOT call runModels here — the batch runs module computation ONCE at the
+          // end of handleFiles on the full accumulated field set (Fix 1b). Running per-doc
+          // produces a small partial array that freezes at an early field count.
           await refreshProject(id);
         } catch (postErr) {
           console.warn("[upload] post-extract processing failed (extract itself succeeded):", postErr);
@@ -1363,17 +1366,18 @@
         // the Anthropic 30k-input-tokens/min rate limit (a 429 trips otherwise).
         if (i < files.length - 1) await new Promise(function (r) { setTimeout(r, 2500); });
       }
-      try { if (typeof refreshProject === "function") await refreshProject(id); } catch (e) {}
-      // One final full recompute on the complete accumulated field set so the sim count
-      // reflects every field extracted across all docs in the batch, not just the last doc's subset.
+      // One full runModels pass on the COMPLETE accumulated field set — after all docs are
+      // ingested and server-persisted. Uses getProject (free GET, no extraction) so the
+      // signalInputs reflects every field the backend merged across the whole batch.
       try {
-        const finalProject = LinStore.getCached(id);
-        if (finalProject && finalProject.signals &&
-            (hasIndex((finalProject.signalInputs || {}).cpi) ||
-             hasIndex((finalProject.signalInputs || {}).spi))) {
-          await runModels(finalProject, resolveSimInputs(finalProject));
+        const finalProject = await LinStore.getProject(id);
+        if (finalProject) {
+          const si = deriveExtendedFields(resolveSimInputs(finalProject));
+          if (hasIndex(si.cpi) || hasIndex(si.spi)) {
+            await runModels(finalProject, si);
+          }
         }
-      } catch (e) { /* non-fatal — batch already persisted */ }
+      } catch (e) { /* non-fatal — batch extraction already persisted server-side */ }
     }
   }
 
@@ -1691,6 +1695,7 @@
     buildCategorySnapshot,
     ensureSimulations,
     runModels,
+    resolveSimInputs,
     deriveExtendedFields,
     DOC_TYPES, DOC_TYPE_LABEL,
     clearCache
