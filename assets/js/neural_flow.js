@@ -154,10 +154,11 @@
   // ─── Colors ──────────────────────────────────────────────────────────────────
   var COL = {
     Green:'#3fcaa6', Yellow:'#f0c040', Amber:'#e2b13c',
-    Red:'#e0556b',   None:'#2a3346',
+    Red:'#e0556b',   None:'#2a3346',  Complete:'#4ea0ff',
     DocOn:'#a0bcd8', DocOff:'#1e2a3c',
   };
-  var STATUS_RANK = { Red:0, Amber:1, Yellow:2, Green:3, None:4 };
+  // Complete ranks alongside Green (blue is a display colour, not a severity)
+  var STATUS_RANK = { Red:0, Amber:1, Yellow:2, Green:3, Complete:3, None:4 };
 
   function statusFromSig(r) {
     if (!r) return 'None';
@@ -231,8 +232,8 @@
     (project.events || []).forEach(function(e) {
       if (e.event === 'signals_extracted' && e.docType) uploadedNorm[normKey(e.docType)] = true;
     });
-    // Fallback: reconstruct from signalInputs.sources if events were cleared by reset
-    if (Object.keys(uploadedNorm).length === 0 && project.signalInputs && project.signalInputs.sources) {
+    // Union with signalInputs.sources (events may be partially cleared by resets)
+    if (project.signalInputs && project.signalInputs.sources) {
       Object.values(project.signalInputs.sources).forEach(function(src) {
         if (src && src.docType) uploadedNorm[normKey(src.docType)] = true;
       });
@@ -251,11 +252,28 @@
 
     // ── 3. Pre-compute all statuses ───────────────────────────────────────────
     var modInfos = MODULES.map(function(m) { return modInfo(m.mc); });
-    var catStatuses = CATS.map(function(_, ci) {
+    // Category statuses — use the app's DST fusion (categories.js); LIN_CATEGORIES
+    // is ordered cat1..cat12, matching the CATS index. Worst-of is only a fallback.
+    var catStatuses = CATS.map(function(cat, ci) {
+      try {
+        if (window.getCategoryStatus && window.LIN_CATEGORIES && window.LIN_CATEGORIES[ci]) {
+          var s = window.getCategoryStatus(window.LIN_CATEGORIES[ci].id, project);
+          if (s) return s; // 'Green' | 'Yellow' | 'Amber' | 'Red' | 'Complete'
+        }
+      } catch (e) {}
       return worstStatus(catModIdxs[ci].map(function(mi) { return modInfos[mi].status; }));
     });
-    var prjStatus = worstStatus(catStatuses);
-    var prjColor  = colFor(prjStatus);
+
+    // Project status — the app's DST project fusion (Red weighted 1.5x)
+    var prjStatus = null;
+    try {
+      if (window.getProjectFusion) {
+        var f = window.getProjectFusion(project);
+        if (f && f.status) prjStatus = f.status;
+      }
+    } catch (e) {}
+    if (!prjStatus) prjStatus = worstStatus(catStatuses);
+    var prjColor = colFor(prjStatus);
 
     // ── 4. Layout geometry ────────────────────────────────────────────────────
     var W = 1280, PAD_TOP = 45;
@@ -289,13 +307,13 @@
 
     // defs
     var defs = se('defs', {}, svg);
-    var glowTargets = { Green:COL.Green, Yellow:COL.Yellow, Amber:COL.Amber, Red:COL.Red, DocOn:COL.DocOn };
+    var glowTargets = { Green:COL.Green, Yellow:COL.Yellow, Amber:COL.Amber, Red:COL.Red, Complete:COL.Complete, DocOn:COL.DocOn };
     Object.keys(glowTargets).forEach(function(k) {
       var f = se('filter', { id:'lnf-glow-'+k, x:'-60%', y:'-60%', width:'220%', height:'220%' }, defs);
       se('feDropShadow', { dx:'0', dy:'0', stdDeviation:'2.5', 'flood-color':glowTargets[k], 'flood-opacity':'0.85' }, f);
     });
     // arrowhead markers for inter-cat and feedback
-    ['Green','Yellow','Amber','Red','None'].forEach(function(s) {
+    ['Green','Yellow','Amber','Red','Complete','None'].forEach(function(s) {
       var m = se('marker', { id:'lnf-arr-'+s, markerWidth:'5', markerHeight:'5', refX:'4', refY:'2.5', orient:'auto' }, defs);
       se('polygon', { points:'4,0 4,5 0,2.5', fill:colFor(s), opacity:'0.75' }, m);
     });
@@ -487,7 +505,7 @@
       'text-anchor':'middle', 'font-family':'monospace' }, prjG);
     prjStatusText.textContent = prjStatus;
     prjG.addEventListener('mouseenter', function(evt) {
-      showTT(evt,'<div class="n">Project Status</div><div class="sub" style="color:'+prjColor+'">'+prjStatus+'</div><div class="sub">Worst of 12 categories</div>');
+      showTT(evt,'<div class="n">Project Status</div><div class="sub" style="color:'+prjColor+'">'+prjStatus+'</div><div class="sub">DST fusion of 12 categories</div>');
     });
     prjG.addEventListener('mousemove', moveTT);
     prjG.addEventListener('mouseleave', hideTT);
