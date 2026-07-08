@@ -32,24 +32,10 @@
     margin-top: 3px;
   }
 
-  #col-headers {
-    display: flex;
-    padding: 10px 24px 0;
-    gap: 0;
-    pointer-events: none;
-  }
-  .col-hdr {
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    color: #3a4a6a;
-    text-transform: uppercase;
-  }
-
   #canvas-wrap {
     position: relative;
     width: 100%;
-    min-height: 1200px;
+    min-height: 1220px;
   }
 
   #flow-svg {
@@ -59,20 +45,10 @@
     overflow: visible;
   }
 
-  /* --- Nodes --- */
-  .node {
-    cursor: pointer;
-    transition: opacity 0.15s;
-  }
-  .node circle {
-    transition: r 0.15s, filter 0.15s;
-  }
-  .node text {
-    pointer-events: none;
-    user-select: none;
-  }
+  .node { cursor: pointer; transition: opacity 0.15s; }
+  .node circle { transition: r 0.15s, filter 0.15s; }
+  .node text { pointer-events: none; user-select: none; }
 
-  /* pulse animation for Red nodes */
   @keyframes redpulse {
     0%   { opacity: 1; }
     50%  { opacity: 0.45; }
@@ -80,25 +56,25 @@
   }
   .pulse-red { animation: redpulse 2s ease-in-out infinite; }
 
-  /* --- Tooltip --- */
   #tooltip {
     position: fixed;
     background: #111927;
     border: 1px solid #2a3a5c;
     border-radius: 5px;
-    padding: 6px 10px;
+    padding: 7px 11px;
     font-size: 11px;
     color: #d0ddf5;
     pointer-events: none;
     z-index: 999;
-    max-width: 220px;
-    line-height: 1.5;
+    max-width: 240px;
+    line-height: 1.55;
     display: none;
   }
-  #tooltip .tt-name { font-weight: 600; color: #e8f0ff; }
-  #tooltip .tt-status { font-size: 10px; margin-top: 2px; }
+  #tooltip .tt-name   { font-weight: 600; color: #e8f0ff; }
+  #tooltip .tt-num    { font-size: 9px; color: #4a5a7a; margin-bottom: 1px; }
+  #tooltip .tt-status { font-size: 10px; margin-top: 1px; }
+  #tooltip .tt-sub    { font-size: 9px; color: #5a6a8a; margin-top: 3px; }
 
-  /* --- Legend --- */
   #legend {
     display: flex;
     align-items: center;
@@ -107,24 +83,19 @@
     border-top: 1px solid #1a2440;
     flex-wrap: wrap;
   }
-  .leg-item {
-    display: flex; align-items: center; gap: 5px;
-    font-size: 10px; color: #7a8aaa;
-  }
-  .leg-dot {
-    width: 9px; height: 9px; border-radius: 50%;
-    flex-shrink: 0;
-  }
-  #legend-note {
-    margin-left: auto; font-size: 9px; color: #3a4a6a;
-  }
+  .leg-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #7a8aaa; }
+  .leg-dot  { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .leg-dash { width: 18px; height: 2px; border-top: 2px dashed; flex-shrink: 0; opacity: 0.7; }
+  #legend-note { margin-left: auto; font-size: 9px; color: #3a4a6a; }
 </style>
 </head>
 <body>
 
 <div id="header">
   <h1>PCEIF Signal Flow — Neural Net View</h1>
-  <p>27 document types → 108 simulation modules → 12 categories → project status &nbsp;|&nbsp; Hover or click any node to trace connections</p>
+  <p>27 document types → 108 simulation modules → 12 categories → project status &nbsp;|&nbsp;
+     Dashed arcs = inter-category feeds. Red dashed arc = governance feedback loop. &nbsp;|&nbsp;
+     Hover or click any node to trace connections.</p>
 </div>
 
 <div id="canvas-wrap">
@@ -137,7 +108,9 @@
   <span class="leg-item"><span class="leg-dot" style="background:#e2b13c;box-shadow:0 0 5px #e2b13c"></span>Amber</span>
   <span class="leg-item"><span class="leg-dot" style="background:#e0556b;box-shadow:0 0 5px #e0556b"></span>Red</span>
   <span class="leg-item"><span class="leg-dot" style="background:#444"></span>No data / inactive</span>
-  <span id="legend-note">Click Project Status to highlight all active paths</span>
+  <span class="leg-item"><span class="leg-dash" style="border-color:#7a8aaa"></span>Inter-category feed</span>
+  <span class="leg-item"><span class="leg-dash" style="border-color:#e0556b"></span>Governance feedback</span>
+  <span id="legend-note">Click any node to trace paths · Click background to reset</span>
 </div>
 
 <div id="tooltip"></div>
@@ -145,24 +118,18 @@
 <script>
 // ─── palette ────────────────────────────────────────────────────────────────
 const C = {
-  Green:    '#3fcaa6',
-  Yellow:   '#f0c040',
-  Amber:    '#e2b13c',
-  Red:      '#e0556b',
-  None:     '#444455',
-  Doc:      '#6a7fa8',
-  DocBg:    '#141e33',
-  bg:       '#0a0f1e',
-  line:     '#1a2a4a',
+  Green: '#3fcaa6', Yellow: '#f0c040', Amber: '#e2b13c',
+  Red:   '#e0556b', None:  '#444455', Doc: '#6a7fa8',
 };
 const STATUS_ORDER = ['Red','Amber','Yellow','Green','None'];
-function worstOf(statuses) {
-  for (const s of STATUS_ORDER) if (statuses.includes(s)) return s;
+function worstOf(arr) {
+  for (const s of STATUS_ORDER) if (arr.includes(s)) return s;
   return 'None';
 }
-function nodeColor(status) { return C[status] || C.None; }
+function nodeColor(s) { return C[s] || C.None; }
+function trunc(str, n) { return str.length > n ? str.slice(0, n - 1) + '…' : str; }
 
-// ─── documents (col 1) ──────────────────────────────────────────────────────
+// ─── documents ──────────────────────────────────────────────────────────────
 const DOCS = [
   'Contract Value','Schedule of Values','Pay Application','Time-Phased Schedule',
   'Schedule Update','Monthly Report','Change Order','RFI','Submittal',
@@ -173,294 +140,343 @@ const DOCS = [
   'Correspondence / Notice','Risk Register','Schedule of Values (Baseline)',
 ];
 
-// ─── modules (col 2) ────────────────────────────────────────────────────────
+// ─── categories ─────────────────────────────────────────────────────────────
 const CATS_DEF = [
-  { id:1,  name:'Quantitative EVM',      count:12 },
-  { id:2,  name:'Schedule Simulation',   count:11 },
-  { id:3,  name:'Cost Simulation',       count:10 },
-  { id:4,  name:'Document & Risk',       count:10 },
-  { id:5,  name:'System Dynamics',       count:8  },
-  { id:6,  name:'Signal Synthesis',      count:4  },
-  { id:7,  name:'Evidence Combination',  count:20 },
-  { id:8,  name:'ML & AI',               count:5  },
-  { id:9,  name:'Governance & Compliance',count:9 },
-  { id:10, name:'Data Integrity',        count:6  },
-  { id:11, name:'Decision Optimization', count:8  },
-  { id:12, name:'Systems Engineering',   count:5  },
+  { id:1,  name:'Quantitative EVM',       count:12 },
+  { id:2,  name:'Schedule Simulation',    count:11 },
+  { id:3,  name:'Cost Simulation',        count:10 },
+  { id:4,  name:'Document & Risk',        count:10 },
+  { id:5,  name:'System Dynamics',        count:8  },
+  { id:6,  name:'Signal Synthesis',       count:4  },
+  { id:7,  name:'Evidence Combination',   count:20 },
+  { id:8,  name:'ML & AI',                count:5  },
+  { id:9,  name:'Governance & Compliance',count:9  },
+  { id:10, name:'Data Integrity',         count:6  },
+  { id:11, name:'Decision Optimization',  count:8  },
+  { id:12, name:'Systems Engineering',    count:5  },
 ];
 
-// synthetic demo statuses — 30% G, 25% Y, 25% A, 15% R, 5% inactive
+// ─── module names (108 total, in category order) ─────────────────────────────
+const MODULE_NAMES = [
+  // Cat 1 — Quantitative EVM (12)
+  'Monte Carlo EAC','CUSUM Anomaly','Doc Risk Score','Bayesian EAC','Kalman Filter',
+  'ARIMA Forecast','Earned Schedule','TCPI Monitor','VAC Trend','Budget Exec Rate',
+  'Regression to Mean','ICE Ratio',
+  // Cat 2 — Schedule Simulation (11)
+  'PERT Network','Line of Balance','CCPM Buffer','Schedule Compression','Float Consumption',
+  'S-Curve Deviation','MTA Velocity','Look-Ahead','Resource Loading','Schedule Risk P80',
+  'Critical Path Index',
+  // Cat 3 — Cost Simulation (10)
+  'RCF Prior','DSM Rework','Contingency Burn','Labor Productivity','Material Cost Var',
+  'Overhead Rate','Cost Risk P80','Analogous Est','Parametric Est','Inflation Adj',
+  // Cat 4 — Document & Risk (10)
+  'Doc Risk Score','RFI Velocity','Submittal Rejection','NCR Rate','Weather Impact',
+  'CO Frequency','Dispute Escalation','Subcontractor Risk','Procurement Risk','Spec Conflict',
+  // Cat 5 — System Dynamics (8)
+  'DSM Propagation','Sensitivity Analysis','Tornado Chart','Scenario Planning',
+  'Rework Feedback','Queueing Model','Agent-Based Supply','Discrete Event',
+  // Cat 6 — Signal Synthesis (4)
+  'Conservative Dominance','Weighted Voting','Majority Rules','Worst-N-of-M',
+  // Cat 7 — Evidence Combination (20)
+  'Dempster-Shafer','Rough Sets','Neutrosophic','Interval Fuzzy','Z-Numbers',
+  'PLTS','Plithogenic','BRB','Quantum','Pythagorean Fuzzy','Picture Fuzzy',
+  'Hesitant Fuzzy','Type-2 Fuzzy','Max Entropy','Possibility Theory','Spherical Fuzzy',
+  'Fermatean Fuzzy','MARCOS','CRITIC-TOPSIS','Hypersoft Sets',
+  // Cat 8 — ML & AI (5)
+  'Isolation Forest','Portfolio Outlier','Trajectory Classifier','Cross-Project Pattern','Anomaly Score',
+  // Cat 9 — Governance & Compliance (9)
+  'ABM Governance','FAR Monitor','OMB A-11','EVM Threshold','CO Frequency',
+  'Quality Gate','Safety Gate','Environmental Gate','Contractor Score',
+  // Cat 10 — Data Integrity (6)
+  'Missing Field Detector','Outlier Screener','Temporal Consistency',
+  'Cross-Doc Conflict','Completeness Score','Source Audit Trail',
+  // Cat 11 — Decision Optimization (8)
+  'Pareto Front','MAUT','AHP Weighting','TOPSIS Rank','Regret Minimization',
+  'Info Value','Sensitivity Rank','Robust Decision',
+  // Cat 12 — Systems Engineering (5)
+  'Requirements Trace','Interface Risk','V-Model Gate','SysML Signal','Digital Twin Sync',
+];
+
+// ─── synthetic statuses ──────────────────────────────────────────────────────
 const DIST = ['Green','Green','Green','Yellow','Yellow','Amber','Amber','Red','Green','None'];
 let _seed = 42;
-function fakeStatus(i) {
+function fakeStatus() {
   _seed = (_seed * 1664525 + 1013904223) & 0xffffffff;
-  const idx = Math.abs(_seed) % DIST.length;
-  return DIST[idx];
+  return DIST[Math.abs(_seed) % DIST.length];
 }
 
-// build flat module list with statuses
+// Build flat module list with name
 let MODULE_LIST = [];
 CATS_DEF.forEach((cat, ci) => {
   for (let m = 0; m < cat.count; m++) {
-    MODULE_LIST.push({ catId: cat.id, catIdx: ci, idx: m, status: fakeStatus(MODULE_LIST.length) });
+    const globalIdx = MODULE_LIST.length;
+    MODULE_LIST.push({
+      catId: cat.id, catIdx: ci, idx: m,
+      status: fakeStatus(),
+      name: MODULE_NAMES[globalIdx],
+      num: `${cat.id}.${m+1}`,
+    });
   }
 });
 
-// category statuses = worst of their modules
-const CAT_STATUSES = CATS_DEF.map((cat, ci) => {
-  const mods = MODULE_LIST.filter(m => m.catIdx === ci);
-  return worstOf(mods.map(m => m.status));
-});
+const CAT_STATUSES = CATS_DEF.map((_, ci) =>
+  worstOf(MODULE_LIST.filter(m => m.catIdx === ci).map(m => m.status))
+);
 const PROJECT_STATUS = worstOf(CAT_STATUSES);
 
-// ─── doc→category mappings (which categories each doc feeds) ────────────────
-// Based on functional relationship: EVM docs → cats 1,2,3; schedule docs → 1,2;
-// risk/doc docs → 4; etc.
+// ─── doc→category mapping (0-indexed cat indices) ────────────────────────────
+// Cats 6,7,8,10,11,12 receive no direct doc inputs (they are fed by inter-category connections)
+// Only Cats 1-5 (idx 0-4) and Cat 9 (idx 8) receive direct document inputs.
 const DOC_TO_CATS = [
-  [0],        // Contract Value         → Cat 1
-  [0,2],      // Schedule of Values     → Cat 1, 3
-  [0,2],      // Pay Application        → Cat 1, 3
-  [0,1],      // Time-Phased Schedule   → Cat 1, 2
-  [1],        // Schedule Update        → Cat 2
-  [0,1,2,3],  // Monthly Report         → Cat 1,2,3,4
-  [2,3],      // Change Order           → Cat 3, 4
-  [3],        // RFI                    → Cat 4
-  [3],        // Submittal              → Cat 4
-  [3,8],      // OAC Minutes            → Cat 4, 9
-  [3,8],      // Field Report           → Cat 4, 9
-  [3,9],      // Inspection Report      → Cat 4, 10
-  [3,9],      // NCR Log                → Cat 4, 10
-  [2,3],      // Subcontractor Report   → Cat 3, 4
-  [1,2],      // Procurement Log        → Cat 2, 3
-  [1,4],      // Lookahead Schedule     → Cat 2, 5
-  [4],        // Resource Report        → Cat 5
-  [2,0],      // Cost Report            → Cat 3, 1
-  [0,1,7],    // Past Performance       → Cat 1, 2, 8
-  [8,9],      // Safety Report          → Cat 9, 10
-  [9,10],     // Quality Audit Report   → Cat 10, 11
-  [9],        // Environmental Report   → Cat 9
-  [0,1,7],    // Historical Data        → Cat 1, 2, 8
-  [10,11],    // Commissioning Report   → Cat 11, 12
-  [3,8],      // Correspondence/Notice  → Cat 4, 9
-  [3,4],      // Risk Register          → Cat 4, 5
-  [0,2],      // Schedule of Values (Baseline) → Cat 1, 3
+  [0,2],      // Contract Value          → Cat1, Cat3
+  [0,1],      // Schedule of Values      → Cat1, Cat2
+  [0,2,8],    // Pay Application         → Cat1, Cat3, Cat9
+  [0,1],      // Time-Phased Schedule    → Cat1, Cat2
+  [1,4],      // Schedule Update         → Cat2, Cat5
+  [0,1,2],    // Monthly Report          → Cat1, Cat2, Cat3
+  [2,8],      // Change Order            → Cat3, Cat9
+  [3],        // RFI                     → Cat4
+  [3],        // Submittal               → Cat4
+  [3,8],      // OAC Minutes             → Cat4, Cat9
+  [3,1],      // Field Report            → Cat4, Cat2
+  [3],        // Inspection Report       → Cat4 (Cat10 via inter-cat)
+  [3,8],      // NCR Log                 → Cat4, Cat9
+  [3,8],      // Subcontractor Report    → Cat4, Cat9
+  [3,2],      // Procurement Log         → Cat4, Cat3
+  [1,4],      // Lookahead Schedule      → Cat2, Cat5
+  [2,4],      // Resource Report         → Cat3, Cat5
+  [2,0],      // Cost Report             → Cat3, Cat1
+  [2],        // Past Performance Report → Cat3 (Cat11 via inter-cat)
+  [8],        // Safety Report           → Cat9
+  [8,3],      // Quality Audit Report    → Cat9, Cat4
+  [8],        // Environmental Report    → Cat9
+  [2],        // Historical Data         → Cat3 (Cat11 via inter-cat)
+  [8,3],      // Commissioning Report    → Cat9, Cat4
+  [3],        // Correspondence / Notice → Cat4
+  [4,3],      // Risk Register           → Cat5, Cat4
+  [0,1],      // Schedule of Values (Baseline) → Cat1, Cat2
 ];
 
-// ─── layout geometry ─────────────────────────────────────────────────────────
+// ─── inter-category feeds (Fix 3a) ──────────────────────────────────────────
+// Cats that receive no direct doc inputs get inputs from other categories.
+const INTER_CAT_FEEDS = [
+  { srcs:[0,1,2,3,4], dst:5,  label:'signal aggregation',  xHub:1010 },
+  { srcs:[0,1,2,3,4,5], dst:6, label:'evidence fusion',    xHub:1020 },
+  { srcs:[0,1,2],  dst:7,     label:'ML training data',    xHub:1030 },
+  { srcs:[0,1,2,3,4,5,6,7,8], dst:9,  label:'data integrity', xHub:1040 },
+  { srcs:[0,1,2,3,4,5,6,7,8], dst:10, label:'decision inputs',xHub:1050 },
+  { srcs:[0,1,2,3], dst:11,   label:'SE validation',       xHub:1060 },
+];
+
+// ─── layout ──────────────────────────────────────────────────────────────────
 const SVG_W = 1340;
-// Module layout: 108 dots × 8px + 11 gaps × 14px + 100px padding = 1118px → use 1220
 const SVG_H = 1220;
 
-const COL_X = {
-  doc: 110,
-  mod: 450,
-  cat: 820,
-  prj: 1180,
-};
+const COL_X = { doc: 110, mod: 460, cat: 820, prj: 1200 };
 
-// doc Y positions
 const DOC_PAD_TOP = 50;
 const DOC_SPACING = (SVG_H - DOC_PAD_TOP * 2) / (DOCS.length - 1);
 function docY(i) { return DOC_PAD_TOP + i * DOC_SPACING; }
 
-// module Y positions — grouped by category with spacing between groups
-const MOD_GROUP_GAP = 14;
-const MOD_DOT_SPACING = 8;
-function computeModulePositions() {
-  const totalMods = MODULE_LIST.length;
-  const totalGroups = CATS_DEF.length;
-  const totalGap = MOD_GROUP_GAP * (totalGroups - 1);
-  const totalDotH = totalMods * MOD_DOT_SPACING;
-  const totalH = totalDotH + totalGap;
-  const startY = (SVG_H - totalH) / 2;
+const MOD_GROUP_GAP  = 14;
+const MOD_DOT_SPACE  = 8;
 
+function computeModulePositions() {
+  const totalH = MODULE_LIST.length * MOD_DOT_SPACE + (CATS_DEF.length - 1) * MOD_GROUP_GAP;
+  const startY = (SVG_H - totalH) / 2;
   let y = startY;
   const catStartY = [];
-  CATS_DEF.forEach((cat, ci) => {
+  CATS_DEF.forEach(cat => {
     catStartY.push(y);
-    y += cat.count * MOD_DOT_SPACING + MOD_GROUP_GAP;
+    y += cat.count * MOD_DOT_SPACE + MOD_GROUP_GAP;
   });
-
-  MODULE_LIST.forEach((m, i) => {
-    const cs = catStartY[m.catIdx];
+  MODULE_LIST.forEach(m => {
     m.x = COL_X.mod;
-    m.y = cs + m.idx * MOD_DOT_SPACING;
-    m.catLabelY = cs - 6;
+    m.y = catStartY[m.catIdx] + m.idx * MOD_DOT_SPACE;
   });
 }
 computeModulePositions();
 
-// category Y = center of their modules
-const CAT_Y = CATS_DEF.map((cat, ci) => {
+const CAT_Y = CATS_DEF.map((_, ci) => {
   const mods = MODULE_LIST.filter(m => m.catIdx === ci);
-  if (!mods.length) return SVG_H / 2;
   return (mods[0].y + mods[mods.length-1].y) / 2;
 });
-
 const PRJ_Y = SVG_H / 2;
 
-// ─── SVG helpers ─────────────────────────────────────────────────────────────
+// ─── SVG bootstrap ───────────────────────────────────────────────────────────
 const SVG_NS = 'http://www.w3.org/2000/svg';
 function el(tag, attrs, parent) {
   const e = document.createElementNS(SVG_NS, tag);
-  for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+  for (const [k,v] of Object.entries(attrs || {})) e.setAttribute(k, v);
   if (parent) parent.appendChild(e);
   return e;
 }
 
-// ─── build SVG ───────────────────────────────────────────────────────────────
 const svg = document.getElementById('flow-svg');
 svg.setAttribute('viewBox', `0 0 ${SVG_W} ${SVG_H}`);
 svg.setAttribute('width', SVG_W);
 svg.setAttribute('height', SVG_H);
 document.getElementById('canvas-wrap').style.minHeight = SVG_H + 'px';
 
-// defs: glow filters
+// defs: glow filters + arrowhead markers
 const defs = el('defs', {}, svg);
-const glowColors = { Green: C.Green, Yellow: C.Yellow, Amber: C.Amber, Red: C.Red, Doc: C.Doc };
-for (const [name, color] of Object.entries(glowColors)) {
-  const f = el('filter', { id: `glow-${name}`, x:'-50%', y:'-50%', width:'200%', height:'200%' }, defs);
-  const fe = el('feDropShadow', { dx:'0', dy:'0', stdDeviation:'3', 'flood-color': color, 'flood-opacity':'0.9' }, f);
+for (const [name, color] of Object.entries({ Green: C.Green, Yellow: C.Yellow, Amber: C.Amber, Red: C.Red, Doc: C.Doc })) {
+  const f = el('filter', { id:`glow-${name}`, x:'-50%', y:'-50%', width:'200%', height:'200%' }, defs);
+  el('feDropShadow', { dx:'0', dy:'0', stdDeviation:'3', 'flood-color':color, 'flood-opacity':'0.9' }, f);
 }
 
-// column header positions
-const colHdrY = 22;
-[['DOCUMENTS', COL_X.doc], ['108 MODULES', COL_X.mod], ['12 CATEGORIES', COL_X.cat], ['PROJECT STATUS', COL_X.prj]].forEach(([label, x]) => {
-  const t = el('text', { x, y: colHdrY, 'text-anchor':'middle', fill:'#2a3a5c', 'font-size':'9', 'font-weight':'700', 'letter-spacing':'0.12em', 'font-family':'monospace' }, svg);
-  t.textContent = label.toUpperCase();
+// arrowhead markers for inter-cat lines (arriving from right → points left)
+function makeArrowMarker(id, color) {
+  const m = el('marker', { id, markerWidth:'6', markerHeight:'6', refX:'5', refY:'3', orient:'auto' }, defs);
+  el('polygon', { points:'5,0 5,6 0,3', fill: color, opacity:'0.8' }, m);
+}
+STATUS_ORDER.forEach(s => makeArrowMarker(`arr-${s}`, nodeColor(s)));
+makeArrowMarker('arr-Doc', C.Doc);
+makeArrowMarker('arr-feedback', C.Red);
+
+// column headers
+const HDR_Y = 22;
+[['DOCUMENTS', COL_X.doc], ['108 MODULES', COL_X.mod], ['12 CATEGORIES', COL_X.cat], ['PROJECT STATUS', COL_X.prj]].forEach(([lbl, x]) => {
+  const t = el('text', { x, y: HDR_Y, 'text-anchor':'middle', fill:'#2a3a5c', 'font-size':'9', 'font-weight':'700', 'letter-spacing':'0.12em', 'font-family':'monospace' }, svg);
+  t.textContent = lbl;
 });
 
-// ─── connection layer (behind nodes) ─────────────────────────────────────────
-const lineLayer = el('g', { id:'lines', opacity:'1' }, svg);
+// ─── connection layers ────────────────────────────────────────────────────────
+const lineLayer     = el('g', { id:'lines' }, svg);
+const interCatLayer = el('g', { id:'inter-cat-lines' }, svg);
 
-// Build index: catIdx → module indices (positions in MODULE_LIST)
-const catToModIdxs = CATS_DEF.map((_, ci) => MODULE_LIST.map((m,i)=>({m,i})).filter(({m})=>m.catIdx===ci).map(({i})=>i));
+// index: catIdx → module flat indices
+const catToModIdxs = CATS_DEF.map((_, ci) =>
+  MODULE_LIST.map((m,i) => ({m,i})).filter(({m}) => m.catIdx === ci).map(({i}) => i)
+);
 
-// Doc → Module connections: expand DOC_TO_CATS to actual module indices
-const docToModIdxs = DOC_TO_CATS.map(catIdxs => {
-  return catIdxs.flatMap(ci => catToModIdxs[ci] || []);
-});
-
-// Store all line elements for interaction
-const docModLines = []; // [{el, docI, modI}]
-const modCatLines = []; // [{el, modI, catI}]
-const catPrjLines = []; // [{el, catI}]
-
-// cat→project lines
-CATS_DEF.forEach((cat, ci) => {
-  const x1 = COL_X.cat + 18, y1 = CAT_Y[ci];
-  const x2 = COL_X.prj - 32, y2 = PRJ_Y;
+// ── cat → project lines
+const catPrjLines = [];
+CATS_DEF.forEach((_, ci) => {
+  const x1 = COL_X.cat + 9, y1 = CAT_Y[ci];
+  const x2 = COL_X.prj - 22, y2 = PRJ_Y;
   const mx = (x1 + x2) / 2;
   const line = el('path', {
-    d: `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`,
+    d:`M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`,
     fill:'none', stroke: nodeColor(CAT_STATUSES[ci]), 'stroke-width':'1.5',
-    opacity:'0.18', 'stroke-linecap':'round',
-    class: 'cat-prj-line'
+    opacity:'0.18', 'stroke-linecap':'round', class:'cat-prj-line'
   }, lineLayer);
   catPrjLines.push({ el: line, catI: ci });
 });
 
-// mod→cat lines
+// ── module → category lines
+const modCatLines = [];
 MODULE_LIST.forEach((mod, mi) => {
   const ci = mod.catIdx;
-  const x1 = COL_X.mod + 5, y1 = mod.y;
-  const x2 = COL_X.cat - 18, y2 = CAT_Y[ci];
+  const x1 = COL_X.mod + 4, y1 = mod.y;
+  const x2 = COL_X.cat - 9, y2 = CAT_Y[ci];
   const mx = (x1 + x2) / 2;
   const line = el('path', {
-    d: `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`,
+    d:`M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`,
     fill:'none', stroke: nodeColor(mod.status), 'stroke-width':'0.8',
-    opacity:'0.12', 'stroke-linecap':'round',
-    class: 'mod-cat-line'
+    opacity:'0.12', 'stroke-linecap':'round', class:'mod-cat-line'
   }, lineLayer);
   modCatLines.push({ el: line, modI: mi, catI: ci });
 });
 
-// doc→mod lines (sampled — not all to avoid extreme clutter: pick a subset)
-// For performance we only draw lines from each doc to the FIRST module of each target cat
+// ── doc → individual module lines (first 2 modules of each target category)
+const docModLines = [];
 DOC_TO_CATS.forEach((catIdxs, di) => {
   catIdxs.forEach(ci => {
-    const mods = catToModIdxs[ci];
-    if (!mods.length) return;
-    // pick center module of the category for visual clarity
-    const mi = mods[Math.floor(mods.length / 2)];
-    const mod = MODULE_LIST[mi];
-    const x1 = COL_X.doc + 5, y1 = docY(di);
-    const x2 = COL_X.mod - 5, y2 = mod.y;
-    const mx = (x1 + x2) / 2;
-    const line = el('path', {
-      d: `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`,
-      fill:'none', stroke: C.Doc, 'stroke-width':'0.7',
-      opacity:'0.10', 'stroke-linecap':'round',
-      class: 'doc-mod-line'
-    }, lineLayer);
-    docModLines.push({ el: line, docI: di, modI: mi });
+    const targets = catToModIdxs[ci].slice(0, 2); // first 2 modules of that cat
+    targets.forEach(mi => {
+      const mod = MODULE_LIST[mi];
+      const x1 = COL_X.doc + 5, y1 = docY(di);
+      const x2 = COL_X.mod - 4, y2 = mod.y;
+      const mx = (x1 + x2) / 2;
+      const line = el('path', {
+        d:`M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`,
+        fill:'none', stroke: C.Doc, 'stroke-width':'0.7',
+        opacity:'0.10', 'stroke-linecap':'round', class:'doc-mod-line'
+      }, lineLayer);
+      docModLines.push({ el: line, docI: di, modI: mi });
+    });
   });
 });
+
+// ── inter-category dashed lines (Fix 3a)
+// Route: source departs from right of cat node (x+9), arcs through xHub, arrives at right of dst cat node (x+9)
+const interCatLines = []; // [{el, arrowEl, srcI, dstI}]
+
+INTER_CAT_FEEDS.forEach(({ srcs, dst, xHub }) => {
+  srcs.forEach(srcI => {
+    const srcColor = nodeColor(CAT_STATUSES[srcI]);
+    const srcX = COL_X.cat + 9, srcY = CAT_Y[srcI];
+    const dstX = COL_X.cat + 9, dstY = CAT_Y[dst];
+    const markerId = `arr-${CAT_STATUSES[srcI]}`;
+
+    const line = el('path', {
+      d:`M${srcX},${srcY} C${xHub},${srcY} ${xHub},${dstY} ${dstX},${dstY}`,
+      fill:'none', stroke: srcColor, 'stroke-width':'1',
+      opacity:'0.18', 'stroke-dasharray':'4 3',
+      'marker-end':`url(#${markerId})`,
+      class:'inter-cat-line'
+    }, interCatLayer);
+
+    interCatLines.push({ el: line, srcI, dstI: dst });
+  });
+});
+
+// ── feedback loop: Project Status → Cat 9 Governance (Fix 3b)
+// Arc sweeps right then DOWN and LEFT back to Cat 9
+const cat9Y = CAT_Y[8]; // Cat 9 is index 8
+const fbSrcX = COL_X.prj + 22, fbSrcY = PRJ_Y;
+const fbDstX = COL_X.cat + 9,  fbDstY = cat9Y;
+const feedbackEl = el('path', {
+  d:`M${fbSrcX},${fbSrcY} C${fbSrcX+80},${fbSrcY} ${fbSrcX+80},${fbDstY} ${fbDstX},${fbDstY}`,
+  fill:'none', stroke: C.Red, 'stroke-width':'1.5',
+  opacity:'0.28', 'stroke-dasharray':'5 4',
+  'marker-end':'url(#arr-feedback)',
+  class:'feedback-line'
+}, interCatLayer);
+
+// feedback label
+const fbLabelX = fbSrcX + 85 + 4;
+const fbLabelY = (fbSrcY + fbDstY) / 2;
+const feedbackLabelEl = el('text', {
+  x: fbLabelX, y: fbLabelY,
+  fill: C.Red, 'font-size':'8', 'font-family':'monospace',
+  opacity:'0.45', 'writing-mode':'tb', 'text-anchor':'middle'
+}, interCatLayer);
+feedbackLabelEl.textContent = 'governance feedback';
 
 // ─── node layer ──────────────────────────────────────────────────────────────
 const nodeLayer = el('g', { id:'nodes' }, svg);
 
-// helper: create a node group
-function makeNode(x, y, r, status, label, labelX, labelAnchor, fontSize, extraClass, parent) {
-  const g = el('g', { class: 'node' + (extraClass ? ' '+extraClass : ''), transform:`translate(${x},${y})` }, parent || nodeLayer);
-  const color = (status === 'Doc') ? C.Doc : nodeColor(status);
-  const filterId = (status === 'Doc') ? 'glow-Doc' : (status === 'None' ? null : `glow-${status}`);
-
-  const circle = el('circle', {
-    r, fill: color, opacity: status === 'None' ? '0.35' : '0.9',
-    ...(filterId ? { filter: `url(#${filterId})` } : {}),
-    stroke: '#0a0f1e', 'stroke-width':'1'
-  }, g);
-
-  if (status === 'Red') circle.classList.add('pulse-red');
-
-  if (label) {
-    const tx = (labelX !== undefined ? labelX - x : 0);
-    const t = el('text', {
-      x: tx, y: '0.4em',
-      fill: '#a0b0cc',
-      'font-size': fontSize || '10',
-      'font-family': 'Inter, system-ui, monospace, sans-serif',
-      'text-anchor': labelAnchor || 'start',
-      'dominant-baseline': 'middle',
-    }, g);
-    t.textContent = label;
-  }
-  return g;
-}
-
-// ── Category group labels (background text behind modules)
+// category group labels (dim, behind module dots)
 CATS_DEF.forEach((cat, ci) => {
   const mods = MODULE_LIST.filter(m => m.catIdx === ci);
   if (!mods.length) return;
-  const labelY = mods[0].y - 9;
   const t = el('text', {
-    x: COL_X.mod - 8, y: labelY,
-    fill: '#2a3a5c', 'font-size':'8', 'font-family':'monospace',
+    x: COL_X.mod - 8, y: mods[0].y - 9,
+    fill:'#2a3a5c', 'font-size':'8', 'font-family':'monospace',
     'text-anchor':'end', 'font-weight':'600', 'letter-spacing':'0.08em'
   }, nodeLayer);
   t.textContent = `C${cat.id}`;
 });
 
-// ── Module nodes (small dots, no label)
+// ── module dots
 const modNodeEls = MODULE_LIST.map((mod, mi) => {
-  const g = el('g', { class:'node mod-node', 'data-mod': mi }, nodeLayer);
+  const g = el('g', { class:'node mod-node', 'data-mod':mi }, nodeLayer);
   const color = nodeColor(mod.status);
   const filterId = mod.status !== 'None' ? `glow-${mod.status}` : null;
   const circle = el('circle', {
-    cx: mod.x, cy: mod.y, r: '4',
-    fill: color, opacity: mod.status === 'None' ? '0.28' : '0.85',
-    ...(filterId ? { filter: `url(#${filterId})` } : {}),
+    cx: mod.x, cy: mod.y, r:'4',
+    fill: color, opacity: mod.status === 'None' ? '0.25' : '0.85',
+    ...(filterId ? { filter:`url(#${filterId})` } : {}),
     stroke:'#0a0f1e', 'stroke-width':'0.5'
   }, g);
   if (mod.status === 'Red') circle.classList.add('pulse-red');
-  g._status = mod.status;
-  g._catIdx = mod.catIdx;
   g._modIdx = mi;
   return g;
 });
 
-// ── Category nodes
+// ── category nodes
 const catNodeEls = CATS_DEF.map((cat, ci) => {
   const x = COL_X.cat, y = CAT_Y[ci];
   const status = CAT_STATUSES[ci];
@@ -471,78 +487,51 @@ const catNodeEls = CATS_DEF.map((cat, ci) => {
   const circle = el('circle', {
     cx: x, cy: y, r:'9',
     fill: color, opacity: status === 'None' ? '0.35' : '0.92',
-    ...(filterId ? { filter: `url(#${filterId})` } : {}),
+    ...(filterId ? { filter:`url(#${filterId})` } : {}),
     stroke:'#0a0f1e', 'stroke-width':'1.5'
   }, g);
   if (status === 'Red') circle.classList.add('pulse-red');
 
-  // label right of node
   const t = el('text', {
-    x: x + 14, y: y,
+    x: x + 14, y,
     fill:'#8a9ab8', 'font-size':'10', 'font-family':'Inter,system-ui,monospace,sans-serif',
     'dominant-baseline':'middle'
   }, g);
   t.textContent = `C${cat.id} ${cat.name}`;
 
-  g._status = status;
   g._catIdx = ci;
   return g;
 });
 
-// ── Project Status node
-const prjStatus = PROJECT_STATUS;
-const prjColor = nodeColor(prjStatus);
-const prjFilter = prjStatus !== 'None' ? `glow-${prjStatus}` : null;
-
+// ── project status node
+const prjColor  = nodeColor(PROJECT_STATUS);
+const prjFilter = PROJECT_STATUS !== 'None' ? `glow-${PROJECT_STATUS}` : null;
 const prjG = el('g', { class:'node prj-node', id:'prj-node' }, nodeLayer);
 const prjCircle = el('circle', {
   cx: COL_X.prj, cy: PRJ_Y, r:'22',
   fill: prjColor, opacity:'0.95',
-  ...(prjFilter ? { filter: `url(#${prjFilter})` } : {}),
-  stroke: '#0a0f1e', 'stroke-width':'2.5'
+  ...(prjFilter ? { filter:`url(#${prjFilter})` } : {}),
+  stroke:'#0a0f1e', 'stroke-width':'2.5'
 }, prjG);
-if (prjStatus === 'Red') prjCircle.classList.add('pulse-red');
+if (PROJECT_STATUS === 'Red') prjCircle.classList.add('pulse-red');
 
-const prjLabel1 = el('text', {
-  x: COL_X.prj, y: PRJ_Y - 4,
-  fill:'#e8f0ff', 'font-size':'10', 'font-weight':'700',
-  'text-anchor':'middle', 'dominant-baseline':'middle',
-  'font-family':'Inter,system-ui,monospace,sans-serif'
-}, prjG);
-prjLabel1.textContent = 'Project';
-const prjLabel2 = el('text', {
-  x: COL_X.prj, y: PRJ_Y + 8,
-  fill:'#e8f0ff', 'font-size':'10', 'font-weight':'700',
-  'text-anchor':'middle', 'dominant-baseline':'middle',
-  'font-family':'Inter,system-ui,monospace,sans-serif'
-}, prjG);
-prjLabel2.textContent = 'Status';
+[['Project', -5], ['Status', 8]].forEach(([txt, dy]) => {
+  const t = el('text', { x: COL_X.prj, y: PRJ_Y + dy, fill:'#e8f0ff', 'font-size':'10', 'font-weight':'700', 'text-anchor':'middle', 'dominant-baseline':'middle', 'font-family':'Inter,system-ui,monospace,sans-serif' }, prjG);
+  t.textContent = txt;
+});
 const prjStatusLabel = el('text', {
-  x: COL_X.prj, y: PRJ_Y + 36,
-  fill: prjColor, 'font-size':'11', 'font-weight':'700',
+  x: COL_X.prj, y: PRJ_Y + 37, fill: prjColor, 'font-size':'11', 'font-weight':'700',
   'text-anchor':'middle', 'font-family':'monospace'
 }, prjG);
-prjStatusLabel.textContent = prjStatus;
+prjStatusLabel.textContent = PROJECT_STATUS;
 
-// ── Document nodes (rendered last so they're on top)
+// ── document nodes (last = on top)
 const docNodeEls = DOCS.map((name, di) => {
   const x = COL_X.doc, y = docY(di);
   const g = el('g', { class:'node doc-node', 'data-doc':di }, nodeLayer);
-
-  const circle = el('circle', {
-    cx: x, cy: y, r:'5',
-    fill: C.Doc, opacity:'0.85',
-    filter:'url(#glow-Doc)',
-    stroke:'#0a0f1e', 'stroke-width':'1'
-  }, g);
-
-  const t = el('text', {
-    x: x - 10, y: y,
-    fill:'#6a7fa8', 'font-size':'9.5', 'font-family':'Inter,system-ui,monospace,sans-serif',
-    'text-anchor':'end', 'dominant-baseline':'middle'
-  }, g);
+  el('circle', { cx: x, cy: y, r:'5', fill: C.Doc, opacity:'0.85', filter:'url(#glow-Doc)', stroke:'#0a0f1e', 'stroke-width':'1' }, g);
+  const t = el('text', { x: x - 10, y, fill:'#6a7fa8', 'font-size':'9.5', 'font-family':'Inter,system-ui,monospace,sans-serif', 'text-anchor':'end', 'dominant-baseline':'middle' }, g);
   t.textContent = name;
-
   g._docIdx = di;
   return g;
 });
@@ -550,65 +539,87 @@ const docNodeEls = DOCS.map((name, di) => {
 // ─── interaction ──────────────────────────────────────────────────────────────
 const tooltip = document.getElementById('tooltip');
 
-function showTooltip(evt, name, status, extra) {
-  const statusColor = (status === 'Doc') ? C.Doc : nodeColor(status);
-  tooltip.innerHTML = `<div class="tt-name">${name}</div><div class="tt-status" style="color:${statusColor}">${status === 'Doc' ? 'Input Document' : status}</div>${extra ? `<div style="color:#5a6a8a;font-size:9px;margin-top:2px">${extra}</div>` : ''}`;
+function showTooltip(evt, html) {
+  tooltip.innerHTML = html;
   tooltip.style.display = 'block';
   moveTooltip(evt);
 }
 function moveTooltip(evt) {
-  const mx = evt.clientX, my = evt.clientY;
-  tooltip.style.left = (mx + 14) + 'px';
-  tooltip.style.top = (my - 10) + 'px';
+  tooltip.style.left = (evt.clientX + 14) + 'px';
+  tooltip.style.top  = (evt.clientY - 10) + 'px';
 }
-function hideTooltip() {
-  tooltip.style.display = 'none';
+function hideTooltip() { tooltip.style.display = 'none'; }
+
+function ttDoc(di) {
+  const cats = DOC_TO_CATS[di].map(ci => `C${ci+1}`).join(', ');
+  return `<div class="tt-name">${DOCS[di]}</div><div class="tt-status" style="color:${C.Doc}">Input Document</div><div class="tt-sub">Feeds: ${cats}</div>`;
+}
+function ttMod(mi) {
+  const mod = MODULE_LIST[mi];
+  const color = nodeColor(mod.status);
+  return `<div class="tt-num">${mod.num}</div><div class="tt-name">${mod.name}</div><div class="tt-status" style="color:${color}">${mod.status}</div><div class="tt-sub">${CATS_DEF[mod.catIdx].name}</div>`;
+}
+function ttCat(ci) {
+  const status = CAT_STATUSES[ci];
+  const icIn  = INTER_CAT_FEEDS.filter(f => f.dst === ci).flatMap(f => f.srcs.map(s => `C${s+1}`));
+  const icOut = INTER_CAT_FEEDS.filter(f => f.srcs.includes(ci)).map(f => `C${f.dst+1}`);
+  let sub = `${CATS_DEF[ci].count} modules`;
+  if (icIn.length)  sub += ` · receives from ${[...new Set(icIn)].join(', ')}`;
+  if (icOut.length) sub += ` · feeds ${[...new Set(icOut)].join(', ')}`;
+  return `<div class="tt-name">C${ci+1}: ${CATS_DEF[ci].name}</div><div class="tt-status" style="color:${nodeColor(status)}">${status}</div><div class="tt-sub">${sub}</div>`;
 }
 
+// ── highlight helpers
 function resetHighlight() {
-  docModLines.forEach(l => { l.el.setAttribute('opacity','0.10'); l.el.setAttribute('stroke-width','0.7'); });
-  modCatLines.forEach(l => { l.el.setAttribute('opacity','0.12'); l.el.setAttribute('stroke-width','0.8'); });
-  catPrjLines.forEach(l => { l.el.setAttribute('opacity','0.18'); l.el.setAttribute('stroke-width','1.5'); });
+  docModLines.forEach(l  => { l.el.setAttribute('opacity','0.10'); l.el.setAttribute('stroke-width','0.7'); });
+  modCatLines.forEach(l  => { l.el.setAttribute('opacity','0.12'); l.el.setAttribute('stroke-width','0.8'); });
+  catPrjLines.forEach(l  => { l.el.setAttribute('opacity','0.18'); l.el.setAttribute('stroke-width','1.5'); });
+  interCatLines.forEach(l => l.el.setAttribute('opacity','0.18'));
+  feedbackEl.setAttribute('opacity','0.28');
+  feedbackLabelEl.setAttribute('opacity','0.45');
+
   docNodeEls.forEach(g => { g.setAttribute('opacity','1'); const c = g.querySelector('circle'); if(c) c.setAttribute('r','5'); });
   modNodeEls.forEach(g => { g.setAttribute('opacity','1'); const c = g.querySelector('circle'); if(c) c.setAttribute('r','4'); });
   catNodeEls.forEach(g => { g.setAttribute('opacity','1'); const c = g.querySelector('circle'); if(c) c.setAttribute('r','9'); });
   prjG.setAttribute('opacity','1'); prjCircle.setAttribute('r','22');
-  lineLayer.setAttribute('opacity','1');
 }
 
 function dimAll() {
-  docNodeEls.forEach(g => g.setAttribute('opacity','0.12'));
-  modNodeEls.forEach(g => g.setAttribute('opacity','0.08'));
-  catNodeEls.forEach(g => g.setAttribute('opacity','0.12'));
-  prjG.setAttribute('opacity','0.12');
-  docModLines.forEach(l => l.el.setAttribute('opacity','0.02'));
-  modCatLines.forEach(l => l.el.setAttribute('opacity','0.02'));
-  catPrjLines.forEach(l => l.el.setAttribute('opacity','0.02'));
+  docNodeEls.forEach(g  => g.setAttribute('opacity','0.10'));
+  modNodeEls.forEach(g  => g.setAttribute('opacity','0.07'));
+  catNodeEls.forEach(g  => g.setAttribute('opacity','0.10'));
+  prjG.setAttribute('opacity','0.10');
+  docModLines.forEach(l  => l.el.setAttribute('opacity','0.02'));
+  modCatLines.forEach(l  => l.el.setAttribute('opacity','0.02'));
+  catPrjLines.forEach(l  => l.el.setAttribute('opacity','0.02'));
+  interCatLines.forEach(l => l.el.setAttribute('opacity','0.03'));
+  feedbackEl.setAttribute('opacity','0.05');
+  feedbackLabelEl.setAttribute('opacity','0.05');
 }
 
 function highlightDocPath(di) {
   dimAll();
-  // the doc itself
   docNodeEls[di].setAttribute('opacity','1');
   const dc = docNodeEls[di].querySelector('circle'); if(dc) dc.setAttribute('r','7');
 
-  // target cat indices from this doc
-  const targetCats = DOC_TO_CATS[di];
-  // activate doc→mod lines
+  const targetCats = new Set(DOC_TO_CATS[di]);
+
   docModLines.filter(l => l.docI === di).forEach(l => {
-    l.el.setAttribute('opacity','0.65'); l.el.setAttribute('stroke-width','1.5');
+    l.el.setAttribute('opacity','0.70'); l.el.setAttribute('stroke-width','1.6');
     modNodeEls[l.modI].setAttribute('opacity','1');
     const mc = modNodeEls[l.modI].querySelector('circle'); if(mc) mc.setAttribute('r','6');
   });
-  // activate mod→cat and cat→prj for target cats
+
   targetCats.forEach(ci => {
     catNodeEls[ci].setAttribute('opacity','1');
-    const cc = catNodeEls[ci].querySelector('circle'); if(cc) cc.setAttribute('r','12');
-    modCatLines.filter(l => l.catI === ci).forEach(l => {
-      l.el.setAttribute('opacity','0.4'); l.el.setAttribute('stroke-width','1.2');
-    });
-    catPrjLines.filter(l => l.catI === ci).forEach(l => {
-      l.el.setAttribute('opacity','0.7'); l.el.setAttribute('stroke-width','2.5');
+    catNodeEls[ci].querySelector('circle').setAttribute('r','12');
+    modCatLines.filter(l => l.catI === ci).forEach(l => { l.el.setAttribute('opacity','0.38'); l.el.setAttribute('stroke-width','1.1'); });
+    catPrjLines.filter(l => l.catI === ci).forEach(l => { l.el.setAttribute('opacity','0.70'); l.el.setAttribute('stroke-width','2.5'); });
+    // show inter-cat feeds DOWNSTREAM of these cats
+    interCatLines.filter(l => l.srcI === ci).forEach(l => { l.el.setAttribute('opacity','0.45'); });
+    // and their destinations
+    interCatLines.filter(l => l.srcI === ci).forEach(l => {
+      catNodeEls[l.dstI].setAttribute('opacity','0.6');
     });
   });
   prjG.setAttribute('opacity','1'); prjCircle.setAttribute('r','22');
@@ -617,66 +628,77 @@ function highlightDocPath(di) {
 function highlightCatPath(ci) {
   dimAll();
   catNodeEls[ci].setAttribute('opacity','1');
-  const cc = catNodeEls[ci].querySelector('circle'); if(cc) cc.setAttribute('r','13');
+  catNodeEls[ci].querySelector('circle').setAttribute('r','13');
 
-  // upstream mods
-  const mods = catToModIdxs[ci];
-  mods.forEach(mi => {
+  // upstream modules
+  catToModIdxs[ci].forEach(mi => {
     modNodeEls[mi].setAttribute('opacity','1');
-    const mc = modNodeEls[mi].querySelector('circle'); if(mc) mc.setAttribute('r','6');
+    modNodeEls[mi].querySelector('circle').setAttribute('r','6');
   });
-  modCatLines.filter(l => l.catI === ci).forEach(l => {
-    l.el.setAttribute('opacity','0.55'); l.el.setAttribute('stroke-width','1.2');
-  });
-  // docs that target this cat
+  modCatLines.filter(l => l.catI === ci).forEach(l => { l.el.setAttribute('opacity','0.55'); l.el.setAttribute('stroke-width','1.2'); });
+
+  // upstream docs
   DOC_TO_CATS.forEach((cats, di) => {
     if (cats.includes(ci)) {
       docNodeEls[di].setAttribute('opacity','1');
-      docModLines.filter(l => l.docI === di).forEach(l => {
-        l.el.setAttribute('opacity','0.4'); l.el.setAttribute('stroke-width','1.2');
-      });
+      docModLines.filter(l => l.docI === di).forEach(l => { l.el.setAttribute('opacity','0.42'); l.el.setAttribute('stroke-width','1.1'); });
     }
   });
-  catPrjLines.filter(l => l.catI === ci).forEach(l => {
-    l.el.setAttribute('opacity','0.7'); l.el.setAttribute('stroke-width','2.5');
+
+  // upstream inter-cat feeds INTO this cat
+  interCatLines.filter(l => l.dstI === ci).forEach(l => {
+    l.el.setAttribute('opacity','0.70');
+    catNodeEls[l.srcI].setAttribute('opacity','0.7');
+    catNodeEls[l.srcI].querySelector('circle').setAttribute('r','10');
   });
+
+  // downstream: cat → project
+  catPrjLines.filter(l => l.catI === ci).forEach(l => { l.el.setAttribute('opacity','0.70'); l.el.setAttribute('stroke-width','2.5'); });
+
+  // downstream: inter-cat feeds OUT from this cat
+  interCatLines.filter(l => l.srcI === ci).forEach(l => {
+    l.el.setAttribute('opacity','0.55');
+    catNodeEls[l.dstI].setAttribute('opacity','0.6');
+  });
+
+  // feedback: if this is Cat 9 (idx 8), show the feedback arc FROM project
+  if (ci === 8) {
+    feedbackEl.setAttribute('opacity','0.80');
+    feedbackLabelEl.setAttribute('opacity','0.90');
+    prjG.setAttribute('opacity','0.8');
+  }
+
   prjG.setAttribute('opacity','1'); prjCircle.setAttribute('r','22');
 }
 
 function highlightAllActive() {
   resetHighlight();
-  // boost all non-None paths
-  docModLines.forEach(l => { l.el.setAttribute('opacity','0.22'); });
-  modCatLines.forEach(l => {
-    const mod = MODULE_LIST[l.modI];
-    if (mod.status !== 'None') { l.el.setAttribute('opacity','0.28'); l.el.setAttribute('stroke-width','1'); }
-  });
-  catPrjLines.forEach(l => {
-    if (CAT_STATUSES[l.catI] !== 'None') { l.el.setAttribute('opacity','0.45'); l.el.setAttribute('stroke-width','2'); }
-  });
+  docModLines.forEach(l  => l.el.setAttribute('opacity','0.20'));
+  modCatLines.forEach(l  => { if (MODULE_LIST[l.modI].status !== 'None') { l.el.setAttribute('opacity','0.26'); l.el.setAttribute('stroke-width','1'); } });
+  catPrjLines.forEach(l  => { if (CAT_STATUSES[l.catI] !== 'None') { l.el.setAttribute('opacity','0.45'); l.el.setAttribute('stroke-width','2'); } });
+  interCatLines.forEach(l => l.el.setAttribute('opacity','0.40'));
+  feedbackEl.setAttribute('opacity','0.65');
+  feedbackLabelEl.setAttribute('opacity','0.80');
 }
 
-// hover: doc nodes
+// ── doc events
 docNodeEls.forEach((g, di) => {
-  g.addEventListener('mouseenter', evt => {
-    showTooltip(evt, DOCS[di], 'Doc', `Feeds ${DOC_TO_CATS[di].length} category group${DOC_TO_CATS[di].length===1?'':'s'}`);
-  });
-  g.addEventListener('mousemove', moveTooltip);
-  g.addEventListener('mouseleave', () => { hideTooltip(); });
+  g.addEventListener('mouseenter', evt => showTooltip(evt, ttDoc(di)));
+  g.addEventListener('mousemove',  moveTooltip);
+  g.addEventListener('mouseleave', hideTooltip);
   g.addEventListener('click', () => { resetHighlight(); highlightDocPath(di); });
 });
 
-// hover: mod nodes
+// ── module events
 modNodeEls.forEach((g, mi) => {
   const mod = MODULE_LIST[mi];
   g.addEventListener('mouseenter', evt => {
-    showTooltip(evt, `Cat ${mod.catId} — Module ${mod.idx + 1}`, mod.status, CATS_DEF[mod.catIdx].name);
-    // highlight connections
-    modCatLines.filter(l => l.modI === mi).forEach(l => { l.el.setAttribute('opacity','0.7'); l.el.setAttribute('stroke-width','1.5'); });
-    docModLines.filter(l => l.modI === mi).forEach(l => { l.el.setAttribute('opacity','0.5'); l.el.setAttribute('stroke-width','1.2'); });
+    showTooltip(evt, ttMod(mi));
+    modCatLines.filter(l => l.modI === mi).forEach(l => { l.el.setAttribute('opacity','0.70'); l.el.setAttribute('stroke-width','1.5'); });
+    docModLines.filter(l => l.modI === mi).forEach(l => { l.el.setAttribute('opacity','0.55'); l.el.setAttribute('stroke-width','1.2'); });
     const c = g.querySelector('circle'); if(c) c.setAttribute('r','6');
   });
-  g.addEventListener('mousemove', moveTooltip);
+  g.addEventListener('mousemove',  moveTooltip);
   g.addEventListener('mouseleave', () => {
     hideTooltip();
     modCatLines.filter(l => l.modI === mi).forEach(l => { l.el.setAttribute('opacity','0.12'); l.el.setAttribute('stroke-width','0.8'); });
@@ -685,28 +707,38 @@ modNodeEls.forEach((g, mi) => {
   });
 });
 
-// hover: cat nodes
+// ── category events
 catNodeEls.forEach((g, ci) => {
-  g.addEventListener('mouseenter', evt => {
-    showTooltip(evt, `Cat ${ci+1}: ${CATS_DEF[ci].name}`, CAT_STATUSES[ci], `${CATS_DEF[ci].count} modules`);
-  });
-  g.addEventListener('mousemove', moveTooltip);
+  g.addEventListener('mouseenter', evt => showTooltip(evt, ttCat(ci)));
+  g.addEventListener('mousemove',  moveTooltip);
   g.addEventListener('mouseleave', hideTooltip);
   g.addEventListener('click', () => { resetHighlight(); highlightCatPath(ci); });
 });
 
-// hover: project node
+// ── project status events
 prjG.addEventListener('mouseenter', evt => {
-  showTooltip(evt, 'Project Status', PROJECT_STATUS, `Worst of 12 categories`);
+  showTooltip(evt, `<div class="tt-name">Project Status</div><div class="tt-status" style="color:${prjColor}">${PROJECT_STATUS}</div><div class="tt-sub">Worst of 12 categories · click to highlight all active paths</div>`);
 });
-prjG.addEventListener('mousemove', moveTooltip);
+prjG.addEventListener('mousemove',  moveTooltip);
 prjG.addEventListener('mouseleave', hideTooltip);
 prjG.addEventListener('click', () => { resetHighlight(); highlightAllActive(); });
 
-// click on background resets
-svg.addEventListener('click', (evt) => {
-  if (evt.target === svg) resetHighlight();
+// ── feedback arc events
+feedbackEl.style.cursor = 'pointer';
+feedbackEl.addEventListener('mouseenter', evt => {
+  showTooltip(evt, `<div class="tt-name">Governance Feedback</div><div class="tt-status" style="color:${C.Red}">Cat 9 loop</div><div class="tt-sub">Governance decisions recorded as events → feed back into Cat 9 Governance &amp; Compliance monitoring</div>`);
+  feedbackEl.setAttribute('opacity','0.9');
+  feedbackLabelEl.setAttribute('opacity','1');
 });
+feedbackEl.addEventListener('mousemove',  moveTooltip);
+feedbackEl.addEventListener('mouseleave', () => {
+  hideTooltip();
+  feedbackEl.setAttribute('opacity','0.28');
+  feedbackLabelEl.setAttribute('opacity','0.45');
+});
+
+// ── background reset
+svg.addEventListener('click', evt => { if (evt.target === svg) resetHighlight(); });
 </script>
 </body>
 </html>
