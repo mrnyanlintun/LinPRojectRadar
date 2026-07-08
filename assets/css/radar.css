@@ -382,6 +382,14 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 
 .dc-note { font-size: 12px; color: var(--faint); line-height: 1.5; margin: 0; }
 
+/* ---------- signal-traced action plan ---------- */
+.dc-action-plan { margin: 16px 0; }
+.ap-title { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.ap-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.ap-table th { text-align: left; font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line-strong); }
+.ap-table td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.ap-table .ap-trigger { font-family: var(--font-mono); font-size: 11.5px; white-space: nowrap; }
+
 /* ---------- decision log ---------- */
 .log-panel { margin-top: 18px; }
 .log-empty { color: var(--faint); font-size: 13px; margin: 8px 0 0; }

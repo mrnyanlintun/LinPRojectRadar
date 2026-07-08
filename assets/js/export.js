@@ -59,7 +59,25 @@
       ["Recommended Action:",     gov.action || ""],
       ["Documentation Required:", gov.documentation || ""],
       ["Fairness Gate:",          gov.fairness_gate ? "Required" : "Not required"],
-      [""],
+      [""]
+    ];
+
+    // Signal-traced action plan (deterministic rules, decision.js)
+    if (typeof deriveActionPlan === "function") {
+      try {
+        const plan = deriveActionPlan(project) || [];
+        if (plan.length) {
+          summaryRows.push(["SIGNAL-TRACED ACTION PLAN"]);
+          summaryRows.push(["Trigger", "What", "Who", "How", "When", "Inform"]);
+          plan.forEach((r) => {
+            summaryRows.push([r.trigger, r.what, r.who, r.how, r.when, r.inform]);
+          });
+          summaryRows.push([""]);
+        }
+      } catch (e) { /* plan derivation must never block the export */ }
+    }
+
+    summaryRows.push(
       ["SIGNAL INPUTS"],
       ["Budget at Completion (BAC):",      si.bac != null ? si.bac : ""],
       ["Earned Value (EV):",               si.ev  != null ? si.ev  : ""],
@@ -75,7 +93,7 @@
       [""],
       ["EXECUTIVE BRIEF"],
       [brief && brief.text ? brief.text : "Not generated"]
-    ];
+    );
     if (brief && brief.text) {
       summaryRows.push([""], ["Brief generated:", brief.generated_at || ""]);
     }

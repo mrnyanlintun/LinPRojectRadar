@@ -669,6 +669,37 @@
   /* ---------- decision card ----------
      Renders into any container (portfolio side panel or Project Detail),
      so all controls are class-scoped to the container — no duplicate ids. */
+  /* Signal-traced action plan table — every row is a deterministic PCEIF rule
+     traced to the exact category/module that triggered it (decision.js). */
+  function actionPlanHtml(p) {
+    if (typeof deriveActionPlan !== "function") return "";
+    let rows = [];
+    try { rows = deriveActionPlan(p) || []; } catch (e) { return ""; }
+    if (!rows.length) return "";
+    const hex = (typeof PCEIF_STATUS_HEX !== "undefined" && PCEIF_STATUS_HEX) || {};
+    const body = rows.map((r) => {
+      const c = hex[r.severity] || "#c8d4e8";
+      return `<tr>
+        <td class="ap-trigger" style="color:${esc(c)}">${esc(r.trigger)}</td>
+        <td>${esc(r.what)}</td>
+        <td>${esc(r.who)}</td>
+        <td>${esc(r.how)}</td>
+        <td>${esc(r.when)}</td>
+        <td>${esc(r.inform)}</td>
+      </tr>`;
+    }).join("");
+    return `<div class="dc-action-plan">
+        <h3 class="ap-title">Signal-Traced Action Plan</h3>
+        <div style="overflow-x:auto">
+        <table class="ap-table">
+          <thead><tr><th>Trigger</th><th>What</th><th>Who</th><th>How</th><th>When</th><th>Inform</th></tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+        </div>
+        <p class="dc-note">Actions are deterministic PCEIF rules traced to signal categories — recommendation only; a named human reviewer records the decision.</p>
+      </div>`;
+  }
+
   function renderDecisionCard(p, root = $("#decision-card")) {
     if (!root) return;   // portfolio no longer hosts the decision card; only the detail page does
     if (!hasSignals(p)) { root.innerHTML = awaitingHtml(p, "PCEIF governance decision"); return; }
@@ -698,6 +729,7 @@
          <div class="dc-field dc-wide"><span class="dc-label">Documentation required</span><span class="dc-value">${esc(d.documentation)}</span></div>
        </div>
        <p class="dc-caveat">Recommended actions require named human approval before they are recorded; fairness gates require contractor response opportunity before any formal action.</p>
+       ${actionPlanHtml(p)}
        ${fairnessBlock}
        <label class="rationale-label">Reviewer rationale <span class="req">(required, min 20 characters)</span>
        <textarea class="rationale" placeholder="State why this action is taken, deferred, or overridden. Recorded to the audit log."></textarea></label>

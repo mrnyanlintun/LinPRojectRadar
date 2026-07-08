@@ -196,6 +196,163 @@ function deriveDecision(project) {
 }
 
 /* ------------------------------------------------------------
+   4b. Signal-traced action plan
+   ------------------------------------------------------------
+   Deterministic what/who/how/when/inform rules per category.
+   Every row is traced to the exact category (or module) that
+   triggered it — never free text, never model output. A reviewer
+   can read: "this row exists because Cat 3 Cost is Amber."
+   ------------------------------------------------------------ */
+const CATEGORY_ACTIONS = {
+  cat1: {
+    what: "Investigate cost/schedule variance drivers",
+    who: "Project Controls Lead",
+    how: "Reconcile EV/AC/PV against pay applications and schedule updates; verify data date alignment; identify top 3 variance work packages",
+    when: { Yellow: "Next monthly cycle", Amber: "Within 10 business days", Red: "Within 48 business hours" },
+    inform: "Project Manager; Program Manager if Red"
+  },
+  cat2: {
+    what: "Adjust schedule and recover float",
+    who: "Scheduler + Project Manager",
+    how: "Re-sequence near-critical activities; verify look-ahead constraints are being cleared; evaluate compression options (crash/fast-track) with cost trade-off",
+    when: { Yellow: "Next schedule update", Amber: "Within 2 weekly cycles", Red: "Immediate recovery-schedule workshop" },
+    inform: "Owner's representative; affected trade contractors"
+  },
+  cat3: {
+    what: "Control budget and contingency burn",
+    who: "Cost Engineer + Project Controls Lead",
+    how: "Freeze non-essential commitments; review contingency drawdown vs % complete; re-forecast EAC using current productivity; validate pending change orders",
+    when: { Yellow: "Next cost report", Amber: "Within 10 business days", Red: "Within 48 business hours" },
+    inform: "Project Manager; Finance/PMO if Red"
+  },
+  cat4: {
+    what: "Resolve open RFIs, submittals, and technical issues",
+    who: "Design Manager + Document Controller",
+    how: "Prioritize overdue RFIs by schedule impact; expedite rejected submittal resubmissions; escalate unresolved technical conflicts to the design team; update risk register",
+    when: { Yellow: "Within 2 weeks", Amber: "Within 1 week", Red: "Daily standup until cleared" },
+    inform: "Architect/Engineer of record; affected subcontractors"
+  },
+  cat5: {
+    what: "Break rework and cascade loops",
+    who: "Project Manager + Design Manager",
+    how: "Identify the propagation source (design change, rework feedback); contain scope of affected work packages; sequence corrective work to avoid re-triggering",
+    when: { Yellow: "Next coordination meeting", Amber: "Within 1 week", Red: "Immediate containment review" },
+    inform: "All affected discipline leads"
+  },
+  cat6: {
+    what: "Reconcile disagreeing signal classes",
+    who: "Project Controls Lead",
+    how: "Review which synthesis rules disagree (conservative vs weighted); verify underlying data quality before acting on the composite",
+    when: { any: "Before next governance decision" },
+    inform: "Project Manager"
+  },
+  cat7: {
+    what: "Investigate evidence conflict before acting",
+    who: "Project Controls Lead + Reviewer",
+    how: "Check the conflict coefficient K; identify which evidence methods dissent and why; do not record a decision until conflict is explained",
+    when: { any: "Before next governance decision" },
+    inform: "Named decision reviewer"
+  },
+  cat8: {
+    what: "Review portfolio anomaly signals",
+    who: "PMO Analyst",
+    how: "Compare this project's trajectory against portfolio peers; verify anomaly is real (not data artifact); document explanation or corrective plan",
+    when: { Yellow: "Next portfolio review", Amber: "Within 2 weeks", Red: "Within 1 week" },
+    inform: "Program Manager"
+  },
+  cat9: {
+    what: "Address compliance threshold breaches",
+    who: "Project Manager + Contract Administrator",
+    how: "Identify which gate breached (EVM threshold, safety, quality, environmental); execute the prescribed regulatory response; document corrective action",
+    when: { Yellow: "Next reporting cycle", Amber: "Within 5 business days", Red: "Immediate — regulatory clock may be running" },
+    inform: "Contracting Officer / Executive as required by the gate"
+  },
+  cat10: {
+    what: "Fix data quality before trusting signals",
+    who: "Document Controller + Project Controls Lead",
+    how: "Locate missing/stale fields flagged by the integrity modules; re-upload or correct source documents; re-run signals after correction",
+    when: { any: "Before acting on any other signal" },
+    inform: "Project Manager"
+  },
+  cat11: {
+    what: "Re-evaluate decision trade-offs",
+    who: "Project Manager",
+    how: "Review the optimization ranking against current constraints; confirm the recommended option still dominates under updated signals",
+    when: { any: "Next decision point" },
+    inform: "PMO"
+  },
+  cat12: {
+    what: "Verify requirements and interface risks",
+    who: "Systems Engineer",
+    how: "Trace flagged requirements to affected interfaces; confirm V-model gate criteria before proceeding",
+    when: { any: "Before next stage gate" },
+    inform: "Design Manager"
+  }
+};
+
+function deriveActionPlan(project) {
+  const rows = [];
+  const cats = (typeof window !== "undefined" && window.LIN_CATEGORIES) || [];
+  const triggeredCatNums = {};
+
+  // 1. One row per Yellow/Amber/Red category (DST-fused status)
+  cats.forEach((c) => {
+    let st = null;
+    try {
+      if (window.getCategoryStatus) st = window.getCategoryStatus(c.id, project);
+    } catch (e) {}
+    const sev = normalizeStatusLabel(st);
+    if (sev !== "Yellow" && sev !== "Amber" && sev !== "Red") return;
+    const a = CATEGORY_ACTIONS[c.id];
+    if (!a) return;
+    triggeredCatNums[c.num] = true;
+    rows.push({
+      trigger: c.num + " " + c.name + " — " + sev,
+      severity: sev,
+      what: a.what,
+      who: a.who,
+      how: a.how,
+      when: a.when[sev] || a.when.any || "Next reporting cycle",
+      inform: a.inform
+    });
+  });
+
+  // 2. Module-level watch rows: Red modules whose category didn't emit a row
+  let fusion = null;
+  try {
+    if (typeof window !== "undefined" && window.getProjectFusion) fusion = window.getProjectFusion(project);
+  } catch (e) {}
+  ((fusion && fusion.redFlags) || []).forEach((f) => {
+    if (triggeredCatNums[f.category]) return;
+    const cat = cats.find((c) => c.num === f.category);
+    const a = cat ? CATEGORY_ACTIONS[cat.id] : null;
+    rows.push({
+      trigger: "Module " + f.num + " " + f.module + " — Red",
+      severity: "Red",
+      what: "Investigate red module signal",
+      who: a ? a.who : "Project Controls Lead",
+      how: "Open the module evidence metric; verify inputs; explain or escalate",
+      when: "Within 5 business days",
+      inform: a ? a.inform : "Project Manager"
+    });
+  });
+
+  // 3. All Green, no red flags — single routine-monitoring row
+  if (!rows.length) {
+    rows.push({
+      trigger: "All categories Green",
+      severity: "Green",
+      what: "Routine monitoring",
+      who: "Project Manager / Controls Lead",
+      how: "Continue monthly signal log; no corrective action indicated",
+      when: "Next monthly cycle",
+      inform: "—"
+    });
+  }
+  return rows;
+}
+
+/* ------------------------------------------------------------
    5. Audit-record assembly
    ------------------------------------------------------------ */
 function buildAuditRecord(project, decision, reviewerInput) {
@@ -213,7 +370,8 @@ function buildAuditRecord(project, decision, reviewerInput) {
       recommended_action: decision.action,
       authority: decision.authority,
       documentation_required: decision.documentation,
-      fairness_gate_required: decision.fairnessGateRequired
+      fairness_gate_required: decision.fairnessGateRequired,
+      action_plan: deriveActionPlan(project)
     },
     human_review: {
       rationale: reviewerInput.rationale,
