@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCEIF Signal Flow — Neural Net View</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0a0f1e;
+    color: #c8d4e8;
+    font-family: 'Inter', 'Segoe UI', system-ui, monospace, sans-serif;
+    font-size: 11px;
+    min-height: 100vh;
+    overflow-x: auto;
+  }
+
+  #header {
+    padding: 18px 24px 10px;
+    border-bottom: 1px solid #1a2440;
+  }
+  #header h1 {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: #e8f0ff;
+  }
+  #header p {
+    font-size: 10px;
+    color: #5a6a8a;
+    margin-top: 3px;
+  }
+
+  #col-headers {
+    display: flex;
+    padding: 10px 24px 0;
+    gap: 0;
+    pointer-events: none;
+  }
+  .col-hdr {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #3a4a6a;
+    text-transform: uppercase;
+  }
+
+  #canvas-wrap {
+    position: relative;
+    width: 100%;
+    min-height: 1200px;
+  }
+
+  #flow-svg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    overflow: visible;
+  }
+
+  /* --- Nodes --- */
+  .node {
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .node circle {
+    transition: r 0.15s, filter 0.15s;
+  }
+  .node text {
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* pulse animation for Red nodes */
+  @keyframes redpulse {
+    0%   { opacity: 1; }
+    50%  { opacity: 0.45; }
+    100% { opacity: 1; }
+  }
+  .pulse-red { animation: redpulse 2s ease-in-out infinite; }
+
+  /* --- Tooltip --- */
+  #tooltip {
+    position: fixed;
+    background: #111927;
+    border: 1px solid #2a3a5c;
+    border-radius: 5px;
+    padding: 6px 10px;
+    font-size: 11px;
+    color: #d0ddf5;
+    pointer-events: none;
+    z-index: 999;
+    max-width: 220px;
+    line-height: 1.5;
+    display: none;
+  }
+  #tooltip .tt-name { font-weight: 600; color: #e8f0ff; }
+  #tooltip .tt-status { font-size: 10px; margin-top: 2px; }
+
+  /* --- Legend --- */
+  #legend {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 14px 24px;
+    border-top: 1px solid #1a2440;
+    flex-wrap: wrap;
+  }
+  .leg-item {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 10px; color: #7a8aaa;
+  }
+  .leg-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  #legend-note {
+    margin-left: auto; font-size: 9px; color: #3a4a6a;
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>PCEIF Signal Flow — Neural Net View</h1>
+  <p>27 document types → 108 simulation modules → 12 categories → project status &nbsp;|&nbsp; Hover or click any node to trace connections</p>
+</div>
+
+<div id="canvas-wrap">
+  <svg id="flow-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+</div>
+
+<div id="legend">
+  <span class="leg-item"><span class="leg-dot" style="background:#3fcaa6;box-shadow:0 0 5px #3fcaa6"></span>Green</span>
+  <span class="leg-item"><span class="leg-dot" style="background:#f0c040;box-shadow:0 0 5px #f0c040"></span>Yellow</span>
+  <span class="leg-item"><span class="leg-dot" style="background:#e2b13c;box-shadow:0 0 5px #e2b13c"></span>Amber</span>
+  <span class="leg-item"><span class="leg-dot" style="background:#e0556b;box-shadow:0 0 5px #e0556b"></span>Red</span>
+  <span class="leg-item"><span class="leg-dot" style="background:#444"></span>No data / inactive</span>
+  <span id="legend-note">Click Project Status to highlight all active paths</span>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+// ─── palette ────────────────────────────────────────────────────────────────
+const C = {
+  Green:    '#3fcaa6',
+  Yellow:   '#f0c040',
+  Amber:    '#e2b13c',
+  Red:      '#e0556b',
+  None:     '#444455',
+  Doc:      '#6a7fa8',
+  DocBg:    '#141e33',
+  bg:       '#0a0f1e',
+  line:     '#1a2a4a',
+};
+const STATUS_ORDER = ['Red','Amber','Yellow','Green','None'];
+function worstOf(statuses) {
+  for (const s of STATUS_ORDER) if (statuses.includes(s)) return s;
+  return 'None';
+}
+function nodeColor(status) { return C[status] || C.None; }
+
+// ─── documents (col 1) ──────────────────────────────────────────────────────
+const DOCS = [
+  'Contract Value','Schedule of Values','Pay Application','Time-Phased Schedule',
+  'Schedule Update','Monthly Report','Change Order','RFI','Submittal',
+  'OAC Minutes','Field Report','Inspection Report','NCR Log',
+  'Subcontractor Report','Procurement Log','Lookahead Schedule','Resource Report',
+  'Cost Report','Past Performance Report','Safety Report','Quality Audit Report',
+  'Environmental Report','Historical Data','Commissioning Report',
+  'Correspondence / Notice','Risk Register','Schedule of Values (Baseline)',
+];
+
+// ─── modules (col 2) ────────────────────────────────────────────────────────
+const CATS_DEF = [
+  { id:1,  name:'Quantitative EVM',      count:12 },
+  { id:2,  name:'Schedule Simulation',   count:11 },
+  { id:3,  name:'Cost Simulation',       count:10 },
+  { id:4,  name:'Document & Risk',       count:10 },
+  { id:5,  name:'System Dynamics',       count:8  },
+  { id:6,  name:'Signal Synthesis',      count:4  },
+  { id:7,  name:'Evidence Combination',  count:20 },
+  { id:8,  name:'ML & AI',               count:5  },
+  { id:9,  name:'Governance & Compliance',count:9 },
+  { id:10, name:'Data Integrity',        count:6  },
+  { id:11, name:'Decision Optimization', count:8  },
+  { id:12, name:'Systems Engineering',   count:5  },
+];
+
+// synthetic demo statuses — 30% G, 25% Y, 25% A, 15% R, 5% inactive
+const DIST = ['Green','Green','Green','Yellow','Yellow','Amber','Amber','Red','Green','None'];
+let _seed = 42;
+function fakeStatus(i) {
+  _seed = (_seed * 1664525 + 1013904223) & 0xffffffff;
+  const idx = Math.abs(_seed) % DIST.length;
+  return DIST[idx];
+}
+
+// build flat module list with statuses
+let MODULE_LIST = [];
+CATS_DEF.forEach((cat, ci) => {
+  for (let m = 0; m < cat.count; m++) {
+    MODULE_LIST.push({ catId: cat.id, catIdx: ci, idx: m, status: fakeStatus(MODULE_LIST.length) });
+  }
+});
+
+// category statuses = worst of their modules
+const CAT_STATUSES = CATS_DEF.map((cat, ci) => {
+  const mods = MODULE_LIST.filter(m => m.catIdx === ci);
+  return worstOf(mods.map(m => m.status));
+});
+const PROJECT_STATUS = worstOf(CAT_STATUSES);
+
+// ─── doc→category mappings (which categories each doc feeds) ────────────────
+// Based on functional relationship: EVM docs → cats 1,2,3; schedule docs → 1,2;
+// risk/doc docs → 4; etc.
+const DOC_TO_CATS = [
+  [0],        // Contract Value         → Cat 1
+  [0,2],      // Schedule of Values     → Cat 1, 3
+  [0,2],      // Pay Application        → Cat 1, 3
+  [0,1],      // Time-Phased Schedule   → Cat 1, 2
+  [1],        // Schedule Update        → Cat 2
+  [0,1,2,3],  // Monthly Report         → Cat 1,2,3,4
+  [2,3],      // Change Order           → Cat 3, 4
+  [3],        // RFI                    → Cat 4
+  [3],        // Submittal              → Cat 4
+  [3,8],      // OAC Minutes            → Cat 4, 9
+  [3,8],      // Field Report           → Cat 4, 9
+  [3,9],      // Inspection Report      → Cat 4, 10
+  [3,9],      // NCR Log                → Cat 4, 10
+  [2,3],      // Subcontractor Report   → Cat 3, 4
+  [1,2],      // Procurement Log        → Cat 2, 3
+  [1,4],      // Lookahead Schedule     → Cat 2, 5
+  [4],        // Resource Report        → Cat 5
+  [2,0],      // Cost Report            → Cat 3, 1
+  [0,1,7],    // Past Performance       → Cat 1, 2, 8
+  [8,9],      // Safety Report          → Cat 9, 10
+  [9,10],     // Quality Audit Report   → Cat 10, 11
+  [9],        // Environmental Report   → Cat 9
+  [0,1,7],    // Historical Data        → Cat 1, 2, 8
+  [10,11],    // Commissioning Report   → Cat 11, 12
+  [3,8],      // Correspondence/Notice  → Cat 4, 9
+  [3,4],      // Risk Register          → Cat 4, 5
+  [0,2],      // Schedule of Values (Baseline) → Cat 1, 3
+];
+
+// ─── layout geometry ─────────────────────────────────────────────────────────
+const SVG_W = 1340;
+// Module layout: 108 dots × 8px + 11 gaps × 14px + 100px padding = 1118px → use 1220
+const SVG_H = 1220;
+
+const COL_X = {
+  doc: 110,
+  mod: 450,
+  cat: 820,
+  prj: 1180,
+};
+
+// doc Y positions
+const DOC_PAD_TOP = 50;
+const DOC_SPACING = (SVG_H - DOC_PAD_TOP * 2) / (DOCS.length - 1);
+function docY(i) { return DOC_PAD_TOP + i * DOC_SPACING; }
+
+// module Y positions — grouped by category with spacing between groups
+const MOD_GROUP_GAP = 14;
+const MOD_DOT_SPACING = 8;
+function computeModulePositions() {
+  const totalMods = MODULE_LIST.length;
+  const totalGroups = CATS_DEF.length;
+  const totalGap = MOD_GROUP_GAP * (totalGroups - 1);
+  const totalDotH = totalMods * MOD_DOT_SPACING;
+  const totalH = totalDotH + totalGap;
+  const startY = (SVG_H - totalH) / 2;
+
+  let y = startY;
+  const catStartY = [];
+  CATS_DEF.forEach((cat, ci) => {
+    catStartY.push(y);
+    y += cat.count * MOD_DOT_SPACING + MOD_GROUP_GAP;
+  });
+
+  MODULE_LIST.forEach((m, i) => {
+    const cs = catStartY[m.catIdx];
+    m.x = COL_X.mod;
+    m.y = cs + m.idx * MOD_DOT_SPACING;
+    m.catLabelY = cs - 6;
+  });
+}
+computeModulePositions();
+
+// category Y = center of their modules
+const CAT_Y = CATS_DEF.map((cat, ci) => {
+  const mods = MODULE_LIST.filter(m => m.catIdx === ci);
+  if (!mods.length) return SVG_H / 2;
+  return (mods[0].y + mods[mods.length-1].y) / 2;
+});
+
+const PRJ_Y = SVG_H / 2;
+
+// ─── SVG helpers ─────────────────────────────────────────────────────────────
+const SVG_NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+// ─── build SVG ───────────────────────────────────────────────────────────────
+const svg = document.getElementById('flow-svg');
+svg.setAttribute('viewBox', `0 0 ${SVG_W} ${SVG_H}`);
+svg.setAttribute('width', SVG_W);
+svg.setAttribute('height', SVG_H);
+document.getElementById('canvas-wrap').style.minHeight = SVG_H + 'px';
+
+// defs: glow filters
+const defs = el('defs', {}, svg);
+const glowColors = { Green: C.Green, Yellow: C.Yellow, Amber: C.Amber, Red: C.Red, Doc: C.Doc };
+for (const [name, color] of Object.entries(glowColors)) {
+  const f = el('filter', { id: `glow-${name}`, x:'-50%', y:'-50%', width:'200%', height:'200%' }, defs);
+  const fe = el('feDropShadow', { dx:'0', dy:'0', stdDeviation:'3', 'flood-color': color, 'flood-opacity':'0.9' }, f);
+}
+
+// column header positions
+const colHdrY = 22;
+[['DOCUMENTS', COL_X.doc], ['108 MODULES', COL_X.mod], ['12 CATEGORIES', COL_X.cat], ['PROJECT STATUS', COL_X.prj]].forEach(([label, x]) => {
+  const t = el('text', { x, y: colHdrY, 'text-anchor':'middle', fill:'#2a3a5c', 'font-size':'9', 'font-weight':'700', 'letter-spacing':'0.12em', 'font-family':'monospace' }, svg);
+  t.textContent = label.toUpperCase();
+});
+
+// ─── connection layer (behind nodes) ─────────────────────────────────────────
+const lineLayer = el('g', { id:'lines', opacity:'1' }, svg);
+
+// Build index: catIdx → module indices (positions in MODULE_LIST)
+const catToModIdxs = CATS_DEF.map((_, ci) => MODULE_LIST.map((m,i)=>({m,i})).filter(({m})=>m.catIdx===ci).map(({i})=>i));
+
+// Doc → Module connections: expand DOC_TO_CATS to actual module indices
+const docToModIdxs = DOC_TO_CATS.map(catIdxs => {
+  return catIdxs.flatMap(ci => catToModIdxs[ci] || []);
+});
+
+// Store all line elements for interaction
+const docModLines = []; // [{el, docI, modI}]
+const modCatLines = []; // [{el, modI, catI}]
+const catPrjLines = []; // [{el, catI}]
+
+// cat→project lines
+CATS_DEF.forEach((cat, ci) => {
+  const x1 = COL_X.cat + 18, y1 = CAT_Y[ci];
+  const x2 = COL_X.prj - 32, y2 = PRJ_Y;
+  const mx = (x1 + x2) / 2;
+  const line = el('path', {
+    d: `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`,
+    fill:'none', stroke: nodeColor(CAT_STATUSES[ci]), 'stroke-width':'1.5',
+    opacity:'0.18', 'stroke-linecap':'round',
+    class: 'cat-prj-line'
+  }, lineLayer);
+  catPrjLines.push({ el: line, catI: ci });
+});
+
+// mod→cat lines
+MODULE_LIST.forEach((mod, mi) => {
+  const ci = mod.catIdx;
+  const x1 = COL_X.mod + 5, y1 = mod.y;
+  const x2 = COL_X.cat - 18, y2 = CAT_Y[ci];
+  const mx = (x1 + x2) / 2;
+  const line = el('path', {
+    d: `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`,
+    fill:'none', stroke: nodeColor(mod.status), 'stroke-width':'0.8',
+    opacity:'0.12', 'stroke-linecap':'round',
+    class: 'mod-cat-line'
+  }, lineLayer);
+  modCatLines.push({ el: line, modI: mi, catI: ci });
+});
+
+// doc→mod lines (sampled — not all to avoid extreme clutter: pick a subset)
+// For performance we only draw lines from each doc to the FIRST module of each target cat
+DOC_TO_CATS.forEach((catIdxs, di) => {
+  catIdxs.forEach(ci => {
+    const mods = catToModIdxs[ci];
+    if (!mods.length) return;
+    // pick center module of the category for visual clarity
+    const mi = mods[Math.floor(mods.length / 2)];
+    const mod = MODULE_LIST[mi];
+    const x1 = COL_X.doc + 5, y1 = docY(di);
+    const x2 = COL_X.mod - 5, y2 = mod.y;
+    const mx = (x1 + x2) / 2;
+    const line = el('path', {
+      d: `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`,
+      fill:'none', stroke: C.Doc, 'stroke-width':'0.7',
+      opacity:'0.10', 'stroke-linecap':'round',
+      class: 'doc-mod-line'
+    }, lineLayer);
+    docModLines.push({ el: line, docI: di, modI: mi });
+  });
+});
+
+// ─── node layer ──────────────────────────────────────────────────────────────
+const nodeLayer = el('g', { id:'nodes' }, svg);
+
+// helper: create a node group
+function makeNode(x, y, r, status, label, labelX, labelAnchor, fontSize, extraClass, parent) {
+  const g = el('g', { class: 'node' + (extraClass ? ' '+extraClass : ''), transform:`translate(${x},${y})` }, parent || nodeLayer);
+  const color = (status === 'Doc') ? C.Doc : nodeColor(status);
+  const filterId = (status === 'Doc') ? 'glow-Doc' : (status === 'None' ? null : `glow-${status}`);
+
+  const circle = el('circle', {
+    r, fill: color, opacity: status === 'None' ? '0.35' : '0.9',
+    ...(filterId ? { filter: `url(#${filterId})` } : {}),
+    stroke: '#0a0f1e', 'stroke-width':'1'
+  }, g);
+
+  if (status === 'Red') circle.classList.add('pulse-red');
+
+  if (label) {
+    const tx = (labelX !== undefined ? labelX - x : 0);
+    const t = el('text', {
+      x: tx, y: '0.4em',
+      fill: '#a0b0cc',
+      'font-size': fontSize || '10',
+      'font-family': 'Inter, system-ui, monospace, sans-serif',
+      'text-anchor': labelAnchor || 'start',
+      'dominant-baseline': 'middle',
+    }, g);
+    t.textContent = label;
+  }
+  return g;
+}
+
+// ── Category group labels (background text behind modules)
+CATS_DEF.forEach((cat, ci) => {
+  const mods = MODULE_LIST.filter(m => m.catIdx === ci);
+  if (!mods.length) return;
+  const labelY = mods[0].y - 9;
+  const t = el('text', {
+    x: COL_X.mod - 8, y: labelY,
+    fill: '#2a3a5c', 'font-size':'8', 'font-family':'monospace',
+    'text-anchor':'end', 'font-weight':'600', 'letter-spacing':'0.08em'
+  }, nodeLayer);
+  t.textContent = `C${cat.id}`;
+});
+
+// ── Module nodes (small dots, no label)
+const modNodeEls = MODULE_LIST.map((mod, mi) => {
+  const g = el('g', { class:'node mod-node', 'data-mod': mi }, nodeLayer);
+  const color = nodeColor(mod.status);
+  const filterId = mod.status !== 'None' ? `glow-${mod.status}` : null;
+  const circle = el('circle', {
+    cx: mod.x, cy: mod.y, r: '4',
+    fill: color, opacity: mod.status === 'None' ? '0.28' : '0.85',
+    ...(filterId ? { filter: `url(#${filterId})` } : {}),
+    stroke:'#0a0f1e', 'stroke-width':'0.5'
+  }, g);
+  if (mod.status === 'Red') circle.classList.add('pulse-red');
+  g._status = mod.status;
+  g._catIdx = mod.catIdx;
+  g._modIdx = mi;
+  return g;
+});
+
+// ── Category nodes
+const catNodeEls = CATS_DEF.map((cat, ci) => {
+  const x = COL_X.cat, y = CAT_Y[ci];
+  const status = CAT_STATUSES[ci];
+  const color = nodeColor(status);
+  const filterId = status !== 'None' ? `glow-${status}` : null;
+
+  const g = el('g', { class:'node cat-node', 'data-cat':ci }, nodeLayer);
+  const circle = el('circle', {
+    cx: x, cy: y, r:'9',
+    fill: color, opacity: status === 'None' ? '0.35' : '0.92',
+    ...(filterId ? { filter: `url(#${filterId})` } : {}),
+    stroke:'#0a0f1e', 'stroke-width':'1.5'
+  }, g);
+  if (status === 'Red') circle.classList.add('pulse-red');
+
+  // label right of node
+  const t = el('text', {
+    x: x + 14, y: y,
+    fill:'#8a9ab8', 'font-size':'10', 'font-family':'Inter,system-ui,monospace,sans-serif',
+    'dominant-baseline':'middle'
+  }, g);
+  t.textContent = `C${cat.id} ${cat.name}`;
+
+  g._status = status;
+  g._catIdx = ci;
+  return g;
+});
+
+// ── Project Status node
+const prjStatus = PROJECT_STATUS;
+const prjColor = nodeColor(prjStatus);
+const prjFilter = prjStatus !== 'None' ? `glow-${prjStatus}` : null;
+
+const prjG = el('g', { class:'node prj-node', id:'prj-node' }, nodeLayer);
+const prjCircle = el('circle', {
+  cx: COL_X.prj, cy: PRJ_Y, r:'22',
+  fill: prjColor, opacity:'0.95',
+  ...(prjFilter ? { filter: `url(#${prjFilter})` } : {}),
+  stroke: '#0a0f1e', 'stroke-width':'2.5'
+}, prjG);
+if (prjStatus === 'Red') prjCircle.classList.add('pulse-red');
+
+const prjLabel1 = el('text', {
+  x: COL_X.prj, y: PRJ_Y - 4,
+  fill:'#e8f0ff', 'font-size':'10', 'font-weight':'700',
+  'text-anchor':'middle', 'dominant-baseline':'middle',
+  'font-family':'Inter,system-ui,monospace,sans-serif'
+}, prjG);
+prjLabel1.textContent = 'Project';
+const prjLabel2 = el('text', {
+  x: COL_X.prj, y: PRJ_Y + 8,
+  fill:'#e8f0ff', 'font-size':'10', 'font-weight':'700',
+  'text-anchor':'middle', 'dominant-baseline':'middle',
+  'font-family':'Inter,system-ui,monospace,sans-serif'
+}, prjG);
+prjLabel2.textContent = 'Status';
+const prjStatusLabel = el('text', {
+  x: COL_X.prj, y: PRJ_Y + 36,
+  fill: prjColor, 'font-size':'11', 'font-weight':'700',
+  'text-anchor':'middle', 'font-family':'monospace'
+}, prjG);
+prjStatusLabel.textContent = prjStatus;
+
+// ── Document nodes (rendered last so they're on top)
+const docNodeEls = DOCS.map((name, di) => {
+  const x = COL_X.doc, y = docY(di);
+  const g = el('g', { class:'node doc-node', 'data-doc':di }, nodeLayer);
+
+  const circle = el('circle', {
+    cx: x, cy: y, r:'5',
+    fill: C.Doc, opacity:'0.85',
+    filter:'url(#glow-Doc)',
+    stroke:'#0a0f1e', 'stroke-width':'1'
+  }, g);
+
+  const t = el('text', {
+    x: x - 10, y: y,
+    fill:'#6a7fa8', 'font-size':'9.5', 'font-family':'Inter,system-ui,monospace,sans-serif',
+    'text-anchor':'end', 'dominant-baseline':'middle'
+  }, g);
+  t.textContent = name;
+
+  g._docIdx = di;
+  return g;
+});
+
+// ─── interaction ──────────────────────────────────────────────────────────────
+const tooltip = document.getElementById('tooltip');
+
+function showTooltip(evt, name, status, extra) {
+  const statusColor = (status === 'Doc') ? C.Doc : nodeColor(status);
+  tooltip.innerHTML = `<div class="tt-name">${name}</div><div class="tt-status" style="color:${statusColor}">${status === 'Doc' ? 'Input Document' : status}</div>${extra ? `<div style="color:#5a6a8a;font-size:9px;margin-top:2px">${extra}</div>` : ''}`;
+  tooltip.style.display = 'block';
+  moveTooltip(evt);
+}
+function moveTooltip(evt) {
+  const mx = evt.clientX, my = evt.clientY;
+  tooltip.style.left = (mx + 14) + 'px';
+  tooltip.style.top = (my - 10) + 'px';
+}
+function hideTooltip() {
+  tooltip.style.display = 'none';
+}
+
+function resetHighlight() {
+  docModLines.forEach(l => { l.el.setAttribute('opacity','0.10'); l.el.setAttribute('stroke-width','0.7'); });
+  modCatLines.forEach(l => { l.el.setAttribute('opacity','0.12'); l.el.setAttribute('stroke-width','0.8'); });
+  catPrjLines.forEach(l => { l.el.setAttribute('opacity','0.18'); l.el.setAttribute('stroke-width','1.5'); });
+  docNodeEls.forEach(g => { g.setAttribute('opacity','1'); const c = g.querySelector('circle'); if(c) c.setAttribute('r','5'); });
+  modNodeEls.forEach(g => { g.setAttribute('opacity','1'); const c = g.querySelector('circle'); if(c) c.setAttribute('r','4'); });
+  catNodeEls.forEach(g => { g.setAttribute('opacity','1'); const c = g.querySelector('circle'); if(c) c.setAttribute('r','9'); });
+  prjG.setAttribute('opacity','1'); prjCircle.setAttribute('r','22');
+  lineLayer.setAttribute('opacity','1');
+}
+
+function dimAll() {
+  docNodeEls.forEach(g => g.setAttribute('opacity','0.12'));
+  modNodeEls.forEach(g => g.setAttribute('opacity','0.08'));
+  catNodeEls.forEach(g => g.setAttribute('opacity','0.12'));
+  prjG.setAttribute('opacity','0.12');
+  docModLines.forEach(l => l.el.setAttribute('opacity','0.02'));
+  modCatLines.forEach(l => l.el.setAttribute('opacity','0.02'));
+  catPrjLines.forEach(l => l.el.setAttribute('opacity','0.02'));
+}
+
+function highlightDocPath(di) {
+  dimAll();
+  // the doc itself
+  docNodeEls[di].setAttribute('opacity','1');
+  const dc = docNodeEls[di].querySelector('circle'); if(dc) dc.setAttribute('r','7');
+
+  // target cat indices from this doc
+  const targetCats = DOC_TO_CATS[di];
+  // activate doc→mod lines
+  docModLines.filter(l => l.docI === di).forEach(l => {
+    l.el.setAttribute('opacity','0.65'); l.el.setAttribute('stroke-width','1.5');
+    modNodeEls[l.modI].setAttribute('opacity','1');
+    const mc = modNodeEls[l.modI].querySelector('circle'); if(mc) mc.setAttribute('r','6');
+  });
+  // activate mod→cat and cat→prj for target cats
+  targetCats.forEach(ci => {
+    catNodeEls[ci].setAttribute('opacity','1');
+    const cc = catNodeEls[ci].querySelector('circle'); if(cc) cc.setAttribute('r','12');
+    modCatLines.filter(l => l.catI === ci).forEach(l => {
+      l.el.setAttribute('opacity','0.4'); l.el.setAttribute('stroke-width','1.2');
+    });
+    catPrjLines.filter(l => l.catI === ci).forEach(l => {
+      l.el.setAttribute('opacity','0.7'); l.el.setAttribute('stroke-width','2.5');
+    });
+  });
+  prjG.setAttribute('opacity','1'); prjCircle.setAttribute('r','22');
+}
+
+function highlightCatPath(ci) {
+  dimAll();
+  catNodeEls[ci].setAttribute('opacity','1');
+  const cc = catNodeEls[ci].querySelector('circle'); if(cc) cc.setAttribute('r','13');
+
+  // upstream mods
+  const mods = catToModIdxs[ci];
+  mods.forEach(mi => {
+    modNodeEls[mi].setAttribute('opacity','1');
+    const mc = modNodeEls[mi].querySelector('circle'); if(mc) mc.setAttribute('r','6');
+  });
+  modCatLines.filter(l => l.catI === ci).forEach(l => {
+    l.el.setAttribute('opacity','0.55'); l.el.setAttribute('stroke-width','1.2');
+  });
+  // docs that target this cat
+  DOC_TO_CATS.forEach((cats, di) => {
+    if (cats.includes(ci)) {
+      docNodeEls[di].setAttribute('opacity','1');
+      docModLines.filter(l => l.docI === di).forEach(l => {
+        l.el.setAttribute('opacity','0.4'); l.el.setAttribute('stroke-width','1.2');
+      });
+    }
+  });
+  catPrjLines.filter(l => l.catI === ci).forEach(l => {
+    l.el.setAttribute('opacity','0.7'); l.el.setAttribute('stroke-width','2.5');
+  });
+  prjG.setAttribute('opacity','1'); prjCircle.setAttribute('r','22');
+}
+
+function highlightAllActive() {
+  resetHighlight();
+  // boost all non-None paths
+  docModLines.forEach(l => { l.el.setAttribute('opacity','0.22'); });
+  modCatLines.forEach(l => {
+    const mod = MODULE_LIST[l.modI];
+    if (mod.status !== 'None') { l.el.setAttribute('opacity','0.28'); l.el.setAttribute('stroke-width','1'); }
+  });
+  catPrjLines.forEach(l => {
+    if (CAT_STATUSES[l.catI] !== 'None') { l.el.setAttribute('opacity','0.45'); l.el.setAttribute('stroke-width','2'); }
+  });
+}
+
+// hover: doc nodes
+docNodeEls.forEach((g, di) => {
+  g.addEventListener('mouseenter', evt => {
+    showTooltip(evt, DOCS[di], 'Doc', `Feeds ${DOC_TO_CATS[di].length} category group${DOC_TO_CATS[di].length===1?'':'s'}`);
+  });
+  g.addEventListener('mousemove', moveTooltip);
+  g.addEventListener('mouseleave', () => { hideTooltip(); });
+  g.addEventListener('click', () => { resetHighlight(); highlightDocPath(di); });
+});
+
+// hover: mod nodes
+modNodeEls.forEach((g, mi) => {
+  const mod = MODULE_LIST[mi];
+  g.addEventListener('mouseenter', evt => {
+    showTooltip(evt, `Cat ${mod.catId} — Module ${mod.idx + 1}`, mod.status, CATS_DEF[mod.catIdx].name);
+    // highlight connections
+    modCatLines.filter(l => l.modI === mi).forEach(l => { l.el.setAttribute('opacity','0.7'); l.el.setAttribute('stroke-width','1.5'); });
+    docModLines.filter(l => l.modI === mi).forEach(l => { l.el.setAttribute('opacity','0.5'); l.el.setAttribute('stroke-width','1.2'); });
+    const c = g.querySelector('circle'); if(c) c.setAttribute('r','6');
+  });
+  g.addEventListener('mousemove', moveTooltip);
+  g.addEventListener('mouseleave', () => {
+    hideTooltip();
+    modCatLines.filter(l => l.modI === mi).forEach(l => { l.el.setAttribute('opacity','0.12'); l.el.setAttribute('stroke-width','0.8'); });
+    docModLines.filter(l => l.modI === mi).forEach(l => { l.el.setAttribute('opacity','0.10'); l.el.setAttribute('stroke-width','0.7'); });
+    const c = g.querySelector('circle'); if(c) c.setAttribute('r','4');
+  });
+});
+
+// hover: cat nodes
+catNodeEls.forEach((g, ci) => {
+  g.addEventListener('mouseenter', evt => {
+    showTooltip(evt, `Cat ${ci+1}: ${CATS_DEF[ci].name}`, CAT_STATUSES[ci], `${CATS_DEF[ci].count} modules`);
+  });
+  g.addEventListener('mousemove', moveTooltip);
+  g.addEventListener('mouseleave', hideTooltip);
+  g.addEventListener('click', () => { resetHighlight(); highlightCatPath(ci); });
+});
+
+// hover: project node
+prjG.addEventListener('mouseenter', evt => {
+  showTooltip(evt, 'Project Status', PROJECT_STATUS, `Worst of 12 categories`);
+});
+prjG.addEventListener('mousemove', moveTooltip);
+prjG.addEventListener('mouseleave', hideTooltip);
+prjG.addEventListener('click', () => { resetHighlight(); highlightAllActive(); });
+
+// click on background resets
+svg.addEventListener('click', (evt) => {
+  if (evt.target === svg) resetHighlight();
+});
+</script>
+</body>
+</html>
