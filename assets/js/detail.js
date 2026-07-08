@@ -547,6 +547,7 @@
         ${cs("d-projnet", "Project Signal Network", `<div class="detail-projnet2d"></div>`, true, totalCats + " categories")}
         ${cs("d-brief", "Executive Brief", executiveBriefHtml(p), true, "")}
         ${cs("d-web", "Signal Web", signalWebHtml(p), true, totalModulesForBadge + " modules")}
+        ${cs("d-neural", "Signal Flow", `<div class="detail-neural-flow" data-project-id="${esc(p.id)}"></div>`, false, `${totalModulesForBadge} modules`)}
         ${cs("d-ensemble", "Ensemble Analysis", ensembleHtml(p), false, `${ensActive} active · ${ensEst} est.`)}
         ${cs("d-uploads", "Uploaded Documents", uploadedDocsPanelHtml(p), false, `${uploadCount} document${uploadCount === 1 ? "" : "s"}`)}
         ${cs("d-ledger", "Signal Inputs", `<section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>`, false, pillBadge(overallState))}
@@ -578,6 +579,9 @@
     // so the prompt sees a fully-populated simulationSignals array. Cached
     // briefs for the current reporting period render without a chat call.
     refreshBrief(root, p);
+    if (typeof LinNeuralFlow !== 'undefined') {
+      LinNeuralFlow.render(p, root.querySelector('.detail-neural-flow'));
+    }
   }
 
   /* ============================================================
