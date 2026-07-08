@@ -404,10 +404,31 @@
      ============================================================ */
   function uploadedDocEvents(project) {
     const evs = (project && Array.isArray(project.events)) ? project.events : [];
-    return evs.filter((e) => {
+    const fromEvents = evs.filter((e) => {
       const t = (e && (e.type || e.event || e.kind)) || "";
       return t === "signals_extracted";
     });
+    // Fallback: if events were cleared by a reset but signalInputs.sources exists,
+    // reconstruct a synthetic event list from sources (which survives resets)
+    if (fromEvents.length === 0 && project && project.signalInputs && project.signalInputs.sources) {
+      const sources = project.signalInputs.sources;
+      const seen = {};
+      const synthetic = [];
+      Object.values(sources).forEach(function(src) {
+        if (src && src.docType && !seen[src.docType]) {
+          seen[src.docType] = true;
+          synthetic.push({
+            event: 'signals_extracted',
+            docType: src.docType,
+            at: src.at || null,
+            appliedFields: [],
+            synthetic: true
+          });
+        }
+      });
+      return synthetic;
+    }
+    return fromEvents;
   }
   function fmtDocType(dt) {
     if (!dt) return "Document";
