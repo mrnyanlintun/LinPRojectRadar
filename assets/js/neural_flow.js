@@ -373,27 +373,28 @@
     var lineG  = se('g', { id:'lnf-lines'  }, svg);
     var interG = se('g', { id:'lnf-intercat' }, svg);
 
-    // cat → project lines
+    // Class B (rollup): cat → project — solid, arrowhead at the status node edge
     var catPrjEls = catStatuses.map(function(cs, ci) {
       var x1=CX.cat+9, y1=catCY[ci], x2=CX.prj-26, y2=PRJ_Y, mx=(x1+x2)/2;
       return se('path', { d:'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2,
-        fill:'none', stroke:colFor(cs), 'stroke-width':'1.5', opacity:'0.22', 'stroke-linecap':'round' }, lineG);
+        fill:'none', stroke:colFor(cs), 'stroke-width':'1.5', opacity:'0.35', 'stroke-linecap':'round',
+        'marker-end':'url(#lnf-arr-'+cs+')' }, lineG);
     });
 
-    // mod → cat lines
+    // Class B (rollup): mod → cat — solid, no arrowhead (volume too high)
     var modCatEls = MODULES.map(function(m, mi) {
       var ci=m.catI, x1=CX.mod+4, y1=modY[mi], x2=CX.cat-9, y2=catCY[ci], mx=(x1+x2)/2;
       return se('path', { d:'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2,
-        fill:'none', stroke:modInfos[mi].color, 'stroke-width':'0.8', opacity:'0.15', 'stroke-linecap':'round' }, lineG);
+        fill:'none', stroke:modInfos[mi].color, 'stroke-width':'0.8', opacity:'0.25', 'stroke-linecap':'round' }, lineG);
     });
 
-    // doc → module lines (first 2 modules of each target category)
+    // Class A (input): doc → module — thin solid, doc-node colour, no arrowhead
     // Store per-doc arrays for hover interaction
     var docLineMap = DOC_KEYS.map(function() { return []; }); // docIdx → [{el, modI}]
     DOC_KEYS.forEach(function(key, di) {
       var uploaded = isUploaded(key);
       var stroke = uploaded ? COL.DocOn : COL.DocOff;
-      var opacity = uploaded ? '0.20' : '0.05';
+      var opacity = uploaded ? '0.15' : '0.05';
       DOC_TO_CATS[di].forEach(function(ci) {
         catModIdxs[ci].slice(0, 2).forEach(function(mi) {
           var x1=CX.doc+5, y1=docY(di), x2=CX.mod-4, y2=modY[mi], mx=(x1+x2)/2;
@@ -412,8 +413,8 @@
         var x1=CX.cat+9, y1=catCY[srcI], x2=CX.cat+9, y2=catCY[feed.dst], xh=feed.xHub;
         var line = se('path', {
           d:'M'+x1+','+y1+' C'+xh+','+y1+' '+xh+','+y2+' '+x2+','+y2,
-          fill:'none', stroke:colFor(cs), 'stroke-width':'1', opacity:'0.20',
-          'stroke-dasharray':'4 3', 'marker-end':'url(#lnf-arr-'+cs+')'
+          fill:'none', stroke:colFor(cs), 'stroke-width':'1', opacity:'0.45',
+          'stroke-dasharray':'6 4', 'marker-end':'url(#lnf-arr-'+cs+')'
         }, interG);
         interCatEls.push({ el:line, srcI:srcI, dstI:feed.dst });
       });
@@ -428,8 +429,8 @@
     }, interG);
     var fbLabelEl = se('text', {
       x:fbSX+70, y:(fbSY+fbDY)/2,
-      fill:COL.Red, 'font-size':'7', 'font-family':'monospace',
-      opacity:'0.50', 'writing-mode':'tb', 'text-anchor':'middle'
+      fill:COL.Red, 'font-size':'8', 'font-family':'monospace',
+      opacity:'0.70', 'writing-mode':'tb', 'text-anchor':'middle'
     }, interG);
     fbLabelEl.textContent = 'governance feedback';
 
@@ -490,7 +491,7 @@
           docLineMap.forEach(function(arr, di) {
             arr.forEach(function(e) {
               if (e.modI===mi) {
-                e.el.setAttribute('opacity', isUploaded(DOC_KEYS[di])?'0.20':'0.05');
+                e.el.setAttribute('opacity', isUploaded(DOC_KEYS[di])?'0.15':'0.05');
                 e.el.setAttribute('stroke-width','0.7');
               }
             });
@@ -559,7 +560,7 @@
       showTT(evt,'<div class="n">Governance Feedback</div><div class="sub" style="color:'+COL.Red+'">Cat 9 loop</div><div class="sub">Governance decisions feed back into Cat 9 compliance monitoring</div>');
     });
     fbEl.addEventListener('mousemove', moveTT);
-    fbEl.addEventListener('mouseleave', function() { hideTT(); fbEl.setAttribute('opacity','0.30'); fbLabelEl.setAttribute('opacity','0.50'); });
+    fbEl.addEventListener('mouseleave', function() { hideTT(); fbEl.setAttribute('opacity','0.30'); fbLabelEl.setAttribute('opacity','0.70'); });
 
     // Document nodes (rendered last = on top)
     DOC_KEYS.forEach(function(key, di) {
@@ -589,7 +590,7 @@
       g.addEventListener('mouseleave', (function(di, uploaded) {
         return function() {
           hideTT();
-          if (uploaded) docLineMap[di].forEach(function(e) { e.el.setAttribute('opacity','0.20'); e.el.setAttribute('stroke-width','0.7'); });
+          if (uploaded) docLineMap[di].forEach(function(e) { e.el.setAttribute('opacity','0.15'); e.el.setAttribute('stroke-width','0.7'); });
         };
       })(di, uploaded));
     });
@@ -615,6 +616,24 @@
     [['Uploaded',COL.DocOn,true],['Not uploaded',COL.DocOff,false]].forEach(function(t) {
       var s = document.createElement('span');
       s.innerHTML = legDot(t[1],t[2]) + t[0];
+      leg.appendChild(s);
+    });
+
+    // Flow-class key: line-style samples for the four connection classes
+    function legLine(color, dashed, arrow) {
+      var border = (dashed ? 'dashed' : 'solid');
+      return '<span style="display:inline-block;width:16px;border-top:2px '+border+' '+color+
+        ';vertical-align:middle;margin-right:3px"></span>' + (arrow ? '<span style="color:'+color+';margin-right:3px">&#9656;</span>' : '');
+    }
+    var sep2 = document.createElement('span');
+    sep2.style.cssText = 'border-left:1px solid #1a2440;height:10px;';
+    leg.appendChild(sep2);
+    [['Input (doc→model)', legLine(COL.DocOn, false, false)],
+     ['Rollup (model→category→status)', legLine(COL.Green, false, true)],
+     ['Derived (category→category)', legLine(COL.Amber, true, true)],
+     ['Governance feedback', legLine(COL.Red, true, true)]].forEach(function(t) {
+      var s = document.createElement('span');
+      s.innerHTML = t[1] + t[0];
       leg.appendChild(s);
     });
     container.appendChild(leg);
