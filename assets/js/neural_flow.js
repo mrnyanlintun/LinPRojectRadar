@@ -231,6 +231,12 @@
     (project.events || []).forEach(function(e) {
       if (e.event === 'signals_extracted' && e.docType) uploadedNorm[normKey(e.docType)] = true;
     });
+    // Fallback: reconstruct from signalInputs.sources if events were cleared by reset
+    if (Object.keys(uploadedNorm).length === 0 && project.signalInputs && project.signalInputs.sources) {
+      Object.values(project.signalInputs.sources).forEach(function(src) {
+        if (src && src.docType) uploadedNorm[normKey(src.docType)] = true;
+      });
+    }
     function isUploaded(name) { return !!uploadedNorm[normKey(name)]; }
 
     // ── 2. Module status from simulationSignals.signal_array ─────────────────
