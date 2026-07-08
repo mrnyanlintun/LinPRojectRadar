@@ -408,27 +408,27 @@
       const t = (e && (e.type || e.event || e.kind)) || "";
       return t === "signals_extracted";
     });
-    // Fallback: if events were cleared by a reset but signalInputs.sources exists,
-    // reconstruct a synthetic event list from sources (which survives resets)
-    if (fromEvents.length === 0 && project && project.signalInputs && project.signalInputs.sources) {
-      const sources = project.signalInputs.sources;
+    // Union with signalInputs.sources: add doc types that have no surviving event
+    // (events may have been partially cleared by an earlier reset).
+    const out = fromEvents.slice();
+    if (project && project.signalInputs && project.signalInputs.sources) {
       const seen = {};
-      const synthetic = [];
-      Object.values(sources).forEach(function(src) {
-        if (src && src.docType && !seen[src.docType]) {
-          seen[src.docType] = true;
-          synthetic.push({
-            event: 'signals_extracted',
-            docType: src.docType,
-            at: src.at || null,
-            appliedFields: [],
-            synthetic: true
-          });
-        }
+      fromEvents.forEach((e) => { if (e.docType) seen[String(e.docType).toLowerCase()] = true; });
+      Object.values(project.signalInputs.sources).forEach(function (src) {
+        if (!src || !src.docType) return;
+        const key = String(src.docType).toLowerCase();
+        if (seen[key]) return;
+        seen[key] = true;
+        out.push({
+          event: 'signals_extracted',
+          docType: src.docType,
+          at: src.at || null,
+          appliedFields: [],
+          synthetic: true
+        });
       });
-      return synthetic;
     }
-    return fromEvents;
+    return out;
   }
   function fmtDocType(dt) {
     if (!dt) return "Document";
