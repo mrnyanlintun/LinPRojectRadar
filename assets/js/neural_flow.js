@@ -2,19 +2,25 @@
 (function () {
   'use strict';
 
-  // ─── Document types (27, ordered to match DOC_TO_CATS) ──────────────────────
-  var DOCS = [
-    'Contract Value','Schedule of Values','Pay Application','Time-Phased Schedule',
-    'Schedule Update','Monthly Report','Change Order','RFI','Submittal',
-    'OAC Minutes','Field Report','Inspection Report','NCR Log',
-    'Subcontractor Report','Procurement Log','Lookahead Schedule','Resource Report',
-    'Cost Report','Past Performance Report','Safety Report','Quality Audit Report',
-    'Environmental Report','Historical Data','Commissioning Report',
-    'Correspondence / Notice','Risk Register','Schedule of Values (Baseline)',
+  // ─── Document types (26 backend keys, ordered to match DOC_TO_CATS) ─────────
+  var DOC_KEYS = [
+    'contract_value','schedule_of_values','pay_application','time_phased_schedule',
+    'schedule_update','monthly_report','change_order','rfi','submittal',
+    'oac_minutes','field_report','inspection_report','ncr_log',
+    'subcontractor_report','procurement_log','lookahead_schedule','resource_report',
+    'cost_report','past_performance_report','safety_report','quality_audit_report',
+    'environmental_report','historical_data','commissioning_report',
+    'correspondence_notice','risk_register',
   ];
+  function docLabel(key) {
+    var lbl = window.LinSignals && LinSignals.DOC_TYPE_LABEL && LinSignals.DOC_TYPE_LABEL[key];
+    if (lbl) return lbl;
+    return key.split('_').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
+  }
 
-  // ─── Category definitions (12) ───────────────────────────────────────────────
-  var CATS = [
+  // ─── Fallback category definitions (12) — used only if LIN_CATEGORIES is
+  // absent (script-order failure); canonical source is categories.js ──────────
+  var FB_CATS = [
     { id:1,  name:'Quantitative EVM',       short:'EVM',       count:12 },
     { id:2,  name:'Schedule Simulation',    short:'Schedule',  count:11 },
     { id:3,  name:'Cost Simulation',        short:'Cost',      count:10 },
@@ -29,7 +35,7 @@
     { id:12, name:'Systems Engineering',    short:'Sys.Eng.',  count:5  },
   ];
 
-  // ─── Module definitions: [catIdx, displayName, method_class] (108 total) ────
+  // ─── Fallback module definitions: [catIdx, displayName, method_class] ───────
   var RAW_MODS = [
     // Cat 1 — Quantitative EVM (12)
     [0,'Monte Carlo EAC','Monte_Carlo_EAC'],  [0,'CUSUM Anomaly','CUSUM_Anomaly'],
@@ -101,14 +107,37 @@
     [11,'Digital Twin Sync','Digital_Twin_Sync'],
   ];
 
-  // Build indexed module list and per-category index maps
-  var catModIdxs = CATS.map(function() { return []; });
-  var MODULES = RAW_MODS.map(function(row, i) {
-    var ci = row[0], name = row[1], mc = row[2];
-    var modI = catModIdxs[ci].length;
-    catModIdxs[ci].push(i);
-    return { i:i, catI:ci, modI:modI, name:name, mc:mc, num:(ci+1)+'.'+(modI+1) };
-  });
+  var SHORTS = ['EVM','Schedule','Cost','Doc&Risk','Sys.Dyn.','Synthesis',
+                'Evidence','ML & AI','Gov.','Integrity','Decision','Sys.Eng.'];
+
+  // Canonical categories + modules from categories.js (real method_class names,
+  // so byClass/getModuleStatus lookups actually hit). Falls back to the
+  // hardcoded arrays above only if LIN_CATEGORIES failed to load.
+  function buildModel() {
+    var LC = window.LIN_CATEGORIES;
+    if (LC && LC.length) {
+      var cats = LC.map(function(c, ci) {
+        return { id: ci + 1, name: c.name, short: SHORTS[ci] || c.name,
+                 count: (c.modules || []).length };
+      });
+      var mods = [];
+      var idxs = LC.map(function() { return []; });
+      LC.forEach(function(c, ci) {
+        (c.modules || []).forEach(function(m) {
+          idxs[ci].push(mods.length);
+          mods.push({ mc: m.method_class, name: m.name, num: m.num, catI: ci });
+        });
+      });
+      return { CATS: cats, MODULES: mods, catModIdxs: idxs };
+    }
+    var fbIdxs = FB_CATS.map(function() { return []; });
+    var fbMods = RAW_MODS.map(function(row, i) {
+      var ci = row[0], modI = fbIdxs[ci].length;
+      fbIdxs[ci].push(i);
+      return { catI: ci, name: row[1], mc: row[2], num: (ci + 1) + '.' + (modI + 1) };
+    });
+    return { CATS: FB_CATS, MODULES: fbMods, catModIdxs: fbIdxs };
+  }
 
   // ─── Doc → category indices (0-based), corrected per spec ───────────────────
   var DOC_TO_CATS = [
@@ -138,7 +167,6 @@
     [8,3],      // Commissioning Report    → Cat9, Cat4
     [3],        // Correspondence / Notice → Cat4
     [4,3],      // Risk Register           → Cat5, Cat4
-    [0,1],      // Schedule of Values (Baseline) → Cat1, Cat2
   ];
 
   // ─── Inter-category feeds (x-hubs between cat col and prj col) ───────────────
@@ -167,6 +195,8 @@
     if (sc === 'yellow' || sc === '#f0c040') return 'Yellow';
     if (sc === 'amber'  || sc === '#e2b13c') return 'Amber';
     if (sc === 'red'    || sc === '#e0556b') return 'Red';
+    if (sc === 'light-amber') return 'Yellow';   // categories.js ranks light-amber with yellow
+    if (sc === 'complete' || sc === 'blue' || sc === '#4ea0ff') return 'Complete';
     return 'None';
   }
   function colFor(s) { return COL[s] || COL.None; }
@@ -240,18 +270,29 @@
     }
     function isUploaded(name) { return !!uploadedNorm[normKey(name)]; }
 
-    // ── 2. Module status from simulationSignals.signal_array ─────────────────
+    // ── 2. Canonical categories/modules + status resolution ──────────────────
+    var model = buildModel();
+    var CATS = model.CATS, MODULES = model.MODULES, catModIdxs = model.catModIdxs;
+
     var simArr = (project.simulationSignals && project.simulationSignals.signal_array) || [];
     var byClass = {};
     simArr.forEach(function(r) { if (r && r.method_class) byClass[r.method_class] = r; });
-    function modInfo(mc) {
-      var r = byClass[mc];
-      var s = statusFromSig(r);
-      return { status:s, color:colFor(s), metric: r && r.evidence_metric ? String(r.evidence_metric) : null };
+    function modInfo(m) {
+      var r = byClass[m.mc];
+      var metric = r && r.evidence_metric ? String(r.evidence_metric) : null;
+      // Prefer the app's shared resolver (handles computed/derived modules too)
+      var st = null;
+      try { if (window.getModuleStatus) st = window.getModuleStatus(m.mc, project); } catch (e) {}
+      if (st) {
+        var s = statusFromSig({ status_color: st });
+        return { status: s, color: colFor(s), metric: metric };
+      }
+      var s2 = statusFromSig(r);
+      return { status: s2, color: colFor(s2), metric: metric };
     }
 
     // ── 3. Pre-compute all statuses ───────────────────────────────────────────
-    var modInfos = MODULES.map(function(m) { return modInfo(m.mc); });
+    var modInfos = MODULES.map(function(m) { return modInfo(m); });
     // Category statuses — use the app's DST fusion (categories.js); LIN_CATEGORIES
     // is ordered cat1..cat12, matching the CATS index. Worst-of is only a fallback.
     var catStatuses = CATS.map(function(cat, ci) {
@@ -283,7 +324,7 @@
 
     var CX = { doc:115, mod:420, cat:730, prj:1090 };
 
-    var DOC_SPACING = (H - PAD_TOP * 2) / (DOCS.length - 1);
+    var DOC_SPACING = (H - PAD_TOP * 2) / (DOC_KEYS.length - 1);
     function docY(i) { return PAD_TOP + i * DOC_SPACING; }
 
     var modY = [];      // indexed by module flat index
@@ -321,10 +362,11 @@
     se('polygon', { points:'4,0 4,5 0,2.5', fill:COL.Red, opacity:'0.85' }, mfb);
 
     // Column headers
-    [['DOCUMENTS',CX.doc],['108 MODULES',CX.mod],['12 CATEGORIES',CX.cat],['PROJECT STATUS',CX.prj]].forEach(function(pair) {
-      var t = se('text', { x:pair[0], y:18, 'text-anchor':'middle', fill:'#253045',
+    [[DOC_KEYS.length+' DOCUMENTS',CX.doc],[MODULES.length+' MODULES',CX.mod],
+     [CATS.length+' CATEGORIES',CX.cat],['PROJECT STATUS',CX.prj]].forEach(function(pair) {
+      var t = se('text', { x:pair[1], y:18, 'text-anchor':'middle', fill:'#253045',
         'font-size':'8', 'font-weight':'700', 'letter-spacing':'0.10em', 'font-family':'monospace' }, svg);
-      t.textContent = pair[1];
+      t.textContent = pair[0];
     });
 
     // ── 6. Connection layers ──────────────────────────────────────────────────
@@ -347,9 +389,9 @@
 
     // doc → module lines (first 2 modules of each target category)
     // Store per-doc arrays for hover interaction
-    var docLineMap = DOCS.map(function() { return []; }); // docIdx → [{el, modI}]
-    DOCS.forEach(function(name, di) {
-      var uploaded = isUploaded(name);
+    var docLineMap = DOC_KEYS.map(function() { return []; }); // docIdx → [{el, modI}]
+    DOC_KEYS.forEach(function(key, di) {
+      var uploaded = isUploaded(key);
       var stroke = uploaded ? COL.DocOn : COL.DocOff;
       var opacity = uploaded ? '0.20' : '0.05';
       DOC_TO_CATS[di].forEach(function(ci) {
@@ -448,7 +490,7 @@
           docLineMap.forEach(function(arr, di) {
             arr.forEach(function(e) {
               if (e.modI===mi) {
-                e.el.setAttribute('opacity', isUploaded(DOCS[di])?'0.20':'0.05');
+                e.el.setAttribute('opacity', isUploaded(DOC_KEYS[di])?'0.20':'0.05');
                 e.el.setAttribute('stroke-width','0.7');
               }
             });
@@ -520,8 +562,9 @@
     fbEl.addEventListener('mouseleave', function() { hideTT(); fbEl.setAttribute('opacity','0.30'); fbLabelEl.setAttribute('opacity','0.50'); });
 
     // Document nodes (rendered last = on top)
-    DOCS.forEach(function(name, di) {
-      var uploaded = isUploaded(name);
+    DOC_KEYS.forEach(function(key, di) {
+      var name = docLabel(key);
+      var uploaded = isUploaded(key);
       var color = uploaded ? COL.DocOn : COL.DocOff;
       var glow  = uploaded ? 'url(#lnf-glow-DocOn)' : null;
       var x=CX.doc, y=docY(di);
