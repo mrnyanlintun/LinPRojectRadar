@@ -1,4 +1,6 @@
-# lin-project-radar
+# Lin Opus Gubernatio
+
+(repo: `lin-project-radar`)
 
 A static, client-side demonstration of the **PCEIF** (Public Capital EVM
 Intelligence Framework) signal-to-action governance workflow — developed for a

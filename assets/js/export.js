@@ -45,7 +45,7 @@
     const brief = snapshot.executive_brief || project.executiveBrief || null;
 
     const summaryRows = [
-      ["LIN PROJECT RADAR — PROJECT REPORT"],
+      ["LIN OPUS GUBERNATIO — PROJECT REPORT"],
       [""],
       ["Project:",       snapshot.project_name || ""],
       ["Project ID:",    snapshot.project_id || ""],
