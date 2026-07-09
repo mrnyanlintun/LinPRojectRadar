@@ -1458,8 +1458,13 @@
       const raw = si ? si[f.key] : undefined;
       const has = raw != null && raw !== "";
       const val = has ? fmtNum(raw) : "—";
-      const src = sourceDocType(si, f.key);
-      const srcTag = src ? `<span class="ds-src">from ${esc(DOC_TYPE_LABEL[src] || src)}</span>` : "";
+      // Traceability link: field ← doc. Latest sources entry carries docType + date.
+      const srcEntry = latestSource(si, f.key);
+      const src = srcEntry ? (srcEntry.docType || srcEntry.doc || srcEntry.type || null) : null;
+      const srcDate = srcEntry && srcEntry.at ? fmtDate(srcEntry.at) : "";
+      const srcTag = src
+        ? `<span class="ds-src">via ${esc(DOC_TYPE_LABEL[src] || src)}${srcDate ? " · " + esc(srcDate) : ""}</span>`
+        : "";
       const mark = has ? `<span class="ds-extracted" title="extracted">✓ extracted</span>` : "";
       const pencil = (f.editable && has)
         ? `<button class="ds-overwrite" data-field="${f.key}" aria-label="Overwrite ${esc(f.label)}" title="Overwrite">✎</button>`
@@ -1579,7 +1584,12 @@
   function panelInnerHtml(project) {
     const id = project ? project.id : "";
     const entry = cache[id] || {};
-    const si = entry.signalInputs || null;
+    // Fall back to the persisted signalInputs (with its sources ledger) so the
+    // field ← doc traceability renders even without a same-session extraction.
+    const persisted = project && project.signalInputs;
+    const persistedHasData = !!(persisted && Object.keys(persisted).some(
+      (k) => k !== "sources" && persisted[k] != null && persisted[k] !== ""));
+    const si = entry.signalInputs || (persistedHasData ? persisted : null);
     const missing = entry.missing || [];
     const dates = entry.dates || null;
     if (!si && !signalEvents(project).length) {
