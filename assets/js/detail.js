@@ -569,9 +569,9 @@
          </div>
        </div>
         ${cs("d-projnet", "Project Signal Network", `<div class="detail-projnet2d"></div>`, true, totalCats + " categories")}
+        ${cs("d-neural", "Signal Flow", `<div class="detail-neural-flow" data-project-id="${esc(p.id)}"></div>`, false, `${totalModulesForBadge} modules`)}
         ${cs("d-brief", "Executive Brief", executiveBriefHtml(p), true, "")}
         ${cs("d-web", "Signal Web", signalWebHtml(p), true, totalModulesForBadge + " modules")}
-        ${cs("d-neural", "Signal Flow", `<div class="detail-neural-flow" data-project-id="${esc(p.id)}"></div>`, false, `${totalModulesForBadge} modules`)}
         ${cs("d-ensemble", "Ensemble Analysis", ensembleHtml(p), false, `${ensActive} active · ${ensEst} est.`)}
         ${cs("d-docsignals", "Documents & Extracted Signals",
              uploadedDocsPanelHtml(p) +
