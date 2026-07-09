@@ -877,6 +877,15 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
   line-height: 1.6;
   margin: 8px 0 0;
 }
+.login-disclaimer {
+  max-width: 340px;
+  margin: 14px auto 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+  text-align: center;
+}
+.login-disclaimer strong { color: var(--radar-amber); }
 #google-signin-btn { margin: 8px 0; min-height: 44px; }
 .btn-secondary {
   font-family: var(--font-mono);
