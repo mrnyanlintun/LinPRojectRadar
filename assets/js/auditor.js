@@ -525,6 +525,7 @@
     const history = cs("aud-history", "AUDIT HISTORY", historyHtml(), false, historyCountBadge());
     root.innerHTML =
       topPickerHtml() +
+      `<p class="upload-disclaimer">Academic use only — do not upload sensitive or real project documents.</p>` +
       `<div class="aud-stack">${corpus}${submission}${results}${history}</div>`;
     wire(root);
   }

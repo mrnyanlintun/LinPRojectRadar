@@ -821,6 +821,7 @@
           </label>
           <div class="dc-actions"><button class="btn primary ds-run">Upload</button></div>
           <p class="ds-status kn-sub" aria-live="polite"></p>
+          <p class="upload-disclaimer">Academic use only — do not upload sensitive or real project documents.</p>
         </div>
       </div>`;
   }
@@ -1097,6 +1098,7 @@
         <div class="dz-icon" aria-hidden="true">↑</div>
         <div class="dz-title">Drop documents here</div>
         <div class="dz-sub">PDF · multiple files at once · Lin identifies type automatically</div>
+        <p class="upload-disclaimer">Academic use only — do not upload sensitive or real project documents.</p>
         <button type="button" class="dz-browse">Browse files</button>
         <input type="file" class="dz-input" multiple accept="${ACCEPT}" hidden />
       </div>

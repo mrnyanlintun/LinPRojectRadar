@@ -886,6 +886,11 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
   text-align: center;
 }
 .login-disclaimer strong { color: var(--radar-amber); }
+.upload-disclaimer {
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: var(--muted);
+}
 #google-signin-btn { margin: 8px 0; min-height: 44px; }
 .btn-secondary {
   font-family: var(--font-mono);
