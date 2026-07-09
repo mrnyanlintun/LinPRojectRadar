@@ -915,6 +915,8 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
   text-align: center;
 }
 .login-disclaimer strong { color: var(--radar-amber); }
+.login-copyright { margin-top: 8px; font-size: 10px; color: var(--muted); text-align: center; }
+.foot-copyright { margin: 0 0 10px; }
 .upload-disclaimer {
   margin-top: 8px;
   font-size: 11px;
