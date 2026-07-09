@@ -146,10 +146,11 @@ body::before {
 .brand-lockup { display: flex; flex-direction: column; gap: 2px; }
 .nav-logo-text {
   font-family: var(--font-display); font-weight: 800;
-  font-size: clamp(20px, 2.6vw, 30px);
-  letter-spacing: .12em; color: #e8d9b0; line-height: 1.1;
+  font-size: 44px;
+  letter-spacing: .02em; color: #efe3c2; line-height: 1.05;
   white-space: nowrap;
 }
+.brand-init { color: #d4af5a; }
 .brand-tagline {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -157,8 +158,9 @@ body::before {
   color: var(--muted);
   white-space: nowrap;
 }
-/* gold washes out on the light background — use a dark bronze there */
-body[data-theme="light"] .nav-logo-text { color: #8a6d2f; }
+/* cream/gold wash out on the light background — dark ink + bronze initials there */
+body[data-theme="light"] .nav-logo-text { color: var(--text); }
+body[data-theme="light"] .brand-init { color: #8a6d2f; }
 body[data-theme="light"] .topbar { border-bottom-color: rgba(138, 109, 47, 0.25); }
 @media (max-width: 900px) {
   .nav-logo-img { height: 56px; }
