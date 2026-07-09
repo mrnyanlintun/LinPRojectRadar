@@ -304,6 +304,7 @@
           </label>
           <button class="btn primary" id="aud-a-upload" ${canUpload ? "" : "disabled"}>${state.uploadBusy ? "Uploading…" : "Upload"}</button>
         </div>
+        <p class="upload-disclaimer">Academic use only — do not upload sensitive or real project documents.</p>
         ${msg ? `<p class="aud-msg ${msg.startsWith("✓") ? "ok" : "warn"}" aria-live="polite">${esc(msg)}</p>` : ""}
       </div>
 
@@ -434,6 +435,7 @@
           <span class="aud-filebtn-label">${state.submission ? esc(state.submission.name) : "Submission (PDF or image)…"}</span>
           ${state.submission ? `<span class="kn-sub">· ${esc(fmtSize(state.submission.size))}</span>` : ""}
         </label>
+        <p class="upload-disclaimer">Academic use only — do not upload sensitive or real project documents.</p>
       </div>
 
       <div class="aud-step">
