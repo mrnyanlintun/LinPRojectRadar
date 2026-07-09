@@ -211,6 +211,9 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .intro h1 { font-family: var(--font-display); font-weight: 800; font-size: 28px; margin: 0 0 8px; letter-spacing: -.01em; }
 @media (max-width: 680px) { .intro h1 { font-size: 22px; } }
 .intro p { color: var(--muted); max-width: 70ch; margin: 0; line-height: 1.55; }
+/* Portfolio only: intro spans the same edges as the full-width radar panel below.
+   Other pages keep the narrow 70ch reading measure. */
+.page[data-page="portfolio"] .intro p { max-width: none; line-height: 1.6; }
 
 /* ---------- layout ---------- */
 .console { display: grid; grid-template-columns: 1.05fr .95fr; gap: 18px; }
