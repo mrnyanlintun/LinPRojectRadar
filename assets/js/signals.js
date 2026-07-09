@@ -815,7 +815,7 @@
         </div>
         <div>
           <label class="rationale-label">Document</label>
-          <p class="upload-disclaimer">Academic use only — do not upload sensitive or real project documents.</p>
+          <p class="upload-disclaimer">Notice: Do not upload confidential, proprietary, or personally identifiable information, or documents relating to actual projects. Content is processed by third-party AI services. Uploads are made at the user's sole risk.</p>
           <label class="aud-filebtn ds-filebtn">
             <input type="file" class="ds-file" accept="${ACCEPT}" />
             <span class="ds-filebtn-label aud-filebtn-label">Choose file</span>
@@ -1098,7 +1098,7 @@
         <div class="dz-icon" aria-hidden="true">↑</div>
         <div class="dz-title">Drop documents here</div>
         <div class="dz-sub">PDF · multiple files at once · Lin identifies type automatically</div>
-        <p class="upload-disclaimer">Academic use only — do not upload sensitive or real project documents.</p>
+        <p class="upload-disclaimer">Notice: Do not upload confidential, proprietary, or personally identifiable information, or documents relating to actual projects. Content is processed by third-party AI services. Uploads are made at the user's sole risk.</p>
         <button type="button" class="dz-browse">Browse files</button>
         <input type="file" class="dz-input" multiple accept="${ACCEPT}" hidden />
       </div>
