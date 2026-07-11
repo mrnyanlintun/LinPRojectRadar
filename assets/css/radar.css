@@ -432,7 +432,25 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .log-time { font-family: var(--font-mono); font-size: 11px; color: var(--faint); margin-top: 4px; }
 
 /* ---------- footer ---------- */
-.foot { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 12px; color: var(--faint); line-height: 1.6; }
+/* Mirrors the .login-disclaimer type treatment. Opaque surface + z-index
+   keep the legal block legible above the newyork skyline art. */
+.site-footer {
+  position: relative;
+  z-index: 2;                      /* sit above the skyline art */
+  margin-top: 28px;
+  background: var(--surface, #0d1322);
+  border-top: 1px solid var(--line, rgba(232,217,176,0.18));
+  padding: 22px 28px 26px;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: none;
+}
+.footer-copyright { margin: 0 0 10px; color: var(--muted); }
+.footer-legal { margin: 0 0 10px; padding-left: 18px; }
+.footer-legal li { margin-bottom: 4px; }
+.footer-legal strong { color: var(--radar-amber, #e2b13c); font-weight: 600; }
+.footer-praxis { margin: 0; opacity: 0.8; }
 
 /* ---------- reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
@@ -916,7 +934,6 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 }
 .login-disclaimer strong { color: var(--radar-amber); }
 .login-copyright { margin-top: 8px; font-size: 10px; color: var(--muted); text-align: center; }
-.foot-copyright { margin: 0 0 10px; }
 .upload-disclaimer {
   margin-top: 8px;
   font-size: 11px;
@@ -1467,12 +1484,7 @@ body.nav-open .nav-rail { transform: translateX(0); }
 }
 .lg-hat { width: 16px; height: 16px; flex: 0 0 auto; vertical-align: -3px; }
 
-/* ---------- Phase 7b: footer bullets + decision-card caveat ---------- */
-.foot-list { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.foot-list li { position: relative; padding-left: 16px; }
-.foot-list li::before { content: "•"; position: absolute; left: 2px; color: var(--faint); }
-.foot-list strong { color: var(--text); }
-.foot-attrib { margin: 0; }
+/* ---------- Phase 7b: decision-card caveat ---------- */
 .dc-caveat { font-size: 11.5px; line-height: 1.45; color: var(--faint); margin: 8px 0 0; }
 
 /* ---------- Technical Auditor page (v2) ---------- */
@@ -1801,7 +1813,7 @@ body.nav-open .nav-rail { transform: translateX(0); }
 }
 .kn-nav-btn:hover { background: var(--surface-soft); border-color: var(--line); }
 .kn-nav-btn.active { background: color-mix(in srgb, var(--phosphor) 14%, transparent); border-color: var(--phosphor); color: var(--text); font-weight: 600; }
-.kn-nav-cat { list-style: none; margin-top: 6px; }
+.kn-nav-cat { list-style: none; margin-top: 6px; margin-left: 12px; }
 .kn-nav-cat details { border-radius: 6px; }
 .kn-nav-cat-head { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 8px; list-style: none; border-radius: 6px; font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em; color: var(--text); }
 .kn-nav-cat-head::-webkit-details-marker { display: none; }
@@ -2161,7 +2173,7 @@ body { overflow-x: hidden; max-width: 100vw; }
   .portfolio-below { grid-template-columns: 1fr; }
 
   /* ---------- footer ---------- */
-  .foot { font-size: 11px; }
+  .site-footer { font-size: 11px; padding: 18px 16px 22px; }
 
   /* ---------- assistant panel: full-width on mobile ---------- */
   .la-panel {

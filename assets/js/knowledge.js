@@ -1537,6 +1537,18 @@ Named Human Approval → Audit Record</pre>
     { id: "decision" }
   ];
 
+  // Sequential display numbers for top-level flat topics, derived from nav
+  // order at render time so inserting a topic never breaks the numbering.
+  // Category groups are skipped — "Cat N" is domain terminology, not an
+  // ordinal. Topic ids/anchors are untouched; only the display label changes.
+  const TOPIC_DISPLAY_NUM = {};
+  CATEGORY_NAV.filter((g) => !g.category).forEach((g, i) => { TOPIC_DISPLAY_NUM[g.id] = i + 1; });
+  function displayTitle(t) {
+    const bare = String(t.title || "").replace(/^\d+[a-z]?\.\s*/, "");
+    const n = TOPIC_DISPLAY_NUM[t.id];
+    return n ? n + ". " + bare : bare;
+  }
+
   // Cat X.Y label per topic id, used in the nav and the article header.
   const CAT_LABEL_BY_ID = {
     module01: "Cat 1.1", module02: "Cat 1.2", module03: "Cat 1.3 / Cat 4.1",
@@ -1699,7 +1711,7 @@ Named Human Approval → Audit Record</pre>
     function flatNavBtn(id) {
       const t = lookupTopic(id);
       if (!t) return "";
-      return `<li><button class="kn-nav-btn${t.id === selectedId ? " active" : ""}" data-topic="${esc(t.id)}">${esc(t.title)}</button></li>`;
+      return `<li><button class="kn-nav-btn${t.id === selectedId ? " active" : ""}" data-topic="${esc(t.id)}">${esc(displayTitle(t))}</button></li>`;
     }
 
     function modNavBtn(id) {
@@ -1770,7 +1782,7 @@ Named Human Approval → Audit Record</pre>
       const body = wrapArticleSections(built, t.id || "topic");
       return `<article class="kn-article">
         <p class="eyebrow">${esc(t.eyebrow || "Knowledge Library")}</p>
-        <h2 class="kn-h kn-h-art">${esc(t.title)}</h2>
+        <h2 class="kn-h kn-h-art">${esc(displayTitle(t))}</h2>
         ${body}
       </article>`;
     }
@@ -1780,7 +1792,7 @@ Named Human Approval → Audit Record</pre>
         `<div class="kn-lib">
            <aside class="panel kn-nav">
              <button class="kn-nav-toggle" aria-expanded="false" aria-controls="kn-nav-list">
-               <span>Topics: ${esc(selectedTopic.title)}</span>
+               <span>Topics: ${esc(displayTitle(selectedTopic))}</span>
                <span class="kn-nav-toggle-arrow">▾</span>
              </button>
              <ol class="kn-nav-list" id="kn-nav-list">${navHtml()}</ol>
