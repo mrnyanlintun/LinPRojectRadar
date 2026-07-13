@@ -499,8 +499,17 @@
   }
 
   /* ---------- signal ledger ---------- */
-  function statusPill(status) {
+  // Human sector name for NA labels ("Design", "Construction", "Hybrid").
+  function sectorName(p) {
+    const s = window.normalizeSector ? normalizeSector(p && p.sector) : String(p && p.sector || "hybrid");
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  function statusPill(status, naSector) {
     if (!status) return `<span class="pill pill-none">No data</span>`;
+    if (status === "NA") {
+      const full = `N/A — not applicable to ${naSector || "this sector's"} projects`;
+      return `<span class="pill pill-na" title="${esc(full)}">N/A</span>`;
+    }
     const key = String(status).toLowerCase().replace("-review", "");
     const label = { green: "Green", amber: "Amber", red: "Red", yellow: "Yellow", complete: "Complete" }[key] || status;
     return `<span class="pill pill-${esc(key)}">${esc(label)}</span>`;
@@ -627,14 +636,22 @@
         </div>`;
       }
 
+      const secName = sectorName(p);
       const modRows = cat.modules.map((m) => {
         const st = window.getModuleStatus ? getModuleStatus(m.method_class, p) : null;
-        return `<div class="cat-mod-row">
+        const na = st === "NA";
+        return `<div class="cat-mod-row${na ? " cat-mod-na" : ""}"${na ? ` title="N/A — not applicable to ${esc(secName)}-sector projects"` : ""}>
           <span class="cat-mod-num">${esc(m.num)}</span>
           <span class="cat-mod-name">${esc(m.name)}</span>
-          ${statusPill(st)}
+          ${statusPill(st, secName + "-sector")}
         </div>`;
       }).join("");
+      // Sector-abstention note — the category stays; only its construction-phase
+      // modules abstain for this sector.
+      const naCount = (window.categoryNAModules ? categoryNAModules(cat.id, p) : []).length;
+      const naNote = naCount
+        ? `<p class="cat-row-na-note">Some modules are construction-phase only and are excluded for ${esc(secName)}-sector projects.</p>`
+        : "";
 
       return `<details class="cat-row" data-cat="${esc(cat.id)}"${open}>
         <summary class="cat-row-head">
@@ -643,6 +660,7 @@
           ${rowPill}
         </summary>
         <p class="cat-row-desc">${desc}</p>
+        ${naNote}
         <div class="cat-mod-list">${modRows}</div>
       </details>`;
     }).join("");
@@ -982,6 +1000,9 @@
     openDetail,
     showPage,
     getSelectedId() { return selectedId; },
+    // Re-key the cached selection after a project-number change (setprojectnumber)
+    // so the detail page / highlights keep pointing at the renamed project.
+    renameSelection(oldId, newId) { if (selectedId === oldId) selectedId = newId; },
     // called by auth.js after a successful sign-in
     init,
     // shared renderers, reused by the Project Detail page (detail.js)

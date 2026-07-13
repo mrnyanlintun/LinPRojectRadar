@@ -33,18 +33,18 @@
     cat1:  "Quant EVM",     cat2:  "Schedule Sim", cat3:  "Cost Sim",
     cat4:  "Doc & Risk",    cat5:  "Sys Dynamics", cat6:  "Synthesis",
     cat7:  "Evidence",      cat8:  "ML & AI",      cat9:  "Governance",
-    cat10: "Data Integrity", cat11: "Decision Opt", cat12: "Systems Eng"
+    cat10: "Data Integrity", cat11: "Decision Opt"
   };
 
   // Fixed 2D layout (world coordinates). Left-to-right signal flow:
   // generators (Cat 1–5) → synthesis (Cat 6) → evidence (Cat 7) / ML (Cat 8)
-  // → governance (Cat 9); Cat 10 (data integrity), Cat 11 (decision opt) and
-  // Cat 12 (systems engineering) sit as supporting inputs near their targets.
+  // → governance (Cat 9); Cat 10 (data integrity) and Cat 11 (decision opt)
+  // sit as supporting inputs near their targets.
   // Spacing is chosen so node labels never collide.
   var LAYOUT = {
     cat1:  { x: 110, y: 70  }, cat2: { x: 110, y: 160 }, cat3: { x: 110, y: 250 },
     cat4:  { x: 110, y: 340 }, cat5: { x: 110, y: 430 },
-    cat6:  { x: 340, y: 150 }, cat10:{ x: 340, y: 330 }, cat12:{ x: 340, y: 480 },
+    cat6:  { x: 340, y: 150 }, cat10:{ x: 340, y: 330 },
     cat7:  { x: 560, y: 150 }, cat8: { x: 560, y: 330 },
     cat9:  { x: 790, y: 150 }, cat11:{ x: 790, y: 330 }
   };
@@ -57,8 +57,7 @@
     ["cat7", "cat9"],
     ["cat8", "cat7"], ["cat8", "cat9"],
     ["cat10", "cat6"], ["cat10", "cat7"],
-    ["cat11", "cat9"],
-    ["cat12", "cat5"]
+    ["cat11", "cat9"]
   ];
 
   var esc = function (s) {
@@ -160,7 +159,7 @@
         var st = categoryStatus(c.id, project);
         return {
           id: c.id,
-          num: c.num,                                   // "Cat 1" … "Cat 12"
+          num: c.num,                                   // "Cat 1" … "Cat 11"
           name: SHORT_NAME[c.id] || c.name,
           pos: LAYOUT[c.id],
           status: st,
@@ -183,10 +182,14 @@
     });
     var anyData = nodes.some(function (n) { return n.status != null; });
 
+    // Derive the header counts from the canonical category data so they can
+    // never drift from categories.js.
+    var totalModules = cats.reduce(function (n, c) { return n + (c.modules || []).length; }, 0);
+
     container.innerHTML =
       '<section class="panel projnet2d-panel" aria-label="Project signal network">' +
         '<div class="projnet2d-head">' +
-          '<p class="eyebrow">PROJECT SIGNAL NETWORK — 108 modules · 12 categories</p>' +
+          '<p class="eyebrow">PROJECT SIGNAL NETWORK — ' + totalModules + ' modules · ' + cats.length + ' categories</p>' +
           '<p class="kn-sub">Derived from this project’s extracted signals</p>' +
           (anyData ? "" : '<p class="projnet2d-awaiting">Awaiting signal extraction — all categories shown as no-data.</p>') +
         '</div>' +
@@ -227,7 +230,7 @@
 
     function cssSize() {
       var w = wrap.clientWidth || 720;
-      return { w: w, h: 520 };   // taller to give the 108 module dots room at default zoom
+      return { w: w, h: 520 };   // taller to give the 103 module dots room at default zoom
     }
 
     function resize() {

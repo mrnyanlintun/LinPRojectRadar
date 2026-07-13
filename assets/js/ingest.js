@@ -112,6 +112,74 @@
     LinSignals.wireIngestForm(container, onApplied);
   }
 
+  /* ---------- project number validation (shared by create + rename) ----------
+     Rules: non-empty, none of / \ " ' (they break Drive paths + attribute
+     contexts), and not already used by any loaded project (case-insensitive).
+     Uniqueness is re-enforced server-side. Returns an error string or null. */
+  const BAD_ID_CHARS = /[\/\\"']/;
+  function validateProjectNumber(id, excludeId) {
+    if (!id) return "Enter a project number / code.";
+    if (BAD_ID_CHARS.test(id)) return "The project number can't contain / \\ \" or ' characters.";
+    const all = LinStore.cachedActive().concat(LinStore.cachedArchived());
+    const clash = all.some((p) =>
+      p.id !== excludeId && String(p.id).toLowerCase() === id.toLowerCase());
+    if (clash) return "Project number “" + id + "” is already in use.";
+    return null;
+  }
+
+  /* Inline editor for assigning / revising a project number (Edit №). */
+  function openEditNumber(btn) {
+    const id = btn.dataset.editnum;
+    const row = btn.closest(".pr-row");
+    if (!row) return;
+    if (row.nextElementSibling && row.nextElementSibling.classList.contains("pr-editnum")) return;
+    const box = document.createElement("div");
+    box.className = "pr-editnum";
+    box.innerHTML =
+      `<label class="rationale-label">New project number / code
+         <input type="text" class="pr-editnum-input ig-input" maxlength="40" placeholder="e.g. AP-2026-014" /></label>
+       <div class="dc-actions">
+         <button class="btn primary small pr-editnum-save">Save</button>
+         <button class="btn small pr-editnum-cancel">Cancel</button>
+       </div>
+       <p class="pr-editnum-msg kn-sub" aria-live="polite"></p>`;
+    row.insertAdjacentElement("afterend", box);
+    const input = box.querySelector(".pr-editnum-input");
+    input.value = id;             // set via property — ids may predate the charset rule
+    input.focus();
+    input.select();
+    const close = () => box.remove();
+    box.querySelector(".pr-editnum-cancel").addEventListener("click", close);
+    box.querySelector(".pr-editnum-save").addEventListener("click", async () => {
+      const newId = input.value.trim();
+      const msg = box.querySelector(".pr-editnum-msg");
+      if (newId === id) { close(); return; }
+      const err = validateProjectNumber(newId, id);
+      if (err) { msg.textContent = err; return; }
+      const save = box.querySelector(".pr-editnum-save");
+      save.disabled = true;
+      msg.textContent = "Updating project number…";
+      try {
+        await LinStore.setProjectNumber(id, newId);
+        // re-key everything that referenced the old id
+        if (window.LinApp && LinApp.renameSelection) LinApp.renameSelection(id, newId);
+        if (window.LinSignals && LinSignals.clearCache) LinSignals.clearCache(id);
+        logEvent(`RENUMBERED project ${id} → ${newId}.`);
+        await LinStore.load();
+        if (window.LinApp) LinApp.refresh();
+        renderManagePage();
+      } catch (e) {
+        // uniqueness (and anything else) is enforced server-side too — surface it
+        msg.textContent = "Couldn't update: " + ((e && e.message) || "store unreachable") + ".";
+        save.disabled = false;
+      }
+    });
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") box.querySelector(".pr-editnum-save").click();
+      if (e.key === "Escape") close();
+    });
+  }
+
   /* ---------- Manage Projects page ---------- */
   function renderManagePage() {
     const root = document.getElementById("manage-root");
@@ -127,6 +195,7 @@
         <span class="li-state state-${key}">${esc(state)}</span>
         <span class="pr-actions">
           <button class="btn small" data-detail="${esc(p.id)}">Detail</button>
+          <button class="btn small" data-editnum="${esc(p.id)}" title="Assign / revise the project number">Edit №</button>
           <button class="btn small" data-populate="${esc(p.id)}">${populated ? "Re-upload" : "Populate"}</button>
           <button class="btn small" data-archive="${esc(p.id)}">Archive</button>
         </span>
@@ -137,9 +206,12 @@
     const archived = LinStore.cachedArchived();
     const cs = window.collapsibleSection || function (id, t, body) { return body; };
 
-    /* CREATE NEW PROJECT — collapsed by default; expands when a PM needs it. */
+    /* CREATE NEW PROJECT — collapsed by default; expands when a PM needs it.
+       The project number is assigned by the PM (no auto-numbering). */
     const createBody =
-      `<p class="kn-sub">Give your project a name and sector. Upload documents to get started.</p>
+      `<p class="kn-sub">Assign your own project number, then a name and sector. Upload documents to get started.</p>
+       <label class="rationale-label" for="np-id">Project number / code <span class="req">(required)</span></label>
+       <input id="np-id" class="ig-input" maxlength="40" placeholder="e.g. AP-2026-014" />
        <label class="rationale-label" for="np-name">Project name</label>
        <input id="np-name" class="ig-input" maxlength="80" placeholder="e.g. Terminal B Expansion" />
        <label class="rationale-label" for="np-sector">Sector</label>
@@ -186,19 +258,22 @@
     });
 
     document.getElementById("np-create").addEventListener("click", async () => {
+      const id = document.getElementById("np-id").value.trim();
       const name = document.getElementById("np-name").value.trim();
       const sector = document.getElementById("np-sector").value;
       const msg = document.getElementById("np-msg");
+      const idErr = validateProjectNumber(id);
+      if (idErr) { msg.textContent = idErr; return; }
       if (name.length < 3) { msg.textContent = "Enter a project name (min 3 characters)."; return; }
       msg.textContent = "Creating project in the store…";
       try {
-        const p = await LinStore.createProject({ name, sector });
+        const p = await LinStore.createProject({ id, name, sector });
         logEvent(`Created EMPTY project ${p.id} — ${name} (${SECTOR_LABEL[sector] || sector}); awaiting ingest.`);
         if (window.LinApp) LinApp.refresh();
         renderManagePage();
         document.getElementById("np-msg").textContent = `Created ${p.id} (empty, saved to Drive). Populate its signals to run the models.`;
       } catch (e) {
-        msg.textContent = "Couldn't reach the project store to create the project. Retry.";
+        msg.textContent = "Couldn't create the project: " + ((e && e.message) || "store unreachable") + ".";
       }
     });
 
@@ -206,6 +281,8 @@
       b.addEventListener("click", async () => { try { await LinStore.archiveProject(b.dataset.archive); logEvent(`ARCHIVED ${b.dataset.archive}.`); if (window.LinApp) LinApp.refresh(); renderManagePage(); } catch (e) { LinStore.banner("Couldn't archive — store unreachable. Retry.", "warn"); } }));
     root.querySelectorAll("[data-detail]").forEach((b) =>
       b.addEventListener("click", () => LinApp.openDetail(b.dataset.detail)));
+    root.querySelectorAll("[data-editnum]").forEach((b) =>
+      b.addEventListener("click", () => openEditNumber(b)));
     root.querySelectorAll("[data-populate]").forEach((b) =>
       b.addEventListener("click", () => {
         // Expand the UPLOAD DOCUMENTS section, pre-select this project in the

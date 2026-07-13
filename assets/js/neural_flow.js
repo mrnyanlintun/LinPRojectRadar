@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  // ─── Document types (26 backend keys, ordered to match DOC_TO_CATS) ─────────
+  // ─── Document types (28 backend keys, ordered to match DOC_TO_CATS) ─────────
   var DOC_KEYS = [
     'contract_value','schedule_of_values','pay_application','time_phased_schedule',
     'schedule_update','monthly_report','change_order','rfi','submittal',
@@ -10,7 +10,7 @@
     'subcontractor_report','procurement_log','lookahead_schedule','resource_report',
     'cost_report','past_performance_report','safety_report','quality_audit_report',
     'environmental_report','historical_data','commissioning_report',
-    'correspondence_notice','risk_register',
+    'correspondence_notice','risk_register','rfi_log','rfa_log',
   ];
   function docLabel(key) {
     var lbl = window.LinSignals && LinSignals.DOC_TYPE_LABEL && LinSignals.DOC_TYPE_LABEL[key];
@@ -18,7 +18,7 @@
     return key.split('_').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
   }
 
-  // ─── Fallback category definitions (12) — used only if LIN_CATEGORIES is
+  // ─── Fallback category definitions (11) — used only if LIN_CATEGORIES is
   // absent (script-order failure); canonical source is categories.js ──────────
   var FB_CATS = [
     { id:1,  name:'Quantitative EVM',       short:'EVM',       count:12 },
@@ -32,7 +32,6 @@
     { id:9,  name:'Governance & Compliance',short:'Gov.',      count:9  },
     { id:10, name:'Data Integrity',         short:'Integrity', count:6  },
     { id:11, name:'Decision Optimization',  short:'Decision',  count:8  },
-    { id:12, name:'Systems Engineering',    short:'Sys.Eng.',  count:5  },
   ];
 
   // ─── Fallback module definitions: [catIdx, displayName, method_class] ───────
@@ -101,14 +100,10 @@
     [10,'AHP Weighting','AHP_Weighting'],      [10,'TOPSIS Rank','TOPSIS_Rank'],
     [10,'Regret Minimiz.','Regret_Minimization'],[10,'Info Value','Info_Value'],
     [10,'Sensitivity Rank','Sensitivity_Rank'],[10,'Robust Decision','Robust_Decision'],
-    // Cat 12 — Systems Engineering (5)
-    [11,'Requirements Trace','Requirements_Trace'],[11,'Interface Risk','Interface_Risk'],
-    [11,'V-Model Gate','V_Model_Gate'],        [11,'SysML Signal','SysML_Signal'],
-    [11,'Digital Twin Sync','Digital_Twin_Sync'],
   ];
 
   var SHORTS = ['EVM','Schedule','Cost','Doc&Risk','Sys.Dyn.','Synthesis',
-                'Evidence','ML & AI','Gov.','Integrity','Decision','Sys.Eng.'];
+                'Evidence','ML & AI','Gov.','Integrity','Decision'];
 
   // Canonical categories + modules from categories.js (real method_class names,
   // so byClass/getModuleStatus lookups actually hit). Falls back to the
@@ -167,6 +162,8 @@
     [8,3],      // Commissioning Report    → Cat9, Cat4
     [3],        // Correspondence / Notice → Cat4
     [4,3],      // Risk Register           → Cat5, Cat4
+    [3],        // RFI Log (register)      → Cat4  (v10.27)
+    [3],        // RFA / Approval Log      → Cat4  (v10.27)
   ];
 
   // ─── Inter-category feeds (x-hubs between cat col and prj col) ───────────────
@@ -176,7 +173,6 @@
     { srcs:[0,1,2],                 dst:7,  xHub:890 },
     { srcs:[0,1,2,3,4,5,6,7,8],    dst:9,  xHub:905 },
     { srcs:[0,1,2,3,4,5,6,7,8],    dst:10, xHub:920 },
-    { srcs:[0,1,2,3],               dst:11, xHub:935 },
   ];
 
   // ─── Colors ──────────────────────────────────────────────────────────────────
@@ -228,6 +224,18 @@
     s.textContent = [
       '@keyframes lnf-red-pulse{0%,100%{opacity:1}50%{opacity:0.5}}',
       '.lnf-red-pulse{animation:lnf-red-pulse 2s ease-in-out infinite}',
+      // Directional flow: each connection class gets a dash pattern and a
+      // keyframe advancing stroke-dashoffset by exactly one dash period
+      // (dash+gap), so the loop is seamless. A negative offset moves the
+      // dashes TOWARD the path end — i.e. in the drawn flow direction.
+      '@keyframes lnf-flow-12{to{stroke-dashoffset:-12}}',
+      '@keyframes lnf-flow-10{to{stroke-dashoffset:-10}}',
+      '@keyframes lnf-flow-9{to{stroke-dashoffset:-9}}',
+      '.lnf-flow-a{stroke-dasharray:2 10;animation:lnf-flow-12 6s linear infinite}',   // Class A input — subtle/slow
+      '.lnf-flow-b{stroke-dasharray:7 5;animation:lnf-flow-12 4s linear infinite}',    // Class B rollup
+      '.lnf-flow-c{animation:lnf-flow-10 3s linear infinite}',                          // Class C derived (keeps its 6 4 dash attr)
+      '.lnf-flow-fb{animation:lnf-flow-9 3s linear infinite}',                          // governance feedback (5 4 dash attr; path runs status→Cat9, so the stream reads as reverse flow)
+      '@media (prefers-reduced-motion: reduce){.lnf-flow-a,.lnf-flow-b,.lnf-flow-c,.lnf-flow-fb{animation:none!important}}',
       '.lnf-nd{cursor:pointer}',
       '#lnf-tt{position:fixed;background:#0c1422;border:1px solid #2a3a5c;border-radius:4px;',
       '  padding:6px 10px;font-size:11px;color:#c8d4e8;pointer-events:none;z-index:9999;',
@@ -277,12 +285,18 @@
     var simArr = (project.simulationSignals && project.simulationSignals.signal_array) || [];
     var byClass = {};
     simArr.forEach(function(r) { if (r && r.method_class) byClass[r.method_class] = r; });
+    // Sector-abstention label for NA modules (construction-phase modules on a
+    // Design project). Shown in the tooltip in place of a status word.
+    var secName = (window.normalizeSector ? window.normalizeSector(project.sector)
+      : String(project.sector || 'hybrid')).replace(/^./, function(c) { return c.toUpperCase(); });
+    var sectorNAText = 'N/A — not applicable to ' + secName + '-sector projects';
     function modInfo(m) {
       var r = byClass[m.mc];
       var metric = r && r.evidence_metric ? String(r.evidence_metric) : null;
       // Prefer the app's shared resolver (handles computed/derived modules too)
       var st = null;
       try { if (window.getModuleStatus) st = window.getModuleStatus(m.mc, project); } catch (e) {}
+      if (st === 'NA') return { status: 'None', na: true, color: COL.None, metric: null };
       if (st) {
         var s = statusFromSig({ status_color: st });
         return { status: s, color: colFor(s), metric: metric };
@@ -291,10 +305,18 @@
       return { status: s2, color: colFor(s2), metric: metric };
     }
 
+    // Staggered start offsets so the streaming dashes don't march in lockstep.
+    // Negative delays start every line mid-cycle.
+    var flowIdx = 0;
+    function flowAnim(el, cls) {
+      el.classList.add(cls);
+      el.style.animationDelay = (-((flowIdx++ % 16) * 0.37)).toFixed(2) + 's';
+    }
+
     // ── 3. Pre-compute all statuses ───────────────────────────────────────────
     var modInfos = MODULES.map(function(m) { return modInfo(m); });
     // Category statuses — use the app's DST fusion (categories.js); LIN_CATEGORIES
-    // is ordered cat1..cat12, matching the CATS index. Worst-of is only a fallback.
+    // is ordered cat1..cat11, matching the CATS index. Worst-of is only a fallback.
     var catStatuses = CATS.map(function(cat, ci) {
       try {
         if (window.getCategoryStatus && window.LIN_CATEGORIES && window.LIN_CATEGORIES[ci]) {
@@ -373,19 +395,23 @@
     var lineG  = se('g', { id:'lnf-lines'  }, svg);
     var interG = se('g', { id:'lnf-intercat' }, svg);
 
-    // Class B (rollup): cat → project — solid, arrowhead at the status node edge
+    // Class B (rollup): cat → project — streaming dashes, arrowhead at the status node edge
     var catPrjEls = catStatuses.map(function(cs, ci) {
       var x1=CX.cat+9, y1=catCY[ci], x2=CX.prj-26, y2=PRJ_Y, mx=(x1+x2)/2;
-      return se('path', { d:'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2,
+      var p = se('path', { d:'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2,
         fill:'none', stroke:colFor(cs), 'stroke-width':'1.5', opacity:'0.35', 'stroke-linecap':'round',
         'marker-end':'url(#lnf-arr-'+cs+')' }, lineG);
+      flowAnim(p, 'lnf-flow-b');
+      return p;
     });
 
-    // Class B (rollup): mod → cat — solid, no arrowhead (volume too high)
+    // Class B (rollup): mod → cat — streaming dashes, no arrowhead (volume too high)
     var modCatEls = MODULES.map(function(m, mi) {
       var ci=m.catI, x1=CX.mod+4, y1=modY[mi], x2=CX.cat-9, y2=catCY[ci], mx=(x1+x2)/2;
-      return se('path', { d:'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2,
+      var p = se('path', { d:'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2,
         fill:'none', stroke:modInfos[mi].color, 'stroke-width':'0.8', opacity:'0.25', 'stroke-linecap':'round' }, lineG);
+      flowAnim(p, 'lnf-flow-b');
+      return p;
     });
 
     // Class A (input): doc → module — thin solid, doc-node colour, no arrowhead
@@ -400,6 +426,7 @@
           var x1=CX.doc+5, y1=docY(di), x2=CX.mod-4, y2=modY[mi], mx=(x1+x2)/2;
           var line = se('path', { d:'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2,
             fill:'none', stroke:stroke, 'stroke-width':'0.7', opacity:opacity, 'stroke-linecap':'round' }, lineG);
+          flowAnim(line, 'lnf-flow-a');
           docLineMap[di].push({ el:line, modI:mi });
         });
       });
@@ -416,6 +443,7 @@
           fill:'none', stroke:colFor(cs), 'stroke-width':'1', opacity:'0.45',
           'stroke-dasharray':'6 4', 'marker-end':'url(#lnf-arr-'+cs+')'
         }, interG);
+        flowAnim(line, 'lnf-flow-c');
         interCatEls.push({ el:line, srcI:srcI, dstI:feed.dst });
       });
     });
@@ -427,6 +455,7 @@
       fill:'none', stroke:COL.Red, 'stroke-width':'1.5', opacity:'0.30',
       'stroke-dasharray':'5 4', 'marker-end':'url(#lnf-arr-fb)'
     }, interG);
+    flowAnim(fbEl, 'lnf-flow-fb');
     var fbLabelEl = se('text', {
       x:fbSX+70, y:(fbSY+fbDY)/2,
       fill:COL.Red, 'font-size':'8', 'font-family':'monospace',
@@ -473,7 +502,8 @@
         return function(evt) {
           circle.setAttribute('r','6');
           var metStr = info.metric ? '<div class="sub">metric: '+escH(info.metric)+'</div>' : '';
-          showTT(evt,'<div class="m">'+escH(m.num)+'</div><div class="n">'+escH(m.name)+'</div><div class="sub" style="color:'+info.color+'">'+info.status+'</div>'+metStr+'<div class="sub">'+escH(CATS[m.catI].name)+'</div>');
+          var statusLabel = info.na ? escH(sectorNAText) : info.status;
+          showTT(evt,'<div class="m">'+escH(m.num)+'</div><div class="n">'+escH(m.name)+'</div><div class="sub" style="color:'+info.color+'">'+statusLabel+'</div>'+metStr+'<div class="sub">'+escH(CATS[m.catI].name)+'</div>');
           modCatEls[mi].setAttribute('opacity','0.70');
           modCatEls[mi].setAttribute('stroke-width','1.4');
           docLineMap.forEach(function(arr, di) {
@@ -548,7 +578,7 @@
       'text-anchor':'middle', 'font-family':'monospace' }, prjG);
     prjStatusText.textContent = prjStatus;
     prjG.addEventListener('mouseenter', function(evt) {
-      showTT(evt,'<div class="n">Project Status</div><div class="sub" style="color:'+prjColor+'">'+prjStatus+'</div><div class="sub">DST fusion of 12 categories</div>');
+      showTT(evt,'<div class="n">Project Status</div><div class="sub" style="color:'+prjColor+'">'+prjStatus+'</div><div class="sub">DST fusion of '+CATS.length+' categories</div>');
     });
     prjG.addEventListener('mousemove', moveTT);
     prjG.addEventListener('mouseleave', hideTT);

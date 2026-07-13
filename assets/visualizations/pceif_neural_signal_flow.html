@@ -124,7 +124,7 @@
 
 <div id="header">
   <h1>PCEIF Signal Flow — Neural Net View</h1>
-  <p>27 document types → 108 simulation modules → 12 categories → project status &nbsp;|&nbsp; Hover or click any node to trace connections</p>
+  <p>27 document types → 103 simulation modules → 11 categories → project status &nbsp;|&nbsp; Hover or click any node to trace connections</p>
 </div>
 
 <div id="canvas-wrap">
@@ -186,7 +186,6 @@ const CATS_DEF = [
   { id:9,  name:'Governance & Compliance',count:9 },
   { id:10, name:'Data Integrity',        count:6  },
   { id:11, name:'Decision Optimization', count:8  },
-  { id:12, name:'Systems Engineering',   count:5  },
 ];
 
 // synthetic demo statuses — 30% G, 25% Y, 25% A, 15% R, 5% inactive
@@ -240,7 +239,7 @@ const DOC_TO_CATS = [
   [9,10],     // Quality Audit Report   → Cat 10, 11
   [9],        // Environmental Report   → Cat 9
   [0,1,7],    // Historical Data        → Cat 1, 2, 8
-  [10,11],    // Commissioning Report   → Cat 11, 12
+  [10],       // Commissioning Report   → Cat 11
   [3,8],      // Correspondence/Notice  → Cat 4, 9
   [3,4],      // Risk Register          → Cat 4, 5
   [0,2],      // Schedule of Values (Baseline) → Cat 1, 3
@@ -248,7 +247,7 @@ const DOC_TO_CATS = [
 
 // ─── layout geometry ─────────────────────────────────────────────────────────
 const SVG_W = 1340;
-// Module layout: 108 dots × 8px + 11 gaps × 14px + 100px padding = 1118px → use 1220
+// Module layout: 103 dots × 8px + 10 gaps × 14px + 100px padding = 1064px → use 1220
 const SVG_H = 1220;
 
 const COL_X = {
@@ -325,7 +324,7 @@ for (const [name, color] of Object.entries(glowColors)) {
 
 // column header positions
 const colHdrY = 22;
-[['DOCUMENTS', COL_X.doc], ['108 MODULES', COL_X.mod], ['12 CATEGORIES', COL_X.cat], ['PROJECT STATUS', COL_X.prj]].forEach(([label, x]) => {
+[['DOCUMENTS', COL_X.doc], ['103 MODULES', COL_X.mod], ['11 CATEGORIES', COL_X.cat], ['PROJECT STATUS', COL_X.prj]].forEach(([label, x]) => {
   const t = el('text', { x, y: colHdrY, 'text-anchor':'middle', fill:'#2a3a5c', 'font-size':'9', 'font-weight':'700', 'letter-spacing':'0.12em', 'font-family':'monospace' }, svg);
   t.textContent = label.toUpperCase();
 });
@@ -697,7 +696,7 @@ catNodeEls.forEach((g, ci) => {
 
 // hover: project node
 prjG.addEventListener('mouseenter', evt => {
-  showTooltip(evt, 'Project Status', PROJECT_STATUS, `Worst of 12 categories`);
+  showTooltip(evt, 'Project Status', PROJECT_STATUS, `Worst of ${CATS_DEF.length} categories`);
 });
 prjG.addEventListener('mousemove', moveTooltip);
 prjG.addEventListener('mouseleave', hideTooltip);
