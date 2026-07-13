@@ -280,13 +280,6 @@ const CATEGORY_ACTIONS = {
     how: "Review the optimization ranking against current constraints; confirm the recommended option still dominates under updated signals",
     when: { any: "Next decision point" },
     inform: "PMO"
-  },
-  cat12: {
-    what: "Verify requirements and interface risks",
-    who: "Systems Engineer",
-    how: "Trace flagged requirements to affected interfaces; confirm V-model gate criteria before proceeding",
-    when: { any: "Before next stage gate" },
-    inform: "Design Manager"
   }
 };
 

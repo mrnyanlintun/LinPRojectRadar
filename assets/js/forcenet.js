@@ -1,6 +1,6 @@
 /* ============================================================
    Lin — 3D Force Network Visualization
-   108 modules · 12 categories · signal flow connections
+   103 modules · 11 categories · signal flow connections
    Exposes window.LinForceNet
    ============================================================ */
 (function () {
@@ -19,8 +19,7 @@
     {id:"cat8",  name:"ML & AI Detection",      short:"Cat 8",  color:"#64748b", count:5},
     {id:"cat9",  name:"Governance",             short:"Cat 9",  color:"#e0556b", count:9},
     {id:"cat10", name:"Data Integrity",         short:"Cat 10", color:"#06b6d4", count:7},
-    {id:"cat11", name:"Decision Optimization",  short:"Cat 11", color:"#10b981", count:7},
-    {id:"cat12", name:"Systems Engineering",    short:"Cat 12", color:"#8b5cf6", count:5}
+    {id:"cat11", name:"Decision Optimization",  short:"Cat 11", color:"#10b981", count:7}
   ];
 
   var NAMES_FALLBACK = {
@@ -45,8 +44,7 @@
     cat10:["Missing Data Index","Data Timeliness","Source Reliability","Audit Trail",
            "Info Completeness","Cross-doc Consistency","Reporting Frequency"],
     cat11:["Multi-Objective Opt","Linear Programming","Constraint Satisfaction","What-If Scenario",
-           "Decision Sensitivity","Pareto Frontier","Regret Minimization"],
-    cat12:["Interface Density","Dependency Mapping","Requirements Trace","Config Change Impact","Integration Complexity"]
+           "Decision Sensitivity","Pareto Frontier","Regret Minimization"]
   };
 
   // Signal flow connections (inner → outer; cat6 = synthesis hub)
@@ -56,7 +54,7 @@
     {from:"cat6",to:"cat7"},{from:"cat6",to:"cat9"},
     {from:"cat7",to:"cat9"},{from:"cat8",to:"cat7"},{from:"cat8",to:"cat9"},
     {from:"cat10",to:"cat6"},{from:"cat10",to:"cat7"},
-    {from:"cat11",to:"cat9"},{from:"cat12",to:"cat5"}
+    {from:"cat11",to:"cat9"}
   ];
 
   var SC = {Complete:"#4ea0ff",Green:"#3fcaa6",Yellow:"#f0c040",Amber:"#e2b13c",Red:"#e0556b","null":"#26344f"};
@@ -126,7 +124,7 @@
   function buildLayout() {
     CAT_POS = {};
     var inner = ["cat1","cat2","cat3","cat4","cat5","cat6"];
-    var outer = ["cat7","cat8","cat9","cat10","cat11","cat12"];
+    var outer = ["cat7","cat8","cat9","cat10","cat11"];
     var IR = 150, OR = 290;
 
     inner.forEach(function (id, i) {
@@ -327,7 +325,7 @@
 
     // 5. Overlay: legend text + focus info
     ctx.font = "10px SFMono-Regular,monospace"; ctx.fillStyle = "#64748b";
-    ctx.fillText("FORCE NETWORK — 108 MODULES · 12 CATEGORIES", 16, 26);
+    ctx.fillText("FORCE NETWORK — 103 MODULES · 11 CATEGORIES", 16, 26);
     ctx.font = "9px SFMono-Regular,monospace"; ctx.fillStyle = "#64748b";
     ctx.fillText("→ arrows show signal flow · inner ring = generators · outer ring = synthesis/evidence/governance", 16, 42);
 
@@ -426,7 +424,7 @@
     tt.querySelector(".fn-tt-num").textContent = m.num;
     tt.querySelector(".fn-tt-name").textContent = m.name;
     var el = tt.querySelector(".fn-tt-status");
-    el.textContent = m.status || (m.cat === "cat12" ? "Conditional" : "No data");
+    el.textContent = m.status || "No data";
     el.style.background = col + "18"; el.style.color = col; el.style.border = "1px solid " + col + "44";
     tt.querySelector(".fn-tt-metric").textContent = m.metric || "";
     var rect = cv.getBoundingClientRect();

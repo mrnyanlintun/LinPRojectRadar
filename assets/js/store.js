@@ -156,17 +156,41 @@
     } catch (e) { lastError = e; return getCached(id); }
   }
 
-  async function createProject({ name, sector }) {
+  async function createProject({ id, name, sector }) {
     if (!configured()) throw new Error("Project store not configured (LIN_API_URL).");
     loading(true, "Creating project");
     try {
-      const j = await apiPost({ action: "create", name, sector });
+      // id is the user-assigned project number/code (v10.27); uniqueness is
+      // validated client-side and re-enforced server-side.
+      const j = await apiPost({ action: "create", id, name, sector });
       const p = j.project;
-      // backend owns id numbering; reflect into memory + cache
       LIN_PROJECTS.push(p);
       writeCache(LIN_PROJECTS.concat(LIN_ARCHIVED));
       banner("");
       return p;
+    } finally { loading(false); }
+  }
+
+  // Assign / revise a project's user-facing number (v10.27 setprojectnumber).
+  // Uniqueness is enforced server-side; a clash comes back as {ok:false,error}
+  // which apiPost surfaces as a thrown Error. On success the in-memory mirrors
+  // and the cache are re-keyed to the new id.
+  async function setProjectNumber(id, newId) {
+    if (!configured()) throw new Error("Project store not configured (LIN_API_URL).");
+    loading(true, "Updating project number");
+    try {
+      const j = await apiPost({ action: "setprojectnumber", id, newId });
+      const updated = (j && j.project) || null;
+      [LIN_PROJECTS, LIN_ARCHIVED].forEach((list) => {
+        const i = list.findIndex((p) => p.id === id);
+        if (i >= 0) {
+          if (updated) list[i] = updated;
+          else list[i].id = newId;
+        }
+      });
+      writeCache(LIN_PROJECTS.concat(LIN_ARCHIVED));
+      banner("");
+      return updated || { id: newId };
     } finally { loading(false); }
   }
 
@@ -350,6 +374,7 @@
 
   window.LinStore = {
     load, listProjects, getProject, createProject, saveProject,
+    setProjectNumber,
     archiveProject, restoreProject, listArchived, chat, analyze,
     listCorpus, listAuditResults, ingestCorpus, runAudit, saveAuditResult,
     extractSignals, identifyDocument, overwriteSignal, resetSignals,

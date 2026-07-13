@@ -815,9 +815,7 @@
       '101': {},
       '102_107': {},
       '111': {},
-      '112_117': {},
-      '121': {},
-      '122_125': {}
+      '112_117': {}
     };
 
     root.querySelectorAll('.dd-chart-canvas').forEach(function(canvas) {
@@ -2071,9 +2069,6 @@
   function m10_2(p){return panel("10.2–10.7","Data Quality Modules","amber",note("Timeliness, reliability, audit trail, completeness, consistency, frequency.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"102_107\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Audit trail","100%","amber")+metricBox("Timeliness","0.58","amber")+metricBox("Overall","Amber","amber")+'</div>');}
   function m11_1(p){return panel("11.1","Multi-Objective Optimization","red",note("3D Pareto surface — current solution dominated, optimal exists at higher cost tolerance.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"111\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Current","Dominated","red")+metricBox("Gap","11.2%","red")+metricBox("Action","Escalate","red")+'</div>');}
   function m11_2(p){return panel("11.2–11.7","Optimization Modules","red",note("LP, constraint satisfaction, what-if, sensitivity, Pareto, regret minimization.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"112_117\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("LP req CPI","1.076","red")+metricBox("Constraints","2 violated","red")+metricBox("Recommend","Escalate","red")+'</div>');}
-  function m12_1(p){return panel("12.1","Interface Density Network","amber",note("3D network — Controls node is central hub with highest interface density.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"121\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Interfaces","8","amber")+metricBox("High density","Controls","amber")+metricBox("Status","Amber","amber")+'</div>');}
-  function m12_2(p){return panel("12.2–12.5","Dependency, Trace, Config, Integration","amber",note("Conditional modules — require interface control documents (ICD) to activate. Only 12.4 (Config Change Impact) activates from change-order data.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"122_125\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Active","12.4 only","amber")+metricBox("Waiting","ICD upload","amber")+metricBox("Status","Conditional","amber")+'</div>');}
-
   function simModules(project) {
     const payload = project.simulationSignals;
     const baseArr = payload && Array.isArray(payload.signal_array) ? payload.signal_array : null;
@@ -2174,7 +2169,7 @@
       m6_3(project) + m6_4(project) + m7_1(project) + m7_2(project) + m7_3(project) +
       m8_1(project) + m8_2(project) + m8_3(project) + m8_4(project) + m8_5(project) +
       m9_1(project) + m9_2(project) + m10_1(project) + m10_2(project) + m11_1(project) +
-      m11_2(project) + m12_1(project) + m12_2(project) +
+      m11_2(project) +
       sims.low +
       m10(project) +                                              // displays as Module 09 (Conservative Dominance)
       sims.dst +                                                  // displays as Module 10 (DST)

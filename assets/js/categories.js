@@ -1,8 +1,8 @@
 /* ============================================================
    lin-project-radar — categories.js
    ------------------------------------------------------------
-   The full 108-module definition across 12 analytical categories.
-   Drives the spider web (108 axes), the ensemble panel, the
+   The full 103-module definition across 11 analytical categories.
+   Drives the spider web (103 axes), the ensemble panel, the
    signal ledger, the Signals page, and the stored snapshot the
    executive brief reads from.
 
@@ -16,10 +16,7 @@
 
    Cat 10 (Data Integrity) and Cat 11 (Decision Optimization)
    are fully active — they derive from existing signalInputs
-   and the project audit trail. Cat 12 (Systems Engineering) is
-   defined but conditional: it activates only when interface
-   control / requirements / system architecture docs are
-   uploaded (see the `conditional` flag).
+   and the project audit trail.
 
    Globals (no ES modules) so the site runs from file:// too.
    Loaded BEFORE the modules that consume it (categories.js
@@ -89,12 +86,12 @@ window.LIN_CATEGORIES = [
       { id: 'cat4_1', num: '4.1', name: 'Document Risk Score', method_class: 'Doc_Risk_Cat4', active: true, required: ['docRiskScore'] },
       { id: 'cat4_2', num: '4.2', name: 'RFI Velocity', method_class: 'RFI_Velocity', active: true, required: ['rfiCount','rfiPeriodDays'] },
       { id: 'cat4_3', num: '4.3', name: 'Submittal Rejection Rate', method_class: 'Submittal_Rejection', active: true, required: ['submittalsTotal','submittalsRejected'] },
-      { id: 'cat4_4', num: '4.4', name: 'NCR Rate', method_class: 'NCR_Rate', active: false, required: ['ncrIssued','ncrClosed','ncrOpen'] },
-      { id: 'cat4_5', num: '4.5', name: 'Weather Day Impact', method_class: 'Weather_Impact', active: true, required: ['weatherDaysLost'] },
+      { id: 'cat4_4', num: '4.4', name: 'NCR Rate', method_class: 'NCR_Rate', active: false, required: ['ncrIssued','ncrClosed','ncrOpen'], sectors: ['construction','hybrid'] },
+      { id: 'cat4_5', num: '4.5', name: 'Weather Day Impact', method_class: 'Weather_Impact', active: true, required: ['weatherDaysLost'], sectors: ['construction','hybrid'] },
       { id: 'cat4_6', num: '4.6', name: 'Change Order Frequency', method_class: 'CO_Frequency', active: true, required: ['changeOrderCount','baselineContractSum','revisedContractSum'] },
       { id: 'cat4_7', num: '4.7', name: 'Dispute Escalation Index', method_class: 'Dispute_Escalation', active: true, required: ['docRiskScore','rfiCount','changeOrderCount'] },
-      { id: 'cat4_8', num: '4.8', name: 'Subcontractor Performance', method_class: 'Subcontractor_Performance', active: true, required: ['subcontractorComplianceScore'] },
-      { id: 'cat4_9', num: '4.9', name: 'Procurement Lead Time Monitor', method_class: 'Procurement_Lead_Time', active: false, required: ['longLeadItemsTotal','longLeadAtRisk','longLeadDelayed'] },
+      { id: 'cat4_8', num: '4.8', name: 'Subcontractor Performance', method_class: 'Subcontractor_Performance', active: true, required: ['subcontractorComplianceScore'], sectors: ['construction','hybrid'] },
+      { id: 'cat4_9', num: '4.9', name: 'Procurement Lead Time Monitor', method_class: 'Procurement_Lead_Time', active: false, required: ['longLeadItemsTotal','longLeadAtRisk','longLeadDelayed'], sectors: ['construction','hybrid'] },
       { id: 'cat4_10', num: '4.10', name: 'Specification Conflict Density', method_class: 'Spec_Conflict_Density', active: true, required: ['docRiskScore','rfiCount'] }
     ]
   },
@@ -175,8 +172,8 @@ window.LIN_CATEGORIES = [
       { id: 'cat9_4', num: '9.4', name: 'EVM Reporting Threshold', method_class: 'EVM_Reporting_Threshold', active: true, required: ['bac','cpi','spi'] },
       { id: 'cat9_5', num: '9.5', name: 'Contract Modification Frequency', method_class: 'Contract_Mod_Frequency', active: true, required: ['changeOrderCount','baselineContractSum','revisedContractSum'] },
       { id: 'cat9_6', num: '9.6', name: 'Quality Compliance Index', method_class: 'Quality_Compliance', active: true, required: ['qualityDeficienciesNoted'] },
-      { id: 'cat9_7', num: '9.7', name: 'Safety Performance Index', method_class: 'Safety_Performance', active: true, required: ['safetyIncidentsDiscussed'] },
-      { id: 'cat9_8', num: '9.8', name: 'Environmental Compliance Rate', method_class: 'Environmental_Compliance', active: true, required: ['environmentalIssuesDiscussed'] },
+      { id: 'cat9_7', num: '9.7', name: 'Safety Performance Index', method_class: 'Safety_Performance', active: true, required: ['safetyIncidentsDiscussed'], sectors: ['construction','hybrid'] },
+      { id: 'cat9_8', num: '9.8', name: 'Environmental Compliance Rate', method_class: 'Environmental_Compliance', active: true, required: ['environmentalIssuesDiscussed'], sectors: ['construction','hybrid'] },
       { id: 'cat9_9', num: '9.9', name: 'Contractor Performance Score', method_class: 'Contractor_Performance', active: false, required: ['overallRating','scheduleRating','costRating'] }
     ]
   },
@@ -207,29 +204,58 @@ window.LIN_CATEGORIES = [
       { id: 'cat11_6', num: '11.6', name: 'Pareto Frontier Analysis', method_class: 'Pareto_Frontier', active: true, required: ['cpi','spi','docRiskScore'] },
       { id: 'cat11_7', num: '11.7', name: 'Regret Minimization Index', method_class: 'Regret_Minimization', active: true, required: ['cpi','spi','bac'] }
     ]
-  },
-  {
-    id: 'cat12', num: 'Cat 12', name: 'Systems Engineering',
-    color: '#a855f7',
-    description: 'Interface complexity, dependency mapping, and requirements traceability. Activates when interface control documents and requirements specifications are uploaded. Most novel category — very few EVM platforms address systems engineering complexity.',
-    conditional: true,
-    modules: [
-      { id: 'cat12_1', num: '12.1', name: 'Interface Density Index', method_class: 'Interface_Density', active: false, required: ['interfaceCount','totalComponents'] },
-      { id: 'cat12_2', num: '12.2', name: 'Dependency Mapping Score', method_class: 'Dependency_Mapping', active: false, required: ['dependencyCount','criticalDependencies'] },
-      { id: 'cat12_3', num: '12.3', name: 'Requirements Traceability Coverage', method_class: 'Requirements_Traceability', active: false, required: ['requirementsTotal','requirementsVerified'] },
-      { id: 'cat12_4', num: '12.4', name: 'Configuration Change Impact', method_class: 'Config_Change_Impact', active: false, required: ['changeOrderCount','configurationItems'] },
-      { id: 'cat12_5', num: '12.5', name: 'Integration Complexity Index', method_class: 'Integration_Complexity', active: false, required: ['interfaceCount','dependencyCount'] }
-    ]
   }
 ];
+
+/* ------------------------------------------------------------
+   Sector relevance. Construction-phase modules carry an optional
+   `sectors` tag; for a project whose sector is outside that list
+   the module abstains with the distinct 'NA' status (excluded
+   from category fusion, rendered dim with an explanation).
+   ------------------------------------------------------------ */
+var LIN_MODULE_SECTORS = null; // method_class → sectors[] (lazy, built once)
+function moduleSectorMap() {
+  if (LIN_MODULE_SECTORS) return LIN_MODULE_SECTORS;
+  LIN_MODULE_SECTORS = {};
+  window.LIN_CATEGORIES.forEach(function (c) {
+    (c.modules || []).forEach(function (m) {
+      if (m.sectors && m.sectors.length) LIN_MODULE_SECTORS[m.method_class] = m.sectors;
+    });
+  });
+  return LIN_MODULE_SECTORS;
+}
+// Normalise the project sector the same way app.js plots it: the legacy
+// "combined" alias and a missing sector both read as hybrid.
+window.normalizeSector = function (sector) {
+  var s = String(sector || "hybrid").toLowerCase();
+  return s === "combined" ? "hybrid" : s;
+};
+/* True when this module carries sector tags that exclude the project's sector. */
+window.isModuleSectorNA = function (methodClass, project) {
+  var sectors = moduleSectorMap()[methodClass];
+  if (!sectors) return false;
+  return sectors.indexOf(window.normalizeSector(project && project.sector)) < 0;
+};
+/* The modules of one category that are N/A for this project's sector —
+   drives the one-line explanatory note under the category header. */
+window.categoryNAModules = function (catId, project) {
+  var cat = LIN_CATEGORIES.find(function (c) { return c.id === catId; });
+  if (!cat) return [];
+  return cat.modules.filter(function (m) {
+    return window.isModuleSectorNA(m.method_class, project);
+  });
+};
 
 /* Per-module status lookup. Reads from live project shape:
      project.signals.{mc,cusum,doc,decision}.status / .state
      project.simulationSignals.signal_array[*].method_class / .status_color
    Returns null when the module hasn't been computed yet (or is inactive /
-   returned insufficient-data and was filtered out of the signal array). */
+   returned insufficient-data and was filtered out of the signal array).
+   Returns the string 'NA' when the module's `sectors` tag excludes this
+   project's sector — a deliberate abstention, distinct from "no data yet". */
 window.getModuleStatus = function (methodClass, project) {
   if (!project) return null;
+  if (window.isModuleSectorNA(methodClass, project)) return "NA";
   const s = project.signals || {};
   const sim = (project.simulationSignals && project.simulationSignals.signal_array) || [];
   const findSim = (cls) => {
@@ -275,32 +301,21 @@ window.getModuleStatus = function (methodClass, project) {
     case "WhatIf_Scenario_Matrix":
     case "Decision_Sensitivity_Matrix":
     case "Pareto_Frontier":
-    case "Regret_Minimization":
-    // Cat 12 — Systems Engineering (conditional; mostly returns null until
-    // interface / requirements / system architecture docs are uploaded).
-    case "Interface_Density":
-    case "Dependency_Mapping":
-    case "Requirements_Traceability":
-    case "Config_Change_Impact":
-    case "Integration_Complexity": return findSim(methodClass);
+    case "Regret_Minimization":    return findSim(methodClass);
     default:                       return findSim(methodClass);
   }
 };
 
 /* Worst-status-wins per category. Returns null for parked categories or
-   categories whose modules haven't been computed yet. Conditional categories
-   (Cat 12) only surface when at least one of their modules has data — until
-   then they render as a grey/inactive band on the spider web. */
+   categories whose modules haven't been computed yet. */
 window.getCategoryStatus = function (catId, project) {
   const cat = LIN_CATEGORIES.find((c) => c.id === catId);
   if (!cat || cat.parked) return null;
-  if (cat.conditional) {
-    const hasAnyData = cat.modules.some((m) => getModuleStatus(m.method_class, project) != null);
-    if (!hasAnyData) return null;
-  }
   const statuses = cat.modules
     .map((m) => getModuleStatus(m.method_class, project))
     .filter(Boolean)
+    // NA = sector abstention — excluded from the fusion vote like any abstain
+    .filter((s) => s !== "NA")
     .map((s) => String(s));
   if (!statuses.length) return null;
   // Dempster-Shafer evidence fusion (Red weighted 1.5x) instead of
@@ -321,7 +336,7 @@ window.getCategoryStatus = function (catId, project) {
 };
 
 /* ------------------------------------------------------------
-   Project-level rollup — fuse the 12 category statuses (again via
+   Project-level rollup — fuse the 11 category statuses (again via
    Dempster-Shafer, Red weighted 1.5x) into the project status.
    Also surfaces: the conflict K (Red-review advisory when >= 0.55),
    every currently-Red module + its category (so the brief can flag

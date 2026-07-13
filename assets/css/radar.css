@@ -342,6 +342,9 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .pill-blue,
 .pill-complete { color: var(--blue-status); background: color-mix(in srgb, var(--blue-status) 16%, transparent); }
 .pill-parked, .pill-none { color: var(--faint); background: color-mix(in srgb, var(--muted) 10%, transparent); }
+/* N/A — sector abstention (construction-phase module on a Design project).
+   Distinct dim state: dashed outline separates it from plain "No data". */
+.pill-na { color: var(--faint); background: transparent; border: 1px dashed color-mix(in srgb, var(--muted) 45%, transparent); }
 
 /* 9-category signal ledger (project detail) */
 .cat-row { border-top: 1px solid var(--line); padding: 12px 0; }
@@ -353,6 +356,8 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .cat-row-desc { color: var(--muted); font-size: 12px; margin: 6px 0 8px 0; padding-left: 66px; }
 .cat-mod-list { display: flex; flex-direction: column; gap: 4px; padding-left: 66px; }
 .cat-mod-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; font-size: 13px; }
+.cat-mod-row.cat-mod-na { opacity: 0.55; }
+.cat-row-na-note { color: var(--faint); font-size: 11px; font-style: italic; margin: 0 0 8px 0; padding-left: 66px; }
 .cat-mod-num { font-family: var(--font-mono); font-size: 10px; color: var(--faint); min-width: 46px; }
 .cat-mod-name { flex: 1; color: var(--muted); }
 .cat-row-parked { padding-bottom: 12px; }
@@ -432,7 +437,25 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .log-time { font-family: var(--font-mono); font-size: 11px; color: var(--faint); margin-top: 4px; }
 
 /* ---------- footer ---------- */
-.foot { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 12px; color: var(--faint); line-height: 1.6; }
+/* Mirrors the .login-disclaimer type treatment. Opaque surface + z-index
+   keep the legal block legible above the newyork skyline art. */
+.site-footer {
+  position: relative;
+  z-index: 2;                      /* sit above the skyline art */
+  margin-top: 28px;
+  background: var(--surface, #0d1322);
+  border-top: 1px solid var(--line, rgba(232,217,176,0.18));
+  padding: 22px 28px 26px;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: none;
+}
+.footer-copyright { margin: 0 0 10px; color: var(--muted); }
+.footer-legal { margin: 0 0 10px; padding-left: 18px; }
+.footer-legal li { margin-bottom: 4px; }
+.footer-legal strong { color: var(--radar-amber, #e2b13c); font-weight: 600; }
+.footer-praxis { margin: 0; opacity: 0.8; }
 
 /* ---------- reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
@@ -531,6 +554,11 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
   align-items: center; padding: 10px 4px; border-bottom: 1px solid var(--line);
 }
 .pr-row:last-child { border-bottom: 0; }
+/* inline project-number editor (Edit № on an Active Projects row) */
+.pr-editnum { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; padding: 10px 12px; margin: 2px 0 8px; border: 1px dashed var(--line); border-radius: 8px; background: color-mix(in srgb, var(--muted) 5%, transparent); }
+.pr-editnum .rationale-label { margin: 0; }
+.pr-editnum .dc-actions { margin: 0; }
+.pr-editnum-msg { flex-basis: 100%; margin: 0; }
 .pr-code { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); }
 .pr-name { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pr-empty { color: var(--faint); font-size: 13px; margin: 8px 0 0; }
@@ -916,7 +944,6 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 }
 .login-disclaimer strong { color: var(--radar-amber); }
 .login-copyright { margin-top: 8px; font-size: 10px; color: var(--muted); text-align: center; }
-.foot-copyright { margin: 0 0 10px; }
 .upload-disclaimer {
   margin-top: 8px;
   font-size: 11px;
@@ -1197,7 +1224,7 @@ body[data-theme="light"] .sw-axis { stroke: rgba(15,23,42,0.14); }
 }
 .sw-history-pill:hover, .sw-history-pill.active { color: var(--text); border-color: var(--phosphor); background: color-mix(in srgb, var(--phosphor) 10%, transparent); }
 
-/* ---------- 108-module signal web ---------- */
+/* ---------- 103-module signal web ---------- */
 .sw-mod-svg { max-height: 560px; }
 .sw-ring-outer { stroke: rgba(255,255,255,0.12); }
 body[data-theme="light"] .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
@@ -1210,7 +1237,7 @@ body[data-theme="light"] .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .sw-mod-svg .sw-axis-parked { stroke: #64748b; stroke-dasharray: 2 3; opacity: .5; }
 .sw-mod-svg .sw-dot { stroke: var(--surface); stroke-width: .6; transition: r .12s ease; }
 .sw-mod-svg .sw-dot:hover { r: 5px; }
-/* The filled web polygon — closed shape through all 108 module points. */
+/* The filled web polygon — closed shape through all 103 module points. */
 .sw-mod-svg .sw-web-current { fill: rgba(78,160,255,0.08); stroke: #4ea0ff; stroke-width: 1.5; }
 .sw-footnote { font-family: var(--font-mono); font-size: 10px; color: #64748b; margin: 4px 0 0; }
 
@@ -1467,12 +1494,7 @@ body.nav-open .nav-rail { transform: translateX(0); }
 }
 .lg-hat { width: 16px; height: 16px; flex: 0 0 auto; vertical-align: -3px; }
 
-/* ---------- Phase 7b: footer bullets + decision-card caveat ---------- */
-.foot-list { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.foot-list li { position: relative; padding-left: 16px; }
-.foot-list li::before { content: "•"; position: absolute; left: 2px; color: var(--faint); }
-.foot-list strong { color: var(--text); }
-.foot-attrib { margin: 0; }
+/* ---------- Phase 7b: decision-card caveat ---------- */
 .dc-caveat { font-size: 11.5px; line-height: 1.45; color: var(--faint); margin: 8px 0 0; }
 
 /* ---------- Technical Auditor page (v2) ---------- */
@@ -1801,7 +1823,7 @@ body.nav-open .nav-rail { transform: translateX(0); }
 }
 .kn-nav-btn:hover { background: var(--surface-soft); border-color: var(--line); }
 .kn-nav-btn.active { background: color-mix(in srgb, var(--phosphor) 14%, transparent); border-color: var(--phosphor); color: var(--text); font-weight: 600; }
-.kn-nav-cat { list-style: none; margin-top: 6px; }
+.kn-nav-cat { list-style: none; margin-top: 6px; margin-left: 12px; }
 .kn-nav-cat details { border-radius: 6px; }
 .kn-nav-cat-head { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 8px; list-style: none; border-radius: 6px; font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em; color: var(--text); }
 .kn-nav-cat-head::-webkit-details-marker { display: none; }
@@ -2161,7 +2183,7 @@ body { overflow-x: hidden; max-width: 100vw; }
   .portfolio-below { grid-template-columns: 1fr; }
 
   /* ---------- footer ---------- */
-  .foot { font-size: 11px; }
+  .site-footer { font-size: 11px; padding: 18px 16px 22px; }
 
   /* ---------- assistant panel: full-width on mobile ---------- */
   .la-panel {
