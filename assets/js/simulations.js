@@ -1381,50 +1381,83 @@
   /* ---------- Cat 4 — Doc / Risk extensions ---------- */
 
   function runRFIVelocity(si) {
+    // Prefers the RFI-log fields (backend v10.27: rfiCount, rfiPeriodDays,
+    // rfiOverdue, rfiAvgResponseDays, rfiOldestOpenDays); falls back to the
+    // sequential-number estimate. Missing inputs → abstain, unchanged rule.
     var count = si.rfiCount != null ? si.rfiCount : (si.rfiNumber != null ? si.rfiNumber : null);
     var days = si.rfiPeriodDays != null ? si.rfiPeriodDays : 30;
     if (count == null) return insufficientData('RFI_Velocity');
     var isDerived = si.sources && si.sources['rfiPeriodDays'] &&
                     si.sources['rfiPeriodDays'].docType === 'derived';
-    var rfiPerWeek = days > 0 ? (count / days) * 7 : 0;
-    rfiPerWeek = Math.round(rfiPerWeek * 10) / 10;
-    var status = rfiPerWeek <= 2 ? 'Green' :
-                 rfiPerWeek <= 4 ? 'Yellow' :
-                 rfiPerWeek <= 8 ? 'Amber' : 'Red';
-    var responseNote = '';
-    if (si.rfiResponseTimeDays != null) {
-      responseNote = ', avg response ' + si.rfiResponseTimeDays + ' days' +
-        (si.rfiResponseTimeDays > 14 ? ' — slow response indicates dispute risk' : '');
+    var per30 = days > 0 ? Math.round((count / days) * 300) / 10 : 0;
+    var rfiPerWeek = days > 0 ? Math.round((count / days) * 70) / 10 : 0;
+    var velStatus = rfiPerWeek <= 2 ? 'Green' :
+                    rfiPerWeek <= 4 ? 'Yellow' :
+                    rfiPerWeek <= 8 ? 'Amber' : 'Red';
+    // Overdue ratio (rfiOverdue / rfiCount): Green <0.1, Yellow <0.2, Amber <0.35, else Red.
+    var overdueRatio = null, overdueStatus = null;
+    if (si.rfiOverdue != null && count > 0) {
+      overdueRatio = si.rfiOverdue / count;
+      overdueStatus = overdueRatio < 0.10 ? 'Green' :
+                      overdueRatio < 0.20 ? 'Yellow' :
+                      overdueRatio < 0.35 ? 'Amber' : 'Red';
     }
+    // Worst of the velocity band and the overdue band.
+    var RANK = { Green: 0, Yellow: 1, Amber: 2, Red: 3 };
+    var status = (overdueStatus && RANK[overdueStatus] > RANK[velStatus]) ? overdueStatus : velStatus;
+    var avgResponse = si.rfiAvgResponseDays != null ? si.rfiAvgResponseDays : si.rfiResponseTimeDays;
+    var evidence = count + ' RFIs over ' + days + ' days (' + per30 + '/30d, ' + rfiPerWeek + '/week)';
+    if (overdueRatio != null) {
+      evidence += ', ' + si.rfiOverdue + ' overdue (' + Math.round(overdueRatio * 100) + '%)';
+    }
+    if (avgResponse != null) {
+      evidence += ', avg response ' + avgResponse + ' days' +
+        (avgResponse > 14 ? ' — slow response indicates dispute risk' : '');
+    }
+    if (si.rfiOldestOpenDays != null) evidence += ', oldest open ' + si.rfiOldestOpenDays + ' days';
+    if (isDerived) evidence += ' — assumed 30-day period, upload RFI log for precise velocity';
     return {
       method_class: 'RFI_Velocity', status_color: status,
-      rfi_per_week: rfiPerWeek, total_rfis: count, period_days: days,
-      response_time_days: si.rfiResponseTimeDays != null ? si.rfiResponseTimeDays : null,
-      evidence_metric: count + ' RFIs over ' + days + ' days (' + rfiPerWeek + '/week)' +
-        responseNote +
-        (isDerived ? ' — assumed 30-day period, upload RFI log for precise velocity' : '')
+      rfi_per_30d: per30, rfi_per_week: rfiPerWeek, total_rfis: count, period_days: days,
+      open_rfis: si.rfiOpen != null ? si.rfiOpen : null,
+      overdue_rfis: si.rfiOverdue != null ? si.rfiOverdue : null,
+      overdue_ratio: overdueRatio != null ? Math.round(overdueRatio * 1000) / 1000 : null,
+      response_time_days: avgResponse != null ? avgResponse : null,
+      evidence_metric: evidence
     };
   }
 
   function runSubmittalRejection(si) {
-    if (!checkInputs(si, ['submittalsTotal','submittalsRejected']))
-      return insufficientData('Submittal_Rejection');
-    var rejectionRate = si.submittalsTotal > 0 ?
-      si.submittalsRejected / si.submittalsTotal : null;
+    // Prefers the RFA-log fields (backend v10.27: rfaTotal / rfaRejected /
+    // rfaResubmit / rfaOpen / rfaAvgReviewDays); falls back to the
+    // submittal-register fields. Missing inputs → abstain, unchanged rule.
+    var useRfa = si.rfaTotal != null && si.rfaRejected != null && si.rfaTotal > 0;
+    var total = useRfa ? si.rfaTotal : si.submittalsTotal;
+    var rejected = useRfa ? si.rfaRejected : si.submittalsRejected;
+    if (total == null || rejected == null) return insufficientData('Submittal_Rejection');
+    var rejectionRate = total > 0 ? rejected / total : null;
     if (rejectionRate === null) return insufficientData('Submittal_Rejection');
     rejectionRate = Math.round(rejectionRate * 1000) / 1000;
     var status = rejectionRate <= 0.05 ? 'Green' :
                  rejectionRate <= 0.15 ? 'Yellow' :
                  rejectionRate <= 0.25 ? 'Amber' : 'Red';
-    var isDerived = si.sources && si.sources['submittalsTotal'] &&
+    var isDerived = !useRfa && si.sources && si.sources['submittalsTotal'] &&
                     si.sources['submittalsTotal'].docType === 'derived';
+    var evidence = rejected + ' of ' + total +
+      (useRfa ? ' RFAs rejected (' : ' submittals rejected (') +
+      Math.round(rejectionRate * 100) + '%)';
+    if (useRfa) {
+      if (si.rfaResubmit != null) evidence += ', ' + si.rfaResubmit + ' revise-and-resubmit';
+      if (si.rfaOpen != null) evidence += ', ' + si.rfaOpen + ' open';
+      if (si.rfaAvgReviewDays != null) evidence += ', avg review ' + si.rfaAvgReviewDays + ' days';
+    }
+    if (isDerived) evidence += ' — estimated from doc risk, upload Submittal Register for precise figures';
     return {
       method_class: 'Submittal_Rejection', status_color: status,
       rejection_rate: rejectionRate,
-      rejected: si.submittalsRejected, total: si.submittalsTotal,
-      evidence_metric: si.submittalsRejected + ' of ' + si.submittalsTotal +
-        ' submittals rejected (' + Math.round(rejectionRate * 100) + '%)' +
-        (isDerived ? ' — estimated from doc risk, upload Submittal Register for precise figures' : '')
+      rejected: rejected, total: total,
+      source: useRfa ? 'rfa_log' : 'submittals',
+      evidence_metric: evidence
     };
   }
 

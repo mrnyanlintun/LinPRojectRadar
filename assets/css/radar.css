@@ -342,6 +342,9 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .pill-blue,
 .pill-complete { color: var(--blue-status); background: color-mix(in srgb, var(--blue-status) 16%, transparent); }
 .pill-parked, .pill-none { color: var(--faint); background: color-mix(in srgb, var(--muted) 10%, transparent); }
+/* N/A — sector abstention (construction-phase module on a Design project).
+   Distinct dim state: dashed outline separates it from plain "No data". */
+.pill-na { color: var(--faint); background: transparent; border: 1px dashed color-mix(in srgb, var(--muted) 45%, transparent); }
 
 /* 9-category signal ledger (project detail) */
 .cat-row { border-top: 1px solid var(--line); padding: 12px 0; }
@@ -353,6 +356,8 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .cat-row-desc { color: var(--muted); font-size: 12px; margin: 6px 0 8px 0; padding-left: 66px; }
 .cat-mod-list { display: flex; flex-direction: column; gap: 4px; padding-left: 66px; }
 .cat-mod-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; font-size: 13px; }
+.cat-mod-row.cat-mod-na { opacity: 0.55; }
+.cat-row-na-note { color: var(--faint); font-size: 11px; font-style: italic; margin: 0 0 8px 0; padding-left: 66px; }
 .cat-mod-num { font-family: var(--font-mono); font-size: 10px; color: var(--faint); min-width: 46px; }
 .cat-mod-name { flex: 1; color: var(--muted); }
 .cat-row-parked { padding-bottom: 12px; }
@@ -549,6 +554,11 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
   align-items: center; padding: 10px 4px; border-bottom: 1px solid var(--line);
 }
 .pr-row:last-child { border-bottom: 0; }
+/* inline project-number editor (Edit № on an Active Projects row) */
+.pr-editnum { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; padding: 10px 12px; margin: 2px 0 8px; border: 1px dashed var(--line); border-radius: 8px; background: color-mix(in srgb, var(--muted) 5%, transparent); }
+.pr-editnum .rationale-label { margin: 0; }
+.pr-editnum .dc-actions { margin: 0; }
+.pr-editnum-msg { flex-basis: 100%; margin: 0; }
 .pr-code { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); }
 .pr-name { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pr-empty { color: var(--faint); font-size: 13px; margin: 8px 0 0; }

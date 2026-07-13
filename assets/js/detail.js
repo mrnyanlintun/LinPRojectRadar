@@ -1339,14 +1339,18 @@
     const R = 160;
     const goldenAngle = Math.PI * (3 - Math.sqrt(5));
 
+    const sectorNA = "N/A — not applicable to " +
+      ((window.normalizeSector ? normalizeSector(project.sector) : (project.sector || "hybrid"))
+        .replace(/^./, (c) => c.toUpperCase())) + "-sector projects";
     const moduleList = [];
     LIN_CATEGORIES.forEach((cat) => {
       cat.modules.forEach((m) => {
         const active = !(cat.parked || cat.conditional || m.active === false);
         const status = active && window.getModuleStatus ? getModuleStatus(m.method_class, project) : null;
-        const norm = active ? normalizeStatus(status) : null;
-        const evidence = active ? moduleEvidence(m, project) : null;
-        moduleList.push({ cat, module: m, status: norm, evidence, catColor: cat.color });
+        const na = status === "NA"; // sector abstention — dim dot, explanatory tooltip
+        const norm = active && !na ? normalizeStatus(status) : null;
+        const evidence = active && !na ? moduleEvidence(m, project) : null;
+        moduleList.push({ cat, module: m, status: norm, na, evidence, catColor: cat.color });
       });
     });
 
@@ -1454,7 +1458,7 @@
         if(hit>=0){
           const ml=pts[hit].ml, col=DOT[ml.status]||DOT.none;
           tt.style.display="block"; tt.style.left=(e.clientX-rect.left+14)+"px"; tt.style.top=(e.clientY-rect.top-10)+"px";
-          tt.innerHTML=`<div style="font-family:var(--font-mono,monospace);font-size:10px;color:#e9a23b;margin-bottom:3px">${esc(ml.module.num)} ${esc(ml.module.name)}</div><div style="font-size:12px;font-weight:600;color:${esc(col)}">${esc(ml.status||"No data")}</div>${ml.evidence?`<div style="font-size:11px;color:#9fb0cc;margin-top:2px">${esc(ml.evidence)}</div>`:""}`;
+          tt.innerHTML=`<div style="font-family:var(--font-mono,monospace);font-size:10px;color:#e9a23b;margin-bottom:3px">${esc(ml.module.num)} ${esc(ml.module.name)}</div><div style="font-size:12px;font-weight:600;color:${esc(col)}">${esc(ml.status||(ml.na?sectorNA:"No data"))}</div>${ml.evidence?`<div style="font-size:11px;color:#9fb0cc;margin-top:2px">${esc(ml.evidence)}</div>`:""}`;
         } else { tt.style.display="none"; }
       }
     });

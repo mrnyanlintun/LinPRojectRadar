@@ -20,8 +20,9 @@
   // stale signal_array get recomputed instead of short-circuiting on a
   // non-empty-but-stale array. v2 = the full 89-module rollout; v3 added
   // Cat 10 (Data Integrity) and Cat 11 (Decision Optimization); v4 removes
-  // the Cat 12 (Systems Engineering) stubs — 103 modules total.
-  const SIM_MODULE_SET_VERSION = 4;
+  // the Cat 12 (Systems Engineering) stubs — 103 modules total; v5 upgrades
+  // RFI_Velocity / Submittal_Rejection to the v10.27 RFI/RFA-log fields.
+  const SIM_MODULE_SET_VERSION = 5;
 
   const esc = (s) => String(s == null ? "" : s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -43,6 +44,8 @@
     ]},
     { label: "Risk & Correspondence Documents", types: [
       ["rfi",                   "RFI / RFI Log"],
+      ["rfi_log",               "RFI Log (register)"],
+      ["rfa_log",               "RFA / Approval Log"],
       ["submittal",             "Submittal / Submittal Register"],
       ["oac_minutes",           "OAC Meeting Minutes"],
       ["correspondence_notice", "Correspondence / Notice"],
@@ -421,7 +424,9 @@
     Object.keys(categoryResults).forEach((cid) => {
       const c = categoryResults[cid];
       if (c.parked) return;
-      c.modules.forEach((m) => { if (m.status) allModules.push(m); });
+      // 'NA' = sector abstention — kept on the per-module snapshot rows for the
+      // audit trail, but excluded from the status tally like any abstain.
+      c.modules.forEach((m) => { if (m.status && m.status !== "NA") allModules.push(m); });
     });
 
     const byStatus = { Complete: 0, Green: 0, Yellow: 0, Amber: 0, Red: 0, Unknown: 0 };
