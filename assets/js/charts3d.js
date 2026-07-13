@@ -2691,50 +2691,6 @@
     aL(ctx,W/2,H-4,'Optimization score (0–1)','#64748b','center');
   }
 
-  // ═══ CAT 12 — Systems Engineering (conditional) ══════════════
-  function render_121(ctx,W,H,m,rx,ry){ // Interface Density network
-    var cx=W/2,cy=H/2,fov=Math.min(W,H)*0.85;
-    function t(p){return prj(rX(rY(p,ry),rx),fov,cx,cy);}
-    ctx.clearRect(0,0,W,H);
-    var systems=[{name:'HVAC',x:-50,y:-30,z:-20,col:'#4ea0ff'},{name:'Elec',x:50,y:-30,z:20,col:'#e2b13c'},{name:'Plumbing',x:-50,y:30,z:20,col:'#3fcaa6'},{name:'Struct',x:50,y:30,z:-20,col:'#9b6dff'},{name:'Controls',x:0,y:0,z:0,col:'#e9a23b'}];
-    var ifaces=[[0,4,0.8],[1,4,0.7],[2,4,0.6],[3,4,0.5],[0,1,0.4],[1,3,0.3],[0,2,0.3],[2,3,0.4]];
-    ifaces.forEach(function(e){
-      var n1=systems[e[0]],n2=systems[e[1]];
-      var p1=t(n1),p2=t(n2);if(!isFinite(p1.x))return;
-      ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);
-      var col=e[2]>0.6?'#e0556b':e[2]>0.4?'#e2b13c':'rgba(100,116,139,0.4)';
-      ctx.strokeStyle=col;ctx.lineWidth=e[2]*3;ctx.stroke();
-    });
-    systems.forEach(function(s){
-      var p=t(s);if(!isFinite(p.x))return;
-      var r=Math.max(12,15*p.s);
-      ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fillStyle=s.col+'22';ctx.fill();ctx.strokeStyle=s.col;ctx.lineWidth=1.8;ctx.stroke();
-      ctx.font='bold 8px SFMono-Regular,monospace';ctx.fillStyle=s.col;ctx.textAlign='center';ctx.fillText(s.name,p.x,p.y+3);ctx.textAlign='left';
-    });
-    aL(ctx,14,H-8,'Line weight = interface density · conditional on ICD upload','#64748b');
-  }
-  function render_122_125(ctx,W,H,m,rx,ry){ // Cat 12 overview 12.2–12.5
-    ctx.clearRect(0,0,W,H);
-    var PAD={l:130,r:20,t:20,b:20};var CW=W-PAD.l-PAD.r,CH=H-PAD.t-PAD.b;
-    var items=[
-      {name:'12.2 Dependency Map',status:'Conditional',note:'Requires DSM upload',val:0},
-      {name:'12.3 Requirements Trace',status:'Conditional',note:'Requires req matrix',val:0},
-      {name:'12.4 Config Change Impact',status:'Amber',note:'CO impact 10%',val:0.55},
-      {name:'12.5 Integration Complexity',status:'Conditional',note:'Requires ICD data',val:0}
-    ];
-    var n=items.length,rowH=CH/n;
-    items.forEach(function(m,i){
-      var y=PAD.t+i*rowH+rowH*0.12,bh=rowH*0.7;
-      var col=m.status==='Amber'?'#e2b13c':'#64748b';
-      var bw=m.val>0?m.val*CW:CW*0.15;
-      ctx.fillStyle=col;ctx.globalAlpha=m.val>0?0.8:0.2;ctx.fillRect(PAD.l,y,bw,bh);ctx.globalAlpha=1;
-      ctx.strokeStyle='rgba(10,15,28,0.2)';ctx.lineWidth=0.3;ctx.strokeRect(PAD.l,y,bw,bh);
-      ctx.font='8px SFMono-Regular,monospace';ctx.fillStyle='#9fb0cc';ctx.textAlign='right';ctx.fillText(m.name,PAD.l-4,y+bh/2+3);ctx.textAlign='left';
-      ctx.fillStyle=col;ctx.fillText(m.note,PAD.l+bw+4,y+bh/2+3);
-    });
-    aL(ctx,W/2,H-4,'Conditional modules — activate when interface docs uploaded','#64748b','center');
-  }
-
   window.LinCharts3D = {
     rX: rX, rY: rY, proj: proj,
     pillDraw:          pillDraw,
@@ -2807,8 +2763,6 @@
     render_101: render_101,
     render_102_107: render_102_107,
     render_111: render_111,
-    render_112_117: render_112_117,
-    render_121: render_121,
-    render_122_125: render_122_125
+    render_112_117: render_112_117
   };
 })();

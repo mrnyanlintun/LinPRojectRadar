@@ -1,8 +1,8 @@
 /* ============================================================
    lin-project-radar — categories.js
    ------------------------------------------------------------
-   The full 108-module definition across 12 analytical categories.
-   Drives the spider web (108 axes), the ensemble panel, the
+   The full 103-module definition across 11 analytical categories.
+   Drives the spider web (103 axes), the ensemble panel, the
    signal ledger, the Signals page, and the stored snapshot the
    executive brief reads from.
 
@@ -16,10 +16,7 @@
 
    Cat 10 (Data Integrity) and Cat 11 (Decision Optimization)
    are fully active — they derive from existing signalInputs
-   and the project audit trail. Cat 12 (Systems Engineering) is
-   defined but conditional: it activates only when interface
-   control / requirements / system architecture docs are
-   uploaded (see the `conditional` flag).
+   and the project audit trail.
 
    Globals (no ES modules) so the site runs from file:// too.
    Loaded BEFORE the modules that consume it (categories.js
@@ -207,19 +204,6 @@ window.LIN_CATEGORIES = [
       { id: 'cat11_6', num: '11.6', name: 'Pareto Frontier Analysis', method_class: 'Pareto_Frontier', active: true, required: ['cpi','spi','docRiskScore'] },
       { id: 'cat11_7', num: '11.7', name: 'Regret Minimization Index', method_class: 'Regret_Minimization', active: true, required: ['cpi','spi','bac'] }
     ]
-  },
-  {
-    id: 'cat12', num: 'Cat 12', name: 'Systems Engineering',
-    color: '#a855f7',
-    description: 'Interface complexity, dependency mapping, and requirements traceability. Activates when interface control documents and requirements specifications are uploaded. Most novel category — very few EVM platforms address systems engineering complexity.',
-    conditional: true,
-    modules: [
-      { id: 'cat12_1', num: '12.1', name: 'Interface Density Index', method_class: 'Interface_Density', active: false, required: ['interfaceCount','totalComponents'] },
-      { id: 'cat12_2', num: '12.2', name: 'Dependency Mapping Score', method_class: 'Dependency_Mapping', active: false, required: ['dependencyCount','criticalDependencies'] },
-      { id: 'cat12_3', num: '12.3', name: 'Requirements Traceability Coverage', method_class: 'Requirements_Traceability', active: false, required: ['requirementsTotal','requirementsVerified'] },
-      { id: 'cat12_4', num: '12.4', name: 'Configuration Change Impact', method_class: 'Config_Change_Impact', active: false, required: ['changeOrderCount','configurationItems'] },
-      { id: 'cat12_5', num: '12.5', name: 'Integration Complexity Index', method_class: 'Integration_Complexity', active: false, required: ['interfaceCount','dependencyCount'] }
-    ]
   }
 ];
 
@@ -275,29 +259,16 @@ window.getModuleStatus = function (methodClass, project) {
     case "WhatIf_Scenario_Matrix":
     case "Decision_Sensitivity_Matrix":
     case "Pareto_Frontier":
-    case "Regret_Minimization":
-    // Cat 12 — Systems Engineering (conditional; mostly returns null until
-    // interface / requirements / system architecture docs are uploaded).
-    case "Interface_Density":
-    case "Dependency_Mapping":
-    case "Requirements_Traceability":
-    case "Config_Change_Impact":
-    case "Integration_Complexity": return findSim(methodClass);
+    case "Regret_Minimization":    return findSim(methodClass);
     default:                       return findSim(methodClass);
   }
 };
 
 /* Worst-status-wins per category. Returns null for parked categories or
-   categories whose modules haven't been computed yet. Conditional categories
-   (Cat 12) only surface when at least one of their modules has data — until
-   then they render as a grey/inactive band on the spider web. */
+   categories whose modules haven't been computed yet. */
 window.getCategoryStatus = function (catId, project) {
   const cat = LIN_CATEGORIES.find((c) => c.id === catId);
   if (!cat || cat.parked) return null;
-  if (cat.conditional) {
-    const hasAnyData = cat.modules.some((m) => getModuleStatus(m.method_class, project) != null);
-    if (!hasAnyData) return null;
-  }
   const statuses = cat.modules
     .map((m) => getModuleStatus(m.method_class, project))
     .filter(Boolean)
@@ -321,7 +292,7 @@ window.getCategoryStatus = function (catId, project) {
 };
 
 /* ------------------------------------------------------------
-   Project-level rollup — fuse the 12 category statuses (again via
+   Project-level rollup — fuse the 11 category statuses (again via
    Dempster-Shafer, Red weighted 1.5x) into the project status.
    Also surfaces: the conflict K (Red-review advisory when >= 0.55),
    every currently-Red module + its category (so the brief can flag

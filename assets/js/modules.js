@@ -689,7 +689,7 @@
          <p class="kn-sub">Create a project and populate its signals on Manage Projects to see the nineteen signal modules across the portfolio. Empty projects are shown on the radar in an awaiting-ingest state, not charted here.</p></section>`;
       return;
     }
-    // The 108-module 3D force network was removed from this page — at portfolio
+    // The 103-module 3D force network was removed from this page — at portfolio
     // level it showed no project-specific status and added no value. The
     // per-project 2D signal network lives on the Project Detail page instead
     // (see projectnet2d.js). forcenet.js remains in the repo but is no longer
@@ -699,7 +699,7 @@
       b.addEventListener("click", () => LinApp.openDetail(b.dataset.open)));
   }
 
-  /* All 108 modules organized by category for ONE project (Project Detail page).
+  /* All 103 modules organized by category for ONE project (Project Detail page).
      Uses LIN_CATEGORIES to show every module with collapsible sections. */
   function projectModuleCardsHtml(project) {
     if (!window.LIN_CATEGORIES) return '';

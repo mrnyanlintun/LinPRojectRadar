@@ -18,7 +18,7 @@
     return key.split('_').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
   }
 
-  // ─── Fallback category definitions (12) — used only if LIN_CATEGORIES is
+  // ─── Fallback category definitions (11) — used only if LIN_CATEGORIES is
   // absent (script-order failure); canonical source is categories.js ──────────
   var FB_CATS = [
     { id:1,  name:'Quantitative EVM',       short:'EVM',       count:12 },
@@ -32,7 +32,6 @@
     { id:9,  name:'Governance & Compliance',short:'Gov.',      count:9  },
     { id:10, name:'Data Integrity',         short:'Integrity', count:6  },
     { id:11, name:'Decision Optimization',  short:'Decision',  count:8  },
-    { id:12, name:'Systems Engineering',    short:'Sys.Eng.',  count:5  },
   ];
 
   // ─── Fallback module definitions: [catIdx, displayName, method_class] ───────
@@ -101,14 +100,10 @@
     [10,'AHP Weighting','AHP_Weighting'],      [10,'TOPSIS Rank','TOPSIS_Rank'],
     [10,'Regret Minimiz.','Regret_Minimization'],[10,'Info Value','Info_Value'],
     [10,'Sensitivity Rank','Sensitivity_Rank'],[10,'Robust Decision','Robust_Decision'],
-    // Cat 12 — Systems Engineering (5)
-    [11,'Requirements Trace','Requirements_Trace'],[11,'Interface Risk','Interface_Risk'],
-    [11,'V-Model Gate','V_Model_Gate'],        [11,'SysML Signal','SysML_Signal'],
-    [11,'Digital Twin Sync','Digital_Twin_Sync'],
   ];
 
   var SHORTS = ['EVM','Schedule','Cost','Doc&Risk','Sys.Dyn.','Synthesis',
-                'Evidence','ML & AI','Gov.','Integrity','Decision','Sys.Eng.'];
+                'Evidence','ML & AI','Gov.','Integrity','Decision'];
 
   // Canonical categories + modules from categories.js (real method_class names,
   // so byClass/getModuleStatus lookups actually hit). Falls back to the
@@ -176,7 +171,6 @@
     { srcs:[0,1,2],                 dst:7,  xHub:890 },
     { srcs:[0,1,2,3,4,5,6,7,8],    dst:9,  xHub:905 },
     { srcs:[0,1,2,3,4,5,6,7,8],    dst:10, xHub:920 },
-    { srcs:[0,1,2,3],               dst:11, xHub:935 },
   ];
 
   // ─── Colors ──────────────────────────────────────────────────────────────────
@@ -294,7 +288,7 @@
     // ── 3. Pre-compute all statuses ───────────────────────────────────────────
     var modInfos = MODULES.map(function(m) { return modInfo(m); });
     // Category statuses — use the app's DST fusion (categories.js); LIN_CATEGORIES
-    // is ordered cat1..cat12, matching the CATS index. Worst-of is only a fallback.
+    // is ordered cat1..cat11, matching the CATS index. Worst-of is only a fallback.
     var catStatuses = CATS.map(function(cat, ci) {
       try {
         if (window.getCategoryStatus && window.LIN_CATEGORIES && window.LIN_CATEGORIES[ci]) {
@@ -548,7 +542,7 @@
       'text-anchor':'middle', 'font-family':'monospace' }, prjG);
     prjStatusText.textContent = prjStatus;
     prjG.addEventListener('mouseenter', function(evt) {
-      showTT(evt,'<div class="n">Project Status</div><div class="sub" style="color:'+prjColor+'">'+prjStatus+'</div><div class="sub">DST fusion of 12 categories</div>');
+      showTT(evt,'<div class="n">Project Status</div><div class="sub" style="color:'+prjColor+'">'+prjStatus+'</div><div class="sub">DST fusion of '+CATS.length+' categories</div>');
     });
     prjG.addEventListener('mousemove', moveTT);
     prjG.addEventListener('mouseleave', hideTT);

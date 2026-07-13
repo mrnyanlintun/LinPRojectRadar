@@ -410,7 +410,7 @@
       { lab: "Governance Synthesis", mods: ["03 Doc Risk", "04 Synthesis", "05 ABM"], color: "var(--phosphor)", x: 30, y: 116 },
       { lab: "Extended Simulation", mods: ["06 PERT", "07 LOB", "08 CCPM", "09 RCF", "10 DSM"], color: "var(--radar-amber)", x: 30, y: 222 },
     ];
-    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="auto" class="kn-svg" role="img" aria-label="Signal stack of 12 categories feeding the governance decision">`;
+    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="auto" class="kn-svg" role="img" aria-label="Signal stack of 11 categories feeding the governance decision">`;
     groups.forEach((g) => {
       const bx = g.x, by = g.y, bw = 360, bh = 64;
       out += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="9" fill="var(--surface-soft)" stroke="${g.color}" stroke-width="1.5"></rect>`;
@@ -538,14 +538,14 @@
       title: "1. What is PCEIF",
       eyebrow: "Framework foundation",
       build: () => `
-        <p class="kn-lead">PCEIF, the <strong>Public Capital EVM Intelligence Framework</strong>, converts the signals that a public capital program already generates into a structured, accountable governance action with a named authority and a documented audit trail — using 108 analytical modules across 12 categories.</p>
+        <p class="kn-lead">PCEIF, the <strong>Public Capital EVM Intelligence Framework</strong>, converts the signals that a public capital program already generates into a structured, accountable governance action with a named authority and a documented audit trail — using 103 analytical modules across 11 categories.</p>
 
         <h3>The problem it solves</h3>
         <p>Standard Earned Value Management produces excellent data. It does not produce a decision. A PM looking at CPI 0.88 in period 4 has no structured path to a defensible escalation: who must act, on what timeframe, with what documentation, under whose authority. The data exists; the governance link is missing.</p>
         <p>PCEIF closes that gap. Signals trigger an explicit rule set; the rule set returns a specific action, a specific authority, and the documentation required. The PM still records the decision, the framework simply makes the recommendation traceable.</p>
 
         <h3>Two-layer architecture</h3>
-        <p>108 analytical modules across 12 categories feed two layers of governance. Cat 1–5 generate signals. Cat 6 synthesizes them into a baseline state. Cat 7 quantifies confidence through twenty independent evidence-combination methods. Cat 9 produces the governance decision card. Cat 10 assesses data integrity. Cat 11 identifies the optimal decision pathway. Cat 12 (conditional) addresses systems-engineering complexity.</p>
+        <p>103 analytical modules across 11 categories feed two layers of governance. Cat 1–5 generate signals. Cat 6 synthesizes them into a baseline state. Cat 7 quantifies confidence through twenty independent evidence-combination methods. Cat 9 produces the governance decision card. Cat 10 assesses data integrity. Cat 11 identifies the optimal decision pathway.</p>
         <ul class="kn-list">
           <li><strong>Layer 1, Agency Governance.</strong> Sets the policy framework: the authority matrix, escalation thresholds, fairness rules, audit requirements. Established by the program owner; not changed per project.</li>
           <li><strong>Layer 2, PM Decision Architecture.</strong> Takes that policy and the project's signal package and surfaces, for each reporting cycle, the specific action the PM should record (or override, with rationale).</li>
@@ -568,14 +568,12 @@ Cat 11: Decision Optimization (7 modules) — Optimal action selection
         ↓
 Cat 9: Governance & Compliance (9 modules) — Named authority + audit trail
         ↓
-Cat 12: Systems Engineering (5 modules, conditional) — Interface complexity
-        ↓
 Named Human Approval → Audit Record</pre>
 
         <h3>What's different from standard EVM</h3>
         <ul class="kn-list">
           <li><strong>Standard EVM:</strong> compute CPI / SPI → report to management.</li>
-          <li><strong>PCEIF:</strong> run 108 analytical modules → detect conflict → classify state → surface the action, authority, and documentation, <em>before</em> the next reporting cycle closes.</li>
+          <li><strong>PCEIF:</strong> run 103 analytical modules → detect conflict → classify state → surface the action, authority, and documentation, <em>before</em> the next reporting cycle closes.</li>
         </ul>
 
         <h3>The role of AI</h3>
@@ -584,19 +582,19 @@ Named Human Approval → Audit Record</pre>
     },
     {
       id: "why-108-modules",
-      title: "1b. Why 108 Analytical Modules",
+      title: "Why 103 Analytical Modules",
       eyebrow: "Framework depth",
       build: () => `
         <p class="kn-lead">Public capital projects are complex adaptive systems. A single EVM index (CPI or SPI) captures cost and schedule performance but misses the systemic, probabilistic, and qualitative dimensions that determine whether a project will succeed. PCEIF addresses this through four principles.</p>
 
-        <h3>1. No human can compute 108 analyses simultaneously</h3>
-        <p>A senior PM reviewing a monthly report might check CPI, SPI, and open RFIs. PCEIF runs 108 analytical methods in milliseconds — probabilistic forecasts, anomaly detection, uncertainty reasoning, optimization, data integrity checks, and governance compliance — all before the PM opens their laptop. The platform does not replace human judgment; it gives the PM a complete evidence package to exercise that judgment.</p>
+        <h3>1. No human can compute 103 analyses simultaneously</h3>
+        <p>A senior PM reviewing a monthly report might check CPI, SPI, and open RFIs. PCEIF runs 103 analytical methods in milliseconds — probabilistic forecasts, anomaly detection, uncertainty reasoning, optimization, data integrity checks, and governance compliance — all before the PM opens their laptop. The platform does not replace human judgment; it gives the PM a complete evidence package to exercise that judgment.</p>
 
         <h3>2. Convergence equals confidence</h3>
-        <p>When 90 of 108 methods agree on a Red classification, the PM can act with high confidence. When methods diverge — some showing Amber, others Red — the divergence itself is the finding: the project is in an ambiguous state that requires investigation before action. No single method can surface that ambiguity.</p>
+        <p>When 90 of 103 methods agree on a Red classification, the PM can act with high confidence. When methods diverge — some showing Amber, others Red — the divergence itself is the finding: the project is in an ambiguous state that requires investigation before action. No single method can surface that ambiguity.</p>
 
         <h3>3. Each category adds a genuinely distinct lens</h3>
-        <p>The 12 categories are not redundant:</p>
+        <p>The 11 categories are not redundant:</p>
         <ul class="kn-list">
           <li><strong>Cat 1 (EVM)</strong> — shows what <em>is</em> happening.</li>
           <li><strong>Cat 2–3 (Simulation)</strong> — shows what <em>will</em> happen.</li>
@@ -607,11 +605,10 @@ Named Human Approval → Audit Record</pre>
           <li><strong>Cat 9 (Governance)</strong> — shows what <em>action is required</em>.</li>
           <li><strong>Cat 10 (Data Integrity)</strong> — shows how much to <em>trust the signals</em>.</li>
           <li><strong>Cat 11 (Optimization)</strong> — shows what the <em>best decision</em> is.</li>
-          <li><strong>Cat 12 (Systems Engineering)</strong> — shows complexity risk <em>invisible to EVM</em>.</li>
         </ul>
 
-        <h3>4. The 108-module claim is technically honest</h3>
-        <p>103 modules are fully executable from standard project documents available in any public capital program. 5 systems-engineering modules activate when interface control documents are uploaded. No module produces a fake or hardcoded output — every status derives from real extracted data or returns "Insufficient data" with a specific explanation of what is missing.</p>
+        <h3>4. The 103-module claim is technically honest</h3>
+        <p>All 103 modules are executable from standard project documents available in any public capital program. No module produces a fake or hardcoded output — every status derives from real extracted data or returns "Insufficient data" with a specific explanation of what is missing.</p>
       `,
     },
     {
@@ -629,7 +626,7 @@ Named Human Approval → Audit Record</pre>
 
         <h3>3. Yellow provides an early warning band</h3>
         <p>The gap between Green (all good) and Amber (significant risk) is too wide. A project moving from Green to Amber has often already been in trouble for 2-3 reporting periods. Yellow captures the early warning zone — minor variance, still recoverable, but requiring PM attention before the next cycle. This is the band where early intervention prevents escalation.</p>
-        <p>With 108 modules producing outputs, a three-state RAG system collapses too much information. The Yellow state — early warning, minor variance — is particularly important: it surfaces the inflection point where a project is leaving the Green zone but has not yet reached Amber. In a 108-module system, Yellow consensus across multiple categories is a meaningful signal that warrants PM attention before the next reporting cycle, not after.</p>
+        <p>With 103 modules producing outputs, a three-state RAG system collapses too much information. The Yellow state — early warning, minor variance — is particularly important: it surfaces the inflection point where a project is leaving the Green zone but has not yet reached Amber. In a 103-module system, Yellow consensus across multiple categories is a meaningful signal that warrants PM attention before the next reporting cycle, not after.</p>
 
         <h3>The five-status authority matrix</h3>
         <table class="kn-table">
@@ -649,7 +646,7 @@ Named Human Approval → Audit Record</pre>
     },
     {
       id: "stack",
-      title: "3. The Signal Stack: 12 Categories · 108 Analytical Modules",
+      title: "The Signal Stack: 11 Categories · 103 Analytical Modules",
       eyebrow: "Architecture",
       build: () => `
         <p class="kn-lead">The signal stack splits into five tiers. The first two compute and govern; the next three extend coverage to specialised construction and design risks, then layer multiple evidence-combination and uncertainty-reasoning frameworks across the result.</p>
@@ -1531,8 +1528,6 @@ Named Human Approval → Audit Record</pre>
       children: ["cat10-overview"] },
     { category: "cat11", num: "Cat 11", name: "Decision Optimization",
       children: ["cat11-overview"] },
-    { category: "cat12", num: "Cat 12", name: "Systems Engineering",
-      children: ["cat12-overview"] },
     { id: "fairness" },
     { id: "decision" }
   ];
@@ -1582,7 +1577,7 @@ Named Human Approval → Audit Record</pre>
     return `<p class="kn-sub">${CAT8_OVERVIEW}</p><p class="kn-lead">${t.body}</p>`;
   }
 
-  // Cat 10 / 11 / 12 — category-level articles. Individual modules are not
+  // Cat 10 / 11 — category-level articles. Individual modules are not
   // (yet) carved into per-method articles; the overview surfaces the entire
   // category's purpose, module list, and PM reading instructions.
   const CAT_OVERVIEW_TOPICS = {
@@ -1617,20 +1612,6 @@ Named Human Approval → Audit Record</pre>
         ["11.7 Regret Minimization Index", "Applies minimax regret theory to the PM's decision under uncertainty. Given three possible futures (improvement, stability, deterioration) and three possible decisions (monitor, investigate, escalate), which decision minimizes the worst-case regret? This is the most theoretically grounded decision-theoretic module in PCEIF."]
       ],
       pmReading: "Cat 11 is read AFTER Cat 6 and Cat 7 — it does not replace the conservative-dominance classification or the evidence-combination cross-check, it operationalises them. The PM reads Cat 6/7 to understand the state, then reads Cat 11 to choose the action."
-    },
-    "cat12-overview": {
-      id: "cat12-overview",
-      title: "Cat 12 — Systems Engineering (Conditional)",
-      eyebrow: "Cat 12 · interface complexity & traceability",
-      body: "EVM measures cost and schedule performance against a baseline. It does not measure how complex the interfaces between project components are, how many dependencies could cascade into failures, or how well requirements are being traced through design and construction. A project can be on time and budget while accumulating integration risk that will surface as expensive rework in the final 20% of delivery — long after EVM would have flagged it.",
-      modules: [
-        ["12.1 Interface Density Index", "Measures the ratio of interfaces to components. High interface density means more coordination overhead, more opportunities for specification conflicts, and higher integration risk. Activates when interface control documents are uploaded."],
-        ["12.2 Dependency Mapping Score", "Maps critical dependencies between work packages. A high dependency count with few mitigation plans signals integration risk. Activates when system architecture documents are available."],
-        ["12.3 Requirements Traceability Coverage", "Measures what percentage of documented requirements have been verified through design and construction. Low traceability coverage in late project phases is a strong predictor of commissioning failures."],
-        ["12.4 Configuration Change Impact", "Partially derivable from change order data — measures the cumulative impact of configuration changes on the system baseline. A high number of approved changes to the configuration baseline increases integration risk even when individual changes appear minor."],
-        ["12.5 Integration Complexity Index", "Composite measure combining interface density, dependency count, and configuration change impact into a single integration risk score."]
-      ],
-      pmReading: "Upload any of: interface control documents, system architecture diagrams, requirements specifications, or design basis reports. The platform will automatically extract the relevant fields and activate the applicable modules. Until then, Cat 12 renders as a grey conditional band on the spider web — that band is itself a finding: the program's systems-engineering posture is not yet visible to the analytics."
     }
   };
   function catOverviewBody(t) {
@@ -1649,7 +1630,7 @@ Named Human Approval → Audit Record</pre>
     title: "How the Categories Advise the PM",
     eyebrow: "Reading the categories",
     build: () => `
-      <p class="kn-lead">The twelve categories each answer a different governance question. Reading them together tells the PM where to spend attention this reporting cycle.</p>
+      <p class="kn-lead">The eleven categories each answer a different governance question. Reading them together tells the PM where to spend attention this reporting cycle.</p>
       <ul class="kn-list">
         <li><strong>Cat 1 Quantitative EVM</strong> — what is happening NOW (cost / schedule indices).</li>
         <li><strong>Cat 2 Schedule Simulation</strong> — WHEN will problems appear (time-based leading indicators).</li>
@@ -1662,7 +1643,6 @@ Named Human Approval → Audit Record</pre>
         <li><strong>Cat 9 Governance & Compliance</strong> — the named authority, required action, and audit trail.</li>
         <li><strong>Cat 10 Data Integrity</strong> — how trustworthy ARE the inputs. Missing data, stale data, low-reliability sources — Cat 10 surfaces the quality of the signal package the other categories consumed.</li>
         <li><strong>Cat 11 Decision Optimization</strong> — given everything the models found, what is the BEST action under constraints (multi-objective, LP, regret minimization).</li>
-        <li><strong>Cat 12 Systems Engineering</strong> — interface complexity, dependency mapping, requirements traceability. CONDITIONAL — activates when interface / requirements / system architecture docs are uploaded.</li>
       </ul>
       <h3>Five-step PM decision protocol</h3>
       <ol class="kn-list kn-list-num">
@@ -1679,7 +1659,7 @@ Named Human Approval → Audit Record</pre>
         <li><strong>Read Cat 11 (Optimization)</strong> for the recommended decision pathway.</li>
         <li><strong>Record decision</strong> with rationale, authority, and confidence level.</li>
       </ol>
-      <p>The PM reads the categories top-down to GENERATE the picture (with Cat 10 verifying that what was generated stands on solid inputs), then bottom-up (start at Cat 9 / Cat 11) to ACT on it. The decision is whatever Cat 9 records — the rest of the 108-module stack is the evidence supporting that decision.</p>
+      <p>The PM reads the categories top-down to GENERATE the picture (with Cat 10 verifying that what was generated stands on solid inputs), then bottom-up (start at Cat 9 / Cat 11) to ACT on it. The decision is whatever Cat 9 records — the rest of the 103-module stack is the evidence supporting that decision.</p>
     `
   };
 
@@ -1728,7 +1708,7 @@ Named Human Approval → Audit Record</pre>
     }
 
     function categoryGroup(g) {
-      // Cat 8 stage-2 topics and Cat 10/11/12 category overviews render as
+      // Cat 8 stage-2 topics and Cat 10/11 category overviews render as
       // simple flat buttons (no Cat X.Y CAT_LABEL_BY_ID rewriting).
       const childButtons = (g.children || []).map((cid) =>
         (CAT8_TOPICS[cid] || CAT_OVERVIEW_TOPICS[cid]) ? flatNavBtn(cid) : modNavBtn(cid)

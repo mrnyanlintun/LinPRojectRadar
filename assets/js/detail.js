@@ -199,9 +199,9 @@
   }
 
   /* ============================================================
-     108-axis module spider web. One axis per defined module across
-     all 12 categories. Active modules plot at a status radius
-     (healthy = near the rim); inactive / parked / conditional /
+     103-axis module spider web. One axis per defined module across
+     all 11 categories. Active modules plot at a status radius
+     (healthy = near the rim); inactive / parked /
      no-data modules sit on a tiny grey ring just off-centre.
      Category clusters are separated by a small angular gap and
      backed by a faint arc in the category colour.
@@ -250,11 +250,8 @@
     return null;
   }
 
-  // Flatten the 108 modules into axis entries with angles, leaving a one-slot
-  // gap between categories so the clusters read as distinct petals. Cat 12 is
-  // conditional — its modules only resolve to a status when interface /
-  // requirements / system architecture docs are uploaded; otherwise they
-  // render as a grey conditional band the same way parked Cat 8 used to.
+  // Flatten the 103 modules into axis entries with angles, leaving a one-slot
+  // gap between categories so the clusters read as distinct petals.
   function buildModuleAxes(project) {
     const cats = LIN_CATEGORIES;
     const moduleCount = cats.reduce((n, c) => n + c.modules.length, 0);
@@ -272,8 +269,7 @@
       cat.modules.forEach((m) => {
         const angle = -Math.PI / 2 + (Math.PI * 2 * slot) / totalSlots;
         // Parked categories never compute; inactive modules need document data.
-        // Everything else (incl. active Cat 8 ML, conditional Cat 12) resolves
-        // via getModuleStatus — Cat 12 stubs return null until activated.
+        // Everything else (incl. active Cat 8 ML) resolves via getModuleStatus.
         const status = (cat.parked || m.active === false) ? null
           : (window.getModuleStatus ? getModuleStatus(m.method_class, project) : null);
         axes.push({ cat, module: m, angle, status });
@@ -344,7 +340,7 @@
   }
 
   /* ============================================================
-     Ensemble analysis panel — three views of the 108-module output:
+     Ensemble analysis panel — three views of the 103-module output:
        1) per-module scatter across status columns
        2) ensemble distribution bar (count per status + trend line)
        3) consensus stacked bar (single proportional bar)
@@ -380,7 +376,7 @@
       <div class="sw-head">
         <div>
           <p class="eyebrow">Ensemble Scatter — ${activeTotal} active modules (${totalModules} total)</p>
-          <p class="kn-sub sw-vs">108 modules in 3D · X = category · Y = status severity · drag to rotate</p>
+          <p class="kn-sub sw-vs">${totalModules} modules in 3D · X = category · Y = status severity · drag to rotate</p>
         </div>
       </div>
       <div class="chart3d-controls">
@@ -584,7 +580,7 @@
     // Reuse the shared renderers, scoped to this page's containers.
     LinApp.renderLedger(p, root.querySelector(".detail-ledger"));
     LinApp.renderDecisionCard(p, root.querySelector(".detail-decision"));
-    // 2D per-project signal network — flat node-link of the 12 categories,
+    // 2D per-project signal network — flat node-link of the 11 categories,
     // coloured by this project's computed category statuses (zoom + pan, no rotate).
     if (window.LinProjectNet2D) LinProjectNet2D.render(root.querySelector(".detail-projnet2d"), p);
     // Document ingestion lives on the Manage Projects page only; the detail page
@@ -1500,11 +1496,13 @@
     const GRID_Y = 120;
 
     const scatterData = [];
+    // Centre the category columns on the X axis whatever the category count.
+    const CAT_MID = (LIN_CATEGORIES.length - 1) / 2;
     let idx = 0;
     LIN_CATEGORIES.forEach((cat, catIdx) => {
       cat.modules.forEach((m) => {
         idx++;
-        const active = !(cat.parked || cat.conditional || m.active === false);
+        const active = !(cat.parked || m.active === false);
         const status = active && window.getModuleStatus ? getModuleStatus(m.method_class, project) : null;
         const norm = active ? normalizeStatus(status) : null;
         const bucket = norm || "none";
@@ -1513,7 +1511,7 @@
         const zSpread = ((idx*13+7)%60) - 30;
         const xJitter = ((idx*7+3)%40) - 20;
         scatterData.push({
-          x: (catIdx-5.5)*55 + xJitter,
+          x: (catIdx-CAT_MID)*55 + xJitter,
           y: SY[statusKey] + (((idx*11)%20) - 10),
           z: zSpread,
           num: m.num, name: m.name, bucket, evidence, color: cat.color, catId: cat.id, catIdx
@@ -1560,7 +1558,7 @@
 
       // Fix 6: X axis labels — 10px, "Cat N", category color, centered
       LIN_CATEGORIES.forEach((cat,i)=>{
-        const p=rxf(ryf({x:(i-5.5)*55,y:GRID_Y+14,z:0},rotY),rotX), pp=proj(p);
+        const p=rxf(ryf({x:(i-CAT_MID)*55,y:GRID_Y+14,z:0},rotY),rotX), pp=proj(p);
         ctx.font="10px SFMono-Regular,ui-monospace,monospace";
         ctx.fillStyle=cat.color||"#64748b";
         ctx.globalAlpha=filteredCats.size===0||filteredCats.has(cat.id)?0.9:0.25;
@@ -1595,7 +1593,7 @@
       });
 
       ctx.font="10px SFMono-Regular,ui-monospace,monospace";ctx.fillStyle="#64748b";
-      ctx.fillText("108-MODULE ENSEMBLE SCATTER",14,22);
+      ctx.fillText(scatterData.length+"-MODULE ENSEMBLE SCATTER",14,22);
       ctx.font="12px -apple-system,sans-serif";ctx.fillStyle="#9fb0cc";
       ctx.fillText(activeTotal+" active · "+counts.Red+" Red · "+counts.Amber+" Amber · "+counts.Green+" Green",14,40);
 

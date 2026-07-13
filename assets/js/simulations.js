@@ -990,8 +990,8 @@
   }
 
   /* ===========================================================
-     Stage-2 full-108 module calculations (108 = 89 baseline + Cat
-     10/11/12 from the v3 module-set bump in signals.js).
+     Stage-2 full-103 module calculations (103 = 89 baseline + Cat
+     10/11 from the module-set bumps in signals.js).
      ------------------------------------------------------------
      These run from the project's signalInputs (si) directly —
      cpi / spi / docRiskScore plus any extracted document data.
@@ -2763,71 +2763,6 @@
   }
 
   /* ===========================================================
-     Cat 12 — Systems Engineering (conditional)
-     ---------------------------------------------------------
-     Activates when interface control / requirements / system
-     architecture documents are uploaded. Until then the modules
-     return a null-status conditional stub so the spider web
-     renders them as a grey band and the ensemble panel excludes
-     them from the active count.
-     =========================================================== */
-
-  function conditionalSE(methodClass, msg) {
-    return {
-      method_class: methodClass, status_color: null, conditional: true,
-      evidence_metric: msg
-    };
-  }
-
-  function runInterfaceDensity(si) {
-    if (si.interfaceCount === null || si.interfaceCount === undefined)
-      return conditionalSE('Interface_Density',
-        'Requires interface control documents — upload ICD or system architecture docs to activate');
-    var density = si.interfaceCount / Math.max(1, si.totalComponents || 10);
-    var status = density <= 0.3 ? 'Green' :
-                 density <= 0.6 ? 'Yellow' :
-                 density <= 1.0 ? 'Amber' : 'Red';
-    return {
-      method_class: 'Interface_Density', status_color: status,
-      density: Math.round(density * 100) / 100,
-      evidence_metric: 'Interface density: ' + (Math.round(density * 100) / 100) + ' interfaces per component'
-    };
-  }
-
-  function runDependencyMapping(si) {
-    return conditionalSE('Dependency_Mapping',
-      'Requires dependency mapping document — upload system architecture to activate');
-  }
-
-  function runRequirementsTraceability(si) {
-    return conditionalSE('Requirements_Traceability',
-      'Requires requirements specification — upload requirements document to activate');
-  }
-
-  function runConfigChangeImpact(si) {
-    if (si.changeOrderCount !== null && si.changeOrderCount !== undefined && si.changeOrderCount > 0) {
-      var impact = Math.min(1, si.changeOrderCount / 10);
-      var status = impact <= 0.2 ? 'Green' :
-                   impact <= 0.5 ? 'Yellow' :
-                   impact <= 0.8 ? 'Amber' : 'Red';
-      return {
-        method_class: 'Config_Change_Impact', status_color: status,
-        change_order_count: si.changeOrderCount,
-        impact_score: Math.round(impact * 100) / 100,
-        evidence_metric: si.changeOrderCount + ' change orders — configuration impact score ' +
-          Math.round(impact * 100) + '%'
-      };
-    }
-    return conditionalSE('Config_Change_Impact',
-      'Requires configuration items document — partially derivable from change orders');
-  }
-
-  function runIntegrationComplexity(si) {
-    return conditionalSE('Integration_Complexity',
-      'Requires interface and dependency documents to activate');
-  }
-
-  /* ===========================================================
      runAll — runs the original 13 client-side models PLUS every
      new active Stage-2 module. DST (Module 10) still runs
      separately in signals.js after the core package is assembled.
@@ -2837,9 +2772,6 @@
      Modules that lack their required inputs return an
      insufficient_data stub; those are filtered out here so the
      spider / ensemble only count modules that actually computed.
-     Cat 12 conditional modules return status_color:null and are
-     kept in the array (passed through the filter) so the spider
-     web can render them as a greyed-out conditional band.
      =========================================================== */
   function runAll(input, existingSignals, project) {
     var si = (input && input.signalInputs) ? input.signalInputs : (input || {});
@@ -2931,17 +2863,7 @@
       function () { return runWhatIfMatrix(si); },
       function () { return runDecisionSensitivity(si); },
       function () { return runParetoFrontier(si); },
-      function () { return runRegretMinimization(si); },
-
-      // Cat 12 — Systems Engineering (conditional). These return either a
-      // computed status or a conditional stub (status_color === null with
-      // conditional:true) that survives the filter below so the spider can
-      // render a "needs more docs" band.
-      function () { return runInterfaceDensity(si); },
-      function () { return runDependencyMapping(si); },
-      function () { return runRequirementsTraceability(si); },
-      function () { return runConfigChangeImpact(si); },
-      function () { return runIntegrationComplexity(si); }
+      function () { return runRegretMinimization(si); }
     ];
 
     var results = [];
@@ -2955,9 +2877,7 @@
     return results.filter(function (r) {
       if (!r) return false;
       if (r.insufficient_data) return false;
-      // Cat 12 conditional stubs are kept (status_color === null + conditional)
-      // so consumers can render them as a distinct grey band.
-      if (r.status_color === null && !r.conditional) return false;
+      if (r.status_color === null) return false;
       return true;
     });
   }
@@ -2970,7 +2890,7 @@
     runPERT, runLOB, runCCPM, runRCF, runDSM,
     runDST, runRoughSets, runNeutrosophic, runIntervalFuzzy,
     runZNumbers, runPLTS, runPlithogenic, runBRB, runQuantumProbability,
-    // Stage-2 modules (full 108-module rollout)
+    // Stage-2 modules (full 103-module rollout)
     runBayesianEAC, runKalmanFilter, runARIMAForecast, runEarnedSchedule,
     runTCPI, runVAC, runBudgetExecutionRate, runRegressionToMean, runICERatio,
     runScheduleCompression, runFloatConsumption, runSCurveDeviation,
@@ -2996,9 +2916,6 @@
     // Cat 11 — Decision Optimization
     runMultiObjectiveOptimization, runLinearProgramming, runConstraintSatisfaction,
     runWhatIfMatrix, runDecisionSensitivity, runParetoFrontier, runRegretMinimization,
-    // Cat 12 — Systems Engineering (conditional)
-    runInterfaceDensity, runDependencyMapping, runRequirementsTraceability,
-    runConfigChangeImpact, runIntegrationComplexity,
     sampleTriangular
   };
 })();
