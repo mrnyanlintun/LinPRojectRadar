@@ -379,25 +379,15 @@
       <p>Each project is a blip on the scope. Distance from center is drift from baseline; angle is delivery sector. Select a project to see its signal ledger, the signal-conflict classification, and the PCEIF governance decision, with explicit authority, documentation, and a contractor fairness gate where required.</p>
     </section>
 
-    <!-- RADAR (full-width, the focus of the Portfolio page) -->
+    <!-- RADAR (full-width rectangular stage; buildRadar() sets the viewBox
+         and draws the in-stage status legend + threshold columns) -->
     <section class="panel radar-panel radar-panel-wide" aria-label="Project radar scope">
+      <p class="radar-note">Radial distance indicates drift from baseline — projects near the center are performing to plan. Angular sectors group projects by delivery type: Design, Construction, and Hybrid. Select any project marker, or the corresponding row in the list below, to open its detail view.</p>
       <div class="radar-wrap">
-        <svg id="radar-svg" viewBox="-50 -50 500 500" role="img"
-             aria-label="Radar scope. Projects plotted by health and delivery sector. A keyboard-accessible list of the same projects is provided below.">
+        <svg id="radar-svg" viewBox="0 0 1200 460" preserveAspectRatio="xMidYMid meet" role="img"
+             aria-label="Radar scope. Radial distance indicates drift from baseline; angular sectors group projects by delivery type (Design, Construction, Hybrid); marker color indicates status. Selecting a project marker opens its detail view; the project list below is an equivalent keyboard control path.">
         </svg>
       </div>
-      <div class="radar-legend">
-        <div class="lg-group">
-          <span class="lg-title">Status</span>
-          <span><i class="lg-complete"></i> Complete</span>
-          <span><i class="lg-green"></i> Green</span>
-          <span><i class="lg-yellow"></i> Yellow</span>
-          <span><i class="lg-amber"></i> Amber</span>
-          <span><i class="lg-red"></i> Red</span>
-        </div>
-
-      </div>
-      <p class="radar-note">Center = on baseline · outer rim = high drift. Sectors: Design / Construction / Hybrid delivery. Select a blip (or a list row below) to open its Project Detail; the list is an equivalent keyboard control path.</p>
 
       <div class="fallback">
         <h3 id="list-heading">Projects (list view)</h3>

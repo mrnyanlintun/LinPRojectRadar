@@ -46,7 +46,13 @@
   };
 
   const SVG_NS = "http://www.w3.org/2000/svg";
-  const CENTER = 200;          // viewBox is 400x400
+  // Rectangular stage: the SVG spans the full panel width with a wide viewBox
+  // (1200×460); the circular scope keeps its fixed geometry, centered, and the
+  // side columns (status legend / ring thresholds) absorb the flexible width.
+  // Below ~800px panel width buildRadar() switches to a narrow stacked viewBox.
+  // The scope center is therefore mutable — set per build, read by polar().
+  let CENTER_X = 600;          // wide stage scope center
+  let CENTER_Y = 230;
   const R_MIN = 0.08 * 180;    // inner radius (health 100)
   const R_MAX = 0.92 * 180;    // outer radius (health 0)
 
@@ -119,7 +125,86 @@
 
   function polar(angleDeg, radius) {
     const a = (angleDeg * Math.PI) / 180;
-    return { x: CENTER + radius * Math.cos(a), y: CENTER + radius * Math.sin(a) };
+    return { x: CENTER_X + radius * Math.cos(a), y: CENTER_Y + radius * Math.sin(a) };
+  }
+
+  /* ---------- rectangular-stage side columns ----------
+     LEFT of the scope: a vertical status legend (dot + name + count per
+     status). RIGHT: the ring-meaning labels ("On track / Watch / Escalate")
+     moved off the scope face, with faint dashed leader ticks back to their
+     rings. Both in mono 11px. In narrow (stacked) mode both columns render
+     beneath the scope and the leaders are omitted. */
+  function buildStageColumns(svg, narrow, VW, VH, thresholdRings) {
+    const mono = { "font-family": "var(--font-mono, monospace)", "font-size": "11", fill: "var(--muted)" };
+
+    // status counts from the live portfolio
+    const counts = { complete: 0, green: 0, yellow: 0, amber: 0, red: 0, empty: 0 };
+    LIN_PROJECTS.forEach((p) => {
+      try { const k = statusKey(p); counts[k in counts ? k : "empty"]++; } catch (e) { counts.empty++; }
+    });
+    const LEGEND_ROWS = [
+      ["Complete", STATUS_COLOR.complete, counts.complete],
+      ["Green",    STATUS_COLOR.green,    counts.green],
+      ["Yellow",   STATUS_COLOR.yellow,   counts.yellow],
+      ["Amber",    STATUS_COLOR.amber,    counts.amber],
+      ["Red",      STATUS_COLOR.red,      counts.red],
+      ["Awaiting", "var(--muted)",        counts.empty],
+    ];
+
+    function textEl(x, y, str, attrs) {
+      const t = el("text", Object.assign({ x, y, "dominant-baseline": "middle" }, mono, attrs || {}));
+      t.textContent = str;
+      return t;
+    }
+
+    // ── left column: STATUS legend ──
+    const legX = narrow ? 46 : 46;
+    let legY = narrow ? VH - 190 : 128;
+    const leg = el("g", { class: "scope-col scope-col-status" });
+    leg.appendChild(textEl(legX, legY, "STATUS", { fill: "var(--faint)", "letter-spacing": "0.2em", "font-size": "10" }));
+    legY += 22;
+    LEGEND_ROWS.forEach(([name, color, n]) => {
+      leg.appendChild(el("circle", { cx: legX + 5, cy: legY, r: 4, fill: color, opacity: name === "Awaiting" ? "0.5" : "0.9" }));
+      leg.appendChild(textEl(legX + 16, legY + 0.5, name));
+      leg.appendChild(textEl(legX + 92, legY + 0.5, String(n), { fill: "var(--text)" }));
+      legY += 24;
+    });
+    svg.appendChild(leg);
+
+    // ── right column: ring thresholds ──
+    const col = el("g", { class: "scope-col scope-col-rings" });
+    if (narrow) {
+      let ty = VH - 190;
+      col.appendChild(textEl(250, ty, "RINGS", { fill: "var(--faint)", "letter-spacing": "0.2em", "font-size": "10" }));
+      ty += 22;
+      thresholdRings.forEach(({ stroke, label }, i) => {
+        col.appendChild(el("line", { x1: 250, y1: ty, x2: 262, y2: ty, stroke, "stroke-width": "2" }));
+        col.appendChild(textEl(268, ty + 0.5, label + (i === 0 ? " (inner)" : i === 1 ? " (middle)" : " (outer)")));
+        ty += 24;
+      });
+    } else {
+      const colX = 1000;
+      col.appendChild(textEl(colX, 128, "RINGS", { fill: "var(--faint)", "letter-spacing": "0.2em", "font-size": "10" }));
+      // one label row per ring, each with a faint dashed leader tick back to
+      // the ring it names (staggered exit angles keep the leaders apart)
+      const rows = [
+        { i: 0, angle: -24, y: 168 },
+        { i: 1, angle: -8,  y: 210 },
+        { i: 2, angle: 8,   y: 252 },
+      ];
+      rows.forEach(({ i, angle, y }) => {
+        const ring = thresholdRings[i];
+        const pt = polar(angle, R_MAX * ring.frac);
+        col.appendChild(el("path", {
+          d: `M ${pt.x.toFixed(1)} ${pt.y.toFixed(1)} L ${colX - 32} ${y} L ${colX - 10} ${y}`,
+          fill: "none", stroke: ring.stroke, "stroke-width": "1",
+          "stroke-dasharray": "3 4", opacity: "0.35"
+        }));
+        col.appendChild(el("circle", { cx: colX + 1, cy: y, r: 3.5, fill: ring.stroke, opacity: "0.9" }));
+        col.appendChild(textEl(colX + 12, y + 0.5, ring.label));
+      });
+    }
+    svg.appendChild(col);
   }
 
   /* ---------- radar scope ---------- */
@@ -134,28 +219,58 @@
 
     const R = R_MAX; // 165.6 — outer edge
 
-    // ── defs: sweep-trail gradient ───────────────────────────────────────
+    // ── rectangular stage geometry ────────────────────────────────────────
+    // Wide stage: 1200×460, scope centered, status legend left / threshold
+    // labels right. Narrow (<800px panel): 460×680, side columns stack below.
+    const wrap = svg.parentElement;
+    const panelW = (wrap && wrap.clientWidth) || window.innerWidth;
+    const narrow = panelW < 800;
+    const VW = narrow ? 460 : 1200;
+    const VH = narrow ? 680 : 460;
+    CENTER_X = narrow ? 230 : 600;
+    CENTER_Y = 230;
+    svg.setAttribute("viewBox", `0 0 ${VW} ${VH}`);
+    svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    if (wrap) wrap.style.aspectRatio = `${VW} / ${VH}`;
+
+    // ── defs: sweep-trail gradient + the ONE shared blip marker ──────────
     const defs = el("defs");
     const trailGrad = el("radialGradient", {
       id: "sweep-trail-grad", gradientUnits: "userSpaceOnUse",
-      cx: CENTER, cy: CENTER, r: R
+      cx: CENTER_X, cy: CENTER_Y, r: R
     });
     const tg1 = el("stop"); tg1.setAttribute("offset", "0%"); tg1.setAttribute("stop-color", "var(--phosphor)"); tg1.setAttribute("stop-opacity", "0");
     const tg2 = el("stop"); tg2.setAttribute("offset", "100%"); tg2.setAttribute("stop-color", "var(--phosphor)"); tg2.setAttribute("stop-opacity", "0.4");
     trailGrad.appendChild(tg1); trailGrad.appendChild(tg2);
     defs.appendChild(trailGrad);
+    // Uniform building marker — a single minimal geometric glyph (pitched
+    // roof + body) every blip references via <use>. Status is the only thing
+    // that varies (fill color); sector is already encoded by the angular
+    // wedge, so it needs no icon of its own.
+    const buildingSym = el("symbol", { id: "blip-building", viewBox: "0 0 24 24" });
+    buildingSym.appendChild(el("path", {
+      d: "M12 3 L21 11 H18 V21 H6 V11 H3 Z",
+      fill: "currentColor"
+    }));
+    defs.appendChild(buildingSym);
     svg.appendChild(defs);
+
+    // ── full-stage panel background (one rectangular instrument screen) ───
+    // page-bg underlay + surface wash (the surface var is translucent), same
+    // treatment as the Signal Flow chart, so nothing bleeds through.
+    svg.appendChild(el("rect", { x: 0, y: 0, width: VW, height: VH, fill: "var(--page-bg, #06080f)" }));
+    svg.appendChild(el("rect", { x: 0, y: 0, width: VW, height: VH, fill: "var(--surface, #0b0e17)" }));
 
     // ── scope background (dark CRT surface, no colored zone bands) ───────
     svg.appendChild(el("circle", {
-      cx: CENTER, cy: CENTER, r: R,
+      cx: CENTER_X, cy: CENTER_Y, r: R,
       fill: "rgba(0,8,18,0.92)"
     }));
 
     // ── 4 faint concentric range rings ───────────────────────────────────
     for (let i = 1; i <= 4; i++) {
       svg.appendChild(el("circle", {
-        cx: CENTER, cy: CENTER, r: R * i / 4,
+        cx: CENTER_X, cy: CENTER_Y, r: R * i / 4,
         fill: "none",
         stroke: "rgba(96,210,232,0.12)",
         "stroke-width": "0.5"
@@ -164,49 +279,42 @@
 
     // ── outer solid ring ─────────────────────────────────────────────────
     svg.appendChild(el("circle", {
-      cx: CENTER, cy: CENTER, r: R,
+      cx: CENTER_X, cy: CENTER_Y, r: R,
       fill: "none",
       stroke: "rgba(96,210,232,0.35)",
       "stroke-width": "1.2"
     }));
 
     // ── threshold rings: Green / Amber / Red ─────────────────────────────
+    // The ring-meaning labels live OFF the scope face, in the right-hand
+    // threshold column (drawn below), keeping the scope itself clean.
     const THRESHOLD_RINGS = [
       { frac: 0.33, stroke: "#3fcaa6", label: "On track" },
       { frac: 0.66, stroke: "#e2b13c", label: "Watch"    },
       { frac: 0.90, stroke: "#e0556b", label: "Escalate" },
     ];
-    THRESHOLD_RINGS.forEach(({ frac, stroke, label }) => {
-      const rr = R * frac;
+    THRESHOLD_RINGS.forEach(({ frac, stroke }) => {
       svg.appendChild(el("circle", {
-        cx: CENTER, cy: CENTER, r: rr,
+        cx: CENTER_X, cy: CENTER_Y, r: R * frac,
         fill: "none",
         stroke,
         "stroke-opacity": "0.4",
         "stroke-width": "1"
       }));
-      const t = el("text", {
-        x: CENTER + rr + 4, y: CENTER,
-        "text-anchor": "start",
-        "font-size": "8",
-        fill: stroke,
-        opacity: "0.65",
-        "dominant-baseline": "middle",
-        class: "scope-deg-label"
-      });
-      t.textContent = label;
-      svg.appendChild(t);
     });
 
     // ── 12 radial lines every 30° ─────────────────────────────────────────
     for (let deg = 0; deg < 360; deg += 30) {
       const tip = polar(deg, R);
       svg.appendChild(el("line", {
-        x1: CENTER, y1: CENTER, x2: tip.x, y2: tip.y,
+        x1: CENTER_X, y1: CENTER_Y, x2: tip.x, y2: tip.y,
         stroke: "rgba(96,210,232,0.08)",
         "stroke-width": "0.5"
       }));
     }
+
+    // ── side columns: status legend (left) + ring thresholds (right) ─────
+    buildStageColumns(svg, narrow, VW, VH, THRESHOLD_RINGS);
 
     // ── degree markings just inside outer ring ───────────────────────────
     for (let deg = 0; deg < 360; deg += 30) {
@@ -227,26 +335,26 @@
       const sweepG = el("g");
 
       // 60° trailing phosphor wedge: from –60° to 0° (both in SVG screen-polar)
-      const tipA = polar(0, R);   // East  (365.6, 200)
-      const tipB = polar(-60, R); // NE    (282.8,  56.5)
+      const tipA = polar(0, R);   // East
+      const tipB = polar(-60, R); // NE
       sweepG.appendChild(el("path", {
-        d: `M ${CENTER} ${CENTER} L ${tipA.x.toFixed(1)} ${tipA.y.toFixed(1)} A ${R.toFixed(1)} ${R.toFixed(1)} 0 0 0 ${tipB.x.toFixed(1)} ${tipB.y.toFixed(1)} Z`,
+        d: `M ${CENTER_X} ${CENTER_Y} L ${tipA.x.toFixed(1)} ${tipA.y.toFixed(1)} A ${R.toFixed(1)} ${R.toFixed(1)} 0 0 0 ${tipB.x.toFixed(1)} ${tipB.y.toFixed(1)} Z`,
         fill: "url(#sweep-trail-grad)"
       }));
 
       // sweep line: from center (cx,cy) to outer edge at 0° (East)
       sweepG.appendChild(el("line", {
-        x1: CENTER, y1: CENTER,
+        x1: CENTER_X, y1: CENTER_Y,
         x2: tipA.x.toFixed(1), y2: tipA.y.toFixed(1),
         stroke: "var(--phosphor)", "stroke-width": "1.5", opacity: "0.9"
       }));
 
-      // SMIL rotation — pivot explicitly at (CENTER, CENTER) in user coords
+      // SMIL rotation — pivot explicitly at (CENTER_X, CENTER_Y) in user coords
       const anim = document.createElementNS(SVG_NS, "animateTransform");
       anim.setAttribute("attributeName", "transform");
       anim.setAttribute("type", "rotate");
-      anim.setAttribute("from", `0 ${CENTER} ${CENTER}`);
-      anim.setAttribute("to", `360 ${CENTER} ${CENTER}`);
+      anim.setAttribute("from", `0 ${CENTER_X} ${CENTER_Y}`);
+      anim.setAttribute("to", `360 ${CENTER_X} ${CENTER_Y}`);
       anim.setAttribute("dur", "4s");
       anim.setAttribute("repeatCount", "indefinite");
       sweepG.appendChild(anim);
@@ -272,25 +380,31 @@
     // sector reading stays correct) and push it outward in radius until it
     // clears every already-placed blip by MIN_SEP. The true radius is kept on
     // q.trueR so a faint tick can show the original drift when nudged far.
-    const MIN_SEP = 34;               // ~2.2× the icon radius (ICON = 16)
+    const MIN_SEP = 34;               // ~2.4× the icon radius (ICON = 14)
     const RADIUS_CAP = R_MAX - 2;     // hard cap at outer ring edge
     const placedDots = [];
     plots.forEach((q) => {
       q.trueR = q.r;
-      let r = q.r, pos = polar(q.ang, r), tries = 0;
+      let r = q.r, ang = q.ang, pos = polar(ang, r), tries = 0;
       while (placedDots.some((d) => Math.hypot(d.x - pos.x, d.y - pos.y) < MIN_SEP) && tries < 12) {
         tries++;
         r = Math.min(RADIUS_CAP, q.trueR + tries * 7);                          // push outward
         const adeg = ((tries % 2) ? 1 : -1) * Math.min(8, Math.ceil(tries / 2) * 3); // small ± within ±8°
-        pos = polar(q.ang + adeg, r);
+        ang = q.ang + adeg;
+        pos = polar(ang, r);
       }
+      // final-assignment clamp (fix/static-blips): no blip may sit outside the
+      // ring, whatever the collision passes did to its radius.
+      r = Math.min(r, R_MAX - 2);
+      pos = polar(ang, r);
       q.x = pos.x; q.y = pos.y; q.r = r;
       placedDots.push({ x: pos.x, y: pos.y });
     });
 
-    // pass 2: label collision avoidance (sorted vertical pass)
-    const LABEL_W = 58, LABEL_H = 11;
-    plots.forEach((q) => { q.lx = q.x + 14; q.ly = q.y + 5; });
+    // pass 2: label collision avoidance — nudge the LABEL only (never the
+    // blip), vertically in ±10px steps, from the uniform (+11, +4) offset.
+    const LABEL_W = 44, LABEL_NUDGE = 10;
+    plots.forEach((q) => { q.lx = q.x + 11; q.ly = q.y + 4; });
     const byY = plots.slice().sort((a, b) => a.ly - b.ly);
     byY.forEach((q, i) => {
       let moved = true, guard = 0;
@@ -298,48 +412,16 @@
         moved = false; guard++;
         for (let j = 0; j < i; j++) {
           const o = byY[j];
-          if (Math.abs(o.lx - q.lx) < LABEL_W && Math.abs(o.ly - q.ly) < LABEL_H) {
-            q.ly = o.ly + LABEL_H; moved = true;
+          if (Math.abs(o.lx - q.lx) < LABEL_W && Math.abs(o.ly - q.ly) < LABEL_NUDGE) {
+            q.ly = o.ly + LABEL_NUDGE; moved = true;
           }
         }
       }
     });
 
-    // Sector-specific blip icons (stroke-based, 24-unit viewBox)
-    // design = compass/dividers, construction = hammer, hybrid = hard hat
-    const SECTOR_ICONS = {
-      design: [
-        // compass pivot circle
-        "M12 4 m-1.2 0 a1.2 1.2 0 1 0 2.4 0 a1.2 1.2 0 1 0 -2.4 0",
-        // left leg: pivot → lower-left foot
-        "M11.1 5 L6 20",
-        // right leg: pivot → lower-right foot
-        "M12.9 5 L18 20",
-        // crossbar connecting the two legs mid-way
-        "M8 14 L16 14"
-      ],
-      construction: [
-        // hammer head (horizontal rectangle)
-        "M3 9 h8 v5 h-8 Z",
-        // handle (vertical, below head center)
-        "M8 14 L8 22"
-      ],
-      hybrid: [
-        // hard-hat brim
-        "M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2z",
-        // crown ridge strap
-        "M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5",
-        // dome arc
-        "M4 15v-3a8 8 0 0 1 16 0v3"
-      ],
-      // legacy alias
-      combined: [
-        "M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2z",
-        "M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5",
-        "M4 15v-3a8 8 0 0 1 16 0v3"
-      ]
-    };
-    const ICON = 16; // display size in SVG user units
+    // ONE uniform marker for every blip — the shared #blip-building symbol
+    // defined in <defs> above. No per-sector glyph branch exists anymore.
+    const ICON = 14; // display size in SVG user units
 
     plots.forEach((q) => {
      try {
@@ -392,33 +474,31 @@
         g.appendChild(pingRing);
       }
 
-      // hard-hat icon: nested <svg> positions it unambiguously in the parent
-      // SVG's coordinate system via x/y/width/height attributes.
-      const iconSvg = el("svg", {
+      // selection ring highlight around the building icon (no shape change) —
+      // visible only via CSS on .selected / .hot / :focus-visible.
+      g.appendChild(el("circle", {
+        cx: q.x, cy: q.y, r: ICON / 2 + 5,
+        fill: "none", stroke: "var(--phosphor)", "stroke-width": "1.5",
+        class: "blip-ring", opacity: "0"
+      }));
+
+      // the ONE uniform building marker, colored only by status
+      const icon = el("use", {
+        href: "#blip-building",
         x: (q.x - ICON / 2).toFixed(1),
         y: (q.y - ICON / 2).toFixed(1),
         width: ICON, height: ICON,
-        viewBox: "0 0 24 24",
-        overflow: "visible",
-        class: "blip-icon"
+        class: "blip-icon",
+        opacity: empty ? "0.55" : "1"
       });
-      const iconG = el("g", {
-        fill: "none", stroke: color,
-        "stroke-linecap": "round", "stroke-linejoin": "round",
-        "stroke-width": "2",
-        opacity: empty ? "0.45" : "1"
-      });
-      if (empty) iconG.setAttribute("stroke-dasharray", "2 2");
-      const sector = (p.sector || "hybrid").toLowerCase();
-      const iconPaths = SECTOR_ICONS[sector] || SECTOR_ICONS.hybrid;
-      iconPaths.forEach((d) => iconG.appendChild(el("path", { d })));
-      iconSvg.appendChild(iconG);
-      g.appendChild(iconSvg);
+      icon.style.color = color;                       // symbol path uses currentColor
+      icon.style.filter = `drop-shadow(0 0 4px ${color})`;  // glow, matches status
+      g.appendChild(icon);
 
       // leader line when the label was nudged away from its natural spot
-      if (Math.abs(q.ly - (q.y + 5)) > 5) {
+      if (Math.abs(q.ly - (q.y + 4)) > 5) {
         g.appendChild(el("line", {
-          x1: q.x + 9, y1: q.y, x2: q.lx - 2, y2: q.ly - 3,
+          x1: q.x + 8, y1: q.y, x2: q.lx - 2, y2: q.ly - 3,
           class: "blip-leader"
         }));
       }
@@ -1372,6 +1452,21 @@
 
     // rebuild radar geometry on resize-driven motion-pref changes
     window.matchMedia("(prefers-reduced-motion: reduce)").addEventListener?.("change", buildRadar);
+    // rebuild when the panel crosses the wide↔narrow stage breakpoint so the
+    // side columns restack (debounced; cheap no-op when the mode is unchanged)
+    let lastNarrow = null, resizeTimer = null;
+    const checkStageMode = () => {
+      const wrap = document.querySelector(".radar-wrap");
+      const w = (wrap && wrap.clientWidth) || window.innerWidth;
+      const narrow = w < 800;
+      if (lastNarrow === null) { lastNarrow = narrow; return; }
+      if (narrow !== lastNarrow) { lastNarrow = narrow; buildRadar(); }
+    };
+    checkStageMode();
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(checkStageMode, 200);
+    }, { passive: true });
   }
 
   // Auth gate (Stage 1): only initialise the app for an authenticated,

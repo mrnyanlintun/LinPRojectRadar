@@ -43,6 +43,9 @@
   --sector-construction: #1d4ed8;
   --sector-hybrid: #c026d3;
 
+  /* blip number labels sit on the fixed dark scope face — always light */
+  --scope-label: #a9b6c9;
+
   --zone-green: rgba(22,163,74,.34);
   --zone-amber: rgba(245,158,11,.36);
   --zone-red: rgba(239,68,68,.34);
@@ -82,6 +85,8 @@ body[data-theme="dark"] {
   --sector-design: #ffffff;
   --sector-construction: #4aa3ff;
   --sector-hybrid: #ff5cc8;
+
+  --scope-label: #9aa3b8;
 
   /* bright, saturated status bands so blips read clearly on dark */
   --zone-green: rgba(47,224,143,.20);
@@ -251,37 +256,36 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 
 /* ---------- radar ---------- */
 .radar-panel { display: flex; flex-direction: column; gap: 14px; }
-.radar-wrap { position: relative; width: 100%; aspect-ratio: 1 / 1; }
+/* Rectangular radar stage: the SVG spans the panel width; buildRadar() sets
+   the viewBox + wrap aspect-ratio per mode (wide 1200×460 / narrow stacked). */
+.radar-wrap { position: relative; width: 100%; aspect-ratio: 1200 / 460; }
 #radar-svg { width: 100%; height: 100%; display: block; }
 
 .blip { cursor: pointer; }
 .blip:focus-visible { outline: none; }
-.blip:focus-visible .blip-ring { opacity: 1 !important; }
-/* unselected labels: small + low contrast so the scope reads cleanly */
+/* ONE uniform number label: mono 11px regular — no italics, no bold, no
+   size jump. The scope face is a fixed dark CRT surface in every theme, so
+   the label color comes from a per-theme --scope-label var (set in the theme
+   blocks) rather than the page text vars. */
 .blip-label {
-  font-family: var(--font-mono); font-size: 8px; fill: var(--faint);
-  transition: font-size .12s ease;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 400;
+  font-style: normal; fill: var(--scope-label, #a9b6c9);
 }
-/* hover/focus/selected: enlarge + full contrast (element is re-appended
-   to the SVG end in JS so it paints above its neighbors — no clipping) */
+/* hover/focus/selected: brighter fill only (element is re-appended to the
+   SVG end in JS so it paints above its neighbors — no clipping) */
 .blip.hot .blip-label,
-.blip.selected .blip-label { font-size: 11.5px; fill: var(--text); font-weight: 700; }
+.blip.selected .blip-label { fill: #eef1f7; }
+/* selection = ring highlight around the building marker (no shape change) */
+.blip-ring { transition: opacity .15s ease; }
+.blip.hot .blip-ring,
+.blip.selected .blip-ring,
+.blip:focus-visible .blip-ring { opacity: 1 !important; }
 .blip-leader { stroke: var(--ring-line); stroke-width: 1; }
 .blip.hot .blip-leader,
 .blip.selected .blip-leader { stroke: var(--phosphor); }
-.blip-dot { transition: r .15s ease; }
-.blip:hover .blip-dot { r: 8; }
 
-
-.radar-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
-.radar-legend span { display: inline-flex; align-items: center; gap: 6px; }
-.radar-legend i { width: 9px; height: 9px; border-radius: 50%; }
-.lg-green { background: var(--clear-green); }
-.lg-amber { background: var(--radar-amber); }
-.lg-red { background: var(--alarm-red); }
-.lg-yellow { background: var(--yellow); }
-.lg-blue, .lg-complete { background: var(--blue-status); }
-.radar-note { font-size: 11px; color: var(--faint); margin: 0; line-height: 1.5; }
+/* instrument caption under the panel header */
+.radar-note { font-family: var(--font-body); font-size: 13px; color: var(--muted); margin: 0 0 14px; line-height: 1.6; max-width: 72ch; }
 
 /* fallback list */
 .fallback h3 { font-family: var(--font-display); font-size: 13px; margin: 18px 0 8px; color: var(--muted); font-weight: 700; }
@@ -781,13 +785,8 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
   font-family: var(--font-mono); font-size: 7.5px;
   fill: var(--faint); opacity: 0.65;
 }
-/* hard-hat icon hover: scale up around its center */
-.blip.hot .blip-icon,
-.blip.selected .blip-icon {
-  transform-box: fill-box;
-  transform-origin: center;
-  transform: scale(1.45);
-}
+/* marker hover/selection: ring highlight only (see .blip-ring) — the
+   uniform building glyph never changes shape or size */
 @media (prefers-reduced-motion: reduce) {
   .radar-sweep-group { animation: none; }
   .blip-ping-ring    { animation: none; }
@@ -1459,7 +1458,8 @@ body[data-theme="light"] .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 
 /* ---------- full-width radar on Portfolio ---------- */
 .radar-panel-wide { width: 100%; }
-.radar-panel-wide .radar-wrap { max-width: 700px; margin: 0 auto; }
+/* the rectangular stage fills the panel width (side columns absorb the flex) */
+.radar-panel-wide .radar-wrap { max-width: none; margin: 0; }
 .portfolio-below { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; align-items: start; }
 .portfolio-below .log-panel { grid-column: 1 / -1; }
 @media (max-width: 940px) { .portfolio-below { grid-template-columns: 1fr; } }
@@ -2195,6 +2195,8 @@ body[data-theme="newyork"] {
   --sector-design: #7ec8e3;       /* Hudson River blue */
   --sector-construction: #d4af5a;
   --sector-hybrid: #4fa393;
+
+  --scope-label: #c3b995;         /* aged brass on the dark scope face */
 
   --zone-green: rgba(79, 163, 147, .22);
   --zone-amber: rgba(212, 175, 90, .22);
