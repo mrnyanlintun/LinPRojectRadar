@@ -269,6 +269,33 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 
 /* fallback list */
 .fallback h3 { font-family: var(--font-display); font-size: 13px; margin: 18px 0 8px; color: var(--muted); font-weight: 700; }
+/* subtle "refreshing…" tag next to the list heading during background revalidate */
+.list-refreshing {
+  font-family: var(--font-mono, ui-monospace, monospace); font-size: 10px;
+  font-weight: 400; letter-spacing: .04em; color: var(--faint);
+  margin-left: 10px; text-transform: none;
+  animation: list-refreshing-pulse 1.4s ease-in-out infinite;
+}
+@keyframes list-refreshing-pulse { 0%, 100% { opacity: .45; } 50% { opacity: .9; } }
+/* first-load skeleton rows (no cache) — shimmer placeholders */
+.skeleton-row { cursor: default; pointer-events: none; }
+.skeleton-row:hover { border-color: transparent; background: transparent; }
+.sk {
+  display: block; height: 11px; border-radius: 4px;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--muted) 12%, transparent) 25%,
+    color-mix(in srgb, var(--muted) 22%, transparent) 37%,
+    color-mix(in srgb, var(--muted) 12%, transparent) 63%);
+  background-size: 400% 100%;
+  animation: sk-shimmer 1.4s ease-in-out infinite;
+}
+.sk-code { width: 36px; }
+.sk-name { width: 60%; }
+.sk-state { width: 54px; }
+@keyframes sk-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .sk, .list-refreshing { animation: none; }
+}
 .recompute-all-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .recompute-all-btn {
   font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px;
@@ -2022,12 +2049,31 @@ body[data-theme="newyork"] .kn-article .collapse-title { font-family: Georgia, "
 .about-grid {
   display: flex; flex-direction: column; gap: 18px; max-width: 900px;
 }
-.about-section { padding: 24px 28px; }
+/* ============================================================
+   About page — brand typography (matches the Knowledge overhaul):
+   serif/display H1+H2 in cream with gold accents, mono eyebrows,
+   gold hairline panels, 72ch prose measure. Scoped to the about
+   classes and [data-page="about"] so nothing leaks into other pages.
+   ============================================================ */
+.about-section { padding: 28px; border-top: 2px solid rgba(212, 175, 90, .45); }
 .about-h {
-  font-family: var(--font-body); font-size: 17px; font-weight: 700;
-  color: var(--text); margin: 0 0 14px; letter-spacing: 0;
+  font-family: var(--font-display); font-size: clamp(19px, 2vw, 22px); font-weight: 500;
+  color: #efe3c2; margin: 0 0 14px; letter-spacing: .01em;
 }
-.about-section p { font-size: 14px; line-height: 1.7; color: var(--text); margin: 0 0 12px; }
+body[data-theme="light"] .about-h { color: var(--text); }
+/* gold brand initials + step numbers echo the header brand-init treatment */
+[data-page="about"] .intro h1 { font-family: var(--font-display); font-weight: 500; color: #efe3c2; }
+body[data-theme="light"] [data-page="about"] .intro h1 { color: var(--text); }
+.about-init, .about-step-num { color: #d4af5a; }
+body[data-theme="light"] .about-init,
+body[data-theme="light"] .about-step-num { color: #8a6d2f; }
+.about-step-num { font-family: var(--font-mono); font-weight: 700; margin-right: 2px; }
+/* mono eyebrow consistent with app panel headers */
+[data-page="about"] .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .25em; color: var(--muted); }
+/* 72ch reading measure on prose */
+.about-section p, .about-section .about-list { max-width: 72ch; }
+.about-section p { font-size: 15px; line-height: 1.7; color: var(--text); margin: 0 0 12px; }
+.about-section .about-list li { font-size: 15px; line-height: 1.7; }
 .about-section p:last-child { margin-bottom: 0; }
 .about-section strong { color: var(--text); }
 .about-section em { font-style: italic; color: var(--muted); }
@@ -2046,6 +2092,9 @@ body[data-theme="newyork"] .kn-article .collapse-title { font-family: Georgia, "
 .about-list { margin: 10px 0 12px 0; padding-left: 18px; }
 .about-list li { font-size: 14px; line-height: 1.65; color: var(--text); margin-bottom: 6px; }
 .about-list-num { list-style: decimal; }
+/* numbered-step prose (explicit gold numbers, no list markers) */
+.about-steps { list-style: none; padding-left: 0; margin: 12px 0 14px; }
+.about-steps li { margin-bottom: 10px; padding-left: 2px; }
 .about-flow-list { list-style: none; padding-left: 0; }
 .about-flow-list li { padding: 8px 0; border-bottom: 1px solid var(--line); }
 .about-flow-list li:last-child { border-bottom: none; }

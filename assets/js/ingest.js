@@ -186,8 +186,11 @@
     if (!root) return;
 
     const rowFor = (p) => {
-      const populated = hasSignals(p);
-      const state = populated ? deriveHealthState(p) : "Awaiting ingest";
+      // Slim portfolio records carry EVM summary fields; slimStatusLabel resolves
+      // a 5-state label from them (or the backend label). Full records derive it.
+      const slimLabel = (p && p.slim && typeof slimStatusLabel === "function") ? slimStatusLabel(p) : null;
+      const populated = slimLabel ? true : hasSignals(p);
+      const state = slimLabel || (hasSignals(p) ? deriveHealthState(p) : "Awaiting ingest");
       const key = populated ? state.toLowerCase().replace("-review", "") : "empty";
       return `<div class="pr-row">
         <span class="pr-code">${esc(p.id)}</span>

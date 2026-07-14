@@ -86,11 +86,22 @@
      A project with no signals is "awaiting ingest" — never a
      fabricated green/amber/red. Only populated projects get a
      derived state (and only those reach decision.js). */
+  // Slim portfolio records (v10.28 listslim) carry a precomputed `status` string
+  // and no `signals` object, so the radar/list read that field directly. Full
+  // records (fetched on detail open) keep the deriveHealthState path unchanged.
   function statusKey(p) {
+    if (p && p.slim) {
+      const lab = (typeof slimStatusLabel === "function") ? slimStatusLabel(p) : null;
+      return lab ? lab.toLowerCase().replace("-review", "") : "empty";
+    }
     if (!hasSignals(p)) return "empty";
     return deriveHealthState(p).toLowerCase().replace("-review", "");
   }
   function stateLabel(p) {
+    if (p && p.slim) {
+      const lab = (typeof slimStatusLabel === "function") ? slimStatusLabel(p) : null;
+      return lab || "Awaiting ingest";
+    }
     return hasSignals(p) ? deriveHealthState(p) : "Awaiting ingest";
   }
   // health proxy → radius band, so distance still reads as drift:
@@ -453,10 +464,15 @@
         btn.className = "list-item";
         btn.setAttribute("data-id", p.id);
         const state = stateLabel(p);
-        // Colour the status word + the sim pill to the 5-status palette, reusing
-        // the canonical map (no second copy). "Awaiting ingest" rows have no
-        // normalized status → no inline colour → they stay muted via their class.
-        const norm = (hasSignals(p) && typeof normalizeStatusLabel === "function")
+        // Colour the status word to the 5-status palette, reusing the canonical
+        // map (no second copy). "Awaiting ingest" rows have no normalized status
+        // → no inline colour → they stay muted via their class. Slim records
+        // carry a precomputed status string; full records derive it — either
+        // way normalizeStatusLabel maps the label to a palette key.
+        const hasStatus = (p && p.slim)
+          ? (typeof slimStatusLabel === "function" && !!slimStatusLabel(p))
+          : hasSignals(p);
+        const norm = (hasStatus && typeof normalizeStatusLabel === "function")
           ? normalizeStatusLabel(state) : null;
         const col = (norm && typeof PCEIF_STATUS_HEX !== "undefined") ? PCEIF_STATUS_HEX[norm] : null;
         const stateStyle = col ? ` style="color:${col}"` : "";
@@ -490,6 +506,40 @@
         ul.appendChild(li);
       }
     });
+  }
+
+  /* ---------- first-load skeleton + refreshing indicator ----------
+     Cold load with no cache shows three shimmer rows; a cached load paints
+     instantly and shows a subtle mono "refreshing…" next to the list heading
+     while the slim list revalidates in the background. */
+  function renderSkeleton() {
+    const ul = $("#project-list");
+    if (!ul) return;
+    ul.innerHTML = "";
+    for (let i = 0; i < 3; i++) {
+      const li = document.createElement("li");
+      li.className = "list-item skeleton-row";
+      li.setAttribute("aria-hidden", "true");
+      li.innerHTML =
+        `<span class="sk sk-code"></span><span class="sk sk-name"></span><span class="sk sk-state"></span>`;
+      ul.appendChild(li);
+    }
+  }
+  function setListRefreshing(on) {
+    const heading = $("#list-heading");
+    if (!heading) return;
+    let tag = document.getElementById("list-refreshing");
+    if (on) {
+      if (!tag) {
+        tag = document.createElement("span");
+        tag.id = "list-refreshing";
+        tag.className = "list-refreshing";
+        tag.textContent = "refreshing…";
+        heading.appendChild(tag);
+      }
+    } else if (tag) {
+      tag.remove();
+    }
   }
 
   function highlightListItem() {
@@ -861,11 +911,38 @@
   /* Drill-down: clicking a blip or list row opens Project Detail.
      Switch to the detail page FIRST (showPage renders the detail content from
      selectedId) so a render error downstream can never block navigation; the
-     portfolio side-ledger update via selectProject is non-blocking. */
+     portfolio side-ledger update via selectProject is non-blocking.
+
+     Under the slim-list model the cached record has no signals/simulation
+     arrays, so the full project JSON is fetched here (once) and swapped into the
+     in-memory mirror before re-rendering the detail page. The page shows its
+     awaiting/loading state from the slim record first, then re-renders with the
+     full data — no blocking spinner. */
   function openDetail(id) {
     selectedId = id;
     showPage("detail");
     try { selectProject(id); } catch (e) { /* side-ledger is non-critical to navigation */ }
+    hydrateFullProject(id);
+  }
+
+  async function hydrateFullProject(id) {
+    const cached = window.LinStore ? LinStore.getCached(id) : null;
+    // Only fetch when the cached record is a slim stub (no signals + slim flag).
+    if (!cached || !cached.slim) return;
+    try {
+      const full = await LinStore.getProject(id);
+      if (!full || full.slim) return;                 // nothing better to show
+      const i = LIN_PROJECTS.findIndex((x) => x.id === id);
+      if (i >= 0) LIN_PROJECTS[i] = full;
+      else {
+        const ai = LIN_ARCHIVED.findIndex((x) => x.id === id);
+        if (ai >= 0) LIN_ARCHIVED[ai] = full;
+      }
+      // Re-render the detail page (if still the open project) with full data.
+      if (selectedId === id && window.LinDetail && typeof LinDetail.render === "function") {
+        LinDetail.render(id);
+      }
+    } catch (e) { console.warn("[detail] full-project hydrate failed for", id, "—", e && e.message); }
   }
 
   /* ---------- theme switch ---------- */
@@ -1021,7 +1098,9 @@
       }
       status.textContent = "Done — recomputed " + done + " project" + (done === 1 ? "" : "s") + ".";
       btn.disabled = false;
-      if (window.LinApp) LinApp.refresh();
+      // Refresh the slim portfolio cache so the radar/list reflect the newly
+      // computed statuses (and the cache isn't stale on the next cold load).
+      if (window.LinApp) LinApp.refreshPortfolio();
     });
   })();
 
@@ -1033,6 +1112,18 @@
       if (selectedId && !LIN_PROJECTS.some((p) => p.id === selectedId) && LIN_PROJECTS.length) {
         selectProject(LIN_PROJECTS[0].id);
       }
+    },
+    // Re-fetch the slim portfolio list, refresh its cache, and re-render. Called
+    // after mutations that change the portfolio (recompute-all, archive/restore,
+    // create, rename) so the radar/list + cache reflect the new server state.
+    async refreshPortfolio() {
+      setListRefreshing(true);
+      try {
+        if (LinStore.loadSlim) await LinStore.loadSlim();
+        else await LinStore.load();
+      } catch (e) { /* store shows its own banner */ }
+      setListRefreshing(false);
+      this.refresh();
     },
     selectProject(id) { showPage("portfolio"); selectProject(id); },
     openDetail,
@@ -1242,20 +1333,42 @@
       if (emailEl && window.LinAuth && LinAuth.getEmail) emailEl.textContent = LinAuth.getEmail() || "";
     } catch (e) { /* non-fatal */ }
     showPage("portfolio");
+    renderDecisionLog();
 
-    // Phase 2: hydrate the portfolio from the Drive-backed store (async).
-    // Renders an empty/awaiting portfolio while loading; the store shows a
-    // non-fatal banner on error and falls back to the last cached list.
-    try { await LinStore.load(); } catch (e) { /* store shows its own banner */ }
+    // Portfolio load — stale-while-revalidate against the slim list (v10.28).
+    // (1) Paint instantly from the slim portfolio cache if present (else show a
+    //     skeleton); (2) fetch listslim in the background, re-render, and update
+    //     the cache. Full project JSON is fetched lazily only on detail open.
+    let paintedFromCache = false;
+    try {
+      const cached = LinStore.readPortfolioCache && LinStore.readPortfolioCache();
+      if (cached && cached.length) {
+        LinStore.hydratePortfolio(cached);
+        buildRadar();
+        buildFallbackList();
+        if (LIN_PROJECTS.length) selectProject(LIN_PROJECTS[0].id);
+        setListRefreshing(true);
+        paintedFromCache = true;
+      } else {
+        renderSkeleton();
+      }
+    } catch (e) { /* first paint is best-effort */ }
+
+    // Background revalidate from the slim endpoint (falls back to full list on 404).
+    try {
+      if (LinStore.loadSlim) await LinStore.loadSlim();
+      else await LinStore.load();
+    } catch (e) { /* store shows its own banner */ }
+    setListRefreshing(false);
 
     buildRadar();
     buildFallbackList();
-    renderDecisionLog();
-    // initPortfolioSummary(); // removed — portfolio executive summary deprecated (card removed from index.html)
 
     // default selection: first project in the portfolio (may be empty →
     // shows the awaiting-ingest state, not a fabricated status).
-    if (LIN_PROJECTS.length) selectProject(LIN_PROJECTS[0].id);
+    if (LIN_PROJECTS.length && (!selectedId || !LIN_PROJECTS.some((p) => p.id === selectedId))) {
+      selectProject(LIN_PROJECTS[0].id);
+    }
 
     // rebuild radar geometry on resize-driven motion-pref changes
     window.matchMedia("(prefers-reduced-motion: reduce)").addEventListener?.("change", buildRadar);

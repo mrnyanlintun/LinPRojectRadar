@@ -50,6 +50,9 @@ var LinAuth = (function () {
     localStorage.removeItem(AUTH_KEY);
     localStorage.removeItem(AUTH_EMAIL_KEY);
     localStorage.removeItem(AUTH_EXPIRY_KEY);
+    // Clear the slim portfolio cache so the next user doesn't briefly see the
+    // previous session's project list before their own data loads.
+    try { if (window.LinStore && LinStore.clearPortfolioCache) LinStore.clearPortfolioCache(); } catch (e) {}
     if (window.google && window.google.accounts) {
       try { google.accounts.id.disableAutoSelect(); } catch (e) {}
     }

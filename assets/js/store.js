@@ -27,6 +27,9 @@
   "use strict";
 
   const CACHE_KEY = "lpr-cache-list-v2";
+  // Slim portfolio cache (v10.28 listslim) — a small id/name/sector/status list
+  // that paints the radar + list instantly on load before the network responds.
+  const PORTFOLIO_CACHE_KEY = "lin-portfolio-cache";
   const url = () => (window.LIN_API_URL || "").trim();
   const configured = () => url() && !/PASTE_/.test(url());
 
@@ -52,6 +55,22 @@
   }
   function writeCache(projects) {
     try { localStorage.setItem(CACHE_KEY, JSON.stringify(projects)); } catch (e) {}
+  }
+
+  /* ---------- slim portfolio cache (stale-while-revalidate) ----------
+     Small enough to paint instantly. Read on load for the first paint,
+     replaced after every successful slim fetch, cleared on sign-out. */
+  function readPortfolioCache() {
+    try {
+      const v = JSON.parse(localStorage.getItem(PORTFOLIO_CACHE_KEY) || "null");
+      return Array.isArray(v) ? v : null;
+    } catch (e) { return null; }
+  }
+  function writePortfolioCache(projects) {
+    try { localStorage.setItem(PORTFOLIO_CACHE_KEY, JSON.stringify(projects || [])); } catch (e) {}
+  }
+  function clearPortfolioCache() {
+    try { localStorage.removeItem(PORTFOLIO_CACHE_KEY); } catch (e) {}
   }
 
   /* ---------- in-memory hydration from a flat project list ---------- */
@@ -145,6 +164,64 @@
     }
   }
 
+  /* ---------- slim list (v10.28 ?action=listslim) ----------
+     A lightweight portfolio list — id, name, sector, status, cpi/spi/docRisk,
+     actualPctComplete, simModuleCount, docCount, slim:true — with no simulation
+     arrays or event bodies. The radar, list, and status pills render from these
+     fields; full project JSON is fetched lazily only when a project is opened.
+     Falls back to the full ?action=list when the slim endpoint 404s (backend
+     not yet on v10.28) — one console warning, no user-facing error. */
+  async function listSlim() {
+    if (!configured()) return readCache() || [];
+    try {
+      const j = await apiGet("?action=listslim");
+      return j.projects || [];
+    } catch (e) {
+      if (/HTTP 404/.test(String(e && e.message))) {
+        console.warn("[store] listslim unavailable (404) — falling back to full list");
+        const j = await apiGet("?action=list");
+        return j.projects || [];
+      }
+      throw e;
+    }
+  }
+
+  /* Stale-while-revalidate loader. Fetches the slim list, hydrates the in-memory
+     mirrors, and refreshes both the slim portfolio cache and the legacy cache.
+     The archive check runs after (non-blocking to the caller's re-render). */
+  async function loadSlim() {
+    lastError = null;
+    if (!configured()) {
+      const cached = readPortfolioCache() || readCache();
+      hydrate(cached || []);
+      banner("Project data is not yet configured. Showing " +
+        (cached ? "last cached" : "an empty") + " portfolio.", "warn");
+      return LIN_PROJECTS.slice();
+    }
+    try {
+      const projects = await listSlim();
+      hydrate(projects);
+      writePortfolioCache(projects);
+      writeCache(projects);
+      banner("");
+      try {
+        await listArchived();
+        const n = LIN_ARCHIVED.length;
+        if (n > 0) {
+          banner(n + (n === 1 ? " project is" : " projects are") +
+            " archived — restore from the archive tab", "warn");
+        }
+      } catch (e2) { /* non-fatal — archive check is advisory only */ }
+      return LIN_PROJECTS.slice();
+    } catch (e) {
+      lastError = e;
+      const cached = readPortfolioCache() || readCache();
+      hydrate(cached || []);
+      banner("Couldn't reach the project store" + (cached ? " — showing last cached projects. Retry." : ". Retry."), "warn");
+      return LIN_PROJECTS.slice();
+    }
+  }
+
   /* ---------- the async seam (same names as Phase 1) ---------- */
   async function listProjects() { await load(); return LIN_PROJECTS.slice(); }
 
@@ -166,6 +243,7 @@
       const p = j.project;
       LIN_PROJECTS.push(p);
       writeCache(LIN_PROJECTS.concat(LIN_ARCHIVED));
+      writePortfolioCache(LIN_PROJECTS.slice());   // keep the slim cache in sync (active only)
       banner("");
       return p;
     } finally { loading(false); }
@@ -189,6 +267,7 @@
         }
       });
       writeCache(LIN_PROJECTS.concat(LIN_ARCHIVED));
+      writePortfolioCache(LIN_PROJECTS.slice());   // keep the slim cache in sync (active only)
       banner("");
       return updated || { id: newId };
     } finally { loading(false); }
@@ -207,6 +286,7 @@
       if (fromArch >= 0) LIN_ARCHIVED.splice(fromArch, 1);
       (isArchived(saved) ? LIN_ARCHIVED : LIN_PROJECTS).push(saved);
       writeCache(LIN_PROJECTS.concat(LIN_ARCHIVED));
+      writePortfolioCache(LIN_PROJECTS.slice());   // keep the slim cache in sync (active only)
       banner("");
       return saved;
     } finally { loading(false); }
@@ -222,6 +302,7 @@
       const i = LIN_PROJECTS.findIndex((p) => p.id === id);
       if (i >= 0) LIN_PROJECTS.splice(i, 1);
       writeCache(LIN_PROJECTS.concat(LIN_ARCHIVED));
+      writePortfolioCache(LIN_PROJECTS.slice());   // keep the slim cache in sync (active only)
       banner("");
       return { archived: id };
     } finally { loading(false); }
@@ -238,6 +319,7 @@
       if (ai >= 0) LIN_ARCHIVED.splice(ai, 1);
       if (p && !LIN_PROJECTS.some((x) => x.id === p.id)) LIN_PROJECTS.push(p);
       writeCache(LIN_PROJECTS.concat(LIN_ARCHIVED));
+      writePortfolioCache(LIN_PROJECTS.slice());   // keep the slim cache in sync (active only)
       banner("");
       return { restored: id };
     } finally { loading(false); }
@@ -378,6 +460,10 @@
     archiveProject, restoreProject, listArchived, chat, analyze,
     listCorpus, listAuditResults, ingestCorpus, runAudit, saveAuditResult,
     extractSignals, identifyDocument, overwriteSignal, resetSignals,
+    // slim portfolio list + stale-while-revalidate cache (v10.28)
+    listSlim, loadSlim,
+    readPortfolioCache, writePortfolioCache, clearPortfolioCache,
+    hydratePortfolio: hydrate,
     // generic POST passthrough (used by the Cat 8 portfolioanalyze call)
     post: apiPost,
     // sync mirror accessors used by render code
