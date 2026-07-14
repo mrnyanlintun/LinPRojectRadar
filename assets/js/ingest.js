@@ -237,6 +237,9 @@
        ${LinSignals.dropzoneHtml(null)}
        <div id="signals-detail" class="ds-detail-wrap"></div>`;
 
+    /* Everything starts collapsed except ACTIVE PROJECTS — the page's purpose;
+       a fully blank Manage page is worse UX. This is the single deliberate
+       exception to the collapsed-by-default rule. */
     root.innerHTML =
       cs("mg-create",   "CREATE NEW PROJECT",  createBody,   false) +
       cs("mg-active",   "ACTIVE PROJECTS",     activeBody,   true,  active.length + " project" + (active.length === 1 ? "" : "s")) +
@@ -244,10 +247,8 @@
       `<div id="signals-panel">` +
         cs("mg-upload", "UPLOAD DOCUMENTS",    uploadBody,   false) +
       `</div>` +
-      `<section class="panel" style="margin-top:18px">
-        <p class="eyebrow">Recent Activity</p>
-        <div id="ingest-log"></div>
-      </section>`;
+      cs("mg-activity", "RECENT ACTIVITY", `<div id="ingest-log"></div>`, false,
+         ingestLog.length ? ingestLog.length + " event" + (ingestLog.length === 1 ? "" : "s") : "");
 
     renderLog();
     // drag-and-drop multi-file ingest (identify → auto-confirm/override → extract);

@@ -564,10 +564,10 @@
            <span class="detail-reset-msg kn-sub" aria-live="polite"></span>
          </div>
        </div>
-        ${cs("d-projnet", "Project Signal Network", `<div class="detail-projnet2d"></div>`, true, totalCats + " categories")}
+        ${cs("d-projnet", "Project Signal Network", `<div class="detail-projnet2d"></div>`, false, totalCats + " categories")}
         ${cs("d-neural", "Signal Flow", `<div class="detail-neural-flow" data-project-id="${esc(p.id)}"></div>`, false, `${totalModulesForBadge} modules`)}
-        ${cs("d-brief", "Executive Brief", executiveBriefHtml(p), true, "")}
-        ${cs("d-web", "Signal Web", signalWebHtml(p), true, totalModulesForBadge + " modules")}
+        ${cs("d-brief", "Executive Brief", executiveBriefHtml(p), false, "")}
+        ${cs("d-web", "Signal Web", signalWebHtml(p), false, totalModulesForBadge + " modules")}
         ${cs("d-ensemble", "Ensemble Analysis", ensembleHtml(p), false, `${ensActive} active · ${ensEst} est.`)}
         ${cs("d-docsignals", "Documents & Extracted Signals",
              uploadedDocsPanelHtml(p) +
@@ -575,36 +575,53 @@
              false, `${uploadCount} doc${uploadCount === 1 ? "" : "s"} · ${inputFieldCount} field${inputFieldCount === 1 ? "" : "s"}`)}
         ${cs("d-ledger", "Signal Inputs", `<section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>`, false, pillBadge(overallState))}
         ${cs("d-decision", "Governance Decision", `<section class="panel detail-decision" aria-label="PCEIF governance decision (project detail)"></section>`, false, pillBadge(overallState))}
-       ${cs("d-stack", "Signal Stack — " + totalCats + " Categories", `<div class="detail-modules"></div>`, true, "")}`;
+       ${cs("d-stack", "Signal Stack — " + totalCats + " Categories", `<div class="detail-modules"></div>`, false, "")}`;
 
-    // Reuse the shared renderers, scoped to this page's containers.
-    LinApp.renderLedger(p, root.querySelector(".detail-ledger"));
-    LinApp.renderDecisionCard(p, root.querySelector(".detail-decision"));
-    // 2D per-project signal network — flat node-link of the 11 categories,
-    // coloured by this project's computed category statuses (zoom + pan, no rotate).
-    if (window.LinProjectNet2D) LinProjectNet2D.render(root.querySelector(".detail-projnet2d"), p);
-    // Document ingestion lives on the Manage Projects page only; the detail page
-    // is read-only — it shows what has already been processed.
-    // HUD-depth per-project deep dive (chart + why-grid + reasoning + rule)
-    LinDeepDive.render(p, root.querySelector(".detail-modules"));
-    // Signals detail panel (extracted values, missing docs, audit trail) — sits
-    // under the simulated charts; collapsed by default behind a "Details" toggle.
-    if (window.LinSignals) LinSignals.renderSignalsPanel(root.querySelector(".detail-signals"), p);
+    // Every section starts collapsed (sessionStorage may restore an open one);
+    // the badges above still summarise what's inside. Heavy visuals render on
+    // FIRST expand via the lin:section-opened event from toggleSection, not at
+    // page load. The canvases (sphere / scatter) additionally need visible
+    // dimensions — eager rendering into a display:none body sizes them 0×0.
+    lazyInits = {
+      // 2D per-project signal network — flat node-link of the 11 categories.
+      "d-projnet": () => { if (window.LinProjectNet2D) LinProjectNet2D.render(root.querySelector(".detail-projnet2d"), p); },
+      "d-neural": () => { if (typeof LinNeuralFlow !== "undefined") LinNeuralFlow.render(p, root.querySelector(".detail-neural-flow")); },
+      // Brief renders (and possibly calls the chat endpoint) only when opened.
+      "d-brief": () => { wireBrief(root, p); refreshBrief(root, p); },
+      "d-web": () => { wireSignalWeb(root, id); wireSignalSphere(root, p); },
+      "d-ensemble": () => { wireEnsembleScatter(root, p); },
+      // Uploaded-docs table is already in the section HTML; the extracted-
+      // signals panel below it renders on expand.
+      "d-docsignals": () => { if (window.LinSignals) LinSignals.renderSignalsPanel(root.querySelector(".detail-signals"), p); },
+      "d-ledger": () => { LinApp.renderLedger(p, root.querySelector(".detail-ledger")); },
+      "d-decision": () => { LinApp.renderDecisionCard(p, root.querySelector(".detail-decision")); },
+      // HUD-depth per-project deep dive (chart + why-grid + reasoning + rule)
+      "d-stack": () => { LinDeepDive.render(p, root.querySelector(".detail-modules")); }
+    };
+    Object.keys(lazyDone).forEach((k) => { delete lazyDone[k]; });
 
     wireBack(root);
     wireReset(root);
-    wireSignalWeb(root, id);
-    wireSignalSphere(root, p);
-    wireEnsembleScatter(root, p);
-    wireBrief(root, p);
-    // Kick off the brief AFTER the spider chart + evidence backfill have run,
-    // so the prompt sees a fully-populated simulationSignals array. Cached
-    // briefs for the current reporting period render without a chat call.
-    refreshBrief(root, p);
-    if (typeof LinNeuralFlow !== 'undefined') {
-      LinNeuralFlow.render(p, root.querySelector('.detail-neural-flow'));
-    }
+    // Initialise any section the session restored as open.
+    Object.keys(lazyInits).forEach((secId) => {
+      const body = document.getElementById("body-" + secId);
+      if (body && body.style.display !== "none") runLazyInit(secId);
+    });
   }
+
+  /* ---------- lazy section initialisation (render-on-first-expand) ---------- */
+  let lazyInits = null;
+  const lazyDone = {};
+  function runLazyInit(secId) {
+    if (!lazyInits || typeof lazyInits[secId] !== "function" || lazyDone[secId]) return;
+    lazyDone[secId] = true;
+    try { lazyInits[secId](); }
+    catch (e) { console.warn("[detail] lazy init failed for section", secId, e); }
+  }
+  document.addEventListener("lin:section-opened", (e) => {
+    const secId = e && e.detail && e.detail.id;
+    if (secId) runLazyInit(secId);
+  });
 
   /* ============================================================
      Executive brief — Lin-generated 4-6 sentence summary of the

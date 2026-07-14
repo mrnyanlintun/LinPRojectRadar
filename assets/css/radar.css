@@ -1911,6 +1911,112 @@ body.nav-open .nav-rail { transform: translateX(0); }
 .kn-flow-wrap .kn-svg-flow { max-height: none; }
 
 /* ============================================================
+   Knowledge Library — brand typography overhaul.
+   Display headings in the app's title face (cream + gold ordinals,
+   serif under the NYC theme via the shared heading rule), mono
+   eyebrows, 72ch reading measure, gold-accented nav, and hairline
+   subsection dividers instead of box-in-box nesting. Every rule is
+   scoped under .kn-* / [data-page="knowledge"] so nothing leaks.
+   ============================================================ */
+[data-page="knowledge"] .intro h1 { font-family: var(--font-display); font-weight: 500; color: #efe3c2; }
+.kn-h-art {
+  font-family: var(--font-display); font-weight: 500; color: #efe3c2;
+  font-size: clamp(22px, 2.8vw, 30px); letter-spacing: .01em;
+}
+.kn-h-art .kn-num, .kn-sec-num { color: #d4af5a; }
+body[data-theme="light"] [data-page="knowledge"] .intro h1,
+body[data-theme="light"] .kn-h-art { color: var(--text); }
+/* light theme: cream/gold wash out — dark ink + bronze, same swap the header brand makes */
+body[data-theme="light"] .kn-h-art .kn-num,
+body[data-theme="light"] .kn-sec-num,
+body[data-theme="light"] .kn-nav-cat-num { color: #8a6d2f; }
+
+/* eyebrows — mono, wide tracking, muted (consistent with app panel headers) */
+.kn-content .eyebrow, .kn-article .eyebrow {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .25em; color: var(--muted);
+}
+
+/* body prose — app body font at reading size, long-line measure */
+.kn-article p, .kn-article .kn-lead, .kn-article li { font-size: 15px; line-height: 1.7; }
+.kn-article p, .kn-article ul, .kn-article ol, .kn-article .kn-callout { max-width: 72ch; }
+
+/* left nav — body font, gold active pill, gold Cat N prefix */
+.kn-nav-btn { font-family: var(--font-body); font-size: 13.5px; }
+.kn-nav-btn.active {
+  background: rgba(212, 175, 90, .10);
+  border-color: rgba(212, 175, 90, .5);
+  color: var(--text); font-weight: 600;
+}
+.kn-nav-cat-num { color: #d4af5a; }
+.kn-nav-cat-name { font-family: var(--font-body); font-size: 12.5px; }
+
+/* panels — same chrome as the rest of the app plus the footer's gold hairline top */
+.kn-content, .kn-nav { border-top: 2px solid rgba(212, 175, 90, .45); }
+.kn-content { padding: 28px; }
+
+/* topic subsections — sentence-case display headers with a gold ordinal and
+   1px hairline dividers; the section chrome collapses into the topic panel
+   (one level of box nesting removed) */
+.kn-article .collapse-section { margin: 0; }
+.kn-article .collapse-header {
+  background: transparent; border: 0; border-top: 1px solid var(--line);
+  border-radius: 0; padding: 14px 2px;
+}
+.kn-article .collapse-section:first-of-type .collapse-header { border-top: 0; }
+.kn-article .collapse-title {
+  font-family: var(--font-display); font-size: 16px; font-weight: 500;
+  letter-spacing: 0; text-transform: none; color: #efe3c2;
+}
+body[data-theme="light"] .kn-article .collapse-title { color: var(--text); }
+body[data-theme="newyork"] .kn-article .collapse-title { font-family: Georgia, "Times New Roman", "Hoefler Text", serif; }
+.kn-article .collapse-body { border: 0; border-radius: 0; padding: 2px 2px 18px; }
+
+/* ============================================================
+   Floating nav cluster — fixed top-right emblem + hamburger that
+   fades in past the header (~120px scroll). The emblem carries a
+   rotating conic radar-sweep overlay and a soft glow pulse; both
+   buttons are keyboard-reachable with a visible focus ring. The
+   chat bubble (assistant) sits bottom-right, so no collision.
+   ============================================================ */
+.float-nav {
+  position: fixed; top: 18px; right: 20px; z-index: 60;
+  display: flex; align-items: center; gap: 10px;
+  opacity: 0; visibility: hidden; transform: translateY(-8px);
+  transition: opacity .3s ease, transform .3s ease, visibility .3s;
+}
+.float-nav.visible { opacity: 1; visibility: visible; transform: none; }
+.float-logo, .float-menu {
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid rgba(212, 175, 90, .5);
+  background: var(--surface);
+  cursor: pointer; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow);
+}
+.float-logo { position: relative; overflow: hidden; animation: float-glow 4s ease-in-out infinite; }
+.float-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.float-logo-sweep {
+  position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  background: conic-gradient(from 0deg,
+    color-mix(in srgb, var(--phosphor) 25%, transparent) 0deg 90deg,
+    transparent 90deg 360deg);
+  animation: float-sweep 8s linear infinite;
+}
+.float-menu { color: var(--text); }
+.float-menu svg { width: 20px; height: 20px; }
+.float-menu:hover, .float-logo:hover { border-color: #d4af5a; }
+.float-logo:focus-visible, .float-menu:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 3px; }
+@keyframes float-sweep { to { transform: rotate(360deg); } }
+@keyframes float-glow {
+  0%, 100% { box-shadow: 0 0 6px color-mix(in srgb, var(--phosphor) 25%, transparent); }
+  50%      { box-shadow: 0 0 16px color-mix(in srgb, var(--phosphor) 50%, transparent); }
+}
+/* reduced motion: static emblem, glow only (no rotation) */
+@media (prefers-reduced-motion: reduce) {
+  .float-logo-sweep { animation: none; }
+}
+
+/* ============================================================
    About page
    ============================================================ */
 .about-grid {
