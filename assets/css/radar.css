@@ -12,28 +12,34 @@
   --radius-md: 14px;
   --radius-lg: 20px;
 
-  /* ----- LIGHT (default) ----- */
-  --page-bg: #eef2f7;
-  --surface: rgba(255,255,255,.92);
-  --surface-soft: rgba(248,250,252,.85);
-  --line: rgba(15,23,42,.12);
-  --line-strong: rgba(15,23,42,.22);
-  --text: #141a23;
-  --muted: #5b6b7c;
-  --faint: #93a3b3;
+  /* ----- LIGHT (default) — "Miami", warm & sunny -----
+     WCAG AA text on a warm off-white field: body #1d2430, muted #4c576b,
+     headings via --heading #141a26. Panels get a slight cream tint against
+     the page so they're distinguishable. Gold used AS TEXT darkens to
+     #8a6a1c for legibility (decorative gold hairlines/fills may stay lighter). */
+  --page-bg: #faf8f2;
+  --surface: #f4f1e9;
+  --surface-soft: #efe9db;
+  --line: #d8d2c2;
+  --line-strong: #c4bda9;
+  --text: #1d2430;
+  --heading: #141a26;
+  --muted: #4c576b;
+  --faint: #5c6678;
   --phosphor: #2563eb;
   --accent: #2563eb;
-  --ink-dim: #5b6b7c;
-  --radar-amber: #f59e0b;
-  --alarm-red: #ef4444;
-  --clear-green: #16a34a;
-  --yellow: #f0c040;
-  --blue-status: #4ea0ff;
-  --eyebrow: #2563eb;
+  --ink-dim: #4c576b;
+  --gold-text: #8a6a1c;
+  --radar-amber: #b4740a;
+  --alarm-red: #dc2626;
+  --clear-green: #15803d;
+  --yellow: #b7861a;
+  --blue-status: #2b7fd4;
+  --eyebrow: #4c576b;
 
   /* sector identity (theme-aware): white/blue/magenta, kept clear of
      the green/amber/red health palette. Design uses dark text on Light. */
-  --sector-design: #141a23;
+  --sector-design: #1d2430;
   --sector-construction: #1d4ed8;
   --sector-hybrid: #c026d3;
 
@@ -50,19 +56,22 @@
   --shadow: 0 14px 40px rgba(15,23,42,.10);
 }
 
-/* ----- DARK (default) ----- */
+/* ----- DARK (default) -----
+   Near-black neutral field (reads "dark", not "navy blue"): deep charcoal
+   backgrounds, desaturated slate borders + muted text. Phosphor/gold accents
+   stay saturated so blips and status colors still pop against the darker field. */
 body[data-theme="dark"] {
-  --page-bg: #03101f;
-  --surface: rgba(8,22,42,.72);
-  --surface-soft: rgba(4,16,32,.55);
-  --line: rgba(96,210,232,.30);
-  --line-strong: rgba(160,235,250,.50);
-  --text: #eef9fd;
-  --muted: #9bc1d2;
-  --faint: rgba(190,225,238,.6);
+  --page-bg: #06080f;
+  --surface: rgba(11,14,23,.82);
+  --surface-soft: rgba(7,9,16,.72);
+  --line: #232838;
+  --line-strong: rgba(120,132,160,.55);
+  --text: #eef1f7;
+  --muted: #8b93a7;
+  --faint: rgba(139,147,167,.72);
   --phosphor: #35d6e8;
   --accent: #35d6e8;
-  --ink-dim: #9bc1d2;
+  --ink-dim: #8b93a7;
   --radar-amber: #ffb01f;
   --alarm-red: #ff5d52;
   --clear-green: #2fe08f;
@@ -81,12 +90,19 @@ body[data-theme="dark"] {
   --zone-crit: rgba(255,93,82,.30);
   --zone-yellow: rgba(255,216,77,.20);
   --zone-blue: rgba(95,180,255,.22);
-  --ring-line: rgba(120,215,235,.30);
+  --ring-line: rgba(150,165,190,.28);
 
-  --grid-opacity: .4;
-  --glass-blur: blur(16px) saturate(160%);
-  --shadow: 0 18px 54px rgba(0,0,0,.45), 0 0 36px rgba(53,214,232,.08);
+  --grid-opacity: .28;
+  --glass-blur: blur(16px) saturate(150%);
+  --shadow: 0 18px 54px rgba(0,0,0,.55), 0 0 36px rgba(53,214,232,.06);
 }
+
+/* Light headings use the darker --heading ink for max legibility on the warm
+   field (component-specific heading overrides above already point at --heading). */
+body[data-theme="light"] h1,
+body[data-theme="light"] h2,
+body[data-theme="light"] h3,
+body[data-theme="light"] .intro h1 { color: var(--heading); }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -108,8 +124,8 @@ body::before {
   pointer-events: none;
   z-index: 0;
   background:
-    linear-gradient(rgba(160,220,245,.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(160,220,245,.06) 1px, transparent 1px);
+    linear-gradient(rgba(150,160,185,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(150,160,185,.05) 1px, transparent 1px);
   background-size: 44px 44px;
   opacity: var(--grid-opacity);
   transition: opacity .35s ease;
@@ -159,9 +175,9 @@ body::before {
   white-space: nowrap;
 }
 /* cream/gold wash out on the light background — dark ink + bronze initials there */
-body[data-theme="light"] .nav-logo-text { color: var(--text); }
-body[data-theme="light"] .brand-init { color: #8a6d2f; }
-body[data-theme="light"] .topbar { border-bottom-color: rgba(138, 109, 47, 0.25); }
+body[data-theme="light"] .nav-logo-text { color: var(--heading); }
+body[data-theme="light"] .brand-init { color: var(--gold-text); }
+body[data-theme="light"] .topbar { border-bottom-color: rgba(138, 106, 28, 0.25); }
 @media (max-width: 900px) {
   .nav-logo-img { height: 72px; }
 }
@@ -1952,11 +1968,11 @@ body.nav-open .nav-rail { transform: translateX(0); }
 }
 .kn-h-art .kn-num, .kn-sec-num { color: #d4af5a; }
 body[data-theme="light"] [data-page="knowledge"] .intro h1,
-body[data-theme="light"] .kn-h-art { color: var(--text); }
+body[data-theme="light"] .kn-h-art { color: var(--heading); }
 /* light theme: cream/gold wash out — dark ink + bronze, same swap the header brand makes */
 body[data-theme="light"] .kn-h-art .kn-num,
 body[data-theme="light"] .kn-sec-num,
-body[data-theme="light"] .kn-nav-cat-num { color: #8a6d2f; }
+body[data-theme="light"] .kn-nav-cat-num { color: var(--gold-text); }
 
 /* eyebrows — mono, wide tracking, muted (consistent with app panel headers) */
 .kn-content .eyebrow, .kn-article .eyebrow {
@@ -2060,13 +2076,13 @@ body[data-theme="newyork"] .kn-article .collapse-title { font-family: Georgia, "
   font-family: var(--font-display); font-size: clamp(19px, 2vw, 22px); font-weight: 500;
   color: #efe3c2; margin: 0 0 14px; letter-spacing: .01em;
 }
-body[data-theme="light"] .about-h { color: var(--text); }
+body[data-theme="light"] .about-h { color: var(--heading); }
 /* gold brand initials + step numbers echo the header brand-init treatment */
 [data-page="about"] .intro h1 { font-family: var(--font-display); font-weight: 500; color: #efe3c2; }
-body[data-theme="light"] [data-page="about"] .intro h1 { color: var(--text); }
+body[data-theme="light"] [data-page="about"] .intro h1 { color: var(--heading); }
 .about-init, .about-step-num { color: #d4af5a; }
 body[data-theme="light"] .about-init,
-body[data-theme="light"] .about-step-num { color: #8a6d2f; }
+body[data-theme="light"] .about-step-num { color: var(--gold-text); }
 .about-step-num { font-family: var(--font-mono); font-weight: 700; margin-right: 2px; }
 /* mono eyebrow consistent with app panel headers */
 [data-page="about"] .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .25em; color: var(--muted); }
@@ -2148,29 +2164,45 @@ body[data-theme="light"] .about-step-num { color: #8a6d2f; }
    THEME — NEW YORK  (Manhattan twilight + gold Art Deco + Liberty bronze)
    ============================================================ */
 body[data-theme="newyork"] {
-  --page-bg: #0a0c14;
-  --surface: rgba(14, 16, 32, .85);
-  --surface-soft: rgba(19, 21, 40, .85);
-  --line: rgba(201, 168, 76, .28);
-  --line-strong: rgba(201, 168, 76, .55);
-  --text: #f5e6c8;
-  --muted: #c8b48a;
-  --faint: #6b5a3e;
-  --phosphor: #c9a84c;            /* Art Deco gold */
-  --radar-amber: #c9a84c;
+  /* Aged bronze-and-gilt monument palette — gold and oxidized-bronze
+     verdigris as roughly equal partners, not gold-primary with a patina
+     garnish. Gold carries page H1s + brand + primary-button borders;
+     verdigris carries eyebrows, hairlines, collapsible headers, neutral
+     badges, and interactive accents. */
+  --nyc-gold: #d4af5a;
+  --nyc-gold-deep: #8a6a1c;
+  --nyc-verdigris: #4fa393;
+  --nyc-verdigris-deep: #2f6e63;
+
+  --page-bg: #0a0e12;
+  --surface: rgba(16, 22, 26, .86);
+  --surface-soft: rgba(21, 28, 32, .86);
+  --line: rgba(79, 163, 147, .30);            /* verdigris hairlines */
+  --line-strong: rgba(79, 163, 147, .55);
+  --text: #f2e7c9;
+  --muted: #b9b492;                            /* aged brass-grey */
+  --faint: #6f7d70;                            /* weathered patina grey */
+  --phosphor: #d4af5a;                         /* gold — primary accent */
+  --accent: #4fa393;                           /* verdigris — interactive accent */
+  --ink-dim: #b9b492;
+  --radar-amber: #d4af5a;
   --alarm-red: #c0392b;
-  --clear-green: #4a7c6f;         /* Liberty oxidized bronze */
-  --eyebrow: #c9a84c;
+  --clear-green: #4fa393;                      /* Liberty oxidized bronze */
+  --yellow: #d8b64a;
+  --blue-status: #6aa9c9;
+  --eyebrow: #4fa393;                          /* eyebrows verdigris */
 
   --sector-design: #7ec8e3;       /* Hudson River blue */
-  --sector-construction: #c9a84c;
-  --sector-hybrid: #4a7c6f;
+  --sector-construction: #d4af5a;
+  --sector-hybrid: #4fa393;
 
-  --zone-green: rgba(74, 124, 111, .22);
-  --zone-amber: rgba(201, 168, 76, .22);
+  --zone-green: rgba(79, 163, 147, .22);
+  --zone-amber: rgba(212, 175, 90, .22);
   --zone-red: rgba(192, 57, 43, .22);
   --zone-crit: rgba(192, 57, 43, .32);
-  --ring-line: rgba(201, 168, 76, .28);
+  --zone-yellow: rgba(216, 182, 74, .20);
+  --zone-blue: rgba(106, 169, 201, .22);
+  --ring-line: rgba(79, 163, 147, .30);
 
   --grid-opacity: 0;
   --glass-blur: blur(8px) saturate(135%);
@@ -2186,7 +2218,9 @@ body[data-theme="newyork"] .nyc-skyline {
 }
 body[data-theme="newyork"] .nyc-skyline svg { width: 100%; height: 100%; display: block; }
 body[data-theme="newyork"]::before { background: none; }
-body[data-theme="newyork"] .panel { border-top: 2px solid var(--phosphor); }
+/* panel hairlines verdigris (the About/Knowledge brand panels keep their own
+   gold hairline, so both metals appear across the page) */
+body[data-theme="newyork"] .panel { border-top: 2px solid var(--nyc-verdigris); }
 body[data-theme="newyork"] h1,
 body[data-theme="newyork"] h2,
 body[data-theme="newyork"] h3,
@@ -2197,6 +2231,51 @@ body[data-theme="newyork"] .nav-logo-text {
   font-family: Georgia, "Times New Roman", "Hoefler Text", serif;
   letter-spacing: 0;
 }
+
+/* ---- NYC accent distribution: gold ↔ verdigris, roughly equal partners ---- */
+/* page-level H1s + brand wordmark stay gold */
+body[data-theme="newyork"] .intro h1,
+body[data-theme="newyork"] .kn-h-art,
+body[data-theme="newyork"] [data-page="about"] .intro h1,
+body[data-theme="newyork"] .nav-logo-text { color: var(--nyc-gold); }
+/* section eyebrows verdigris — the (0,2,0) theme selector beats the
+   .intro p (0,1,1) rule that otherwise pins intro eyebrows to --muted */
+body[data-theme="newyork"] .eyebrow,
+body[data-theme="newyork"] .intro .eyebrow { color: var(--nyc-verdigris); }
+/* collapsible section headers verdigris */
+body[data-theme="newyork"] .collapse-title,
+body[data-theme="newyork"] .cat-row-num,
+body[data-theme="newyork"] .kn-nav-cat-num { color: var(--nyc-verdigris); }
+body[data-theme="newyork"] .collapse-header { border-color: var(--line); }
+/* neutral badges verdigris (status pills keep their status colours) */
+body[data-theme="newyork"] .collapse-badge,
+body[data-theme="newyork"] .pill-none,
+body[data-theme="newyork"] .pill-parked,
+body[data-theme="newyork"] .pill-na,
+body[data-theme="newyork"] .badge-est {
+  color: var(--nyc-verdigris);
+  border-color: color-mix(in srgb, var(--nyc-verdigris) 45%, transparent);
+}
+/* primary buttons: gold border on transparent, verdigris on hover */
+body[data-theme="newyork"] .btn.primary,
+body[data-theme="newyork"] .theme-switch button.active,
+body[data-theme="newyork"] .nav-rail button.active {
+  background: transparent;
+  color: var(--nyc-gold);
+  border-color: var(--nyc-gold);
+}
+body[data-theme="newyork"] .btn.primary:hover,
+body[data-theme="newyork"] .theme-switch button:hover,
+body[data-theme="newyork"] .nav-rail button:hover {
+  color: var(--nyc-verdigris);
+  border-color: var(--nyc-verdigris);
+}
+/* interactive accents verdigris with gold hover */
+body[data-theme="newyork"] a,
+body[data-theme="newyork"] .kn-ask,
+body[data-theme="newyork"] .la-link { color: var(--nyc-verdigris); }
+body[data-theme="newyork"] a:hover,
+body[data-theme="newyork"] .kn-ask:hover { color: var(--nyc-gold); }
 
 /* ============================================================
    MOBILE — 640px and below (iPhone SE, 14, 14 Pro Max)
