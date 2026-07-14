@@ -63,6 +63,40 @@ function normalizeStatusLabel(status) {
 }
 
 /* ------------------------------------------------------------
+   1c. Slim-list status (portfolio glance, no full signals object)
+   ------------------------------------------------------------
+   The slim portfolio list (v10.28 ?action=listslim) carries EVM
+   summary fields but no signals object. When the backend supplies a
+   real 5-status label, use it; otherwise derive a conservative
+   worst-of band from CPI / SPI using the same RAG thresholds the
+   modules use (≥0.95 Green, ≥0.90 Amber, else Red). Doc-risk is only
+   folded in when it is a valid normalized score in [0, 1] (the slim
+   docRiskScore field carries inconsistent scales — raw counts as well
+   as 0–1 scores — so out-of-range values are ignored). Returns null
+   when there are no EVM metrics — i.e. genuinely awaiting ingest.
+   ------------------------------------------------------------ */
+function deriveStatusFromMetrics(cpi, spi, docRisk) {
+  let worst = -1;                 // 0 Green, 1 Amber, 2 Red
+  const bump = (n) => { if (n > worst) worst = n; };
+  [cpi, spi].forEach((v) => {
+    const n = Number(v);
+    if (Number.isFinite(n) && n > 0) bump(n >= 0.95 ? 0 : n >= 0.90 ? 1 : 2);
+  });
+  if (docRisk != null) {   // guard: Number(null) is 0, which would falsely read as Green
+    const d = Number(docRisk);
+    if (Number.isFinite(d) && d >= 0 && d <= 1) bump(d < 0.30 ? 0 : d < 0.70 ? 1 : 2);
+  }
+  return worst < 0 ? null : ["Green", "Amber", "Red"][worst];
+}
+function slimStatusLabel(p) {
+  if (!p) return null;
+  const norm = normalizeStatusLabel(p.status);   // real 5-state label if provided
+  if (norm) return norm;
+  const dr = (p.docRisk != null ? p.docRisk : p.docRiskScore);
+  return deriveStatusFromMetrics(p.cpi, p.spi, dr);
+}
+
+/* ------------------------------------------------------------
    2. Signal-conflict classification
    ------------------------------------------------------------
    PCEIF surfaces disagreement between signal classes instead of

@@ -397,38 +397,30 @@
     <section class="page" data-page="about" hidden>
       <section class="intro">
         <p class="eyebrow">About</p>
-        <h1>Lin Opus Gubernatio</h1>
-        <p>Demonstration platform for the Public Capital EVM Intelligence Framework (PCEIF).</p>
+        <h1><span class="about-init">L</span>in <span class="about-init">O</span>pus <span class="about-init">G</span>ubernatio</h1>
+        <p>An AI-driven probabilistic governance platform for capital project controls — from document to decision.</p>
       </section>
 
       <div class="about-grid">
 
-        <!-- Section 1 — About this site -->
-        <section class="panel about-section">
-          <h2 class="about-h">About this site</h2>
-          <p>Lin Opus Gubernatio is the demonstration platform for the Public Capital EVM Intelligence Framework (PCEIF) — a Doctor of Engineering praxis at The George Washington University (Engineering Management) by Nyan Lin Tun.</p>
-          <p>The framework converts multi-model AI and quantitative signals into accountable, auditable, role-based governance actions for U.S. public capital programs. AI explains and summarizes. Governance decisions come from explicit rule-based logic, and every recommended action requires named human approval before it is recorded.</p>
+        <!-- What it does -->
+        <section class="panel about-section about-section-wide">
+          <h2 class="about-h">What it does</h2>
+          <p>Lin Opus Gubernatio implements the Public Capital EVM Intelligence Framework (PCEIF): it turns the records a capital program already produces into an accountable, auditable governance recommendation. The pipeline runs in four steps.</p>
+          <ol class="about-list about-steps">
+            <li><span class="about-step-num">1.</span> <strong>Ingests</strong> 26 document types — pay applications, schedules, change orders, RFIs, submittals, inspection and compliance reports — extracting the cost, schedule, and risk figures automatically.</li>
+            <li><span class="about-step-num">2.</span> <strong>Runs</strong> 103 signal modules across 11 categories — earned-value analysis, schedule and cost simulation, document risk, system dynamics, and machine-learning anomaly detection.</li>
+            <li><span class="about-step-num">3.</span> <strong>Fuses</strong> the evidence with Dempster–Shafer combination into a single five-state status — Complete, Green, Yellow, Amber, or Red — that surfaces disagreement between signals rather than averaging it away.</li>
+            <li><span class="about-step-num">4.</span> <strong>Produces</strong> a signal-traced recommended action plan — each action tied to the category and module that triggered it, with a named authority and required documentation — which a named human reviewer records. The platform advises; it never decides.</li>
+          </ol>
+          <p>A separate <strong>Technical Auditor</strong> maintains a reference corpus — specifications, codes of practice, and user requirements — and audits submittals and drawings against it, returning traceable findings and recommendations for named human review.</p>
           <p class="about-note">All project data on this site is synthetic. No real project, agency, employer, contractor, or vendor is referenced.</p>
         </section>
 
-        <!-- Section 2 — Platform -->
-        <section class="panel about-section">
-          <h2 class="about-h">Platform</h2>
-          <div class="about-table-wrap">
-            <table class="about-table">
-              <tbody>
-                <tr><td>Framework</td><td>PCEIF — Public Capital EVM Intelligence Framework</td></tr>
-                <tr><td>Modules</td><td>103 analytical modules across 11 categories</td></tr>
-                <tr><td>Classification</td><td>5-status: Complete / Green / Yellow / Amber / Red</td></tr>
-                <tr><td>Active modules</td><td>All 103 compute from standard project documents</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <!-- Section 3 — Architecture -->
+        <!-- Architecture -->
         <section class="panel about-section about-section-wide">
-          <h2 class="about-h">Technical architecture</h2>
+          <h2 class="about-h">Architecture</h2>
+          <p>103 analytical modules across 11 categories run client-side in the browser; a single serverless endpoint brokers persistence and AI, holding every API key server-side.</p>
           <div class="about-arch">
             <div class="about-arch-layer" style="--layer-color: var(--phosphor)">
               <div class="about-arch-label">Frontend — GitHub Pages (static)</div>
@@ -437,7 +429,7 @@
             <div class="about-arch-layer" style="--layer-color: var(--clear-green)">
               <div class="about-arch-label">Backend — Google Apps Script Web App</div>
               <p>Single <code>/exec</code> endpoint. Serverless, running as the owner. Routes requests, holds API keys in Script Properties, brokers persistence and AI. The browser never holds an API key.</p>
-              <p class="about-endpoints">Endpoints: health, list, get, create, save, archive, restore, chat, analyze, extractsignals, overwritesignal, resetsignals, tts, ingestcorpus, audit</p>
+              <p class="about-endpoints">Endpoints: health, list, listslim, get, create, save, setprojectnumber, archive, restore, chat, analyze, extractsignals, overwritesignal, resetsignals, tts, ingestcorpus, audit</p>
             </div>
             <div class="about-arch-layer" style="--layer-color: var(--radar-amber)">
               <div class="about-arch-label">Persistence — Google Drive</div>
@@ -504,7 +496,7 @@
             <table class="about-table">
               <tbody>
                 <tr><td>Version</td><td>v1.0-praxis-demo</td></tr>
-                <tr><td>Backend</td><td>v10.18+</td></tr>
+                <tr><td>Backend</td><td>v10.28+</td></tr>
                 <tr><td>Framework</td><td>PCEIF Layer 1 + Layer 2</td></tr>
                 <tr><td>Last updated</td><td id="about-date">—</td></tr>
                 <tr><td>Institution</td><td>George Washington University</td></tr>
@@ -515,14 +507,12 @@
           </div>
         </section>
 
-        <!-- Section 6 — Disclaimer -->
+        <!-- Research context -->
         <section class="panel about-section about-section-wide">
-          <h2 class="about-h">Disclaimer</h2>
-          <p>This platform is a demonstration artifact for a Doctor of Engineering praxis. All project data is synthetic. No real project, agency, employer, contractor, or vendor is referenced. AI explains and summarizes — governance decisions require named human approval. The platform is not a validated production system.</p>
-          <ul class="about-list">
-            <li><strong>Research framework:</strong> Design Science Research (DSR) methodology (Hevner, Peffers)</li>
-            <li><strong>Institution:</strong> The George Washington University, School of Engineering and Applied Science</li>
-          </ul>
+          <h2 class="about-h">Research context</h2>
+          <p>Lin Opus Gubernatio is the demonstration artifact for a Doctor of Engineering praxis by Nyan Lin Tun at The George Washington University, Department of Engineering Management and Systems Engineering. The work follows the Design Science Research (DSR) methodology (Hevner, Peffers): the platform is the designed artifact, evaluated through practitioner validation with public-program controls professionals.</p>
+          <p>AI explains and summarizes; governance decisions come from explicit rule-based logic, and every recommended action requires named human approval before it is recorded. The platform is not a validated production system.</p>
+          <p class="about-note">All project data on this site is synthetic. No real project, agency, employer, contractor, or vendor is referenced.</p>
         </section>
 
       </div><!-- /about-grid -->
