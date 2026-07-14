@@ -932,6 +932,44 @@
       t.setAttribute("aria-expanded", String(open));
       t.setAttribute("aria-label", open ? "Close navigation menu" : "Open navigation menu");
     }
+    // keep the floating cluster's menu button in sync with the header one
+    const f = $(".float-menu");
+    if (f) f.setAttribute("aria-expanded", String(open));
+  }
+
+  /* ---------- floating nav cluster ----------
+     Past ~120px of scroll the header (and its hamburger) is gone, so a fixed
+     top-right cluster fades in: a 44px animated logo emblem (click = smooth
+     scroll to top) + a hamburger that drives the SAME setNavOpen() menu as
+     the header button. Fades back out at the top. The radar-sweep rotation
+     is CSS-only and disabled under prefers-reduced-motion (glow stays). */
+  function initFloatingNav() {
+    if (document.getElementById("float-nav")) return;
+    const el = document.createElement("div");
+    el.id = "float-nav";
+    el.className = "float-nav";
+    el.innerHTML =
+      '<button type="button" class="float-logo" title="Back to top" aria-label="Scroll back to top">' +
+        '<img src="logo.png" alt="" />' +
+        '<span class="float-logo-sweep" aria-hidden="true"></span>' +
+      '</button>' +
+      '<button type="button" class="float-menu" aria-label="Open navigation menu" aria-expanded="false">' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>' +
+      '</button>';
+    document.body.appendChild(el);
+    el.querySelector(".float-logo").addEventListener("click", () =>
+      window.scrollTo({ top: 0, behavior: reduceMotion() ? "auto" : "smooth" }));
+    el.querySelector(".float-menu").addEventListener("click", (e) => {
+      e.stopPropagation(); // don't let the document outside-click handler re-close it
+      setNavOpen(!document.body.classList.contains("nav-open"));
+    });
+    const onScroll = () => {
+      // visibility (not display) so the fade transition runs and hidden
+      // buttons drop out of the tab order / accessibility tree
+      el.classList.toggle("visible", window.scrollY > 120);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
   }
 
   function wireNavReveal() {
@@ -1010,7 +1048,18 @@
     renderDecisionCard
   };
 
-  /* ---------- shared collapsible section (Project Detail + Signals page) ---------- */
+  /* ---------- shared collapsible section (Project Detail + Signals page) ----------
+     Open/closed state persists per section id in sessionStorage so toggles
+     survive in-page navigation within a session; a fresh session returns to
+     the declared defaults. Opening a section dispatches `lin:section-opened`
+     so heavy visuals can lazy-render on first expand instead of page load. */
+  var SECTION_STATE_PREFIX = "lin-sec-";
+  function readSectionState(id) {
+    try { return sessionStorage.getItem(SECTION_STATE_PREFIX + id); } catch (e) { return null; }
+  }
+  function writeSectionState(id, open) {
+    try { sessionStorage.setItem(SECTION_STATE_PREFIX + id, open ? "1" : "0"); } catch (e) {}
+  }
   window.toggleSection = function (id) {
     var body = document.getElementById("body-" + id);
     var arrow = document.getElementById("arrow-" + id);
@@ -1020,13 +1069,18 @@
       body.style.display = "block";
       if (arrow) arrow.textContent = "▲";
       if (section) section.classList.add("open");
+      writeSectionState(id, true);
+      try { document.dispatchEvent(new CustomEvent("lin:section-opened", { detail: { id: id } })); } catch (e) {}
     } else {
       body.style.display = "none";
       if (arrow) arrow.textContent = "▼";
       if (section) section.classList.remove("open");
+      writeSectionState(id, false);
     }
   };
   window.collapsibleSection = function (id, title, content, defaultOpen, badgeHtml) {
+    var stored = readSectionState(id);
+    if (stored != null) defaultOpen = stored === "1";
     var openCls = defaultOpen ? " open" : "";
     var toggle = "toggleSection('" + id + "')";
     return '<div class="collapse-section' + openCls + '" id="section-' + id + '">' +
@@ -1179,6 +1233,7 @@
 
     wireNav();
     wireNavReveal();
+    initFloatingNav();
     wireTzSelect();
     startClock();
     // Show the signed-in user's email in the top bar (auth.js / Stage 1).

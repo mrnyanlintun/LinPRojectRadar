@@ -538,7 +538,7 @@
       title: "1. What is PCEIF",
       eyebrow: "Framework foundation",
       build: () => `
-        <p class="kn-lead">PCEIF, the <strong>Public Capital EVM Intelligence Framework</strong>, converts the signals that a public capital program already generates into a structured, accountable governance action with a named authority and a documented audit trail — using 103 analytical modules across 11 categories.</p>
+        <p class="kn-lead">PCEIF, the <strong>Public Capital EVM Intelligence Framework</strong>, converts the signals that a public capital program already generates into a structured, accountable governance action with a named authority and a documented audit trail — using 103 analytical modules across 11 categories. Lin Opus Gubernatio is the platform that implements the framework.</p>
 
         <h3>The problem it solves</h3>
         <p>Standard Earned Value Management produces excellent data. It does not produce a decision. A PM looking at CPI 0.88 in period 4 has no structured path to a defensible escalation: who must act, on what timeframe, with what documentation, under whose authority. The data exists; the governance link is missing.</p>
@@ -582,7 +582,7 @@ Named Human Approval → Audit Record</pre>
     },
     {
       id: "why-108-modules",
-      title: "Why 103 Analytical Modules",
+      title: "Why 103 analytical modules",
       eyebrow: "Framework depth",
       build: () => `
         <p class="kn-lead">Public capital projects are complex adaptive systems. A single EVM index (CPI or SPI) captures cost and schedule performance but misses the systemic, probabilistic, and qualitative dimensions that determine whether a project will succeed. PCEIF addresses this through four principles.</p>
@@ -593,7 +593,7 @@ Named Human Approval → Audit Record</pre>
         <h3>2. Convergence equals confidence</h3>
         <p>When 90 of 103 methods agree on a Red classification, the PM can act with high confidence. When methods diverge — some showing Amber, others Red — the divergence itself is the finding: the project is in an ambiguous state that requires investigation before action. No single method can surface that ambiguity.</p>
 
-        <h3>3. Each category adds a genuinely distinct lens</h3>
+        <h3>3. Each category adds a distinct lens</h3>
         <p>The 11 categories are not redundant:</p>
         <ul class="kn-list">
           <li><strong>Cat 1 (EVM)</strong> — shows what <em>is</em> happening.</li>
@@ -607,13 +607,13 @@ Named Human Approval → Audit Record</pre>
           <li><strong>Cat 11 (Optimization)</strong> — shows what the <em>best decision</em> is.</li>
         </ul>
 
-        <h3>4. The 103-module claim is technically honest</h3>
-        <p>All 103 modules are executable from standard project documents available in any public capital program. No module produces a fake or hardcoded output — every status derives from real extracted data or returns "Insufficient data" with a specific explanation of what is missing.</p>
+        <h3>4. What the 103-module count includes</h3>
+        <p>All 103 modules are executable from standard project documents available in any public capital program. Every status derives from extracted data; a module whose required inputs are absent abstains and reports "Insufficient data" with the specific missing fields. No status is fabricated.</p>
       `,
     },
     {
       id: "five-status",
-      title: "2. Why Five Status Levels",
+      title: "Why five status levels",
       eyebrow: "Governance model",
       build: () => `
         <p class="kn-lead">Traditional RAG (Red-Amber-Green) systems use three states. PCEIF uses five — Complete, Green, Yellow, Amber, Red — for three concrete reasons.</p>
@@ -625,8 +625,7 @@ Named Human Approval → Audit Record</pre>
         <p>Public capital programs have a distinct closeout phase — work is done, but sign-off, commissioning, and documentation must be completed. A Green state implies active monitoring is still required. A Complete state signals the project has met its targets and transitions to closeout governance — different authority, different documentation requirements.</p>
 
         <h3>3. Yellow provides an early warning band</h3>
-        <p>The gap between Green (all good) and Amber (significant risk) is too wide. A project moving from Green to Amber has often already been in trouble for 2-3 reporting periods. Yellow captures the early warning zone — minor variance, still recoverable, but requiring PM attention before the next cycle. This is the band where early intervention prevents escalation.</p>
-        <p>With 103 modules producing outputs, a three-state RAG system collapses too much information. The Yellow state — early warning, minor variance — is particularly important: it surfaces the inflection point where a project is leaving the Green zone but has not yet reached Amber. In a 103-module system, Yellow consensus across multiple categories is a meaningful signal that warrants PM attention before the next reporting cycle, not after.</p>
+        <p>The gap between Green (on track) and Amber (significant risk) is too wide: a project moving from Green to Amber has often already been in trouble for two or three reporting periods. Yellow captures the zone in between — minor variance, still recoverable, requiring PM attention before the next cycle. With 103 modules producing outputs, Yellow consensus across multiple categories marks the inflection point where a project is leaving the Green zone, and it is where early intervention prevents escalation.</p>
 
         <h3>The five-status authority matrix</h3>
         <table class="kn-table">
@@ -644,110 +643,10 @@ Named Human Approval → Audit Record</pre>
         <p>Six or more statuses create decision paralysis — the PM spends time debating whether a project is "Orange-Amber" vs "Deep-Amber" rather than acting. Five states map cleanly to five distinct governance responses with different authorities and timeframes.</p>
       `,
     },
-    {
-      id: "stack",
-      title: "The Signal Stack: 11 Categories · 103 Analytical Modules",
-      eyebrow: "Architecture",
-      build: () => `
-        <p class="kn-lead">The signal stack splits into five tiers. The first two compute and govern; the next three extend coverage to specialised construction and design risks, then layer multiple evidence-combination and uncertainty-reasoning frameworks across the result.</p>
-        ${svgSignalStack()}
-
-        <h3>Cat 1.1–Cat 1.3, Quantitative EVM Analysis</h3>
-        <ul class="kn-list">
-          <li><strong>Cat 1.1: Monte Carlo EAC Forecast.</strong> EVM core (CPI, SPI) plus the 5,000-iteration Beta-PERT P80 EAC forecast.</li>
-          <li><strong>Cat 1.2: CUSUM Anomaly Monitor.</strong> Two-sided tabular CUSUM over the SPI series; breach when cumulative drift exceeds the decision interval H = 5σ.</li>
-          <li><strong>Cat 1.3: Document Risk Extraction.</strong> Transparent keyword rules score risk language across RFIs, submittals, OAC minutes, and correspondence.</li>
-        </ul>
-
-        <h3>Cat 2.1–Cat 3.2, Extended Construction & Design Simulation</h3>
-        <ul class="kn-list">
-          <li><strong>Cat 2.1: PERT</strong> network criticality (P80 duration, path criticality index).</li>
-          <li><strong>Cat 2.2: Line of Balance</strong> production velocity (crew-buffer collapse as a leading indicator).</li>
-          <li><strong>Cat 2.3: CCPM</strong> buffer-health fever chart (buffer consumed vs chain complete).</li>
-          <li><strong>Cat 3.1: Reference Class Forecasting</strong> cost prior (outside-view debiasing against an empirical reference class).</li>
-          <li><strong>Cat 3.2: Design Structure Matrix</strong> rework propagation (architectural change cascades to MEP).</li>
-        </ul>
-
-        <h3>Cat 6.1, Baseline Synthesis</h3>
-        <ul class="kn-list">
-          <li><strong>Cat 6.1: Conservative Dominance.</strong> Classifies the disagreement between signal classes (six conflict types) rather than averaging it away. Worst signal wins. This is the governance baseline that Cat 7.1–Cat 7.9 cross-check.</li>
-        </ul>
-
-        <h3>Cat 7.1–Cat 7.9, Evidence Combination &amp; Uncertainty Reasoning</h3>
-        <ul class="kn-list">
-          <li><strong>Cat 7.1: Dempster-Shafer</strong> (1967/1976). Belief masses + conflict mass K.</li>
-          <li><strong>Cat 7.2: Rough Sets</strong> (1982). Lower / upper approximations and boundary region.</li>
-          <li><strong>Cat 7.3: Neutrosophic Logic</strong> (1995). Truth / Indeterminacy / Falsity as independent dimensions.</li>
-          <li><strong>Cat 7.4: Interval-valued Fuzzy Sets</strong> (1975/1986). Membership intervals propagating EVM measurement tolerances.</li>
-          <li><strong>Cat 7.5: Z-numbers</strong> (2011). Each signal as a (Restriction, Reliability) pair.</li>
-          <li><strong>Cat 7.6: PLTS</strong> (2016). Per-source probability distribution over linguistic states.</li>
-          <li><strong>Cat 7.7: Plithogenic Sets</strong> (2018). Contradiction-degree weighting against the dominant value.</li>
-          <li><strong>Cat 7.8: Belief Rule Base</strong> (2006/2023). Expert IF-THEN rules with belief-distribution consequents.</li>
-          <li><strong>Cat 7.9: Quantum Probability</strong> (2012). Amplitude state vector with phase-angle interference.</li>
-        </ul>
-
-        <h3>Cat 9.1, Governance Decision Output</h3>
-        <ul class="kn-list">
-          <li><strong>Cat 9.1: ABM Governance Layer.</strong> Consumes the Cat 6.1 baseline plus the M10–18 cross-checks and maps (state × conflict × sector) to action, authority, and documentation. Implemented as pure functions in <code>decision.js</code>. This is the LAST module, the artefact that survives the reporting cycle.</li>
-        </ul>
-
-        <p class="kn-callout">Outputs from Cat 1.1–Cat 3.2 feed Cat 6.1 (Conservative Dominance). Cat 6.1 is the governance baseline; Cat 7.1–Cat 7.9 each provide an independent lens to compare against it. Cat 9.1 consumes both and produces the recorded decision card. Divergence between Cat 7.1–Cat 7.9 and Cat 6.1 is itself a governance-relevant finding that the PM must own explicitly.</p>
-      `,
-    },
-    {
-      id: "pm-advice",
-      title: "3. How the 19 Modules Advise the PM",
-      eyebrow: "PM decision protocol",
-      build: () => `
-        <p class="kn-lead">Nineteen modules is a lot. This section explains how the modules are layered, what the PM reads first, and what Lin will say in each confidence band. The point of the stack is not to overwhelm, it is to make the recommended action defensible.</p>
-
-        <h3>The five tiers</h3>
-        <ul class="kn-list">
-          <li><strong>Tier 1: Cat 1.1–Cat 1.3: Quantitative EVM.</strong> Compute what IS happening on cost, schedule, and field documents. These are the inputs everything else stands on.</li>
-          <li><strong>Tier 2: Cat 2.1–Cat 3.2: Extended simulation.</strong> Leading indicators that surface schedule and design risks BEFORE EVM shows the problem (network criticality, crew buffer, fever chart, outside-view priors, rework cascades).</li>
-          <li><strong>Tier 3: Cat 6.1: Baseline synthesis.</strong> Conservative dominance classification, the worst single signal wins. This is the governance baseline state.</li>
-          <li><strong>Tier 4, Cat 7.1–Cat 7.9: Evidence combination.</strong> Nine independent uncertainty-reasoning frameworks (Dempster-Shafer, Rough Sets, Neutrosophic, Interval Fuzzy, Z-numbers, PLTS, Plithogenic, BRB, Quantum) confidence-check the Cat 6.1 baseline.</li>
-          <li><strong>Tier 5: Cat 9.1: Governance decision.</strong> Named-authority action, required documentation, fairness gate, the artefact that survives the reporting cycle.</li>
-        </ul>
-
-        <h3>PM decision protocol</h3>
-        <ol class="kn-list">
-          <li><strong>Step 1.</strong> Read Cat 9.1 (Governance recommendation). This is the action.</li>
-          <li><strong>Step 2.</strong> Check Cat 6.1 (Conservative dominance). This is the baseline state.</li>
-          <li><strong>Step 3.</strong> Count how many of Cat 7.1–Cat 7.9 agree with Cat 6.1:
-            <ul class="kn-list">
-              <li>8–9 agree: <strong>HIGH CONFIDENCE</strong>, act on the Cat 9.1 recommendation.</li>
-              <li>5–7 agree: <strong>MODERATE CONFIDENCE</strong>, act, but document the uncertainty.</li>
-              <li>&lt; 5 agree: <strong>LOW CONFIDENCE</strong>, investigate before acting.</li>
-            </ul>
-          </li>
-          <li><strong>Step 4.</strong> Read specific divergences:
-            <ul class="kn-list">
-              <li>M11 (Rough Sets) borderline → get more data.</li>
-              <li>M13 (Interval Fuzzy) wide interval → verify EVM inputs.</li>
-              <li>M14 (Z-numbers) low reliability → request verified data.</li>
-              <li>M15 (PLTS) P(Red) &lt; 60% → document probability in rationale.</li>
-              <li>M18 (Quantum) destructive interference → signals cancel, own the ambiguity.</li>
-            </ul>
-          </li>
-          <li><strong>Step 5.</strong> Record the decision card with rationale and confidence level.</li>
-        </ol>
-
-        <h3>PM-facing language, what Lin should say</h3>
-        ${ragTable(
-          ["Scenario", "Recommended phrasing"],
-          [
-            [{ label: "High confidence Green", color: RAG.green }, "All signal methods agree this project is on track. Routine monitoring is appropriate."],
-            [{ label: "High confidence Amber", color: RAG.amber }, "Multiple methods flag this project as needing attention. The signals are consistent, a weekly review with the controls lead is recommended before the next reporting cycle."],
-            [{ label: "High confidence Red", color: RAG.red }, "The project requires escalation. All evidence methods confirm the classification. A recovery plan review with the program director is required within 48 hours."],
-            ["Low confidence any state", "The classification is [state] but the signal methods disagree. [Specific reason]. Investigate the discrepancy before recording a formal governance action."],
-            ["Destructive interference", "The signals are genuinely contradictory. The governance layer recommends [action] but the evidence base is divided, document the uncertainty explicitly."],
-          ]
-        )}
-
-        <p class="kn-callout">The point of the stack is that the recommended action is defensible, not just to the PM, but to a future auditor reading the decision card. "Cat 9.1 recommended Red-review; 8 of 9 evidence methods agreed with the Cat 6.1 baseline; the contractor fairness gate was acknowledged on [date]" reads cleanly. "It looked Red so we escalated" does not.</p>
-      `,
-    },
+    /* The former "stack" and "pm-advice" topics (19-module era) were removed:
+       unreachable from the category nav and describing a superseded module
+       count. Their architecture content lives on in "How the categories
+       advise the PM" and the per-category articles. */
     {
       id: "module01",
       title: "4. Cat 1.1: Monte Carlo EAC Forecast",
@@ -1431,7 +1330,7 @@ Named Human Approval → Audit Record</pre>
     },
     {
       id: "fairness",
-      title: "23. The Fairness Gate",
+      title: "The fairness gate",
       eyebrow: "Procedural safeguard",
       build: () => `
         <p class="kn-lead">An automated signal must never directly drive a contractual consequence. The fairness gate is the procedural step that ensures the contractor has a documented opportunity to explain field conditions before a fairness-sensitive Red-review becomes a formal action.</p>
@@ -1459,7 +1358,7 @@ Named Human Approval → Audit Record</pre>
     },
     {
       id: "decision",
-      title: "24. The Decision Card and Audit Trail",
+      title: "The decision card and audit trail",
       eyebrow: "Accountable record",
       build: () => `
         <p class="kn-lead">The decision card is the single artefact that captures, for each governed decision, who decided, what they decided, on what evidence, under what authority, and on what date. It is the record that survives the project, the basis for independent audit, dispute resolution, and program-level reporting.</p>
@@ -1627,7 +1526,7 @@ Named Human Approval → Audit Record</pre>
 
   const CATEGORIES_ADVISE_PM_TOPIC = {
     id: "how-categories-advise-pm",
-    title: "How the Categories Advise the PM",
+    title: "How the categories advise the PM",
     eyebrow: "Reading the categories",
     build: () => `
       <p class="kn-lead">The eleven categories each answer a different governance question. Reading them together tells the PM where to spend attention this reporting cycle.</p>
@@ -1751,7 +1650,12 @@ Named Human Approval → Audit Record</pre>
         const titleText = titleHtml.replace(/<[^>]+>/g, "").trim() || ("Section " + ((i + 1) / 2));
         const body = parts[i + 1] || "";
         const sectionId = "kn-" + topicId + "-sec" + ((i + 1) / 2);
-        out += window.collapsibleSection(sectionId, esc(titleText), body, false);
+        // Leading ordinal ("1.") renders gold, echoing the brand-init treatment.
+        const numMatch = titleText.match(/^(\d+[a-z]?\.)\s*(.*)$/);
+        const titleMarkup = numMatch
+          ? `<span class="kn-sec-num">${esc(numMatch[1])}</span> ${esc(numMatch[2])}`
+          : esc(titleText);
+        out += window.collapsibleSection(sectionId, titleMarkup, body, false);
       }
       return out;
     }
@@ -1760,9 +1664,13 @@ Named Human Approval → Audit Record</pre>
       const t = lookupTopic(selectedId) || LIBRARY[0];
       const built = t.build ? t.build() : "";
       const body = wrapArticleSections(built, t.id || "topic");
+      // Gold leading number + cream title — echoes the header brand-init treatment.
+      const bare = String(t.title || "").replace(/^\d+[a-z]?\.\s*/, "");
+      const n = TOPIC_DISPLAY_NUM[t.id];
+      const heading = (n ? `<span class="kn-num">${n}.</span> ` : "") + esc(bare);
       return `<article class="kn-article">
         <p class="eyebrow">${esc(t.eyebrow || "Knowledge Library")}</p>
-        <h2 class="kn-h kn-h-art">${esc(displayTitle(t))}</h2>
+        <h2 class="kn-h kn-h-art">${heading}</h2>
         ${body}
       </article>`;
     }
