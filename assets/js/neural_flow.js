@@ -236,6 +236,10 @@
       '.lnf-flow-c{animation:lnf-flow-10 3s linear infinite}',                          // Class C derived (keeps its 6 4 dash attr)
       '.lnf-flow-fb{animation:lnf-flow-9 3s linear infinite}',                          // governance feedback (5 4 dash attr; path runs status→Cat9, so the stream reads as reverse flow)
       '@media (prefers-reduced-motion: reduce){.lnf-flow-a,.lnf-flow-b,.lnf-flow-c,.lnf-flow-fb{animation:none!important}}',
+      // Text halo: paint-order strokes a 3px surface-coloured outline UNDER the
+      // glyph fill, so labels stay legible where connection lines pass beneath
+      // them. Applied to every label class (module, category, doc, headers).
+      '.lnf-halo{paint-order:stroke;stroke:var(--surface,#0b0e17);stroke-width:3px;stroke-linejoin:round;stroke-linecap:round}',
       '.lnf-nd{cursor:pointer}',
       '#lnf-tt{position:fixed;background:#0c1422;border:1px solid #2a3a5c;border-radius:4px;',
       '  padding:6px 10px;font-size:11px;color:#c8d4e8;pointer-events:none;z-index:9999;',
@@ -339,12 +343,15 @@
     var prjColor = colFor(prjStatus);
 
     // ── 4. Layout geometry ────────────────────────────────────────────────────
+    // Row pitch sized to the 11.5px module labels (13px pitch avoids collisions);
+    // the SVG height grows with the pitch. The doc column sits further right so
+    // its enlarged end-anchored labels never clip the left viewBox edge.
     var W = 1280, PAD_TOP = 45;
-    var MOD_SPACE = 8, MOD_GAP = 12;
+    var MOD_SPACE = 13, MOD_GAP = 15;
     var totalModH = MODULES.length * MOD_SPACE + (CATS.length - 1) * MOD_GAP;
     var H = Math.max(totalModH + PAD_TOP * 2, 920);
 
-    var CX = { doc:115, mod:420, cat:730, prj:1090 };
+    var CX = { doc:268, mod:460, cat:760, prj:1090 };
 
     var DOC_SPACING = (H - PAD_TOP * 2) / (DOC_KEYS.length - 1);
     function docY(i) { return PAD_TOP + i * DOC_SPACING; }
@@ -368,6 +375,12 @@
     // ── 5. Build SVG ─────────────────────────────────────────────────────────
     var svg = se('svg', { viewBox:'0 0 '+W+' '+H, width:'100%', height:H, xmlns:NS, style:'display:block' }, container);
 
+    // Solid panel background — page-bg underlay + surface wash — so the NYC
+    // skyline art and page gradients never bleed through the diagram. On the
+    // Miami (light) theme the vars resolve to the light surface automatically.
+    se('rect', { x:0, y:0, width:W, height:H, fill:'var(--page-bg, #0b0e17)' }, svg);
+    se('rect', { x:0, y:0, width:W, height:H, fill:'var(--surface, #0b0e17)' }, svg);
+
     // defs
     var defs = se('defs', {}, svg);
     var glowTargets = { Green:COL.Green, Yellow:COL.Yellow, Amber:COL.Amber, Red:COL.Red, Complete:COL.Complete, DocOn:COL.DocOn };
@@ -383,11 +396,12 @@
     var mfb = se('marker', { id:'lnf-arr-fb', markerWidth:'5', markerHeight:'5', refX:'4', refY:'2.5', orient:'auto' }, defs);
     se('polygon', { points:'4,0 4,5 0,2.5', fill:COL.Red, opacity:'0.85' }, mfb);
 
-    // Column headers
+    // Column headers — 12px mono, tracking kept
     [[DOC_KEYS.length+' DOCUMENTS',CX.doc],[MODULES.length+' MODULES',CX.mod],
      [CATS.length+' CATEGORIES',CX.cat],['PROJECT STATUS',CX.prj]].forEach(function(pair) {
-      var t = se('text', { x:pair[1], y:18, 'text-anchor':'middle', fill:'#253045',
-        'font-size':'8', 'font-weight':'700', 'letter-spacing':'0.10em', 'font-family':'monospace' }, svg);
+      var t = se('text', { x:pair[1], y:20, 'text-anchor':'middle', fill:'var(--muted, #4a5a7a)',
+        'font-size':'12', 'font-weight':'700', 'letter-spacing':'0.10em', 'font-family':'monospace',
+        class:'lnf-halo' }, svg);
       t.textContent = pair[0];
     });
 
@@ -458,8 +472,8 @@
     flowAnim(fbEl, 'lnf-flow-fb');
     var fbLabelEl = se('text', {
       x:fbSX+70, y:(fbSY+fbDY)/2,
-      fill:COL.Red, 'font-size':'8', 'font-family':'monospace',
-      opacity:'0.70', 'writing-mode':'tb', 'text-anchor':'middle'
+      fill:COL.Red, 'font-size':'10', 'font-family':'monospace',
+      opacity:'0.70', 'writing-mode':'tb', 'text-anchor':'middle', class:'lnf-halo'
     }, interG);
     fbLabelEl.textContent = 'governance feedback';
 
@@ -470,14 +484,15 @@
     CATS.forEach(function(cat, ci) {
       var firstMI = catModIdxs[ci][0];
       var t = se('text', {
-        x:CX.mod-6, y:modY[firstMI]-8,
-        fill:'#1e2c44', 'font-size':'7', 'font-family':'monospace',
-        'text-anchor':'end', 'font-weight':'700'
+        x:CX.mod-6, y:modY[firstMI]-9,
+        fill:'var(--faint, #1e2c44)', 'font-size':'9', 'font-family':'monospace',
+        'text-anchor':'end', 'font-weight':'700', class:'lnf-halo'
       }, nodeG);
       t.textContent = 'C'+cat.id;
     });
 
-    // Module dots + small right-side labels
+    // Module dots + right-side labels (11.5px, truncated 26 chars — full
+    // names stay available in the hover tooltip)
     var modNodeEls = MODULES.map(function(m, mi) {
       var info = modInfos[mi];
       var glow = info.status !== 'None' ? 'url(#lnf-glow-'+info.status+')' : null;
@@ -489,14 +504,14 @@
       var circle = se('circle', circleAttrs, g);
       if (info.status === 'Red') circle.classList.add('lnf-red-pulse');
 
-      // Small label to the right (7px, truncated 20 chars)
       var lbl = se('text', {
-        x:CX.mod+7, y:modY[mi],
-        fill:info.status==='None'?'#1e2c44':'#5a7898',
-        'font-size':'7', 'font-family':'monospace',
-        'dominant-baseline':'middle', 'pointer-events':'none'
+        x:CX.mod+8, y:modY[mi],
+        fill:info.status==='None'?'var(--faint, #1e2c44)':'var(--muted, #5a7898)',
+        'font-size':'11.5', 'font-family':'monospace',
+        'dominant-baseline':'middle', 'pointer-events':'none', class:'lnf-halo'
       }, g);
-      lbl.textContent = trunc(m.name, 20);
+      if (info.status==='None') lbl.setAttribute('opacity','0.55');
+      lbl.textContent = trunc(m.name, 26);
 
       g.addEventListener('mouseenter', (function(m, mi, info, circle) {
         return function(evt) {
@@ -541,7 +556,7 @@
       if (glow) cAttrs.filter = glow;
       var circle = se('circle', cAttrs, g);
       if (cs==='Red') circle.classList.add('lnf-red-pulse');
-      var t = se('text', { x:x+13, y:y, fill:'#6a8aaa', 'font-size':'9', 'font-family':'monospace', 'dominant-baseline':'middle' }, g);
+      var t = se('text', { x:x+14, y:y, fill:'var(--muted, #6a8aaa)', 'font-size':'14', 'font-family':'monospace', 'dominant-baseline':'middle', class:'lnf-halo' }, g);
       t.textContent = 'C'+cat.id+' '+cat.short;
 
       g.addEventListener('mouseenter', (function(cat, ci, cs, color, circle) {
@@ -569,13 +584,13 @@
     if (prjGlow) pcAttrs.filter = prjGlow;
     var prjCircle = se('circle', pcAttrs, prjG);
     if (prjStatus==='Red') prjCircle.classList.add('lnf-red-pulse');
-    [['Project',-5],['Status',7]].forEach(function(pair) {
-      var t = se('text', { x:CX.prj, y:PRJ_Y+pair[1], fill:'#e8f0ff', 'font-size':'9', 'font-weight':'700',
+    [['Project',-6],['Status',7]].forEach(function(pair) {
+      var t = se('text', { x:CX.prj, y:PRJ_Y+pair[1], fill:'#e8f0ff', 'font-size':'10', 'font-weight':'700',
         'text-anchor':'middle', 'dominant-baseline':'middle', 'font-family':'monospace' }, prjG);
       t.textContent = pair[0];
     });
-    var prjStatusText = se('text', { x:CX.prj, y:PRJ_Y+34, fill:prjColor, 'font-size':'10', 'font-weight':'700',
-      'text-anchor':'middle', 'font-family':'monospace' }, prjG);
+    var prjStatusText = se('text', { x:CX.prj, y:PRJ_Y+38, fill:prjColor, 'font-size':'12', 'font-weight':'700',
+      'text-anchor':'middle', 'font-family':'monospace', class:'lnf-halo' }, prjG);
     prjStatusText.textContent = prjStatus;
     prjG.addEventListener('mouseenter', function(evt) {
       showTT(evt,'<div class="n">Project Status</div><div class="sub" style="color:'+prjColor+'">'+prjStatus+'</div><div class="sub">DST fusion of '+CATS.length+' categories</div>');
@@ -603,8 +618,9 @@
       var dAttrs = { cx:x, cy:y, r:'5', fill:color, opacity:uploaded?'0.88':'0.30', stroke:'none' };
       if (glow) dAttrs.filter = glow;
       se('circle', dAttrs, g);
-      var t = se('text', { x:x-9, y:y, fill:uploaded?'#7a9ac0':'#253045',
-        'font-size':'8.5', 'font-family':'monospace', 'text-anchor':'end', 'dominant-baseline':'middle' }, g);
+      var t = se('text', { x:x-10, y:y, fill:uploaded?'var(--muted, #7a9ac0)':'var(--faint, #253045)',
+        'font-size':'13', 'font-family':'monospace', 'text-anchor':'end', 'dominant-baseline':'middle', class:'lnf-halo' }, g);
+      if (!uploaded) t.setAttribute('opacity','0.55');
       t.textContent = name;
 
       g.addEventListener('mouseenter', (function(name, di, uploaded, color) {
@@ -627,8 +643,9 @@
 
     // ── 8. Legend strip ───────────────────────────────────────────────────────
     var leg = document.createElement('div');
-    leg.style.cssText = 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:7px 10px 4px;' +
-      'font-size:9px;color:#4a5a7a;font-family:monospace;border-top:1px solid #1a2440;margin-top:2px;';
+    leg.style.cssText = 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 12px 6px;' +
+      'font-size:10.5px;color:var(--muted, #4a5a7a);font-family:monospace;' +
+      'background:var(--surface, #0b0e17);border-top:1px solid var(--line, #1a2440);margin-top:0;';
 
     function legDot(color, glow) {
       var sh = glow ? '0 0 5px '+color : 'none';

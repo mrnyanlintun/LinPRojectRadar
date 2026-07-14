@@ -2164,11 +2164,11 @@ body[data-theme="light"] .about-step-num { color: var(--gold-text); }
    THEME — NEW YORK  (Manhattan twilight + gold Art Deco + Liberty bronze)
    ============================================================ */
 body[data-theme="newyork"] {
-  /* Aged bronze-and-gilt monument palette — gold and oxidized-bronze
-     verdigris as roughly equal partners, not gold-primary with a patina
-     garnish. Gold carries page H1s + brand + primary-button borders;
-     verdigris carries eyebrows, hairlines, collapsible headers, neutral
-     badges, and interactive accents. */
+  /* Gilt-primary monument palette: gold (#d4af5a) is the PRIMARY accent —
+     page H1s, brand initials, panel hairlines, primary buttons, active nav,
+     badge borders. Verdigris is the SECONDARY accent only — section
+     eyebrows, secondary hover states, and the skyline patina tint. Scanning
+     any NYC page, gold should visibly outnumber verdigris roughly 2:1. */
   --nyc-gold: #d4af5a;
   --nyc-gold-deep: #8a6a1c;
   --nyc-verdigris: #4fa393;
@@ -2177,13 +2177,13 @@ body[data-theme="newyork"] {
   --page-bg: #0a0e12;
   --surface: rgba(16, 22, 26, .86);
   --surface-soft: rgba(21, 28, 32, .86);
-  --line: rgba(79, 163, 147, .30);            /* verdigris hairlines */
-  --line-strong: rgba(79, 163, 147, .55);
+  --line: rgba(212, 175, 90, .28);            /* gold hairlines */
+  --line-strong: rgba(212, 175, 90, .55);
   --text: #f2e7c9;
   --muted: #b9b492;                            /* aged brass-grey */
   --faint: #6f7d70;                            /* weathered patina grey */
   --phosphor: #d4af5a;                         /* gold — primary accent */
-  --accent: #4fa393;                           /* verdigris — interactive accent */
+  --accent: #d4af5a;                           /* gold — interactive accent (verdigris on hover) */
   --ink-dim: #b9b492;
   --radar-amber: #d4af5a;
   --alarm-red: #c0392b;
@@ -2202,7 +2202,7 @@ body[data-theme="newyork"] {
   --zone-crit: rgba(192, 57, 43, .32);
   --zone-yellow: rgba(216, 182, 74, .20);
   --zone-blue: rgba(106, 169, 201, .22);
-  --ring-line: rgba(79, 163, 147, .30);
+  --ring-line: rgba(212, 175, 90, .30);
 
   --grid-opacity: 0;
   --glass-blur: blur(8px) saturate(135%);
@@ -2218,9 +2218,6 @@ body[data-theme="newyork"] .nyc-skyline {
 }
 body[data-theme="newyork"] .nyc-skyline svg { width: 100%; height: 100%; display: block; }
 body[data-theme="newyork"]::before { background: none; }
-/* panel hairlines verdigris (the About/Knowledge brand panels keep their own
-   gold hairline, so both metals appear across the page) */
-body[data-theme="newyork"] .panel { border-top: 2px solid var(--nyc-verdigris); }
 body[data-theme="newyork"] h1,
 body[data-theme="newyork"] h2,
 body[data-theme="newyork"] h3,
@@ -2232,31 +2229,38 @@ body[data-theme="newyork"] .nav-logo-text {
   letter-spacing: 0;
 }
 
-/* ---- NYC accent distribution: gold ↔ verdigris, roughly equal partners ---- */
-/* page-level H1s + brand wordmark stay gold */
+/* ---- NYC accent distribution: gold PRIMARY (~2:1), verdigris secondary ---- */
+/* page-level H1s + brand wordmark gold */
 body[data-theme="newyork"] .intro h1,
 body[data-theme="newyork"] .kn-h-art,
 body[data-theme="newyork"] [data-page="about"] .intro h1,
 body[data-theme="newyork"] .nav-logo-text { color: var(--nyc-gold); }
-/* section eyebrows verdigris — the (0,2,0) theme selector beats the
-   .intro p (0,1,1) rule that otherwise pins intro eyebrows to --muted */
+/* panel top hairlines gold */
+body[data-theme="newyork"] .panel,
+body[data-theme="newyork"] .kn-content,
+body[data-theme="newyork"] .kn-nav,
+body[data-theme="newyork"] .about-section { border-top: 2px solid var(--nyc-gold); }
+/* section eyebrows verdigris (the secondary accent) — the (0,2,0) theme
+   selector beats the .intro p (0,1,1) rule that otherwise pins intro
+   eyebrows to --muted */
 body[data-theme="newyork"] .eyebrow,
 body[data-theme="newyork"] .intro .eyebrow { color: var(--nyc-verdigris); }
-/* collapsible section headers verdigris */
+/* collapsible section headers gold */
 body[data-theme="newyork"] .collapse-title,
 body[data-theme="newyork"] .cat-row-num,
-body[data-theme="newyork"] .kn-nav-cat-num { color: var(--nyc-verdigris); }
+body[data-theme="newyork"] .kn-nav-cat-num { color: var(--nyc-gold); }
 body[data-theme="newyork"] .collapse-header { border-color: var(--line); }
-/* neutral badges verdigris (status pills keep their status colours) */
+/* neutral badges: gold borders (status pills keep their status colours) */
 body[data-theme="newyork"] .collapse-badge,
 body[data-theme="newyork"] .pill-none,
 body[data-theme="newyork"] .pill-parked,
 body[data-theme="newyork"] .pill-na,
 body[data-theme="newyork"] .badge-est {
-  color: var(--nyc-verdigris);
-  border-color: color-mix(in srgb, var(--nyc-verdigris) 45%, transparent);
+  color: var(--nyc-gold);
+  border-color: color-mix(in srgb, var(--nyc-gold) 45%, transparent);
 }
-/* primary buttons: gold border on transparent, verdigris on hover */
+/* primary buttons + active nav: gold border on transparent; hover is the
+   verdigris secondary state */
 body[data-theme="newyork"] .btn.primary,
 body[data-theme="newyork"] .theme-switch button.active,
 body[data-theme="newyork"] .nav-rail button.active {
@@ -2270,12 +2274,12 @@ body[data-theme="newyork"] .nav-rail button:hover {
   color: var(--nyc-verdigris);
   border-color: var(--nyc-verdigris);
 }
-/* interactive accents verdigris with gold hover */
+/* interactive accents gold with verdigris hover (secondary hover state) */
 body[data-theme="newyork"] a,
 body[data-theme="newyork"] .kn-ask,
-body[data-theme="newyork"] .la-link { color: var(--nyc-verdigris); }
+body[data-theme="newyork"] .la-link { color: var(--nyc-gold); }
 body[data-theme="newyork"] a:hover,
-body[data-theme="newyork"] .kn-ask:hover { color: var(--nyc-gold); }
+body[data-theme="newyork"] .kn-ask:hover { color: var(--nyc-verdigris); }
 
 /* ============================================================
    MOBILE — 640px and below (iPhone SE, 14, 14 Pro Max)
@@ -2499,38 +2503,8 @@ body { overflow-x: hidden; max-width: 100vw; }
 .dz-done { border-color: color-mix(in srgb, var(--clear-green) 35%, var(--line)); }
 .dz-error { border-color: color-mix(in srgb, var(--alarm-red) 35%, var(--line)); }
 
-/* ============================================================
-   Per-theme cursors — 32×32 PNG, hotspot 9 1 (triangle apex).
-   Miami (light / default), Gotham (dark), NYC (newyork). The
-   theme→image mapping lives in --cur-* vars so the functional
-   selectors are written once. Every url() keeps an auto/pointer
-   fallback. Placed last so it wins the source-order cascade over
-   the scattered `cursor: pointer` declarations above; canvas
-   grab/grabbing and the functional exceptions are preserved.
-   NOTE: the Gotham glyph is a generic bat silhouette drawn for
-   this project — deliberately not the trademarked DC emblem.
-   ============================================================ */
-body {                                   /* default = Miami (light theme) */
-  --cur-default: url("../cursors/cursor-miami-default.png") 9 1, auto;
-  --cur-pointer: url("../cursors/cursor-miami-pointer.png") 9 1, pointer;
-}
-body[data-theme="dark"] {
-  --cur-default: url("../cursors/cursor-gotham-default.png") 9 1, auto;
-  --cur-pointer: url("../cursors/cursor-gotham-pointer.png") 9 1, pointer;
-}
-body[data-theme="newyork"] {
-  --cur-default: url("../cursors/cursor-nyc-default.png") 9 1, auto;
-  --cur-pointer: url("../cursors/cursor-nyc-pointer.png") 9 1, pointer;
-}
-body { cursor: var(--cur-default); }
-a, button, .btn, [role="button"], summary, label[for], [onclick],
-.blip, .list-item, .li-open, .theme-switch button, .nav-rail button,
-.kn-nav-btn, .kn-nav-cat-head, .collapse-header, .cat-row-head,
-.la-fab, .float-logo, .float-menu, .aud-filebtn, .dz-browse,
-.chart3d-btn, .recompute-all-btn, .btn-secondary { cursor: var(--cur-pointer); }
-/* functional exceptions keep native cursors */
-input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]),
-textarea, [contenteditable="true"] { cursor: text; }
+/* Custom PNG cursors removed — native cursors throughout (interactive
+   elements keep their scattered `cursor: pointer` rules, inputs default to
+   the I-beam, disabled controls to not-allowed). The radar scope keeps a
+   functional crosshair. */
 #radar-svg, .radar-wrap { cursor: crosshair; }
-.btn:disabled, button:disabled, [disabled], .aud-filebtn.is-disabled { cursor: not-allowed; }
-.dropzone, .dropzone * { cursor: copy; }
