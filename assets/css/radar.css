@@ -320,7 +320,7 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
   white-space: nowrap;
 }
 .recompute-all-btn:hover:not(:disabled) { border-color: var(--phosphor); color: var(--phosphor); }
-.recompute-all-btn:disabled { opacity: 0.45; cursor: default; }
+.recompute-all-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .recompute-all-status { font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; color: var(--muted); }
 #project-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .list-item {
@@ -2498,3 +2498,39 @@ body { overflow-x: hidden; max-width: 100vw; }
 .dz-identifying, .dz-identified { opacity: 0.7; }
 .dz-done { border-color: color-mix(in srgb, var(--clear-green) 35%, var(--line)); }
 .dz-error { border-color: color-mix(in srgb, var(--alarm-red) 35%, var(--line)); }
+
+/* ============================================================
+   Per-theme cursors — 32×32 PNG, hotspot 9 1 (triangle apex).
+   Miami (light / default), Gotham (dark), NYC (newyork). The
+   theme→image mapping lives in --cur-* vars so the functional
+   selectors are written once. Every url() keeps an auto/pointer
+   fallback. Placed last so it wins the source-order cascade over
+   the scattered `cursor: pointer` declarations above; canvas
+   grab/grabbing and the functional exceptions are preserved.
+   NOTE: the Gotham glyph is a generic bat silhouette drawn for
+   this project — deliberately not the trademarked DC emblem.
+   ============================================================ */
+body {                                   /* default = Miami (light theme) */
+  --cur-default: url("../cursors/cursor-miami-default.png") 9 1, auto;
+  --cur-pointer: url("../cursors/cursor-miami-pointer.png") 9 1, pointer;
+}
+body[data-theme="dark"] {
+  --cur-default: url("../cursors/cursor-gotham-default.png") 9 1, auto;
+  --cur-pointer: url("../cursors/cursor-gotham-pointer.png") 9 1, pointer;
+}
+body[data-theme="newyork"] {
+  --cur-default: url("../cursors/cursor-nyc-default.png") 9 1, auto;
+  --cur-pointer: url("../cursors/cursor-nyc-pointer.png") 9 1, pointer;
+}
+body { cursor: var(--cur-default); }
+a, button, .btn, [role="button"], summary, label[for], [onclick],
+.blip, .list-item, .li-open, .theme-switch button, .nav-rail button,
+.kn-nav-btn, .kn-nav-cat-head, .collapse-header, .cat-row-head,
+.la-fab, .float-logo, .float-menu, .aud-filebtn, .dz-browse,
+.chart3d-btn, .recompute-all-btn, .btn-secondary { cursor: var(--cur-pointer); }
+/* functional exceptions keep native cursors */
+input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+textarea, [contenteditable="true"] { cursor: text; }
+#radar-svg, .radar-wrap { cursor: crosshair; }
+.btn:disabled, button:disabled, [disabled], .aud-filebtn.is-disabled { cursor: not-allowed; }
+.dropzone, .dropzone * { cursor: copy; }
