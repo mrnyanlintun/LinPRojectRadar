@@ -558,6 +558,7 @@
              Reporting period: <span class="mod-mono">${esc(p.reportingPeriod)}</span> ·
              State: <span class="li-state state-${stateKey}">${esc(state)}</span>
            </p>
+           ${p.address ? `<p class="detail-meta detail-address">Address: <strong>${esc(p.address)}</strong></p>` : ""}
          </div>
          <div class="detail-head-actions">
            <button class="btn small detail-reset" data-reset="${esc(p.id)}">Reset signals</button>

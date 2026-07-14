@@ -127,56 +127,105 @@
     return null;
   }
 
-  /* Inline editor for assigning / revising a project number (Edit №). */
-  function openEditNumber(btn) {
-    const id = btn.dataset.editnum;
+  /* ---------- coordinate validation (shared by edit + create) ----------
+     Both-or-neither; address optional. Lat −90..90, lng −180..180; values
+     round to 6 decimals. Returns {err} or {lat,lng} (nulls = clear). */
+  function validateLatLng(latStr, lngStr) {
+    const hasLat = latStr !== "", hasLng = lngStr !== "";
+    if (hasLat !== hasLng) return { err: "Enter both latitude and longitude, or neither." };
+    if (!hasLat) return { lat: null, lng: null };
+    const lat = Number(latStr), lng = Number(lngStr);
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) return { err: "Latitude must be a number between -90 and 90." };
+    if (!Number.isFinite(lng) || lng < -180 || lng > 180) return { err: "Longitude must be a number between -180 and 180." };
+    return { lat: Math.round(lat * 1e6) / 1e6, lng: Math.round(lng * 1e6) / 1e6 };
+  }
+
+  /* Unified inline "Edit info" panel — project number, name, address, and
+     coordinates in one place (merges the old Edit № affordance). Sector is
+     shown read-only: it drives simulation rules and is not editable here.
+     Location fields feed the portfolio map view; NO hardcoded location
+     table exists — pins render only from data saved here. */
+  function openEditInfo(btn) {
+    const id = btn.dataset.editinfo;
     const row = btn.closest(".pr-row");
     if (!row) return;
     if (row.nextElementSibling && row.nextElementSibling.classList.contains("pr-editnum")) return;
+    const cached = LinStore.getCached(id) || {};
     const box = document.createElement("div");
-    box.className = "pr-editnum";
+    box.className = "pr-editnum pr-editinfo";
     box.innerHTML =
-      `<label class="rationale-label">New project number / code
-         <input type="text" class="pr-editnum-input ig-input" maxlength="40" placeholder="e.g. AP-2026-014" /></label>
-       <div class="dc-actions">
-         <button class="btn primary small pr-editnum-save">Save</button>
-         <button class="btn small pr-editnum-cancel">Cancel</button>
+      `<div class="pr-editinfo-grid">
+         <label class="rationale-label">Project number / code
+           <input type="text" class="pe-id ig-input" maxlength="40" placeholder="e.g. AP-2026-014" /></label>
+         <label class="rationale-label">Project name
+           <input type="text" class="pe-name ig-input" maxlength="80" /></label>
+         <label class="rationale-label">Sector (read-only — drives simulation rules)
+           <input type="text" class="pe-sector ig-input" disabled /></label>
+         <label class="rationale-label">Address (optional)
+           <input type="text" class="pe-address ig-input" maxlength="160" placeholder="e.g. Terminal B, Austin-Bergstrom Intl Airport" /></label>
+         <label class="rationale-label">Latitude (−90…90, optional)
+           <input type="text" class="pe-lat ig-input" inputmode="decimal" placeholder="e.g. 30.194500" /></label>
+         <label class="rationale-label">Longitude (−180…180, optional)
+           <input type="text" class="pe-lng ig-input" inputmode="decimal" placeholder="e.g. -97.669900" /></label>
        </div>
-       <p class="pr-editnum-msg kn-sub" aria-live="polite"></p>`;
+       <div class="dc-actions">
+         <button class="btn primary small pe-save">Save</button>
+         <button class="btn small pe-cancel">Cancel</button>
+       </div>
+       <p class="pe-msg kn-sub" aria-live="polite"></p>`;
     row.insertAdjacentElement("afterend", box);
-    const input = box.querySelector(".pr-editnum-input");
-    input.value = id;             // set via property — ids may predate the charset rule
-    input.focus();
-    input.select();
+    // values via properties — legacy data may predate the charset rules
+    box.querySelector(".pe-id").value = id;
+    box.querySelector(".pe-name").value = cached.name || "";
+    box.querySelector(".pe-sector").value = SECTOR_LABEL[cached.sector] || cached.sector || "";
+    box.querySelector(".pe-address").value = cached.address || "";
+    box.querySelector(".pe-lat").value = cached.lat != null ? String(cached.lat) : "";
+    box.querySelector(".pe-lng").value = cached.lng != null ? String(cached.lng) : "";
+    box.querySelector(".pe-id").focus();
+
     const close = () => box.remove();
-    box.querySelector(".pr-editnum-cancel").addEventListener("click", close);
-    box.querySelector(".pr-editnum-save").addEventListener("click", async () => {
-      const newId = input.value.trim();
-      const msg = box.querySelector(".pr-editnum-msg");
-      if (newId === id) { close(); return; }
-      const err = validateProjectNumber(newId, id);
-      if (err) { msg.textContent = err; return; }
-      const save = box.querySelector(".pr-editnum-save");
+    box.querySelector(".pe-cancel").addEventListener("click", close);
+    box.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+    box.querySelector(".pe-save").addEventListener("click", async () => {
+      const msg = box.querySelector(".pe-msg");
+      const newId = box.querySelector(".pe-id").value.trim();
+      const name = box.querySelector(".pe-name").value.trim();
+      const address = box.querySelector(".pe-address").value.trim();
+      const coords = validateLatLng(box.querySelector(".pe-lat").value.trim(),
+                                    box.querySelector(".pe-lng").value.trim());
+      if (newId !== id) {
+        const idErr = validateProjectNumber(newId, id);
+        if (idErr) { msg.textContent = idErr; return; }
+      }
+      if (name.length < 3) { msg.textContent = "Enter a project name (min 3 characters)."; return; }
+      if (coords.err) { msg.textContent = coords.err; return; }
+      const save = box.querySelector(".pe-save");
       save.disabled = true;
-      msg.textContent = "Updating project number…";
+      msg.textContent = "Saving project info…";
       try {
-        await LinStore.setProjectNumber(id, newId);
-        // re-key everything that referenced the old id
-        if (window.LinApp && LinApp.renameSelection) LinApp.renameSelection(id, newId);
-        if (window.LinSignals && LinSignals.clearCache) LinSignals.clearCache(id);
-        logEvent(`RENUMBERED project ${id} → ${newId}.`);
+        // ALWAYS mutate the full project.json — never save a slim stub back
+        // to Drive (that would drop signals/history from the stored file).
+        const full = await LinStore.getProject(id);
+        if (!full || full.slim) throw new Error("couldn't load the full project record");
+        full.name = name;
+        full.address = address || null;
+        full.lat = coords.lat;
+        full.lng = coords.lng;
+        await LinStore.saveProject(full);
+        // number change last — it re-keys the Drive folder + mirrors
+        if (newId !== id) {
+          await LinStore.setProjectNumber(id, newId);
+          if (window.LinApp && LinApp.renameSelection) LinApp.renameSelection(id, newId);
+          if (window.LinSignals && LinSignals.clearCache) LinSignals.clearCache(id);
+        }
+        logEvent(`EDITED project info for ${newId}${newId !== id ? ` (was ${id})` : ""}: name/address/coordinates updated.`);
         await LinStore.load();
         if (window.LinApp) LinApp.refresh();
         renderManagePage();
       } catch (e) {
-        // uniqueness (and anything else) is enforced server-side too — surface it
-        msg.textContent = "Couldn't update: " + ((e && e.message) || "store unreachable") + ".";
+        msg.textContent = "Couldn't save: " + ((e && e.message) || "store unreachable") + ".";
         save.disabled = false;
       }
-    });
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") box.querySelector(".pr-editnum-save").click();
-      if (e.key === "Escape") close();
     });
   }
 
@@ -198,7 +247,7 @@
         <span class="li-state state-${key}">${esc(state)}</span>
         <span class="pr-actions">
           <button class="btn small" data-detail="${esc(p.id)}">Detail</button>
-          <button class="btn small" data-editnum="${esc(p.id)}" title="Assign / revise the project number">Edit №</button>
+          <button class="btn small" data-editinfo="${esc(p.id)}" title="Edit project number, name, address, and map coordinates">Edit info</button>
           <button class="btn small" data-populate="${esc(p.id)}">${populated ? "Re-upload" : "Populate"}</button>
           <button class="btn small" data-archive="${esc(p.id)}">Archive</button>
         </span>
@@ -217,6 +266,12 @@
        <input id="np-id" class="ig-input" maxlength="40" placeholder="e.g. AP-2026-014" />
        <label class="rationale-label" for="np-name">Project name</label>
        <input id="np-name" class="ig-input" maxlength="80" placeholder="e.g. Terminal B Expansion" />
+       <label class="rationale-label" for="np-address">Address (optional)</label>
+       <input id="np-address" class="ig-input" maxlength="160" placeholder="e.g. Terminal B, Austin-Bergstrom Intl Airport" />
+       <label class="rationale-label" for="np-lat">Latitude (optional, −90…90)</label>
+       <input id="np-lat" class="ig-input" inputmode="decimal" placeholder="e.g. 30.194500" />
+       <label class="rationale-label" for="np-lng">Longitude (optional, −180…180)</label>
+       <input id="np-lng" class="ig-input" inputmode="decimal" placeholder="e.g. -97.669900" />
        <label class="rationale-label" for="np-sector">Sector</label>
        <select id="np-sector" class="ig-input">
          <option value="design">Design</option>
@@ -265,13 +320,25 @@
       const id = document.getElementById("np-id").value.trim();
       const name = document.getElementById("np-name").value.trim();
       const sector = document.getElementById("np-sector").value;
+      const address = document.getElementById("np-address").value.trim();
       const msg = document.getElementById("np-msg");
       const idErr = validateProjectNumber(id);
       if (idErr) { msg.textContent = idErr; return; }
       if (name.length < 3) { msg.textContent = "Enter a project name (min 3 characters)."; return; }
+      const coords = validateLatLng(document.getElementById("np-lat").value.trim(),
+                                    document.getElementById("np-lng").value.trim());
+      if (coords.err) { msg.textContent = coords.err; return; }
       msg.textContent = "Creating project in the store…";
       try {
         const p = await LinStore.createProject({ id, name, sector });
+        // optional location fields persist via the normal save flow (the
+        // create endpoint only takes id/name/sector)
+        if (address || coords.lat != null) {
+          p.address = address || null;
+          p.lat = coords.lat;
+          p.lng = coords.lng;
+          await LinStore.saveProject(p);
+        }
         logEvent(`Created EMPTY project ${p.id} — ${name} (${SECTOR_LABEL[sector] || sector}); awaiting ingest.`);
         if (window.LinApp) LinApp.refresh();
         renderManagePage();
@@ -285,8 +352,8 @@
       b.addEventListener("click", async () => { try { await LinStore.archiveProject(b.dataset.archive); logEvent(`ARCHIVED ${b.dataset.archive}.`); if (window.LinApp) LinApp.refresh(); renderManagePage(); } catch (e) { LinStore.banner("Couldn't archive — store unreachable. Retry.", "warn"); } }));
     root.querySelectorAll("[data-detail]").forEach((b) =>
       b.addEventListener("click", () => LinApp.openDetail(b.dataset.detail)));
-    root.querySelectorAll("[data-editnum]").forEach((b) =>
-      b.addEventListener("click", () => openEditNumber(b)));
+    root.querySelectorAll("[data-editinfo]").forEach((b) =>
+      b.addEventListener("click", () => openEditInfo(b)));
     root.querySelectorAll("[data-populate]").forEach((b) =>
       b.addEventListener("click", () => {
         // Expand the UPLOAD DOCUMENTS section, pre-select this project in the

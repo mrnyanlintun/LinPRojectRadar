@@ -379,14 +379,28 @@
       <p>Each project is a blip on the scope. Distance from center is drift from baseline; angle is delivery sector. Select a project to see its signal ledger, the signal-conflict classification, and the PCEIF governance decision, with explicit authority, documentation, and a contractor fairness gate where required.</p>
     </section>
 
-    <!-- RADAR (full-width rectangular stage; buildRadar() sets the viewBox
-         and draws the in-stage status legend + threshold columns) -->
+    <!-- RADAR / MAP (full-width rectangular stage; buildRadar() sets the
+         viewBox and draws the in-stage status legend + threshold columns;
+         the world-map view builds lazily on first switch) -->
     <section class="panel radar-panel radar-panel-wide" aria-label="Project radar scope">
+      <div class="stage-head">
+        <div class="stage-toggle" role="group" aria-label="Portfolio view">
+          <button type="button" class="stage-btn active" data-view="radar">Radar</button>
+          <button type="button" class="stage-btn" data-view="map">Map</button>
+        </div>
+      </div>
       <p class="radar-note">Radial distance indicates drift from baseline — projects near the center are performing to plan. Angular sectors group projects by delivery type: Design, Construction, and Hybrid. Select any project marker, or the corresponding row in the list below, to open its detail view.</p>
       <div class="radar-wrap">
         <svg id="radar-svg" viewBox="0 0 1200 460" preserveAspectRatio="xMidYMid meet" role="img"
              aria-label="Radar scope. Radial distance indicates drift from baseline; angular sectors group projects by delivery type (Design, Construction, Hybrid); marker color indicates status. Selecting a project marker opens its detail view; the project list below is an equivalent keyboard control path.">
         </svg>
+      </div>
+      <div class="map-wrap" hidden>
+        <svg id="map-svg" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid meet" role="img"
+             aria-label="Stylized world map. One building marker per project with a stored location; marker color indicates status. Selecting a marker highlights the project; double-clicking opens its detail view. The project list below is an equivalent keyboard control path.">
+        </svg>
+        <p class="map-nolocation" id="map-nolocation" hidden></p>
+        <p class="map-caption">Locations are illustrative — synthetic demonstration data.</p>
       </div>
 
       <div class="fallback">
