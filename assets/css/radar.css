@@ -2510,3 +2510,80 @@ body { overflow-x: hidden; max-width: 100vw; }
    the I-beam, disabled controls to not-allowed). The radar scope keeps a
    functional crosshair. */
 #radar-svg, .radar-wrap { cursor: crosshair; }
+
+/* ============================================================
+   Portfolio world-map view (Radar | Map toggle)
+   Stylized HUD hologram: landmass fill + coastline + blurred glow
+   halo, themed per palette; status-colored building pins.
+   ============================================================ */
+/* view toggle pills (same treatment as the theme switch) */
+.stage-head { display: flex; align-items: center; justify-content: flex-end; margin-bottom: 10px; }
+.stage-toggle { display: flex; gap: 4px; border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.stage-btn {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .06em;
+  background: transparent; color: var(--muted); border: 0;
+  padding: 5px 14px; border-radius: 999px; cursor: pointer;
+  transition: background .2s, color .2s;
+}
+.stage-btn:hover { color: var(--text); }
+.stage-btn.active { background: var(--phosphor); color: #fff; }
+body[data-theme="newyork"] .stage-btn.active { background: transparent; color: var(--nyc-gold); box-shadow: inset 0 0 0 1px var(--nyc-gold); }
+
+.map-wrap { position: relative; width: 100%; }
+.map-wrap[hidden] { display: none; }
+#map-svg { width: 100%; height: auto; display: block; aspect-ratio: 2 / 1; }
+
+/* holographic landmass layers (colors per theme) */
+.map-land-fill { fill: var(--phosphor); opacity: .12; stroke: none; }
+.map-coast { fill: none; stroke: var(--phosphor); stroke-width: 1.2; opacity: .65; stroke-linejoin: round; }
+.map-coast-glow { fill: none; stroke: var(--phosphor); stroke-width: 2.4; opacity: .5; stroke-linejoin: round; }
+/* NYC: gold/verdigris duotone glow */
+body[data-theme="newyork"] .map-land-fill { fill: var(--nyc-verdigris); opacity: .10; }
+body[data-theme="newyork"] .map-coast { stroke: var(--nyc-gold); }
+body[data-theme="newyork"] .map-coast-glow { stroke: var(--nyc-verdigris); }
+/* Miami: deep slate crisp lines, no glow blur, no vignette */
+body[data-theme="light"] .map-land-fill { fill: #3d4657; opacity: .08; }
+body[data-theme="light"] .map-coast { stroke: #3d4657; opacity: .8; }
+body[data-theme="light"] .map-coast-glow,
+body[data-theme="light"] .map-vignette { display: none; }
+
+/* pins */
+.map-pin { cursor: pointer; }
+.map-pin-leader { stroke: var(--ring-line); stroke-width: 1; opacity: .6; }
+.map-pin-leader-short { opacity: .35; }
+.map-pin-ring { pointer-events: none; }
+.map-pin.selected .map-pin-ring { animation: map-pin-pulse 1.1s ease-out 1; }
+@keyframes map-pin-pulse {
+  0%   { opacity: .9; r: 15; }
+  100% { opacity: 0;  r: 30; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-pin.selected .map-pin-ring { animation: none; opacity: .8; }
+}
+
+/* captions + no-location note */
+.map-caption { font-family: var(--font-body); font-size: 12px; color: var(--faint); margin: 8px 0 0; }
+.map-nolocation { font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin: 8px 0 0; }
+.map-noloc-id {
+  font-family: var(--font-mono); font-size: 11px; color: var(--phosphor);
+  background: transparent; border: 0; padding: 0 1px; cursor: pointer; text-decoration: underline;
+}
+.map-empty-hint { font-family: var(--font-mono); font-size: 14px; fill: var(--muted); }
+
+/* map tooltip (HTML singleton) */
+#map-tt {
+  position: fixed; display: none; z-index: 9999; pointer-events: none;
+  background: var(--surface, #0c1422); border: 1px solid var(--line, #2a3a5c);
+  border-radius: 6px; padding: 8px 12px; max-width: 260px;
+  font-family: var(--font-mono); font-size: 11px; color: var(--text); line-height: 1.55;
+  box-shadow: var(--shadow);
+}
+#map-tt .mt-num { font-size: 10px; color: var(--phosphor); }
+#map-tt .mt-name { font-weight: 600; }
+#map-tt .mt-sub { color: var(--muted); }
+#map-tt .mt-addr { color: var(--muted); font-size: 10.5px; margin-top: 2px; }
+#map-tt .mt-hint { color: var(--faint); font-size: 10px; margin-top: 4px; font-style: italic; }
+
+/* Edit info inline panel grid (extends the .pr-editnum chrome) */
+.pr-editinfo-grid { display: grid; grid-template-columns: repeat(3, minmax(160px, 1fr)); gap: 10px 14px; width: 100%; }
+@media (max-width: 800px) { .pr-editinfo-grid { grid-template-columns: 1fr; } }
