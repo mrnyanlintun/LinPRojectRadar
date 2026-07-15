@@ -208,9 +208,11 @@
      ============================================================ */
   const MOD_CX = 250, MOD_CY = 250, MOD_OUTER = 200;
   const PARKED_GREY = "#64748b"; // Cat 8 (ML/AI) parked-status grey
+  // Central palette (radar.css --status-* via config.js). Canvas/SVG dots.
+  const SC = window.LIN_STATUS_COLORS;
   const DOT_COLOR = {
-    Complete: "#4ea0ff", Green: "#3fcaa6", Yellow: "#f0c040",
-    Amber: "#e2b13c", Red: "#e0556b", none: "#26344f"
+    Complete: SC.Complete, Green: SC.Green, Yellow: SC.Yellow,
+    Amber: SC.Amber, Red: SC.Red, none: SC.None
   };
 
   function moduleStatusToRadius(status) {
@@ -1339,6 +1341,7 @@
   }
 
   function wireSignalSphere(root, project) {
+  const SC = window.LIN_STATUS_COLORS;   // central palette (radar.css --status-*)
     const canvas = root.querySelector(".sphere3d-canvas");
     if (!canvas || !window.LIN_CATEGORIES) return;
     const wrap = canvas.parentElement;
@@ -1352,7 +1355,7 @@
     }
     resize();
     const ctx = canvas.getContext("2d");
-    const DOT = { Complete: "#4ea0ff", Green: "#3fcaa6", Yellow: "#f0c040", Amber: "#e2b13c", Red: "#e0556b", none: "#1b2740" };
+    const DOT = { Complete: SC.Complete, Green: SC.Green, Yellow: SC.Yellow, Amber: SC.Amber, Red: SC.Red, none: SC.None };
     const SR = { Complete: 1.0, Green: 0.85, Yellow: 0.65, Amber: 0.40, Red: 0.15 };
     const R = 160;
     const goldenAngle = Math.PI * (3 - Math.sqrt(5));
@@ -1499,6 +1502,7 @@
   }
 
   function wireEnsembleScatter(root, project) {
+  const SC = window.LIN_STATUS_COLORS;   // central palette (radar.css --status-*)
     const canvas = root.querySelector(".scatter3d-canvas");
     if (!canvas || !window.LIN_CATEGORIES) return;
     if (!window.hasSignals || !hasSignals(project)) return;
@@ -1513,7 +1517,7 @@
     }
     resize();
     const ctx = canvas.getContext("2d");
-    const DOT = { Complete: "#4ea0ff", Green: "#3fcaa6", Yellow: "#f0c040", Amber: "#e2b13c", Red: "#e0556b", none: "#26344f" };
+    const DOT = { Complete: SC.Complete, Green: SC.Green, Yellow: SC.Yellow, Amber: SC.Amber, Red: SC.Red, none: SC.None };
     const SY = { Complete: -120, Green: -80, Yellow: -30, Amber: 40, Red: 100, none: 0 };
     const GRID_Y = 120;
 
@@ -1620,9 +1624,9 @@
       ctx.fillText(activeTotal+" active · "+counts.Red+" Red · "+counts.Amber+" Amber · "+counts.Green+" Green",14,40);
 
       // Fix 2: Y axis status labels as screen-space overlay — drawn last, anchored to left
-      [{label:"Complete",y:SY.Complete,color:"#4ea0ff"},{label:"Green",y:SY.Green,color:"#3fcaa6"},
-       {label:"Yellow",y:SY.Yellow,color:"#f0c040"},{label:"Amber",y:SY.Amber,color:"#e2b13c"},
-       {label:"Red",y:SY.Red,color:"#e0556b"}
+      [{label:"Complete",y:SY.Complete,color:SC.Complete},{label:"Green",y:SY.Green,color:SC.Green},
+       {label:"Yellow",y:SY.Yellow,color:SC.Yellow},{label:"Amber",y:SY.Amber,color:SC.Amber},
+       {label:"Red",y:SY.Red,color:SC.Red}
       ].forEach((lb)=>{
         const pp=proj(rxf(ryf({x:-320,y:lb.y,z:0},rotY),rotX));
         ctx.font="10px SFMono-Regular,ui-monospace,monospace";

@@ -37,12 +37,43 @@
   --flow-accent: #3457a8;   /* Signal Flow doc→model lines — slate-blue on Miami */
   --ink-dim: #4c576b;
   --gold-text: #8a6a1c;
-  --radar-amber: #b4740a;
-  --alarm-red: #dc2626;
-  --clear-green: #15803d;
-  --yellow: #b98a00;        /* deepened for Miami — yellow-on-cream is the one status that fades */
-  --blue-status: #2b7fd4;
   --eyebrow: #8a6a1c;       /* section eyebrows go sun-gold on Miami (was grey-blue) */
+
+  /* ============================================================
+     STATUS PALETTE — THE single source of truth.
+     Never hardcode a status hex anywhere in this repo.
+       · CSS / SVG / DOM  → var(--status-*)  (re-themes live, for free)
+       · <canvas> renderers, which cannot read var() → window.LIN_STATUS_COLORS
+         (config.js reads THESE vars back via getComputedStyle)
+     Yellow vs Amber is the point of this palette: pale baby yellow against an
+     unmistakable orange, so the two never read alike side by side.
+     ------------------------------------------------------------
+     -*        = graphic fills/strokes (blips, pins, dots, rings). Identical
+                 across all four themes.
+     -*-text   = label ink. Same as the fill on the dark themes; Miami
+                 overrides it, because these bright fills are unreadable as
+                 text on cream (see the Miami block).
+     ============================================================ */
+  --status-complete: #4ea0ff;
+  --status-green:    #2ee66b;
+  --status-yellow:   #ffe066;
+  --status-amber:    #ff8c1a;
+  --status-red:      #ff3b30;
+  --status-nodata:   #26344f;
+
+  --status-complete-text: var(--status-complete);
+  --status-green-text:    var(--status-green);
+  --status-yellow-text:   var(--status-yellow);
+  --status-amber-text:    var(--status-amber);
+  --status-red-text:      var(--status-red);
+
+  /* Marker outline: only Miami needs one (pale fills vanish on cream), so the
+     dark themes carry a zero-width transparent stroke rather than a special case. */
+  --status-outline: transparent;
+  --status-outline-w: 0;
+
+  /* NOTE: the legacy aliases (--clear-green etc.) are declared on `body`, not
+     here — see the block just below :root for why. */
 
   /* sector identity (theme-aware): white/blue/magenta, kept clear of
      the green/amber/red health palette. Design uses dark text on Light. */
@@ -66,6 +97,25 @@
   --shadow: 0 14px 40px rgba(120,84,20,.12);   /* warm sand shadow, not cool slate */
 }
 
+/* Legacy status names, kept so the ~90 existing call sites keep working. They
+   alias the TEXT variants, because almost every one of them is a label; the
+   genuine graphic consumers (blips, pins, rings) point at the -* fills directly.
+
+   These MUST be declared on `body`, not :root. A custom property's var()
+   references resolve against the cascade of the element that DECLARES it, and
+   the computed token is then inherited. Declared on :root, --clear-green would
+   resolve --status-green-text against :root (→ the bright fill) and body would
+   inherit that already-resolved value — Miami's darkened text override, which
+   lives on body[data-theme="light"], would never apply. Declaring them on body
+   resolves them against the active theme. */
+body {
+  --radar-amber: var(--status-amber-text);
+  --alarm-red:   var(--status-red-text);
+  --clear-green: var(--status-green-text);
+  --yellow:      var(--status-yellow-text);
+  --blue-status: var(--status-complete-text);
+}
+
 /* Miami-only decorative accents. These live here (not in :root) because :root
    is the shared default — Gotham and NYC don't override these names, so a
    :root declaration would leak into them. */
@@ -74,6 +124,19 @@ body[data-theme="light"] {
   --coral: #e8795a;                       /* secondary: hover borders, scan-line */
   --hairline-gold: rgba(214,158,46,0.45); /* panel top hairlines */
   --scan-accent: #e8795a;                 /* map scan-line sweep — coral on Miami */
+
+  /* Status on cream. The GRAPHIC fills stay bright (--status-* is inherited
+     untouched) and instead get a dark outline, so a baby-yellow blip still
+     reads against the sand field. The label INK is what has to darken —
+     #ffe066 as text on cream is ~1.2:1. Measured against --surface #fbf3e3. */
+  --status-outline: rgba(29,36,48,0.55);
+  --status-outline-w: 1.5px;
+
+  --status-green-text:    #177a3d;
+  --status-yellow-text:   #8f6b00;
+  --status-amber-text:    #b35400;
+  --status-red-text:      #c21807;
+  --status-complete-text: #1d6fd0;   /* #4ea0ff is ~2.1:1 on cream; not in the brief but unreadable as-is */
 }
 
 /* ----- DARK (default) -----
@@ -93,11 +156,9 @@ body[data-theme="dark"] {
   --accent: #35d6e8;
   --flow-accent: #35d6e8;   /* Signal Flow doc→model lines — phosphor on Gotham */
   --ink-dim: #8b93a7;
-  --radar-amber: #ffb01f;
-  --alarm-red: #ff5d52;
-  --clear-green: #2fe08f;
-  --yellow: #ffd84d;
-  --blue-status: #5fb4ff;
+  /* Status colours deliberately NOT redeclared here — Gotham inherits the
+     central --status-* palette from :root. --eyebrow is a Gotham brand accent
+     (not a status), so it keeps its own literal gold. */
   --eyebrow: #ffb01f;
 
   --sector-design: #ffffff;
@@ -294,6 +355,27 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 
 .blip { cursor: pointer; }
 .blip:focus-visible { outline: none; }
+
+/* ---------- status marker outline ----------
+   Baby yellow (#ffe066) and the other bright fills disappear against Miami's
+   cream panels, so every status marker carries a dark hairline there. Driven
+   entirely by --status-outline / --status-outline-w, which are transparent/0
+   on the dark themes — these rules are inert everywhere except Miami, so no
+   per-theme selector duplication is needed.
+   paint-order:stroke keeps the stroke behind the fill, so a 1.5px hairline
+   never eats into a small dot's colour. */
+.blip-icon,
+.scope-col-status circle,
+.gl-pin-glyph {
+  stroke: var(--status-outline);
+  stroke-width: var(--status-outline-w);
+  paint-order: stroke;
+}
+/* DOM swatches: box-shadow rings outside the element, so no layout shift. */
+.sw-legend i,
+.projnet2d-legend i {
+  box-shadow: 0 0 0 var(--status-outline-w) var(--status-outline);
+}
 /* ONE uniform number label: mono 11px regular — no italics, no bold, no
    size jump. The scope face is a fixed dark CRT surface in every theme, so
    the label color comes from a per-theme --scope-label var (set in the theme
@@ -532,7 +614,7 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .footer-copyright { margin: 0 0 10px; color: var(--muted); }
 .footer-legal { margin: 0 0 10px; padding-left: 18px; }
 .footer-legal li { margin-bottom: 4px; }
-.footer-legal strong { color: var(--radar-amber, #e2b13c); font-weight: 600; }
+.footer-legal strong { color: var(--radar-amber); font-weight: 600; }
 .footer-praxis { margin: 0; opacity: 0.8; }
 
 /* ---------- reduced motion ---------- */
@@ -926,7 +1008,7 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 /* Brief flags — Red modules / Red-review advisory / liability (deterministic) */
 .eb-flags { margin: 10px 0 4px; display: flex; flex-direction: column; gap: 6px; }
 .eb-flag { margin: 0; font-size: 12px; line-height: 1.5; }
-.eb-flag-info { color: #4ea0ff; }
+.eb-flag-info { color: var(--status-complete-text); }
 .eb-flag-review { color: var(--radar-amber); font-weight: 600; }
 .eb-flag-red { color: var(--alarm-red); font-weight: 600; }
 .eb-flag-list { margin: 4px 0 0; padding-left: 18px; font-size: 12px; color: var(--ink-dim); }
@@ -1021,7 +1103,7 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
   margin-top: 8px;
   font-size: 11px;
   line-height: 1.4;
-  color: var(--radar-amber, #e2b13c);
+  color: var(--radar-amber);
   opacity: 0.85;
 }
 #google-signin-btn { margin: 8px 0; min-height: 44px; }
@@ -1269,21 +1351,21 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .sw-prev-key { display: inline-block; width: 26px; border-top: 1px dashed rgba(233,162,59,0.65); transform: translateY(-3px); }
 .signal-web-svg { display: block; width: 100%; height: auto; max-height: 420px; margin-top: 10px; overflow: visible; }
 .sw-ring { fill: none; stroke-width: 1; }
-.sw-ring-green { stroke: #3fcaa6; opacity: .22; }
-.sw-ring-yellow { stroke: #f0c040; opacity: .22; }
-.sw-ring-amber { stroke: #e2b13c; opacity: .22; }
-.sw-ring-red { stroke: #e0556b; opacity: .22; }
+.sw-ring-green { stroke: var(--status-green); opacity: .22; }
+.sw-ring-yellow { stroke: var(--status-yellow); opacity: .22; }
+.sw-ring-amber { stroke: var(--status-amber); opacity: .22; }
+.sw-ring-red { stroke: var(--status-red); opacity: .22; }
 .sw-axis { stroke: rgba(255,255,255,0.1); stroke-width: .5; }
 body[data-theme="light"] .sw-axis { stroke: rgba(15,23,42,0.14); }
-.sw-web-current { fill: rgba(78,160,255,0.15); stroke: #4ea0ff; stroke-width: 1.5; }
+.sw-web-current { fill: color-mix(in srgb, var(--status-complete) 15%, transparent); stroke: var(--status-complete); stroke-width: 1.5; }
 .sw-web-prev { fill: none; stroke: rgba(233,162,59,0.4); stroke-width: 1; stroke-dasharray: 4 4; }
 .sw-label { font-family: var(--font-mono); font-size: 9px; fill: var(--faint); dominant-baseline: middle; }
 .sw-label-parked { fill: #64748b; font-style: italic; }
 .sw-axis-parked { stroke-dasharray: 2 3; opacity: .5; }
 .sw-ring-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; opacity: .55; }
-.sw-ring-label-green { fill: #3fcaa6; }
-.sw-ring-label-amber { fill: #e2b13c; }
-.sw-ring-label-red { fill: #e0556b; }
+.sw-ring-label-green { fill: var(--status-green-text); }
+.sw-ring-label-amber { fill: var(--status-amber-text); }
+.sw-ring-label-red { fill: var(--status-red-text); }
 .sw-dot { stroke: var(--surface); stroke-width: 1.5; }
 .sw-dot:hover { r: 6px; }
 .sw-center { stroke: var(--surface); stroke-width: 2; }
@@ -1311,7 +1393,7 @@ body[data-theme="light"] .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .sw-mod-svg .sw-dot { stroke: var(--surface); stroke-width: .6; transition: r .12s ease; }
 .sw-mod-svg .sw-dot:hover { r: 5px; }
 /* The filled web polygon — closed shape through all 103 module points. */
-.sw-mod-svg .sw-web-current { fill: rgba(78,160,255,0.08); stroke: #4ea0ff; stroke-width: 1.5; }
+.sw-mod-svg .sw-web-current { fill: color-mix(in srgb, var(--status-complete) 8%, transparent); stroke: var(--status-complete); stroke-width: 1.5; }
 .sw-footnote { font-family: var(--font-mono); font-size: 10px; color: #64748b; margin: 4px 0 0; }
 
 /* ---------- Ensemble analysis panel ---------- */
@@ -1421,7 +1503,7 @@ body[data-theme="light"] .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .projnet2d-panel { padding: 0; overflow: hidden; }
 .projnet2d-head { padding: 12px 18px; border-bottom: 1px solid var(--line); }
 .projnet2d-head .eyebrow { margin: 0 0 2px; }
-.projnet2d-awaiting { margin: 6px 0 0; font-size: 11px; color: var(--radar-amber, #e2b13c); }
+.projnet2d-awaiting { margin: 6px 0 0; font-size: 11px; color: var(--radar-amber); }
 .projnet2d-legend {
   display: flex; flex-wrap: wrap; gap: 12px; padding: 8px 18px;
   border-bottom: 1px solid var(--line); background: var(--surface-2, #131d33);
@@ -1867,11 +1949,11 @@ body.nav-open .nav-rail { transform: translateX(0); }
 /* checkmark / X draw animations */
 .ds-anim-check, .ds-anim-x { display: block; width: 60px; height: 60px; margin: 4px auto; }
 .ds-anim-ring { stroke-width: 2.5; stroke-dasharray: 152; stroke-dashoffset: 152; animation: ds-draw .5s ease forwards; }
-.ds-anim-check .ds-anim-ring { stroke: #3fcaa6; }
-.ds-anim-x .ds-anim-ring { stroke: #e0556b; }
+.ds-anim-check .ds-anim-ring { stroke: var(--status-green); }
+.ds-anim-x .ds-anim-ring { stroke: var(--status-red); }
 .ds-anim-stroke { stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 48; stroke-dashoffset: 48; animation: ds-draw .35s .42s ease forwards; }
-.ds-anim-check .ds-anim-stroke { stroke: #3fcaa6; }
-.ds-anim-x .ds-anim-stroke { stroke: #e0556b; }
+.ds-anim-check .ds-anim-stroke { stroke: var(--status-green); }
+.ds-anim-x .ds-anim-stroke { stroke: var(--status-red); }
 .ds-anim-stroke-2 { animation-delay: .56s; }
 @keyframes ds-draw { to { stroke-dashoffset: 0; } }
 
@@ -2257,11 +2339,12 @@ body[data-theme="newyork"] {
   --accent: #d4af5a;                           /* gold — interactive accent (verdigris on hover) */
   --flow-accent: #4fa393;                      /* Signal Flow doc→model lines — verdigris on NYC */
   --ink-dim: #b9b492;
-  --radar-amber: #d4af5a;
-  --alarm-red: #c0392b;
-  --clear-green: #4fa393;                      /* Liberty oxidized bronze */
-  --yellow: #d8b64a;
-  --blue-status: #6aa9c9;
+  /* Status colours deliberately NOT redeclared here. NYC used to re-skin them
+     to its own bronze/verdigris ramp (green→#4fa393 Liberty bronze,
+     amber→#d4af5a gold), which made Yellow and Amber near-identical against
+     the gilt chrome. It now inherits the central --status-* palette so the
+     Yellow↔Amber split holds on every theme. --eyebrow stays verdigris: it is
+     a brand accent, not a status. */
   --eyebrow: #4fa393;                          /* eyebrows verdigris */
 
   --sector-design: #7ec8e3;       /* Hudson River blue */
@@ -2354,6 +2437,59 @@ body[data-theme="newyork"] .kn-ask,
 body[data-theme="newyork"] .la-link { color: var(--nyc-gold); }
 body[data-theme="newyork"] a:hover,
 body[data-theme="newyork"] .kn-ask:hover { color: var(--nyc-verdigris); }
+
+/* ============================================================
+   THEME — MARIA  (plum-black + baby pink)
+   A dark theme like Gotham and NYC: it inherits the central --status-*
+   palette untouched, so Yellow↔Amber reads the same here as everywhere.
+   Baby pink #f7b6d2 is the primary accent, #d16a9e its deep companion for
+   hovers/flow lines, blush #ffd9e8 the soft secondary. Against the
+   plum-black field the pink stays soft, and status Red (#ff3b30) sits well
+   clear of it — no scarlet override is needed.
+   ============================================================ */
+body[data-theme="maria"] {
+  --maria-pink: #f7b6d2;        /* baby pink — primary accent */
+  --maria-pink-deep: #d16a9e;   /* deep companion — hovers, flow lines */
+  --maria-blush: #ffd9e8;       /* blush — soft secondary */
+
+  --page-bg: #120a12;
+  --surface: rgba(32, 18, 30, .86);
+  --surface-soft: rgba(41, 23, 38, .82);
+  --line: rgba(247, 182, 210, .20);
+  --line-strong: rgba(247, 182, 210, .46);
+  --text: #f7ebf1;
+  --muted: #bda1b1;
+  --faint: rgba(189, 161, 177, .72);
+  --phosphor: #f7b6d2;
+  --accent: #f7b6d2;
+  --flow-accent: #d16a9e;       /* Signal Flow doc→model lines — deep pink on Maria */
+  --ink-dim: #bda1b1;
+  --eyebrow: #f7b6d2;
+
+  --sector-design: #ffffff;
+  --sector-construction: #9ec5ff;
+  --sector-hybrid: #f7b6d2;
+
+  --scope-label: #cbb3c2;
+
+  --zone-green: rgba(46,230,107,.18);
+  --zone-amber: rgba(255,140,26,.18);
+  --zone-red: rgba(255,59,48,.20);
+  --zone-crit: rgba(255,59,48,.30);
+  --zone-yellow: rgba(255,224,102,.18);
+  --zone-blue: rgba(78,160,255,.20);
+  --ring-line: rgba(247,182,210,.26);
+
+  --grid-opacity: .20;
+  --glass-blur: blur(14px) saturate(140%);
+  --shadow: 0 18px 54px rgba(0,0,0,.6), 0 0 36px rgba(247,182,210,.05);
+}
+/* Baby pink is the lightest accent of any theme, so accent-backed controls
+   take plum ink instead of the shared white (white on #f7b6d2 is ~1.3:1). */
+body[data-theme="maria"] .theme-switch button.active,
+body[data-theme="maria"] .btn.primary,
+body[data-theme="maria"] .nav-rail button.active,
+body[data-theme="maria"] .stage-btn.active { color: #2a0f20; }
 
 /* ============================================================
    MOBILE — 640px and below (iPhone SE, 14, 14 Pro Max)
@@ -2757,7 +2893,7 @@ body[data-theme="light"] .map-scan-texture { display: none; }   /* CRT texture i
   border: 1px solid currentColor; font-size: 9.5px; letter-spacing: .03em;
   color: var(--muted);
 }
-.gl-pill[data-st="complete"] { color: #4ea0ff; }
+.gl-pill[data-st="complete"] { color: var(--status-complete-text); }
 .gl-pill[data-st="green"]    { color: var(--clear-green); }
 .gl-pill[data-st="yellow"]   { color: var(--yellow); }
 .gl-pill[data-st="amber"]    { color: var(--radar-amber); }

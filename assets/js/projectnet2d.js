@@ -19,12 +19,13 @@
   "use strict";
 
   // Status → fill colour (matches the radar/forcenet legend and the spec).
+  var SC = window.LIN_STATUS_COLORS;
   var STATUS_FILL = {
-    Complete: "#4ea0ff",
-    Green:    "#3fcaa6",
-    Yellow:   "#f0c040",
-    Amber:    "#e2b13c",
-    Red:      "#e0556b"
+    Complete: SC.Complete,
+    Green:    SC.Green,
+    Yellow:   SC.Yellow,
+    Amber:    SC.Amber,
+    Red:      SC.Red
   };
   var NO_DATA_FILL = "#26344f";
 
@@ -194,11 +195,11 @@
           (anyData ? "" : '<p class="projnet2d-awaiting">Awaiting signal extraction — all categories shown as no-data.</p>') +
         '</div>' +
         '<div class="projnet2d-legend" aria-hidden="true">' +
-          '<span><i style="background:#4ea0ff"></i>Complete</span>' +
-          '<span><i style="background:#3fcaa6"></i>Green</span>' +
-          '<span><i style="background:#f0c040"></i>Yellow</span>' +
-          '<span><i style="background:#e2b13c"></i>Amber</span>' +
-          '<span><i style="background:#e0556b"></i>Red</span>' +
+          '<span><i style="background:var(--status-complete)"></i>Complete</span>' +
+          '<span><i style="background:var(--status-green)"></i>Green</span>' +
+          '<span><i style="background:var(--status-yellow)"></i>Yellow</span>' +
+          '<span><i style="background:var(--status-amber)"></i>Amber</span>' +
+          '<span><i style="background:var(--status-red)"></i>Red</span>' +
           '<span><i style="background:#26344f"></i>No data</span>' +
         '</div>' +
         '<div class="projnet2d-wrap"><canvas class="projnet2d-canvas"></canvas></div>' +

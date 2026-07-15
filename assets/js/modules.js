@@ -525,8 +525,8 @@
     const gates = decisions.filter(({ d }) => d.fairnessGateRequired);
 
     const stateColor = {
-      "Complete": "#4ea0ff", "Green": "var(--clear-green)", "Yellow": "var(--yellow)",
-      "Amber": "var(--radar-amber)", "Red": "var(--alarm-red)", "Red-review": "var(--alarm-red)"
+      "Complete": "var(--status-complete)", "Green": "var(--status-green)", "Yellow": "var(--status-yellow)",
+      "Amber": "var(--status-amber)", "Red": "var(--status-red)", "Red-review": "var(--status-red)"
     };
     const rows = Object.entries(byState).map(([state, list]) => ({
       label: state, value: list.length, color: stateColor[state], note: `${list.length}`

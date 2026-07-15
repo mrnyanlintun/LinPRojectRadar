@@ -1585,7 +1585,7 @@
     ticks.forEach(function(tk){var y=PAD.t+CH-tk.pct*CH;axL(ctx,PAD.l-4,y+3,tk.label,'#64748b','right');ctx.beginPath();ctx.moveTo(PAD.l-3,y);ctx.lineTo(PAD.l,y);ctx.strokeStyle='rgba(38,52,79,0.5)';ctx.lineWidth=0.5;ctx.stroke();});
   }
   function T(p,rx,ry,fov,cx,cy){return prj(rX(rY(p,ry),rx),fov,cx,cy);}
-  var SC={Red:'#e0556b',Amber:'#e2b13c',Green:'#3fcaa6',Yellow:'#f0c040',null:'#26344f'};
+  var _S=window.LIN_STATUS_COLORS,SC={Red:_S.Red,Amber:_S.Amber,Green:_S.Green,Yellow:_S.Yellow,null:_S.None};
 
   /* CAT 4-5 RENDERERS (verbatim) */
   // ═══════════════ CAT 4 RENDERERS ═══════════════════════════
@@ -2225,7 +2225,7 @@
     ctx.clearRect(0,0,W,H);
     var signals=[{name:'EVM (Monte Carlo)',val:'Red',score:0.75},{name:'Schedule (CUSUM)',val:'Red',score:0.82},{name:'Doc Risk',val:'Amber',score:0.45},{name:'Schedule Sim',val:'Amber',score:0.60}];
     var states=['Green','Amber','Red'];
-    var cols={Green:'#3fcaa6',Amber:'#e2b13c',Red:'#e0556b'};
+    var _S2=window.LIN_STATUS_COLORS,cols={Green:_S2.Green,Amber:_S2.Amber,Red:_S2.Red};
     var PAD={l:130,r:20,t:28,b:36};var CW=W-PAD.l-PAD.r,CH=H-PAD.t-PAD.b;
     var rowH=CH/signals.length,colW=CW/3;
     // Header

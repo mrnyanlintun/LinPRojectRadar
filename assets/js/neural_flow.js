@@ -176,9 +176,10 @@
   ];
 
   // ─── Colors ──────────────────────────────────────────────────────────────────
+  var SC = window.LIN_STATUS_COLORS;
   var COL = {
-    Green:'#3fcaa6', Yellow:'#f0c040', Amber:'#e2b13c',
-    Red:'#e0556b',   None:'#2a3346',  Complete:'#4ea0ff',
+    Green:SC.Green, Yellow:SC.Yellow, Amber:SC.Amber,
+    Red:SC.Red,     None:SC.None,     Complete:SC.Complete,
     DocOn:'#a0bcd8', DocOff:'#1e2a3c',
   };
   // Complete ranks alongside Green (blue is a display colour, not a severity)
@@ -186,6 +187,11 @@
 
   function statusFromSig(r) {
     if (!r) return 'None';
+    // NOTE: the hexes below are INPUT normalisation, not palette definitions —
+    // stored status_color is normally a name ("Green"), but older records may
+    // carry a raw hex from the pre-centralisation palette. They stay pinned to
+    // those historical values on purpose; do not "update" them to the current
+    // palette or legacy records stop resolving. Output colour comes from COL.
     var sc = String(r.status_color || r.status || '').toLowerCase();
     if (sc === 'green'  || sc === '#3fcaa6') return 'Green';
     if (sc === 'yellow' || sc === '#f0c040') return 'Yellow';
