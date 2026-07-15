@@ -29,8 +29,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="assets/css/radar.css" />
-  <!-- MapLibre GL JS (pinned) — real street-level map view; tiles from OpenFreeMap (no key). -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css" />
+  <!-- MapLibre GL JS (pinned) — real street-level map view; tiles from OpenFreeMap (no key).
+       CSS/JS are injected on demand by app.js (background warm-up after the
+       portfolio list paints, or on first Map toggle) instead of blocking here. -->
   <!-- Google Identity Services — Stage 1 OAuth sign-in (see assets/js/auth.js) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -415,6 +416,9 @@
           <div class="map-scan-line"></div>
         </div>
         <button type="button" id="map-reset-btn" class="map-reset-btn" hidden title="World view (Ctrl+0 / Esc)">⤢ World view</button>
+        <!-- Boot feedback for a genuinely cold map (no warm-up finished yet):
+             swaps to the quiet attribution-adjacent state once tiles/style load. -->
+        <p class="map-boot-status" id="map-boot-status" hidden aria-live="polite">ACQUIRING TILES…</p>
         <p class="map-nolocation" id="map-nolocation" hidden></p>
         <p class="map-caption">Locations are illustrative — synthetic demonstration data.</p>
       </div>
@@ -625,7 +629,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <!-- SheetJS: client-side XLSX generation for audit export. -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
+  <!-- MapLibre GL JS is injected on demand by app.js, not loaded here. -->
   <script src="assets/js/config.js"></script>
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/data.js"></script>

@@ -570,6 +570,65 @@
   let glFailed = false;
   let focusedPinId = null;   // the flown-to / selected marker
 
+  const GL_CSS_URL = "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css";
+  const GL_JS_URL  = "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js";
+  let mapAssetsPromise = null;
+
+  /* inject the MapLibre CSS/JS on demand (background warm-up or first Map
+     toggle) instead of blocking the initial page load with static tags. */
+  function loadMapAssets() {
+    if (typeof maplibregl !== "undefined") return Promise.resolve();
+    if (mapAssetsPromise) return mapAssetsPromise;
+    mapAssetsPromise = new Promise((resolve, reject) => {
+      if (!document.querySelector('link[data-maplibre-css]')) {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = GL_CSS_URL;
+        link.dataset.maplibreCss = "1";
+        document.head.appendChild(link);
+      }
+      const script = document.createElement("script");
+      script.src = GL_JS_URL;
+      script.dataset.maplibreJs = "1";
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("maplibre load failed"));
+      document.head.appendChild(script);
+    });
+    return mapAssetsPromise;
+  }
+
+  /* respect constrained connections: no background warm-up on save-data or 2g */
+  function shouldSkipMapWarmup() {
+    try {
+      const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      if (!c) return false;
+      if (c.saveData) return true;
+      if (c.effectiveType && /2g/.test(c.effectiveType)) return true;
+    } catch (e) {}
+    return false;
+  }
+
+  /* background warm-up: after the portfolio list has painted and the browser
+     is idle, preload the MapLibre assets and build the (hidden) map instance
+     so style/fonts/sprites/tiles fetch while the user is still on the radar. */
+  function scheduleMapWarmup() {
+    if (shouldSkipMapWarmup()) return;
+    const idle = window.requestIdleCallback || function (cb) { setTimeout(cb, 1200); };
+    idle(() => {
+      if (mapBuilt || glMap) return;   // already built (or being built) — nothing to warm
+      loadMapAssets().then(() => { if (!mapBuilt && !glMap) createGlMap(false); }).catch(() => {});
+    }, { timeout: 3000 });   // force a fire even under sustained load — never wait forever
+  }
+
+  function showBootStatus(msg) {
+    const el = document.getElementById("map-boot-status");
+    if (el) { el.textContent = msg; el.hidden = false; }
+  }
+  function hideBootStatus() {
+    const el = document.getElementById("map-boot-status");
+    if (el) el.hidden = true;
+  }
+
   function hasCoords(p) {
     return !!p && p.lat != null && p.lng != null &&
       Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng));
@@ -596,19 +655,24 @@
     if (glLoadTimer) { clearTimeout(glLoadTimer); glLoadTimer = null; }
     if (glMap) { try { glMap.remove(); } catch (e) {} glMap = null; }
     glMarkers = {}; glPopup = null; focusedPinId = null;
+    hideBootStatus();   // the fail panel below is the single source of truth for the error
     const host = document.getElementById("map-gl");
     if (host) host.innerHTML = `<div class="gl-fail">${esc(msg || "Map tiles unavailable — check connection")}</div>`;
     const rb = document.getElementById("map-reset-btn");
     if (rb) rb.hidden = true;
   }
 
-  /* build the MapLibre map for the current theme (markers added on load) */
-  function createGlMap() {
+  /* build the MapLibre map for the current theme (markers added on load).
+     showStatus: false during background warm-up (stage isn't visible, no
+     need to tell the user anything); true when built because the user is
+     actually looking at the map stage and waiting on it. */
+  function createGlMap(showStatus) {
     const host = document.getElementById("map-gl");
     if (!host) return;
-    if (typeof maplibregl === "undefined") { showMapFailure(); return; }   // CDN blocked / offline
+    if (typeof maplibregl === "undefined") { if (showStatus) showMapFailure(); return; }   // CDN blocked / offline
     host.innerHTML = "";
     glFailed = false;
+    if (showStatus) showBootStatus("ACQUIRING TILES…");
     try {
       glMap = new maplibregl.Map({
         container: host,
@@ -618,7 +682,7 @@
         attributionControl: true,      // "© OpenStreetMap contributors" stays visible (license)
         maxZoom: 18
       });
-    } catch (e) { showMapFailure(); return; }
+    } catch (e) { if (showStatus) showMapFailure(); return; }
 
     // watchdog: if the style never loads (offline / CDN down), show the panel
     glLoadTimer = setTimeout(() => {
@@ -627,6 +691,7 @@
 
     glMap.on("load", () => {
       if (glLoadTimer) { clearTimeout(glLoadTimer); glLoadTimer = null; }
+      hideBootStatus();
       addGlMarkers();
     });
     // swallow MapLibre's transient tile/sprite errors so they neither storm the
@@ -810,11 +875,12 @@
     }
     if (!glMap) {
       glFailed = false;
-      createGlMap();                              // markers added when the style loads
+      try { await loadMapAssets(); } catch (e) { showMapFailure(); mapBuilt = true; return; }
+      createGlMap(true);                          // markers added when the style loads
     } else {
       try { glMap.resize(); } catch (e) {}        // container was hidden until now
       if (glMap.isStyleLoaded()) addGlMarkers();
-      else glMap.once("load", addGlMarkers);
+      else { showBootStatus("ACQUIRING TILES…"); glMap.once("load", () => { hideBootStatus(); addGlMarkers(); }); }
     }
     mapBuilt = true;
   }
@@ -1786,6 +1852,9 @@
     let savedView = "radar";
     try { savedView = localStorage.getItem(VIEW_KEY) || "radar"; } catch (e) {}
     if (savedView === "map") setPortfolioView("map", false);
+    // radar stayed the default view — warm the map up in the background now
+    // that the list has painted, so the first Map toggle is near-instant.
+    else scheduleMapWarmup();
 
     // default selection: first project in the portfolio (may be empty →
     // shows the awaiting-ingest state, not a fabricated status).
