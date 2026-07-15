@@ -628,6 +628,13 @@
     // land within 18px of each other (glyphs fan horizontally ±12px; a thin
     // leader ties each back to its TRUE projected point, which keeps its dot)
     const pts = located.map((p) => {
+      // regression guard: latitude is bounded to ±90, so a value outside that
+      // range means lat/lng got swapped upstream — warn (with the id) rather
+      // than silently plotting the pin in the ocean. The projection itself is
+      // GeoJSON-correct: longitude → X, latitude → Y.
+      if (Math.abs(Number(p.lat)) > 90) {
+        console.warn(`[map] project ${p.id}: latitude ${p.lat} out of range (±90) — check lat/lng order`);
+      }
       return { p, tx: MAP_X(Number(p.lng)), ty: MAP_Y(Number(p.lat)), dx: 0 };
     });
     const clusters = [];
