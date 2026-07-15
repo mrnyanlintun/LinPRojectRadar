@@ -632,6 +632,7 @@
       cl.forEach((pt, k) => { pt.dx = (k - (cl.length - 1) / 2) * 24; });   // pairs = ±12
     });
 
+    mapPinPts = {};   // id → glyph position, consumed by the fly-to zoom
     pts.forEach(({ p, tx, ty, dx }) => {
       const status = statusKey(p);
       const color =
@@ -641,6 +642,7 @@
         status === "amber" ? STATUS_COLOR.amber :
         status === "red"   ? STATUS_COLOR.red : "var(--muted)";
       const gx = tx + dx, gy = ty - 15;   // glyph sits above the true point
+      mapPinPts[p.id] = { gx, gy };
 
       const g = el("g", { class: "map-pin", "data-id": p.id,
         "aria-label": `${p.id} ${p.name}, ${stateLabel(p)}` });
@@ -682,9 +684,9 @@
       });
       g.addEventListener("mousemove", moveTT);
       g.addEventListener("mouseleave", hideTT);
-      // click = select (list-row sync); double-click = open detail
-      g.addEventListener("click", () => selectProject(p.id));
-      g.addEventListener("dblclick", () => { hideTT(); openDetail(p.id); });
+      // click = select (list-row sync) + cinematic fly-to; dblclick = detail
+      g.addEventListener("click", () => { selectProject(p.id); flyToProject(p.id); });
+      g.addEventListener("dblclick", () => { hideTT(); hideMapCard(); openDetail(p.id); });
 
       svg.appendChild(g);
     });
@@ -709,6 +711,21 @@
     }
 
     highlightPin();
+
+    // Rebuilds (refresh, theme change) must not strand a stale focus: if the
+    // focused pin no longer exists, jump home; otherwise re-apply the focus
+    // classes and re-pin the info card at the (unchanged) zoomed viewBox.
+    if (focusedPinId && !mapPinPts[focusedPinId]) {
+      focusedPinId = null;
+      hideMapCard();
+      setVB(svg, MAP_HOME);
+    }
+    applyFocusClasses(svg);
+    if (focusedPinId) {
+      const fp = LIN_PROJECTS.find((x) => x.id === focusedPinId);
+      const fpt = mapPinPts[focusedPinId];
+      if (fp && fpt) showMapCard(fp, fpt.gx, fpt.gy);
+    }
   }
 
   /* Lazy map build: on first use, swap slim portfolio records for full
@@ -749,9 +766,160 @@
     });
   }
 
+  /* ============================================================
+     Cinematic fly-to zoom. Selecting a project on the map (pin
+     click, or list-row selection while the map view is active)
+     animates the SVG viewBox to a ~5× window on the pin (≈400×170
+     in the 2000×848 space — the raster art goes soft past ~6×, so
+     no deeper), clamped to the artwork bounds. The tween runs on
+     requestAnimationFrame with ease-in-out and a 1.05× overshoot
+     that settles over the last 150ms (viewBox is not
+     CSS-animatable). Reduced motion → jump-cut, static ring.
+     ============================================================ */
+  const MAP_HOME = { x: 0, y: 0, w: MAP_W, h: MAP_H };
+  const FOCUS_W = 400, FOCUS_H = 170;
+  let mapPinPts = {};        // id → {gx, gy}, rebuilt by renderMap
+  let focusedPinId = null;
+  let flyRaf = null;
+
+  function getVB(svg) { const vb = svg.viewBox.baseVal; return { x: vb.x, y: vb.y, w: vb.width, h: vb.height }; }
+  function setVB(svg, v) { svg.setAttribute("viewBox", `${v.x.toFixed(2)} ${v.y.toFixed(2)} ${v.w.toFixed(2)} ${v.h.toFixed(2)}`); }
+  function clampVB(v) {
+    const w = Math.min(v.w, MAP_W), h = Math.min(v.h, MAP_H);
+    return {
+      x: Math.max(0, Math.min(v.x, MAP_W - w)),
+      y: Math.max(0, Math.min(v.y, MAP_H - h)),
+      w, h
+    };
+  }
+  const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+  const lerpVB = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, w: a.w + (b.w - a.w) * t, h: a.h + (b.h - a.h) * t });
+
+  // Animate the viewBox to `target`. A new target cancels any in-flight
+  // tween mid-frame, so pin-to-pin flights chain naturally.
+  function tweenViewBox(svg, target, opts, done) {
+    opts = opts || {};
+    if (flyRaf) { cancelAnimationFrame(flyRaf); flyRaf = null; }
+    if (reduceMotion()) { setVB(svg, target); if (done) done(); return; }
+    const from = getVB(svg);
+    const DUR = 900, SETTLE = 150, MAIN = DUR - SETTLE;
+    // overshoot: pass through a 1.05×-zoom (smaller) window, settle back
+    const over = opts.overshoot ? clampVB({
+      x: target.x + target.w * (1 - 1 / 1.05) / 2,
+      y: target.y + target.h * (1 - 1 / 1.05) / 2,
+      w: target.w / 1.05, h: target.h / 1.05
+    }) : null;
+    const t0 = performance.now();
+    const frame = (now) => {
+      const t = now - t0;
+      if (t >= DUR) { setVB(svg, target); flyRaf = null; if (done) done(); return; }
+      if (!over) setVB(svg, lerpVB(from, target, easeInOutCubic(Math.min(1, t / DUR))));
+      else if (t < MAIN) setVB(svg, lerpVB(from, over, easeInOutCubic(t / MAIN)));
+      else setVB(svg, lerpVB(over, target, easeOutCubic((t - MAIN) / SETTLE)));
+      flyRaf = requestAnimationFrame(frame);
+    };
+    flyRaf = requestAnimationFrame(frame);
+  }
+
+  /* pinned info card (not hover-dependent) shown while a pin is focused */
+  function getMapCard() {
+    let c = document.getElementById("map-card");
+    if (!c) { c = document.createElement("div"); c.id = "map-card"; document.body.appendChild(c); }
+    return c;
+  }
+  function hideMapCard() { const c = document.getElementById("map-card"); if (c) c.style.display = "none"; }
+  function showMapCard(p, gx, gy) {
+    const svg = $("#map-svg");
+    if (!svg) return;
+    const card = getMapCard();
+    const sec = { design: "Design", construction: "Construction", hybrid: "Hybrid", combined: "Hybrid" }[String(p.sector || "").toLowerCase()] || p.sector || "—";
+    const addr = p.formattedAddress || p.address;
+    card.innerHTML =
+      `<div class="mt-num">${esc(p.id)}</div>` +
+      `<div class="mt-name">${esc(p.name)}</div>` +
+      `<div class="mt-sub">${esc(sec)} · ${esc(stateLabel(p))}</div>` +
+      (addr ? `<div class="mt-addr">${esc(addr)}</div>` : "") +
+      `<button type="button" class="map-card-open">Open detail →</button>`;
+    card.querySelector(".map-card-open").addEventListener("click", () => { hideMapCard(); openDetail(p.id); });
+    card.style.display = "block";
+    // position beside the pin in screen coordinates (post-flight geometry)
+    try {
+      const pt = new DOMPoint(gx + 16, gy - 8).matrixTransform(svg.getScreenCTM());
+      const r = card.getBoundingClientRect();
+      card.style.left = Math.min(Math.max(8, pt.x), window.innerWidth - r.width - 8) + "px";
+      card.style.top = Math.min(Math.max(8, pt.y - r.height / 2), window.innerHeight - r.height - 8) + "px";
+    } catch (e) { /* CTM unavailable pre-layout — the card still shows */ }
+  }
+
+  function applyFocusClasses(svg) {
+    svg = svg || $("#map-svg");
+    if (!svg) return;
+    svg.classList.toggle("map-focused", !!focusedPinId);
+    svg.querySelectorAll(".map-pin").forEach((g) => {
+      const on = g.getAttribute("data-id") === focusedPinId;
+      const was = g.classList.contains("focused");
+      g.classList.toggle("focused", on);
+      if (on && !was) {
+        const ring = g.querySelector(".map-pin-ring");
+        if (ring) { ring.style.animation = "none"; void ring.getBoundingClientRect(); ring.style.animation = ""; }
+      }
+    });
+    const rb = document.getElementById("map-reset-btn");
+    if (rb) rb.hidden = !focusedPinId;
+  }
+
+  function flyToProject(id) {
+    const svg = $("#map-svg");
+    const pt = mapPinPts[id];
+    if (!svg || !pt) return;             // no pin (no coordinates) → no flight
+    focusedPinId = id;
+    hideMapCard();                        // card re-pins when the flight lands
+    applyFocusClasses(svg);
+    const target = clampVB({ x: pt.gx - FOCUS_W / 2, y: pt.gy - FOCUS_H / 2, w: FOCUS_W, h: FOCUS_H });
+    tweenViewBox(svg, target, { overshoot: true }, () => {
+      if (focusedPinId !== id) return;   // superseded mid-flight
+      const p = LIN_PROJECTS.find((x) => x.id === id) || (window.LinStore && LinStore.getCached(id));
+      if (p) showMapCard(p, pt.gx, pt.gy);
+    });
+  }
+
+  function resetMapView() {
+    const svg = $("#map-svg");
+    if (!svg) return;
+    focusedPinId = null;
+    hideMapCard();
+    applyFocusClasses(svg);
+    tweenViewBox(svg, MAP_HOME, {});
+  }
+
+  function mapViewActive() {
+    const page = document.querySelector('.page[data-page="portfolio"]');
+    const wrap = document.querySelector(".map-wrap");
+    return !!(page && !page.hidden && wrap && !wrap.hidden);
+  }
+  // list-row selections fly only when the map view is actually showing
+  function maybeFlyToSelection(id) { if (mapViewActive()) flyToProject(id); }
+
+  // Ctrl/Cmd+0 + Escape reset — the handler only acts (and only calls
+  // preventDefault) while the map view is active AND a project is focused or
+  // keyboard focus is inside the map stage, so the browser's page-zoom reset
+  // keeps working everywhere else.
+  document.addEventListener("keydown", (e) => {
+    const zeroCombo = (e.ctrlKey || e.metaKey) && e.key === "0";
+    if (!zeroCombo && e.key !== "Escape") return;
+    if (!mapViewActive()) return;
+    const wrap = document.querySelector(".map-wrap");
+    const stageFocused = wrap && wrap.contains(document.activeElement);
+    if (!focusedPinId && !stageFocused) return;
+    if (zeroCombo) e.preventDefault();
+    resetMapView();
+  });
+
   /* ---------- Radar | Map view toggle (persisted; radar default) ---------- */
   function setPortfolioView(view, persist) {
     const isMap = view === "map";
+    if (!isMap) hideMapCard();   // the pinned card is fixed-positioned — never leave it over the radar
     const radarWrap = document.querySelector(".radar-wrap");
     const mapWrap = document.querySelector(".map-wrap");
     const note = document.querySelector(".radar-note");
@@ -766,6 +934,8 @@
   function wireViewToggle() {
     document.querySelectorAll(".stage-btn").forEach((b) =>
       b.addEventListener("click", () => setPortfolioView(b.dataset.view)));
+    const rb = document.getElementById("map-reset-btn");
+    if (rb) rb.addEventListener("click", resetMapView);
   }
 
   /* ---------- accessible fallback list ---------- */
@@ -798,7 +968,7 @@
           simChip +
           `<span class="li-state state-${esc(statusKey(p))}"${stateStyle}>${esc(state)}</span>` +
           `<button class="btn small li-open" data-open="${esc(p.id)}" title="Open project detail">Open →</button>`;
-        btn.addEventListener("click", () => { selectProject(p.id); });
+        btn.addEventListener("click", () => { selectProject(p.id); maybeFlyToSelection(p.id); });
         btn.querySelector(".li-open").addEventListener("click", (e) => {
           e.stopPropagation();
           openDetail(p.id);
@@ -1295,6 +1465,8 @@
       s.toggleAttribute("hidden", s.dataset.page !== page));
     document.querySelectorAll("[data-nav]").forEach((b) =>
       b.classList.toggle("active", b.dataset.nav === page));
+    // the pinned map card is fixed-positioned — never leave it over another page
+    if (page !== "portfolio") hideMapCard();
     // (re)render content pages so they reflect the latest portfolio state.
     // Guarded so a single page-render error can never leave navigation half-done.
     try {

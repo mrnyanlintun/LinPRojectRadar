@@ -397,8 +397,9 @@
       </div>
       <div class="map-wrap" hidden>
         <svg id="map-svg" viewBox="0 0 2000 848" preserveAspectRatio="xMidYMid meet" role="img"
-             aria-label="Stylized world map. One building marker per project with a stored location; marker color indicates status. Selecting a marker highlights the project; double-clicking opens its detail view. The project list below is an equivalent keyboard control path.">
+             aria-label="Stylized world map. One building marker per project with a stored location; marker color indicates status. Selecting a marker highlights the project and zooms to it; double-clicking opens its detail view. Press Escape or Control+0 to reset the view. The project list below is an equivalent keyboard control path.">
         </svg>
+        <button type="button" id="map-reset-btn" class="map-reset-btn" hidden title="Reset view (Ctrl+0 / Esc)">⤢ Reset view</button>
         <p class="map-nolocation" id="map-nolocation" hidden></p>
         <p class="map-caption">Locations are illustrative — synthetic demonstration data.</p>
       </div>

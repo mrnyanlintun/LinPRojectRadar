@@ -2553,8 +2553,29 @@ body[data-theme="light"] .map-vignette { display: none; }
   0%   { opacity: .9; r: 15; }
   100% { opacity: 0;  r: 30; }
 }
+
+/* fly-to focus state: the focused pin grows ~1.6× with a one-shot ring
+   pulse; every other pin dims while a project is focused */
+.map-pin { transition: opacity .35s ease; }
+#map-svg.map-focused .map-pin:not(.focused) { opacity: .25; }
+.map-pin-icon { transition: transform .3s ease; transform-box: fill-box; transform-origin: center; }
+.map-pin.focused .map-pin-icon { transform: scale(1.6); }
+.map-pin.focused .map-pin-ring { animation: map-pin-pulse 1.1s ease-out 1; }
+
+/* on-screen reset control (top-right of the map stage) */
+.map-reset-btn {
+  position: absolute; top: 10px; right: 10px; z-index: 5;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em;
+  padding: 5px 12px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); color: var(--muted);
+  transition: color .15s, border-color .15s;
+}
+.map-reset-btn:hover { color: var(--text); border-color: var(--phosphor); }
+
 @media (prefers-reduced-motion: reduce) {
-  .map-pin.selected .map-pin-ring { animation: none; opacity: .8; }
+  .map-pin.selected .map-pin-ring,
+  .map-pin.focused .map-pin-ring { animation: none; opacity: .8; }   /* static ring */
+  .map-pin, .map-pin-icon { transition: none; }
 }
 
 /* captions + no-location note */
@@ -2574,11 +2595,25 @@ body[data-theme="light"] .map-vignette { display: none; }
   font-family: var(--font-mono); font-size: 11px; color: var(--text); line-height: 1.55;
   box-shadow: var(--shadow);
 }
-#map-tt .mt-num { font-size: 10px; color: var(--phosphor); }
-#map-tt .mt-name { font-weight: 600; }
-#map-tt .mt-sub { color: var(--muted); }
-#map-tt .mt-addr { color: var(--muted); font-size: 10.5px; margin-top: 2px; }
+#map-tt .mt-num, #map-card .mt-num { font-size: 10px; color: var(--phosphor); }
+#map-tt .mt-name, #map-card .mt-name { font-weight: 600; }
+#map-tt .mt-sub, #map-card .mt-sub { color: var(--muted); }
+#map-tt .mt-addr, #map-card .mt-addr { color: var(--muted); font-size: 10.5px; margin-top: 2px; }
 #map-tt .mt-hint { color: var(--faint); font-size: 10px; margin-top: 4px; font-style: italic; }
+
+/* pinned info card while a project is focused (interactive, unlike #map-tt) */
+#map-card {
+  position: fixed; display: none; z-index: 9998;
+  background: var(--surface, #0c1422); border: 1px solid var(--line, #2a3a5c);
+  border-radius: 8px; padding: 10px 14px; max-width: 280px;
+  font-family: var(--font-mono); font-size: 11px; color: var(--text); line-height: 1.55;
+  box-shadow: var(--shadow);
+}
+.map-card-open {
+  margin-top: 6px; font-family: var(--font-mono); font-size: 10.5px;
+  color: var(--phosphor); background: transparent; border: 0; padding: 0;
+  cursor: pointer; text-decoration: underline; display: block;
+}
 
 /* Edit info inline panel grid (extends the .pr-editnum chrome) */
 .pr-editinfo-grid { display: grid; grid-template-columns: repeat(3, minmax(160px, 1fr)); gap: 10px 14px; width: 100%; }
