@@ -132,11 +132,14 @@ body[data-theme="light"] {
   --status-outline: rgba(29,36,48,0.55);
   --status-outline-w: 1.5px;
 
-  --status-green-text:    #177a3d;
-  --status-yellow-text:   #8f6b00;
-  --status-amber-text:    #b35400;
-  --status-red-text:      #c21807;
-  --status-complete-text: #1d6fd0;   /* #4ea0ff is ~2.1:1 on cream; not in the brief but unreadable as-is */
+  /* All five measured on --surface #fbf3e3; every one clears AA (>=4.5:1).
+     yellow #8a6600 (4.78) and complete #1d6ece (4.56) are AA nudges up from
+     #8f6b00 (4.46) and #1d6fd0 (4.49) — the smallest steps that pass. */
+  --status-green-text:    #177a3d;   /* 4.90 */
+  --status-yellow-text:   #8a6600;   /* 4.78 */
+  --status-amber-text:    #b35400;   /* 4.55 */
+  --status-red-text:      #c21807;   /* 5.55 */
+  --status-complete-text: #1d6ece;   /* 4.56 — #4ea0ff itself is ~2.1:1 on cream */
 }
 
 /* ----- DARK (default) -----
@@ -2810,9 +2813,15 @@ body[data-theme="light"] .map-scan-texture { display: none; }   /* CRT texture i
   animation: map-pin-blink 2s ease-in-out infinite;   /* status-colored blink */
 }
 .gl-pin-glyph { display: block; }
+/* The id label sits ABOVE the head and is taken OUT OF FLOW on purpose: the
+   pin's tip is the anchor, so .gl-pin-inner's bottom edge must be the tip and
+   nothing may add height below the glyph. (In flow, this label would push the
+   tip up by its own height and the pin would point above the real location.) */
 .gl-pin-num {
+  position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+  margin-bottom: 1px;
   font-family: var(--font-mono); font-size: 9px; line-height: 1;
-  color: var(--pin-color, var(--muted)); margin-top: 1px;
+  color: var(--pin-color, var(--muted));
   text-shadow: 0 0 3px var(--page-bg, #000), 0 0 3px var(--page-bg, #000);
 }
 /* Red blinks faster (urgency reads at a glance); Complete pulses slowly */
@@ -2832,8 +2841,10 @@ body[data-theme="light"] .map-scan-texture { display: none; }   /* CRT texture i
    otherwise drive opacity and override this dim) */
 #map-gl.gl-any-selected .gl-pin:not(.gl-selected) .gl-pin-inner { animation: none; opacity: .4; }
 /* one-shot ring pulse on the selected marker */
+/* 37.5% == the pin head's centre (y=12 of the 32-tall viewBox), so the pulse
+   rings the head rather than the taper. */
 .gl-pin.gl-ring .gl-pin-inner::after {
-  content: ""; position: absolute; left: 50%; top: 40%;
+  content: ""; position: absolute; left: 50%; top: 37.5%;
   width: 16px; height: 16px; margin: -8px 0 0 -8px;
   border: 2px solid var(--pin-color, var(--muted)); border-radius: 50%;
   animation: gl-ring-pulse .9s ease-out 1; pointer-events: none;
