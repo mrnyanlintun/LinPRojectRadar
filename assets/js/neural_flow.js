@@ -228,13 +228,19 @@
       // keyframe advancing stroke-dashoffset by exactly one dash period
       // (dash+gap), so the loop is seamless. A negative offset moves the
       // dashes TOWARD the path end — i.e. in the drawn flow direction.
+      '@keyframes lnf-flow-16{to{stroke-dashoffset:-16}}',
       '@keyframes lnf-flow-12{to{stroke-dashoffset:-12}}',
       '@keyframes lnf-flow-10{to{stroke-dashoffset:-10}}',
       '@keyframes lnf-flow-9{to{stroke-dashoffset:-9}}',
-      '.lnf-flow-a{stroke-dasharray:2 10;animation:lnf-flow-12 6s linear infinite}',   // Class A input — subtle/slow
+      '.lnf-flow-a{stroke-dasharray:10 6;animation:lnf-flow-16 6s linear infinite}',   // Class A input — high-contrast dash
       '.lnf-flow-b{stroke-dasharray:7 5;animation:lnf-flow-12 4s linear infinite}',    // Class B rollup
       '.lnf-flow-c{animation:lnf-flow-10 3s linear infinite}',                          // Class C derived (keeps its 6 4 dash attr)
       '.lnf-flow-fb{animation:lnf-flow-9 3s linear infinite}',                          // governance feedback (5 4 dash attr; path runs status→Cat9, so the stream reads as reverse flow)
+      // Class A doc→module lines take the theme accent (phosphor/verdigris/
+      // slate-blue) so they carry a visible hue against the surface instead of
+      // grey-on-grey. Each connection is two stacked paths sharing this colour:
+      // a static base + a brighter moving dash overlay (opacity set per element).
+      '.lnf-a-line{stroke:var(--flow-accent,#35d6e8)}',
       '@media (prefers-reduced-motion: reduce){.lnf-flow-a,.lnf-flow-b,.lnf-flow-c,.lnf-flow-fb{animation:none!important}}',
       // Text halo: paint-order strokes a 3px surface-coloured outline UNDER the
       // glyph fill, so labels stay legible where connection lines pass beneath
@@ -419,32 +425,72 @@
       return p;
     });
 
-    // Class B (rollup): mod → cat — streaming dashes, no arrowhead (volume too high)
+    // Class B (rollup): mod → cat — streaming dashes, no arrowhead (volume too
+    // high). Base opacity nudged 0.25 → 0.35 so it isn't overpowered by the now
+    // brighter Class A doc→module lines (keeps the rollup readable).
+    var MODCAT_OP = '0.35';
     var modCatEls = MODULES.map(function(m, mi) {
       var ci=m.catI, x1=CX.mod+4, y1=modY[mi], x2=CX.cat-9, y2=catCY[ci], mx=(x1+x2)/2;
       var p = se('path', { d:'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2,
-        fill:'none', stroke:modInfos[mi].color, 'stroke-width':'0.8', opacity:'0.25', 'stroke-linecap':'round' }, lineG);
+        fill:'none', stroke:modInfos[mi].color, 'stroke-width':'0.8', opacity:MODCAT_OP, 'stroke-linecap':'round' }, lineG);
       flowAnim(p, 'lnf-flow-b');
       return p;
     });
 
-    // Class A (input): doc → module — thin solid, doc-node colour, no arrowhead
-    // Store per-doc arrays for hover interaction
-    var docLineMap = DOC_KEYS.map(function() { return []; }); // docIdx → [{el, modI}]
+    // Class A (input): doc → module. Drawn as TWO stacked paths sharing the
+    // theme accent (var --flow-accent via .lnf-a-line): a STATIC base plus a
+    // brighter animated dash overlay, so the motion reads without relying on a
+    // single faint stroke. UPLOADED docs render bright (base .45 / dash .75,
+    // 1.6px); not-uploaded stay faint (.12) — the contrast is the signal.
+    // Store per-doc arrays of {base, dash, modI} for hover interaction.
+    var A_BASE = { on: '0.45', off: '0.12' };
+    var A_DASH = { on: '0.75', off: '0.12' };
+    var A_W    = { on: '1.6',  off: '0.7'  };
+    var docLineMap = DOC_KEYS.map(function() { return []; });
     DOC_KEYS.forEach(function(key, di) {
-      var uploaded = isUploaded(key);
-      var stroke = uploaded ? COL.DocOn : COL.DocOff;
-      var opacity = uploaded ? '0.15' : '0.05';
+      var up = isUploaded(key);
+      var baseOp = up ? A_BASE.on : A_BASE.off, dashOp = up ? A_DASH.on : A_DASH.off, w = up ? A_W.on : A_W.off;
       DOC_TO_CATS[di].forEach(function(ci) {
         catModIdxs[ci].slice(0, 2).forEach(function(mi) {
           var x1=CX.doc+5, y1=docY(di), x2=CX.mod-4, y2=modY[mi], mx=(x1+x2)/2;
-          var line = se('path', { d:'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2,
-            fill:'none', stroke:stroke, 'stroke-width':'0.7', opacity:opacity, 'stroke-linecap':'round' }, lineG);
-          flowAnim(line, 'lnf-flow-a');
-          docLineMap[di].push({ el:line, modI:mi });
+          var d = 'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2;
+          var base = se('path', { d:d, class:'lnf-a-line', fill:'none',
+            'stroke-width':w, opacity:baseOp, 'stroke-linecap':'round' }, lineG);
+          var dash = se('path', { d:d, class:'lnf-a-line', fill:'none',
+            'stroke-width':w, opacity:dashOp, 'stroke-linecap':'round' }, lineG);
+          flowAnim(dash, 'lnf-flow-a');
+          docLineMap[di].push({ base:base, dash:dash, modI:mi });
         });
       });
     });
+
+    // ── Class A hover helpers ─────────────────────────────────────────────────
+    // A hover dims every doc→module line to 0.2 so the highlighted path pops,
+    // then raises the connected lines to 0.85 / 2.2px; leaving restores each
+    // line to its per-upload default.
+    function classAReset() {
+      docLineMap.forEach(function(arr, di) {
+        var up = isUploaded(DOC_KEYS[di]);
+        arr.forEach(function(e) {
+          e.base.setAttribute('opacity', up ? A_BASE.on : A_BASE.off);
+          e.dash.setAttribute('opacity', up ? A_DASH.on : A_DASH.off);
+          e.base.setAttribute('stroke-width', up ? A_W.on : A_W.off);
+          e.dash.setAttribute('stroke-width', up ? A_W.on : A_W.off);
+        });
+      });
+    }
+    function classAFocus(match) {
+      docLineMap.forEach(function(arr, di) {
+        arr.forEach(function(e) {
+          if (match(e, di)) {
+            e.base.setAttribute('opacity', '0.85'); e.dash.setAttribute('opacity', '0.85');
+            e.base.setAttribute('stroke-width', '2.2'); e.dash.setAttribute('stroke-width', '2.2');
+          } else {
+            e.base.setAttribute('opacity', '0.2'); e.dash.setAttribute('opacity', '0.2');
+          }
+        });
+      });
+    }
 
     // inter-category dashed lines
     var interCatEls = [];
@@ -521,9 +567,7 @@
           showTT(evt,'<div class="m">'+escH(m.num)+'</div><div class="n">'+escH(m.name)+'</div><div class="sub" style="color:'+info.color+'">'+statusLabel+'</div>'+metStr+'<div class="sub">'+escH(CATS[m.catI].name)+'</div>');
           modCatEls[mi].setAttribute('opacity','0.70');
           modCatEls[mi].setAttribute('stroke-width','1.4');
-          docLineMap.forEach(function(arr, di) {
-            arr.forEach(function(e) { if (e.modI===mi) { e.el.setAttribute('opacity','0.65'); e.el.setAttribute('stroke-width','1.3'); } });
-          });
+          classAFocus(function(e){ return e.modI===mi; });
         };
       })(m, mi, info, circle));
       g.addEventListener('mousemove', moveTT);
@@ -531,16 +575,9 @@
         return function() {
           hideTT();
           circle.setAttribute('r','4');
-          modCatEls[mi].setAttribute('opacity','0.15');
+          modCatEls[mi].setAttribute('opacity', MODCAT_OP);
           modCatEls[mi].setAttribute('stroke-width','0.8');
-          docLineMap.forEach(function(arr, di) {
-            arr.forEach(function(e) {
-              if (e.modI===mi) {
-                e.el.setAttribute('opacity', isUploaded(DOC_KEYS[di])?'0.15':'0.05');
-                e.el.setAttribute('stroke-width','0.7');
-              }
-            });
-          });
+          classAReset();
         };
       })(mi, info, circle));
       return g;
@@ -627,17 +664,13 @@
         return function(evt) {
           var cats = DOC_TO_CATS[di].map(function(ci){return 'C'+(ci+1);}).join(', ');
           showTT(evt,'<div class="n">'+escH(name)+'</div><div class="sub" style="color:'+color+'">'+(uploaded?'Uploaded':'Not uploaded')+'</div><div class="sub">Feeds: '+cats+'</div>');
-          if (uploaded) {
-            docLineMap[di].forEach(function(e) { e.el.setAttribute('opacity','0.65'); e.el.setAttribute('stroke-width','1.4'); });
-          }
+          // trace this document's feeds regardless of upload state
+          classAFocus(function(e, d){ return d===di; });
         };
       })(name, di, uploaded, color));
       g.addEventListener('mousemove', moveTT);
       g.addEventListener('mouseleave', (function(di, uploaded) {
-        return function() {
-          hideTT();
-          if (uploaded) docLineMap[di].forEach(function(e) { e.el.setAttribute('opacity','0.15'); e.el.setAttribute('stroke-width','0.7'); });
-        };
+        return function() { hideTT(); classAReset(); };
       })(di, uploaded));
     });
 
@@ -675,7 +708,7 @@
     var sep2 = document.createElement('span');
     sep2.style.cssText = 'border-left:1px solid #1a2440;height:10px;';
     leg.appendChild(sep2);
-    [['Input (doc→model)', legLine(COL.DocOn, false, false)],
+    [['Input (doc→model)', legLine('var(--flow-accent, #35d6e8)', false, false)],
      ['Rollup (model→category→status)', legLine(COL.Green, false, true)],
      ['Derived (category→category)', legLine(COL.Amber, true, true)],
      ['Governance feedback', legLine(COL.Red, true, true)]].forEach(function(t) {
