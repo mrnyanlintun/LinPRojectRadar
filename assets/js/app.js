@@ -50,14 +50,26 @@
 
   const SVG_NS = "http://www.w3.org/2000/svg";
   // Rectangular stage: the SVG spans the full panel width with a wide viewBox
-  // (1200×460); the circular scope keeps its fixed geometry, centered, and the
-  // side columns (status legend / ring thresholds) absorb the flexible width.
-  // Below ~800px panel width buildRadar() switches to a narrow stacked viewBox.
+  // (1200×460); the circular scope is centered and the side columns (status
+  // legend / ring thresholds) absorb the flexible width. Below ~800px panel
+  // width buildRadar() switches to a narrow stacked viewBox (460×680).
   // The scope center is therefore mutable — set per build, read by polar().
-  let CENTER_X = 600;          // wide stage scope center
-  let CENTER_Y = 230;
-  const R_MIN = 0.08 * 180;    // inner radius (health 100)
-  const R_MAX = 0.92 * 180;    // outer radius (health 0)
+  //
+  // SCOPE_H is the vertical band the circle owns inside the stage. On the wide
+  // stage that IS the viewBox height (460). On the narrow stage the viewBox is
+  // 680 tall but the circle only owns the top 460 of it — the side columns
+  // stack beneath at y = VH-190 — so the band, not VH, is what the radius must
+  // derive from (44% of 680 would put the circle through the top edge and into
+  // the stacked columns). Both bands are 460, so the scope is the same size in
+  // either mode and only CENTER_X moves.
+  const SCOPE_H = 460;
+  // Outer radius = 44% of the band → ~6% breathing room above and below.
+  // EVERYTHING radial derives from R_MAX; nothing below should hardcode a radius.
+  const R_MAX = 0.44 * SCOPE_H;      // 202.4 — outer radius (health 0)
+  const R_MIN = R_MAX * (8 / 92);    // 17.6  — inner radius (health 100), original ratio kept
+  const ICON = 16;                   // blip glyph size in SVG user units (drives separation + rings)
+  let CENTER_X = 600;                // wide stage scope center; 230 when narrow
+  const CENTER_Y = SCOPE_H / 2;      // 230 — circle always centered in its band
 
   let selectedId = null;
   const decisionLog = [];
@@ -229,7 +241,7 @@
     // than by buildRadar itself.
     console.log("Projects loaded:", LIN_PROJECTS.length, LIN_PROJECTS.map((p) => p.id));
 
-    const R = R_MAX; // 165.6 — outer edge
+    const R = R_MAX; // 202.4 — outer edge (derived from SCOPE_H)
 
     // ── rectangular stage geometry ────────────────────────────────────────
     // Wide stage: 1200×460, scope centered, status legend left / threshold
@@ -238,9 +250,10 @@
     const panelW = (wrap && wrap.clientWidth) || window.innerWidth;
     const narrow = panelW < 800;
     const VW = narrow ? 460 : 1200;
-    const VH = narrow ? 680 : 460;
-    CENTER_X = narrow ? 230 : 600;
-    CENTER_Y = 230;
+    const VH = narrow ? 680 : 460;   // narrow: SCOPE_H band on top + stacked columns beneath
+    CENTER_X = narrow ? VW / 2 : 600;
+    // CENTER_Y is fixed at SCOPE_H/2 — the circle is centered in its band in
+    // both modes, so it is a const now and needs no per-build assignment.
     svg.setAttribute("viewBox", `0 0 ${VW} ${VH}`);
     svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
     if (wrap) wrap.style.aspectRatio = `${VW} / ${VH}`;
@@ -329,8 +342,9 @@
     buildStageColumns(svg, narrow, VW, VH, THRESHOLD_RINGS);
 
     // ── degree markings just inside outer ring ───────────────────────────
+    const DEG_INSET = R * 0.078;   // ≈13 at the old R — keeps the label just inside the ring
     for (let deg = 0; deg < 360; deg += 30) {
-      const pos = polar(deg, R - 13);
+      const pos = polar(deg, R - DEG_INSET);
       const t = el("text", {
         x: pos.x, y: pos.y,
         "text-anchor": "middle", "dominant-baseline": "middle",
@@ -392,7 +406,7 @@
     // sector reading stays correct) and push it outward in radius until it
     // clears every already-placed blip by MIN_SEP. The true radius is kept on
     // q.trueR so a faint tick can show the original drift when nudged far.
-    const MIN_SEP = 34;               // ~2.4× the icon radius (ICON = 14)
+    const MIN_SEP = ICON * 2.43;      // ~2.4× the icon size — scales with the glyph
     const RADIUS_CAP = R_MAX - 2;     // hard cap at outer ring edge
     const placedDots = [];
     plots.forEach((q) => {
@@ -414,9 +428,10 @@
     });
 
     // pass 2: label collision avoidance — nudge the LABEL only (never the
-    // blip), vertically in ±10px steps, from the uniform (+11, +4) offset.
+    // blip), vertically in ±10px steps, from the uniform (LABEL_DX, +4) offset.
     const LABEL_W = 44, LABEL_NUDGE = 10;
-    plots.forEach((q) => { q.lx = q.x + 11; q.ly = q.y + 4; });
+    const LABEL_DX = ICON / 2 + 4;    // clear of the glyph edge, whatever ICON is
+    plots.forEach((q) => { q.lx = q.x + LABEL_DX; q.ly = q.y + 4; });
     const byY = plots.slice().sort((a, b) => a.ly - b.ly);
     byY.forEach((q, i) => {
       let moved = true, guard = 0;
@@ -433,7 +448,7 @@
 
     // ONE uniform marker for every blip — the shared #blip-building symbol
     // defined in <defs> above. No per-sector glyph branch exists anymore.
-    const ICON = 14; // display size in SVG user units
+    // (ICON is module-scope: MIN_SEP above derives from it.)
 
     plots.forEach((q) => {
      try {
@@ -477,7 +492,7 @@
       const pingDelay = -(4 - (normAng / 360) * 4);
       if (!reduceMotion() && !empty) {
         const pingRing = el("circle", {
-          cx: q.x, cy: q.y, r: "9",
+          cx: q.x, cy: q.y, r: (ICON / 2 + 2).toFixed(1),
           fill: "none", stroke: color,
           "stroke-width": "1",
           class: "blip-ping-ring"
@@ -703,10 +718,45 @@
     glMap.on("error", () => {});
   }
 
-  /* one custom HTML marker per project — building glyph, status color, blink.
+  /* ---------- the shared map-pin shape ----------
+     Classic teardrop, defined ONCE in a hidden <defs> and referenced by every
+     marker via <use>; only the status colour varies per instance (the body is
+     fill:currentColor, and .gl-pin-inner sets color from --pin-color).
+
+     Geometry matters here: the viewBox is 24×32 and the TIP sits at exactly
+     (12, 32) — the bottom-centre of the box. Combined with MapLibre's
+     anchor:"bottom" (which puts the element's bottom-centre on the coordinate)
+     that lands the point, not the head, on the exact lat/lng. Anything that
+     adds height below the svg would push the tip off the coordinate, which is
+     why .gl-pin-num is taken out of flow in CSS.
+
+     The radar keeps its own building glyph (#blip-building) — this is map-only. */
+  const GL_PIN_DEFS_ID = "gl-pin-defs";
+  function ensureGlPinDefs() {
+    if (document.getElementById(GL_PIN_DEFS_ID)) return;
+    const holder = document.createElementNS(SVG_NS, "svg");
+    holder.id = GL_PIN_DEFS_ID;
+    holder.setAttribute("aria-hidden", "true");
+    holder.setAttribute("width", "0");
+    holder.setAttribute("height", "0");
+    holder.style.cssText = "position:absolute;width:0;height:0;overflow:hidden";
+    holder.innerHTML =
+      '<defs><g id="gl-pin-shape">' +
+        // head: r9.5 circle centred (12,12); flanks sweep down to the tip at (12,32)
+        '<path class="gl-pin-body" fill="currentColor" ' +
+          'd="M12 32 C12 32 21.5 20.2 21.5 12 A9.5 9.5 0 1 0 2.5 12 C2.5 20.2 12 32 12 32 Z"/>' +
+        // inner dot — dark so it reads as a hole against every status fill.
+        // stroke:none keeps Miami's marker outline on the body silhouette only.
+        '<circle class="gl-pin-hole" cx="12" cy="12" r="3.4" fill="rgba(0,8,18,.82)" stroke="none"/>' +
+      '</g></defs>';
+    document.body.appendChild(holder);
+  }
+
+  /* one custom HTML marker per project — pin glyph, status color, blink.
      All visual state lives on .gl-pin-inner; MapLibre owns .gl-pin's transform
      for positioning, so we never set transform on the marker element itself. */
-  function buildingMarkerEl(p) {
+  function pinMarkerEl(p) {
+    ensureGlPinDefs();
     const el = document.createElement("div");
     el.className = "gl-pin";
     el.dataset.status = statusKey(p);
@@ -717,9 +767,11 @@
     const inner = document.createElement("div");
     inner.className = "gl-pin-inner";
     inner.style.animationDelay = mapPinBlinkDelay(p.id).toFixed(2) + "s";   // stagger the fleet
+    // 30px tall at the 24×32 aspect → 22.5 wide. The <use> pulls the shared
+    // teardrop; currentColor resolves from --pin-color on .gl-pin-inner.
     inner.innerHTML =
-      '<svg class="gl-pin-glyph" viewBox="0 0 24 24" width="30" height="30" aria-hidden="true">' +
-      '<path d="M12 3 L21 11 H18 V21 H6 V11 H3 Z" fill="currentColor"/></svg>' +
+      '<svg class="gl-pin-glyph" viewBox="0 0 24 32" width="22.5" height="30" aria-hidden="true">' +
+      '<use href="#gl-pin-shape"/></svg>' +
       `<span class="gl-pin-num">${esc(p.id)}</span>`;
     el.appendChild(inner);
     return el;
@@ -734,7 +786,7 @@
       if (Math.abs(Number(p.lat)) > 90) {
         console.warn(`[map] project ${p.id}: latitude ${p.lat} out of range (±90) — check lat/lng order`);
       }
-      const el = buildingMarkerEl(p);
+      const el = pinMarkerEl(p);
       const marker = new maplibregl.Marker({ element: el, anchor: "bottom" })
         .setLngLat([Number(p.lng), Number(p.lat)])   // MapLibre = [lng, lat]
         .addTo(glMap);
