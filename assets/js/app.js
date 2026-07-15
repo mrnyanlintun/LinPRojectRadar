@@ -95,6 +95,15 @@
   // Slim portfolio records (v10.28 listslim) carry a precomputed `status` string
   // and no `signals` object, so the radar/list read that field directly. Full
   // records (fetched on detail open) keep the deriveHealthState path unchanged.
+  // deterministic per-project blink offset (0–1.68s) so map pins don't strobe
+  // in unison — numeric ids use their value, others fall back to a char sum
+  function mapPinBlinkDelay(id) {
+    const s = String(id == null ? "" : id);
+    const n = parseInt(s.replace(/\D/g, ""), 10);
+    const h = Number.isFinite(n) ? n : s.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+    return (h % 7) * 0.28;
+  }
+
   function statusKey(p) {
     if (p && p.slim) {
       const lab = (typeof slimStatusLabel === "function") ? slimStatusLabel(p) : null;
@@ -644,8 +653,10 @@
       const gx = tx + dx, gy = ty - 15;   // glyph sits above the true point
       mapPinPts[p.id] = { gx, gy };
 
-      const g = el("g", { class: "map-pin", "data-id": p.id,
+      const g = el("g", { class: "map-pin", "data-id": p.id, "data-status": status,
         "aria-label": `${p.id} ${p.name}, ${stateLabel(p)}` });
+      // status color drives both the glyph fill (currentColor) and its blink glow
+      g.style.setProperty("--pin-color", color);
 
       // leader from the glyph down to the exact projected point
       g.appendChild(el("line", { x1: tx, y1: ty, x2: gx, y2: gy + 11,
@@ -659,11 +670,11 @@
       // the SAME building glyph as the radar blips
       const icon = el("use", {
         href: "#map-building", x: (gx - 11).toFixed(1), y: (gy - 11).toFixed(1),
-        width: 22, height: 22, class: "map-pin-icon",
-        opacity: status === "empty" ? "0.55" : "1"
+        width: 22, height: 22, class: "map-pin-icon"
       });
-      icon.style.color = color;
-      icon.style.filter = `drop-shadow(0 0 5px ${color})`;
+      // color + glow come from --pin-color via CSS; stagger the blink so a
+      // screenful of pins doesn't strobe in unison (delay from the id hash)
+      icon.style.animationDelay = mapPinBlinkDelay(p.id).toFixed(2) + "s";
       g.appendChild(icon);
 
       const lbl = el("text", { x: gx + 13, y: gy + 4, class: "blip-label" });
