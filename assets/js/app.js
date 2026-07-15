@@ -37,12 +37,15 @@
     combined:     { label: "HYBRID",       start: 150, end: 270 }
   };
 
+  // Radar blips and map pins are GRAPHICS: they point at the --status-* fills
+  // (not the darkened -text variants) and re-theme live via var(). The palette
+  // itself lives in radar.css — never hardcode a status hex here.
   const STATUS_COLOR = {
-    complete: "#4ea0ff",
-    green: "var(--clear-green)",
-    yellow: "var(--yellow)",
-    amber: "var(--radar-amber)",
-    red:   "var(--alarm-red)"
+    complete: "var(--status-complete)",
+    green: "var(--status-green)",
+    yellow: "var(--status-yellow)",
+    amber: "var(--status-amber)",
+    red:   "var(--status-red)"
   };
 
   const SVG_NS = "http://www.w3.org/2000/svg";
@@ -298,9 +301,9 @@
     // The ring-meaning labels live OFF the scope face, in the right-hand
     // threshold column (drawn below), keeping the scope itself clean.
     const THRESHOLD_RINGS = [
-      { frac: 0.33, stroke: "#3fcaa6", label: "On track" },
-      { frac: 0.66, stroke: "#e2b13c", label: "Watch"    },
-      { frac: 0.90, stroke: "#e0556b", label: "Escalate" },
+      { frac: 0.33, stroke: "var(--status-green)", label: "On track" },
+      { frac: 0.66, stroke: "var(--status-amber)", label: "Watch"    },
+      { frac: 0.90, stroke: "var(--status-red)",   label: "Escalate" },
     ];
     THRESHOLD_RINGS.forEach(({ frac, stroke }) => {
       svg.appendChild(el("circle", {
@@ -1433,6 +1436,9 @@
       localStorage.setItem("lin-theme", theme);        // new primary key
       localStorage.setItem("lin-radar-theme", theme);  // legacy key (kept for back-compat)
     } catch (e) {}
+    // Canvas renderers can't read var(), so re-resolve the status palette from
+    // the new theme's CSS vars; they pick it up on their next draw.
+    try { if (window.LIN_STATUS_COLORS) LIN_STATUS_COLORS.refresh(); } catch (e) {}
     onMapThemeChange();   // swap the OpenFreeMap dark/positron style if the map is live
   }
 
@@ -1800,7 +1806,7 @@
     } catch (e) {}
     if (stored === "clean") stored = "light";
     if (stored === "cyberpunk") stored = "dark";   // theme removed
-    const VALID_THEMES = ["light", "dark", "newyork"];
+    const VALID_THEMES = ["light", "dark", "newyork", "maria"];
     const saved = VALID_THEMES.includes(stored) ? stored : "dark";
     applyTheme(saved);
 

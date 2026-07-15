@@ -17,13 +17,19 @@ const PCEIF_VERSION = "L2-v0.5-demo";
    global so renderers can read both the canonical label set and the hex
    palette without duplicating it. */
 const PCEIF_STATUS_LABELS = ["Complete", "Green", "Yellow", "Amber", "Red"];
-const PCEIF_STATUS_HEX = {
-  Complete: "#4ea0ff",
-  Green: "#3fcaa6",
-  Yellow: "#f0c040",
-  Amber: "#e2b13c",
-  Red: "#e0556b"
-};
+const PCEIF_STATUS_HEX = (function () {
+  /* Resolved from the ONE palette: radar.css --status-* → config.js
+     LIN_STATUS_COLORS. The literals here are a last-ditch fallback for
+     running this file without config.js (e.g. a bare unit harness). */
+  var c = (typeof window !== "undefined" && window.LIN_STATUS_COLORS) || {};
+  return {
+    Complete: c.Complete || "#4ea0ff",
+    Green:    c.Green    || "#2ee66b",
+    Yellow:   c.Yellow   || "#ffe066",
+    Amber:    c.Amber    || "#ff8c1a",
+    Red:      c.Red      || "#ff3b30"
+  };
+})();
 const DATA_BOUNDARY =
   "Synthetic demonstration data only; not a validated production system.";
 

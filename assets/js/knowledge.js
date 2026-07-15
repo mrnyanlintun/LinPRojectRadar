@@ -299,8 +299,11 @@
   }
 
   // Small typography helpers shared by every topic body.
+  // Reference tables render the palette as label ink → -text variants, which
+  // are the darkened set on Miami and the plain fills on the dark themes.
   const RAG = {
-    green: "var(--clear-green)", amber: "var(--radar-amber)", red: "var(--alarm-red)",
+    green: "var(--status-green-text)", amber: "var(--status-amber-text)", red: "var(--status-red-text)",
+    yellow: "var(--status-yellow-text)", complete: "var(--status-complete-text)",
   };
   function ragTable(headerRow, rows) {
     return `<table class="kn-rag">
@@ -1247,7 +1250,7 @@ Named Human Approval → Audit Record</pre>
         ${ragTable(
           ["State", "Authority", "Timeframe", "Basis"],
           [
-            [{ label: "Complete", color: "#4ea0ff" },
+            [{ label: "Complete", color: RAG.complete },
              "Project Manager / Controls Lead",
              "Closeout documentation",
              "Milestone achieved and signed off — transition to closeout governance"],
@@ -1255,7 +1258,7 @@ Named Human Approval → Audit Record</pre>
              "Project Manager / Controls Lead",
              "Monthly reporting cycle",
              "Routine performance within delegated PM authority"],
-            [{ label: "Yellow", color: "#f0c040" },
+            [{ label: "Yellow", color: RAG.yellow },
              "Project Manager",
              "Weekly check-in",
              "Minor variance — early-warning band, investigate before next cycle"],

@@ -57,7 +57,11 @@
     {from:"cat11",to:"cat9"}
   ];
 
-  var SC = {Complete:"#4ea0ff",Green:"#3fcaa6",Yellow:"#f0c040",Amber:"#e2b13c",Red:"#e0556b","null":"#26344f"};
+  // Status fills from the central palette (radar.css --status-* via config.js).
+  // NOTE: the per-category colours in CATS_FALLBACK above are a DIFFERENT
+  // palette (category identity, not status) and stay hardcoded on purpose.
+  var _S = window.LIN_STATUS_COLORS;
+  var SC = {Complete:_S.Complete, Green:_S.Green, Yellow:_S.Yellow, Amber:_S.Amber, Red:_S.Red, "null":_S.None};
 
   // ── MODULE REGISTRY ────────────────────────────────────────────
   var CATS_DATA = [];
