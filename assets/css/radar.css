@@ -28,6 +28,7 @@
   --faint: #5c6678;
   --phosphor: #2563eb;
   --accent: #2563eb;
+  --flow-accent: #3457a8;   /* Signal Flow doc→model lines — slate-blue on Miami */
   --ink-dim: #4c576b;
   --gold-text: #8a6a1c;
   --radar-amber: #b4740a;
@@ -74,6 +75,7 @@ body[data-theme="dark"] {
   --faint: rgba(139,147,167,.72);
   --phosphor: #35d6e8;
   --accent: #35d6e8;
+  --flow-accent: #35d6e8;   /* Signal Flow doc→model lines — phosphor on Gotham */
   --ink-dim: #8b93a7;
   --radar-amber: #ffb01f;
   --alarm-red: #ff5d52;
@@ -2184,6 +2186,7 @@ body[data-theme="newyork"] {
   --faint: #6f7d70;                            /* weathered patina grey */
   --phosphor: #d4af5a;                         /* gold — primary accent */
   --accent: #d4af5a;                           /* gold — interactive accent (verdigris on hover) */
+  --flow-accent: #4fa393;                      /* Signal Flow doc→model lines — verdigris on NYC */
   --ink-dim: #b9b492;
   --radar-amber: #d4af5a;
   --alarm-red: #c0392b;
