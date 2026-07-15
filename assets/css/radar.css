@@ -2546,6 +2546,42 @@ body[data-theme="light"] .map-art {
 }
 body[data-theme="light"] .map-vignette { display: none; }
 
+/* HUD instrument overlay — CRT scanline texture + a slow top→bottom sweep.
+   Stage-fixed (a DOM overlay, not an SVG child) so the fly-to viewBox zoom
+   leaves it untouched; sized to the map box via the same aspect-ratio and
+   pointer-events:none so it never intercepts marker clicks or the reset
+   control. z-index keeps it above the artwork/pins but below the reset btn (5)
+   and the body-level info card/tooltip (9998/9999). */
+.map-fx {
+  position: absolute; top: 0; left: 0; width: 100%;
+  aspect-ratio: 2000 / 848;
+  overflow: hidden; pointer-events: none; z-index: 2;
+}
+.map-scan-texture {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--flow-accent) 3%, transparent) 0,
+    color-mix(in srgb, var(--flow-accent) 3%, transparent) 1px,
+    transparent 1px, transparent 4px);
+}
+body[data-theme="light"] .map-scan-texture { display: none; }   /* CRT texture is a dark-themes cue */
+.map-scan-line {
+  position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+  will-change: transform;
+  background: linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(100% - 42px),
+    color-mix(in srgb, var(--flow-accent) 42%, transparent) calc(100% - 2px),
+    var(--flow-accent) 100%);   /* 40px trail rising to a 2px core at the bottom edge */
+  animation: map-scan 6s linear infinite;
+}
+/* element is full map-box height; its bottom-edge core sweeps top→bottom as
+   the whole layer translates from one box-height up to home. translateY uses
+   %, so it stays correct through any stage resize — no measured px. */
+@keyframes map-scan { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+
 /* pins */
 .map-pin { cursor: pointer; }
 .map-pin-leader { stroke: var(--ring-line); stroke-width: 1; opacity: .6; }
@@ -2565,6 +2601,28 @@ body[data-theme="light"] .map-vignette { display: none; }
 .map-pin.focused .map-pin-icon { transform: scale(1.6); }
 .map-pin.focused .map-pin-ring { animation: map-pin-pulse 1.1s ease-out 1; }
 
+/* status-colored blink — opacity + glow-radius swing, color from --pin-color
+   (set inline per pin). Red blinks faster (urgency reads at a glance),
+   Complete does a slow gentle pulse; the rest hold the default beat. The
+   per-pin animation-delay (set in JS from the id hash) staggers the fleet. */
+.map-pin-icon {
+  color: var(--pin-color, var(--muted));
+  filter: drop-shadow(0 0 5px var(--pin-color, var(--muted)));
+  animation: map-pin-blink 2s ease-in-out infinite;
+}
+.map-pin[data-status="red"] .map-pin-icon { animation-duration: 1.2s; }
+.map-pin[data-status="complete"] .map-pin-icon { animation-duration: 3s; }
+@keyframes map-pin-blink {
+  0%, 100% { opacity: 1;   filter: drop-shadow(0 0 6px var(--pin-color, var(--muted))); }
+  50%      { opacity: .45; filter: drop-shadow(0 0 2px var(--pin-color, var(--muted))); }
+}
+/* a selected/focused pin holds steady — blinking would fight the fly-to focus */
+.map-pin.selected .map-pin-icon,
+.map-pin.focused .map-pin-icon {
+  animation: none; opacity: 1;
+  filter: drop-shadow(0 0 7px var(--pin-color, var(--muted)));
+}
+
 /* on-screen reset control (top-right of the map stage) */
 .map-reset-btn {
   position: absolute; top: 10px; right: 10px; z-index: 5;
@@ -2579,6 +2637,8 @@ body[data-theme="light"] .map-vignette { display: none; }
   .map-pin.selected .map-pin-ring,
   .map-pin.focused .map-pin-ring { animation: none; opacity: .8; }   /* static ring */
   .map-pin, .map-pin-icon { transition: none; }
+  .map-pin-icon { animation: none; opacity: 1; }   /* static glow, no blink */
+  .map-scan-line { display: none; }                /* no sweep; texture (dark themes) stays */
 }
 
 /* captions + no-location note */
