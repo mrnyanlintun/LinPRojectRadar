@@ -716,11 +716,12 @@
       // hover tooltip: number · name · sector · status · address
       g.addEventListener("mouseenter", (e) => {
         const sec = { design: "Design", construction: "Construction", hybrid: "Hybrid", combined: "Hybrid" }[String(p.sector || "").toLowerCase()] || p.sector || "—";
+        const addr = p.formattedAddress || p.address;   // prefer the geocoded form
         tt.innerHTML =
           `<div class="mt-num">${esc(p.id)}</div>` +
           `<div class="mt-name">${esc(p.name)}</div>` +
           `<div class="mt-sub">${esc(sec)} · ${esc(stateLabel(p))}</div>` +
-          (p.address ? `<div class="mt-addr">${esc(p.address)}</div>` : "") +
+          (addr ? `<div class="mt-addr">${esc(addr)}</div>` : "") +
           `<div class="mt-hint">double-click to open detail →</div>`;
         tt.style.display = "block"; moveTT(e);
       });
@@ -733,12 +734,12 @@
       svg.appendChild(g);
     });
 
-    // ── "No location set" side note (each id opens its Edit info panel) ──
+    // ── "No address set" side note (each id opens its Edit info panel) ──
     const note = document.getElementById("map-nolocation");
     if (note) {
       if (unlocated.length) {
         note.hidden = false;
-        note.innerHTML = "No location set: " + unlocated.map((p) =>
+        note.innerHTML = "No address set: " + unlocated.map((p) =>
           `<button type="button" class="map-noloc-id" data-editloc="${esc(p.id)}">${esc(p.id)}</button>`).join(", ");
         note.querySelectorAll("[data-editloc]").forEach((b) =>
           b.addEventListener("click", () => {

@@ -127,24 +127,27 @@
     return null;
   }
 
-  /* ---------- coordinate validation (shared by edit + create) ----------
-     Both-or-neither; address optional. Lat −90..90, lng −180..180; values
-     round to 6 decimals. Returns {err} or {lat,lng} (nulls = clear). */
-  function validateLatLng(latStr, lngStr) {
-    const hasLat = latStr !== "", hasLng = lngStr !== "";
-    if (hasLat !== hasLng) return { err: "Enter both latitude and longitude, or neither." };
-    if (!hasLat) return { lat: null, lng: null };
-    const lat = Number(latStr), lng = Number(lngStr);
-    if (!Number.isFinite(lat) || lat < -90 || lat > 90) return { err: "Latitude must be a number between -90 and 90." };
-    if (!Number.isFinite(lng) || lng < -180 || lng > 180) return { err: "Longitude must be a number between -180 and 180." };
-    return { lat: Math.round(lat * 1e6) / 1e6, lng: Math.round(lng * 1e6) / 1e6 };
+  /* ---------- geocode outcome (shared by edit + create) ----------
+     Backend v10.29 geocodes server-side in saveProject_ whenever the saved
+     address changed, echoing lat/lng/formattedAddress or a human-readable
+     geocodeError on the returned project. PMs never type coordinates. */
+  function geocodeOutcome(saved) {
+    if (!saved) return null;
+    if (saved.geocodeError) {
+      // the backend message is already human-readable and usually carries its
+      // own "refine and save again" instruction — don't repeat it
+      const hint = /refine|save again/i.test(saved.geocodeError) ? "" : " — refine the address and save again.";
+      return { ok: false, text: "Couldn't locate this address: " + saved.geocodeError + hint };
+    }
+    if (saved.formattedAddress || saved.lat != null) return { ok: true, text: "Located: " + (saved.formattedAddress || saved.address) };
+    return null;
   }
 
-  /* Unified inline "Edit info" panel — project number, name, address, and
-     coordinates in one place (merges the old Edit № affordance). Sector is
-     shown read-only: it drives simulation rules and is not editable here.
-     Location fields feed the portfolio map view; NO hardcoded location
-     table exists — pins render only from data saved here. */
+  /* Unified inline "Edit info" panel — project number, name, and address in
+     one place (merges the old Edit № affordance). Sector is shown read-only:
+     it drives simulation rules and is not editable here. The address is the
+     ONLY location field — the backend geocodes it server-side on save, and
+     the outcome (formatted address or geocode error) surfaces inline. */
   function openEditInfo(btn) {
     const id = btn.dataset.editinfo;
     const row = btn.closest(".pr-row");
@@ -161,12 +164,8 @@
            <input type="text" class="pe-name ig-input" maxlength="80" /></label>
          <label class="rationale-label">Sector (read-only — drives simulation rules)
            <input type="text" class="pe-sector ig-input" disabled /></label>
-         <label class="rationale-label">Address (optional)
+         <label class="rationale-label pr-editinfo-addr">Address (optional — located automatically on save)
            <input type="text" class="pe-address ig-input" maxlength="160" placeholder="e.g. Terminal B, Austin-Bergstrom Intl Airport" /></label>
-         <label class="rationale-label">Latitude (−90…90, optional)
-           <input type="text" class="pe-lat ig-input" inputmode="decimal" placeholder="e.g. 30.194500" /></label>
-         <label class="rationale-label">Longitude (−180…180, optional)
-           <input type="text" class="pe-lng ig-input" inputmode="decimal" placeholder="e.g. -97.669900" /></label>
        </div>
        <div class="dc-actions">
          <button class="btn primary small pe-save">Save</button>
@@ -179,8 +178,10 @@
     box.querySelector(".pe-name").value = cached.name || "";
     box.querySelector(".pe-sector").value = SECTOR_LABEL[cached.sector] || cached.sector || "";
     box.querySelector(".pe-address").value = cached.address || "";
-    box.querySelector(".pe-lat").value = cached.lat != null ? String(cached.lat) : "";
-    box.querySelector(".pe-lng").value = cached.lng != null ? String(cached.lng) : "";
+    // show the current geocoded state so the PM knows where the pin sits now
+    if (cached.formattedAddress && cached.lat != null) {
+      box.querySelector(".pe-msg").textContent = "Located: " + cached.formattedAddress;
+    }
     box.querySelector(".pe-id").focus();
 
     const close = () => box.remove();
@@ -188,20 +189,18 @@
     box.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
     box.querySelector(".pe-save").addEventListener("click", async () => {
       const msg = box.querySelector(".pe-msg");
+      msg.classList.remove("pe-msg-error", "pe-msg-ok");
       const newId = box.querySelector(".pe-id").value.trim();
       const name = box.querySelector(".pe-name").value.trim();
       const address = box.querySelector(".pe-address").value.trim();
-      const coords = validateLatLng(box.querySelector(".pe-lat").value.trim(),
-                                    box.querySelector(".pe-lng").value.trim());
       if (newId !== id) {
         const idErr = validateProjectNumber(newId, id);
         if (idErr) { msg.textContent = idErr; return; }
       }
       if (name.length < 3) { msg.textContent = "Enter a project name (min 3 characters)."; return; }
-      if (coords.err) { msg.textContent = coords.err; return; }
       const save = box.querySelector(".pe-save");
       save.disabled = true;
-      msg.textContent = "Saving project info…";
+      msg.textContent = address ? "Saving — locating address…" : "Saving project info…";
       try {
         // ALWAYS mutate the full project.json — never save a slim stub back
         // to Drive (that would drop signals/history from the stored file).
@@ -209,21 +208,39 @@
         if (!full || full.slim) throw new Error("couldn't load the full project record");
         full.name = name;
         full.address = address || null;
-        full.lat = coords.lat;
-        full.lng = coords.lng;
-        await LinStore.saveProject(full);
+        // the save response echoes the updated project, including the
+        // server-side geocode result (lat/lng/formattedAddress/geocodeError)
+        const saved = await LinStore.saveProject(full);
         // number change last — it re-keys the Drive folder + mirrors
         if (newId !== id) {
           await LinStore.setProjectNumber(id, newId);
           if (window.LinApp && LinApp.renameSelection) LinApp.renameSelection(id, newId);
           if (window.LinSignals && LinSignals.clearCache) LinSignals.clearCache(id);
         }
-        logEvent(`EDITED project info for ${newId}${newId !== id ? ` (was ${id})` : ""}: name/address/coordinates updated.`);
+        logEvent(`EDITED project info for ${newId}${newId !== id ? ` (was ${id})` : ""}: name/address updated.`);
         await LinStore.load();
         if (window.LinApp) LinApp.refresh();
         renderManagePage();
+        // Surface the geocode outcome inline: re-open the (re-rendered) panel
+        // and show "Located: …" or the geocode error so the PM can refine.
+        const outcome = address ? geocodeOutcome(saved) : null;
+        if (outcome) {
+          const finalId = newId !== id ? newId : id;
+          const btn2 = document.querySelector(`#manage-root [data-editinfo="${finalId}"]`);
+          if (btn2) {
+            openEditInfo(btn2);
+            const box2 = btn2.closest(".pr-row").nextElementSibling;
+            const msg2 = box2 && box2.querySelector(".pe-msg");
+            if (msg2) {
+              msg2.textContent = outcome.text;
+              msg2.classList.add(outcome.ok ? "pe-msg-ok" : "pe-msg-error");
+              box2.scrollIntoView({ block: "center" });
+            }
+          }
+        }
       } catch (e) {
         msg.textContent = "Couldn't save: " + ((e && e.message) || "store unreachable") + ".";
+        msg.classList.add("pe-msg-error");
         save.disabled = false;
       }
     });
@@ -266,12 +283,8 @@
        <input id="np-id" class="ig-input" maxlength="40" placeholder="e.g. AP-2026-014" />
        <label class="rationale-label" for="np-name">Project name</label>
        <input id="np-name" class="ig-input" maxlength="80" placeholder="e.g. Terminal B Expansion" />
-       <label class="rationale-label" for="np-address">Address (optional)</label>
+       <label class="rationale-label" for="np-address">Address (optional — located automatically on save)</label>
        <input id="np-address" class="ig-input" maxlength="160" placeholder="e.g. Terminal B, Austin-Bergstrom Intl Airport" />
-       <label class="rationale-label" for="np-lat">Latitude (optional, −90…90)</label>
-       <input id="np-lat" class="ig-input" inputmode="decimal" placeholder="e.g. 30.194500" />
-       <label class="rationale-label" for="np-lng">Longitude (optional, −180…180)</label>
-       <input id="np-lng" class="ig-input" inputmode="decimal" placeholder="e.g. -97.669900" />
        <label class="rationale-label" for="np-sector">Sector</label>
        <select id="np-sector" class="ig-input">
          <option value="design">Design</option>
@@ -325,24 +338,24 @@
       const idErr = validateProjectNumber(id);
       if (idErr) { msg.textContent = idErr; return; }
       if (name.length < 3) { msg.textContent = "Enter a project name (min 3 characters)."; return; }
-      const coords = validateLatLng(document.getElementById("np-lat").value.trim(),
-                                    document.getElementById("np-lng").value.trim());
-      if (coords.err) { msg.textContent = coords.err; return; }
-      msg.textContent = "Creating project in the store…";
+      msg.textContent = address ? "Creating project — locating address…" : "Creating project in the store…";
       try {
         const p = await LinStore.createProject({ id, name, sector });
-        // optional location fields persist via the normal save flow (the
-        // create endpoint only takes id/name/sector)
-        if (address || coords.lat != null) {
-          p.address = address || null;
-          p.lat = coords.lat;
-          p.lng = coords.lng;
-          await LinStore.saveProject(p);
+        // the optional address persists via the normal save flow (the create
+        // endpoint only takes id/name/sector); the backend geocodes on save
+        let outcome = null;
+        if (address) {
+          p.address = address;
+          const saved = await LinStore.saveProject(p);
+          outcome = geocodeOutcome(saved);
         }
         logEvent(`Created EMPTY project ${p.id} — ${name} (${SECTOR_LABEL[sector] || sector}); awaiting ingest.`);
         if (window.LinApp) LinApp.refresh();
         renderManagePage();
-        document.getElementById("np-msg").textContent = `Created ${p.id} (empty, saved to Drive). Populate its signals to run the models.`;
+        const msg2 = document.getElementById("np-msg");
+        msg2.textContent = `Created ${p.id} (empty, saved to Drive).` +
+          (outcome ? " " + outcome.text : " Populate its signals to run the models.");
+        msg2.classList.toggle("pe-msg-error", !!(outcome && !outcome.ok));
       } catch (e) {
         msg.textContent = "Couldn't create the project: " + ((e && e.message) || "store unreachable") + ".";
       }
