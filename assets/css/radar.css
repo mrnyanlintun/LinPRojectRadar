@@ -2531,20 +2531,16 @@ body[data-theme="newyork"] .stage-btn.active { background: transparent; color: v
 
 .map-wrap { position: relative; width: 100%; }
 .map-wrap[hidden] { display: none; }
-#map-svg { width: 100%; height: auto; display: block; aspect-ratio: 2 / 1; }
+#map-svg { width: 100%; height: auto; display: block; aspect-ratio: 2000 / 848; }
 
-/* holographic landmass layers (colors per theme) */
-.map-land-fill { fill: var(--phosphor); opacity: .12; stroke: none; }
-.map-coast { fill: none; stroke: var(--phosphor); stroke-width: 1.2; opacity: .65; stroke-linejoin: round; }
-.map-coast-glow { fill: none; stroke: var(--phosphor); stroke-width: 2.4; opacity: .5; stroke-linejoin: round; }
-/* NYC: gold/verdigris duotone glow */
-body[data-theme="newyork"] .map-land-fill { fill: var(--nyc-verdigris); opacity: .10; }
-body[data-theme="newyork"] .map-coast { stroke: var(--nyc-gold); }
-body[data-theme="newyork"] .map-coast-glow { stroke: var(--nyc-verdigris); }
-/* Miami: deep slate crisp lines, no glow blur, no vignette */
-body[data-theme="light"] .map-land-fill { fill: #3d4657; opacity: .08; }
-body[data-theme="light"] .map-coast { stroke: #3d4657; opacity: .8; }
-body[data-theme="light"] .map-coast-glow,
+/* the Gemini HUD world artwork — blue-glow as-is on the dark themes; on
+   Miami it inverts to dark-slate lines so it stays legible on the light
+   surface. The vignette remains a dark-themes-only treatment. */
+.map-art { opacity: .9; }
+body[data-theme="light"] .map-art {
+  filter: invert(0.85) hue-rotate(180deg) saturate(0.6) brightness(1.05);
+  opacity: .95;
+}
 body[data-theme="light"] .map-vignette { display: none; }
 
 /* pins */

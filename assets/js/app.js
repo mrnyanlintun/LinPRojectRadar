@@ -537,69 +537,24 @@
   /* ============================================================
      Stylized HUD world map — the portfolio's second view.
      Pure inline SVG: no map library, no tiles, no external
-     requests. The landmass is a compact hand-simplified outline
-     (lng/lat vertex rings, ~2KB) projected equirectangularly at
-     build time with the SAME projection the pins use, so land and
-     pins always agree:
-       x = (lng + 180) / 360 * W,   y = (90 - lat) / 180 * H
-     Rendered as a glowing hologram: landmass fill at low opacity,
-     coastline stroke, and the same stroke blurred beneath for the
-     glow halo (the blur layer is hidden on the light theme, where
-     crisp lines read better).
+     requests beyond the local artwork. The world is the committed
+     Gemini HUD artwork (assets/world_map_hud.png) drawn as an SVG
+     <image> in a 0 0 2000 848 viewBox. Pin positions go through the
+     CALIBRATED transform measured against that artwork — every pin,
+     leader dot, fan offset, and tooltip anchor derives from MAP_X /
+     MAP_Y only (the artwork is not exactly equirectangular, so the
+     generic formula would drift).
      ============================================================ */
-  const MAP_W = 1200, MAP_H = 600;
+  const MAP_W = 2000, MAP_H = 848;                 // must match the artwork viewBox
+  const MAP_X = (lng) => 5.7122 * lng + 970.96;    // px in the 2000×848 viewBox
+  const MAP_Y = (lat) => -5.4787 * lat + 509.12;
   const VIEW_KEY = "lin-portfolio-view";
   let mapBuilt = false;      // lazily built on first switch
   let mapHydrated = false;   // slim records swapped for full ones (coords live in full project.json)
 
-  function mapProject(lng, lat) {
-    return { x: (lng + 180) / 360 * MAP_W, y: (90 - lat) / 180 * MAP_H };
-  }
   function hasCoords(p) {
     return !!p && p.lat != null && p.lng != null &&
       Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng));
-  }
-
-  // Hand-simplified world landmass — coarse on purpose (stylized silhouette,
-  // not cartography). Each ring is a closed [lng, lat] vertex list.
-  const WORLD_LANDMASS = [
-    // North America (incl. Alaska + Central America)
-    [[-168,66],[-161,70],[-140,70],[-125,72],[-110,73],[-95,72],[-85,70],[-82,67],[-88,64],[-90,58],[-85,55],[-82,58],[-78,62],[-70,60],[-60,55],[-65,50],[-70,47],[-65,44],[-70,42],[-74,39],[-76,35],[-80,32],[-81,26],[-83,29],[-90,29],[-96,27],[-97,22],[-95,18],[-90,16],[-88,16],[-86,12],[-83,9],[-80,8],[-85,10],[-92,15],[-105,20],[-110,23],[-114,28],[-117,33],[-122,37],[-124,43],[-124,48],[-132,55],[-140,60],[-152,60],[-158,56],[-165,55]],
-    // South America
-    [[-78,7],[-72,10],[-63,10],[-52,4],[-50,0],[-44,-3],[-35,-6],[-37,-12],[-39,-15],[-41,-22],[-48,-26],[-52,-32],[-57,-36],[-62,-40],[-65,-45],[-69,-50],[-69,-54],[-72,-52],[-74,-46],[-73,-40],[-71,-33],[-70,-25],[-70,-18],[-75,-15],[-79,-8],[-81,-4],[-80,1],[-77,4]],
-    // Greenland
-    [[-45,60],[-40,63],[-32,68],[-22,70],[-20,74],[-28,78],[-38,80],[-50,80],[-58,76],[-55,72],[-52,66],[-48,61]],
-    // Africa
-    [[-6,35],[10,33],[20,32],[30,31],[34,27],[37,21],[39,15],[43,12],[51,11],[48,5],[42,-2],[40,-10],[36,-18],[33,-26],[27,-34],[19,-35],[16,-29],[12,-18],[13,-11],[9,-2],[8,4],[0,6],[-8,5],[-13,9],[-17,15],[-17,21],[-10,30]],
-    // Madagascar
-    [[44,-12],[50,-16],[48,-25],[44,-24],[43,-17]],
-    // Eurasia (Europe + Asia + Arabia + India + SE Asia, one coarse ring)
-    [[-9,43],[-9,36],[3,40],[7,44],[13,44],[19,41],[23,38],[26,39],[27,41],[33,42],[41,41],[48,44],[44,47],[36,46],[30,46],[24,56],[18,60],[22,65],[28,71],[40,68],[45,68],[60,69],[75,73],[90,76],[110,77],[130,72],[150,70],[160,70],[170,66],[178,65],[178,62],[170,60],[162,60],[158,52],[155,51],[157,58],[150,60],[142,54],[135,44],[129,38],[126,35],[122,31],[117,24],[108,19],[105,10],[104,2],[100,6],[98,12],[97,17],[94,16],[90,22],[86,20],[80,15],[77,8],[73,18],[70,22],[66,25],[60,25],[57,25],[59,22],[57,17],[52,13],[45,12],[43,17],[39,21],[35,28],[34,30],[36,36],[30,36],[27,37],[26,39],[23,38],[19,41],[13,44],[7,44],[3,40],[-2,44],[0,49],[4,52],[8,54],[8,57],[12,56],[10,54],[5,53],[0,50],[-5,48],[-2,46]],
-    // British Isles
-    [[-5,50],[-3,53],[-2,56],[-4,58],[-6,56],[-5,53],[-6,50]],
-    // Iceland
-    [[-22,64],[-15,64],[-14,66],[-20,67],[-24,65]],
-    // Japan
-    [[130,31],[134,34],[140,36],[142,40],[145,44],[141,43],[137,37],[131,33]],
-    // Borneo
-    [[109,0],[113,5],[117,4],[118,-1],[114,-4],[110,-2]],
-    // Sumatra + Java (coarse)
-    [[95,5],[99,2],[103,-2],[106,-6],[110,-7],[114,-8],[112,-9],[105,-7],[101,-4],[96,1]],
-    // New Guinea
-    [[131,-1],[136,-2],[141,-3],[147,-6],[150,-9],[144,-8],[138,-7],[132,-4]],
-    // Australia
-    [[114,-22],[122,-18],[130,-13],[136,-12],[142,-11],[146,-15],[149,-20],[153,-26],[151,-33],[146,-39],[140,-38],[135,-35],[129,-32],[124,-33],[115,-34],[113,-26]],
-    // New Zealand (coarse)
-    [[173,-35],[176,-38],[178,-38],[175,-41],[172,-44],[167,-46],[170,-43],[172,-40],[173,-37]]
-  ];
-
-  function worldPathD() {
-    return WORLD_LANDMASS.map((ring) =>
-      ring.map(([lng, lat], i) => {
-        const pt = mapProject(lng, lat);
-        return (i ? "L" : "M") + pt.x.toFixed(1) + " " + pt.y.toFixed(1);
-      }).join(" ") + " Z"
-    ).join(" ");
   }
 
   /* ---------- map tooltip (HTML singleton, like the flow chart's) ---------- */
@@ -615,11 +570,8 @@
     const hideTT = () => { tt.style.display = "none"; };
     const moveTT = (e) => { tt.style.left = (e.clientX + 14) + "px"; tt.style.top = (e.clientY - 10) + "px"; };
 
-    // ── defs: glow blur, vignette gradient, the shared building marker ──
+    // ── defs: vignette gradient + the shared building marker ──
     const defs = el("defs");
-    const blur = el("filter", { id: "map-blur", x: "-20%", y: "-20%", width: "140%", height: "140%" });
-    blur.appendChild(el("feGaussianBlur", { stdDeviation: "3" }));   // ≈6px halo
-    defs.appendChild(blur);
     const vig = el("radialGradient", { id: "map-vignette-grad", cx: "0.5", cy: "0.5", r: "0.72" });
     const v1 = el("stop", { offset: "0.62" }); v1.setAttribute("stop-color", "#000"); v1.setAttribute("stop-opacity", "0");
     const v2 = el("stop", { offset: "1" });    v2.setAttribute("stop-color", "#000"); v2.setAttribute("stop-opacity", "0.38");
@@ -634,11 +586,15 @@
     svg.appendChild(el("rect", { x: 0, y: 0, width: MAP_W, height: MAP_H, fill: "var(--page-bg, #06080f)" }));
     svg.appendChild(el("rect", { x: 0, y: 0, width: MAP_W, height: MAP_H, fill: "var(--surface, #0b0e17)" }));
 
-    // ── holographic landmass: glow halo → fill → crisp coastline ──
-    const d = worldPathD();
-    svg.appendChild(el("path", { d, class: "map-coast-glow", filter: "url(#map-blur)" }));
-    svg.appendChild(el("path", { d, class: "map-land-fill" }));
-    svg.appendChild(el("path", { d, class: "map-coast" }));
+    // ── the world: committed Gemini HUD artwork (local asset, no network
+    // beyond same-origin). Theme handling lives in CSS on .map-art —
+    // blue-glow as-is on the dark themes, inverted to slate on Miami.
+    svg.appendChild(el("image", {
+      href: "assets/world_map_hud.png",
+      x: 0, y: 0, width: MAP_W, height: MAP_H,
+      class: "map-art", "pointer-events": "none",
+      preserveAspectRatio: "xMidYMid meet"
+    }));
 
     // ── subtle vignette (darker edges; hidden on the light theme via CSS) ──
     svg.appendChild(el("rect", {
@@ -659,12 +615,11 @@
       svg.appendChild(hint);
     }
 
-    // project all pins, then fan any that land within 18px of each other
-    // (glyphs fan horizontally ±12px; a thin leader ties each back to its
-    // TRUE projected point, which keeps its small dot)
+    // project all pins through the calibrated transform, then fan any that
+    // land within 18px of each other (glyphs fan horizontally ±12px; a thin
+    // leader ties each back to its TRUE projected point, which keeps its dot)
     const pts = located.map((p) => {
-      const pos = mapProject(Number(p.lng), Number(p.lat));
-      return { p, tx: pos.x, ty: pos.y, dx: 0 };
+      return { p, tx: MAP_X(Number(p.lng)), ty: MAP_Y(Number(p.lat)), dx: 0 };
     });
     const clusters = [];
     pts.forEach((pt) => {
