@@ -2586,4 +2586,8 @@ body[data-theme="light"] .map-vignette { display: none; }
 
 /* Edit info inline panel grid (extends the .pr-editnum chrome) */
 .pr-editinfo-grid { display: grid; grid-template-columns: repeat(3, minmax(160px, 1fr)); gap: 10px 14px; width: 100%; }
+.pr-editinfo-addr { grid-column: 1 / -1; }   /* the address field spans the full row */
 @media (max-width: 800px) { .pr-editinfo-grid { grid-template-columns: 1fr; } }
+/* server-side geocode outcome, surfaced inline after a save */
+.pe-msg-ok { color: var(--clear-green) !important; }
+.pe-msg-error { color: var(--alarm-red) !important; }
