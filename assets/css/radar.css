@@ -13,30 +13,36 @@
   --radius-lg: 20px;
 
   /* ----- LIGHT (default) — "Miami", warm & sunny -----
-     WCAG AA text on a warm off-white field: body #1d2430, muted #4c576b,
-     headings via --heading #141a26. Panels get a slight cream tint against
-     the page so they're distinguishable. Gold used AS TEXT darkens to
-     #8a6a1c for legibility (decorative gold hairlines/fills may stay lighter). */
-  --page-bg: #faf8f2;
-  --surface: #f4f1e9;
-  --surface-soft: #efe9db;
-  --line: #d8d2c2;
-  --line-strong: #c4bda9;
+     Always-sunny palette: warm sand page gradient + sun glow (applied on body),
+     warm cream panels, sun-gold and coral accents. WCAG AA text on the warm
+     field: body #1d2430, muted #4c576b, headings via --heading #141a26.
+     Gold used AS TEXT darkens to #8a6a1c for legibility (decorative gold
+     hairlines/fills may stay lighter at --sun-gold). Warmth comes from
+     surfaces and accents — never from lightening text. */
+  --page-bg: #fdf6e9;       /* solid fallback; body layers the sand gradient + sun glow */
+  --surface: #fbf3e3;
+  --surface-soft: #f4e7ce;
+  --line: #e3d5b8;
+  --line-strong: #cbb68d;
   --text: #1d2430;
   --heading: #141a26;
   --muted: #4c576b;
   --faint: #5c6678;
-  --phosphor: #2563eb;
-  --accent: #2563eb;
+  /* Interactive accent is the DEEP sun-gold, not the decorative #d69e2e:
+     --phosphor is used as small text (eyebrows, links, hover states) and as a
+     button background under white ink. #8a6a1c clears 4.5:1 both ways
+     (4.57:1 on cream / 5.05:1 under white); #d69e2e would be 2.16:1 as text. */
+  --phosphor: #8a6a1c;
+  --accent: #8a6a1c;
   --flow-accent: #3457a8;   /* Signal Flow doc→model lines — slate-blue on Miami */
   --ink-dim: #4c576b;
   --gold-text: #8a6a1c;
   --radar-amber: #b4740a;
   --alarm-red: #dc2626;
   --clear-green: #15803d;
-  --yellow: #b7861a;
+  --yellow: #b98a00;        /* deepened for Miami — yellow-on-cream is the one status that fades */
   --blue-status: #2b7fd4;
-  --eyebrow: #4c576b;
+  --eyebrow: #8a6a1c;       /* section eyebrows go sun-gold on Miami (was grey-blue) */
 
   /* sector identity (theme-aware): white/blue/magenta, kept clear of
      the green/amber/red health palette. Design uses dark text on Light. */
@@ -57,7 +63,17 @@
 
   --grid-opacity: 0;
   --glass-blur: blur(14px);
-  --shadow: 0 14px 40px rgba(15,23,42,.10);
+  --shadow: 0 14px 40px rgba(120,84,20,.12);   /* warm sand shadow, not cool slate */
+}
+
+/* Miami-only decorative accents. These live here (not in :root) because :root
+   is the shared default — Gotham and NYC don't override these names, so a
+   :root declaration would leak into them. */
+body[data-theme="light"] {
+  --sun-gold: #d69e2e;                    /* decorative gold: hairlines, borders, glow */
+  --coral: #e8795a;                       /* secondary: hover borders, scan-line */
+  --hairline-gold: rgba(214,158,46,0.45); /* panel top hairlines */
+  --scan-accent: #e8795a;                 /* map scan-line sweep — coral on Miami */
 }
 
 /* ----- DARK (default) -----
@@ -121,6 +137,19 @@ body {
   color: var(--text);
   background: var(--page-bg);
   transition: background .35s ease, color .35s ease;
+}
+
+/* Miami page field: a soft sun glow fixed at the top-right over a warm sand
+   gradient. background-attachment:fixed keeps both anchored to the viewport so
+   they never band or re-tile as the page scrolls. */
+body[data-theme="light"],
+body[data-theme="light"] #lin-login,
+body[data-theme="light"] #lin-access-denied {
+  background:
+    radial-gradient(circle at 85% -10%, rgba(255,196,87,0.35), transparent 45%),
+    linear-gradient(180deg, #fdf6e9 0%, #f9ecd7 55%, #f6e3c4 100%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
 }
 
 /* blueprint grid (dark themes only via opacity var) */
@@ -2163,6 +2192,46 @@ body[data-theme="light"] .about-step-num { color: var(--gold-text); }
 }
 
 /* ============================================================
+   THEME — MIAMI (light)  ·  sunshine touches
+   The palette itself lives in :root (the shared default); these are the
+   Miami-only component shifts that would otherwise leak into Gotham/NYC.
+   Sun-gold (#d69e2e) is used for structure — hairlines, borders, glow —
+   never for small text, which stays on the deep --phosphor (#8a6a1c).
+   ============================================================ */
+/* panel top hairlines: sun-gold on Miami (Gotham keeps its #d4af5a) */
+body[data-theme="light"] .kn-content,
+body[data-theme="light"] .kn-nav,
+body[data-theme="light"] .about-section { border-top-color: var(--hairline-gold); }
+
+/* map stage: light tiles keep their style; the stage gets a sun-gold edge */
+body[data-theme="light"] #map-gl { border: 1px solid var(--sun-gold); }
+
+/* secondary highlights — coral edges on hover, dark ink stays for the label */
+body[data-theme="light"] .li-open:hover,
+body[data-theme="light"] .kn-chip:hover,
+body[data-theme="light"] .btn-secondary:hover,
+body[data-theme="light"] .recompute-all-btn:hover:not(:disabled) { border-color: var(--coral); }
+
+/* Yellow status on cream: #b98a00 as INK is only 2.84:1 — the one status that
+   fades on this field. Wherever a yellow background/border/dot already carries
+   the status cue, the label switches to body ink (≈11.9:1 on the tinted chip)
+   and yellow keeps its identity as the chip itself. Green/amber/red are
+   unchanged. Bare yellow text with no chip to sit on (.li-state, .dd-metric em)
+   is left on --yellow — darkening it there would erase the only cue. */
+body[data-theme="light"] .pill-yellow,
+body[data-theme="light"] .state-badge.state-yellow { color: var(--text); }
+
+body[data-theme="light"] .gl-pill[data-st="yellow"] {
+  color: var(--text);
+  border-color: var(--yellow);
+  background: color-mix(in srgb, var(--yellow) 22%, transparent);
+}
+
+body[data-theme="light"] .dd-verdict.status-yellow { color: var(--text); }
+/* .dd-verdict i is background:currentColor — pin the dot so it stays yellow */
+body[data-theme="light"] .dd-verdict.status-yellow i { background: var(--yellow); }
+
+/* ============================================================
    THEME — NEW YORK  (Manhattan twilight + gold Art Deco + Liberty bronze)
    ============================================================ */
 body[data-theme="newyork"] {
@@ -2573,6 +2642,9 @@ body[data-theme="newyork"] .stage-btn.active { background: transparent; color: v
     transparent 1px, transparent 4px);
 }
 body[data-theme="light"] .map-scan-texture { display: none; }   /* CRT texture is a dark-themes cue */
+/* --scan-accent lets a theme colour the sweep independently of the Signal Flow
+   doc→model lines (--flow-accent). Only Miami sets it (coral); Gotham and NYC
+   don't declare it, so they fall back to --flow-accent exactly as before. */
 .map-scan-line {
   position: absolute; left: 0; top: 0; width: 100%; height: 100%;
   will-change: transform;
@@ -2580,8 +2652,8 @@ body[data-theme="light"] .map-scan-texture { display: none; }   /* CRT texture i
     to bottom,
     transparent 0,
     transparent calc(100% - 42px),
-    color-mix(in srgb, var(--flow-accent) 42%, transparent) calc(100% - 2px),
-    var(--flow-accent) 100%);   /* 40px trail rising to a 2px core at the bottom edge */
+    color-mix(in srgb, var(--scan-accent, var(--flow-accent)) 42%, transparent) calc(100% - 2px),
+    var(--scan-accent, var(--flow-accent)) 100%);   /* 40px trail rising to a 2px core at the bottom edge */
   animation: map-scan 6s linear infinite;
 }
 /* element is full map-box height; its bottom-edge core sweeps top→bottom as
