@@ -13,10 +13,11 @@
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
     script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://unpkg.com https://accounts.google.com;
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com https://cdnjs.cloudflare.com;
     font-src 'self' https://fonts.gstatic.com;
-    img-src 'self' data: https:;
-    connect-src 'self' https://script.google.com https://script.googleusercontent.com https://api.openai.com https://accounts.google.com;
+    img-src 'self' data: blob: https:;
+    worker-src 'self' blob:;
+    connect-src 'self' https://script.google.com https://script.googleusercontent.com https://api.openai.com https://accounts.google.com https://tiles.openfreemap.org;
     frame-src 'self' https://accounts.google.com;
     frame-ancestors 'none';
   " />
@@ -28,6 +29,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="assets/css/radar.css" />
+  <!-- MapLibre GL JS (pinned) — real street-level map view; tiles from OpenFreeMap (no key). -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css" />
   <!-- Google Identity Services — Stage 1 OAuth sign-in (see assets/js/auth.js) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -396,18 +399,22 @@
         </svg>
       </div>
       <div class="map-wrap" hidden>
-        <svg id="map-svg" viewBox="0 0 2000 848" preserveAspectRatio="xMidYMid meet" role="img"
-             aria-label="Stylized world map. One building marker per project with a stored location; marker color indicates status. Selecting a marker highlights the project and zooms to it; double-clicking opens its detail view. Press Escape or Control+0 to reset the view. The project list below is an equivalent keyboard control path.">
-        </svg>
+        <!-- Real street-level map (MapLibre GL + OpenFreeMap vector tiles). One
+             building marker per located project; marker color indicates status.
+             Selecting a marker flies to street level and opens a popup;
+             double-click opens its detail view. Press Escape or Control+0 to
+             return to the world view. The project list below is an equivalent
+             keyboard control path. -->
+        <div id="map-gl" role="application"
+             aria-label="Interactive world map. One building marker per project with a stored location; marker color indicates status. Selecting a marker flies to it and opens a popup; double-clicking opens its detail view. Press Escape or Control+0 to return to the world view. The project list below is an equivalent keyboard control path."></div>
         <!-- HUD instrument overlay: CRT scanline texture + a slow top→bottom sweep.
-             Sits above the map artwork/pins but pointer-events:none so it never
-             blocks marker clicks or the reset control; stage-fixed (not inside the
-             SVG) so the fly-to viewBox zoom leaves it untouched. -->
+             Sits above the map canvas but pointer-events:none so it never blocks
+             marker clicks, map panning, or the reset control. -->
         <div class="map-fx" aria-hidden="true">
           <div class="map-scan-texture"></div>
           <div class="map-scan-line"></div>
         </div>
-        <button type="button" id="map-reset-btn" class="map-reset-btn" hidden title="Reset view (Ctrl+0 / Esc)">⤢ Reset view</button>
+        <button type="button" id="map-reset-btn" class="map-reset-btn" hidden title="World view (Ctrl+0 / Esc)">⤢ World view</button>
         <p class="map-nolocation" id="map-nolocation" hidden></p>
         <p class="map-caption">Locations are illustrative — synthetic demonstration data.</p>
       </div>
@@ -618,6 +625,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <!-- SheetJS: client-side XLSX generation for audit export. -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
   <script src="assets/js/config.js"></script>
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/data.js"></script>

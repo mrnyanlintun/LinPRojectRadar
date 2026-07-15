@@ -544,214 +544,255 @@
   }
 
   /* ============================================================
-     Stylized HUD world map — the portfolio's second view.
-     Pure inline SVG: no map library, no tiles, no external
-     requests beyond the local artwork. The world is the committed
-     Gemini HUD artwork (assets/world_map_hud.png) drawn as an SVG
-     <image> in a 0 0 2000 848 viewBox. Pin positions go through the
-     CALIBRATED transform measured against that artwork — every pin,
-     leader dot, fan offset, and tooltip anchor derives from MAP_X /
-     MAP_Y only (the artwork is not exactly equirectangular, so the
-     generic formula would drift).
+     Real street-level map — the portfolio's second view.
+     MapLibre GL JS (cdnjs) + OpenFreeMap vector tiles: no API key,
+     no account, no billing. Dark style for Gotham/NYC, positron for
+     Miami; the style is swapped when the theme changes (markers are
+     DOM overlays and survive the swap). One custom HTML building
+     glyph per located project, colored by status and blinking like
+     the radar blips; selecting one flies to street level with
+     MapLibre's built-in arc. If the library or style can't load, a
+     muted panel takes the stage and the Radar view stays fully
+     functional — no console error storms.
      ============================================================ */
-  const MAP_W = 2000, MAP_H = 848;                 // must match the artwork viewBox
-  const MAP_X = (lng) => 5.7122 * lng + 970.96;    // px in the 2000×848 viewBox
-  const MAP_Y = (lat) => -5.4787 * lat + 509.12;
   const VIEW_KEY = "lin-portfolio-view";
+  const GL_STYLE = {
+    dark:  "https://tiles.openfreemap.org/styles/dark",      // Gotham + NYC
+    light: "https://tiles.openfreemap.org/styles/positron"   // Miami
+  };
+  const GL_WORLD = { center: [20, 20], zoom: 1.6 };
   let mapBuilt = false;      // lazily built on first switch
   let mapHydrated = false;   // slim records swapped for full ones (coords live in full project.json)
+  let glMap = null;          // MapLibre instance (null until built / after failure)
+  let glMarkers = {};        // id → { marker, el, p }
+  let glPopup = null;        // the single open popup, if any
+  let glLoadTimer = null;    // style-load watchdog → failure panel
+  let glFailed = false;
+  let focusedPinId = null;   // the flown-to / selected marker
 
   function hasCoords(p) {
     return !!p && p.lat != null && p.lng != null &&
       Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng));
   }
 
-  /* ---------- map tooltip (HTML singleton, like the flow chart's) ---------- */
-  function getMapTooltip() {
-    let t = document.getElementById("map-tt");
-    if (!t) { t = document.createElement("div"); t.id = "map-tt"; document.body.appendChild(t); }
-    return t;
+  function glStyleForTheme() {
+    return document.body.dataset.theme === "light" ? GL_STYLE.light : GL_STYLE.dark;
+  }
+  function sectorLabel(p) {
+    return { design: "Design", construction: "Construction", hybrid: "Hybrid", combined: "Hybrid" }[String(p.sector || "").toLowerCase()] || p.sector || "—";
+  }
+  function statusColorFor(p) {
+    const status = statusKey(p);
+    return status === "complete" ? STATUS_COLOR.complete :
+      status === "green"  ? STATUS_COLOR.green :
+      status === "yellow" ? STATUS_COLOR.yellow :
+      status === "amber"  ? STATUS_COLOR.amber :
+      status === "red"    ? STATUS_COLOR.red : "var(--muted)";
   }
 
-  function renderMap(svg) {
-    svg.innerHTML = "";
-    const tt = getMapTooltip();
-    const hideTT = () => { tt.style.display = "none"; };
-    const moveTT = (e) => { tt.style.left = (e.clientX + 14) + "px"; tt.style.top = (e.clientY - 10) + "px"; };
+  /* muted failure panel inside the stage; the Radar view keeps working */
+  function showMapFailure(msg) {
+    glFailed = true;
+    if (glLoadTimer) { clearTimeout(glLoadTimer); glLoadTimer = null; }
+    if (glMap) { try { glMap.remove(); } catch (e) {} glMap = null; }
+    glMarkers = {}; glPopup = null; focusedPinId = null;
+    const host = document.getElementById("map-gl");
+    if (host) host.innerHTML = `<div class="gl-fail">${esc(msg || "Map tiles unavailable — check connection")}</div>`;
+    const rb = document.getElementById("map-reset-btn");
+    if (rb) rb.hidden = true;
+  }
 
-    // ── defs: vignette gradient + the shared building marker ──
-    const defs = el("defs");
-    const vig = el("radialGradient", { id: "map-vignette-grad", cx: "0.5", cy: "0.5", r: "0.72" });
-    const v1 = el("stop", { offset: "0.62" }); v1.setAttribute("stop-color", "#000"); v1.setAttribute("stop-opacity", "0");
-    const v2 = el("stop", { offset: "1" });    v2.setAttribute("stop-color", "#000"); v2.setAttribute("stop-opacity", "0.38");
-    vig.appendChild(v1); vig.appendChild(v2);
-    defs.appendChild(vig);
-    const sym = el("symbol", { id: "map-building", viewBox: "0 0 24 24" });
-    sym.appendChild(el("path", { d: "M12 3 L21 11 H18 V21 H6 V11 H3 Z", fill: "currentColor" }));
-    defs.appendChild(sym);
-    svg.appendChild(defs);
-
-    // ── stage background (same rectangular instrument treatment) ──
-    svg.appendChild(el("rect", { x: 0, y: 0, width: MAP_W, height: MAP_H, fill: "var(--page-bg, #06080f)" }));
-    svg.appendChild(el("rect", { x: 0, y: 0, width: MAP_W, height: MAP_H, fill: "var(--surface, #0b0e17)" }));
-
-    // ── the world: committed Gemini HUD artwork (local asset, no network
-    // beyond same-origin). Theme handling lives in CSS on .map-art —
-    // blue-glow as-is on the dark themes, inverted to slate on Miami.
-    svg.appendChild(el("image", {
-      href: "assets/world_map_hud.png",
-      x: 0, y: 0, width: MAP_W, height: MAP_H,
-      class: "map-art", "pointer-events": "none",
-      preserveAspectRatio: "xMidYMid meet"
-    }));
-
-    // ── subtle vignette (darker edges; hidden on the light theme via CSS) ──
-    svg.appendChild(el("rect", {
-      x: 0, y: 0, width: MAP_W, height: MAP_H,
-      fill: "url(#map-vignette-grad)", class: "map-vignette", "pointer-events": "none"
-    }));
-
-    // ── pins: ONLY projects whose stored data has coordinates ──
-    const located = LIN_PROJECTS.filter(hasCoords);
-    const unlocated = LIN_PROJECTS.filter((p) => !hasCoords(p));
-
-    if (!located.length) {
-      const hint = el("text", {
-        x: MAP_W / 2, y: MAP_H / 2, "text-anchor": "middle",
-        class: "map-empty-hint"
+  /* build the MapLibre map for the current theme (markers added on load) */
+  function createGlMap() {
+    const host = document.getElementById("map-gl");
+    if (!host) return;
+    if (typeof maplibregl === "undefined") { showMapFailure(); return; }   // CDN blocked / offline
+    host.innerHTML = "";
+    glFailed = false;
+    try {
+      glMap = new maplibregl.Map({
+        container: host,
+        style: glStyleForTheme(),
+        center: GL_WORLD.center,
+        zoom: GL_WORLD.zoom,
+        attributionControl: true,      // "© OpenStreetMap contributors" stays visible (license)
+        maxZoom: 18
       });
-      hint.textContent = "Set project locations via Manage Projects → Edit info.";
-      svg.appendChild(hint);
-    }
+    } catch (e) { showMapFailure(); return; }
 
-    // project all pins through the calibrated transform, then fan any that
-    // land within 18px of each other (glyphs fan horizontally ±12px; a thin
-    // leader ties each back to its TRUE projected point, which keeps its dot)
-    const pts = located.map((p) => {
-      // regression guard: latitude is bounded to ±90, so a value outside that
-      // range means lat/lng got swapped upstream — warn (with the id) rather
-      // than silently plotting the pin in the ocean. The projection itself is
-      // GeoJSON-correct: longitude → X, latitude → Y.
+    // watchdog: if the style never loads (offline / CDN down), show the panel
+    glLoadTimer = setTimeout(() => {
+      if (glMap && !glMap.isStyleLoaded()) showMapFailure();
+    }, 9000);
+
+    glMap.on("load", () => {
+      if (glLoadTimer) { clearTimeout(glLoadTimer); glLoadTimer = null; }
+      addGlMarkers();
+    });
+    // swallow MapLibre's transient tile/sprite errors so they neither storm the
+    // console nor nuke the map. A genuine style-load failure (offline / CDN down)
+    // is caught by the watchdog above: 'load' never fires, panel shows.
+    glMap.on("error", () => {});
+  }
+
+  /* one custom HTML marker per project — building glyph, status color, blink.
+     All visual state lives on .gl-pin-inner; MapLibre owns .gl-pin's transform
+     for positioning, so we never set transform on the marker element itself. */
+  function buildingMarkerEl(p) {
+    const el = document.createElement("div");
+    el.className = "gl-pin";
+    el.dataset.status = statusKey(p);
+    el.style.setProperty("--pin-color", statusColorFor(p));
+    el.setAttribute("role", "button");
+    el.setAttribute("tabindex", "0");
+    el.setAttribute("aria-label", `${p.id} ${p.name}, ${stateLabel(p)}`);
+    const inner = document.createElement("div");
+    inner.className = "gl-pin-inner";
+    inner.style.animationDelay = mapPinBlinkDelay(p.id).toFixed(2) + "s";   // stagger the fleet
+    inner.innerHTML =
+      '<svg class="gl-pin-glyph" viewBox="0 0 24 24" width="30" height="30" aria-hidden="true">' +
+      '<path d="M12 3 L21 11 H18 V21 H6 V11 H3 Z" fill="currentColor"/></svg>' +
+      `<span class="gl-pin-num">${esc(p.id)}</span>`;
+    el.appendChild(inner);
+    return el;
+  }
+
+  function addGlMarkers() {
+    if (!glMap) return;
+    Object.keys(glMarkers).forEach((id) => { try { glMarkers[id].marker.remove(); } catch (e) {} });
+    glMarkers = {};
+    LIN_PROJECTS.filter(hasCoords).forEach((p) => {
+      // regression guard: |lat| > 90 means lat/lng got swapped upstream
       if (Math.abs(Number(p.lat)) > 90) {
         console.warn(`[map] project ${p.id}: latitude ${p.lat} out of range (±90) — check lat/lng order`);
       }
-      return { p, tx: MAP_X(Number(p.lng)), ty: MAP_Y(Number(p.lat)), dx: 0 };
-    });
-    const clusters = [];
-    pts.forEach((pt) => {
-      const c = clusters.find((cl) => cl.some((m) => Math.hypot(m.tx - pt.tx, m.ty - pt.ty) < 18));
-      if (c) c.push(pt); else clusters.push([pt]);
-    });
-    clusters.forEach((cl) => {
-      if (cl.length < 2) return;
-      cl.sort((a, b) => a.tx - b.tx);
-      cl.forEach((pt, k) => { pt.dx = (k - (cl.length - 1) / 2) * 24; });   // pairs = ±12
-    });
-
-    mapPinPts = {};   // id → glyph position, consumed by the fly-to zoom
-    pts.forEach(({ p, tx, ty, dx }) => {
-      const status = statusKey(p);
-      const color =
-        status === "complete" ? STATUS_COLOR.complete :
-        status === "green" ? STATUS_COLOR.green :
-        status === "yellow" ? STATUS_COLOR.yellow :
-        status === "amber" ? STATUS_COLOR.amber :
-        status === "red"   ? STATUS_COLOR.red : "var(--muted)";
-      const gx = tx + dx, gy = ty - 15;   // glyph sits above the true point
-      mapPinPts[p.id] = { gx, gy };
-
-      const g = el("g", { class: "map-pin", "data-id": p.id, "data-status": status,
-        "aria-label": `${p.id} ${p.name}, ${stateLabel(p)}` });
-      // status color drives both the glyph fill (currentColor) and its blink glow
-      g.style.setProperty("--pin-color", color);
-
-      // leader from the glyph down to the exact projected point
-      g.appendChild(el("line", { x1: tx, y1: ty, x2: gx, y2: gy + 11,
-        class: "map-pin-leader" + (dx === 0 ? " map-pin-leader-short" : "") }));
-      g.appendChild(el("circle", { cx: tx, cy: ty, r: 2.5, fill: color, class: "map-pin-dot" }));
-
-      // one-shot selection pulse ring (CSS-driven)
-      g.appendChild(el("circle", { cx: gx, cy: gy, r: 15, fill: "none", stroke: "var(--phosphor)",
-        "stroke-width": "1.5", class: "map-pin-ring", opacity: "0" }));
-
-      // the SAME building glyph as the radar blips
-      const icon = el("use", {
-        href: "#map-building", x: (gx - 11).toFixed(1), y: (gy - 11).toFixed(1),
-        width: 22, height: 22, class: "map-pin-icon"
+      const el = buildingMarkerEl(p);
+      const marker = new maplibregl.Marker({ element: el, anchor: "bottom" })
+        .setLngLat([Number(p.lng), Number(p.lat)])   // MapLibre = [lng, lat]
+        .addTo(glMap);
+      el.dataset.id = p.id;
+      el.setAttribute("aria-label", `${p.id} ${p.name}, ${stateLabel(p)}`);   // MapLibre resets it to "Map marker" on add
+      const open = () => { selectProject(p.id); flyToProject(p.id); };
+      el.addEventListener("click", (e) => { e.stopPropagation(); open(); });
+      el.addEventListener("dblclick", (e) => { e.stopPropagation(); hideMapCard(); openDetail(p.id); });
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
       });
-      // color + glow come from --pin-color via CSS; stagger the blink so a
-      // screenful of pins doesn't strobe in unison (delay from the id hash)
-      icon.style.animationDelay = mapPinBlinkDelay(p.id).toFixed(2) + "s";
-      g.appendChild(icon);
-
-      const lbl = el("text", { x: gx + 13, y: gy + 4, class: "blip-label" });
-      lbl.textContent = p.id;
-      g.appendChild(lbl);
-
-      // hover tooltip: number · name · sector · status · address
-      g.addEventListener("mouseenter", (e) => {
-        const sec = { design: "Design", construction: "Construction", hybrid: "Hybrid", combined: "Hybrid" }[String(p.sector || "").toLowerCase()] || p.sector || "—";
-        const addr = p.formattedAddress || p.address;   // prefer the geocoded form
-        tt.innerHTML =
-          `<div class="mt-num">${esc(p.id)}</div>` +
-          `<div class="mt-name">${esc(p.name)}</div>` +
-          `<div class="mt-sub">${esc(sec)} · ${esc(stateLabel(p))}</div>` +
-          (addr ? `<div class="mt-addr">${esc(addr)}</div>` : "") +
-          `<div class="mt-hint">double-click to open detail →</div>`;
-        tt.style.display = "block"; moveTT(e);
-      });
-      g.addEventListener("mousemove", moveTT);
-      g.addEventListener("mouseleave", hideTT);
-      // click = select (list-row sync) + cinematic fly-to; dblclick = detail
-      g.addEventListener("click", () => { selectProject(p.id); flyToProject(p.id); });
-      g.addEventListener("dblclick", () => { hideTT(); hideMapCard(); openDetail(p.id); });
-
-      svg.appendChild(g);
+      glMarkers[p.id] = { marker, el, p };
     });
-
-    // ── "No address set" side note (each id opens its Edit info panel) ──
-    const note = document.getElementById("map-nolocation");
-    if (note) {
-      if (unlocated.length) {
-        note.hidden = false;
-        note.innerHTML = "No address set: " + unlocated.map((p) =>
-          `<button type="button" class="map-noloc-id" data-editloc="${esc(p.id)}">${esc(p.id)}</button>`).join(", ");
-        note.querySelectorAll("[data-editloc]").forEach((b) =>
-          b.addEventListener("click", () => {
-            showPage("manage");
-            const editBtn = document.querySelector(`#manage-root [data-editinfo="${b.dataset.editloc}"]`);
-            if (editBtn) { editBtn.click(); editBtn.scrollIntoView({ block: "center" }); }
-          }));
-      } else {
-        note.hidden = true;
-        note.innerHTML = "";
-      }
-    }
-
+    updateNoLocationNote();
+    if (focusedPinId && !glMarkers[focusedPinId]) focusedPinId = null;   // stale focus after refresh
     highlightPin();
+    applyGlFocus();
+  }
 
-    // Rebuilds (refresh, theme change) must not strand a stale focus: if the
-    // focused pin no longer exists, jump home; otherwise re-apply the focus
-    // classes and re-pin the info card at the (unchanged) zoomed viewBox.
-    if (focusedPinId && !mapPinPts[focusedPinId]) {
-      focusedPinId = null;
-      hideMapCard();
-      setVB(svg, MAP_HOME);
+  /* "No address set" side note — each id opens its Edit info panel */
+  function updateNoLocationNote() {
+    const note = document.getElementById("map-nolocation");
+    if (!note) return;
+    const unlocated = LIN_PROJECTS.filter((p) => !hasCoords(p));
+    if (unlocated.length) {
+      note.hidden = false;
+      note.innerHTML = "No address set: " + unlocated.map((p) =>
+        `<button type="button" class="map-noloc-id" data-editloc="${esc(p.id)}">${esc(p.id)}</button>`).join(", ");
+      note.querySelectorAll("[data-editloc]").forEach((b) =>
+        b.addEventListener("click", () => {
+          showPage("manage");
+          const editBtn = document.querySelector(`#manage-root [data-editinfo="${b.dataset.editloc}"]`);
+          if (editBtn) { editBtn.click(); editBtn.scrollIntoView({ block: "center" }); }
+        }));
+    } else {
+      note.hidden = true;
+      note.innerHTML = "";
     }
-    applyFocusClasses(svg);
-    if (focusedPinId) {
-      const fp = LIN_PROJECTS.find((x) => x.id === focusedPinId);
-      const fpt = mapPinPts[focusedPinId];
-      if (fp && fpt) showMapCard(fp, fpt.gx, fpt.gy);
-    }
+  }
+
+  /* popup on click: number · name · sector · status pill · address · Open detail */
+  function hideMapCard() { if (glPopup) { try { glPopup.remove(); } catch (e) {} glPopup = null; } }
+  function openGlPopup(p) {
+    if (!glMap) return;
+    hideMapCard();
+    const node = document.createElement("div");
+    node.className = "gl-pop";
+    const addr = p.formattedAddress || p.address;
+    node.innerHTML =
+      `<div class="mt-num">${esc(p.id)}</div>` +
+      `<div class="mt-name">${esc(p.name)}</div>` +
+      `<div class="mt-sub">${esc(sectorLabel(p))} · <span class="gl-pill" data-st="${esc(statusKey(p))}">${esc(stateLabel(p))}</span></div>` +
+      (addr ? `<div class="mt-addr">${esc(addr)}</div>` : "") +
+      `<button type="button" class="map-card-open">Open detail →</button>`;
+    node.querySelector(".map-card-open").addEventListener("click", () => { hideMapCard(); openDetail(p.id); });
+    glPopup = new maplibregl.Popup({ offset: 30, closeButton: true, closeOnClick: false, className: "gl-popup", maxWidth: "260px" })
+      .setLngLat([Number(p.lng), Number(p.lat)])
+      .setDOMContent(node)
+      .addTo(glMap);
+  }
+
+  /* selection sync (list row ↔ marker): the selected marker scales + others dim */
+  function highlightPin() {
+    const host = document.getElementById("map-gl");
+    Object.keys(glMarkers).forEach((id) => {
+      const on = id === selectedId;
+      const el = glMarkers[id].el;
+      const was = el.classList.contains("gl-selected");
+      el.classList.toggle("gl-selected", on);
+      if (on && !was) { el.classList.remove("gl-ring"); void el.offsetWidth; el.classList.add("gl-ring"); }  // one-shot ring
+      if (!on) el.classList.remove("gl-ring");
+    });
+    if (host) host.classList.toggle("gl-any-selected", !!(selectedId && glMarkers[selectedId]));
+  }
+
+  /* keep the reset control + focus dim in sync with the flown-to pin */
+  function applyGlFocus() {
+    const rb = document.getElementById("map-reset-btn");
+    if (rb) rb.hidden = !focusedPinId;
+  }
+
+  /* ============================================================
+     Cinematic entrance. Selecting a project (pin click, or list-row
+     selection while the map view is active) flies to street level
+     with MapLibre's built-in arc; the selected marker scales 1.4×
+     with a one-shot ring pulse and the rest dim. Reduced motion →
+     jumpTo (no arc). Reset returns to the world view.
+     ============================================================ */
+  function flyToProject(id) {
+    const m = glMarkers[id];
+    if (!glMap || !m) return;                 // no marker (no coordinates) → no flight
+    focusedPinId = id;
+    applyGlFocus();
+    highlightPin();                            // ensure scale/dim reflect this pin
+    const center = [Number(m.p.lng), Number(m.p.lat)];
+    if (reduceMotion()) glMap.jumpTo({ center, zoom: 16 });
+    else glMap.flyTo({ center, zoom: 16, speed: 1.2, curve: 1.6, essential: true });
+    openGlPopup(m.p);
+  }
+
+  function resetMapView() {
+    focusedPinId = null;
+    hideMapCard();
+    // clear the map's visual selection so the world view isn't left with one pin
+    // scaled 1.4× and the rest dimmed (list-row selection is unaffected)
+    const host = document.getElementById("map-gl");
+    if (host) host.classList.remove("gl-any-selected");
+    Object.keys(glMarkers).forEach((id) => glMarkers[id].el.classList.remove("gl-selected", "gl-ring"));
+    applyGlFocus();
+    if (!glMap) return;
+    if (reduceMotion()) glMap.jumpTo(GL_WORLD);
+    else glMap.flyTo({ center: GL_WORLD.center, zoom: GL_WORLD.zoom, speed: 1.2, curve: 1.6, essential: true });
+  }
+
+  /* theme switch → swap the OpenFreeMap style (markers persist across setStyle) */
+  function onMapThemeChange() {
+    if (!glMap || glFailed) return;
+    try { glMap.setStyle(glStyleForTheme()); } catch (e) {}
   }
 
   /* Lazy map build: on first use, swap slim portfolio records for full
      project JSON (the slim list carries no coordinates) — one GET per
      project, once per session, only when the map view is actually opened. */
   async function buildMap() {
-    const svg = $("#map-svg");
-    if (!svg) return;
+    const host = document.getElementById("map-gl");
+    if (!host) return;
     if (!mapHydrated && window.LinStore && LinStore.getProject && LinStore.configured && LinStore.configured()) {
       mapHydrated = true;
       const slims = LIN_PROJECTS.filter((p) => p && p.slim);
@@ -767,148 +808,15 @@
         } catch (e) { /* pins simply won't render for records we couldn't hydrate */ }
       }
     }
-    renderMap(svg);
+    if (!glMap) {
+      glFailed = false;
+      createGlMap();                              // markers added when the style loads
+    } else {
+      try { glMap.resize(); } catch (e) {}        // container was hidden until now
+      if (glMap.isStyleLoaded()) addGlMarkers();
+      else glMap.once("load", addGlMarkers);
+    }
     mapBuilt = true;
-  }
-
-  function highlightPin() {
-    document.querySelectorAll(".map-pin").forEach((g) => {
-      const on = g.getAttribute("data-id") === selectedId;
-      const was = g.classList.contains("selected");
-      g.classList.toggle("selected", on);
-      if (on && !was) {
-        // restart the one-shot pulse so re-selection pulses again
-        const ring = g.querySelector(".map-pin-ring");
-        if (ring) { ring.style.animation = "none"; void ring.getBoundingClientRect(); ring.style.animation = ""; }
-      }
-    });
-  }
-
-  /* ============================================================
-     Cinematic fly-to zoom. Selecting a project on the map (pin
-     click, or list-row selection while the map view is active)
-     animates the SVG viewBox to a ~5× window on the pin (≈400×170
-     in the 2000×848 space — the raster art goes soft past ~6×, so
-     no deeper), clamped to the artwork bounds. The tween runs on
-     requestAnimationFrame with ease-in-out and a 1.05× overshoot
-     that settles over the last 150ms (viewBox is not
-     CSS-animatable). Reduced motion → jump-cut, static ring.
-     ============================================================ */
-  const MAP_HOME = { x: 0, y: 0, w: MAP_W, h: MAP_H };
-  const FOCUS_W = 400, FOCUS_H = 170;
-  let mapPinPts = {};        // id → {gx, gy}, rebuilt by renderMap
-  let focusedPinId = null;
-  let flyRaf = null;
-
-  function getVB(svg) { const vb = svg.viewBox.baseVal; return { x: vb.x, y: vb.y, w: vb.width, h: vb.height }; }
-  function setVB(svg, v) { svg.setAttribute("viewBox", `${v.x.toFixed(2)} ${v.y.toFixed(2)} ${v.w.toFixed(2)} ${v.h.toFixed(2)}`); }
-  function clampVB(v) {
-    const w = Math.min(v.w, MAP_W), h = Math.min(v.h, MAP_H);
-    return {
-      x: Math.max(0, Math.min(v.x, MAP_W - w)),
-      y: Math.max(0, Math.min(v.y, MAP_H - h)),
-      w, h
-    };
-  }
-  const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-  const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
-  const lerpVB = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, w: a.w + (b.w - a.w) * t, h: a.h + (b.h - a.h) * t });
-
-  // Animate the viewBox to `target`. A new target cancels any in-flight
-  // tween mid-frame, so pin-to-pin flights chain naturally.
-  function tweenViewBox(svg, target, opts, done) {
-    opts = opts || {};
-    if (flyRaf) { cancelAnimationFrame(flyRaf); flyRaf = null; }
-    if (reduceMotion()) { setVB(svg, target); if (done) done(); return; }
-    const from = getVB(svg);
-    const DUR = 900, SETTLE = 150, MAIN = DUR - SETTLE;
-    // overshoot: pass through a 1.05×-zoom (smaller) window, settle back
-    const over = opts.overshoot ? clampVB({
-      x: target.x + target.w * (1 - 1 / 1.05) / 2,
-      y: target.y + target.h * (1 - 1 / 1.05) / 2,
-      w: target.w / 1.05, h: target.h / 1.05
-    }) : null;
-    const t0 = performance.now();
-    const frame = (now) => {
-      const t = now - t0;
-      if (t >= DUR) { setVB(svg, target); flyRaf = null; if (done) done(); return; }
-      if (!over) setVB(svg, lerpVB(from, target, easeInOutCubic(Math.min(1, t / DUR))));
-      else if (t < MAIN) setVB(svg, lerpVB(from, over, easeInOutCubic(t / MAIN)));
-      else setVB(svg, lerpVB(over, target, easeOutCubic((t - MAIN) / SETTLE)));
-      flyRaf = requestAnimationFrame(frame);
-    };
-    flyRaf = requestAnimationFrame(frame);
-  }
-
-  /* pinned info card (not hover-dependent) shown while a pin is focused */
-  function getMapCard() {
-    let c = document.getElementById("map-card");
-    if (!c) { c = document.createElement("div"); c.id = "map-card"; document.body.appendChild(c); }
-    return c;
-  }
-  function hideMapCard() { const c = document.getElementById("map-card"); if (c) c.style.display = "none"; }
-  function showMapCard(p, gx, gy) {
-    const svg = $("#map-svg");
-    if (!svg) return;
-    const card = getMapCard();
-    const sec = { design: "Design", construction: "Construction", hybrid: "Hybrid", combined: "Hybrid" }[String(p.sector || "").toLowerCase()] || p.sector || "—";
-    const addr = p.formattedAddress || p.address;
-    card.innerHTML =
-      `<div class="mt-num">${esc(p.id)}</div>` +
-      `<div class="mt-name">${esc(p.name)}</div>` +
-      `<div class="mt-sub">${esc(sec)} · ${esc(stateLabel(p))}</div>` +
-      (addr ? `<div class="mt-addr">${esc(addr)}</div>` : "") +
-      `<button type="button" class="map-card-open">Open detail →</button>`;
-    card.querySelector(".map-card-open").addEventListener("click", () => { hideMapCard(); openDetail(p.id); });
-    card.style.display = "block";
-    // position beside the pin in screen coordinates (post-flight geometry)
-    try {
-      const pt = new DOMPoint(gx + 16, gy - 8).matrixTransform(svg.getScreenCTM());
-      const r = card.getBoundingClientRect();
-      card.style.left = Math.min(Math.max(8, pt.x), window.innerWidth - r.width - 8) + "px";
-      card.style.top = Math.min(Math.max(8, pt.y - r.height / 2), window.innerHeight - r.height - 8) + "px";
-    } catch (e) { /* CTM unavailable pre-layout — the card still shows */ }
-  }
-
-  function applyFocusClasses(svg) {
-    svg = svg || $("#map-svg");
-    if (!svg) return;
-    svg.classList.toggle("map-focused", !!focusedPinId);
-    svg.querySelectorAll(".map-pin").forEach((g) => {
-      const on = g.getAttribute("data-id") === focusedPinId;
-      const was = g.classList.contains("focused");
-      g.classList.toggle("focused", on);
-      if (on && !was) {
-        const ring = g.querySelector(".map-pin-ring");
-        if (ring) { ring.style.animation = "none"; void ring.getBoundingClientRect(); ring.style.animation = ""; }
-      }
-    });
-    const rb = document.getElementById("map-reset-btn");
-    if (rb) rb.hidden = !focusedPinId;
-  }
-
-  function flyToProject(id) {
-    const svg = $("#map-svg");
-    const pt = mapPinPts[id];
-    if (!svg || !pt) return;             // no pin (no coordinates) → no flight
-    focusedPinId = id;
-    hideMapCard();                        // card re-pins when the flight lands
-    applyFocusClasses(svg);
-    const target = clampVB({ x: pt.gx - FOCUS_W / 2, y: pt.gy - FOCUS_H / 2, w: FOCUS_W, h: FOCUS_H });
-    tweenViewBox(svg, target, { overshoot: true }, () => {
-      if (focusedPinId !== id) return;   // superseded mid-flight
-      const p = LIN_PROJECTS.find((x) => x.id === id) || (window.LinStore && LinStore.getCached(id));
-      if (p) showMapCard(p, pt.gx, pt.gy);
-    });
-  }
-
-  function resetMapView() {
-    const svg = $("#map-svg");
-    if (!svg) return;
-    focusedPinId = null;
-    hideMapCard();
-    applyFocusClasses(svg);
-    tweenViewBox(svg, MAP_HOME, {});
   }
 
   function mapViewActive() {
@@ -919,7 +827,7 @@
   // list-row selections fly only when the map view is actually showing
   function maybeFlyToSelection(id) { if (mapViewActive()) flyToProject(id); }
 
-  // Ctrl/Cmd+0 + Escape reset — the handler only acts (and only calls
+  // Ctrl/Cmd+0 + Escape → world view — the handler only acts (and only calls
   // preventDefault) while the map view is active AND a project is focused or
   // keyboard focus is inside the map stage, so the browser's page-zoom reset
   // keeps working everywhere else.
@@ -933,6 +841,7 @@
     if (zeroCombo) e.preventDefault();
     resetMapView();
   });
+
 
   /* ---------- Radar | Map view toggle (persisted; radar default) ---------- */
   function setPortfolioView(view, persist) {
@@ -1458,6 +1367,7 @@
       localStorage.setItem("lin-theme", theme);        // new primary key
       localStorage.setItem("lin-radar-theme", theme);  // legacy key (kept for back-compat)
     } catch (e) {}
+    onMapThemeChange();   // swap the OpenFreeMap dark/positron style if the map is live
   }
 
   /* ---------- clock (timezone-aware via tz.js) ---------- */
