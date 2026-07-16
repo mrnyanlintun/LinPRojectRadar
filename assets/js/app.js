@@ -806,7 +806,8 @@
     applyGlFocus();
   }
 
-  /* "No address set" side note — each id opens its Edit info panel */
+  /* "No address set" side note — each id opens that project's inline Manage
+     accordion on the Portfolio list (address is edited there now). */
   function updateNoLocationNote() {
     const note = document.getElementById("map-nolocation");
     if (!note) return;
@@ -817,9 +818,8 @@
         `<button type="button" class="map-noloc-id" data-editloc="${esc(p.id)}">${esc(p.id)}</button>`).join(", ");
       note.querySelectorAll("[data-editloc]").forEach((b) =>
         b.addEventListener("click", () => {
-          showPage("manage");
-          const editBtn = document.querySelector(`#manage-root [data-editinfo="${b.dataset.editloc}"]`);
-          if (editBtn) { editBtn.click(); editBtn.scrollIntoView({ block: "center" }); }
+          showPage("portfolio");
+          if (window.LinIngest && LinIngest.openInlineManage) LinIngest.openInlineManage(b.dataset.editloc);
         }));
     } else {
       note.hidden = true;
@@ -1015,11 +1015,21 @@
           `<span class="li-name">${esc(p.name)}</span>` +
           simChip +
           `<span class="li-state state-${esc(statusKey(p))}"${stateStyle}>${esc(state)}</span>` +
-          `<button class="btn small li-open" data-open="${esc(p.id)}" title="Open project detail">Open →</button>`;
+          `<span class="li-actions">` +
+            `<button class="btn small li-signals" data-signals="${esc(p.id)}" title="Open the signal ledger on the Detail page">Signals</button>` +
+            `<button class="btn small li-manage" data-manage="${esc(p.id)}" title="Edit info, upload, archive, reset — inline">Manage</button>` +
+            `<button class="btn small li-open" data-open="${esc(p.id)}" title="Open project detail">Open →</button>` +
+          `</span>`;
         btn.addEventListener("click", () => { selectProject(p.id); maybeFlyToSelection(p.id); });
-        btn.querySelector(".li-open").addEventListener("click", (e) => {
-          e.stopPropagation();
-          openDetail(p.id);
+        // all three row buttons stop propagation so they never trigger row-select
+        btn.querySelectorAll(".li-signals, .li-manage, .li-open").forEach((b) =>
+          b.addEventListener("click", (e) => e.stopPropagation()));
+        // Signals + Open → both land on Detail (the deep-analysis home; signals in view)
+        btn.querySelector(".li-open").addEventListener("click", () => openDetail(p.id));
+        btn.querySelector(".li-signals").addEventListener("click", () => openDetail(p.id));
+        // Manage → the inline admin accordion directly under this row
+        btn.querySelector(".li-manage").addEventListener("click", () => {
+          if (window.LinIngest && LinIngest.openInlineManage) LinIngest.openInlineManage(p.id);
         });
         li.appendChild(btn);
         ul.appendChild(li);
@@ -1512,7 +1522,18 @@
   }
 
   /* ---------- page navigation ---------- */
+  // Consolidation redirects: the standalone Signals/Manage pages folded into
+  // Portfolio, and Knowledge + About merged into the tabbed Handbook. Old
+  // routes (and deep-links) resolve to their new home; knowledge → Handbook's
+  // Methods tab, about → the About tab.
+  const PAGE_REDIRECT = { modules: "portfolio", manage: "portfolio", knowledge: "handbook", about: "handbook" };
+
   function showPage(page) {
+    if (PAGE_REDIRECT[page]) {
+      if (page === "knowledge") pendingHandbookTab = "methods";
+      if (page === "about") pendingHandbookTab = "about";
+      page = PAGE_REDIRECT[page];
+    }
     document.querySelectorAll(".page").forEach((s) =>
       s.toggleAttribute("hidden", s.dataset.page !== page));
     document.querySelectorAll("[data-nav]").forEach((b) =>
@@ -1522,13 +1543,48 @@
     // (re)render content pages so they reflect the latest portfolio state.
     // Guarded so a single page-render error can never leave navigation half-done.
     try {
-      if (page === "modules" && window.LinModules) LinModules.renderModulesPage();
-      if (page === "knowledge" && window.LinKnowledge) LinKnowledge.renderKnowledgePage();
-      if (page === "manage" && window.LinIngest) LinIngest.renderManagePage();
+      if (page === "portfolio" && window.LinIngest) LinIngest.renderPortfolioAdmin();
+      if (page === "handbook") renderHandbook();
       if (page === "auditor" && window.LinAuditor) LinAuditor.renderAuditorPage();
       if (page === "detail" && window.LinDetail && selectedId) LinDetail.render(selectedId);
     } catch (e) { /* page is already visible; a render hiccup must not block nav */ }
     window.scrollTo({ top: 0 });
+  }
+
+  /* ---------- Handbook: tabbed About + Methods (Knowledge) ----------
+     Two pill tabs mirror the Radar|Map control (distinct .hb-tab class so the
+     stage handlers don't pick them up). Tab choice persists in sessionStorage;
+     a pending tab (set by an old about/knowledge deep-link) wins once. The
+     Methods tab hosts the whole Knowledge Library, rendered lazily. */
+  const HB_TAB_KEY = "lin-handbook-tab";
+  let pendingHandbookTab = null;
+  let knowledgeRendered = false;
+  function setHandbookTab(tab) {
+    tab = tab === "methods" ? "methods" : "about";
+    document.querySelectorAll(".hb-tab").forEach((b) => {
+      const on = b.dataset.tab === tab;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-selected", String(on));
+    });
+    const ap = document.getElementById("hb-panel-about");
+    const mp = document.getElementById("hb-panel-methods");
+    if (ap) ap.toggleAttribute("hidden", tab !== "about");
+    if (mp) mp.toggleAttribute("hidden", tab !== "methods");
+    if (tab === "methods" && window.LinKnowledge) {
+      // render once; renderKnowledgePage resets its own selected topic each call
+      if (!knowledgeRendered) { LinKnowledge.renderKnowledgePage(); knowledgeRendered = true; }
+    }
+    try { sessionStorage.setItem(HB_TAB_KEY, tab); } catch (e) {}
+  }
+  function renderHandbook() {
+    let tab = pendingHandbookTab;
+    pendingHandbookTab = null;
+    if (!tab) { try { tab = sessionStorage.getItem(HB_TAB_KEY); } catch (e) {} }
+    setHandbookTab(tab || "about");
+  }
+  function wireHandbookTabs() {
+    document.querySelectorAll(".hb-tab").forEach((b) =>
+      b.addEventListener("click", () => setHandbookTab(b.dataset.tab)));
   }
 
   function wireNav() {
@@ -1865,6 +1921,7 @@
     wireNav();
     wireNavReveal();
     initFloatingNav();
+    wireHandbookTabs();
     wireTzSelect();
     startClock();
     // Show the signed-in user's email in the top bar (auth.js / Stage 1).

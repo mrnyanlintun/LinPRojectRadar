@@ -3,8 +3,8 @@
    Project Detail drill-down: one project's identity, signal
    ledger, PCEIF decision card (fairness gate where applicable),
    and all five modules computed for that project.
-   Reuses LinApp's ledger/decision-card renderers and
-   LinModules.renderProjectModules — no duplicated rules.
+   Reuses LinApp's ledger/decision-card renderers with no
+   duplicated rules; the standalone Signals page was retired.
    ============================================================ */
 
 (function () {

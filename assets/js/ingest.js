@@ -143,19 +143,48 @@
     return null;
   }
 
-  /* Unified inline "Edit info" panel — project number, name, and address in
-     one place (merges the old Edit № affordance). Sector is shown read-only:
-     it drives simulation rules and is not editable here. The address is the
-     ONLY location field — the backend geocodes it server-side on save, and
-     the outcome (formatted address or geocode error) surfaces inline. */
-  function openEditInfo(btn) {
-    const id = btn.dataset.editinfo;
-    const row = btn.closest(".pr-row");
-    if (!row) return;
-    if (row.nextElementSibling && row.nextElementSibling.classList.contains("pr-editnum")) return;
+  /* ---------- inline per-row admin accordion (Portfolio list) ----------
+     The old standalone Manage page's per-project controls now live inline on
+     the Portfolio list rows: clicking a row's "Manage" button opens this
+     accordion directly beneath it. One panel open at a time. It carries the
+     unified Edit-info fields (number / name / address; sector read-only) PLUS
+     the row's admin actions — Populate/Re-upload, Archive, Reset signals.
+     The address is the ONLY location field — the backend geocodes it on save
+     and the outcome surfaces inline. */
+  function findPortfolioRow(id) {
+    let row = null;
+    document.querySelectorAll("#project-list .list-item").forEach((r) => {
+      if (r.getAttribute("data-id") === id) row = r;
+    });
+    return row;
+  }
+  function closeInlineManage(exceptLi) {
+    document.querySelectorAll("#project-list .pr-admin").forEach((el) => {
+      if (el.parentElement !== exceptLi) {
+        const b = el.parentElement && el.parentElement.querySelector(".list-item");
+        if (b) b.classList.remove("mng-open");
+        el.remove();
+      }
+    });
+  }
+
+  // Toggle the inline admin accordion for a project id. Reused by the map's
+  // "No address set" deep-link (was: open the Manage page's Edit-info panel).
+  function openInlineManage(id) {
+    const rowBtn = findPortfolioRow(id);
+    if (!rowBtn) return;
+    const li = rowBtn.closest("li");
+    if (!li) return;
+    // toggle: second click (or Manage again) collapses it
+    const open = li.querySelector(".pr-admin");
+    if (open) { open.remove(); rowBtn.classList.remove("mng-open"); return; }
+    closeInlineManage(li);                 // accordion: one open at a time
+    rowBtn.classList.add("mng-open");
+
     const cached = LinStore.getCached(id) || {};
+    const populated = hasSignals(cached);
     const box = document.createElement("div");
-    box.className = "pr-editnum pr-editinfo";
+    box.className = "pr-admin pr-editinfo";
     box.innerHTML =
       `<div class="pr-editinfo-grid">
          <label class="rationale-label">Project number / code
@@ -168,27 +197,69 @@
            <input type="text" class="pe-address ig-input" maxlength="160" placeholder="e.g. Terminal B, Austin-Bergstrom Intl Airport" /></label>
        </div>
        <div class="dc-actions">
-         <button class="btn primary small pe-save">Save</button>
-         <button class="btn small pe-cancel">Cancel</button>
+         <button class="btn primary small pe-save">Save info</button>
+         <button class="btn small pe-populate">${populated ? "Re-upload documents" : "Populate signals"}</button>
+         <button class="btn small pe-reset">Reset signals</button>
+         <button class="btn small pe-archive">Archive</button>
+         <button class="btn small pe-cancel">Close</button>
        </div>
        <p class="pe-msg kn-sub" aria-live="polite"></p>`;
-    row.insertAdjacentElement("afterend", box);
-    // values via properties — legacy data may predate the charset rules
+    li.appendChild(box);
     box.querySelector(".pe-id").value = id;
     box.querySelector(".pe-name").value = cached.name || "";
     box.querySelector(".pe-sector").value = SECTOR_LABEL[cached.sector] || cached.sector || "";
     box.querySelector(".pe-address").value = cached.address || "";
-    // show the current geocoded state so the PM knows where the pin sits now
     if (cached.formattedAddress && cached.lat != null) {
       box.querySelector(".pe-msg").textContent = "Located: " + cached.formattedAddress;
     }
-    box.querySelector(".pe-id").focus();
+    const msg = box.querySelector(".pe-msg");
 
-    const close = () => box.remove();
+    const close = () => { box.remove(); rowBtn.classList.remove("mng-open"); };
     box.querySelector(".pe-cancel").addEventListener("click", close);
-    box.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+    box.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); close(); } });
+
+    // Populate / Re-upload → expand the admin Upload section, preselect, scroll.
+    box.querySelector(".pe-populate").addEventListener("click", () => {
+      const section = document.getElementById("section-mg-upload");
+      if (window.toggleSection && section && !section.classList.contains("open")) toggleSection("mg-upload");
+      const sel = document.querySelector("#portfolio-admin .dz-project");
+      if (sel) sel.value = id;
+      const panel = document.getElementById("signals-panel");
+      if (panel) panel.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
+
+    // Archive
+    box.querySelector(".pe-archive").addEventListener("click", async () => {
+      try {
+        await LinStore.archiveProject(id);
+        logEvent(`ARCHIVED ${id}.`);
+        if (window.LinApp) LinApp.refresh();
+        renderPortfolioAdmin();
+      } catch (e) { LinStore.banner("Couldn't archive — store unreachable. Retry.", "warn"); }
+    });
+
+    // Reset signals → clears extraction back to "Awaiting ingest".
+    box.querySelector(".pe-reset").addEventListener("click", async () => {
+      const btn = box.querySelector(".pe-reset");
+      btn.disabled = true;
+      msg.classList.remove("pe-msg-error", "pe-msg-ok");
+      msg.textContent = "Resetting signals…";
+      try {
+        await LinStore.resetSignals(id);
+        if (window.LinSignals && LinSignals.clearCache) LinSignals.clearCache(id);
+        await LinStore.load();
+        logEvent(`RESET signals for ${id}.`);
+        if (window.LinApp) LinApp.refresh();
+        renderPortfolioAdmin();
+      } catch (e) {
+        msg.textContent = "Couldn't reset: " + ((e && e.message) || "store unreachable") + ".";
+        msg.classList.add("pe-msg-error");
+        btn.disabled = false;
+      }
+    });
+
+    // Save info (number / name / address) with inline geocode feedback.
     box.querySelector(".pe-save").addEventListener("click", async () => {
-      const msg = box.querySelector(".pe-msg");
       msg.classList.remove("pe-msg-error", "pe-msg-ok");
       const newId = box.querySelector(".pe-id").value.trim();
       const name = box.querySelector(".pe-name").value.trim();
@@ -202,16 +273,11 @@
       save.disabled = true;
       msg.textContent = address ? "Saving — locating address…" : "Saving project info…";
       try {
-        // ALWAYS mutate the full project.json — never save a slim stub back
-        // to Drive (that would drop signals/history from the stored file).
         const full = await LinStore.getProject(id);
         if (!full || full.slim) throw new Error("couldn't load the full project record");
         full.name = name;
         full.address = address || null;
-        // the save response echoes the updated project, including the
-        // server-side geocode result (lat/lng/formattedAddress/geocodeError)
         const saved = await LinStore.saveProject(full);
-        // number change last — it re-keys the Drive folder + mirrors
         if (newId !== id) {
           await LinStore.setProjectNumber(id, newId);
           if (window.LinApp && LinApp.renameSelection) LinApp.renameSelection(id, newId);
@@ -220,22 +286,19 @@
         logEvent(`EDITED project info for ${newId}${newId !== id ? ` (was ${id})` : ""}: name/address updated.`);
         await LinStore.load();
         if (window.LinApp) LinApp.refresh();
-        renderManagePage();
-        // Surface the geocode outcome inline: re-open the (re-rendered) panel
-        // and show "Located: …" or the geocode error so the PM can refine.
+        renderPortfolioAdmin();
+        // re-open the (rebuilt) row's panel to surface the geocode outcome
         const outcome = address ? geocodeOutcome(saved) : null;
+        const finalId = newId !== id ? newId : id;
+        openInlineManage(finalId);
         if (outcome) {
-          const finalId = newId !== id ? newId : id;
-          const btn2 = document.querySelector(`#manage-root [data-editinfo="${finalId}"]`);
-          if (btn2) {
-            openEditInfo(btn2);
-            const box2 = btn2.closest(".pr-row").nextElementSibling;
-            const msg2 = box2 && box2.querySelector(".pe-msg");
-            if (msg2) {
-              msg2.textContent = outcome.text;
-              msg2.classList.add(outcome.ok ? "pe-msg-ok" : "pe-msg-error");
-              box2.scrollIntoView({ block: "center" });
-            }
+          const li2 = findPortfolioRow(finalId);
+          const box2 = li2 && li2.closest("li").querySelector(".pr-admin");
+          const msg2 = box2 && box2.querySelector(".pe-msg");
+          if (msg2) {
+            msg2.textContent = outcome.text;
+            msg2.classList.add(outcome.ok ? "pe-msg-ok" : "pe-msg-error");
+            box2.scrollIntoView({ block: "center" });
           }
         }
       } catch (e) {
@@ -244,34 +307,18 @@
         save.disabled = false;
       }
     });
+    box.querySelector(".pe-id").focus();
+    box.scrollIntoView({ block: "nearest" });
   }
 
-  /* ---------- Manage Projects page ---------- */
-  function renderManagePage() {
-    const root = document.getElementById("manage-root");
+  /* ---------- Portfolio admin sections (Create / Upload / Archived / Activity)
+     Consolidated from the removed standalone Manage page. The per-project ACTIVE
+     rows are gone — each project's admin now lives inline on its Portfolio list
+     row (openInlineManage). Rendered into #portfolio-admin below the list. */
+  function renderPortfolioAdmin() {
+    const root = document.getElementById("portfolio-admin");
     if (!root) return;
 
-    const rowFor = (p) => {
-      // Slim portfolio records carry EVM summary fields; slimStatusLabel resolves
-      // a 5-state label from them (or the backend label). Full records derive it.
-      const slimLabel = (p && p.slim && typeof slimStatusLabel === "function") ? slimStatusLabel(p) : null;
-      const populated = slimLabel ? true : hasSignals(p);
-      const state = slimLabel || (hasSignals(p) ? deriveHealthState(p) : "Awaiting ingest");
-      const key = populated ? state.toLowerCase().replace("-review", "") : "empty";
-      return `<div class="pr-row">
-        <span class="pr-code">${esc(p.id)}</span>
-        <span class="pr-name">${esc(p.name)} <span class="kn-sub">· ${esc(SECTOR_LABEL[p.sector] || p.sector)}</span></span>
-        <span class="li-state state-${key}">${esc(state)}</span>
-        <span class="pr-actions">
-          <button class="btn small" data-detail="${esc(p.id)}">Detail</button>
-          <button class="btn small" data-editinfo="${esc(p.id)}" title="Edit project number, name, address, and map coordinates">Edit info</button>
-          <button class="btn small" data-populate="${esc(p.id)}">${populated ? "Re-upload" : "Populate"}</button>
-          <button class="btn small" data-archive="${esc(p.id)}">Archive</button>
-        </span>
-      </div>`;
-    };
-
-    const active = LinStore.cachedActive();
     const archived = LinStore.cachedArchived();
     const cs = window.collapsibleSection || function (id, t, body) { return body; };
 
@@ -294,9 +341,6 @@
        <div class="dc-actions"><button id="np-create" class="btn primary">Create project</button></div>
        <p id="np-msg" class="kn-sub" aria-live="polite"></p>`;
 
-    /* ACTIVE PROJECTS — open by default; the primary view of this page. */
-    const activeBody = active.map(rowFor).join("") || `<p class="pr-empty">No active projects.</p>`;
-
     /* ARCHIVED PROJECTS — collapsed by default. The empty-state copy lives
        inside the body so it shows when the user expands the section. */
     const archivedBody = `<div id="archived-list"><p class="pr-empty">Loading archived projects…</p></div>`;
@@ -308,12 +352,11 @@
        ${LinSignals.dropzoneHtml(null)}
        <div id="signals-detail" class="ds-detail-wrap"></div>`;
 
-    /* Everything starts collapsed except ACTIVE PROJECTS — the page's purpose;
-       a fully blank Manage page is worse UX. This is the single deliberate
-       exception to the collapsed-by-default rule. */
+    /* All admin sections collapsed by default — they sit below the live radar +
+       project list, which are the Portfolio's primary content. Per-project
+       actions live inline on the list rows above (openInlineManage). */
     root.innerHTML =
       cs("mg-create",   "CREATE NEW PROJECT",  createBody,   false) +
-      cs("mg-active",   "ACTIVE PROJECTS",     activeBody,   true,  active.length + " project" + (active.length === 1 ? "" : "s")) +
       cs("mg-archived", "ARCHIVED PROJECTS",   archivedBody, false, archived.length + " project" + (archived.length === 1 ? "" : "s")) +
       `<div id="signals-panel">` +
         cs("mg-upload", "UPLOAD DOCUMENTS",    uploadBody,   false) +
@@ -351,7 +394,7 @@
         }
         logEvent(`Created EMPTY project ${p.id} — ${name} (${SECTOR_LABEL[sector] || sector}); awaiting ingest.`);
         if (window.LinApp) LinApp.refresh();
-        renderManagePage();
+        renderPortfolioAdmin();
         const msg2 = document.getElementById("np-msg");
         msg2.textContent = `Created ${p.id} (empty, saved to Drive).` +
           (outcome ? " " + outcome.text : " Populate its signals to run the models.");
@@ -360,24 +403,6 @@
         msg.textContent = "Couldn't create the project: " + ((e && e.message) || "store unreachable") + ".";
       }
     });
-
-    root.querySelectorAll("[data-archive]").forEach((b) =>
-      b.addEventListener("click", async () => { try { await LinStore.archiveProject(b.dataset.archive); logEvent(`ARCHIVED ${b.dataset.archive}.`); if (window.LinApp) LinApp.refresh(); renderManagePage(); } catch (e) { LinStore.banner("Couldn't archive — store unreachable. Retry.", "warn"); } }));
-    root.querySelectorAll("[data-detail]").forEach((b) =>
-      b.addEventListener("click", () => LinApp.openDetail(b.dataset.detail)));
-    root.querySelectorAll("[data-editinfo]").forEach((b) =>
-      b.addEventListener("click", () => openEditInfo(b)));
-    root.querySelectorAll("[data-populate]").forEach((b) =>
-      b.addEventListener("click", () => {
-        // Expand the UPLOAD DOCUMENTS section, pre-select this project in the
-        // dropzone, and scroll it into view.
-        const section = document.getElementById("section-mg-upload");
-        if (window.toggleSection && section && !section.classList.contains("open")) toggleSection("mg-upload");
-        const sel = root.querySelector(".dz-project");
-        if (sel) sel.value = b.dataset.populate;
-        const panel = root.querySelector("#signals-panel");
-        if (panel) panel.scrollIntoView({ block: "start" });
-      }));
 
     // async: load the archived list from the backend and wire Restore
     loadArchivedList(root);
@@ -402,7 +427,7 @@
           await LinStore.restoreProject(b.dataset.restore);
           logEvent(`RESTORED ${b.dataset.restore}.`);
           if (window.LinApp) LinApp.refresh();
-          renderManagePage();
+          renderPortfolioAdmin();
         } catch (e) { LinStore.banner("Couldn't restore — store unreachable. Retry.", "warn"); }
       }));
   }
@@ -410,5 +435,5 @@
   // Phase 2 seam kept for API compatibility; store.js already hydrates.
   function mergeUserProjects() {}
 
-  window.LinIngest = { mergeUserProjects, renderManagePage, renderScopedIngest, populateSignals, INGEST_RULES };
+  window.LinIngest = { mergeUserProjects, renderPortfolioAdmin, openInlineManage, renderScopedIngest, populateSignals, INGEST_RULES };
 })();
