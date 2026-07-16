@@ -186,10 +186,10 @@ body[data-theme="dark"] {
 
 /* Light headings use the darker --heading ink for max legibility on the warm
    field (component-specific heading overrides above already point at --heading). */
-body[data-theme="light"] h1,
-body[data-theme="light"] h2,
-body[data-theme="light"] h3,
-body[data-theme="light"] .intro h1 { color: var(--heading); }
+body.t-light h1,
+body.t-light h2,
+body.t-light h3,
+body.t-light .intro h1 { color: var(--heading); }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -275,9 +275,9 @@ body::before {
   white-space: nowrap;
 }
 /* cream/gold wash out on the light background — dark ink + bronze initials there */
-body[data-theme="light"] .nav-logo-text { color: var(--heading); }
-body[data-theme="light"] .brand-init { color: var(--gold-text); }
-body[data-theme="light"] .topbar { border-bottom-color: rgba(138, 106, 28, 0.25); }
+body.t-light .nav-logo-text { color: var(--heading); }
+body.t-light .brand-init { color: var(--gold-text); }
+body.t-light .topbar { border-bottom-color: rgba(138, 106, 28, 0.25); }
 @media (max-width: 900px) {
   .nav-logo-img { height: 72px; }
 }
@@ -311,7 +311,7 @@ body[data-theme="light"] .topbar { border-bottom-color: rgba(138, 106, 28, 0.25)
   background: color-mix(in srgb, var(--radar-amber) 12%, transparent);
 }
 
-.theme-switch { display: flex; gap: 4px; border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.theme-switch { display: flex; flex-wrap: wrap; gap: 4px; border: 1px solid var(--line); border-radius: var(--radius-md); padding: 3px; }
 .theme-switch button {
   font-family: var(--font-body); font-size: 12px; font-weight: 600;
   background: transparent; color: var(--muted); border: 0;
@@ -320,7 +320,7 @@ body[data-theme="light"] .topbar { border-bottom-color: rgba(138, 106, 28, 0.25)
 }
 .theme-switch button:hover { color: var(--text); }
 .theme-switch button.active { background: var(--phosphor); color: #fff; }
-body[data-theme="light"] .theme-switch button.active { color: #fff; }
+body.t-light .theme-switch button.active { color: #fff; }
 
 /* ---------- page intro ---------- */
 .intro { margin: 8px 0 22px; }
@@ -460,6 +460,26 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
   background: transparent; color: var(--muted); cursor: pointer;
 }
 .li-open:hover { border-color: var(--phosphor); color: var(--phosphor); }
+/* per-row action cluster: Signals · Manage · Open → */
+.li-actions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
+.li-signals, .li-manage {
+  font-family: var(--font-mono); font-size: 10px; white-space: nowrap;
+  padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line);
+  background: transparent; color: var(--muted); cursor: pointer;
+}
+.li-signals:hover, .li-manage:hover { border-color: var(--phosphor); color: var(--phosphor); }
+.list-item.mng-open { border-color: var(--phosphor); background: var(--surface-soft); }
+.list-item.mng-open .li-manage { border-color: var(--phosphor); color: var(--phosphor); }
+/* inline admin accordion (opens beneath the row inside its <li>) */
+#project-list li { list-style: none; }
+.pr-admin {
+  margin: 4px 2px 10px; padding: 14px 14px 10px;
+  border: 1px dashed var(--line-strong); border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--muted) 6%, transparent);
+}
+.pr-admin .pr-editinfo-grid { margin-bottom: 4px; }
+.pr-admin .dc-actions { margin: 12px 0 6px; }
+.pr-admin .pe-msg { margin: 4px 0 0; }
 .li-sim {
   font-family: var(--font-mono); font-size: 10px; white-space: nowrap;
   padding: 1px 7px; border-radius: 999px; border: 1px solid currentColor; opacity: .9;
@@ -633,41 +653,9 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
    All colors via theme tokens — works in all three themes.
    ============================================================ */
 
-/* ---------- left navigation rail ---------- */
-.layout { display: grid; grid-template-columns: 168px 1fr; gap: 18px; align-items: start; }
+/* nav is the icon dock (built in app.js); content is full-width */
+.layout { display: block; }
 .content { min-width: 0; }
-
-.nav-rail {
-  position: sticky; top: 14px;
-  display: flex; flex-direction: column; gap: 4px;
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: var(--radius-lg); box-shadow: var(--shadow);
-  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-  padding: 10px;
-}
-.nav-rail button {
-  display: flex; align-items: center; gap: 10px;
-  font-family: var(--font-body); font-size: 13px; font-weight: 600;
-  background: transparent; color: var(--muted);
-  border: 1px solid transparent; border-radius: var(--radius-md);
-  padding: 10px 12px; cursor: pointer; text-align: left;
-  transition: background .2s, color .2s;
-}
-.nav-rail button svg { width: 16px; height: 16px; flex: 0 0 auto; }
-.nav-rail button:hover { color: var(--text); background: var(--surface-soft); }
-.nav-rail button.active { background: var(--phosphor); border-color: var(--phosphor); color: #fff; }
-.nav-rail button:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
-
-/* narrow screens: rail becomes a horizontal strip above the content */
-@media (max-width: 760px) {
-  .layout { grid-template-columns: 1fr; }
-  .nav-rail { position: static; flex-direction: row; flex-wrap: wrap; padding: 8px; }
-  .nav-rail button { padding: 8px 12px; }
-  .nav-rail button span { font-size: 12px; }
-}
-@media (max-width: 420px) {
-  .nav-rail button span { display: none; }   /* icons only at ~360px */
-  .nav-rail button { padding: 9px 11px; }
 }
 
 /* ---------- project detail (drill-down) ---------- */
@@ -1359,7 +1347,7 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .sw-ring-amber { stroke: var(--status-amber); opacity: .22; }
 .sw-ring-red { stroke: var(--status-red); opacity: .22; }
 .sw-axis { stroke: rgba(255,255,255,0.1); stroke-width: .5; }
-body[data-theme="light"] .sw-axis { stroke: rgba(15,23,42,0.14); }
+body.t-light .sw-axis { stroke: rgba(15,23,42,0.14); }
 .sw-web-current { fill: color-mix(in srgb, var(--status-complete) 15%, transparent); stroke: var(--status-complete); stroke-width: 1.5; }
 .sw-web-prev { fill: none; stroke: rgba(233,162,59,0.4); stroke-width: 1; stroke-dasharray: 4 4; }
 .sw-label { font-family: var(--font-mono); font-size: 9px; fill: var(--faint); dominant-baseline: middle; }
@@ -1385,7 +1373,7 @@ body[data-theme="light"] .sw-axis { stroke: rgba(15,23,42,0.14); }
 /* ---------- 103-module signal web ---------- */
 .sw-mod-svg { max-height: 560px; }
 .sw-ring-outer { stroke: rgba(255,255,255,0.12); }
-body[data-theme="light"] .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
+body.t-light .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .sw-mod-band { fill: none; stroke-width: 13; opacity: .15; stroke-linecap: round; }
 .sw-mod-band-parked { stroke: #64748b; opacity: .15; }
 .sw-mod-band-label { font-family: var(--font-mono); font-size: 8px; fill: #64748b; letter-spacing: .04em; dominant-baseline: middle; }
@@ -1580,41 +1568,41 @@ body[data-theme="light"] .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .portfolio-below .log-panel { grid-column: 1 / -1; }
 @media (max-width: 940px) { .portfolio-below { grid-template-columns: 1fr; } }
 
-/* ---------- nav rail + theme as a reveal overlay ---------- */
-.layout { display: block; }                 /* nav is an overlay, not a column */
+/* ---------- app menu (theme switcher + sign out) reveal overlay ---------- */
+.layout { display: block; }
 .content { min-width: 0; }
 
-.nav-toggle {
-  display: inline-flex;
-  align-items: center; justify-content: center;
-  width: 44px; height: 44px; flex: 0 0 auto;
+/* Emblem menu button - header + dock foot. Middle bar of the inline SVG is a
+   radar sweep line ending in a blip dot; theme-colored via currentColor. */
+.menu-emblem {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; flex: 0 0 auto; padding: 0;
   background: var(--surface); color: var(--text);
-  border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
-  position: relative;
-}
-.nav-toggle .nav-toggle-icon { width: 24px; height: 24px; }
-.nav-toggle .nav-toggle-icon-close { display: none; }
-body.nav-open .nav-toggle .nav-toggle-icon-open { display: none; }
-body.nav-open .nav-toggle .nav-toggle-icon-close { display: block; }
-.nav-toggle:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
-
-.nav-rail {
-  position: fixed; right: 0; top: 0; z-index: 60;
-  width: 220px; max-height: 100vh; overflow: auto;
-  display: flex; flex-direction: column; gap: 4px;
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  border: 1px solid var(--line); border-radius: 12px; cursor: pointer;
   box-shadow: var(--shadow);
-  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-  padding: 14px 12px;
-  transform: translateX(112%); transition: transform .2s ease;
+  transition: border-color .2s, color .2s, background .2s;
 }
-body.nav-open .nav-rail { transform: translateX(0); }
-.nav-rail .theme-switch { margin-top: 10px; }
+.menu-emblem:hover { border-color: var(--phosphor); color: var(--phosphor); }
+.menu-emblem:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
+.menu-emblem-svg { width: 24px; height: 24px; transition: transform .25s ease; }
+.menu-emblem-img { width: 28px; height: 28px; object-fit: contain; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--phosphor) 45%, transparent)); transition: transform .25s ease; }
+body.nav-open .menu-emblem-svg, body.nav-open .menu-emblem-img { transform: rotate(90deg); }
 
-@media (prefers-reduced-motion: reduce) {
-  .nav-rail { transition: none; }
+.app-menu {
+  position: fixed; right: 14px; top: 70px; z-index: 70;
+  width: 220px; max-width: calc(100vw - 28px);
+  display: flex; flex-direction: column; gap: 12px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow);
+  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  padding: 14px;
+  opacity: 0; visibility: hidden; transform: translateY(-8px);
+  transition: opacity .2s ease, transform .2s ease, visibility .2s;
 }
+body.nav-open .app-menu { opacity: 1; visibility: visible; transform: none; }
+.app-menu-title { font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); margin: 0; }
+.app-menu-signout { align-self: flex-start; }
+@media (prefers-reduced-motion: reduce) { .app-menu { transition: none; } }
 
 /* ---------- Knowledge: impact + Ask-the-AI ---------- */
 .kn-impact { font-size: 13px; line-height: 1.55; color: var(--text); margin: 8px 0 6px; }
@@ -2083,12 +2071,12 @@ body.nav-open .nav-rail { transform: translateX(0); }
   font-size: clamp(22px, 2.8vw, 30px); letter-spacing: .01em;
 }
 .kn-h-art .kn-num, .kn-sec-num { color: #d4af5a; }
-body[data-theme="light"] [data-page="knowledge"] .intro h1,
-body[data-theme="light"] .kn-h-art { color: var(--heading); }
+body.t-light [data-page="knowledge"] .intro h1,
+body.t-light .kn-h-art { color: var(--heading); }
 /* light theme: cream/gold wash out — dark ink + bronze, same swap the header brand makes */
-body[data-theme="light"] .kn-h-art .kn-num,
-body[data-theme="light"] .kn-sec-num,
-body[data-theme="light"] .kn-nav-cat-num { color: var(--gold-text); }
+body.t-light .kn-h-art .kn-num,
+body.t-light .kn-sec-num,
+body.t-light .kn-nav-cat-num { color: var(--gold-text); }
 
 /* eyebrows — mono, wide tracking, muted (consistent with app panel headers) */
 .kn-content .eyebrow, .kn-article .eyebrow {
@@ -2126,7 +2114,7 @@ body[data-theme="light"] .kn-nav-cat-num { color: var(--gold-text); }
   font-family: var(--font-display); font-size: 16px; font-weight: 500;
   letter-spacing: 0; text-transform: none; color: #efe3c2;
 }
-body[data-theme="light"] .kn-article .collapse-title { color: var(--text); }
+body.t-light .kn-article .collapse-title { color: var(--text); }
 body[data-theme="newyork"] .kn-article .collapse-title { font-family: Georgia, "Times New Roman", "Hoefler Text", serif; }
 .kn-article .collapse-body { border: 0; border-radius: 0; padding: 2px 2px 18px; }
 
@@ -2137,42 +2125,89 @@ body[data-theme="newyork"] .kn-article .collapse-title { font-family: Georgia, "
    buttons are keyboard-reachable with a visible focus ring. The
    chat bubble (assistant) sits bottom-right, so no collision.
    ============================================================ */
-.float-nav {
-  position: fixed; top: 18px; right: 20px; z-index: 60;
-  display: flex; align-items: center; gap: 10px;
-  opacity: 0; visibility: hidden; transform: translateY(-8px);
-  transition: opacity .3s ease, transform .3s ease, visibility .3s;
+/* ---------- icon dock - the sole navigation ----------
+   Fixed to the right edge, vertically centered, ALWAYS visible (subtle at the
+   top, full once scrolled). Emblem (top) scrolls to top; three destination
+   icons with left-flyout labels + an active notch; emblem menu button (foot).
+   <=700px: a horizontal bottom bar. */
+.icon-dock {
+  position: fixed; right: 14px; top: 50%; transform: translateY(-50%); z-index: 60;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 10px 8px; border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  border: 1px solid var(--line); box-shadow: var(--shadow);
+  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  opacity: .7; transition: opacity .3s ease;
 }
-.float-nav.visible { opacity: 1; visibility: visible; transform: none; }
-.float-logo, .float-menu {
-  width: 44px; height: 44px; border-radius: 50%;
-  border: 1px solid rgba(212, 175, 90, .5);
-  background: var(--surface);
-  cursor: pointer; padding: 0;
-  display: inline-flex; align-items: center; justify-content: center;
-  box-shadow: var(--shadow);
+.icon-dock.scrolled { opacity: 1; }
+.icon-dock:hover, .icon-dock:focus-within { opacity: 1; }
+
+.dock-emblem {
+  width: 40px; height: 40px; border-radius: 50%; padding: 0;
+  border: 1px solid var(--line-strong); background: var(--surface); cursor: pointer;
+  position: relative; overflow: hidden;
+  opacity: 0; visibility: hidden; transform: scale(.85);
+  transition: opacity .3s ease, transform .3s ease, visibility .3s, border-color .2s;
 }
-.float-logo { position: relative; overflow: hidden; animation: float-glow 4s ease-in-out infinite; }
-.float-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.float-logo-sweep {
+.icon-dock.scrolled .dock-emblem { opacity: 1; visibility: visible; transform: none; }
+.dock-emblem img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dock-emblem-sweep {
   position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
   background: conic-gradient(from 0deg,
     color-mix(in srgb, var(--phosphor) 25%, transparent) 0deg 90deg,
     transparent 90deg 360deg);
-  animation: float-sweep 8s linear infinite;
+  animation: dock-sweep 8s linear infinite;
 }
-.float-menu { color: var(--text); }
-.float-menu svg { width: 20px; height: 20px; }
-.float-menu:hover, .float-logo:hover { border-color: #d4af5a; }
-.float-logo:focus-visible, .float-menu:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 3px; }
-@keyframes float-sweep { to { transform: rotate(360deg); } }
-@keyframes float-glow {
-  0%, 100% { box-shadow: 0 0 6px color-mix(in srgb, var(--phosphor) 25%, transparent); }
-  50%      { box-shadow: 0 0 16px color-mix(in srgb, var(--phosphor) 50%, transparent); }
+.dock-emblem:hover { border-color: var(--phosphor); }
+.dock-emblem:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 3px; }
+@keyframes dock-sweep { to { transform: rotate(360deg); } }
+
+.dock-nav { display: flex; flex-direction: column; gap: 6px; }
+.dock-nav-btn {
+  position: relative; width: 42px; height: 42px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; color: var(--muted);
+  border: 1px solid transparent; border-radius: 12px; cursor: pointer;
+  transition: color .2s, background .2s, border-color .2s;
 }
-/* reduced motion: static emblem, glow only (no rotation) */
+.dock-icon { width: 26px; height: 26px; }
+.dock-nav-btn:hover { color: var(--phosphor); background: var(--surface-soft); }
+.dock-nav-btn:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
+.dock-nav-btn.active { color: #fff; background: var(--phosphor); border-color: var(--phosphor); }
+.dock-nav-btn.active::before {
+  content: ""; position: absolute; left: -9px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 20px; border-radius: 2px; background: var(--phosphor);
+}
+body[data-theme="newyork"] .dock-nav-btn.active { background: transparent; color: var(--nyc-gold); border-color: var(--nyc-gold); }
+body[data-theme="newyork"] .dock-nav-btn.active::before { background: var(--nyc-gold); }
+
+.dock-label {
+  position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+  white-space: nowrap; pointer-events: none;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; font-weight: 600;
+  color: var(--text); background: var(--surface); border: 1px solid var(--line);
+  padding: 4px 8px; border-radius: 6px; box-shadow: var(--shadow);
+  opacity: 0; transition: opacity .15s ease;
+}
+.dock-nav-btn:hover .dock-label, .dock-nav-btn:focus-visible .dock-label { opacity: 1; }
+
+.dock-menu { width: 40px; height: 40px; border-radius: 12px; }
+.dock-menu .menu-emblem-svg { width: 22px; height: 22px; }
+
 @media (prefers-reduced-motion: reduce) {
-  .float-logo-sweep { animation: none; }
+  .dock-emblem-sweep { animation: none; }
+  .icon-dock, .dock-emblem, .dock-label { transition: none; }
+}
+
+@media (max-width: 700px) {
+  .icon-dock {
+    right: 50%; top: auto; bottom: 12px; transform: translateX(50%);
+    flex-direction: row; align-items: center; gap: 8px; padding: 8px 12px;
+  }
+  .dock-nav { flex-direction: row; gap: 6px; }
+  .dock-nav-btn.active::before { left: 50%; top: auto; bottom: -8px; transform: translateX(-50%); width: 20px; height: 3px; }
+  .dock-label { right: auto; left: 50%; top: auto; bottom: calc(100% + 10px); transform: translateX(-50%); }
+}
 }
 
 /* ============================================================
@@ -2192,13 +2227,13 @@ body[data-theme="newyork"] .kn-article .collapse-title { font-family: Georgia, "
   font-family: var(--font-display); font-size: clamp(19px, 2vw, 22px); font-weight: 500;
   color: #efe3c2; margin: 0 0 14px; letter-spacing: .01em;
 }
-body[data-theme="light"] .about-h { color: var(--heading); }
+body.t-light .about-h { color: var(--heading); }
 /* gold brand initials + step numbers echo the header brand-init treatment */
 [data-page="about"] .intro h1 { font-family: var(--font-display); font-weight: 500; color: #efe3c2; }
-body[data-theme="light"] [data-page="about"] .intro h1 { color: var(--heading); }
+body.t-light [data-page="about"] .intro h1 { color: var(--heading); }
 .about-init, .about-step-num { color: #d4af5a; }
-body[data-theme="light"] .about-init,
-body[data-theme="light"] .about-step-num { color: var(--gold-text); }
+body.t-light .about-init,
+body.t-light .about-step-num { color: var(--gold-text); }
 .about-step-num { font-family: var(--font-mono); font-weight: 700; margin-right: 2px; }
 /* mono eyebrow consistent with app panel headers */
 [data-page="about"] .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .25em; color: var(--muted); }
@@ -2284,18 +2319,18 @@ body[data-theme="light"] .about-step-num { color: var(--gold-text); }
    never for small text, which stays on the deep --phosphor (#8a6a1c).
    ============================================================ */
 /* panel top hairlines: sun-gold on Miami (Gotham keeps its #d4af5a) */
-body[data-theme="light"] .kn-content,
-body[data-theme="light"] .kn-nav,
-body[data-theme="light"] .about-section { border-top-color: var(--hairline-gold); }
+body.t-light .kn-content,
+body.t-light .kn-nav,
+body.t-light .about-section { border-top-color: var(--hairline-gold); }
 
 /* map stage: light tiles keep their style; the stage gets a sun-gold edge */
-body[data-theme="light"] #map-gl { border: 1px solid var(--sun-gold); }
+body.t-light #map-gl { border: 1px solid var(--sun-gold); }
 
 /* secondary highlights — coral edges on hover, dark ink stays for the label */
-body[data-theme="light"] .li-open:hover,
-body[data-theme="light"] .kn-chip:hover,
-body[data-theme="light"] .btn-secondary:hover,
-body[data-theme="light"] .recompute-all-btn:hover:not(:disabled) { border-color: var(--coral); }
+body.t-light .li-open:hover,
+body.t-light .kn-chip:hover,
+body.t-light .btn-secondary:hover,
+body.t-light .recompute-all-btn:hover:not(:disabled) { border-color: var(--coral); }
 
 /* Yellow status on cream: #b98a00 as INK is only 2.84:1 — the one status that
    fades on this field. Wherever a yellow background/border/dot already carries
@@ -2303,18 +2338,18 @@ body[data-theme="light"] .recompute-all-btn:hover:not(:disabled) { border-color:
    and yellow keeps its identity as the chip itself. Green/amber/red are
    unchanged. Bare yellow text with no chip to sit on (.li-state, .dd-metric em)
    is left on --yellow — darkening it there would erase the only cue. */
-body[data-theme="light"] .pill-yellow,
-body[data-theme="light"] .state-badge.state-yellow { color: var(--text); }
+body.t-light .pill-yellow,
+body.t-light .state-badge.state-yellow { color: var(--text); }
 
-body[data-theme="light"] .gl-pill[data-st="yellow"] {
+body.t-light .gl-pill[data-st="yellow"] {
   color: var(--text);
   border-color: var(--yellow);
   background: color-mix(in srgb, var(--yellow) 22%, transparent);
 }
 
-body[data-theme="light"] .dd-verdict.status-yellow { color: var(--text); }
+body.t-light .dd-verdict.status-yellow { color: var(--text); }
 /* .dd-verdict i is background:currentColor — pin the dot so it stays yellow */
-body[data-theme="light"] .dd-verdict.status-yellow i { background: var(--yellow); }
+body.t-light .dd-verdict.status-yellow i { background: var(--yellow); }
 
 /* ============================================================
    THEME — NEW YORK  (Manhattan twilight + gold Art Deco + Liberty bronze)
@@ -2422,15 +2457,13 @@ body[data-theme="newyork"] .badge-est {
 /* primary buttons + active nav: gold border on transparent; hover is the
    verdigris secondary state */
 body[data-theme="newyork"] .btn.primary,
-body[data-theme="newyork"] .theme-switch button.active,
-body[data-theme="newyork"] .nav-rail button.active {
+body[data-theme="newyork"] .theme-switch button.active {
   background: transparent;
   color: var(--nyc-gold);
   border-color: var(--nyc-gold);
 }
 body[data-theme="newyork"] .btn.primary:hover,
-body[data-theme="newyork"] .theme-switch button:hover,
-body[data-theme="newyork"] .nav-rail button:hover {
+body[data-theme="newyork"] .theme-switch button:hover {
   color: var(--nyc-verdigris);
   border-color: var(--nyc-verdigris);
 }
@@ -2442,57 +2475,84 @@ body[data-theme="newyork"] a:hover,
 body[data-theme="newyork"] .kn-ask:hover { color: var(--nyc-verdigris); }
 
 /* ============================================================
-   THEME — MARIA  (plum-black + baby pink)
-   A dark theme like Gotham and NYC: it inherits the central --status-*
-   palette untouched, so Yellow↔Amber reads the same here as everywhere.
-   Baby pink #f7b6d2 is the primary accent, #d16a9e its deep companion for
-   hovers/flow lines, blush #ffd9e8 the soft secondary. Against the
-   plum-black field the pink stays soft, and status Red (#ff3b30) sits well
-   clear of it — no scarlet override is needed.
+   THEME — MARIA  (baby pink + white — LIGHT theme)
+   A light theme, structurally a sibling of Miami: warmth comes from blush
+   surfaces and rose accents, never from lightening text (reuses Miami's dark
+   slate #1d2430 / #4c576b). Rose #d16a9e is the STRUCTURAL accent (hairlines,
+   borders, decorative); the interactive accent AS TEXT is the deeper
+   #a84275 (5.26:1 on the surface, 4.68:1 on the page — the darkest rose that
+   still reads pink), mirroring Miami's decorative-gold vs text-gold split.
+   Baby pink #f7b6d2 is the soft secondary (chips/hovers). All Miami
+   light-theme conventions apply — status-marker outline, darkened status-text
+   variants, yellow-pill dark ink, no glow-blur, light map tiles, and here the
+   scan-line + hairlines go rose. Red status #ff3b30 stays unmistakable against
+   the pinks. Every changed text var measured ≥4.5:1 (see PR).
    ============================================================ */
 body[data-theme="maria"] {
-  --maria-pink: #f7b6d2;        /* baby pink — primary accent */
-  --maria-pink-deep: #d16a9e;   /* deep companion — hovers, flow lines */
-  --maria-blush: #ffd9e8;       /* blush — soft secondary */
+  --rose: #d16a9e;                        /* structural rose — hairlines, borders, scan */
+  --maria-blush: #f7b6d2;                 /* baby pink — soft secondary (chips/hovers) */
+  --sun-gold: #d16a9e;                    /* map-stage border etc. reuse Miami's var name → rose */
+  --coral: #d16a9e;                       /* hover borders (Miami's --coral slot) → rose */
+  --hairline-gold: rgba(209,106,158,0.40);/* panel top hairlines → rose (Miami var name) */
+  --scan-accent: #d16a9e;                 /* map scan-line sweep → rose */
 
-  --page-bg: #120a12;
-  --surface: rgba(32, 18, 30, .86);
-  --surface-soft: rgba(41, 23, 38, .82);
-  --line: rgba(247, 182, 210, .20);
-  --line-strong: rgba(247, 182, 210, .46);
-  --text: #f7ebf1;
-  --muted: #bda1b1;
-  --faint: rgba(189, 161, 177, .72);
-  --phosphor: #f7b6d2;
-  --accent: #f7b6d2;
-  --flow-accent: #d16a9e;       /* Signal Flow doc→model lines — deep pink on Maria */
-  --ink-dim: #bda1b1;
-  --eyebrow: #f7b6d2;
+  --page-bg: #fdf7fa;       /* solid fallback; body layers the blush gradient + glow */
+  --surface: #fdf4f8;
+  --surface-soft: #f8e4ee;
+  --line: #ecd3e0;
+  --line-strong: #d9b3c8;
+  --text: #1d2430;
+  --heading: #141a26;
+  --muted: #4c576b;
+  --faint: #5c6678;
+  --phosphor: #a84275;      /* interactive/text accent (deep rose) — active-fill bg + links */
+  --accent: #a84275;
+  --flow-accent: #a84275;   /* Signal Flow doc→model lines — deep rose on Maria */
+  --ink-dim: #4c576b;
+  --eyebrow: #a84275;
 
-  --sector-design: #ffffff;
-  --sector-construction: #9ec5ff;
-  --sector-hybrid: #f7b6d2;
+  /* Status on the blush surface — same treatment as Miami: bright graphic
+     fills stay, get a dark outline; label ink darkens. Measured on #fdf4f8. */
+  --status-outline: rgba(29,36,48,0.55);
+  --status-outline-w: 1.5px;
+  --status-green-text:    #177a3d;   /* 5.01 */
+  --status-yellow-text:   #8a6600;   /* 4.89 */
+  --status-amber-text:    #b35400;   /* 4.65 */
+  --status-red-text:      #c21807;   /* 5.68 */
+  --status-complete-text: #1d6ece;   /* 4.67 */
 
-  --scope-label: #cbb3c2;
+  --sector-design: #1d2430;
+  --sector-construction: #1d4ed8;
+  --sector-hybrid: #a8267e;
 
-  --zone-green: rgba(46,230,107,.18);
-  --zone-amber: rgba(255,140,26,.18);
-  --zone-red: rgba(255,59,48,.20);
-  --zone-crit: rgba(255,59,48,.30);
-  --zone-yellow: rgba(255,224,102,.18);
-  --zone-blue: rgba(78,160,255,.20);
-  --ring-line: rgba(247,182,210,.26);
+  --scope-label: #a9b6c9;   /* labels sit on the fixed dark scope face */
 
-  --grid-opacity: .20;
-  --glass-blur: blur(14px) saturate(140%);
-  --shadow: 0 18px 54px rgba(0,0,0,.6), 0 0 36px rgba(247,182,210,.05);
+  --zone-green: rgba(22,163,74,.30);
+  --zone-amber: rgba(245,158,11,.32);
+  --zone-red: rgba(239,68,68,.30);
+  --zone-crit: rgba(239,68,68,.42);
+  --zone-yellow: rgba(240,192,64,.30);
+  --zone-blue: rgba(78,160,255,.28);
+  --ring-line: rgba(168,66,117,.26);
+
+  --grid-opacity: 0;                        /* no blueprint grid on light */
+  --glass-blur: blur(14px);                 /* no saturate/glow on light */
+  --shadow: 0 14px 40px rgba(158,40,110,.12);/* soft rose shadow */
 }
-/* Baby pink is the lightest accent of any theme, so accent-backed controls
-   take plum ink instead of the shared white (white on #f7b6d2 is ~1.3:1). */
-body[data-theme="maria"] .theme-switch button.active,
-body[data-theme="maria"] .btn.primary,
-body[data-theme="maria"] .nav-rail button.active,
-body[data-theme="maria"] .stage-btn.active { color: #2a0f20; }
+/* Blush page field: soft pink radial glow top-right over the blush gradient,
+   fixed like Miami's sun field so it never bands on scroll. Login too. */
+body[data-theme="maria"],
+body[data-theme="maria"] #lin-login,
+body[data-theme="maria"] #lin-access-denied {
+  background:
+    radial-gradient(circle at 85% -10%, rgba(247,182,210,0.30), transparent 45%),
+    linear-gradient(180deg, #fdf7fa 0%, #fbeef4 55%, #f8e4ee 100%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+/* Maria-specific chrome: rose topbar hairline. (Active-fill controls take
+   white on the deep-rose --phosphor — 5.67:1 — via the shared light rule.) */
+body[data-theme="maria"] .topbar { border-bottom-color: rgba(168,66,117,0.28); }
 
 /* ============================================================
    MOBILE — 640px and below (iPhone SE, 14, 14 Pro Max)
@@ -2740,6 +2800,22 @@ body { overflow-x: hidden; max-width: 100vw; }
 .stage-btn.active { background: var(--phosphor); color: #fff; }
 body[data-theme="newyork"] .stage-btn.active { background: transparent; color: var(--nyc-gold); box-shadow: inset 0 0 0 1px var(--nyc-gold); }
 
+/* Handbook tab bar — mirrors the stage-toggle pill language, distinct class so
+   the Radar/Map handlers never pick it up. Left-aligned above the tab panels. */
+.hb-head { display: flex; align-items: center; justify-content: flex-start; margin: 0 0 18px; }
+.hb-tabs { display: flex; gap: 4px; border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.hb-tab {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .06em;
+  background: transparent; color: var(--muted); border: 0;
+  padding: 6px 16px; border-radius: 999px; cursor: pointer;
+  transition: background .2s, color .2s;
+}
+.hb-tab:hover { color: var(--text); }
+.hb-tab.active { background: var(--phosphor); color: #fff; }
+body[data-theme="newyork"] .hb-tab.active { background: transparent; color: var(--nyc-gold); box-shadow: inset 0 0 0 1px var(--nyc-gold); }
+.hb-panel[hidden] { display: none; }
+.hb-methods-note { margin: 0 0 16px; }
+
 .map-wrap { position: relative; width: 100%; }
 .map-wrap[hidden] { display: none; }
 /* real MapLibre map stage — fills the panel at the former artwork aspect so the
@@ -2780,7 +2856,7 @@ body[data-theme="newyork"] .stage-btn.active { background: transparent; color: v
     color-mix(in srgb, var(--flow-accent) 3%, transparent) 1px,
     transparent 1px, transparent 4px);
 }
-body[data-theme="light"] .map-scan-texture { display: none; }   /* CRT texture is a dark-themes cue */
+body.t-light .map-scan-texture { display: none; }   /* CRT texture is a dark-themes cue */
 /* --scan-accent lets a theme colour the sweep independently of the Signal Flow
    doc→model lines (--flow-accent). Only Miami sets it (coral); Gotham and NYC
    don't declare it, so they fall back to --flow-accent exactly as before. */

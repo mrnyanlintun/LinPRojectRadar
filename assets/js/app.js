@@ -806,7 +806,8 @@
     applyGlFocus();
   }
 
-  /* "No address set" side note — each id opens its Edit info panel */
+  /* "No address set" side note — each id opens that project's inline Manage
+     accordion on the Portfolio list (address is edited there now). */
   function updateNoLocationNote() {
     const note = document.getElementById("map-nolocation");
     if (!note) return;
@@ -817,9 +818,8 @@
         `<button type="button" class="map-noloc-id" data-editloc="${esc(p.id)}">${esc(p.id)}</button>`).join(", ");
       note.querySelectorAll("[data-editloc]").forEach((b) =>
         b.addEventListener("click", () => {
-          showPage("manage");
-          const editBtn = document.querySelector(`#manage-root [data-editinfo="${b.dataset.editloc}"]`);
-          if (editBtn) { editBtn.click(); editBtn.scrollIntoView({ block: "center" }); }
+          showPage("portfolio");
+          if (window.LinIngest && LinIngest.openInlineManage) LinIngest.openInlineManage(b.dataset.editloc);
         }));
     } else {
       note.hidden = true;
@@ -1015,11 +1015,21 @@
           `<span class="li-name">${esc(p.name)}</span>` +
           simChip +
           `<span class="li-state state-${esc(statusKey(p))}"${stateStyle}>${esc(state)}</span>` +
-          `<button class="btn small li-open" data-open="${esc(p.id)}" title="Open project detail">Open →</button>`;
+          `<span class="li-actions">` +
+            `<button class="btn small li-signals" data-signals="${esc(p.id)}" title="Open the signal ledger on the Detail page">Signals</button>` +
+            `<button class="btn small li-manage" data-manage="${esc(p.id)}" title="Edit info, upload, archive, reset — inline">Manage</button>` +
+            `<button class="btn small li-open" data-open="${esc(p.id)}" title="Open project detail">Open →</button>` +
+          `</span>`;
         btn.addEventListener("click", () => { selectProject(p.id); maybeFlyToSelection(p.id); });
-        btn.querySelector(".li-open").addEventListener("click", (e) => {
-          e.stopPropagation();
-          openDetail(p.id);
+        // all three row buttons stop propagation so they never trigger row-select
+        btn.querySelectorAll(".li-signals, .li-manage, .li-open").forEach((b) =>
+          b.addEventListener("click", (e) => e.stopPropagation()));
+        // Signals + Open → both land on Detail (the deep-analysis home; signals in view)
+        btn.querySelector(".li-open").addEventListener("click", () => openDetail(p.id));
+        btn.querySelector(".li-signals").addEventListener("click", () => openDetail(p.id));
+        // Manage → the inline admin accordion directly under this row
+        btn.querySelector(".li-manage").addEventListener("click", () => {
+          if (window.LinIngest && LinIngest.openInlineManage) LinIngest.openInlineManage(p.id);
         });
         li.appendChild(btn);
         ul.appendChild(li);
@@ -1481,6 +1491,10 @@
   /* ---------- theme switch ---------- */
   function applyTheme(theme) {
     document.body.dataset.theme = theme;
+    // Miami and Maria are both LIGHT themes; the shared light-theme component
+    // rules key off this class so both get dark headings, status-marker
+    // outlines, yellow-pill dark ink, light spider axes, etc.
+    document.body.classList.toggle("t-light", theme === "light" || theme === "maria");
     document.querySelectorAll("[data-set-theme]").forEach((b) =>
       b.classList.toggle("active", b.dataset.setTheme === theme)
     );
@@ -1512,7 +1526,18 @@
   }
 
   /* ---------- page navigation ---------- */
+  // Consolidation redirects: the standalone Signals/Manage pages folded into
+  // Portfolio, and Knowledge + About merged into the tabbed Handbook. Old
+  // routes (and deep-links) resolve to their new home; knowledge → Handbook's
+  // Methods tab, about → the About tab.
+  const PAGE_REDIRECT = { modules: "portfolio", manage: "portfolio", knowledge: "handbook", about: "handbook" };
+
   function showPage(page) {
+    if (PAGE_REDIRECT[page]) {
+      if (page === "knowledge") pendingHandbookTab = "methods";
+      if (page === "about") pendingHandbookTab = "about";
+      page = PAGE_REDIRECT[page];
+    }
     document.querySelectorAll(".page").forEach((s) =>
       s.toggleAttribute("hidden", s.dataset.page !== page));
     document.querySelectorAll("[data-nav]").forEach((b) =>
@@ -1522,87 +1547,167 @@
     // (re)render content pages so they reflect the latest portfolio state.
     // Guarded so a single page-render error can never leave navigation half-done.
     try {
-      if (page === "modules" && window.LinModules) LinModules.renderModulesPage();
-      if (page === "knowledge" && window.LinKnowledge) LinKnowledge.renderKnowledgePage();
-      if (page === "manage" && window.LinIngest) LinIngest.renderManagePage();
+      if (page === "portfolio" && window.LinIngest) LinIngest.renderPortfolioAdmin();
+      if (page === "handbook") renderHandbook();
       if (page === "auditor" && window.LinAuditor) LinAuditor.renderAuditorPage();
       if (page === "detail" && window.LinDetail && selectedId) LinDetail.render(selectedId);
     } catch (e) { /* page is already visible; a render hiccup must not block nav */ }
     window.scrollTo({ top: 0 });
   }
 
-  function wireNav() {
-    document.querySelectorAll("[data-nav]").forEach((b) =>
-      b.addEventListener("click", () => {
-        showPage(b.dataset.nav);
-        // click-toggle nav: choosing an item always closes the rail
-        setNavOpen(false);
-      }));
+  /* ---------- Handbook: tabbed About + Methods (Knowledge) ----------
+     Two pill tabs mirror the Radar|Map control (distinct .hb-tab class so the
+     stage handlers don't pick them up). Tab choice persists in sessionStorage;
+     a pending tab (set by an old about/knowledge deep-link) wins once. The
+     Methods tab hosts the whole Knowledge Library, rendered lazily. */
+  const HB_TAB_KEY = "lin-handbook-tab";
+  let pendingHandbookTab = null;
+  let knowledgeRendered = false;
+  function setHandbookTab(tab) {
+    tab = tab === "methods" ? "methods" : "about";
+    document.querySelectorAll(".hb-tab").forEach((b) => {
+      const on = b.dataset.tab === tab;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-selected", String(on));
+    });
+    const ap = document.getElementById("hb-panel-about");
+    const mp = document.getElementById("hb-panel-methods");
+    if (ap) ap.toggleAttribute("hidden", tab !== "about");
+    if (mp) mp.toggleAttribute("hidden", tab !== "methods");
+    if (tab === "methods" && window.LinKnowledge) {
+      // render once; renderKnowledgePage resets its own selected topic each call
+      if (!knowledgeRendered) { LinKnowledge.renderKnowledgePage(); knowledgeRendered = true; }
+    }
+    try { sessionStorage.setItem(HB_TAB_KEY, tab); } catch (e) {}
+  }
+  function renderHandbook() {
+    let tab = pendingHandbookTab;
+    pendingHandbookTab = null;
+    if (!tab) { try { tab = sessionStorage.getItem(HB_TAB_KEY); } catch (e) {} }
+    setHandbookTab(tab || "about");
+  }
+  function wireHandbookTabs() {
+    document.querySelectorAll(".hb-tab").forEach((b) =>
+      b.addEventListener("click", () => setHandbookTab(b.dataset.tab)));
   }
 
-  /* ---------- click-toggle nav rail (no hover behavior, all viewports) ---------- */
+  // Destinations shown on the icon dock (the sole navigation). Each glyph is a
+  // 26px stroke SVG, accent-colored, with a mono label that flies out to the
+  // left on hover. data-nav drives showPage() + the shared .active sync.
+  const DOCK_NAV = [
+    { nav: "portfolio", label: "PORTFOLIO",
+      svg: '<circle cx="13" cy="13" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/>' +
+           '<path d="M13 13 L13 4 A9 9 0 0 1 21 10 Z" fill="currentColor" opacity="0.28"/>' +
+           '<line x1="13" y1="13" x2="13" y2="4" stroke="currentColor" stroke-width="1.4"/>' +
+           '<circle cx="16.5" cy="9" r="1.5" fill="currentColor"/>' +
+           '<circle cx="9.5" cy="16" r="1.5" fill="currentColor"/>' },
+    { nav: "auditor", label: "TECHNICAL AUDITOR",
+      svg: '<path d="M13 3 L21 6 V12 C21 17 17.5 20.5 13 22.5 C8.5 20.5 5 17 5 12 V6 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>' +
+           '<path d="M9.5 12.5 L12 15 L16.5 9.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>' },
+    { nav: "handbook", label: "HANDBOOK",
+      svg: '<path d="M13 6 C11 4.4 8.2 4 5 4 V18.5 C8.2 18.5 11 6.5 13 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>' +
+           '<path d="M13 6 C15 4.4 17.8 4 21 4 V18.5 C17.8 18.5 15 6.5 13 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>' +
+           '<line x1="13" y1="6" x2="13" y2="20" stroke="currentColor" stroke-width="1.5"/>' }
+  ];
+
+  // The emblem menu button's inline SVG IS the shipping design — three bars
+  // whose middle bar is a radar sweep line ending in a blip dot.
+  const MENU_EMBLEM_SVG =
+    '<svg class="menu-emblem-svg" viewBox="0 0 24 24" aria-hidden="true">' +
+      '<path d="M4 7h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+      '<path d="M4 12h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+      '<circle cx="17.4" cy="12" r="1.8" fill="currentColor"/>' +
+      '<path d="M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+    '</svg>';
+
+  // Optional in-place upgrade: if a Gemini menu_emblem.png is added to assets/
+  // later, swap it into every emblem button. Absent today → the SVG ships.
+  function tryEmblemUpgrade() {
+    const img = new Image();
+    img.onload = () => {
+      document.querySelectorAll(".menu-emblem").forEach((b) =>
+        b.innerHTML = '<img src="assets/menu_emblem.png" alt="" class="menu-emblem-img" />');
+    };
+    img.src = "assets/menu_emblem.png";
+  }
+
+  function wireNav() {
+    // Dock buttons are wired in initIconDock; this covers any other [data-nav].
+    document.querySelectorAll("[data-nav]").forEach((b) => {
+      if (b.closest("#icon-dock")) return;
+      b.addEventListener("click", () => { showPage(b.dataset.nav); setNavOpen(false); });
+    });
+  }
+
+  /* ---------- app menu (theme switcher + sign out) ---------- */
   function setNavOpen(open) {
     document.body.classList.toggle("nav-open", open);
-    const t = $("#nav-toggle");
-    if (t) {
-      t.setAttribute("aria-expanded", String(open));
-      t.setAttribute("aria-label", open ? "Close navigation menu" : "Open navigation menu");
-    }
-    // keep the floating cluster's menu button in sync with the header one
-    const f = $(".float-menu");
-    if (f) f.setAttribute("aria-expanded", String(open));
+    document.querySelectorAll(".menu-emblem").forEach((b) => {
+      b.setAttribute("aria-expanded", String(open));
+      b.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+    });
   }
 
-  /* ---------- floating nav cluster ----------
-     Past ~120px of scroll the header (and its hamburger) is gone, so a fixed
-     top-right cluster fades in: a 44px animated logo emblem (click = smooth
-     scroll to top) + a hamburger that drives the SAME setNavOpen() menu as
-     the header button. Fades back out at the top. The radar-sweep rotation
-     is CSS-only and disabled under prefers-reduced-motion (glow stays). */
-  function initFloatingNav() {
-    if (document.getElementById("float-nav")) return;
+  /* ---------- icon dock — the SOLE navigation ----------
+     Fixed to the right edge, vertically centered, ALWAYS visible (subtle 70%
+     at the top, full once scrolled). Top: the animated radar-sweep emblem
+     (scroll-to-top, and its visibility stays scroll-gated). Middle: the three
+     destination icons with left-flyout labels + active notch. Bottom: the
+     emblem menu button, opening the same #app-menu as the header button.
+     On ≤700px it becomes a horizontal bottom bar. */
+  function initIconDock() {
+    if (document.getElementById("icon-dock")) return;
     const el = document.createElement("div");
-    el.id = "float-nav";
-    el.className = "float-nav";
+    el.id = "icon-dock";
+    el.className = "icon-dock";
     el.innerHTML =
-      '<button type="button" class="float-logo" title="Back to top" aria-label="Scroll back to top">' +
+      '<button type="button" class="dock-emblem" title="Back to top" aria-label="Scroll back to top">' +
         '<img src="logo.png" alt="" />' +
-        '<span class="float-logo-sweep" aria-hidden="true"></span>' +
+        '<span class="dock-emblem-sweep" aria-hidden="true"></span>' +
       '</button>' +
-      '<button type="button" class="float-menu" aria-label="Open navigation menu" aria-expanded="false">' +
-        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>' +
+      '<nav class="dock-nav" aria-label="Primary navigation">' +
+        DOCK_NAV.map((d) =>
+          `<button type="button" class="dock-nav-btn" data-nav="${d.nav}" aria-label="${d.label}">` +
+            `<svg class="dock-icon" viewBox="0 0 26 26" aria-hidden="true">${d.svg}</svg>` +
+            `<span class="dock-label">${d.label}</span>` +
+          `</button>`).join("") +
+      '</nav>' +
+      '<button type="button" class="dock-menu menu-emblem" aria-label="Open menu" aria-expanded="false" aria-controls="app-menu">' +
+        MENU_EMBLEM_SVG +
       '</button>';
     document.body.appendChild(el);
-    el.querySelector(".float-logo").addEventListener("click", () =>
-      window.scrollTo({ top: 0, behavior: reduceMotion() ? "auto" : "smooth" }));
-    el.querySelector(".float-menu").addEventListener("click", (e) => {
-      e.stopPropagation(); // don't let the document outside-click handler re-close it
-      setNavOpen(!document.body.classList.contains("nav-open"));
-    });
-    const onScroll = () => {
-      // visibility (not display) so the fade transition runs and hidden
-      // buttons drop out of the tab order / accessibility tree
-      el.classList.toggle("visible", window.scrollY > 120);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-  }
 
-  function wireNavReveal() {
-    const rail = $("#nav-rail");
-    const toggle = $("#nav-toggle");
-    if (toggle) toggle.addEventListener("click", (e) => {
+    el.querySelector(".dock-emblem").addEventListener("click", () =>
+      window.scrollTo({ top: 0, behavior: reduceMotion() ? "auto" : "smooth" }));
+    el.querySelectorAll(".dock-nav-btn").forEach((b) =>
+      b.addEventListener("click", () => { showPage(b.dataset.nav); setNavOpen(false); }));
+    el.querySelector(".dock-menu").addEventListener("click", (e) => {
       e.stopPropagation();
       setNavOpen(!document.body.classList.contains("nav-open"));
     });
-    // outside-click closes the rail (any click not inside the rail or on the toggle)
+
+    // Always visible; the emblem (scroll-to-top) stays scroll-gated, and the
+    // whole dock lifts to full opacity once past the header.
+    const onScroll = () => el.classList.toggle("scrolled", window.scrollY > 120);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    tryEmblemUpgrade();
+  }
+
+  function wireNavReveal() {
+    const menu = $("#app-menu");
+    const headerBtn = $("#menu-btn");
+    if (headerBtn) headerBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setNavOpen(!document.body.classList.contains("nav-open"));
+    });
+    // outside-click closes the menu (anything not inside the menu or a menu button)
     document.addEventListener("click", (e) => {
       if (!document.body.classList.contains("nav-open")) return;
-      if (rail && rail.contains(e.target)) return;
-      if (toggle && toggle.contains(e.target)) return;
+      if (menu && menu.contains(e.target)) return;
+      if (e.target.closest && e.target.closest(".menu-emblem")) return;
       setNavOpen(false);
     });
-    // Escape closes the overlay
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") setNavOpen(false); });
   }
 
@@ -1864,7 +1969,8 @@
 
     wireNav();
     wireNavReveal();
-    initFloatingNav();
+    initIconDock();
+    wireHandbookTabs();
     wireTzSelect();
     startClock();
     // Show the signed-in user's email in the top bar (auth.js / Stage 1).
