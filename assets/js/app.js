@@ -1597,20 +1597,33 @@
   // Destinations shown on the icon dock (the sole navigation). Each glyph is a
   // 26px stroke SVG, accent-colored, with a mono label that flies out to the
   // left on hover. data-nav drives showPage() + the shared .active sync.
+  // Each glyph carries class hooks so CSS/SMIL can animate it (no JS loops):
+  //  · radar  — .radar-sweep wedge rotates around (13,13); .radar-blip pulse.
+  //  · shield — .shield-scan sweeps down on hover; .shield-check draws in
+  //             (pathLength=1 + dashoffset); active = check fully drawn.
+  //  · book   — CLOSED by default (.book-cover over the spine); on hover / focus
+  //             / row-open / active the cover swings open (rotateY on the spine)
+  //             and the two .book-page leaves fade in.
   const DOCK_NAV = [
     { nav: "portfolio", label: "PORTFOLIO",
       svg: '<circle cx="13" cy="13" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/>' +
-           '<path d="M13 13 L13 4 A9 9 0 0 1 21 10 Z" fill="currentColor" opacity="0.28"/>' +
-           '<line x1="13" y1="13" x2="13" y2="4" stroke="currentColor" stroke-width="1.4"/>' +
-           '<circle cx="16.5" cy="9" r="1.5" fill="currentColor"/>' +
-           '<circle cx="9.5" cy="16" r="1.5" fill="currentColor"/>' },
+           '<g class="radar-sweep">' +
+             '<path d="M13 13 L13 4 A9 9 0 0 1 21 10 Z" fill="currentColor" opacity="0.28"/>' +
+             '<line x1="13" y1="13" x2="13" y2="4" stroke="currentColor" stroke-width="1.4"/>' +
+           '</g>' +
+           '<circle class="radar-blip radar-blip-1" cx="16.5" cy="9" r="1.5" fill="currentColor"/>' +
+           '<circle class="radar-blip radar-blip-2" cx="9.5" cy="16" r="1.5" fill="currentColor"/>' },
     { nav: "auditor", label: "TECHNICAL AUDITOR",
-      svg: '<path d="M13 3 L21 6 V12 C21 17 17.5 20.5 13 22.5 C8.5 20.5 5 17 5 12 V6 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>' +
-           '<path d="M9.5 12.5 L12 15 L16.5 9.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>' },
+      svg: '<path class="shield-body" d="M13 3 L21 6 V12 C21 17 17.5 20.5 13 22.5 C8.5 20.5 5 17 5 12 V6 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>' +
+           '<line class="shield-scan" x1="6.5" y1="8" x2="19.5" y2="8" stroke="currentColor" stroke-width="1" opacity="0"/>' +
+           '<path class="shield-check" d="M9.5 12.5 L12 15 L16.5 9.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" pathLength="1"/>' },
     { nav: "handbook", label: "HANDBOOK",
-      svg: '<path d="M13 6 C11 4.4 8.2 4 5 4 V18.5 C8.2 18.5 11 6.5 13 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>' +
-           '<path d="M13 6 C15 4.4 17.8 4 21 4 V18.5 C17.8 18.5 15 6.5 13 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>' +
-           '<line x1="13" y1="6" x2="13" y2="20" stroke="currentColor" stroke-width="1.5"/>' }
+      svg: '<g class="book">' +
+             '<path class="book-page book-page-l" d="M13 7 C11 5.5 8.2 5.1 5.4 5.1 V18.7 C8.2 18.7 11 6.6 13 8.1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>' +
+             '<path class="book-page book-page-r" d="M13 7 C15 5.5 17.8 5.1 20.6 5.1 V18.7 C17.8 18.7 15 6.6 13 8.1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>' +
+             '<line class="book-spine" x1="13" y1="7" x2="13" y2="20" stroke="currentColor" stroke-width="1.5"/>' +
+             '<path class="book-cover" d="M13 6.6 C15 5.1 17.8 4.7 20.6 4.7 V18.3 C17.8 18.3 15 6.6 13 8.1 Z" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>' +
+           '</g>' }
   ];
 
   // The emblem menu button's inline SVG IS the shipping design — three bars
@@ -1892,10 +1905,10 @@
         b.classList.toggle("active", on);
         b.setAttribute("aria-expanded", String(on));
       });
-      // The Portfolio nav icon owns the "portfolio" row but is NOT a trigger
-      // (its .active class marks the current page); keep only its aria in sync.
-      const pf = document.querySelector('.dock-nav-btn[data-nav="portfolio"]');
-      if (pf) pf.setAttribute("aria-expanded", String(curKey === "portfolio"));
+      // The Portfolio and Handbook nav icons own their rows but are NOT triggers
+      // (their .active class marks the current page); keep only their aria in sync.
+      document.querySelectorAll('.dock-nav-btn[data-nav="portfolio"], .dock-nav-btn[data-nav="handbook"]')
+        .forEach((b) => b.setAttribute("aria-expanded", String(curKey === b.dataset.nav)));
     }
     return { open: open, close: close, current: () => curKey };
   })();
@@ -1925,11 +1938,16 @@
   // its existing modal (New Project, Upload) or drawer (Archived, Activity).
   // Archived carries its live count badge (id kept so renderPortfolioAdmin
   // refreshes it while the row is open).
-  // When the portfolio row closes it returns focus to the Portfolio icon; that
-  // would retrigger the icon's focus-to-open handler and reopen the row. This
-  // flag (set via Flyout's onClose, before the refocus) suppresses that reopen
-  // for a short window. Read by wirePortfolioDockIcon's focus handler.
-  let pfSuppressFocusOpen = false;
+  // When a nav-icon row closes it returns focus to that icon, which would
+  // retrigger the icon's focus-to-open handler and reopen the row. This flag
+  // (set via Flyout's onClose, before the refocus) suppresses that reopen for a
+  // short window. Shared by the Portfolio and Handbook icons (only one row is
+  // open at a time, so a single flag is sufficient). Read by wireDockFlyoutIcon.
+  let dockSuppressFocusOpen = false;
+  function suppressDockRefocus() {
+    dockSuppressFocusOpen = true;
+    setTimeout(() => { dockSuppressFocusOpen = false; }, 400);
+  }
   function openPortfolioFlyout(anchor) {
     const A = window.LinIngest;
     const archivedCount = (window.LinStore && LinStore.cachedArchived)
@@ -1941,10 +1959,19 @@
       { label: "Archived", badgeId: "tool-archived-badge", badge: archivedCount, onClick: () => { Flyout.close(); if (A) A.openArchivedDrawer(); } },
       { label: "Activity", onClick: () => { Flyout.close(); if (A) A.openActivityDrawer(); } }
     ];
-    Flyout.open("portfolio", anchor, pills, () => {
-      pfSuppressFocusOpen = true;
-      setTimeout(() => { pfSuppressFocusOpen = false; }, 400);
-    });
+    Flyout.open("portfolio", anchor, pills, suppressDockRefocus);
+  }
+
+  // Handbook fly-out: both pills land on the Handbook page with a tab preselected
+  // (reusing the existing pendingHandbookTab deep-link consumed by renderHandbook).
+  // No separate "Handbook" pill — both pills navigate to the page.
+  function openHandbookFlyout(anchor) {
+    const go = (tab) => { Flyout.close(); pendingHandbookTab = tab; showPage("handbook"); };
+    const pills = [
+      { label: "About the Platform", title: "Handbook — About", onClick: () => go("about") },
+      { label: "Methods & Framework", title: "Handbook — Methods", onClick: () => go("methods") }
+    ];
+    Flyout.open("handbook", anchor, pills, suppressDockRefocus);
   }
 
   window.LinUI = { openModal: openModal, drawer: Drawer, flyout: Flyout, toast: toast };
@@ -1989,17 +2016,22 @@
 
     el.querySelector(".dock-emblem").addEventListener("click", () =>
       window.scrollTo({ top: 0, behavior: reduceMotion() ? "auto" : "smooth" }));
-    // Destination icons navigate on click. Portfolio is special (see below): its
-    // click still navigates on mouse/keyboard, but it also owns the actions row.
+    // Destination icons navigate on click. Portfolio and Handbook are special
+    // (see wireDockFlyoutIcon): they still navigate on mouse/keyboard, but each
+    // also owns a fly-out row. Technical Auditor keeps a plain click-to-navigate
+    // + its label flyout (no sub-destinations).
     el.querySelectorAll(".dock-nav-btn").forEach((b) => {
-      if (b.dataset.nav === "portfolio") return;
+      if (b.dataset.nav === "portfolio" || b.dataset.nav === "handbook") return;
       b.addEventListener("click", () => { showPage(b.dataset.nav); });
     });
     el.querySelector(".dock-menu").addEventListener("click", (e) => {
       e.stopPropagation();
       openThemeFlyout(e.currentTarget);
     });
-    wirePortfolioDockIcon(el.querySelector('.dock-nav-btn[data-nav="portfolio"]'));
+    wireDockFlyoutIcon(el.querySelector('.dock-nav-btn[data-nav="portfolio"]'),
+      "portfolio", openPortfolioFlyout, () => showPage("portfolio"));
+    wireDockFlyoutIcon(el.querySelector('.dock-nav-btn[data-nav="handbook"]'),
+      "handbook", openHandbookFlyout, () => showPage("handbook"));
 
     // Always visible; the emblem (scroll-to-top) stays scroll-gated, and the
     // whole dock lifts to full opacity once past the header.
@@ -2009,25 +2041,26 @@
     tryEmblemUpgrade();
   }
 
-  /* ---------- Portfolio dock icon — navigation AND the actions fly-out ----------
-     The icon keeps its primary job (click → navigate) while owning the actions
-     row. Resolution of the two jobs:
+  /* ---------- dock nav icon that ALSO owns a fly-out row (Portfolio, Handbook) ----------
+     ONE generic path (not per-icon): the icon keeps its primary job (click →
+     navigate) while owning a row. Resolution of the two jobs:
        · Hover (pointer devices) → row flies out; leaving icon+row retracts it.
        · Focus (keyboard) → row appears; focus leaving icon+row retracts it;
          Escape retracts + returns focus to the icon (handled in Flyout).
        · Click on mouse/keyboard → navigate (the row was already open via
-         hover/focus, and its first pill also navigates — self-sufficient).
-       · Touch (no hover) → tap toggles the row; the Portfolio pill navigates.
-     The row's first pill is Portfolio, so nothing depends on the icon's click. */
-  function wirePortfolioDockIcon(btn) {
+         hover/focus, and its pills also navigate — self-sufficient).
+       · Touch (no hover) → tap toggles the row; a pill navigates.
+     `key` is the Flyout key, `openFn(btn)` builds the row, `navFn()` is the
+     icon's click navigation. */
+  function wireDockFlyoutIcon(btn, key, openFn, navFn) {
     if (!btn) return;
     btn.setAttribute("aria-haspopup", "true");
     btn.setAttribute("aria-expanded", "false");
     const canHover = () => !window.matchMedia || window.matchMedia("(hover: hover)").matches;
     let lastPointer = "mouse", lastPointerAt = 0, closeTimer = null;
     const flyoutEl = () => document.querySelector(".dock-flyout");
-    const isOpen = () => Flyout.current() === "portfolio";
-    const openRow = () => { if (!isOpen()) openPortfolioFlyout(btn); btn.setAttribute("aria-expanded", "true"); };
+    const isOpen = () => Flyout.current() === key;
+    const openRow = () => { if (!isOpen()) openFn(btn); btn.setAttribute("aria-expanded", "true"); };
     const cancelClose = () => { if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; } };
     const scheduleClose = () => {
       cancelClose();
@@ -2041,26 +2074,22 @@
     // relatedTarget) so crossing between them never triggers a spurious close.
     btn.addEventListener("mouseenter", () => { if (canHover()) { cancelClose(); openRow(); } });
 
-    // KEYBOARD focus opens (only :focus-visible — so a touch tap or mouse click,
-    // which focus the button without keyboard intent, don't double-fire with the
-    // click handler). The suppress flag skips the reopen when the row's own close
-    // returned focus here. Focus leaving both icon and row closes (below).
+    // KEYBOARD focus opens. The suppress flag skips the reopen when the row's own
+    // close returned focus here. A pointer-driven focus (a tap or click just
+    // moved focus here) is handled by the click/hover paths — only open on
+    // keyboard focus, i.e. no recent pointerdown (focus-visible heuristic).
     btn.addEventListener("focus", () => {
-      if (pfSuppressFocusOpen) return;
-      // pointer-driven focus (a tap or click just moved focus here) is handled by
-      // the click/hover paths; only open on keyboard focus — i.e. no recent
-      // pointerdown on this button. (focus-visible heuristic; robust in all UAs.)
+      if (dockSuppressFocusOpen) return;
       const pointerDriven = (Date.now() - lastPointerAt) < 600;
       if (!pointerDriven) openRow();
     });
-    function onFocusOut(e) {
+    btn.addEventListener("focusout", (e) => {
       if (!isOpen()) return;
       const to = e.relatedTarget;
       const row = flyoutEl();
       if (to && (btn.contains(to) || (row && row.contains(to)))) return;
       Flyout.close(); btn.setAttribute("aria-expanded", "false");
-    }
-    btn.addEventListener("focusout", onFocusOut);
+    });
     document.addEventListener("focusin", (e) => {
       if (!isOpen()) return;
       const row = flyoutEl();
@@ -2076,7 +2105,7 @@
         else openRow();
         return;
       }
-      showPage("portfolio");   // mouse / keyboard keep the icon's primary job
+      navFn();   // mouse / keyboard keep the icon's primary job
     });
 
     // Keep the row hovered without it collapsing when the pointer crosses the gap
@@ -2098,8 +2127,8 @@
 
   /* The header hamburger and the stage toolbar's action buttons are gone: the
      Portfolio dock icon owns the actions row (New Project / Upload modals ·
-     Archived / Activity drawers) and the menu button owns the theme fly-out —
-     both wired in initIconDock. */
+     Archived / Activity drawers), the Handbook icon owns its tab row, and the
+     menu button owns the theme fly-out — all wired in initIconDock. */
 
   /* ---------- "Recompute all signals" button ----------
      Runs the full 94-module set for every ingested project from stored
