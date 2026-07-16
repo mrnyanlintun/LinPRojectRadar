@@ -653,41 +653,9 @@ body.t-light .theme-switch button.active { color: #fff; }
    All colors via theme tokens — works in all three themes.
    ============================================================ */
 
-/* ---------- left navigation rail ---------- */
-.layout { display: grid; grid-template-columns: 168px 1fr; gap: 18px; align-items: start; }
+/* nav is the icon dock (built in app.js); content is full-width */
+.layout { display: block; }
 .content { min-width: 0; }
-
-.nav-rail {
-  position: sticky; top: 14px;
-  display: flex; flex-direction: column; gap: 4px;
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: var(--radius-lg); box-shadow: var(--shadow);
-  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-  padding: 10px;
-}
-.nav-rail button {
-  display: flex; align-items: center; gap: 10px;
-  font-family: var(--font-body); font-size: 13px; font-weight: 600;
-  background: transparent; color: var(--muted);
-  border: 1px solid transparent; border-radius: var(--radius-md);
-  padding: 10px 12px; cursor: pointer; text-align: left;
-  transition: background .2s, color .2s;
-}
-.nav-rail button svg { width: 16px; height: 16px; flex: 0 0 auto; }
-.nav-rail button:hover { color: var(--text); background: var(--surface-soft); }
-.nav-rail button.active { background: var(--phosphor); border-color: var(--phosphor); color: #fff; }
-.nav-rail button:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
-
-/* narrow screens: rail becomes a horizontal strip above the content */
-@media (max-width: 760px) {
-  .layout { grid-template-columns: 1fr; }
-  .nav-rail { position: static; flex-direction: row; flex-wrap: wrap; padding: 8px; }
-  .nav-rail button { padding: 8px 12px; }
-  .nav-rail button span { font-size: 12px; }
-}
-@media (max-width: 420px) {
-  .nav-rail button span { display: none; }   /* icons only at ~360px */
-  .nav-rail button { padding: 9px 11px; }
 }
 
 /* ---------- project detail (drill-down) ---------- */
@@ -1600,41 +1568,41 @@ body.t-light .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .portfolio-below .log-panel { grid-column: 1 / -1; }
 @media (max-width: 940px) { .portfolio-below { grid-template-columns: 1fr; } }
 
-/* ---------- nav rail + theme as a reveal overlay ---------- */
-.layout { display: block; }                 /* nav is an overlay, not a column */
+/* ---------- app menu (theme switcher + sign out) reveal overlay ---------- */
+.layout { display: block; }
 .content { min-width: 0; }
 
-.nav-toggle {
-  display: inline-flex;
-  align-items: center; justify-content: center;
-  width: 44px; height: 44px; flex: 0 0 auto;
+/* Emblem menu button - header + dock foot. Middle bar of the inline SVG is a
+   radar sweep line ending in a blip dot; theme-colored via currentColor. */
+.menu-emblem {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; flex: 0 0 auto; padding: 0;
   background: var(--surface); color: var(--text);
-  border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
-  position: relative;
-}
-.nav-toggle .nav-toggle-icon { width: 24px; height: 24px; }
-.nav-toggle .nav-toggle-icon-close { display: none; }
-body.nav-open .nav-toggle .nav-toggle-icon-open { display: none; }
-body.nav-open .nav-toggle .nav-toggle-icon-close { display: block; }
-.nav-toggle:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
-
-.nav-rail {
-  position: fixed; right: 0; top: 0; z-index: 60;
-  width: 220px; max-height: 100vh; overflow: auto;
-  display: flex; flex-direction: column; gap: 4px;
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  border: 1px solid var(--line); border-radius: 12px; cursor: pointer;
   box-shadow: var(--shadow);
-  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-  padding: 14px 12px;
-  transform: translateX(112%); transition: transform .2s ease;
+  transition: border-color .2s, color .2s, background .2s;
 }
-body.nav-open .nav-rail { transform: translateX(0); }
-.nav-rail .theme-switch { margin-top: 10px; }
+.menu-emblem:hover { border-color: var(--phosphor); color: var(--phosphor); }
+.menu-emblem:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
+.menu-emblem-svg { width: 24px; height: 24px; transition: transform .25s ease; }
+.menu-emblem-img { width: 28px; height: 28px; object-fit: contain; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--phosphor) 45%, transparent)); transition: transform .25s ease; }
+body.nav-open .menu-emblem-svg, body.nav-open .menu-emblem-img { transform: rotate(90deg); }
 
-@media (prefers-reduced-motion: reduce) {
-  .nav-rail { transition: none; }
+.app-menu {
+  position: fixed; right: 14px; top: 70px; z-index: 70;
+  width: 220px; max-width: calc(100vw - 28px);
+  display: flex; flex-direction: column; gap: 12px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow);
+  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  padding: 14px;
+  opacity: 0; visibility: hidden; transform: translateY(-8px);
+  transition: opacity .2s ease, transform .2s ease, visibility .2s;
 }
+body.nav-open .app-menu { opacity: 1; visibility: visible; transform: none; }
+.app-menu-title { font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); margin: 0; }
+.app-menu-signout { align-self: flex-start; }
+@media (prefers-reduced-motion: reduce) { .app-menu { transition: none; } }
 
 /* ---------- Knowledge: impact + Ask-the-AI ---------- */
 .kn-impact { font-size: 13px; line-height: 1.55; color: var(--text); margin: 8px 0 6px; }
@@ -2157,42 +2125,89 @@ body[data-theme="newyork"] .kn-article .collapse-title { font-family: Georgia, "
    buttons are keyboard-reachable with a visible focus ring. The
    chat bubble (assistant) sits bottom-right, so no collision.
    ============================================================ */
-.float-nav {
-  position: fixed; top: 18px; right: 20px; z-index: 60;
-  display: flex; align-items: center; gap: 10px;
-  opacity: 0; visibility: hidden; transform: translateY(-8px);
-  transition: opacity .3s ease, transform .3s ease, visibility .3s;
+/* ---------- icon dock - the sole navigation ----------
+   Fixed to the right edge, vertically centered, ALWAYS visible (subtle at the
+   top, full once scrolled). Emblem (top) scrolls to top; three destination
+   icons with left-flyout labels + an active notch; emblem menu button (foot).
+   <=700px: a horizontal bottom bar. */
+.icon-dock {
+  position: fixed; right: 14px; top: 50%; transform: translateY(-50%); z-index: 60;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 10px 8px; border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  border: 1px solid var(--line); box-shadow: var(--shadow);
+  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  opacity: .7; transition: opacity .3s ease;
 }
-.float-nav.visible { opacity: 1; visibility: visible; transform: none; }
-.float-logo, .float-menu {
-  width: 44px; height: 44px; border-radius: 50%;
-  border: 1px solid rgba(212, 175, 90, .5);
-  background: var(--surface);
-  cursor: pointer; padding: 0;
-  display: inline-flex; align-items: center; justify-content: center;
-  box-shadow: var(--shadow);
+.icon-dock.scrolled { opacity: 1; }
+.icon-dock:hover, .icon-dock:focus-within { opacity: 1; }
+
+.dock-emblem {
+  width: 40px; height: 40px; border-radius: 50%; padding: 0;
+  border: 1px solid var(--line-strong); background: var(--surface); cursor: pointer;
+  position: relative; overflow: hidden;
+  opacity: 0; visibility: hidden; transform: scale(.85);
+  transition: opacity .3s ease, transform .3s ease, visibility .3s, border-color .2s;
 }
-.float-logo { position: relative; overflow: hidden; animation: float-glow 4s ease-in-out infinite; }
-.float-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.float-logo-sweep {
+.icon-dock.scrolled .dock-emblem { opacity: 1; visibility: visible; transform: none; }
+.dock-emblem img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dock-emblem-sweep {
   position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
   background: conic-gradient(from 0deg,
     color-mix(in srgb, var(--phosphor) 25%, transparent) 0deg 90deg,
     transparent 90deg 360deg);
-  animation: float-sweep 8s linear infinite;
+  animation: dock-sweep 8s linear infinite;
 }
-.float-menu { color: var(--text); }
-.float-menu svg { width: 20px; height: 20px; }
-.float-menu:hover, .float-logo:hover { border-color: #d4af5a; }
-.float-logo:focus-visible, .float-menu:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 3px; }
-@keyframes float-sweep { to { transform: rotate(360deg); } }
-@keyframes float-glow {
-  0%, 100% { box-shadow: 0 0 6px color-mix(in srgb, var(--phosphor) 25%, transparent); }
-  50%      { box-shadow: 0 0 16px color-mix(in srgb, var(--phosphor) 50%, transparent); }
+.dock-emblem:hover { border-color: var(--phosphor); }
+.dock-emblem:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 3px; }
+@keyframes dock-sweep { to { transform: rotate(360deg); } }
+
+.dock-nav { display: flex; flex-direction: column; gap: 6px; }
+.dock-nav-btn {
+  position: relative; width: 42px; height: 42px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; color: var(--muted);
+  border: 1px solid transparent; border-radius: 12px; cursor: pointer;
+  transition: color .2s, background .2s, border-color .2s;
 }
-/* reduced motion: static emblem, glow only (no rotation) */
+.dock-icon { width: 26px; height: 26px; }
+.dock-nav-btn:hover { color: var(--phosphor); background: var(--surface-soft); }
+.dock-nav-btn:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
+.dock-nav-btn.active { color: #fff; background: var(--phosphor); border-color: var(--phosphor); }
+.dock-nav-btn.active::before {
+  content: ""; position: absolute; left: -9px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 20px; border-radius: 2px; background: var(--phosphor);
+}
+body[data-theme="newyork"] .dock-nav-btn.active { background: transparent; color: var(--nyc-gold); border-color: var(--nyc-gold); }
+body[data-theme="newyork"] .dock-nav-btn.active::before { background: var(--nyc-gold); }
+
+.dock-label {
+  position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+  white-space: nowrap; pointer-events: none;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; font-weight: 600;
+  color: var(--text); background: var(--surface); border: 1px solid var(--line);
+  padding: 4px 8px; border-radius: 6px; box-shadow: var(--shadow);
+  opacity: 0; transition: opacity .15s ease;
+}
+.dock-nav-btn:hover .dock-label, .dock-nav-btn:focus-visible .dock-label { opacity: 1; }
+
+.dock-menu { width: 40px; height: 40px; border-radius: 12px; }
+.dock-menu .menu-emblem-svg { width: 22px; height: 22px; }
+
 @media (prefers-reduced-motion: reduce) {
-  .float-logo-sweep { animation: none; }
+  .dock-emblem-sweep { animation: none; }
+  .icon-dock, .dock-emblem, .dock-label { transition: none; }
+}
+
+@media (max-width: 700px) {
+  .icon-dock {
+    right: 50%; top: auto; bottom: 12px; transform: translateX(50%);
+    flex-direction: row; align-items: center; gap: 8px; padding: 8px 12px;
+  }
+  .dock-nav { flex-direction: row; gap: 6px; }
+  .dock-nav-btn.active::before { left: 50%; top: auto; bottom: -8px; transform: translateX(-50%); width: 20px; height: 3px; }
+  .dock-label { right: auto; left: 50%; top: auto; bottom: calc(100% + 10px); transform: translateX(-50%); }
+}
 }
 
 /* ============================================================
@@ -2442,15 +2457,13 @@ body[data-theme="newyork"] .badge-est {
 /* primary buttons + active nav: gold border on transparent; hover is the
    verdigris secondary state */
 body[data-theme="newyork"] .btn.primary,
-body[data-theme="newyork"] .theme-switch button.active,
-body[data-theme="newyork"] .nav-rail button.active {
+body[data-theme="newyork"] .theme-switch button.active {
   background: transparent;
   color: var(--nyc-gold);
   border-color: var(--nyc-gold);
 }
 body[data-theme="newyork"] .btn.primary:hover,
-body[data-theme="newyork"] .theme-switch button:hover,
-body[data-theme="newyork"] .nav-rail button:hover {
+body[data-theme="newyork"] .theme-switch button:hover {
   color: var(--nyc-verdigris);
   border-color: var(--nyc-verdigris);
 }

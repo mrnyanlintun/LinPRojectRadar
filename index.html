@@ -326,40 +326,36 @@
         </div>
         <span class="clock" id="tz-clock" aria-label="Current time in selected timezone">--:--:--</span>
         <select id="tz-select" class="tz-select" aria-label="Timezone"></select>
-        <button id="nav-toggle" class="nav-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="nav-rail">
-          <svg class="nav-toggle-icon nav-toggle-icon-open" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          <svg class="nav-toggle-icon nav-toggle-icon-close" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <!-- Emblem menu button (inline SVG is the shipping design: three bars
+             whose middle bar is a radar sweep line ending in a blip dot,
+             theme-colored via currentColor). Opens #app-menu. A Gemini
+             menu_emblem.png, if added later, is swapped in by app.js. -->
+        <button id="menu-btn" class="menu-emblem" aria-label="Open menu" aria-expanded="false" aria-controls="app-menu">
+          <svg class="menu-emblem-svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 7h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M4 12h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="17.4" cy="12" r="1.8" fill="currentColor"/>
+            <path d="M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </button>
       </div>
     </header>
 
-    <div class="layout">
-
-    <nav id="nav-rail" class="nav-rail" aria-label="Site pages and theme">
-      <button data-nav="portfolio" class="active">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="2" fill="currentColor"/><line x1="8" y1="8" x2="13" y2="3.5" stroke="currentColor" stroke-width="1.2"/></svg>
-        <span>Portfolio</span>
-      </button>
-      <button data-nav="auditor">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM10 2v3h3M5 8.5h6M5 11h6M5 6h3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
-        <span>Technical Auditor</span>
-      </button>
-      <button data-nav="handbook">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.2C6.8 2.2 5 2 3 2v11c2 0 3.8.2 5 1.2 1.2-1 3-1.2 5-1.2V2c-2 0-3.8.2-5 1.2zM8 3.2v11" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
-        <span>Handbook</span>
-      </button>
+    <!-- APP MENU — opened by either emblem button (header or dock). The icon
+         dock carries navigation now, so the menu holds only the theme switcher
+         and sign-out. Revealed as a top-right overlay via body.nav-open. -->
+    <div id="app-menu" class="app-menu" role="dialog" aria-label="Menu">
+      <p class="app-menu-title">Theme</p>
       <div class="theme-switch" role="group" aria-label="Visual theme">
         <button data-set-theme="light" title="Miami — always sunny">Miami</button>
         <button data-set-theme="dark" class="active" title="Gotham — deep dark">Gotham</button>
         <button data-set-theme="newyork" title="NYC — aged bronze &amp; gilt">NYC</button>
-        <button data-set-theme="maria" title="Maria — plum-black &amp; baby pink">Maria</button>
+        <button data-set-theme="maria" title="Maria — baby pink &amp; white">Maria</button>
       </div>
-    </nav>
+      <button onclick="LinAuth.logout()" class="btn-secondary app-menu-signout">Sign out</button>
+    </div>
 
+    <div class="layout">
     <main class="content">
 
     <section class="page" data-page="portfolio">
