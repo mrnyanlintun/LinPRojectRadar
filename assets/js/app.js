@@ -1491,6 +1491,10 @@
   /* ---------- theme switch ---------- */
   function applyTheme(theme) {
     document.body.dataset.theme = theme;
+    // Miami and Maria are both LIGHT themes; the shared light-theme component
+    // rules key off this class so both get dark headings, status-marker
+    // outlines, yellow-pill dark ink, light spider axes, etc.
+    document.body.classList.toggle("t-light", theme === "light" || theme === "maria");
     document.querySelectorAll("[data-set-theme]").forEach((b) =>
       b.classList.toggle("active", b.dataset.setTheme === theme)
     );

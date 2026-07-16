@@ -186,10 +186,10 @@ body[data-theme="dark"] {
 
 /* Light headings use the darker --heading ink for max legibility on the warm
    field (component-specific heading overrides above already point at --heading). */
-body[data-theme="light"] h1,
-body[data-theme="light"] h2,
-body[data-theme="light"] h3,
-body[data-theme="light"] .intro h1 { color: var(--heading); }
+body.t-light h1,
+body.t-light h2,
+body.t-light h3,
+body.t-light .intro h1 { color: var(--heading); }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -275,9 +275,9 @@ body::before {
   white-space: nowrap;
 }
 /* cream/gold wash out on the light background — dark ink + bronze initials there */
-body[data-theme="light"] .nav-logo-text { color: var(--heading); }
-body[data-theme="light"] .brand-init { color: var(--gold-text); }
-body[data-theme="light"] .topbar { border-bottom-color: rgba(138, 106, 28, 0.25); }
+body.t-light .nav-logo-text { color: var(--heading); }
+body.t-light .brand-init { color: var(--gold-text); }
+body.t-light .topbar { border-bottom-color: rgba(138, 106, 28, 0.25); }
 @media (max-width: 900px) {
   .nav-logo-img { height: 72px; }
 }
@@ -311,7 +311,7 @@ body[data-theme="light"] .topbar { border-bottom-color: rgba(138, 106, 28, 0.25)
   background: color-mix(in srgb, var(--radar-amber) 12%, transparent);
 }
 
-.theme-switch { display: flex; gap: 4px; border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.theme-switch { display: flex; flex-wrap: wrap; gap: 4px; border: 1px solid var(--line); border-radius: var(--radius-md); padding: 3px; }
 .theme-switch button {
   font-family: var(--font-body); font-size: 12px; font-weight: 600;
   background: transparent; color: var(--muted); border: 0;
@@ -320,7 +320,7 @@ body[data-theme="light"] .topbar { border-bottom-color: rgba(138, 106, 28, 0.25)
 }
 .theme-switch button:hover { color: var(--text); }
 .theme-switch button.active { background: var(--phosphor); color: #fff; }
-body[data-theme="light"] .theme-switch button.active { color: #fff; }
+body.t-light .theme-switch button.active { color: #fff; }
 
 /* ---------- page intro ---------- */
 .intro { margin: 8px 0 22px; }
@@ -1379,7 +1379,7 @@ body[data-theme="light"] .theme-switch button.active { color: #fff; }
 .sw-ring-amber { stroke: var(--status-amber); opacity: .22; }
 .sw-ring-red { stroke: var(--status-red); opacity: .22; }
 .sw-axis { stroke: rgba(255,255,255,0.1); stroke-width: .5; }
-body[data-theme="light"] .sw-axis { stroke: rgba(15,23,42,0.14); }
+body.t-light .sw-axis { stroke: rgba(15,23,42,0.14); }
 .sw-web-current { fill: color-mix(in srgb, var(--status-complete) 15%, transparent); stroke: var(--status-complete); stroke-width: 1.5; }
 .sw-web-prev { fill: none; stroke: rgba(233,162,59,0.4); stroke-width: 1; stroke-dasharray: 4 4; }
 .sw-label { font-family: var(--font-mono); font-size: 9px; fill: var(--faint); dominant-baseline: middle; }
@@ -1405,7 +1405,7 @@ body[data-theme="light"] .sw-axis { stroke: rgba(15,23,42,0.14); }
 /* ---------- 103-module signal web ---------- */
 .sw-mod-svg { max-height: 560px; }
 .sw-ring-outer { stroke: rgba(255,255,255,0.12); }
-body[data-theme="light"] .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
+body.t-light .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .sw-mod-band { fill: none; stroke-width: 13; opacity: .15; stroke-linecap: round; }
 .sw-mod-band-parked { stroke: #64748b; opacity: .15; }
 .sw-mod-band-label { font-family: var(--font-mono); font-size: 8px; fill: #64748b; letter-spacing: .04em; dominant-baseline: middle; }
@@ -2103,12 +2103,12 @@ body.nav-open .nav-rail { transform: translateX(0); }
   font-size: clamp(22px, 2.8vw, 30px); letter-spacing: .01em;
 }
 .kn-h-art .kn-num, .kn-sec-num { color: #d4af5a; }
-body[data-theme="light"] [data-page="knowledge"] .intro h1,
-body[data-theme="light"] .kn-h-art { color: var(--heading); }
+body.t-light [data-page="knowledge"] .intro h1,
+body.t-light .kn-h-art { color: var(--heading); }
 /* light theme: cream/gold wash out — dark ink + bronze, same swap the header brand makes */
-body[data-theme="light"] .kn-h-art .kn-num,
-body[data-theme="light"] .kn-sec-num,
-body[data-theme="light"] .kn-nav-cat-num { color: var(--gold-text); }
+body.t-light .kn-h-art .kn-num,
+body.t-light .kn-sec-num,
+body.t-light .kn-nav-cat-num { color: var(--gold-text); }
 
 /* eyebrows — mono, wide tracking, muted (consistent with app panel headers) */
 .kn-content .eyebrow, .kn-article .eyebrow {
@@ -2146,7 +2146,7 @@ body[data-theme="light"] .kn-nav-cat-num { color: var(--gold-text); }
   font-family: var(--font-display); font-size: 16px; font-weight: 500;
   letter-spacing: 0; text-transform: none; color: #efe3c2;
 }
-body[data-theme="light"] .kn-article .collapse-title { color: var(--text); }
+body.t-light .kn-article .collapse-title { color: var(--text); }
 body[data-theme="newyork"] .kn-article .collapse-title { font-family: Georgia, "Times New Roman", "Hoefler Text", serif; }
 .kn-article .collapse-body { border: 0; border-radius: 0; padding: 2px 2px 18px; }
 
@@ -2212,13 +2212,13 @@ body[data-theme="newyork"] .kn-article .collapse-title { font-family: Georgia, "
   font-family: var(--font-display); font-size: clamp(19px, 2vw, 22px); font-weight: 500;
   color: #efe3c2; margin: 0 0 14px; letter-spacing: .01em;
 }
-body[data-theme="light"] .about-h { color: var(--heading); }
+body.t-light .about-h { color: var(--heading); }
 /* gold brand initials + step numbers echo the header brand-init treatment */
 [data-page="about"] .intro h1 { font-family: var(--font-display); font-weight: 500; color: #efe3c2; }
-body[data-theme="light"] [data-page="about"] .intro h1 { color: var(--heading); }
+body.t-light [data-page="about"] .intro h1 { color: var(--heading); }
 .about-init, .about-step-num { color: #d4af5a; }
-body[data-theme="light"] .about-init,
-body[data-theme="light"] .about-step-num { color: var(--gold-text); }
+body.t-light .about-init,
+body.t-light .about-step-num { color: var(--gold-text); }
 .about-step-num { font-family: var(--font-mono); font-weight: 700; margin-right: 2px; }
 /* mono eyebrow consistent with app panel headers */
 [data-page="about"] .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .25em; color: var(--muted); }
@@ -2304,18 +2304,18 @@ body[data-theme="light"] .about-step-num { color: var(--gold-text); }
    never for small text, which stays on the deep --phosphor (#8a6a1c).
    ============================================================ */
 /* panel top hairlines: sun-gold on Miami (Gotham keeps its #d4af5a) */
-body[data-theme="light"] .kn-content,
-body[data-theme="light"] .kn-nav,
-body[data-theme="light"] .about-section { border-top-color: var(--hairline-gold); }
+body.t-light .kn-content,
+body.t-light .kn-nav,
+body.t-light .about-section { border-top-color: var(--hairline-gold); }
 
 /* map stage: light tiles keep their style; the stage gets a sun-gold edge */
-body[data-theme="light"] #map-gl { border: 1px solid var(--sun-gold); }
+body.t-light #map-gl { border: 1px solid var(--sun-gold); }
 
 /* secondary highlights — coral edges on hover, dark ink stays for the label */
-body[data-theme="light"] .li-open:hover,
-body[data-theme="light"] .kn-chip:hover,
-body[data-theme="light"] .btn-secondary:hover,
-body[data-theme="light"] .recompute-all-btn:hover:not(:disabled) { border-color: var(--coral); }
+body.t-light .li-open:hover,
+body.t-light .kn-chip:hover,
+body.t-light .btn-secondary:hover,
+body.t-light .recompute-all-btn:hover:not(:disabled) { border-color: var(--coral); }
 
 /* Yellow status on cream: #b98a00 as INK is only 2.84:1 — the one status that
    fades on this field. Wherever a yellow background/border/dot already carries
@@ -2323,18 +2323,18 @@ body[data-theme="light"] .recompute-all-btn:hover:not(:disabled) { border-color:
    and yellow keeps its identity as the chip itself. Green/amber/red are
    unchanged. Bare yellow text with no chip to sit on (.li-state, .dd-metric em)
    is left on --yellow — darkening it there would erase the only cue. */
-body[data-theme="light"] .pill-yellow,
-body[data-theme="light"] .state-badge.state-yellow { color: var(--text); }
+body.t-light .pill-yellow,
+body.t-light .state-badge.state-yellow { color: var(--text); }
 
-body[data-theme="light"] .gl-pill[data-st="yellow"] {
+body.t-light .gl-pill[data-st="yellow"] {
   color: var(--text);
   border-color: var(--yellow);
   background: color-mix(in srgb, var(--yellow) 22%, transparent);
 }
 
-body[data-theme="light"] .dd-verdict.status-yellow { color: var(--text); }
+body.t-light .dd-verdict.status-yellow { color: var(--text); }
 /* .dd-verdict i is background:currentColor — pin the dot so it stays yellow */
-body[data-theme="light"] .dd-verdict.status-yellow i { background: var(--yellow); }
+body.t-light .dd-verdict.status-yellow i { background: var(--yellow); }
 
 /* ============================================================
    THEME — NEW YORK  (Manhattan twilight + gold Art Deco + Liberty bronze)
@@ -2462,57 +2462,84 @@ body[data-theme="newyork"] a:hover,
 body[data-theme="newyork"] .kn-ask:hover { color: var(--nyc-verdigris); }
 
 /* ============================================================
-   THEME — MARIA  (plum-black + baby pink)
-   A dark theme like Gotham and NYC: it inherits the central --status-*
-   palette untouched, so Yellow↔Amber reads the same here as everywhere.
-   Baby pink #f7b6d2 is the primary accent, #d16a9e its deep companion for
-   hovers/flow lines, blush #ffd9e8 the soft secondary. Against the
-   plum-black field the pink stays soft, and status Red (#ff3b30) sits well
-   clear of it — no scarlet override is needed.
+   THEME — MARIA  (baby pink + white — LIGHT theme)
+   A light theme, structurally a sibling of Miami: warmth comes from blush
+   surfaces and rose accents, never from lightening text (reuses Miami's dark
+   slate #1d2430 / #4c576b). Rose #d16a9e is the STRUCTURAL accent (hairlines,
+   borders, decorative); the interactive accent AS TEXT is the deeper
+   #a84275 (5.26:1 on the surface, 4.68:1 on the page — the darkest rose that
+   still reads pink), mirroring Miami's decorative-gold vs text-gold split.
+   Baby pink #f7b6d2 is the soft secondary (chips/hovers). All Miami
+   light-theme conventions apply — status-marker outline, darkened status-text
+   variants, yellow-pill dark ink, no glow-blur, light map tiles, and here the
+   scan-line + hairlines go rose. Red status #ff3b30 stays unmistakable against
+   the pinks. Every changed text var measured ≥4.5:1 (see PR).
    ============================================================ */
 body[data-theme="maria"] {
-  --maria-pink: #f7b6d2;        /* baby pink — primary accent */
-  --maria-pink-deep: #d16a9e;   /* deep companion — hovers, flow lines */
-  --maria-blush: #ffd9e8;       /* blush — soft secondary */
+  --rose: #d16a9e;                        /* structural rose — hairlines, borders, scan */
+  --maria-blush: #f7b6d2;                 /* baby pink — soft secondary (chips/hovers) */
+  --sun-gold: #d16a9e;                    /* map-stage border etc. reuse Miami's var name → rose */
+  --coral: #d16a9e;                       /* hover borders (Miami's --coral slot) → rose */
+  --hairline-gold: rgba(209,106,158,0.40);/* panel top hairlines → rose (Miami var name) */
+  --scan-accent: #d16a9e;                 /* map scan-line sweep → rose */
 
-  --page-bg: #120a12;
-  --surface: rgba(32, 18, 30, .86);
-  --surface-soft: rgba(41, 23, 38, .82);
-  --line: rgba(247, 182, 210, .20);
-  --line-strong: rgba(247, 182, 210, .46);
-  --text: #f7ebf1;
-  --muted: #bda1b1;
-  --faint: rgba(189, 161, 177, .72);
-  --phosphor: #f7b6d2;
-  --accent: #f7b6d2;
-  --flow-accent: #d16a9e;       /* Signal Flow doc→model lines — deep pink on Maria */
-  --ink-dim: #bda1b1;
-  --eyebrow: #f7b6d2;
+  --page-bg: #fdf7fa;       /* solid fallback; body layers the blush gradient + glow */
+  --surface: #fdf4f8;
+  --surface-soft: #f8e4ee;
+  --line: #ecd3e0;
+  --line-strong: #d9b3c8;
+  --text: #1d2430;
+  --heading: #141a26;
+  --muted: #4c576b;
+  --faint: #5c6678;
+  --phosphor: #a84275;      /* interactive/text accent (deep rose) — active-fill bg + links */
+  --accent: #a84275;
+  --flow-accent: #a84275;   /* Signal Flow doc→model lines — deep rose on Maria */
+  --ink-dim: #4c576b;
+  --eyebrow: #a84275;
 
-  --sector-design: #ffffff;
-  --sector-construction: #9ec5ff;
-  --sector-hybrid: #f7b6d2;
+  /* Status on the blush surface — same treatment as Miami: bright graphic
+     fills stay, get a dark outline; label ink darkens. Measured on #fdf4f8. */
+  --status-outline: rgba(29,36,48,0.55);
+  --status-outline-w: 1.5px;
+  --status-green-text:    #177a3d;   /* 5.01 */
+  --status-yellow-text:   #8a6600;   /* 4.89 */
+  --status-amber-text:    #b35400;   /* 4.65 */
+  --status-red-text:      #c21807;   /* 5.68 */
+  --status-complete-text: #1d6ece;   /* 4.67 */
 
-  --scope-label: #cbb3c2;
+  --sector-design: #1d2430;
+  --sector-construction: #1d4ed8;
+  --sector-hybrid: #a8267e;
 
-  --zone-green: rgba(46,230,107,.18);
-  --zone-amber: rgba(255,140,26,.18);
-  --zone-red: rgba(255,59,48,.20);
-  --zone-crit: rgba(255,59,48,.30);
-  --zone-yellow: rgba(255,224,102,.18);
-  --zone-blue: rgba(78,160,255,.20);
-  --ring-line: rgba(247,182,210,.26);
+  --scope-label: #a9b6c9;   /* labels sit on the fixed dark scope face */
 
-  --grid-opacity: .20;
-  --glass-blur: blur(14px) saturate(140%);
-  --shadow: 0 18px 54px rgba(0,0,0,.6), 0 0 36px rgba(247,182,210,.05);
+  --zone-green: rgba(22,163,74,.30);
+  --zone-amber: rgba(245,158,11,.32);
+  --zone-red: rgba(239,68,68,.30);
+  --zone-crit: rgba(239,68,68,.42);
+  --zone-yellow: rgba(240,192,64,.30);
+  --zone-blue: rgba(78,160,255,.28);
+  --ring-line: rgba(168,66,117,.26);
+
+  --grid-opacity: 0;                        /* no blueprint grid on light */
+  --glass-blur: blur(14px);                 /* no saturate/glow on light */
+  --shadow: 0 14px 40px rgba(158,40,110,.12);/* soft rose shadow */
 }
-/* Baby pink is the lightest accent of any theme, so accent-backed controls
-   take plum ink instead of the shared white (white on #f7b6d2 is ~1.3:1). */
-body[data-theme="maria"] .theme-switch button.active,
-body[data-theme="maria"] .btn.primary,
-body[data-theme="maria"] .nav-rail button.active,
-body[data-theme="maria"] .stage-btn.active { color: #2a0f20; }
+/* Blush page field: soft pink radial glow top-right over the blush gradient,
+   fixed like Miami's sun field so it never bands on scroll. Login too. */
+body[data-theme="maria"],
+body[data-theme="maria"] #lin-login,
+body[data-theme="maria"] #lin-access-denied {
+  background:
+    radial-gradient(circle at 85% -10%, rgba(247,182,210,0.30), transparent 45%),
+    linear-gradient(180deg, #fdf7fa 0%, #fbeef4 55%, #f8e4ee 100%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+/* Maria-specific chrome: rose topbar hairline. (Active-fill controls take
+   white on the deep-rose --phosphor — 5.67:1 — via the shared light rule.) */
+body[data-theme="maria"] .topbar { border-bottom-color: rgba(168,66,117,0.28); }
 
 /* ============================================================
    MOBILE — 640px and below (iPhone SE, 14, 14 Pro Max)
@@ -2773,7 +2800,6 @@ body[data-theme="newyork"] .stage-btn.active { background: transparent; color: v
 .hb-tab:hover { color: var(--text); }
 .hb-tab.active { background: var(--phosphor); color: #fff; }
 body[data-theme="newyork"] .hb-tab.active { background: transparent; color: var(--nyc-gold); box-shadow: inset 0 0 0 1px var(--nyc-gold); }
-body[data-theme="maria"] .hb-tab.active { color: #2a0f20; }
 .hb-panel[hidden] { display: none; }
 .hb-methods-note { margin: 0 0 16px; }
 
@@ -2817,7 +2843,7 @@ body[data-theme="maria"] .hb-tab.active { color: #2a0f20; }
     color-mix(in srgb, var(--flow-accent) 3%, transparent) 1px,
     transparent 1px, transparent 4px);
 }
-body[data-theme="light"] .map-scan-texture { display: none; }   /* CRT texture is a dark-themes cue */
+body.t-light .map-scan-texture { display: none; }   /* CRT texture is a dark-themes cue */
 /* --scan-accent lets a theme colour the sweep independently of the Signal Flow
    doc→model lines (--flow-accent). Only Miami sets it (coral); Gotham and NYC
    don't declare it, so they fall back to --flow-accent exactly as before. */
