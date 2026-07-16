@@ -35,7 +35,7 @@
   <!-- Google Identity Services — Stage 1 OAuth sign-in (see assets/js/auth.js) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
-<body data-theme="dark">
+<body data-theme="newyork">
   <!-- NYC backdrop (visible only when data-theme="newyork"; CSS-gated).
        Aged bronze-and-gilt Manhattan silhouette: a twilight teal-to-bronze
        sky over Lower/Midtown towers — the Empire State (setback tower + mast)
@@ -328,9 +328,9 @@
         <select id="tz-select" class="tz-select" aria-label="Timezone"></select>
         <!-- Emblem menu button (inline SVG is the shipping design: three bars
              whose middle bar is a radar sweep line ending in a blip dot,
-             theme-colored via currentColor). Opens #app-menu. A Gemini
-             menu_emblem.png, if added later, is swapped in by app.js. -->
-        <button id="menu-btn" class="menu-emblem" aria-label="Open menu" aria-expanded="false" aria-controls="app-menu">
+             theme-colored via currentColor). Opens the menu drawer (theme +
+             sign out). A Gemini menu_emblem.png, if added, is swapped in by app.js. -->
+        <button id="menu-btn" class="menu-emblem" aria-label="Open menu" aria-expanded="false">
           <svg class="menu-emblem-svg" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4 7h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             <path d="M4 12h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -340,20 +340,6 @@
         </button>
       </div>
     </header>
-
-    <!-- APP MENU — opened by either emblem button (header or dock). The icon
-         dock carries navigation now, so the menu holds only the theme switcher
-         and sign-out. Revealed as a top-right overlay via body.nav-open. -->
-    <div id="app-menu" class="app-menu" role="dialog" aria-label="Menu">
-      <p class="app-menu-title">Theme</p>
-      <div class="theme-switch" role="group" aria-label="Visual theme">
-        <button data-set-theme="light" title="Miami — always sunny">Miami</button>
-        <button data-set-theme="dark" class="active" title="Gotham — deep dark">Gotham</button>
-        <button data-set-theme="newyork" title="NYC — aged bronze &amp; gilt">NYC</button>
-        <button data-set-theme="maria" title="Maria — baby pink &amp; white">Maria</button>
-      </div>
-      <button onclick="LinAuth.logout()" class="btn-secondary app-menu-signout">Sign out</button>
-    </div>
 
     <div class="layout">
     <main class="content">
@@ -371,6 +357,15 @@
          the world-map view builds lazily on first switch) -->
     <section class="panel radar-panel radar-panel-wide" aria-label="Project radar scope">
       <div class="stage-head">
+        <!-- Stage toolbar: MODALS for actions to complete (New Project, Upload),
+             DRAWERS for reference consulted alongside the page (Archived, Activity).
+             Wired in app.js; Archived badge count set by renderPortfolioAdmin(). -->
+        <div class="stage-tools" role="group" aria-label="Portfolio actions">
+          <button type="button" id="tool-new" class="stage-tool primary">+ New Project</button>
+          <button type="button" id="tool-upload" class="stage-tool">Upload Documents</button>
+          <button type="button" id="tool-archived" class="stage-tool">Archived<span class="tool-badge" id="tool-archived-badge" hidden></span></button>
+          <button type="button" id="tool-activity" class="stage-tool">Activity</button>
+        </div>
         <div class="stage-toggle" role="group" aria-label="Portfolio view">
           <button type="button" class="stage-btn active" data-view="radar">Radar</button>
           <button type="button" class="stage-btn" data-view="map">Map</button>
@@ -416,12 +411,10 @@
       </div>
     </section>
 
-    <!-- Consolidated admin: everything the standalone Manage page used to do —
-         Create, Upload, Archived (Restore), Recent Activity — as collapsed
-         sections below the list. Per-project Edit/Populate/Archive/Reset are
-         inline accordions on the list rows above. Rendered by
-         LinIngest.renderPortfolioAdmin(). -->
-    <div id="portfolio-admin"></div>
+    <!-- Admin is launched from the stage toolbar: New Project + Upload open
+         MODALS; Archived + Activity open DRAWERS. Per-project Edit/Populate/
+         Archive/Reset are inline accordions on the list rows above. So the
+         Portfolio body is just stage + toolbar + project list — nothing else. -->
 
     </section><!-- /page portfolio -->
 
