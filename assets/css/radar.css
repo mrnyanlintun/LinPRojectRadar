@@ -2320,33 +2320,25 @@ body[data-theme="newyork"] .dock-nav-btn.active::before { background: var(--nyc-
 .dock-menu { width: 40px; height: 40px; border-radius: 12px; }
 .dock-menu .menu-emblem-svg { width: 22px; height: 22px; }
 
-/* Dedicated actions button (portfolio-scoped) — opens the actions fly-out.
-   Same footprint / interaction language as a dock nav button. */
-.dock-actions {
-  position: relative; width: 42px; height: 42px; padding: 0;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: transparent; color: var(--muted);
-  border: 1px solid transparent; border-radius: 12px; cursor: pointer;
-  transition: color .2s, background .2s, border-color .2s;
-}
-.dock-actions[hidden] { display: none; }
-.dock-actions:hover { color: var(--phosphor); background: var(--surface-soft); }
-.dock-actions:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
-.dock-actions.active { color: var(--phosphor); border-color: var(--phosphor); }
-.dock-actions-svg { width: 24px; height: 24px; }
-.dock-actions-badge { position: absolute; top: -3px; right: -3px; }
+/* The Portfolio dock icon owns the actions fly-out, so its plain mono label
+   flyout is suppressed (the pill row replaces it). Auditor / Handbook keep
+   their simple label flyouts. */
+.dock-nav-btn[data-nav="portfolio"] .dock-label { display: none; }
 
-/* ---------- dock fly-out: an UNBOXED row of pills (§3 theme, §4 actions) ----------
+/* ---------- dock fly-out: an UNBOXED row of pills (theme + Portfolio) ----------
    Fixed, anchored by its RIGHT edge just left of the triggering dock button and
    centered on it (translateY -50%). No container chrome — each .flyout-pill is
    its own pill. Pills slide in from the right + fade, staggered 30ms apart
    (--fly-delay set per pill in JS); retract reverses. Sign out (.sep) is the
-   last pill, gap-separated. Reduced-motion → fade only, no slide/stagger. */
+   last pill, gap-separated. On the mobile bottom bar the row extends UPWARD
+   (.flyout-up). Reduced-motion → fade only, no slide/stagger. */
 .dock-flyout {
   position: fixed; z-index: 61; transform: translateY(-50%);
   display: flex; flex-direction: row; align-items: center; gap: 8px;
+  padding-right: 12px;                 /* visual gap to the icon; keeps hover area continuous */
   pointer-events: none;
 }
+.dock-flyout.flyout-up { padding-right: 0; padding-bottom: 12px; }
 .dock-flyout.open { pointer-events: auto; }
 .flyout-pill {
   font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .04em;
@@ -2368,12 +2360,22 @@ body[data-theme="newyork"] .flyout-pill.primary { background: transparent; color
 body.t-light .flyout-pill.primary { color: #fff; }
 .flyout-pill.sep { margin-left: 14px; }         /* visual gap before Sign out */
 
+/* mobile bottom bar: the row stacks UPWARD from the icon, centered */
+.dock-flyout.flyout-up {
+  flex-direction: column-reverse; align-items: center; transform: translateX(-50%);
+}
+.dock-flyout.flyout-up .flyout-pill { transform: translateY(14px); }
+.dock-flyout.flyout-up.open .flyout-pill { transform: translateY(0); }
+.dock-flyout.flyout-up .flyout-pill.sep { margin-left: 0; margin-top: 14px; }
+
 @media (prefers-reduced-motion: reduce) {
   .dock-emblem-sweep { animation: none; }
   .icon-dock, .dock-emblem, .dock-label { transition: none; }
   /* fade only — no slide, no stagger */
-  .flyout-pill { transform: none; transition: opacity .12s ease, color .2s, border-color .2s, background .2s; transition-delay: 0ms; }
-  .dock-flyout.open .flyout-pill { transform: none; }
+  .flyout-pill,
+  .dock-flyout.flyout-up .flyout-pill { transform: none; transition: opacity .12s ease, color .2s, border-color .2s, background .2s; transition-delay: 0ms; }
+  .dock-flyout.open .flyout-pill,
+  .dock-flyout.flyout-up.open .flyout-pill { transform: none; }
 }
 
 @media (max-width: 700px) {

@@ -1545,9 +1545,6 @@
       s.toggleAttribute("hidden", s.dataset.page !== page));
     document.querySelectorAll("[data-nav]").forEach((b) =>
       b.classList.toggle("active", b.dataset.nav === page));
-    // the dock's actions fly-out button is portfolio-scoped — hide it elsewhere
-    const dockActions = document.querySelector(".dock-actions");
-    if (dockActions) dockActions.hidden = (page !== "portfolio");
     // the pinned map card is fixed-positioned — never leave it over another page
     if (page !== "portfolio") hideMapCard();
     // (re)render content pages so they reflect the latest portfolio state.
@@ -1624,14 +1621,6 @@
       '<path d="M4 12h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
       '<circle cx="17.4" cy="12" r="1.8" fill="currentColor"/>' +
       '<path d="M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
-    '</svg>';
-
-  // The dock "actions" button glyph — a plus in a rounded square, marking the
-  // Portfolio actions fly-out (New Project / Upload / Archived / Activity).
-  const DOCK_ACTIONS_SVG =
-    '<svg class="dock-actions-svg" viewBox="0 0 24 24" aria-hidden="true">' +
-      '<rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"/>' +
-      '<path d="M12 8.5v7M8.5 12h7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>' +
     '</svg>';
 
   // Optional in-place upgrade: if a Gemini menu_emblem.png is added to assets/
@@ -1808,7 +1797,7 @@
      open at a time — opening another replaces it (theme and actions are
      mutually exclusive). Reduced-motion → appear without slide/stagger (CSS). */
   const Flyout = (function () {
-    let el = null, curKey = null, anchorEl = null, lastFocus = null;
+    let el = null, curKey = null, anchorEl = null, lastFocus = null, onCloseCb = null;
     function ensure() {
       if (el) return;
       el = document.createElement("div");
@@ -1831,14 +1820,33 @@
     function reposition() {
       if (!curKey || !anchorEl) return;
       const r = anchorEl.getBoundingClientRect();
-      el.style.top = (r.top + r.height / 2) + "px";       // vertical center of the button
-      el.style.right = (window.innerWidth - r.left + 12) + "px";  // right edge just left of it
+      const mobile = window.matchMedia && window.matchMedia("(max-width: 700px)").matches;
+      if (mobile) {
+        // mobile bottom bar: extend UPWARD from the icon, centered horizontally.
+        // Bottom touches the icon (visual gap comes from padding) so hover intent
+        // isn't broken by a dead gap between the icon and the row.
+        el.classList.add("flyout-up");
+        el.style.left = (r.left + r.width / 2) + "px";
+        el.style.bottom = (window.innerHeight - r.top) + "px";
+        el.style.top = ""; el.style.right = "";
+      } else {
+        // desktop right-edge dock: extend LEFT, centered on the button. Right edge
+        // meets the button's left edge (padding supplies the visual gap) so the
+        // hover area is continuous from icon to pills.
+        el.classList.remove("flyout-up");
+        el.style.top = (r.top + r.height / 2) + "px";
+        el.style.right = (window.innerWidth - r.left) + "px";
+        el.style.left = ""; el.style.bottom = "";
+      }
     }
-    function open(key, anchor, pills) {
+    function open(key, anchor, pills, onClose) {
       ensure();
       if (curKey === key) { close(); return; }            // toggle
+      onCloseCb = null;                                   // suppress prior row's onClose
       curKey = key; anchorEl = anchor; lastFocus = document.activeElement;
+      onCloseCb = onClose || null;
       el.setAttribute("aria-label", key === "theme" ? "Visual theme" : "Portfolio actions");
+      el.dataset.flyoutKey = key;
       el.innerHTML = "";
       const n = pills.length;
       pills.forEach((p, i) => {
@@ -1848,6 +1856,14 @@
           (p.active ? " active" : "") + (p.sep ? " sep" : "");
         b.textContent = p.label;
         if (p.title) b.title = p.title;
+        if (p.badgeId || p.badge != null) {
+          const bd = document.createElement("span");
+          bd.className = "tool-badge";
+          if (p.badgeId) bd.id = p.badgeId;
+          const cnt = p.badge != null ? p.badge : 0;
+          if (cnt > 0) bd.textContent = String(cnt); else bd.hidden = true;
+          b.appendChild(bd);
+        }
         // stagger outward from the button: rightmost (nearest) extends first
         b.style.setProperty("--fly-delay", ((n - 1 - i) * 30) + "ms");
         b.addEventListener("click", () => { if (p.onClick) p.onClick(b); });
@@ -1864,6 +1880,10 @@
       curKey = null; anchorEl = null;
       el.classList.remove("open");
       syncTriggers();
+      // Fire onClose BEFORE returning focus, so a trigger (e.g. the Portfolio
+      // icon) can suppress its own focus-reopen when we refocus it here.
+      const cb = onCloseCb; onCloseCb = null;
+      if (cb) try { cb(); } catch (e) {}
       if (lastFocus && lastFocus.focus) try { lastFocus.focus(); } catch (e) {}
     }
     function syncTriggers() {
@@ -1872,6 +1892,10 @@
         b.classList.toggle("active", on);
         b.setAttribute("aria-expanded", String(on));
       });
+      // The Portfolio nav icon owns the "portfolio" row but is NOT a trigger
+      // (its .active class marks the current page); keep only its aria in sync.
+      const pf = document.querySelector('.dock-nav-btn[data-nav="portfolio"]');
+      if (pf) pf.setAttribute("aria-expanded", String(curKey === "portfolio"));
     }
     return { open: open, close: close, current: () => curKey };
   })();
@@ -1895,17 +1919,32 @@
     Flyout.open("theme", anchor, pills);
   }
 
-  // Actions fly-out (§4): the four Portfolio actions, each opening its existing
-  // modal (New Project, Upload) or drawer (Archived, Activity).
-  function openActionsFlyout(anchor) {
+  // Portfolio fly-out: the row that extends from the Portfolio dock icon. Its
+  // FIRST pill navigates to the page (so the row is self-sufficient — nothing
+  // depends on the icon's own click), followed by the four actions, each opening
+  // its existing modal (New Project, Upload) or drawer (Archived, Activity).
+  // Archived carries its live count badge (id kept so renderPortfolioAdmin
+  // refreshes it while the row is open).
+  // When the portfolio row closes it returns focus to the Portfolio icon; that
+  // would retrigger the icon's focus-to-open handler and reopen the row. This
+  // flag (set via Flyout's onClose, before the refocus) suppresses that reopen
+  // for a short window. Read by wirePortfolioDockIcon's focus handler.
+  let pfSuppressFocusOpen = false;
+  function openPortfolioFlyout(anchor) {
     const A = window.LinIngest;
+    const archivedCount = (window.LinStore && LinStore.cachedArchived)
+      ? LinStore.cachedArchived().length : 0;
     const pills = [
+      { label: "Portfolio", title: "Go to Portfolio", onClick: () => { Flyout.close(); showPage("portfolio"); } },
       { label: "+ New Project", primary: true, onClick: () => { Flyout.close(); if (A) A.openCreateModal(); } },
       { label: "Upload Documents", onClick: () => { Flyout.close(); if (A) A.openUploadModal(); } },
-      { label: "Archived", onClick: () => { Flyout.close(); if (A) A.openArchivedDrawer(); } },
+      { label: "Archived", badgeId: "tool-archived-badge", badge: archivedCount, onClick: () => { Flyout.close(); if (A) A.openArchivedDrawer(); } },
       { label: "Activity", onClick: () => { Flyout.close(); if (A) A.openActivityDrawer(); } }
     ];
-    Flyout.open("actions", anchor, pills);
+    Flyout.open("portfolio", anchor, pills, () => {
+      pfSuppressFocusOpen = true;
+      setTimeout(() => { pfSuppressFocusOpen = false; }, 400);
+    });
   }
 
   window.LinUI = { openModal: openModal, drawer: Drawer, flyout: Flyout, toast: toast };
@@ -1942,12 +1981,6 @@
             `<span class="dock-label">${d.label}</span>` +
           `</button>`).join("") +
       '</nav>' +
-      '<button type="button" class="dock-actions dock-flyout-trigger" data-flyout="actions"' +
-        ' aria-label="Portfolio actions" aria-expanded="false" aria-haspopup="true"' +
-        ' title="Portfolio actions" hidden>' +
-        DOCK_ACTIONS_SVG +
-        '<span class="tool-badge dock-actions-badge" id="tool-archived-badge" hidden></span>' +
-      '</button>' +
       '<button type="button" class="dock-menu menu-emblem dock-flyout-trigger" data-flyout="theme"' +
         ' aria-label="Theme and account menu" aria-expanded="false" aria-haspopup="true">' +
         MENU_EMBLEM_SVG +
@@ -1956,20 +1989,17 @@
 
     el.querySelector(".dock-emblem").addEventListener("click", () =>
       window.scrollTo({ top: 0, behavior: reduceMotion() ? "auto" : "smooth" }));
-    el.querySelectorAll(".dock-nav-btn").forEach((b) =>
-      b.addEventListener("click", () => { showPage(b.dataset.nav); }));
+    // Destination icons navigate on click. Portfolio is special (see below): its
+    // click still navigates on mouse/keyboard, but it also owns the actions row.
+    el.querySelectorAll(".dock-nav-btn").forEach((b) => {
+      if (b.dataset.nav === "portfolio") return;
+      b.addEventListener("click", () => { showPage(b.dataset.nav); });
+    });
     el.querySelector(".dock-menu").addEventListener("click", (e) => {
       e.stopPropagation();
       openThemeFlyout(e.currentTarget);
     });
-    el.querySelector(".dock-actions").addEventListener("click", (e) => {
-      e.stopPropagation();
-      openActionsFlyout(e.currentTarget);
-    });
-    // actions button is portfolio-scoped; reveal it when Portfolio is active
-    const portfolioActive = !document.querySelector('.page[data-page="portfolio"]')
-      || !document.querySelector('.page[data-page="portfolio"]').hasAttribute("hidden");
-    el.querySelector(".dock-actions").hidden = !portfolioActive;
+    wirePortfolioDockIcon(el.querySelector('.dock-nav-btn[data-nav="portfolio"]'));
 
     // Always visible; the emblem (scroll-to-top) stays scroll-gated, and the
     // whole dock lifts to full opacity once past the header.
@@ -1979,9 +2009,96 @@
     tryEmblemUpgrade();
   }
 
+  /* ---------- Portfolio dock icon — navigation AND the actions fly-out ----------
+     The icon keeps its primary job (click → navigate) while owning the actions
+     row. Resolution of the two jobs:
+       · Hover (pointer devices) → row flies out; leaving icon+row retracts it.
+       · Focus (keyboard) → row appears; focus leaving icon+row retracts it;
+         Escape retracts + returns focus to the icon (handled in Flyout).
+       · Click on mouse/keyboard → navigate (the row was already open via
+         hover/focus, and its first pill also navigates — self-sufficient).
+       · Touch (no hover) → tap toggles the row; the Portfolio pill navigates.
+     The row's first pill is Portfolio, so nothing depends on the icon's click. */
+  function wirePortfolioDockIcon(btn) {
+    if (!btn) return;
+    btn.setAttribute("aria-haspopup", "true");
+    btn.setAttribute("aria-expanded", "false");
+    const canHover = () => !window.matchMedia || window.matchMedia("(hover: hover)").matches;
+    let lastPointer = "mouse", lastPointerAt = 0, closeTimer = null;
+    const flyoutEl = () => document.querySelector(".dock-flyout");
+    const isOpen = () => Flyout.current() === "portfolio";
+    const openRow = () => { if (!isOpen()) openPortfolioFlyout(btn); btn.setAttribute("aria-expanded", "true"); };
+    const cancelClose = () => { if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; } };
+    const scheduleClose = () => {
+      cancelClose();
+      closeTimer = setTimeout(() => { if (isOpen()) Flyout.close(); btn.setAttribute("aria-expanded", "false"); }, 220);
+    };
+
+    btn.addEventListener("pointerdown", (e) => { lastPointer = e.pointerType || "mouse"; lastPointerAt = Date.now(); });
+
+    // Hover opens (pointer devices only). Closing is handled by the document-level
+    // mouseout below, which treats the icon + row as one hover group (via
+    // relatedTarget) so crossing between them never triggers a spurious close.
+    btn.addEventListener("mouseenter", () => { if (canHover()) { cancelClose(); openRow(); } });
+
+    // KEYBOARD focus opens (only :focus-visible — so a touch tap or mouse click,
+    // which focus the button without keyboard intent, don't double-fire with the
+    // click handler). The suppress flag skips the reopen when the row's own close
+    // returned focus here. Focus leaving both icon and row closes (below).
+    btn.addEventListener("focus", () => {
+      if (pfSuppressFocusOpen) return;
+      // pointer-driven focus (a tap or click just moved focus here) is handled by
+      // the click/hover paths; only open on keyboard focus — i.e. no recent
+      // pointerdown on this button. (focus-visible heuristic; robust in all UAs.)
+      const pointerDriven = (Date.now() - lastPointerAt) < 600;
+      if (!pointerDriven) openRow();
+    });
+    function onFocusOut(e) {
+      if (!isOpen()) return;
+      const to = e.relatedTarget;
+      const row = flyoutEl();
+      if (to && (btn.contains(to) || (row && row.contains(to)))) return;
+      Flyout.close(); btn.setAttribute("aria-expanded", "false");
+    }
+    btn.addEventListener("focusout", onFocusOut);
+    document.addEventListener("focusin", (e) => {
+      if (!isOpen()) return;
+      const row = flyoutEl();
+      if (btn.contains(e.target) || (row && row.contains(e.target))) return;
+      Flyout.close(); btn.setAttribute("aria-expanded", "false");
+    });
+
+    // Click: navigate on mouse/keyboard; toggle the row on touch
+    btn.addEventListener("click", (e) => {
+      if (lastPointer === "touch" || lastPointer === "pen") {
+        e.preventDefault(); e.stopPropagation();
+        if (isOpen()) { Flyout.close(); btn.setAttribute("aria-expanded", "false"); }
+        else openRow();
+        return;
+      }
+      showPage("portfolio");   // mouse / keyboard keep the icon's primary job
+    });
+
+    // Keep the row hovered without it collapsing when the pointer crosses the gap
+    document.addEventListener("mouseover", (e) => {
+      if (!isOpen() || !canHover()) return;
+      const row = flyoutEl();
+      if (row && (row.contains(e.target) || btn.contains(e.target))) cancelClose();
+    });
+    document.addEventListener("mouseout", (e) => {
+      if (!isOpen() || !canHover()) return;
+      const row = flyoutEl();
+      const to = e.relatedTarget;
+      if (!row) return;
+      const leaving = (row.contains(e.target) || btn.contains(e.target));
+      const stayingInside = to && (row.contains(to) || btn.contains(to));
+      if (leaving && !stayingInside) scheduleClose();
+    });
+  }
+
   /* The header hamburger and the stage toolbar's action buttons are gone: the
-     icon dock's menu button (theme fly-out) and actions button (New Project /
-     Upload modals · Archived / Activity drawers) are the sole entry points now,
+     Portfolio dock icon owns the actions row (New Project / Upload modals ·
+     Archived / Activity drawers) and the menu button owns the theme fly-out —
      both wired in initIconDock. */
 
   /* ---------- "Recompute all signals" button ----------
