@@ -218,14 +218,9 @@
     box.querySelector(".pe-cancel").addEventListener("click", close);
     box.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); close(); } });
 
-    // Populate / Re-upload → expand the admin Upload section, preselect, scroll.
+    // Populate / Re-upload → open the Upload modal with this project preselected.
     box.querySelector(".pe-populate").addEventListener("click", () => {
-      const section = document.getElementById("section-mg-upload");
-      if (window.toggleSection && section && !section.classList.contains("open")) toggleSection("mg-upload");
-      const sel = document.querySelector("#portfolio-admin .dz-project");
-      if (sel) sel.value = id;
-      const panel = document.getElementById("signals-panel");
-      if (panel) panel.scrollIntoView({ block: "start", behavior: "smooth" });
+      openUploadModal(id);
     });
 
     // Archive
@@ -311,105 +306,117 @@
     box.scrollIntoView({ block: "nearest" });
   }
 
-  /* ---------- Portfolio admin sections (Create / Upload / Archived / Activity)
-     Consolidated from the removed standalone Manage page. The per-project ACTIVE
-     rows are gone — each project's admin now lives inline on its Portfolio list
-     row (openInlineManage). Rendered into #portfolio-admin below the list. */
+  /* ---------- Portfolio admin (Create / Upload / Archived / Activity) ----------
+     Launched from the stage toolbar: Create + Upload are MODALS (actions to
+     complete), Archived + Activity are DRAWERS (reference alongside the page).
+     Per-project admin lives inline on each Portfolio list row (openInlineManage). */
+  /* renderPortfolioAdmin — the admin sections are now modals (Create, Upload)
+     and drawers (Archived, Activity) launched from the stage toolbar. Nothing
+     renders into #portfolio-admin anymore; this only refreshes the toolbar's
+     Archived badge count. Kept as the name app.js + the internal flows call. */
   function renderPortfolioAdmin() {
-    const root = document.getElementById("portfolio-admin");
-    if (!root) return;
-
-    const archived = LinStore.cachedArchived();
-    const cs = window.collapsibleSection || function (id, t, body) { return body; };
-
-    /* CREATE NEW PROJECT — collapsed by default; expands when a PM needs it.
-       The project number is assigned by the PM (no auto-numbering). */
-    const createBody =
-      `<p class="kn-sub">Assign your own project number, then a name and sector. Upload documents to get started.</p>
-       <label class="rationale-label" for="np-id">Project number / code <span class="req">(required)</span></label>
-       <input id="np-id" class="ig-input" maxlength="40" placeholder="e.g. AP-2026-014" />
-       <label class="rationale-label" for="np-name">Project name</label>
-       <input id="np-name" class="ig-input" maxlength="80" placeholder="e.g. Terminal B Expansion" />
-       <label class="rationale-label" for="np-address">Address (optional — located automatically on save)</label>
-       <input id="np-address" class="ig-input" maxlength="160" placeholder="e.g. Terminal B, Austin-Bergstrom Intl Airport" />
-       <label class="rationale-label" for="np-sector">Sector</label>
-       <select id="np-sector" class="ig-input">
-         <option value="design">Design</option>
-         <option value="construction">Construction</option>
-         <option value="hybrid">Hybrid</option>
-       </select>
-       <div class="dc-actions"><button id="np-create" class="btn primary">Create project</button></div>
-       <p id="np-msg" class="kn-sub" aria-live="polite"></p>`;
-
-    /* ARCHIVED PROJECTS — collapsed by default. The empty-state copy lives
-       inside the body so it shows when the user expands the section. */
-    const archivedBody = `<div id="archived-list"><p class="pr-empty">Loading archived projects…</p></div>`;
-
-    /* UPLOAD DOCUMENTS — collapsed by default. Drag-and-drop multi-file ingest:
-       drop any combination, Lin identifies each document type automatically. */
-    const uploadBody =
-      `<p class="kn-sub">Drop one or more documents below. Lin identifies each document type automatically and extracts the signals — no need to label them first.</p>
-       ${LinSignals.dropzoneHtml(null)}
-       <div id="signals-detail" class="ds-detail-wrap"></div>`;
-
-    /* All admin sections collapsed by default — they sit below the live radar +
-       project list, which are the Portfolio's primary content. Per-project
-       actions live inline on the list rows above (openInlineManage). */
-    root.innerHTML =
-      cs("mg-create",   "CREATE NEW PROJECT",  createBody,   false) +
-      cs("mg-archived", "ARCHIVED PROJECTS",   archivedBody, false, archived.length + " project" + (archived.length === 1 ? "" : "s")) +
-      `<div id="signals-panel">` +
-        cs("mg-upload", "UPLOAD DOCUMENTS",    uploadBody,   false) +
-      `</div>` +
-      cs("mg-activity", "RECENT ACTIVITY", `<div id="ingest-log"></div>`, false,
-         ingestLog.length ? ingestLog.length + " event" + (ingestLog.length === 1 ? "" : "s") : "");
-
-    renderLog();
-    // drag-and-drop multi-file ingest (identify → auto-confirm/override → extract);
-    // on each result, render the signals detail panel (extracted / missing / audit).
-    LinSignals.wireDropzone(root.querySelector("#signals-panel"), (id) => {
-      const panel = root.querySelector("#signals-detail");
-      if (panel) LinSignals.renderSignalsPanel(panel, LinStore.getCached(id));
-    });
-
-    document.getElementById("np-create").addEventListener("click", async () => {
-      const id = document.getElementById("np-id").value.trim();
-      const name = document.getElementById("np-name").value.trim();
-      const sector = document.getElementById("np-sector").value;
-      const address = document.getElementById("np-address").value.trim();
-      const msg = document.getElementById("np-msg");
-      const idErr = validateProjectNumber(id);
-      if (idErr) { msg.textContent = idErr; return; }
-      if (name.length < 3) { msg.textContent = "Enter a project name (min 3 characters)."; return; }
-      msg.textContent = address ? "Creating project — locating address…" : "Creating project in the store…";
-      try {
-        const p = await LinStore.createProject({ id, name, sector });
-        // the optional address persists via the normal save flow (the create
-        // endpoint only takes id/name/sector); the backend geocodes on save
-        let outcome = null;
-        if (address) {
-          p.address = address;
-          const saved = await LinStore.saveProject(p);
-          outcome = geocodeOutcome(saved);
-        }
-        logEvent(`Created EMPTY project ${p.id} — ${name} (${SECTOR_LABEL[sector] || sector}); awaiting ingest.`);
-        if (window.LinApp) LinApp.refresh();
-        renderPortfolioAdmin();
-        const msg2 = document.getElementById("np-msg");
-        msg2.textContent = `Created ${p.id} (empty, saved to Drive).` +
-          (outcome ? " " + outcome.text : " Populate its signals to run the models.");
-        msg2.classList.toggle("pe-msg-error", !!(outcome && !outcome.ok));
-      } catch (e) {
-        msg.textContent = "Couldn't create the project: " + ((e && e.message) || "store unreachable") + ".";
-      }
-    });
-
-    // async: load the archived list from the backend and wire Restore
-    loadArchivedList(root);
+    const badge = document.getElementById("tool-archived-badge");
+    if (!badge) return;
+    const n = LinStore.cachedArchived().length;
+    if (n > 0) { badge.textContent = String(n); badge.hidden = false; }
+    else { badge.textContent = ""; badge.hidden = true; }
   }
 
-  async function loadArchivedList(root) {
-    const box = root.querySelector("#archived-list");
+  /* ---------- CREATE — modal dialog (LinUI.openModal) ---------- */
+  function openCreateModal() {
+    if (!window.LinUI) return;
+    LinUI.openModal({
+      title: "New Project",
+      mount: (body, close) => {
+        body.innerHTML =
+          `<p class="kn-sub">Assign your own project number, then a name and sector. Upload documents to get started.</p>
+           <label class="rationale-label" for="np-id">Project number / code <span class="req">(required)</span></label>
+           <input id="np-id" class="ig-input" maxlength="40" placeholder="e.g. AP-2026-014" />
+           <label class="rationale-label" for="np-name">Project name</label>
+           <input id="np-name" class="ig-input" maxlength="80" placeholder="e.g. Terminal B Expansion" />
+           <label class="rationale-label" for="np-address">Address (optional — located automatically on save)</label>
+           <input id="np-address" class="ig-input" maxlength="160" placeholder="e.g. Terminal B, Austin-Bergstrom Intl Airport" />
+           <label class="rationale-label" for="np-sector">Sector</label>
+           <select id="np-sector" class="ig-input">
+             <option value="design">Design</option>
+             <option value="construction">Construction</option>
+             <option value="hybrid">Hybrid</option>
+           </select>
+           <div class="dc-actions"><button id="np-create" class="btn primary">Create project</button></div>
+           <p id="np-msg" class="kn-sub" aria-live="polite"></p>`;
+        body.querySelector("#np-create").addEventListener("click", async () => {
+          const id = body.querySelector("#np-id").value.trim();
+          const name = body.querySelector("#np-name").value.trim();
+          const sector = body.querySelector("#np-sector").value;
+          const address = body.querySelector("#np-address").value.trim();
+          const msg = body.querySelector("#np-msg");
+          msg.classList.remove("pe-msg-error");
+          const idErr = validateProjectNumber(id);
+          if (idErr) { msg.textContent = idErr; return; }
+          if (name.length < 3) { msg.textContent = "Enter a project name (min 3 characters)."; return; }
+          const btn = body.querySelector("#np-create"); btn.disabled = true;
+          msg.textContent = address ? "Creating project — locating address…" : "Creating project in the store…";
+          try {
+            const p = await LinStore.createProject({ id, name, sector });
+            let outcome = null;
+            if (address) { p.address = address; const saved = await LinStore.saveProject(p); outcome = geocodeOutcome(saved); }
+            logEvent(`Created EMPTY project ${p.id} — ${name} (${SECTOR_LABEL[sector] || sector}); awaiting ingest.`);
+            if (window.LinApp) LinApp.refresh();
+            renderPortfolioAdmin();
+            close();
+            if (window.LinUI) LinUI.toast(`Created ${p.id}. ` + (outcome ? outcome.text : "Populate its signals to run the models."), !(outcome && !outcome.ok));
+          } catch (e) {
+            btn.disabled = false;
+            msg.textContent = "Couldn't create the project: " + ((e && e.message) || "store unreachable") + ".";
+            msg.classList.add("pe-msg-error");
+          }
+        });
+      }
+    });
+  }
+
+  /* ---------- UPLOAD — modal dialog (bulk dropzone + selector) ----------
+     preselectId (optional) pre-selects that project in the dropzone selector —
+     used by the inline-row Populate/Re-upload button. The academic-use
+     disclaimer rides along inside LinSignals.dropzoneHtml(). */
+  function openUploadModal(preselectId) {
+    if (!window.LinUI) return;
+    LinUI.openModal({
+      title: "Upload Documents",
+      mount: (body) => {
+        body.innerHTML =
+          `<p class="kn-sub">Drop one or more documents below. Lin identifies each document type automatically and extracts the signals — no need to label them first.</p>
+           <div id="signals-panel">
+             ${LinSignals.dropzoneHtml(null)}
+             <div id="signals-detail" class="ds-detail-wrap"></div>
+           </div>`;
+        const panelWrap = body.querySelector("#signals-panel");
+        LinSignals.wireDropzone(panelWrap, (id) => {
+          const panel = body.querySelector("#signals-detail");
+          if (panel) LinSignals.renderSignalsPanel(panel, LinStore.getCached(id));
+        });
+        if (preselectId) {
+          const sel = body.querySelector(".dz-project");
+          if (sel) sel.value = preselectId;
+        }
+      }
+    });
+  }
+
+  /* ---------- ARCHIVED — right-side drawer (Restore per row) ---------- */
+  function openArchivedDrawer() {
+    if (!window.LinUI) return;
+    LinUI.drawer.open("archived", {
+      title: "Archived Projects", variant: "panel", width: 380,
+      mount: (body) => {
+        body.innerHTML = `<div id="archived-list"><p class="pr-empty">Loading archived projects…</p></div>`;
+        loadArchivedList(body);
+      }
+    });
+  }
+
+  async function loadArchivedList(scope) {
+    const box = scope.querySelector("#archived-list");
     if (!box) return;
     let archived = [];
     try { archived = await LinStore.listArchived(); }
@@ -418,7 +425,6 @@
       ? archived.map((p) =>
           `<div class="pr-row"><span class="pr-code">${esc(p.id)}</span>` +
           `<span class="pr-name">${esc(p.name)} <span class="kn-sub">· ${esc(SECTOR_LABEL[p.sector] || p.sector)}</span></span>` +
-          `<span class="pr-code">Archived</span>` +
           `<button class="btn small" data-restore="${esc(p.id)}">Restore</button></div>`).join("")
       : `<p class="pr-empty">Nothing archived. Archiving moves a project's folder to <span class="mod-mono">00_Archive</span> in Drive.</p>`;
     box.querySelectorAll("[data-restore]").forEach((b) =>
@@ -428,12 +434,22 @@
           logEvent(`RESTORED ${b.dataset.restore}.`);
           if (window.LinApp) LinApp.refresh();
           renderPortfolioAdmin();
+          if (window.LinUI) LinUI.drawer.close();   // restoring closes the drawer + refreshes the list
         } catch (e) { LinStore.banner("Couldn't restore — store unreachable. Retry.", "warn"); }
       }));
+  }
+
+  /* ---------- ACTIVITY — right-side drawer (Recent Activity log) ---------- */
+  function openActivityDrawer() {
+    if (!window.LinUI) return;
+    LinUI.drawer.open("activity", {
+      title: "Recent Activity", variant: "panel", width: 380,
+      mount: (body) => { body.innerHTML = `<div id="ingest-log"></div>`; renderLog(); }
+    });
   }
 
   // Phase 2 seam kept for API compatibility; store.js already hydrates.
   function mergeUserProjects() {}
 
-  window.LinIngest = { mergeUserProjects, renderPortfolioAdmin, openInlineManage, renderScopedIngest, populateSignals, INGEST_RULES };
+  window.LinIngest = { mergeUserProjects, renderPortfolioAdmin, openInlineManage, openCreateModal, openUploadModal, openArchivedDrawer, openActivityDrawer, renderScopedIngest, populateSignals, INGEST_RULES };
 })();

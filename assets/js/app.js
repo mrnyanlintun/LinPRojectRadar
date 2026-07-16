@@ -1533,6 +1533,8 @@
   const PAGE_REDIRECT = { modules: "portfolio", manage: "portfolio", knowledge: "handbook", about: "handbook" };
 
   function showPage(page) {
+    // navigating closes any open drawer (menu / archived / activity)
+    try { if (window.LinUI && LinUI.drawer) LinUI.drawer.close(); } catch (e) {}
     if (PAGE_REDIRECT[page]) {
       if (page === "knowledge") pendingHandbookTab = "methods";
       if (page === "about") pendingHandbookTab = "about";
@@ -1631,20 +1633,190 @@
     img.src = "assets/menu_emblem.png";
   }
 
+  /* ---------- themes offered in the switcher ----------
+     Gotham ("dark") is archived: renders if forced, but not offered here and
+     not the default. Default is NYC — the remaining dark theme. */
+  const DEFAULT_THEME = "newyork";
+  const OFFERED_THEMES = ["light", "newyork", "maria"];
+  const THEME_META = [
+    { key: "light",   label: "Miami", title: "Miami — always sunny" },
+    { key: "newyork", label: "NYC",   title: "NYC — aged bronze & gilt" },
+    { key: "maria",   label: "Maria", title: "Maria — baby pink & white" }
+  ];
+
+  /* ============================================================
+     LinUI — shared overlay infrastructure.
+       · openModal(): a centered <dialog>-style modal (reuses the .ds-modal
+         chrome) with focus trap, Escape, backdrop-click, first-field autofocus.
+         For actions that must be COMPLETED (Create, Upload).
+       · Drawer: ONE right-side drawer, reused for the menu, Archived and
+         Activity. Slides in (translateX + fade), notch touches the dock, focus
+         trapped, Escape / click-outside / toggle / navigation close it, only one
+         open at a time. Reduced-motion → fade only (CSS-driven).
+       · toast(): brief inline confirmation.
+     ============================================================ */
+  function focusableIn(el) {
+    return Array.prototype.slice.call(el.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter((n) => n.offsetParent !== null || n === document.activeElement);
+  }
+  function trapTab(e, container) {
+    if (e.key !== "Tab") return;
+    const f = focusableIn(container);
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+
+  function toast(text, ok) {
+    let t = document.getElementById("lin-toast");
+    if (!t) { t = document.createElement("div"); t.id = "lin-toast"; t.className = "lin-toast"; t.setAttribute("role", "status"); document.body.appendChild(t); }
+    t.textContent = text;
+    t.classList.toggle("toast-error", ok === false);
+    t.classList.add("show");
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove("show"), 4000);
+  }
+
+  function openModal(opts) {
+    const back = document.createElement("div");
+    back.className = "app-modal-backdrop";
+    back.innerHTML =
+      '<div class="app-modal" role="dialog" aria-modal="true" aria-label="' + esc(opts.title || "Dialog") + '">' +
+        '<button type="button" class="app-modal-x" aria-label="Close">×</button>' +
+        '<h2 class="app-modal-title">' + esc(opts.title || "") + '</h2>' +
+        '<div class="app-modal-body"></div>' +
+      '</div>';
+    document.body.appendChild(back);
+    const panel = back.querySelector(".app-modal");
+    const body = back.querySelector(".app-modal-body");
+    const lastFocus = document.activeElement;
+    let closed = false;
+    function close() {
+      if (closed) return; closed = true;
+      document.removeEventListener("keydown", onKey, true);
+      back.classList.remove("open");
+      const done = () => back.remove();
+      if (reduceMotion()) done(); else setTimeout(done, 160);
+      if (lastFocus && lastFocus.focus) try { lastFocus.focus(); } catch (e) {}
+      if (opts.onClose) opts.onClose();
+    }
+    function onKey(e) {
+      if (e.key === "Escape") { e.preventDefault(); close(); }
+      else trapTab(e, panel);
+    }
+    document.addEventListener("keydown", onKey, true);
+    back.addEventListener("mousedown", (e) => { if (e.target === back) close(); });
+    back.querySelector(".app-modal-x").addEventListener("click", close);
+    if (opts.mount) opts.mount(body, close);
+    requestAnimationFrame(() => back.classList.add("open"));
+    const first = panel.querySelector('input, select, textarea, button:not(.app-modal-x)');
+    if (first) try { first.focus(); } catch (e) {}
+    return close;
+  }
+
+  const Drawer = (function () {
+    let root, panel, titleEl, bodyEl, curKey = null, lastFocus = null, onCloseCb = null;
+    function ensure() {
+      if (root) return;
+      root = document.createElement("div");
+      root.className = "drawer-root";
+      root.innerHTML =
+        '<aside class="app-drawer" role="dialog" aria-modal="true" tabindex="-1">' +
+          '<span class="drawer-notch" aria-hidden="true"></span>' +
+          '<div class="drawer-head"><h2 class="drawer-title"></h2>' +
+            '<button type="button" class="drawer-close" aria-label="Close">×</button></div>' +
+          '<div class="drawer-body"></div>' +
+        '</aside>';
+      document.body.appendChild(root);
+      panel = root.querySelector(".app-drawer");
+      titleEl = root.querySelector(".drawer-title");
+      bodyEl = root.querySelector(".drawer-body");
+      root.querySelector(".drawer-close").addEventListener("click", () => close());
+      panel.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") { e.preventDefault(); close(); }
+        else trapTab(e, panel);
+      });
+      // click-outside closes (not on the drawer, a drawer trigger, or an emblem)
+      document.addEventListener("click", (e) => {
+        if (!curKey) return;
+        if (root.contains(e.target)) return;
+        if (e.target.closest && e.target.closest("[data-drawer], .menu-emblem")) return;
+        close();
+      });
+    }
+    function open(key, opts) {
+      ensure();
+      if (curKey === key) { close(); return; }          // toggle
+      onCloseCb = null;                                  // suppress prior onClose UI
+      lastFocus = document.activeElement;
+      curKey = key;
+      panel.setAttribute("aria-label", opts.title || "Panel");
+      panel.dataset.variant = opts.variant || "panel";
+      panel.style.setProperty("--drawer-w", (opts.width || 380) + "px");
+      titleEl.textContent = opts.title || "";
+      bodyEl.innerHTML = "";
+      if (opts.mount) opts.mount(bodyEl);
+      onCloseCb = opts.onClose || null;
+      root.classList.add("open");
+      syncTriggers();
+      const first = focusableIn(panel)[0];
+      if (first) try { first.focus(); } catch (e) {} else panel.focus();
+    }
+    function close() {
+      if (!curKey) return;
+      curKey = null;
+      root.classList.remove("open");
+      const cb = onCloseCb; onCloseCb = null;
+      syncTriggers();
+      if (lastFocus && lastFocus.focus) try { lastFocus.focus(); } catch (e) {}
+      if (cb) cb();
+    }
+    function syncTriggers() {
+      document.body.classList.toggle("drawer-open", !!curKey);
+      document.querySelectorAll("[data-drawer], .menu-emblem").forEach((b) => {
+        const k = b.dataset.drawer || (b.classList.contains("menu-emblem") ? "menu" : null);
+        const on = !!curKey && k === curKey;
+        b.classList.toggle("active", on);
+        b.setAttribute("aria-expanded", String(on));
+      });
+    }
+    return { open: open, close: close, current: () => curKey };
+  })();
+
+  // Menu drawer contents: the theme switcher (Gotham archived) + sign out.
+  function openMenuDrawer() {
+    Drawer.open("menu", {
+      title: "Menu", variant: "menu", width: 208,
+      mount: (body) => {
+        const cur = document.body.dataset.theme;
+        body.innerHTML =
+          '<p class="drawer-subhead">Theme</p>' +
+          '<div class="theme-switch" role="group" aria-label="Visual theme">' +
+            THEME_META.map((t) =>
+              `<button data-set-theme="${t.key}" title="${esc(t.title)}"${t.key === cur ? ' class="active"' : ""}>${esc(t.label)}</button>`).join("") +
+          '</div>' +
+          '<button type="button" class="btn-secondary app-menu-signout">Sign out</button>';
+        body.querySelectorAll("[data-set-theme]").forEach((b) =>
+          b.addEventListener("click", () => {
+            applyTheme(b.dataset.setTheme);
+            body.querySelectorAll("[data-set-theme]").forEach((x) => x.classList.toggle("active", x === b));
+          }));
+        body.querySelector(".app-menu-signout").addEventListener("click", () => {
+          if (window.LinAuth && LinAuth.logout) LinAuth.logout();
+        });
+      }
+    });
+  }
+
+  window.LinUI = { openModal: openModal, drawer: Drawer, toast: toast };
+
   function wireNav() {
     // Dock buttons are wired in initIconDock; this covers any other [data-nav].
     document.querySelectorAll("[data-nav]").forEach((b) => {
       if (b.closest("#icon-dock")) return;
-      b.addEventListener("click", () => { showPage(b.dataset.nav); setNavOpen(false); });
-    });
-  }
-
-  /* ---------- app menu (theme switcher + sign out) ---------- */
-  function setNavOpen(open) {
-    document.body.classList.toggle("nav-open", open);
-    document.querySelectorAll(".menu-emblem").forEach((b) => {
-      b.setAttribute("aria-expanded", String(open));
-      b.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+      b.addEventListener("click", () => { showPage(b.dataset.nav); });
     });
   }
 
@@ -1653,7 +1825,7 @@
      at the top, full once scrolled). Top: the animated radar-sweep emblem
      (scroll-to-top, and its visibility stays scroll-gated). Middle: the three
      destination icons with left-flyout labels + active notch. Bottom: the
-     emblem menu button, opening the same #app-menu as the header button.
+     emblem menu button, opening the same menu drawer as the header button.
      On ≤700px it becomes a horizontal bottom bar. */
   function initIconDock() {
     if (document.getElementById("icon-dock")) return;
@@ -1672,7 +1844,7 @@
             `<span class="dock-label">${d.label}</span>` +
           `</button>`).join("") +
       '</nav>' +
-      '<button type="button" class="dock-menu menu-emblem" aria-label="Open menu" aria-expanded="false" aria-controls="app-menu">' +
+      '<button type="button" class="dock-menu menu-emblem" aria-label="Open menu" aria-expanded="false">' +
         MENU_EMBLEM_SVG +
       '</button>';
     document.body.appendChild(el);
@@ -1680,10 +1852,10 @@
     el.querySelector(".dock-emblem").addEventListener("click", () =>
       window.scrollTo({ top: 0, behavior: reduceMotion() ? "auto" : "smooth" }));
     el.querySelectorAll(".dock-nav-btn").forEach((b) =>
-      b.addEventListener("click", () => { showPage(b.dataset.nav); setNavOpen(false); }));
+      b.addEventListener("click", () => { showPage(b.dataset.nav); }));
     el.querySelector(".dock-menu").addEventListener("click", (e) => {
       e.stopPropagation();
-      setNavOpen(!document.body.classList.contains("nav-open"));
+      openMenuDrawer();
     });
 
     // Always visible; the emblem (scroll-to-top) stays scroll-gated, and the
@@ -1695,20 +1867,19 @@
   }
 
   function wireNavReveal() {
-    const menu = $("#app-menu");
+    // Header emblem opens the same menu drawer as the dock emblem. (Drawer
+    // handles its own Escape / click-outside / focus-trap.)
     const headerBtn = $("#menu-btn");
-    if (headerBtn) headerBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      setNavOpen(!document.body.classList.contains("nav-open"));
-    });
-    // outside-click closes the menu (anything not inside the menu or a menu button)
-    document.addEventListener("click", (e) => {
-      if (!document.body.classList.contains("nav-open")) return;
-      if (menu && menu.contains(e.target)) return;
-      if (e.target.closest && e.target.closest(".menu-emblem")) return;
-      setNavOpen(false);
-    });
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape") setNavOpen(false); });
+    if (headerBtn) headerBtn.addEventListener("click", (e) => { e.stopPropagation(); openMenuDrawer(); });
+  }
+
+  /* ---------- stage toolbar (New Project / Upload modals · Archived / Activity drawers) ---------- */
+  function wireStageToolbar() {
+    const nw = $("#tool-new"), up = $("#tool-upload"), ar = $("#tool-archived"), ac = $("#tool-activity");
+    if (nw) nw.addEventListener("click", () => { if (window.LinIngest) LinIngest.openCreateModal(); });
+    if (up) up.addEventListener("click", () => { if (window.LinIngest) LinIngest.openUploadModal(); });
+    if (ar) { ar.dataset.drawer = "archived"; ar.addEventListener("click", () => { if (window.LinIngest) LinIngest.openArchivedDrawer(); }); }
+    if (ac) { ac.dataset.drawer = "activity"; ac.addEventListener("click", () => { if (window.LinIngest) LinIngest.openActivityDrawer(); }); }
   }
 
   /* ---------- "Recompute all signals" button ----------
@@ -1948,27 +2119,27 @@
 
   /* ---------- init ---------- */
   async function init() {
-    document.querySelectorAll("[data-set-theme]").forEach((b) =>
-      b.addEventListener("click", () => applyTheme(b.dataset.setTheme))
-    );
-    // Three themes — Light / Dark / New York; Dark default. Read both the new
-    // `lin-theme` key and the legacy `lin-radar-theme` key for backwards
-    // compatibility; the old "clean" name maps to Light; the removed
-    // "cyberpunk" theme falls back to Dark.
-    let stored = "dark";
+    // Theme buttons are built inside the menu drawer (wired there); nothing to
+    // bind here at load. Offered themes: Miami (light) · NYC (newyork) · Maria.
+    // Gotham ("dark") is ARCHIVED — still renders if forced via applyTheme, but
+    // no longer offered or used as a default. DEFAULT changed dark → newyork
+    // (the remaining dark theme). A persisted "dark" falls through to the
+    // default; "clean"→light and the removed "cyberpunk"→default as before.
+    let stored = DEFAULT_THEME;
     try {
       stored = localStorage.getItem("lin-theme")
             || localStorage.getItem("lin-radar-theme")
-            || "dark";
+            || DEFAULT_THEME;
     } catch (e) {}
     if (stored === "clean") stored = "light";
-    if (stored === "cyberpunk") stored = "dark";   // theme removed
-    const VALID_THEMES = ["light", "dark", "newyork", "maria"];
-    const saved = VALID_THEMES.includes(stored) ? stored : "dark";
+    if (stored === "cyberpunk") stored = DEFAULT_THEME;   // theme removed
+    if (stored === "dark") stored = DEFAULT_THEME;         // Gotham archived → NYC
+    const saved = OFFERED_THEMES.includes(stored) ? stored : DEFAULT_THEME;
     applyTheme(saved);
 
     wireNav();
     wireNavReveal();
+    wireStageToolbar();
     initIconDock();
     wireHandbookTabs();
     wireTzSelect();
