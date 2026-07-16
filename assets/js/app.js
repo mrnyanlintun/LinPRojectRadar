@@ -1112,14 +1112,14 @@
      for the Portfolio views. Returns null when none have run (graceful
      fallback — nothing is shown). */
   // Total active modules across all categories — the consistent denominator for the sim pill.
-  // Computed once; falls back to 94 (the known active count) if categories aren't loaded yet.
+  // Computed once; falls back to 103 (the known active count) if categories aren't loaded yet.
   function activeModuleTotal() {
     if (window.LIN_CATEGORIES) {
       return window.LIN_CATEGORIES.reduce(function(n, c) {
         return n + (c.modules || []).filter(function(m) { return m.active !== false; }).length;
       }, 0);
     }
-    return 94;
+    return 103;
   }
 
   function simSummary(p) {
@@ -2131,7 +2131,7 @@
      menu button owns the theme fly-out — all wired in initIconDock. */
 
   /* ---------- "Recompute all signals" button ----------
-     Runs the full 94-module set for every ingested project from stored
+     Runs the full 103-module set for every ingested project from stored
      signalInputs — no document re-upload, no extraction API calls.
      Network: only GET (?action=get) and save (?action=save). */
   (function wireRecomputeAll() {

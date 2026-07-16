@@ -2796,6 +2796,196 @@
   }
 
   /* ===========================================================
+     Newly activated modules (were dormant / active:false).
+     Each: read inputs from signalInputs; any required input null →
+     abstain (insufficientData, filtered out of fusion); else compute,
+     band, and emit status_color + evidence_metric citing the numbers.
+     Matched to the registry by method_class.
+     =========================================================== */
+
+  // Cat 2.9 — Resource Loading Index (actual vs planned labor hours)
+  function runResourceLoading(si) {
+    if (!checkInputs(si, ['plannedLaborHours','actualLaborHours']))
+      return insufficientData('Resource_Loading');
+    var planned = num(si.plannedLaborHours, 0), actual = num(si.actualLaborHours, 0);
+    if (planned <= 0) return insufficientData('Resource_Loading', 'Planned labor hours not available');
+    var ratio = actual / planned;
+    var status = (ratio >= 0.90 && ratio <= 1.10) ? 'Green' :
+                 ((ratio >= 0.80 && ratio < 0.90) || (ratio > 1.10 && ratio <= 1.20)) ? 'Yellow' :
+                 ((ratio >= 0.70 && ratio < 0.80) || (ratio > 1.20 && ratio <= 1.35)) ? 'Amber' : 'Red';
+    return {
+      method_class: 'Resource_Loading', status_color: status,
+      load_ratio: round2(ratio),
+      evidence_metric: 'Actual ' + Math.round(actual).toLocaleString() + 'h vs planned ' +
+        Math.round(planned).toLocaleString() + 'h (ratio ' + round2(ratio) + ')'
+    };
+  }
+
+  // Cat 3.4 — Labor Productivity Index (earned-hours rate)
+  function runLaborProductivity(si) {
+    if (!checkInputs(si, ['plannedLaborHours','actualLaborHours','actualPctComplete']))
+      return insufficientData('Labor_Productivity');
+    var planned = num(si.plannedLaborHours, 0), actual = num(si.actualLaborHours, 0);
+    var pct = num(si.actualPctComplete, 0);
+    if (actual <= 0) return insufficientData('Labor_Productivity', 'Actual labor hours not available');
+    var earnedHoursRate = ((pct / 100) * planned) / actual;
+    var status = earnedHoursRate >= 0.95 ? 'Green' :
+                 earnedHoursRate >= 0.85 ? 'Yellow' :
+                 earnedHoursRate >= 0.75 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Labor_Productivity', status_color: status,
+      earned_hours_rate: round2(earnedHoursRate),
+      evidence_metric: 'Earned-hours rate ' + round2(earnedHoursRate) + ' (' + round1(pct) + '% × ' +
+        Math.round(planned).toLocaleString() + 'h planned ÷ ' + Math.round(actual).toLocaleString() + 'h actual)'
+    };
+  }
+
+  // Cat 3.8 — Analogous Estimating Ratio (overrun % vs an analogous reference)
+  function runAnalogousEstimating(si) {
+    if (!checkInputs(si, ['analogousOverrunPct','bac']))
+      return insufficientData('Analogous_Estimating');
+    var pct = num(si.analogousOverrunPct, 0), bac = num(si.bac, 0);
+    var exposure = bac * pct / 100;
+    var status = pct < 3 ? 'Green' : pct < 7 ? 'Yellow' : pct < 12 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Analogous_Estimating', status_color: status,
+      analogous_overrun_pct: round1(pct), bac_exposure: Math.round(exposure),
+      evidence_metric: 'Analogous overrun ' + round1(pct) + '% → ' + money(exposure) + ' BAC exposure'
+    };
+  }
+
+  // Cat 4.4 — NCR Rate (open non-conformance share of issued)
+  function runNCRRate(si) {
+    if (!checkInputs(si, ['ncrIssued','ncrClosed','ncrOpen']))
+      return insufficientData('NCR_Rate');
+    var issued = num(si.ncrIssued, 0), open = num(si.ncrOpen, 0);
+    if (issued === 0) {
+      return {
+        method_class: 'NCR_Rate', status_color: 'Green', open_ratio: 0,
+        evidence_metric: 'No NCRs issued this period'
+      };
+    }
+    var openRatio = open / Math.max(issued, 1);
+    var status = openRatio < 0.15 ? 'Green' :
+                 openRatio < 0.30 ? 'Yellow' :
+                 openRatio < 0.50 ? 'Amber' : 'Red';
+    return {
+      method_class: 'NCR_Rate', status_color: status, open_ratio: round2(openRatio),
+      evidence_metric: open + ' open of ' + issued + ' NCRs issued (open ratio ' + round2(openRatio) + ')'
+    };
+  }
+
+  // Cat 4.9 — Procurement Lead Time Monitor (weighted disruption of long-lead items)
+  function runProcurementLeadTime(si) {
+    if (!checkInputs(si, ['longLeadItemsTotal','longLeadAtRisk','longLeadDelayed']))
+      return insufficientData('Procurement_Lead_Time');
+    var total = num(si.longLeadItemsTotal, 0), atRisk = num(si.longLeadAtRisk, 0),
+        delayed = num(si.longLeadDelayed, 0);
+    var riskRatio = (atRisk + 2 * delayed) / Math.max(total, 1);
+    var status = riskRatio < 0.15 ? 'Green' :
+                 riskRatio < 0.30 ? 'Yellow' :
+                 riskRatio < 0.50 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Procurement_Lead_Time', status_color: status, risk_ratio: round2(riskRatio),
+      evidence_metric: atRisk + ' at-risk + ' + delayed + ' delayed of ' + total +
+        ' long-lead items (weighted disruption ' + round2(riskRatio) + ')'
+    };
+  }
+
+  // Cat 5.6 — Queueing Theory Bottleneck (constrained share of planned activities)
+  function runQueueingBottleneck(si) {
+    if (!checkInputs(si, ['activitiesPlanned','activitiesConstrained']))
+      return insufficientData('Queueing_Bottleneck');
+    var planned = num(si.activitiesPlanned, 0), constrained = num(si.activitiesConstrained, 0);
+    var constraintRatio = constrained / Math.max(planned, 1);
+    var status = constraintRatio < 0.15 ? 'Green' :
+                 constraintRatio < 0.25 ? 'Yellow' :
+                 constraintRatio < 0.40 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Queueing_Bottleneck', status_color: status, constraint_ratio: round2(constraintRatio),
+      evidence_metric: constrained + ' of ' + planned + ' planned activities constrained (queue ratio ' +
+        round2(constraintRatio) + ')'
+    };
+  }
+
+  // Cat 5.7 — Agent-Based Supply Chain (at-risk share of long-lead items — a
+  // different lens from 4.9: raw at-risk share vs 4.9's weighted disruption).
+  function runAgentSupplyChain(si) {
+    if (!checkInputs(si, ['longLeadItemsTotal','longLeadAtRisk']))
+      return insufficientData('Agent_Supply_Chain');
+    var total = num(si.longLeadItemsTotal, 0), atRisk = num(si.longLeadAtRisk, 0);
+    var atRiskRatio = atRisk / Math.max(total, 1);
+    var status = atRiskRatio < 0.10 ? 'Green' :
+                 atRiskRatio < 0.20 ? 'Yellow' :
+                 atRiskRatio < 0.35 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Agent_Supply_Chain', status_color: status, at_risk_ratio: round2(atRiskRatio),
+      evidence_metric: atRisk + ' of ' + total + ' long-lead items at risk (at-risk share ' +
+        round2(atRiskRatio) + ')'
+    };
+  }
+
+  // Cat 9.9 — Contractor Performance Score (worst of three 1–5 ratings)
+  function runContractorPerformance(si) {
+    if (!checkInputs(si, ['overallRating','scheduleRating','costRating']))
+      return insufficientData('Contractor_Performance');
+    var overall = num(si.overallRating, 0), sched = num(si.scheduleRating, 0), cost = num(si.costRating, 0);
+    var minRating = Math.min(overall, sched, cost);
+    var status = minRating >= 4.0 ? 'Green' :
+                 minRating >= 3.5 ? 'Yellow' :
+                 minRating >= 3.0 ? 'Amber' : 'Red';
+    return {
+      method_class: 'Contractor_Performance', status_color: status, min_rating: round1(minRating),
+      evidence_metric: 'Ratings — overall ' + round1(overall) + ', schedule ' + round1(sched) +
+        ', cost ' + round1(cost) + ' (worst ' + round1(minRating) + '/5)'
+    };
+  }
+
+  // Cat 2.7 — Milestone Trend Analysis (forecast slip across dated snapshots).
+  // Backend v10.31 accumulates project.milestoneHistory (each snapshot:
+  // {at, milestones:[{name, baseline, forecast}]}, sorted, max 12), plumbed into
+  // si.milestoneHistory by resolveSimInputs the same way spiHistory/cpiHistory flow.
+  function runMilestoneTrend(si) {
+    var mh = si.milestoneHistory;
+    if (!Array.isArray(mh) || mh.length < 2)
+      return insufficientData('Milestone_Trend', 'Awaiting a second schedule update (2 snapshots needed)');
+    var latest = mh[mh.length - 1], prev = mh[mh.length - 2];
+    var validDate = function (v) { var d = new Date(v); return isNaN(d.getTime()) ? null : d; };
+    var prevByName = {};
+    ((prev && prev.milestones) || []).forEach(function (m) {
+      if (m && m.name && validDate(m.forecast)) prevByName[m.name] = validDate(m.forecast);
+    });
+    var matched = [], worstSlip = -Infinity, worstName = null, sumSlip = 0;
+    ((latest && latest.milestones) || []).forEach(function (m) {
+      if (!m || !m.name) return;
+      var lf = validDate(m.forecast), pf = prevByName[m.name];
+      if (!lf || !pf) return;
+      var slip = Math.round((lf.getTime() - pf.getTime()) / 86400000);
+      matched.push({ name: m.name, slip: slip });
+      sumSlip += slip;
+      if (slip > worstSlip) { worstSlip = slip; worstName = m.name; }
+    });
+    if (!matched.length)
+      return insufficientData('Milestone_Trend', 'Milestone names not comparable across periods');
+    var meanSlip = sumSlip / matched.length;
+    var status = meanSlip <= 0 ? 'Green' :
+                 meanSlip <= 7 ? 'Yellow' :
+                 meanSlip <= 14 ? 'Amber' : 'Red';
+    // One badly slipping milestone must not hide inside the average.
+    if (worstSlip > 21 && (status === 'Green' || status === 'Yellow')) status = 'Amber';
+    var slipStr = function (d) { d = round1(d); return (d >= 0 ? '+' : '') + d + 'd'; };
+    var period = function (s) { return String((s && s.at) || '').substring(0, 7) || '?'; };
+    return {
+      method_class: 'Milestone_Trend', status_color: status,
+      mean_slip_days: round1(meanSlip), worst_slip_days: worstSlip, worst_milestone: worstName,
+      matched_count: matched.length,
+      evidence_metric: matched.length + ' milestone' + (matched.length === 1 ? '' : 's') + ' matched ' +
+        period(prev) + '→' + period(latest) + '; mean slip ' + slipStr(meanSlip) +
+        "; worst '" + worstName + "' " + slipStr(worstSlip)
+    };
+  }
+
+  /* ===========================================================
      runAll — runs the original 13 client-side models PLUS every
      new active Stage-2 module. DST (Module 10) still runs
      separately in signals.js after the core package is assembled.
@@ -2896,7 +3086,19 @@
       function () { return runWhatIfMatrix(si); },
       function () { return runDecisionSensitivity(si); },
       function () { return runParetoFrontier(si); },
-      function () { return runRegretMinimization(si); }
+      function () { return runRegretMinimization(si); },
+
+      // Newly activated dormant modules — 8 arithmetic paths + multi-period
+      // milestone trend. All data-gated: they abstain when their inputs are absent.
+      function () { return runResourceLoading(si); },       // Cat 2.9
+      function () { return runLaborProductivity(si); },     // Cat 3.4
+      function () { return runAnalogousEstimating(si); },   // Cat 3.8
+      function () { return runNCRRate(si); },               // Cat 4.4
+      function () { return runProcurementLeadTime(si); },   // Cat 4.9
+      function () { return runQueueingBottleneck(si); },    // Cat 5.6
+      function () { return runAgentSupplyChain(si); },      // Cat 5.7
+      function () { return runContractorPerformance(si); }, // Cat 9.9
+      function () { return runMilestoneTrend(si); }         // Cat 2.7
     ];
 
     var results = [];
@@ -2949,6 +3151,10 @@
     // Cat 11 — Decision Optimization
     runMultiObjectiveOptimization, runLinearProgramming, runConstraintSatisfaction,
     runWhatIfMatrix, runDecisionSensitivity, runParetoFrontier, runRegretMinimization,
+    // Newly activated dormant modules (8 arithmetic + multi-period milestone trend)
+    runResourceLoading, runLaborProductivity, runAnalogousEstimating, runNCRRate,
+    runProcurementLeadTime, runQueueingBottleneck, runAgentSupplyChain,
+    runContractorPerformance, runMilestoneTrend,
     sampleTriangular
   };
 })();

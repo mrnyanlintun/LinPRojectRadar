@@ -21,8 +21,10 @@
   // non-empty-but-stale array. v2 = the full 89-module rollout; v3 added
   // Cat 10 (Data Integrity) and Cat 11 (Decision Optimization); v4 removes
   // the Cat 12 (Systems Engineering) stubs — 103 modules total; v5 upgrades
-  // RFI_Velocity / Submittal_Rejection to the v10.27 RFI/RFA-log fields.
-  const SIM_MODULE_SET_VERSION = 5;
+  // RFI_Velocity / Submittal_Rejection to the v10.27 RFI/RFA-log fields; v6
+  // activates 9 dormant modules (8 arithmetic paths + multi-period Milestone
+  // Trend) so stale arrays computed before them get rerun.
+  const SIM_MODULE_SET_VERSION = 6;
 
   const esc = (s) => String(s == null ? "" : s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -261,6 +263,12 @@
     if (si.bac == null && evm.bac != null) si.bac = evm.bac;
     const doc = project.signals && project.signals.doc;
     if (si.docRiskScore == null && doc && doc.score != null) si.docRiskScore = doc.score;
+    // Milestone Trend (Cat 2.7) reads dated snapshots the backend accumulates on
+    // project.milestoneHistory. Bridge that project-level series into the module
+    // inputs here, the same way the EVM histories reach the modules via si.
+    if (si.milestoneHistory == null && Array.isArray(project.milestoneHistory)) {
+      si.milestoneHistory = project.milestoneHistory;
+    }
     return si;
   }
 
@@ -765,6 +773,7 @@
       if (!cached.signalInputs) cached.signalInputs = si;
       if (!cached.simulationSignals && simPayload) cached.simulationSignals = simPayload;
       if (project.history) cached.history = project.history;
+      if (project.milestoneHistory) cached.milestoneHistory = project.milestoneHistory;
     }
     return true;
   }
@@ -791,6 +800,7 @@
             if (LIN_PROJECTS[i].simulationSignals) fresh.simulationSignals = LIN_PROJECTS[i].simulationSignals;
           }
           if (!fresh.history && LIN_PROJECTS[i].history) fresh.history = LIN_PROJECTS[i].history;
+          if (!fresh.milestoneHistory && LIN_PROJECTS[i].milestoneHistory) fresh.milestoneHistory = LIN_PROJECTS[i].milestoneHistory;
           LIN_PROJECTS[i] = fresh;
         }
       }
