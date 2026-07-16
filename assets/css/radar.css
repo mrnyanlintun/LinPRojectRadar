@@ -36,11 +36,13 @@
   --accent: #8a6a1c;
   --flow-accent: #3457a8;   /* Signal Flow doc→model lines — slate-blue on Miami */
   --ink-dim: #4c576b;
-  /* Wordmark patina — LIGHT pair (Miami default; Maria inherits via :root).
-     Darkest gold/verdigris that still read gold-and-patina AND clear 4.5:1 on
-     the cream/blush page: gold 4.58, verdigris 5.39 (worst across both themes). */
-  --wm-gold: #8a6a1c;
-  --wm-verdigris: #2f6e63;
+  /* Wordmark — solid two-color (NO gradient). LIGHT pair (Miami default; Maria
+     inherits via :root). Metallic bronze (L/O/G) + oxidized-bronze verdigris
+     (the rest). Darkest pair that still reads bronze-and-patina AND clears
+     4.5:1 on the cream/blush page: bronze 5.34, verdigris 5.39 (worst across
+     both light themes). */
+  --brand-bronze: #8a5a1e;
+  --brand-verdigris: #2f6e63;
   --gold-text: #8a6a1c;
   --eyebrow: #8a6a1c;       /* section eyebrows go sun-gold on Miami (was grey-blue) */
 
@@ -157,9 +159,9 @@ body[data-theme="light"] {
    key. Keep this block. */
 body[data-theme="dark"] {
   --page-bg: #06080f;
-  /* wordmark patina — bright pair (dark theme): gold 11.7:1, verdigris 8.3:1 */
-  --wm-gold: #e3c36e;
-  --wm-verdigris: #63b6a2;
+  /* wordmark solids — bright pair (dark theme): bronze 8.6:1, verdigris 8.0:1 */
+  --brand-bronze: #d9a441;
+  --brand-verdigris: #63b6a2;
   --surface: rgba(11,14,23,.82);
   --surface-soft: rgba(7,9,16,.72);
   --line: #232838;
@@ -272,24 +274,22 @@ body::before {
   filter: drop-shadow(0 0 18px rgba(63, 202, 166, 0.28));
 }
 .brand-lockup { display: flex; flex-direction: column; gap: 2px; }
-/* ---------- Lady-Liberty wordmark (gold → oxidized-bronze patina) ----------
+/* ---------- Lady-Liberty wordmark (solid bronze + oxidized bronze) ----------
    Weathered-copper statuary treatment, IDENTICAL across all themes for brand
-   consistency: the L/O/G initials stay solid gold; the rest of the letters
-   carry a gold→verdigris gradient (background-clip:text — renders cleaner than
-   per-letter spans at this display size). Two var pairs (not theme tints): a
-   BRIGHT pair on the dark themes, a DARKER pair on the light themes so the
-   wordmark clears AA on the cream/blush page. Same gold-and-patina look either
-   way — only the shade shifts for legibility. Ratios reported in the PR. */
+   consistency. SOLID two-color fill — no gradient, no background-clip, no
+   per-letter fade: the L/O/G initials are metallic BRONZE; every other letter
+   is oxidized-bronze VERDIGRIS. Two var pairs (not theme tints): a BRIGHT pair
+   on the dark themes, a DARKER pair on the light themes so both colors clear AA
+   on the cream/blush page. Same bronze-and-patina look either way — only the
+   shade shifts for legibility. Ratios reported in the PR. */
 .nav-logo-text {
   font-family: var(--font-display); font-weight: 800;
   font-size: clamp(34px, 4.2vw, 56px);
   letter-spacing: .02em; line-height: 1.05;
   white-space: nowrap;
-  background: linear-gradient(100deg, var(--wm-gold) 0%, var(--wm-gold) 32%, var(--wm-verdigris) 100%);
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent; color: transparent;
+  color: var(--brand-verdigris);
 }
-.brand-init { -webkit-text-fill-color: var(--wm-gold); color: var(--wm-gold); }
+.brand-init { color: var(--brand-bronze); }
 .brand-tagline {
   font-family: var(--font-mono);
   font-size: 13px;
@@ -1709,19 +1709,6 @@ body.t-light .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 /* ============================================================
    STAGE TOOLBAR — actions beside the Radar|Map toggle.
    ============================================================ */
-.stage-tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.stage-tool {
-  font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .04em;
-  display: inline-flex; align-items: center; gap: 6px;
-  background: transparent; color: var(--muted);
-  border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; cursor: pointer;
-  transition: background .2s, color .2s, border-color .2s;
-}
-.stage-tool:hover { color: var(--text); border-color: var(--phosphor); }
-.stage-tool.primary { background: var(--phosphor); color: #fff; border-color: var(--phosphor); }
-body[data-theme="newyork"] .stage-tool.primary { background: transparent; color: var(--nyc-gold); box-shadow: inset 0 0 0 1px var(--nyc-gold); }
-body.t-light .stage-tool.primary { color: #fff; }
-.stage-tool.active { border-color: var(--phosphor); color: var(--phosphor); }
 .tool-badge {
   font-size: 10px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
   display: inline-flex; align-items: center; justify-content: center;
@@ -2333,9 +2320,60 @@ body[data-theme="newyork"] .dock-nav-btn.active::before { background: var(--nyc-
 .dock-menu { width: 40px; height: 40px; border-radius: 12px; }
 .dock-menu .menu-emblem-svg { width: 22px; height: 22px; }
 
+/* Dedicated actions button (portfolio-scoped) — opens the actions fly-out.
+   Same footprint / interaction language as a dock nav button. */
+.dock-actions {
+  position: relative; width: 42px; height: 42px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; color: var(--muted);
+  border: 1px solid transparent; border-radius: 12px; cursor: pointer;
+  transition: color .2s, background .2s, border-color .2s;
+}
+.dock-actions[hidden] { display: none; }
+.dock-actions:hover { color: var(--phosphor); background: var(--surface-soft); }
+.dock-actions:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
+.dock-actions.active { color: var(--phosphor); border-color: var(--phosphor); }
+.dock-actions-svg { width: 24px; height: 24px; }
+.dock-actions-badge { position: absolute; top: -3px; right: -3px; }
+
+/* ---------- dock fly-out: an UNBOXED row of pills (§3 theme, §4 actions) ----------
+   Fixed, anchored by its RIGHT edge just left of the triggering dock button and
+   centered on it (translateY -50%). No container chrome — each .flyout-pill is
+   its own pill. Pills slide in from the right + fade, staggered 30ms apart
+   (--fly-delay set per pill in JS); retract reverses. Sign out (.sep) is the
+   last pill, gap-separated. Reduced-motion → fade only, no slide/stagger. */
+.dock-flyout {
+  position: fixed; z-index: 61; transform: translateY(-50%);
+  display: flex; flex-direction: row; align-items: center; gap: 8px;
+  pointer-events: none;
+}
+.dock-flyout.open { pointer-events: auto; }
+.flyout-pill {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .04em;
+  white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface); color: var(--muted);
+  border: 1px solid var(--sun-gold, var(--line-strong)); border-radius: 999px;
+  padding: 7px 14px; cursor: pointer; box-shadow: var(--shadow);
+  opacity: 0; transform: translateX(14px);
+  transition: opacity .18s ease, transform .18s ease, color .2s, border-color .2s, background .2s;
+  transition-delay: var(--fly-delay, 0ms);
+}
+.dock-flyout.open .flyout-pill { opacity: 1; transform: translateX(0); }
+.flyout-pill:hover { color: var(--text); border-color: var(--phosphor); }
+.flyout-pill:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
+.flyout-pill.active { border-color: var(--phosphor); color: var(--phosphor); }
+.flyout-pill.primary { background: var(--phosphor); color: #fff; border-color: var(--phosphor); }
+body[data-theme="newyork"] .flyout-pill.primary { background: transparent; color: var(--nyc-gold); box-shadow: inset 0 0 0 1px var(--nyc-gold), var(--shadow); }
+body.t-light .flyout-pill.primary { color: #fff; }
+.flyout-pill.sep { margin-left: 14px; }         /* visual gap before Sign out */
+
 @media (prefers-reduced-motion: reduce) {
   .dock-emblem-sweep { animation: none; }
   .icon-dock, .dock-emblem, .dock-label { transition: none; }
+  /* fade only — no slide, no stagger */
+  .flyout-pill { transform: none; transition: opacity .12s ease, color .2s, border-color .2s, background .2s; transition-delay: 0ms; }
+  .dock-flyout.open .flyout-pill { transform: none; }
 }
 
 @media (max-width: 700px) {
@@ -2494,9 +2532,9 @@ body.t-light .dd-verdict.status-yellow i { background: var(--yellow); }
    THEME — NEW YORK  (Manhattan twilight + gold Art Deco + Liberty bronze)
    ============================================================ */
 body[data-theme="newyork"] {
-  /* wordmark patina — bright pair (dark theme): gold 11.3:1, verdigris 8.1:1 */
-  --wm-gold: #e3c36e;
-  --wm-verdigris: #63b6a2;
+  /* wordmark solids — bright pair (dark theme): bronze 8.6:1, verdigris 8.0:1 */
+  --brand-bronze: #d9a441;
+  --brand-verdigris: #63b6a2;
   /* Gilt-primary monument palette: gold (#d4af5a) is the PRIMARY accent —
      page H1s, brand initials, panel hairlines, primary buttons, active nav,
      badge borders. Verdigris is the SECONDARY accent only — section
@@ -2571,8 +2609,8 @@ body[data-theme="newyork"] .nav-logo-text {
 body[data-theme="newyork"] .intro h1,
 body[data-theme="newyork"] .kn-h-art,
 body[data-theme="newyork"] [data-page="about"] .intro h1 { color: var(--nyc-gold); }
-/* .nav-logo-text keeps NYC's serif font (above) but NOT a flat color — the
-   patina gradient (background-clip:text) owns the wordmark fill in every theme. */
+/* .nav-logo-text keeps NYC's serif font (above) but NOT a theme color — the
+   solid bronze/verdigris vars own the wordmark fill identically in every theme. */
 /* panel top hairlines gold */
 body[data-theme="newyork"] .panel,
 body[data-theme="newyork"] .kn-content,

@@ -1533,8 +1533,9 @@
   const PAGE_REDIRECT = { modules: "portfolio", manage: "portfolio", knowledge: "handbook", about: "handbook" };
 
   function showPage(page) {
-    // navigating closes any open drawer (menu / archived / activity)
+    // navigating closes any open drawer (archived / activity) or dock fly-out
     try { if (window.LinUI && LinUI.drawer) LinUI.drawer.close(); } catch (e) {}
+    try { if (window.LinUI && LinUI.flyout) LinUI.flyout.close(); } catch (e) {}
     if (PAGE_REDIRECT[page]) {
       if (page === "knowledge") pendingHandbookTab = "methods";
       if (page === "about") pendingHandbookTab = "about";
@@ -1544,6 +1545,9 @@
       s.toggleAttribute("hidden", s.dataset.page !== page));
     document.querySelectorAll("[data-nav]").forEach((b) =>
       b.classList.toggle("active", b.dataset.nav === page));
+    // the dock's actions fly-out button is portfolio-scoped — hide it elsewhere
+    const dockActions = document.querySelector(".dock-actions");
+    if (dockActions) dockActions.hidden = (page !== "portfolio");
     // the pinned map card is fixed-positioned — never leave it over another page
     if (page !== "portfolio") hideMapCard();
     // (re)render content pages so they reflect the latest portfolio state.
@@ -1620,6 +1624,14 @@
       '<path d="M4 12h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
       '<circle cx="17.4" cy="12" r="1.8" fill="currentColor"/>' +
       '<path d="M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+    '</svg>';
+
+  // The dock "actions" button glyph — a plus in a rounded square, marking the
+  // Portfolio actions fly-out (New Project / Upload / Archived / Activity).
+  const DOCK_ACTIONS_SVG =
+    '<svg class="dock-actions-svg" viewBox="0 0 24 24" aria-hidden="true">' +
+      '<rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"/>' +
+      '<path d="M12 8.5v7M8.5 12h7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>' +
     '</svg>';
 
   // Optional in-place upgrade: if a Gemini menu_emblem.png is added to assets/
@@ -1785,32 +1797,118 @@
     return { open: open, close: close, current: () => curKey };
   })();
 
-  // Menu drawer contents: the theme switcher (Gotham archived) + sign out.
-  function openMenuDrawer() {
-    Drawer.open("menu", {
-      title: "Menu", variant: "menu", width: 208,
-      mount: (body) => {
-        const cur = document.body.dataset.theme;
-        body.innerHTML =
-          '<p class="drawer-subhead">Theme</p>' +
-          '<div class="theme-switch" role="group" aria-label="Visual theme">' +
-            THEME_META.map((t) =>
-              `<button data-set-theme="${t.key}" title="${esc(t.title)}"${t.key === cur ? ' class="active"' : ""}>${esc(t.label)}</button>`).join("") +
-          '</div>' +
-          '<button type="button" class="btn-secondary app-menu-signout">Sign out</button>';
-        body.querySelectorAll("[data-set-theme]").forEach((b) =>
-          b.addEventListener("click", () => {
-            applyTheme(b.dataset.setTheme);
-            body.querySelectorAll("[data-set-theme]").forEach((x) => x.classList.toggle("active", x === b));
-          }));
-        body.querySelector(".app-menu-signout").addEventListener("click", () => {
-          if (window.LinAuth && LinAuth.logout) LinAuth.logout();
-        });
+  /* ============================================================
+     Flyout — an UNBOXED pill row that extends LEFT from a dock button.
+     Reused by the theme switcher (§3) and the Portfolio actions (§4):
+     parameterized, not duplicated. No enclosing container — each pill
+     carries its own chrome (surface fill, gold hairline, mono label).
+     Pills stagger 30ms apart (outward from the button) as they extend, and
+     retract with the stagger reversed. Escape / click-outside / toggle close
+     it; focus order follows visual order (left→right). Only ONE flyout row is
+     open at a time — opening another replaces it (theme and actions are
+     mutually exclusive). Reduced-motion → appear without slide/stagger (CSS). */
+  const Flyout = (function () {
+    let el = null, curKey = null, anchorEl = null, lastFocus = null;
+    function ensure() {
+      if (el) return;
+      el = document.createElement("div");
+      el.className = "dock-flyout";
+      el.setAttribute("role", "group");
+      document.body.appendChild(el);
+      document.addEventListener("click", (e) => {
+        if (!curKey) return;
+        if (el.contains(e.target)) return;
+        if (e.target.closest && e.target.closest(".dock-flyout-trigger")) return;
+        close();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (curKey && e.key === "Escape") { e.preventDefault(); close(); }
+        else if (curKey && e.key === "Tab") trapTab(e, el);
+      });
+      window.addEventListener("resize", reposition, { passive: true });
+      window.addEventListener("scroll", reposition, { passive: true });
+    }
+    function reposition() {
+      if (!curKey || !anchorEl) return;
+      const r = anchorEl.getBoundingClientRect();
+      el.style.top = (r.top + r.height / 2) + "px";       // vertical center of the button
+      el.style.right = (window.innerWidth - r.left + 12) + "px";  // right edge just left of it
+    }
+    function open(key, anchor, pills) {
+      ensure();
+      if (curKey === key) { close(); return; }            // toggle
+      curKey = key; anchorEl = anchor; lastFocus = document.activeElement;
+      el.setAttribute("aria-label", key === "theme" ? "Visual theme" : "Portfolio actions");
+      el.innerHTML = "";
+      const n = pills.length;
+      pills.forEach((p, i) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "flyout-pill" + (p.primary ? " primary" : "") +
+          (p.active ? " active" : "") + (p.sep ? " sep" : "");
+        b.textContent = p.label;
+        if (p.title) b.title = p.title;
+        // stagger outward from the button: rightmost (nearest) extends first
+        b.style.setProperty("--fly-delay", ((n - 1 - i) * 30) + "ms");
+        b.addEventListener("click", () => { if (p.onClick) p.onClick(b); });
+        el.appendChild(b);
+      });
+      reposition();
+      requestAnimationFrame(() => el.classList.add("open"));
+      syncTriggers();
+      const first = el.querySelector(".flyout-pill");
+      if (first) try { first.focus(); } catch (e) {}
+    }
+    function close() {
+      if (!curKey) return;
+      curKey = null; anchorEl = null;
+      el.classList.remove("open");
+      syncTriggers();
+      if (lastFocus && lastFocus.focus) try { lastFocus.focus(); } catch (e) {}
+    }
+    function syncTriggers() {
+      document.querySelectorAll(".dock-flyout-trigger").forEach((b) => {
+        const on = !!curKey && b.dataset.flyout === curKey;
+        b.classList.toggle("active", on);
+        b.setAttribute("aria-expanded", String(on));
+      });
+    }
+    return { open: open, close: close, current: () => curKey };
+  })();
+
+  // Theme fly-out (§3): Miami · NYC · Maria pills + a gap-separated Sign out.
+  function openThemeFlyout(anchor) {
+    const cur = document.body.dataset.theme;
+    const pills = THEME_META.map((t) => ({
+      label: t.label, title: t.title, active: t.key === cur,
+      onClick: (btn) => {
+        applyTheme(t.key);
+        // keep the row open so the new active state reads; refresh actives
+        anchor.ownerDocument.querySelectorAll(".dock-flyout .flyout-pill:not(.sep)")
+          .forEach((x) => x.classList.toggle("active", x === btn));
       }
-    });
+    }));
+    pills.push({ label: "Sign out", sep: true, onClick: () => {
+      Flyout.close();
+      if (window.LinAuth && LinAuth.logout) LinAuth.logout();
+    } });
+    Flyout.open("theme", anchor, pills);
   }
 
-  window.LinUI = { openModal: openModal, drawer: Drawer, toast: toast };
+  // Actions fly-out (§4): the four Portfolio actions, each opening its existing
+  // modal (New Project, Upload) or drawer (Archived, Activity).
+  function openActionsFlyout(anchor) {
+    const A = window.LinIngest;
+    const pills = [
+      { label: "+ New Project", primary: true, onClick: () => { Flyout.close(); if (A) A.openCreateModal(); } },
+      { label: "Upload Documents", onClick: () => { Flyout.close(); if (A) A.openUploadModal(); } },
+      { label: "Archived", onClick: () => { Flyout.close(); if (A) A.openArchivedDrawer(); } },
+      { label: "Activity", onClick: () => { Flyout.close(); if (A) A.openActivityDrawer(); } }
+    ];
+    Flyout.open("actions", anchor, pills);
+  }
+
+  window.LinUI = { openModal: openModal, drawer: Drawer, flyout: Flyout, toast: toast };
 
   function wireNav() {
     // Dock buttons are wired in initIconDock; this covers any other [data-nav].
@@ -1844,7 +1942,14 @@
             `<span class="dock-label">${d.label}</span>` +
           `</button>`).join("") +
       '</nav>' +
-      '<button type="button" class="dock-menu menu-emblem" aria-label="Open menu" aria-expanded="false">' +
+      '<button type="button" class="dock-actions dock-flyout-trigger" data-flyout="actions"' +
+        ' aria-label="Portfolio actions" aria-expanded="false" aria-haspopup="true"' +
+        ' title="Portfolio actions" hidden>' +
+        DOCK_ACTIONS_SVG +
+        '<span class="tool-badge dock-actions-badge" id="tool-archived-badge" hidden></span>' +
+      '</button>' +
+      '<button type="button" class="dock-menu menu-emblem dock-flyout-trigger" data-flyout="theme"' +
+        ' aria-label="Theme and account menu" aria-expanded="false" aria-haspopup="true">' +
         MENU_EMBLEM_SVG +
       '</button>';
     document.body.appendChild(el);
@@ -1855,8 +1960,16 @@
       b.addEventListener("click", () => { showPage(b.dataset.nav); }));
     el.querySelector(".dock-menu").addEventListener("click", (e) => {
       e.stopPropagation();
-      openMenuDrawer();
+      openThemeFlyout(e.currentTarget);
     });
+    el.querySelector(".dock-actions").addEventListener("click", (e) => {
+      e.stopPropagation();
+      openActionsFlyout(e.currentTarget);
+    });
+    // actions button is portfolio-scoped; reveal it when Portfolio is active
+    const portfolioActive = !document.querySelector('.page[data-page="portfolio"]')
+      || !document.querySelector('.page[data-page="portfolio"]').hasAttribute("hidden");
+    el.querySelector(".dock-actions").hidden = !portfolioActive;
 
     // Always visible; the emblem (scroll-to-top) stays scroll-gated, and the
     // whole dock lifts to full opacity once past the header.
@@ -1866,21 +1979,10 @@
     tryEmblemUpgrade();
   }
 
-  function wireNavReveal() {
-    // Header emblem opens the same menu drawer as the dock emblem. (Drawer
-    // handles its own Escape / click-outside / focus-trap.)
-    const headerBtn = $("#menu-btn");
-    if (headerBtn) headerBtn.addEventListener("click", (e) => { e.stopPropagation(); openMenuDrawer(); });
-  }
-
-  /* ---------- stage toolbar (New Project / Upload modals · Archived / Activity drawers) ---------- */
-  function wireStageToolbar() {
-    const nw = $("#tool-new"), up = $("#tool-upload"), ar = $("#tool-archived"), ac = $("#tool-activity");
-    if (nw) nw.addEventListener("click", () => { if (window.LinIngest) LinIngest.openCreateModal(); });
-    if (up) up.addEventListener("click", () => { if (window.LinIngest) LinIngest.openUploadModal(); });
-    if (ar) { ar.dataset.drawer = "archived"; ar.addEventListener("click", () => { if (window.LinIngest) LinIngest.openArchivedDrawer(); }); }
-    if (ac) { ac.dataset.drawer = "activity"; ac.addEventListener("click", () => { if (window.LinIngest) LinIngest.openActivityDrawer(); }); }
-  }
+  /* The header hamburger and the stage toolbar's action buttons are gone: the
+     icon dock's menu button (theme fly-out) and actions button (New Project /
+     Upload modals · Archived / Activity drawers) are the sole entry points now,
+     both wired in initIconDock. */
 
   /* ---------- "Recompute all signals" button ----------
      Runs the full 94-module set for every ingested project from stored
@@ -2119,7 +2221,7 @@
 
   /* ---------- init ---------- */
   async function init() {
-    // Theme buttons are built inside the menu drawer (wired there); nothing to
+    // Theme buttons are built inside the theme fly-out (wired there); nothing to
     // bind here at load. Offered themes: Miami (light) · NYC (newyork) · Maria.
     // Gotham ("dark") is ARCHIVED — still renders if forced via applyTheme, but
     // no longer offered or used as a default. DEFAULT changed dark → newyork
@@ -2138,8 +2240,6 @@
     applyTheme(saved);
 
     wireNav();
-    wireNavReveal();
-    wireStageToolbar();
     initIconDock();
     wireHandbookTabs();
     wireTzSelect();
