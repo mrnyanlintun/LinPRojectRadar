@@ -2333,8 +2333,8 @@ body[data-theme="newyork"] .dock-nav-btn.active::before { background: var(--nyc-
    end state shown. Animations stay inside the 26px SVG (no layout shift).
    ============================================================ */
 .dock-icon [class^="radar"],
-.dock-icon .book, .dock-icon .book-cover, .dock-icon .book-page,
-.dock-icon .shield-check, .dock-icon .shield-scan {
+.dock-icon .book, .dock-icon .book-closed, .dock-icon .book-open,
+.dock-icon .doc-check, .dock-icon .doc-scan {
   transform-box: view-box;                 /* map transform-origin to viewBox coords */
 }
 
@@ -2354,51 +2354,65 @@ body[data-theme="newyork"] .dock-nav-btn.active::before { background: var(--nyc-
 .dock-nav-btn[data-nav="portfolio"]:hover .radar-blip-2,
 .dock-nav-btn[data-nav="portfolio"]:focus-visible .radar-blip-2 { animation-delay: .7s; }
 
-/* --- Technical Auditor: scan line sweeps down + checkmark draws in --- */
-.dock-icon .shield-check {
+/* --- Technical Auditor: a document sheet being scanned --- */
+.dock-icon .doc-line { opacity: .5; transition: opacity .25s ease; }   /* dim until read */
+.dock-icon .doc-scan { opacity: 0; }                                   /* hidden until sweeping */
+.dock-icon .doc-check {
   stroke-dasharray: 1; stroke-dashoffset: 1;   /* pathLength=1 → hidden by default */
-  transition: stroke-dashoffset .5s ease;
+  transition: stroke-dashoffset .45s ease;
 }
-.dock-icon .shield-scan { transform-origin: 13px 13px; }
-@keyframes dock-shield-scan {
-  0%   { transform: translateY(-2px); opacity: 0; }
-  15%  { opacity: .9; }
-  85%  { opacity: .9; }
-  100% { transform: translateY(12px); opacity: 0; }
+/* the scan line sweeps top→bottom inside the sheet */
+@keyframes dock-doc-scan {
+  0%   { transform: translateY(0);    opacity: 0; }
+  12%  { opacity: .95; }
+  88%  { opacity: .95; }
+  100% { transform: translateY(11px); opacity: .95; }
 }
-/* hover/focus: draw the check + run one scan sweep */
-.dock-nav-btn[data-nav="auditor"]:hover .shield-check,
-.dock-nav-btn[data-nav="auditor"]:focus-visible .shield-check,
-.dock-nav-btn[data-nav="auditor"].active .shield-check { stroke-dashoffset: 0; }
-.dock-nav-btn[data-nav="auditor"]:hover .shield-scan,
-.dock-nav-btn[data-nav="auditor"]:focus-visible .shield-scan { animation: dock-shield-scan .8s ease-in-out; }
-/* active resting state: check fully drawn, scan idle (no animation) */
+/* each row brightens briefly as the line passes it (staggered) */
+@keyframes dock-doc-read { 0%,55% { opacity: .5; } 72% { opacity: 1; } 100% { opacity: .85; } }
 
-/* --- Handbook: closed book whose cover swings open --- */
-.dock-icon .book-cover {
-  transform-origin: 13px 13px;                 /* hinge on the spine */
-  transition: transform .25s ease, opacity .25s ease;
+/* hover / focus: single pass; the tick draws in as the sweep finishes */
+.dock-nav-btn[data-nav="auditor"]:hover .doc-scan,
+.dock-nav-btn[data-nav="auditor"]:focus-visible .doc-scan { animation: dock-doc-scan .9s ease-in-out forwards; }
+.dock-nav-btn[data-nav="auditor"]:hover .doc-line-1,
+.dock-nav-btn[data-nav="auditor"]:focus-visible .doc-line-1 { animation: dock-doc-read .9s ease .1s both; }
+.dock-nav-btn[data-nav="auditor"]:hover .doc-line-2,
+.dock-nav-btn[data-nav="auditor"]:focus-visible .doc-line-2 { animation: dock-doc-read .9s ease .32s both; }
+.dock-nav-btn[data-nav="auditor"]:hover .doc-line-3,
+.dock-nav-btn[data-nav="auditor"]:focus-visible .doc-line-3 { animation: dock-doc-read .9s ease .54s both; }
+.dock-nav-btn[data-nav="auditor"]:hover .doc-check,
+.dock-nav-btn[data-nav="auditor"]:focus-visible .doc-check { stroke-dashoffset: 0; transition-delay: .75s; }
+
+/* active resting state: slow looping scan, all rows read, tick drawn */
+.dock-nav-btn[data-nav="auditor"].active .doc-scan { animation: dock-doc-scan 2.5s ease-in-out infinite; }
+.dock-nav-btn[data-nav="auditor"].active .doc-line { opacity: 1; }
+.dock-nav-btn[data-nav="auditor"].active .doc-check { stroke-dashoffset: 0; }
+
+/* --- Handbook: closed book cross-fading to an open spread as the cover swings --- */
+.dock-icon .book-closed {
+  transform-origin: 9px 13px;                  /* hinge on the binding/spine */
+  transition: transform .25s ease, opacity .15s ease;
 }
-.dock-icon .book-page {
-  opacity: 0; transition: opacity .25s ease .05s;
-}
+.dock-icon .book-open { opacity: 0; transition: opacity .15s ease .1s; }
 /* open on hover / focus / row-open (aria-expanded) / active page */
-.dock-nav-btn[data-nav="handbook"]:hover .book-cover,
-.dock-nav-btn[data-nav="handbook"]:focus-visible .book-cover,
-.dock-nav-btn[data-nav="handbook"][aria-expanded="true"] .book-cover,
-.dock-nav-btn[data-nav="handbook"].active .book-cover { transform: rotateY(-152deg); opacity: 0; }
-.dock-nav-btn[data-nav="handbook"]:hover .book-page,
-.dock-nav-btn[data-nav="handbook"]:focus-visible .book-page,
-.dock-nav-btn[data-nav="handbook"][aria-expanded="true"] .book-page,
-.dock-nav-btn[data-nav="handbook"].active .book-page { opacity: 1; }
+.dock-nav-btn[data-nav="handbook"]:hover .book-closed,
+.dock-nav-btn[data-nav="handbook"]:focus-visible .book-closed,
+.dock-nav-btn[data-nav="handbook"][aria-expanded="true"] .book-closed,
+.dock-nav-btn[data-nav="handbook"].active .book-closed { transform: rotateY(-150deg); opacity: 0; }
+.dock-nav-btn[data-nav="handbook"]:hover .book-open,
+.dock-nav-btn[data-nav="handbook"]:focus-visible .book-open,
+.dock-nav-btn[data-nav="handbook"][aria-expanded="true"] .book-open,
+.dock-nav-btn[data-nav="handbook"].active .book-open { opacity: 1; }
 
 @media (prefers-reduced-motion: reduce) {
   /* no motion — jump straight to the end state, no transitions/keyframes */
   .dock-icon .radar-sweep, .dock-icon .radar-blip,
-  .dock-icon .shield-check, .dock-icon .shield-scan,
-  .dock-icon .book-cover, .dock-icon .book-page { animation: none !important; transition: none !important; }
-  .dock-nav-btn[data-nav="auditor"]:hover .shield-scan,
-  .dock-nav-btn[data-nav="auditor"]:focus-visible .shield-scan { animation: none !important; }
+  .dock-icon .doc-scan, .dock-icon .doc-line, .dock-icon .doc-check,
+  .dock-icon .book-closed, .dock-icon .book-open { animation: none !important; transition: none !important; }
+  /* static doc with the tick shown (reviewed), scan hidden, rows legible */
+  .dock-nav-btn[data-nav="auditor"] .doc-line { opacity: 1; }
+  .dock-nav-btn[data-nav="auditor"] .doc-check { stroke-dashoffset: 0; }
+  .dock-nav-btn[data-nav="auditor"] .doc-scan { opacity: 0; }
 }
 
 /* ---------- dock fly-out: an UNBOXED row of pills (theme + Portfolio) ----------

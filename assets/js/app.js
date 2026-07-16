@@ -1599,11 +1599,14 @@
   // left on hover. data-nav drives showPage() + the shared .active sync.
   // Each glyph carries class hooks so CSS/SMIL can animate it (no JS loops):
   //  · radar  — .radar-sweep wedge rotates around (13,13); .radar-blip pulse.
-  //  · shield — .shield-scan sweeps down on hover; .shield-check draws in
-  //             (pathLength=1 + dashoffset); active = check fully drawn.
-  //  · book   — CLOSED by default (.book-cover over the spine); on hover / focus
-  //             / row-open / active the cover swings open (rotateY on the spine)
-  //             and the two .book-page leaves fade in.
+  //  · doc    — a document sheet being scanned: .doc-scan line sweeps top→bottom
+  //             inside the sheet on hover, the three .doc-line rows brighten in
+  //             turn, and the .doc-check tick draws in (pathLength=1 + dashoffset)
+  //             when the sweep completes; active = slow looping scan, tick drawn.
+  //  · book   — CLOSED by default (.book-closed: cover + binding + page block +
+  //             ribbon); on hover / focus / row-open / active it cross-fades to
+  //             the open two-page spread (.book-open) while the cover swings on
+  //             its spine hinge.
   const DOCK_NAV = [
     { nav: "portfolio", label: "PORTFOLIO",
       svg: '<circle cx="13" cy="13" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/>' +
@@ -1614,15 +1617,38 @@
            '<circle class="radar-blip radar-blip-1" cx="16.5" cy="9" r="1.5" fill="currentColor"/>' +
            '<circle class="radar-blip radar-blip-2" cx="9.5" cy="16" r="1.5" fill="currentColor"/>' },
     { nav: "auditor", label: "TECHNICAL AUDITOR",
-      svg: '<path class="shield-body" d="M13 3 L21 6 V12 C21 17 17.5 20.5 13 22.5 C8.5 20.5 5 17 5 12 V6 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>' +
-           '<line class="shield-scan" x1="6.5" y1="8" x2="19.5" y2="8" stroke="currentColor" stroke-width="1" opacity="0"/>' +
-           '<path class="shield-check" d="M9.5 12.5 L12 15 L16.5 9.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" pathLength="1"/>' },
+      svg: '<g class="doc">' +
+             // portrait sheet with a folded (dog-ear) top-right corner
+             '<path class="doc-body" d="M8 3.6 H15.4 L19.6 7.8 V21 Q19.6 22.4 18.2 22.4 H9.4 Q8 22.4 8 21 V5 Q8 3.6 9.4 3.6 Z" fill="currentColor" fill-opacity="0.10" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>' +
+             '<path class="doc-fold" d="M15.4 3.6 V7.8 H19.6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>' +
+             // three text rows
+             '<line class="doc-line doc-line-1" x1="10.4" y1="11" x2="17" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>' +
+             '<line class="doc-line doc-line-2" x1="10.4" y1="14" x2="17" y2="14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>' +
+             '<line class="doc-line doc-line-3" x1="10.4" y1="17" x2="14.6" y2="17" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>' +
+             // review tick (lower-right), drawn once when the sweep completes
+             '<path class="doc-check" d="M14.6 18.4 L16.2 20 L19.4 15.7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" pathLength="1"/>' +
+             // scan line (glow underlay + crisp line) sweeping down inside the sheet
+             '<g class="doc-scan">' +
+               '<line x1="6.4" y1="8" x2="21.2" y2="8" stroke="currentColor" stroke-width="3" opacity="0.16"/>' +
+               '<line x1="6.4" y1="8" x2="21.2" y2="8" stroke="currentColor" stroke-width="1.2"/>' +
+             '</g>' +
+           '</g>' },
     { nav: "handbook", label: "HANDBOOK",
       svg: '<g class="book">' +
-             '<path class="book-page book-page-l" d="M13 7 C11 5.5 8.2 5.1 5.4 5.1 V18.7 C8.2 18.7 11 6.6 13 8.1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>' +
-             '<path class="book-page book-page-r" d="M13 7 C15 5.5 17.8 5.1 20.6 5.1 V18.7 C17.8 18.7 15 6.6 13 8.1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>' +
-             '<line class="book-spine" x1="13" y1="7" x2="13" y2="20" stroke="currentColor" stroke-width="1.5"/>' +
-             '<path class="book-cover" d="M13 6.6 C15 5.1 17.8 4.7 20.6 4.7 V18.3 C17.8 18.3 15 6.6 13 8.1 Z" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>' +
+             '<g class="book-closed">' +
+               '<rect x="7" y="4.6" width="12" height="16.8" rx="2" fill="currentColor" fill-opacity="0.12" stroke="currentColor" stroke-width="1.5"/>' +
+               '<line x1="10.2" y1="5.7" x2="10.2" y2="20.3" stroke="currentColor" stroke-width="1.3"/>' +
+               '<line x1="19" y1="9.2" x2="20.7" y2="9.2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>' +
+               '<line x1="19" y1="13" x2="20.7" y2="13" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>' +
+               '<path class="book-ribbon" d="M14.6 4.6 V7.9 L15.6 6.9 L16.6 7.9 V4.6" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>' +
+             '</g>' +
+             '<g class="book-open">' +
+               '<path d="M13 8 C10.3 6.5 7.7 6.3 5 6.6 L5 18.9 C7.7 18.6 10.4 18.9 13 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>' +
+               '<path d="M13 8 C15.7 6.5 18.3 6.3 21 6.6 L21 18.9 C18.3 18.6 15.6 18.9 13 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>' +
+               '<line x1="13" y1="8" x2="13" y2="20" stroke="currentColor" stroke-width="1.5"/>' +
+               '<path d="M9.7 9.5 C8.4 9.4 7 9.5 5.9 9.9" fill="none" stroke="currentColor" stroke-width="1" opacity="0.65"/>' +
+               '<path d="M16.3 9.5 C17.6 9.4 19 9.5 20.1 9.9" fill="none" stroke="currentColor" stroke-width="1" opacity="0.65"/>' +
+             '</g>' +
            '</g>' }
   ];
 
