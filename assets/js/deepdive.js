@@ -277,16 +277,16 @@
     const pdS  = m.pMilestoneDelay >= 0.60 ? "red" : m.pMilestoneDelay >= 0.30 ? "amber" : "green";
     const why = st === "red" ? [
       `CPI ${e.cpi.toFixed(2)} and SPI ${e.spi.toFixed(2)} are below control tolerance, so the earned-value trend is not only a forecast issue.`,
-      `The P80 EAC sits ${m.p80eacOverrunPct >= 0 ? "+" : ""}${m.p80eacOverrunPct.toFixed(1)}% over baseline with a ${(m.pMilestoneDelay * 100).toFixed(0)}% probability of milestone delay — the conservative forecast is in recovery-review territory.`,
+      `The P80 EAC sits ${m.p80eacOverrunPct >= 0 ? "+" : ""}${m.p80eacOverrunPct.toFixed(1)}% over baseline with a ${(m.pMilestoneDelay * 100).toFixed(0)}% probability of milestone delay: the conservative forecast is in recovery-review territory.`,
       `The distribution above shows the P50→P80 spread; the tail beyond P80 is the residual 20% risk the governance layer must own.`
     ] : st === "amber" ? [
       `At least one cost or schedule indicator is in the watch band: CPI ${e.cpi.toFixed(2)}, SPI ${e.spi.toFixed(2)}, P80 ${m.p80eacOverrunPct >= 0 ? "+" : ""}${m.p80eacOverrunPct.toFixed(1)}%.`,
       `The forecast remains manageable, but P(milestone delay) is ${(m.pMilestoneDelay * 100).toFixed(0)}%, which requires review before the next reporting cycle closes.`,
-      `Amber means attention required — not immediate executive recovery action.`
+      `Amber means attention required, not immediate executive recovery action.`
     ] : [
       `CPI ${e.cpi.toFixed(2)} and SPI ${e.spi.toFixed(2)} remain inside normal monitoring tolerance for the current reporting cycle.`,
       `P80 EAC exposure is ${m.p80eacOverrunPct >= 0 ? "+" : ""}${m.p80eacOverrunPct.toFixed(1)}% with only a ${(m.pMilestoneDelay * 100).toFixed(0)}% delay probability, so the conservative outcome does not trigger recovery review.`,
-      `Forecast and reported status agree — the distribution sits over the baseline.`
+      `Forecast and reported status agree: the distribution sits over the baseline.`
     ];
     const mcReal = mcChartReal(p);
     const mc = mcReal.mc;
@@ -309,11 +309,11 @@
     const cu = p.signals.cusum;
     const st = cu.breached ? "red" : cu.status;
     const why = cu.breached ? [
-      `CUSUM drift ${cu.drift.toFixed(1)} exceeds the control threshold ${cu.threshold.toFixed(1)}, so the pattern is cumulative — not a one-period fluctuation.`,
+      `CUSUM drift ${cu.drift.toFixed(1)} exceeds the control threshold ${cu.threshold.toFixed(1)}, so the pattern is cumulative, not a one-period fluctuation.`,
       `The chart shows sustained accumulation across reporting periods rather than noise around the baseline.`,
       `A breach hands the question to the governance layer; the monitor itself never acts.`
     ] : st === "amber" ? [
-      `CUSUM drift ${cu.drift.toFixed(1)} is inside the watch band — weakening, but the ${cu.threshold.toFixed(1)} threshold is not broken.`,
+      `CUSUM drift ${cu.drift.toFixed(1)} is inside the watch band: weakening, but the ${cu.threshold.toFixed(1)} threshold is not broken.`,
       `Amber prevents the team from waiting until the next full EVM variance becomes visible.`
     ] : [
       `CUSUM drift ${cu.drift.toFixed(1)} on ${cu.metric} stays well below the ${cu.threshold.toFixed(1)} control threshold.`,
@@ -340,7 +340,7 @@
     const d = p.signals.doc;
     const st = d.status;
     const why = st === "red" ? [
-      `Document risk score ${d.score.toFixed(2)} is at or above the 0.70 red threshold — the text evidence itself can justify escalation before the next cost report reflects it.`,
+      `Document risk score ${d.score.toFixed(2)} is at or above the 0.70 red threshold: the text evidence itself can justify escalation before the next cost report reflects it.`,
       `Source: ${d.source}. The extracted language points to cost/schedule/scope impact rather than routine correspondence.`,
       `Evidence excerpt: "${d.excerpt}"`
     ] : st === "amber" ? [
@@ -348,11 +348,11 @@
       `Source: ${d.source}.`,
       `Evidence excerpt: "${d.excerpt}"`
     ] : [
-      `Document risk score ${d.score.toFixed(2)} is below the 0.30 watch threshold — records are routine for this reporting cycle.`,
+      `Document risk score ${d.score.toFixed(2)} is below the 0.30 watch threshold: records are routine for this reporting cycle.`,
       `The document trail supports the quantitative forecast rather than contradicting it.`
     ];
     return panel("03", "Document-Risk Extraction", st,
-      note("Risk signal extracted from project documents. Document language often leads the EVM signal by weeks — disputes and coordination failures appear in writing before they register in cost or schedule performance.") +
+      note("Risk signal extracted from project documents. Document language often leads the EVM signal by weeks: disputes and coordination failures appear in writing before they register in cost or schedule performance.") +
       `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="risk3d" data-nodrag="1"></canvas></div>` +
       `<div class="dd-grid">${
         metricBox("Risk score", d.score.toFixed(2), st) +
@@ -377,18 +377,18 @@
     const st = overrunPct >= 10 ? "red" : overrunPct >= 5 ? "amber" : "green";
     const bayesS = st;
     const why = st === "red" ? [
-      `Bayesian posterior EAC $${(posteriorEAC/1e6).toFixed(1)}M represents a ${overrunPct.toFixed(1)}% overrun — both the EVM-derived likelihood and the reference-class prior point above BAC.`,
+      `Bayesian posterior EAC $${(posteriorEAC/1e6).toFixed(1)}M represents a ${overrunPct.toFixed(1)}% overrun: both the EVM-derived likelihood and the reference-class prior point above BAC.`,
       `A 40/60 prior-to-likelihood weight yields a posterior that is not meaningfully better than the straight EVM EAC.`,
       `The Bayesian update confirms rather than mitigates the quantitative EVM signal.`
     ] : st === "amber" ? [
-      `Posterior EAC $${(posteriorEAC/1e6).toFixed(1)}M sits ${overrunPct.toFixed(1)}% above BAC — the reference-class prior provides only marginal improvement over the EVM likelihood.`,
+      `Posterior EAC $${(posteriorEAC/1e6).toFixed(1)}M sits ${overrunPct.toFixed(1)}% above BAC: the reference-class prior provides only marginal improvement over the EVM likelihood.`,
       `Weight split (40% prior, 60% likelihood) reflects that the EVM data now dominates the updated forecast.`
     ] : [
       `Bayesian update places the posterior EAC at $${(posteriorEAC/1e6).toFixed(1)}M, within green tolerance of BAC.`,
       `The 40/60 prior-likelihood blend confirms the EVM trajectory is consistent with reference-class outcomes.`
     ];
     return panel("1.4", "Bayesian EAC", st,
-      note("Bayesian update combining a reference-class-forecasting prior with the EVM-derived likelihood. Produces a posterior estimate more stable than raw EVM but responsive to sustained underperformance. Displayed as three overlapping 3D distributions — drag to separate them.") +
+      note("Bayesian update combining a reference-class-forecasting prior with the EVM-derived likelihood. Produces a posterior estimate more stable than raw EVM but responsive to sustained underperformance. Displayed as three overlapping 3D distributions. Drag to separate them.") +
       `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="bayesian3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Prior EAC", "$" + (priorEAC/1e6).toFixed(1) + "M", "green") +
@@ -414,16 +414,16 @@
     const trending = lastN.length >= 2 && lastN[lastN.length-1] < lastN[0];
     const smoothed = spi + (trending ? -0.008 : 0.005);
     const why = st === "red" ? [
-      `Kalman-smoothed SPI ${smoothed.toFixed(3)} remains below the 0.85 red threshold — the filter eliminates reporting noise but the downtrend is structural.`,
+      `Kalman-smoothed SPI ${smoothed.toFixed(3)} remains below the 0.85 red threshold: the filter eliminates reporting noise but the downtrend is structural.`,
       `Noise-filtering confirms the raw SPI reading is not an artefact; the signal is real.`
     ] : st === "amber" ? [
       `Smoothed SPI ${smoothed.toFixed(3)} is in the 0.85–0.95 watch band. The filter shows the trend is real, not a single-period blip.`,
       `Amber flags the need for explanation before the trend reaches the red boundary.`
     ] : [
-      `Smoothed SPI ${smoothed.toFixed(3)} is above 0.95 — the filter confirms schedule performance is within normal variation.`
+      `Smoothed SPI ${smoothed.toFixed(3)} is above 0.95: the filter confirms schedule performance is within normal variation.`
     ];
     return panel("1.5", "Kalman Filter SPI Smoother", st,
-      note("Noise-filtered SPI trend using a Kalman smoother. Separates genuine schedule drift from reporting artefacts. The smoothed line (solid) and raw series (dashed) are shown in 3D space — drag to compare planes.") +
+      note("Noise-filtered SPI trend using a Kalman smoother. Separates genuine schedule drift from reporting artefacts. The smoothed line (solid) and raw series (dashed) are shown in 3D space. Drag to compare planes.") +
       `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="kalman3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Raw SPI", spi.toFixed(3), spiS) +
@@ -446,10 +446,10 @@
     const forecastS = forecastCPI < 0.90 ? "red" : forecastCPI < 0.95 ? "amber" : "green";
     const why = st === "red" ? [
       `Current CPI ${cpi.toFixed(3)} is already below the 0.90 red threshold; ARIMA(1,1,1) forecasts further decline to ${forecastCPI.toFixed(3)} over the next 3 periods.`,
-      `The confidence interval stays entirely below 0.95 — no plausible recovery scenario returns to green within the forecast window.`
+      `The confidence interval stays entirely below 0.95: no plausible recovery scenario returns to green within the forecast window.`
     ] : st === "amber" ? [
       `CPI ${cpi.toFixed(3)} is in the watch band; 3-period ARIMA forecast ${forecastCPI.toFixed(3)} continues a flat-to-declining path.`,
-      `The 80% CI lower bound dips toward red — early intervention is more cost-effective than waiting for the threshold breach.`
+      `The 80% CI lower bound dips toward red: early intervention is more cost-effective than waiting for the threshold breach.`
     ] : [
       `CPI ${cpi.toFixed(3)} is above 0.95; ARIMA forecast is flat-stable at ${forecastCPI.toFixed(3)}, well within green territory.`
     ];
@@ -480,16 +480,16 @@
     const st = spiT < 0.85 ? "red" : spiT < 0.95 ? "amber" : "green";
     const spiTS = st;
     const why = st === "red" ? [
-      `SPI(t) ${spiT.toFixed(3)} converts to a ${delayWeeks.toFixed(1)}-week time delay — a time-based metric that persists even when CPI-driven SPI temporarily recovers.`,
+      `SPI(t) ${spiT.toFixed(3)} converts to a ${delayWeeks.toFixed(1)}-week time delay: a time-based metric that persists even when CPI-driven SPI temporarily recovers.`,
       `Earned Schedule makes the delay explicit: the project has earned only ${actualPct.toFixed(0)}% of work when ${plannedPct.toFixed(0)}% was planned.`
     ] : st === "amber" ? [
-      `SPI(t) ${spiT.toFixed(3)} equates to approximately ${delayWeeks.toFixed(1)} weeks behind plan — within the watch band but requiring active management.`,
+      `SPI(t) ${spiT.toFixed(3)} equates to approximately ${delayWeeks.toFixed(1)} weeks behind plan: within the watch band but requiring active management.`,
       `Earned Schedule is more persistent than cost-ratio SPI: once the delay accumulates it does not self-correct without schedule recovery action.`
     ] : [
-      `SPI(t) ${spiT.toFixed(3)} is above 0.95 — the time-based schedule index agrees with cost-ratio SPI that the project is on track.`
+      `SPI(t) ${spiT.toFixed(3)} is above 0.95: the time-based schedule index agrees with cost-ratio SPI that the project is on track.`
     ];
     return panel("1.7", "Earned Schedule", st,
-      note("Time-based schedule performance. SPI(t) = ES ÷ AT where ES is the time at which the planned value equalled current earned value, and AT is actual time elapsed. Removes the mathematical recovery artefact of cost-ratio SPI. Dual S-curves shown in 3D — amber lines show the ES gap.") +
+      note("Time-based schedule performance. SPI(t) = ES ÷ AT where ES is the time at which the planned value equalled current earned value, and AT is actual time elapsed. Removes the mathematical recovery artefact of cost-ratio SPI. Dual S-curves shown in 3D: amber lines show the ES gap.") +
       `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="es3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("SPI(t)", spiT.toFixed(3), spiTS) +
@@ -500,7 +500,7 @@
         metricBox("Planned %", plannedPct.toFixed(0) + "%", "green")
       }</div>` +
       reasons(why, st) +
-      rule("GREEN if SPI(t) >= 0.95; AMBER if 0.85–0.95; RED if < 0.85. SPI(t) does not recover mathematically as the project nears completion — it must be earned back."));
+      rule("GREEN if SPI(t) >= 0.95; AMBER if 0.85–0.95; RED if < 0.85. SPI(t) does not recover mathematically as the project nears completion: it must be earned back."));
   }
 
   function m1_8(p) {
@@ -514,14 +514,14 @@
     const tcpiS = st;
     const feasible = tcpi < 1.05;
     const why = st === "red" ? [
-      `TCPI ${tcpi.toFixed(3)} exceeds 1.10 — the required remaining performance is ${((tcpi-1)*100).toFixed(1)}% above budget efficiency and ${(gap*100).toFixed(1)}pp above current CPI ${cpi.toFixed(3)}.`,
+      `TCPI ${tcpi.toFixed(3)} exceeds 1.10: the required remaining performance is ${((tcpi-1)*100).toFixed(1)}% above budget efficiency and ${(gap*100).toFixed(1)}pp above current CPI ${cpi.toFixed(3)}.`,
       `A TCPI above 1.10 is widely accepted as infeasible without a schedule or scope adjustment.`,
       `The gauge dials show the widening CPI-to-TCPI gap that must close for the project to finish within BAC.`
     ] : st === "amber" ? [
-      `TCPI ${tcpi.toFixed(3)} is in the 1.05–1.10 watch band — technically feasible but requiring immediate productivity improvement.`,
+      `TCPI ${tcpi.toFixed(3)} is in the 1.05–1.10 watch band: technically feasible but requiring immediate productivity improvement.`,
       `Current CPI ${cpi.toFixed(3)} vs required ${tcpi.toFixed(3)} is a ${(gap*100).toFixed(1)}pp gap that typically requires corrective action.`
     ] : [
-      `TCPI ${tcpi.toFixed(3)} is below 1.05 — the remaining work is achievable at current performance levels without recovery action.`,
+      `TCPI ${tcpi.toFixed(3)} is below 1.05: the remaining work is achievable at current performance levels without recovery action.`,
       `CPI ${cpi.toFixed(3)} meets or exceeds the required efficiency to finish within BAC.`
     ];
     return panel("1.8", "To-Complete Performance Index (TCPI)", st,
@@ -550,18 +550,18 @@
     const st = vacPct <= -10 ? "red" : vacPct <= -5 ? "amber" : "green";
     const vacS = st;
     const why = st === "red" ? [
-      `VAC −$${(Math.abs(vac)/1e6).toFixed(1)}M (${vacPct.toFixed(1)}% of BAC) — the projected final overrun exceeds the red threshold of −10%.`,
+      `VAC −$${(Math.abs(vac)/1e6).toFixed(1)}M (${vacPct.toFixed(1)}% of BAC): the projected final overrun exceeds the red threshold of −10%.`,
       `At current CPI ${cpi.toFixed(3)}, the project is forecasting to finish $${(Math.abs(vac)/1e6).toFixed(1)}M over budget.`,
-      `The arc chart shows EV earned and AC spent as partial rings inside the BAC baseline — the overrun arc is the gap the contractor must absorb.`
+      `The arc chart shows EV earned and AC spent as partial rings inside the BAC baseline: the overrun arc is the gap the contractor must absorb.`
     ] : st === "amber" ? [
-      `VAC ${vacPct.toFixed(1)}% is in the −5% to −10% watch band — manageable but requiring active cost monitoring.`,
+      `VAC ${vacPct.toFixed(1)}% is in the −5% to −10% watch band: manageable but requiring active cost monitoring.`,
       `At CPI ${cpi.toFixed(3)}, EAC $${(eac/1e6).toFixed(1)}M vs BAC $${(bac/1e6).toFixed(1)}M leaves limited contingency buffer.`
     ] : [
-      `VAC ${vacPct.toFixed(1)}% is within the green tolerance — the project is forecast to finish within 5% of BAC.`,
+      `VAC ${vacPct.toFixed(1)}% is within the green tolerance: the project is forecast to finish within 5% of BAC.`,
       `Current EAC $${(eac/1e6).toFixed(1)}M leaves a positive or near-zero variance at completion.`
     ];
     return panel("1.9", "Variance at Completion (VAC)", st,
-      note("Projected final cost overrun: VAC = BAC − EAC. Shown as 3D concentric arc rings — BAC (blue full ring), EV earned (green partial), AC spent (amber partial), and overrun exposure (red arc). Drag to rotate and separate the rings.") +
+      note("Projected final cost overrun: VAC = BAC − EAC. Shown as 3D concentric arc rings: BAC (blue full ring), EV earned (green partial), AC spent (amber partial), and overrun exposure (red arc). Drag to rotate and separate the rings.") +
       `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="vac3d" data-nodrag="1"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · 2D view</p></div>` +
       `<div class="dd-grid">${
         metricBox("BAC", "$" + (bac/1e6).toFixed(1) + "M", "green") +
@@ -588,17 +588,17 @@
     const berS = ber < 0.92 ? "red" : ber < 0.97 ? "amber" : "green";
     const st = berS;
     const why = st === "red" ? [
-      `Budget execution rate ${ber.toFixed(3)} — actual spend is running more than 8% below planned cumulative expenditure.`,
+      `Budget execution rate ${ber.toFixed(3)}: actual spend is running more than 8% below planned cumulative expenditure.`,
       `Under-execution risks payment-application disputes and schedule compression in later phases when deferred costs materialise.`
     ] : st === "amber" ? [
-      `BER ${ber.toFixed(3)} — spending is 3–8% below the planned burn curve. This can indicate deferred costs or optimistic monthly closings.`,
-      `The dual surface chart shows the planned (back, dashed) and actual (front, solid) expenditure curves — the amber curtain lines mark the gap.`
+      `BER ${ber.toFixed(3)}: spending is 3–8% below the planned burn curve. This can indicate deferred costs or optimistic monthly closings.`,
+      `The dual surface chart shows the planned (back, dashed) and actual (front, solid) expenditure curves: the amber curtain lines mark the gap.`
     ] : [
-      `Budget execution rate ${ber.toFixed(3)} — actual spend is tracking the planned curve within normal tolerance.`,
+      `Budget execution rate ${ber.toFixed(3)}: actual spend is tracking the planned curve within normal tolerance.`,
       `No deferred-cost or front-loading risk is indicated by the execution pattern.`
     ];
     return panel("1.10", "Budget Execution Rate", st,
-      note("Rate of budget consumption versus the planned expenditure S-curve. Detects under-spend (deferred costs, optimistic closings) and over-spend (front-loading, acceleration). 3D dual surfaces — planned behind, actual in front, amber curtains show the gap.") +
+      note("Rate of budget consumption versus the planned expenditure S-curve. Detects under-spend (deferred costs, optimistic closings) and over-spend (front-loading, acceleration). 3D dual surfaces: planned behind, actual in front, amber curtains show the gap.") +
       `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="ber3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("BER", ber.toFixed(3), berS) +
@@ -624,13 +624,13 @@
     const st = cpi < 0.90 ? "red" : cpi < 0.95 ? "amber" : "green";
     const speed = Math.abs(longRunMean - cpi) > 0.04 ? "Slow" : "Moderate";
     const why = st === "red" ? [
-      `CPI ${cpi.toFixed(3)} is significantly below the long-run mean ${longRunMean.toFixed(3)} — regression to mean predicts recovery to only ${predicted.toFixed(3)} over the next period (speed: ${speed}).`,
+      `CPI ${cpi.toFixed(3)} is significantly below the long-run mean ${longRunMean.toFixed(3)}: regression to mean predicts recovery to only ${predicted.toFixed(3)} over the next period (speed: ${speed}).`,
       `At slow convergence speed, the project will not return to a green CPI within the current reporting window.`
     ] : st === "amber" ? [
-      `CPI ${cpi.toFixed(3)} is below the long-run mean ${longRunMean.toFixed(3)} — statistical regression predicts gradual recovery toward ${predicted.toFixed(3)}.`,
+      `CPI ${cpi.toFixed(3)} is below the long-run mean ${longRunMean.toFixed(3)}: statistical regression predicts gradual recovery toward ${predicted.toFixed(3)}.`,
       `Recovery is real but slow. Amber persists until CPI closes the gap to within 0.95.`
     ] : [
-      `CPI ${cpi.toFixed(3)} is near or above the long-run mean ${longRunMean.toFixed(3)} — regression to mean does not indicate a downside risk in the near term.`
+      `CPI ${cpi.toFixed(3)} is near or above the long-run mean ${longRunMean.toFixed(3)}: regression to mean does not indicate a downside risk in the near term.`
     ];
     return panel("1.11", "Regression to Mean CPI", st,
       note("Statistical regression predicting CPI convergence toward the long-run project mean. Red line = historical CPI, blue dashed = predicted convergence path, green dashed = long-run mean. Drag to view the convergence trajectory.") +
@@ -659,14 +659,14 @@
     const st = iceRatio < 0.90 ? "red" : iceRatio < 0.95 ? "amber" : "green";
     const ratioS = st;
     const why = st === "red" ? [
-      `ICE ratio ${iceRatio.toFixed(3)} — the independent estimate is $${(gap/1e6).toFixed(1)}M above the contractor EAC, a gap exceeding 10%.`,
+      `ICE ratio ${iceRatio.toFixed(3)}: the independent estimate is $${(gap/1e6).toFixed(1)}M above the contractor EAC, a gap exceeding 10%.`,
       `An ICE ratio < 0.90 triggers formal reconciliation; the contractor is required to explain the divergence in writing.`,
       `The outer arc ring marks the ICE range; the white dot on the outer ring marks the ICE point estimate.`
     ] : st === "amber" ? [
-      `ICE ratio ${iceRatio.toFixed(3)} — the independent estimate is $${(gap/1e6).toFixed(1)}M above contractor EAC, a 5–10% divergence.`,
+      `ICE ratio ${iceRatio.toFixed(3)}: the independent estimate is $${(gap/1e6).toFixed(1)}M above contractor EAC, a 5–10% divergence.`,
       `The gap is within the acceptable variance band but requires monitoring and a documented reconciliation narrative.`
     ] : [
-      `ICE ratio ${iceRatio.toFixed(3)} — contractor EAC and independent estimate are within 5%, meeting the acceptable convergence standard.`
+      `ICE ratio ${iceRatio.toFixed(3)}: contractor EAC and independent estimate are within 5%, meeting the acceptable convergence standard.`
     ];
     return panel("1.12", "ICE Ratio", st,
       note("Independent Cost Estimate ratio: contractor EAC ÷ ICE. A ratio < 0.90 triggers formal reconciliation under OMB Circular A-11. Arc rings show BAC (inner blue), contractor EAC (amber middle), and ICE range (outer red arc). White dot = ICE point estimate. Drag to rotate.") +
@@ -680,7 +680,7 @@
         metricBox("Reconciliation", iceRatio<0.90?"REQUIRED":"Not required", iceRatio<0.90?"red":"green")
       }</div>` +
       reasons(why, st) +
-      rule("GREEN if ICE ratio >= 0.95 (within 5%); AMBER if 0.90–0.95; RED if < 0.90 — formal reconciliation required under OMB A-11 / FAR Part 34."));
+      rule("GREEN if ICE ratio >= 0.95 (within 5%); AMBER if 0.90–0.95; RED if < 0.90: formal reconciliation required under OMB A-11 / FAR Part 34."));
   }
 
   /* ---- wire all Cat 1 canvas charts after innerHTML is set ---- */
@@ -838,7 +838,7 @@
     const st = sci < 0.90 ? 'red' : sci < 0.95 ? 'amber' : 'green';
     const fore = (sci*0.997).toFixed(3);
     return panel("2.4", "Schedule Compression Index", st,
-      note("Schedule Compression Index (SCI) tracks the ratio of schedule performance vs. baseline. Values below 1.0 indicate schedule compression is accumulating — work is being re-sequenced or accelerated at the expense of float.") +
+      note("Schedule Compression Index (SCI) tracks the ratio of schedule performance vs. baseline. Values below 1.0 indicate schedule compression is accumulating: work is being re-sequenced or accelerated at the expense of float.") +
       `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="sci3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("SCI", sci.toFixed(3), st) +
@@ -847,7 +847,7 @@
         metricBox("Forecast", fore, st)
       }</div>` +
       reasons([
-        `SCI ${sci.toFixed(3)} is below the 1.00 baseline — schedule compression has been accumulating over the last reporting periods.`,
+        `SCI ${sci.toFixed(3)} is below the 1.00 baseline: schedule compression has been accumulating over the last reporting periods.`,
         `ARIMA-style short-range forecast projects continued decline to ${fore} over the next 3 periods.`
       ], st) +
       rule("GREEN if SCI >= 0.95; AMBER if 0.90–0.95; RED if < 0.90. Compression index below 0.90 indicates severe schedule stress."));
@@ -891,7 +891,7 @@
         metricBox("Trend", gap < -5 ? "Widening" : "Stable", st)
       }</div>` +
       reasons([
-        `Actual progress ${actual.toFixed(0)}% vs. planned ${planned.toFixed(0)}% — the S-curve deviation gap is ${Math.abs(gap).toFixed(0)} percentage points.`,
+        `Actual progress ${actual.toFixed(0)}% vs. planned ${planned.toFixed(0)}%: the S-curve deviation gap is ${Math.abs(gap).toFixed(0)} percentage points.`,
         `A widening gap between S-curves signals that the schedule recovery plan is not absorbing the original lag.`
       ], st) +
       rule("GREEN if S-curve gap <= 5%; AMBER if 5–10%; RED if > 10%. Gap above 10% indicates unrecovered schedule slip."));
@@ -904,7 +904,7 @@
     const avgSlip = Number(si.avgMilestoneSlipWeeks || 3.2).toFixed(1);
     const st = slipping / total >= 0.75 ? 'red' : slipping > 0 ? 'amber' : 'green';
     return panel("2.7", "Milestone Trend Analysis", st,
-      note("MTA fan chart — each milestone is tracked across reporting periods. An upward slope indicates slipping forecast dates. All lines should be horizontal for on-schedule delivery.") +
+      note("MTA fan chart: each milestone is tracked across reporting periods. An upward slope indicates slipping forecast dates. All lines should be horizontal for on-schedule delivery.") +
       `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="mta3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Milestones", String(total), "green") +
@@ -935,7 +935,7 @@
         metricBox("Window", "6-week", "green")
       }</div>` +
       reasons([
-        `${rate}% of planned activities in the 6-week window are constrained — ${constrained} of ${total} activities cannot start as planned.`,
+        `${rate}% of planned activities in the 6-week window are constrained: ${constrained} of ${total} activities cannot start as planned.`,
         `A constraint rate above 40% in the near-term window is a reliable predictor of schedule slip in the next reporting period.`
       ], st) +
       rule("GREEN if constraint rate < 20%; AMBER if 20–40%; RED if >= 40% of look-ahead activities are constrained."));
@@ -948,7 +948,7 @@
     const rli = actual > 0 && planned > 0 ? (actual / planned) : 0.94;
     const st = rli < 0.90 ? 'red' : rli < 0.97 ? 'amber' : 'green';
     return panel("2.9", "Resource Loading Index", st,
-      note("Planned vs. actual labor hours. Dual area surface — planned (back, dashed) vs. actual (front, solid). Under-loading indicates schedule risk from resource constraints; over-loading indicates future recovery risk.") +
+      note("Planned vs. actual labor hours. Dual area surface: planned (back, dashed) vs. actual (front, solid). Under-loading indicates schedule risk from resource constraints; over-loading indicates future recovery risk.") +
       `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="resource3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Labor plan", Math.round(planned).toLocaleString() + "h", "green") +
@@ -957,7 +957,7 @@
         metricBox("Trend", rli < 0.97 ? "Under-loaded" : "On track", st)
       }</div>` +
       reasons([
-        `Resource Loading Index ${rli.toFixed(2)} — actual labor hours are ${Math.round((1-rli)*100)}% below plan at the current reporting period.`,
+        `Resource Loading Index ${rli.toFixed(2)}: actual labor hours are ${Math.round((1-rli)*100)}% below plan at the current reporting period.`,
         `Sustained RLI below 0.97 indicates the resource plan is not being executed, creating a recovery risk as the project approaches completion.`
       ], st) +
       rule("GREEN if RLI >= 0.97; AMBER if 0.90–0.97; RED if < 0.90. RLI below 0.90 requires resource recovery plan."));
@@ -994,7 +994,7 @@
     const st = cpiSched < 0.90 ? 'red' : cpiSched < 0.95 ? 'amber' : 'green';
     const fore = (cpiSched * 0.995).toFixed(3);
     return panel("2.11", "Critical Path Index", st,
-      note("Critical path schedule performance ratio vs. baseline. Near-critical paths (blue) track activities within 10% of the critical path duration — these are the successor risks if the critical path recovers.") +
+      note("Critical path schedule performance ratio vs. baseline. Near-critical paths (blue) track activities within 10% of the critical path duration: these are the successor risks if the critical path recovers.") +
       `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="cpisched3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("CPI (sched)", cpiSched.toFixed(3), st) +
@@ -1003,7 +1003,7 @@
         metricBox("Forecast", fore, st)
       }</div>` +
       reasons([
-        `Critical path schedule index ${cpiSched.toFixed(3)} — below 0.95 amber threshold, trending toward ${fore} over 3 periods.`,
+        `Critical path schedule index ${cpiSched.toFixed(3)}: below 0.95 amber threshold, trending toward ${fore} over 3 periods.`,
         `${nearCrit} near-critical paths are tracking within 10% of the critical path and represent the next escalation risk if the dominant path recovers.`
       ], st) +
       rule("GREEN if CPI(sched) >= 0.95; AMBER if 0.90–0.95; RED if < 0.90. Near-critical paths above 2 add transition risk."));
@@ -1016,15 +1016,15 @@
     const redN = statuses.filter((x) => x === "red").length;
     const ambN = statuses.filter((x) => x === "amber").length;
     const st = redN >= 2 ? "red" : (redN || ambN) ? "amber" : "green";
-    const why = conflict === "Agreement — low risk" ? [
-      `All four signal classes are green and aligned — there is no disagreement to surface.`,
+    const why = conflict === "Agreement: low risk" ? [
+      `All four signal classes are green and aligned: there is no disagreement to surface.`,
       `Agreement is itself recorded: the decision card still logs the evidence package for auditability.`
     ] : [
       `Conflict type "${conflict}": ${redN} red and ${ambN} amber signal class(es) against ${4 - redN - ambN} green.`,
-      `PCEIF surfaces this disagreement instead of averaging it away — the gap between signal classes is the finding.`,
+      `PCEIF surfaces this disagreement instead of averaging it away: the gap between signal classes is the finding.`,
       `The classification feeds Cat 8.1, which maps it to an action and an authority.`
     ];
-    return panel("09", "Conservative Dominance — Signal Synthesis", st,
+    return panel("09", "Conservative Dominance: Signal Synthesis", st,
       note("Agreement map across all signal classes. When signals diverge, the gap between classes is the finding. PCEIF surfaces disagreement instead of averaging it away. Conservative dominance: the worst single-signal status drives the overall classification.") +
       synthChart(p) +
       `<div class="dd-grid">${
@@ -1234,7 +1234,7 @@
       }
       x += w;
     });
-    return svgo(h, "DST belief distribution — stacked horizontal bar showing Green/Amber/Red/Unknown masses") +
+    return svgo(h, "DST belief distribution: stacked horizontal bar showing Green/Amber/Red/Unknown masses") +
       `<rect x="${pad}" y="${barY}" width="${span}" height="${barH}" rx="4" fill="var(--surface-soft)" stroke="var(--ring-line)"></rect>` +
       bars +
       `<rect x="${pad}" y="${barY}" width="${span}" height="${barH}" rx="4" fill="none" stroke="var(--ring-line)"></rect>` +
@@ -1252,7 +1252,7 @@
   function m04(s) {
     _cat2SimData = _cat2SimData || {}; _cat2SimData.pert = s;
     const st = simCls(s.status_color);
-    return panel("04", "PERT — Network Criticality", st,
+    return panel("04", "PERT: Network Criticality", st,
       note("Program Evaluation and Review Technique (PERT). Stochastic network analysis quantifying schedule risk across the critical path. The P80 duration is the planning-conservative milestone estimate. The Path Criticality Index identifies which path has the least float and highest probability of driving project completion.") +
       '<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="pert3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>' +
       `<div class="dd-grid">${
@@ -1263,7 +1263,7 @@
       }</div>` +
       reasons([
         `The P80 network duration is ${s.p80_duration_days} days against a ${s.baseline_days}-day deterministic baseline; the gap is the schedule risk the stochastic network exposes.`,
-        `The dominant (structural) path is critical in ${Math.round(s.path_criticality_index * 100)}% of simulated runs — that is where float is thinnest.`
+        `The dominant (structural) path is critical in ${Math.round(s.path_criticality_index * 100)}% of simulated runs: that is where float is thinnest.`
       ], st) +
       rule("GREEN if P80 <= +15% of baseline; AMBER if +15-30%; RED if > +30%. Lower SPI widens the pessimistic activity bound."));
   }
@@ -1271,8 +1271,8 @@
   function m05(s) {
     _cat2SimData = _cat2SimData || {}; _cat2SimData.lob = s;
     const st = simCls(s.status_color);
-    return panel("05", "LOB — Production Velocity", st,
-      note("Line of Balance (LOB). Production velocity analysis for sequential operations. Monitors the time buffer between lead and follow-on crews. Buffer erosion is a leading schedule indicator — it appears before the delay reaches the critical path and before it registers in the SPI.") +
+    return panel("05", "LOB: Production Velocity", st,
+      note("Line of Balance (LOB). Production velocity analysis for sequential operations. Monitors the time buffer between lead and follow-on crews. Buffer erosion is a leading schedule indicator: it appears before the delay reaches the critical path and before it registers in the SPI.") +
       '<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="lob2d" data-nodrag="1"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · 2D view</p></div>' +
       `<div class="dd-grid">${
         metricBox("Min Buffer (days)", s.minimum_buffer_days.toFixed(1), st) +
@@ -1282,7 +1282,7 @@
       }</div>` +
       reasons([
         `The follower (paving ${s.paving_rate} units/day) trails the leader (grading ${s.grading_rate} units/day); the crew-to-crew schedule buffer falls to ${s.minimum_buffer_days.toFixed(1)} days.`,
-        `Lower SPI slows the follower, eroding the buffer sooner — the marked critical unit is where collision risk peaks.`
+        `Lower SPI slows the follower, eroding the buffer sooner: the marked critical unit is where collision risk peaks.`
       ], st) +
       rule("GREEN if minimum crew buffer > 3.0 days; AMBER if <= 3.0; RED if <= 1.5."));
   }
@@ -1290,7 +1290,7 @@
   function m06(s) {
     _cat2SimData = _cat2SimData || {}; _cat2SimData.ccpm = s;
     const st = simCls(s.status_color);
-    return panel("06", "CCPM — Buffer Health", st,
+    return panel("06", "CCPM: Buffer Health", st,
       note("Critical Chain Project Management (CCPM). Tracks the rate at which the project buffer is being consumed against the rate of chain completion. A project burning buffer faster than it is completing work is on a trajectory toward delay, regardless of what the current SPI reports.") +
       '<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="ccpm3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>' +
       `<div class="dd-grid">${
@@ -1300,7 +1300,7 @@
         metricBox("Status", st.toUpperCase(), st)
       }</div>` +
       reasons([
-        `Buffer is ${s.pct_buffer_consumed}% consumed at ${s.pct_chain_complete}% chain completion — the fever-chart dot sits in the ${String(s.zone).toUpperCase()} zone.`,
+        `Buffer is ${s.pct_buffer_consumed}% consumed at ${s.pct_chain_complete}% chain completion: the fever-chart dot sits in the ${String(s.zone).toUpperCase()} zone.`,
         `Amber when buffer-burn >= chain completion; red when it crosses completion + (100 - completion)/3.`
       ], st) +
       rule("GREEN below the amber line; AMBER when buffer consumed >= chain complete %; RED beyond the upper fever band."));
@@ -1308,7 +1308,7 @@
 
   function m07(s) {
     const st = simCls(s.status_color);
-    return panel("07", "RCF — Cost Prior", st,
+    return panel("07", "RCF: Cost Prior", st,
       note("Reference Class Forecasting (RCF). Outside-view cost estimate derived from the historical overrun distribution of comparable public infrastructure projects. Corrects for optimism bias in contractor estimates by anchoring the forecast to what projects of this type actually cost.") +
       rcfChart(s) +
       `<div class="dd-grid">${
@@ -1318,7 +1318,7 @@
         metricBox("vs BAC %", (s.vs_bac_pct >= 0 ? "+" : "") + s.vs_bac_pct.toFixed(1) + "%", st)
       }</div>` +
       reasons([
-        `The outside-view reference class puts the P80 cost prior at ${moneyShort(s.rcf_p80_adjusted)} — ${(s.vs_bac_pct >= 0 ? "+" : "") + s.vs_bac_pct.toFixed(1)}% over the Budget at Completion (BAC).`,
+        `The outside-view reference class puts the P80 cost prior at ${moneyShort(s.rcf_p80_adjusted)}: ${(s.vs_bac_pct >= 0 ? "+" : "") + s.vs_bac_pct.toFixed(1)}% over the Budget at Completion (BAC).`,
         `The debiasing factor x${s.debiasing_factor.toFixed(2)} is the empirical correction applied to the inside-view estimate.`
       ], st) +
       rule("GREEN if P80 prior <= +10% of BAC; AMBER if +10-25%; RED if > +25%."));
@@ -1326,7 +1326,7 @@
 
   function m08(s) {
     const st = simCls(s.status_color);
-    return panel("08", "DSM — Rework Propagation", st,
+    return panel("08", "DSM: Rework Propagation", st,
       note("Design Structure Matrix (DSM). Models how a scope change in one design discipline propagates through downstream disciplines. An architectural revision triggers structural re-coordination and MEP rerouting. The rework multiplier quantifies the total coordination burden a single change introduces across the design team.") +
       dsmChart(s) +
       `<div class="dd-grid">${
@@ -1354,11 +1354,11 @@
 
     const comparisonNote = conservativeState
       ? (agrees
-        ? `DST confirms the conservative dominance result — both methods classify this project as ${conservativeState.toUpperCase()}.`
+        ? `DST confirms the conservative dominance result: both methods classify this project as ${conservativeState.toUpperCase()}.`
         : `DST diverges from conservative dominance. Conservative dominance classifies ${conservativeState.toUpperCase()}; DST assigns highest belief to ${s.status_color.toUpperCase()} with conflict mass ${Math.round((s.conflict_mass || 0) * 100)}% indicating significant inter-signal disagreement. The divergence itself is a governance signal.`)
-      : `Conservative dominance state not yet available — run signals to compare.`;
+      : `Conservative dominance state not yet available: run signals to compare.`;
 
-    return panel("10", "DST — Evidence Combination", st,
+    return panel("10", "DST: Evidence Combination", st,
       note("Dempster-Shafer Evidence Theory combines the four primary signal classes into a unified belief distribution. Unlike conservative dominance which takes the worst single signal, DST weights all evidence and produces explicit belief masses for each state plus a conflict mass measuring inter-signal disagreement.") +
       dstChart(s) +
       `<div class="dd-grid">${
@@ -1371,7 +1371,7 @@
       }</div>` +
       `<p class="dd-chart-note">${esc(comparisonNote)}</p>` +
       reasons([
-        `DST assigns belief Green ${Math.round((s.belief_green || 0) * 100)}%, Amber ${Math.round((s.belief_amber || 0) * 100)}%, Red ${Math.round((s.belief_red || 0) * 100)}% — highest belief mass determines the output state.`,
+        `DST assigns belief Green ${Math.round((s.belief_green || 0) * 100)}%, Amber ${Math.round((s.belief_amber || 0) * 100)}%, Red ${Math.round((s.belief_red || 0) * 100)}%: highest belief mass determines the output state.`,
         `Conflict mass ${Math.round((s.conflict_mass || 0) * 100)}% (${s.conflict_level || "Low"}) reflects disagreement between the four evidence sources. High conflict mass is itself a signal worth surfacing to the governance layer.`
       ], st) +
       rule("DST RULE: Belief masses assigned per signal class performance against thresholds. Dempster combination rule applied iteratively across four sources. Final state = highest belief mass. Conflict mass > 30% = high inter-signal disagreement."));
@@ -1454,7 +1454,7 @@
     const votes = s.signal_votes || {};
     const total = s.total_signals || 1;
     return panel("11", "Rough Sets Classification", st,
-      note("Rough Set Theory classifies the project using lower and upper approximations. The lower approximation contains states ALL signals definitively support (>75% agreement). The upper approximation contains states ANY signal supports. The boundary region — upper minus lower — is the indeterminate zone where evidence is insufficient to classify with certainty.") +
+      note("Rough Set Theory classifies the project using lower and upper approximations. The lower approximation contains states ALL signals definitively support (>75% agreement). The upper approximation contains states ANY signal supports. The boundary region (upper minus lower) is the indeterminate zone where evidence is insufficient to classify with certainty.") +
       roughSetsChart(s) +
       `<div class="dd-grid">${
         metricBox("Classification", (s.classification || "Unknown").length > 22 ? (s.classification || "").slice(0, 21) + "…" : (s.classification || "Unknown"), st) +
@@ -1475,7 +1475,7 @@
     const st = simCls(s.status_color);
     const T = Math.round((s.T || 0) * 100), I = Math.round((s.I || 0) * 100), F = Math.round((s.F || 0) * 100);
     return panel("12", "Neutrosophic Logic", st,
-      note("Neutrosophic Logic extends fuzzy logic with three independent membership dimensions: Truth (T), Indeterminacy (I), and Falsity (F). Unlike classical logic where T + F = 1, neutrosophic values need not sum to 1 — genuine uncertainty is a separate dimension, not a residual of truth and falsity. High indeterminacy signals measurement ambiguity rather than a positive or negative finding.") +
+      note("Neutrosophic Logic extends fuzzy logic with three independent membership dimensions: Truth (T), Indeterminacy (I), and Falsity (F). Unlike classical logic where T + F = 1, neutrosophic values need not sum to 1: genuine uncertainty is a separate dimension, not a residual of truth and falsity. High indeterminacy signals measurement ambiguity rather than a positive or negative finding.") +
       neutroChart(s) +
       `<div class="dd-grid">${
         metricBox("Truth (T)", T + "%", T >= 70 ? "green" : T >= 50 ? "amber" : "red") +
@@ -1485,9 +1485,9 @@
       }</div>` +
       reasons([
         `Neutrosophic combines ${(s.signal_components || []).length} signal source(s) via disjunctive combination (T) and conjunctive combination (I, F).`,
-        `T=${T}%, I=${I}%, F=${F}%. Indeterminacy level: ${s.indeterminacy_level || "Low"} — ${I > 30 ? "high uncertainty, governance attention warranted" : I > 15 ? "moderate uncertainty in evidence" : "evidence is sufficiently conclusive"}.`
+        `T=${T}%, I=${I}%, F=${F}%. Indeterminacy level: ${s.indeterminacy_level || "Low"}: ${I > 30 ? "high uncertainty, governance attention warranted" : I > 15 ? "moderate uncertainty in evidence" : "evidence is sufficiently conclusive"}.`
       ], st) +
-      rule("Status set by signal source majority (red if >= 2 red sources, amber if >= 2 amber, else green). Indeterminacy > 30% upgrades green to amber — the uncertainty itself is a governance signal."));
+      rule("Status set by signal source majority (red if >= 2 red sources, amber if >= 2 amber, else green). Indeterminacy > 30% upgrades green to amber: the uncertainty itself is a governance signal."));
   }
 
   function m14(s) {
@@ -1507,9 +1507,9 @@
       }</div>` +
       reasons([
         `Interval-valued membership reflects +/-2% SoV and +/-1% pay-application input uncertainty. Green [${gi[0]}, ${gi[1]}]%, Amber [${ai[0]}, ${ai[1]}]%, Red [${ri[0]}, ${ri[1]}]%.`,
-        `Uncertainty width ${(s.uncertainty_width || 0).toFixed(2)}: ${s.uncertainty_level || "Low"} — ${s.uncertainty_level === "High" ? "wide interval means input noise could shift the classification" : "interval width is within acceptable precision for this signal package"}.`
+        `Uncertainty width ${(s.uncertainty_width || 0).toFixed(2)}: ${s.uncertainty_level || "Low"}: ${s.uncertainty_level === "High" ? "wide interval means input noise could shift the classification" : "interval width is within acceptable precision for this signal package"}.`
       ], st) +
-      rule("Status = highest midpoint across Green/Amber/Red intervals. Uncertainty level HIGH if combined interval width > 0.30, MODERATE if > 0.15 — corresponds to input noise of roughly +/-3 percentage points on CPI."));
+      rule("Status = highest midpoint across Green/Amber/Red intervals. Uncertainty level HIGH if combined interval width > 0.30, MODERATE if > 0.15: corresponds to input noise of roughly +/-3 percentage points on CPI."));
   }
 
   /* Module 15 chart: reliability-weighted stacked bar (Red / Amber / Green). */
@@ -1553,7 +1553,7 @@
     return out + "</svg>";
   }
 
-  /* Module 17 chart: bubble scatter — membership (x) vs contradiction (y). */
+  /* Module 17 chart: bubble scatter: membership (x) vs contradiction (y). */
   function plithogenicChart(s) {
     const h = 156, padL = 50, padB = 30, padT = 16, padR = 16;
     const plotW = W - padL - padR, plotH = h - padT - padB;
@@ -1589,7 +1589,7 @@
         out += `<text x="4" y="${y + 12}" class="mod-axis" fill="var(--muted)">${esc(m.id)}</text>` +
           `<rect x="${pad}" y="${y}" width="${span}" height="${barH}" rx="3" fill="var(--surface-soft)" stroke="var(--ring-line)"></rect>` +
           `<rect x="${pad}" y="${y}" width="${w.toFixed(1)}" height="${barH}" rx="3" fill="var(--phosphor)" opacity="0.6"></rect>` +
-          `<text x="${(pad + w + 6).toFixed(1)}" y="${y + 12}" class="mod-axis" fill="var(--text)">w=${(m.weight || 0).toFixed(2)} — ${esc(m.desc || "")}</text>`;
+          `<text x="${(pad + w + 6).toFixed(1)}" y="${y + 12}" class="mod-axis" fill="var(--text)">w=${(m.weight || 0).toFixed(2)}: ${esc(m.desc || "")}</text>`;
       });
     }
     return out + "</svg>";
@@ -1625,8 +1625,8 @@
 
   function m15(s) {
     const st = simCls(s.status_color);
-    return panel("14", "Z-numbers — Reliability-weighted Evidence", st,
-      note("Z-numbers (Zadeh, 2011) pair each signal with a reliability measure for its source. A CPI derived from a verified pay application carries more weight than one estimated from a rough schedule update. The governance recommendation is weighted by how trustworthy each signal source is — not just what it says but how reliable the data behind it is.") +
+    return panel("14", "Z-numbers: Reliability-weighted Evidence", st,
+      note("Z-numbers (Zadeh, 2011) pair each signal with a reliability measure for its source. A CPI derived from a verified pay application carries more weight than one estimated from a rough schedule update. The governance recommendation is weighted by how trustworthy each signal source is, not just what it says but how reliable the data behind it is.") +
       zNumbersChart(s) +
       `<div class="dd-grid">${
         metricBox("Weighted Red",   (s.weighted_red   || 0).toFixed(2), s.weighted_red   >= (s.weighted_amber || 0) ? "red"   : "green") +
@@ -1644,8 +1644,8 @@
 
   function m16(s) {
     const st = simCls(s.status_color);
-    return panel("15", "PLTS — Probabilistic Linguistic Term Sets", st,
-      note("Probabilistic Linguistic Term Sets (Pang, 2016) express each signal as a probability distribution across linguistic states rather than a single crisp label. A signal can be Red with 70% probability and Amber with 25% simultaneously. This maps directly to how expert reviewers actually assess projects — with confidence degrees, not binary verdicts.") +
+    return panel("15", "PLTS: Probabilistic Linguistic Term Sets", st,
+      note("Probabilistic Linguistic Term Sets (Pang, 2016) express each signal as a probability distribution across linguistic states rather than a single crisp label. A signal can be Red with 70% probability and Amber with 25% simultaneously. This maps directly to how expert reviewers actually assess projects: with confidence degrees, not binary verdicts.") +
       pltsChart(s) +
       `<div class="dd-grid">${
         metricBox("P(Green)", (s.p_green || 0) + "%", s.p_green >= 60 ? "green" : s.p_green >= 30 ? "amber" : "red") +
@@ -1662,8 +1662,8 @@
 
   function m17(s) {
     const st = simCls(s.status_color);
-    return panel("16", "Plithogenic Sets — Contradiction Analysis", st,
-      note("Plithogenic Sets (Smarandache, 2018) assign each signal a contradiction degree measuring how much it opposes the dominant classification. A Green doc-risk signal in a project where EVM and CUSUM are both Red has a high contradiction degree — it does not simply cancel the Red signals; it is weighted to reflect its opposition. The contradiction degree itself is a governance finding.") +
+    return panel("16", "Plithogenic Sets: Contradiction Analysis", st,
+      note("Plithogenic Sets (Smarandache, 2018) assign each signal a contradiction degree measuring how much it opposes the dominant classification. A Green doc-risk signal in a project where EVM and CUSUM are both Red has a high contradiction degree: it does not simply cancel the Red signals; it is weighted to reflect its opposition. The contradiction degree itself is a governance finding.") +
       plithogenicChart(s) +
       `<div class="dd-grid">${
         metricBox("Red score",   (s.red_score   || 0).toFixed(2), s.red_score   >= (s.amber_score || 0) ? "red"   : "green") +
@@ -1674,14 +1674,14 @@
       }</div>` +
       reasons([
         `Plithogenic aggregation weights each attribute by membership x (1 - contradiction * 0.5). Signals opposing the dominant state are down-weighted, but not erased.`,
-        `Average contradiction ${Math.round((s.avg_contradiction || 0) * 100)}% (${s.contradiction_level || "Low"}) — ${s.contradiction_level === "High" ? "signals are genuinely opposed, this is a finding in itself" : "signals are broadly consistent"}.`
+        `Average contradiction ${Math.round((s.avg_contradiction || 0) * 100)}% (${s.contradiction_level || "Low"}): ${s.contradiction_level === "High" ? "signals are genuinely opposed, this is a finding in itself" : "signals are broadly consistent"}.`
       ], st) +
       rule("Aggregation weighted by membership x (1 - contradiction factor). High average contradiction = signals are genuinely opposed. Smarandache, 2018."));
   }
 
   function m18(s) {
     const st = simCls(s.status_color);
-    return panel("17", "BRB — Belief Rule Base", st,
+    return panel("17", "BRB: Belief Rule Base", st,
       note("The Belief Rule Base (Yang, 2006) encodes expert knowledge as IF-THEN rules whose consequent is a belief distribution rather than a crisp state. \"If EVM is Red and CUSUM has breached, belief is 90% Red, 8% Amber, 2% Green.\" Multiple rules can fire simultaneously and are combined by their rule weights, bridging the explicit governance rules of PCEIF with probabilistic expert judgment.") +
       brbChart(s) +
       `<div class="dd-grid">${
@@ -1699,8 +1699,8 @@
 
   function m19(s) {
     const st = simCls(s.status_color);
-    return panel("18", "Quantum Probability — Signal Interference", st,
-      note("Quantum Probability (Busemeyer & Bruza, 2012) models signals as wave amplitudes rather than classical probabilities. When signals align — EVM Red, CUSUM breached, forecast Red — they interfere constructively, amplifying the Red classification. When signals oppose — strong EVM deterioration but clean documents — they interfere destructively, reflecting genuine ambiguity. Constructive interference means high classification confidence; destructive means the signals are genuinely contradictory.") +
+    return panel("18", "Quantum Probability: Signal Interference", st,
+      note("Quantum Probability (Busemeyer & Bruza, 2012) models signals as wave amplitudes rather than classical probabilities. When signals align (EVM Red, CUSUM breached, forecast Red), they interfere constructively, amplifying the Red classification. When signals oppose (strong EVM deterioration but clean documents), they interfere destructively, reflecting genuine ambiguity. Constructive interference means high classification confidence; destructive means the signals are genuinely contradictory.") +
       quantumChart(s) +
       `<div class="dd-grid">${
         metricBox("Q-P(Green)", (s.p_green || 0) + "%", s.p_green >= 60 ? "green" : "amber") +
@@ -1711,7 +1711,7 @@
       }</div>` +
       reasons([
         `Amplitudes α=${(s.alpha_green || 0).toFixed(2)} (Green) and γ=${(s.gamma_red || 0).toFixed(2)} (Red) derived from classical signal probabilities (square root of average).`,
-        `Phase angle ${s.phase_angle_deg || 0}° drives a ${(s.interference_type || "Neutral").toLowerCase()} interference of magnitude ${(s.interference_magnitude || 0).toFixed(2)} — ${s.interference_type === "Constructive" ? "signals reinforce each other" : s.interference_type === "Destructive" ? "signals partially cancel, classification uncertainty is genuine" : "neither strong reinforcement nor cancellation"}.`
+        `Phase angle ${s.phase_angle_deg || 0}° drives a ${(s.interference_type || "Neutral").toLowerCase()} interference of magnitude ${(s.interference_magnitude || 0).toFixed(2)}: ${s.interference_type === "Constructive" ? "signals reinforce each other" : s.interference_type === "Destructive" ? "signals partially cancel, classification uncertainty is genuine" : "neither strong reinforcement nor cancellation"}.`
       ], st) +
       rule("Amplitudes = sqrt of classical probabilities. Interference = 2 alpha gamma cos(theta) where theta is the phase angle from signal coherence. Busemeyer & Bruza, 2012."));
   }
@@ -1784,7 +1784,7 @@
       const isBaseline = e.num === "09";
       const agreesM09 = isBaseline ? "Baseline" : (String(e.val).toLowerCase() === baseline ? "Yes" : "No");
       const agreeCls = isBaseline ? "" : (agreesM09 === "Yes" ? "dd-cmp-yes" : "dd-cmp-no");
-      return `<tr><td class="dd-cmp-mod">Module ${e.num} — ${esc(e.label)}</td>` +
+      return `<tr><td class="dd-cmp-mod">Module ${e.num}: ${esc(e.label)}</td>` +
         `<td class="dd-cmp-year">${esc(e.year || "—")}</td>` +
         `<td><span class="dd-verdict status-${c}" style="display:inline-flex;gap:4px;align-items:center"><i></i>${esc(String(e.val).toUpperCase())}</span></td>` +
         `<td class="${agreeCls}">${agreesM09}</td></tr>`;
@@ -1794,17 +1794,17 @@
     let confidence, summaryText;
     if (agreeCount >= 8) {
       confidence = "HIGH";
-      summaryText = `All synthesis methods confirm the classification — high confidence. ${agreeCount} of 9 evidence methods agree with the Cat 6.1 baseline (${String(s09).toUpperCase()}). Act on the Cat 8.1 recommendation.`;
+      summaryText = `All synthesis methods confirm the classification: high confidence. ${agreeCount} of 9 evidence methods agree with the Cat 6.1 baseline (${String(s09).toUpperCase()}). Act on the Cat 8.1 recommendation.`;
     } else if (agreeCount >= 5) {
       confidence = "MODERATE";
-      summaryText = `${agreeCount} of 9 evidence methods agree with the Cat 6.1 baseline (${String(s09).toUpperCase()}) — moderate confidence. Act on the Cat 8.1 recommendation but document the uncertainty.`;
+      summaryText = `${agreeCount} of 9 evidence methods agree with the Cat 6.1 baseline (${String(s09).toUpperCase()}): moderate confidence. Act on the Cat 8.1 recommendation but document the uncertainty.`;
     } else {
       confidence = "LOW";
-      summaryText = `Significant divergence — investigate before recording a formal governance action. Only ${agreeCount} of 9 evidence methods agree with the Cat 6.1 baseline (${String(s09).toUpperCase()}). Spread across all methods: ${redCount} Red, ${amberCount} Amber, ${greenCount} Green.`;
+      summaryText = `Significant divergence: investigate before recording a formal governance action. Only ${agreeCount} of 9 evidence methods agree with the Cat 6.1 baseline (${String(s09).toUpperCase()}). Spread across all methods: ${redCount} Red, ${amberCount} Amber, ${greenCount} Green.`;
     }
 
     return `<section class="panel dd-panel status-${overallSt}" aria-label="Synthesis comparison">
-      <div class="dd-head"><b>Synthesis Methods Comparison — Cat 6.1 & Cat 7.1–7.9</b><span class="dd-cmp-conf dd-cmp-conf-${confidence.toLowerCase()}">${confidence} CONFIDENCE</span></div>
+      <div class="dd-head"><b>Synthesis Methods Comparison: Cat 6.1 & Cat 7.1–7.9</b><span class="dd-cmp-conf dd-cmp-conf-${confidence.toLowerCase()}">${confidence} CONFIDENCE</span></div>
       <p class="dd-chart-note">Agreement check across all synthesis and evidence methods. Conservative dominance (Cat 6.1) is the governance baseline; Cat 7.1–7.9 provide independent cross-checks using different evidence frameworks across five decades of uncertainty-reasoning research.</p>
       <table class="dd-cmp-table">${header}${rows}</table>
       <p class="dd-chart-note">${esc(summaryText)}</p>
@@ -1821,7 +1821,7 @@
     const overrunPct = Math.round((rcfP80 / bac - 1) * 100);
     const st = overrunPct > 15 ? 'red' : overrunPct > 8 ? 'amber' : 'green';
     return panel("3.1", "Reference Class Forecast", st,
-      note("Outside-view cost prior from comparable infrastructure projects. RCF P80 is the 80th-percentile outcome drawn from historical analogous project overruns — it is the benchmark against which all bottom-up estimates are pressure-tested.") +
+      note("Outside-view cost prior from comparable infrastructure projects. RCF P80 is the 80th-percentile outcome drawn from historical analogous project overruns: it is the benchmark against which all bottom-up estimates are pressure-tested.") +
       `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="rcf3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("BAC", "$" + (bac/1e6).toFixed(1) + "M", "green") +
@@ -1830,7 +1830,7 @@
         metricBox("Method", "Ref Class", "green")
       }</div>` +
       reasons([
-        `RCF P80 is $${(rcfP80/1e6).toFixed(1)}M — ${overrunPct}% above BAC. Outside-view priors from comparable infrastructure projects indicate systematic underestimation at this stage of delivery.`,
+        `RCF P80 is $${(rcfP80/1e6).toFixed(1)}M: ${overrunPct}% above BAC. Outside-view priors from comparable infrastructure projects indicate systematic underestimation at this stage of delivery.`,
         `The reference class histogram shows the right tail extends well above BAC, consistent with the Flyvbjerg et al. findings on megaproject cost overruns.`
       ], st) +
       rule("GREEN if RCF P80 within 8% of BAC; AMBER if 8–15%; RED if > 15%. RCF P80 above BAC indicates the estimate has not absorbed the historical outside-view overrun premium."));
@@ -1842,7 +1842,7 @@
     const impacted = si.dsmImpactedTrades || 4;
     const st = multiplier > 2.5 ? 'red' : multiplier > 1.5 ? 'amber' : 'green';
     return panel("3.2", "DSM Rework Propagation", st,
-      note("Design Structure Matrix — rework burden from scope changes propagated across disciplines. Off-diagonal cells show the rework flow intensity between each discipline pair. The overall multiplier is the ratio of total rework-hours to the original trigger event hours.") +
+      note("Design Structure Matrix: rework burden from scope changes propagated across disciplines. Off-diagonal cells show the rework flow intensity between each discipline pair. The overall multiplier is the ratio of total rework-hours to the original trigger event hours.") +
       `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="dsm3d" data-nodrag="1"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · 2D view</p></div>` +
       `<div class="dd-grid">${
         metricBox("Rework mult", multiplier.toFixed(1) + "×", st) +
@@ -1851,10 +1851,10 @@
         metricBox("Method", "DSM", "green")
       }</div>` +
       reasons([
-        `DSM rework multiplier ${multiplier.toFixed(1)}× — every hour of rework at the triggering discipline propagates ${multiplier.toFixed(1)} hours of consequential rework across ${impacted} downstream trades.`,
+        `DSM rework multiplier ${multiplier.toFixed(1)}×: every hour of rework at the triggering discipline propagates ${multiplier.toFixed(1)} hours of consequential rework across ${impacted} downstream trades.`,
         `High off-diagonal intensity in the structural/MEP/interior block indicates tightly coupled dependencies that amplify any scope change.`
       ], st) +
-      rule("GREEN if multiplier <= 1.5×; AMBER if 1.5–2.5×; RED if > 2.5×. DSM multiplier above 2.5× indicates highly coupled design disciplines — scope changes carry significant downstream cost consequences."));
+      rule("GREEN if multiplier <= 1.5×; AMBER if 1.5–2.5×; RED if > 2.5×. DSM multiplier above 2.5× indicates highly coupled design disciplines: scope changes carry significant downstream cost consequences."));
   }
 
   function m3_3(p) {
@@ -1866,7 +1866,7 @@
     const burnRate = burnedPct > 0 && completion > 0 ? (burnedPct / completion).toFixed(2) : '1.84';
     const st = burnedPct > 75 ? 'red' : burnedPct > 50 ? 'amber' : 'green';
     return panel("3.3", "Contingency Burn Rate", st,
-      note("Contingency drawdown against project completion. The 80% threshold line marks the critical depletion point — consuming 80% of contingency before 80% completion leaves insufficient reserve for delivery risks in the later, higher-risk phases.") +
+      note("Contingency drawdown against project completion. The 80% threshold line marks the critical depletion point: consuming 80% of contingency before 80% completion leaves insufficient reserve for delivery risks in the later, higher-risk phases.") +
       `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="contingency3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Burned", burnedPct + "%", st) +
@@ -1875,7 +1875,7 @@
         metricBox("Threshold", "80%", "green")
       }</div>` +
       reasons([
-        `${burnedPct}% of contingency consumed at ${completion}% project completion — burning ${burnRate}× faster than the planned straight-line depletion rate.`,
+        `${burnedPct}% of contingency consumed at ${completion}% project completion: burning ${burnRate}× faster than the planned straight-line depletion rate.`,
         `At this rate the contingency is exhausted before project completion, eliminating the financial buffer for late-stage delivery risks.`
       ], st) +
       rule("GREEN if contingency burned <= 50%; AMBER if 50–75%; RED if > 75% burned. Burn rate above 1.5× at any completion point requires a formal contingency replenishment or scope reduction plan."));
@@ -1887,7 +1887,7 @@
     const st = lpi < 0.90 ? 'red' : lpi < 0.95 ? 'amber' : 'green';
     const fore = (lpi * 0.987).toFixed(3);
     return panel("3.4", "Labor Productivity Index", st,
-      note("LPI tracks the ratio of earned output hours to actual hours worked. An LPI below 1.00 indicates productivity is declining — more hours are being consumed per unit of output than planned. The uncertainty band reflects measurement variation across reporting periods.") +
+      note("LPI tracks the ratio of earned output hours to actual hours worked. An LPI below 1.00 indicates productivity is declining: more hours are being consumed per unit of output than planned. The uncertainty band reflects measurement variation across reporting periods.") +
       `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="labor3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("LPI", lpi.toFixed(3), st) +
@@ -1896,8 +1896,8 @@
         metricBox("Forecast", fore, st)
       }</div>` +
       reasons([
-        `LPI ${lpi.toFixed(3)} — productivity has declined from baseline 1.00 over ${si.lpiPeriods || 7} reporting periods, trending to ${fore} in the next period.`,
-        `Sustained LPI below 0.90 cannot be recovered without either a schedule extension or a significant uplift in crew productivity — both carry cost implications.`
+        `LPI ${lpi.toFixed(3)}: productivity has declined from baseline 1.00 over ${si.lpiPeriods || 7} reporting periods, trending to ${fore} in the next period.`,
+        `Sustained LPI below 0.90 cannot be recovered without either a schedule extension or a significant uplift in crew productivity: both carry cost implications.`
       ], st) +
       rule("GREEN if LPI >= 0.95; AMBER if 0.90–0.95; RED if < 0.90. LPI below 0.90 for 3+ consecutive periods requires a formal productivity recovery plan."));
   }
@@ -1918,7 +1918,7 @@
         metricBox("Finishes", si.finishesVariance !== undefined ? (si.finishesVariance >= 0 ? "+" : "") + si.finishesVariance.toFixed(1) + "%" : "+2.5%", "green")
       }</div>` +
       reasons([
-        `Structural materials +${structVar.toFixed(1)}%, MEP +${mepVar.toFixed(1)}% — the two highest-value trades are both running above plan, compounding the overall cost variance.`,
+        `Structural materials +${structVar.toFixed(1)}%, MEP +${mepVar.toFixed(1)}%: the two highest-value trades are both running above plan, compounding the overall cost variance.`,
         `Civil and finishes are near target; the cost overrun is concentrated in structural and MEP where supply-chain volatility has outpaced the estimate contingency.`
       ], st) +
       rule("GREEN if no trade variance > 6%; AMBER if any trade 6–12%; RED if any trade > 12%. Structural or MEP variance above 10% requires formal cost forecast revision."));
@@ -1931,7 +1931,7 @@
     const gap = Math.round((target - rate) * 100);
     const st = rate < 0.92 ? 'red' : rate < 0.97 ? 'amber' : 'green';
     return panel("3.6", "Overhead Absorption Rate", st,
-      note("Overhead absorption — the ratio of overheads actually recovered through charged work vs. the planned overhead recovery rate. Under-absorption means indirect costs accumulate as unrecovered overhead, eroding the margin.") +
+      note("Overhead absorption: the ratio of overheads actually recovered through charged work vs. the planned overhead recovery rate. Under-absorption means indirect costs accumulate as unrecovered overhead, eroding the margin.") +
       `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="overhead3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
         metricBox("Rate", Math.round(rate * 100) + "%", st) +
@@ -1940,7 +1940,7 @@
         metricBox("Trend", rate < (si.priorOverheadRate || 0.960) ? "Declining" : "Stable", st)
       }</div>` +
       reasons([
-        `Overhead absorption ${Math.round(rate * 100)}% vs. target ${Math.round(target * 100)}% — a ${gap}% under-absorption gap means indirect costs are not being fully recovered through the current workload mix.`,
+        `Overhead absorption ${Math.round(rate * 100)}% vs. target ${Math.round(target * 100)}%: a ${gap}% under-absorption gap means indirect costs are not being fully recovered through the current workload mix.`,
         `Three consecutive periods below target indicates a structural under-utilisation of indirect resources, not a transient timing issue.`
       ], st) +
       rule("GREEN if absorption rate >= 97%; AMBER if 92–97%; RED if < 92%. Under-absorption below 92% for 2+ periods requires an overhead recovery plan or rate revision."));
@@ -1965,8 +1965,8 @@
         metricBox("P(overrun)", pDelay + "%", st)
       }</div>` +
       reasons([
-        `Monte Carlo cost simulation: P50 $${(p50/1e6).toFixed(1)}M, P80 $${(p80/1e6).toFixed(1)}M — ${vsBAC}% above BAC. ${pDelay}% probability of any cost overrun.`,
-        `The long right tail in the distribution is driven by material and labor variance risk — the distribution is positively skewed, consistent with the reference class prior.`
+        `Monte Carlo cost simulation: P50 $${(p50/1e6).toFixed(1)}M, P80 $${(p80/1e6).toFixed(1)}M: ${vsBAC}% above BAC. ${pDelay}% probability of any cost overrun.`,
+        `The long right tail in the distribution is driven by material and labor variance risk: the distribution is positively skewed, consistent with the reference class prior.`
       ], st) +
       rule("GREEN if P80 within 6% of BAC; AMBER if 6–12%; RED if > 12% above BAC. P80 above BAC by more than 10% requires a formal cost-at-completion revision."));
   }
@@ -2007,7 +2007,7 @@
         metricBox("Models", "3", "green")
       }</div>` +
       reasons([
-        `Consensus parametric index ${consensus.toFixed(3)} — all three models (RS Means, ENR, CBRE) are converging below 1.00, indicating the project's cost performance is deteriorating relative to the parametric benchmark.`,
+        `Consensus parametric index ${consensus.toFixed(3)}: all three models (RS Means, ENR, CBRE) are converging below 1.00, indicating the project's cost performance is deteriorating relative to the parametric benchmark.`,
         `A declining multi-model consensus below 0.95 provides independent confirmation of the EVM CPI trend, reducing the probability of a data artefact.`
       ], st) +
       rule("GREEN if consensus index >= 0.97; AMBER if 0.93–0.97; RED if < 0.93. Three-model convergence below 0.95 is a high-confidence signal of systemic cost underperformance."));
@@ -2020,7 +2020,7 @@
     const nominalCost = si.nominalCostM || 5.04;
     const st = inflationPct > 6 ? 'red' : inflationPct > 3 ? 'amber' : 'green';
     return panel("3.10", "Inflation Adjustment", st,
-      note("Nominal vs. inflation-adjusted cost surfaces across 6 quarters. Red surface = nominal cost (what invoices show). Blue surface = real cost (inflation-stripped). The amber bracket at the final period shows the cumulative inflation gap — the portion of cost growth attributable to price-level changes rather than scope or productivity.") +
+      note("Nominal vs. inflation-adjusted cost surfaces across 6 quarters. Red surface = nominal cost (what invoices show). Blue surface = real cost (inflation-stripped). The amber bracket at the final period shows the cumulative inflation gap: the portion of cost growth attributable to price-level changes rather than scope or productivity.") +
       `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="inflation3d" data-nodrag="1"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · 2D view</p></div>` +
       `<div class="dd-grid">${
         metricBox("Inflation", "+" + inflationPct.toFixed(1) + "%", st) +
@@ -2029,34 +2029,34 @@
         metricBox("Gap", "$" + (nominalCost - realCost).toFixed(2) + "M", st)
       }</div>` +
       reasons([
-        `Cumulative inflation impact +${inflationPct.toFixed(1)}% — $${(nominalCost - realCost).toFixed(2)}M of the nominal cost growth is attributable to price-level increases rather than scope change or productivity loss.`,
+        `Cumulative inflation impact +${inflationPct.toFixed(1)}%: $${(nominalCost - realCost).toFixed(2)}M of the nominal cost growth is attributable to price-level increases rather than scope change or productivity loss.`,
         `Inflation-adjusted (real) cost is $${realCost.toFixed(2)}M vs. nominal $${nominalCost.toFixed(2)}M. Inflation contribution must be excluded from the scope/productivity variance to correctly diagnose the root cause of cost overruns.`
       ], st) +
       rule("GREEN if inflation adjustment <= 3%; AMBER if 3–6%; RED if > 6%. Inflation contribution above 6% requires re-baselining the cost forecast with updated escalation factors."));
   }
 
   /* ---- Cat 4-12 panel functions ---- */
-  function m4_1(p){return panel("4.1","Document Risk Score","amber",note("2D radar — 6 NLP dimensions. Composite risk score 0.45.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"41\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Score","0.45","amber")+metricBox("Threshold","0.70","amber")+metricBox("Trend","Rising","amber")+'</div>');}
-  function m4_2(p){return panel("4.2","RFI Velocity","red",note("RFI rate 3.2/week — above 2.5/week threshold. Response time 18 days.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"42\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Rate","3.2/wk","red")+metricBox("Threshold","2.5/wk","red")+metricBox("Resp time","18 days","red")+'</div>');}
-  function m4_3(p){return panel("4.3","Submittal Rejection Rate","amber",note("Rejection rate peaked at 15%. Currently 13% — above 10% threshold.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"43\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Current","13%","amber")+metricBox("Peak","15%","amber")+metricBox("Threshold","10%","amber")+'</div>');}
-  function m4_4(p){return panel("4.4","NCR Rate","red",note("2D histogram — non-conformance reports trending upward. M6: 6 NCRs.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"44\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("M6 NCRs","6","red")+metricBox("Threshold","4","red")+metricBox("Trend","Rising","red")+'</div>');}
+  function m4_1(p){return panel("4.1","Document Risk Score","amber",note("2D radar: 6 NLP dimensions. Composite risk score 0.45.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"41\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Score","0.45","amber")+metricBox("Threshold","0.70","amber")+metricBox("Trend","Rising","amber")+'</div>');}
+  function m4_2(p){return panel("4.2","RFI Velocity","red",note("RFI rate 3.2/week: above 2.5/week threshold. Response time 18 days.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"42\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Rate","3.2/wk","red")+metricBox("Threshold","2.5/wk","red")+metricBox("Resp time","18 days","red")+'</div>');}
+  function m4_3(p){return panel("4.3","Submittal Rejection Rate","amber",note("Rejection rate peaked at 15%. Currently 13%: above 10% threshold.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"43\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Current","13%","amber")+metricBox("Peak","15%","amber")+metricBox("Threshold","10%","amber")+'</div>');}
+  function m4_4(p){return panel("4.4","NCR Rate","red",note("2D histogram: non-conformance reports trending upward. M6: 6 NCRs.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"44\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("M6 NCRs","6","red")+metricBox("Threshold","4","red")+metricBox("Trend","Rising","red")+'</div>');}
   function m4_5(p){return panel("4.5","Weather Day Impact","amber",note("Lost 5 weather days vs 3-day buffer remaining. Buffer eroding.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"45\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Lost","5 days","amber")+metricBox("Buffer left","3 days","amber")+metricBox("Risk","Amber","amber")+'</div>');}
-  function m4_6(p){return panel("4.6","Change Order Frequency","amber",note("1 CO issued — $380k cumulative. Frequency and value both trending up.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"46\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Count","1 CO","amber")+metricBox("Cumulative","$380k","amber")+metricBox("Trend","Rising","amber")+'</div>');}
-  function m4_7(p){return panel("4.7","Dispute Escalation Index","amber",note("Escalation index 0.38 — above 0.30 threshold. Trend rising.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"47\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Index","0.38","amber")+metricBox("Threshold","0.30","amber")+metricBox("Trend","Rising","amber")+'</div>');}
-  function m4_8(p){return panel("4.8","Subcontractor Performance","amber",note("2D radar — 3 subs across 5 dimensions. Mech trailing on schedule/cost.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"48\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Elec","70%","amber")+metricBox("Mech","58%","amber")+metricBox("Civil","78%","amber")+'</div>');}
-  function m4_9(p){return panel("4.9","Procurement Lead Time","amber",note("3D dot plot — steel +7d, HVAC +12d vs planned. Concrete on schedule.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"49\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Steel","+7d","amber")+metricBox("HVAC","+12d","amber")+metricBox("Concrete","−1d","amber")+'</div>');}
-  function m4_10(p){return panel("4.10","Spec Conflict Index","amber",note("Chord diagram — MEP–Struct conflict 0.8. Arch–MEP 0.5.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"410\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("MEP–Struct","0.8","amber")+metricBox("Arch–MEP","0.5","amber")+metricBox("Status","Amber","amber")+'</div>');}
-  function m5_1(p){return panel("5.1","DSM Propagation","amber",note("3D cascade — Arch scope change propagates through 4 downstream disciplines.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"51\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Rework mult","2.8×","amber")+metricBox("Depth","3 levels","amber")+metricBox("Impacted","4 trades","amber")+'</div>');}
-  function m5_2(p){return panel("5.2","Sensitivity Analysis","amber",note("3D tornado — labor rate ±12.4% has largest EAC impact.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"52\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Top driver","Labor rate","amber")+metricBox("Impact","±12.4%","amber")+metricBox("Vars tested","5","amber")+'</div>');}
-  function m5_3(p){return panel("5.3","Tornado Ranking","amber",note("2D horizontal — ranked EAC drivers. Labor rate dominates at +12.4%.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"53\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("#1 driver","Labor","amber")+metricBox("Impact","+12.4%","amber")+metricBox("#2","Materials","amber")+'</div>');}
-  function m5_4(p){return panel("5.4","Scenario Modeling","amber",note("3D overlapping distributions — optimistic / base / pessimistic EAC.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"54\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Optimistic","$25.8M","amber")+metricBox("Base","$27.1M","amber")+metricBox("Pessimistic","$28.6M","amber")+'</div>');}
-  function m5_5(p){return panel("5.5","Rework Feedback Loop","amber",note("3D spiral — each loop = feedback cycle. Amplification 1.35× after 4 loops.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"55\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Amplification","1.35×","amber")+metricBox("Loops","4","amber")+metricBox("Trend","Growing","amber")+'</div>');}
-  function m5_6(p){return panel("5.6","Queueing Bottleneck","amber",note("3D area — 3 queue types growing over 6 periods. Submittal Q deepest.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"56\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("RFI queue","10 items","amber")+metricBox("Submittal Q","11 items","amber")+metricBox("Trend","Growing","amber")+'</div>');}
-  function m5_7(p){return panel("5.7","Agent-Based Supply Chain","amber",note("3D network — disrupted supply paths shown in red dashed. Steel + HVAC.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"57\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Disrupted","2 paths","amber")+metricBox("Steel","+7d","amber")+metricBox("HVAC","+12d","amber")+'</div>');}
-  function m5_8(p){return panel("5.8","Discrete Event Simulation","amber",note("2D Gantt — planned vs simulated actuals. Steel +2W, MEP +3W, Comm +2W.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"58\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Steel","+2W","amber")+metricBox("MEP rough","+3W","amber")+metricBox("Commissioning","+2W","amber")+'</div>');}
+  function m4_6(p){return panel("4.6","Change Order Frequency","amber",note("1 CO issued: $380k cumulative. Frequency and value both trending up.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"46\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Count","1 CO","amber")+metricBox("Cumulative","$380k","amber")+metricBox("Trend","Rising","amber")+'</div>');}
+  function m4_7(p){return panel("4.7","Dispute Escalation Index","amber",note("Escalation index 0.38: above 0.30 threshold. Trend rising.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"47\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Index","0.38","amber")+metricBox("Threshold","0.30","amber")+metricBox("Trend","Rising","amber")+'</div>');}
+  function m4_8(p){return panel("4.8","Subcontractor Performance","amber",note("2D radar: 3 subs across 5 dimensions. Mech trailing on schedule/cost.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"48\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Elec","70%","amber")+metricBox("Mech","58%","amber")+metricBox("Civil","78%","amber")+'</div>');}
+  function m4_9(p){return panel("4.9","Procurement Lead Time","amber",note("3D dot plot: steel +7d, HVAC +12d vs planned. Concrete on schedule.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"49\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Steel","+7d","amber")+metricBox("HVAC","+12d","amber")+metricBox("Concrete","−1d","amber")+'</div>');}
+  function m4_10(p){return panel("4.10","Spec Conflict Index","amber",note("Chord diagram: MEP–Struct conflict 0.8. Arch–MEP 0.5.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"410\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("MEP–Struct","0.8","amber")+metricBox("Arch–MEP","0.5","amber")+metricBox("Status","Amber","amber")+'</div>');}
+  function m5_1(p){return panel("5.1","DSM Propagation","amber",note("3D cascade: Arch scope change propagates through 4 downstream disciplines.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"51\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Rework mult","2.8×","amber")+metricBox("Depth","3 levels","amber")+metricBox("Impacted","4 trades","amber")+'</div>');}
+  function m5_2(p){return panel("5.2","Sensitivity Analysis","amber",note("3D tornado: labor rate ±12.4% has largest EAC impact.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"52\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Top driver","Labor rate","amber")+metricBox("Impact","±12.4%","amber")+metricBox("Vars tested","5","amber")+'</div>');}
+  function m5_3(p){return panel("5.3","Tornado Ranking","amber",note("2D horizontal: ranked EAC drivers. Labor rate dominates at +12.4%.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"53\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("#1 driver","Labor","amber")+metricBox("Impact","+12.4%","amber")+metricBox("#2","Materials","amber")+'</div>');}
+  function m5_4(p){return panel("5.4","Scenario Modeling","amber",note("3D overlapping distributions: optimistic / base / pessimistic EAC.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"54\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Optimistic","$25.8M","amber")+metricBox("Base","$27.1M","amber")+metricBox("Pessimistic","$28.6M","amber")+'</div>');}
+  function m5_5(p){return panel("5.5","Rework Feedback Loop","amber",note("3D spiral: each loop = feedback cycle. Amplification 1.35× after 4 loops.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"55\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Amplification","1.35×","amber")+metricBox("Loops","4","amber")+metricBox("Trend","Growing","amber")+'</div>');}
+  function m5_6(p){return panel("5.6","Queueing Bottleneck","amber",note("3D area: 3 queue types growing over 6 periods. Submittal Q deepest.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"56\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("RFI queue","10 items","amber")+metricBox("Submittal Q","11 items","amber")+metricBox("Trend","Growing","amber")+'</div>');}
+  function m5_7(p){return panel("5.7","Agent-Based Supply Chain","amber",note("3D network: disrupted supply paths shown in red dashed. Steel + HVAC.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"57\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Disrupted","2 paths","amber")+metricBox("Steel","+7d","amber")+metricBox("HVAC","+12d","amber")+'</div>');}
+  function m5_8(p){return panel("5.8","Discrete Event Simulation","amber",note("2D Gantt: planned vs simulated actuals. Steel +2W, MEP +3W, Comm +2W.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"58\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Steel","+2W","amber")+metricBox("MEP rough","+3W","amber")+metricBox("Commissioning","+2W","amber")+'</div>');}
   function m6_1(p){return panel("6.1","Conservative Dominance","red",note("Worst signal wins. 2× Red → Red-review. Deterministic, auditable.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"61\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Result","Red-review","red")+metricBox("Rule","Worst wins","red")+metricBox("Signals","2R 2A","red")+'</div>');}
   function m6_2(p){return panel("6.2","Weighted Voting","red",note("Weighted aggregate of all signal scores. Score 0.719 → Red.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"62\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Score","0.719","red")+metricBox("Top weight","EVM 35%","red")+metricBox("Result","Red","red")+'</div>');}
-  function m6_3(p){return panel("6.3","Majority Rules","red",note("Signal majority vote. 2R 2A tie — conservative dominance applies.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"63\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Red","2 votes","red")+metricBox("Amber","2 votes","red")+metricBox("Result","Red (tie)","red")+'</div>');}
+  function m6_3(p){return panel("6.3","Majority Rules","red",note("Signal majority vote. 2R 2A tie: conservative dominance applies.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"63\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Red","2 votes","red")+metricBox("Amber","2 votes","red")+metricBox("Result","Red (tie)","red")+'</div>');}
   function m6_4(p){return panel("6.4","Worst-N-of-M","red",note("Worst 2 of 6 signals above threshold → Red-review.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"64\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Threshold","0.70","red")+metricBox("Worst 2","MC + CUSUM","red")+metricBox("Result","Red-review","red")+'</div>');}
   function m7_1(p){return panel("7.1","Dempster-Shafer Theory","red",note("Belief masses: Red 0.52, Amber 0.28, Conflict 0.12.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"71\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Bel(Red)","0.52","red")+metricBox("Bel(Amb)","0.28","red")+metricBox("Conflict","0.12","red")+'</div>');}
   function m7_2(p){return panel("7.2–7.8","Evidence Methods (Rough Sets → BRB)","red",note("7 uncertainty methods compared. All converge on Red with varying confidence.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"72_78\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Methods","7","red")+metricBox("Agree Red","6 of 7","red")+metricBox("Avg conf","0.73","red")+'</div>');}
@@ -2065,7 +2065,7 @@
   function m9_2(p){return panel("8.2–8.9","Compliance Modules","amber",note("FAR, OMB, EVM reporting, quality, safety, environmental, contractor score.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"92_99\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Compliant","3 of 8","amber")+metricBox("Amber","4 of 8","amber")+metricBox("Red","1 of 8","amber")+'</div>');}
   function m10_1(p){return panel("9.1","Missing Data Index","amber",note("Field completeness heatmap across 5 document types and 8 key fields.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"101\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Complete","73%","amber")+metricBox("Missing","27 fields","amber")+metricBox("Worst","Field Rpt","amber")+'</div>');}
   function m10_2(p){return panel("9.2–9.7","Data Quality Modules","amber",note("Timeliness, reliability, audit trail, completeness, consistency, frequency.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"102_107\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Audit trail","100%","amber")+metricBox("Timeliness","0.58","amber")+metricBox("Overall","Amber","amber")+'</div>');}
-  function m11_1(p){return panel("10.1","Multi-Objective Optimization","red",note("3D Pareto surface — current solution dominated, optimal exists at higher cost tolerance.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"111\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Current","Dominated","red")+metricBox("Gap","11.2%","red")+metricBox("Action","Escalate","red")+'</div>');}
+  function m11_1(p){return panel("10.1","Multi-Objective Optimization","red",note("3D Pareto surface: current solution dominated, optimal exists at higher cost tolerance.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"111\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Current","Dominated","red")+metricBox("Gap","11.2%","red")+metricBox("Action","Escalate","red")+'</div>');}
   function m11_2(p){return panel("10.2–10.7","Optimization Modules","red",note("LP, constraint satisfaction, what-if, sensitivity, Pareto, regret minimization.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"112_117\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("LP req CPI","1.076","red")+metricBox("Constraints","2 violated","red")+metricBox("Recommend","Escalate","red")+'</div>');}
   function simModules(project) {
     const payload = project.simulationSignals;
@@ -2138,7 +2138,7 @@
     if (!window.hasSignals || !hasSignals(project)) {
       root.innerHTML =
         `<section class="panel awaiting-state">
-           <p><strong>Awaiting ingest — no signals yet.</strong></p>
+           <p><strong>Awaiting ingest: no signals yet.</strong></p>
            <p class="kn-sub">The modules compute from this project's signals. Populate signals (Manage Projects, or the "Ingest" panel above) to run the real Monte Carlo (5,000 iterations) and CUSUM, the keyword document-risk extraction, and the PCEIF synthesis + governance decision. Nothing is computed or fabricated until inputs are ingested.</p>
          </section>`;
       return;
@@ -2152,7 +2152,7 @@
     //   sims.synth — Module 09 vs 10-18 agreement table + PM confidence band
     //   19     ABM Governance decision card (internally m09) — LAST
     root.innerHTML =
-      `<p class="mod-banner">Cat 1–Cat 3 modules are quantitative signal generators. Cat 6.1 (Conservative Dominance) is the baseline synthesis. Cat 7.1–7.9 are independent evidence-combination methods cross-checking Cat 6.1 across five decades of uncertainty-reasoning research. Cat 8.1 (ABM Governance) is the decision output — the named-authority action that survives this reporting cycle.</p>` +
+      `<p class="mod-banner">Cat 1–Cat 3 modules are quantitative signal generators. Cat 6.1 (Conservative Dominance) is the baseline synthesis. Cat 7.1–7.9 are independent evidence-combination methods cross-checking Cat 6.1 across five decades of uncertainty-reasoning research. Cat 8.1 (ABM Governance) is the decision output: the named-authority action that survives this reporting cycle.</p>` +
       m01(project) + m02(project) + m03(project) +
       m1_4(project) + m1_5(project) + m1_6(project) + m1_7(project) + m1_8(project) +
       m1_9(project) + m1_10(project) + m1_11(project) + m1_12(project) +
@@ -2274,9 +2274,9 @@
     try {
       const st = window.getModuleStatus ? window.getModuleStatus("Anomaly_Score", project) : null;
       const isRed = st && /red|amber/i.test(String(st));
-      if (isRed) return "Portfolio Health: flagged as a portfolio outlier (" + String(st) + ") —";
+      if (isRed) return "Portfolio Health: flagged as a portfolio outlier (" + String(st) + "). ";
     } catch (e) {}
-    return "Portfolio Health: no anomaly flagged —";
+    return "Portfolio Health: no anomaly flagged. ";
   }
 
   // ---------- Portfolio Health dialog (event-driven, v10.35) — real results ----------
@@ -2372,7 +2372,7 @@
     if (!root.isConnected) return; // dialog closed while the fetch was in flight
     if (!data.anyData) {
       const reason = data.projectCount < 3
-        ? "Portfolio Health needs at least 3 projects with computed signals to compare against the population — " + data.projectCount + " loaded."
+        ? "Portfolio Health needs at least 3 projects with computed signals to compare against the population: " + data.projectCount + " loaded."
         : "Portfolio Health hasn't run yet for the current portfolio.";
       root.innerHTML =
         `<p class="kn-sub">${escg(reason)}</p>` +
@@ -2394,7 +2394,7 @@
       ? `<p class="kn-sub cat8-asof">Portfolio Health as of ${esc(asOf)}</p>`
       : "";
     const staleLine = data.stale
-      ? `<p class="cat8-stale-hint">Portfolio health predates the latest upload — ` +
+      ? `<p class="cat8-stale-hint">Portfolio health predates the latest upload: ` +
         `<button type="button" class="dd-link" data-refresh-health>refresh</button></p>`
       : "";
     root.innerHTML =
