@@ -143,14 +143,76 @@
 
   /* ---------- UI ---------- */
 
+  // One line-art robot character that morphs between three activity states
+  // (idle / listening / answering). Shared base: rounded head, two dot eyes,
+  // antenna + tip, signal waves. Per-state accessories cross-fade (headset /
+  // open book / speech bubbles). ALL animation is CSS/SMIL — JS only toggles
+  // the is-idle / is-listening / is-answering state classes on the launcher.
+  const ROBOT_SVG =
+    '<svg class="la-robot" viewBox="0 0 64 64" aria-hidden="true" focusable="false">' +
+      '<g class="bot-bob">' +
+        // signal waves above the antenna (idle: slow pulse · answering: fast)
+        '<g class="bot-waves">' +
+          '<path class="bot-wave bot-wave-1" d="M26 9 A7 7 0 0 1 38 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+          '<path class="bot-wave bot-wave-2" d="M22.5 10.5 A10.5 10.5 0 0 1 41.5 10.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+        '</g>' +
+        // antenna
+        '<line class="bot-antenna" x1="32" y1="18" x2="32" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+        '<circle class="bot-antenna-tip" cx="32" cy="10" r="2" fill="currentColor"/>' +
+        // IDLE accessory: headset arc + ear cups + mic boom
+        '<g class="bot-acc bot-headset">' +
+          '<path d="M18 30 A14 14 0 0 1 46 30" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>' +
+          '<rect x="15" y="28" width="4.5" height="8" rx="2" fill="currentColor"/>' +
+          '<rect x="44.5" y="28" width="4.5" height="8" rx="2" fill="currentColor"/>' +
+          '<path d="M17.5 35 Q13.5 43 25 41" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+          '<circle cx="25" cy="41" r="2" fill="currentColor"/>' +
+        '</g>' +
+        // head
+        '<rect class="bot-head" x="20" y="18" width="24" height="22" rx="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/>' +
+        // eyes (blink; look down while listening)
+        '<g class="bot-eyes">' +
+          '<circle class="bot-eye bot-eye-l" cx="27.5" cy="28" r="2.4" fill="currentColor"/>' +
+          '<circle class="bot-eye bot-eye-r" cx="36.5" cy="28" r="2.4" fill="currentColor"/>' +
+        '</g>' +
+        // mouth: neutral + grin (grin fades in on hover/focus)
+        '<path class="bot-mouth" d="M28 34.5 Q32 36.5 36 34.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+        '<path class="bot-grin" d="M27 33.5 Q32 38.5 37 33.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+        // LISTENING accessory: open book with reading-sweep text rows
+        '<g class="bot-acc bot-book">' +
+          '<path d="M32 44 C28 42 23.5 41.8 19.5 42.3 L19.5 52 C23.5 51.5 28 51.8 32 53.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>' +
+          '<path d="M32 44 C36 42 40.5 41.8 44.5 42.3 L44.5 52 C40.5 51.5 36 51.8 32 53.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>' +
+          '<line x1="32" y1="44" x2="32" y2="53.2" stroke="currentColor" stroke-width="2"/>' +
+          '<g class="bot-book-text" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">' +
+            '<line class="bot-read bot-read-1" x1="22" y1="46.4" x2="29.5" y2="46.4"/>' +
+            '<line class="bot-read bot-read-2" x1="22" y1="49.4" x2="29.5" y2="49.4"/>' +
+            '<line class="bot-read bot-read-3" x1="34.5" y1="46.4" x2="42" y2="46.4"/>' +
+            '<line class="bot-read bot-read-4" x1="34.5" y1="49.4" x2="42" y2="49.4"/>' +
+          '</g>' +
+        '</g>' +
+        // ANSWERING accessory: two speech bubbles (dots + lines, alternating)
+        '<g class="bot-acc bot-bubbles">' +
+          '<g class="bot-bubble bot-bubble-1">' +
+            '<path d="M45 19 h12 a3 3 0 0 1 3 3 v6 a3 3 0 0 1 -3 3 h-7 l-3 3 v-3 a3 3 0 0 1 -2 -3 v-6 a3 3 0 0 1 2 -3 z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>' +
+            '<g fill="currentColor"><circle class="bot-dot bot-dot-1" cx="49" cy="25" r="1.3"/><circle class="bot-dot bot-dot-2" cx="53" cy="25" r="1.3"/><circle class="bot-dot bot-dot-3" cx="57" cy="25" r="1.3"/></g>' +
+          '</g>' +
+          '<g class="bot-bubble bot-bubble-2">' +
+            '<path d="M19 33 h-12 a3 3 0 0 0 -3 3 v5 a3 3 0 0 0 3 3 h7 l3 3 v-3 a3 3 0 0 0 2 -3 v-5 a3 3 0 0 0 -2 -3 z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>' +
+            '<g stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line class="bot-say bot-say-1" x1="7" y1="38" x2="16" y2="38"/><line class="bot-say bot-say-2" x1="7" y1="41" x2="13" y2="41"/></g>' +
+          '</g>' +
+        '</g>' +
+      '</g>' +
+    '</svg>';
+
   function buildWidget() {
     const wrap = document.createElement("div");
     wrap.id = "lin-assistant";
     wrap.innerHTML =
-      `<button id="la-launcher" class="la-launcher" aria-expanded="false" aria-controls="la-panel"
-               title="Ask Lin">
-         <span aria-hidden="true">💬</span><span class="la-launcher-label">Ask Lin</span>
+      `<button id="la-launcher" class="la-launcher is-idle" aria-expanded="false" aria-controls="la-panel"
+               aria-label="Ask Lin — assistant" title="Ask Lin">
+         <span class="la-greet" aria-hidden="true">Ask Lin</span>
+         ${ROBOT_SVG}
        </button>
+       <span id="la-live" class="la-sr-only" aria-live="polite"></span>
        <div id="la-panel" class="la-panel" role="dialog" aria-label="Lin assistant" hidden>
          <div class="la-head">
            <div><strong>Lin</strong></div>
@@ -180,13 +242,79 @@
     const msgs = document.getElementById("la-msgs");
     const form = document.getElementById("la-form");
     const input = document.getElementById("la-input");
+    const live = document.getElementById("la-live");
+
+    /* ---------- robot state machine ----------
+       Panel closed → always IDLE. Otherwise ANSWERING (a reply is in flight)
+       wins over LISTENING (typing in the input), which wins over IDLE. JS only
+       flips the state class; all motion is CSS. Screen-reader announcements go
+       out politely via #la-live. */
+    let answering = false;      // send → response finishes
+    let typingActive = false;   // input focused + non-empty (debounced)
+    let curState = "idle";
+    function computeState() {
+      if (panel.hidden) return "idle";
+      if (answering) return "answering";
+      if (typingActive) return "listening";
+      return "idle";
+    }
+    function applyState() {
+      const s = computeState();
+      if (s === curState) return;
+      curState = s;
+      launcher.classList.remove("is-idle", "is-listening", "is-answering");
+      launcher.classList.add("is-" + s);
+      live.textContent = s === "listening" ? "Lin is listening"
+                       : s === "answering" ? "Lin is answering" : "";
+    }
+    // one-shot flourishes (happy double-bob on success, head-shake on error)
+    function flourish(cls) {
+      launcher.classList.remove("la-happy", "la-shake");
+      // reflow so re-adding the class restarts the animation
+      void launcher.offsetWidth;
+      launcher.classList.add(cls);
+      setTimeout(() => launcher.classList.remove(cls), 700);
+    }
+
+    // Greeting: auto-show the "Ask Lin" bubble once per session, permanently
+    // suppressed once the visitor has ever used the chat (localStorage).
+    let chatUsed = false;
+    try { chatUsed = localStorage.getItem("lin-chat-used") === "1"; } catch (e) {}
+    function markChatUsed() {
+      launcher.classList.remove("la-greeting");
+      if (chatUsed) return;
+      chatUsed = true;
+      try { localStorage.setItem("lin-chat-used", "1"); } catch (e) {}
+    }
+    (function maybeGreet() {
+      if (chatUsed) return;
+      let greeted = false;
+      try { greeted = sessionStorage.getItem("lin-greeted") === "1"; } catch (e) {}
+      if (greeted) return;
+      try { sessionStorage.setItem("lin-greeted", "1"); } catch (e) {}
+      launcher.classList.add("la-greeting");
+      setTimeout(() => launcher.classList.remove("la-greeting"), 6000);
+    })();
 
     function toggle(open) {
       const show = open !== undefined ? open : panel.hidden;
       panel.hidden = !show;
       launcher.setAttribute("aria-expanded", String(show));
-      if (show) input.focus();
+      if (show) { launcher.classList.remove("la-greeting"); input.focus(); }
+      else { typingActive = false; }
+      applyState();
     }
+
+    // typing → LISTENING (debounced so it doesn't flicker per keystroke)
+    let typeTimer = null;
+    function evalTyping() {
+      typingActive = !panel.hidden && document.activeElement === input &&
+                     input.value.trim().length > 0;
+      applyState();
+    }
+    input.addEventListener("input", () => { clearTimeout(typeTimer); typeTimer = setTimeout(evalTyping, 200); });
+    input.addEventListener("focus", () => { clearTimeout(typeTimer); typeTimer = setTimeout(evalTyping, 200); });
+    input.addEventListener("blur", () => { clearTimeout(typeTimer); typingActive = false; applyState(); });
 
     launcher.addEventListener("click", () => toggle());
     document.getElementById("la-close").addEventListener("click", () => toggle(false));
@@ -234,14 +362,25 @@
       return { html: `<strong>${esc(a.title)}.</strong> ${esc(a.body)}`, plain: `${a.title}. ${a.body}` };
     }
 
+    // ANSWERING lasts from send until the reply lands; on success a happy
+    // double-bob, on error a head-shake, then back to IDLE/LISTENING.
+    function startAnswering() { markChatUsed(); typingActive = false; answering = true; applyState(); }
+    function endAnswering(ok) {
+      answering = false;
+      flourish(ok ? "la-happy" : "la-shake");
+      // re-evaluate typing (the visitor may already be typing the next question)
+      evalTyping();
+    }
+
     async function ask(text) {
       if (!text || !text.trim()) return;
       msgs.insertAdjacentHTML("beforeend", `<div class="la-msg la-user"><p>${esc(text)}</p></div>`);
       msgs.scrollTop = msgs.scrollHeight;
+      startAnswering();
 
       // No backend configured → scripted answer only.
       if (!(window.LinStore && LinStore.configured && LinStore.configured())) {
-        const s = scripted(text); addBot(s.html); speak(s.plain); return;
+        const s = scripted(text); addBot(s.html); speak(s.plain); endAnswering(true); return;
       }
       // Live AI answer via Groq (scoped to the open project), with scripted fallback.
       const thinking = document.createElement("div");
@@ -257,10 +396,12 @@
         } else {
           const s = scripted(text); addBot(s.html + ` <span class="la-fallback-note">(scripted fallback)</span>`); speak(s.plain);
         }
+        endAnswering(true);
       } catch (e) {
         thinking.remove();
         const s = scripted(text);
         addBot(s.html + ` <span class="la-fallback-note">(scripted fallback — AI unreachable)</span>`); speak(s.plain);
+        endAnswering(false);
       }
     }
 
