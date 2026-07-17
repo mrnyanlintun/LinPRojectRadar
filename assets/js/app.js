@@ -2326,17 +2326,32 @@
       el.innerHTML = '<span style="color:var(--faint)">Summary unavailable — chat endpoint not configured.</span>';
       return;
     }
-    const projectLines = projects.map((p) => {
+    // Shape-tolerant per-project state/metrics: full projects carry
+    // signals.decision + signalInputs; SLIM rows (listslim) expose a precomputed
+    // status label and top-level cpi/spi. Without the slim fallbacks the summary
+    // reported every project as "unknown" with 0 red/amber and no CPI/SPI context.
+    const projState = (p) => {
       const s = p.signals || {};
-      const state = (s.decision && s.decision.state) || p.status || "unknown";
+      if (s.decision && s.decision.state) return s.decision.state;
+      if (p && p.slim && typeof slimStatusLabel === "function") {
+        const lab = slimStatusLabel(p);
+        if (lab) return lab;
+      }
+      return p.status || "unknown";
+    };
+    const projMetric = (p, k) => {
       const si = p.signalInputs || {};
-      const cpi = Number(si.cpi), spi = Number(si.spi);
+      return Number(si[k] != null ? si[k] : p[k]);
+    };
+    const projectLines = projects.map((p) => {
+      const state = projState(p);
+      const cpi = projMetric(p, "cpi"), spi = projMetric(p, "spi");
       return p.id + " " + p.name + " (" + (p.sector || "unknown") + "): state=" + state +
         (Number.isFinite(cpi) ? ", cost performance " + (cpi >= 0.95 ? "on budget" : cpi >= 0.90 ? "slightly over" : "over budget") : "") +
         (Number.isFinite(spi) ? ", schedule " + (spi >= 0.95 ? "on track" : spi >= 0.90 ? "slightly behind" : "behind") : "");
     }).join("\n");
-    const redCount = projects.filter((p) => p.signals && p.signals.decision && String(p.signals.decision.state || "").indexOf("Red") >= 0).length;
-    const amberCount = projects.filter((p) => p.signals && p.signals.decision && p.signals.decision.state === "Amber").length;
+    const redCount = projects.filter((p) => String(projState(p)).indexOf("Red") >= 0).length;
+    const amberCount = projects.filter((p) => projState(p) === "Amber").length;
 
     const prompt = "You are a senior program controls advisor writing a portfolio-level executive summary for a program director." +
       "\n\nPortfolio: " + projects.length + " active projects. " + redCount + " in red-review, " + amberCount + " amber, " +
