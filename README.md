@@ -90,6 +90,49 @@ assets/js/tz.js             timezone selector (default America/New_York)
 assets/js/app.js            radar, page orchestration, decision card, audit export
 ```
 
+## Synthetic data calibration
+
+Every project in this demo is authored from synthetic documents, not real
+project records — but "synthetic" doesn't mean "unverifiable." `calibration/`
+makes each project's *intended* signal outcome an explicit, auditable claim
+instead of something only held in the author's head:
+
+1. Author a set of calibration documents for a project — designed so the
+   extracted EVM figures, doc-risk language, etc. push the project toward a
+   specific intended status (e.g. "this project's documents are designed to
+   land on Amber, with Doc Risk as the worst module").
+2. Once you've confirmed (by uploading and inspecting the result) that the
+   documents actually produce that intended behavior, set that project's
+   `target_status` (and `intended_worst_module`) in `calibration/manifest.json`
+   — this is a one-time, human-confirmed record of intent. Leave it `"unset"`
+   until you've actually confirmed it; never guess.
+3. Upload the documents to the project as usual.
+4. Open `calibration/verify.html` in a browser. It fetches the manifest and
+   the live `?action=listslim` project list and shows PASS/FAIL per project —
+   PASS means the live computed status matches the manifest's target. A
+   project with `target_status: "unset"` always shows a distinct
+   **NO TARGET SET** badge, never a silent pass.
+
+Re-run `calibration/verify.html` after any change to a module, the
+status-derivation rule, or the governance thresholds — it's the regression
+net for "did this change move a calibrated project off its intended
+status."
+
+## Handbook → chatbot library export
+
+The chatbot's Drive `_lib` folder (`pceif_definition`, `signal_taxonomy`,
+`governance_framework`, `escalation_logic`, `faq_simulated`) is meant to hold
+plain-text content **generated from the in-app Handbook**
+(`assets/js/knowledge.js`), not maintained separately — the Handbook is the
+single source of truth for both the in-app documentation and the chatbot's
+grounding text.
+
+After any Handbook content change in `knowledge.js`, open `tools/export_lib.html`,
+re-generate the five outputs, and manually re-upload them to the backend's
+Drive `_lib` folder (uploading stays a manual step — Drive is not reachable
+from this repo/environment). The five `.txt` outputs are GENERATED artifacts;
+do not hand-edit them on Drive — edit `knowledge.js` and re-export instead.
+
 ## Run / deploy
 
 Open `index.html` directly, or serve the folder

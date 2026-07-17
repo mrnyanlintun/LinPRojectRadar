@@ -735,6 +735,27 @@ body.t-light .theme-switch button.active { color: #fff; }
 .up-status { text-align: center; }
 .up-pill { display: inline-block; }
 .up-empty { margin: 6px 0 0; }
+
+/* ---------- Period Comparison panel (project detail) ---------- */
+.detail-periods { margin-bottom: 18px; }
+.pc-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+.pc-table th {
+  text-align: left; font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted); font-weight: 600;
+  padding: 4px 10px 6px; border-bottom: 1px solid var(--line); white-space: nowrap;
+}
+.pc-table td { padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 13px; }
+.pc-table tr:last-child td { border-bottom: none; }
+.pc-metric { font-weight: 600; }
+.pc-val, .pc-delta { font-family: var(--font-mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
+.pc-arrow { text-align: center; width: 1%; white-space: nowrap; }
+.pc-note { margin-top: 8px; }
+.pc-spark-head { margin-top: 16px; }
+.pc-spark-grid { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 4px; }
+.pc-spark-cell { display: flex; flex-direction: column; gap: 4px; min-width: 160px; }
+.pc-spark-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+.pc-spark { width: 160px; height: 36px; display: block; }
+.pc-spark-empty { font-size: 9px; fill: var(--faint); font-family: var(--font-mono); }
 .up-note { margin: 8px 0 0; padding: 7px 10px; border-left: 2px solid var(--phosphor);
   background: color-mix(in srgb, var(--phosphor) 6%, transparent); border-radius: 0 4px 4px 0; }
 .up-note-file { font-family: var(--font-mono); font-size: 11px; color: var(--faint); }

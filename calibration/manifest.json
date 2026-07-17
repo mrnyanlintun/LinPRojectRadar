@@ -1,0 +1,42 @@
+{
+  "_readme": "Calibration manifest for Lin Project Radar / PCEIF synthetic demo projects. Each entry records what a project's authored calibration documents were DESIGNED to produce (target_status, intended_worst_module) so future module/signal changes can be re-verified against calibration/verify.html. target_status/intended_worst_module are intentionally left as 'unset' until a human confirms, from the authored documents, what the project was designed to demonstrate — this file does not guess. authored_key_figures/actual_current_status are sourced ONLY from data actually found in this repo (see _source_note); fields that could not be sourced from a real file are null, not fabricated.",
+  "_source_note": "This static repo's only local project data is assets/js/data.js (LIN_SEED_PROJECTS, ids '01'/'02' — both start with an EMPTY signals object, no CPI/SPI/docRisk ever populated) and backend/data/projects.json (the backend's local dev store, currently { projects: [], seq: 0 } — no projects). This app's real/live project data (uploaded documents, extracted signalInputs, computed status) lives in a live Google Drive backend reached only via the deployed Apps Script Web App (LIN_API_URL in assets/js/config.js), which is not reachable from this repo/environment. Every authored_key_figures / actual_current_status value below is therefore null unless a future maintainer, working against the live backend or a checked-in export of it, fills it in from real data.",
+  "schema_version": 1,
+  "generated_at": "2026-07-17",
+  "projects": {
+    "01": {
+      "name": "Example Project A",
+      "sector": "design",
+      "target_status": "unset",
+      "intended_worst_module": null,
+      "authored_key_figures": {
+        "cpi": null,
+        "spi": null,
+        "docRisk": null,
+        "ncr_open_ratio": null,
+        "resource_ratio": null,
+        "ratings": null
+      },
+      "actual_current_status": null,
+      "authored_date": null,
+      "doc_set_version": null
+    },
+    "02": {
+      "name": "Example Project B",
+      "sector": "construction",
+      "target_status": "unset",
+      "intended_worst_module": null,
+      "authored_key_figures": {
+        "cpi": null,
+        "spi": null,
+        "docRisk": null,
+        "ncr_open_ratio": null,
+        "resource_ratio": null,
+        "ratings": null
+      },
+      "actual_current_status": null,
+      "authored_date": null,
+      "doc_set_version": null
+    }
+  }
+}

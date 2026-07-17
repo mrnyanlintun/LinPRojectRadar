@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lin Project Radar — Handbook → chatbot _lib export</title>
+<style>
+  body { background:#0b0e17; color:#c8d4e8; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size:14px; padding:24px; max-width:960px; margin:0 auto; }
+  h1 { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:17px; margin:0 0 4px; }
+  p.sub { color:#7a8aa8; margin:0 0 20px; line-height:1.5; }
+  .lib-section { border:1px solid #22304a; border-radius:8px; padding:14px 16px; margin-bottom:18px; background:#0f1524; }
+  .lib-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
+  .lib-name { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px; color:#8ab4f8; }
+  .lib-note { color:#7a8aa8; font-size:11.5px; }
+  textarea.lib-out {
+    width:100%; min-height:160px; resize:vertical; box-sizing:border-box;
+    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; line-height:1.4;
+    background:#080b12; color:#c8d4e8; border:1px solid #22304a; border-radius:6px; padding:10px;
+  }
+  .lib-actions { display:flex; gap:8px; margin-top:8px; }
+  .lib-btn {
+    font-family:inherit; font-size:12.5px; padding:6px 12px; border-radius:6px; cursor:pointer;
+    border:1px solid #2f4066; background:#141c2e; color:#c8d4e8;
+  }
+  .lib-btn:hover { background:#1c2740; }
+  .lib-btn.copied { border-color:#2ee66b; color:#2ee66b; }
+  a.lib-dl { text-decoration:none; }
+  #status { color:#ffb347; font-size:12.5px; margin-bottom:16px; }
+</style>
+</head>
+<body>
+<h1>Handbook → chatbot _lib export</h1>
+<p class="sub">
+  Single-source export tool. Reads the Handbook content source (<code>assets/js/knowledge.js</code>,
+  the same content the in-app Handbook renders from) and deterministically transforms it into the
+  five plain-text files the chatbot's Drive <code>_lib</code> folder is meant to hold. Output is
+  GENERATED — re-run this page after any Handbook content change and manually re-upload the five
+  files below (Drive is not reachable from this repo/environment, so uploading stays a manual step).
+  Nothing here calls a network endpoint; everything runs against the already-loaded knowledge.js
+  content in your browser.
+</p>
+<div id="status"></div>
+<div id="sections"></div>
+
+<script src="../assets/js/config.js"></script>
+<script src="../assets/js/categories.js"></script>
+<script src="../assets/js/knowledge.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  const statusEl = document.getElementById("status");
+  const K = window.LIN_KNOWLEDGE;
+  if (!K) {
+    statusEl.textContent = "window.LIN_KNOWLEDGE did not load — check that assets/js/knowledge.js loaded without error.";
+    return;
+  }
+
+  /* ---------- HTML → plain text, heading-preserving ----------
+     Convert <h1>-<h6> into a standalone "## Heading" line (blank line
+     before/after); convert <li> into "- item" lines; strip every other
+     tag; decode the handful of entities esc() in the app's own JS files
+     produces (&amp; &lt; &gt; &quot; &#39;); collapse runs of blank lines
+     and trailing/leading whitespace per line. */
+  function decodeEntities(s) {
+    return s
+      .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+      .replace(/&quot;/g, "\"").replace(/&#39;/g, "'").replace(/&nbsp;/g, " ");
+  }
+  function htmlToText(html) {
+    if (!html) return "";
+    let s = String(html);
+    // Headings -> "## text" on its own line, blank line after.
+    s = s.replace(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi, (m, inner) => "\n\n## " + inner.replace(/<[^>]+>/g, "").trim() + "\n\n");
+    // List items -> "- text" lines.
+    s = s.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (m, inner) => "\n- " + inner.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+    // Paragraph/block boundaries -> newline.
+    s = s.replace(/<\/(p|div|tr|pre)>/gi, "\n");
+    s = s.replace(/<br\s*\/?>/gi, "\n");
+    // Strip every remaining tag.
+    s = s.replace(/<[^>]+>/g, " ");
+    s = decodeEntities(s);
+    // Collapse whitespace: multiple spaces -> one, multiple blank lines -> one.
+    s = s.split("\n").map((line) => line.replace(/[ \t]+/g, " ").trim()).join("\n");
+    s = s.replace(/\n{3,}/g, "\n\n").trim();
+    return s;
+  }
+
+  function topicText(topic) {
+    if (!topic) return "";
+    if (typeof topic.build === "function") return htmlToText(topic.build());
+    if (topic.body) return htmlToText(topic.body);
+    return "";
+  }
+  function findLibrary(id) { return (K.library || []).find((t) => t.id === id) || null; }
+  function findTopic(id) { return (K.topics || []).find((t) => t.id === id) || null; }
+
+  function todayISO() {
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function genHeader() {
+    return "GENERATED from Handbook " + todayISO() + " — do not hand-edit\n\n";
+  }
+
+  /* ---------- section → Handbook topic mapping ----------
+     pceif_definition   <- LIBRARY 'pceif' ("1. What is PCEIF")
+     signal_taxonomy    <- LIBRARY 'why-108-modules' (lists/defines the 10
+                            categories + Portfolio Health taxonomy)
+     governance_framework <- LIBRARY 'decision' (decision card / authority
+                            matrix / "named human approval" rules)
+     escalation_logic   <- LIBRARY 'fairness' (the fairness-gate escalation
+                            procedure — a genuinely distinct topic from
+                            'decision' in knowledge.js, not a forced split)
+     faq_simulated      <- TOPICS (the short, user-facing Q&A-style entries
+                            the in-app Assistant scripts from — knowledge.js
+                            has no topic literally titled "FAQ", so this pulls
+                            the practical how-do-I / what-is topics: what
+                            PCEIF is, the five statuses, reading the radar,
+                            the fairness gate, the decision card, creating /
+                            archiving a project, ingesting a document,
+                            themes, timezone, and the demo-boundaries
+                            disclaimer). Documented substitution, not a
+                            fabricated section. */
+  const SECTIONS = [
+    {
+      key: "pceif_definition",
+      label: "pceif_definition",
+      build: () => genHeader() + topicText(findLibrary("pceif"))
+    },
+    {
+      key: "signal_taxonomy",
+      label: "signal_taxonomy",
+      build: () => genHeader() + topicText(findLibrary("why-108-modules"))
+    },
+    {
+      key: "governance_framework",
+      label: "governance_framework",
+      build: () => genHeader() + topicText(findLibrary("decision"))
+    },
+    {
+      key: "escalation_logic",
+      label: "escalation_logic",
+      build: () => genHeader() + topicText(findLibrary("fairness"))
+    },
+    {
+      key: "faq_simulated",
+      label: "faq_simulated",
+      build: () => {
+        const ids = ["pceif", "five-status", "radar", "fairness", "decision",
+                     "create", "archive", "ingest", "themes", "timezone", "boundaries"];
+        const parts = ids.map((id) => {
+          const t = findTopic(id);
+          if (!t) return "";
+          return "## " + t.title + "\n\n" + htmlToText(t.body || "");
+        }).filter(Boolean);
+        return genHeader() + parts.join("\n\n");
+      }
+    }
+  ];
+
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  const host = document.getElementById("sections");
+  let missingCount = 0;
+  SECTIONS.forEach((section) => {
+    const text = section.build();
+    const contentOnly = text.split("\n").slice(2).join("\n").trim(); // strip the GENERATED header line for the empty check
+    if (!contentOnly) missingCount++;
+
+    const wrap = document.createElement("div");
+    wrap.className = "lib-section";
+    wrap.innerHTML =
+      '<div class="lib-head">' +
+        '<span class="lib-name">' + esc(section.label) + '.txt</span>' +
+        '<span class="lib-note">' + text.length + ' chars' + (contentOnly ? "" : " — EMPTY (source topic not found or has no content)") + '</span>' +
+      '</div>' +
+      '<textarea class="lib-out" readonly spellcheck="false"></textarea>' +
+      '<div class="lib-actions">' +
+        '<button class="lib-btn lib-copy" type="button">Copy</button>' +
+        '<a class="lib-dl" download="' + esc(section.label) + '.txt"><button class="lib-btn" type="button">Download .txt</button></a>' +
+      '</div>';
+    const ta = wrap.querySelector(".lib-out");
+    ta.value = text;
+    const copyBtn = wrap.querySelector(".lib-copy");
+    copyBtn.addEventListener("click", () => {
+      ta.select();
+      navigator.clipboard && navigator.clipboard.writeText(text).then(() => {
+        copyBtn.textContent = "Copied";
+        copyBtn.classList.add("copied");
+        setTimeout(() => { copyBtn.textContent = "Copy"; copyBtn.classList.remove("copied"); }, 1500);
+      }).catch(() => { document.execCommand && document.execCommand("copy"); });
+    });
+    const dlLink = wrap.querySelector(".lib-dl");
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    dlLink.href = URL.createObjectURL(blob);
+
+    host.appendChild(wrap);
+  });
+
+  statusEl.textContent = missingCount
+    ? missingCount + " of " + SECTIONS.length + " section(s) produced no content — check the topic mapping above."
+    : "All " + SECTIONS.length + " sections produced content from the live Handbook source.";
+})();
+</script>
+</body>
+</html>

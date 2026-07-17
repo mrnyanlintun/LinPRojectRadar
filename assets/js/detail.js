@@ -396,6 +396,173 @@
   }
 
   /* ============================================================
+     Period Comparison — read-only longitudinal view over the
+     project's already-stored history snapshots (project.history)
+     and milestone-trend snapshots (project.milestoneHistory). Never
+     recomputes anything; only reads what's already on the loaded
+     project object. Delta table for the last two periods + small
+     inline-SVG sparklines (CPI/SPI/docRisk) across every stored
+     period, matching the house inline-SVG style used in deepdive.js
+     (svgo()-style viewBox + <polyline>).
+     ============================================================ */
+  // Sorted, read-only view of project.history — deliberately does NOT call
+  // LinSignals.buildHistorySnapshot() (that recomputes/mutates); this section
+  // is read-only by contract.
+  function storedHistory(project) {
+    return (Array.isArray(project && project.history) ? project.history.slice() : [])
+      .filter((h) => h && h.period)
+      .sort((a, b) => String(a.period).localeCompare(String(b.period)));
+  }
+  function pcArrow(delta) {
+    if (delta == null || !Number.isFinite(delta) || Math.abs(delta) < 1e-9) return "–";
+    return delta > 0 ? "▲" : "▼";
+  }
+  function pcNum(v) {
+    if (v == null || v === "") return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
+  function pcFmt(v, digits) {
+    if (v == null) return "—";
+    return v.toFixed(digits == null ? 2 : digits);
+  }
+  // Red-module count from a history snapshot. buildHistorySnapshot() (the
+  // legacy shape) stores a fixed module_results map keyed by module id, not
+  // every module — count Red across whatever module_results the snapshot
+  // actually carries. buildCategorySnapshot()'s richer shape stores a
+  // summary.by_status.Red tally directly — prefer that when present since
+  // it's computed from the full per-category module list.
+  function pcRedCount(snapshot) {
+    if (!snapshot) return null;
+    if (snapshot.summary && snapshot.summary.by_status && Number.isFinite(snapshot.summary.by_status.Red)) {
+      return snapshot.summary.by_status.Red;
+    }
+    const mr = snapshot.module_results;
+    if (!mr || typeof mr !== "object") return null;
+    let n = 0;
+    Object.keys(mr).forEach((k) => {
+      const r = mr[k];
+      const st = r && (r.status || r.status_color || r.state);
+      if (normalizeStatus(st) === "Red") n++;
+    });
+    return n;
+  }
+  function pcStatus(snapshot) {
+    if (!snapshot) return null;
+    return (snapshot.governance && snapshot.governance.state) || null;
+  }
+  // Same date-diff / mean-slip logic as LinSimulations.runMilestoneTrend
+  // (simulations.js), applied to the last two project.milestoneHistory
+  // snapshots — kept identical on purpose so the two surfaces never disagree.
+  function pcMilestoneMeanSlip(milestoneHistory) {
+    const mh = Array.isArray(milestoneHistory) ? milestoneHistory : [];
+    if (mh.length < 2) return null;
+    const latest = mh[mh.length - 1], prev = mh[mh.length - 2];
+    const validDate = (v) => { const d = new Date(v); return isNaN(d.getTime()) ? null : d; };
+    const prevByName = {};
+    ((prev && prev.milestones) || []).forEach((m) => {
+      if (m && m.name && validDate(m.forecast)) prevByName[m.name] = validDate(m.forecast);
+    });
+    let matched = 0, sumSlip = 0;
+    ((latest && latest.milestones) || []).forEach((m) => {
+      if (!m || !m.name) return;
+      const lf = validDate(m.forecast), pf = prevByName[m.name];
+      if (!lf || !pf) return;
+      matched++;
+      sumSlip += Math.round((lf.getTime() - pf.getTime()) / 86400000);
+    });
+    if (!matched) return null;
+    return sumSlip / matched;
+  }
+  function pcDeltaRow(label, prevVal, curVal, digits, suffix) {
+    const p = pcNum(prevVal), c = pcNum(curVal);
+    const delta = (p != null && c != null) ? c - p : null;
+    return `<tr>
+        <td class="pc-metric">${esc(label)}</td>
+        <td class="pc-val">${p == null ? "—" : pcFmt(p, digits) + (suffix || "")}</td>
+        <td class="pc-val">${c == null ? "—" : pcFmt(c, digits) + (suffix || "")}</td>
+        <td class="pc-arrow">${pcArrow(delta)}</td>
+        <td class="pc-delta">${delta == null ? "—" : (delta > 0 ? "+" : "") + pcFmt(delta, digits) + (suffix || "")}</td>
+      </tr>`;
+  }
+  function pcDeltaRowText(label, prevVal, curVal) {
+    const changed = prevVal !== curVal;
+    const arrow = !changed ? "–" : "▲"; // status is categorical — ▲ just flags "changed"
+    return `<tr>
+        <td class="pc-metric">${esc(label)}</td>
+        <td class="pc-val">${esc(prevVal == null ? "—" : String(prevVal))}</td>
+        <td class="pc-val">${esc(curVal == null ? "—" : String(curVal))}</td>
+        <td class="pc-arrow">${arrow}</td>
+        <td class="pc-delta">${changed ? esc((prevVal == null ? "—" : prevVal) + " → " + (curVal == null ? "—" : curVal)) : "no change"}</td>
+      </tr>`;
+  }
+  // Small hand-rolled inline-SVG sparkline (house style — see deepdive.js
+  // svgo()/<polyline> pattern). No chart libraries.
+  function pcSparkline(values, color, label) {
+    const pts = values.map((v, i) => ({ i, v })).filter((p) => p.v != null);
+    const W = 160, H = 36, PAD = 3;
+    if (pts.length < 2) {
+      return `<svg viewBox="0 0 ${W} ${H}" class="pc-spark" role="img" aria-label="${esc(label)} — insufficient points">` +
+        `<text x="${W / 2}" y="${H / 2 + 4}" text-anchor="middle" class="pc-spark-empty">n/a</text></svg>`;
+    }
+    const vals = pts.map((p) => p.v);
+    const lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+    const span = hi - lo || 1;
+    const n = values.length;
+    const x = (i) => PAD + (i * (W - 2 * PAD)) / Math.max(1, n - 1);
+    const y = (v) => H - PAD - ((v - lo) / span) * (H - 2 * PAD);
+    const points = pts.map((p) => `${x(p.i).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");
+    return `<svg viewBox="0 0 ${W} ${H}" class="pc-spark" role="img" aria-label="${esc(label)} sparkline across ${pts.length} periods">` +
+      `<polyline points="${points}" fill="none" stroke="${color}" stroke-width="2"></polyline>` +
+      `</svg>`;
+  }
+  function periodComparisonHtml(project) {
+    const hist = storedHistory(project);
+    if (hist.length < 2) {
+      return `<section class="panel detail-periods" aria-label="Period comparison">
+        <p class="kn-sub">Longitudinal view unlocks after two reporting periods.</p>
+      </section>`;
+    }
+    const prev = hist[hist.length - 2];
+    const cur = hist[hist.length - 1];
+    const prevSi = prev.signal_inputs || {};
+    const curSi = cur.signal_inputs || {};
+    const prevRed = pcRedCount(prev);
+    const curRed = pcRedCount(cur);
+    const mh = Array.isArray(project.milestoneHistory) ? project.milestoneHistory : [];
+    const prevMh = mh.slice(0, Math.max(0, mh.length - 1));
+    const curSlip = pcMilestoneMeanSlip(mh);
+    const prevSlip = pcMilestoneMeanSlip(prevMh);
+    const rows =
+      pcDeltaRow("CPI", prevSi.cpi, curSi.cpi, 2, "") +
+      pcDeltaRow("SPI", prevSi.spi, curSi.spi, 2, "") +
+      pcDeltaRow("Doc-risk score", prevSi.docRiskScore, curSi.docRiskScore, 2, "") +
+      pcDeltaRowText("Status", pcStatus(prev), pcStatus(cur)) +
+      pcDeltaRow("Red modules", prevRed, curRed, 0, "") +
+      pcDeltaRow("Milestone mean slip", prevSlip, curSlip, 1, "d");
+    const cpiSeries = hist.map((h) => pcNum(h.signal_inputs && h.signal_inputs.cpi));
+    const spiSeries = hist.map((h) => pcNum(h.signal_inputs && h.signal_inputs.spi));
+    const docSeries = hist.map((h) => pcNum(h.signal_inputs && h.signal_inputs.docRiskScore));
+    const redModuleNote = (prevRed == null || curRed == null)
+      ? `<p class="kn-sub pc-note">Red-module count: this project's stored snapshots don't carry a full per-module status array for one or both periods, so the count above may be a partial approximation of what was actually stored (not a fabricated figure).</p>`
+      : "";
+    return `<section class="panel detail-periods" aria-label="Period comparison">
+      <p class="eyebrow">Last two reporting periods: <span class="mod-mono">${esc(prev.period)}</span> → <span class="mod-mono">${esc(cur.period)}</span></p>
+      <table class="pc-table">
+        <thead><tr><th>Metric</th><th>${esc(prev.period)}</th><th>${esc(cur.period)}</th><th></th><th>Δ</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${redModuleNote}
+      <p class="eyebrow pc-spark-head">Trend across ${hist.length} stored periods</p>
+      <div class="pc-spark-grid">
+        <div class="pc-spark-cell"><span class="pc-spark-label">CPI</span>${pcSparkline(cpiSeries, "var(--clear-green)", "CPI")}</div>
+        <div class="pc-spark-cell"><span class="pc-spark-label">SPI</span>${pcSparkline(spiSeries, "var(--radar-amber)", "SPI")}</div>
+        <div class="pc-spark-cell"><span class="pc-spark-label">Doc risk</span>${pcSparkline(docSeries, "var(--alarm-red)", "Doc risk")}</div>
+      </div>
+    </section>`;
+  }
+
+  /* ============================================================
      Uploaded Documents — one row per `signals_extracted` event on
      the project. Reuses LinSignals.DOC_TYPE_LABEL for friendly type
      names and the selected LinTZ zone for the upload timestamp.
@@ -728,6 +895,8 @@
              `<section class="panel detail-signals" aria-label="Extracted signals detail"></section>`,
              false, `${uploadCount} doc${uploadCount === 1 ? "" : "s"} · ${inputFieldCount} field${inputFieldCount === 1 ? "" : "s"}`)}
         ${cs("d-ensemble", "Ensemble Analysis", ensembleHtml(p), false, `${ensActive} active · ${ensEst} est.`)}
+        ${cs("d-periods", "Period Comparison", periodComparisonHtml(p), false,
+             storedHistory(p).length >= 2 ? `${storedHistory(p).length} periods` : "")}
        ${cs("d-stack", "Signal Stack — " + totalCats + " Categories", `<div class="detail-modules"></div>`, false, "")}`;
 
     // Every section starts collapsed (sessionStorage may restore an open one);
@@ -743,6 +912,10 @@
       "d-brief": () => { wireBrief(root, p); refreshBrief(root, p); },
       "d-web": () => { wireSignalWeb(root, id); wireSignalSphere(root, p); },
       "d-ensemble": () => { wireEnsembleScatter(root, p); },
+      // Period Comparison is fully static HTML (table + inline SVG sparklines)
+      // already rendered above — no post-expand work, but kept in lazyInits
+      // to follow the same render-on-first-expand idiom as every other section.
+      "d-periods": () => {},
       // Uploaded-docs table is already in the section HTML; the extracted-
       // signals panel below it renders on expand.
       "d-docsignals": () => { if (window.LinSignals) LinSignals.renderSignalsPanel(root.querySelector(".detail-signals"), p); },
