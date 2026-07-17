@@ -56,13 +56,25 @@
     const reds = [], gated = [];
     let empty = 0;
     LIN_PROJECTS.forEach((p) => {
-      if (!(window.hasSignals && hasSignals(p))) { empty++; return; }
-      const d = deriveDecision(p);
-      const isRed = d.healthState === "Red" || d.healthState === "Red-review";
-      const key = isRed ? "Red" : d.healthState;
+      // Shape-tolerant: full projects derive a decision; SLIM rows (listslim,
+      // which now fill LIN_PROJECTS) have no signals object, so bucket them by
+      // their precomputed status (slimStatusLabel → the same label the radar/list
+      // show). Without this every slim row read as "awaiting ingest" and the
+      // chat's portfolio overview reported 0 populated. The fairness gate needs
+      // full decision data, so it's only known for full rows.
+      let label = null;
+      if (window.hasSignals && hasSignals(p)) {
+        const d = deriveDecision(p);
+        label = d.healthState;
+        if (d.fairnessGateRequired) gated.push(p.id);
+      } else if (p && p.slim && typeof slimStatusLabel === "function") {
+        label = slimStatusLabel(p);           // null → genuinely awaiting ingest
+      }
+      if (!label) { empty++; return; }
+      const isRed = String(label).indexOf("Red") >= 0;
+      const key = isRed ? "Red" : (counts[label] != null ? label : "Green");
       counts[key] = (counts[key] || 0) + 1;
       if (isRed) reds.push(p.id);
-      if (d.fairnessGateRequired) gated.push(p.id);
     });
     const archived = (window.LIN_ARCHIVED || []).length;
     const populated = LIN_PROJECTS.length - empty;

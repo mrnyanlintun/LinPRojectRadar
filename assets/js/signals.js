@@ -518,13 +518,20 @@
     }));
   }
   function portfolioVector(p) {
-    const si = p && p.signalInputs;
+    // Shape-tolerant. Full projects carry the EVM figures under signalInputs;
+    // SLIM rows from ?action=listslim (the stale-while-revalidate portfolio list
+    // that now fills LIN_PROJECTS) expose cpi/spi/docRisk(Score)/actualPctComplete
+    // at the TOP level with no signalInputs. Reading only signalInputs dropped
+    // every slim row → pool < 3 → Cat 8 permanently starved. Read either shape.
+    const si = (p && p.signalInputs) ? p.signalInputs : (p && p.slim ? p : null);
     if (!si || si.cpi == null) return null;
+    const docRisk = si.docRiskScore != null ? si.docRiskScore
+                  : (si.docRisk != null ? si.docRisk : 0);
     return {
       id: p.id,
       cpi: si.cpi,
       spi: si.spi,
-      docRiskScore: si.docRiskScore || 0,
+      docRiskScore: docRisk,
       actualPctComplete: si.actualPctComplete || 0
     };
   }
@@ -1722,6 +1729,7 @@
     buildCategorySnapshot,
     ensureSimulations,
     runModels,
+    portfolioVector, runPortfolioAnalysis,
     resolveSimInputs,
     deriveExtendedFields,
     DOC_TYPES, DOC_TYPE_LABEL,
