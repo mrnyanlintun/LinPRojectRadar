@@ -1533,8 +1533,7 @@
   const PAGE_REDIRECT = { modules: "portfolio", manage: "portfolio", knowledge: "handbook", about: "handbook" };
 
   function showPage(page) {
-    // navigating closes any open drawer (archived / activity) or dock fly-out
-    try { if (window.LinUI && LinUI.drawer) LinUI.drawer.close(); } catch (e) {}
+    // navigating closes any open dock fly-out
     try { if (window.LinUI && LinUI.flyout) LinUI.flyout.close(); } catch (e) {}
     if (PAGE_REDIRECT[page]) {
       if (page === "knowledge") pendingHandbookTab = "methods";
@@ -1688,11 +1687,8 @@
      LinUI — shared overlay infrastructure.
        · openModal(): a centered <dialog>-style modal (reuses the .ds-modal
          chrome) with focus trap, Escape, backdrop-click, first-field autofocus.
-         For actions that must be COMPLETED (Create, Upload).
-       · Drawer: ONE right-side drawer, reused for the menu, Archived and
-         Activity. Slides in (translateX + fade), notch touches the dock, focus
-         trapped, Escape / click-outside / toggle / navigation close it, only one
-         open at a time. Reduced-motion → fade only (CSS-driven).
+         The single overlay pattern for ALL four pills — Create, Upload,
+         Archived, Activity.
        · toast(): brief inline confirmation.
      ============================================================ */
   function focusableIn(el) {
@@ -1755,75 +1751,6 @@
     if (first) try { first.focus(); } catch (e) {}
     return close;
   }
-
-  const Drawer = (function () {
-    let root, panel, titleEl, bodyEl, curKey = null, lastFocus = null, onCloseCb = null;
-    function ensure() {
-      if (root) return;
-      root = document.createElement("div");
-      root.className = "drawer-root";
-      root.innerHTML =
-        '<aside class="app-drawer" role="dialog" aria-modal="true" tabindex="-1">' +
-          '<span class="drawer-notch" aria-hidden="true"></span>' +
-          '<div class="drawer-head"><h2 class="drawer-title"></h2>' +
-            '<button type="button" class="drawer-close" aria-label="Close">×</button></div>' +
-          '<div class="drawer-body"></div>' +
-        '</aside>';
-      document.body.appendChild(root);
-      panel = root.querySelector(".app-drawer");
-      titleEl = root.querySelector(".drawer-title");
-      bodyEl = root.querySelector(".drawer-body");
-      root.querySelector(".drawer-close").addEventListener("click", () => close());
-      panel.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") { e.preventDefault(); close(); }
-        else trapTab(e, panel);
-      });
-      // click-outside closes (not on the drawer, a drawer trigger, or an emblem)
-      document.addEventListener("click", (e) => {
-        if (!curKey) return;
-        if (root.contains(e.target)) return;
-        if (e.target.closest && e.target.closest("[data-drawer], .menu-emblem")) return;
-        close();
-      });
-    }
-    function open(key, opts) {
-      ensure();
-      if (curKey === key) { close(); return; }          // toggle
-      onCloseCb = null;                                  // suppress prior onClose UI
-      lastFocus = document.activeElement;
-      curKey = key;
-      panel.setAttribute("aria-label", opts.title || "Panel");
-      panel.dataset.variant = opts.variant || "panel";
-      panel.style.setProperty("--drawer-w", (opts.width || 380) + "px");
-      titleEl.textContent = opts.title || "";
-      bodyEl.innerHTML = "";
-      if (opts.mount) opts.mount(bodyEl);
-      onCloseCb = opts.onClose || null;
-      root.classList.add("open");
-      syncTriggers();
-      const first = focusableIn(panel)[0];
-      if (first) try { first.focus(); } catch (e) {} else panel.focus();
-    }
-    function close() {
-      if (!curKey) return;
-      curKey = null;
-      root.classList.remove("open");
-      const cb = onCloseCb; onCloseCb = null;
-      syncTriggers();
-      if (lastFocus && lastFocus.focus) try { lastFocus.focus(); } catch (e) {}
-      if (cb) cb();
-    }
-    function syncTriggers() {
-      document.body.classList.toggle("drawer-open", !!curKey);
-      document.querySelectorAll("[data-drawer], .menu-emblem").forEach((b) => {
-        const k = b.dataset.drawer || (b.classList.contains("menu-emblem") ? "menu" : null);
-        const on = !!curKey && k === curKey;
-        b.classList.toggle("active", on);
-        b.setAttribute("aria-expanded", String(on));
-      });
-    }
-    return { open: open, close: close, current: () => curKey };
-  })();
 
   /* ============================================================
      Flyout — an UNBOXED pill row that extends LEFT from a dock button.
@@ -1961,7 +1888,7 @@
   // Portfolio fly-out: the row that extends from the Portfolio dock icon. Its
   // FIRST pill navigates to the page (so the row is self-sufficient — nothing
   // depends on the icon's own click), followed by the four actions, each opening
-  // its existing modal (New Project, Upload) or drawer (Archived, Activity).
+  // its dialog (New Project, Upload, Archived, Activity — one modal pattern).
   // Archived carries its live count badge (id kept so renderPortfolioAdmin
   // refreshes it while the row is open).
   // When a nav-icon row closes it returns focus to that icon, which would
@@ -1982,8 +1909,8 @@
       { label: "Portfolio", title: "Go to Portfolio", onClick: () => { Flyout.close(); showPage("portfolio"); } },
       { label: "+ New Project", primary: true, onClick: () => { Flyout.close(); if (A) A.openCreateModal(); } },
       { label: "Upload Documents", onClick: () => { Flyout.close(); if (A) A.openUploadModal(); } },
-      { label: "Archived", badgeId: "tool-archived-badge", badge: archivedCount, onClick: () => { Flyout.close(); if (A) A.openArchivedDrawer(); } },
-      { label: "Activity", onClick: () => { Flyout.close(); if (A) A.openActivityDrawer(); } }
+      { label: "Archived", badgeId: "tool-archived-badge", badge: archivedCount, onClick: () => { Flyout.close(); if (A) A.openArchivedModal(); } },
+      { label: "Activity", onClick: () => { Flyout.close(); if (A) A.openActivityModal(); } }
     ];
     Flyout.open("portfolio", anchor, pills, suppressDockRefocus);
   }
@@ -2000,7 +1927,7 @@
     Flyout.open("handbook", anchor, pills, suppressDockRefocus);
   }
 
-  window.LinUI = { openModal: openModal, drawer: Drawer, flyout: Flyout, toast: toast };
+  window.LinUI = { openModal: openModal, flyout: Flyout, toast: toast };
 
   function wireNav() {
     // Dock buttons are wired in initIconDock; this covers any other [data-nav].
@@ -2015,7 +1942,7 @@
      at the top, full once scrolled). Top: the animated radar-sweep emblem
      (scroll-to-top, and its visibility stays scroll-gated). Middle: the three
      destination icons with left-flyout labels + active notch. Bottom: the
-     emblem menu button, opening the same menu drawer as the header button.
+     emblem menu button, opening the theme fly-out (Miami · NYC · Maria + sign out).
      On ≤700px it becomes a horizontal bottom bar. */
   function initIconDock() {
     if (document.getElementById("icon-dock")) return;
@@ -2152,9 +2079,9 @@
   }
 
   /* The header hamburger and the stage toolbar's action buttons are gone: the
-     Portfolio dock icon owns the actions row (New Project / Upload modals ·
-     Archived / Activity drawers), the Handbook icon owns its tab row, and the
-     menu button owns the theme fly-out — all wired in initIconDock. */
+     Portfolio dock icon owns the actions row (New Project / Upload / Archived /
+     Activity — all dialogs), the Handbook icon owns its tab row, and the menu
+     button owns the theme fly-out — all wired in initIconDock. */
 
   /* ---------- "Recompute all signals" button ----------
      Runs the full 103-module set for every ingested project from stored
