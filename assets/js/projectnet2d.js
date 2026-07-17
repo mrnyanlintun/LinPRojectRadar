@@ -107,6 +107,21 @@
   var BUCKET_FILL = { G: STATUS_FILL.Green, Y: STATUS_FILL.Yellow, A: STATUS_FILL.Amber, R: STATUS_FILL.Red };
   var BUCKET_WORD = { G: "Green", Y: "Yellow", A: "Amber", R: "Red" };
 
+  // Color-blind-safe cue: module dots are ~3.3px on canvas — too small for a
+  // legible letter, so status is ALSO encoded as a distinct shape (matches
+  // linStatusShape() in config.js). Traces the path only; caller fills/strokes.
+  function tracePath(ctx, shape, cx, cy, r) {
+    ctx.beginPath();
+    if (shape === "square") { ctx.rect(cx - r, cy - r, r * 2, r * 2); return; }
+    if (shape === "triangle") {
+      ctx.moveTo(cx, cy - r); ctx.lineTo(cx - r, cy + r); ctx.lineTo(cx + r, cy + r); ctx.closePath(); return;
+    }
+    if (shape === "diamond") {
+      ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy); ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r, cy); ctx.closePath(); return;
+    }
+    ctx.arc(cx, cy, r, 0, Math.PI * 2); // circle + ring (ring stroked hollow by caller)
+  }
+
   // Lay this category's modules out as small dots in an arc around the node,
   // avoiding the bottom wedge where the category label sits. One ring up to
   // 12 modules; two concentric rings above that (Cat 7 = 20) so they stay
@@ -330,12 +345,13 @@
           ctx.stroke();
         });
         n.dots.forEach(function (d) {
-          ctx.beginPath();
-          ctx.arc(d.x, d.y, 3.3, 0, Math.PI * 2);
+          var shape = window.linStatusShape ? linStatusShape(d.status) : "circle";
+          tracePath(ctx, shape, d.x, d.y, 3.3);
           ctx.fillStyle = d.fill;
-          ctx.fill();
-          ctx.lineWidth = 0.6;
-          ctx.strokeStyle = hexToRgba(inkColor, 0.5);
+          if (shape === "ring") { /* Complete: hollow — fill skipped, outline below carries it */ }
+          else ctx.fill();
+          ctx.lineWidth = shape === "ring" ? 1.4 : 0.6;
+          ctx.strokeStyle = shape === "ring" ? d.fill : hexToRgba(inkColor, 0.5);
           ctx.stroke();
         });
       });
@@ -362,6 +378,23 @@
         ctx.font = "600 11px 'Inter', system-ui, sans-serif";
         ctx.textBaseline = "top";
         ctx.fillText(n.name, n.pos.x, n.pos.y + NODE_R + 5);
+
+        // Color-blind-safe cue: fused-status LETTER badge at the node's
+        // top-right (NODE_R=27 is plenty big for the main "Cat N" label,
+        // which stays as-is — this badge adds the status word's initial).
+        if (n.status && window.linStatusLetter) {
+          var letter = linStatusLetter(n.status);
+          if (letter) {
+            var bx = n.pos.x + NODE_R * 0.72, by = n.pos.y - NODE_R * 0.72, br = 8;
+            ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2);
+            ctx.fillStyle = n.fill; ctx.fill();
+            ctx.lineWidth = 1; ctx.strokeStyle = hexToRgba(inkColor, 0.7); ctx.stroke();
+            ctx.fillStyle = (window.linStatusInk ? linStatusInk(n.fill) : "#0b1220");
+            ctx.font = "700 10px 'IBM Plex Mono', ui-monospace, monospace";
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText(letter, bx, by + 0.5);
+          }
+        }
       });
 
       // Keep the callout pinned to its world anchor through zoom/pan.

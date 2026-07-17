@@ -35,6 +35,7 @@
 <script src="assets/js/config.js"></script>
 <script src="assets/js/categories.js"></script>
 <script src="assets/js/decision.js"></script>
+<script src="assets/js/sim.js"></script>
 <script src="assets/js/simulations.js"></script>
 <script>
 (function () {
@@ -108,6 +109,144 @@
       window.projectCompletionDate ? window.projectCompletionDate(p) : p.signalInputs.baselineEnd);
     assert("Design sector + Complete → no liabilityUntil", null, decided.liabilityUntil);
   })();
+
+  // =========================================================================
+  // Praxis regression net — quality-pack additions. Every band edge below is
+  // read from the ACTUAL threshold constants in sim.js / simulations.js (not
+  // hand-typed guesses) — this harness is meant to fail the moment a band
+  // drifts, so each pair of assertions straddles the real edge value from
+  // the code, ± a hair, rather than an illustrative round number.
+  // =========================================================================
+
+  // ---- sim.js: evmStatus(cpi, spi) — red if cpi<0.90 or spi<0.85; amber if
+  // cpi<0.95 or spi<0.95; else green. (3-band: no separate Yellow tier here.)
+  assert("evmStatus(0.95, 0.95) → green (both at the green edge)", "green", LinSim.evmStatus(0.95, 0.95));
+  assert("evmStatus(0.949, 0.95) → amber (cpi just under the green edge)", "amber", LinSim.evmStatus(0.949, 0.95));
+  assert("evmStatus(0.90, 0.95) → amber (cpi at the amber edge, not red)", "amber", LinSim.evmStatus(0.90, 0.95));
+  assert("evmStatus(0.899, 0.95) → red (cpi just under the amber edge)", "red", LinSim.evmStatus(0.899, 0.95));
+  assert("evmStatus(0.99, 0.85) → amber (spi at the red/amber boundary)", "amber", LinSim.evmStatus(0.99, 0.85));
+  assert("evmStatus(0.99, 0.849) → red (spi just under 0.85)", "red", LinSim.evmStatus(0.99, 0.849));
+
+  // ---- sim.js: mcStatus(overrunPctP80) — red >= 10, amber >= 5, else green.
+  assert("mcStatus(4.99) → green (just under the amber edge)", "green", LinSim.mcStatus(4.99));
+  assert("mcStatus(5) → amber (at the amber edge)", "amber", LinSim.mcStatus(5));
+  assert("mcStatus(9.99) → amber (just under the red edge)", "amber", LinSim.mcStatus(9.99));
+  assert("mcStatus(10) → red (at the red edge)", "red", LinSim.mcStatus(10));
+
+  // ---- sim.js: cusumStatus(cu) — red if breached; amber if maxStat >= 0.6*H.
+  assert("cusumStatus breached → red regardless of stat", "red",
+    LinSim.cusumStatus({ breached: true, maxStat: 0, H: 5 }));
+  assert("cusumStatus maxStat at 0.6*H, not breached → amber", "amber",
+    LinSim.cusumStatus({ breached: false, maxStat: 3, H: 5 }));
+  assert("cusumStatus maxStat just under 0.6*H → green", "green",
+    LinSim.cusumStatus({ breached: false, maxStat: 2.99, H: 5 }));
+
+  // ---- sim.js: docStatus(score) — red >= 0.70, amber >= 0.30, else green.
+  assert("docStatus(0.29) → green (just under the amber edge)", "green", LinSim.docStatus(0.29));
+  assert("docStatus(0.30) → amber (at the amber edge)", "amber", LinSim.docStatus(0.30));
+  assert("docStatus(0.69) → amber (just under the red edge)", "amber", LinSim.docStatus(0.69));
+  assert("docStatus(0.70) → red (at the red edge)", "red", LinSim.docStatus(0.70));
+
+  // ---- simulations.js: runResourceLoading — Green [0.90, 1.10]; Yellow the
+  // adjacent bands; Red beyond [0.70, 1.35] (see the function for the exact
+  // asymmetric Yellow/Amber split).
+  function ratioSi(actual, planned) { return { plannedLaborHours: planned, actualLaborHours: actual }; }
+  assert("Resource_Loading ratio 0.90 → Green (green-band edge)", "Green",
+    LinSimulations.runResourceLoading(ratioSi(90, 100)).status_color);
+  assert("Resource_Loading ratio 0.899 → Yellow (just under the green edge)", "Yellow",
+    LinSimulations.runResourceLoading(ratioSi(89.9, 100)).status_color);
+  assert("Resource_Loading ratio 1.20 → Yellow (Yellow band's inclusive upper edge)", "Yellow",
+    LinSimulations.runResourceLoading(ratioSi(120, 100)).status_color);
+  assert("Resource_Loading ratio 1.21 → Amber (just past the Yellow ceiling)", "Amber",
+    LinSimulations.runResourceLoading(ratioSi(121, 100)).status_color);
+  assert("Resource_Loading ratio 1.351 → Red (past the amber ceiling)", "Red",
+    LinSimulations.runResourceLoading(ratioSi(135.1, 100)).status_color);
+
+  // ---- simulations.js: runNCRRate openRatio — Green <0.15, Yellow <0.30,
+  // Amber <0.50, else Red.
+  function ncrSi(open, issued) { return { ncrIssued: issued, ncrClosed: issued - open, ncrOpen: open }; }
+  assert("NCR_Rate openRatio 0.149 (14.9/100, just under the green edge) → Green", "Green",
+    LinSimulations.runNCRRate(ncrSi(14.9, 100)).status_color);
+  assert("NCR_Rate openRatio 0.15 (15/100 exact, at the green/Yellow boundary) → Yellow", "Yellow",
+    LinSimulations.runNCRRate(ncrSi(15, 100)).status_color);
+  assert("NCR_Rate openRatio 0.30 → Amber", "Amber", LinSimulations.runNCRRate(ncrSi(30, 100)).status_color);
+  assert("NCR_Rate openRatio 0.50 → Red", "Red", LinSimulations.runNCRRate(ncrSi(50, 100)).status_color);
+  assert("NCR_Rate 0 issued → Green (no NCRs is good, not abstained)", "Green",
+    LinSimulations.runNCRRate({ ncrIssued: 0, ncrClosed: 0, ncrOpen: 0 }).status_color);
+
+  // ---- simulations.js: runContractorPerformance minRating — Green >=4.0,
+  // Yellow >=3.5, Amber >=3.0, else Red.
+  function ratingSi(overall, sched, cost) { return { overallRating: overall, scheduleRating: sched, costRating: cost }; }
+  assert("Contractor_Performance minRating 4.0 → Green", "Green",
+    LinSimulations.runContractorPerformance(ratingSi(4.0, 5, 5)).status_color);
+  assert("Contractor_Performance minRating 3.99 → Yellow (just under the green edge)", "Yellow",
+    LinSimulations.runContractorPerformance(ratingSi(3.99, 5, 5)).status_color);
+  assert("Contractor_Performance minRating 3.0 → Amber", "Amber",
+    LinSimulations.runContractorPerformance(ratingSi(3.0, 5, 5)).status_color);
+  assert("Contractor_Performance minRating 2.99 → Red (just under the amber edge)", "Red",
+    LinSimulations.runContractorPerformance(ratingSi(2.99, 5, 5)).status_color);
+
+  // ---- simulations.js: runMilestoneTrend meanSlip — Green <=0, Yellow <=7,
+  // Amber <=14, else Red; worstSlip>21 forces at least Amber regardless of mean.
+  function msHistory(slips) {
+    var base = new Date("2026-01-01T00:00:00Z");
+    function snap(offsetDays) {
+      return { at: "2026-0" + (offsetDays === 0 ? "1" : "2") + "-01", milestones: slips.map(function (s, i) {
+        var d = new Date(base.getTime() + (offsetDays === 0 ? 0 : s) * 86400000);
+        return { name: "M" + i, baseline: "2026-01-01", forecast: d.toISOString().slice(0, 10) };
+      }) };
+    }
+    return [snap(0), snap(1)];
+  }
+  assert("Milestone_Trend meanSlip 0d → Green", "Green",
+    LinSimulations.runMilestoneTrend({ milestoneHistory: msHistory([0, 0]) }).status_color);
+  assert("Milestone_Trend meanSlip 7d → Yellow", "Yellow",
+    LinSimulations.runMilestoneTrend({ milestoneHistory: msHistory([7, 7]) }).status_color);
+  assert("Milestone_Trend meanSlip 14d → Amber", "Amber",
+    LinSimulations.runMilestoneTrend({ milestoneHistory: msHistory([14, 14]) }).status_color);
+  assert("Milestone_Trend meanSlip 21d → Red (past the amber ceiling)", "Red",
+    LinSimulations.runMilestoneTrend({ milestoneHistory: msHistory([21, 21]) }).status_color);
+  assert("Milestone_Trend worstSlip>21 overrides a low mean to at least Amber", "Amber",
+    LinSimulations.runMilestoneTrend({ milestoneHistory: msHistory([0, 22]) }).status_color);
+  assert("Milestone_Trend < 2 snapshots → abstains (insufficient_data)", true,
+    !!LinSimulations.runMilestoneTrend({ milestoneHistory: [msHistory([0, 0])[0]] }).insufficient_data);
+
+  // ---- Abstention assertions — null/missing required inputs must abstain
+  // (insufficient_data / null status), never fabricate a status.
+  assert("Resource_Loading with no inputs → insufficient_data, no status_color", true,
+    (function () { var r = LinSimulations.runResourceLoading({}); return !!r.insufficient_data && r.status_color == null; })());
+  assert("NCR_Rate with no inputs → insufficient_data, no status_color", true,
+    (function () { var r = LinSimulations.runNCRRate({}); return !!r.insufficient_data && r.status_color == null; })());
+  assert("Contractor_Performance with no inputs → insufficient_data, no status_color", true,
+    (function () { var r = LinSimulations.runContractorPerformance({}); return !!r.insufficient_data && r.status_color == null; })());
+  assert("Contractor_Performance with a partial rating set (missing costRating) → abstains", true,
+    !!LinSimulations.runContractorPerformance({ overallRating: 4, scheduleRating: 4 }).insufficient_data);
+
+  // ---- Rollup assertions — the DST fusion getCategoryStatus/getProjectFusion
+  // both delegate to (categories.js explicitly does NOT do plain worst-wins —
+  // it calls LinSimulations.dstFuse, falling back to worst-wins only if that
+  // module failed to load — see categories.js:363-370). These assertions pin
+  // CURRENT implemented behavior, verified against the real dstFuse, not an
+  // assumed "worst status always wins" policy.
+  //
+  // At SMALL evidence counts a lone Red does dominate (worst-wins-like):
+  assert("DST fuse of 1 Green + 1 Red (small evidence count) → Red dominates", "Red",
+    (LinSimulations.dstFuse(["Green", "Red"]) || {}).status);
+  assert("DST fuse of 2 Green + 1 Red (small evidence count) → Red still dominates", "Red",
+    (LinSimulations.dstFuse(["Green", "Green", "Red"]) || {}).status);
+  // But as more Green evidence accumulates, a lone Red gets diluted rather
+  // than sinking the category/project outright — this is the "raises but
+  // does not necessarily sink" behavior the task asks to pin, not assume:
+  assert("DST fuse of 3 Green + 1 Red → dilutes to Green (does not sink the category)", "Green",
+    (LinSimulations.dstFuse(["Green", "Green", "Green", "Red"]) || {}).status);
+  assert("DST fuse of 8 Green + 1 Red (a large, mostly-clean category) → Green", "Green",
+    (LinSimulations.dstFuse(["Green", "Green", "Green", "Green", "Green", "Green", "Green", "Green", "Red"]) || {}).status);
+  // Conflict K rises sharply the moment evidence disagrees — this is what
+  // feeds the advisory "Red-review" flag (K >= 0.55), not the fused band.
+  assert("DST fuse of 1 Green + 1 Red → conflict K is high (>= 0.55, the redReview advisory threshold)",
+    true, (LinSimulations.dstFuse(["Green", "Red"]) || {}).conflict >= 0.55);
+  assert("DST fuse of all-Green evidence → conflict K stays well under the redReview advisory threshold (0.55)",
+    true, (LinSimulations.dstFuse(["Green", "Green", "Green"]) || {}).conflict < 0.55);
 
   // ---- render ----
   const tbody = document.querySelector("#results tbody");
