@@ -18,8 +18,10 @@
     return key.split('_').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
   }
 
-  // ─── Fallback category definitions (11) — used only if LIN_CATEGORIES is
-  // absent (script-order failure); canonical source is categories.js ──────────
+  // ─── Fallback category definitions (10 project-level; Portfolio Health is
+  // portfolio-scale and not part of this diagram) — used only if
+  // LIN_CATEGORIES is absent (script-order failure); canonical source is
+  // categories.js ───────────────────────────────────────────────────────────
   var FB_CATS = [
     { id:1,  name:'Quantitative EVM',       short:'EVM',       count:12 },
     { id:2,  name:'Schedule Simulation',    short:'Schedule',  count:11 },
@@ -28,10 +30,9 @@
     { id:5,  name:'System Dynamics',        short:'Sys.Dyn.',  count:8  },
     { id:6,  name:'Signal Synthesis',       short:'Synthesis', count:4  },
     { id:7,  name:'Evidence Combination',   short:'Evidence',  count:20 },
-    { id:8,  name:'ML & AI',                short:'ML & AI',   count:5  },
-    { id:9,  name:'Governance & Compliance',short:'Gov.',      count:9  },
-    { id:10, name:'Data Integrity',         short:'Integrity', count:6  },
-    { id:11, name:'Decision Optimization',  short:'Decision',  count:8  },
+    { id:8,  name:'Governance & Compliance',short:'Gov.',      count:9  },
+    { id:9,  name:'Data Integrity',         short:'Integrity', count:6  },
+    { id:10, name:'Decision Optimization',  short:'Decision',  count:8  },
   ];
 
   // ─── Fallback module definitions: [catIdx, displayName, method_class] ───────
@@ -81,49 +82,51 @@
     [6,'Possibility Theory','Possibility_Theory'],[6,'Spherical Fuzzy','Spherical_Fuzzy'],
     [6,'Fermatean Fuzzy','Fermatean_Fuzzy'],  [6,'MARCOS','MARCOS'],
     [6,'CRITIC-TOPSIS','CRITIC_TOPSIS'],      [6,'Hypersoft Sets','Hypersoft_Sets'],
-    // Cat 8 — ML & AI (5)
-    [7,'Isolation Forest','Isolation_Forest'],[7,'Portfolio Outlier','Portfolio_Outlier'],
-    [7,'Trajectory Class.','Trajectory_Classifier'],[7,'Cross-Project Pat.','Cross_Project_Pattern'],
-    [7,'Anomaly Score','Anomaly_Score'],
-    // Cat 9 — Governance & Compliance (9)
-    [8,'ABM Governance','ABM_Governance'],    [8,'FAR Monitor','FAR_Monitor'],
-    [8,'OMB A-11','OMB_A11'],                 [8,'EVM Threshold','EVM_Threshold'],
-    [8,'CO Frequency Gov','CO_Frequency_Gov'],[8,'Quality Gate','Quality_Gate'],
-    [8,'Safety Gate','Safety_Gate'],          [8,'Environmental Gate','Environmental_Gate'],
-    [8,'Contractor Score','Contractor_Score'],
-    // Cat 10 — Data Integrity (6)
-    [9,'Missing Field Det.','Missing_Field_Detector'],[9,'Outlier Screener','Outlier_Screener'],
-    [9,'Temporal Consist.','Temporal_Consistency'],[9,'Cross-Doc Conflict','Cross_Doc_Conflict'],
-    [9,'Completeness Score','Completeness_Score'],[9,'Source Audit Trail','Source_Audit_Trail'],
-    // Cat 11 — Decision Optimization (8)
-    [10,'Pareto Front','Pareto_Front'],        [10,'MAUT','MAUT'],
-    [10,'AHP Weighting','AHP_Weighting'],      [10,'TOPSIS Rank','TOPSIS_Rank'],
-    [10,'Regret Minimiz.','Regret_Minimization'],[10,'Info Value','Info_Value'],
-    [10,'Sensitivity Rank','Sensitivity_Rank'],[10,'Robust Decision','Robust_Decision'],
+    // Cat 8 — Governance & Compliance (9)
+    [7,'ABM Governance','ABM_Governance'],    [7,'FAR Monitor','FAR_Monitor'],
+    [7,'OMB A-11','OMB_A11'],                 [7,'EVM Threshold','EVM_Threshold'],
+    [7,'CO Frequency Gov','CO_Frequency_Gov'],[7,'Quality Gate','Quality_Gate'],
+    [7,'Safety Gate','Safety_Gate'],          [7,'Environmental Gate','Environmental_Gate'],
+    [7,'Contractor Score','Contractor_Score'],
+    // Cat 9 — Data Integrity (6)
+    [8,'Missing Field Det.','Missing_Field_Detector'],[8,'Outlier Screener','Outlier_Screener'],
+    [8,'Temporal Consist.','Temporal_Consistency'],[8,'Cross-Doc Conflict','Cross_Doc_Conflict'],
+    [8,'Completeness Score','Completeness_Score'],[8,'Source Audit Trail','Source_Audit_Trail'],
+    // Cat 10 — Decision Optimization (8)
+    [9,'Pareto Front','Pareto_Front'],        [9,'MAUT','MAUT'],
+    [9,'AHP Weighting','AHP_Weighting'],      [9,'TOPSIS Rank','TOPSIS_Rank'],
+    [9,'Regret Minimiz.','Regret_Minimization'],[9,'Info Value','Info_Value'],
+    [9,'Sensitivity Rank','Sensitivity_Rank'],[9,'Robust Decision','Robust_Decision'],
   ];
+  // Portfolio Health (ex-Cat 8 ML/AI) is portfolio-scale — not part of this
+  // project-level diagram; see the Health dialog (ingest.js/deepdive.js).
 
   var SHORTS = ['EVM','Schedule','Cost','Doc&Risk','Sys.Dyn.','Synthesis',
-                'Evidence','ML & AI','Gov.','Integrity','Decision'];
+                'Evidence','Gov.','Integrity','Decision'];
 
   // Canonical categories + modules from categories.js (real method_class names,
-  // so byClass/getModuleStatus lookups actually hit). Falls back to the
-  // hardcoded arrays above only if LIN_CATEGORIES failed to load.
+  // so byClass/getModuleStatus lookups actually hit). Portfolio Health is
+  // portfolio-scale and excluded from this project-level diagram. Falls back
+  // to the hardcoded arrays above only if LIN_CATEGORIES failed to load.
   function buildModel() {
     var LC = window.LIN_CATEGORIES;
     if (LC && LC.length) {
-      var cats = LC.map(function(c, ci) {
+      var PLC = window.projectLevelCategories ? window.projectLevelCategories()
+        : LC.filter(function(c) { return !(c && c.level === 'portfolio'); });
+      var cats = PLC.map(function(c, ci) {
         return { id: ci + 1, name: c.name, short: SHORTS[ci] || c.name,
                  count: (c.modules || []).length };
       });
       var mods = [];
-      var idxs = LC.map(function() { return []; });
-      LC.forEach(function(c, ci) {
+      var idxs = PLC.map(function() { return []; });
+      var catIds = PLC.map(function(c) { return c.id; });
+      PLC.forEach(function(c, ci) {
         (c.modules || []).forEach(function(m) {
           idxs[ci].push(mods.length);
           mods.push({ mc: m.method_class, name: m.name, num: m.num, catI: ci });
         });
       });
-      return { CATS: cats, MODULES: mods, catModIdxs: idxs };
+      return { CATS: cats, MODULES: mods, catModIdxs: idxs, catIds: catIds };
     }
     var fbIdxs = FB_CATS.map(function() { return []; });
     var fbMods = RAW_MODS.map(function(row, i) {
@@ -131,35 +134,36 @@
       fbIdxs[ci].push(i);
       return { catI: ci, name: row[1], mc: row[2], num: (ci + 1) + '.' + (modI + 1) };
     });
-    return { CATS: FB_CATS, MODULES: fbMods, catModIdxs: fbIdxs };
+    return { CATS: FB_CATS, MODULES: fbMods, catModIdxs: fbIdxs, catIds: null };
   }
 
-  // ─── Doc → category indices (0-based), corrected per spec ───────────────────
+  // ─── Doc → category indices (0-based, gapless 1-10; Portfolio Health is
+  // portfolio-scale and not fed by individual document uploads) ────────────────
   var DOC_TO_CATS = [
     [0,2],      // Contract Value          → Cat1, Cat3
     [0,1],      // Schedule of Values      → Cat1, Cat2
-    [0,2,8],    // Pay Application         → Cat1, Cat3, Cat9
+    [0,2,7],    // Pay Application         → Cat1, Cat3, Cat8
     [0,1],      // Time-Phased Schedule    → Cat1, Cat2
     [1,4],      // Schedule Update         → Cat2, Cat5
     [0,1,2],    // Monthly Report          → Cat1, Cat2, Cat3
-    [2,8],      // Change Order            → Cat3, Cat9
+    [2,7],      // Change Order            → Cat3, Cat8
     [3],        // RFI                     → Cat4
     [3],        // Submittal               → Cat4
-    [3,8],      // OAC Minutes             → Cat4, Cat9
+    [3,7],      // OAC Minutes             → Cat4, Cat8
     [3,1],      // Field Report            → Cat4, Cat2
     [3],        // Inspection Report       → Cat4
-    [3,8],      // NCR Log                 → Cat4, Cat9
-    [3,8],      // Subcontractor Report    → Cat4, Cat9
+    [3,7],      // NCR Log                 → Cat4, Cat8
+    [3,7],      // Subcontractor Report    → Cat4, Cat8
     [3,2],      // Procurement Log         → Cat4, Cat3
     [1,4],      // Lookahead Schedule      → Cat2, Cat5
     [2,4],      // Resource Report         → Cat3, Cat5
     [2,0],      // Cost Report             → Cat3, Cat1
     [2],        // Past Performance Report → Cat3
-    [8],        // Safety Report           → Cat9
-    [8,3],      // Quality Audit Report    → Cat9, Cat4
-    [8],        // Environmental Report    → Cat9
+    [7],        // Safety Report           → Cat8
+    [7,3],      // Quality Audit Report    → Cat8, Cat4
+    [7],        // Environmental Report    → Cat8
     [2],        // Historical Data         → Cat3
-    [8,3],      // Commissioning Report    → Cat9, Cat4
+    [7,3],      // Commissioning Report    → Cat8, Cat4
     [3],        // Correspondence / Notice → Cat4
     [4,3],      // Risk Register           → Cat5, Cat4
     [3],        // RFI Log (register)      → Cat4  (v10.27)
@@ -168,11 +172,10 @@
 
   // ─── Inter-category feeds (x-hubs between cat col and prj col) ───────────────
   var INTER_CAT = [
-    { srcs:[0,1,2,3,4],             dst:5,  xHub:860 },
-    { srcs:[0,1,2,3,4,5],           dst:6,  xHub:875 },
-    { srcs:[0,1,2],                 dst:7,  xHub:890 },
-    { srcs:[0,1,2,3,4,5,6,7,8],    dst:9,  xHub:905 },
-    { srcs:[0,1,2,3,4,5,6,7,8],    dst:10, xHub:920 },
+    { srcs:[0,1,2,3,4],             dst:5, xHub:860 },
+    { srcs:[0,1,2,3,4,5],           dst:6, xHub:875 },
+    { srcs:[0,1,2,3,4,5,6,7],       dst:8, xHub:905 },
+    { srcs:[0,1,2,3,4,5,6,7],       dst:9, xHub:920 },
   ];
 
   // ─── Colors ──────────────────────────────────────────────────────────────────
@@ -296,7 +299,7 @@
 
     // ── 2. Canonical categories/modules + status resolution ──────────────────
     var model = buildModel();
-    var CATS = model.CATS, MODULES = model.MODULES, catModIdxs = model.catModIdxs;
+    var CATS = model.CATS, MODULES = model.MODULES, catModIdxs = model.catModIdxs, catIds = model.catIds;
 
     var simArr = (project.simulationSignals && project.simulationSignals.signal_array) || [];
     var byClass = {};
@@ -331,12 +334,14 @@
 
     // ── 3. Pre-compute all statuses ───────────────────────────────────────────
     var modInfos = MODULES.map(function(m) { return modInfo(m); });
-    // Category statuses — use the app's DST fusion (categories.js); LIN_CATEGORIES
-    // is ordered cat1..cat11, matching the CATS index. Worst-of is only a fallback.
+    // Category statuses — use the app's DST fusion (categories.js), keyed by
+    // the STABLE internal id (catIds[ci]) rather than array position, since
+    // Portfolio Health is filtered out of this project-level CATS list.
+    // Worst-of is only a fallback.
     var catStatuses = CATS.map(function(cat, ci) {
       try {
-        if (window.getCategoryStatus && window.LIN_CATEGORIES && window.LIN_CATEGORIES[ci]) {
-          var s = window.getCategoryStatus(window.LIN_CATEGORIES[ci].id, project);
+        if (window.getCategoryStatus && catIds && catIds[ci]) {
+          var s = window.getCategoryStatus(catIds[ci], project);
           if (s) return s; // 'Green' | 'Yellow' | 'Amber' | 'Red' | 'Complete'
         }
       } catch (e) {}
@@ -514,8 +519,8 @@
       });
     });
 
-    // Governance feedback arc: Project Status → Cat 9 (idx 8)
-    var fbSX=CX.prj+26, fbSY=PRJ_Y, fbDX=CX.cat+9, fbDY=catCY[8];
+    // Governance feedback arc: Project Status → Cat 8 (idx 7)
+    var fbSX=CX.prj+26, fbSY=PRJ_Y, fbDX=CX.cat+9, fbDY=catCY[7];
     var fbEl = se('path', {
       d:'M'+fbSX+','+fbSY+' C'+(fbSX+65)+','+fbSY+' '+(fbSX+65)+','+fbDY+' '+fbDX+','+fbDY,
       fill:'none', stroke:COL.Red, 'stroke-width':'1.5', opacity:'0.30',
@@ -590,18 +595,18 @@
     });
 
     // Category nodes
-    // Release 2 · Phase 2 item 10 — one-line role caption per category, keyed by
-    // cat id (Cat 2-3 share a role; Cat 6-7 share a role).
+    // Gapless 1-10 project-level roles, keyed by cat id (Cat 2-3 share a role;
+    // Cat 6-7 share a role). Portfolio Health's "how this project compares to
+    // the portfolio" caption now lives in the Health dialog, not here.
     var CAT_ROLE = {
       1: 'what is happening',
       2: 'what will happen', 3: 'what will happen',
       4: 'what is being said',
       5: 'how components interact',
       6: 'what the evidence collectively means', 7: 'what the evidence collectively means',
-      8: 'how this project compares to the portfolio',
-      9: 'what action is required',
-      10: 'how much to trust the signals',
-      11: 'what the best decision is'
+      8: 'what action is required',
+      9: 'how much to trust the signals',
+      10: 'what the best decision is'
     };
     var catNodeEls = CATS.map(function(cat, ci) {
       var cs=catStatuses[ci], color=colFor(cs);
@@ -657,7 +662,7 @@
       'text-anchor':'middle', 'font-family':'monospace', class:'lnf-halo' }, prjG);
     prjStatusText.textContent = prjStatus;
     prjG.addEventListener('mouseenter', function(evt) {
-      showTT(evt,'<div class="n">Project Status</div><div class="sub" style="color:'+prjColor+'">'+prjStatus+'</div><div class="sub">DST fusion of '+CATS.length+' categories</div>');
+      showTT(evt,'<div class="n">Project Status</div><div class="sub" style="color:'+prjColor+'">'+prjStatus+'</div><div class="sub">DST fusion of '+CATS.length+' categories + Portfolio Health</div>');
     });
     prjG.addEventListener('mousemove', moveTT);
     prjG.addEventListener('mouseleave', hideTT);
@@ -666,7 +671,7 @@
     fbEl.style.cursor = 'default';
     fbEl.addEventListener('mouseenter', function(evt) {
       fbEl.setAttribute('opacity','0.80'); fbLabelEl.setAttribute('opacity','0.90');
-      showTT(evt,'<div class="n">Governance Feedback</div><div class="sub" style="color:'+COL.Red+'">Cat 9 loop</div><div class="sub">Governance decisions feed back into Cat 9 compliance monitoring</div>');
+      showTT(evt,'<div class="n">Governance Feedback</div><div class="sub" style="color:'+COL.Red+'">Cat 8 loop</div><div class="sub">Governance decisions feed back into Cat 8 compliance monitoring</div>');
     });
     fbEl.addEventListener('mousemove', moveTT);
     fbEl.addEventListener('mouseleave', function() { hideTT(); fbEl.setAttribute('opacity','0.30'); fbLabelEl.setAttribute('opacity','0.70'); });

@@ -1,22 +1,47 @@
 /* ============================================================
    lin-project-radar — categories.js
    ------------------------------------------------------------
-   The full 103-module definition across 11 analytical categories.
-   Drives the spider web (103 axes), the ensemble panel, the
-   signal ledger, the Signals page, and the stored snapshot the
-   executive brief reads from.
+   The full 103-module definition across 10 PROJECT-LEVEL categories
+   (display-numbered 1-10, gapless) plus the PORTFOLIO-LEVEL "Portfolio
+   Health" suite (ML & AI Pattern Detection, 5 modules, numbered PH.1-PH.5,
+   NOT part of the 1-10 sequence — it compares a project against the rest
+   of the portfolio, not the project in isolation).
+
+   Every entry's internal `id` (cat1..cat11, cat9_1, etc.) is STABLE and
+   never renumbered — sessionStorage keys, deep-link anchors, and CSS hooks
+   all key off `id`. The USER-VISIBLE number lives entirely in `num`
+   ('Cat 1'..'Cat 10' for project categories, 'PH' for the portfolio suite;
+   module nums 'N.M' or 'PH.M'). Anything that renders a category/module
+   number MUST read `num`, never derive it from array position or the
+   internal id. The Portfolio Health category also carries
+   `level: 'portfolio'` so renderers can route it to the Health dialog
+   instead of the numbered 1-10 sequence.
+
+   Registry order (internal, for iteration) is unchanged from the original
+   11-category rollout: cat1..cat7, cat8 (Portfolio Health), cat9..cat11.
+   Display numbers:
+     cat1..cat7   → Cat 1..Cat 7   (unchanged)
+     cat8         → 'PH'            (Portfolio Health — was 'Cat 8')
+     cat9         → 'Cat 8'         (Governance & Compliance — was 'Cat 9')
+     cat10        → 'Cat 9'         (Data Integrity — was 'Cat 10')
+     cat11        → 'Cat 10'        (Decision Optimization — was 'Cat 11')
 
    Every module carries: id, num, name, method_class, active
    (true/false) and required (input keys it needs to compute).
 
-   Cat 8 (ML & AI) is active — its 5 modules compute via the
-   portfolioanalyze endpoint. Many Cat 2-9 modules now compute
-   from fields derived from the existing document set (see
-   signals.js deriveExtendedFields), tagged [est.] in the UI.
+   Portfolio Health (ex-"Cat 8") is active — its 5 modules compute via the
+   portfolioanalyze endpoint and render in the Health dialog, not on any
+   single project's detail page. Many project-category modules now compute
+   from fields derived from the existing document set (see signals.js
+   deriveExtendedFields), tagged [est.] in the UI.
 
-   Cat 10 (Data Integrity) and Cat 11 (Decision Optimization)
-   are fully active — they derive from existing signalInputs
-   and the project audit trail.
+   Cat 9 (Data Integrity) and Cat 10 (Decision Optimization) are fully
+   active — they derive from existing signalInputs and the project audit
+   trail.
+
+   Fusion/status math is UNCHANGED by this renumber: getProjectFusion still
+   fuses all 11 registry entries (including Portfolio Health) via
+   Dempster-Shafer — only the DISPLAY layer (num, grouping, dialogs) changed.
 
    Globals (no ES modules) so the site runs from file:// too.
    Loaded BEFORE the modules that consume it (categories.js
@@ -149,60 +174,64 @@ window.LIN_CATEGORIES = [
     ]
   },
   {
-    id: 'cat8', num: 'Cat 8', name: 'ML & AI Pattern Detection',
+    // Portfolio Health (ex-"Cat 8") is NOT a numbered project category — it
+    // compares one project against the rest of the portfolio, not the project
+    // in isolation. num:'PH' (module nums 'PH.1'-'PH.5'); level:'portfolio'
+    // routes it to the Health dialog wherever project-category sequences render.
+    id: 'cat8', num: 'PH', name: 'ML & AI Pattern Detection', level: 'portfolio',
     color: '#64748b',
-    parked: false,  // NOW ACTIVE — portfolioanalyze (Code.gs v10.17) computes these
+    parked: false,  // ACTIVE — portfolioanalyze (Code.gs v10.17) computes these
     description: 'Machine learning anomaly detection using portfolio-wide signal comparison.',
     modules: [
-      { id: 'cat8_1', num: '8.1', name: 'Isolation Forest', method_class: 'Isolation_Forest', active: true, required: ['portfolioVectors'] },
-      { id: 'cat8_2', num: '8.2', name: 'Portfolio Outlier Detection', method_class: 'Portfolio_Outlier', active: true, required: ['portfolioVectors'] },
-      { id: 'cat8_3', num: '8.3', name: 'Signal Trajectory Classifier', method_class: 'Trajectory_Classifier', active: true, required: ['signalHistory'] },
-      { id: 'cat8_4', num: '8.4', name: 'Cross-project Pattern Detector', method_class: 'Cross_Project_Pattern', active: true, required: ['portfolioVectors'] },
-      { id: 'cat8_5', num: '8.5', name: 'Anomaly Score', method_class: 'Anomaly_Score', active: true, required: ['portfolioVectors'] }
+      { id: 'cat8_1', num: 'PH.1', name: 'Isolation Forest', method_class: 'Isolation_Forest', active: true, required: ['portfolioVectors'] },
+      { id: 'cat8_2', num: 'PH.2', name: 'Portfolio Outlier Detection', method_class: 'Portfolio_Outlier', active: true, required: ['portfolioVectors'] },
+      { id: 'cat8_3', num: 'PH.3', name: 'Signal Trajectory Classifier', method_class: 'Trajectory_Classifier', active: true, required: ['signalHistory'] },
+      { id: 'cat8_4', num: 'PH.4', name: 'Cross-project Pattern Detector', method_class: 'Cross_Project_Pattern', active: true, required: ['portfolioVectors'] },
+      { id: 'cat8_5', num: 'PH.5', name: 'Anomaly Score', method_class: 'Anomaly_Score', active: true, required: ['portfolioVectors'] }
     ]
   },
   {
-    id: 'cat9', num: 'Cat 9', name: 'Governance & Compliance',
+    id: 'cat9', num: 'Cat 8', name: 'Governance & Compliance',
     color: '#e0556b',
     description: 'Named authority, required action, regulatory compliance — always the last step.',
     modules: [
-      { id: 'cat9_1', num: '9.1', name: 'ABM Governance Layer', method_class: 'ABM_Governance', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'cat9_2', num: '9.2', name: 'FAR Threshold Monitor', method_class: 'FAR_Threshold', active: true, required: ['bac','cpi','ev','ac'] },
-      { id: 'cat9_3', num: '9.3', name: 'OMB A-11 Check', method_class: 'OMB_A11_Check', active: true, required: ['bac','cpi','actualPctComplete'] },
-      { id: 'cat9_4', num: '9.4', name: 'EVM Reporting Threshold', method_class: 'EVM_Reporting_Threshold', active: true, required: ['bac','cpi','spi'] },
-      { id: 'cat9_5', num: '9.5', name: 'Contract Modification Frequency', method_class: 'Contract_Mod_Frequency', active: true, required: ['changeOrderCount','baselineContractSum','revisedContractSum'] },
-      { id: 'cat9_6', num: '9.6', name: 'Quality Compliance Index', method_class: 'Quality_Compliance', active: true, required: ['qualityDeficienciesNoted'] },
-      { id: 'cat9_7', num: '9.7', name: 'Safety Performance Index', method_class: 'Safety_Performance', active: true, required: ['safetyIncidentsDiscussed'], sectors: ['construction','hybrid'] },
-      { id: 'cat9_8', num: '9.8', name: 'Environmental Compliance Rate', method_class: 'Environmental_Compliance', active: true, required: ['environmentalIssuesDiscussed'], sectors: ['construction','hybrid'] },
-      { id: 'cat9_9', num: '9.9', name: 'Contractor Performance Score', method_class: 'Contractor_Performance', active: true, required: ['overallRating','scheduleRating','costRating'] }
+      { id: 'cat9_1', num: '8.1', name: 'ABM Governance Layer', method_class: 'ABM_Governance', active: true, required: ['cpi','spi','docRiskScore'] },
+      { id: 'cat9_2', num: '8.2', name: 'FAR Threshold Monitor', method_class: 'FAR_Threshold', active: true, required: ['bac','cpi','ev','ac'] },
+      { id: 'cat9_3', num: '8.3', name: 'OMB A-11 Check', method_class: 'OMB_A11_Check', active: true, required: ['bac','cpi','actualPctComplete'] },
+      { id: 'cat9_4', num: '8.4', name: 'EVM Reporting Threshold', method_class: 'EVM_Reporting_Threshold', active: true, required: ['bac','cpi','spi'] },
+      { id: 'cat9_5', num: '8.5', name: 'Contract Modification Frequency', method_class: 'Contract_Mod_Frequency', active: true, required: ['changeOrderCount','baselineContractSum','revisedContractSum'] },
+      { id: 'cat9_6', num: '8.6', name: 'Quality Compliance Index', method_class: 'Quality_Compliance', active: true, required: ['qualityDeficienciesNoted'] },
+      { id: 'cat9_7', num: '8.7', name: 'Safety Performance Index', method_class: 'Safety_Performance', active: true, required: ['safetyIncidentsDiscussed'], sectors: ['construction','hybrid'] },
+      { id: 'cat9_8', num: '8.8', name: 'Environmental Compliance Rate', method_class: 'Environmental_Compliance', active: true, required: ['environmentalIssuesDiscussed'], sectors: ['construction','hybrid'] },
+      { id: 'cat9_9', num: '8.9', name: 'Contractor Performance Score', method_class: 'Contractor_Performance', active: true, required: ['overallRating','scheduleRating','costRating'] }
     ]
   },
   {
-    id: 'cat10', num: 'Cat 10', name: 'Data Integrity & Information Quality',
+    id: 'cat10', num: 'Cat 9', name: 'Data Integrity & Information Quality',
     color: '#06b6d4',
-    description: 'Measures the quality, completeness, timeliness and reliability of the data driving all other modules. Every analytical output is only as good as its inputs — Cat 10 quantifies that.',
+    description: 'Measures the quality, completeness, timeliness and reliability of the data driving all other modules. Every analytical output is only as good as its inputs — Cat 9 quantifies that.',
     modules: [
-      { id: 'cat10_1', num: '10.1', name: 'Missing Data Index', method_class: 'Missing_Data_Index', active: true, required: ['bac'] },
-      { id: 'cat10_2', num: '10.2', name: 'Data Timeliness Score', method_class: 'Data_Timeliness_Score', active: true, required: ['docDate'] },
-      { id: 'cat10_3', num: '10.3', name: 'Source Reliability Weighting', method_class: 'Source_Reliability_Weighting', active: true, required: ['bac'] },
-      { id: 'cat10_4', num: '10.4', name: 'Audit Trail Completeness', method_class: 'Audit_Trail_Completeness', active: true, required: ['bac'] },
-      { id: 'cat10_5', num: '10.5', name: 'Information Completeness Ratio', method_class: 'Information_Completeness_Ratio', active: true, required: ['bac'] },
-      { id: 'cat10_6', num: '10.6', name: 'Cross-document Consistency Score', method_class: 'Cross_Doc_Consistency', active: true, required: ['ev','ac'] },
-      { id: 'cat10_7', num: '10.7', name: 'Reporting Frequency Index', method_class: 'Reporting_Frequency_Index', active: true, required: ['docDate'] }
+      { id: 'cat10_1', num: '9.1', name: 'Missing Data Index', method_class: 'Missing_Data_Index', active: true, required: ['bac'] },
+      { id: 'cat10_2', num: '9.2', name: 'Data Timeliness Score', method_class: 'Data_Timeliness_Score', active: true, required: ['docDate'] },
+      { id: 'cat10_3', num: '9.3', name: 'Source Reliability Weighting', method_class: 'Source_Reliability_Weighting', active: true, required: ['bac'] },
+      { id: 'cat10_4', num: '9.4', name: 'Audit Trail Completeness', method_class: 'Audit_Trail_Completeness', active: true, required: ['bac'] },
+      { id: 'cat10_5', num: '9.5', name: 'Information Completeness Ratio', method_class: 'Information_Completeness_Ratio', active: true, required: ['bac'] },
+      { id: 'cat10_6', num: '9.6', name: 'Cross-document Consistency Score', method_class: 'Cross_Doc_Consistency', active: true, required: ['ev','ac'] },
+      { id: 'cat10_7', num: '9.7', name: 'Reporting Frequency Index', method_class: 'Reporting_Frequency_Index', active: true, required: ['docDate'] }
     ]
   },
   {
-    id: 'cat11', num: 'Cat 11', name: 'Decision Optimization',
+    id: 'cat11', num: 'Cat 10', name: 'Decision Optimization',
     color: '#10b981',
-    description: 'Selects the best action under constraints — distinct from Cat 5 which explains system behavior. Cat 11 answers: given the current signal state, what is the optimal decision pathway?',
+    description: 'Selects the best action under constraints — distinct from Cat 5 which explains system behavior. Cat 10 answers: given the current signal state, what is the optimal decision pathway?',
     modules: [
-      { id: 'cat11_1', num: '11.1', name: 'Multi-Objective Optimization', method_class: 'Multi_Objective_Optimization', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'cat11_2', num: '11.2', name: 'Linear Programming', method_class: 'Linear_Programming', active: true, required: ['bac','ev','ac','cpi'] },
-      { id: 'cat11_3', num: '11.3', name: 'Constraint Satisfaction Analysis', method_class: 'Constraint_Satisfaction', active: true, required: ['cpi','spi','bac'] },
-      { id: 'cat11_4', num: '11.4', name: 'What-If Scenario Matrix', method_class: 'WhatIf_Scenario_Matrix', active: true, required: ['bac','ev','ac','cpi','spi'] },
-      { id: 'cat11_5', num: '11.5', name: 'Decision Sensitivity Matrix', method_class: 'Decision_Sensitivity_Matrix', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'cat11_6', num: '11.6', name: 'Pareto Frontier Analysis', method_class: 'Pareto_Frontier', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'cat11_7', num: '11.7', name: 'Regret Minimization Index', method_class: 'Regret_Minimization', active: true, required: ['cpi','spi','bac'] }
+      { id: 'cat11_1', num: '10.1', name: 'Multi-Objective Optimization', method_class: 'Multi_Objective_Optimization', active: true, required: ['cpi','spi','docRiskScore'] },
+      { id: 'cat11_2', num: '10.2', name: 'Linear Programming', method_class: 'Linear_Programming', active: true, required: ['bac','ev','ac','cpi'] },
+      { id: 'cat11_3', num: '10.3', name: 'Constraint Satisfaction Analysis', method_class: 'Constraint_Satisfaction', active: true, required: ['cpi','spi','bac'] },
+      { id: 'cat11_4', num: '10.4', name: 'What-If Scenario Matrix', method_class: 'WhatIf_Scenario_Matrix', active: true, required: ['bac','ev','ac','cpi','spi'] },
+      { id: 'cat11_5', num: '10.5', name: 'Decision Sensitivity Matrix', method_class: 'Decision_Sensitivity_Matrix', active: true, required: ['cpi','spi','docRiskScore'] },
+      { id: 'cat11_6', num: '10.6', name: 'Pareto Frontier Analysis', method_class: 'Pareto_Frontier', active: true, required: ['cpi','spi','docRiskScore'] },
+      { id: 'cat11_7', num: '10.7', name: 'Regret Minimization Index', method_class: 'Regret_Minimization', active: true, required: ['cpi','spi','bac'] }
     ]
   }
 ];
@@ -245,6 +274,18 @@ window.categoryNAModules = function (catId, project) {
     return window.isModuleSectorNA(m.method_class, project);
   });
 };
+/* True for the Portfolio Health suite (ex-"Cat 8") — portfolio-scale, not part
+   of the numbered 1-10 project-category sequence. Renderers that walk
+   LIN_CATEGORIES for a project's category rollup should route entries where
+   this returns true to the Health dialog instead of the numbered list. */
+window.isPortfolioLevelCategory = function (cat) {
+  return !!(cat && cat.level === "portfolio");
+};
+/* The 10 project-level categories in display order (Portfolio Health excluded) —
+   the canonical list for anything rendering a gapless 1-10 sequence. */
+window.projectLevelCategories = function () {
+  return LIN_CATEGORIES.filter(function (c) { return !window.isPortfolioLevelCategory(c); });
+};
 
 /* Per-module status lookup. Reads from live project shape:
      project.signals.{mc,cusum,doc,decision}.status / .state
@@ -278,14 +319,15 @@ window.getModuleStatus = function (methodClass, project) {
     case "abm_governance":         return s.decision ? s.decision.state : null;
     // Cat 5.1 reuses the Cat 3 DSM result under a distinct method_class.
     case "DSM_Rework_Cat5":        return findSim("DSM_Rework_Propagation");
-    // Cat 8 ML/AI — results come from the portfolioanalyze POST and are merged
-    // into the simulation signal_array like the other sim modules.
+    // Portfolio Health (ex-"Cat 8" ML/AI) — results come from the
+    // portfolioanalyze POST and are merged into the simulation signal_array
+    // like the other sim modules.
     case "Isolation_Forest":
     case "Portfolio_Outlier":
     case "Trajectory_Classifier":
     case "Cross_Project_Pattern":
     case "Anomaly_Score":          return findSim(methodClass);
-    // Cat 10 — Data Integrity & Information Quality (compute from existing
+    // Cat 9 — Data Integrity & Information Quality (compute from existing
     // signalInputs + the project audit trail).
     case "Missing_Data_Index":
     case "Data_Timeliness_Score":
@@ -294,7 +336,7 @@ window.getModuleStatus = function (methodClass, project) {
     case "Information_Completeness_Ratio":
     case "Cross_Doc_Consistency":
     case "Reporting_Frequency_Index":
-    // Cat 11 — Decision Optimization (compute from existing signalInputs).
+    // Cat 10 — Decision Optimization (compute from existing signalInputs).
     case "Multi_Objective_Optimization":
     case "Linear_Programming":
     case "Constraint_Satisfaction":
@@ -336,8 +378,10 @@ window.getCategoryStatus = function (catId, project) {
 };
 
 /* ------------------------------------------------------------
-   Project-level rollup — fuse the 11 category statuses (again via
-   Dempster-Shafer, Red weighted 1.5x) into the project status.
+   Project-level rollup — fuse all 11 registry category statuses (10 project
+   categories + Portfolio Health; again via Dempster-Shafer, Red weighted
+   1.5x) into the project status. UNCHANGED by the display renumber —
+   Portfolio Health still votes here, it just isn't shown as "Cat 8" anymore.
    Also surfaces: the conflict K (Red-review advisory when >= 0.55),
    every currently-Red module + its category (so the brief can flag
    them even on a Green project), and Complete + liability handling.

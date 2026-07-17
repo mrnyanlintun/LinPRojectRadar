@@ -464,7 +464,7 @@
     listSlim, loadSlim,
     readPortfolioCache, writePortfolioCache, clearPortfolioCache,
     hydratePortfolio: hydrate,
-    // generic POST passthrough (used by the Cat 8 portfolioanalyze call)
+    // generic POST passthrough (used by the Portfolio Health portfolioanalyze call)
     post: apiPost,
     // sync mirror accessors used by render code
     cachedActive, cachedArchived, getCached, listActive: cachedActive,

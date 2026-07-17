@@ -79,7 +79,7 @@
       id: "five-status",
       keywords: ["status", "five status", "5 status", "complete", "yellow", "blue", "rag", "red amber green", "why five", "authority matrix", "closeout"],
       title: "Why five status levels (Complete / Green / Yellow / Amber / Red)",
-      body: "Traditional RAG collapses important distinctions. PCEIF uses five status levels for three reasons. (1) RAG hides the gap between 'slightly off' and 'stalled' — both show as Red. (2) Complete (blue) marks projects that have hit their milestone and transition to closeout governance — different authority, different documentation. (3) Yellow is an early-warning band between Green and Amber: minor variance, still recoverable, requiring a PM weekly check-in before it escalates. Each status maps to a distinct authority/timeframe in the Cat 9.1 matrix."
+      body: "Traditional RAG collapses important distinctions. PCEIF uses five status levels for three reasons. (1) RAG hides the gap between 'slightly off' and 'stalled' — both show as Red. (2) Complete (blue) marks projects that have hit their milestone and transition to closeout governance — different authority, different documentation. (3) Yellow is an early-warning band between Green and Amber: minor variance, still recoverable, requiring a PM weekly check-in before it escalates. Each status maps to a distinct authority/timeframe in the Cat 8.1 matrix."
     },
     {
       id: "radar",
@@ -109,13 +109,13 @@
       id: "module10",
       keywords: ["module 10", "module 10", "synthesis", "conflict", "disagreement", "leading", "forecast ahead", "conservative dominance"],
       title: "Cat 6.1: Conservative Dominance (Signal Synthesis)",
-      body: "Cat 6.1 classifies disagreement between signal classes instead of averaging it away. Conflict types: Multi-signal red-review, Anomaly without narrative, Forecast ahead of status, Leading document risk, Agreement, low risk, and Mixed early warning. The precedence order is deliberate and documented in decision.js. Conservative dominance: the worst single signal drives the overall state. Cat 6.1 is the baseline that Cat 7.1–Cat 7.9 cross-check before Cat 9.1 records the decision."
+      body: "Cat 6.1 classifies disagreement between signal classes instead of averaging it away. Conflict types: Multi-signal red-review, Anomaly without narrative, Forecast ahead of status, Leading document risk, Agreement, low risk, and Mixed early warning. The precedence order is deliberate and documented in decision.js. Conservative dominance: the worst single signal drives the overall state. Cat 6.1 is the baseline that Cat 7.1–Cat 7.9 cross-check before Cat 8.1 records the decision."
     },
     {
       id: "module19",
       keywords: ["module 19", "module 09", "abm", "agent", "governance layer", "decision rules", "authority"],
-      title: "Cat 9.1: ABM Governance Layer",
-      body: "Cat 9.1 is the agent-based governance layer: each authority role (PM, controls lead, program director) is an agent with explicit decision rules. Those rules live in decision.js as pure, readable functions (deriveHealthState, classifyConflict, and deriveDecision), and the Signals page calls them directly. The decision card you see on the Portfolio and Project Detail pages IS this module's output. Cat 9.1 is the LAST module in the stack, the artefact that survives the reporting cycle."
+      title: "Cat 8.1: ABM Governance Layer",
+      body: "Cat 8.1 is the agent-based governance layer: each authority role (PM, controls lead, program director) is an agent with explicit decision rules. Those rules live in decision.js as pure, readable functions (deriveHealthState, classifyConflict, and deriveDecision), and the Signals page calls them directly. The decision card you see on the Portfolio and Project Detail pages IS this module's output. Cat 8.1 is the LAST module in the stack, the artefact that survives the reporting cycle."
     },
     {
       id: "fairness",
@@ -333,7 +333,7 @@
       "Evidence Combination: Cat 7.1–Cat 7.9"
     ];
     const row2 = [
-      "Governance Decision: Cat 9.1",
+      "Governance Decision: Cat 8.1",
       "Named Human Approval",
       "Audit Record"
     ];
@@ -413,7 +413,7 @@
       { lab: "Governance Synthesis", mods: ["03 Doc Risk", "04 Synthesis", "05 ABM"], color: "var(--phosphor)", x: 30, y: 116 },
       { lab: "Extended Simulation", mods: ["06 PERT", "07 LOB", "08 CCPM", "09 RCF", "10 DSM"], color: "var(--radar-amber)", x: 30, y: 222 },
     ];
-    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="auto" class="kn-svg" role="img" aria-label="Signal stack of 11 categories feeding the governance decision">`;
+    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="auto" class="kn-svg" role="img" aria-label="Signal stack of 10 categories and Portfolio Health feeding the governance decision">`;
     groups.forEach((g) => {
       const bx = g.x, by = g.y, bw = 360, bh = 64;
       out += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="9" fill="var(--surface-soft)" stroke="${g.color}" stroke-width="1.5"></rect>`;
@@ -541,14 +541,14 @@
       title: "1. What is PCEIF",
       eyebrow: "Framework foundation",
       build: () => `
-        <p class="kn-lead">PCEIF, the <strong>Public Capital EVM Intelligence Framework</strong>, converts the signals that a public capital program already generates into a structured, accountable governance action with a named authority and a documented audit trail — using 103 analytical modules across 11 categories. Lin Opus Gubernatio is the platform that implements the framework.</p>
+        <p class="kn-lead">PCEIF, the <strong>Public Capital EVM Intelligence Framework</strong>, converts the signals that a public capital program already generates into a structured, accountable governance action with a named authority and a documented audit trail — using 103 analytical modules across 10 project-level categories and the portfolio-level Health suite. Lin Opus Gubernatio is the platform that implements the framework.</p>
 
         <h3>The problem it solves</h3>
         <p>Standard Earned Value Management produces excellent data. It does not produce a decision. A PM looking at CPI 0.88 in period 4 has no structured path to a defensible escalation: who must act, on what timeframe, with what documentation, under whose authority. The data exists; the governance link is missing.</p>
         <p>PCEIF closes that gap. Signals trigger an explicit rule set; the rule set returns a specific action, a specific authority, and the documentation required. The PM still records the decision, the framework simply makes the recommendation traceable.</p>
 
         <h3>Two-layer architecture</h3>
-        <p>103 analytical modules across 11 categories feed two layers of governance. Cat 1–5 generate signals. Cat 6 synthesizes them into a baseline state. Cat 7 quantifies confidence through twenty independent evidence-combination methods. Cat 9 produces the governance decision card. Cat 10 assesses data integrity. Cat 11 identifies the optimal decision pathway.</p>
+        <p>103 analytical modules across 10 project-level categories and the portfolio-level Health suite feed two layers of governance. Cat 1–5 generate signals. Cat 6 synthesizes them into a baseline state. Cat 7 quantifies confidence through twenty independent evidence-combination methods. Cat 8 produces the governance decision card. Cat 9 assesses data integrity. Cat 10 identifies the optimal decision pathway. Portfolio Health (PH) sits outside the numbered stack, comparing each project against the rest of the program.</p>
         <ul class="kn-list">
           <li><strong>Layer 1, Agency Governance.</strong> Sets the policy framework: the authority matrix, escalation thresholds, fairness rules, audit requirements. Established by the program owner; not changed per project.</li>
           <li><strong>Layer 2, PM Decision Architecture.</strong> Takes that policy and the project's signal package and surfaces, for each reporting cycle, the specific action the PM should record (or override, with rationale).</li>
@@ -563,13 +563,13 @@ Cat 6: Signal Synthesis (4 modules) — Conservative Dominance baseline
         ↓
 Cat 7: Evidence Combination (20 modules) — Confidence quantification
         ↓
-Cat 8: ML & AI Pattern Detection (5 modules) — Portfolio anomaly detection
+PH: Portfolio Health (5 modules) — Portfolio anomaly detection
         ↓
-Cat 10: Data Integrity (7 modules) — Input quality assessment
+Cat 9: Data Integrity (7 modules) — Input quality assessment
         ↓
-Cat 11: Decision Optimization (7 modules) — Optimal action selection
+Cat 10: Decision Optimization (7 modules) — Optimal action selection
         ↓
-Cat 9: Governance & Compliance (9 modules) — Named authority + audit trail
+Cat 8: Governance & Compliance (9 modules) — Named authority + audit trail
         ↓
 Named Human Approval → Audit Record</pre>
 
@@ -585,7 +585,7 @@ Named Human Approval → Audit Record</pre>
     },
     {
       id: "why-108-modules",
-      title: "Why 103 analytical modules",
+      title: "Why 103 modules across 10 categories and Portfolio Health",
       eyebrow: "Framework depth",
       build: () => `
         <p class="kn-lead">Public capital projects are complex adaptive systems. A single EVM index (CPI or SPI) captures cost and schedule performance but misses the systemic, probabilistic, and qualitative dimensions that determine whether a project will succeed. PCEIF addresses this through four principles.</p>
@@ -597,17 +597,17 @@ Named Human Approval → Audit Record</pre>
         <p>When 90 of 103 methods agree on a Red classification, the PM can act with high confidence. When methods diverge — some showing Amber, others Red — the divergence itself is the finding: the project is in an ambiguous state that requires investigation before action. No single method can surface that ambiguity.</p>
 
         <h3>3. Each category adds a distinct lens</h3>
-        <p>The 11 categories are not redundant:</p>
+        <p>The 10 project-level categories, plus the portfolio-level Health suite, are not redundant:</p>
         <ul class="kn-list">
           <li><strong>Cat 1 (EVM)</strong> — shows what <em>is</em> happening.</li>
           <li><strong>Cat 2–3 (Simulation)</strong> — shows what <em>will</em> happen.</li>
           <li><strong>Cat 4 (Documents)</strong> — shows what <em>is being said</em>.</li>
           <li><strong>Cat 5 (Dynamics)</strong> — shows how components <em>interact</em>.</li>
           <li><strong>Cat 6–7 (Synthesis)</strong> — shows what the evidence <em>collectively means</em>.</li>
-          <li><strong>Cat 8 (ML/AI)</strong> — shows how this project <em>compares to the portfolio</em>.</li>
-          <li><strong>Cat 9 (Governance)</strong> — shows what <em>action is required</em>.</li>
-          <li><strong>Cat 10 (Data Integrity)</strong> — shows how much to <em>trust the signals</em>.</li>
-          <li><strong>Cat 11 (Optimization)</strong> — shows what the <em>best decision</em> is.</li>
+          <li><strong>Cat 8 (Governance)</strong> — shows what <em>action is required</em>.</li>
+          <li><strong>Cat 9 (Data Integrity)</strong> — shows how much to <em>trust the signals</em>.</li>
+          <li><strong>Cat 10 (Optimization)</strong> — shows what the <em>best decision</em> is.</li>
+          <li><strong>Portfolio Health (PH)</strong> — shows how this project <em>compares to the portfolio</em>.</li>
         </ul>
 
         <h3>4. What the 103-module count includes</h3>
@@ -760,7 +760,7 @@ Named Human Approval → Audit Record</pre>
         ${svgCusum()}
 
         <h3>What a breach means</h3>
-        <p>A CUSUM breach hands the question to Cat 6.1 (Conservative Dominance) and ultimately Cat 9.1 (ABM Governance Layer). The monitor never acts on its own; it produces evidence the governance layer routes. If the breach has no document narrative behind it, the conflict type is "Anomaly Without Narrative", itself a finding worth surfacing.</p>
+        <p>A CUSUM breach hands the question to Cat 6.1 (Conservative Dominance) and ultimately Cat 8.1 (ABM Governance Layer). The monitor never acts on its own; it produces evidence the governance layer routes. If the breach has no document narrative behind it, the conflict type is "Anomaly Without Narrative", itself a finding worth surfacing.</p>
       `,
     },
     {
@@ -934,7 +934,7 @@ Named Human Approval → Audit Record</pre>
         <p>The classifier walks the table in order: it picks the <em>first</em> matching conflict, not the most common one. That preserves the leading-indicator property, a Document Red overshadowed by aggregate Greens still surfaces as "Leading Document Risk" if it would otherwise be missed.</p>
 
         <h3>How it differs from Cat 7.1–Cat 7.9</h3>
-        <p>Cat 6.1 is the governance baseline: conservative dominance with explicit conflict typing. Cat 7.1–Cat 7.9 each provide an independent evidence-combination lens (probabilistic, set-theoretic, fuzzy, quantum). When Cat 6.1 and any of 10–18 disagree, the disagreement itself is what gets recorded, the governance layer owns the residual uncertainty rather than picking a method. Cat 9.1 (ABM Governance) consumes both the Cat 6.1 baseline and the M10–18 cross-checks to produce the actionable decision card.</p>
+        <p>Cat 6.1 is the governance baseline: conservative dominance with explicit conflict typing. Cat 7.1–Cat 7.9 each provide an independent evidence-combination lens (probabilistic, set-theoretic, fuzzy, quantum). When Cat 6.1 and any of 10–18 disagree, the disagreement itself is what gets recorded, the governance layer owns the residual uncertainty rather than picking a method. Cat 8.1 (ABM Governance) consumes both the Cat 6.1 baseline and the M10–18 cross-checks to produce the actionable decision card.</p>
       `,
     },
     {
@@ -1238,10 +1238,10 @@ Named Human Approval → Audit Record</pre>
     },
     {
       id: "module19",
-      title: "22. Cat 9.1: ABM Governance Layer",
-      eyebrow: "Cat 9.1 · decision output (LAST)",
+      title: "22. Cat 8.1: ABM Governance Layer",
+      eyebrow: "Cat 8.1 · decision output (LAST)",
       build: () => `
-        <p class="kn-lead">"Agent-based" here means each authority role (PM, controls lead, program director) is modelled as an agent with explicit, executable decision rules. In <code>decision.js</code> those rules are pure functions, readable, testable, and auditable. Nothing is learned; everything is documented. Cat 9.1 is the LAST module because it consumes the Cat 6.1 baseline plus the M10–18 evidence checks and produces the recorded decision card.</p>
+        <p class="kn-lead">"Agent-based" here means each authority role (PM, controls lead, program director) is modelled as an agent with explicit, executable decision rules. In <code>decision.js</code> those rules are pure functions, readable, testable, and auditable. Nothing is learned; everything is documented. Cat 8.1 is the LAST module because it consumes the Cat 6.1 baseline plus the M10–18 evidence checks and produces the recorded decision card.</p>
 
         <h3>Why the authority matrix exists</h3>
         <p>PCEIF operates under two layers. Layer 1 is the agency governance policy: the program owner sets the authority matrix before any project starts. Layer 2 is the PM decision architecture: it uses that matrix to route each signal package to the correct authority. The matrix is not hardcoded. A different agency can configure different thresholds and authorities. What PCEIF provides is the routing logic and the audit trail.</p>
@@ -1327,8 +1327,8 @@ Named Human Approval → Audit Record</pre>
         <p>A governance system cannot rely on a black-box model. Every recommended action must be traceable to a specific rule that a reviewer can read aloud. During a dispute the PM must be able to say: "the system recommended escalation because two signal classes were Red and the conflict was classified as Multi-signal Red-review under the PCEIF authority matrix." That sentence requires explicit rules, not neural weights.</p>
         <p>This is also why <code>decision.js</code> is plain JavaScript with no compilation step, anyone reading the code can verify the agency's authority matrix is implemented exactly as policy specifies.</p>
 
-        <h3>Why Cat 9.1 is the LAST module</h3>
-        <p>The position is deliberate. The PM should read Cat 9.1 first as the recommended action, then walk backward through the evidence chain to confirm. Cat 1.1–Cat 3.2 supply the inputs; Cat 6.1 is the baseline classification; Cat 7.1–Cat 7.9 are the confidence check; Cat 9.1 is what gets recorded. Placing the decision artefact at the end of the stack reflects the audit-trail order: the recommendation is the last thing the PM commits to, not the first thing they see.</p>
+        <h3>Why Cat 8.1 is the LAST module</h3>
+        <p>The position is deliberate. The PM should read Cat 8.1 first as the recommended action, then walk backward through the evidence chain to confirm. Cat 1.1–Cat 3.2 supply the inputs; Cat 6.1 is the baseline classification; Cat 7.1–Cat 7.9 are the confidence check; Cat 8.1 is what gets recorded. Placing the decision artefact at the end of the stack reflects the audit-trail order: the recommendation is the last thing the PM commits to, not the first thing they see.</p>
       `,
     },
     {
@@ -1396,11 +1396,13 @@ Named Human Approval → Audit Record</pre>
   window.LIN_KNOWLEDGE = { terms: TERMS, glossary: GLOSSARY, topics: TOPICS, library: LIBRARY };
 
   /* ---------- knowledge page rendering, two-panel navigator + content ---------- */
-  /* ---------- 9-category nav structure ----------
+  /* ---------- category nav structure (10 numbered categories + Portfolio Health) ----------
      Top-level entries are either flat topics (rendered as a single button) or
-     a `category` group with a list of child topic ids. Cat 8 (ML & AI) is now
-     active — its topic ids are 'stage2:*' (kept for back-compat) and resolve to
-     the real per-method articles in CAT8_TOPICS. */
+     a `category` group with a list of child topic ids. Portfolio Health (the
+     former ML & AI category) is now a portfolio-level suite displayed as
+     "PH", not a numbered project-level category — its topic ids are
+     'stage2:*' (kept for back-compat) and resolve to the real per-method
+     articles in CAT8_TOPICS. */
   const CATEGORY_NAV = [
     { id: "pceif" },
     { id: "why-108-modules" },
@@ -1421,15 +1423,15 @@ Named Human Approval → Audit Record</pre>
     { category: "cat7", num: "Cat 7", name: "Evidence Combination",
       children: ["module10", "module11", "module12", "module13", "module14",
                  "module15", "module16", "module17", "module18"] },
-    { category: "cat8", num: "Cat 8", name: "ML & AI Pattern Detection",
+    { category: "cat9", num: "Cat 8", name: "Governance & Compliance",
+      children: ["module19"] },
+    { category: "cat10", num: "Cat 9", name: "Data Integrity & Information Quality",
+      children: ["cat10-overview"] },
+    { category: "cat11", num: "Cat 10", name: "Decision Optimization",
+      children: ["cat11-overview"] },
+    { category: "cat8", num: "PH", name: "Portfolio Health",
       children: ["stage2:isolation", "stage2:portfolio", "stage2:trajectory",
                  "stage2:cross-project", "stage2:anomaly-score"] },
-    { category: "cat9", num: "Cat 9", name: "Governance & Compliance",
-      children: ["module19"] },
-    { category: "cat10", num: "Cat 10", name: "Data Integrity & Information Quality",
-      children: ["cat10-overview"] },
-    { category: "cat11", num: "Cat 11", name: "Decision Optimization",
-      children: ["cat11-overview"] },
     { id: "fairness" },
     { id: "decision" }
   ];
@@ -1455,65 +1457,67 @@ Named Human Approval → Audit Record</pre>
     module10: "Cat 7.1", module11: "Cat 7.2", module12: "Cat 7.3",
     module13: "Cat 7.4", module14: "Cat 7.5", module15: "Cat 7.6",
     module16: "Cat 7.7", module17: "Cat 7.8", module18: "Cat 7.9",
-    module19: "Cat 9.1"
+    module19: "Cat 8.1"
   };
 
-  // Cat 8 — ML & AI Pattern Detection. Active (portfolioanalyze, Code.gs v10.17).
-  // The shared overview is prepended to every Cat 8 article so the category
+  // Portfolio Health (formerly "Cat 8 — ML & AI Pattern Detection"). Active
+  // (portfolioanalyze, Code.gs v10.17). This is a portfolio-level suite, not
+  // a numbered project-level category — its modules are labelled PH.1–PH.5.
+  // The shared overview is prepended to every Portfolio Health article so the
   // context (portfolio-wide comparison) is always visible.
-  const CAT8_OVERVIEW = "Cat 8 uses portfolio-wide signal comparison to detect anomalies that individual module analysis cannot surface. Rather than evaluating a project in isolation, these methods ask: how does this project compare to every other project in the portfolio? A project with normal-looking EVM can still be anomalous if its combination of cost performance, schedule performance, and document risk is unlike any other project in the program.";
+  const CAT8_OVERVIEW = "Portfolio Health uses portfolio-wide signal comparison to detect anomalies that individual module analysis cannot surface. Rather than evaluating a project in isolation, these methods ask: how does this project compare to every other project in the portfolio? A project with normal-looking EVM can still be anomalous if its combination of cost performance, schedule performance, and document risk is unlike any other project in the program.";
 
   const CAT8_TOPICS = {
-    "stage2:isolation": { id: "stage2:isolation", title: "Cat 8.1 Isolation Forest",
+    "stage2:isolation": { id: "stage2:isolation", title: "PH.1 Isolation Forest",
       body: "Measures how far a project's signal combination sits from the portfolio centroid using Mahalanobis distance. High distance = unusual combination of signals. A project with moderate CPI and moderate SPI but very high document risk may appear amber on individual modules but anomalous when compared against the full portfolio." },
-    "stage2:portfolio": { id: "stage2:portfolio", title: "Cat 8.2 Portfolio Outlier Detection",
+    "stage2:portfolio": { id: "stage2:portfolio", title: "PH.2 Portfolio Outlier Detection",
       body: "Ranks the project by CPI and SPI percentile within the portfolio. A project in the bottom 15th percentile on both dimensions is a portfolio-level outlier — regardless of whether individual thresholds are breached." },
-    "stage2:trajectory": { id: "stage2:trajectory", title: "Cat 8.3 Signal Trajectory Classifier",
+    "stage2:trajectory": { id: "stage2:trajectory", title: "PH.3 Signal Trajectory Classifier",
       body: "Analyzes CPI trend across reporting periods from the stored snapshot history. Distinguishes improving, stable, declining, and deteriorating trajectories. Requires at least 2 reporting periods." },
-    "stage2:cross-project": { id: "stage2:cross-project", title: "Cat 8.4 Cross-project Pattern Detector",
+    "stage2:cross-project": { id: "stage2:cross-project", title: "PH.4 Cross-project Pattern Detector",
       body: "Identifies other projects in the portfolio with similar signal combinations. When multiple projects show the same distress pattern, it may indicate a systemic program-level issue rather than an isolated project problem." },
-    "stage2:anomaly-score": { id: "stage2:anomaly-score", title: "Cat 8.5 Composite Anomaly Score",
-      body: "Weighted combination of all Cat 8 methods into a single anomaly index from 0 to 100%. Above 70% = highly anomalous, immediate attention required. This is the single most important Cat 8 output for the executive brief." }
+    "stage2:anomaly-score": { id: "stage2:anomaly-score", title: "PH.5 Composite Anomaly Score",
+      body: "Weighted combination of all Portfolio Health methods into a single anomaly index from 0 to 100%. Above 70% = highly anomalous, immediate attention required. This is the single most important Portfolio Health output for the executive brief." }
   };
   function cat8TopicBody(t) {
     return `<p class="kn-sub">${CAT8_OVERVIEW}</p><p class="kn-lead">${t.body}</p>`;
   }
 
-  // Cat 10 / 11 — category-level articles. Individual modules are not
+  // Cat 9 / 10 — category-level articles. Individual modules are not
   // (yet) carved into per-method articles; the overview surfaces the entire
   // category's purpose, module list, and PM reading instructions.
   const CAT_OVERVIEW_TOPICS = {
     "cat10-overview": {
       id: "cat10-overview",
-      title: "Cat 10 — Data Integrity & Information Quality",
-      eyebrow: "Cat 10 · data quality of the inputs",
-      body: "Every analytical output in PCEIF is only as good as its inputs. A CPI derived from an unverified pay application is less reliable than one from an audited schedule of values. A document risk score estimated from proxy signals is less precise than one extracted directly from RFI logs. Cat 10 makes this uncertainty explicit — it does not hide it.",
+      title: "Cat 9 — Data Integrity & Information Quality",
+      eyebrow: "Cat 9 · data quality of the inputs",
+      body: "Every analytical output in PCEIF is only as good as its inputs. A CPI derived from an unverified pay application is less reliable than one from an audited schedule of values. A document risk score estimated from proxy signals is less precise than one extracted directly from RFI logs. Cat 9 makes this uncertainty explicit — it does not hide it.",
       modules: [
-        ["10.1 Missing Data Index", "Counts how many of the 11 core signal fields are populated. A project with 6 of 11 fields missing may still generate a governance recommendation, but Cat 10.1 flags that the recommendation rests on incomplete information."],
-        ["10.2 Data Timeliness Score", "Measures days since the most recent document upload. Data older than 60 days warrants a Yellow flag — the signals may not reflect current project conditions. Data older than 90 days warrants Amber."],
-        ["10.3 Source Reliability Weighting", "Each document type carries a reliability weight based on its verification status. Verified pay applications (0.90) outweigh estimated fields derived from proxy calculations (0.40). The weighted average across all populated fields gives the overall source reliability score."],
-        ["10.4 Audit Trail Completeness", "Checks whether the required governance events are recorded — project creation, document uploads, signal extractions, and decision records. A project with signals but no decision record has an incomplete audit trail."],
-        ["10.5 Information Completeness Ratio", "Distinguishes between measured fields (from actual documents) and estimated fields (derived from proxy calculations). A project with 80% measured fields has higher information quality than one with 40% measured."],
-        ["10.6 Cross-document Consistency Score", "Checks whether figures across uploaded documents are internally consistent. If the CPI stored in signalInputs does not match EV/AC, or if the percentage complete in the pay application conflicts with the schedule, this module flags the inconsistency."],
-        ["10.7 Reporting Frequency Index", "Measures the average interval between document uploads. Projects with infrequent updates accumulate stale data — a 90-day gap between pay applications means the portfolio is making decisions on two-month-old cost performance data."]
+        ["9.1 Missing Data Index", "Counts how many of the 11 core signal fields are populated. A project with 6 of 11 fields missing may still generate a governance recommendation, but Cat 9.1 flags that the recommendation rests on incomplete information."],
+        ["9.2 Data Timeliness Score", "Measures days since the most recent document upload. Data older than 60 days warrants a Yellow flag — the signals may not reflect current project conditions. Data older than 90 days warrants Amber."],
+        ["9.3 Source Reliability Weighting", "Each document type carries a reliability weight based on its verification status. Verified pay applications (0.90) outweigh estimated fields derived from proxy calculations (0.40). The weighted average across all populated fields gives the overall source reliability score."],
+        ["9.4 Audit Trail Completeness", "Checks whether the required governance events are recorded — project creation, document uploads, signal extractions, and decision records. A project with signals but no decision record has an incomplete audit trail."],
+        ["9.5 Information Completeness Ratio", "Distinguishes between measured fields (from actual documents) and estimated fields (derived from proxy calculations). A project with 80% measured fields has higher information quality than one with 40% measured."],
+        ["9.6 Cross-document Consistency Score", "Checks whether figures across uploaded documents are internally consistent. If the CPI stored in signalInputs does not match EV/AC, or if the percentage complete in the pay application conflicts with the schedule, this module flags the inconsistency."],
+        ["9.7 Reporting Frequency Index", "Measures the average interval between document uploads. Projects with infrequent updates accumulate stale data — a 90-day gap between pay applications means the portfolio is making decisions on two-month-old cost performance data."]
       ],
-      pmReading: "High Cat 10 status means the evidence base is current, measured, complete and internally consistent — act on the Cat 9 recommendation with confidence. Low Cat 10 status means the evidence base has gaps — seek additional documents before recording a formal governance action."
+      pmReading: "High Cat 9 status means the evidence base is current, measured, complete and internally consistent — act on the Cat 8 recommendation with confidence. Low Cat 9 status means the evidence base has gaps — seek additional documents before recording a formal governance action."
     },
     "cat11-overview": {
       id: "cat11-overview",
-      title: "Cat 11 — Decision Optimization",
-      eyebrow: "Cat 11 · choosing under constraints",
-      body: "Cat 5 (System Dynamics) explains how project components interact and how disturbances propagate. Cat 11 takes the current signal state as given and asks: what is the optimal decision? These are fundamentally different questions. Cat 5 is diagnostic; Cat 11 is prescriptive.",
+      title: "Cat 10 — Decision Optimization",
+      eyebrow: "Cat 10 · choosing under constraints",
+      body: "Cat 5 (System Dynamics) explains how project components interact and how disturbances propagate. Cat 10 takes the current signal state as given and asks: what is the optimal decision? These are fundamentally different questions. Cat 5 is diagnostic; Cat 10 is prescriptive.",
       modules: [
-        ["11.1 Multi-Objective Optimization", "Public capital projects have three competing objectives: minimize cost overrun, minimize schedule delay, minimize risk. These objectives often trade off — accelerating schedule increases cost; reducing scope reduces risk but may miss requirements. Cat 11.1 finds the Pareto-efficient position given the current signal state."],
-        ["11.2 Linear Programming", "Given remaining work, remaining budget, and current cost performance, linear programming determines whether completing the project within budget is feasible and what CPI is required. It answers: is recovery possible?"],
-        ["11.3 Constraint Satisfaction Analysis", "Checks whether the project satisfies four governance constraints: cost (CPI ≥ 0.90), schedule (SPI ≥ 0.90), document risk (score < 0.70), and FAR reporting threshold (overrun < 25%). Violated constraints require specific governance responses under federal acquisition regulations."],
-        ["11.4 What-If Scenario Matrix", "Projects four futures: optimistic (CPI recovers to 1.0), base (current CPI continues), pessimistic (CPI degrades 5%), and recovery (CPI improves 5%). The range across scenarios quantifies decision uncertainty."],
-        ["11.5 Decision Sensitivity Matrix", "Identifies which input variable most affects the governance recommendation. If cost performance accounts for 70% of decision sensitivity, a small CPI change changes the recommendation significantly — the PM should focus verification efforts there first."],
-        ["11.6 Pareto Frontier Analysis", "Determines whether the project is Pareto-efficient (all objectives met), Pareto-dominated (multiple objectives failing simultaneously, suggesting systemic problems), or in a trade-off zone (improving one objective requires accepting degradation in another)."],
-        ["11.7 Regret Minimization Index", "Applies minimax regret theory to the PM's decision under uncertainty. Given three possible futures (improvement, stability, deterioration) and three possible decisions (monitor, investigate, escalate), which decision minimizes the worst-case regret? This is the most theoretically grounded decision-theoretic module in PCEIF."]
+        ["10.1 Multi-Objective Optimization", "Public capital projects have three competing objectives: minimize cost overrun, minimize schedule delay, minimize risk. These objectives often trade off — accelerating schedule increases cost; reducing scope reduces risk but may miss requirements. Cat 10.1 finds the Pareto-efficient position given the current signal state."],
+        ["10.2 Linear Programming", "Given remaining work, remaining budget, and current cost performance, linear programming determines whether completing the project within budget is feasible and what CPI is required. It answers: is recovery possible?"],
+        ["10.3 Constraint Satisfaction Analysis", "Checks whether the project satisfies four governance constraints: cost (CPI ≥ 0.90), schedule (SPI ≥ 0.90), document risk (score < 0.70), and FAR reporting threshold (overrun < 25%). Violated constraints require specific governance responses under federal acquisition regulations."],
+        ["10.4 What-If Scenario Matrix", "Projects four futures: optimistic (CPI recovers to 1.0), base (current CPI continues), pessimistic (CPI degrades 5%), and recovery (CPI improves 5%). The range across scenarios quantifies decision uncertainty."],
+        ["10.5 Decision Sensitivity Matrix", "Identifies which input variable most affects the governance recommendation. If cost performance accounts for 70% of decision sensitivity, a small CPI change changes the recommendation significantly — the PM should focus verification efforts there first."],
+        ["10.6 Pareto Frontier Analysis", "Determines whether the project is Pareto-efficient (all objectives met), Pareto-dominated (multiple objectives failing simultaneously, suggesting systemic problems), or in a trade-off zone (improving one objective requires accepting degradation in another)."],
+        ["10.7 Regret Minimization Index", "Applies minimax regret theory to the PM's decision under uncertainty. Given three possible futures (improvement, stability, deterioration) and three possible decisions (monitor, investigate, escalate), which decision minimizes the worst-case regret? This is the most theoretically grounded decision-theoretic module in PCEIF."]
       ],
-      pmReading: "Cat 11 is read AFTER Cat 6 and Cat 7 — it does not replace the conservative-dominance classification or the evidence-combination cross-check, it operationalises them. The PM reads Cat 6/7 to understand the state, then reads Cat 11 to choose the action."
+      pmReading: "Cat 10 is read AFTER Cat 6 and Cat 7 — it does not replace the conservative-dominance classification or the evidence-combination cross-check, it operationalises them. The PM reads Cat 6/7 to understand the state, then reads Cat 10 to choose the action."
     }
   };
   function catOverviewBody(t) {
@@ -1532,7 +1536,7 @@ Named Human Approval → Audit Record</pre>
     title: "How the categories advise the PM",
     eyebrow: "Reading the categories",
     build: () => `
-      <p class="kn-lead">The eleven categories each answer a different governance question. Reading them together tells the PM where to spend attention this reporting cycle.</p>
+      <p class="kn-lead">The ten project-level categories, plus the portfolio-level Health suite, each answer a different governance question. Reading them together tells the PM where to spend attention this reporting cycle.</p>
       <ul class="kn-list">
         <li><strong>Cat 1 Quantitative EVM</strong> — what is happening NOW (cost / schedule indices).</li>
         <li><strong>Cat 2 Schedule Simulation</strong> — WHEN will problems appear (time-based leading indicators).</li>
@@ -1541,27 +1545,27 @@ Named Human Approval → Audit Record</pre>
         <li><strong>Cat 5 System Dynamics</strong> — how the components AMPLIFY each other (rework propagation).</li>
         <li><strong>Cat 6 Signal Synthesis</strong> — the BASELINE classification (conservative dominance) — the worst single signal wins.</li>
         <li><strong>Cat 7 Evidence Combination</strong> — HOW CONFIDENT is the classification (twenty independent uncertainty-reasoning methods cross-check the baseline).</li>
-        <li><strong>Cat 8 ML & AI</strong> — portfolio-wide anomaly detection: how unusual is this project versus the whole program (Isolation Forest, outlier ranking, trajectory, cross-project patterns, composite score).</li>
-        <li><strong>Cat 9 Governance & Compliance</strong> — the named authority, required action, and audit trail.</li>
-        <li><strong>Cat 10 Data Integrity</strong> — how trustworthy ARE the inputs. Missing data, stale data, low-reliability sources — Cat 10 surfaces the quality of the signal package the other categories consumed.</li>
-        <li><strong>Cat 11 Decision Optimization</strong> — given everything the models found, what is the BEST action under constraints (multi-objective, LP, regret minimization).</li>
+        <li><strong>Cat 8 Governance & Compliance</strong> — the named authority, required action, and audit trail.</li>
+        <li><strong>Cat 9 Data Integrity</strong> — how trustworthy ARE the inputs. Missing data, stale data, low-reliability sources — Cat 9 surfaces the quality of the signal package the other categories consumed.</li>
+        <li><strong>Cat 10 Decision Optimization</strong> — given everything the models found, what is the BEST action under constraints (multi-objective, LP, regret minimization).</li>
+        <li><strong>Portfolio Health (PH)</strong> — portfolio-wide anomaly detection: how unusual is this project versus the whole program (Isolation Forest, outlier ranking, trajectory, cross-project patterns, composite score).</li>
       </ul>
       <h3>Five-step PM decision protocol</h3>
       <ol class="kn-list kn-list-num">
-        <li><strong>Read Cat 9 (Governance)</strong> — this is the recommended action.</li>
+        <li><strong>Read Cat 8 (Governance)</strong> — this is the recommended action.</li>
         <li><strong>Check Cat 6 (Conservative Dominance)</strong> — this is the baseline state.</li>
-        <li><strong>Check Cat 10 (Data Integrity)</strong> — how much to trust the signals.</li>
+        <li><strong>Check Cat 9 (Data Integrity)</strong> — how much to trust the signals.</li>
         <li><strong>Count how many of Cat 7 (20 evidence methods) agree with Cat 6:</strong>
           <ul class="kn-list" style="margin-top:6px">
-            <li>16–20 agree: HIGH CONFIDENCE — act on Cat 9 recommendation.</li>
+            <li>16–20 agree: HIGH CONFIDENCE — act on Cat 8 recommendation.</li>
             <li>10–15 agree: MODERATE CONFIDENCE — act but document uncertainty.</li>
             <li>&lt;10 agree: LOW CONFIDENCE — investigate before acting.</li>
           </ul>
         </li>
-        <li><strong>Read Cat 11 (Optimization)</strong> for the recommended decision pathway.</li>
+        <li><strong>Read Cat 10 (Optimization)</strong> for the recommended decision pathway.</li>
         <li><strong>Record decision</strong> with rationale, authority, and confidence level.</li>
       </ol>
-      <p>The PM reads the categories top-down to GENERATE the picture (with Cat 10 verifying that what was generated stands on solid inputs), then bottom-up (start at Cat 9 / Cat 11) to ACT on it. The decision is whatever Cat 9 records — the rest of the 103-module stack is the evidence supporting that decision.</p>
+      <p>The PM reads the categories top-down to GENERATE the picture (with Cat 9 verifying that what was generated stands on solid inputs), then bottom-up (start at Cat 8 / Cat 10) to ACT on it. The decision is whatever Cat 8 records — the rest of the 103-module stack is the evidence supporting that decision.</p>
     `
   };
 
@@ -1578,7 +1582,7 @@ Named Human Approval → Audit Record</pre>
       if (CAT8_TOPICS[id]) {
         const t = CAT8_TOPICS[id];
         return Object.assign({}, t, {
-          eyebrow: "Cat 8 — ML & AI Pattern Detection",
+          eyebrow: "Portfolio Health (PH)",
           build: () => cat8TopicBody(t)
         });
       }
@@ -1610,7 +1614,7 @@ Named Human Approval → Audit Record</pre>
     }
 
     function categoryGroup(g) {
-      // Cat 8 stage-2 topics and Cat 10/11 category overviews render as
+      // Portfolio Health stage-2 topics and Cat 9/10 category overviews render as
       // simple flat buttons (no Cat X.Y CAT_LABEL_BY_ID rewriting).
       const childButtons = (g.children || []).map((cid) =>
         (CAT8_TOPICS[cid] || CAT_OVERVIEW_TOPICS[cid]) ? flatNavBtn(cid) : modNavBtn(cid)

@@ -96,7 +96,7 @@
     "09": "Cat 6.1",
     "10": "Cat 7.1", "11": "Cat 7.2", "12": "Cat 7.3", "13": "Cat 7.4",
     "14": "Cat 7.5", "15": "Cat 7.6", "16": "Cat 7.7", "17": "Cat 7.8", "18": "Cat 7.9",
-    "19": "Cat 9.1"
+    "19": "Cat 8.1"
   };
   function catLabel(num) {
     const key = String(num).trim();
@@ -1022,7 +1022,7 @@
     ] : [
       `Conflict type "${conflict}": ${redN} red and ${ambN} amber signal class(es) against ${4 - redN - ambN} green.`,
       `PCEIF surfaces this disagreement instead of averaging it away — the gap between signal classes is the finding.`,
-      `The classification feeds Cat 9.1, which maps it to an action and an authority.`
+      `The classification feeds Cat 8.1, which maps it to an action and an authority.`
     ];
     return panel("09", "Conservative Dominance — Signal Synthesis", st,
       note("Agreement map across all signal classes. When signals diverge, the gap between classes is the finding. PCEIF surfaces disagreement instead of averaging it away. Conservative dominance: the worst single-signal status drives the overall classification.") +
@@ -1794,10 +1794,10 @@
     let confidence, summaryText;
     if (agreeCount >= 8) {
       confidence = "HIGH";
-      summaryText = `All synthesis methods confirm the classification — high confidence. ${agreeCount} of 9 evidence methods agree with the Cat 6.1 baseline (${String(s09).toUpperCase()}). Act on the Cat 9.1 recommendation.`;
+      summaryText = `All synthesis methods confirm the classification — high confidence. ${agreeCount} of 9 evidence methods agree with the Cat 6.1 baseline (${String(s09).toUpperCase()}). Act on the Cat 8.1 recommendation.`;
     } else if (agreeCount >= 5) {
       confidence = "MODERATE";
-      summaryText = `${agreeCount} of 9 evidence methods agree with the Cat 6.1 baseline (${String(s09).toUpperCase()}) — moderate confidence. Act on the Cat 9.1 recommendation but document the uncertainty.`;
+      summaryText = `${agreeCount} of 9 evidence methods agree with the Cat 6.1 baseline (${String(s09).toUpperCase()}) — moderate confidence. Act on the Cat 8.1 recommendation but document the uncertainty.`;
     } else {
       confidence = "LOW";
       summaryText = `Significant divergence — investigate before recording a formal governance action. Only ${agreeCount} of 9 evidence methods agree with the Cat 6.1 baseline (${String(s09).toUpperCase()}). Spread across all methods: ${redCount} Red, ${amberCount} Amber, ${greenCount} Green.`;
@@ -2061,12 +2061,12 @@
   function m7_1(p){return panel("7.1","Dempster-Shafer Theory","red",note("Belief masses: Red 0.52, Amber 0.28, Conflict 0.12.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"71\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Bel(Red)","0.52","red")+metricBox("Bel(Amb)","0.28","red")+metricBox("Conflict","0.12","red")+'</div>');}
   function m7_2(p){return panel("7.2–7.8","Evidence Methods (Rough Sets → BRB)","red",note("7 uncertainty methods compared. All converge on Red with varying confidence.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"72_78\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Methods","7","red")+metricBox("Agree Red","6 of 7","red")+metricBox("Avg conf","0.73","red")+'</div>');}
   function m7_3(p){return panel("7.9–7.20","Advanced Methods Comparison","red",note("12 advanced methods. 10 of 12 agree Red. Confidence range 0.52–0.89.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"79_720\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Methods","12","red")+metricBox("Agree Red","10 of 12","red")+metricBox("Avg conf","0.72","red")+'</div>');}
-  function m9_1(p){return panel("9.1","ABM Governance Layer","red",note("Authority matrix decision tree. Signal → synthesis → authority → action.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"91\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Result","Red-review","red")+metricBox("Authority","Prog Director","red")+metricBox("Deadline","48hrs","red")+'</div>');}
-  function m9_2(p){return panel("9.2–9.9","Compliance Modules","amber",note("FAR, OMB, EVM reporting, quality, safety, environmental, contractor score.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"92_99\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Compliant","3 of 8","amber")+metricBox("Amber","4 of 8","amber")+metricBox("Red","1 of 8","amber")+'</div>');}
-  function m10_1(p){return panel("10.1","Missing Data Index","amber",note("Field completeness heatmap across 5 document types and 8 key fields.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"101\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Complete","73%","amber")+metricBox("Missing","27 fields","amber")+metricBox("Worst","Field Rpt","amber")+'</div>');}
-  function m10_2(p){return panel("10.2–10.7","Data Quality Modules","amber",note("Timeliness, reliability, audit trail, completeness, consistency, frequency.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"102_107\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Audit trail","100%","amber")+metricBox("Timeliness","0.58","amber")+metricBox("Overall","Amber","amber")+'</div>');}
-  function m11_1(p){return panel("11.1","Multi-Objective Optimization","red",note("3D Pareto surface — current solution dominated, optimal exists at higher cost tolerance.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"111\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Current","Dominated","red")+metricBox("Gap","11.2%","red")+metricBox("Action","Escalate","red")+'</div>');}
-  function m11_2(p){return panel("11.2–11.7","Optimization Modules","red",note("LP, constraint satisfaction, what-if, sensitivity, Pareto, regret minimization.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"112_117\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("LP req CPI","1.076","red")+metricBox("Constraints","2 violated","red")+metricBox("Recommend","Escalate","red")+'</div>');}
+  function m9_1(p){return panel("8.1","ABM Governance Layer","red",note("Authority matrix decision tree. Signal → synthesis → authority → action.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"91\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Result","Red-review","red")+metricBox("Authority","Prog Director","red")+metricBox("Deadline","48hrs","red")+'</div>');}
+  function m9_2(p){return panel("8.2–8.9","Compliance Modules","amber",note("FAR, OMB, EVM reporting, quality, safety, environmental, contractor score.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"92_99\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Compliant","3 of 8","amber")+metricBox("Amber","4 of 8","amber")+metricBox("Red","1 of 8","amber")+'</div>');}
+  function m10_1(p){return panel("9.1","Missing Data Index","amber",note("Field completeness heatmap across 5 document types and 8 key fields.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"101\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Complete","73%","amber")+metricBox("Missing","27 fields","amber")+metricBox("Worst","Field Rpt","amber")+'</div>');}
+  function m10_2(p){return panel("9.2–9.7","Data Quality Modules","amber",note("Timeliness, reliability, audit trail, completeness, consistency, frequency.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"102_107\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Audit trail","100%","amber")+metricBox("Timeliness","0.58","amber")+metricBox("Overall","Amber","amber")+'</div>');}
+  function m11_1(p){return panel("10.1","Multi-Objective Optimization","red",note("3D Pareto surface — current solution dominated, optimal exists at higher cost tolerance.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"111\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Current","Dominated","red")+metricBox("Gap","11.2%","red")+metricBox("Action","Escalate","red")+'</div>');}
+  function m11_2(p){return panel("10.2–10.7","Optimization Modules","red",note("LP, constraint satisfaction, what-if, sensitivity, Pareto, regret minimization.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"112_117\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("LP req CPI","1.076","red")+metricBox("Constraints","2 violated","red")+metricBox("Recommend","Escalate","red")+'</div>');}
   function simModules(project) {
     const payload = project.simulationSignals;
     const baseArr = payload && Array.isArray(payload.signal_array) ? payload.signal_array : null;
@@ -2152,7 +2152,7 @@
     //   sims.synth — Module 09 vs 10-18 agreement table + PM confidence band
     //   19     ABM Governance decision card (internally m09) — LAST
     root.innerHTML =
-      `<p class="mod-banner">Cat 1–Cat 3 modules are quantitative signal generators. Cat 6.1 (Conservative Dominance) is the baseline synthesis. Cat 7.1–7.9 are independent evidence-combination methods cross-checking Cat 6.1 across five decades of uncertainty-reasoning research. Cat 9.1 (ABM Governance) is the decision output — the named-authority action that survives this reporting cycle.</p>` +
+      `<p class="mod-banner">Cat 1–Cat 3 modules are quantitative signal generators. Cat 6.1 (Conservative Dominance) is the baseline synthesis. Cat 7.1–7.9 are independent evidence-combination methods cross-checking Cat 6.1 across five decades of uncertainty-reasoning research. Cat 8.1 (ABM Governance) is the decision output — the named-authority action that survives this reporting cycle.</p>` +
       m01(project) + m02(project) + m03(project) +
       m1_4(project) + m1_5(project) + m1_6(project) + m1_7(project) + m1_8(project) +
       m1_9(project) + m1_10(project) + m1_11(project) + m1_12(project) +
@@ -2165,7 +2165,7 @@
       m5_1(project) + m5_2(project) + m5_3(project) + m5_4(project) + m5_5(project) +
       m5_6(project) + m5_7(project) + m5_8(project) + m6_1(project) + m6_2(project) +
       m6_3(project) + m6_4(project) + m7_1(project) + m7_2(project) + m7_3(project) +
-      // Cat 8 (ML/AI) is portfolio-scale, not single-project — its cards moved to
+      // Portfolio Health (ex-"Cat 8" ML/AI) is portfolio-scale, not single-project — its cards moved to
       // the "Portfolio Intelligence" section on the Portfolio page (Release 2
       // item 12). Here it reduces to a one-line summary inside its category group.
       m9_1(project) + m9_2(project) + m10_1(project) + m10_2(project) + m11_1(project) +
@@ -2181,11 +2181,17 @@
     groupByCategory(project, root);   // Release 2 item 11 — collapse by category
   }
 
-  /* ---------- Release 2 item 11 — group the Signal Stack panels under 11
-     collapsible category headers (number, name, worst-status dot, module count),
-     all collapsed by default, open/closed persisted per category in
-     sessionStorage. Canvases are already drawn (wired above) before their panels
-     are moved into the collapsed bodies, so their bitmaps survive the move. */
+  /* ---------- Category renumber (display-layer only) — group the Signal Stack
+     panels under 10 GAPLESS collapsible category headers (number, name,
+     worst-status dot, module count), all collapsed by default, open/closed
+     persisted per category in sessionStorage (keyed by the stable category
+     NUMBER — sessionStorage keys are cosmetic cache keys, not the internal
+     `id`, so this renumber intentionally does not need a migration). Canvases
+     are already drawn (wired above) before their panels are moved into the
+     collapsed bodies, so their bitmaps survive the move.
+     Portfolio Health (ex-"Cat 8") is portfolio-scale, so it is NOT part of the
+     numbered 1-10 sequence — it renders as one clearly separated line beneath
+     the category list, linking to the Health dialog. */
   const DD_CAT_KEY = "lin-ddcat-";
   const WORST_RANK = { red: 4, amber: 3, yellow: 2, green: 1, complete: 0, none: -1, na: -1 };
   function panelStatusKey(el) {
@@ -2194,11 +2200,13 @@
   }
   function groupByCategory(project, root) {
     if (!root) return;
-    const cats = (window.LIN_CATEGORIES || []);
+    const projectCats = (window.projectLevelCategories ? window.projectLevelCategories()
+      : (window.LIN_CATEGORIES || []).filter((c) => !(c && c.level === "portfolio")));
     const panels = Array.prototype.slice.call(root.querySelectorAll(".dd-panel"));
     if (!panels.length) return;
     const banner = root.querySelector(".mod-banner");
-    // bucket panels by category number (1..11)
+    // bucket panels by their category number (data-cat, set from the num each
+    // legacy panel() call declares — now reads 1..10, gapless)
     const buckets = {};
     panels.forEach((el) => {
       const c = el.getAttribute("data-cat") || "?";
@@ -2206,14 +2214,12 @@
     });
     const wrap = document.createElement("div");
     wrap.className = "dd-catgroups";
-    for (let n = 1; n <= 11; n++) {
+    for (let n = 1; n <= 10; n++) {
       const key = String(n);
-      const cat = cats[n - 1];
+      const cat = projectCats[n - 1];
       const catName = (cat && cat.name) || ("Category " + n);
-      // Cat 8 has no panels here (relocated) — render a one-line summary group.
       const list = buckets[key] || [];
-      const isCat8 = (n === 8);
-      if (!list.length && !isCat8) continue;
+      if (!list.length) continue;
       let worst = "none";
       list.forEach((el) => { const s = panelStatusKey(el); if ((WORST_RANK[s] || -1) > (WORST_RANK[worst] || -1)) worst = s; });
       const group = document.createElement("section");
@@ -2221,31 +2227,17 @@
       group.dataset.cat = key;
       const openState = (function () { try { return sessionStorage.getItem(DD_CAT_KEY + key); } catch (e) { return null; } })();
       const open = openState === "open";   // collapsed by default
-      const count = isCat8 ? 5 : list.length;
+      const count = list.length;
       group.innerHTML =
         `<button type="button" class="dd-cat-header" aria-expanded="${open}">` +
-          `<span class="dd-cat-dot status-dot-${isCat8 ? "none" : worst}"></span>` +
+          `<span class="dd-cat-dot status-dot-${worst}"></span>` +
           `<span class="dd-cat-name"><span class="mod-mono">Cat ${n}</span> ${escg(catName)}</span>` +
           `<span class="dd-cat-count">${count} module${count === 1 ? "" : "s"}</span>` +
           `<span class="dd-cat-chev" aria-hidden="true">${open ? "▾" : "▸"}</span>` +
         `</button>` +
         `<div class="dd-cat-body"${open ? "" : " hidden"}></div>`;
       const body = group.querySelector(".dd-cat-body");
-      if (isCat8) {
-        // Cat 8 stays in its numeric position (8 of 1-11) — no renumbering — but
-        // carries only a one-line summary here; the module cards + flagged-project
-        // lists live in the "Portfolio Health" dialog (Release 2b), opened via the
-        // Health pill on the Portfolio dock fly-out.
-        const anomaly = cat8SummaryLine(project);
-        body.innerHTML = `<p class="dd-cat8-summary kn-sub">${escg(anomaly)} ` +
-          `<button type="button" class="dd-link" data-goto-health>Portfolio level &mdash; see Health &rarr;</button></p>`;
-        const link = body.querySelector("[data-goto-health]");
-        if (link) link.addEventListener("click", () => {
-          if (window.LinIngest && LinIngest.openHealthModal) LinIngest.openHealthModal();
-        });
-      } else {
-        list.forEach((el) => body.appendChild(el));   // move drawn panels in
-      }
+      list.forEach((el) => body.appendChild(el));   // move drawn panels in
       const header = group.querySelector(".dd-cat-header");
       const chev = group.querySelector(".dd-cat-chev");
       header.addEventListener("click", () => {
@@ -2257,35 +2249,48 @@
       });
       wrap.appendChild(group);
     }
-    // reassemble: banner (kept) + grouped categories
+    // Portfolio Health — separated line BENEATH the numbered 1-10 sequence,
+    // not a numbered group of its own.
+    const healthLine = document.createElement("p");
+    healthLine.className = "dd-health-line kn-sub";
+    const anomaly = cat8SummaryLine(project);
+    healthLine.innerHTML = `${escg(anomaly)} <button type="button" class="dd-link" data-goto-health>see Health &rarr;</button>`;
+    const healthLink = healthLine.querySelector("[data-goto-health]");
+    if (healthLink) healthLink.addEventListener("click", () => {
+      if (window.LinIngest && LinIngest.openHealthModal) LinIngest.openHealthModal();
+    });
+    // reassemble: banner (kept) + grouped categories (gapless 1-10) + the
+    // separated Portfolio Health line (NOT part of the numbered sequence)
     root.innerHTML = "";
     if (banner) root.appendChild(banner);
     root.appendChild(wrap);
+    root.appendChild(healthLine);
   }
   function escg(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
-  // One-line Cat 8 summary for the detail category rollup.
+  // One-line Portfolio Health summary for the detail category rollup — the
+  // separated line beneath the numbered 1-10 category sequence.
   function cat8SummaryLine(project) {
     try {
       const st = window.getModuleStatus ? window.getModuleStatus("Anomaly_Score", project) : null;
       const isRed = st && /red|amber/i.test(String(st));
-      if (isRed) return "Portfolio comparison: this project is flagged as a portfolio outlier (" + String(st) + ").";
+      if (isRed) return "Portfolio Health: flagged as a portfolio outlier (" + String(st) + ") —";
     } catch (e) {}
-    return "Portfolio comparison: no anomaly flagged for this project.";
+    return "Portfolio Health: no anomaly flagged —";
   }
 
-  // ---------- Portfolio Health dialog (Release 2b) — real Cat 8 results ----------
-  // Cat 8 (ML & AI Pattern Detection) computes per-project, one result per module
+  // ---------- Portfolio Health dialog (Release 2b) — real results ----------
+  // Portfolio Health (ML & AI Pattern Detection) computes per-project, one result per module
   // per project, via the portfolioanalyze POST (signals.js runPortfolioAnalysis)
   // that runs alongside every project's normal signal computation. There is no
   // separate "portfolio-wide" result to read — this scans every loaded project's
-  // own Cat 8 verdict and reports which projects that module flags (Red/Amber).
+  // own Portfolio Health verdict and reports which projects that module flags (Red/Amber).
   const CAT8_MODULES = [
-    { mc: "Isolation_Forest",     num: "8.1", name: "Isolation Forest" },
-    { mc: "Portfolio_Outlier",    num: "8.2", name: "Portfolio Outlier" },
-    { mc: "Trajectory_Classifier",num: "8.3", name: "Trajectory Classifier" },
-    { mc: "Cross_Project_Pattern",num: "8.4", name: "Cross-project Pattern" },
-    { mc: "Anomaly_Score",        num: "8.5", name: "Anomaly Score" }
+    { mc: "Isolation_Forest",     num: "PH.1", name: "Isolation Forest" },
+    { mc: "Portfolio_Outlier",    num: "PH.2", name: "Portfolio Outlier" },
+    { mc: "Trajectory_Classifier",num: "PH.3", name: "Trajectory Classifier" },
+    { mc: "Cross_Project_Pattern",num: "PH.4", name: "Cross-project Pattern" },
+    { mc: "Anomaly_Score",        num: "PH.5", name: "Anomaly Score" }
   ];
   function cat8HealthData() {
     const projects = (window.LIN_PROJECTS || []).filter((p) => p && p.id);
@@ -2323,8 +2328,8 @@
     const data = cat8HealthData();
     if (!data.anyData) {
       const reason = data.projectCount < 3
-        ? "Category 8 needs at least 3 projects with computed signals to compare against the population — " + data.projectCount + " loaded."
-        : "Category 8 hasn't run yet for the current portfolio.";
+        ? "Portfolio Health needs at least 3 projects with computed signals to compare against the population — " + data.projectCount + " loaded."
+        : "Portfolio Health hasn't run yet for the current portfolio.";
       root.innerHTML =
         `<p class="kn-sub">${escg(reason)}</p>` +
         `<div class="dc-actions"><button type="button" class="btn primary small" data-run-portfolio-analysis>Run portfolio analysis</button></div>`;
@@ -2341,7 +2346,7 @@
       try { if (window.LinApp) { LinApp.showPage("portfolio"); LinApp.openDetail(id); } } catch (e) {}
     };
     root.innerHTML =
-      `<p class="kn-sub">Category 8 operates at portfolio scale: each project is compared against the population.</p>` +
+      `<p class="kn-sub">Portfolio Health compares how this project's signals stack up against the rest of the portfolio: each project is compared against the population.</p>` +
       data.modules.map((m) => {
         const rows = m.flagged.length
           ? m.flagged.map((f) =>

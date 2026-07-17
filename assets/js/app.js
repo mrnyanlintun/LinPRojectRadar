@@ -1199,29 +1199,21 @@
     wireCategoryLedger(root);
   }
 
-  /* 9-category signal ledger. Each row = one category; the row pill is the
-     worst-status-wins category status. Click expands the per-module list.
-     Cat 9 (Governance) is open by default; Cat 8 (ML & AI) is parked and
-     shows the Stage 2 placeholder instead of an expand control. */
+  /* 10-category signal ledger (gapless 1-10). Each row = one project-level
+     category; the row pill is the worst-status-wins category status. Click
+     expands the per-module list. Cat 8 (Governance, ex-Cat 9) is open by
+     default. Portfolio Health (ex-"Cat 8" ML & AI) is portfolio-scale, not a
+     numbered project category, so it renders as ONE separated row at the end
+     linking to the Health dialog instead of an expandable module list. */
   function categoryLedgerHtml(p) {
     if (!window.LIN_CATEGORIES) return "";
-    return LIN_CATEGORIES.map((cat) => {
+    const projectCats = window.projectLevelCategories ? projectLevelCategories() : LIN_CATEGORIES.filter((c) => !(c && c.level === "portfolio"));
+    const healthCat = LIN_CATEGORIES.find((c) => c && c.level === "portfolio");
+    const rows = projectCats.map((cat) => {
       const status = window.getCategoryStatus ? getCategoryStatus(cat.id, p) : null;
-      const open = cat.id === "cat9" ? " open" : "";
+      const open = cat.id === "cat9" ? " open" : "";   // Governance (now Cat 8) open by default
       const desc = esc(cat.description);
-      const rowPill = cat.parked ? `<span class="pill pill-parked">Stage 2</span>` : statusPill(status);
-
-      if (cat.parked) {
-        return `<div class="cat-row cat-row-parked" data-cat="${esc(cat.id)}">
-          <div class="cat-row-head">
-            <span class="cat-row-num" style="color:${esc(cat.color)}">${esc(cat.num)}</span>
-            <span class="cat-row-name">${esc(cat.name)}</span>
-            ${rowPill}
-          </div>
-          <p class="cat-row-desc">${desc}</p>
-          <p class="cat-row-parked-note">ML & AI — available in Stage 2. Modules listed for reference: ${esc(cat.modules.map((m) => m.name).join(", "))}.</p>
-        </div>`;
-      }
+      const rowPill = statusPill(status);
 
       const secName = sectorName(p);
       const modRows = cat.modules.map((m) => {
@@ -1251,9 +1243,31 @@
         <div class="cat-mod-list">${modRows}</div>
       </details>`;
     }).join("");
+
+    // Portfolio Health — separated row, not part of the numbered 1-10 sequence.
+    let healthRow = "";
+    if (healthCat) {
+      healthRow = `<div class="cat-row cat-row-health" data-cat="${esc(healthCat.id)}">
+        <div class="cat-row-head">
+          <span class="cat-row-num" style="color:${esc(healthCat.color)}">${esc(healthCat.num)}</span>
+          <span class="cat-row-name">${esc(healthCat.name)}</span>
+          <button type="button" class="btn small cat-row-health-btn" data-open-health>See Portfolio Health</button>
+        </div>
+        <p class="cat-row-desc">${esc(healthCat.description)} Portfolio-scale — compares this project against the rest of the portfolio, not a numbered project category.</p>
+      </div>`;
+    }
+    return rows + healthRow;
   }
 
-  function wireCategoryLedger(/* root */) { /* details/summary handles toggling natively */ }
+  function wireCategoryLedger(root) {
+    // details/summary handles the 1-10 rows' toggling natively; only the
+    // separated Portfolio Health row's button needs wiring.
+    if (!root) return;
+    const btn = root.querySelector("[data-open-health]");
+    if (btn) btn.addEventListener("click", () => {
+      if (window.LinIngest && LinIngest.openHealthModal) LinIngest.openHealthModal();
+    });
+  }
 
   /* 6th ledger row — only when the simulation models have run for this project. */
   function simLedgerRow(p) {
@@ -1913,7 +1927,7 @@
       // global pill — Release 2 item 1. Removed here.
       { label: "Archived", badgeId: "tool-archived-badge", badge: archivedCount, onClick: () => { Flyout.close(); if (A) A.openArchivedModal(); } },
       { label: "Activity", onClick: () => { Flyout.close(); if (A) A.openActivityModal(); } },
-      { label: "Health", title: "Portfolio Health — Category 8: ML & AI Pattern Detection", onClick: () => { Flyout.close(); if (A) A.openHealthModal(); } }
+      { label: "Health", title: "Portfolio Health — ML & AI Pattern Detection", onClick: () => { Flyout.close(); if (A) A.openHealthModal(); } }
     ];
     Flyout.open("portfolio", anchor, pills, suppressDockRefocus);
   }
@@ -2087,8 +2101,8 @@
      button owns the theme fly-out — all wired in initIconDock. */
 
   /* The on-page "Portfolio Intelligence" section (Release 2 item 12) is retired:
-     Cat 8's cards now live in the Health dialog (Release 2b), opened from the
-     dock fly-out's Health pill — see openHealthModal in ingest.js. */
+     Portfolio Health's cards now live in the Health dialog (Release 2b), opened
+     from the dock fly-out's Health pill — see openHealthModal in ingest.js. */
 
   /* Thin indeterminate top progress bar for the first cold load (no cache). */
   function showTopProgress() {

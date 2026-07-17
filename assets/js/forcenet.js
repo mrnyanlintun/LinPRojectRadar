@@ -1,6 +1,6 @@
 /* ============================================================
    Lin — 3D Force Network Visualization
-   103 modules · 11 categories · signal flow connections
+   103 modules · 10 categories + Portfolio Health · signal flow connections
    Exposes window.LinForceNet
    ============================================================ */
 (function () {
@@ -16,10 +16,10 @@
     {id:"cat5",  name:"System Dynamics",        short:"Cat 5",  color:"#8b5cf6", count:8},
     {id:"cat6",  name:"Signal Synthesis",       short:"Cat 6",  color:"#e2b13c", count:4},
     {id:"cat7",  name:"Evidence Combination",   short:"Cat 7",  color:"#9b6dff", count:20},
-    {id:"cat8",  name:"ML & AI Detection",      short:"Cat 8",  color:"#64748b", count:5},
-    {id:"cat9",  name:"Governance",             short:"Cat 9",  color:"#e0556b", count:9},
-    {id:"cat10", name:"Data Integrity",         short:"Cat 10", color:"#06b6d4", count:7},
-    {id:"cat11", name:"Decision Optimization",  short:"Cat 11", color:"#10b981", count:7}
+    {id:"cat8",  name:"Portfolio Health",       short:"PH",     color:"#64748b", count:5},
+    {id:"cat9",  name:"Governance",             short:"Cat 8",  color:"#e0556b", count:9},
+    {id:"cat10", name:"Data Integrity",         short:"Cat 9",  color:"#06b6d4", count:7},
+    {id:"cat11", name:"Decision Optimization",  short:"Cat 10", color:"#10b981", count:7}
   ];
 
   var NAMES_FALLBACK = {
@@ -329,7 +329,7 @@
 
     // 5. Overlay: legend text + focus info
     ctx.font = "10px SFMono-Regular,monospace"; ctx.fillStyle = "#64748b";
-    ctx.fillText("FORCE NETWORK — 103 MODULES · 11 CATEGORIES", 16, 26);
+    ctx.fillText("FORCE NETWORK — 103 MODULES · 10 CATEGORIES + PORTFOLIO HEALTH", 16, 26);
     ctx.font = "9px SFMono-Regular,monospace"; ctx.fillStyle = "#64748b";
     ctx.fillText("→ arrows show signal flow · inner ring = generators · outer ring = synthesis/evidence/governance", 16, 42);
 
