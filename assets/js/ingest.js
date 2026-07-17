@@ -89,7 +89,7 @@
     elLog.innerHTML = ingestLog.length
       ? ingestLog.slice(0, 25).map((e) =>
           `<div class="ig-log-entry"><span class="mod-mono">${esc(window.LinTZ ? LinTZ.format(e.at) : e.at)}</span> ${esc(e.msg)}</div>`).join("")
-      : `<p class="kn-sub">Nothing yet. Upload a document to get started.</p>`;
+      : `<p class="pr-empty">No recent activity.</p>`;
   }
 
   /* The keyword document-risk ingest panel was removed — document ingestion now
@@ -307,13 +307,13 @@
   }
 
   /* ---------- Portfolio admin (Create / Upload / Archived / Activity) ----------
-     Launched from the stage toolbar: Create + Upload are MODALS (actions to
-     complete), Archived + Activity are DRAWERS (reference alongside the page).
-     Per-project admin lives inline on each Portfolio list row (openInlineManage). */
-  /* renderPortfolioAdmin — the admin sections are now modals (Create, Upload)
-     and drawers (Archived, Activity) launched from the stage toolbar. Nothing
-     renders into #portfolio-admin anymore; this only refreshes the toolbar's
-     Archived badge count. Kept as the name app.js + the internal flows call. */
+     All four are centered DIALOGS (LinUI.openModal), launched from the dock
+     actions fly-out. Per-project admin lives inline on each Portfolio list row
+     (openInlineManage). */
+  /* renderPortfolioAdmin — the admin surfaces are now dialogs (Create, Upload,
+     Archived, Activity) launched from the dock actions fly-out. Nothing renders
+     into #portfolio-admin anymore; this only refreshes the fly-out's Archived
+     badge count. Kept as the name app.js + the internal flows call. */
   function renderPortfolioAdmin() {
     const badge = document.getElementById("tool-archived-badge");
     if (!badge) return;
@@ -403,13 +403,17 @@
     });
   }
 
-  /* ---------- ARCHIVED — right-side drawer (Restore per row) ---------- */
-  function openArchivedDrawer() {
+  /* ---------- ARCHIVED — centered dialog (Restore per row) ----------
+     Same modal component as New Project / Upload (LinUI.openModal). Restoring
+     UPDATES THE LIST IN PLACE (a visitor may restore several in a row) rather
+     than closing on the first — each restore refreshes the portfolio list + map
+     and shows an inline toast; the dialog closes on ×, Escape, or backdrop. */
+  function openArchivedModal() {
     if (!window.LinUI) return;
-    LinUI.drawer.open("archived", {
-      title: "Archived Projects", variant: "panel", width: 380,
-      mount: (body) => {
-        body.innerHTML = `<div id="archived-list"><p class="pr-empty">Loading archived projects…</p></div>`;
+    LinUI.openModal({
+      title: "Archived Projects",
+      mount: (body, close) => {
+        body.innerHTML = `<div class="app-modal-scroll"><div id="archived-list"><p class="pr-empty">Loading archived projects…</p></div></div>`;
         loadArchivedList(body);
       }
     });
@@ -421,35 +425,45 @@
     let archived = [];
     try { archived = await LinStore.listArchived(); }
     catch (e) { box.innerHTML = `<p class="pr-empty">Couldn't load archived projects. Retry.</p>`; return; }
+    const dateOf = (p) => {
+      const d = p.archivedAt || p.archivedDate || p.updatedAt || p.modified || p.date || null;
+      return d ? (window.LinTZ ? LinTZ.format(d) : String(d)) : "—";
+    };
     box.innerHTML = archived.length
       ? archived.map((p) =>
           `<div class="pr-row"><span class="pr-code">${esc(p.id)}</span>` +
-          `<span class="pr-name">${esc(p.name)} <span class="kn-sub">· ${esc(SECTOR_LABEL[p.sector] || p.sector)}</span></span>` +
+          `<span class="pr-name">${esc(p.name)} <span class="kn-sub">· ${esc(SECTOR_LABEL[p.sector] || p.sector)} · archived ${esc(dateOf(p))}</span></span>` +
           `<button class="btn small" data-restore="${esc(p.id)}">Restore</button></div>`).join("")
-      : `<p class="pr-empty">Nothing archived. Archiving moves a project's folder to <span class="mod-mono">00_Archive</span> in Drive.</p>`;
+      : `<p class="pr-empty">No archived projects.</p>`;
     box.querySelectorAll("[data-restore]").forEach((b) =>
       b.addEventListener("click", async () => {
+        const id = b.dataset.restore;
+        b.disabled = true;
         try {
-          await LinStore.restoreProject(b.dataset.restore);
-          logEvent(`RESTORED ${b.dataset.restore}.`);
-          if (window.LinApp) LinApp.refresh();
-          renderPortfolioAdmin();
-          if (window.LinUI) LinUI.drawer.close();   // restoring closes the drawer + refreshes the list
-        } catch (e) { LinStore.banner("Couldn't restore — store unreachable. Retry.", "warn"); }
+          await LinStore.restoreProject(id);
+          logEvent(`RESTORED ${id}.`);
+          if (window.LinApp) LinApp.refresh();     // refresh portfolio list + map
+          renderPortfolioAdmin();                  // refresh the Archived count badge
+          loadArchivedList(scope);                 // update the dialog list in place
+          if (window.LinUI) LinUI.toast(`Restored ${id} to the active portfolio.`);
+        } catch (e) {
+          b.disabled = false;
+          LinStore.banner("Couldn't restore — store unreachable. Retry.", "warn");
+        }
       }));
   }
 
-  /* ---------- ACTIVITY — right-side drawer (Recent Activity log) ---------- */
-  function openActivityDrawer() {
+  /* ---------- ACTIVITY — centered dialog (Recent Activity log) ---------- */
+  function openActivityModal() {
     if (!window.LinUI) return;
-    LinUI.drawer.open("activity", {
-      title: "Recent Activity", variant: "panel", width: 380,
-      mount: (body) => { body.innerHTML = `<div id="ingest-log"></div>`; renderLog(); }
+    LinUI.openModal({
+      title: "Recent Activity",
+      mount: (body) => { body.innerHTML = `<div class="app-modal-scroll"><div id="ingest-log"></div></div>`; renderLog(); }
     });
   }
 
   // Phase 2 seam kept for API compatibility; store.js already hydrates.
   function mergeUserProjects() {}
 
-  window.LinIngest = { mergeUserProjects, renderPortfolioAdmin, openInlineManage, openCreateModal, openUploadModal, openArchivedDrawer, openActivityDrawer, renderScopedIngest, populateSignals, INGEST_RULES };
+  window.LinIngest = { mergeUserProjects, renderPortfolioAdmin, openInlineManage, openCreateModal, openUploadModal, openArchivedModal, openActivityModal, renderScopedIngest, populateSignals, INGEST_RULES };
 })();

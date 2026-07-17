@@ -851,8 +851,8 @@ body.t-light .theme-switch button.active { color: #fff; }
   /* the "hop" onto / off the open chat panel (position set by JS via translate) */
   transition: transform .25s ease, width .2s ease, height .2s ease;
 }
-/* z-index 110 keeps the robot above the chat panel (91) and drawers (80/81) so
-   its listening/answering states stay visible while chatting, but below true
+/* z-index 110 keeps the robot above the chat panel (91) so its
+   listening/answering states stay visible while chatting, but below true
    modal dialogs (.app-modal-backdrop 120 · .ds-modal-backdrop 200) which
    correctly cover it. When perched it shrinks on mobile to sit in the header. */
 .la-launcher.perched-mobile { width: 44px; height: 44px; }
@@ -1721,73 +1721,16 @@ body.t-light .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .menu-emblem:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
 .menu-emblem-svg { width: 24px; height: 24px; transition: transform .25s ease; }
 .menu-emblem-img { width: 28px; height: 28px; object-fit: contain; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--phosphor) 45%, transparent)); transition: transform .25s ease; }
-/* 90° twist while the menu drawer is open (Drawer marks its trigger .active) */
+/* 90° twist while the theme fly-out is open (Flyout marks its trigger .active) */
 .menu-emblem.active .menu-emblem-svg, .menu-emblem.active .menu-emblem-img { transform: rotate(90deg); }
 .menu-emblem.active { border-color: var(--phosphor); color: var(--phosphor); }
 
-/* ============================================================
-   DRAWER — one right-side panel reused for the menu, Archived, Activity.
-   Slides in (translateX + fade, 180ms), a notch touches the dock, focus
-   trapped in JS, closes on Escape / click-outside / toggle / navigation.
-   variant "menu": small, anchored beside the dock. variant "panel": wider,
-   full height minus header. Reduced-motion → fade only (no slide).
-   ============================================================ */
-.drawer-root {
-  position: fixed; inset: 0; z-index: 80; pointer-events: none;
-}
-.app-drawer {
-  position: fixed; right: 14px; z-index: 81; pointer-events: auto;
-  width: var(--drawer-w, 380px); max-width: calc(100vw - 28px);
-  display: flex; flex-direction: column;
-  background: var(--surface); color: var(--text);
-  border: 1px solid var(--line); border-top: 2px solid var(--hairline-gold, rgba(212,175,90,.45));
-  border-radius: var(--radius-lg); box-shadow: var(--shadow);
-  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-  opacity: 0; visibility: hidden; transform: translateX(24px);
-  transition: opacity .18s ease-out, transform .18s ease-out, visibility .18s;
-}
-.drawer-root.open .app-drawer { opacity: 1; visibility: visible; transform: none; }
-/* notch pointing right toward the dock */
-.drawer-notch {
-  position: absolute; right: -7px; width: 12px; height: 12px;
-  background: var(--surface); border-right: 1px solid var(--line); border-top: 1px solid var(--line);
-  transform: rotate(45deg);
-}
-/* variant: menu — compact, vertically centered on the dock, clear of it */
-.app-drawer[data-variant="menu"] {
-  top: 50%; transform: translateY(-50%) translateX(24px);
-  right: 78px; max-height: calc(100vh - 40px); overflow: auto; padding: 14px;
-}
-.drawer-root.open .app-drawer[data-variant="menu"] { transform: translateY(-50%); }
-.app-drawer[data-variant="menu"] .drawer-notch { top: calc(50% - 6px); right: -7px; }
-.app-drawer[data-variant="menu"] .drawer-head { border: 0; padding: 0 0 6px; }
-/* variant: panel — full height minus header, scrollable body (Archived/Activity) */
-.app-drawer[data-variant="panel"] {
-  top: 78px; bottom: 16px; right: 78px;
-}
-.app-drawer[data-variant="panel"] .drawer-notch { top: 20px; right: -7px; }
-.drawer-head {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 10px; padding: 4px 4px 12px; border-bottom: 1px solid var(--line);
-  flex: 0 0 auto;
-}
-.drawer-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; margin: 0; color: var(--text); }
-.drawer-close { background: none; border: 0; font-size: 22px; line-height: 1; color: var(--muted); cursor: pointer; padding: 0 4px; }
-.drawer-close:hover { color: var(--text); }
-.drawer-subhead { font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); margin: 0 0 8px; }
-.drawer-body { flex: 1 1 auto; overflow: auto; padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
-.app-drawer[data-variant="menu"] .drawer-body { padding-top: 4px; }
-.app-menu-signout { align-self: flex-start; margin-top: 4px; }
-@media (prefers-reduced-motion: reduce) {
-  .app-drawer, .drawer-root.open .app-drawer,
-  .app-drawer[data-variant="menu"], .drawer-root.open .app-drawer[data-variant="menu"] { transition: opacity .18s ease; transform: none; }
-}
-/* short/narrow windows: drawers span the viewport edge-to-edge below the dock */
-@media (max-width: 700px) {
-  .app-drawer[data-variant="menu"], .app-drawer[data-variant="panel"] { right: 12px; left: 12px; width: auto; max-width: none; }
-  .app-drawer[data-variant="panel"] { top: 70px; bottom: 84px; }
-  .drawer-notch { display: none; }
-}
+/* The drawer component was retired: Archived/Activity are now centered dialogs
+   (LinUI.openModal), the same pattern as New Project/Upload; the theme switcher
+   is the dock fly-out. See .app-modal-* for the shared dialog chrome. */
+/* Scrollable list inside a dialog (Archived rows / Activity log) — sized to
+   content with an internal scroll so the title/close stay put. */
+.app-modal-scroll { max-height: min(70vh, 460px); overflow-y: auto; margin: 0 -4px; padding: 0 4px; }
 
 /* ============================================================
    MODAL — centered dialog for actions to complete (Create, Upload).
