@@ -838,19 +838,126 @@ body.t-light .theme-switch button.active { color: #fff; }
 #ingest-result { margin-top: 8px; }
 
 /* ---------- floating scripted assistant ---------- */
+/* ---------- Ask Lin — three-state animated line-art robot ----------
+   One character, gold via --phosphor, that morphs idle → listening →
+   answering. All motion is CSS/SMIL; JS toggles is-idle/is-listening/
+   is-answering. Reduced-motion → static per-state poses (see block below). */
 .la-launcher {
   position: fixed; right: 22px; bottom: 22px; z-index: 90;
-  display: flex; align-items: center; gap: 8px;
-  background: var(--phosphor); color: #fff;
-  border: 1px solid var(--phosphor); border-radius: 999px;
-  font-family: var(--font-display); font-weight: 700; font-size: 14px;
-  padding: 11px 18px; cursor: pointer; box-shadow: var(--shadow);
+  width: 64px; height: 64px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; border: 0; cursor: pointer;
+  color: var(--phosphor);
 }
-.la-launcher span[aria-hidden] {
-  display: inline-flex; width: 20px; height: 20px; align-items: center; justify-content: center;
-  border: 2px solid currentColor; border-radius: 50%; font-size: 12px;
+.la-robot {
+  width: 64px; height: 64px; overflow: visible;
+  filter: drop-shadow(0 2px 7px color-mix(in srgb, var(--phosphor) 45%, transparent));
+  transition: transform .2s ease;
 }
-.la-launcher:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+/* light themes: a thin dark outline so the gold reads on the pale page */
+body.t-light .la-robot {
+  filter: drop-shadow(0 0 .6px var(--heading)) drop-shadow(0 0 .6px var(--heading))
+          drop-shadow(0 2px 6px color-mix(in srgb, var(--phosphor) 40%, transparent));
+}
+.la-launcher:hover .la-robot,
+.la-launcher:focus-visible .la-robot { transform: scale(1.08); }
+.la-launcher:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; border-radius: 14px; }
+
+/* screen-reader-only live region */
+.la-sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* speech bubble greeting ("Ask Lin") — on hover/focus, and auto once/session */
+.la-greet {
+  position: absolute; right: 68px; bottom: 20px; white-space: nowrap;
+  font-family: var(--font-display); font-weight: 700; font-size: 13px;
+  color: var(--text); background: var(--surface);
+  border: 1px solid var(--line-strong); border-radius: 12px;
+  padding: 6px 11px; box-shadow: var(--shadow); pointer-events: none;
+  opacity: 0; transform: translateX(6px); transition: opacity .2s ease, transform .2s ease;
+}
+.la-greet::after {
+  content: ""; position: absolute; right: -5px; bottom: 12px; width: 9px; height: 9px;
+  background: var(--surface); border-right: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line-strong); transform: rotate(-45deg);
+}
+.la-launcher:hover .la-greet,
+.la-launcher:focus-visible .la-greet,
+.la-launcher.la-greeting .la-greet { opacity: 1; transform: translateX(0); }
+
+/* ----- shared base motion ----- */
+.la-robot .bot-bob { animation: bot-bob 3s ease-in-out infinite, bot-flourish 33s ease-in-out infinite; transform-box: view-box; transform-origin: 32px 40px; }
+@keyframes bot-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+/* occasional idle head-tilt flourish (only while idle) */
+@keyframes bot-flourish { 0%,92%,100% { rotate: 0deg; } 95% { rotate: -7deg; } 98% { rotate: 5deg; } }
+.la-launcher.is-listening .bot-bob,
+.la-launcher.is-answering .bot-bob { animation: bot-bob 3s ease-in-out infinite; }  /* no flourish off-idle */
+
+.la-robot .bot-eye { transform-box: fill-box; transform-origin: center; }
+.la-robot .bot-eye-l { animation: bot-blink 5.2s infinite; }
+.la-robot .bot-eye-r { animation: bot-blink 6.3s .4s infinite; }
+@keyframes bot-blink { 0%,94%,100% { transform: scaleY(1); } 97% { transform: scaleY(.12); } }
+/* eyes look down while reading */
+.la-robot .bot-eyes { transition: transform .2s ease; transform-box: view-box; }
+.la-launcher.is-listening .bot-eyes { transform: translateY(2px); }
+
+/* mouth: neutral by default, grin fades in on hover/focus */
+.la-robot .bot-grin { opacity: 0; transition: opacity .2s ease; }
+.la-launcher:hover .bot-mouth,
+.la-launcher:focus-visible .bot-mouth { opacity: 0; }
+.la-launcher:hover .bot-grin,
+.la-launcher:focus-visible .bot-grin { opacity: 1; }
+
+/* signal waves: slow pulse idle, fast when transmitting (answering) */
+.la-robot .bot-wave { opacity: .25; }
+.la-launcher.is-idle .bot-wave-1,
+.la-launcher.is-listening .bot-wave-1 { animation: bot-wave 2.2s ease-in-out infinite; }
+.la-launcher.is-idle .bot-wave-2,
+.la-launcher.is-listening .bot-wave-2 { animation: bot-wave 2.2s ease-in-out .5s infinite; }
+.la-launcher.is-answering .bot-wave-1 { animation: bot-wave .7s ease-in-out infinite; }
+.la-launcher.is-answering .bot-wave-2 { animation: bot-wave .7s ease-in-out .25s infinite; }
+@keyframes bot-wave { 0%,100% { opacity: .18; } 50% { opacity: .95; } }
+
+/* ----- per-state accessories cross-fade (200ms) ----- */
+.la-robot .bot-acc { opacity: 0; transition: opacity .2s ease; }
+.la-launcher.is-idle .bot-headset { opacity: 1; }
+.la-launcher.is-listening .bot-book { opacity: 1; }
+.la-launcher.is-answering .bot-bubbles { opacity: 1; }
+
+/* reading sweep: the four page rows light left→right in a loop */
+.la-robot .bot-read { opacity: .3; }
+.la-launcher.is-listening .bot-read-1 { animation: bot-read 1.8s ease-in-out infinite; }
+.la-launcher.is-listening .bot-read-2 { animation: bot-read 1.8s ease-in-out .3s infinite; }
+.la-launcher.is-listening .bot-read-3 { animation: bot-read 1.8s ease-in-out .6s infinite; }
+.la-launcher.is-listening .bot-read-4 { animation: bot-read 1.8s ease-in-out .9s infinite; }
+@keyframes bot-read { 0%,60%,100% { opacity: .3; } 30% { opacity: 1; } }
+
+/* speech-bubble typing: dots then lines, alternating turns */
+.la-robot .bot-dot, .la-robot .bot-say { opacity: .3; }
+.la-launcher.is-answering .bot-dot-1 { animation: bot-type 1.4s steps(1) infinite; }
+.la-launcher.is-answering .bot-dot-2 { animation: bot-type 1.4s steps(1) .18s infinite; }
+.la-launcher.is-answering .bot-dot-3 { animation: bot-type 1.4s steps(1) .36s infinite; }
+.la-launcher.is-answering .bot-say-1 { animation: bot-type 1.4s steps(1) .7s infinite; }
+.la-launcher.is-answering .bot-say-2 { animation: bot-type 1.4s steps(1) .9s infinite; }
+@keyframes bot-type { 0%,49% { opacity: 1; } 50%,100% { opacity: .25; } }
+
+/* one-shot flourishes */
+.la-launcher.la-happy .bot-bob { animation: bot-happy .6s ease-in-out; }
+@keyframes bot-happy { 0%,100% { transform: translateY(0); } 25% { transform: translateY(-6px); } 50% { transform: translateY(0); } 75% { transform: translateY(-5px); } }
+.la-launcher.la-shake .bot-bob { animation: bot-shake .5s ease-in-out; transform-box: view-box; transform-origin: 32px 40px; }
+@keyframes bot-shake { 0%,100% { rotate: 0deg; } 20% { rotate: -6deg; } 40% { rotate: 6deg; } 60% { rotate: -6deg; } 80% { rotate: 6deg; } }
+
+@media (prefers-reduced-motion: reduce) {
+  /* static per-state poses — no loops, no transitions */
+  .la-robot .bot-bob, .la-robot .bot-eye, .la-robot .bot-eyes,
+  .la-robot .bot-wave, .la-robot .bot-acc, .la-robot .bot-grin, .la-robot .bot-mouth,
+  .la-robot .bot-read, .la-robot .bot-dot, .la-robot .bot-say,
+  .la-launcher .la-robot { animation: none !important; transition: none !important; }
+  .la-robot .bot-wave { opacity: .55; }
+  .la-robot .bot-read, .la-robot .bot-dot, .la-robot .bot-say { opacity: .85; }
+}
 
 .la-panel[hidden] { display: none !important; }
 .la-panel {
@@ -2974,6 +3081,10 @@ body { overflow-x: hidden; max-width: 100vw; }
     right: 8px; left: 8px; bottom: 70px;
     width: auto;
   }
+  /* ---------- Ask Lin robot: smaller launcher on mobile ---------- */
+  .la-launcher { width: 52px; height: 52px; right: 16px; bottom: 16px; }
+  .la-robot { width: 52px; height: 52px; }
+  .la-greet { right: 56px; }
 
   /* ---------- store banner ---------- */
   .store-banner { font-size: 12px; padding: 8px 14px; }
