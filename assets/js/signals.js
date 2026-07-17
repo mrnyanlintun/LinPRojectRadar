@@ -815,6 +815,22 @@
         await savePortfolioHealthSnapshot(project.id, "upload");
       } catch (e) { /* Portfolio Health is non-fatal — never block the core run */ }
     }
+    // Status finalization — the ONE place project.status is decided and
+    // persisted. Every render surface (list, map pins, radar blips, detail
+    // header, Health dialog, exports) is meant to READ this stored value;
+    // full-object live paths (getProjectFusion) delegate to the same
+    // window.deriveProjectStatus so they can never disagree with what gets
+    // saved here. Fixes the Complete/Green divergence where the slim
+    // portfolio list — which has no signals object to recompute from —
+    // was reading a stale pre-promotion status.
+    try {
+      if (window.deriveProjectStatus) {
+        const fused = (window.getProjectFusion && window.getProjectFusion(project)) || {};
+        const completionDate = window.projectCompletionDate ? window.projectCompletionDate(project) : null;
+        const decided = window.deriveProjectStatus(fused.status, si, project.sector, completionDate);
+        project.status = decided.status;
+      }
+    } catch (e) { /* non-fatal — falls back to whatever status was already on the project */ }
     persistHistorySnapshot(project);
     try { buildCategorySnapshot(project); } catch (e) { /* non-fatal — keeps the legacy snapshot path working */ }
     const builtSignals = project.signals;
@@ -831,6 +847,7 @@
       if (!cached.simulationSignals && simPayload) cached.simulationSignals = simPayload;
       if (project.history) cached.history = project.history;
       if (project.milestoneHistory) cached.milestoneHistory = project.milestoneHistory;
+      if (project.status) cached.status = project.status;
     }
     return true;
   }

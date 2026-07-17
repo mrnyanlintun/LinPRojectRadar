@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lin Project Radar — signal-math regression net</title>
+<style>
+  body { background:#0b0e17; color:#c8d4e8; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px; padding:24px; }
+  h1 { font-size:16px; margin:0 0 4px; }
+  p.sub { color:#7a8aa8; margin:0 0 20px; }
+  table { border-collapse:collapse; width:100%; margin-bottom:28px; }
+  th, td { border:1px solid #22304a; padding:6px 10px; text-align:left; vertical-align:top; }
+  th { background:#141c2e; color:#9ab0d0; }
+  tr.pass td.result { color:#2ee66b; }
+  tr.fail td.result { color:#ff3b30; font-weight:700; }
+  .summary { font-size:14px; margin:8px 0 24px; }
+  .summary.ok { color:#2ee66b; }
+  .summary.bad { color:#ff3b30; }
+  code { color:#8ab4f8; }
+</style>
+</head>
+<body>
+<h1>Lin Project Radar — signal-math regression net</h1>
+<p class="sub">
+  Zero-dependency page: imports the real assets/js/categories.js, decision.js and
+  simulations.js and asserts against their actual behavior — this file must fail
+  if a band or the status-promotion rule drifts. Run after any change to
+  categories.js, decision.js, or simulations.js.
+</p>
+<div id="summary" class="summary">Running…</div>
+<table id="results">
+  <thead><tr><th>#</th><th>Assertion</th><th>Expected</th><th>Actual</th><th class="result">Result</th></tr></thead>
+  <tbody></tbody>
+</table>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/categories.js"></script>
+<script src="assets/js/decision.js"></script>
+<script src="assets/js/simulations.js"></script>
+<script>
+(function () {
+  "use strict";
+  const rows = [];
+  function eq(a, b) {
+    if (a === b) return true;
+    if (typeof a === "number" && typeof b === "number") return Math.abs(a - b) < 1e-9;
+    return false;
+  }
+  function assert(name, expected, actual) {
+    rows.push({ name, expected, actual, pass: eq(expected, actual) });
+  }
+
+  // Minimal synthetic project fixture. status-derivation reads
+  // project.signalInputs / project.sector / project.signals.evm.dataDate —
+  // everything else on the fixture is deliberately absent so these three
+  // assertions isolate ONLY the Complete-promotion rule (fix/status-single-source).
+  function fixtureProject(overrides) {
+    return Object.assign({
+      id: "TEST-01",
+      sector: "construction",
+      signalInputs: { actualPctComplete: 60, baselineEnd: "2026-01-15" },
+      signals: {}
+    }, overrides || {});
+  }
+
+  // ---- deriveProjectStatus: the single canonical status-decision helper ----
+  // (categories.js) — used both by the live full-object fusion path
+  // (getProjectFusion) and by the signal-run finalization that persists
+  // project.status (signals.js runModels). These three assertions are the
+  // regression net requested by fix/status-single-source.
+
+  // 1. pct 100 -> Complete regardless of fused color (even if fused is Red).
+  (function () {
+    const p = fixtureProject({ signalInputs: { actualPctComplete: 100, baselineEnd: "2026-01-15" } });
+    const decided = window.deriveProjectStatus("Red", p.signalInputs, p.sector,
+      window.projectCompletionDate ? window.projectCompletionDate(p) : p.signalInputs.baselineEnd);
+    assert("actualPctComplete=100, fused=Red → status is Complete", "Complete", decided.status);
+  })();
+
+  // 2. pct 99.9 -> fused color passes through unpromoted.
+  (function () {
+    const p = fixtureProject({ signalInputs: { actualPctComplete: 99.9, baselineEnd: "2026-01-15" } });
+    const decided = window.deriveProjectStatus("Amber", p.signalInputs, p.sector,
+      window.projectCompletionDate ? window.projectCompletionDate(p) : p.signalInputs.baselineEnd);
+    assert("actualPctComplete=99.9, fused=Amber → status stays Amber (not promoted)", "Amber", decided.status);
+  })();
+
+  // 3. Construction sector + Complete -> liability flag present (2-year tail
+  // from the completion date).
+  (function () {
+    const p = fixtureProject({
+      sector: "construction",
+      signalInputs: { actualPctComplete: 100, baselineEnd: "2026-01-15" }
+    });
+    const decided = window.deriveProjectStatus("Green", p.signalInputs, p.sector,
+      window.projectCompletionDate ? window.projectCompletionDate(p) : p.signalInputs.baselineEnd);
+    assert("Construction sector + Complete → liabilityUntil is set (2026-01-15 + 2y)",
+      "2028-01-15", decided.liabilityUntil);
+  })();
+
+  // Design sector + Complete -> NO liability flag (liability only applies to
+  // Construction/Hybrid, per categories.js deriveProjectStatus).
+  (function () {
+    const p = fixtureProject({
+      sector: "design",
+      signalInputs: { actualPctComplete: 100, baselineEnd: "2026-01-15" }
+    });
+    const decided = window.deriveProjectStatus("Green", p.signalInputs, p.sector,
+      window.projectCompletionDate ? window.projectCompletionDate(p) : p.signalInputs.baselineEnd);
+    assert("Design sector + Complete → no liabilityUntil", null, decided.liabilityUntil);
+  })();
+
+  // ---- render ----
+  const tbody = document.querySelector("#results tbody");
+  let failCount = 0;
+  rows.forEach((r, i) => {
+    if (!r.pass) failCount++;
+    const tr = document.createElement("tr");
+    tr.className = r.pass ? "pass" : "fail";
+    tr.innerHTML =
+      "<td>" + (i + 1) + "</td>" +
+      "<td>" + r.name + "</td>" +
+      "<td><code>" + JSON.stringify(r.expected) + "</code></td>" +
+      "<td><code>" + JSON.stringify(r.actual) + "</code></td>" +
+      "<td class=\"result\">" + (r.pass ? "PASS" : "FAIL") + "</td>";
+    tbody.appendChild(tr);
+  });
+  const summary = document.getElementById("summary");
+  summary.textContent = failCount === 0
+    ? "All " + rows.length + " assertions passed."
+    : failCount + " of " + rows.length + " assertions FAILED.";
+  summary.className = "summary " + (failCount === 0 ? "ok" : "bad");
+})();
+</script>
+</body>
+</html>
