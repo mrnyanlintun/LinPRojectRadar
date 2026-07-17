@@ -567,17 +567,23 @@
            <span class="detail-reset-msg kn-sub" aria-live="polite"></span>
          </div>
        </div>
+        ${/* Release 2 · Phase 2 item 9 — section order: Project Signal Network →
+             Signal Flow → Executive Brief → Governance Decision → Signal Web →
+             Signal Inputs → Ensemble Analysis → Signal Stack. Documents &
+             Extracted Signals (not in the named order) is kept adjacent to Signal
+             Inputs. sessionStorage keys (the section ids) are unchanged, so saved
+             open/closed states survive. */""}
         ${cs("d-projnet", "Project Signal Network", `<div class="detail-projnet2d"></div>`, false, totalCats + " categories")}
         ${cs("d-neural", "Signal Flow", `<div class="detail-neural-flow" data-project-id="${esc(p.id)}"></div>`, false, `${totalModulesForBadge} modules`)}
         ${cs("d-brief", "Executive Brief", executiveBriefHtml(p), false, "")}
+        ${cs("d-decision", "Governance Decision", `<section class="panel detail-decision" aria-label="PCEIF governance decision (project detail)"></section>`, false, pillBadge(overallState))}
         ${cs("d-web", "Signal Web", signalWebHtml(p), false, totalModulesForBadge + " modules")}
-        ${cs("d-ensemble", "Ensemble Analysis", ensembleHtml(p), false, `${ensActive} active · ${ensEst} est.`)}
+        ${cs("d-ledger", "Signal Inputs", `<section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>`, false, pillBadge(overallState))}
         ${cs("d-docsignals", "Documents & Extracted Signals",
              uploadedDocsPanelHtml(p) +
              `<section class="panel detail-signals" aria-label="Extracted signals detail"></section>`,
              false, `${uploadCount} doc${uploadCount === 1 ? "" : "s"} · ${inputFieldCount} field${inputFieldCount === 1 ? "" : "s"}`)}
-        ${cs("d-ledger", "Signal Inputs", `<section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>`, false, pillBadge(overallState))}
-        ${cs("d-decision", "Governance Decision", `<section class="panel detail-decision" aria-label="PCEIF governance decision (project detail)"></section>`, false, pillBadge(overallState))}
+        ${cs("d-ensemble", "Ensemble Analysis", ensembleHtml(p), false, `${ensActive} active · ${ensEst} est.`)}
        ${cs("d-stack", "Signal Stack — " + totalCats + " Categories", `<div class="detail-modules"></div>`, false, "")}`;
 
     // Every section starts collapsed (sessionStorage may restore an open one);
