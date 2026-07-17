@@ -191,14 +191,18 @@
            <input type="text" class="pe-id ig-input" maxlength="40" placeholder="e.g. AP-2026-014" /></label>
          <label class="rationale-label">Project name
            <input type="text" class="pe-name ig-input" maxlength="80" /></label>
-         <label class="rationale-label">Sector (read-only — drives simulation rules)
-           <input type="text" class="pe-sector ig-input" disabled /></label>
+         <label class="rationale-label">Project type / sector (drives which modules apply)
+           <select class="pe-sector ig-input">
+             <option value="design">Design</option>
+             <option value="construction">Construction</option>
+             <option value="hybrid">Hybrid</option>
+           </select></label>
          <label class="rationale-label pr-editinfo-addr">Address (optional — located automatically on save)
            <input type="text" class="pe-address ig-input" maxlength="160" placeholder="e.g. Terminal B, Austin-Bergstrom Intl Airport" /></label>
        </div>
        <div class="dc-actions">
          <button class="btn primary small pe-save">Save info</button>
-         <button class="btn small pe-populate">${populated ? "Re-upload documents" : "Populate signals"}</button>
+         <button class="btn small pe-populate">Upload documents</button>
          <button class="btn small pe-reset">Reset signals</button>
          <button class="btn small pe-archive">Archive</button>
          <button class="btn small pe-cancel">Close</button>
@@ -207,8 +211,16 @@
     li.appendChild(box);
     box.querySelector(".pe-id").value = id;
     box.querySelector(".pe-name").value = cached.name || "";
-    box.querySelector(".pe-sector").value = SECTOR_LABEL[cached.sector] || cached.sector || "";
+    const origSector = (window.normalizeSector ? window.normalizeSector(cached.sector) : String(cached.sector || "hybrid").toLowerCase());
+    box.querySelector(".pe-sector").value = origSector;
     box.querySelector(".pe-address").value = cached.address || "";
+    // Changing sector invalidates sector-gated module results — warn inline.
+    box.querySelector(".pe-sector").addEventListener("change", (e) => {
+      if (e.target.value !== origSector) {
+        msg.classList.remove("pe-msg-ok"); msg.classList.add("pe-msg-error");
+        msg.textContent = "Sector changed — save, then recompute signals to update module applicability.";
+      }
+    });
     if (cached.formattedAddress && cached.lat != null) {
       box.querySelector(".pe-msg").textContent = "Located: " + cached.formattedAddress;
     }
@@ -259,6 +271,8 @@
       const newId = box.querySelector(".pe-id").value.trim();
       const name = box.querySelector(".pe-name").value.trim();
       const address = box.querySelector(".pe-address").value.trim();
+      const sector = box.querySelector(".pe-sector").value;
+      const sectorChanged = sector !== origSector;
       if (newId !== id) {
         const idErr = validateProjectNumber(newId, id);
         if (idErr) { msg.textContent = idErr; return; }
@@ -272,7 +286,10 @@
         if (!full || full.slim) throw new Error("couldn't load the full project record");
         full.name = name;
         full.address = address || null;
+        full.sector = sector;
         const saved = await LinStore.saveProject(full);
+        // Sector change invalidates sector-gated modules — flag the row until recomputed.
+        if (sectorChanged && window.LinApp && LinApp.markSectorDirty) LinApp.markSectorDirty(newId !== id ? newId : id);
         if (newId !== id) {
           await LinStore.setProjectNumber(id, newId);
           if (window.LinApp && LinApp.renameSelection) LinApp.renameSelection(id, newId);
@@ -381,24 +398,69 @@
      disclaimer rides along inside LinSignals.dropzoneHtml(). */
   function openUploadModal(preselectId) {
     if (!window.LinUI) return;
+    let busy = false;
+    const locked = !!preselectId;
+    const projName = preselectId ? ((LinStore.getCached(preselectId) || {}).name || "") : "";
     LinUI.openModal({
-      title: "Upload Documents",
-      mount: (body) => {
+      title: locked ? "Upload Documents" : "Upload Documents",
+      // Non-dismissable while a batch runs: the backdrop is inert, Escape / ×
+      // prompt "leave anyway?". Once the summary shows (busy=false) closing is free.
+      canClose: () => !busy,
+      onBlockedClose: (doClose, source) => {
+        if (source === "backdrop") return;                 // backdrop never closes mid-upload
+        if (window.confirm("Uploads in progress — leave anyway?")) doClose();
+      },
+      mount: (body, close) => {
         body.innerHTML =
-          `<p class="kn-sub">Drop one or more documents below. Lin identifies each document type automatically and extracts the signals — no need to label them first.</p>
+          `<p class="kn-sub">${locked ? `Uploading to <strong>${esc(preselectId)}${projName && projName !== preselectId ? " · " + esc(projName) : ""}</strong>. ` : ""}Drop one or more documents below. Lin identifies each document type automatically and extracts the signals, no need to label them first.</p>
+           <div class="up-progress" hidden>
+             <div class="up-progress-head"><span class="up-count">0 of 0</span><span class="up-live kn-sub"></span></div>
+             <div class="up-track"><div class="up-bar"></div></div>
+           </div>
            <div id="signals-panel">
-             ${LinSignals.dropzoneHtml(null)}
+             ${LinSignals.dropzoneHtml(preselectId || null)}
              <div id="signals-detail" class="ds-detail-wrap"></div>
-           </div>`;
+           </div>
+           <div class="up-summary" hidden></div>`;
         const panelWrap = body.querySelector("#signals-panel");
+        const prog = body.querySelector(".up-progress");
+        const bar = body.querySelector(".up-bar");
+        const countEl = body.querySelector(".up-count");
+        const liveEl = body.querySelector(".up-live");
+        const summaryEl = body.querySelector(".up-summary");
+        const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
         LinSignals.wireDropzone(panelWrap, (id) => {
           const panel = body.querySelector("#signals-detail");
           if (panel) LinSignals.renderSignalsPanel(panel, LinStore.getCached(id));
+        }, (ev) => {
+          if (ev.type === "start") {
+            busy = true; prog.hidden = false; bar.style.width = "0%";
+            countEl.textContent = "0 of " + ev.total; liveEl.textContent = "";
+          } else if (ev.type === "file") {
+            liveEl.textContent = cap(ev.state) + " " + ev.name;
+          } else if (ev.type === "progress") {
+            bar.style.width = (ev.total ? Math.round(ev.done / ev.total * 100) : 0) + "%";
+            countEl.textContent = ev.done + " of " + ev.total;
+          } else if (ev.type === "done") {
+            busy = false; bar.style.width = "100%";
+            panelWrap.hidden = true; prog.hidden = true;
+            const ok = ev.summary.filter((s) => s.status === "done");
+            const bad = ev.summary.filter((s) => s.status !== "done");
+            summaryEl.hidden = false;
+            summaryEl.innerHTML =
+              `<h3 class="up-summary-title">Upload complete</h3>` +
+              `<p class="kn-sub">${ok.length} file${ok.length === 1 ? "" : "s"} uploaded${bad.length ? `, ${bad.length} failed` : ""}.</p>` +
+              `<ul class="up-summary-list">` +
+                ev.summary.map((s) => `<li class="${s.status === "done" ? "up-ok" : "up-fail"}"><span class="up-file">${esc(s.name)}</span> ` +
+                  (s.status === "done"
+                    ? `<span class="up-detail">${s.fields || 0} field${(s.fields || 0) === 1 ? "" : "s"} extracted</span>`
+                    : `<span class="up-detail">${esc(s.error || "failed")}</span>`) + `</li>`).join("") +
+              `</ul>` +
+              `<div class="dc-actions"><button class="btn primary small up-close">Close</button></div>`;
+            summaryEl.querySelector(".up-close").addEventListener("click", () => close());
+            try { if (window.LinApp) LinApp.refresh(); } catch (e) {}
+          }
         });
-        if (preselectId) {
-          const sel = body.querySelector(".dz-project");
-          if (sel) sel.value = preselectId;
-        }
       }
     });
   }

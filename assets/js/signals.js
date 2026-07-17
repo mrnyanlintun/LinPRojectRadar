@@ -1127,8 +1127,9 @@
       <div class="dz-queue" aria-live="polite"></div>`;
   }
 
-  function wireDropzone(container, onResult) {
+  function wireDropzone(container, onResult, onBatch) {
     if (!container) return;
+    const reportBatch = (ev) => { try { if (onBatch) onBatch(ev); } catch (e) {} };
     const dz = container.querySelector(".dropzone");
     const input = container.querySelector(".dz-input");
     const queue = container.querySelector(".dz-queue");
@@ -1267,24 +1268,26 @@
       item.innerHTML = `<span class="dz-item-name">${esc(file.name)}</span>` +
         `<span class="dz-item-status">⟳ Identifying…</span>`;
       queue.appendChild(item);
+      reportBatch({ type: "file", name: file.name, state: "uploading" });
 
       if (file.size > 20 * 1024 * 1024) {
         setError(item, file, "File too large — max 20 MB");
-        return;
+        return { name: file.name, status: "failed", error: "File too large — max 20 MB" };
       }
 
       let base64;
       try { base64 = await fileToBase64(file); }
-      catch (e) { setError(item, file, "Couldn't read file"); return; }
+      catch (e) { setError(item, file, "Couldn't read file"); return { name: file.name, status: "failed", error: "Couldn't read file" }; }
 
       if (base64.length > 5000000) {
         setError(item, file, "File too large — maximum ~3 MB. Please compress the PDF.");
-        return;
+        return { name: file.name, status: "failed", error: "File too large — compress the PDF (~3 MB max)" };
       }
 
       // Single call: extract everything AND infer the document type at once
       // (docType:"auto"). No separate identifyOnly round-trip. The backend reads
       // the document, names the type, and extracts every field in one pass.
+      reportBatch({ type: "file", name: file.name, state: "extracting" });
       item.className = "dz-item dz-identified";
       item.innerHTML = `<span class="dz-item-name">${esc(file.name)}</span>` +
         `<span class="dz-item-status">\u27f3 Extracting\u2026</span>`;
@@ -1355,10 +1358,12 @@
           `<span class="dz-item-result">${esc(resultText)}</span>`;
         try { if (window.LinApp) LinApp.refresh(); } catch (e) { /* non-fatal */ }
         try { if (onResult) onResult(id); } catch (e) { /* non-fatal */ }
+        return { name: file.name, status: "done", fields: appliedCount };
       } catch (e) {
         console.error("[dropzone] extract error:", e);
         setError(item, file, (e && e.message) || "Network error — check console",
           function () { item.remove(); processOne(id, file); });
+        return { name: file.name, status: "failed", error: (e && e.message) || "Network error" };
       }
     }
 
@@ -1384,8 +1389,12 @@
         queue.appendChild(note);
         return;
       }
+      reportBatch({ type: "start", total: files.length, projectId: id });
+      const summary = [];
       for (let i = 0; i < files.length; i++) {
-        await processOne(id, files[i]);
+        const res = await processOne(id, files[i]) || { name: files[i].name, status: "failed", error: "unknown" };
+        summary.push(res);
+        reportBatch({ type: "progress", done: i + 1, total: files.length, name: res.name, status: res.status });
         // 2.5s between files spreads a ~27-doc batch over ~70s so it stays under
         // the Anthropic 30k-input-tokens/min rate limit (a 429 trips otherwise).
         if (i < files.length - 1) await new Promise(function (r) { setTimeout(r, 2500); });
@@ -1402,6 +1411,9 @@
           }
         }
       } catch (e) { /* non-fatal — batch extraction already persisted server-side */ }
+      // this project's signals were just (re)computed — clear any sector-changed flag
+      try { if (window.LinApp && LinApp.clearSectorDirty) LinApp.clearSectorDirty(id); } catch (e) {}
+      reportBatch({ type: "done", summary: summary, projectId: id });
     }
   }
 

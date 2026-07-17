@@ -554,15 +554,15 @@
          <button class="btn detail-back" data-back>← Back to Portfolio</button>
          <div class="detail-id">
            <p class="eyebrow">Project detail</p>
-           <h1><span class="mod-mono">${esc(p.id)}</span> ${esc(p.name)}</h1>
+           <h1><span class="mod-mono">${esc(p.id)}</span> ${esc(p.name)} <span class="sector-pill" data-sector="${esc(String(p.sector || "hybrid").toLowerCase() === "combined" ? "hybrid" : String(p.sector || "hybrid").toLowerCase())}">${esc(String(SECTOR_LABEL[p.sector] || p.sector || "Hybrid").toUpperCase())}</span></h1>
+           ${(p.formattedAddress || p.address) ? `<p class="detail-meta detail-address">${esc(p.formattedAddress || p.address)}</p>` : ""}
            <p class="detail-meta">
-             Sector: <strong>${esc(SECTOR_LABEL[p.sector] || p.sector)}</strong> ·
              Reporting period: <span class="mod-mono">${esc(p.reportingPeriod)}</span> ·
              State: <span class="li-state state-${stateKey}">${esc(state)}</span>
            </p>
-           ${(p.formattedAddress || p.address) ? `<p class="detail-meta detail-address">Address: <strong>${esc(p.formattedAddress || p.address)}</strong></p>` : ""}
          </div>
          <div class="detail-head-actions">
+           <button class="btn small primary detail-upload" data-upload="${esc(p.id)}">Upload documents</button>
            <button class="btn small detail-reset" data-reset="${esc(p.id)}">Reset signals</button>
            <span class="detail-reset-msg kn-sub" aria-live="polite"></span>
          </div>
@@ -1284,6 +1284,12 @@
   function wireBack(root) {
     root.querySelectorAll("[data-back]").forEach((b) =>
       b.addEventListener("click", () => LinApp.showPage("portfolio")));
+    // Per-project upload (Release 2): opens the upload dialog pre-locked to this
+    // project (no selector).
+    root.querySelectorAll("[data-upload]").forEach((b) =>
+      b.addEventListener("click", () => {
+        if (window.LinIngest && LinIngest.openUploadModal) LinIngest.openUploadModal(b.dataset.upload);
+      }));
   }
 
   // Reset signals: POST resetsignals, clear local signal state, re-render the

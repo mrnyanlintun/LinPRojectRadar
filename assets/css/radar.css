@@ -1733,6 +1733,63 @@ body.t-light .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .app-modal-scroll { max-height: min(70vh, 460px); overflow-y: auto; margin: 0 -4px; padding: 0 4px; }
 
 /* ============================================================
+   Release 2 · Phase 1 — portfolio & upload UX
+   ============================================================ */
+/* Sector pill (DESIGN / CONSTRUCTION / HYBRID) — theme-colored border, mono,
+   NOT status-colored. Appears after the project name in the list + detail head. */
+.sector-pill {
+  display: inline-block; vertical-align: middle;
+  font-family: var(--font-mono); font-size: 9.5px; font-weight: 600; letter-spacing: .08em;
+  color: var(--muted); background: transparent;
+  border: 1px solid var(--line-strong); border-radius: 999px;
+  padding: 1px 7px; margin-left: 6px; white-space: nowrap;
+}
+.detail-id h1 .sector-pill { font-size: 11px; vertical-align: middle; }
+/* "recompute" row flag after a sector change, until signals are recomputed */
+.li-flag {
+  font-family: var(--font-mono); font-size: 9.5px; font-weight: 600; letter-spacing: .06em;
+  color: var(--status-amber, #d98a00); border: 1px solid currentColor; border-radius: 999px;
+  padding: 1px 7px; margin-left: 6px;
+}
+
+/* Thin indeterminate top progress bar (first cold load) */
+.top-progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 130; background: transparent; overflow: hidden; pointer-events: none; }
+.top-progress[hidden] { display: none; }
+.top-progress-fill { position: absolute; height: 100%; width: 34%; left: -34%; background: var(--phosphor); border-radius: 2px; animation: top-progress-slide 1.15s ease-in-out infinite; }
+@keyframes top-progress-slide { 0% { left: -34%; } 60% { left: 100%; } 100% { left: 100%; } }
+@media (prefers-reduced-motion: reduce) { .top-progress-fill { animation: none; left: 0; width: 100%; opacity: .5; } }
+
+/* Recompute-all determinate overlay pinned to the top of the radar stage */
+.recompute-overlay {
+  position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 6;
+  min-width: min(360px, 80%); padding: 8px 12px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border: 1px solid var(--line-strong); border-radius: var(--radius-md); box-shadow: var(--shadow);
+}
+.recompute-overlay[hidden] { display: none; }
+.recompute-overlay .ro-label { font-family: var(--font-mono); font-size: 11px; color: var(--text); margin-bottom: 6px; }
+.recompute-overlay .ro-track { height: 5px; background: var(--surface-soft); border-radius: 3px; overflow: hidden; }
+.recompute-overlay .ro-bar { height: 100%; width: 0; background: var(--phosphor); border-radius: 3px; transition: width .25s ease; }
+
+/* Upload progress dialog — determinate bar + live counts, then a summary view */
+.up-progress { margin: 4px 0 12px; }
+.up-progress[hidden], .up-summary[hidden] { display: none; }
+.up-progress-head { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 6px; font-family: var(--font-mono); font-size: 11px; }
+.up-progress-head .up-count { color: var(--text); font-weight: 600; }
+.up-progress-head .up-live { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
+.up-track { height: 6px; background: var(--surface-soft); border-radius: 3px; overflow: hidden; }
+.up-bar { height: 100%; width: 0; background: var(--phosphor); border-radius: 3px; transition: width .25s ease; }
+@media (prefers-reduced-motion: reduce) { .up-bar, .recompute-overlay .ro-bar { transition: none; } }
+.up-summary-title { font-family: var(--font-display); font-size: 15px; margin: 4px 0 6px; }
+.up-summary-list { list-style: none; margin: 8px 0 4px; padding: 0; max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+.up-summary-list li { display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; padding: 6px 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-soft); }
+.up-summary-list .up-file { font-family: var(--font-mono); font-size: 11.5px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.up-summary-list .up-detail { color: var(--muted); white-space: nowrap; }
+.up-summary-list li.up-ok { border-left: 3px solid var(--status-green, #2e9e5b); }
+.up-summary-list li.up-fail { border-left: 3px solid var(--status-red, #c0392b); }
+.up-summary-list li.up-fail .up-detail { color: var(--status-red, #c0392b); }
+
+/* ============================================================
    MODAL — centered dialog for actions to complete (Create, Upload).
    Reuses the .ds-modal chrome; adds focus trap + Escape + first-field focus
    (handled in LinUI.openModal). Backdrop-click closes.
