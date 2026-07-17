@@ -130,7 +130,7 @@ function classifyConflict(project) {
   if (s.mc === "red" && s.evm !== "red") return "Forecast ahead of status";
   if ((s.doc === "amber" || s.doc === "red") && s.evm === "green")
     return "Leading document risk";
-  if (Object.values(s).every((v) => v === "green")) return "Agreement — low risk";
+  if (Object.values(s).every((v) => v === "green")) return "Agreement: low risk";
   return "Mixed early warning";
 }
 
@@ -201,7 +201,7 @@ function deriveDecision(project) {
   let action, authority, documentation;
 
   if (healthState === "Complete") {
-    action = "Project complete — proceed to close-out and any liability-period monitoring";
+    action = "Project complete: proceed to close-out and any liability-period monitoring";
     authority = "Project manager / Controls lead";
     documentation = "Close-out record; monitor through the defects-liability period where applicable";
   } else if (healthState === "Green") {
@@ -210,7 +210,7 @@ function deriveDecision(project) {
     documentation = "Monthly signal log entry";
   } else if (escalate) {
     action = fairnessGateRequired
-      ? "Request contractor explanation and recovery-plan review — fairness gate required before any formal action"
+      ? "Request contractor explanation and recovery-plan review; fairness gate required before any formal action"
       : "Recovery-plan review and management escalation";
     authority = fairnessGateRequired
       ? "Program director / PMO with contract-administration awareness"
@@ -222,7 +222,7 @@ function deriveDecision(project) {
     if (conflictType === "Forecast ahead of status") {
       action = "Investigate forecast assumptions and mitigation options";
     } else if (conflictType === "Anomaly without narrative") {
-      action = "Controls review — request explanation for unexplained trend drift";
+      action = "Controls review: request explanation for unexplained trend drift";
     } else if (conflictType === "Leading document risk") {
       action = "Early-warning review; verify document evidence; update risk register";
     } else {
@@ -304,7 +304,7 @@ const CATEGORY_ACTIONS = {
     what: "Address compliance threshold breaches",
     who: "Project Manager + Contract Administrator",
     how: "Identify which gate breached (EVM threshold, safety, quality, environmental); execute the prescribed regulatory response; document corrective action",
-    when: { Yellow: "Next reporting cycle", Amber: "Within 5 business days", Red: "Immediate — regulatory clock may be running" },
+    when: { Yellow: "Next reporting cycle", Amber: "Within 5 business days", Red: "Immediate; regulatory clock may be running" },
     inform: "Contracting Officer / Executive as required by the gate"
   },
   cat10: {
@@ -340,7 +340,7 @@ function deriveActionPlan(project) {
     if (!a) return;
     triggeredCatNums[c.num] = true;
     rows.push({
-      trigger: c.num + " " + c.name + " — " + sev,
+      trigger: c.num + " " + c.name + ": " + sev,
       severity: sev,
       what: a.what,
       who: a.who,
@@ -360,7 +360,7 @@ function deriveActionPlan(project) {
     const cat = cats.find((c) => c.num === f.category);
     const a = cat ? CATEGORY_ACTIONS[cat.id] : null;
     rows.push({
-      trigger: "Module " + f.num + " " + f.module + " — Red",
+      trigger: "Module " + f.num + " " + f.module + ": Red",
       severity: "Red",
       what: "Investigate red module signal",
       who: a ? a.who : "Project Controls Lead",
@@ -379,7 +379,7 @@ function deriveActionPlan(project) {
       who: "Project Manager / Controls Lead",
       how: "Continue monthly signal log; no corrective action indicated",
       when: "Next monthly cycle",
-      inform: "—"
+      inform: "N/A"
     });
   }
   return rows;

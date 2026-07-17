@@ -458,7 +458,7 @@
 
       // SVG tooltip
       const titleEl = el("title");
-      titleEl.textContent = `${p.id} — ${p.name}`;
+      titleEl.textContent = `${p.id}: ${p.name}`;
       g.appendChild(titleEl);
 
       // faint tick back toward the true drift radius when the de-overlap pass
@@ -680,7 +680,7 @@
     return document.body.dataset.theme === "light" ? GL_STYLE.light : GL_STYLE.dark;
   }
   function sectorLabel(p) {
-    return { design: "Design", construction: "Construction", hybrid: "Hybrid", combined: "Hybrid" }[String(p.sector || "").toLowerCase()] || p.sector || "—";
+    return { design: "Design", construction: "Construction", hybrid: "Hybrid", combined: "Hybrid" }[String(p.sector || "").toLowerCase()] || p.sector || "N/A";
   }
   function statusColorFor(p) {
     const status = statusKey(p);
@@ -699,7 +699,7 @@
     glMarkers = {}; glPopup = null; focusedPinId = null;
     hideBootStatus();   // the fail panel below is the single source of truth for the error
     const host = document.getElementById("map-gl");
-    if (host) host.innerHTML = `<div class="gl-fail">${esc(msg || "Map tiles unavailable — check connection")}</div>`;
+    if (host) host.innerHTML = `<div class="gl-fail">${esc(msg || "Map tiles unavailable: check connection")}</div>`;
     const rb = document.getElementById("map-reset-btn");
     if (rb) rb.hidden = true;
   }
@@ -1055,12 +1055,12 @@
           `<span class="li-code">${esc(p.id)}</span>` +
           `<span class="li-name">${esc(p.name)}</span>` +
           `<span class="sector-pill" data-sector="${esc(secKey)}">${esc(sectorLabel(p).toUpperCase())}</span>` +
-          (isSectorDirty(p.id) ? `<span class="li-flag" title="Sector changed — recompute signals to update module applicability">recompute</span>` : "") +
+          (isSectorDirty(p.id) ? `<span class="li-flag" title="Sector changed: recompute signals to update module applicability">recompute</span>` : "") +
           simChip +
           `<span class="li-state state-${esc(statusKey(p))}"${stateStyle}>${esc(state)}</span>` +
           `<span class="li-actions">` +
             `<button class="btn small li-signals" data-signals="${esc(p.id)}" title="Open the signal ledger on the Detail page">Signals</button>` +
-            `<button class="btn small li-manage" data-manage="${esc(p.id)}" title="Edit info, upload, archive, reset — inline">Manage</button>` +
+            `<button class="btn small li-manage" data-manage="${esc(p.id)}" title="Edit info, upload, archive, reset (inline)">Manage</button>` +
             `<button class="btn small li-open" data-open="${esc(p.id)}" title="Open project detail">Open →</button>` +
           `</span>`;
         btn.addEventListener("click", () => { selectProject(p.id); maybeFlyToSelection(p.id); });
@@ -1143,7 +1143,7 @@
   function statusPill(status, naSector) {
     if (!status) return `<span class="pill pill-none">No data</span>`;
     if (status === "NA") {
-      const full = `N/A — not applicable to ${naSector || "this sector's"} projects`;
+      const full = `N/A: not applicable to ${naSector || "this sector's"} projects`;
       return `<span class="pill pill-na" title="${esc(full)}">N/A</span>`;
     }
     const key = String(status).toLowerCase().replace("-review", "");
@@ -1228,7 +1228,7 @@
     ];
 
     const conflictClass =
-      conflict === "Agreement — low risk" ? "conflict-calm" : "conflict-alert";
+      conflict === "Agreement: low risk" ? "conflict-calm" : "conflict-alert";
 
     root.innerHTML =
       `<div class="ledger-head">
@@ -1268,7 +1268,7 @@
       const modRows = cat.modules.map((m) => {
         const st = window.getModuleStatus ? getModuleStatus(m.method_class, p) : null;
         const na = st === "NA";
-        return `<div class="cat-mod-row${na ? " cat-mod-na" : ""}"${na ? ` title="N/A — not applicable to ${esc(secName)}-sector projects"` : ""}>
+        return `<div class="cat-mod-row${na ? " cat-mod-na" : ""}"${na ? ` title="N/A: not applicable to ${esc(secName)}-sector projects"` : ""}>
           <span class="cat-mod-num">${esc(m.num)}</span>
           <span class="cat-mod-name">${esc(m.name)}</span>
           ${statusPill(st, secName + "-sector")}
@@ -1302,7 +1302,7 @@
           <span class="cat-row-name">${esc(healthCat.name)}</span>
           <button type="button" class="btn small cat-row-health-btn" data-open-health>See Portfolio Health</button>
         </div>
-        <p class="cat-row-desc">${esc(healthCat.description)} Portfolio-scale — compares this project against the rest of the portfolio, not a numbered project category.</p>
+        <p class="cat-row-desc">${esc(healthCat.description)} Portfolio-scale: compares this project against the rest of the portfolio, not a numbered project category.</p>
       </div>`;
     }
     return rows + healthRow;
@@ -1364,7 +1364,7 @@
           <tbody>${body}</tbody>
         </table>
         </div>
-        <p class="dc-note">Actions are deterministic PCEIF rules traced to signal categories — recommendation only; a named human reviewer records the decision.</p>
+        <p class="dc-note">Actions are deterministic PCEIF rules traced to signal categories: recommendation only; a named human reviewer records the decision.</p>
       </div>`;
   }
 
@@ -1406,7 +1406,7 @@
          <button class="btn export-btn">Export audit JSON</button>
          <button class="btn export-xlsx-btn">Export Report (XLSX)</button>
        </div>
-       <p class="dc-note">Recommendation only — a named human reviewer records the decision. The recommendation does not trigger any action on its own.</p>`;
+       <p class="dc-note">Recommendation only: a named human reviewer records the decision. The recommendation does not trigger any action on its own.</p>`;
 
     wireDecisionControls(p, d, root);
   }
@@ -1469,7 +1469,7 @@
         if (window.LinExport && typeof LinExport.exportProjectReport === "function") {
           LinExport.exportProjectReport(p);
         } else {
-          alert("XLSX export not available — the SheetJS library failed to load.");
+          alert("XLSX export not available: the SheetJS library failed to load.");
         }
       } catch (e) {
         console.error("[xlsx] export failed:", e);
@@ -1735,9 +1735,9 @@
   const DEFAULT_THEME = "newyork";
   const OFFERED_THEMES = ["light", "newyork", "maria"];
   const THEME_META = [
-    { key: "light",   label: "Miami", title: "Miami — always sunny" },
-    { key: "newyork", label: "NYC",   title: "NYC — aged bronze & gilt" },
-    { key: "maria",   label: "Maria", title: "Maria — baby pink & white" }
+    { key: "light",   label: "Miami", title: "Miami: always sunny" },
+    { key: "newyork", label: "NYC",   title: "NYC: aged bronze & gilt" },
+    { key: "maria",   label: "Maria", title: "Maria: baby pink & white" }
   ];
 
   /* ============================================================
@@ -1976,7 +1976,7 @@
       // global pill — Release 2 item 1. Removed here.
       { label: "Archived", badgeId: "tool-archived-badge", badge: archivedCount, onClick: () => { Flyout.close(); if (A) A.openArchivedModal(); } },
       { label: "Activity", onClick: () => { Flyout.close(); if (A) A.openActivityModal(); } },
-      { label: "Health", title: "Portfolio Health — ML & AI Pattern Detection", onClick: () => { Flyout.close(); if (A) A.openHealthModal(); } }
+      { label: "Health", title: "Portfolio Health: ML & AI Pattern Detection", onClick: () => { Flyout.close(); if (A) A.openHealthModal(); } }
     ];
     Flyout.open("portfolio", anchor, pills, suppressDockRefocus);
   }
@@ -1987,8 +1987,8 @@
   function openHandbookFlyout(anchor) {
     const go = (tab) => { Flyout.close(); pendingHandbookTab = tab; showPage("handbook"); };
     const pills = [
-      { label: "About the Platform", title: "Handbook — About", onClick: () => go("about") },
-      { label: "Methods & Framework", title: "Handbook — Methods", onClick: () => go("methods") }
+      { label: "About the Platform", title: "Handbook: About", onClick: () => go("about") },
+      { label: "Methods & Framework", title: "Handbook: Methods", onClick: () => go("methods") }
     ];
     Flyout.open("handbook", anchor, pills, suppressDockRefocus);
   }
@@ -2220,7 +2220,7 @@
         "Rebuild signals (repair)\n\n" +
         "This re-runs local computation for all " + projects.length + " project" + (projects.length === 1 ? "" : "s") +
         " and refreshes Portfolio Health from the results already on file.\n\n" +
-        "No AI calls, no document re-extraction — extraction results already on file are reused. " +
+        "No AI calls, no document re-extraction: extraction results already on file are reused. " +
         "This is the only tool that recomputes everything at once; use it if signals look stale or out of sync.\n\n" +
         "Continue?"
       );
@@ -2247,7 +2247,7 @@
         if (overlay) overlay.update(done, projects.length);
       }
       if (overlay) overlay.done();
-      status.textContent = "Done — recomputed " + done + " project" + (done === 1 ? "" : "s") + ".";
+      status.textContent = "Done: recomputed " + done + " project" + (done === 1 ? "" : "s") + ".";
       btn.disabled = false;
       // Refresh the slim portfolio cache so the radar/list reflect the newly
       // computed statuses (and the cache isn't stale on the next cold load).
@@ -2387,7 +2387,7 @@
       return;
     }
     if (!window.LinStore || typeof LinStore.chat !== "function") {
-      el.innerHTML = '<span style="color:var(--faint)">Summary unavailable — chat endpoint not configured.</span>';
+      el.innerHTML = '<span style="color:var(--faint)">Summary unavailable: chat endpoint not configured.</span>';
       return;
     }
     // Shape-tolerant per-project state/metrics: full projects carry
@@ -2447,7 +2447,7 @@
       } catch (e) { /* non-fatal */ }
     }).catch((err) => {
       console.error("[portfolio-summary] chat failed:", err);
-      el.innerHTML = '<span style="color:var(--faint)">Summary unavailable — check connection, then press Generate.</span>';
+      el.innerHTML = '<span style="color:var(--faint)">Summary unavailable: check connection, then press Generate.</span>';
     });
   }
 
