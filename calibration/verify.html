@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lin Project Radar — calibration verification</title>
+<style>
+  body { background:#0b0e17; color:#c8d4e8; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px; padding:24px; }
+  h1 { font-size:16px; margin:0 0 4px; }
+  p.sub { color:#7a8aa8; margin:0 0 20px; max-width:820px; line-height:1.5; }
+  table { border-collapse:collapse; width:100%; margin-bottom:28px; }
+  th, td { border:1px solid #22304a; padding:6px 10px; text-align:left; vertical-align:top; }
+  th { background:#141c2e; color:#9ab0d0; }
+  tr.pass td.result { color:#2ee66b; font-weight:700; }
+  tr.fail td.result { color:#ff3b30; font-weight:700; }
+  tr.notarget td.result { color:#ffb347; font-weight:700; }
+  .summary { font-size:14px; margin:8px 0 24px; }
+  .summary.ok { color:#2ee66b; }
+  .summary.bad { color:#ff3b30; }
+  .summary.warn { color:#ffb347; }
+  code { color:#8ab4f8; }
+  .badge { display:inline-block; padding:1px 6px; border-radius:3px; font-size:11px; font-weight:700; }
+  .badge.pass { background:#123420; color:#2ee66b; }
+  .badge.fail { background:#3a1216; color:#ff3b30; }
+  .badge.notarget { background:#3a2c10; color:#ffb347; }
+</style>
+</head>
+<body>
+<h1>Lin Project Radar — calibration verification</h1>
+<p class="sub">
+  Re-verification script for <code>calibration/manifest.json</code>. Loads the manifest (authored
+  target_status per synthetic demo project) and the LIVE project list from the deployed backend
+  (<code>?action=listslim</code>, via <code>window.LIN_API_URL</code>) and compares the computed
+  (live) status against each project's manifest target. PASS means the live computed status
+  matches the manifest's target_status. A manifest entry with <code>target_status: "unset"</code>
+  is NOT treated as a pass — it renders a distinct "NO TARGET SET" badge, since no claim about
+  correctness can be made until a human confirms the intended target from the authored documents.
+  Run this after any module/signal-math change to confirm calibrated projects still land where
+  they were designed to land.
+</p>
+<div id="summary" class="summary">Loading…</div>
+<table id="results">
+  <thead><tr>
+    <th>Project ID</th><th>Name</th><th>Target status</th><th>Computed (live) status</th>
+    <th>Worst module — intended</th><th>Worst module — actual</th><th class="result">Result</th>
+  </tr></thead>
+  <tbody></tbody>
+</table>
+
+<script src="../assets/js/config.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  function apiUrl() { return (window.LIN_API_URL || "").trim(); }
+  function configured() { return apiUrl() && !/PASTE_/.test(apiUrl()); }
+
+  // Same pattern as LinStore.listSlim() (assets/js/store.js) — simple GET,
+  // no custom headers, so no CORS preflight.
+  async function fetchLiveProjects() {
+    if (!configured()) throw new Error("LIN_API_URL is not configured (assets/js/config.js) — can't reach the live backend from this environment.");
+    const r = await fetch(apiUrl() + "?action=listslim");
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    if (!j || j.ok === false) throw new Error((j && j.error) || "backend error");
+    return j.projects || [];
+  }
+
+  async function fetchManifest() {
+    const r = await fetch("../calibration/manifest.json");
+    if (!r.ok) throw new Error("Couldn't load ../calibration/manifest.json (HTTP " + r.status + ")");
+    return r.json();
+  }
+
+  function normalizeStatus(s) {
+    if (s == null) return null;
+    return String(s).trim();
+  }
+
+  function renderRow(id, entry, live) {
+    const target = entry ? entry.target_status : "unset";
+    const noTarget = !target || target === "unset";
+    const computed = live ? normalizeStatus(live.status) : null;
+    const intendedWorst = entry ? (entry.intended_worst_module || "unset") : "unset";
+    // The slim (?action=listslim) shape carries no per-module detail — only
+    // id/name/sector/status/cpi/spi/docRisk/actualPctComplete/simModuleCount/
+    // docCount (see store.js listSlim() comment). A per-module "worst module"
+    // isn't available from this endpoint without fetching the full project
+    // (?action=get) for every row, which this page deliberately avoids to
+    // stay a lightweight, fast re-verification pass. Documented limitation,
+    // not a fabricated value.
+    const actualWorst = "n/a (slim list has no per-module detail)";
+
+    let resultCls, resultLabel;
+    if (noTarget) { resultCls = "notarget"; resultLabel = '<span class="badge notarget">NO TARGET SET</span>'; }
+    else if (!live) { resultCls = "fail"; resultLabel = '<span class="badge fail">FAIL (project not in live list)</span>'; }
+    else if (computed === target) { resultCls = "pass"; resultLabel = '<span class="badge pass">PASS</span>'; }
+    else { resultCls = "fail"; resultLabel = '<span class="badge fail">FAIL</span>'; }
+
+    return {
+      cls: resultCls,
+      html:
+        "<td><code>" + esc(id) + "</code></td>" +
+        "<td>" + esc((entry && entry.name) || (live && live.name) || "—") + "</td>" +
+        "<td>" + esc(target || "unset") + "</td>" +
+        "<td>" + esc(computed == null ? "— (not in live list)" : computed) + "</td>" +
+        "<td>" + esc(intendedWorst) + "</td>" +
+        "<td>" + esc(actualWorst) + "</td>" +
+        "<td class=\"result\">" + resultLabel + "</td>"
+    };
+  }
+
+  async function run() {
+    const summary = document.getElementById("summary");
+    const tbody = document.querySelector("#results tbody");
+    let manifest, live;
+    try {
+      manifest = await fetchManifest();
+    } catch (e) {
+      summary.textContent = "Failed to load manifest: " + e.message;
+      summary.className = "summary bad";
+      return;
+    }
+    try {
+      live = await fetchLiveProjects();
+    } catch (e) {
+      summary.textContent = "Couldn't reach the live backend (" + e.message + ") — showing manifest entries with no computed status.";
+      summary.className = "summary warn";
+      live = [];
+    }
+    const liveById = {};
+    live.forEach((p) => { if (p && p.id != null) liveById[p.id] = p; });
+
+    const entries = (manifest && manifest.projects) || {};
+    const ids = Object.keys(entries);
+    // Also surface any live project that has no manifest entry at all, so
+    // the page never hides projects the manifest simply hasn't caught up to.
+    Object.keys(liveById).forEach((id) => { if (ids.indexOf(id) < 0) ids.push(id); });
+
+    let pass = 0, fail = 0, noTarget = 0;
+    ids.forEach((id) => {
+      const row = renderRow(id, entries[id], liveById[id]);
+      if (row.cls === "pass") pass++;
+      else if (row.cls === "notarget") noTarget++;
+      else fail++;
+      const tr = document.createElement("tr");
+      tr.className = row.cls;
+      tr.innerHTML = row.html;
+      tbody.appendChild(tr);
+    });
+
+    summary.textContent = ids.length + " project(s): " + pass + " PASS, " + fail + " FAIL, " +
+      noTarget + " NO TARGET SET.";
+    summary.className = "summary " + (fail > 0 ? "bad" : (noTarget > 0 ? "warn" : "ok"));
+  }
+
+  run();
+})();
+</script>
+</body>
+</html>
