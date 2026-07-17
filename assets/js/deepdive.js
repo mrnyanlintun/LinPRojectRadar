@@ -2061,11 +2061,6 @@
   function m7_1(p){return panel("7.1","Dempster-Shafer Theory","red",note("Belief masses: Red 0.52, Amber 0.28, Conflict 0.12.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"71\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Bel(Red)","0.52","red")+metricBox("Bel(Amb)","0.28","red")+metricBox("Conflict","0.12","red")+'</div>');}
   function m7_2(p){return panel("7.2–7.8","Evidence Methods (Rough Sets → BRB)","red",note("7 uncertainty methods compared. All converge on Red with varying confidence.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"72_78\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Methods","7","red")+metricBox("Agree Red","6 of 7","red")+metricBox("Avg conf","0.73","red")+'</div>');}
   function m7_3(p){return panel("7.9–7.20","Advanced Methods Comparison","red",note("12 advanced methods. 10 of 12 agree Red. Confidence range 0.52–0.89.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"79_720\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Methods","12","red")+metricBox("Agree Red","10 of 12","red")+metricBox("Avg conf","0.72","red")+'</div>');}
-  function m8_1(p){return panel("8.1","Isolation Forest","amber",note("3D scatter — Project 06 anomaly score 74%, above 60% threshold.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"81\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Score","74%","amber")+metricBox("Threshold","60%","amber")+metricBox("Result","Anomaly","amber")+'</div>');}
-  function m8_2(p){return panel("8.2","Portfolio Outlier","red",note("2D scatter — Project 06 at 12th percentile across 9 projects.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"82\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Percentile","12th","red")+metricBox("CPI","0.929","red")+metricBox("SPI","0.911","red")+'</div>');}
-  function m8_3(p){return panel("8.3","Trajectory Classifier","red",note("Declining trajectory — boundary crossed at M5.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"83\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Class","Declining","red")+metricBox("Boundary","CPI<0.93","red")+metricBox("Crossed","M5","red")+'</div>');}
-  function m8_4(p){return panel("8.4","Cross-project Pattern","amber",note("Heatmap — Project 06 consistently underperforms on cost and risk.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"84\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Projects","9","amber")+metricBox("Metrics","5","amber")+metricBox("P06 rank","Bottom 2","amber")+'</div>');}
-  function m8_5(p){return panel("8.5","Composite Anomaly Score","red",note("Arc rings — 4 component scores aggregate to 68% composite anomaly.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"85\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Composite","68%","red")+metricBox("Top signal","Portfolio","red")+metricBox("Result","Red","red")+'</div>');}
   function m9_1(p){return panel("9.1","ABM Governance Layer","red",note("Authority matrix decision tree. Signal → synthesis → authority → action.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"91\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Result","Red-review","red")+metricBox("Authority","Prog Director","red")+metricBox("Deadline","48hrs","red")+'</div>');}
   function m9_2(p){return panel("9.2–9.9","Compliance Modules","amber",note("FAR, OMB, EVM reporting, quality, safety, environmental, contractor score.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"92_99\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Compliant","3 of 8","amber")+metricBox("Amber","4 of 8","amber")+metricBox("Red","1 of 8","amber")+'</div>');}
   function m10_1(p){return panel("10.1","Missing Data Index","amber",note("Field completeness heatmap across 5 document types and 8 key fields.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"101\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Complete","73%","amber")+metricBox("Missing","27 fields","amber")+metricBox("Worst","Field Rpt","amber")+'</div>');}
@@ -2237,16 +2232,16 @@
         `<div class="dd-cat-body"${open ? "" : " hidden"}></div>`;
       const body = group.querySelector(".dd-cat-body");
       if (isCat8) {
+        // Cat 8 stays in its numeric position (8 of 1-11) — no renumbering — but
+        // carries only a one-line summary here; the module cards + flagged-project
+        // lists live in the "Portfolio Health" dialog (Release 2b), opened via the
+        // Health pill on the Portfolio dock fly-out.
         const anomaly = cat8SummaryLine(project);
         body.innerHTML = `<p class="dd-cat8-summary kn-sub">${escg(anomaly)} ` +
-          `<button type="button" class="dd-link" data-goto-pi>See Portfolio Intelligence &rarr;</button></p>`;
-        const link = body.querySelector("[data-goto-pi]");
+          `<button type="button" class="dd-link" data-goto-health>Portfolio level &mdash; see Health &rarr;</button></p>`;
+        const link = body.querySelector("[data-goto-health]");
         if (link) link.addEventListener("click", () => {
-          try { if (window.LinApp) LinApp.showPage("portfolio"); } catch (e) {}
-          setTimeout(() => {
-            const pi = document.getElementById("portfolio-intelligence");
-            if (pi) { pi.scrollIntoView({ block: "center" }); const h = pi.querySelector(".collapse-header,[aria-expanded]"); if (h && h.getAttribute("aria-expanded") === "false") h.click(); }
-          }, 60);
+          if (window.LinIngest && LinIngest.openHealthModal) LinIngest.openHealthModal();
         });
       } else {
         list.forEach((el) => body.appendChild(el));   // move drawn panels in
@@ -2279,15 +2274,93 @@
     return "Portfolio comparison: no anomaly flagged for this project.";
   }
 
-  // Cat 8 module cards for the Portfolio Intelligence section (Release 2 item 12).
-  function renderCat8(project, root) {
-    if (!root) return;
-    const p = project || {};
-    root.innerHTML =
-      `<p class="kn-sub">Portfolio-scale ML anomaly detection: how each project compares to the rest of the portfolio. These five modules run across all projects, so they live here rather than on any single project's detail page.</p>` +
-      m8_1(p) + m8_2(p) + m8_3(p) + m8_4(p) + m8_5(p);
-    try { wireDeepDiveCanvases(p, root); } catch (e) {}
+  // ---------- Portfolio Health dialog (Release 2b) — real Cat 8 results ----------
+  // Cat 8 (ML & AI Pattern Detection) computes per-project, one result per module
+  // per project, via the portfolioanalyze POST (signals.js runPortfolioAnalysis)
+  // that runs alongside every project's normal signal computation. There is no
+  // separate "portfolio-wide" result to read — this scans every loaded project's
+  // own Cat 8 verdict and reports which projects that module flags (Red/Amber).
+  const CAT8_MODULES = [
+    { mc: "Isolation_Forest",     num: "8.1", name: "Isolation Forest" },
+    { mc: "Portfolio_Outlier",    num: "8.2", name: "Portfolio Outlier" },
+    { mc: "Trajectory_Classifier",num: "8.3", name: "Trajectory Classifier" },
+    { mc: "Cross_Project_Pattern",num: "8.4", name: "Cross-project Pattern" },
+    { mc: "Anomaly_Score",        num: "8.5", name: "Anomaly Score" }
+  ];
+  function cat8HealthData() {
+    const projects = (window.LIN_PROJECTS || []).filter((p) => p && p.id);
+    let anyData = false;
+    const modules = CAT8_MODULES.map((m) => {
+      const flagged = [];
+      let computedCount = 0;
+      projects.forEach((p) => {
+        const arr = (p.simulationSignals && p.simulationSignals.signal_array) || [];
+        const r = arr.find((x) => x && x.method_class === m.mc);
+        if (!r || r.insufficient_data || r.status_color == null) return;
+        computedCount++; anyData = true;
+        if (/red|amber/i.test(String(r.status_color))) {
+          flagged.push({ id: p.id, name: p.name, status: String(r.status_color), evidence: r.evidence_metric || "" });
+        }
+      });
+      return Object.assign({}, m, { flagged, computedCount });
+    });
+    return { modules, anyData, projectCount: projects.length };
   }
 
-  window.LinDeepDive = { render, renderCat8 };
+  function statusPillClass(status) {
+    const s = String(status || "").toLowerCase();
+    if (s.indexOf("red") >= 0) return "red";
+    if (s.indexOf("amber") >= 0) return "amber";
+    if (s.indexOf("yellow") >= 0) return "yellow";
+    if (s.indexOf("green") >= 0) return "green";
+    return "none";
+  }
+
+  // Renders the Portfolio Health dialog body (real data, no demo panels). Row
+  // clicks close the dialog and open that project's detail page.
+  function renderCat8Health(root, closeDialog) {
+    if (!root) return;
+    const data = cat8HealthData();
+    if (!data.anyData) {
+      const reason = data.projectCount < 3
+        ? "Category 8 needs at least 3 projects with computed signals to compare against the population — " + data.projectCount + " loaded."
+        : "Category 8 hasn't run yet for the current portfolio.";
+      root.innerHTML =
+        `<p class="kn-sub">${escg(reason)}</p>` +
+        `<div class="dc-actions"><button type="button" class="btn primary small" data-run-portfolio-analysis>Run portfolio analysis</button></div>`;
+      const btn = root.querySelector("[data-run-portfolio-analysis]");
+      if (btn) btn.addEventListener("click", () => {
+        const recompute = document.getElementById("recompute-all-btn");
+        if (recompute) { if (closeDialog) closeDialog(); recompute.click(); }
+        else { btn.disabled = true; btn.textContent = "No recompute path available"; }
+      });
+      return;
+    }
+    const openProject = (id) => {
+      if (closeDialog) closeDialog();
+      try { if (window.LinApp) { LinApp.showPage("portfolio"); LinApp.openDetail(id); } } catch (e) {}
+    };
+    root.innerHTML =
+      `<p class="kn-sub">Category 8 operates at portfolio scale: each project is compared against the population.</p>` +
+      data.modules.map((m) => {
+        const rows = m.flagged.length
+          ? m.flagged.map((f) =>
+              `<button type="button" class="cat8-flagged-row" data-open-project="${esc(f.id)}">` +
+                `<span class="cat8-flagged-id mod-mono">${esc(f.id)}</span>` +
+                `<span class="cat8-flagged-name">${esc(f.name)}</span>` +
+                `<span class="li-state state-${statusPillClass(f.status)}">${esc(f.status)}</span>` +
+              `</button>` +
+              (f.evidence ? `<p class="cat8-evidence kn-sub">${esc(f.evidence)}</p>` : "")
+            ).join("")
+          : `<p class="kn-sub cat8-none">No anomalies flagged (${m.computedCount} project${m.computedCount === 1 ? "" : "s"} compared).</p>`;
+        return `<section class="panel dd-panel status-${m.flagged.length ? statusPillClass(m.flagged[0].status) : "green"} cat8-module">` +
+          `<div class="dd-head"><b>${esc(m.num)} ${esc(m.name)}</b></div>` +
+          `<div class="cat8-flagged-list">${rows}</div>` +
+        `</section>`;
+      }).join("");
+    root.querySelectorAll("[data-open-project]").forEach((b) =>
+      b.addEventListener("click", () => openProject(b.dataset.openProject)));
+  }
+
+  window.LinDeepDive = { render, renderCat8Health };
 })();
