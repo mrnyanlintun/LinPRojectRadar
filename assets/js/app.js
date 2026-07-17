@@ -1912,7 +1912,8 @@
       // Upload is now per-project (inline Manage accordion + detail page), not a
       // global pill — Release 2 item 1. Removed here.
       { label: "Archived", badgeId: "tool-archived-badge", badge: archivedCount, onClick: () => { Flyout.close(); if (A) A.openArchivedModal(); } },
-      { label: "Activity", onClick: () => { Flyout.close(); if (A) A.openActivityModal(); } }
+      { label: "Activity", onClick: () => { Flyout.close(); if (A) A.openActivityModal(); } },
+      { label: "Health", title: "Portfolio Health — Category 8: ML & AI Pattern Detection", onClick: () => { Flyout.close(); if (A) A.openHealthModal(); } }
     ];
     Flyout.open("portfolio", anchor, pills, suppressDockRefocus);
   }
@@ -2085,31 +2086,9 @@
      Activity — all dialogs), the Handbook icon owns its tab row, and the menu
      button owns the theme fly-out — all wired in initIconDock. */
 
-  /* Portfolio Intelligence (Release 2 item 12) — the Cat 8 ML/AI cards, lazily
-     rendered on first expand via LinDeepDive.renderCat8. Collapsed by default. */
-  function wirePortfolioIntelligence() {
-    const sec = document.getElementById("portfolio-intelligence");
-    if (!sec) return;
-    const header = sec.querySelector(".pi-header");
-    const body = sec.querySelector(".pi-body");
-    const chev = sec.querySelector(".collapse-chev");
-    if (!header || !body) return;
-    let rendered = false;
-    header.addEventListener("click", () => {
-      const open = body.hasAttribute("hidden");
-      if (open) {
-        body.removeAttribute("hidden");
-        if (!rendered && window.LinDeepDive && LinDeepDive.renderCat8) {
-          const proj = (LIN_PROJECTS.find((p) => hasSignals(p))) || LIN_PROJECTS[0] || {};
-          try { LinDeepDive.renderCat8(proj, body); rendered = true; } catch (e) { console.warn("[portfolio-intel]", e); }
-        }
-      } else {
-        body.setAttribute("hidden", "");
-      }
-      header.setAttribute("aria-expanded", String(open));
-      if (chev) chev.textContent = open ? "▾" : "▸";
-    });
-  }
+  /* The on-page "Portfolio Intelligence" section (Release 2 item 12) is retired:
+     Cat 8's cards now live in the Health dialog (Release 2b), opened from the
+     dock fly-out's Health pill — see openHealthModal in ingest.js. */
 
   /* Thin indeterminate top progress bar for the first cold load (no cache). */
   function showTopProgress() {
@@ -2443,7 +2422,6 @@
     initIconDock();
     wireHandbookTabs();
     wireTzSelect();
-    wirePortfolioIntelligence();
     startClock();
     // Show the signed-in user's email in the top bar (auth.js / Stage 1).
     try {
