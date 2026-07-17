@@ -106,7 +106,10 @@
   function panel(num, title, status, inner) {
     const c = cls(status);
     const catRef = catLabel(num);
-    return `<section class="panel dd-panel status-${c}" aria-label="${esc(catRef)} deep dive">
+    // Category number (1..11) parsed from the "Cat N.M" reference, so the Signal
+    // Stack can group panels under collapsible category headers (Release 2 item 11).
+    const catNum = (String(catRef).match(/Cat\s+(\d+)/) || [])[1] || "";
+    return `<section class="panel dd-panel status-${c}" data-cat="${esc(catNum)}" data-num="${esc(String(num))}" aria-label="${esc(catRef)} deep dive">
       <div class="dd-head"><b>Why ${esc(catRef.toUpperCase())} (${esc(title)}) is ${esc(String(status).toUpperCase())}</b>${verdict(title, status)}</div>
       ${inner}
     </section>`;
@@ -2167,7 +2170,9 @@
       m5_1(project) + m5_2(project) + m5_3(project) + m5_4(project) + m5_5(project) +
       m5_6(project) + m5_7(project) + m5_8(project) + m6_1(project) + m6_2(project) +
       m6_3(project) + m6_4(project) + m7_1(project) + m7_2(project) + m7_3(project) +
-      m8_1(project) + m8_2(project) + m8_3(project) + m8_4(project) + m8_5(project) +
+      // Cat 8 (ML/AI) is portfolio-scale, not single-project — its cards moved to
+      // the "Portfolio Intelligence" section on the Portfolio page (Release 2
+      // item 12). Here it reduces to a one-line summary inside its category group.
       m9_1(project) + m9_2(project) + m10_1(project) + m10_2(project) + m11_1(project) +
       m11_2(project) +
       sims.low +
@@ -2178,7 +2183,111 @@
       sims.synth +                                                // comparison panel
       m09(project);                                               // displays as Module 19 (ABM Governance) — LAST
     wireDeepDiveCanvases(project, root);
+    groupByCategory(project, root);   // Release 2 item 11 — collapse by category
   }
 
-  window.LinDeepDive = { render };
+  /* ---------- Release 2 item 11 — group the Signal Stack panels under 11
+     collapsible category headers (number, name, worst-status dot, module count),
+     all collapsed by default, open/closed persisted per category in
+     sessionStorage. Canvases are already drawn (wired above) before their panels
+     are moved into the collapsed bodies, so their bitmaps survive the move. */
+  const DD_CAT_KEY = "lin-ddcat-";
+  const WORST_RANK = { red: 4, amber: 3, yellow: 2, green: 1, complete: 0, none: -1, na: -1 };
+  function panelStatusKey(el) {
+    const m = (el.className.match(/status-(\w+)/) || [])[1];
+    return m ? m.toLowerCase() : "none";
+  }
+  function groupByCategory(project, root) {
+    if (!root) return;
+    const cats = (window.LIN_CATEGORIES || []);
+    const panels = Array.prototype.slice.call(root.querySelectorAll(".dd-panel"));
+    if (!panels.length) return;
+    const banner = root.querySelector(".mod-banner");
+    // bucket panels by category number (1..11)
+    const buckets = {};
+    panels.forEach((el) => {
+      const c = el.getAttribute("data-cat") || "?";
+      (buckets[c] = buckets[c] || []).push(el);
+    });
+    const wrap = document.createElement("div");
+    wrap.className = "dd-catgroups";
+    for (let n = 1; n <= 11; n++) {
+      const key = String(n);
+      const cat = cats[n - 1];
+      const catName = (cat && cat.name) || ("Category " + n);
+      // Cat 8 has no panels here (relocated) — render a one-line summary group.
+      const list = buckets[key] || [];
+      const isCat8 = (n === 8);
+      if (!list.length && !isCat8) continue;
+      let worst = "none";
+      list.forEach((el) => { const s = panelStatusKey(el); if ((WORST_RANK[s] || -1) > (WORST_RANK[worst] || -1)) worst = s; });
+      const group = document.createElement("section");
+      group.className = "dd-catgroup";
+      group.dataset.cat = key;
+      const openState = (function () { try { return sessionStorage.getItem(DD_CAT_KEY + key); } catch (e) { return null; } })();
+      const open = openState === "open";   // collapsed by default
+      const count = isCat8 ? 5 : list.length;
+      group.innerHTML =
+        `<button type="button" class="dd-cat-header" aria-expanded="${open}">` +
+          `<span class="dd-cat-dot status-dot-${isCat8 ? "none" : worst}"></span>` +
+          `<span class="dd-cat-name"><span class="mod-mono">Cat ${n}</span> ${escg(catName)}</span>` +
+          `<span class="dd-cat-count">${count} module${count === 1 ? "" : "s"}</span>` +
+          `<span class="dd-cat-chev" aria-hidden="true">${open ? "▾" : "▸"}</span>` +
+        `</button>` +
+        `<div class="dd-cat-body"${open ? "" : " hidden"}></div>`;
+      const body = group.querySelector(".dd-cat-body");
+      if (isCat8) {
+        const anomaly = cat8SummaryLine(project);
+        body.innerHTML = `<p class="dd-cat8-summary kn-sub">${escg(anomaly)} ` +
+          `<button type="button" class="dd-link" data-goto-pi>See Portfolio Intelligence &rarr;</button></p>`;
+        const link = body.querySelector("[data-goto-pi]");
+        if (link) link.addEventListener("click", () => {
+          try { if (window.LinApp) LinApp.showPage("portfolio"); } catch (e) {}
+          setTimeout(() => {
+            const pi = document.getElementById("portfolio-intelligence");
+            if (pi) { pi.scrollIntoView({ block: "center" }); const h = pi.querySelector(".collapse-header,[aria-expanded]"); if (h && h.getAttribute("aria-expanded") === "false") h.click(); }
+          }, 60);
+        });
+      } else {
+        list.forEach((el) => body.appendChild(el));   // move drawn panels in
+      }
+      const header = group.querySelector(".dd-cat-header");
+      const chev = group.querySelector(".dd-cat-chev");
+      header.addEventListener("click", () => {
+        const nowOpen = body.hasAttribute("hidden");
+        if (nowOpen) body.removeAttribute("hidden"); else body.setAttribute("hidden", "");
+        header.setAttribute("aria-expanded", String(nowOpen));
+        chev.textContent = nowOpen ? "▾" : "▸";
+        try { sessionStorage.setItem(DD_CAT_KEY + key, nowOpen ? "open" : "closed"); } catch (e) {}
+      });
+      wrap.appendChild(group);
+    }
+    // reassemble: banner (kept) + grouped categories
+    root.innerHTML = "";
+    if (banner) root.appendChild(banner);
+    root.appendChild(wrap);
+  }
+  function escg(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+  // One-line Cat 8 summary for the detail category rollup.
+  function cat8SummaryLine(project) {
+    try {
+      const st = window.getModuleStatus ? window.getModuleStatus("Anomaly_Score", project) : null;
+      const isRed = st && /red|amber/i.test(String(st));
+      if (isRed) return "Portfolio comparison: this project is flagged as a portfolio outlier (" + String(st) + ").";
+    } catch (e) {}
+    return "Portfolio comparison: no anomaly flagged for this project.";
+  }
+
+  // Cat 8 module cards for the Portfolio Intelligence section (Release 2 item 12).
+  function renderCat8(project, root) {
+    if (!root) return;
+    const p = project || {};
+    root.innerHTML =
+      `<p class="kn-sub">Portfolio-scale ML anomaly detection: how each project compares to the rest of the portfolio. These five modules run across all projects, so they live here rather than on any single project's detail page.</p>` +
+      m8_1(p) + m8_2(p) + m8_3(p) + m8_4(p) + m8_5(p);
+    try { wireDeepDiveCanvases(p, root); } catch (e) {}
+  }
+
+  window.LinDeepDive = { render, renderCat8 };
 })();

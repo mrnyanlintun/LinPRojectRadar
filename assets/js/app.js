@@ -152,12 +152,12 @@
     return { x: CENTER_X + radius * Math.cos(a), y: CENTER_Y + radius * Math.sin(a) };
   }
 
-  /* ---------- rectangular-stage side columns ----------
-     LEFT of the scope: a vertical status legend (dot + name + count per
-     status). RIGHT: the ring-meaning labels ("On track / Watch / Escalate")
-     moved off the scope face, with faint dashed leader ticks back to their
-     rings. Both in mono 11px. In narrow (stacked) mode both columns render
-     beneath the scope and the leaders are omitted. */
+  /* ---------- rectangular-stage side column ----------
+     A vertical status legend to the LEFT of the scope (dot + name + count per
+     status), mono 11px. The former right-hand ring-meaning column ("On track /
+     Watch / Escalate") was removed — the stage caption already explains that
+     radial distance is drift from baseline, so the labels were redundant. The
+     scope stays centered in the wide viewBox (x=600 of 1200). */
   function buildStageColumns(svg, narrow, VW, VH, thresholdRings) {
     const mono = { "font-family": "var(--font-mono, monospace)", "font-size": "11", fill: "var(--muted)" };
 
@@ -194,41 +194,7 @@
       legY += 24;
     });
     svg.appendChild(leg);
-
-    // ── right column: ring thresholds ──
-    const col = el("g", { class: "scope-col scope-col-rings" });
-    if (narrow) {
-      let ty = VH - 190;
-      col.appendChild(textEl(250, ty, "RINGS", { fill: "var(--faint)", "letter-spacing": "0.2em", "font-size": "10" }));
-      ty += 22;
-      thresholdRings.forEach(({ stroke, label }, i) => {
-        col.appendChild(el("line", { x1: 250, y1: ty, x2: 262, y2: ty, stroke, "stroke-width": "2" }));
-        col.appendChild(textEl(268, ty + 0.5, label + (i === 0 ? " (inner)" : i === 1 ? " (middle)" : " (outer)")));
-        ty += 24;
-      });
-    } else {
-      const colX = 1000;
-      col.appendChild(textEl(colX, 128, "RINGS", { fill: "var(--faint)", "letter-spacing": "0.2em", "font-size": "10" }));
-      // one label row per ring, each with a faint dashed leader tick back to
-      // the ring it names (staggered exit angles keep the leaders apart)
-      const rows = [
-        { i: 0, angle: -24, y: 168 },
-        { i: 1, angle: -8,  y: 210 },
-        { i: 2, angle: 8,   y: 252 },
-      ];
-      rows.forEach(({ i, angle, y }) => {
-        const ring = thresholdRings[i];
-        const pt = polar(angle, R_MAX * ring.frac);
-        col.appendChild(el("path", {
-          d: `M ${pt.x.toFixed(1)} ${pt.y.toFixed(1)} L ${colX - 32} ${y} L ${colX - 10} ${y}`,
-          fill: "none", stroke: ring.stroke, "stroke-width": "1",
-          "stroke-dasharray": "3 4", opacity: "0.35"
-        }));
-        col.appendChild(el("circle", { cx: colX + 1, cy: y, r: 3.5, fill: ring.stroke, opacity: "0.9" }));
-        col.appendChild(textEl(colX + 12, y + 0.5, ring.label));
-      });
-    }
-    svg.appendChild(col);
+    // (Right-hand ring-meaning column removed in Release 2 — see header note.)
   }
 
   /* ---------- radar scope ---------- */
@@ -651,6 +617,31 @@
     return !!p && p.lat != null && p.lng != null &&
       Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng));
   }
+  // Whether a project has an ADDRESS (for the "no address set" note), tolerant
+  // of BOTH shapes: full projects and v10.32 slim rows both surface
+  // address / formattedAddress / lat / lng at the top level. A project counts as
+  // located if it has coords OR a non-empty address string — so a project whose
+  // address is set but not yet geocoded is no longer wrongly flagged.
+  function hasAddress(p) {
+    if (!p) return false;
+    if (hasCoords(p)) return true;
+    const a = p.formattedAddress || p.address;
+    return !!(a && String(a).trim());
+  }
+
+  /* Sector-changed flag: changing a project's sector invalidates sector-gated
+     module results, so the row is flagged "recompute" until its signals are
+     recomputed (recompute-all or a per-project populate). Persisted so the flag
+     survives a reload. */
+  const SECTOR_DIRTY_KEY = "lpr-sector-dirty";
+  function readSectorDirty() {
+    try { const v = JSON.parse(localStorage.getItem(SECTOR_DIRTY_KEY) || "[]"); return Array.isArray(v) ? v : []; }
+    catch (e) { return []; }
+  }
+  function writeSectorDirty(ids) { try { localStorage.setItem(SECTOR_DIRTY_KEY, JSON.stringify(ids)); } catch (e) {} }
+  function isSectorDirty(id) { return readSectorDirty().indexOf(id) >= 0; }
+  function markSectorDirty(id) { const s = readSectorDirty(); if (s.indexOf(id) < 0) { s.push(id); writeSectorDirty(s); } }
+  function clearSectorDirty(id) { writeSectorDirty(readSectorDirty().filter((x) => x !== id)); }
 
   function glStyleForTheme() {
     return document.body.dataset.theme === "light" ? GL_STYLE.light : GL_STYLE.dark;
@@ -811,7 +802,7 @@
   function updateNoLocationNote() {
     const note = document.getElementById("map-nolocation");
     if (!note) return;
-    const unlocated = LIN_PROJECTS.filter((p) => !hasCoords(p));
+    const unlocated = LIN_PROJECTS.filter((p) => !hasAddress(p));
     if (unlocated.length) {
       note.hidden = false;
       note.innerHTML = "No address set: " + unlocated.map((p) =>
@@ -1010,9 +1001,12 @@
         const col = (norm && typeof PCEIF_STATUS_HEX !== "undefined") ? PCEIF_STATUS_HEX[norm] : null;
         const stateStyle = col ? ` style="color:${col}"` : "";
         const simChip = "";
+        const secKey = String(p.sector || "hybrid").toLowerCase() === "combined" ? "hybrid" : String(p.sector || "hybrid").toLowerCase();
         btn.innerHTML =
           `<span class="li-code">${esc(p.id)}</span>` +
           `<span class="li-name">${esc(p.name)}</span>` +
+          `<span class="sector-pill" data-sector="${esc(secKey)}">${esc(sectorLabel(p).toUpperCase())}</span>` +
+          (isSectorDirty(p.id) ? `<span class="li-flag" title="Sector changed — recompute signals to update module applicability">recompute</span>` : "") +
           simChip +
           `<span class="li-state state-${esc(statusKey(p))}"${stateStyle}>${esc(state)}</span>` +
           `<span class="li-actions">` +
@@ -1729,6 +1723,13 @@
     const body = back.querySelector(".app-modal-body");
     const lastFocus = document.activeElement;
     let closed = false;
+    // Optional dismissal guard: opts.canClose() returning false blocks Escape /
+    // backdrop / × (used by the non-dismissable upload progress dialog); when
+    // blocked, opts.onBlockedClose() runs instead (e.g. a "leave anyway?" prompt).
+    function attemptClose(source) {
+      if (opts.canClose && !opts.canClose()) { if (opts.onBlockedClose) opts.onBlockedClose(close, source); return; }
+      close();
+    }
     function close() {
       if (closed) return; closed = true;
       document.removeEventListener("keydown", onKey, true);
@@ -1739,12 +1740,12 @@
       if (opts.onClose) opts.onClose();
     }
     function onKey(e) {
-      if (e.key === "Escape") { e.preventDefault(); close(); }
+      if (e.key === "Escape") { e.preventDefault(); attemptClose("escape"); }
       else trapTab(e, panel);
     }
     document.addEventListener("keydown", onKey, true);
-    back.addEventListener("mousedown", (e) => { if (e.target === back) close(); });
-    back.querySelector(".app-modal-x").addEventListener("click", close);
+    back.addEventListener("mousedown", (e) => { if (e.target === back) attemptClose("backdrop"); });
+    back.querySelector(".app-modal-x").addEventListener("click", () => attemptClose("x"));
     if (opts.mount) opts.mount(body, close);
     requestAnimationFrame(() => back.classList.add("open"));
     const first = panel.querySelector('input, select, textarea, button:not(.app-modal-x)');
@@ -1908,7 +1909,8 @@
     const pills = [
       { label: "Portfolio", title: "Go to Portfolio", onClick: () => { Flyout.close(); showPage("portfolio"); } },
       { label: "+ New Project", primary: true, onClick: () => { Flyout.close(); if (A) A.openCreateModal(); } },
-      { label: "Upload Documents", onClick: () => { Flyout.close(); if (A) A.openUploadModal(); } },
+      // Upload is now per-project (inline Manage accordion + detail page), not a
+      // global pill — Release 2 item 1. Removed here.
       { label: "Archived", badgeId: "tool-archived-badge", badge: archivedCount, onClick: () => { Flyout.close(); if (A) A.openArchivedModal(); } },
       { label: "Activity", onClick: () => { Flyout.close(); if (A) A.openActivityModal(); } }
     ];
@@ -2083,6 +2085,83 @@
      Activity — all dialogs), the Handbook icon owns its tab row, and the menu
      button owns the theme fly-out — all wired in initIconDock. */
 
+  /* Portfolio Intelligence (Release 2 item 12) — the Cat 8 ML/AI cards, lazily
+     rendered on first expand via LinDeepDive.renderCat8. Collapsed by default. */
+  function wirePortfolioIntelligence() {
+    const sec = document.getElementById("portfolio-intelligence");
+    if (!sec) return;
+    const header = sec.querySelector(".pi-header");
+    const body = sec.querySelector(".pi-body");
+    const chev = sec.querySelector(".collapse-chev");
+    if (!header || !body) return;
+    let rendered = false;
+    header.addEventListener("click", () => {
+      const open = body.hasAttribute("hidden");
+      if (open) {
+        body.removeAttribute("hidden");
+        if (!rendered && window.LinDeepDive && LinDeepDive.renderCat8) {
+          const proj = (LIN_PROJECTS.find((p) => hasSignals(p))) || LIN_PROJECTS[0] || {};
+          try { LinDeepDive.renderCat8(proj, body); rendered = true; } catch (e) { console.warn("[portfolio-intel]", e); }
+        }
+      } else {
+        body.setAttribute("hidden", "");
+      }
+      header.setAttribute("aria-expanded", String(open));
+      if (chev) chev.textContent = open ? "▾" : "▸";
+    });
+  }
+
+  /* Thin indeterminate top progress bar for the first cold load (no cache). */
+  function showTopProgress() {
+    let bar = document.getElementById("top-progress");
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "top-progress";
+      bar.className = "top-progress";
+      bar.innerHTML = '<div class="top-progress-fill"></div>';
+      document.body.appendChild(bar);
+    }
+    bar.hidden = false;
+  }
+  function hideTopProgress() {
+    const bar = document.getElementById("top-progress");
+    if (bar) bar.hidden = true;
+  }
+
+  /* Determinate progress overlay for Recompute-all — a small banner pinned to
+     the radar stage ("Recomputing signals... project n of N" + a determinate
+     bar). Non-blocking: it sits at the top of the stage and the rest of the
+     page stays interactive. */
+  function showRecomputeOverlay(total) {
+    const stage = document.querySelector('.page[data-page="portfolio"] .radar-panel') || document.querySelector(".radar-panel");
+    if (!stage) return null;
+    let ov = document.getElementById("recompute-overlay");
+    if (!ov) {
+      ov = document.createElement("div");
+      ov.id = "recompute-overlay";
+      ov.className = "recompute-overlay";
+      ov.innerHTML = '<div class="ro-label">Recomputing signals&hellip;</div>' +
+        '<div class="ro-track"><div class="ro-bar"></div></div>';
+      if (getComputedStyle(stage).position === "static") stage.style.position = "relative";
+      stage.appendChild(ov);
+    }
+    const label = ov.querySelector(".ro-label");
+    const bar = ov.querySelector(".ro-bar");
+    ov.hidden = false;
+    return {
+      update(done, n, id) {
+        const pct = n ? Math.round((done / n) * 100) : 0;
+        label.textContent = "Recomputing signals… project " + Math.min(done + 1, n) + " of " + n + (id ? " (" + id + ")" : "");
+        bar.style.width = pct + "%";
+      },
+      done() {
+        label.textContent = "Recompute complete.";
+        bar.style.width = "100%";
+        setTimeout(() => { ov.hidden = true; }, 1200);
+      }
+    };
+  }
+
   /* ---------- "Recompute all signals" button ----------
      Runs the full 103-module set for every ingested project from stored
      signalInputs — no document re-upload, no extraction API calls.
@@ -2096,8 +2175,10 @@
       const projects = (LinStore.cachedActive ? LinStore.cachedActive() : []);
       if (!projects.length) { status.textContent = "No ingested projects found."; return; }
       btn.disabled = true;
+      const overlay = showRecomputeOverlay(projects.length);   // determinate stage overlay (non-blocking)
       let done = 0;
       for (const p of projects) {
+        if (overlay) overlay.update(done, projects.length, p.id);
         status.textContent = "Recomputing " + (done + 1) + " / " + projects.length + "…";
         try {
           const full = await LinStore.getProject(p.id);
@@ -2107,11 +2188,14 @@
           const hasSpi = si.spi != null && Number.isFinite(Number(si.spi)) && Number(si.spi) > 0;
           if (!hasCpi && !hasSpi) { done++; continue; }
           await LinSignals.runModels(full, si);
+          clearSectorDirty(full.id);                          // recompute clears the sector-changed flag
         } catch (e) {
           console.warn("[recompute-all] project " + p.id + ":", e && e.message);
         }
         done++;
+        if (overlay) overlay.update(done, projects.length);
       }
+      if (overlay) overlay.done();
       status.textContent = "Done — recomputed " + done + " project" + (done === 1 ? "" : "s") + ".";
       btn.disabled = false;
       // Refresh the slim portfolio cache so the radar/list reflect the newly
@@ -2153,7 +2237,9 @@
     init,
     // shared renderers, reused by the Project Detail page (detail.js)
     renderLedger,
-    renderDecisionCard
+    renderDecisionCard,
+    // sector-changed flag hooks (Release 2 · editable project type)
+    markSectorDirty, clearSectorDirty, isSectorDirty
   };
 
   /* ---------- shared collapsible section (Project Detail + Signals page) ----------
@@ -2357,6 +2443,7 @@
     initIconDock();
     wireHandbookTabs();
     wireTzSelect();
+    wirePortfolioIntelligence();
     startClock();
     // Show the signed-in user's email in the top bar (auth.js / Stage 1).
     try {
@@ -2382,6 +2469,7 @@
         paintedFromCache = true;
       } else {
         renderSkeleton();
+        showTopProgress();   // first-ever cold load (no cache): thin indeterminate top bar
       }
     } catch (e) { /* first paint is best-effort */ }
 
@@ -2391,6 +2479,7 @@
       else await LinStore.load();
     } catch (e) { /* store shows its own banner */ }
     setListRefreshing(false);
+    hideTopProgress();
 
     buildRadar();
     buildFallbackList();

@@ -554,30 +554,36 @@
          <button class="btn detail-back" data-back>← Back to Portfolio</button>
          <div class="detail-id">
            <p class="eyebrow">Project detail</p>
-           <h1><span class="mod-mono">${esc(p.id)}</span> ${esc(p.name)}</h1>
+           <h1><span class="mod-mono">${esc(p.id)}</span> ${esc(p.name)} <span class="sector-pill" data-sector="${esc(String(p.sector || "hybrid").toLowerCase() === "combined" ? "hybrid" : String(p.sector || "hybrid").toLowerCase())}">${esc(String(SECTOR_LABEL[p.sector] || p.sector || "Hybrid").toUpperCase())}</span></h1>
+           ${(p.formattedAddress || p.address) ? `<p class="detail-meta detail-address">${esc(p.formattedAddress || p.address)}</p>` : ""}
            <p class="detail-meta">
-             Sector: <strong>${esc(SECTOR_LABEL[p.sector] || p.sector)}</strong> ·
              Reporting period: <span class="mod-mono">${esc(p.reportingPeriod)}</span> ·
              State: <span class="li-state state-${stateKey}">${esc(state)}</span>
            </p>
-           ${(p.formattedAddress || p.address) ? `<p class="detail-meta detail-address">Address: <strong>${esc(p.formattedAddress || p.address)}</strong></p>` : ""}
          </div>
          <div class="detail-head-actions">
+           <button class="btn small primary detail-upload" data-upload="${esc(p.id)}">Upload documents</button>
            <button class="btn small detail-reset" data-reset="${esc(p.id)}">Reset signals</button>
            <span class="detail-reset-msg kn-sub" aria-live="polite"></span>
          </div>
        </div>
+        ${/* Release 2 · Phase 2 item 9 — section order: Project Signal Network →
+             Signal Flow → Executive Brief → Governance Decision → Signal Web →
+             Signal Inputs → Ensemble Analysis → Signal Stack. Documents &
+             Extracted Signals (not in the named order) is kept adjacent to Signal
+             Inputs. sessionStorage keys (the section ids) are unchanged, so saved
+             open/closed states survive. */""}
         ${cs("d-projnet", "Project Signal Network", `<div class="detail-projnet2d"></div>`, false, totalCats + " categories")}
         ${cs("d-neural", "Signal Flow", `<div class="detail-neural-flow" data-project-id="${esc(p.id)}"></div>`, false, `${totalModulesForBadge} modules`)}
         ${cs("d-brief", "Executive Brief", executiveBriefHtml(p), false, "")}
+        ${cs("d-decision", "Governance Decision", `<section class="panel detail-decision" aria-label="PCEIF governance decision (project detail)"></section>`, false, pillBadge(overallState))}
         ${cs("d-web", "Signal Web", signalWebHtml(p), false, totalModulesForBadge + " modules")}
-        ${cs("d-ensemble", "Ensemble Analysis", ensembleHtml(p), false, `${ensActive} active · ${ensEst} est.`)}
+        ${cs("d-ledger", "Signal Inputs", `<section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>`, false, pillBadge(overallState))}
         ${cs("d-docsignals", "Documents & Extracted Signals",
              uploadedDocsPanelHtml(p) +
              `<section class="panel detail-signals" aria-label="Extracted signals detail"></section>`,
              false, `${uploadCount} doc${uploadCount === 1 ? "" : "s"} · ${inputFieldCount} field${inputFieldCount === 1 ? "" : "s"}`)}
-        ${cs("d-ledger", "Signal Inputs", `<section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>`, false, pillBadge(overallState))}
-        ${cs("d-decision", "Governance Decision", `<section class="panel detail-decision" aria-label="PCEIF governance decision (project detail)"></section>`, false, pillBadge(overallState))}
+        ${cs("d-ensemble", "Ensemble Analysis", ensembleHtml(p), false, `${ensActive} active · ${ensEst} est.`)}
        ${cs("d-stack", "Signal Stack — " + totalCats + " Categories", `<div class="detail-modules"></div>`, false, "")}`;
 
     // Every section starts collapsed (sessionStorage may restore an open one);
@@ -1284,6 +1290,12 @@
   function wireBack(root) {
     root.querySelectorAll("[data-back]").forEach((b) =>
       b.addEventListener("click", () => LinApp.showPage("portfolio")));
+    // Per-project upload (Release 2): opens the upload dialog pre-locked to this
+    // project (no selector).
+    root.querySelectorAll("[data-upload]").forEach((b) =>
+      b.addEventListener("click", () => {
+        if (window.LinIngest && LinIngest.openUploadModal) LinIngest.openUploadModal(b.dataset.upload);
+      }));
   }
 
   // Reset signals: POST resetsignals, clear local signal state, re-render the
