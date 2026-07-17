@@ -81,7 +81,7 @@
 
   /* ---------- page rendering ---------- */
   function projectOptions() {
-    return LinStore.cachedActive().map((p) => `<option value="${esc(p.id)}">${esc(p.id)} — ${esc(p.name)}</option>`).join("");
+    return LinStore.cachedActive().map((p) => `<option value="${esc(p.id)}">${esc(p.id)}: ${esc(p.name)}</option>`).join("");
   }
   function renderLog() {
     const elLog = document.getElementById("ingest-log");
@@ -136,7 +136,7 @@
     if (saved.geocodeError) {
       // the backend message is already human-readable and usually carries its
       // own "refine and save again" instruction — don't repeat it
-      const hint = /refine|save again/i.test(saved.geocodeError) ? "" : " — refine the address and save again.";
+      const hint = /refine|save again/i.test(saved.geocodeError) ? "" : " Refine the address and save again.";
       return { ok: false, text: "Couldn't locate this address: " + saved.geocodeError + hint };
     }
     if (saved.formattedAddress || saved.lat != null) return { ok: true, text: "Located: " + (saved.formattedAddress || saved.address) };
@@ -197,13 +197,13 @@
              <option value="construction">Construction</option>
              <option value="hybrid">Hybrid</option>
            </select></label>
-         <label class="rationale-label pr-editinfo-addr">Address (optional — located automatically on save)
+         <label class="rationale-label pr-editinfo-addr">Address (optional, located automatically on save)
            <input type="text" class="pe-address ig-input" maxlength="160" placeholder="e.g. Terminal B, Austin-Bergstrom Intl Airport" /></label>
        </div>
        <div class="dc-actions">
          <button class="btn primary small pe-save">Save info</button>
          <button class="btn small pe-populate">Upload documents</button>
-         <button class="btn small pe-recompute"${populated ? "" : " disabled title=\"No signals to recompute — upload documents first\""}>Recompute this project</button>
+         <button class="btn small pe-recompute"${populated ? "" : " disabled title=\"No signals to recompute: upload documents first\""}>Recompute this project</button>
          <button class="btn small pe-reset">Reset signals</button>
          <button class="btn small pe-archive">Archive</button>
          <button class="btn small pe-cancel">Close</button>
@@ -219,7 +219,7 @@
     box.querySelector(".pe-sector").addEventListener("change", (e) => {
       if (e.target.value !== origSector) {
         msg.classList.remove("pe-msg-ok"); msg.classList.add("pe-msg-error");
-        msg.textContent = "Sector changed — save, then recompute signals to update module applicability.";
+        msg.textContent = "Sector changed: save, then recompute signals to update module applicability.";
       }
     });
     if (cached.formattedAddress && cached.lat != null) {
@@ -250,7 +250,7 @@
         const si = LinSignals.deriveExtendedFields(LinSignals.resolveSimInputs(full));
         const hasCpi = si.cpi != null && Number.isFinite(Number(si.cpi)) && Number(si.cpi) > 0;
         const hasSpi = si.spi != null && Number.isFinite(Number(si.spi)) && Number(si.spi) > 0;
-        if (!hasCpi && !hasSpi) throw new Error("no CPI/SPI on file — upload a document first");
+        if (!hasCpi && !hasSpi) throw new Error("no CPI/SPI on file, upload a document first");
         await LinSignals.runModels(full, si);   // also refreshes Portfolio Health once
         if (window.LinApp && LinApp.clearSectorDirty) LinApp.clearSectorDirty(id);
         logEvent(`RECOMPUTED signals for ${id}.`);
@@ -272,7 +272,7 @@
         logEvent(`ARCHIVED ${id}.`);
         if (window.LinApp) LinApp.refresh();
         renderPortfolioAdmin();
-      } catch (e) { LinStore.banner("Couldn't archive — store unreachable. Retry.", "warn"); }
+      } catch (e) { LinStore.banner("Couldn't archive: store unreachable. Retry.", "warn"); }
     });
 
     // Reset signals → clears extraction back to "Awaiting ingest".
@@ -310,7 +310,7 @@
       if (name.length < 3) { msg.textContent = "Enter a project name (min 3 characters)."; return; }
       const save = box.querySelector(".pe-save");
       save.disabled = true;
-      msg.textContent = address ? "Saving — locating address…" : "Saving project info…";
+      msg.textContent = address ? "Saving, locating address…" : "Saving project info…";
       try {
         const full = await LinStore.getProject(id);
         if (!full || full.slim) throw new Error("couldn't load the full project record");
@@ -381,7 +381,7 @@
            <input id="np-id" class="ig-input" maxlength="40" placeholder="e.g. AP-2026-014" />
            <label class="rationale-label" for="np-name">Project name</label>
            <input id="np-name" class="ig-input" maxlength="80" placeholder="e.g. Terminal B Expansion" />
-           <label class="rationale-label" for="np-address">Address (optional — located automatically on save)</label>
+           <label class="rationale-label" for="np-address">Address (optional, located automatically on save)</label>
            <input id="np-address" class="ig-input" maxlength="160" placeholder="e.g. Terminal B, Austin-Bergstrom Intl Airport" />
            <label class="rationale-label" for="np-sector">Sector</label>
            <select id="np-sector" class="ig-input">
@@ -402,12 +402,12 @@
           if (idErr) { msg.textContent = idErr; return; }
           if (name.length < 3) { msg.textContent = "Enter a project name (min 3 characters)."; return; }
           const btn = body.querySelector("#np-create"); btn.disabled = true;
-          msg.textContent = address ? "Creating project — locating address…" : "Creating project in the store…";
+          msg.textContent = address ? "Creating project, locating address…" : "Creating project in the store…";
           try {
             const p = await LinStore.createProject({ id, name, sector });
             let outcome = null;
             if (address) { p.address = address; const saved = await LinStore.saveProject(p); outcome = geocodeOutcome(saved); }
-            logEvent(`Created EMPTY project ${p.id} — ${name} (${SECTOR_LABEL[sector] || sector}); awaiting ingest.`);
+            logEvent(`Created EMPTY project ${p.id}: ${name} (${SECTOR_LABEL[sector] || sector}); awaiting ingest.`);
             if (window.LinApp) LinApp.refresh();
             renderPortfolioAdmin();
             close();
@@ -438,7 +438,7 @@
       canClose: () => !busy,
       onBlockedClose: (doClose, source) => {
         if (source === "backdrop") return;                 // backdrop never closes mid-upload
-        if (window.confirm("Uploads in progress — leave anyway?")) doClose();
+        if (window.confirm("Uploads in progress, leave anyway?")) doClose();
       },
       mount: (body, close) => {
         body.innerHTML =
@@ -540,7 +540,7 @@
           if (window.LinUI) LinUI.toast(`Restored ${id} to the active portfolio.`);
         } catch (e) {
           b.disabled = false;
-          LinStore.banner("Couldn't restore — store unreachable. Retry.", "warn");
+          LinStore.banner("Couldn't restore: store unreachable. Retry.", "warn");
         }
       }));
   }
@@ -563,7 +563,7 @@
   function openHealthModal() {
     if (!window.LinUI || !window.LinDeepDive) return;
     LinUI.openModal({
-      title: "Portfolio Health — ML & AI Pattern Detection",
+      title: "Portfolio Health: ML & AI Pattern Detection",
       mount: (body, close) => {
         body.innerHTML = `<div class="app-modal-scroll" id="health-body"></div>`;
         LinDeepDive.renderCat8Health(body.querySelector("#health-body"), close);

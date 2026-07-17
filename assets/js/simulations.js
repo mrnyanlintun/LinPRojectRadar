@@ -541,7 +541,7 @@
       indeterminacy_level: I > 0.30 ? "High" : I > 0.15 ? "Moderate" : "Low",
       signal_components: components,
       evidence_metric: "T=" + T + " I=" + I + " F=" + F +
-        " — Indeterminacy: " + (I > 0.30 ? "High" : I > 0.15 ? "Moderate" : "Low")
+        ", Indeterminacy: " + (I > 0.30 ? "High" : I > 0.15 ? "Moderate" : "Low")
     };
   }
 
@@ -860,7 +860,7 @@
       avg_contradiction: Math.round(avgContradiction * 100) / 100,
       contradiction_level: avgContradiction > 0.6 ? "High" : avgContradiction > 0.3 ? "Moderate" : "Low",
       attributes: attributes,
-      evidence_metric: "Plithogenic scores — Red: " + (Math.round(redScore * 100) / 100) +
+      evidence_metric: "Plithogenic scores, Red: " + (Math.round(redScore * 100) / 100) +
         " · Amber: " + (Math.round(amberScore * 100) / 100) +
         " · Green: " + (Math.round(greenScore * 100) / 100) +
         " · Contradiction: " + Math.round(avgContradiction * 100) + "%"
@@ -1012,7 +1012,7 @@
       method_class: methodClass,
       status_color: null,
       insufficient_data: true,
-      evidence_metric: message || 'Insufficient data — upload required documents'
+      evidence_metric: message || 'Insufficient data: upload required documents'
     };
   }
 
@@ -1119,7 +1119,7 @@
     var remainingBudget = si.bac - si.ac;
     if (remainingBudget <= 0) return {
       method_class: 'TCPI', status_color: 'Red',
-      tcpi: null, evidence_metric: 'Budget exhausted — no remaining funds'
+      tcpi: null, evidence_metric: 'Budget exhausted: no remaining funds'
     };
     var tcpi = remainingWork / remainingBudget;
     tcpi = Math.round(tcpi * 1000) / 1000;
@@ -1129,7 +1129,7 @@
     return {
       method_class: 'TCPI', status_color: status, tcpi: tcpi,
       evidence_metric: 'TCPI: ' + tcpi +
-        ' — ' + (tcpi <= 1.05 ? 'achievable' :
+        ', ' + (tcpi <= 1.05 ? 'achievable' :
                  tcpi <= 1.10 ? 'challenging' :
                  tcpi <= 1.20 ? 'very difficult' : 'unrealistic') +
         ' to finish within budget'
@@ -1228,7 +1228,7 @@
     return {
       method_class: 'Schedule_Compression', status_color: status,
       compression_ratio: compressionRatio, remaining_days: Math.round(remainingDays),
-      evidence_metric: 'Schedule compression: ' + compressionRatio + 'x — ' +
+      evidence_metric: 'Schedule compression: ' + compressionRatio + 'x, ' +
         Math.round(remainingDays) + ' days of work remaining'
     };
   }
@@ -1250,7 +1250,7 @@
       float_remaining_days: Math.round(floatRemaining),
       consumption_rate: Math.round(consumptionRate * 100),
       float_stress: floatStress,
-      evidence_metric: 'Float: ' + Math.round(floatRemaining) + ' days remaining — ' +
+      evidence_metric: 'Float: ' + Math.round(floatRemaining) + ' days remaining, ' +
         Math.round(consumptionRate * 100) + '% consumed'
     };
   }
@@ -1339,7 +1339,7 @@
       burn_stress: burnStress,
       evidence_metric: 'Contingency: ' + Math.round(burnRate * 100) + '% burned at ' +
         Math.round(si.actualPctComplete) + '% complete' +
-        (isDerived ? ' — estimated, upload Pay Application contingency detail for precise figures' : '')
+        (isDerived ? ' (estimated; upload Pay Application contingency detail for precise figures)' : '')
     };
   }
 
@@ -1412,10 +1412,10 @@
     }
     if (avgResponse != null) {
       evidence += ', avg response ' + avgResponse + ' days' +
-        (avgResponse > 14 ? ' — slow response indicates dispute risk' : '');
+        (avgResponse > 14 ? ' (slow response indicates dispute risk)' : '');
     }
     if (si.rfiOldestOpenDays != null) evidence += ', oldest open ' + si.rfiOldestOpenDays + ' days';
-    if (isDerived) evidence += ' — assumed 30-day period, upload RFI log for precise velocity';
+    if (isDerived) evidence += ' (assumed 30-day period; upload RFI log for precise velocity)';
     return {
       method_class: 'RFI_Velocity', status_color: status,
       rfi_per_30d: per30, rfi_per_week: rfiPerWeek, total_rfis: count, period_days: days,
@@ -1451,7 +1451,7 @@
       if (si.rfaOpen != null) evidence += ', ' + si.rfaOpen + ' open';
       if (si.rfaAvgReviewDays != null) evidence += ', avg review ' + si.rfaAvgReviewDays + ' days';
     }
-    if (isDerived) evidence += ' — estimated from doc risk, upload Submittal Register for precise figures';
+    if (isDerived) evidence += ' (estimated from doc risk; upload Submittal Register for precise figures)';
     return {
       method_class: 'Submittal_Rejection', status_color: status,
       rejection_rate: rejectionRate,
@@ -1476,9 +1476,9 @@
     return {
       method_class: 'CO_Frequency', status_color: status,
       co_count: coRate, scope_growth_pct: Math.round(scopeGrowth * 10) / 10,
-      evidence_metric: coRate + ' change orders — scope growth: +' +
+      evidence_metric: coRate + ' change orders, scope growth: +' +
         Math.round(scopeGrowth * 10) / 10 + '%' +
-        (isDerived ? ' — estimated, upload Change Order log for precise figures' : '')
+        (isDerived ? ' (estimated; upload Change Order log for precise figures)' : '')
     };
   }
 
@@ -2048,7 +2048,7 @@
       distance_to_threshold: Math.round(distanceToThreshold * 10) / 10,
       far_reporting_required: overrunPct >= far34Threshold,
       evidence_metric: 'FAR Part 34: ' + Math.round(overrunPct*10)/10 +
-        '% overrun — threshold ' + far34Threshold + '% (' +
+        '% overrun, threshold ' + far34Threshold + '% (' +
         (overrunPct >= far34Threshold ? 'REPORTING REQUIRED' :
          Math.round(distanceToThreshold*10)/10 + '% headroom') + ')'
     };
@@ -2071,8 +2071,8 @@
       reporting_triggered: reportingTriggered,
       projected_overrun: Math.round(projectedOverrun),
       evidence_metric: 'OMB A-11: CPI ' + si.cpi +
-        (reportingTriggered ? ' — MANDATORY REPORTING TRIGGERED' :
-         cpiBelow90 ? ' — below threshold, monitor' : ' — within threshold')
+        (reportingTriggered ? ': MANDATORY REPORTING TRIGGERED' :
+         cpiBelow90 ? ': below threshold, monitor' : ': within threshold')
     };
   }
 
@@ -2112,11 +2112,11 @@
       method_class: 'Contract_Mod_Frequency', status_color: riskLevel,
       co_count: si.changeOrderCount,
       scope_growth_pct: Math.round(scopeGrowthPct * 10) / 10,
-      evidence_metric: si.changeOrderCount + ' contract modifications — ' +
-        Math.round(scopeGrowthPct*10)/10 + '% scope growth — ' +
+      evidence_metric: si.changeOrderCount + ' contract modifications, ' +
+        Math.round(scopeGrowthPct*10)/10 + '% scope growth, ' +
         (riskLevel === 'Red' ? 'contracting officer review merits consideration' :
          riskLevel === 'Amber' ? 'elevated modification frequency' : 'within normal range') +
-        (isDerived ? ' — estimated, upload Change Order log for precise figures' : '')
+        (isDerived ? ' (estimated; upload Change Order log for precise figures)' : '')
     };
   }
 
@@ -2139,7 +2139,7 @@
       constrained: si.activitiesConstrained, planned: si.activitiesPlanned,
       evidence_metric: si.activitiesConstrained + ' of ' + si.activitiesPlanned +
         ' planned activities constrained (' + Math.round(constraintRate * 100) + '%)' +
-        (isDerived ? ' — estimated, upload Look-Ahead Schedule for precise figures' : '')
+        (isDerived ? ' (estimated; upload Look-Ahead Schedule for precise figures)' : '')
     };
   }
 
@@ -2161,7 +2161,7 @@
       weather_ratio: Math.round(weatherRatio * 100),
       evidence_metric: si.weatherDaysLost + ' weather days lost' +
         (float != null ? ', ' + Math.round(weatherRatio * 100) + '% of available float consumed' : '') +
-        (isDerived ? ' — estimated, upload Field Report for precise figures' : '')
+        (isDerived ? ' (estimated; upload Field Report for precise figures)' : '')
     };
   }
 
@@ -2182,9 +2182,9 @@
       method_class: 'Quality_Compliance', status_color: status,
       quality_score: Math.round(auditScore), pass_rate: Math.round(passRate * 100),
       deficiencies: si.qualityDeficienciesNoted,
-      evidence_metric: 'Quality compliance: ' + Math.round(auditScore) + '/100 — ' +
+      evidence_metric: 'Quality compliance: ' + Math.round(auditScore) + '/100, ' +
         si.qualityDeficienciesNoted + ' deficiencies noted' +
-        (isDerived ? ' — estimated from field observations, upload Quality Audit for precise score' : '')
+        (isDerived ? ' (estimated from field observations; upload Quality Audit for precise score)' : '')
     };
   }
 
@@ -2209,7 +2209,7 @@
       incidents_discussed: si.safetyIncidentsDiscussed,
       evidence_metric: 'Safety: ' + si.safetyIncidentsDiscussed + ' incidents in OAC records' +
         (si.oshaIncidentRate != null ? ', OSHA rate ' + Math.round(si.oshaIncidentRate * 10) / 10 : '') +
-        (isDerived ? ' — estimated from meeting records, upload Safety Report for OSHA rate' : '')
+        (isDerived ? ' (estimated from meeting records; upload Safety Report for OSHA rate)' : '')
     };
   }
 
@@ -2232,7 +2232,7 @@
       violations: si.environmentalViolations || 0,
       evidence_metric: 'Environmental compliance: ' + complianceRate + '%' +
         (si.environmentalViolations ? ', ' + si.environmentalViolations + ' violations recorded' : '') +
-        (isDerived ? ' — estimated from meeting records, upload Environmental Report for permit data' : '')
+        (isDerived ? ' (estimated from meeting records; upload Environmental Report for permit data)' : '')
     };
   }
 
@@ -2267,9 +2267,9 @@
       method_class: 'Subcontractor_Performance', status_color: status,
       compliance_score: scorePct, signals_contributing: signals,
       evidence_metric: 'Subcontractor compliance: ' + scorePct + '%' +
-        (signals.length ? ' — ' + signals.join(', ') : '') +
-        (isDerived ? ' — derived from meeting records and correspondence' :
-                     ' — from subcontractor performance report')
+        (signals.length ? ' (' + signals.join(', ') + ')' : '') +
+        (isDerived ? ', derived from meeting records and correspondence' :
+                     ', from subcontractor performance report')
     };
   }
 
@@ -2291,7 +2291,7 @@
       variance_pct: Math.round(variance * 100),
       evidence_metric: 'Material cost variance: ' + (variance >= 0 ? '+' : '') +
         Math.round(variance * 100) + '% vs expected at current progress' +
-        (isDerived ? ' — estimated (40% of BAC/AC), upload Cost Report for precise figures' : '')
+        (isDerived ? ' (estimated at 40% of BAC/AC; upload Cost Report for precise figures)' : '')
     };
   }
 
@@ -2313,7 +2313,7 @@
       absorption_ratio: absorption,
       evidence_metric: 'Overhead absorption: ' + Math.round(absorption * 100) +
         '% of planned indirect cost at current progress' +
-        (isDerived ? ' — estimated (12% overhead), upload Cost Report for precise figures' : '')
+        (isDerived ? ' (estimated at 12% overhead; upload Cost Report for precise figures)' : '')
     };
   }
 
@@ -2335,7 +2335,7 @@
       escalation_pct: Math.round(escalation * 100),
       evidence_metric: 'Material escalation proxy: +' + Math.round(escalation * 100) +
         '% above progress-adjusted baseline' +
-        (isDerived ? ' — estimated, upload Cost Report / price index for precise figures' : '')
+        (isDerived ? ' (estimated; upload Cost Report / price index for precise figures)' : '')
     };
   }
 
@@ -2385,7 +2385,7 @@
       last_doc_date: si.docDate,
       evidence_metric: 'Last document: ' + si.docDate +
         ' (' + daysSinceDoc + ' days ago' +
-        (daysSinceDoc > 60 ? ' — data may be stale' : '') + ')'
+        (daysSinceDoc > 60 ? ', data may be stale' : '') + ')'
     };
   }
 
@@ -2424,7 +2424,7 @@
       derived_fields: derivedCount,
       total_sources: weights.length,
       evidence_metric: 'Avg source reliability: ' + Math.round(avgReliability * 100) + '%' +
-        (derivedCount > 0 ? ' (' + derivedCount + ' estimated fields)' : ' — all measured')
+        (derivedCount > 0 ? ' (' + derivedCount + ' estimated fields)' : ', all measured')
     };
   }
 
@@ -2450,7 +2450,7 @@
       completeness_pct: Math.round(completeness * 100),
       total_events: totalEvents,
       has_decision_record: hasDecisionRecord,
-      evidence_metric: Math.round(completeness * 100) + '% audit trail completeness — ' +
+      evidence_metric: Math.round(completeness * 100) + '% audit trail completeness, ' +
         totalEvents + ' events recorded' +
         (hasDecisionRecord ? ', decision record present' : ', no decision record yet')
     };
@@ -2529,7 +2529,7 @@
       evidence_metric: (checks - inconsistencies) + ' of ' + checks +
         ' cross-document checks consistent (' +
         Math.round(consistencyScore * 100) + '%)' +
-        (inconsistencies > 0 ? ' — verify figures across uploaded documents' : '')
+        (inconsistencies > 0 ? '; verify figures across uploaded documents' : '')
     };
   }
 
@@ -2545,7 +2545,7 @@
       return {
         method_class: 'Reporting_Frequency_Index', status_color: 'Yellow',
         uploads: extractEvents.length, expected_per_month: 4,
-        evidence_metric: extractEvents.length + ' document upload(s) recorded — ' +
+        evidence_metric: extractEvents.length + ' document upload(s) recorded, ' +
           (extractEvents.length === 0 ? 'no documents uploaded yet' : 'upload more documents for frequency analysis')
       };
     }
@@ -2562,10 +2562,10 @@
       method_class: 'Reporting_Frequency_Index', status_color: status,
       avg_interval_days: Math.round(avgInterval),
       uploads: extractEvents.length,
-      evidence_metric: Math.round(avgInterval) + ' day avg interval between document uploads — ' +
+      evidence_metric: Math.round(avgInterval) + ' day avg interval between document uploads, ' +
         (avgInterval <= 14 ? 'high frequency reporting' :
          avgInterval <= 30 ? 'monthly reporting cycle' :
-         avgInterval <= 60 ? 'infrequent updates' : 'reporting gap — data may be stale')
+         avgInterval <= 60 ? 'infrequent updates' : 'reporting gap, data may be stale')
     };
   }
 
@@ -2599,7 +2599,7 @@
       pareto_score: paretoScore,
       binding_constraint: bindingConstraint.name,
       objectives: objectives,
-      evidence_metric: 'Multi-objective score: ' + Math.round(paretoScore * 100) + '% — ' +
+      evidence_metric: 'Multi-objective score: ' + Math.round(paretoScore * 100) + '%, ' +
         'binding constraint: ' + bindingConstraint.name +
         ' (score ' + Math.round(bindingConstraint.score * 100) + '%)'
     };
@@ -2614,7 +2614,7 @@
     if (remainingBudget <= 0) return {
       method_class: 'Linear_Programming', status_color: 'Red',
       feasible: false,
-      evidence_metric: 'No feasible solution — budget exhausted before project completion'
+      evidence_metric: 'No feasible solution: budget exhausted before project completion'
     };
     var requiredCPI = remainingWork / remainingBudget;
     var lpFeasible = requiredCPI <= 1.20;
@@ -2630,9 +2630,9 @@
       optimal: lpOptimal,
       lp_score: Math.round(lpScore * 100) / 100,
       evidence_metric: 'LP: requires CPI ' + (Math.round(requiredCPI * 1000) / 1000) +
-        ' to complete within budget — ' +
+        ' to complete within budget, ' +
         (lpOptimal ? 'achievable at current performance' :
-         lpFeasible ? 'requires productivity improvement' : 'budget infeasible — recovery plan needed')
+         lpFeasible ? 'requires productivity improvement' : 'budget infeasible, recovery plan needed')
     };
   }
 
@@ -2658,7 +2658,7 @@
       violated_constraints: violated.map(function (c) { return c.name; }),
       satisfaction_rate: Math.round(satisfactionRate * 100),
       evidence_metric: satisfied + ' of ' + constraints.length + ' constraints satisfied' +
-        (violated.length > 0 ? ' — violated: ' + violated.map(function (c) { return c.name; }).join(', ') : ' — all constraints met')
+        (violated.length > 0 ? '; violated: ' + violated.map(function (c) { return c.name; }).join(', ') : '; all constraints met')
     };
   }
 
@@ -2689,7 +2689,7 @@
       }),
       scenario_range_pct: rangePct,
       base_eac: Math.round(baseEAC),
-      evidence_metric: 'Scenario range: ' + rangePct + '% of BAC — ' +
+      evidence_metric: 'Scenario range: ' + rangePct + '% of BAC, ' +
         'base EAC $' + Math.round(baseEAC / 1000) + 'k, ' +
         'worst $' + Math.round(scenarios[2].eac / 1000) + 'k, ' +
         'best $' + Math.round(scenarios[0].eac / 1000) + 'k'
@@ -2720,7 +2720,7 @@
       top_driver_pct: topDriver.pct,
       sensitivity_matrix: sensitivity,
       evidence_metric: 'Decision most sensitive to: ' + topDriver.driver +
-        ' (' + topDriver.pct + '% of decision weight) — ' +
+        ' (' + topDriver.pct + '% of decision weight); ' +
         'a small change here most changes the governance recommendation'
     };
   }
@@ -2748,10 +2748,10 @@
       dominated: dominated,
       tradeoff_required: tradeoffRequired,
       pareto_score: paretoScore,
-      evidence_metric: paretoEfficient ? 'Project is Pareto-efficient — all objectives met simultaneously' :
-        dominated ? 'Project is Pareto-dominated — multiple objectives failing simultaneously' :
-        tradeoffRequired ? 'Trade-off required — improving one objective may affect another' :
-        'Partial Pareto efficiency — some objectives met'
+      evidence_metric: paretoEfficient ? 'Project is Pareto-efficient: all objectives met simultaneously' :
+        dominated ? 'Project is Pareto-dominated: multiple objectives failing simultaneously' :
+        tradeoffRequired ? 'Trade-off required: improving one objective may affect another' :
+        'Partial Pareto efficiency: some objectives met'
     };
   }
 
@@ -2790,7 +2790,7 @@
       expected_regret: expectedRegret,
       min_regret_score: minRegret,
       evidence_metric: 'Minimax regret recommends: ' + recommended +
-        ' (expected regret score ' + minRegret + '/30) — ' +
+        ' (expected regret score ' + minRegret + '/30); ' +
         'this decision minimizes worst-case outcome under uncertain future states'
     };
   }
@@ -2936,7 +2936,7 @@
                  minRating >= 3.0 ? 'Amber' : 'Red';
     return {
       method_class: 'Contractor_Performance', status_color: status, min_rating: round1(minRating),
-      evidence_metric: 'Ratings — overall ' + round1(overall) + ', schedule ' + round1(sched) +
+      evidence_metric: 'Ratings: overall ' + round1(overall) + ', schedule ' + round1(sched) +
         ', cost ' + round1(cost) + ' (worst ' + round1(minRating) + '/5)'
     };
   }
