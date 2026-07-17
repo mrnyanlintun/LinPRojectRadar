@@ -536,6 +536,51 @@
       actualPctComplete: si.actualPctComplete || 0
     };
   }
+  /* ---------- Portfolio Health snapshot persistence (v10.35 event-driven) ----------
+     One aggregate snapshot — every loaded project's last-known Portfolio Health
+     module results — saved as a single portfolio_health.json at the Drive root.
+     Built from the in-memory mirror (window.LIN_PROJECTS), which is already
+     up to date immediately after a signal run persists. Read-only surfaces
+     (the Health dialog) fetch this via LinStore.getPortfolioHealth() instead
+     of ever recomputing. */
+  function buildPortfolioHealthSnapshot() {
+    const projects = (window.LIN_PROJECTS || []).filter((p) => p && p.id);
+    const results = {};
+    projects.forEach((p) => {
+      const arr = (p.simulationSignals && p.simulationSignals.signal_array) || [];
+      const modules = CAT8_METHODS.map((mc) => {
+        const r = arr.find((x) => x && x.method_class === mc);
+        if (!r) return null;
+        return {
+          method_class: mc,
+          status_color: r.status_color != null ? r.status_color : (r.status || null),
+          evidence_metric: r.evidence_metric || null,
+          insufficient_data: !!r.insufficient_data
+        };
+      }).filter(Boolean);
+      if (modules.length) {
+        results[p.id] = { id: p.id, name: p.name, updatedAt: p.updatedAt || null, modules };
+      }
+    });
+    return { results, projectCount: projects.length, computedAt: new Date().toISOString() };
+  }
+
+  // Non-fatal — a save failure must never block or surface an error on the
+  // signal run that triggered it.
+  async function savePortfolioHealthSnapshot(id, trigger) {
+    if (!window.LinStore || !LinStore.savePortfolioHealth) return null;
+    try {
+      const snapshot = buildPortfolioHealthSnapshot();
+      return await LinStore.savePortfolioHealth({
+        id: id, trigger: trigger || "upload",
+        results: snapshot.results, projectCount: snapshot.projectCount, computedAt: snapshot.computedAt
+      });
+    } catch (e) {
+      console.warn("[signals] savePortfolioHealthSnapshot failed:", e && e.message);
+      return null;
+    }
+  }
+
   async function runPortfolioAnalysis(project, allProjects) {
     const list = allProjects || window.LIN_PROJECTS || [];
     const portfolio = list.map(portfolioVector).filter(Boolean);
@@ -765,6 +810,9 @@
             .filter((s) => CAT8_METHODS.indexOf(s.method_class) < 0)
             .concat(cat8);
         }
+        // Persist the aggregate Portfolio Health snapshot once per run (upload,
+        // batch end, or repair — never on page load/view open). Non-fatal.
+        await savePortfolioHealthSnapshot(project.id, "upload");
       } catch (e) { /* Portfolio Health is non-fatal — never block the core run */ }
     }
     persistHistorySnapshot(project);
@@ -1744,6 +1792,7 @@
     ensureSimulations,
     runModels,
     portfolioVector, runPortfolioAnalysis,
+    buildPortfolioHealthSnapshot, savePortfolioHealthSnapshot,
     resolveSimInputs,
     deriveExtendedFields,
     DOC_TYPES, DOC_TYPE_LABEL,

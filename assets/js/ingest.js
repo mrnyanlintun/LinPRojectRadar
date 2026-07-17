@@ -203,6 +203,7 @@
        <div class="dc-actions">
          <button class="btn primary small pe-save">Save info</button>
          <button class="btn small pe-populate">Upload documents</button>
+         <button class="btn small pe-recompute"${populated ? "" : " disabled title=\"No signals to recompute — upload documents first\""}>Recompute this project</button>
          <button class="btn small pe-reset">Reset signals</button>
          <button class="btn small pe-archive">Archive</button>
          <button class="btn small pe-cancel">Close</button>
@@ -233,6 +234,35 @@
     // Populate / Re-upload → open the Upload modal with this project preselected.
     box.querySelector(".pe-populate").addEventListener("click", () => {
       openUploadModal(id);
+    });
+
+    // Recompute this project — surgical repair: local re-run for THIS project
+    // plus one Portfolio Health refresh. No AI calls, no re-extraction.
+    const recomputeBtn = box.querySelector(".pe-recompute");
+    if (recomputeBtn) recomputeBtn.addEventListener("click", async () => {
+      if (!window.LinSignals || !window.LinStore) return;
+      recomputeBtn.disabled = true;
+      msg.classList.remove("pe-msg-error", "pe-msg-ok");
+      msg.textContent = "Recomputing " + id + "…";
+      try {
+        const full = await LinStore.getProject(id);
+        if (!full || !full.signalInputs) throw new Error("no stored signal inputs to recompute from");
+        const si = LinSignals.deriveExtendedFields(LinSignals.resolveSimInputs(full));
+        const hasCpi = si.cpi != null && Number.isFinite(Number(si.cpi)) && Number(si.cpi) > 0;
+        const hasSpi = si.spi != null && Number.isFinite(Number(si.spi)) && Number(si.spi) > 0;
+        if (!hasCpi && !hasSpi) throw new Error("no CPI/SPI on file — upload a document first");
+        await LinSignals.runModels(full, si);   // also refreshes Portfolio Health once
+        if (window.LinApp && LinApp.clearSectorDirty) LinApp.clearSectorDirty(id);
+        logEvent(`RECOMPUTED signals for ${id}.`);
+        if (window.LinApp) LinApp.refresh();
+        msg.textContent = "Recomputed " + id + " and refreshed Portfolio Health.";
+        msg.classList.add("pe-msg-ok");
+      } catch (e) {
+        msg.textContent = "Couldn't recompute: " + ((e && e.message) || "store unreachable") + ".";
+        msg.classList.add("pe-msg-error");
+      } finally {
+        recomputeBtn.disabled = false;
+      }
     });
 
     // Archive

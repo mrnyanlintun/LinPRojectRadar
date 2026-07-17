@@ -2279,12 +2279,13 @@
     return "Portfolio Health: no anomaly flagged —";
   }
 
-  // ---------- Portfolio Health dialog (Release 2b) — real results ----------
-  // Portfolio Health (ML & AI Pattern Detection) computes per-project, one result per module
-  // per project, via the portfolioanalyze POST (signals.js runPortfolioAnalysis)
-  // that runs alongside every project's normal signal computation. There is no
-  // separate "portfolio-wide" result to read — this scans every loaded project's
-  // own Portfolio Health verdict and reports which projects that module flags (Red/Amber).
+  // ---------- Portfolio Health dialog (event-driven, v10.35) — real results ----------
+  // Portfolio Health is computed at most once per upload/batch/repair (never on
+  // dialog open — see signals.js runModels/savePortfolioHealthSnapshot) and
+  // persisted server-side as one portfolio_health.json. This dialog is a PURE
+  // READ of that stored snapshot via LinStore.getPortfolioHealth() — it never
+  // recomputes. Falls back to scanning the in-memory mirror only when the
+  // stored snapshot is unavailable (e.g. backend not yet on v10.35).
   const CAT8_MODULES = [
     { mc: "Isolation_Forest",     num: "PH.1", name: "Isolation Forest" },
     { mc: "Portfolio_Outlier",    num: "PH.2", name: "Portfolio Outlier" },
@@ -2292,7 +2293,7 @@
     { mc: "Cross_Project_Pattern",num: "PH.4", name: "Cross-project Pattern" },
     { mc: "Anomaly_Score",        num: "PH.5", name: "Anomaly Score" }
   ];
-  function cat8HealthData() {
+  function cat8HealthDataFromLive() {
     const projects = (window.LIN_PROJECTS || []).filter((p) => p && p.id);
     let anyData = false;
     const modules = CAT8_MODULES.map((m) => {
@@ -2309,7 +2310,47 @@
       });
       return Object.assign({}, m, { flagged, computedCount });
     });
-    return { modules, anyData, projectCount: projects.length };
+    return { modules, anyData, projectCount: projects.length, savedAt: null, stale: false };
+  }
+  // Compare each loaded project's updatedAt against the snapshot's savedAt —
+  // if any active project was touched after the snapshot was computed, the
+  // dialog is showing a stale picture.
+  function isSnapshotStale(savedAt) {
+    if (!savedAt) return false;
+    const savedTime = new Date(savedAt).getTime();
+    if (!Number.isFinite(savedTime)) return false;
+    return (window.LIN_PROJECTS || []).some((p) => {
+      const t = p && p.updatedAt ? new Date(p.updatedAt).getTime() : NaN;
+      return Number.isFinite(t) && t > savedTime;
+    });
+  }
+  async function cat8HealthData() {
+    if (window.LinStore && LinStore.getPortfolioHealth) {
+      try {
+        const resp = await LinStore.getPortfolioHealth();
+        const results = resp && resp.results;
+        if (results && Object.keys(results).length) {
+          let anyData = false;
+          const modules = CAT8_MODULES.map((m) => {
+            const flagged = [];
+            let computedCount = 0;
+            Object.keys(results).forEach((pid) => {
+              const entry = results[pid];
+              const mod = (entry.modules || []).find((x) => x && x.method_class === m.mc);
+              if (!mod || mod.insufficient_data || mod.status_color == null) return;
+              computedCount++; anyData = true;
+              if (/red|amber/i.test(String(mod.status_color))) {
+                flagged.push({ id: pid, name: entry.name || pid, status: String(mod.status_color), evidence: mod.evidence_metric || "" });
+              }
+            });
+            return Object.assign({}, m, { flagged, computedCount });
+          });
+          const savedAt = resp.savedAt || resp.computedAt || null;
+          return { modules, anyData, projectCount: Object.keys(results).length, savedAt, stale: isSnapshotStale(savedAt) };
+        }
+      } catch (e) { /* fall through to the live scan */ }
+    }
+    return cat8HealthDataFromLive();
   }
 
   function statusPillClass(status) {
@@ -2322,17 +2363,20 @@
   }
 
   // Renders the Portfolio Health dialog body (real data, no demo panels). Row
-  // clicks close the dialog and open that project's detail page.
-  function renderCat8Health(root, closeDialog) {
+  // clicks close the dialog and open that project's detail page. Pure read —
+  // never triggers a compute; loads the stored snapshot once on open.
+  async function renderCat8Health(root, closeDialog) {
     if (!root) return;
-    const data = cat8HealthData();
+    root.innerHTML = `<p class="kn-sub">Loading Portfolio Health…</p>`;
+    const data = await cat8HealthData();
+    if (!root.isConnected) return; // dialog closed while the fetch was in flight
     if (!data.anyData) {
       const reason = data.projectCount < 3
         ? "Portfolio Health needs at least 3 projects with computed signals to compare against the population — " + data.projectCount + " loaded."
         : "Portfolio Health hasn't run yet for the current portfolio.";
       root.innerHTML =
         `<p class="kn-sub">${escg(reason)}</p>` +
-        `<div class="dc-actions"><button type="button" class="btn primary small" data-run-portfolio-analysis>Run portfolio analysis</button></div>`;
+        `<div class="dc-actions"><button type="button" class="btn primary small" data-run-portfolio-analysis>Rebuild signals (repair)</button></div>`;
       const btn = root.querySelector("[data-run-portfolio-analysis]");
       if (btn) btn.addEventListener("click", () => {
         const recompute = document.getElementById("recompute-all-btn");
@@ -2345,8 +2389,17 @@
       if (closeDialog) closeDialog();
       try { if (window.LinApp) { LinApp.showPage("portfolio"); LinApp.openDetail(id); } } catch (e) {}
     };
+    const asOf = data.savedAt ? (window.LinTZ ? LinTZ.format(data.savedAt) : String(data.savedAt)) : null;
+    const asOfLine = asOf
+      ? `<p class="kn-sub cat8-asof">Portfolio Health as of ${esc(asOf)}</p>`
+      : "";
+    const staleLine = data.stale
+      ? `<p class="cat8-stale-hint">Portfolio health predates the latest upload — ` +
+        `<button type="button" class="dd-link" data-refresh-health>refresh</button></p>`
+      : "";
     root.innerHTML =
       `<p class="kn-sub">Portfolio Health compares how this project's signals stack up against the rest of the portfolio: each project is compared against the population.</p>` +
+      asOfLine + staleLine +
       data.modules.map((m) => {
         const rows = m.flagged.length
           ? m.flagged.map((f) =>
@@ -2365,6 +2418,27 @@
       }).join("");
     root.querySelectorAll("[data-open-project]").forEach((b) =>
       b.addEventListener("click", () => openProject(b.dataset.openProject)));
+    const refreshBtn = root.querySelector("[data-refresh-health]");
+    if (refreshBtn) refreshBtn.addEventListener("click", async () => {
+      refreshBtn.disabled = true;
+      refreshBtn.textContent = "Refreshing…";
+      try {
+        if (window.LinSignals && LinSignals.runPortfolioAnalysis && LinSignals.savePortfolioHealthSnapshot) {
+          const anyProject = (window.LIN_PROJECTS || [])[0];
+          if (anyProject) {
+            const cat8 = await LinSignals.runPortfolioAnalysis(anyProject, window.LIN_PROJECTS);
+            if (Array.isArray(cat8) && cat8.length) {
+              anyProject.simulationSignals = anyProject.simulationSignals || { signal_array: [] };
+              anyProject.simulationSignals.signal_array = (anyProject.simulationSignals.signal_array || [])
+                .filter((s) => !cat8.some((c) => c.method_class === s.method_class))
+                .concat(cat8);
+            }
+            await LinSignals.savePortfolioHealthSnapshot(anyProject.id, "manual-refresh");
+          }
+        }
+      } catch (e) { /* non-fatal */ }
+      renderCat8Health(root, closeDialog);
+    });
   }
 
   window.LinDeepDive = { render, renderCat8Health };

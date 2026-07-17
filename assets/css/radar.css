@@ -1837,6 +1837,10 @@ body.t-light .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .cat8-flagged-name { flex: 1 1 auto; font-size: 13px; }
 .cat8-evidence { margin: -2px 0 4px 2px; font-style: italic; }
 .cat8-none { margin: 4px 0 0; }
+.cat8-asof { margin: -4px 0 8px; opacity: 0.75; }
+.cat8-stale-hint { margin: -4px 0 12px; padding: 6px 10px; border: 1px solid var(--amber, #e2b13c);
+  border-radius: var(--radius-sm); background: color-mix(in srgb, var(--amber, #e2b13c) 12%, transparent);
+  font-size: 12px; }
 
 /* ============================================================
    MODAL — centered dialog for actions to complete (Create, Upload).
