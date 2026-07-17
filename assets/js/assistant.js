@@ -296,12 +296,62 @@
       setTimeout(() => launcher.classList.remove("la-greeting"), 6000);
     })();
 
+    /* ---------- perch: the robot hops onto the open panel ----------
+       Closed → the robot rests at its bottom-right corner. Open → it hops (CSS
+       translate, 250ms) to perch on the panel's TOP-LEFT corner, half-overlapping
+       the edge. Top-left keeps it clear of the close button (top-right) and the
+       chat input/messages (below), and it stays perched as the panel grows.
+       Desktop: it straddles the corner from up-and-left (clear of the "Lin"
+       title, which is inset ~16px). Mobile (full-width panel): it shrinks to
+       44px and sits just above the header's top edge at the left. Position is
+       measured (panel height is dynamic) and re-run on open / resize / scroll /
+       panel growth. */
+    function perch() {
+      const mobile = window.matchMedia("(max-width: 700px)").matches;
+      launcher.classList.toggle("perched-mobile", mobile && !panel.hidden);
+      if (panel.hidden) { launcher.style.transform = ""; return; }
+      // The launcher's RESTING box is deterministic from its fixed CSS anchors
+      // (right/bottom margins + size), so we compute it instead of measuring —
+      // measuring while the .25s transform-transition is running would read a
+      // mid-tween value. Only the panel is measured (it carries no transform),
+      // so this always tracks the panel's LIVE top as it grows.
+      const size = mobile ? 44 : 64;              // perched-mobile shrinks to 44
+      const margin = mobile ? 16 : 22;            // matches .la-launcher right/bottom
+      const restLeft = window.innerWidth - margin - size;
+      const restTop = window.innerHeight - margin - size;
+      const pr = panel.getBoundingClientRect();
+      let targetLeft, targetTop;
+      if (mobile) {
+        // full-width panel: sit at the left, mostly above the header top edge
+        // (only ~10px dips in, above the inset "Lin" title / controls)
+        targetLeft = pr.left + 4;
+        targetTop = pr.top - (size - 10);
+      } else {
+        // straddle the top-left corner from up-and-left: only the robot's
+        // bottom-right ~14px overlaps the panel, clear of the inset "Lin" title
+        targetLeft = pr.left - (size - 14);
+        targetTop = pr.top - (size - 14);
+      }
+      // keep the robot fully on-screen on short/narrow windows
+      targetLeft = Math.max(4, Math.min(targetLeft, window.innerWidth - size - 4));
+      targetTop = Math.max(4, targetTop);
+      launcher.style.transform = "translate(" + Math.round(targetLeft - restLeft) +
+                                 "px, " + Math.round(targetTop - restTop) + "px)";
+    }
+    // keep the perch aligned as the panel grows / the viewport changes
+    if (typeof ResizeObserver !== "undefined") {
+      new ResizeObserver(() => { if (!panel.hidden) perch(); }).observe(panel);
+    }
+    window.addEventListener("resize", () => { if (!panel.hidden) perch(); }, { passive: true });
+    window.addEventListener("scroll", () => { if (!panel.hidden) perch(); }, { passive: true });
+
     function toggle(open) {
       const show = open !== undefined ? open : panel.hidden;
       panel.hidden = !show;
       launcher.setAttribute("aria-expanded", String(show));
       if (show) { launcher.classList.remove("la-greeting"); input.focus(); }
       else { typingActive = false; }
+      perch();
       applyState();
     }
 

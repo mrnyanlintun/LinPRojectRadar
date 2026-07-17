@@ -843,12 +843,20 @@ body.t-light .theme-switch button.active { color: #fff; }
    answering. All motion is CSS/SMIL; JS toggles is-idle/is-listening/
    is-answering. Reduced-motion → static per-state poses (see block below). */
 .la-launcher {
-  position: fixed; right: 22px; bottom: 22px; z-index: 90;
+  position: fixed; right: 22px; bottom: 22px; z-index: 110;
   width: 64px; height: 64px; padding: 0;
   display: inline-flex; align-items: center; justify-content: center;
   background: transparent; border: 0; cursor: pointer;
   color: var(--phosphor);
+  /* the "hop" onto / off the open chat panel (position set by JS via translate) */
+  transition: transform .25s ease, width .2s ease, height .2s ease;
 }
+/* z-index 110 keeps the robot above the chat panel (91) and drawers (80/81) so
+   its listening/answering states stay visible while chatting, but below true
+   modal dialogs (.app-modal-backdrop 120 · .ds-modal-backdrop 200) which
+   correctly cover it. When perched it shrinks on mobile to sit in the header. */
+.la-launcher.perched-mobile { width: 44px; height: 44px; }
+.la-launcher.perched-mobile .la-robot { width: 44px; height: 44px; }
 .la-robot {
   width: 64px; height: 64px; overflow: visible;
   filter: drop-shadow(0 2px 7px color-mix(in srgb, var(--phosphor) 45%, transparent));
@@ -954,7 +962,7 @@ body.t-light .la-robot {
   .la-robot .bot-bob, .la-robot .bot-eye, .la-robot .bot-eyes,
   .la-robot .bot-wave, .la-robot .bot-acc, .la-robot .bot-grin, .la-robot .bot-mouth,
   .la-robot .bot-read, .la-robot .bot-dot, .la-robot .bot-say,
-  .la-launcher .la-robot { animation: none !important; transition: none !important; }
+  .la-launcher, .la-launcher .la-robot { animation: none !important; transition: none !important; }
   .la-robot .bot-wave { opacity: .55; }
   .la-robot .bot-read, .la-robot .bot-dot, .la-robot .bot-say { opacity: .85; }
 }
