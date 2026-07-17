@@ -2167,6 +2167,15 @@
       if (!window.LinSignals || !window.LinStore) return;
       const projects = (LinStore.cachedActive ? LinStore.cachedActive() : []);
       if (!projects.length) { status.textContent = "No ingested projects found."; return; }
+      const confirmed = window.confirm(
+        "Rebuild signals (repair)\n\n" +
+        "This re-runs local computation for all " + projects.length + " project" + (projects.length === 1 ? "" : "s") +
+        " and refreshes Portfolio Health from the results already on file.\n\n" +
+        "No AI calls, no document re-extraction — extraction results already on file are reused. " +
+        "This is the only tool that recomputes everything at once; use it if signals look stale or out of sync.\n\n" +
+        "Continue?"
+      );
+      if (!confirmed) return;
       btn.disabled = true;
       const overlay = showRecomputeOverlay(projects.length);   // determinate stage overlay (non-blocking)
       let done = 0;

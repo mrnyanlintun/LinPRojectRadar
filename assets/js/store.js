@@ -443,6 +443,28 @@
     return j;
   }
 
+  /* ---------- Portfolio Health persistence (v10.35 event-driven) ----------
+     Portfolio Health is computed at most once per upload/batch/repair (never
+     on page load or dialog open) and persisted server-side as one
+     portfolio_health.json at the Drive root. saveportfoliohealth writes the
+     snapshot after a compute pass; getportfoliohealth is a pure read, used
+     by the Health dialog. Both are non-fatal — a failure here must never
+     block the signal run that triggered it. */
+  async function savePortfolioHealth(payload) {
+    if (!configured()) return null;
+    try {
+      const j = await apiPost(Object.assign({ action: "saveportfoliohealth" }, payload));
+      return j;
+    } catch (e) { lastError = e; console.warn("[store] saveportfoliohealth failed:", e && e.message); return null; }
+  }
+  async function getPortfolioHealth() {
+    if (!configured()) return null;
+    try {
+      const j = await apiGet("?action=getportfoliohealth");
+      return j;
+    } catch (e) { lastError = e; console.warn("[store] getportfoliohealth failed:", e && e.message); return null; }
+  }
+
   /* ---------- synchronous accessors for render (read the mirror) ---------- */
   function cachedActive() { return LIN_PROJECTS.slice(); }
   function cachedArchived() { return LIN_ARCHIVED.slice(); }
@@ -460,6 +482,7 @@
     archiveProject, restoreProject, listArchived, chat, analyze,
     listCorpus, listAuditResults, ingestCorpus, runAudit, saveAuditResult,
     extractSignals, identifyDocument, overwriteSignal, resetSignals,
+    savePortfolioHealth, getPortfolioHealth,
     // slim portfolio list + stale-while-revalidate cache (v10.28)
     listSlim, loadSlim,
     readPortfolioCache, writePortfolioCache, clearPortfolioCache,
