@@ -224,6 +224,33 @@
     if (parent) parent.appendChild(e);
     return e;
   }
+  // Color-blind-safe cue: these are the tiny (r=4) flow-diagram module dots —
+  // too small for a legible letter, so status is ALSO encoded as a distinct
+  // shape (circle/triangle/diamond/square/ring — matches linStatusShape() in
+  // config.js). Draws a circle/rect/polygon in place of a plain circle;
+  // `attrs` still carries fill/opacity/filter/stroke as before.
+  function seShape(shape, cx, cy, r, attrs, parent) {
+    var a = Object.assign({}, attrs || {});
+    if (shape === 'square') {
+      a.x = cx - r; a.y = cy - r; a.width = r * 2; a.height = r * 2;
+      return se('rect', a, parent);
+    }
+    if (shape === 'triangle') {
+      a.points = cx + ',' + (cy - r) + ' ' + (cx - r) + ',' + (cy + r) + ' ' + (cx + r) + ',' + (cy + r);
+      return se('polygon', a, parent);
+    }
+    if (shape === 'diamond') {
+      a.points = cx + ',' + (cy - r) + ' ' + (cx + r) + ',' + cy + ' ' + cx + ',' + (cy + r) + ' ' + (cx - r) + ',' + cy;
+      return se('polygon', a, parent);
+    }
+    if (shape === 'ring') {
+      a.cx = cx; a.cy = cy; a.r = r * 0.7;
+      a.stroke = a.fill; a['stroke-width'] = Math.max(1, r * 0.5); a.fill = 'none';
+      return se('circle', a, parent);
+    }
+    a.cx = cx; a.cy = cy; a.r = r;
+    return se('circle', a, parent);
+  }
 
   // ─── Inject shared styles once ───────────────────────────────────────────────
   function ensureStyles() {
@@ -555,10 +582,11 @@
       var glow = info.status !== 'None' ? 'url(#lnf-glow-'+info.status+')' : null;
       var g = se('g', { class:'lnf-nd' }, nodeG);
 
-      var circleAttrs = { cx:CX.mod, cy:modY[mi], r:'4',
+      var circleAttrs = {
         fill:info.color, opacity:info.status==='None'?'0.20':'0.85', stroke:'none' };
       if (glow) circleAttrs.filter = glow;
-      var circle = se('circle', circleAttrs, g);
+      var dotShape = window.linStatusShape ? linStatusShape(info.status) : 'circle';
+      var circle = seShape(dotShape, CX.mod, modY[mi], 4, circleAttrs, g);
       if (info.status === 'Red') circle.classList.add('lnf-red-pulse');
 
       var lbl = se('text', {
@@ -570,9 +598,10 @@
       if (info.status==='None') lbl.setAttribute('opacity','0.55');
       lbl.textContent = trunc(m.name, 26);
 
+      circle.style.transformOrigin = CX.mod + 'px ' + modY[mi] + 'px';
       g.addEventListener('mouseenter', (function(m, mi, info, circle) {
         return function(evt) {
-          circle.setAttribute('r','6');
+          circle.style.transform = 'scale(1.5)';
           var metStr = info.metric ? '<div class="sub">metric: '+escH(info.metric)+'</div>' : '';
           var statusLabel = info.na ? escH(sectorNAText) : info.status;
           showTT(evt,'<div class="m">'+escH(m.num)+'</div><div class="n">'+escH(m.name)+'</div><div class="sub" style="color:'+info.color+'">'+statusLabel+'</div>'+metStr+'<div class="sub">'+escH(CATS[m.catI].name)+'</div>');
@@ -585,7 +614,7 @@
       g.addEventListener('mouseleave', (function(mi, info, circle) {
         return function() {
           hideTT();
-          circle.setAttribute('r','4');
+          circle.style.transform = '';
           modCatEls[mi].setAttribute('opacity', MODCAT_OP);
           modCatEls[mi].setAttribute('stroke-width','0.8');
           classAReset();
@@ -613,9 +642,11 @@
       var glow = cs !== 'None' ? 'url(#lnf-glow-'+cs+')' : null;
       var x=CX.cat, y=catCY[ci];
       var g = se('g', { class:'lnf-nd' }, nodeG);
-      var cAttrs = { cx:x, cy:y, r:'9', fill:color, opacity:cs==='None'?'0.28':'0.88', stroke:'none' };
+      var cAttrs = { fill:color, opacity:cs==='None'?'0.28':'0.88', stroke:'none' };
       if (glow) cAttrs.filter = glow;
-      var circle = se('circle', cAttrs, g);
+      var catShape = window.linStatusShape ? linStatusShape(cs) : 'circle';
+      var circle = seShape(catShape, x, y, 9, cAttrs, g);
+      circle.style.transformOrigin = x + 'px ' + y + 'px';
       if (cs==='Red') circle.classList.add('lnf-red-pulse');
       // number + name label, nudged up so the role caption sits directly beneath
       var t = se('text', { x:x+14, y:y-4, fill:'var(--muted, #6a8aaa)', 'font-size':'13', 'font-family':'monospace', 'dominant-baseline':'middle', class:'lnf-halo' }, g);
@@ -630,7 +661,7 @@
 
       g.addEventListener('mouseenter', (function(cat, ci, cs, color, circle) {
         return function(evt) {
-          circle.setAttribute('r','11');
+          circle.style.transform = 'scale(1.22)';
           var icIn  = interCatEls.filter(function(l){return l.dstI===ci;}).map(function(l){return 'C'+(l.srcI+1);});
           var icOut = interCatEls.filter(function(l){return l.srcI===ci;}).map(function(l){return 'C'+(l.dstI+1);});
           var sub = cat.count+' modules';
@@ -641,7 +672,7 @@
       })(cat, ci, cs, color, circle));
       g.addEventListener('mousemove', moveTT);
       g.addEventListener('mouseleave', (function(circle) {
-        return function() { hideTT(); circle.setAttribute('r','9'); };
+        return function() { hideTT(); circle.style.transform = ''; };
       })(circle));
       return g;
     });

@@ -68,6 +68,17 @@
   --status-red:      #ff3b30;
   --status-nodata:   #26344f;
 
+  /* Ink for the redundant status LETTER drawn on top of a status fill
+     (color-blind-safe cue — see linStatusLetter()/linStatusInk() in
+     config.js). Computed once from the -* fills above (identical across
+     themes): dark ink on the four light/medium fills, light ink on the
+     one dark-saturated fill (Red). */
+  --status-ink-complete: #0b1220;
+  --status-ink-green:    #0b1220;
+  --status-ink-yellow:   #0b1220;
+  --status-ink-amber:    #0b1220;
+  --status-ink-red:      #f5f8ff;
+
   --status-complete-text: var(--status-complete);
   --status-green-text:    var(--status-green);
   --status-yellow-text:   var(--status-yellow);
@@ -691,6 +702,18 @@ body.t-light .theme-switch button.active { color: #fff; }
 .detail-id h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(20px,2.6vw,30px); margin: 0 0 6px; letter-spacing: -.01em; }
 .detail-id h1 .mod-mono { color: var(--eyebrow); font-weight: 600; font-size: .8em; }
 .detail-meta { font-size: 13px; color: var(--muted); margin: 0; }
+
+/* ---------- Status provenance trace ("why this status") — quality pack ---------- */
+.det-prov { font-size: 12.5px; color: var(--muted); margin: 6px 0 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.det-prov-line { line-height: 1.4; }
+.det-prov-toggle { font-size: 12px; white-space: nowrap; }
+.det-prov-panel { display: block; width: 100%; margin-top: 4px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-soft); font-size: 12px; }
+.det-prov-panel[hidden] { display: none; }
+.det-prov-hop { padding: 3px 0; border-bottom: 1px dashed var(--line); }
+.det-prov-hop:last-of-type { border-bottom: none; }
+.det-prov-hop b { color: var(--text); }
+.det-prov-also { padding-top: 6px; margin-top: 4px; border-top: 1px solid var(--line); }
+.det-prov-also b { color: var(--text); }
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; margin-bottom: 18px; }
 @media (max-width: 940px) { .detail-grid { grid-template-columns: 1fr; } }
 .detail-mods-h { font-family: var(--font-display); font-size: 17px; margin: 4px 0 12px; }
@@ -1816,6 +1839,17 @@ body.t-light .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .status-dot-green { background: var(--status-green, #2e9e5b); }
 .status-dot-complete { background: var(--status-complete, #4ea0ff); }
 .status-dot-none { background: var(--faint, #6f7d90); opacity: .5; }
+/* Color-blind-safe cue: at 9px these dots are too small for a legible
+   letter, so status is ALSO encoded as a distinct shape (circle/triangle/
+   diamond/square/ring — matches linStatusShape() in config.js). */
+.status-dot-green { border-radius: 50%; clip-path: none; }                                  /* circle */
+.status-dot-yellow { border-radius: 0; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }    /* triangle */
+.status-dot-amber { border-radius: 0; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); } /* diamond */
+.status-dot-red { border-radius: 0; clip-path: none; }                                      /* square */
+.status-dot-complete {
+  border-radius: 50%; clip-path: none;
+  background: transparent; box-shadow: inset 0 0 0 2px var(--status-complete, #4ea0ff);
+}                                                                                            /* ring */
 .dd-cat-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 12px; }
 .dd-cat-body[hidden] { display: none; }
 .dd-cat8-summary { margin: 2px 0; }

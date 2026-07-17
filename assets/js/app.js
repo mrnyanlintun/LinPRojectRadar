@@ -84,6 +84,28 @@
   const reduceMotion = () =>
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  /* ---------- color-blind-safe status shape badge ----------
+     The radar blip icon is deliberately ONE uniform glyph (see the
+     #blip-building comment below) — status is colour-only on the icon
+     itself, and at ICON=16 SVG units it's too small to hold a legible
+     letter. So the redundant non-color cue here is a small distinct SHAPE
+     badge (ring/circle/triangle/diamond/square, from linStatusShape()) drawn
+     at the icon's top-right corner, filled with the same status colour. */
+  function shapeBadge(shape, cx, cy, r, fill) {
+    if (shape === "circle") return el("circle", { cx, cy, r, fill });
+    if (shape === "square") return el("rect", { x: cx - r, y: cy - r, width: r * 2, height: r * 2, fill });
+    if (shape === "triangle") {
+      const p = `${cx},${cy - r} ${cx - r},${cy + r} ${cx + r},${cy + r}`;
+      return el("polygon", { points: p, fill });
+    }
+    if (shape === "diamond") {
+      const p = `${cx},${cy - r} ${cx + r},${cy} ${cx},${cy + r} ${cx - r},${cy}`;
+      return el("polygon", { points: p, fill });
+    }
+    // ring — hollow circle, for Complete
+    return el("circle", { cx, cy, r: r * 0.72, fill: "none", stroke: fill, "stroke-width": Math.max(1, r * 0.5) });
+  }
+
   // Stable angle within a sector from a hashed id (no per-render jitter)
   function hashAngle(project) {
     // Unknown / missing sector must not throw and drop the project — fall back
@@ -488,6 +510,17 @@
       icon.style.filter = `drop-shadow(0 0 4px ${color})`;  // glow, matches status
       g.appendChild(icon);
 
+      // color-blind-safe cue: small shape badge at the icon's top-right
+      // corner (too small at ICON=16 for a legible letter — see shapeBadge()).
+      if (!empty && window.linStatusShape) {
+        const shape = linStatusShape(status);
+        const badgeFill = window.LIN_STATUS_COLORS ? LIN_STATUS_COLORS[
+          status === "complete" ? "Complete" : status === "green" ? "Green" :
+          status === "yellow" ? "Yellow" : status === "amber" ? "Amber" : "Red"
+        ] : color;
+        g.appendChild(shapeBadge(shape, q.x + ICON / 2 - 1, q.y - ICON / 2 + 1, 3.4, badgeFill));
+      }
+
       // leader line when the label was nudged away from its natural spot
       if (Math.abs(q.ly - (q.y + 4)) > 5) {
         g.appendChild(el("line", {
@@ -736,10 +769,10 @@
         // head: r9.5 circle centred (12,12); flanks sweep down to the tip at (12,32)
         '<path class="gl-pin-body" fill="currentColor" ' +
           'd="M12 32 C12 32 21.5 20.2 21.5 12 A9.5 9.5 0 1 0 2.5 12 C2.5 20.2 12 32 12 32 Z"/>' +
-        // inner dot — dark so it reads as a hole against every status fill.
-        // stroke:none keeps Miami's marker outline on the body silhouette only.
-        '<circle class="gl-pin-hole" cx="12" cy="12" r="3.4" fill="rgba(0,8,18,.82)" stroke="none"/>' +
       '</g></defs>';
+      // (The former decorative "hole" circle at (12,12) was replaced by the
+      // color-blind-safe status LETTER drawn per-marker in pinMarkerEl() —
+      // same visual anchor, now carries information instead of just contrast.)
     document.body.appendChild(holder);
   }
 
@@ -760,9 +793,25 @@
     inner.style.animationDelay = mapPinBlinkDelay(p.id).toFixed(2) + "s";   // stagger the fleet
     // 30px tall at the 24×32 aspect → 22.5 wide. The <use> pulls the shared
     // teardrop; currentColor resolves from --pin-color on .gl-pin-inner.
+    // color-blind-safe cue: a status letter (C/G/Y/A/R) inside the pin head —
+    // the head is a 19px circle, big enough for a legible letter (unlike the
+    // 16-unit radar blip icon, which uses a shape badge instead — see
+    // shapeBadge() above). Ink auto-contrasts per status via linStatusInk().
+    const sKey = statusKey(p);
+    const letter = window.linStatusLetter ? linStatusLetter(sKey) : "";
+    const capName = sKey === "complete" ? "Complete" : sKey === "green" ? "Green" :
+      sKey === "yellow" ? "Yellow" : sKey === "amber" ? "Amber" : sKey === "red" ? "Red" : null;
+    const ink = (capName && window.LIN_STATUS_COLORS && window.linStatusInk)
+      ? linStatusInk(LIN_STATUS_COLORS[capName]) : "#0b1220";
+    const letterSvg = letter
+      ? `<text class="gl-pin-letter" x="12" y="12" text-anchor="middle" dominant-baseline="central" ` +
+        `font-family="var(--font-mono, monospace)" font-size="10" font-weight="700" fill="${ink}" ` +
+        `aria-hidden="true">${esc(letter)}</text>`
+      // no signals yet: keep the old decorative "hole" dot instead of a letter
+      : '<circle class="gl-pin-hole" cx="12" cy="12" r="3.4" fill="rgba(0,8,18,.82)" stroke="none"/>';
     inner.innerHTML =
       '<svg class="gl-pin-glyph" viewBox="0 0 24 32" width="22.5" height="30" aria-hidden="true">' +
-      '<use href="#gl-pin-shape"/></svg>' +
+      '<use href="#gl-pin-shape"/>' + letterSvg + '</svg>' +
       `<span class="gl-pin-num">${esc(p.id)}</span>`;
     el.appendChild(inner);
     return el;

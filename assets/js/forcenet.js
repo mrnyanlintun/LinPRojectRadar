@@ -63,6 +63,22 @@
   var _S = window.LIN_STATUS_COLORS;
   var SC = {Complete:_S.Complete, Green:_S.Green, Yellow:_S.Yellow, Amber:_S.Amber, Red:_S.Red, "null":_S.None};
 
+  // Color-blind-safe cue: module dots are 3-8px on canvas — too small for a
+  // legible letter, so status is ALSO encoded as a distinct shape (matches
+  // linStatusShape() in config.js: circle/triangle/diamond/square/ring).
+  // Traces the path only; caller fills or strokes it.
+  function tracePath(ctx, shape, cx, cy, r) {
+    ctx.beginPath();
+    if (shape === "square") { ctx.rect(cx - r, cy - r, r * 2, r * 2); return; }
+    if (shape === "triangle") {
+      ctx.moveTo(cx, cy - r); ctx.lineTo(cx - r, cy + r); ctx.lineTo(cx + r, cy + r); ctx.closePath(); return;
+    }
+    if (shape === "diamond") {
+      ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy); ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r, cy); ctx.closePath(); return;
+    }
+    ctx.arc(cx, cy, r, 0, Math.PI * 2); // circle + ring (ring is stroked hollow by the caller)
+  }
+
   // ── MODULE REGISTRY ────────────────────────────────────────────
   var CATS_DATA = [];
   var MODS = [];         // {idx, cat, catName, catShort, catColor, num, name, status, metric}
@@ -302,10 +318,12 @@
       if (focusCat && m.cat === focusCat) r *= 1.4;
       if (isH) r *= 1.8;
 
-      ctx.beginPath(); ctx.arc(s.pp.x, s.pp.y, r, 0, Math.PI * 2);
+      var shape = window.linStatusShape ? linStatusShape(m.status) : "circle";
+      tracePath(ctx, shape, s.pp.x, s.pp.y, r);
       ctx.fillStyle = col;
       ctx.globalAlpha = focused ? (m.status ? (isH ? 1 : 0.85) : 0.2) : 0.05;
-      ctx.fill();
+      if (m.status === "Complete") { ctx.lineWidth = Math.max(1, r * 0.45); ctx.strokeStyle = col; ctx.stroke(); }
+      else ctx.fill();
 
       if (m.status && focused) {
         ctx.beginPath(); ctx.arc(s.pp.x, s.pp.y, r + 1, 0, Math.PI * 2);

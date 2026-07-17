@@ -497,6 +497,149 @@
   }
   // Compact "what's already on file" note for the ingest panel, so the PM can
   // see existing documents before uploading again.
+  /* ============================================================
+     Status provenance trace ("why this status") — quality pack.
+     Pure read of already-stored data (project.status, category/module
+     statuses derived from the stored simulationSignals/signals, and
+     signalInputs.sources[field].docType/.at) — never recomputes.
+     Walks: project status → worst category (getCategoryStatus) →
+     worst module in it (getModuleStatus) → its evidence_metric →
+     the source document that fed the module's required input(s).
+     ============================================================ */
+  const PROV_RANK = { Red: 0, Amber: 1, Yellow: 2, Green: 3, Complete: 4 };
+  function provRank(s) { const n = PROV_RANK[normalizeStatus(s)]; return n == null ? 9 : n; }
+
+  // Best-effort extraction of the one number worth surfacing inline from an
+  // evidence_metric sentence (e.g. "...doc risk 0.46)" → "0.46"). Falls back
+  // to null (the one-liner omits the parenthetical) rather than guessing.
+  function firstMetricNumber(evidenceMetric) {
+    if (!evidenceMetric) return null;
+    const m = String(evidenceMetric).match(/(-?\d+(?:\.\d+)?)/);
+    return m ? m[1] : null;
+  }
+
+  function sourceForModule(project, module) {
+    const si = project.signalInputs || {};
+    const required = module.required || [];
+    for (let i = 0; i < required.length; i++) {
+      const raw = si.sources && si.sources[required[i]];
+      const entry = Array.isArray(raw) ? raw[raw.length - 1] : raw;
+      if (entry && entry.docType && entry.docType !== "derived") {
+        return { field: required[i], docType: entry.docType, at: entry.at || null, fileName: entry.fileName || null };
+      }
+    }
+    // No non-derived source found — fall back to ANY source (including a
+    // derived estimate) so the trace still points somewhere, flagged as such.
+    for (let i = 0; i < required.length; i++) {
+      const raw = si.sources && si.sources[required[i]];
+      const entry = Array.isArray(raw) ? raw[raw.length - 1] : raw;
+      if (entry) return { field: required[i], docType: entry.docType || "unknown", at: entry.at || null, derived: entry.docType === "derived" };
+    }
+    return null;
+  }
+
+  function buildProvenanceTrace(project) {
+    if (!project || !window.LIN_CATEGORIES || typeof window.getCategoryStatus !== "function") return null;
+    const projStatus = project.status ||
+      (window.getProjectFusion ? ((window.getProjectFusion(project) || {}).status) : null);
+    if (!projStatus) return null;
+
+    const cats = window.projectLevelCategories ? window.projectLevelCategories()
+      : LIN_CATEGORIES.filter((c) => !c.parked);
+    let worstCat = null, worstCatStatus = null, worstCatRank = 99, catTieCount = 0;
+    cats.forEach((c) => {
+      const st = window.getCategoryStatus(c.id, project);
+      if (!st) return;
+      const r = provRank(st);
+      if (r < worstCatRank) { worstCatRank = r; worstCat = c; worstCatStatus = st; catTieCount = 1; }
+      else if (r === worstCatRank) { catTieCount++; }
+    });
+    if (!worstCat) return null;
+
+    let worstMod = null, worstModStatus = null, worstModRank = 99, modTieCount = 0;
+    worstCat.modules.forEach((m) => {
+      const st = window.getModuleStatus ? window.getModuleStatus(m.method_class, project) : null;
+      if (!st || st === "NA") return;
+      const r = provRank(st);
+      if (r < worstModRank) { worstModRank = r; worstMod = m; worstModStatus = st; modTieCount = 1; }
+      else if (r === worstModRank) { modTieCount++; }
+    });
+    if (!worstMod) return null;
+
+    const simArr = (project.simulationSignals && project.simulationSignals.signal_array) || [];
+    const simResult = simArr.find((r) => r && r.method_class === worstMod.method_class);
+    const evidenceMetric = simResult ? (simResult.evidence_metric || null) : null;
+    const source = sourceForModule(project, worstMod);
+
+    // Every OTHER Red/Amber module across the whole project (not just the
+    // worst category), for the "also elevated: …" list.
+    const otherFlags = [];
+    LIN_CATEGORIES.forEach((c) => {
+      if (c.parked) return;
+      (c.modules || []).forEach((m) => {
+        if (m.method_class === worstMod.method_class) return;
+        const st = window.getModuleStatus ? window.getModuleStatus(m.method_class, project) : null;
+        if (!st || st === "NA") return;
+        const n = normalizeStatus(st);
+        if (n === "Red" || n === "Amber") otherFlags.push({ cat: c, module: m, status: n });
+      });
+    });
+    otherFlags.sort((a, b) => provRank(a.status) - provRank(b.status));
+
+    return {
+      projStatus, worstCat, worstCatStatus, catTieCount,
+      worstMod, worstModStatus, modTieCount,
+      evidenceMetric, source, otherFlags
+    };
+  }
+
+  function provenanceLineHtml(project) {
+    const t = buildProvenanceTrace(project);
+    if (!t) return "";
+    const metricNum = firstMetricNumber(t.evidenceMetric);
+    const docLabel = t.source
+      ? ((window.LinSignals && LinSignals.DOC_TYPE_LABEL && LinSignals.DOC_TYPE_LABEL[t.source.docType]) || t.source.docType)
+      : null;
+    const docDate = t.source && t.source.at ? (window.LinTZ ? LinTZ.format(t.source.at) : String(t.source.at).slice(0, 10)) : null;
+    const tieNote = t.catTieCount > 1 ? " and " + (t.catTieCount - 1) + " other" + (t.catTieCount - 1 === 1 ? "" : "s") : "";
+    const parts = [
+      esc(t.projStatus) + " — driven by " + esc(t.worstCat.num) + " " + esc(t.worstCat.name) + tieNote,
+      esc(t.worstMod.num) + " " + esc(t.worstMod.name) + (metricNum ? " (" + esc(metricNum) + ")" : "")
+    ];
+    if (docLabel) {
+      parts.push(esc(docLabel) + (docDate ? " " + esc(docDate) : "") + (t.source.derived ? " [est.]" : ""));
+    }
+    const oneLine = parts.join(" → ");
+    const hasDetail = !!(t.evidenceMetric || t.otherFlags.length);
+    return `<p class="det-prov" data-detail-provenance>
+      <span class="det-prov-line">${oneLine}</span>
+      ${hasDetail ? `<button type="button" class="dd-link det-prov-toggle" aria-expanded="false">why?</button>` : ""}
+      <span class="det-prov-panel" hidden>${provenancePanelHtml(t)}</span>
+    </p>`;
+  }
+
+  function provenancePanelHtml(t) {
+    const rows = [];
+    rows.push(`<div class="det-prov-hop"><b>Project</b> — ${esc(t.projStatus)}</div>`);
+    rows.push(`<div class="det-prov-hop"><b>${esc(t.worstCat.num)} ${esc(t.worstCat.name)}</b> — ${esc(t.worstCatStatus)}${t.catTieCount > 1 ? ` (tied with ${t.catTieCount - 1} other category${t.catTieCount - 1 === 1 ? "" : "ies"} at this severity — first shown)` : ""}</div>`);
+    rows.push(`<div class="det-prov-hop"><b>${esc(t.worstMod.num)} ${esc(t.worstMod.name)}</b> — ${esc(t.worstModStatus)}${t.modTieCount > 1 ? ` (tied with ${t.modTieCount - 1} other module${t.modTieCount - 1 === 1 ? "" : "s"} at this severity — first shown)` : ""}${t.evidenceMetric ? `<div class="kn-sub">${esc(t.evidenceMetric)}</div>` : ""}</div>`);
+    if (t.source) {
+      const docLabel = (window.LinSignals && LinSignals.DOC_TYPE_LABEL && LinSignals.DOC_TYPE_LABEL[t.source.docType]) || t.source.docType;
+      const docDate = t.source.at ? (window.LinTZ ? LinTZ.format(t.source.at) : String(t.source.at).slice(0, 10)) : "date unknown";
+      rows.push(`<div class="det-prov-hop"><b>Source</b> — ${esc(docLabel)}${t.source.fileName ? " (" + esc(t.source.fileName) + ")" : ""}, ${esc(docDate)}${t.source.derived ? " — estimated field, not a direct extraction" : ""}</div>`);
+    } else {
+      rows.push(`<div class="det-prov-hop"><b>Source</b> — no traceable document for this module's inputs.</div>`);
+    }
+    if (t.otherFlags.length) {
+      const shown = t.otherFlags.slice(0, 6);
+      const extra = t.otherFlags.length - shown.length;
+      rows.push(`<div class="det-prov-also"><b>Also elevated:</b> ` +
+        shown.map((f) => esc(f.module.num) + " " + esc(f.module.name) + " (" + esc(f.status) + ")").join(", ") +
+        (extra > 0 ? ", and " + extra + " more" : "") + `</div>`);
+    }
+    return rows.join("");
+  }
+
   function ingestUploadedNoteHtml(project) {
     const evs = uploadedDocEvents(project);
     if (!evs.length) return "";
@@ -560,6 +703,7 @@
              Reporting period: <span class="mod-mono">${esc(p.reportingPeriod)}</span> ·
              State: <span class="li-state state-${stateKey}">${esc(state)}</span>
            </p>
+           ${populated ? provenanceLineHtml(p) : ""}
          </div>
          <div class="detail-head-actions">
            <button class="btn small primary detail-upload" data-upload="${esc(p.id)}">Upload documents</button>
@@ -611,6 +755,7 @@
 
     wireBack(root);
     wireReset(root);
+    wireProvenanceTrace(root);
     // Initialise any section the session restored as open.
     Object.keys(lazyInits).forEach((secId) => {
       const body = document.getElementById("body-" + secId);
@@ -1297,6 +1442,21 @@
       b.addEventListener("click", () => {
         if (window.LinIngest && LinIngest.openUploadModal) LinIngest.openUploadModal(b.dataset.upload);
       }));
+  }
+
+  // Status provenance trace toggle — pure UI expand/collapse, no data fetch
+  // (the panel HTML is already rendered; this just reveals it).
+  function wireProvenanceTrace(root) {
+    const toggle = root.querySelector(".det-prov-toggle");
+    if (!toggle) return;
+    const panel = root.querySelector(".det-prov-panel");
+    if (!panel) return;
+    toggle.addEventListener("click", () => {
+      const open = panel.hasAttribute("hidden");
+      if (open) panel.removeAttribute("hidden"); else panel.setAttribute("hidden", "");
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.textContent = open ? "hide" : "why?";
+    });
   }
 
   // Reset signals: POST resetsignals, clear local signal state, re-render the
