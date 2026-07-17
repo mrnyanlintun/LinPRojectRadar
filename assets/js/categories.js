@@ -386,12 +386,6 @@ window.getCategoryStatus = function (catId, project) {
    every currently-Red module + its category (so the brief can flag
    them even on a Green project), and Complete + liability handling.
    ------------------------------------------------------------ */
-function projectPercentComplete_(project) {
-  const si = (project && project.signalInputs) || {};
-  const v = si.actualPctComplete != null ? si.actualPctComplete : si.pctComplete;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
 function projectCompletionDate_(project) {
   const si = (project && project.signalInputs) || {};
   if (si.baselineEnd) return si.baselineEnd;
@@ -401,6 +395,41 @@ function projectCompletionDate_(project) {
   if (project && project.reportingPeriod) return project.reportingPeriod + "-01";
   return null;
 }
+window.projectCompletionDate = projectCompletionDate_;
+/* ------------------------------------------------------------
+   Canonical status-decision helper — the ONE place the Complete
+   promotion + liability rule is implemented. Called by getProjectFusion
+   (live, full-object render paths) AND by the signal-run finalization
+   in signals.js (so the PERSISTED project.status — the only field the
+   slim/listslim portfolio-list path can read — carries the same
+   promotion the map/radar/detail already compute live). Pure function:
+   fusedStatus is the raw DST-fused band (Green/Yellow/Amber/Red/null);
+   signalInputs supplies actualPctComplete + the completion-date fields;
+   sector drives the 2-year Construction/Hybrid liability tail. ------ */
+window.deriveProjectStatus = function (fusedStatus, signalInputs, sector, completionDate) {
+  const si = signalInputs || {};
+  const v = si.actualPctComplete != null ? si.actualPctComplete : si.pctComplete;
+  const pct = Number(v);
+  const out = { status: fusedStatus || null, complete: false, completionDate: null, liabilityUntil: null };
+  if (!Number.isFinite(pct) || pct < 100) return out;
+
+  out.status = "Complete";
+  out.complete = true;
+  const cDate = completionDate ||
+    si.baselineEnd ||
+    null;
+  out.completionDate = cDate;
+  const sec = String(sector || "").toLowerCase();
+  if ((sec === "construction" || sec === "hybrid" || sec === "combined") && cDate) {
+    const d = new Date(cDate);
+    if (!isNaN(d.getTime())) {
+      d.setFullYear(d.getFullYear() + 2);
+      out.liabilityUntil = d.toISOString().slice(0, 10);
+    }
+  }
+  return out;
+};
+
 window.getProjectFusion = function (project) {
   if (!project) return null;
   const catStatuses = LIN_CATEGORIES
@@ -435,20 +464,15 @@ window.getProjectFusion = function (project) {
 
   // Complete (blue) is a project-end flag set by actual % complete == 100,
   // independent of DST. Construction/Hybrid then carry a 2-year liability tail.
-  const comp = projectPercentComplete_(project);
-  if (comp != null && comp >= 100) {
-    out.status = "Complete";
+  // Delegates to the canonical deriveProjectStatus so this live path and the
+  // persisted-at-finalization path (signals.js) can never disagree.
+  const completionDate = projectCompletionDate_(project);
+  const decided = window.deriveProjectStatus(out.status, project.signalInputs, project.sector, completionDate);
+  out.status = decided.status;
+  if (decided.complete) {
     out.complete = true;
-    const completionDate = projectCompletionDate_(project);
-    out.completionDate = completionDate;
-    const sector = String(project.sector || "").toLowerCase();
-    if ((sector === "construction" || sector === "hybrid" || sector === "combined") && completionDate) {
-      const d = new Date(completionDate);
-      if (!isNaN(d.getTime())) {
-        d.setFullYear(d.getFullYear() + 2);
-        out.liabilityUntil = d.toISOString().slice(0, 10);
-      }
-    }
+    out.completionDate = decided.completionDate;
+    if (decided.liabilityUntil) out.liabilityUntil = decided.liabilityUntil;
   }
   return out;
 };
