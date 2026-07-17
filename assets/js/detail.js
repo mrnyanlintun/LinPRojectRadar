@@ -207,7 +207,7 @@
      backed by a faint arc in the category colour.
      ============================================================ */
   const MOD_CX = 250, MOD_CY = 250, MOD_OUTER = 200;
-  const PARKED_GREY = "#64748b"; // Cat 8 (ML/AI) parked-status grey
+  const PARKED_GREY = "#64748b"; // Portfolio Health (ex-Cat 8 ML/AI) parked-status grey
   // Central palette (radar.css --status-* via config.js). Canvas/SVG dots.
   const SC = window.LIN_STATUS_COLORS;
   const DOT_COLOR = {
@@ -271,7 +271,7 @@
       cat.modules.forEach((m) => {
         const angle = -Math.PI / 2 + (Math.PI * 2 * slot) / totalSlots;
         // Parked categories never compute; inactive modules need document data.
-        // Everything else (incl. active Cat 8 ML) resolves via getModuleStatus.
+        // Everything else (incl. active Portfolio Health ML) resolves via getModuleStatus.
         const status = (cat.parked || m.active === false) ? null
           : (window.getModuleStatus ? getModuleStatus(m.method_class, project) : null);
         axes.push({ cat, module: m, angle, status });
@@ -865,8 +865,9 @@
     "Cat 1": "Cost Performance (Cat 1)", "Cat 2": "Schedule Simulation (Cat 2)",
     "Cat 3": "Cost Simulation (Cat 3)", "Cat 4": "Document & Risk (Cat 4)",
     "Cat 5": "System Dynamics (Cat 5)", "Cat 6": "Signal Synthesis (Cat 6)",
-    "Cat 7": "Evidence Combination (Cat 7)", "Cat 8": "Portfolio Analysis (Cat 8)",
-    "Cat 9": "Governance & Compliance (Cat 9)"
+    "Cat 7": "Evidence Combination (Cat 7)", "Cat 8": "Governance & Compliance (Cat 8)",
+    "Cat 9": "Data Integrity (Cat 9)", "Cat 10": "Decision Optimization (Cat 10)",
+    "PH": "Portfolio Health — ML & AI (portfolio-scale, not a numbered category)"
   };
 
   /* Parse the structured 4-section brief into its parts. Returns null when the

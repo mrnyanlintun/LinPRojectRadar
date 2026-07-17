@@ -6,8 +6,10 @@
    is one category, coloured by that category's computed status
    FOR THIS PROJECT (reusing window.getCategoryStatus — the exact
    same source that colours the per-category module cards). Edges
-   show signal flow: generators → synthesis → evidence → ML →
-   governance, with Cat 10–12 as supporting inputs.
+   show signal flow: generators → synthesis → evidence → Portfolio
+   Health → governance, with data integrity / decision optimization
+   as supporting inputs. Display numbers are gapless 1-10 (Portfolio
+   Health is portfolio-scale and unnumbered) via each category's num.
 
    Pure 2D: scroll to zoom, drag to pan. No 3D projection, no
    rotation. Replaces the 3D force network (forcenet.js), which is
@@ -33,14 +35,15 @@
   var SHORT_NAME = {
     cat1:  "Quant EVM",     cat2:  "Schedule Sim", cat3:  "Cost Sim",
     cat4:  "Doc & Risk",    cat5:  "Sys Dynamics", cat6:  "Synthesis",
-    cat7:  "Evidence",      cat8:  "ML & AI",      cat9:  "Governance",
+    cat7:  "Evidence",      cat8:  "Portfolio Health", cat9:  "Governance",
     cat10: "Data Integrity", cat11: "Decision Opt"
   };
 
-  // Fixed 2D layout (world coordinates). Left-to-right signal flow:
-  // generators (Cat 1–5) → synthesis (Cat 6) → evidence (Cat 7) / ML (Cat 8)
-  // → governance (Cat 9); Cat 10 (data integrity) and Cat 11 (decision opt)
-  // sit as supporting inputs near their targets.
+  // Fixed 2D layout (world coordinates; positions keyed by stable internal
+  // ids, unaffected by display renumbering). Left-to-right signal flow:
+  // generators (cat1-5) → synthesis (cat6) → evidence (cat7) / Portfolio
+  // Health (cat8) → governance (cat9); data integrity (cat10) and decision
+  // opt (cat11) sit as supporting inputs near their targets.
   // Spacing is chosen so node labels never collide.
   var LAYOUT = {
     cat1:  { x: 110, y: 70  }, cat2: { x: 110, y: 160 }, cat3: { x: 110, y: 250 },
@@ -160,7 +163,7 @@
         var st = categoryStatus(c.id, project);
         return {
           id: c.id,
-          num: c.num,                                   // "Cat 1" … "Cat 11"
+          num: c.num,                                   // "Cat 1" … "Cat 10", "PH"
           name: SHORT_NAME[c.id] || c.name,
           pos: LAYOUT[c.id],
           status: st,

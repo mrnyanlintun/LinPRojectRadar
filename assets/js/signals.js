@@ -503,12 +503,13 @@
     return snapshot;
   }
 
-  /* ---------- Cat 8 — portfolio-wide ML anomaly detection ----------
+  /* ---------- Portfolio Health — portfolio-wide ML anomaly detection ----------
      Builds signal vectors from every loaded project (plus the current one) and
      POSTs them to the backend `portfolioanalyze` endpoint (Code.gs v10.17),
-     which returns the 5 Cat 8 module results. Non-fatal and async — the core
-     signal run is never blocked by it. Returns an array of Cat-8 sim results
-     (real results, or insufficient-data stubs when there isn't enough data). */
+     which returns the 5 Portfolio Health module results (PH.1-PH.5). Non-fatal
+     and async — the core signal run is never blocked by it. Returns an array
+     of Portfolio Health sim results (real results, or insufficient-data stubs
+     when there isn't enough data). */
   const CAT8_METHODS = ["Isolation_Forest", "Portfolio_Outlier", "Trajectory_Classifier",
                         "Cross_Project_Pattern", "Anomaly_Score"];
   function cat8Insufficient(message) {
@@ -522,7 +523,7 @@
     // SLIM rows from ?action=listslim (the stale-while-revalidate portfolio list
     // that now fills LIN_PROJECTS) expose cpi/spi/docRisk(Score)/actualPctComplete
     // at the TOP level with no signalInputs. Reading only signalInputs dropped
-    // every slim row → pool < 3 → Cat 8 permanently starved. Read either shape.
+    // every slim row → pool < 3 → Portfolio Health permanently starved. Read either shape.
     const si = (p && p.signalInputs) ? p.signalInputs : (p && p.slim ? p : null);
     if (!si || si.cpi == null) return null;
     const docRisk = si.docRiskScore != null ? si.docRiskScore
@@ -752,9 +753,10 @@
         });
       } catch (e) { /* simulations are non-fatal — never block the core run */ }
     }
-    // Cat 8 — portfolio-wide ML anomaly detection (POST portfolioanalyze). Runs
-    // AFTER runAll() so the snapshot below is built with Cat 8 included. Async
-    // and non-fatal: merged into the sim array when it returns, skipped on error.
+    // Portfolio Health — portfolio-wide ML anomaly detection (POST
+    // portfolioanalyze). Runs AFTER runAll() so the snapshot below is built
+    // with Portfolio Health included. Async and non-fatal: merged into the
+    // sim array when it returns, skipped on error.
     if (simPayload) {
       try {
         const cat8 = await runPortfolioAnalysis(project, window.LIN_PROJECTS);
@@ -763,7 +765,7 @@
             .filter((s) => CAT8_METHODS.indexOf(s.method_class) < 0)
             .concat(cat8);
         }
-      } catch (e) { /* Cat 8 is non-fatal — never block the core run */ }
+      } catch (e) { /* Portfolio Health is non-fatal — never block the core run */ }
     }
     persistHistorySnapshot(project);
     try { buildCategorySnapshot(project); } catch (e) { /* non-fatal — keeps the legacy snapshot path working */ }

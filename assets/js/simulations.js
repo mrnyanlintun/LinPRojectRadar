@@ -2030,7 +2030,7 @@
     };
   }
 
-  /* ---------- Cat 9 — Governance extensions ---------- */
+  /* ---------- Cat 8 — Governance extensions ---------- */
 
   function runFARThreshold(si) {
     if (!checkInputs(si, ['bac','cpi','ev','ac'])) return insufficientData('FAR_Threshold');
@@ -2165,7 +2165,7 @@
     };
   }
 
-  // Cat 9.6 — Quality Compliance Index
+  // Cat 8.6 — Quality Compliance Index
   function runQualityCompliance(si) {
     if (!checkInputs(si, ['qualityDeficienciesNoted']))
       return insufficientData('Quality_Compliance');
@@ -2188,7 +2188,7 @@
     };
   }
 
-  // Cat 9.7 — Safety Performance Index
+  // Cat 8.7 — Safety Performance Index
   function runSafetyPerformance(si) {
     if (!checkInputs(si, ['safetyIncidentsDiscussed']))
       return insufficientData('Safety_Performance');
@@ -2213,7 +2213,7 @@
     };
   }
 
-  // Cat 9.8 — Environmental Compliance Rate
+  // Cat 8.8 — Environmental Compliance Rate
   function runEnvironmentalCompliance(si) {
     if (!checkInputs(si, ['environmentalIssuesDiscussed']))
       return insufficientData('Environmental_Compliance');
@@ -2340,7 +2340,7 @@
   }
 
   /* ===========================================================
-     Cat 10 — Data Integrity & Information Quality
+     Cat 9 — Data Integrity & Information Quality
      ---------------------------------------------------------
      Quantifies the QUALITY of the inputs the other 100 modules
      consume. Every signal is only as good as its source data, so
@@ -2348,7 +2348,7 @@
      should place in the rest of the stack.
      =========================================================== */
 
-  // Cat 10.1 — Missing Data Index
+  // Cat 9.1 — Missing Data Index
   function runMissingDataIndex(si) {
     var coreFields = ['bac','ev','ac','pv','cpi','spi','docRiskScore',
                       'actualPctComplete','plannedPctComplete',
@@ -2370,7 +2370,7 @@
     };
   }
 
-  // Cat 10.2 — Data Timeliness Score
+  // Cat 9.2 — Data Timeliness Score
   function runDataTimeliness(si) {
     if (!si.docDate) return insufficientData('Data_Timeliness_Score');
     var docDate = new Date(si.docDate);
@@ -2389,7 +2389,7 @@
     };
   }
 
-  // Cat 10.3 — Source Reliability Weighting
+  // Cat 9.3 — Source Reliability Weighting
   function runSourceReliability(si) {
     if (!si.sources || Object.keys(si.sources).length === 0)
       return insufficientData('Source_Reliability_Weighting');
@@ -2428,7 +2428,7 @@
     };
   }
 
-  // Cat 10.4 — Audit Trail Completeness
+  // Cat 9.4 — Audit Trail Completeness
   function runAuditTrailCompleteness(si, project) {
     var events = (project && project.events) ? project.events : [];
     var requiredEvents = ['project_created', 'signals_extracted'];
@@ -2456,7 +2456,7 @@
     };
   }
 
-  // Cat 10.5 — Information Completeness Ratio
+  // Cat 9.5 — Information Completeness Ratio
   function runInfoCompletenessRatio(si) {
     var allFields = ['bac','ev','ac','pv','cpi','spi','docRiskScore',
                      'actualPctComplete','plannedPctComplete',
@@ -2493,7 +2493,7 @@
     };
   }
 
-  // Cat 10.6 — Cross-document Consistency Score
+  // Cat 9.6 — Cross-document Consistency Score
   function runCrossDocConsistency(si) {
     if (!checkInputs(si, ['ev','ac'])) return insufficientData('Cross_Doc_Consistency');
     var inconsistencies = 0;
@@ -2533,7 +2533,7 @@
     };
   }
 
-  // Cat 10.7 — Reporting Frequency Index
+  // Cat 9.7 — Reporting Frequency Index
   function runReportingFrequency(si, project) {
     var events = (project && project.events) ? project.events : [];
     // simulation_run is the canonical extraction-tracked event today; if
@@ -2570,14 +2570,14 @@
   }
 
   /* ===========================================================
-     Cat 11 — Decision Optimization
+     Cat 10 — Decision Optimization
      ---------------------------------------------------------
-     Cat 5 explains how the system behaves; Cat 11 selects the
+     Cat 5 explains how the system behaves; Cat 10 selects the
      best action under constraints. Multi-objective, LP, regret-
      minimization etc — answer the PM's "what should I do?".
      =========================================================== */
 
-  // Cat 11.1 — Multi-Objective Optimization
+  // Cat 10.1 — Multi-Objective Optimization
   function runMultiObjectiveOptimization(si) {
     if (!checkInputs(si, ['cpi','spi','docRiskScore']))
       return insufficientData('Multi_Objective_Optimization');
@@ -2605,7 +2605,7 @@
     };
   }
 
-  // Cat 11.2 — Linear Programming
+  // Cat 10.2 — Linear Programming
   function runLinearProgramming(si) {
     if (!checkInputs(si, ['bac','ev','ac','cpi']))
       return insufficientData('Linear_Programming');
@@ -2636,7 +2636,7 @@
     };
   }
 
-  // Cat 11.3 — Constraint Satisfaction Analysis
+  // Cat 10.3 — Constraint Satisfaction Analysis
   function runConstraintSatisfaction(si) {
     if (!checkInputs(si, ['cpi','spi','bac']))
       return insufficientData('Constraint_Satisfaction');
@@ -2662,7 +2662,7 @@
     };
   }
 
-  // Cat 11.4 — What-If Scenario Matrix
+  // Cat 10.4 — What-If Scenario Matrix
   function runWhatIfMatrix(si) {
     if (!checkInputs(si, ['bac','ev','ac','cpi','spi']))
       return insufficientData('WhatIf_Scenario_Matrix');
@@ -2696,7 +2696,7 @@
     };
   }
 
-  // Cat 11.5 — Decision Sensitivity Matrix
+  // Cat 10.5 — Decision Sensitivity Matrix
   function runDecisionSensitivity(si) {
     if (!checkInputs(si, ['cpi','spi','docRiskScore']))
       return insufficientData('Decision_Sensitivity_Matrix');
@@ -2725,7 +2725,7 @@
     };
   }
 
-  // Cat 11.6 — Pareto Frontier Analysis
+  // Cat 10.6 — Pareto Frontier Analysis
   function runParetoFrontier(si) {
     if (!checkInputs(si, ['cpi','spi','docRiskScore']))
       return insufficientData('Pareto_Frontier');
@@ -2755,7 +2755,7 @@
     };
   }
 
-  // Cat 11.7 — Regret Minimization Index
+  // Cat 10.7 — Regret Minimization Index
   function runRegretMinimization(si) {
     if (!checkInputs(si, ['cpi','spi','bac']))
       return insufficientData('Regret_Minimization');
@@ -2925,7 +2925,7 @@
     };
   }
 
-  // Cat 9.9 — Contractor Performance Score (worst of three 1–5 ratings)
+  // Cat 8.9 — Contractor Performance Score (worst of three 1–5 ratings)
   function runContractorPerformance(si) {
     if (!checkInputs(si, ['overallRating','scheduleRating','costRating']))
       return insufficientData('Contractor_Performance');
@@ -3064,13 +3064,13 @@
       function () { return runMARCOS(si); }, function () { return runCRITIC_TOPSIS(si); },
       function () { return runHypersoftSets(si); },
 
-      // Cat 9 governance extensions
+      // Cat 8 governance extensions
       function () { return runFARThreshold(si); }, function () { return runOMBA11Check(si); },
       function () { return runEVMReportingThreshold(si); }, function () { return runContractModFrequency(si); },
       function () { return runQualityCompliance(si); }, function () { return runSafetyPerformance(si); },
       function () { return runEnvironmentalCompliance(si); },
 
-      // Cat 10 — Data Integrity (project arg needed for audit-trail / frequency)
+      // Cat 9 — Data Integrity (project arg needed for audit-trail / frequency)
       function () { return runMissingDataIndex(si); },
       function () { return runDataTimeliness(si); },
       function () { return runSourceReliability(si); },
@@ -3079,7 +3079,7 @@
       function () { return runCrossDocConsistency(si); },
       function () { return runReportingFrequency(si, project); },
 
-      // Cat 11 — Decision Optimization
+      // Cat 10 — Decision Optimization
       function () { return runMultiObjectiveOptimization(si); },
       function () { return runLinearProgramming(si); },
       function () { return runConstraintSatisfaction(si); },
@@ -3097,7 +3097,7 @@
       function () { return runProcurementLeadTime(si); },   // Cat 4.9
       function () { return runQueueingBottleneck(si); },    // Cat 5.6
       function () { return runAgentSupplyChain(si); },      // Cat 5.7
-      function () { return runContractorPerformance(si); }, // Cat 9.9
+      function () { return runContractorPerformance(si); }, // Cat 8.9
       function () { return runMilestoneTrend(si); }         // Cat 2.7
     ];
 
@@ -3144,11 +3144,11 @@
     runLookaheadHealth, runWeatherImpact, runQualityCompliance, runSafetyPerformance,
     runEnvironmentalCompliance, runSubcontractorPerformance,
     runMaterialCostVariance, runOverheadAbsorption, runInflationAdjustment,
-    // Cat 10 — Data Integrity & Information Quality
+    // Cat 9 — Data Integrity & Information Quality
     runMissingDataIndex, runDataTimeliness, runSourceReliability,
     runAuditTrailCompleteness, runInfoCompletenessRatio,
     runCrossDocConsistency, runReportingFrequency,
-    // Cat 11 — Decision Optimization
+    // Cat 10 — Decision Optimization
     runMultiObjectiveOptimization, runLinearProgramming, runConstraintSatisfaction,
     runWhatIfMatrix, runDecisionSensitivity, runParetoFrontier, runRegretMinimization,
     // Newly activated dormant modules (8 arithmetic + multi-period milestone trend)
