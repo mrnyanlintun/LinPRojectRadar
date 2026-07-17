@@ -590,6 +590,19 @@
     });
 
     // Category nodes
+    // Release 2 · Phase 2 item 10 — one-line role caption per category, keyed by
+    // cat id (Cat 2-3 share a role; Cat 6-7 share a role).
+    var CAT_ROLE = {
+      1: 'what is happening',
+      2: 'what will happen', 3: 'what will happen',
+      4: 'what is being said',
+      5: 'how components interact',
+      6: 'what the evidence collectively means', 7: 'what the evidence collectively means',
+      8: 'how this project compares to the portfolio',
+      9: 'what action is required',
+      10: 'how much to trust the signals',
+      11: 'what the best decision is'
+    };
     var catNodeEls = CATS.map(function(cat, ci) {
       var cs=catStatuses[ci], color=colFor(cs);
       var glow = cs !== 'None' ? 'url(#lnf-glow-'+cs+')' : null;
@@ -599,8 +612,16 @@
       if (glow) cAttrs.filter = glow;
       var circle = se('circle', cAttrs, g);
       if (cs==='Red') circle.classList.add('lnf-red-pulse');
-      var t = se('text', { x:x+14, y:y, fill:'var(--muted, #6a8aaa)', 'font-size':'14', 'font-family':'monospace', 'dominant-baseline':'middle', class:'lnf-halo' }, g);
+      // number + name label, nudged up so the role caption sits directly beneath
+      var t = se('text', { x:x+14, y:y-4, fill:'var(--muted, #6a8aaa)', 'font-size':'13', 'font-family':'monospace', 'dominant-baseline':'middle', class:'lnf-halo' }, g);
       t.textContent = 'C'+cat.id+' '+cat.short;
+      var role = CAT_ROLE[cat.id];
+      if (role) {
+        var rt = se('text', { x:x+14, y:y+9, fill:'var(--faint, #6f7d90)', 'font-size':'9', 'font-style':'italic', 'font-family':'monospace', 'dominant-baseline':'middle', class:'lnf-halo lnf-cat-role' }, g);
+        rt.textContent = role;
+        var rtitle = se('title', {}, rt);
+        rtitle.textContent = 'C' + cat.id + ' ' + cat.name + ' — ' + role;
+      }
 
       g.addEventListener('mouseenter', (function(cat, ci, cs, color, circle) {
         return function(evt) {

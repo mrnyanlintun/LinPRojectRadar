@@ -1790,6 +1790,52 @@ body.t-light .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .up-summary-list li.up-fail .up-detail { color: var(--status-red, #c0392b); }
 
 /* ============================================================
+   Release 2 · Phase 2 — detail: signals-by-category + Portfolio Intelligence
+   ============================================================ */
+/* Signal Flow category role caption (item 10) */
+.lnf-cat-role { opacity: .85; }
+
+/* Signal Stack grouped by category (item 11) */
+.dd-catgroups { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.dd-catgroup { border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; background: var(--surface); }
+.dd-cat-header {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  background: var(--surface-soft); border: 0; cursor: pointer; text-align: left;
+  padding: 10px 14px; font-family: inherit; color: var(--text);
+}
+.dd-cat-header:hover { background: color-mix(in srgb, var(--surface-soft) 80%, var(--phosphor) 8%); }
+.dd-cat-header:focus-visible { outline: 2px solid var(--phosphor); outline-offset: -2px; }
+.dd-cat-name { flex: 1 1 auto; font-family: var(--font-display); font-weight: 600; font-size: 14px; }
+.dd-cat-name .mod-mono { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-right: 6px; }
+.dd-cat-count { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+.dd-cat-chev { font-size: 12px; color: var(--muted); width: 14px; text-align: center; }
+.dd-cat-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; background: var(--muted); }
+.status-dot-red { background: var(--status-red, #c0392b); }
+.status-dot-amber { background: var(--status-amber, #d98a00); }
+.status-dot-yellow { background: var(--status-yellow, #d4b100); }
+.status-dot-green { background: var(--status-green, #2e9e5b); }
+.status-dot-complete { background: var(--status-complete, #4ea0ff); }
+.status-dot-none { background: var(--faint, #6f7d90); opacity: .5; }
+.dd-cat-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 12px; }
+.dd-cat-body[hidden] { display: none; }
+.dd-cat8-summary { margin: 2px 0; }
+.dd-link { background: none; border: 0; color: var(--phosphor); cursor: pointer; font: inherit; padding: 0; text-decoration: underline; }
+
+/* Portfolio Intelligence section (item 12) */
+.portfolio-intelligence { margin-top: 16px; padding: 0; overflow: hidden; }
+.pi-header {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--surface-soft); border: 0; cursor: pointer; text-align: left;
+  padding: 12px 16px; color: var(--text); font-family: inherit;
+}
+.pi-header:hover { background: color-mix(in srgb, var(--surface-soft) 80%, var(--phosphor) 8%); }
+.pi-header:focus-visible { outline: 2px solid var(--phosphor); outline-offset: -2px; }
+.pi-header .collapse-title { font-family: var(--font-display); font-weight: 700; font-size: 15px; }
+.pi-header .collapse-chev { color: var(--muted); }
+.pi-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; }
+.pi-body[hidden] { display: none; }
+
+/* ============================================================
    MODAL — centered dialog for actions to complete (Create, Upload).
    Reuses the .ds-modal chrome; adds focus trap + Escape + first-field focus
    (handled in LinUI.openModal). Backdrop-click closes.
