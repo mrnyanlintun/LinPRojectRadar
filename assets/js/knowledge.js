@@ -2450,13 +2450,17 @@ Named Human Approval → Audit Record</pre>
   /* ---------- PCEIF Framework Overview (TDS §1-4) ---------- */
   /* ---------- Statistical Defensibility (Data Science perspective) ----------
      Renders the DS_DEFENSIBILITY object (a global loaded from
-     ds_defensibility_data.js, committed verbatim). Every applied capability is
-     shown by NAME. A render-time scrub rewrites the handful of internal
-     module-id / record-id cross-references that appear in the source prose into
-     name-based phrasing, so no capability is referenced by module number in the
-     rendered view. Statistical thresholds and coefficients (for example a CPI
-     band of 0.90 or a fusion mass of 0.76) are the subject matter of this
-     handbook and are shown as written. */
+     assets/js/ds_defensibility_data.js): the v3 code-aligned module registry
+     (103 capabilities across the ten project categories plus Portfolio Health),
+     preceded by Executive Findings, the two-axis Defensibility Model, the
+     Standards Crosswalk, and the Priority Refactor Register, and followed by the
+     preserved praxis outline, governance-axis mapping, and accreditation prose.
+     Capabilities are referenced by NAME only: module ids and code-source strings
+     are never emitted into the data object, and a render-time scrub rewrites the
+     handful of module-id cross-references that appear inside the source prose
+     into name-based phrasing. Statistical thresholds and coefficients (for
+     example a CPI band of 0.90) are the subject matter of the handbook and are
+     shown as written. */
   const DSD_ID_REWRITES = [
     ["PH.1's tree-based isolation", "the tree-based isolation method"],
     ["distinct computation vs 5.1 or dedupe", "distinct computation vs the flow-weighted rework method or dedupe"],
@@ -2468,6 +2472,7 @@ Named Human Approval → Audit Record</pre>
     ["3.10 normalizes for index inflation so 3.5 isolates execution variance", "the baseline-index normalization removes index inflation so the variance-decomposition method isolates execution variance"],
     ["the tornado (5.3) and scenario matrix (10.4)", "the tornado sensitivity view and the what-if scenario matrix"],
     ["DST (7.1) within Cat 7", "Dempster-Shafer fusion within the evidence-combination family"],
+    ["used by Module 3.2", "used by the cost-simulation rework method"],
     ["(Judgment Record 4.21)", "(the Human Judgment Record)"]
   ];
   function dsdScrub(s) {
@@ -2478,90 +2483,163 @@ Named Human Approval → Audit Record</pre>
     return out;
   }
   function dsdText(s) { return esc(dsdScrub(s)); }
-
-  function dsdFamilyCard(fam) {
+  function dsdVal() {
+    return (typeof DS_DEFENSIBILITY !== "undefined")
+      ? DS_DEFENSIBILITY
+      : (typeof window !== "undefined" ? window.DS_DEFENSIBILITY : null);
+  }
+  // Assurance class -> chip. A = faithful (verdigris/green), B = method-shaped
+  // (bronze/amber), C = mismatch (alert/red). Colours are theme tokens only.
+  function dsdClassChip(cls) {
+    var c = String(cls || "").trim().toUpperCase();
+    if (c !== "A" && c !== "B" && c !== "C") return "";
+    return '<span class="dsd-chip dsd-chip-' + c.toLowerCase() + '">Class ' + c + '</span>';
+  }
+  function dsdTierChip(tier) {
+    var m = /Tier\s+([123])/.exec(tier || "");
+    if (!m) return "";
+    return '<span class="dsd-chip dsd-chip-ghost">Tier ' + m[1] + '</span>';
+  }
+  function dsdModuleCard(mod) {
     var fields = [
-      ["Uncertainty model", fam.uncertainty],
-      ["Deterministic vs probabilistic", fam.detProb],
-      ["Explainability", fam.explainability],
-      ["Human oversight", fam.oversight],
-      ["Failure modes and mitigations", fam.failureModes],
-      ["Assumptions and limitations", fam.assumptions],
-      ["Validation and accreditation", fam.validation],
-      ["Course grounding", fam.course]
+      ["Engineering problem", mod.engineeringProblem],
+      ["Deterministic vs probabilistic", mod.detProbSplit],
+      ["Uncertainty method", mod.uncertaintyMethod],
+      ["Explainability", mod.explainability],
+      ["Human oversight", mod.oversightDescription || mod.oversightLevel],
+      ["Failure modes", mod.failureModes],
+      ["Assumptions and limitations", mod.assumptionsLimitations],
+      ["Implementation fidelity", mod.implementationFidelity],
+      ["Accreditation basis", mod.accreditationBasis],
+      ["Validation required", mod.validationRequired],
+      ["Standards alignment", mod.standardsAlignment],
+      ["Permitted vs prohibited claims", mod.permittedProhibitedClaims],
+      ["Governance role", mod.governanceRole]
     ];
     var h = '<section class="dsd-fam">';
-    h += '<h4 class="dsd-fam-h">' + dsdText(fam.label) + '</h4>';
+    h += '<h4 class="dsd-fam-h">' + dsdText(mod.name) + '</h4>';
+    h += '<div class="dsd-chiprow">';
+    h += dsdTierChip(mod.defenseTier);
+    h += dsdClassChip(mod.assuranceClass);
+    if (mod.methodClass) h += '<span class="dsd-chip dsd-chip-ghost">' + dsdText(mod.methodClass) + '</span>';
+    h += '</div>';
+    if (mod.assuranceDescription) {
+      h += '<p class="dsd-assurance">' + dsdText(mod.assuranceDescription) + '</p>';
+    }
     h += '<dl class="dsd-fields">';
     fields.forEach(function (f) {
       if (f[1] == null || f[1] === "") return;
       h += '<dt>' + esc(f[0]) + '</dt><dd>' + dsdText(f[1]) + '</dd>';
     });
     h += '</dl>';
-    var applied = fam.applied || [];
-    if (applied.length) {
-      h += '<div class="dsd-applied-h">Applied capabilities</div>';
-      applied.forEach(function (a) {
-        var inner = "";
-        if (a.note) inner += '<p class="dsd-note">' + dsdText(a.note) + '</p>';
-        (a.qa || []).forEach(function (qa) {
-          inner += '<p class="dsd-qa"><span class="dsd-q">' + dsdText(qa[0]) + '</span> ' +
-                   '<span class="dsd-a">' + dsdText(qa[1]) + '</span></p>';
-        });
-        h += '<details class="dsd-cap"><summary class="dsd-cap-name">' + dsdText(a.name) + '</summary>' +
-             '<div class="dsd-cap-body">' + inner + '</div></details>';
+    if (mod.defenseQuestions && mod.defenseQuestions.length) {
+      h += '<div class="dsd-applied-h">Defense questions</div>';
+      mod.defenseQuestions.forEach(function (qa) {
+        h += '<details class="dsd-cap"><summary class="dsd-cap-name">' + dsdText(qa.question) + '</summary>' +
+             '<div class="dsd-cap-body"><p class="dsd-note">' + dsdText(qa.answer) + '</p></div></details>';
       });
+    }
+    if (mod.requiredInputs && mod.requiredInputs.length) {
+      h += '<div class="dsd-inputrow"><span class="dsd-inputlabel">Required inputs</span>' +
+        mod.requiredInputs.map(function (r) {
+          return '<span class="dsd-chip dsd-chip-input">' + dsdText(r) + '</span>';
+        }).join("") + '</div>';
     }
     h += '</section>';
     return h;
   }
-
+  // Generic table: rows is an array of arrays; header is a separate array.
+  function dsdTable(header, rows) {
+    var h = '<div class="dsd-tablewrap"><table class="kn-rag"><thead><tr>';
+    header.forEach(function (c) { h += '<th>' + esc(c) + '</th>'; });
+    h += '</tr></thead><tbody>';
+    rows.forEach(function (r) {
+      h += '<tr>' + r.map(function (c, i) {
+        return '<td' + (i === 0 ? ' class="kn-rag-metric"' : '') + '>' + dsdText(c) + '</td>';
+      }).join("") + '</tr>';
+    });
+    h += '</tbody></table></div>';
+    return h;
+  }
   function renderDsDefensibility() {
-    // ds_defensibility_data.js declares `const DS_DEFENSIBILITY`, which is a
-    // global lexical binding (reachable by bare name from this closure) rather
-    // than a window property, so resolve it either way.
-    var D = (typeof DS_DEFENSIBILITY !== "undefined")
-      ? DS_DEFENSIBILITY
-      : (typeof window !== "undefined" ? window.DS_DEFENSIBILITY : null);
+    var D = dsdVal();
     if (!D) return '<p class="kn-lead">Statistical defensibility content is unavailable.</p>';
     var H = [];
+
+    // 1. Title + intro + one-sentence pull-quote.
     H.push('<p class="dsd-fulltitle">' + dsdText(D.title) + '</p>');
-    H.push('<p class="kn-lead">' + dsdText(D.intro) + '</p>');
-    H.push('<blockquote class="kn-callout dsd-pull">' + dsdText(D.oneSentence) + '</blockquote>');
+    if (D.intro) H.push('<p class="kn-lead">' + dsdText(D.intro) + '</p>');
+    if (D.oneSentence) H.push('<blockquote class="kn-callout dsd-pull">' + dsdText(D.oneSentence) + '</blockquote>');
 
-    // Praxis outline, before the tier navigation, collapsed by default.
-    var px = D.praxisOutline || {};
-    var pxBody = '<p class="kn-lead">' + dsdText(px.lead) + '</p>';
-    pxBody += '<ol class="dsd-chapters">';
-    (px.chapters || []).forEach(function (c) {
-      pxBody += '<li><span class="dsd-ch-title">' + dsdText(c[0]) + '</span>' +
-                '<span class="dsd-ch-sum">' + dsdText(c[1]) + '</span></li>';
+    // 2. Executive Findings.
+    if (D.executiveFindings && D.executiveFindings.length) {
+      var ef = '<ul class="kn-list">' + D.executiveFindings.map(function (x) {
+        return '<li>' + dsdText(x) + '</li>';
+      }).join("") + '</ul>';
+      H.push(window.collapsibleSection("dsd-execfindings", "Executive Findings", ef, false));
+    }
+
+    // 3. Two-Axis Defensibility Model.
+    if (D.defensibilityModel) {
+      var dm = D.defensibilityModel, b = "";
+      if (dm.intro) b += '<p class="kn-lead">' + dsdText(dm.intro) + '</p>';
+      if (dm.axisA) {
+        b += '<h4 class="dsd-fam-h">Axis A. Uncertainty and evidence tier</h4>';
+        b += dsdTable(dm.axisA.header, dm.axisA.tiers);
+      }
+      if (dm.axisB) {
+        b += '<h4 class="dsd-fam-h">Axis B. Implementation assurance class</h4>';
+        b += '<p class="kn-body">A respected method name does not validate an implementation that only approximates or renames it; Axis B states how faithfully the code implements the named method.</p>';
+        b += dsdTable(dm.axisB.header, dm.axisB.classes);
+      }
+      H.push(window.collapsibleSection("dsd-model", "Two-Axis Defensibility Model", b, false));
+    }
+
+    // 4. Standards Crosswalk.
+    if (D.standardsCrosswalk && D.standardsCrosswalk.pairs) {
+      var sc = dsdTable(["Instrument", "Role"], D.standardsCrosswalk.pairs);
+      if (D.standardsCrosswalk.note) sc += '<div class="kn-callout">' + dsdText(D.standardsCrosswalk.note) + '</div>';
+      H.push(window.collapsibleSection("dsd-crosswalk", "Standards Crosswalk", sc, false));
+    }
+
+    // 5. Known Refactors Before Formal Defense.
+    if (D.refactorRegister && D.refactorRegister.rows) {
+      var rr = "";
+      if (D.refactorRegister.framing) rr += '<p class="kn-lead">' + dsdText(D.refactorRegister.framing) + '</p>';
+      rr += dsdTable(["Current name", "Finding", "Recommended disposition"],
+        D.refactorRegister.rows.map(function (r) { return [r.currentName, r.finding, r.disposition]; }));
+      H.push(window.collapsibleSection("dsd-refactor", "Known Refactors Before Formal Defense", rr, false));
+    }
+
+    // 6. Capabilities by category.
+    (D.categories || []).forEach(function (cat) {
+      var body = "";
+      (cat.modules || []).forEach(function (mod) { body += dsdModuleCard(mod); });
+      var badge = '<span class="dsd-count">' + (cat.modules ? cat.modules.length : 0) + ' capabilities</span>';
+      var title = '<span class="kn-sec-num">' + esc(cat.num) + '</span> ' + dsdText(cat.name);
+      H.push(window.collapsibleSection("dsd-cat-" + cat.key, title, body, false, badge));
     });
-    pxBody += '</ol>';
-    if (px.judgmentLayer) pxBody += '<div class="kn-callout">' + dsdText(px.judgmentLayer) + '</div>';
-    H.push(window.collapsibleSection("dsd-praxis", esc(px.heading || "The Praxis Behind the Platform"), pxBody, false));
 
-    // Three tiers, collapsed by default, one family card each.
-    (D.sections || []).forEach(function (tier) {
-      var body = '<p class="kn-sub">' + dsdText(tier.description) + '</p>';
-      (tier.families || []).forEach(function (fam) { body += dsdFamilyCard(fam); });
-      var title = '<span class="kn-sec-num">Tier ' + esc(String(tier.tier)) + '</span> ' + dsdText(tier.title);
-      H.push(window.collapsibleSection("dsd-tier-" + tier.tier, title, body, false));
-    });
-
-    // AI Governance Mapping, two-column table.
-    var gax = '<div class="dsd-tablewrap"><table class="kn-rag"><thead><tr>' +
-              '<th>Instrument</th><th>Implementation</th></tr></thead><tbody>';
-    (D.governanceAxis || []).forEach(function (row) {
-      gax += '<tr><td class="kn-rag-metric dsd-gx-inst">' + dsdText(row[0]) + '</td>' +
-             '<td>' + dsdText(row[1]) + '</td></tr>';
-    });
-    gax += '</tbody></table></div>';
-    H.push(window.collapsibleSection("dsd-governance", "AI Governance Mapping", gax, false));
-
-    // Closing: accreditation.
-    H.push(window.collapsibleSection("dsd-accreditation", "How PCEIF Is Accredited",
-      '<p class="kn-body">' + dsdText(D.accreditation) + '</p>', false));
+    // 7. Preserved praxis outline, governance-axis mapping, accreditation.
+    if (D.praxisOutline) {
+      var px = D.praxisOutline;
+      var pxBody = '<p class="kn-lead">' + dsdText(px.lead) + '</p><ol class="dsd-chapters">';
+      (px.chapters || []).forEach(function (c) {
+        pxBody += '<li><span class="dsd-ch-title">' + dsdText(c[0]) + '</span>' +
+                  '<span class="dsd-ch-sum">' + dsdText(c[1]) + '</span></li>';
+      });
+      pxBody += '</ol>';
+      if (px.judgmentLayer) pxBody += '<div class="kn-callout">' + dsdText(px.judgmentLayer) + '</div>';
+      H.push(window.collapsibleSection("dsd-praxis", esc(px.heading || "The Praxis Behind the Platform"), pxBody, false));
+    }
+    if (D.governanceAxis && D.governanceAxis.length) {
+      H.push(window.collapsibleSection("dsd-governance", "AI Governance Mapping",
+        dsdTable(["Instrument", "Implementation"], D.governanceAxis), false));
+    }
+    if (D.accreditation) {
+      H.push(window.collapsibleSection("dsd-accreditation", "How PCEIF Is Accredited",
+        '<p class="kn-body">' + dsdText(D.accreditation) + '</p>', false));
+    }
 
     return H.join("\n");
   }
