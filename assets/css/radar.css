@@ -939,6 +939,32 @@ body.t-light .la-robot {
 .la-launcher:focus-visible .la-greet,
 .la-launcher.la-greeting .la-greet { opacity: 1; transform: translateX(0); }
 
+/* idle-invitation bubble — same styling as the greeting bubble, but wraps
+   (invitations run up to ~60 chars) and shows only while .la-inviting */
+.la-invite {
+  position: absolute; right: 68px; bottom: 16px; max-width: 220px; text-align: right;
+  font-family: var(--font-display); font-weight: 700; font-size: 13px; line-height: 1.35;
+  color: var(--text); background: var(--surface);
+  border: 1px solid var(--line-strong); border-radius: 12px;
+  padding: 7px 12px; box-shadow: var(--shadow); pointer-events: none;
+  opacity: 0; transform: translateX(6px); transition: opacity .25s ease, transform .25s ease;
+}
+.la-invite::after {
+  content: ""; position: absolute; right: -5px; bottom: 12px; width: 9px; height: 9px;
+  background: var(--surface); border-right: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line-strong); transform: rotate(-45deg);
+}
+.la-launcher.la-inviting .la-invite { opacity: 1; transform: translateX(0); }
+.la-launcher.la-inviting .la-greet { opacity: 0 !important; }   /* never both bubbles at once */
+
+/* one-shot invitation gestures (added by JS, removed after ~900ms) — same
+   override pattern as la-happy/la-shake. Suppressed under reduced motion
+   (JS never adds the class when prefers-reduced-motion). */
+.la-launcher.la-wave .bot-bob { animation: bot-wave-hi .9s ease-in-out; transform-box: view-box; transform-origin: 32px 40px; }
+@keyframes bot-wave-hi { 0%,100% { rotate: 0deg; } 15% { rotate: -9deg; } 40% { rotate: 7deg; } 65% { rotate: -5deg; } 85% { rotate: 3deg; } }
+.la-launcher.la-bow .bot-bob { animation: bot-bow .6s ease; transform-box: view-box; transform-origin: 32px 42px; }
+@keyframes bot-bow { 0%,100% { transform: translateY(0) rotate(0deg); } 45% { transform: translateY(3px) rotate(6deg); } }
+
 /* ----- shared base motion ----- */
 .la-robot .bot-bob { animation: bot-bob 3s ease-in-out infinite, bot-flourish 33s ease-in-out infinite; transform-box: view-box; transform-origin: 32px 40px; }
 @keyframes bot-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
