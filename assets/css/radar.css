@@ -2561,6 +2561,57 @@ body.t-light .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 /* Let the 2-row flow diagram render at its natural size — don't cap height. */
 .kn-flow-wrap .kn-svg-flow { max-height: none; }
 
+/* ---------- Statistical Defensibility (data science handbook view) ----------
+   Scoped dsd-* classes; all colour comes from existing theme variables so the
+   view renders correctly in Gotham, Miami, and NYC without touching any theme
+   variable definitions. */
+.dsd-fulltitle {
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: .04em;
+  color: var(--muted); margin: 0 0 14px;
+}
+.dsd-pull { font-size: 15px; font-style: italic; margin: 4px 0 20px; }
+.dsd-chapters { list-style: decimal; padding-left: 22px; margin: 6px 0 14px; }
+.dsd-chapters li { margin-bottom: 10px; }
+.dsd-ch-title { display: block; font-weight: 700; color: var(--text); font-size: 14px; }
+.dsd-ch-sum { display: block; color: var(--muted); font-size: 13.5px; line-height: 1.6; margin-top: 2px; }
+.dsd-fam {
+  border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft);
+  padding: 16px 18px; margin: 14px 0;
+}
+.dsd-fam-h {
+  font-family: var(--font-display); font-size: 16px; font-weight: 700;
+  color: var(--text); margin: 0 0 12px;
+}
+.dsd-fields { margin: 0 0 6px; }
+.dsd-fields dt {
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--muted); margin-top: 12px;
+}
+.dsd-fields dt:first-child { margin-top: 0; }
+.dsd-fields dd { margin: 3px 0 0; font-size: 13.5px; line-height: 1.6; color: var(--text); }
+.dsd-applied-h {
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--muted); margin: 16px 0 4px;
+}
+.dsd-cap { border-top: 1px solid var(--line); }
+.dsd-cap-name {
+  cursor: pointer; padding: 11px 4px; font-weight: 600; font-size: 13.5px;
+  color: var(--text); list-style: none; display: flex; align-items: center; gap: 8px;
+}
+.dsd-cap-name::before {
+  content: "\25B8"; color: var(--phosphor); font-size: 11px; transition: transform .15s;
+}
+.dsd-cap[open] > .dsd-cap-name::before { transform: rotate(90deg); }
+.dsd-cap-name::-webkit-details-marker { display: none; }
+.dsd-cap-name:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
+.dsd-cap-body { padding: 0 4px 12px 22px; }
+.dsd-note { font-size: 13.5px; line-height: 1.6; color: var(--text); margin: 0 0 8px; }
+.dsd-qa { font-size: 13.5px; line-height: 1.6; margin: 0 0 8px; }
+.dsd-q { font-weight: 700; color: var(--text); }
+.dsd-a { color: var(--muted); }
+.dsd-tablewrap { overflow-x: auto; margin: 6px 0 14px; }
+.dsd-gx-inst { font-weight: 600; }
+
 /* ============================================================
    Knowledge Library — brand typography overhaul.
    Display headings in the app's title face (cream + gold ordinals,
