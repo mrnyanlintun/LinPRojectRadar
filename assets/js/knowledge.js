@@ -2448,6 +2448,131 @@ Named Human Approval → Audit Record</pre>
   };
 
   /* ---------- PCEIF Framework Overview (TDS §1-4) ---------- */
+  /* ---------- Statistical Defensibility (Data Science perspective) ----------
+     Renders the DS_DEFENSIBILITY object (a global loaded from
+     ds_defensibility_data.js, committed verbatim). Every applied capability is
+     shown by NAME. A render-time scrub rewrites the handful of internal
+     module-id / record-id cross-references that appear in the source prose into
+     name-based phrasing, so no capability is referenced by module number in the
+     rendered view. Statistical thresholds and coefficients (for example a CPI
+     band of 0.90 or a fusion mass of 0.76) are the subject matter of this
+     handbook and are shown as written. */
+  const DSD_ID_REWRITES = [
+    ["PH.1's tree-based isolation", "the tree-based isolation method"],
+    ["distinct computation vs 5.1 or dedupe", "distinct computation vs the flow-weighted rework method or dedupe"],
+    ["Duplicate of 5.1?", "Duplicate of the flow-weighted rework method?"],
+    ["the draft lists it at 3.2 and 5.1.", "the draft lists it in both the cost-simulation and system-dynamics families."],
+    ["(see 3.2 dedupe flag)", "(see the cost-simulation dedupe flag)"],
+    ["Same as 3.2?", "Same as the cost-simulation rework method?"],
+    ["see 3.2. Defense", "see the cost-simulation entry. Defense"],
+    ["3.10 normalizes for index inflation so 3.5 isolates execution variance", "the baseline-index normalization removes index inflation so the variance-decomposition method isolates execution variance"],
+    ["the tornado (5.3) and scenario matrix (10.4)", "the tornado sensitivity view and the what-if scenario matrix"],
+    ["DST (7.1) within Cat 7", "Dempster-Shafer fusion within the evidence-combination family"],
+    ["(Judgment Record 4.21)", "(the Human Judgment Record)"]
+  ];
+  function dsdScrub(s) {
+    var out = String(s == null ? "" : s);
+    for (var i = 0; i < DSD_ID_REWRITES.length; i++) {
+      out = out.split(DSD_ID_REWRITES[i][0]).join(DSD_ID_REWRITES[i][1]);
+    }
+    return out;
+  }
+  function dsdText(s) { return esc(dsdScrub(s)); }
+
+  function dsdFamilyCard(fam) {
+    var fields = [
+      ["Uncertainty model", fam.uncertainty],
+      ["Deterministic vs probabilistic", fam.detProb],
+      ["Explainability", fam.explainability],
+      ["Human oversight", fam.oversight],
+      ["Failure modes and mitigations", fam.failureModes],
+      ["Assumptions and limitations", fam.assumptions],
+      ["Validation and accreditation", fam.validation],
+      ["Course grounding", fam.course]
+    ];
+    var h = '<section class="dsd-fam">';
+    h += '<h4 class="dsd-fam-h">' + dsdText(fam.label) + '</h4>';
+    h += '<dl class="dsd-fields">';
+    fields.forEach(function (f) {
+      if (f[1] == null || f[1] === "") return;
+      h += '<dt>' + esc(f[0]) + '</dt><dd>' + dsdText(f[1]) + '</dd>';
+    });
+    h += '</dl>';
+    var applied = fam.applied || [];
+    if (applied.length) {
+      h += '<div class="dsd-applied-h">Applied capabilities</div>';
+      applied.forEach(function (a) {
+        var inner = "";
+        if (a.note) inner += '<p class="dsd-note">' + dsdText(a.note) + '</p>';
+        (a.qa || []).forEach(function (qa) {
+          inner += '<p class="dsd-qa"><span class="dsd-q">' + dsdText(qa[0]) + '</span> ' +
+                   '<span class="dsd-a">' + dsdText(qa[1]) + '</span></p>';
+        });
+        h += '<details class="dsd-cap"><summary class="dsd-cap-name">' + dsdText(a.name) + '</summary>' +
+             '<div class="dsd-cap-body">' + inner + '</div></details>';
+      });
+    }
+    h += '</section>';
+    return h;
+  }
+
+  function renderDsDefensibility() {
+    // ds_defensibility_data.js declares `const DS_DEFENSIBILITY`, which is a
+    // global lexical binding (reachable by bare name from this closure) rather
+    // than a window property, so resolve it either way.
+    var D = (typeof DS_DEFENSIBILITY !== "undefined")
+      ? DS_DEFENSIBILITY
+      : (typeof window !== "undefined" ? window.DS_DEFENSIBILITY : null);
+    if (!D) return '<p class="kn-lead">Statistical defensibility content is unavailable.</p>';
+    var H = [];
+    H.push('<p class="dsd-fulltitle">' + dsdText(D.title) + '</p>');
+    H.push('<p class="kn-lead">' + dsdText(D.intro) + '</p>');
+    H.push('<blockquote class="kn-callout dsd-pull">' + dsdText(D.oneSentence) + '</blockquote>');
+
+    // Praxis outline, before the tier navigation, collapsed by default.
+    var px = D.praxisOutline || {};
+    var pxBody = '<p class="kn-lead">' + dsdText(px.lead) + '</p>';
+    pxBody += '<ol class="dsd-chapters">';
+    (px.chapters || []).forEach(function (c) {
+      pxBody += '<li><span class="dsd-ch-title">' + dsdText(c[0]) + '</span>' +
+                '<span class="dsd-ch-sum">' + dsdText(c[1]) + '</span></li>';
+    });
+    pxBody += '</ol>';
+    if (px.judgmentLayer) pxBody += '<div class="kn-callout">' + dsdText(px.judgmentLayer) + '</div>';
+    H.push(window.collapsibleSection("dsd-praxis", esc(px.heading || "The Praxis Behind the Platform"), pxBody, false));
+
+    // Three tiers, collapsed by default, one family card each.
+    (D.sections || []).forEach(function (tier) {
+      var body = '<p class="kn-sub">' + dsdText(tier.description) + '</p>';
+      (tier.families || []).forEach(function (fam) { body += dsdFamilyCard(fam); });
+      var title = '<span class="kn-sec-num">Tier ' + esc(String(tier.tier)) + '</span> ' + dsdText(tier.title);
+      H.push(window.collapsibleSection("dsd-tier-" + tier.tier, title, body, false));
+    });
+
+    // AI Governance Mapping, two-column table.
+    var gax = '<div class="dsd-tablewrap"><table class="kn-rag"><thead><tr>' +
+              '<th>Instrument</th><th>Implementation</th></tr></thead><tbody>';
+    (D.governanceAxis || []).forEach(function (row) {
+      gax += '<tr><td class="kn-rag-metric dsd-gx-inst">' + dsdText(row[0]) + '</td>' +
+             '<td>' + dsdText(row[1]) + '</td></tr>';
+    });
+    gax += '</tbody></table></div>';
+    H.push(window.collapsibleSection("dsd-governance", "AI Governance Mapping", gax, false));
+
+    // Closing: accreditation.
+    H.push(window.collapsibleSection("dsd-accreditation", "How PCEIF Is Accredited",
+      '<p class="kn-body">' + dsdText(D.accreditation) + '</p>', false));
+
+    return H.join("\n");
+  }
+
+  const DS_DEFENSIBILITY_TOPIC = {
+    id: "ds-defensibility",
+    title: "Statistical Defensibility",
+    eyebrow: "A Data Science Perspective",
+    build: () => renderDsDefensibility()
+  };
+
   const FRAMEWORK_TOPIC = {
     id: "pceif-framework", title: "PCEIF Framework Overview",
     eyebrow: "Methods & Framework · the governance spine",
@@ -2564,6 +2689,7 @@ Named Human Approval → Audit Record</pre>
     { id: "five-status" },
     { id: "status-evidence-rules" },
     { id: "human-judgment-record" },
+    { id: "ds-defensibility" },
     { id: "how-categories-advise-pm" },
     { category: "cat1", num: "Cat 1", name: "Quantitative EVM",
       children: ["module01", "module02", "module03", "cat1-modules"] },
@@ -2742,6 +2868,7 @@ Named Human Approval → Audit Record</pre>
       if (id === "pceif-framework") return FRAMEWORK_TOPIC;
       if (id === "status-evidence-rules") return STATUS_RULES_TOPIC;
       if (id === "human-judgment-record") return JUDGMENT_TOPIC;
+      if (id === "ds-defensibility") return DS_DEFENSIBILITY_TOPIC;
       if (id === "limitations") return LIMITATIONS_TOPIC;
       if (id === "references") return REFERENCES_TOPIC;
       if (CAT8_TOPICS[id]) {
