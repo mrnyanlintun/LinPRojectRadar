@@ -222,6 +222,7 @@
       `<button id="la-launcher" class="la-launcher is-idle" aria-expanded="false" aria-controls="la-panel"
                aria-label="Ask Lin — assistant" title="Ask Lin">
          <span class="la-greet" aria-hidden="true">Ask Lin</span>
+         <span class="la-invite" aria-hidden="true"></span>
          ${ROBOT_SVG}
        </button>
        <span id="la-live" class="la-sr-only" aria-live="polite"></span>
@@ -357,12 +358,21 @@
     window.addEventListener("resize", () => { if (!panel.hidden) perch(); }, { passive: true });
     window.addEventListener("scroll", () => { if (!panel.hidden) perch(); }, { passive: true });
 
+    // populated by the idleInvitations() IIFE below: { onChatOpened, onManualClose }
+    const inviteHooks = {};
     function toggle(open) {
+      const wasOpen = !panel.hidden;
       const show = open !== undefined ? open : panel.hidden;
       panel.hidden = !show;
       launcher.setAttribute("aria-expanded", String(show));
-      if (show) { launcher.classList.remove("la-greeting"); input.focus(); }
-      else { typingActive = false; }
+      if (show) {
+        launcher.classList.remove("la-greeting");
+        input.focus();
+        if (inviteHooks.onChatOpened) inviteHooks.onChatOpened();   // opening within an invite window counts as responding
+      } else {
+        typingActive = false;
+        if (wasOpen && inviteHooks.onManualClose) inviteHooks.onManualClose();
+      }
       perch();
       applyState();
     }
@@ -381,6 +391,164 @@
     launcher.addEventListener("click", () => toggle());
     document.getElementById("la-close").addEventListener("click", () => toggle(false));
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !panel.hidden) toggle(false); });
+
+    /* ===========================================================
+       Idle invitations — the robot occasionally catches your eye
+       -----------------------------------------------------------
+       When the chat is CLOSED and the user is idle, the robot offers a
+       short, CONTEXTUAL invitation in its bubble with a one-shot gesture,
+       then returns to idle. Strict, mandatory timing contract (there is no
+       user off-switch; the contract IS the restraint):
+         • first invite only after >=45s idle AND >=60s after load
+         • then no more than once per 4 min of continued idleness
+         • bubble ~5s then fades; gesture plays once
+         • HARD CAP 3 per session
+         • 2 consecutive ignored (chat not opened within 20s) -> silent for the session
+         • if the user ever manually closes the chat -> halve frequency + at most 1 more
+         • never while any modal/loader/audit runs, chat open, an input is
+           focused, or the tab is hidden; aborts instantly on any activity
+       Reduced-motion: the bubble still appears, but with NO gesture (static
+       robot) — documented choice; the invitation copy alone reads fine.
+       =========================================================== */
+    (function idleInvitations() {
+      const inviteEl = launcher.querySelector(".la-invite");
+      if (!inviteEl) return;
+      const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      const IDLE_MS = 45000, MIN_AFTER_LOAD_MS = 60000;
+      const BASE_INTERVAL_MS = 240000, CLOSED_INTERVAL_MS = 480000;  // 4 min; 8 min after a manual close
+      const BUBBLE_MS = 5000, IGNORE_MS = 20000, HARD_CAP = 3;
+
+      const loadTime = Date.now();
+      let lastActivity = Date.now();
+      let lastInviteTime = 0;
+      let shownCount = 0;
+      let ignoredStreak = 0;
+      let everManuallyClosed = false;
+      let maxAfterClose = Infinity;   // set when the user first manually closes the chat
+      let silenced = false;
+      let bubbleVisible = false;
+      let fadeTimer = null, ignoreTimer = null, gestureTimer = null;
+      const usedLines = new Set();
+
+      function hideBubble() {
+        bubbleVisible = false;
+        launcher.classList.remove("la-inviting");
+        clearTimeout(fadeTimer); fadeTimer = null;
+      }
+      function stopGesture() {
+        launcher.classList.remove("la-wave", "la-bow");
+        clearTimeout(gestureTimer); gestureTimer = null;
+      }
+      // Abort on ANY user activity: bubble + gesture stop at once. The 20s
+      // ignore window keeps running (aborting is not the same as responding).
+      function abort() { if (bubbleVisible) { hideBubble(); stopGesture(); } }
+
+      // Contextual copy from the CURRENT page/selection. Never the same line
+      // twice a session; the first invite is always the plain "Can I help?".
+      function pickMessage() {
+        if (shownCount === 0 && !usedLines.has("Can I help?")) return "Can I help?";
+        const page = (document.querySelector(".page:not([hidden])") || {}).dataset;
+        const pageName = page && page.page;
+        const cands = [];
+        if (pageName === "handbook") {
+          cands.push("Ask me how any module works.");
+        } else if (pageName === "auditor") {
+          cands.push("I can explain what the auditor checks.");
+        } else {
+          const id = window.LinApp && LinApp.getSelectedId && LinApp.getSelectedId();
+          const proj = id && (window.LIN_PROJECTS || []).find((p) => p.id === id);
+          if (pageName === "detail" && proj) {
+            cands.push("Want a plain-English read on " + proj.name + "?");
+            cands.push("I can explain what is driving this project's status.");
+          } else if (proj) {
+            cands.push("Want a plain-English read on " + proj.name + "?");
+            cands.push("Ask me which projects need attention this week.");
+          } else {
+            cands.push("Ask me which projects need attention this week.");
+            cands.push("I can answer about any project's status, signals, or governance decision.");
+          }
+        }
+        cands.push("Can I help?");
+        const fresh = cands.find((c) => !usedLines.has(c));
+        return fresh || cands[0];
+      }
+
+      function playGesture() {
+        if (reduceMotion) return;
+        stopGesture();
+        // first invite waves; subsequent alternate wave / small bow
+        const cls = (shownCount % 2 === 0) ? "la-wave" : "la-bow";
+        void launcher.offsetWidth;   // reflow so the one-shot restarts cleanly
+        launcher.classList.add(cls);
+        gestureTimer = setTimeout(() => launcher.classList.remove(cls), 900);
+      }
+
+      function showInvitation() {
+        const msg = pickMessage();
+        inviteEl.textContent = msg;
+        usedLines.add(msg);
+        bubbleVisible = true;
+        launcher.classList.add("la-inviting");
+        playGesture();
+        shownCount++;
+        lastInviteTime = Date.now();
+        // announce politely for screen-reader users (no visual dependency)
+        if (live) live.textContent = msg;
+        clearTimeout(fadeTimer);
+        fadeTimer = setTimeout(() => { hideBubble(); stopGesture(); }, BUBBLE_MS);
+        clearTimeout(ignoreTimer);
+        ignoreTimer = setTimeout(() => {
+          ignoreTimer = null;
+          ignoredStreak++;
+          if (ignoredStreak >= 2) silenced = true;   // two ignored in a row -> done for the session
+        }, IGNORE_MS);
+      }
+
+      // The user opened the chat — if that happened within an invitation's
+      // 20s window it counts as responding: reset the ignored streak.
+      function onChatOpened() {
+        if (ignoreTimer) { clearTimeout(ignoreTimer); ignoreTimer = null; ignoredStreak = 0; }
+        abort();
+      }
+      // Manual close: halve the frequency and allow at most one further invite.
+      function onManualClose() {
+        if (!everManuallyClosed) { everManuallyClosed = true; maxAfterClose = shownCount + 1; }
+      }
+      inviteHooks.onChatOpened = onChatOpened;
+      inviteHooks.onManualClose = onManualClose;
+
+      function canInvite() {
+        if (silenced || shownCount >= HARD_CAP) return false;
+        if (everManuallyClosed && shownCount >= maxAfterClose) return false;
+        if (bubbleVisible) return false;
+        if (!panel.hidden) return false;                 // chat open
+        if (document.hidden) return false;               // tab hidden
+        const ae = document.activeElement;
+        if (ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.tagName === "SELECT" || ae.isContentEditable)) return false;
+        // any modal / loader / audit in flight — one DOM query each, no cross-module API:
+        // .lwr covers upload/extraction/recompute/map-load working robots.
+        if (document.querySelector(".app-modal-backdrop, .ds-modal-backdrop, .lwr, .aud-loading, #recompute-overlay:not([hidden])")) return false;
+        return true;
+      }
+
+      function due() {
+        const now = Date.now();
+        if (now - lastActivity < IDLE_MS) return false;                 // not idle long enough
+        if (shownCount === 0) return now - loadTime >= MIN_AFTER_LOAD_MS;
+        const interval = everManuallyClosed ? CLOSED_INTERVAL_MS : BASE_INTERVAL_MS;
+        return now - lastInviteTime >= interval;
+      }
+
+      // Activity resets the idle clock and aborts a visible invitation instantly.
+      const onActivity = () => { lastActivity = Date.now(); abort(); };
+      ["pointermove", "pointerdown", "keydown", "wheel", "touchstart", "scroll"].forEach((ev) =>
+        document.addEventListener(ev, onActivity, { passive: true, capture: true }));
+      document.addEventListener("visibilitychange", () => { if (document.hidden) abort(); });
+
+      // Poll on a modest cadence; every gate is re-checked at fire time.
+      setInterval(() => { if (canInvite() && due()) showInvitation(); }, 2500);
+    })();
 
     /* ---------- voice OUT (text-to-speech) ---------- */
     const ttsOK = "speechSynthesis" in window && typeof window.SpeechSynthesisUtterance !== "undefined";
