@@ -2612,6 +2612,48 @@ body.t-light .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .dsd-tablewrap { overflow-x: auto; margin: 6px 0 14px; }
 .dsd-gx-inst { font-weight: 600; }
 
+/* Module-card chips: tier / assurance-class / method-class badges + input chips.
+   Assurance colours map to existing semantic status tokens: Class A success
+   (green), Class B caution (amber), Class C alert (red). */
+.dsd-chiprow { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; align-items: center; }
+.dsd-chip {
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .04em;
+  padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line);
+  color: var(--text); background: var(--surface); white-space: nowrap;
+}
+.dsd-chip-ghost { color: var(--muted); }
+/* Assurance class is coded by a leading status dot + background tint + border,
+   never by the label text colour, so the "Class X" text keeps full --text
+   contrast (>= 4.5:1) in every theme while the hue still reads at a glance. */
+.dsd-chip-a, .dsd-chip-b, .dsd-chip-c { color: var(--text); font-weight: 600; }
+.dsd-chip-a::before, .dsd-chip-b::before, .dsd-chip-c::before {
+  content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  margin-right: 6px; vertical-align: baseline;
+}
+.dsd-chip-a {
+  border-color: color-mix(in srgb, var(--clear-green) 60%, var(--line));
+  background: color-mix(in srgb, var(--clear-green) 15%, var(--surface));
+}
+.dsd-chip-a::before { background: var(--clear-green); }
+.dsd-chip-b {
+  border-color: color-mix(in srgb, var(--radar-amber) 60%, var(--line));
+  background: color-mix(in srgb, var(--radar-amber) 15%, var(--surface));
+}
+.dsd-chip-b::before { background: var(--radar-amber); }
+.dsd-chip-c {
+  border-color: color-mix(in srgb, var(--alarm-red) 60%, var(--line));
+  background: color-mix(in srgb, var(--alarm-red) 15%, var(--surface));
+}
+.dsd-chip-c::before { background: var(--alarm-red); }
+.dsd-assurance { font-size: 13px; line-height: 1.55; color: var(--muted); margin: 0 0 12px; font-style: italic; }
+.dsd-count { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); }
+.dsd-inputrow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 12px 0 2px; }
+.dsd-inputlabel {
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--muted); margin-right: 4px;
+}
+.dsd-chip-input { font-size: 10.5px; color: var(--muted); background: var(--surface-soft); }
+
 /* ============================================================
    Knowledge Library — brand typography overhaul.
    Display headings in the app's title face (cream + gold ordinals,
