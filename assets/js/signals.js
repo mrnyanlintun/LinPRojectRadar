@@ -810,10 +810,13 @@
             .filter((s) => CAT8_METHODS.indexOf(s.method_class) < 0)
             .concat(cat8);
         }
-        // Persist the aggregate Portfolio Health snapshot once per run (upload,
-        // batch end, or repair — never on page load/view open). Non-fatal.
-        await savePortfolioHealthSnapshot(project.id, "upload");
-      } catch (e) { /* Portfolio Health is non-fatal — never block the core run */ }
+        // NOTE: the aggregate Portfolio Health roster save is deliberately NOT
+        // done here. It must run AFTER this project's own save is confirmed
+        // (below), so the roster reads post-save statuses rather than freezing a
+        // pre-save snapshot into the chat/Health source. The portfolioanalyze
+        // POST above only COMPUTES the PH modules and merges them into this
+        // project's sim array; it does not persist the roster.
+      } catch (e) { /* Portfolio Health compute is non-fatal — never block the core run */ }
     }
     // Status finalization — the ONE place project.status is decided and
     // persisted. Every render surface (list, map pins, radar blips, detail
@@ -834,12 +837,31 @@
     persistHistorySnapshot(project);
     try { buildCategorySnapshot(project); } catch (e) { /* non-fatal — keeps the legacy snapshot path working */ }
     const builtSignals = project.signals;
-    await LinStore.saveProject(project);
+
+    // ---- the ONE persistence of post-compute state (awaited, verified) ----
+    // A silent save failure here is exactly the data-integrity bug this path
+    // guards against: results render from memory, never reach the backend, and
+    // every fresh read restores the old status. So a failed save is surfaced
+    // (visible toast + retry) and RE-THROWN, never swallowed. The retry re-saves
+    // the already-computed in-memory project — no recompute needed.
+    const stamp = new Date().toISOString();
+    project._localComputedAt = stamp;   // recency marker for the anti-clobber guard in store.hydrate
+    let saved = null;
+    try {
+      saved = await LinStore.saveProject(project);
+      if (!saved || saved.ok === false) throw new Error("save returned no project");
+    } catch (e) {
+      console.warn("[signals] post-compute saveProject FAILED for", project.id, "—", e && e.message);
+      notifySaveFailed(project, si, simPayload, e);
+      throw e;   // propagate: callers must not treat a failed save as success
+    }
+
     // saveProject reconciles the in-memory mirror with the backend's echoed
     // project, which omits client-only fields (the built signals package,
     // signalInputs, and simulationSignals). Re-assert them onto the canonical
     // cached object so the detail deep-dive and the ledger keep rendering
-    // after the save.
+    // after the save, and carry the recency marker so a background slim refresh
+    // won't clobber this fresher state.
     const cached = LinStore.getCached(project.id);
     if (cached) {
       if (!hasSignals(cached) && builtSignals) cached.signals = builtSignals;
@@ -848,8 +870,45 @@
       if (project.history) cached.history = project.history;
       if (project.milestoneHistory) cached.milestoneHistory = project.milestoneHistory;
       if (project.status) cached.status = project.status;
+      cached._localComputedAt = stamp;
     }
+
+    // Portfolio Health roster save — ONLY now, after this project's own save is
+    // confirmed, so the roster (the chat/Health source) reads post-save
+    // statuses. Non-fatal: a roster-save failure must not undo the confirmed
+    // project save, but it is still logged (never silent).
+    try {
+      await savePortfolioHealthSnapshot(project.id, "upload");
+    } catch (e) { console.warn("[signals] portfolio-health roster save failed (project save already landed):", e && e.message); }
+
     return true;
+  }
+
+  // Surface a failed post-compute save with a one-tap retry that re-saves the
+  // already-computed in-memory project (no recompute). Kept observable: the
+  // console.warn breadcrumb above fires on every failure regardless of the toast.
+  function notifySaveFailed(project, si, simPayload, err) {
+    const retry = async () => {
+      try {
+        const again = await LinStore.saveProject(project);
+        if (!again || again.ok === false) throw new Error("save returned no project");
+        const cached = LinStore.getCached(project.id);
+        if (cached) {
+          if (simPayload && !cached.simulationSignals) cached.simulationSignals = simPayload;
+          if (si && !cached.signalInputs) cached.signalInputs = si;
+          if (project.status) cached.status = project.status;
+          cached._localComputedAt = project._localComputedAt;
+        }
+        if (window.LinUI && LinUI.toast) LinUI.toast("Signal results saved.", true);
+        if (window.LinApp && LinApp.refresh) LinApp.refresh();
+      } catch (e) {
+        console.warn("[signals] save retry FAILED for", project.id, "—", e && e.message);
+        notifySaveFailed(project, si, simPayload, e);
+      }
+    };
+    if (window.LinUI && LinUI.toast) {
+      LinUI.toast("Signal results failed to save — retry", false, { label: "Retry", onClick: retry });
+    }
   }
 
   /* refresh the in-memory project (events + persisted state) after a server
@@ -1117,6 +1176,7 @@
         const canCompute = hasIndex(si.cpi) || hasIndex(si.spi);
         const project = LinStore.getCached(id);
         let ran = false;
+        let saveFailed = false;
         if (canCompute && project) {
           status.textContent = readyToRun
             ? "CPI and SPI ready — running models…"
@@ -1125,15 +1185,26 @@
           // don't overwrite prior fields with null (each doc only carries its own field set).
           const accSi = Object.assign({}, project.signalInputs || {});
           Object.keys(si).forEach(function(k) { if (si[k] != null && si[k] !== "") accSi[k] = si[k]; });
-          ran = await runModels(project, accSi);
+          // Extraction already succeeded; a runModels save failure is a DISTINCT
+          // condition (results computed but not persisted) surfaced by runModels'
+          // own retry toast — so catch it here rather than let it fall into the
+          // outer "Extraction failed" handler, which would wrongly imply the
+          // extraction itself failed.
+          try {
+            ran = await runModels(project, accSi);
+          } catch (saveErr) {
+            saveFailed = true;   // runModels already showed the retry toast + logged
+          }
         }
         await refreshProject(id);
 
-        status.textContent = ran
-          ? "Extracted — models ran on the extracted signals."
-          : (canCompute
-              ? "Extracted — but the models could not run (check CPI/SPI)."
-              : "Extracted. Upload a document with CPI or SPI to run the models (see Details below).");
+        status.textContent = saveFailed
+          ? "Extracted, but saving the signal results failed — use Retry (results are not yet stored)."
+          : ran
+            ? "Extracted — models ran on the extracted signals."
+            : (canCompute
+                ? "Extracted — but the models could not run (check CPI/SPI)."
+                : "Extracted. Upload a document with CPI or SPI to run the models (see Details below).");
         if (window.LinApp) LinApp.refresh();
         if (onResult) onResult(id, { signalInputs: si, missing, readyToRun, ran });
         stopLoading();
@@ -1469,6 +1540,10 @@
       // One full runModels pass on the COMPLETE accumulated field set — after all docs are
       // ingested and server-persisted. Uses getProject (free GET, no extraction) so the
       // signalInputs reflects every field the backend merged across the whole batch.
+      // runModels surfaces its own save failures (toast + retry) and RE-THROWS on a
+      // failed post-compute save — so a failure here is never silent. The per-document
+      // extractions did persist server-side, but the SIGNAL RESULTS did not; that is
+      // exactly the revert-on-reload symptom, so it must be observable, not swallowed.
       try {
         const finalProject = await LinStore.getProject(id);
         if (finalProject) {
@@ -1477,7 +1552,11 @@
             await runModels(finalProject, si);
           }
         }
-      } catch (e) { /* non-fatal — batch extraction already persisted server-side */ }
+      } catch (e) {
+        // runModels already showed the retry toast + logged the breadcrumb; log the
+        // batch-level context too so the failure is traceable, and don't pretend success.
+        console.warn("[upload] batch signal run/save failed for", id, "—", e && e.message);
+      }
       // this project's signals were just (re)computed — clear any sector-changed flag
       try { if (window.LinApp && LinApp.clearSectorDirty) LinApp.clearSectorDirty(id); } catch (e) {}
       reportBatch({ type: "done", summary: summary, projectId: id });

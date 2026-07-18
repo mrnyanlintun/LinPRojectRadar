@@ -1762,14 +1762,33 @@
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   }
 
-  function toast(text, ok) {
+  // toast(text, ok, action?) — action is an optional { label, onClick } that
+  // renders a button inside the toast (used for "failed to save — retry"). A
+  // toast carrying an action stays up longer and is not auto-dismissed until
+  // its window elapses, so the user has time to act.
+  function toast(text, ok, action) {
     let t = document.getElementById("lin-toast");
     if (!t) { t = document.createElement("div"); t.id = "lin-toast"; t.className = "lin-toast"; t.setAttribute("role", "status"); document.body.appendChild(t); }
-    t.textContent = text;
     t.classList.toggle("toast-error", ok === false);
-    t.classList.add("show");
     clearTimeout(t._timer);
-    t._timer = setTimeout(() => t.classList.remove("show"), 4000);
+    if (action && action.label && typeof action.onClick === "function") {
+      t.textContent = "";
+      const span = document.createElement("span");
+      span.textContent = text;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "lin-toast-action";
+      btn.textContent = action.label;
+      btn.addEventListener("click", () => { t.classList.remove("show"); action.onClick(); });
+      t.appendChild(span);
+      t.appendChild(btn);
+      t.classList.add("show");
+      t._timer = setTimeout(() => t.classList.remove("show"), 10000);
+    } else {
+      t.textContent = text;
+      t.classList.add("show");
+      t._timer = setTimeout(() => t.classList.remove("show"), 4000);
+    }
   }
 
   function openModal(opts) {

@@ -85,10 +85,89 @@
     if (typeof a === "string") return /^(true|1|yes|archived)$/i.test(a.trim());
     return false;
   }
+  // A project carries locally-computed state (simulationSignals is NEVER
+  // persisted by the backend; signals/signalInputs are client-built) plus a
+  // client compute stamp set by signals.js after a confirmed save.
+  function hasComputedSignals(p) {
+    return !!(p && p.simulationSignals && p.simulationSignals.signal_array &&
+              p.simulationSignals.signal_array.length);
+  }
+  // Local is newer than an incoming (background-refresh) row when its client
+  // compute stamp postdates the row's backend updatedAt. Missing stamps/dates
+  // never count as "newer" — only a real, comparable, strictly-greater stamp.
+  function localIsNewer(local, row) {
+    const lc = local && local._localComputedAt ? Date.parse(local._localComputedAt) : NaN;
+    if (!Number.isFinite(lc)) return false;
+    const ru = row && (row.updatedAt || row.modified || row.computed_at);
+    const rt = ru ? Date.parse(ru) : NaN;
+    // If the row has no comparable timestamp, treat local's real compute stamp
+    // as authoritative (the backend row predates our compute or is timestampless).
+    if (!Number.isFinite(rt)) return true;
+    return lc > rt;
+  }
+  // Reconciling hydrate. A background slim refresh must NOT clobber fresher
+  // locally-computed state with a staler backend row (the symptom: status
+  // reverts after upload on reload/background refresh). For each incoming row:
+  //   • if the local copy is strictly newer, KEEP local and queue one re-fetch
+  //     so the authoritative backend copy catches up (no refresh loop);
+  //   • otherwise take the incoming row but GRAFT the never-persisted computed
+  //     fields (simulationSignals, and signals/signalInputs/status/history when
+  //     the row lacks them) so they survive the refresh.
+  let staleRefetchQueued = false;
   function hydrate(projects) {
+    const prevById = {};
+    LIN_PROJECTS.concat(LIN_ARCHIVED).forEach((p) => { if (p && p.id != null) prevById[p.id] = p; });
+    const staleIds = [];
+    const reconciled = (projects || []).map((row) => {
+      const local = prevById[row.id];
+      if (!local) return row;
+      if (localIsNewer(local, row)) {
+        // Backend returned a staler row than what we just computed/saved — keep
+        // local intact and mark for a single reconciling re-fetch.
+        staleIds.push(row.id);
+        return local;
+      }
+      if (!hasComputedSignals(local) && local.status == null) return row;
+      // Incoming row is same-or-newer, but the backend never stores
+      // simulationSignals and may omit client-built fields — graft them so the
+      // detail/radar/health surfaces don't lose their computed state.
+      const merged = Object.assign({}, row);
+      if (hasComputedSignals(local)) merged.simulationSignals = local.simulationSignals;
+      if (!(row.signals && row.signals.evm) && local.signals) merged.signals = local.signals;
+      if (!row.signalInputs && local.signalInputs) merged.signalInputs = local.signalInputs;
+      if (row.status == null && local.status != null) merged.status = local.status;
+      if (!row.history && local.history) merged.history = local.history;
+      if (!row.milestoneHistory && local.milestoneHistory) merged.milestoneHistory = local.milestoneHistory;
+      if (local._localComputedAt) merged._localComputedAt = local._localComputedAt;
+      return merged;
+    });
     LIN_PROJECTS.length = 0;
     LIN_ARCHIVED.length = 0;
-    (projects || []).forEach((p) => (isArchived(p) ? LIN_ARCHIVED : LIN_PROJECTS).push(p));
+    reconciled.forEach((p) => (isArchived(p) ? LIN_ARCHIVED : LIN_PROJECTS).push(p));
+    if (staleIds.length) queueStaleRefetch(staleIds);
+  }
+  // One bounded reconciling re-fetch for projects the backend returned staler
+  // than local (loop-guarded: at most one in-flight batch, and a re-fetched row
+  // only replaces local when it is genuinely newer than local's compute stamp).
+  function queueStaleRefetch(ids) {
+    if (staleRefetchQueued || !configured()) return;
+    staleRefetchQueued = true;
+    Promise.resolve().then(async () => {
+      for (const id of ids) {
+        try {
+          const j = await apiGet("?action=get&id=" + encodeURIComponent(id));
+          const fresh = j && j.project;
+          if (!fresh) continue;
+          const i = LIN_PROJECTS.findIndex((p) => p.id === id);
+          if (i < 0) continue;
+          const local = LIN_PROJECTS[i];
+          if (localIsNewer(local, fresh)) continue; // backend still hasn't caught up; keep local
+          if (hasComputedSignals(local) && !hasComputedSignals(fresh)) fresh.simulationSignals = local.simulationSignals;
+          if (local._localComputedAt) fresh._localComputedAt = local._localComputedAt;
+          LIN_PROJECTS[i] = fresh;
+        } catch (e) { console.warn("[store] stale re-fetch failed for", id, "—", e && e.message); }
+      }
+    }).finally(() => { staleRefetchQueued = false; });
   }
 
   /* ---------- CORS-safe fetch helpers (simple requests only) ---------- */
