@@ -2782,11 +2782,66 @@ body[data-theme="newyork"] .dock-nav-btn.active::before { background: var(--nyc-
 .dock-nav-btn[data-nav="handbook"][aria-expanded="true"] .book-open,
 .dock-nav-btn[data-nav="handbook"].active .book-open { opacity: 1; }
 
+/* ============================================================
+   Dock AMBIENT idle animation — all four icons animate CONTINUOUSLY
+   (not only on hover/active) so the dock reads as a live instrument
+   panel. Each ambient loop is SLOWER / gentler than that icon's hover
+   state (which is unchanged and stays clearly more energetic). The
+   loops apply ONLY in the true idle state — :not(:hover):not(:focus-
+   visible):not(.active) — so hover/active take full control (and so an
+   animation never fights a transition, e.g. the book's hover page-turn).
+   Starts are staggered 0 / 0.7 / 1.4 / 2.1s so they never beat in
+   unison (reads as a machine, not a UI). CSS-only, transform/opacity.
+   Paused when the tab is hidden (body.dock-idle-paused, toggled on
+   visibilitychange). OFF under reduced motion (block below).
+   Calibration vs. status alarms: the dock is 26px and sits in the side/
+   bottom rail, away from the radar/map status blips; ambient blip
+   pulses are deliberately shallow (.42 -> .78, not -> 1) and slow (2.6s)
+   so they never pull the eye from a Red status blink elsewhere. If a
+   loop ever competes, slow it / lower its opacity here.
+   ============================================================ */
+body.dock-idle-paused .dock-icon *,
+body.dock-idle-paused .dock-menu .menu-emblem-svg circle { animation-play-state: paused !important; }
+
+/* 1. Portfolio radar (delay 0s): slow continuous sweep + shallow blip flicker */
+.dock-nav-btn[data-nav="portfolio"]:not(:hover):not(:focus-visible):not(.active) .radar-sweep {
+  animation: dock-radar-spin 4s linear infinite;
+}
+.dock-nav-btn[data-nav="portfolio"]:not(:hover):not(:focus-visible):not(.active) .radar-blip-1 {
+  animation: dock-amb-blip 2.6s ease-in-out infinite;
+}
+.dock-nav-btn[data-nav="portfolio"]:not(:hover):not(:focus-visible):not(.active) .radar-blip-2 {
+  animation: dock-amb-blip 2.6s ease-in-out 1.3s infinite;
+}
+@keyframes dock-amb-blip { 0%,100% { opacity: .42; } 50% { opacity: .78; } }
+
+/* 2. Auditor doc-scan (delay 0.7s): scan line travels down every ~3s; the
+   check tick still draws ONLY on hover/active (untouched below). */
+.dock-nav-btn[data-nav="auditor"]:not(:hover):not(:focus-visible):not(.active) .doc-scan {
+  animation: dock-doc-scan 3s ease-in-out 0.7s infinite;
+}
+
+/* 3. Handbook book (delay 1.4s): the closed cover "breathes" — a gentle flex
+   on its spine hinge, NO full page-turn at idle (the turn stays for hover). */
+.dock-nav-btn[data-nav="handbook"]:not(:hover):not(:focus-visible):not(.active):not([aria-expanded="true"]) .book-closed {
+  animation: dock-book-breathe 5s ease-in-out 1.4s infinite;
+}
+@keyframes dock-book-breathe { 0%,100% { transform: rotateY(0deg); } 50% { transform: rotateY(-13deg); } }
+
+/* 4. Menu emblem (delay 2.1s): the middle-bar blip dot pulses slowly, matching
+   the radar's visual language (chosen over a gear rotation — the glyph has no
+   gear, but it does carry a radar blip on its middle bar). */
+.dock-menu:not(:hover):not(:focus-visible) .menu-emblem-svg circle {
+  transform-box: fill-box; transform-origin: center;
+  animation: dock-amb-blip 2.8s ease-in-out 2.1s infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   /* no motion — jump straight to the end state, no transitions/keyframes */
   .dock-icon .radar-sweep, .dock-icon .radar-blip,
   .dock-icon .doc-scan, .dock-icon .doc-line, .dock-icon .doc-check,
-  .dock-icon .book-closed, .dock-icon .book-open { animation: none !important; transition: none !important; }
+  .dock-icon .book-closed, .dock-icon .book-open,
+  .dock-menu .menu-emblem-svg circle { animation: none !important; transition: none !important; }
   /* static doc with the tick shown (reviewed), scan hidden, rows legible */
   .dock-nav-btn[data-nav="auditor"] .doc-line { opacity: 1; }
   .dock-nav-btn[data-nav="auditor"] .doc-check { stroke-dashoffset: 0; }

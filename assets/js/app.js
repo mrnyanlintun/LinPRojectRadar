@@ -2096,6 +2096,13 @@
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     tryEmblemUpgrade();
+
+    // Ambient dock loops run continuously (CSS-only). Pause them all when the
+    // tab is backgrounded — perpetual loops on a hidden tab drain battery for
+    // no benefit. One class toggle drives every ambient animation's play-state.
+    const reflectDockPaused = () => document.body.classList.toggle("dock-idle-paused", document.hidden);
+    document.addEventListener("visibilitychange", reflectDockPaused);
+    reflectDockPaused();
   }
 
   /* ---------- dock nav icon that ALSO owns a fly-out row (Portfolio, Handbook) ----------
