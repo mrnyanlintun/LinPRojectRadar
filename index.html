@@ -453,7 +453,7 @@
           <p>Lin Opus Gubernatio implements the Public Capital EVM Intelligence Framework (PCEIF): it turns the records a capital program already produces into an accountable, auditable governance recommendation. The pipeline runs in four steps.</p>
           <ol class="about-list about-steps">
             <li><span class="about-step-num">1.</span> <strong>Ingests</strong> 26 document types (pay applications, schedules, change orders, RFIs, submittals, inspection and compliance reports), extracting the cost, schedule, and risk figures automatically.</li>
-            <li><span class="about-step-num">2.</span> <strong>Runs</strong> 103 signal modules across 11 categories: earned-value analysis, schedule and cost simulation, document risk, system dynamics, and machine-learning anomaly detection.</li>
+            <li><span class="about-step-num">2.</span> <strong>Runs</strong> 103 signal modules across 10 project-level categories plus the portfolio-level Health suite: earned-value analysis, schedule and cost simulation, document risk, system dynamics, and machine-learning anomaly detection.</li>
             <li><span class="about-step-num">3.</span> <strong>Fuses</strong> the evidence with Dempster–Shafer combination into a single five-state status (Complete, Green, Yellow, Amber, or Red) that surfaces disagreement between signals rather than averaging it away.</li>
             <li><span class="about-step-num">4.</span> <strong>Produces</strong> a signal-traced recommended action plan, each action tied to the category and module that triggered it, with a named authority and required documentation, which a named human reviewer records. The platform advises; it never decides.</li>
           </ol>
@@ -464,7 +464,7 @@
         <!-- Architecture -->
         <section class="panel about-section about-section-wide">
           <h2 class="about-h">Architecture</h2>
-          <p>103 analytical modules across 11 categories run client-side in the browser; a single serverless endpoint brokers persistence and AI, holding every API key server-side.</p>
+          <p>103 analytical modules across 10 project-level categories plus the portfolio-level Health suite run client-side in the browser; a single serverless endpoint brokers persistence and AI, holding every API key server-side. Portfolio Health is computed server-side and persisted separately in portfolio_health.json.</p>
           <div class="about-arch">
             <div class="about-arch-layer" style="--layer-color: var(--phosphor)">
               <div class="about-arch-label">Frontend: GitHub Pages (static)</div>

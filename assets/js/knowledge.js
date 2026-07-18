@@ -79,7 +79,7 @@
       id: "five-status",
       keywords: ["status", "five status", "5 status", "complete", "yellow", "blue", "rag", "red amber green", "why five", "authority matrix", "closeout"],
       title: "Why five status levels (Complete / Green / Yellow / Amber / Red)",
-      body: "Traditional RAG collapses important distinctions. PCEIF uses five status levels for three reasons. (1) RAG hides the gap between 'slightly off' and 'stalled' — both show as Red. (2) Complete (blue) marks projects that have hit their milestone and transition to closeout governance — different authority, different documentation. (3) Yellow is an early-warning band between Green and Amber: minor variance, still recoverable, requiring a PM weekly check-in before it escalates. Each status maps to a distinct authority/timeframe in the Cat 8.1 matrix."
+      body: "Traditional RAG collapses important distinctions. PCEIF uses five status levels for three reasons. (1) RAG hides the gap between 'slightly off' and 'stalled', both show as Red. (2) Complete (blue) marks projects that have hit their milestone and transition to closeout governance, different authority, different documentation. (3) Yellow is an early-warning band between Green and Amber: minor variance, still recoverable, requiring a PM weekly check-in before it escalates. Each status maps to a distinct authority/timeframe in the Cat 8.1 matrix."
     },
     {
       id: "radar",
@@ -541,7 +541,7 @@
       title: "1. What is PCEIF",
       eyebrow: "Framework foundation",
       build: () => `
-        <p class="kn-lead">PCEIF, the <strong>Public Capital EVM Intelligence Framework</strong>, converts the signals that a public capital program already generates into a structured, accountable governance action with a named authority and a documented audit trail — using 103 analytical modules across 10 project-level categories and the portfolio-level Health suite. Lin Opus Gubernatio is the platform that implements the framework.</p>
+        <p class="kn-lead">PCEIF, the <strong>Public Capital EVM Intelligence Framework</strong>, converts the signals that a public capital program already generates into a structured, accountable governance action with a named authority and a documented audit trail, using 103 analytical modules across 10 project-level categories and the portfolio-level Health suite. Lin Opus Gubernatio is the platform that implements the framework.</p>
 
         <h3>The problem it solves</h3>
         <p>Standard Earned Value Management produces excellent data. It does not produce a decision. A PM looking at CPI 0.88 in period 4 has no structured path to a defensible escalation: who must act, on what timeframe, with what documentation, under whose authority. The data exists; the governance link is missing.</p>
@@ -559,17 +559,17 @@
         ↓
 Cat 1–5: Signal Generation (57 modules)
         ↓
-Cat 6: Signal Synthesis (4 modules) — Conservative Dominance baseline
+Cat 6: Signal Synthesis (4 modules), Conservative Dominance baseline
         ↓
-Cat 7: Evidence Combination (20 modules) — Confidence quantification
+Cat 7: Evidence Combination (20 modules), Confidence quantification
         ↓
-PH: Portfolio Health (5 modules) — Portfolio anomaly detection
+PH: Portfolio Health (5 modules), Portfolio anomaly detection
         ↓
-Cat 9: Data Integrity (7 modules) — Input quality assessment
+Cat 9: Data Integrity (7 modules), Input quality assessment
         ↓
-Cat 10: Decision Optimization (7 modules) — Optimal action selection
+Cat 10: Decision Optimization (7 modules), Optimal action selection
         ↓
-Cat 8: Governance & Compliance (9 modules) — Named authority + audit trail
+Cat 8: Governance & Compliance (9 modules), Named authority + audit trail
         ↓
 Named Human Approval → Audit Record</pre>
 
@@ -591,23 +591,23 @@ Named Human Approval → Audit Record</pre>
         <p class="kn-lead">Public capital projects are complex adaptive systems. A single EVM index (CPI or SPI) captures cost and schedule performance but misses the systemic, probabilistic, and qualitative dimensions that determine whether a project will succeed. PCEIF addresses this through four principles.</p>
 
         <h3>1. No human can compute 103 analyses simultaneously</h3>
-        <p>A senior PM reviewing a monthly report might check CPI, SPI, and open RFIs. PCEIF runs 103 analytical methods in milliseconds — probabilistic forecasts, anomaly detection, uncertainty reasoning, optimization, data integrity checks, and governance compliance — all before the PM opens their laptop. The platform does not replace human judgment; it gives the PM a complete evidence package to exercise that judgment.</p>
+        <p>A senior PM reviewing a monthly report might check CPI, SPI, and open RFIs. PCEIF runs 103 analytical methods in milliseconds, probabilistic forecasts, anomaly detection, uncertainty reasoning, optimization, data integrity checks, and governance compliance, all before the PM opens their laptop. The platform does not replace human judgment; it gives the PM a complete evidence package to exercise that judgment.</p>
 
         <h3>2. Convergence equals confidence</h3>
-        <p>When 90 of 103 methods agree on a Red classification, the PM can act with high confidence. When methods diverge — some showing Amber, others Red — the divergence itself is the finding: the project is in an ambiguous state that requires investigation before action. No single method can surface that ambiguity.</p>
+        <p>When 90 of 103 methods agree on a Red classification, the PM can act with high confidence. When methods diverge, some showing Amber, others Red, the divergence itself is the finding: the project is in an ambiguous state that requires investigation before action. No single method can surface that ambiguity.</p>
 
         <h3>3. Each category adds a distinct lens</h3>
         <p>The 10 project-level categories, plus the portfolio-level Health suite, are not redundant:</p>
         <ul class="kn-list">
-          <li><strong>Cat 1 (EVM)</strong> — shows what <em>is</em> happening.</li>
-          <li><strong>Cat 2–3 (Simulation)</strong> — shows what <em>will</em> happen.</li>
-          <li><strong>Cat 4 (Documents)</strong> — shows what <em>is being said</em>.</li>
-          <li><strong>Cat 5 (Dynamics)</strong> — shows how components <em>interact</em>.</li>
-          <li><strong>Cat 6–7 (Synthesis)</strong> — shows what the evidence <em>collectively means</em>.</li>
-          <li><strong>Cat 8 (Governance)</strong> — shows what <em>action is required</em>.</li>
-          <li><strong>Cat 9 (Data Integrity)</strong> — shows how much to <em>trust the signals</em>.</li>
-          <li><strong>Cat 10 (Optimization)</strong> — shows what the <em>best decision</em> is.</li>
-          <li><strong>Portfolio Health (PH)</strong> — shows how this project <em>compares to the portfolio</em>.</li>
+          <li><strong>Cat 1 (EVM)</strong>, shows what <em>is</em> happening.</li>
+          <li><strong>Cat 2–3 (Simulation)</strong>, shows what <em>will</em> happen.</li>
+          <li><strong>Cat 4 (Documents)</strong>, shows what <em>is being said</em>.</li>
+          <li><strong>Cat 5 (Dynamics)</strong>, shows how components <em>interact</em>.</li>
+          <li><strong>Cat 6–7 (Synthesis)</strong>, shows what the evidence <em>collectively means</em>.</li>
+          <li><strong>Cat 8 (Governance)</strong>, shows what <em>action is required</em>.</li>
+          <li><strong>Cat 9 (Data Integrity)</strong>, shows how much to <em>trust the signals</em>.</li>
+          <li><strong>Cat 10 (Optimization)</strong>, shows what the <em>best decision</em> is.</li>
+          <li><strong>Portfolio Health (PH)</strong>, shows how this project <em>compares to the portfolio</em>.</li>
         </ul>
 
         <h3>4. What the 103-module count includes</h3>
@@ -619,16 +619,16 @@ Named Human Approval → Audit Record</pre>
       title: "Why five status levels",
       eyebrow: "Governance model",
       build: () => `
-        <p class="kn-lead">Traditional RAG (Red-Amber-Green) systems use three states. PCEIF uses five — Complete, Green, Yellow, Amber, Red — for three concrete reasons.</p>
+        <p class="kn-lead">Traditional RAG (Red-Amber-Green) systems use three states. PCEIF uses five, Complete, Green, Yellow, Amber, Red, for three concrete reasons.</p>
 
         <h3>1. RAG collapses important distinctions</h3>
         <p>A project that is slightly behind schedule and a project that has completely stalled both show as Red under RAG. A PM responding to a slightly-behind project applies very different actions than one responding to a stalled project. Collapsing them to the same status loses the governance signal.</p>
 
         <h3>2. The Complete state enables closeout governance</h3>
-        <p>Public capital programs have a distinct closeout phase — work is done, but sign-off, commissioning, and documentation must be completed. A Green state implies active monitoring is still required. A Complete state signals the project has met its targets and transitions to closeout governance — different authority, different documentation requirements.</p>
+        <p>Public capital programs have a distinct closeout phase, work is done, but sign-off, commissioning, and documentation must be completed. A Green state implies active monitoring is still required. A Complete state signals the project has met its targets and transitions to closeout governance, different authority, different documentation requirements.</p>
 
         <h3>3. Yellow provides an early warning band</h3>
-        <p>The gap between Green (on track) and Amber (significant risk) is too wide: a project moving from Green to Amber has often already been in trouble for two or three reporting periods. Yellow captures the zone in between — minor variance, still recoverable, requiring PM attention before the next cycle. With 103 modules producing outputs, Yellow consensus across multiple categories marks the inflection point where a project is leaving the Green zone, and it is where early intervention prevents escalation.</p>
+        <p>The gap between Green (on track) and Amber (significant risk) is too wide: a project moving from Green to Amber has often already been in trouble for two or three reporting periods. Yellow captures the zone in between, minor variance, still recoverable, requiring PM attention before the next cycle. With 103 modules producing outputs, Yellow consensus across multiple categories marks the inflection point where a project is leaving the Green zone, and it is where early intervention prevents escalation.</p>
 
         <h3>The five-status authority matrix</h3>
         <table class="kn-table">
@@ -643,7 +643,7 @@ Named Human Approval → Audit Record</pre>
         </table>
 
         <h3>Why not more than five?</h3>
-        <p>Six or more statuses create decision paralysis — the PM spends time debating whether a project is "Orange-Amber" vs "Deep-Amber" rather than acting. Five states map cleanly to five distinct governance responses with different authorities and timeframes.</p>
+        <p>Six or more statuses create decision paralysis, the PM spends time debating whether a project is "Orange-Amber" vs "Deep-Amber" rather than acting. Five states map cleanly to five distinct governance responses with different authorities and timeframes.</p>
       `,
     },
     /* The former "stack" and "pm-advice" topics (19-module era) were removed:
@@ -1253,7 +1253,7 @@ Named Human Approval → Audit Record</pre>
             [{ label: "Complete", color: RAG.complete },
              "Project Manager / Controls Lead",
              "Closeout documentation",
-             "Milestone achieved and signed off — transition to closeout governance"],
+             "Milestone achieved and signed off, transition to closeout governance"],
             [{ label: "Green", color: RAG.green },
              "Project Manager / Controls Lead",
              "Monthly reporting cycle",
@@ -1261,7 +1261,7 @@ Named Human Approval → Audit Record</pre>
             [{ label: "Yellow", color: RAG.yellow },
              "Project Manager",
              "Weekly check-in",
-             "Minor variance — early-warning band, investigate before next cycle"],
+             "Minor variance, early-warning band, investigate before next cycle"],
             [{ label: "Amber", color: RAG.amber },
              "PM + Project Controls Lead",
              "Weekly review loop",
@@ -1394,7 +1394,7 @@ Named Human Approval → Audit Record</pre>
   ];
 
 /* ============================================================
-   Module Reference — per-module documentation for all 103 project-
+   Module Reference, per-module documentation for all 103 project-
    level modules (Cat 1-10) plus the 5 Portfolio Health modules.
    Data is read directly from assets/js/simulations.js (formulas,
    thresholds, abstention conditions) and assets/js/categories.js
@@ -1408,6 +1408,20 @@ Named Human Approval → Audit Record</pre>
       rows.map((r) => `<tr><td class="kn-rag-cell" style="--kn-th:${RAG[r[0]] || ""}">${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join("") +
       `</tbody></table>`;
   }
+  // Governance role, rendered from the TDS §11 template parameterised by the
+  // module's name, method class, and input gate. Per-module override via m.gov.
+  // This is the concise "one contribution to an evidence package, not an
+  // autonomous decision" framing required by PCEIF, not the full boilerplate.
+  function modGov(m) {
+    if (m.gov) return m.gov;
+    return `Within PCEIF this module contributes one signal to an evidence package; it is evidence, not an instruction, and it never authorises action on its own. Its output must trace to the source record, data date, method (<code>${esc(m.mc)}</code>), threshold or trigger reason, and code version, and it abstains rather than fabricating a status when a required input is absent. Any conflict with the other signals in its category stays visible and routes to human review, where a named authority may accept, override, defer, or escalate the recommendation with a recorded rationale.`;
+  }
+  // Human-judgment note: the anchoring/over- or under-reaction risk this class
+  // of signal invites, and the discipline that counters it. Override via m.hj.
+  function modHj(m) {
+    if (m.hj) return m.hj;
+    return "Read as evidence, not verdict: corroborate against the other signals in its category before acting, and record a rationale if you set it aside. No silent override, the reasoning enters the audit trail.";
+  }
   function modDoc(m) {
     const html = `
       <p><strong>Purpose.</strong> ${m.purpose}</p>
@@ -1417,6 +1431,8 @@ Named Human Approval → Audit Record</pre>
       <p><strong>Data sources.</strong> ${m.sources}</p>
       <p><strong>Interpretation for the PM.</strong> ${m.interp}</p>
       <p><strong>Methodological grounding.</strong> ${m.ground}</p>
+      <p><strong>Governance role.</strong> ${modGov(m)}</p>
+      <p><strong>Human-judgment note.</strong> ${modHj(m)}</p>
     `;
     return window.collapsibleSection("modref-" + m.mc, `<strong>${esc(m.n)}</strong> ${esc(m.name)}`, html, false);
   }
@@ -1424,35 +1440,98 @@ Named Human Approval → Audit Record</pre>
     return `<p class="kn-lead">${lead}</p>` + mods.map(modDoc).join("");
   }
 
-  /* ---------- Cat 1 — Quantitative EVM (1.1-1.12) ---------- */
+  /* ---------- Per-category governance framing (Praxis Ch. 5 pattern) ----------
+     Each category is introduced with the Praxis Ch.5 structure: Why it matters,
+     Governance role, Human-judgment risks. Rendered as plain <p> (not <h3>) so
+     the shared wrapArticleSections() splitter leaves the module register intact.
+     The module register itself is the collapsible per-module list below. */
+  const CAT_PRAXIS = {
+    cat1: {
+      why: "Category 1 addresses baseline cost and schedule performance, the CPI/SPI core of earned value. It matters because public project-control action must come early enough to prevent avoidable deterioration, yet not so early that it produces unsupported or unfair escalation. It gives the PM and controls team a structured family of evidence that would otherwise stay fragmented across spreadsheets, schedules, logs, and narratives.",
+      risks: "PMs may anchor on familiar CPI/SPI values, assume last period's Green still controls this review, or over-react to a single forecast without checking its assumptions. The framework counters this with status rollup, dominant-signal display, evidence sufficiency, mandatory rationale, no silent overrides, and audit-aware decision records."
+    },
+    cat2: {
+      why: "Category 2 addresses delivery timing, milestone exposure, float, resource feasibility, and near-term schedule health, the time-based leading indicators that move before SPI does. It surfaces schedule risk early enough to act while there is still room to recover.",
+      risks: "PMs may normalise incremental drift, accept aggressive recovery plans without feasibility evidence, or under-react to float consumption. The framework counters this with status rollup, dominant-signal display, evidence sufficiency, mandatory rationale, and audit-aware records."
+    },
+    cat3: {
+      why: "Category 3 addresses future budget exposure: productivity, contingency, rework, material cost, and escalation pressure, correcting for the optimism bias built into bottom-up contractor estimates.",
+      risks: "PMs may treat remaining contingency as comfort even when the burn rate is unsustainable, or dispute a model's assumptions without documenting why. The framework counters this with evidence sufficiency, mandatory rationale, and audit-aware records."
+    },
+    cat4: {
+      why: "Category 4 addresses evidence embedded in RFIs, submittals, NCRs, procurement notes, weather records, change logs, specifications, and field narratives, the qualitative early warning that leads EVM by weeks.",
+      risks: "PMs may over-read one strong phrase, ignore repeated weak warnings, or treat a document-risk flag as fault rather than review evidence. The framework counters this by requiring corroboration, mandatory rationale, and the fairness gate before any contractor-affecting action."
+    },
+    cat5: {
+      why: "Category 5 addresses interdependence, feedback loops, bottlenecks, rework propagation, supply coordination, and scenario behaviour, how project components amplify one another rather than fail in isolation.",
+      risks: "PMs may treat connected problems as isolated issues, underestimate rework loops, or miss queue effects because they look purely operational. The framework counters this with status rollup, evidence sufficiency, and audit-aware records."
+    },
+    cat6: {
+      why: "Category 6 combines heterogeneous module outputs into a transparent project-health interpretation. Its baseline rule, conservative dominance, keeps a severe credible signal from being averaged away by a crowd of green ones.",
+      risks: "PMs may cherry-pick the most favourable signal, ignore conflict, or average away a serious Red. The framework counters this by making the dominant signal and the conflict explicit, and requiring rationale to depart from them."
+    },
+    cat7: {
+      why: "Category 7 addresses uncertainty, incompleteness, vagueness, conflicting evidence, and multi-criteria ranking. Twenty independent uncertainty-reasoning frameworks cross-check the Category 6 baseline and quantify how much confidence the classification actually carries.",
+      risks: "PMs may treat vague evidence as certain, treat uncertain evidence as useless, or confuse weak evidence with conflicting evidence. The framework counters this by reporting agreement and conflict, not just a colour."
+    },
+    cat8: {
+      why: "Category 8 addresses public-owner authority, procurement constraints, audit obligations, and procedural fairness. It is always the last step: the named authority, the required action, the compliance check, and the audit trail.",
+      risks: "PMs may act outside authority, bypass approval, treat an internal warning as formal direction, or fail to record rationale. The framework counters this with the authority matrix, the human-approval gate, the fairness gate, and mandatory rationale."
+    },
+    cat9: {
+      why: "Category 9 addresses record completeness, freshness, provenance, and suitability for signal generation. Every analytical output is only as good as its inputs; this category quantifies that and refuses to hide it.",
+      risks: "PMs may trust a complete-looking dashboard built on missing data, or treat extracted facts as verified facts. The framework counters this by surfacing missing, stale, and low-reliability inputs before the fused status is trusted."
+    },
+    cat10: {
+      why: "Category 10 addresses candidate management responses, action ranking, recovery options, and proportional response selection. Where Category 5 explains system behaviour, Category 10 takes the current state as given and asks which action is optimal under constraints.",
+      risks: "PMs may choose the easiest action, escalate too quickly, or delay because the options are unclear. The framework counters this by ranking proportional responses and tying each to its constraint and authority."
+    },
+    ph: {
+      why: "Portfolio Health matters because public owners manage programs, not only isolated projects. A project can look normal in isolation yet be an outlier against its peers. It supports executive review and program learning.",
+      risks: "It provides program-level context only: it does not automatically trigger project-level formal action without project-level evidence review, and its outputs are noisier for small portfolios (fewer than roughly three to five active projects)."
+    }
+  };
+  const CAT_PRAXIS_GOV = "PCEIF treats this category's output as evidence, not instruction. The governance role is to convert each module result into a reviewable signal package carrying source record, data date, method, threshold or trigger reason, confidence or uncertainty, input completeness, action implication, and reviewer role. If required inputs are missing, the module abstains rather than fabricating a status.";
+  function praxisIntro(key) {
+    const p = CAT_PRAXIS[key];
+    if (!p) return "";
+    return `<p><strong>Why it matters.</strong> ${p.why}</p>` +
+           `<p><strong>Governance role.</strong> ${CAT_PRAXIS_GOV}</p>` +
+           `<p><strong>Human-judgment risks.</strong> ${p.risks}</p>`;
+  }
+  function catModSection(key, lead, mods) {
+    return praxisIntro(key) + `<p class="kn-lead">${lead}</p>` + mods.map(modDoc).join("");
+  }
+
+  /* ---------- Cat 1, Quantitative EVM (1.1-1.12) ---------- */
   const CAT1_MODULES = [
     { n: "1.1", name: "Monte Carlo EAC Forecast", mc: "Monte_Carlo",
       purpose: "Replaces a single-point EAC with a probabilistic range so contingency and escalation decisions are made against an explicit confidence level rather than false precision.",
       formula: "5,000-iteration simulation: CPI is sampled per-iteration from a Beta-PERT(a, m, b) distribution derived from the project's current CPI/SPI; EAC_i = BAC / CPI_i. P50 and P80 are read from the sorted simulated array; P(delay) = share of iterations where EAC_i &gt; BAC × 1.10.",
       bands: [["green","Green","P80 EAC within +5% of BAC"], ["amber","Amber","P80 EAC +5% to +10% of BAC"], ["red","Red","P80 EAC &gt; +10% of BAC"]],
-      sources: "Pay Application (G702), Schedule of Values (G703), Cost Report — supplies BAC/EV/AC/CPI/SPI that seed the distribution.",
+      sources: "Pay Application (G702), Schedule of Values (G703), Cost Report, supplies BAC/EV/AC/CPI/SPI that seed the distribution.",
       interp: "Green means the conservative planning figure is within tolerance of budget; Red means even the 80th-percentile outcome breaches the +10% overrun line, a funding conversation, not a watch item.",
       ground: "Monte Carlo simulation with a Beta-PERT input distribution is standard practice in quantitative cost-risk analysis for capital programs (Project Management Institute, 2019); Beta-PERT is preferred over triangular or normal because it is bounded and weighted toward the most-likely estimate." },
     { n: "1.2", name: "CUSUM Anomaly Monitor", mc: "CUSUM",
       purpose: "Detects sustained schedule drift that accumulates slowly across periods, before any single-period SPI reading would trip a simple variance threshold.",
       formula: "Two-sided tabular CUSUM over the SPI series: C⁺ᵢ = max(0, C⁺ᵢ₋₁ + (xᵢ − μ₀ − k)); C⁻ᵢ = max(0, C⁻ᵢ₋₁ − (xᵢ − μ₀ + k)); μ₀ = 1.00 (on schedule), k = 0.5σ, decision interval H = 5σ. A breach is C⁺ᵢ &gt; H or C⁻ᵢ &gt; H.",
       bands: [["green","Green","drift statistic below the watch level"], ["amber","Amber","drift approaching the control limit"], ["red","Red","C⁺ or C⁻ breaches H (5σ)"]],
-      sources: "Schedule Update / Look-ahead, Monthly Progress Report — supplies the SPI time series the recursion runs over.",
+      sources: "Schedule Update / Look-ahead, Monthly Progress Report, supplies the SPI time series the recursion runs over.",
       interp: "A breach hands the finding to Cat 6.1/Cat 8.1 governance; on its own it is evidence of a systemic pattern, not noise, and if no document explains it the conflict type is 'Anomaly Without Narrative'.",
       ground: "Tabular CUSUM (Page, 1954) is a sequential change-detection method from statistical process control, chosen over a Shewhart 3σ chart because it is sensitive to small sustained shifts rather than only large single-period ones; construction SPI series carry higher natural variance than manufacturing measurements, so H is widened to 5σ to bound false positives." },
     { n: "1.3", name: "Document Risk Extraction", mc: "Doc_Risk",
       purpose: "Surfaces qualitative risk language in project records as a leading indicator, since EVM lags field conditions by weeks.",
       formula: "Weighted sum of matched keyword/pattern rules across RFIs, submittals, OAC minutes, and correspondence, normalised to a 0-1 score. Each match carries a weight and an evidence excerpt; the ledger stores the matched rule and source document.",
-      bands: [["green","Green","score &lt; 0.30 — routine language"], ["amber","Amber","0.30-0.70 — possible cost/schedule/scope impact language"], ["red","Red","score ≥ 0.70 — high-impact language converging across document types"]],
+      bands: [["green","Green","score &lt; 0.30, routine language"], ["amber","Amber","0.30-0.70, possible cost/schedule/scope impact language"], ["red","Red","score ≥ 0.70, high-impact language converging across document types"]],
       sources: "RFI / RFI Log, Submittal / Submittal Register, OAC Meeting Minutes, Correspondence / Notice, Risk Register, Inspection Report / NCR.",
-      interp: "Red is a flag requiring Cat 6.1 corroboration, never a standalone trigger — keyword extraction is rule-based, not semantic, and a sophisticated contractor can write around it.",
+      interp: "Red is a flag requiring Cat 6.1 corroboration, never a standalone trigger, keyword extraction is rule-based, not semantic, and a sophisticated contractor can write around it.",
       ground: "Rule-based text scoring for early warning is consistent with document-risk literature in project controls; it trades recall for full auditability, every matched rule and excerpt is inspectable, unlike a black-box NLP classifier." },
     { n: "1.4", name: "Bayesian EAC", mc: "Bayesian_EAC",
       purpose: "Blends a prior expectation (finish on budget) with the likelihood implied by current CPI, producing a posterior EAC that is more conservative than a naive CPI-only projection when current performance is thin on data.",
       formula: "priorMean = BAC, priorVariance = (BAC × 0.15)²; likelihoodMean = BAC/CPI, likelihoodVariance = (BAC × (1−CPI)/CPI)²; posteriorMean = (priorMean/priorVariance + likelihoodMean/likelihoodVariance) / (1/priorVariance + 1/likelihoodVariance); deltaPct = (posteriorMean − BAC)/BAC × 100.",
       bands: [["green","Green","delta ≤ 5%"], ["yellow","Yellow","5% &lt; delta ≤ 10%"], ["amber","Amber","10% &lt; delta ≤ 20%"], ["red","Red","delta &gt; 20%"]],
       abstain: "any of bac, ev, ac, cpi is null/undefined.",
-      sources: "Pay Application, Schedule of Values, Cost Report — the same BAC/EV/AC/CPI inputs as Cat 1.1.",
+      sources: "Pay Application, Schedule of Values, Cost Report, the same BAC/EV/AC/CPI inputs as Cat 1.1.",
       interp: "A posterior far from BAC means the current-period evidence is overwhelming the prior; the PM should treat the posterior, not the raw BAC/CPI figure, as the credible forecast.",
       ground: "Bayesian updating (prior + evidence → posterior) is the standard mechanism for revising an estimate as new reporting-period evidence arrives, letting a forecast move with the data instead of staying anchored to the original budget." },
     { n: "1.5", name: "Kalman Filter SPI Smoother", mc: "Kalman_Filter",
@@ -1460,7 +1539,7 @@ Named Human Approval → Audit Record</pre>
       formula: "Scalar Kalman recursion over spiHistory with process noise Q = 0.01 and measurement noise R = 0.1: P = P + Q; K = P/(P+R); x = x + K(xᵢ − x); P = (1−K)P. trend = (last − third-from-last)/2 when history.length ≥ 3.",
       bands: [["green","Green","smoothed SPI ≥ 0.95"], ["yellow","Yellow","0.92-0.94"], ["amber","Amber","0.88-0.91"], ["red","Red","&lt; 0.88"]],
       abstain: "spiHistory (or a single spi reading) has fewer than 2 periods.",
-      sources: "Schedule Update / Look-ahead, Monthly Progress Report — the SPI series across reporting periods.",
+      sources: "Schedule Update / Look-ahead, Monthly Progress Report, the SPI series across reporting periods.",
       interp: "The smoothed value and trend separate a real schedule shift from a single noisy period; a negative trend with an already-low smoothed SPI is a compounding-risk signal, not a one-off dip.",
       ground: "The Kalman filter (Kalman, 1960) is the standard recursive estimator for extracting a latent state (true schedule performance) from a noisy observed series, balancing prior estimate against new measurement via the Kalman gain K." },
     { n: "1.6", name: "ARIMA CPI Forecast", mc: "ARIMA_Forecast",
@@ -1468,7 +1547,7 @@ Named Human Approval → Audit Record</pre>
       formula: "First-differences the cpiHistory series; phi = lag-1 autocorrelation of the differences, clamped to [-0.9, 0.9]; forecastDiff = phi × lastDiff; forecastCPI = lastCPI + forecastDiff.",
       bands: [["green","Green","forecast CPI ≥ 0.95"], ["yellow","Yellow","0.92-0.94"], ["amber","Amber","0.88-0.91"], ["red","Red","&lt; 0.88"]],
       abstain: "cpiHistory (or a single cpi reading) has fewer than 3 periods.",
-      sources: "Pay Application, Cost Report — the CPI series across reporting periods.",
+      sources: "Pay Application, Cost Report, the CPI series across reporting periods.",
       interp: "'Recovering' vs 'declining' in the evidence string tells the PM whether the autocorrelation structure of recent periods points toward or away from budget; treat as a trend confirmation for Cat 1.1/1.4, not an independent verdict.",
       ground: "Box-Jenkins ARIMA methodology (Box &amp; Jenkins, 1970) models a series from its own autocorrelation structure; this implementation is a simplified AR(1)-on-differences approximation, a lightweight proxy for the full Box-Jenkins identification/estimation/diagnostic cycle." },
     { n: "1.7", name: "Earned Schedule", mc: "Earned_Schedule",
@@ -1480,9 +1559,9 @@ Named Human Approval → Audit Record</pre>
       interp: "The implied delay in days is more actionable to a PM than a dimensionless SPI, especially late in the project when cost-based SPI has converged to ~1.0 regardless of actual schedule health.",
       ground: "Earned Schedule (Lipke, 2003) extends classic EVM by re-expressing schedule performance in time units rather than cost units, correcting the well-documented failure of SPI to signal schedule problems near project completion." },
     { n: "1.8", name: "TCPI", mc: "TCPI",
-      purpose: "Answers 'what cost-efficiency must the remaining work achieve to finish on budget' — the forward-looking complement to CPI's backward-looking read.",
+      purpose: "Answers 'what cost-efficiency must the remaining work achieve to finish on budget', the forward-looking complement to CPI's backward-looking read.",
       formula: "TCPI = (BAC − EV) / (BAC − AC). If remaining budget (BAC − AC) ≤ 0, the module reports Red directly ('Budget exhausted: no remaining funds') without computing a ratio.",
-      bands: [["green","Green","TCPI ≤ 1.05 — achievable"], ["yellow","Yellow","1.05-1.10 — challenging"], ["amber","Amber","1.10-1.20 — very difficult"], ["red","Red","&gt; 1.20 — unrealistic, or budget exhausted"]],
+      bands: [["green","Green","TCPI ≤ 1.05, achievable"], ["yellow","Yellow","1.05-1.10, challenging"], ["amber","Amber","1.10-1.20, very difficult"], ["red","Red","&gt; 1.20, unrealistic, or budget exhausted"]],
       abstain: "bac, ev or ac missing.",
       sources: "Pay Application, Schedule of Values, Cost Report.",
       interp: "A TCPI well above the project's demonstrated CPI-to-date is a credibility check: if the project has never sustained that efficiency level, budget completion is unrealistic without a scope, schedule, or funding change.",
@@ -1496,20 +1575,20 @@ Named Human Approval → Audit Record</pre>
       interp: "A negative VAC means projected overrun; its magnitude in dollars, not just percent, is what a program controls office takes into a contingency-draw conversation.",
       ground: "Variance at Completion is a standard PMI EVM output (Project Management Institute, 2019), the completion-date analogue of the point-in-time cost variance (CV)." },
     { n: "1.10", name: "Budget Execution Rate", mc: "Budget_Execution_Rate",
-      purpose: "Checks whether spend is tracking ahead of, at, or behind the pace implied by percent complete — a different lens from CPI because it compares AC to expected spend, not to EV.",
+      purpose: "Checks whether spend is tracking ahead of, at, or behind the pace implied by percent complete, a different lens from CPI because it compares AC to expected spend, not to EV.",
       formula: "expectedSpend = BAC × (actualPctComplete / 100); executionRate = AC / expectedSpend.",
       bands: [["green","Green","≤ 1.05"], ["yellow","Yellow","1.05-1.10"], ["amber","Amber","1.10-1.20"], ["red","Red","&gt; 1.20"]],
       abstain: "ac, bac or actualPctComplete missing, or expectedSpend is 0.",
       sources: "Pay Application, Cost Report.",
-      interp: "A rate above 1.0 means the project is spending faster than its stated percent complete would imply — either front-loaded billing or unreported progress lag, both worth reconciling before certifying the next pay app.",
+      interp: "A rate above 1.0 means the project is spending faster than its stated percent complete would imply, either front-loaded billing or unreported progress lag, both worth reconciling before certifying the next pay app.",
       ground: "Spend-pacing checks against the S-curve baseline are a standard cost-control practice; comparing AC against percent-complete-implied spend (rather than EV) isolates billing-pace anomalies independent of earned-value definitions." },
     { n: "1.11", name: "Regression to Mean CPI", mc: "Regression_To_Mean",
       purpose: "Tempers a single extreme CPI reading by partially reverting it toward the project's own historical average, guarding against over-reacting to one noisy period.",
       formula: "mean = average(cpiHistory); deviation = current − mean; regressedCPI = mean + deviation × 0.5 (50% reversion toward the mean).",
       bands: [["green","Green","regressed CPI ≥ 0.95"], ["yellow","Yellow","0.92-0.94"], ["amber","Amber","0.88-0.91"], ["red","Red","&lt; 0.88"]],
       abstain: "cpiHistory (or a single cpi reading) has fewer than 2 periods.",
-      sources: "Pay Application, Cost Report — CPI history.",
-      interp: "When the regressed CPI and the raw current CPI disagree sharply, the raw reading may be an outlier period (e.g., a one-time billing timing effect) rather than a real shift in performance — worth a document check before escalating on the raw number alone.",
+      sources: "Pay Application, Cost Report, CPI history.",
+      interp: "When the regressed CPI and the raw current CPI disagree sharply, the raw reading may be an outlier period (e.g., a one-time billing timing effect) rather than a real shift in performance, worth a document check before escalating on the raw number alone.",
       ground: "Regression to the mean is a well-established statistical phenomenon (Galton, 1886) applied here as a simple 50%-reversion smoother, a deliberately conservative counterweight to single-period Monte Carlo/ARIMA readings that could otherwise be dominated by one noisy observation." },
     { n: "1.12", name: "ICE Ratio", mc: "ICE_Ratio",
       purpose: "Cross-checks the CPI-based EAC against an independent parametric EAC (AC-to-date plus remaining work at budget rate); large divergence between the two means the forecasting method choice itself matters.",
@@ -1521,27 +1600,27 @@ Named Human Approval → Audit Record</pre>
       ground: "Independent-Cost-Estimate (ICE) cross-checking, comparing multiple EAC formulas, is a standard defense against a single forecasting assumption driving a funding decision, echoing the PMI EVM standard's guidance to compare multiple EAC formulas (Project Management Institute, 2019)." }
   ];
 
-  /* ---------- Cat 2 — Schedule Simulation (2.1-2.11) ---------- */
+  /* ---------- Cat 2, Schedule Simulation (2.1-2.11) ---------- */
   const CAT2_MODULES = [
     { n: "2.1", name: "PERT Network Criticality", mc: "PERT_Network_Criticality",
       purpose: "Simulates a small representative network of dependent activities to produce a probabilistic finish date instead of a single deterministic estimate.",
       formula: "3-activity network (A then max(B,C)); each duration sampled from a Triangular(a,m,b) distribution across 2,000 iterations, with the pessimistic bounds of B and C widened by a factor of 1 + max(0, 1 − SPI) × 0.8 (a degrading SPI fattens the tail). ratio = P80 total duration ÷ deterministic baseline duration.",
       bands: [["green","Green","ratio ≤ 1.15 (within baseline)"], ["amber","Amber","1.15 &lt; ratio ≤ 1.30"], ["red","Red","ratio &gt; 1.30"]],
-      sources: "Schedule Update / Look-ahead, Time-phased Schedule / Baseline — supplies the SPI that widens the pessimistic bound.",
+      sources: "Schedule Update / Look-ahead, Time-phased Schedule / Baseline, supplies the SPI that widens the pessimistic bound.",
       interp: "Because a degrading SPI directly fattens the simulated tail, this module amplifies existing schedule concerns into a probabilistic finish-date warning before the project's own critical path tool would flag it.",
       ground: "PERT (Malcolm, Roseboom, Clark &amp; Fazar, 1959) treats activity duration as a random variable rather than a point estimate; sampling from a triangular distribution across many iterations is the standard simplification of full network simulation." },
     { n: "2.2", name: "Line of Balance", mc: "Line_of_Balance_Velocity",
       purpose: "Tracks the schedule buffer between a leading and a following crew on repetitive linear work, so buffer collapse is visible before a crew-collision shows up in aggregate EVM.",
       formula: "gradingRate = 2.0 units/day (leader); pavingRate = 1.8 × clamp(SPI, 0.3, 1.2) units/day (follower); lagPerUnit = max(0, 1/pavingRate − 1/gradingRate); over 20 units, buffer(u) = 5.0 days − u × lagPerUnit; minBuffer is the headline metric.",
       bands: [["green","Green","min buffer &gt; 3.0 days"], ["amber","Amber","1.5-3.0 days"], ["red","Red","≤ 1.5 days"]],
-      sources: "Schedule Update / Look-ahead — supplies the SPI that sets the follower crew's simulated velocity.",
+      sources: "Schedule Update / Look-ahead, supplies the SPI that sets the follower crew's simulated velocity.",
       interp: "A shrinking buffer, even while EVM aggregates still look fine, means the two crews are converging toward a physical collision on site and the sequencing needs attention now, not after CPI/SPI move.",
       ground: "Line of Balance originates in repetitive-unit production scheduling (U.S. Navy Bureau of Yards and Docks, 1942; later formalised for construction), tracking velocity and buffer between sequential trades rather than a single critical path." },
     { n: "2.3", name: "CCPM Buffer Health", mc: "CCPM_Buffer_Health",
       purpose: "Aggregates schedule safety margin into one project buffer and tracks its consumption rate against chain completion, so a buffer being burned faster than work is being earned is visible on a fever chart.",
       formula: "pctBufferConsumed = clamp((1 − SPI) × 100 × 1.5, 0, 100); amberLine = % chain complete; redLine = % chain complete + (100 − % chain complete) / 3. Status compares consumed against these two dynamic (completion-dependent) lines.",
       bands: [["green","Green","consumed below the amber line"], ["amber","Amber","consumed ≥ amber line"], ["red","Red","consumed ≥ red line"]],
-      sources: "Schedule Update / Look-ahead — SPI and percent complete.",
+      sources: "Schedule Update / Look-ahead, SPI and percent complete.",
       interp: "Crossing into the red zone means the buffer will be exhausted before the chain finishes; this is a rate-of-burn signal, distinct from CPI/SPI's point-in-time reading.",
       ground: "Critical Chain Project Management (Goldratt, 1997) consolidates individual-activity padding into a single chain-level buffer and manages that buffer's consumption rate as the primary schedule-health signal, rather than tracking dozens of individual float values." },
     { n: "2.4", name: "Schedule Compression Index", mc: "Schedule_Compression",
@@ -1573,7 +1652,7 @@ Named Human Approval → Audit Record</pre>
       formula: "For each milestone matched by name between the latest and previous snapshot: slip = (latest forecast date − previous forecast date) in days. meanSlip = average slip across matched milestones; worstSlip = the single largest slip.",
       bands: [["green","Green","mean slip ≤ 0"], ["yellow","Yellow","0-7 days"], ["amber","Amber","7-14 days, or any single milestone slipping &gt; 21 days"], ["red","Red","mean slip &gt; 14 days"]],
       abstain: "fewer than 2 milestone-history snapshots are available, or no milestone names match across the two snapshots.",
-      sources: "Schedule Update / Look-ahead — requires at least two dated schedule snapshots.",
+      sources: "Schedule Update / Look-ahead, requires at least two dated schedule snapshots.",
       interp: "A single badly-slipping milestone is force-escalated to at least Amber even if the average across all milestones looks fine, so one critical date cannot hide inside an otherwise healthy mean.",
       ground: "Milestone trend charts (tracking successive forecast dates for the same milestone over time) are a standard program-controls technique for detecting slow slip that a single-period schedule variance would miss." },
     { n: "2.8", name: "Look-Ahead Schedule Health", mc: "Lookahead_Health",
@@ -1610,20 +1689,20 @@ Named Human Approval → Audit Record</pre>
       ground: "Combining a physical-progress ratio with the cost-based SPI is a pragmatic cross-check technique, similar in spirit to how Cat 1.7 (Earned Schedule) and Cat 2.6 (S-Curve Deviation) each triangulate schedule health from more than one read." }
   ];
 
-  /* ---------- Cat 3 — Cost Simulation (3.1-3.10) ---------- */
+  /* ---------- Cat 3, Cost Simulation (3.1-3.10) ---------- */
   const CAT3_MODULES = [
     { n: "3.1", name: "Reference Class Forecasting", mc: "Reference_Class_Forecasting",
       purpose: "Replaces the project's own bottom-up cost estimate with the empirical distribution of overruns from comparable projects, correcting for optimism bias baked into inside-view estimates.",
       formula: "Fixed airport-infrastructure reference-class multiplier set [1.00, 1.04, 1.10, 1.14, 1.15, 1.26, 1.38, 1.45, 1.52]; P50/P80 read from this sorted array; P80 prior = BAC × multiplier[P80]; overP80 = (multiplier[P80] − 1) × 100.",
       bands: [["green","Green","P80 overrun ≤ 10% of BAC"], ["amber","Amber","10-25%"], ["red","Red","&gt; 25%"]],
-      sources: "Historical Project Data, Past Performance Report — the reference class itself is a fixed synthetic distribution, not per-project extracted data; only BAC is read from the project.",
+      sources: "Historical Project Data, Past Performance Report, the reference class itself is a fixed synthetic distribution, not per-project extracted data; only BAC is read from the project.",
       interp: "The debiasing multiplier is the outside-view answer to 'what do comparable projects actually cost'; when it diverges sharply from the project's own bottom-up EAC (Cat 1.1/1.4), the gap is itself the finding worth escalating.",
       ground: "Reference Class Forecasting (Flyvbjerg, 2008) replaces inside-view estimation with the empirical outside-view distribution of a comparable reference class, the method now embedded in UK Treasury Green Book guidance for major infrastructure business cases." },
     { n: "3.2", name: "DSM Rework Propagation", mc: "DSM_Rework_Propagation",
       purpose: "Estimates the cumulative downstream rework triggered by a single architectural change, by propagating it through a fixed inter-discipline dependency matrix.",
       formula: "3×3 dependency matrix over {Arch, Structural, MEP}; unit change vector v0 = [1,0,0] is propagated for 4 passes (v(t+1) = A·v(t)); rework multiplier = sum of all accumulated values across the 4 passes and 3 disciplines. This module uses a fixed synthetic matrix, it does not read the project's live signal inputs.",
       bands: [["green","Green","rework multiplier ≤ 2.5"], ["amber","Amber","&gt; 2.5"]],
-      sources: "BIM Execution Plan (BEP), Design Development (DD) Sets — conceptually informs the coupling strengths; the matrix itself is fixed/synthetic in this demo, not derived per-project.",
+      sources: "BIM Execution Plan (BEP), Design Development (DD) Sets, conceptually informs the coupling strengths; the matrix itself is fixed/synthetic in this demo, not derived per-project.",
       interp: "A multiplier above 2.5 means a single unit of architectural change is estimated to generate more than 2.5 units of downstream coordination rework, a high-coordination-risk design phase where even small scope changes should go through a formal impact review before approval.",
       ground: "The Design Structure Matrix (Steward, 1981) captures dependency and feedback loops between design elements; propagating a unit change through the matrix to estimate cumulative rework underpins modern BIM clash-detection and integrated-project-delivery coordination practice." },
     { n: "3.3", name: "Contingency Burn Rate", mc: "Contingency_Burn_Rate",
@@ -1647,7 +1726,7 @@ Named Human Approval → Audit Record</pre>
       formula: "expected = materialCostBaseline × (actualPctComplete/100); variance = (materialCostCurrent − expected) / expected.",
       bands: [["green","Green","|variance| ≤ 5%"], ["yellow","Yellow","5-12%"], ["amber","Amber","12-20%"], ["red","Red","&gt; 20%"]],
       abstain: "materialCostBaseline or materialCostCurrent missing.",
-      sources: "Cost Report; when absent, the value is estimated as ~40% of BAC/AC and flagged '[est.]' — a Cat 9 (Source Reliability) input.",
+      sources: "Cost Report; when absent, the value is estimated as ~40% of BAC/AC and flagged '[est.]', a Cat 9 (Source Reliability) input.",
       interp: "This module isolates material cost specifically; a material variance that is much worse than the overall CPI points to a commodity price or procurement issue rather than a general execution problem.",
       ground: "Cost-variance-by-cost-category decomposition (material, labor, overhead) is standard practice for pinpointing which cost driver is responsible for an overall CPI shortfall, rather than treating cost variance as a single undifferentiated number." },
     { n: "3.6", name: "Overhead Absorption Rate", mc: "Overhead_Absorption",
@@ -1671,7 +1750,7 @@ Named Human Approval → Audit Record</pre>
       formula: "exposure = BAC × analogousOverrunPct / 100.",
       bands: [["green","Green","overrun &lt; 3%"], ["yellow","Yellow","3-7%"], ["amber","Amber","7-12%"], ["red","Red","≥ 12%"]],
       abstain: "analogousOverrunPct or bac missing.",
-      sources: "Historical Project Data, Past Performance Report — the analogous overrun figure is a documented, project-specific analog rather than a fixed distribution.",
+      sources: "Historical Project Data, Past Performance Report, the analogous overrun figure is a documented, project-specific analog rather than a fixed distribution.",
       interp: "The dollar exposure figure is what makes this module actionable: it converts an abstract percentage into the specific contingency amount a reviewer should expect to hold in reserve, based on how a genuinely comparable project actually performed.",
       ground: "Analogous estimating, using an actual prior project's documented result as the basis for a percentage adjustment, is one of PMI's three standard estimating techniques (Project Management Institute, 2019), alongside parametric and bottom-up estimating." },
     { n: "3.9", name: "Parametric Cost Index", mc: "Parametric_Cost",
@@ -1680,7 +1759,7 @@ Named Human Approval → Audit Record</pre>
       bands: [["green","Green","|index−1| ≤ 3%"], ["yellow","Yellow","3-8%"], ["amber","Amber","8-15%"], ["red","Red","&gt; 15%"]],
       abstain: "bac, ev, ac or actualPctComplete missing, or eacParametric ≤ 0.",
       sources: "Pay Application, Schedule of Values, Cost Report.",
-      interp: "Because this module uses tighter tolerance bands than the closely related Cat 1.12 ICE Ratio, it can flag divergence between forecasting methods earlier — treat a Cat 3.9 Amber/Red alongside a still-Green Cat 1.12 as an early warning to reconcile forecasting assumptions before it becomes a larger gap.",
+      interp: "Because this module uses tighter tolerance bands than the closely related Cat 1.12 ICE Ratio, it can flag divergence between forecasting methods earlier, treat a Cat 3.9 Amber/Red alongside a still-Green Cat 1.12 as an early warning to reconcile forecasting assumptions before it becomes a larger gap.",
       ground: "Parametric estimating (deriving cost from a statistical relationship between historical data and project parameters) is a standard PMI estimating technique (Project Management Institute, 2019); comparing it against the CPI-based EAC applies the same independent-cross-check logic as Cat 1.12." },
     { n: "3.10", name: "Inflation Adjustment Index", mc: "Inflation_Adjustment",
       purpose: "Isolates the portion of material cost overrun attributable to price escalation above the expected baseline rate, distinct from quantity or scope-driven cost variance.",
@@ -1692,7 +1771,7 @@ Named Human Approval → Audit Record</pre>
       ground: "Escalation tracking against a baseline material cost index is standard practice on multi-year public capital programs, where material price volatility (structural steel, copper, concrete) is a well-documented, non-performance-driven source of overrun." }
   ];
 
-  /* ---------- Cat 4 — Document & Risk Signals (4.1-4.10) ---------- */
+  /* ---------- Cat 4, Document & Risk Signals (4.1-4.10) ---------- */
   const CAT4_MODULES = [
     { n: "4.1", name: "Document Risk Score", mc: "Doc_Risk_Cat4",
       purpose: "The Cat 4 view of the same document-risk score computed in Cat 1.3, surfaced here alongside the other qualitative Cat 4 signals for category-level rollup.",
@@ -1706,7 +1785,7 @@ Named Human Approval → Audit Record</pre>
       formula: "rfiPerWeek = (rfiCount / rfiPeriodDays) × 7; overdueRatio = rfiOverdue / rfiCount (when overdue data is available). Status is the worse of the velocity band and the overdue band.",
       bands: [["green","Green","≤ 2 RFIs/week, and overdue ratio &lt; 10%"], ["yellow","Yellow","2-4/week, or overdue ratio 10-20%"], ["amber","Amber","4-8/week, or overdue ratio 20-35%"], ["red","Red","&gt; 8/week, or overdue ratio ≥ 35%"]],
       abstain: "rfiCount (or the legacy rfiNumber fallback) is null.",
-      sources: "RFI / RFI Log — with period-days, overdue count, average response days, and oldest-open days used when available; falls back to an estimated 30-day period (flagged '[est.]') if the RFI log lacks explicit dates.",
+      sources: "RFI / RFI Log, with period-days, overdue count, average response days, and oldest-open days used when available; falls back to an estimated 30-day period (flagged '[est.]') if the RFI log lacks explicit dates.",
       interp: "A high overdue ratio combined with a slow average response time (&gt;14 days) points to dispute risk on top of raw volume, worth flagging even if the raw per-week velocity still reads Green.",
       ground: "RFI velocity and aging are standard leading indicators in construction claims and delay-analysis practice; a spike in RFI volume with slow turnaround is a well-documented precursor to schedule and cost impact well before it registers in EVM." },
     { n: "4.3", name: "Submittal Rejection Rate", mc: "Submittal_Rejection",
@@ -1775,11 +1854,11 @@ Named Human Approval → Audit Record</pre>
       ground: "Weighting a risk score by document volume with a sub-linear (square-root) dampening is a standard technique for avoiding double-counting when two correlated signals (document risk and RFI count) are combined into one index." }
   ];
 
-  /* ---------- Cat 5 — System Dynamics & Complexity (5.1-5.8) ---------- */
+  /* ---------- Cat 5, System Dynamics & Complexity (5.1-5.8) ---------- */
   const CAT5_MODULES = [
     { n: "5.1", name: "DSM Rework Propagation", mc: "DSM_Rework_Cat5",
       purpose: "The Cat 5 (systems view) presentation of the same DSM rework-propagation result computed once in Cat 3.2, read here as a demonstration of how a design change amplifies through the interacting system rather than as a cost estimate.",
-      formula: "Identical computation and result to Cat 3.2 — this module is a status alias (module.method_class 'DSM_Rework_Cat5' resolves via getModuleStatus() to the Cat 3.2 'DSM_Rework_Propagation' result), not a second calculation.",
+      formula: "Identical computation and result to Cat 3.2, this module is a status alias (module.method_class 'DSM_Rework_Cat5' resolves via getModuleStatus() to the Cat 3.2 'DSM_Rework_Propagation' result), not a second calculation.",
       bands: [["green","Green","rework multiplier ≤ 2.5"], ["amber","Amber","&gt; 2.5"]],
       sources: "Same as Cat 3.2: BIM Execution Plan (BEP), Design Development (DD) Sets.",
       interp: "Read this alongside the rest of Cat 5 as the system-dynamics illustration of amplification and feedback, and alongside Cat 3.2 as the cost-impact reading of the same underlying propagation.",
@@ -1821,15 +1900,15 @@ Named Human Approval → Audit Record</pre>
       formula: "constraintRatio = activitiesConstrained / activitiesPlanned. (Same underlying fields as Cat 2.8, with tighter thresholds appropriate to a bottleneck-severity read.)",
       bands: [["green","Green","&lt; 15%"], ["yellow","Yellow","15-25%"], ["amber","Amber","25-40%"], ["red","Red","≥ 40%"]],
       abstain: "activitiesPlanned or activitiesConstrained missing.",
-      sources: "Look-Ahead Schedule (6-week) — same source as Cat 2.8.",
+      sources: "Look-Ahead Schedule (6-week), same source as Cat 2.8.",
       interp: "Where Cat 2.8 asks 'is the near-term schedule healthy', this module asks 'is there a systemic bottleneck resource'; a persistently high constraint ratio across several periods, not just one, is the pattern that indicates a structural bottleneck rather than a transient blockage.",
       ground: "Queueing theory (work arriving faster than a constrained resource can process it, Little's Law: L = λW) is the formal framework behind Theory of Constraints bottleneck management, applied here as a simplified constrained-activity-share proxy." },
     { n: "5.7", name: "Agent-Based Supply Chain", mc: "Agent_Supply_Chain",
       purpose: "Reads the raw at-risk share of long-lead procurement items, a different lens on the Cat 4.9 procurement data that does not weight already-delayed items more heavily.",
-      formula: "atRiskRatio = longLeadAtRisk / longLeadItemsTotal. (Compare to Cat 4.9's weighted riskRatio = (atRisk + 2×delayed)/total — this module reports the unweighted at-risk share alone.)",
+      formula: "atRiskRatio = longLeadAtRisk / longLeadItemsTotal. (Compare to Cat 4.9's weighted riskRatio = (atRisk + 2×delayed)/total, this module reports the unweighted at-risk share alone.)",
       bands: [["green","Green","&lt; 10%"], ["yellow","Yellow","10-20%"], ["amber","Amber","20-35%"], ["red","Red","≥ 35%"]],
       abstain: "longLeadItemsTotal or longLeadAtRisk missing.",
-      sources: "Procurement Log — same source as Cat 4.9.",
+      sources: "Procurement Log, same source as Cat 4.9.",
       interp: "Because this is the unweighted at-risk share, Cat 5.7 can read Green while Cat 4.9 (which double-weights delayed items) reads worse, or vice versa; reading both together separates 'many items are merely at risk' from 'a smaller number are already confirmed delayed'.",
       ground: "Agent-based supply-chain modelling (Bonabeau, 2002) treats procurement as a network of interacting agents (suppliers, fabricators, the project) whose individual delay risk aggregates into program-level exposure; this implementation is a simplified aggregate proxy for that fuller agent-based simulation." },
     { n: "5.8", name: "Discrete Event Simulation", mc: "Discrete_Event_Sim",
@@ -1842,14 +1921,14 @@ Named Human Approval → Audit Record</pre>
       ground: "Discrete event simulation (Law &amp; Kelton, 2000) models a system as a sequence of state-changing events with interruptions and queues; this implementation is a lightweight closed-form throughput proxy rather than a full event-by-event simulation." }
   ];
 
-  /* ---------- Cat 6 — Signal Synthesis (6.1-6.4) ---------- */
+  /* ---------- Cat 6, Signal Synthesis (6.1-6.4) ---------- */
   const CAT6_MODULES = [
     { n: "6.1", name: "Conservative Dominance", mc: "Conservative_Dominance",
       purpose: "The governance baseline: the worst single signal class drives the overall classification, and the specific TYPE of disagreement between signal classes is named rather than averaged away.",
       formula: "Six precedence-ordered conflict types are evaluated in order (first match wins): Multi-signal Red-review (≥2 Red), Anomaly Without Narrative (CUSUM Red, EVM Amber/Green), Leading Document Risk (Doc Red, EVM Green), Single Signal Watch (one Amber), Mixed Early Warning (Ambers only), Agreement/All Stable (all Green). Runs in the main signal pipeline (decision.js), not simulations.js.",
-      sources: "Consumes the already-computed outputs of Cat 1 (EVM, CUSUM, Doc Risk) and Cat 1.1 (Monte Carlo forecast) — no independent document extraction of its own.",
+      sources: "Consumes the already-computed outputs of Cat 1 (EVM, CUSUM, Doc Risk) and Cat 1.1 (Monte Carlo forecast), no independent document extraction of its own.",
       interp: "Conservative Dominance never averages a Red into a 'slightly Amber' reading; the worst signal wins by design, so a project with one severe problem and several healthy metrics still surfaces as needing review, the deliberate opposite of a weighted average.",
-      ground: "Conservative dominance (worst-signal-wins classification with named conflict typing) is a deliberate governance design choice favoring transparency and precaution over statistical optimality — it is the interpretable baseline that the 20 Cat 7 evidence-combination methods then cross-check." },
+      ground: "Conservative dominance (worst-signal-wins classification with named conflict typing) is a deliberate governance design choice favoring transparency and precaution over statistical optimality, it is the interpretable baseline that the 20 Cat 7 evidence-combination methods then cross-check." },
     { n: "6.2", name: "Weighted Voting", mc: "Weighted_Voting",
       purpose: "Aggregates every currently-computed module's status into a single weighted vote, giving core EVM/Doc-Risk signals more influence than the 20 Cat 7 evidence-combination methods, which each individually carry low weight.",
       formula: "Per-category weights: Cat 1 (EVM/CUSUM) 1.5, Cat 2 1.2, Cat 3 1.2, Cat 4 1.0, Cat 5 0.8, Cat 6 1.0, Cat 7 0.6, decision-state 1.5. Votes accumulate into Green/Yellow/Amber/Red buckets; the status is the bucket with the most accumulated weight; dominantPct reports its share of the total weighted vote.",
@@ -1858,7 +1937,7 @@ Named Human Approval → Audit Record</pre>
       interp: "The dominantPct is the confidence read: a status that carries 80%+ of the weighted vote is far more decisive than one that barely edges out a close second place, worth checking dominantPct even when the headline status looks fine.",
       ground: "Weighted voting is a standard ensemble-classification technique; weighting core EVM/document signals above the 20 lower-weighted evidence-combination methods reflects that Cat 7's methods are individually exploratory cross-checks, not independent primary evidence sources." },
     { n: "6.3", name: "Majority Rules", mc: "Majority_Rules",
-      purpose: "The unweighted counterpart to Cat 6.2 — simple plurality vote across every currently-computed module's status, with no category weighting.",
+      purpose: "The unweighted counterpart to Cat 6.2, simple plurality vote across every currently-computed module's status, with no category weighting.",
       formula: "Counts each module's status into Green/Yellow/Amber/Red buckets (one vote per module, no weighting); status is the bucket with the most votes; majorityPct = winning count / total votes.",
       abstain: "no module has produced a status yet.",
       sources: "Consumes every other module's already-computed status; no independent document extraction.",
@@ -1873,7 +1952,7 @@ Named Human Approval → Audit Record</pre>
       ground: "N-of-M threshold voting is a standard fault-tolerant-systems technique (a system is considered failed once N of M independent checks fail); applying it to a governance signal package treats module agreement as a redundancy/consensus check." }
   ];
 
-  /* ---------- Cat 7 — Evidence Combination (7.1-7.20) ---------- */
+  /* ---------- Cat 7, Evidence Combination (7.1-7.20) ---------- */
   const CAT7_MODULES = [
     { n: "7.1", name: "Dempster-Shafer", mc: "DST_Evidence_Combination",
       purpose: "Combines four independent evidence sources (EVM, Monte Carlo forecast, CUSUM, document risk) into explicit belief masses over {Green, Amber, Red, Unknown}, rather than taking the single worst signal.",
@@ -1894,7 +1973,7 @@ Named Human Approval → Audit Record</pre>
       formula: "T_combined = 1 − ∏(1−Tᵢ) (disjunctive); I_combined = ∏Iᵢ; F_combined = ∏Fᵢ (both conjunctive); normalised so T+I+F sums consistently. Status: Red if ≥2 sources Red, Amber if ≥2 Amber, else Green; escalates Green→Amber if I &gt; 0.30.",
       abstain: "no evidence-source components are available (returns an Amber 'Insufficient signal data' stub rather than the standard insufficient-data flag).",
       sources: "Consumes existing Cat 1 EVM/CUSUM/Doc Risk and Cat 1.1 Monte Carlo outputs.",
-      interp: "High indeterminacy (&gt;30%) triggers an automatic upgrade from Green to Amber — the module treats 'we genuinely don't know' as a governance-relevant state in its own right, distinct from 'we know it's fine' or 'we know it's a problem'.",
+      interp: "High indeterminacy (&gt;30%) triggers an automatic upgrade from Green to Amber, the module treats 'we genuinely don't know' as a governance-relevant state in its own right, distinct from 'we know it's fine' or 'we know it's a problem'.",
       ground: "Neutrosophic Logic (Smarandache, 1995) generalises fuzzy and intuitionistic logic by treating indeterminacy as an independent axis, T+I+F need not sum to 1, capturing epistemic uncertainty that classical and fuzzy frameworks force into the residual of truth and falsity." },
     { n: "7.4", name: "Interval Fuzzy Sets", mc: "Interval_Fuzzy_Sets",
       purpose: "Propagates realistic input-measurement uncertainty (±2% on EV from Schedule-of-Values accuracy, ±1% on AC from pay-app rounding) through the fuzzy classification, producing an interval rather than a point membership.",
@@ -1947,7 +2026,7 @@ Named Human Approval → Audit Record</pre>
       interp: "The hesitancy term (π, the leftover 'unassigned' mass) reported alongside membership/non-membership quantifies how much of the judgment remains genuinely uncommitted, distinct from Cat 7.4's measurement-uncertainty interval.",
       ground: "Pythagorean Fuzzy Sets (Yager, 2013) relax the intuitionistic-fuzzy constraint from μ+ν≤1 to μ²+ν²≤1, allowing a wider, more expressive combination of simultaneous positive and negative evidence." },
     { n: "7.11", name: "Picture Fuzzy Sets", mc: "Picture_Fuzzy",
-      purpose: "Extends fuzzy evaluation to four components — positive, neutral, negative, and refusal — modelling abstention (a source declining to commit) as its own explicit category rather than as residual uncertainty.",
+      purpose: "Extends fuzzy evaluation to four components, positive, neutral, negative, and refusal, modelling abstention (a source declining to commit) as its own explicit category rather than as residual uncertainty.",
       formula: "positive = clamp((evmMin−0.85)/0.15, 0, 0.95); negative = clamp((0.95−evmMin)/0.15, 0, 0.95) × (1 + docRisk×0.5), clamped 0.95; neutral = max(0, 0.6−positive−negative)×0.3; refusal = max(0, 1−positive−neutral−negative); score = positive − negative.",
       bands: [["green","Green","score ≥ 0.30"], ["yellow","Yellow","0.00-0.30"], ["amber","Amber","−0.30 to 0.00"], ["red","Red","&lt; −0.30"]],
       abstain: "cpi, spi or docRiskScore missing.",
@@ -2015,7 +2094,7 @@ Named Human Approval → Audit Record</pre>
       abstain: "cpi, spi or docRiskScore missing.",
       sources: "Pay Application, Schedule of Values, RFI / RFI Log.",
       interp: "Unlike Cat 7.18's fixed weights, this module's CRITIC weighting means the criterion currently varying most from its typical value gets the most influence on the score this period, worth noting when interpreting which input is driving the result.",
-      ground: "CRITIC weighting (Diakoulaki, Mavrotas &amp; Papayannakis, 1995) derives objective criteria weights from the data's own variability; TOPSIS (Hwang &amp; Yoon, 1981) ranks alternatives by their relative closeness to an ideal solution — combining the two removes the need for a priori fixed weights." },
+      ground: "CRITIC weighting (Diakoulaki, Mavrotas &amp; Papayannakis, 1995) derives objective criteria weights from the data's own variability; TOPSIS (Hwang &amp; Yoon, 1981) ranks alternatives by their relative closeness to an ideal solution, combining the two removes the need for a priori fixed weights." },
     { n: "7.20", name: "Hypersoft Sets", mc: "Hypersoft_Sets",
       purpose: "Classifies the project by matching a categorical combination of attributes (cost quality, schedule quality, risk level) against a fixed lookup table of pre-scored combinations, a fundamentally discrete, rule-table approach distinct from the continuous fuzzy methods elsewhere in Cat 7.",
       formula: "Three categorical attributes derived from thresholds (cost/schedule: poor/fair/good from CPI/SPI bands; risk: low/medium/high from docRiskScore bands); the combined key looks up a score in a fixed 24-entry combination table (default 0.35 if the exact combination is not tabulated).",
@@ -2026,10 +2105,10 @@ Named Human Approval → Audit Record</pre>
       ground: "Hypersoft Sets (Smarandache, 2018) generalise Soft Set theory by allowing multiple independent attribute dimensions (rather than a single parameter set), matched here against an explicit, enumerable scoring table rather than a continuous function." }
   ];
 
-  /* ---------- Cat 8 — Governance & Compliance (8.1-8.9) ---------- */
+  /* ---------- Cat 8, Governance & Compliance (8.1-8.9) ---------- */
   const CAT8_MODULES = [
     { n: "8.1", name: "ABM Governance Layer", mc: "ABM_Governance",
-      purpose: "Converts the fused signal state into the named authority, recommended action, and required documentation — the last step in the stack, the artefact that survives the reporting cycle.",
+      purpose: "Converts the fused signal state into the named authority, recommended action, and required documentation, the last step in the stack, the artefact that survives the reporting cycle.",
       formula: "Each authority role (PM, controls lead, program director) is modelled as an agent with explicit decision rules implemented as pure functions (deriveHealthState, classifyConflict, deriveDecision) in decision.js, consuming the Cat 6.1 baseline and Cat 7 evidence-combination cross-checks. Runs in decision.js, not simulations.js.",
       sources: "Consumes every already-computed module's output; no independent document extraction of its own.",
       interp: "This module's output IS the decision card the PM sees; a status change here is not itself a decision, a decision requires a named human, a role, a rationale, and a timestamp before it is recorded.",
@@ -2099,7 +2178,7 @@ Named Human Approval → Audit Record</pre>
       ground: "Contractor Performance Assessment Reporting System (CPARS)-style multi-dimension rating, taking the minimum across dimensions rather than an average, reflects standard federal past-performance evaluation practice where any single failing dimension is independently disqualifying." }
   ];
 
-  /* ---------- Cat 9 — Data Integrity & Information Quality (9.1-9.7) ---------- */
+  /* ---------- Cat 9, Data Integrity & Information Quality (9.1-9.7) ---------- */
   const CAT9_MODULES = [
     { n: "9.1", name: "Missing Data Index", mc: "Missing_Data_Index",
       purpose: "Counts how many of the 11 core signal fields (bac, ev, ac, pv, cpi, spi, docRiskScore, actualPctComplete, plannedPctComplete, baselineStart, baselineEnd) are populated at all.",
@@ -2113,7 +2192,7 @@ Named Human Approval → Audit Record</pre>
       formula: "daysSinceDoc = today − most recent docDate.",
       bands: [["green","Green","≤ 30 days"], ["yellow","Yellow","30-60 days"], ["amber","Amber","60-90 days"], ["red","Red","&gt; 90 days"]],
       abstain: "no docDate is available at all.",
-      sources: "Any uploaded document — this module reads the most recent document date across all types.",
+      sources: "Any uploaded document, this module reads the most recent document date across all types.",
       interp: "A Red or Amber here is a caution flag on every other module's currency, not just this one; a governance recommendation built on 90-day-old data should be treated as provisional until fresher documents are uploaded.",
       ground: "Data-timeliness / data-freshness scoring is a standard data-quality dimension (alongside completeness, accuracy, and consistency) in information-quality frameworks applied to decision-support systems." },
     { n: "9.3", name: "Source Reliability Weighting", mc: "Source_Reliability_Weighting",
@@ -2128,7 +2207,7 @@ Named Human Approval → Audit Record</pre>
       purpose: "Checks whether the project's event log contains the required governance milestones (creation, signal extraction, and ideally a recorded decision), a structural completeness check independent of the signal values themselves.",
       formula: "completeness = presentRequiredEvents / 2 (project_created, signals_extracted/simulation_run); hasDecisionRecord checked separately.",
       bands: [["green","Green","completeness = 100% AND total events ≥ 3"], ["yellow","Yellow","completeness ≥ 75%"], ["amber","Amber","completeness ≥ 50%"], ["red","Red","completeness &lt; 50%"]],
-      sources: "The project's own internal event log (project creation, document ingests, simulation runs, decision records) — not an external document type.",
+      sources: "The project's own internal event log (project creation, document ingests, simulation runs, decision records), not an external document type.",
       interp: "A project with healthy signal statuses but no recorded decision event is flagged here even though the other 102 modules may look fine; a status change without a name, role, rationale, and timestamp attached is exactly what this module is designed to catch.",
       ground: "Audit-trail completeness checking against a required-event checklist is standard governance-record practice on public programs where every material status determination must be independently reconstructable from the record." },
     { n: "9.5", name: "Information Completeness Ratio", mc: "Information_Completeness_Ratio",
@@ -2143,7 +2222,7 @@ Named Human Approval → Audit Record</pre>
       formula: "Three checks with tight tolerances (CPI/SPI derivation within 0.005, percent-complete within 5 points); consistencyScore = (checks passed) / (checks performed).",
       bands: [["green","Green","100% consistent"], ["yellow","Yellow","≥ 67%"], ["amber","Amber","≥ 33%"], ["red","Red","&lt; 33%"]],
       abstain: "ev or ac missing, or none of the three checks can be performed.",
-      sources: "Pay Application, Schedule of Values — cross-checks whether the recorded CPI/SPI/percent-complete are internally consistent with the underlying EV/AC/PV/BAC figures.",
+      sources: "Pay Application, Schedule of Values, cross-checks whether the recorded CPI/SPI/percent-complete are internally consistent with the underlying EV/AC/PV/BAC figures.",
       interp: "Any inconsistency flagged here means the numbers feeding every other module do not reconcile internally, worth verifying the source figures across documents before trusting the derived CPI/SPI/percent-complete elsewhere in the stack.",
       ground: "Cross-document reconciliation checking (do the summary figures match the underlying source data) is a standard internal-controls technique for detecting transcription or reporting errors before they propagate into downstream analysis." },
     { n: "9.7", name: "Reporting Frequency Index", mc: "Reporting_Frequency_Index",
@@ -2155,7 +2234,7 @@ Named Human Approval → Audit Record</pre>
       ground: "Reporting-cadence tracking against an expected monthly (or more frequent) update cycle is standard program-controls discipline; PCEIF makes the interval itself an explicit, auditable signal rather than an assumed constant." }
   ];
 
-  /* ---------- Cat 10 — Decision Optimization (10.1-10.7) ---------- */
+  /* ---------- Cat 10, Decision Optimization (10.1-10.7) ---------- */
   const CAT10_MODULES = [
     { n: "10.1", name: "Multi-Objective Optimization", mc: "Multi_Objective_Optimization",
       purpose: "Normalises cost performance, schedule performance, and document risk onto a common 0-1 scale and identifies which objective is currently the binding constraint on the project's overall standing.",
@@ -2215,7 +2294,7 @@ Named Human Approval → Audit Record</pre>
       ground: "Minimax regret theory (Savage, 1951) chooses the action minimising the worst-case regret across possible future states, a decision rule specifically suited to genuine Knightian uncertainty about the future rather than a single point forecast; the hard override reflects that decision theory informs, but does not override, governance policy floors." }
   ];
 
-  /* ---------- Portfolio Health (PH.1-PH.5) — computed server-side via the
+  /* ---------- Portfolio Health (PH.1-PH.5), computed server-side via the
      portfolioanalyze endpoint (Code.gs, not present in this client-side repo);
      documentation here reflects the existing, already-accurate CAT8_TOPICS
      descriptions used elsewhere in this file, restructured into the same
@@ -2262,27 +2341,27 @@ Named Human Approval → Audit Record</pre>
   /* ---------- Module Reference topic registration (one per category) ---------- */
   const MODREF_TOPICS = {
     "cat1-modules": { id: "cat1-modules", title: "Cat 1 Module Reference", eyebrow: "Cat 1 · Methods & Framework",
-      build: () => modSectionBody("Full documentation for all 12 Cat 1 (Quantitative EVM) modules: purpose, exact computation as implemented in simulations.js, real status-band thresholds, data sources, PM interpretation, and methodological grounding. Collapsed by default — expand a module to read it.", CAT1_MODULES) },
+      build: () => catModSection("cat1", "Full documentation for all 12 Cat 1 (Quantitative EVM) modules: purpose, exact computation as implemented in simulations.js, real status-band thresholds, data sources, PM interpretation, methodological grounding, governance role, and a human-judgment note. Collapsed by default, expand a module to read it.", CAT1_MODULES) },
     "cat2-modules": { id: "cat2-modules", title: "Cat 2 Module Reference", eyebrow: "Cat 2 · Methods & Framework",
-      build: () => modSectionBody("Full documentation for all 11 Cat 2 (Schedule Simulation) modules.", CAT2_MODULES) },
+      build: () => catModSection("cat2", "Full documentation for all 11 Cat 2 (Schedule Simulation) modules.", CAT2_MODULES) },
     "cat3-modules": { id: "cat3-modules", title: "Cat 3 Module Reference", eyebrow: "Cat 3 · Methods & Framework",
-      build: () => modSectionBody("Full documentation for all 10 Cat 3 (Cost Simulation) modules.", CAT3_MODULES) },
+      build: () => catModSection("cat3", "Full documentation for all 10 Cat 3 (Cost Simulation) modules.", CAT3_MODULES) },
     "cat4-modules": { id: "cat4-modules", title: "Cat 4 Module Reference", eyebrow: "Cat 4 · Methods & Framework",
-      build: () => modSectionBody("Full documentation for all 10 Cat 4 (Document & Risk Signals) modules.", CAT4_MODULES) },
+      build: () => catModSection("cat4", "Full documentation for all 10 Cat 4 (Document & Risk Signals) modules.", CAT4_MODULES) },
     "cat5-modules": { id: "cat5-modules", title: "Cat 5 Module Reference", eyebrow: "Cat 5 · Methods & Framework",
-      build: () => modSectionBody("Full documentation for all 8 Cat 5 (System Dynamics & Complexity) modules.", CAT5_MODULES) },
+      build: () => catModSection("cat5", "Full documentation for all 8 Cat 5 (System Dynamics & Complexity) modules.", CAT5_MODULES) },
     "cat6-modules": { id: "cat6-modules", title: "Cat 6 Module Reference", eyebrow: "Cat 6 · Methods & Framework",
-      build: () => modSectionBody("Full documentation for all 4 Cat 6 (Signal Synthesis) modules.", CAT6_MODULES) },
+      build: () => catModSection("cat6", "Full documentation for all 4 Cat 6 (Signal Synthesis) modules.", CAT6_MODULES) },
     "cat7-modules": { id: "cat7-modules", title: "Cat 7 Module Reference", eyebrow: "Cat 7 · Methods & Framework",
-      build: () => modSectionBody("Full documentation for all 20 Cat 7 (Evidence Combination) modules.", CAT7_MODULES) },
+      build: () => catModSection("cat7", "Full documentation for all 20 Cat 7 (Evidence Combination) modules.", CAT7_MODULES) },
     "cat9-modules": { id: "cat9-modules", title: "Cat 8 Module Reference", eyebrow: "Cat 8 · Methods & Framework",
-      build: () => modSectionBody("Full documentation for all 9 Cat 8 (Governance & Compliance) modules.", CAT8_MODULES) },
+      build: () => catModSection("cat8", "Full documentation for all 9 Cat 8 (Governance & Compliance) modules.", CAT8_MODULES) },
     "cat10-modules": { id: "cat10-modules", title: "Cat 9 Module Reference", eyebrow: "Cat 9 · Methods & Framework",
-      build: () => modSectionBody("Full documentation for all 7 Cat 9 (Data Integrity & Information Quality) modules.", CAT9_MODULES) },
+      build: () => catModSection("cat9", "Full documentation for all 7 Cat 9 (Data Integrity & Information Quality) modules.", CAT9_MODULES) },
     "cat11-modules": { id: "cat11-modules", title: "Cat 10 Module Reference", eyebrow: "Cat 10 · Methods & Framework",
-      build: () => modSectionBody("Full documentation for all 7 Cat 10 (Decision Optimization) modules.", CAT10_MODULES) },
+      build: () => catModSection("cat10", "Full documentation for all 7 Cat 10 (Decision Optimization) modules.", CAT10_MODULES) },
     "ph-modules": { id: "ph-modules", title: "Portfolio Health Module Reference", eyebrow: "PH · Methods & Framework",
-      build: () => modSectionBody("Full documentation for all 5 Portfolio Health modules. These compute server-side (the portfolioanalyze endpoint) rather than in this repository's client-side simulations.js; the computation summaries below reflect the same descriptions used elsewhere in this Knowledge Library.", PH_MODULES) }
+      build: () => catModSection("ph", "Full documentation for all 5 Portfolio Health modules. These compute server-side (the portfolioanalyze endpoint) rather than in this repository's client-side simulations.js; the computation summaries below reflect the same descriptions used elsewhere in this Knowledge Library.", PH_MODULES) }
   };
 
   /* ---------- References (APA 7th) ---------- */
@@ -2326,8 +2405,8 @@ Named Human Approval → Audit Record</pre>
         "Torra, V. (2010). Hesitant fuzzy sets. <em>International Journal of Intelligent Systems</em>, 25(6), 529-539.",
         "Turksen, I. B. (1986). Interval valued fuzzy sets based on normal forms. <em>Fuzzy Sets and Systems</em>, 20(2), 191-210.",
         "Yager, R. R. (2013). Pythagorean membership grades in multicriteria decision making. <em>IEEE Transactions on Fuzzy Systems</em>, 22(4), 958-965.",
-        "Yang, J. B., Liu, J., Wang, J., Sii, H. S., &amp; Wang, H. W. (2006). Belief rule-base inference methodology using the evidential reasoning approach. <em>IEEE Transactions on Systems, Man, and Cybernetics — Part A</em>, 36(2), 266-285.",
-        "Zadeh, L. A. (1975). The concept of a linguistic variable and its application to approximate reasoning — I. <em>Information Sciences</em>, 8(3), 199-249.",
+        "Yang, J. B., Liu, J., Wang, J., Sii, H. S., &amp; Wang, H. W. (2006). Belief rule-base inference methodology using the evidential reasoning approach. <em>IEEE Transactions on Systems, Man, and Cybernetics, Part A</em>, 36(2), 266-285.",
+        "Zadeh, L. A. (1975). The concept of a linguistic variable and its application to approximate reasoning, I. <em>Information Sciences</em>, 8(3), 199-249.",
         "Zadeh, L. A. (2011). A note on Z-numbers. <em>Information Sciences</em>, 181(14), 2923-2932."
       ];
       return `<p class="kn-lead">APA 7th-edition references for every method actually implemented in PCEIF's 103 project-level modules and 5 Portfolio Health modules, cited in-text throughout the Cat 1-10 and Portfolio Health Module Reference sections above. Only works that genuinely underlie an implemented computation are listed here.</p>
@@ -2357,8 +2436,114 @@ Named Human Approval → Audit Record</pre>
       <h3>Portfolio-scale methods and small populations</h3>
       <p>The five Portfolio Health modules (PH.1-PH.5) compare a project against the rest of the portfolio and require at least 3 active projects to produce a meaningful centroid, covariance estimate, or percentile rank; with fewer than 3 projects these modules abstain. Even above that floor, anomaly-detection methods like Isolation Forest (Liu, Ting &amp; Zhou, 2008, cited in the References above) are known to be sensitive to small sample sizes, a portfolio of 4-5 projects will produce noisier outlier and cross-project-pattern reads than one of 40-50, and a PH.5 Anomaly Score computed against a very small portfolio should be weighted accordingly.</p>
 
+      <h3>Behavioral and simulation modules as synthetic stress tests</h3>
+      <p>The agent-based, game-theoretic, and discrete-event style modules are synthetic stress-test illustrations, not calibrated behavioral models. They demonstrate how the framework governs a signal under bounded conditions; they do not prove real-world behavioral outcomes, and they are not calibrated against observed project-control meetings or decision events. Future work would need to calibrate these parameters against coded practitioner decision patterns or controlled expert elicitation before they could support empirical claims.</p>
+
+      <h3>Practitioner-validation scope and pilot dependency</h3>
+      <p>The intended evaluation path is design-science practitioner consultation (relevance, feasibility, auditability, fairness, usability, and implementation burden), not field measurement. Practitioner feedback can support the claim that the framework is credible and worth refinement; it cannot substitute for a field pilot. PCEIF should be treated as a governance artifact pending pilot testing, not as an operational standard for agency adoption. The technology landscape it reasons about is also bounded by the literature cutoff and will continue to evolve, which the model-agnostic signal classes and version governance are designed to accommodate.</p>
+
       <h3>No claim of predictive validity</h3>
       <p>No predictive-accuracy validation has been performed on this demonstration, there is no held-out real-world outcome data against which any module's forecast, threshold, or classification has been back-tested. This is a deliberate scope boundary, not an oversight: the research contribution of this project is the governance framework and decision logic itself, the signal-to-action pipeline, the explicit conflict typing in Cat 6.1, the named-authority escalation rules in Cat 8.1/decision.js, the fairness gate, the audit-export structure, validated qualitatively against public-sector program-controls and administrative-law practice, not the numerical accuracy of the synthetic module outputs. A reviewer evaluating this work should evaluate the governance architecture on its own terms, and treat every module's numeric output as an illustration of that architecture rather than as a validated forecast.</p>
+    `
+  };
+
+  /* ---------- PCEIF Framework Overview (TDS §1-4) ---------- */
+  const FRAMEWORK_TOPIC = {
+    id: "pceif-framework", title: "PCEIF Framework Overview",
+    eyebrow: "Methods & Framework · the governance spine",
+    build: () => `
+      <p class="kn-lead">PCEIF, the Public Capital EVM Intelligence Framework, is a model-agnostic governance architecture for converting project-control signals into accountable action. It treats every analytical output as evidence, and defines the minimum conditions under which that evidence can support monitoring, clarification, investigation, escalation, recovery planning, executive review, or formal authority review, and what must be recorded when a PM accepts, rejects, overrides, defers, or requests more evidence. Lin Opus Gubernatio is the current reference implementation, but PCEIF can be instantiated above commercial platforms, spreadsheets, simulations, or future digital-twin environments.</p>
+
+      <h3>Architectural principles</h3>
+      <ul class="kn-list">
+        <li><strong>Technology agnosticism.</strong> Governance attaches to the signal package, not to the vendor or algorithm.</li>
+        <li><strong>Evidence traceability.</strong> Every signal identifies its data date, source record, method or rule, input completeness, uncertainty, and trigger reason.</li>
+        <li><strong>Human accountability.</strong> High-impact actions require a named reviewer and a recorded judgment.</li>
+        <li><strong>Procedural fairness.</strong> Contractor-affecting action requires evidence review and a response opportunity, unless urgent safety, compliance, or public-interest conditions apply.</li>
+        <li><strong>Abstention honesty.</strong> Modules with missing required inputs return no status and are excluded from fusion rather than fabricating evidence.</li>
+        <li><strong>Single-source state.</strong> Project status is computed once, persisted, and read by all surfaces.</li>
+        <li><strong>Learning governance.</strong> Repeated override, deferral, and data-doubt patterns become framework-revision inputs.</li>
+      </ul>
+
+      <h3>The four-layer governance architecture</h3>
+      <ul class="kn-list">
+        <li><strong>Layer 1, Evidence and Record Governance.</strong> Controls source records, version, date, provenance, completeness, and access boundary.</li>
+        <li><strong>Layer 2, Signal Assurance Governance.</strong> Controls method transparency, thresholds, uncertainty, abstention, and conflict.</li>
+        <li><strong>Layer 3, Decision Authority Governance.</strong> Controls action category, authority, timeframe, fairness, approval, and override.</li>
+        <li><strong>Layer 4, Audit, Learning, and Version Governance.</strong> Controls reconstruction, review, post-action learning, and framework change.</li>
+      </ul>
+
+      <h3>Governance objects</h3>
+      <p>The object model deliberately separates evidence extraction, analytical computation, and management authority so they cannot be conflated: project record, source document, extracted fact, signal input, signal output, signal package, category state, conflict state, project-health state, Portfolio Health state, governance decision card, PM judgment record, responsible-party response record, audit event, and framework version. A source document can produce extracted facts; facts can support signals; signals can support a recommendation; only a human authority can approve or modify an action.</p>
+
+      <h3>From document to decision</h3>
+      ${svgPceifFlow()}
+      <p>Records (documents, schedule, cost) become signals (Cat 1 to Cat 5), which are synthesised into a baseline health state (Cat 6), cross-checked for confidence (Cat 7), checked for data quality and optimal response (Cat 9, Cat 10), governed into a decision card with a named authority (Cat 8), approved by a named human, and preserved as an exportable audit record. Portfolio Health (PH) runs alongside as program-level context, not a project-level trigger.</p>
+
+      <h3>Conformance</h3>
+      <p>An implementation conforms to PCEIF only when it preserves the evidence-to-action separation, exposes method and source metadata, supports abstention, records human judgment, enforces authority and fairness controls, and produces an exportable audit record. Visual similarity to Lin is not a conformance requirement.</p>
+    `
+  };
+
+  /* ---------- Status & Evidence Rules (TDS §6, verified vs code) ---------- */
+  const STATUS_RULES_TOPIC = {
+    id: "status-evidence-rules", title: "Status & Evidence Rules",
+    eyebrow: "Methods & Framework · how status is decided",
+    build: () => `
+      <p class="kn-lead">PCEIF status is not a single averaged colour. Module states roll up into category states, category states fuse into a project state, and disagreement is surfaced at every step. The rules below are stated as implemented in <code>sim.js</code> and <code>simulations.js</code>, which are the ground truth for every threshold.</p>
+
+      <h3>The five states plus Abstain</h3>
+      <p>A module or category reports one of five states, Complete, Green, Yellow, Amber, or Red, or it Abstains. Abstain is a governance state, not an error: it communicates that the evidence a module requires is absent or insufficient. An abstaining module (the <code>insufficientData()</code> path in simulations.js, triggered when a required input is null or undefined) contributes no mass to fusion and is excluded from the vote; it does not default to Green. Complete (blue) is a project-end flag set when actual percent complete reaches 100, independent of the fused band; a completed source contributes best-case (Green) evidence to any fusion it enters.</p>
+
+      <h3>Evidence sufficiency and the minimum viable signal package</h3>
+      <p>Before a status is trusted, the signal package should carry, for each contributing signal, its source record, data date, method or rule identity, input completeness, uncertainty or confidence, and trigger reason. A project running many abstaining modules should be read through Cat 9 (Data Integrity), specifically the Missing Data Index and the Information Completeness Ratio, before its fused status is treated as a confident read.</p>
+
+      <h3>Category status: Dempster-Shafer evidence combination</h3>
+      <p>Category status is produced by evidence combination, not worst-wins. The shared <code>dstFuse()</code> in simulations.js maps each module status to a belief mass over {Green, Yellow, Amber, Red, Unknown} (for example a Red source carries mass 0.76 to Red, 0.14 to Amber), combines sources by Dempster's rule, and reports the maximum-belief state. A Red-dominant source is applied at 1.5x weight (full once plus a half-strength Shafer-discounted re-combination) so a single Red cannot silently sink a category of greens, while genuine Red evidence still dominates. The combination also yields a conflict coefficient K measuring how much the sources disagree.</p>
+
+      <h3>Project status: conservative dominance and the conflict advisory</h3>
+      <p>Project status follows conservative dominance in spirit, a severe, credible category is not averaged away, and is implemented by fusing all eleven registry category statuses (the ten project categories plus Portfolio Health) through the same Dempster-Shafer fuser with Red weighted 1.5x. The last-step conflict K feeds an advisory <code>redReview</code> flag when K is at least 0.55; this flags the package for accountable human review but never overrides the fused band. (Within an individual Cat 7 evidence module, the conflict level is labelled High above 0.30 and Moderate above 0.10.) Portfolio Health provides program-level review context but does not directly authorise project-level formal action.</p>
+
+      <h3>Cat 1 core thresholds (sim.js)</h3>
+      ${modBands([
+        ["green","Monte Carlo (mcStatus)","Green P80 EAC within +5% of BAC; Amber +5% to +10%; Red beyond +10%"],
+        ["amber","CUSUM (cusumStatus)","two-sided tabular CUSUM, μ0 = 1.00, k = 0.5σ, decision interval H = 5σ; Red on a C+ or C- breach of H"],
+        ["red","Document risk (docStatus)","Green below 0.30; Amber 0.30 to 0.70; Red at or above 0.70"]
+      ])}
+    `
+  };
+
+  /* ---------- Human Judgment Record (TDS §8) ---------- */
+  const JUDGMENT_TOPIC = {
+    id: "human-judgment-record", title: "Human Judgment Record",
+    eyebrow: "Methods & Framework · accountable judgment",
+    build: () => `
+      <p class="kn-lead">PCEIF never lets a model output become an action on its own. Whenever a recommendation is approved, modified, overridden, deferred, escalated, or converted into an evidence request, the PM judgment record is mandatory. No silent override is permitted: the reasoning is always written down and always enters the audit trail.</p>
+
+      <h3>Mandatory rationale, no silent override</h3>
+      <p>The decision card exposes the derived state, the dominant signal, the recommended action, the required authority, the fairness requirement, and the documentation required. A named reviewer must record a rationale before the decision is committed. Accepting the recommendation is a judgment; departing from it is a judgment; both are recorded. This is what separates a governed decision from an automated one.</p>
+
+      <h3>The override taxonomy</h3>
+      <p>When a reviewer departs from the recommendation, the judgment record classifies why, using a fixed taxonomy so patterns can be learned across cycles:</p>
+      <ul class="kn-list">
+        <li><strong>data_doubt.</strong> The reviewer questions the accuracy or completeness of the underlying data.</li>
+        <li><strong>context_knowledge.</strong> The reviewer holds project context the model does not, that changes the reading.</li>
+        <li><strong>timing.</strong> The action is right but the timing is not; the reviewer defers or accelerates.</li>
+        <li><strong>authority_directed.</strong> A higher authority has directed a different course.</li>
+        <li><strong>evidence_escalation.</strong> The reviewer judges the evidence stronger than the signal implies and escalates.</li>
+        <li><strong>evidence_reduction.</strong> The reviewer judges the evidence weaker than the signal implies and de-escalates.</li>
+        <li><strong>fairness_gate.</strong> The reviewer intervenes to protect a responsible party's response opportunity before formal action.</li>
+        <li><strong>emergency.</strong> Urgent safety, compliance, or public-interest conditions require immediate action.</li>
+      </ul>
+
+      <h3>The judgment ledger</h3>
+      <p>The judgment ledger joins the decision card, the approval record, the override or deferral record, the responsible-party response record, and the audit identifier into one reconstructable chain. The audit record must permit reconstruction of what evidence existed, what method was used, which signal state was produced, who reviewed it, what judgment was made, why it was made, and what follow-up was assigned.</p>
+
+      <h3>Fairness gate</h3>
+      <p>Where an action would affect a contractor or other responsible party and the state has reached red-review, the fairness gate is a mandatory procedural step: evidence review and a documented response opportunity must be acknowledged before a formal decision is recorded, unless urgent safety, compliance, or public-interest conditions apply. It is a workflow step, never a score or percentage.</p>
+
+      <h3>Learning governance</h3>
+      <p>Repeated overrides, deferrals, and evidence-gap patterns are not noise; they are inputs to framework revision. Learning governance analyses them to identify thresholds, modules, data pipelines, or workflow steps that require change, so the framework improves from how it is actually used.</p>
     `
   };
 
@@ -2369,13 +2554,16 @@ Named Human Approval → Audit Record</pre>
      Top-level entries are either flat topics (rendered as a single button) or
      a `category` group with a list of child topic ids. Portfolio Health (the
      former ML & AI category) is now a portfolio-level suite displayed as
-     "PH", not a numbered project-level category — its topic ids are
+     "PH", not a numbered project-level category, its topic ids are
      'stage2:*' (kept for back-compat) and resolve to the real per-method
      articles in CAT8_TOPICS. */
   const CATEGORY_NAV = [
     { id: "pceif" },
+    { id: "pceif-framework" },
     { id: "why-108-modules" },
     { id: "five-status" },
+    { id: "status-evidence-rules" },
+    { id: "human-judgment-record" },
     { id: "how-categories-advise-pm" },
     { category: "cat1", num: "Cat 1", name: "Quantitative EVM",
       children: ["module01", "module02", "module03", "cat1-modules"] },
@@ -2409,7 +2597,7 @@ Named Human Approval → Audit Record</pre>
 
   // Sequential display numbers for top-level flat topics, derived from nav
   // order at render time so inserting a topic never breaks the numbering.
-  // Category groups are skipped — "Cat N" is domain terminology, not an
+  // Category groups are skipped, "Cat N" is domain terminology, not an
   // ordinal. Topic ids/anchors are untouched; only the display label changes.
   const TOPIC_DISPLAY_NUM = {};
   CATEGORY_NAV.filter((g) => !g.category).forEach((g, i) => { TOPIC_DISPLAY_NUM[g.id] = i + 1; });
@@ -2431,9 +2619,9 @@ Named Human Approval → Audit Record</pre>
     module19: "Cat 8.1"
   };
 
-  // Portfolio Health (formerly "Cat 8 — ML & AI Pattern Detection"). Active
+  // Portfolio Health (formerly "Cat 8, ML & AI Pattern Detection"). Active
   // (portfolioanalyze, Code.gs v10.17). This is a portfolio-level suite, not
-  // a numbered project-level category — its modules are labelled PH.1–PH.5.
+  // a numbered project-level category, its modules are labelled PH.1–PH.5.
   // The shared overview is prepended to every Portfolio Health article so the
   // context (portfolio-wide comparison) is always visible.
   const CAT8_OVERVIEW = "Portfolio Health uses portfolio-wide signal comparison to detect anomalies that individual module analysis cannot surface. Rather than evaluating a project in isolation, these methods ask: how does this project compare to every other project in the portfolio? A project with normal-looking EVM can still be anomalous if its combination of cost performance, schedule performance, and document risk is unlike any other project in the program.";
@@ -2442,7 +2630,7 @@ Named Human Approval → Audit Record</pre>
     "stage2:isolation": { id: "stage2:isolation", title: "PH.1 Isolation Forest",
       body: "Measures how far a project's signal combination sits from the portfolio centroid using Mahalanobis distance. High distance = unusual combination of signals. A project with moderate CPI and moderate SPI but very high document risk may appear amber on individual modules but anomalous when compared against the full portfolio." },
     "stage2:portfolio": { id: "stage2:portfolio", title: "PH.2 Portfolio Outlier Detection",
-      body: "Ranks the project by CPI and SPI percentile within the portfolio. A project in the bottom 15th percentile on both dimensions is a portfolio-level outlier — regardless of whether individual thresholds are breached." },
+      body: "Ranks the project by CPI and SPI percentile within the portfolio. A project in the bottom 15th percentile on both dimensions is a portfolio-level outlier, regardless of whether individual thresholds are breached." },
     "stage2:trajectory": { id: "stage2:trajectory", title: "PH.3 Signal Trajectory Classifier",
       body: "Analyzes CPI trend across reporting periods from the stored snapshot history. Distinguishes improving, stable, declining, and deteriorating trajectories. Requires at least 2 reporting periods." },
     "stage2:cross-project": { id: "stage2:cross-project", title: "PH.4 Cross-project Pattern Detector",
@@ -2454,46 +2642,46 @@ Named Human Approval → Audit Record</pre>
     return `<p class="kn-sub">${CAT8_OVERVIEW}</p><p class="kn-lead">${t.body}</p>`;
   }
 
-  // Cat 9 / 10 — category-level articles. Individual modules are not
+  // Cat 9 / 10, category-level articles. Individual modules are not
   // (yet) carved into per-method articles; the overview surfaces the entire
   // category's purpose, module list, and PM reading instructions.
   const CAT_OVERVIEW_TOPICS = {
     "cat10-overview": {
       id: "cat10-overview",
-      title: "Cat 9 — Data Integrity & Information Quality",
+      title: "Cat 9, Data Integrity & Information Quality",
       eyebrow: "Cat 9 · data quality of the inputs",
-      body: "Every analytical output in PCEIF is only as good as its inputs. A CPI derived from an unverified pay application is less reliable than one from an audited schedule of values. A document risk score estimated from proxy signals is less precise than one extracted directly from RFI logs. Cat 9 makes this uncertainty explicit — it does not hide it.",
+      body: "Every analytical output in PCEIF is only as good as its inputs. A CPI derived from an unverified pay application is less reliable than one from an audited schedule of values. A document risk score estimated from proxy signals is less precise than one extracted directly from RFI logs. Cat 9 makes this uncertainty explicit, it does not hide it.",
       modules: [
         ["9.1 Missing Data Index", "Counts how many of the 11 core signal fields are populated. A project with 6 of 11 fields missing may still generate a governance recommendation, but Cat 9.1 flags that the recommendation rests on incomplete information."],
-        ["9.2 Data Timeliness Score", "Measures days since the most recent document upload. Data older than 60 days warrants a Yellow flag — the signals may not reflect current project conditions. Data older than 90 days warrants Amber."],
+        ["9.2 Data Timeliness Score", "Measures days since the most recent document upload. Data older than 60 days warrants a Yellow flag, the signals may not reflect current project conditions. Data older than 90 days warrants Amber."],
         ["9.3 Source Reliability Weighting", "Each document type carries a reliability weight based on its verification status. Verified pay applications (0.90) outweigh estimated fields derived from proxy calculations (0.40). The weighted average across all populated fields gives the overall source reliability score."],
-        ["9.4 Audit Trail Completeness", "Checks whether the required governance events are recorded — project creation, document uploads, signal extractions, and decision records. A project with signals but no decision record has an incomplete audit trail."],
+        ["9.4 Audit Trail Completeness", "Checks whether the required governance events are recorded, project creation, document uploads, signal extractions, and decision records. A project with signals but no decision record has an incomplete audit trail."],
         ["9.5 Information Completeness Ratio", "Distinguishes between measured fields (from actual documents) and estimated fields (derived from proxy calculations). A project with 80% measured fields has higher information quality than one with 40% measured."],
         ["9.6 Cross-document Consistency Score", "Checks whether figures across uploaded documents are internally consistent. If the CPI stored in signalInputs does not match EV/AC, or if the percentage complete in the pay application conflicts with the schedule, this module flags the inconsistency."],
-        ["9.7 Reporting Frequency Index", "Measures the average interval between document uploads. Projects with infrequent updates accumulate stale data — a 90-day gap between pay applications means the portfolio is making decisions on two-month-old cost performance data."]
+        ["9.7 Reporting Frequency Index", "Measures the average interval between document uploads. Projects with infrequent updates accumulate stale data, a 90-day gap between pay applications means the portfolio is making decisions on two-month-old cost performance data."]
       ],
-      pmReading: "High Cat 9 status means the evidence base is current, measured, complete and internally consistent — act on the Cat 8 recommendation with confidence. Low Cat 9 status means the evidence base has gaps — seek additional documents before recording a formal governance action."
+      pmReading: "High Cat 9 status means the evidence base is current, measured, complete and internally consistent, act on the Cat 8 recommendation with confidence. Low Cat 9 status means the evidence base has gaps, seek additional documents before recording a formal governance action."
     },
     "cat11-overview": {
       id: "cat11-overview",
-      title: "Cat 10 — Decision Optimization",
+      title: "Cat 10, Decision Optimization",
       eyebrow: "Cat 10 · choosing under constraints",
       body: "Cat 5 (System Dynamics) explains how project components interact and how disturbances propagate. Cat 10 takes the current signal state as given and asks: what is the optimal decision? These are fundamentally different questions. Cat 5 is diagnostic; Cat 10 is prescriptive.",
       modules: [
-        ["10.1 Multi-Objective Optimization", "Public capital projects have three competing objectives: minimize cost overrun, minimize schedule delay, minimize risk. These objectives often trade off — accelerating schedule increases cost; reducing scope reduces risk but may miss requirements. Cat 10.1 finds the Pareto-efficient position given the current signal state."],
+        ["10.1 Multi-Objective Optimization", "Public capital projects have three competing objectives: minimize cost overrun, minimize schedule delay, minimize risk. These objectives often trade off, accelerating schedule increases cost; reducing scope reduces risk but may miss requirements. Cat 10.1 finds the Pareto-efficient position given the current signal state."],
         ["10.2 Linear Programming", "Given remaining work, remaining budget, and current cost performance, linear programming determines whether completing the project within budget is feasible and what CPI is required. It answers: is recovery possible?"],
         ["10.3 Constraint Satisfaction Analysis", "Checks whether the project satisfies four governance constraints: cost (CPI ≥ 0.90), schedule (SPI ≥ 0.90), document risk (score < 0.70), and FAR reporting threshold (overrun < 25%). Violated constraints require specific governance responses under federal acquisition regulations."],
         ["10.4 What-If Scenario Matrix", "Projects four futures: optimistic (CPI recovers to 1.0), base (current CPI continues), pessimistic (CPI degrades 5%), and recovery (CPI improves 5%). The range across scenarios quantifies decision uncertainty."],
-        ["10.5 Decision Sensitivity Matrix", "Identifies which input variable most affects the governance recommendation. If cost performance accounts for 70% of decision sensitivity, a small CPI change changes the recommendation significantly — the PM should focus verification efforts there first."],
+        ["10.5 Decision Sensitivity Matrix", "Identifies which input variable most affects the governance recommendation. If cost performance accounts for 70% of decision sensitivity, a small CPI change changes the recommendation significantly, the PM should focus verification efforts there first."],
         ["10.6 Pareto Frontier Analysis", "Determines whether the project is Pareto-efficient (all objectives met), Pareto-dominated (multiple objectives failing simultaneously, suggesting systemic problems), or in a trade-off zone (improving one objective requires accepting degradation in another)."],
         ["10.7 Regret Minimization Index", "Applies minimax regret theory to the PM's decision under uncertainty. Given three possible futures (improvement, stability, deterioration) and three possible decisions (monitor, investigate, escalate), which decision minimizes the worst-case regret? This is the most theoretically grounded decision-theoretic module in PCEIF."]
       ],
-      pmReading: "Cat 10 is read AFTER Cat 6 and Cat 7 — it does not replace the conservative-dominance classification or the evidence-combination cross-check, it operationalises them. The PM reads Cat 6/7 to understand the state, then reads Cat 10 to choose the action."
+      pmReading: "Cat 10 is read AFTER Cat 6 and Cat 7, it does not replace the conservative-dominance classification or the evidence-combination cross-check, it operationalises them. The PM reads Cat 6/7 to understand the state, then reads Cat 10 to choose the action."
     }
   };
   function catOverviewBody(t) {
     var modList = (t.modules || []).map(function (m) {
-      return '<li><strong>' + esc(m[0]) + '</strong> — ' + esc(m[1]) + '</li>';
+      return '<li><strong>' + esc(m[0]) + '</strong>, ' + esc(m[1]) + '</li>';
     }).join("");
     return '<p class="kn-lead">' + esc(t.body) + '</p>' +
            '<h3>Modules in this category</h3>' +
@@ -2509,34 +2697,34 @@ Named Human Approval → Audit Record</pre>
     build: () => `
       <p class="kn-lead">The ten project-level categories, plus the portfolio-level Health suite, each answer a different governance question. Reading them together tells the PM where to spend attention this reporting cycle.</p>
       <ul class="kn-list">
-        <li><strong>Cat 1 Quantitative EVM</strong> — what is happening NOW (cost / schedule indices).</li>
-        <li><strong>Cat 2 Schedule Simulation</strong> — WHEN will problems appear (time-based leading indicators).</li>
-        <li><strong>Cat 3 Cost Simulation</strong> — HOW MUCH will it cost (budget-based leading indicators).</li>
-        <li><strong>Cat 4 Document & Risk Signals</strong> — qualitative early warning from project records, BEFORE EVM shows the slip.</li>
-        <li><strong>Cat 5 System Dynamics</strong> — how the components AMPLIFY each other (rework propagation).</li>
-        <li><strong>Cat 6 Signal Synthesis</strong> — the BASELINE classification (conservative dominance) — the worst single signal wins.</li>
-        <li><strong>Cat 7 Evidence Combination</strong> — HOW CONFIDENT is the classification (twenty independent uncertainty-reasoning methods cross-check the baseline).</li>
-        <li><strong>Cat 8 Governance & Compliance</strong> — the named authority, required action, and audit trail.</li>
-        <li><strong>Cat 9 Data Integrity</strong> — how trustworthy ARE the inputs. Missing data, stale data, low-reliability sources — Cat 9 surfaces the quality of the signal package the other categories consumed.</li>
-        <li><strong>Cat 10 Decision Optimization</strong> — given everything the models found, what is the BEST action under constraints (multi-objective, LP, regret minimization).</li>
-        <li><strong>Portfolio Health (PH)</strong> — portfolio-wide anomaly detection: how unusual is this project versus the whole program (Isolation Forest, outlier ranking, trajectory, cross-project patterns, composite score).</li>
+        <li><strong>Cat 1 Quantitative EVM</strong>, what is happening NOW (cost / schedule indices).</li>
+        <li><strong>Cat 2 Schedule Simulation</strong>, WHEN will problems appear (time-based leading indicators).</li>
+        <li><strong>Cat 3 Cost Simulation</strong>, HOW MUCH will it cost (budget-based leading indicators).</li>
+        <li><strong>Cat 4 Document & Risk Signals</strong>, qualitative early warning from project records, BEFORE EVM shows the slip.</li>
+        <li><strong>Cat 5 System Dynamics</strong>, how the components AMPLIFY each other (rework propagation).</li>
+        <li><strong>Cat 6 Signal Synthesis</strong>, the BASELINE classification (conservative dominance), the worst single signal wins.</li>
+        <li><strong>Cat 7 Evidence Combination</strong>, HOW CONFIDENT is the classification (twenty independent uncertainty-reasoning methods cross-check the baseline).</li>
+        <li><strong>Cat 8 Governance & Compliance</strong>, the named authority, required action, and audit trail.</li>
+        <li><strong>Cat 9 Data Integrity</strong>, how trustworthy ARE the inputs. Missing data, stale data, low-reliability sources, Cat 9 surfaces the quality of the signal package the other categories consumed.</li>
+        <li><strong>Cat 10 Decision Optimization</strong>, given everything the models found, what is the BEST action under constraints (multi-objective, LP, regret minimization).</li>
+        <li><strong>Portfolio Health (PH)</strong>, portfolio-wide anomaly detection: how unusual is this project versus the whole program (Isolation Forest, outlier ranking, trajectory, cross-project patterns, composite score).</li>
       </ul>
       <h3>Five-step PM decision protocol</h3>
       <ol class="kn-list kn-list-num">
-        <li><strong>Read Cat 8 (Governance)</strong> — this is the recommended action.</li>
-        <li><strong>Check Cat 6 (Conservative Dominance)</strong> — this is the baseline state.</li>
-        <li><strong>Check Cat 9 (Data Integrity)</strong> — how much to trust the signals.</li>
+        <li><strong>Read Cat 8 (Governance)</strong>, this is the recommended action.</li>
+        <li><strong>Check Cat 6 (Conservative Dominance)</strong>, this is the baseline state.</li>
+        <li><strong>Check Cat 9 (Data Integrity)</strong>, how much to trust the signals.</li>
         <li><strong>Count how many of Cat 7 (20 evidence methods) agree with Cat 6:</strong>
           <ul class="kn-list" style="margin-top:6px">
-            <li>16–20 agree: HIGH CONFIDENCE — act on Cat 8 recommendation.</li>
-            <li>10–15 agree: MODERATE CONFIDENCE — act but document uncertainty.</li>
-            <li>&lt;10 agree: LOW CONFIDENCE — investigate before acting.</li>
+            <li>16–20 agree: HIGH CONFIDENCE, act on Cat 8 recommendation.</li>
+            <li>10–15 agree: MODERATE CONFIDENCE, act but document uncertainty.</li>
+            <li>&lt;10 agree: LOW CONFIDENCE, investigate before acting.</li>
           </ul>
         </li>
         <li><strong>Read Cat 10 (Optimization)</strong> for the recommended decision pathway.</li>
         <li><strong>Record decision</strong> with rationale, authority, and confidence level.</li>
       </ol>
-      <p>The PM reads the categories top-down to GENERATE the picture (with Cat 9 verifying that what was generated stands on solid inputs), then bottom-up (start at Cat 8 / Cat 10) to ACT on it. The decision is whatever Cat 8 records — the rest of the 103-module stack is the evidence supporting that decision.</p>
+      <p>The PM reads the categories top-down to GENERATE the picture (with Cat 9 verifying that what was generated stands on solid inputs), then bottom-up (start at Cat 8 / Cat 10) to ACT on it. The decision is whatever Cat 8 records, the rest of the 103-module stack is the evidence supporting that decision.</p>
     `
   };
 
@@ -2551,6 +2739,9 @@ Named Human Approval → Audit Record</pre>
     // topic alongside the existing LIBRARY entries.
     function lookupTopic(id) {
       if (MODREF_TOPICS[id]) return MODREF_TOPICS[id];
+      if (id === "pceif-framework") return FRAMEWORK_TOPIC;
+      if (id === "status-evidence-rules") return STATUS_RULES_TOPIC;
+      if (id === "human-judgment-record") return JUDGMENT_TOPIC;
       if (id === "limitations") return LIMITATIONS_TOPIC;
       if (id === "references") return REFERENCES_TOPIC;
       if (CAT8_TOPICS[id]) {
@@ -2645,7 +2836,7 @@ Named Human Approval → Audit Record</pre>
       const t = lookupTopic(selectedId) || LIBRARY[0];
       const built = t.build ? t.build() : "";
       const body = wrapArticleSections(built, t.id || "topic");
-      // Gold leading number + cream title — echoes the header brand-init treatment.
+      // Gold leading number + cream title, echoes the header brand-init treatment.
       const bare = String(t.title || "").replace(/^\d+[a-z]?\.\s*/, "");
       const n = TOPIC_DISPLAY_NUM[t.id];
       const heading = (n ? `<span class="kn-num">${n}.</span> ` : "") + esc(bare);
