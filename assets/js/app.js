@@ -585,6 +585,7 @@
   let glPopup = null;        // the single open popup, if any
   let glLoadTimer = null;    // style-load watchdog → failure panel
   let glFailed = false;
+  let mapBootRobot = null;   // 'loading' working-robot shown while tiles/style init
   let focusedPinId = null;   // the flown-to / selected marker
 
   const GL_CSS_URL = "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css";
@@ -640,10 +641,28 @@
   function showBootStatus(msg) {
     const el = document.getElementById("map-boot-status");
     if (el) { el.textContent = msg; el.hidden = false; }
+    // 'loading' working-robot (sm, indeterminate — no real progress signal for
+    // tile/style init, so no invented bar). Mounted once; removed on the map's
+    // first idle/load or on the failure path (hideBootStatus / showMapFailure).
+    const host = document.getElementById("map-gl");
+    if (host && host.parentNode && !mapBootRobot && window.LinWorkingRobot) {
+      const holder = document.createElement("div");
+      holder.className = "map-boot-robot";
+      host.parentNode.insertBefore(holder, host.nextSibling);
+      const handle = LinWorkingRobot.mount(holder, {
+        variant: "loading", size: "sm", message: "Loading map…", progress: null
+      });
+      mapBootRobot = { handle, holder };
+    }
   }
   function hideBootStatus() {
     const el = document.getElementById("map-boot-status");
     if (el) el.hidden = true;
+    if (mapBootRobot) {
+      try { mapBootRobot.handle.destroy(); } catch (e) {}
+      if (mapBootRobot.holder && mapBootRobot.holder.parentNode) mapBootRobot.holder.parentNode.removeChild(mapBootRobot.holder);
+      mapBootRobot = null;
+    }
   }
 
   function hasCoords(p) {
@@ -2196,30 +2215,36 @@
   function showRecomputeOverlay(total) {
     const stage = document.querySelector('.page[data-page="portfolio"] .radar-panel') || document.querySelector(".radar-panel");
     if (!stage) return null;
-    let ov = document.getElementById("recompute-overlay");
-    if (!ov) {
-      ov = document.createElement("div");
-      ov.id = "recompute-overlay";
-      ov.className = "recompute-overlay";
-      ov.innerHTML = '<div class="ro-label">Recomputing signals&hellip;</div>' +
-        '<div class="ro-track"><div class="ro-bar"></div></div>';
-      if (getComputedStyle(stage).position === "static") stage.style.position = "relative";
-      stage.appendChild(ov);
-    }
-    const label = ov.querySelector(".ro-label");
-    const bar = ov.querySelector(".ro-bar");
-    ov.hidden = false;
+    // Reset any leftover overlay from a previous run so we never orphan a robot.
+    const prev = document.getElementById("recompute-overlay");
+    if (prev && prev.parentNode) prev.parentNode.removeChild(prev);
+    const ov = document.createElement("div");
+    ov.id = "recompute-overlay";
+    ov.className = "recompute-overlay";
+    if (getComputedStyle(stage).position === "static") stage.style.position = "relative";
+    stage.appendChild(ov);
+    // 'computing' robot, determinate from the real n-of-N loop counter.
+    const robot = (window.LinWorkingRobot && LinWorkingRobot.mount)
+      ? LinWorkingRobot.mount(ov, {
+          variant: "computing", size: "md",
+          message: "Recomputing signals, please wait.", progress: 0
+        })
+      : null;
+    const removeOv = () => { if (ov.parentNode) ov.parentNode.removeChild(ov); };
     return {
       update(done, n, id) {
-        const pct = n ? Math.round((done / n) * 100) : 0;
-        label.textContent = "Recomputing signals… project " + Math.min(done + 1, n) + " of " + n + (id ? " (" + id + ")" : "");
-        bar.style.width = pct + "%";
+        const at = Math.min(done + 1, n);
+        if (robot) robot.update({
+          message: "Recomputing signals, project " + at + " of " + n + (id ? " (" + id + ")" : ""),
+          progress: n ? done / n : null
+        });
       },
       done() {
-        label.textContent = "Recompute complete.";
-        bar.style.width = "100%";
-        setTimeout(() => { ov.hidden = true; }, 1200);
-      }
+        if (robot) { robot.update({ message: "Recompute complete.", progress: 1 }); robot.tick(); }
+        setTimeout(() => { if (robot) robot.destroy(); removeOv(); }, 1200);
+      },
+      // Error/abort path — always tear the robot down, never orphan it.
+      destroy() { if (robot) robot.destroy(); removeOv(); }
     };
   }
 
@@ -2247,6 +2272,8 @@
       btn.disabled = true;
       const overlay = showRecomputeOverlay(projects.length);   // determinate stage overlay (non-blocking)
       let done = 0;
+      let completed = false;
+      try {
       for (const p of projects) {
         if (overlay) overlay.update(done, projects.length, p.id);
         status.textContent = "Recomputing " + (done + 1) + " / " + projects.length + "…";
@@ -2265,9 +2292,14 @@
         done++;
         if (overlay) overlay.update(done, projects.length);
       }
-      if (overlay) overlay.done();
+      completed = true;
+      if (overlay) overlay.done();                             // done() self-destroys the robot after a beat
       status.textContent = "Done: recomputed " + done + " project" + (done === 1 ? "" : "s") + ".";
-      btn.disabled = false;
+      } finally {
+        // Never orphan the robot: if the loop aborted before done(), tear it down.
+        if (!completed && overlay) overlay.destroy();
+        btn.disabled = false;
+      }
       // Refresh the slim portfolio cache so the radar/list reflect the newly
       // computed statuses (and the cache isn't stale on the next cold load).
       if (window.LinApp) LinApp.refreshPortfolio();

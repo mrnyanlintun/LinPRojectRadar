@@ -444,8 +444,7 @@
         body.innerHTML =
           `<p class="kn-sub">${locked ? `Uploading to <strong>${esc(preselectId)}${projName && projName !== preselectId ? " · " + esc(projName) : ""}</strong>. ` : ""}Drop one or more documents below. Lin identifies each document type automatically and extracts the signals, no need to label them first.</p>
            <div class="up-progress" hidden>
-             <div class="up-progress-head"><span class="up-count">0 of 0</span><span class="up-live kn-sub"></span></div>
-             <div class="up-track"><div class="up-bar"></div></div>
+             <div class="up-robot"></div>
            </div>
            <div id="signals-panel">
              ${LinSignals.dropzoneHtml(preselectId || null)}
@@ -454,26 +453,46 @@
            <div class="up-summary" hidden></div>`;
         const panelWrap = body.querySelector("#signals-panel");
         const prog = body.querySelector(".up-progress");
-        const bar = body.querySelector(".up-bar");
-        const countEl = body.querySelector(".up-count");
-        const liveEl = body.querySelector(".up-live");
+        const robotHost = body.querySelector(".up-robot");
         const summaryEl = body.querySelector(".up-summary");
-        const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+        // 'extracting' working-robot at md size, driven by the REAL n-of-N batch
+        // events (never a faked bar). Torn down on 'done' (before the summary
+        // shows) so it is never orphaned.
+        let robot = null;
+        const destroyRobot = () => { if (robot) { try { robot.destroy(); } catch (e) {} robot = null; } };
         LinSignals.wireDropzone(panelWrap, (id) => {
           const panel = body.querySelector("#signals-detail");
           if (panel) LinSignals.renderSignalsPanel(panel, LinStore.getCached(id));
         }, (ev) => {
           if (ev.type === "start") {
-            busy = true; prog.hidden = false; bar.style.width = "0%";
-            countEl.textContent = "0 of " + ev.total; liveEl.textContent = "";
+            busy = true; prog.hidden = false;
+            destroyRobot();
+            robot = window.LinWorkingRobot
+              ? LinWorkingRobot.mount(robotHost, {
+                  variant: "extracting", size: "md",
+                  message: "Reading " + ev.total + " document" + (ev.total === 1 ? "" : "s") + "…",
+                  progress: 0
+                })
+              : null;
           } else if (ev.type === "file") {
-            liveEl.textContent = cap(ev.state) + " " + ev.name;
+            // 'uploading' → reading the file; 'extracting' → pulling figures out.
+            const msg = ev.state === "extracting" ? "Extracting figures from " + ev.name : "Reading " + ev.name + "…";
+            if (robot) robot.update({ message: msg });
           } else if (ev.type === "progress") {
-            bar.style.width = (ev.total ? Math.round(ev.done / ev.total * 100) : 0) + "%";
-            countEl.textContent = ev.done + " of " + ev.total;
+            if (robot) {
+              robot.update({
+                message: ev.done + " of " + ev.total + " document" + (ev.total === 1 ? "" : "s") + " complete",
+                progress: ev.total ? ev.done / ev.total : null
+              });
+              robot.tick();                     // a check pops as each file lands
+            }
           } else if (ev.type === "done") {
-            busy = false; bar.style.width = "100%";
-            panelWrap.hidden = true; prog.hidden = true;
+            busy = false;
+            if (robot) { robot.update({ message: "Extraction complete", progress: 1 }); robot.tick(); }
+            // Keep the robot visible long enough for the completion tick to play,
+            // then remove it and its container together (no orphan, no dangling box).
+            setTimeout(() => { destroyRobot(); prog.hidden = true; }, 700);
+            panelWrap.hidden = true;
             const ok = ev.summary.filter((s) => s.status === "done");
             const bad = ev.summary.filter((s) => s.status !== "done");
             summaryEl.hidden = false;

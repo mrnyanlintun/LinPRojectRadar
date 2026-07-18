@@ -1011,6 +1011,115 @@ body.t-light .la-robot {
   .la-robot .bot-read, .la-robot .bot-dot, .la-robot .bot-say { opacity: .85; }
 }
 
+/* ============================================================
+   LinWorkingRobot — "robot at work" loader (workingrobot.js)
+   Same line-art language as the Ask Lin robot; all motion is cheap
+   CSS transforms/opacity. Theme-agnostic: strokes are currentColor,
+   set from --phosphor, with a thin outline on light themes.
+   ============================================================ */
+.lwr {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  color: var(--phosphor); text-align: center;
+}
+.lwr-figure { position: relative; line-height: 0; }
+.lwr-robot-svg { display: block; overflow: visible; }
+.lwr-md .lwr-robot-svg { width: 150px; height: 120px; }
+.lwr-sm .lwr-robot-svg { width: 84px; height: 67px; }
+body.t-light .lwr-robot-svg {
+  filter: drop-shadow(0 0 .6px var(--heading)) drop-shadow(0 0 .6px var(--heading));
+}
+/* speech-bubble callout, matching the Ask Lin greeting bubble */
+.lwr-callout {
+  position: relative; max-width: 260px;
+  font-family: var(--font-body); font-size: 13px; line-height: 1.4;
+  color: var(--text); background: var(--surface);
+  border: 1px solid var(--line-strong); border-radius: 12px;
+  padding: 7px 12px; box-shadow: var(--shadow);
+}
+.lwr-callout::after {
+  content: ""; position: absolute; left: 50%; top: -5px; width: 9px; height: 9px;
+  margin-left: -4px; background: var(--surface);
+  border-left: 1px solid var(--line-strong); border-top: 1px solid var(--line-strong);
+  transform: rotate(45deg);
+}
+.lwr-sm .lwr-callout { font-size: 12px; max-width: 200px; padding: 5px 10px; }
+/* determinate progress bar (hidden when indeterminate under normal motion) */
+.lwr-progress { width: min(240px, 80%); }
+.lwr-sm .lwr-progress { width: min(160px, 90%); }
+.lwr-track { height: 5px; border-radius: 999px; background: var(--surface-soft); border: 1px solid var(--line); overflow: hidden; }
+.lwr-bar { height: 100%; width: 0; border-radius: 999px; background: var(--phosphor); transition: width .3s ease; }
+.lwr-rm-fallback { display: none; font-family: var(--font-mono); font-size: 11px; color: var(--muted); letter-spacing: .06em; }
+.lwr-indeterminate .lwr-progress { display: none; }   /* the robot's motion conveys activity */
+
+/* ---- shared robot motion (seamless loops: 0%/100% identical) ---- */
+.lwr-bot-bob { transform-box: view-box; transform-origin: 78px 42px; animation: lwr-bob 3s ease-in-out infinite; }
+@keyframes lwr-bob { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-1.5px) rotate(-3deg); } }
+.lwr-eye { transform-box: fill-box; transform-origin: center; }
+.lwr-eye-l { animation: lwr-blink 5.4s infinite; }
+.lwr-eye-r { animation: lwr-blink 6.1s .3s infinite; }
+@keyframes lwr-blink { 0%,93%,100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
+.lwr-antenna-tip { animation: lwr-pulse 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes lwr-pulse { 0%,100% { opacity: .5; } 50% { opacity: 1; } }
+/* hands tap the desk, alternating */
+.lwr-hand-l, .lwr-arm-l { transform-box: view-box; transform-origin: 58px 60px; animation: lwr-tap .5s ease-in-out infinite; }
+.lwr-hand-r, .lwr-arm-r { transform-box: view-box; transform-origin: 98px 60px; animation: lwr-tap .5s ease-in-out .25s infinite; }
+@keyframes lwr-tap { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2.2px); } }
+/* the mini bar-chart redraws — this reads as "calculating", not spinning */
+.lwr-cbar { transform-box: fill-box; transform-origin: center bottom; }
+.lwr-cbar-1 { animation: lwr-chart 1.5s ease-in-out infinite; }
+.lwr-cbar-2 { animation: lwr-chart 1.5s ease-in-out .18s infinite; }
+.lwr-cbar-3 { animation: lwr-chart 1.5s ease-in-out .36s infinite; }
+.lwr-cbar-4 { animation: lwr-chart 1.5s ease-in-out .54s infinite; }
+@keyframes lwr-chart { 0%,100% { transform: scaleY(.35); } 25% { transform: scaleY(1); } 55% { transform: scaleY(.6); } 80% { transform: scaleY(.85); } }
+/* scrolling tick line across the top of the screen */
+.lwr-tickline { stroke-dasharray: 4 4; animation: lwr-scroll 1s linear infinite; }
+@keyframes lwr-scroll { to { stroke-dashoffset: -8; } }
+
+/* ---- variant accessories ---- */
+.lwr-check { opacity: 0; }
+.lwr-page { opacity: 0; }
+/* extracting: a page feeds into the console; computing/loading hide it */
+.lwr-extracting .lwr-page {
+  opacity: 1; transform-box: view-box; transform-origin: center;
+  animation: lwr-feed 2.4s ease-in-out infinite;
+}
+@keyframes lwr-feed {
+  0% { opacity: 0; transform: translateX(0); }
+  15% { opacity: 1; }
+  70% { opacity: 1; transform: translateX(24px); }
+  80%,100% { opacity: 0; transform: translateX(24px); }
+}
+/* computing: emphasize the chart (slightly faster), calmer arms */
+.lwr-computing .lwr-cbar-1,
+.lwr-computing .lwr-cbar-2,
+.lwr-computing .lwr-cbar-3,
+.lwr-computing .lwr-cbar-4 { animation-duration: 1.1s; }
+/* loading: calmer — no page, gentle chart */
+.lwr-loading .lwr-tickline { animation-duration: 1.6s; }
+/* one-shot completion check (flashed via .tick()) */
+.lwr-ticking .lwr-check { animation: lwr-pop .9s ease-out; }
+@keyframes lwr-pop {
+  0% { opacity: 0; transform: scale(.4); }
+  20% { opacity: 1; transform: scale(1.15); }
+  45% { transform: scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.lwr-check { transform-box: view-box; transform-origin: 102px 20px; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* static pose, no loops; determinate shows the bar, indeterminate shows text */
+  .lwr-bot-bob, .lwr-eye, .lwr-antenna-tip, .lwr-hand-l, .lwr-hand-r,
+  .lwr-arm-l, .lwr-arm-r, .lwr-cbar, .lwr-tickline, .lwr-page, .lwr-check, .lwr-bar {
+    animation: none !important; transition: none !important;
+  }
+  .lwr-cbar { transform: scaleY(.7); }        /* frozen mid-chart, still legible */
+  .lwr-extracting .lwr-page { opacity: 1; transform: translateX(12px); }
+  .lwr-indeterminate .lwr-progress { display: block; }
+  .lwr-indeterminate .lwr-track { display: none; }
+  .lwr-indeterminate .lwr-rm-fallback { display: inline; }
+}
+
 .la-panel[hidden] { display: none !important; }
 .la-panel {
   position: fixed; right: 22px; bottom: 78px; z-index: 91;
@@ -1811,9 +1920,19 @@ body.t-light .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
   border: 1px solid var(--line-strong); border-radius: var(--radius-md); box-shadow: var(--shadow);
 }
 .recompute-overlay[hidden] { display: none; }
+.recompute-overlay { padding: 12px 16px; }   /* the working-robot loader needs a little more room */
 .recompute-overlay .ro-label { font-family: var(--font-mono); font-size: 11px; color: var(--text); margin-bottom: 6px; }
 .recompute-overlay .ro-track { height: 5px; background: var(--surface-soft); border-radius: 3px; overflow: hidden; }
 .recompute-overlay .ro-bar { height: 100%; width: 0; background: var(--phosphor); border-radius: 3px; transition: width .25s ease; }
+
+/* 'loading' working-robot centered over the map panel while it initializes */
+.map-boot-robot {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  z-index: 5; pointer-events: none;
+  padding: 12px 16px; border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid var(--line);
+}
 
 /* Upload progress dialog — determinate bar + live counts, then a summary view */
 .up-progress { margin: 4px 0 12px; }
