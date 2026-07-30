@@ -1,0 +1,6 @@
+﻿
+Algorithm       Hash                                                                   Path                            
+---------       ----                                                                   ----                            
+SHA256          D7CA7342297B41645728E93180459E021AEF7E4F05A85D4CB97AC052A48DCE82       C:\Users\NTUN\OneDrive - Aror...
+
+

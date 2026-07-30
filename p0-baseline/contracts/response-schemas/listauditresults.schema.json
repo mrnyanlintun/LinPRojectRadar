@@ -1,0 +1,29 @@
+{
+  "action": "listauditresults",
+  "schema": {
+    "properties": {
+      "ok": {
+        "type": "boolean"
+      },
+      "results": {
+        "items": {
+          "properties": {
+            "createdAt": {
+              "type": "string"
+            },
+            "fileId": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "observed_length": 5,
+        "type": "array"
+      }
+    },
+    "type": "object"
+  }
+}
