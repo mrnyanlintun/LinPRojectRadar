@@ -1,0 +1,14 @@
+{
+  "action": "getportfoliohealth",
+  "schema": {
+    "properties": {
+      "error": {
+        "type": "string"
+      },
+      "ok": {
+        "type": "boolean"
+      }
+    },
+    "type": "object"
+  }
+}

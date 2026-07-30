@@ -8,8 +8,8 @@
 
   "output_dir": "p0-baseline/contracts",
 
-  "_sample_project_id_comment": "Populate before a capture run. Actions taking an id return an error shape without it, which is a valid fixture but not the useful one.",
-  "sample_project_id": "TO_BE_RECORDED",
+  "_sample_project_id_comment": "Must be a live ACTIVE project id. Verified from ?action=listslim on 2026-07-30. Note that '01' is an ARCHIVED project (Phase23 Smoke Test): ?action=get returns 'Not found: 01' for it, so an archived id silently baselines an error shape as the contract.",
+  "sample_project_id": "PRJ-08421",
 
   "get_actions": [
     { "action": "health",             "params": {},                    "capture": true,  "note": "Diagnostic. Reports version under key 'apiVersion'." },

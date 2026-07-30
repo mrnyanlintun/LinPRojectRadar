@@ -44,12 +44,51 @@ Per M0 Amendment 4, the following is recorded and is **not** treated as a new bu
 - **`saveportfoliohealth`** is called at `store.js:535` but is absent from the live v10.29
   `postActionsRegistered` list. It is present in the v10.36 reference, which indicates it was
   added after v10.29.
-- **`getportfoliohealth`** is called at `store.js:542`. The live deployment's GET support cannot be
-  confirmed because the health self-report was not captured. It is absent from the v10.36
-  reference's `okHealth_().endpoints` array, though the v10.36 `doGet` does dispatch it, which is
-  itself evidence that the self-report arrays are incomplete.
+- **`getportfoliohealth`** is called at `store.js:542` and is **confirmed absent from the live
+  deployment**. The capture run returned:
+
+  ```json
+  {"ok":false,"error":"Unknown GET action: getportfoliohealth"}
+  ```
+
+  This upgrades the earlier "unverified" status to verified. Both halves of the portfolio health
+  pair are therefore missing from the deployed backend while the frontend calls both.
+  `deepdive.js:2330` consumes `LinStore.getPortfolioHealth()`, so the Health dialog is calling an
+  endpoint that does not exist in production today.
 
 The Render facade decides at A1 whether to implement these two actions.
+
+## Capture run, 2026-07-30
+
+Read-only GET actions only. All 18 POST actions remained `DEFERRED_TO_MANUAL`; no write or AI
+action was issued. 11 of 11 GET actions captured, 0 failures, every one returning **HTTP 200**.
+
+Two results are contract-relevant beyond the fixtures themselves:
+
+1. **Errors are returned with HTTP 200 and `ok:false`.** `getportfoliohealth` is an unknown action
+   yet still answers 200. Status code carries no success information in this API. The Render facade
+   must reproduce this, and `compare.py`'s status check alone will not catch an action that
+   regresses into an error shape; the key-set and type checks are what detect it.
+2. **`ping` and `version` returned byte-identical payloads**, confirming they are aliases on the
+   live deployment, not merely in the v10.36 reference.
+
+`?action=health` confirmed live that it reports the version under `apiVersion`, while `?action=ping`
+reports it under `version`. Both were captured, so the inconsistency is now evidenced rather than
+inferred from source.
+
+### Sample project id
+
+`sample_project_id` is `PRJ-08421`, an active project verified from `?action=listslim`.
+
+A first capture attempt used `01`, which produced `{"ok":false,"error":"Not found: 01"}` for `get`
+and `Project not found: 01` for `listcorpus`, `listauditresults` and `gethistory`. `01` is an
+**archived** project ("Phase23 Smoke Test"), visible in the `listarchived` fixture. Those four
+fixtures were error shapes and were replaced by re-capturing with an active id. This is the exact
+failure the config file warns about: an id that looks plausible can silently baseline an error
+shape as the contract.
+
+`gethistory` legitimately returns `{"ok":true,"history":[]}` for this project. The empty array
+carries no element type information, so its derived schema records `items` as `unknown`.
 
 ## Actions present in dispatchers but absent from a self-report
 

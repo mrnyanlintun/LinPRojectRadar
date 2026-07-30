@@ -64,6 +64,64 @@ def resolve_params(params, cfg):
     return resolved, None
 
 
+def _type_names(schema):
+    """Flatten a schema's type into a set of primitive names, expanding an existing union."""
+    if schema.get("type") == "mixed":
+        return set(schema.get("types", []))
+    return {schema.get("type", "unknown")}
+
+
+def merge_schemas(left, right):
+    """
+    Combine two derived schemas into one that describes both.
+
+    Merging is done on already-derived schema objects and never re-serialises them. An earlier
+    version built unions by json.dumps-ing the accumulated schema on every element, which nested
+    one level deeper per array element and exhausted memory on the 12 project portfolio.
+    """
+    if left == right:
+        return left
+
+    left_type, right_type = left.get("type"), right.get("type")
+
+    if left_type == "object" and right_type == "object":
+        left_props, right_props = left.get("properties", {}), right.get("properties", {})
+        merged_props = {}
+        for key in sorted(set(left_props) | set(right_props)):
+            if key in left_props and key in right_props:
+                merged_props[key] = merge_schemas(left_props[key], right_props[key])
+            else:
+                # Present in only some elements: part of the contract, so record it.
+                present = left_props.get(key) or right_props[key]
+                merged_props[key] = dict(present, optional=True)
+        return {"type": "object", "properties": merged_props}
+
+    if left_type == "array" and right_type == "array":
+        merged = {"type": "array", "items": merge_schemas(left.get("items", {"type": "unknown"}),
+                                                          right.get("items", {"type": "unknown"}))}
+        return merged
+
+    names = _type_names(left) | _type_names(right)
+
+    # "unknown" only ever comes from an empty array, which carries no type information. It must
+    # not dilute a union that has real observations.
+    if "unknown" in names and len(names) > 1:
+        names.discard("unknown")
+        if len(names) == 1:
+            return {"type": names.pop()}
+
+    # integer and number describe the same JSON contract; widen rather than flag drift.
+    if names == {"integer", "number"}:
+        return {"type": "number"}
+
+    # null combined with one concrete type means nullable, which is more useful than "mixed".
+    if "null" in names and len(names) == 2:
+        concrete = (names - {"null"}).pop()
+        return {"type": concrete, "nullable": True}
+
+    return {"type": "mixed", "types": sorted(names)}
+
+
 def derive_schema(value):
     """
     Describe shape, not content. Arrays collapse to a single merged element schema so that a
@@ -82,24 +140,10 @@ def derive_schema(value):
     if isinstance(value, list):
         if not value:
             return {"type": "array", "items": {"type": "unknown"}, "observed_length": 0}
-        merged = {}
-        for element in value:
-            element_schema = derive_schema(element)
-            if element_schema.get("type") == "object":
-                for key, sub in element_schema.get("properties", {}).items():
-                    if key in merged and merged[key] != sub:
-                        merged[key] = {"type": "mixed", "seen": sorted(
-                            {json.dumps(merged[key], sort_keys=True), json.dumps(sub, sort_keys=True)}
-                        )}
-                    else:
-                        merged[key] = sub
-            else:
-                return {"type": "array", "items": element_schema, "observed_length": len(value)}
-        return {
-            "type": "array",
-            "items": {"type": "object", "properties": merged},
-            "observed_length": len(value),
-        }
+        merged = derive_schema(value[0])
+        for element in value[1:]:
+            merged = merge_schemas(merged, derive_schema(element))
+        return {"type": "array", "items": merged, "observed_length": len(value)}
     if isinstance(value, dict):
         return {
             "type": "object",

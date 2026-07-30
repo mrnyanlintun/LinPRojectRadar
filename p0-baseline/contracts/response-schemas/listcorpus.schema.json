@@ -1,0 +1,35 @@
+{
+  "action": "listcorpus",
+  "schema": {
+    "properties": {
+      "corpus": {
+        "items": {
+          "properties": {
+            "docType": {
+              "type": "string"
+            },
+            "fileId": {
+              "type": "string"
+            },
+            "ingestedAt": {
+              "type": "string"
+            },
+            "mimeType": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "observed_length": 3,
+        "type": "array"
+      },
+      "ok": {
+        "type": "boolean"
+      }
+    },
+    "type": "object"
+  }
+}

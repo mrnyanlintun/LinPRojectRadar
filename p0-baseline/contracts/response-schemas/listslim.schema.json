@@ -1,0 +1,56 @@
+{
+  "action": "listslim",
+  "schema": {
+    "properties": {
+      "ok": {
+        "type": "boolean"
+      },
+      "projects": {
+        "items": {
+          "properties": {
+            "actualPctComplete": {
+              "type": "integer"
+            },
+            "cpi": {
+              "type": "number"
+            },
+            "docCount": {
+              "type": "integer"
+            },
+            "docRiskScore": {
+              "type": "number"
+            },
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "sector": {
+              "type": "string"
+            },
+            "simModuleCount": {
+              "type": "integer"
+            },
+            "slim": {
+              "type": "boolean"
+            },
+            "spi": {
+              "type": "number"
+            },
+            "status": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "observed_length": 15,
+        "type": "array"
+      }
+    },
+    "type": "object"
+  }
+}

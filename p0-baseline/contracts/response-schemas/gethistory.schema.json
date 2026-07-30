@@ -1,0 +1,18 @@
+{
+  "action": "gethistory",
+  "schema": {
+    "properties": {
+      "history": {
+        "items": {
+          "type": "unknown"
+        },
+        "observed_length": 0,
+        "type": "array"
+      },
+      "ok": {
+        "type": "boolean"
+      }
+    },
+    "type": "object"
+  }
+}

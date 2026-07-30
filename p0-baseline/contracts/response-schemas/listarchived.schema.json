@@ -1,0 +1,342 @@
+{
+  "action": "listarchived",
+  "schema": {
+    "properties": {
+      "ok": {
+        "type": "boolean"
+      },
+      "projects": {
+        "items": {
+          "properties": {
+            "createdAt": {
+              "type": "string"
+            },
+            "events": {
+              "items": {
+                "properties": {
+                  "appliedFields": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "optional": true,
+                    "type": "array"
+                  },
+                  "at": {
+                    "type": "string"
+                  },
+                  "docType": {
+                    "optional": true,
+                    "type": "mixed",
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "event": {
+                    "type": "string"
+                  },
+                  "period": {
+                    "optional": true,
+                    "type": "mixed",
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "fairnessSensitive": {
+              "optional": true,
+              "type": "boolean"
+            },
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "sector": {
+              "type": "string"
+            },
+            "signalInputs": {
+              "optional": true,
+              "properties": {
+                "ac": {
+                  "type": "integer"
+                },
+                "actualPctComplete": {
+                  "type": "integer"
+                },
+                "bac": {
+                  "type": "integer"
+                },
+                "cpi": {
+                  "type": "number"
+                },
+                "docRiskScore": {
+                  "type": "null"
+                },
+                "ev": {
+                  "type": "integer"
+                },
+                "period": {
+                  "type": "string"
+                },
+                "plannedPctComplete": {
+                  "type": "integer"
+                },
+                "pv": {
+                  "type": "integer"
+                },
+                "sources": {
+                  "properties": {
+                    "ac": {
+                      "properties": {
+                        "at": {
+                          "type": "string"
+                        },
+                        "docType": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "integer"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "actualPctComplete": {
+                      "properties": {
+                        "at": {
+                          "type": "string"
+                        },
+                        "docType": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "integer"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "bac": {
+                      "properties": {
+                        "at": {
+                          "type": "string"
+                        },
+                        "docType": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "integer"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "ev": {
+                      "properties": {
+                        "at": {
+                          "type": "string"
+                        },
+                        "docType": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "integer"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "plannedPctComplete": {
+                      "properties": {
+                        "at": {
+                          "type": "string"
+                        },
+                        "docType": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "integer"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "pv": {
+                      "properties": {
+                        "at": {
+                          "type": "string"
+                        },
+                        "docType": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "integer"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "type": "object"
+                },
+                "spi": {
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "signals": {
+              "properties": {
+                "cusum": {
+                  "optional": true,
+                  "properties": {
+                    "breachIndex": {
+                      "type": "integer"
+                    },
+                    "breached": {
+                      "type": "boolean"
+                    },
+                    "drift": {
+                      "type": "number"
+                    },
+                    "hUnits": {
+                      "type": "integer"
+                    },
+                    "metric": {
+                      "type": "string"
+                    },
+                    "series": {
+                      "items": {
+                        "type": "number"
+                      },
+                      "observed_length": 12,
+                      "type": "array"
+                    },
+                    "sigma": {
+                      "type": "number"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "target": {
+                      "type": "integer"
+                    },
+                    "threshold": {
+                      "type": "number"
+                    }
+                  },
+                  "type": "object"
+                },
+                "doc": {
+                  "optional": true,
+                  "properties": {
+                    "excerpt": {
+                      "type": "string"
+                    },
+                    "score": {
+                      "type": "number"
+                    },
+                    "source": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "evm": {
+                  "optional": true,
+                  "properties": {
+                    "bac": {
+                      "type": "integer"
+                    },
+                    "cpi": {
+                      "type": "number"
+                    },
+                    "dataDate": {
+                      "type": "string"
+                    },
+                    "spi": {
+                      "type": "number"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "mc": {
+                  "optional": true,
+                  "properties": {
+                    "inputs": {
+                      "properties": {
+                        "bac": {
+                          "type": "integer"
+                        },
+                        "cpi": {
+                          "type": "number"
+                        },
+                        "cusumBreached": {
+                          "type": "boolean"
+                        },
+                        "cusumDrift": {
+                          "type": "number"
+                        },
+                        "cusumThreshold": {
+                          "type": "number"
+                        },
+                        "docScore": {
+                          "type": "number"
+                        },
+                        "seed": {
+                          "type": "integer"
+                        },
+                        "spi": {
+                          "type": "number"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "iterations": {
+                      "type": "integer"
+                    },
+                    "p50": {
+                      "type": "number"
+                    },
+                    "p50eacOverrunPct": {
+                      "type": "number"
+                    },
+                    "p80": {
+                      "type": "number"
+                    },
+                    "p80eacOverrunPct": {
+                      "type": "number"
+                    },
+                    "pMilestoneDelay": {
+                      "type": "number"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            "status": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "observed_length": 3,
+        "type": "array"
+      }
+    },
+    "type": "object"
+  }
+}
