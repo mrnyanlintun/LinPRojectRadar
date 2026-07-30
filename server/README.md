@@ -26,8 +26,36 @@ not read a value from the repository.
 |---|---|---|---|
 | `DATABASE_URL` | **yes** | `postgresql://user:pass@dpg-xxxx.oregon-postgres.render.com:5432/og` | Service refuses to boot without it. `postgres://` and `postgresql://` are normalised to the psycopg 3 dialect automatically. **Never commit this.** |
 | `CORS_ORIGINS` | no | `https://mrnyanlintun.github.io` | Comma separated. Omit or leave empty to disable CORS entirely. |
-| `PYTHON_VERSION` | set in `render.yaml` | `3.12.7` | |
+| `PYTHON_VERSION` | set in `render.yaml` | `3.12.7` | Secondary pin. See below. |
 | `LOG_LEVEL` | no | `INFO` | Defaults to `INFO`. |
+
+## Interpreter version: pinned in two places
+
+The Python version is pinned **twice**, deliberately:
+
+1. **`server/.python-version`** containing `3.12.7`. This is the primary pin. Render reads it from
+   the service root directory, and it is the more reliable of the two for interpreter selection.
+2. **`PYTHON_VERSION: "3.12.7"`** in `render.yaml`. Retained as a belt-and-braces setting.
+
+Both must be kept in step. Changing one alone will produce a build whose interpreter does not match
+the file that claims to pin it.
+
+### Why two pins
+
+A build ran on Python 3.14 despite `PYTHON_VERSION: "3.12.7"` being set in `render.yaml`. Two
+things went wrong, only one of them loudly:
+
+- **`psycopg[binary]` failed to resolve.** `psycopg-binary` ships wheels only and has no sdist, so
+  pip could not build from source and reported only the versions carrying a wheel for the running
+  interpreter. `cp314` wheels first appear in 3.2.10, so 3.2.3 was unreachable on 3.14. This is why
+  the pin is now 3.2.13, which carries both `cp312` and `cp314` wheels.
+- **SQLAlchemy silently lost its C extensions.** SQLAlchemy 2.0.36 has no `cp314` wheel, so on 3.14
+  pip installs the pure-python fallback. It works, just slower, and nothing in the build log says
+  so. This is the failure mode the two pins exist to prevent: a wrong interpreter does not always
+  announce itself.
+
+`server/.python-version` is forced to LF in `.gitattributes`. A trailing carriage return would make
+the version string unparseable on Render's Linux builder.
 
 ## Render dashboard steps
 
