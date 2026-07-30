@@ -1,0 +1,16 @@
+{
+  "script_id": "TO_BE_RECORDED",
+  "project_name": "TO_BE_RECORDED",
+  "deployment_id": "AKfycbwhmg_1L_RjbxPTR0IF3xpmHgLLzHA67O3mH27uqrAFfv8bF9U359yBqwjqbZO3YNTO",
+  "active_version_number": "TO_BE_RECORDED",
+  "deployment_description": "TO_BE_RECORDED",
+  "deployment_updated": "TO_BE_RECORDED",
+  "execute_as": "TO_BE_RECORDED",
+  "access_setting": "TO_BE_RECORDED",
+  "web_app_url": "https://script.google.com/macros/s/AKfycbwhmg_1L_RjbxPTR0IF3xpmHgLLzHA67O3mH27uqrAFfv8bF9U359yBqwjqbZO3YNTO/exec",
+  "reported_api_version": "lin-project-radar-backend-v10.29-geocode",
+  "captured_at_utc": "20260730T213156Z",
+  "server_reported_timestamp": "2026-07-30T21:31:40.548Z",
+  "evidence_path": "p0-baseline/live/20260730T213156Z/",
+  "evidence_sha256_of_ping_json": "D7CA7342297B41645728E93180459E021AEF7E4F05A85D4CB97AC052A48DCE82"
+}

@@ -1,0 +1,30 @@
+action,method,in_dispatcher,in_ping_selfreport,in_health_selfreport,frontend_callsites,notes
+analyze,POST,UNKNOWN,YES,NOT_CAPTURED,store.js:432,AI action - DEFERRED_TO_MANUAL.
+archive,POST,UNKNOWN,YES,NOT_CAPTURED,store.js:380,
+audit,POST,UNKNOWN,YES,NOT_CAPTURED,store.js:471,AI action - DEFERRED_TO_MANUAL.
+chat,POST,UNKNOWN,YES,NOT_CAPTURED,store.js:423,AI action - DEFERRED_TO_MANUAL.
+create,POST,UNKNOWN,YES,NOT_CAPTURED,store.js:321,
+extractsignals,POST,UNKNOWN,YES,NOT_CAPTURED,store.js:498; signals.js:1436(direct fetch signals.js:1297),"Only action reaching the backend outside store.js. signals.js:1436 builds the payload, :1447 calls extractWithRetry, :1381 calls postJSON, :1297 issues fetch(window.LIN_API_URL) with a 45s timeout and 429 backoff."
+get,GET,UNKNOWN,N/A(GET),NOT_CAPTURED,store.js:158; store.js:310,
+gethistory,GET,UNKNOWN,N/A(GET),NOT_CAPTURED,NONE,In v10.36 reference GET list; no frontend call site.
+getportfoliohealth,GET,UNKNOWN,N/A(GET),NOT_CAPTURED,store.js:542,Called by frontend; live GET support unverified (health not captured). Known version gap (accepted).
+health,GET,UNKNOWN,N/A(GET),NOT_CAPTURED,NONE,Diagnostic. No frontend call site. Reports key 'apiVersion'.
+identifyonly,POST,UNKNOWN,YES,NOT_CAPTURED,store.js:508,"Frontend sends camelCase 'identifyOnly' (store.js:508). Backend normalises via String(p.action).toLowerCase(), so it dispatches correctly. Not a defect. Preserve normalisation in the Render facade."
+ingestcorpus,POST,UNKNOWN,YES,NOT_CAPTURED,store.js:460,Write action - DEFERRED_TO_MANUAL.
+list,GET,UNKNOWN,N/A(GET),NOT_CAPTURED,store.js:208; store.js:216; store.js:251; store.js:261,
+listarchived,GET,UNKNOWN,N/A(GET),NOT_CAPTURED,store.js:223; store.js:411,
+listauditresults,GET,UNKNOWN,N/A(GET),NOT_CAPTURED,store.js:454,
+listcorpus,GET,UNKNOWN,N/A(GET),NOT_CAPTURED,store.js:447,
+listslim,GET,UNKNOWN,N/A(GET),NOT_CAPTURED,store.js:246; store.js:256,
+overwritesignal,POST,UNKNOWN,YES,NOT_CAPTURED,store.js:515,
+ping,GET,UNKNOWN,N/A(GET),NOT_CAPTURED,NONE,Diagnostic. No frontend call site. Reports key 'version' (not 'apiVersion') - see Amendment 1.
+portfolioanalyze,POST,UNKNOWN,YES,NOT_CAPTURED,signals.js:600,"Routed through LinStore.post, not a direct call. Live ping reports portfolioanalyzeRegistered:true."
+resetsignals,POST,UNKNOWN,YES,NOT_CAPTURED,store.js:521,
+restore,POST,UNKNOWN,YES,NOT_CAPTURED,store.js:395,
+save,POST,UNKNOWN,YES,NOT_CAPTURED,store.js:359,
+saveauditresult,POST,UNKNOWN,YES,NOT_CAPTURED,store.js:480,
+savehistory,POST,UNKNOWN,YES,NOT_CAPTURED,NONE,In live ping self-report; no frontend call site.
+saveportfoliohealth,POST,UNKNOWN,NO,NOT_CAPTURED,store.js:535,Called by frontend; ABSENT from live v10.29 ping self-report. Known version gap (accepted).
+setprojectnumber,POST,UNKNOWN,YES,NOT_CAPTURED,store.js:339,
+tts,POST,UNKNOWN,YES,NOT_CAPTURED,NONE,In live ping self-report; no frontend call site. AI/paid action - DEFERRED_TO_MANUAL.
+version,GET,UNKNOWN,N/A(GET),NOT_CAPTURED,NONE,Alias of ping in the v10.36 reference. No frontend call site.

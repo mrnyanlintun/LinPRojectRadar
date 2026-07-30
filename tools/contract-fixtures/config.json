@@ -1,0 +1,50 @@
+{
+  "_comment": "Contract fixture capture configuration. Action list derived from the live v10.29 ping self-report plus frontend call sites. See INVENTORY_FINDINGS.md.",
+
+  "base_url": "https://script.google.com/macros/s/AKfycbwhmg_1L_RjbxPTR0IF3xpmHgLLzHA67O3mH27uqrAFfv8bF9U359yBqwjqbZO3YNTO/exec",
+
+  "_timeout_comment": "Apps Script cold start has been measured above 20 seconds. Minimum 45 per M0 Amendment 7.",
+  "timeout_seconds": 45,
+
+  "output_dir": "p0-baseline/contracts",
+
+  "_sample_project_id_comment": "Populate before a capture run. Actions taking an id return an error shape without it, which is a valid fixture but not the useful one.",
+  "sample_project_id": "TO_BE_RECORDED",
+
+  "get_actions": [
+    { "action": "health",             "params": {},                    "capture": true,  "note": "Diagnostic. Reports version under key 'apiVersion'." },
+    { "action": "ping",               "params": {},                    "capture": true,  "note": "Diagnostic. Reports version under key 'version'." },
+    { "action": "version",            "params": {},                    "capture": true,  "note": "Alias of ping in the v10.36 reference. Live support unverified." },
+    { "action": "list",               "params": {},                    "capture": true,  "note": "Full portfolio." },
+    { "action": "listslim",           "params": {},                    "capture": true,  "note": "Slim portfolio. store.js falls back to 'list' on 404." },
+    { "action": "listarchived",       "params": {},                    "capture": true,  "note": "Archived projects." },
+    { "action": "get",                "params": { "id": "{{sample_project_id}}" }, "capture": true, "note": "Single project." },
+    { "action": "listcorpus",         "params": { "id": "{{sample_project_id}}" }, "capture": true, "note": "Corpus listing." },
+    { "action": "listauditresults",   "params": { "id": "{{sample_project_id}}" }, "capture": true, "note": "Audit results listing." },
+    { "action": "gethistory",         "params": { "id": "{{sample_project_id}}" }, "capture": true, "note": "No frontend consumer. Captured for completeness." },
+    { "action": "getportfoliohealth", "params": {},                    "capture": true,  "note": "Called at store.js:542. Live support unverified: known version gap (accepted)." }
+  ],
+
+  "post_actions": [
+    { "action": "create",              "capture": "DEFERRED_TO_MANUAL", "reason": "Write action. Creates a project." },
+    { "action": "save",                "capture": "DEFERRED_TO_MANUAL", "reason": "Write action. Overwrites project state." },
+    { "action": "archive",             "capture": "DEFERRED_TO_MANUAL", "reason": "Write action. Moves a project to the archive folder." },
+    { "action": "restore",             "capture": "DEFERRED_TO_MANUAL", "reason": "Write action. Moves a project out of the archive folder." },
+    { "action": "setprojectnumber",    "capture": "DEFERRED_TO_MANUAL", "reason": "Write action. Mutates project identity." },
+    { "action": "resetsignals",        "capture": "DEFERRED_TO_MANUAL", "reason": "Write action. Clears extracted signals." },
+    { "action": "overwritesignal",     "capture": "DEFERRED_TO_MANUAL", "reason": "Write action. Mutates a stored signal value." },
+    { "action": "savehistory",         "capture": "DEFERRED_TO_MANUAL", "reason": "Write action. No frontend consumer." },
+    { "action": "saveauditresult",     "capture": "DEFERRED_TO_MANUAL", "reason": "Write action. Persists an audit record." },
+    { "action": "saveportfoliohealth", "capture": "DEFERRED_TO_MANUAL", "reason": "Write action. Absent from live v10.29 self-report: known version gap (accepted)." },
+    { "action": "ingestcorpus",        "capture": "DEFERRED_TO_MANUAL", "reason": "Write action. Adds documents to the corpus." },
+    { "action": "chat",                "capture": "DEFERRED_TO_MANUAL", "reason": "AI action. Bills the Anthropic key." },
+    { "action": "analyze",             "capture": "DEFERRED_TO_MANUAL", "reason": "AI action. Bills the Anthropic key." },
+    { "action": "audit",               "capture": "DEFERRED_TO_MANUAL", "reason": "AI action. Bills the Anthropic key." },
+    { "action": "portfolioanalyze",    "capture": "DEFERRED_TO_MANUAL", "reason": "AI action. Bills the Anthropic key." },
+    { "action": "extractsignals",      "capture": "DEFERRED_TO_MANUAL", "reason": "AI action and write. Bills the Anthropic key and mutates signals." },
+    { "action": "identifyOnly",        "capture": "DEFERRED_TO_MANUAL", "reason": "AI action. Note the camelCase: the frontend sends it this way at store.js:508 and the backend lowercases. The Render facade must match case insensitively." },
+    { "action": "tts",                 "capture": "DEFERRED_TO_MANUAL", "reason": "AI action. Bills the OpenAI key. No frontend consumer." }
+  ],
+
+  "_deferred_note": "Every POST is DEFERRED_TO_MANUAL in this PR. Capturing them requires a disposable project and explicit researcher approval, because each either mutates stored state or bills a paid API key. No POST is issued by capture.py unless it is moved out of this list."
+}

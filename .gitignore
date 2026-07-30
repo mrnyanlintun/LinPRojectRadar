@@ -1,1 +1,24 @@
-﻿.claude/worktrees/
+# Python virtual environments
+venv/
+.venv/
+env/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.pyd
+
+# Agent worktrees
+.claude/worktrees/
+
+# Secrets. The tracked backend/.env.example template is preserved below.
+.env
+.env.*
+!.env.example
+
+# Local databases
+dev.db
+*.sqlite3
+
+# NOTE: p0-baseline/ is deliberately NOT ignored. Its contents are captured
+# evidence of what the live endpoint reported and must be committed.
