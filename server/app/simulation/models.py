@@ -13,6 +13,11 @@ set into the study under the same names.
 
 Every function is pure: signalInputs in, a result dict out. The only randomness is the `rand`
 callable the caller supplies, seeded from (scenario_id, period).
+
+Every model takes `period_cutoff`, the reporting period's data cutoff date. Most ignore it.
+It exists so that NO module ever reads the system clock: a module needing a notion of "now"
+receives the cutoff instead. A wall-clock read would make the same documents produce different
+results on different days, which is the exact confound the frozen-extraction design removes.
 """
 
 from __future__ import annotations
@@ -58,7 +63,7 @@ def _sample_triangular(a: float, m: float, b: float, rand: Callable[[], float]) 
 # ---------------------------------------------------------------- A2.1 PERT
 
 
-def run_pert(si: dict, rand: Callable[[], float]) -> dict[str, Any]:
+def run_pert(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
     PERT stochastic network criticality. A then (B parallel C); finish = A + max(B, C).
 
@@ -107,7 +112,7 @@ def run_pert(si: dict, rand: Callable[[], float]) -> dict[str, Any]:
 # ---------------------------------------------------------------- A2.2 LOB
 
 
-def run_lob(si: dict, rand: Callable[[], float]) -> dict[str, Any]:
+def run_lob(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """Line of balance: leader (grading) against follower (paving), buffer eroding per unit."""
     spi = num(si.get("spi"), 1.0)
     units = 20
@@ -147,7 +152,7 @@ def run_lob(si: dict, rand: Callable[[], float]) -> dict[str, Any]:
 # ---------------------------------------------------------------- A2.3 CCPM
 
 
-def run_ccpm(si: dict, rand: Callable[[], float]) -> dict[str, Any]:
+def run_ccpm(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """CCPM buffer-health fever chart: buffer consumption against chain completion."""
     raw = si.get("actualPctComplete")
     if raw is None:
@@ -176,7 +181,7 @@ def run_ccpm(si: dict, rand: Callable[[], float]) -> dict[str, Any]:
 # ---------------------------------------------------------------- A3.1 RCF
 
 
-def run_rcf(si: dict, rand: Callable[[], float]) -> dict[str, Any]:
+def run_rcf(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """Reference class forecasting: empirical overrun multipliers as a cost prior."""
     bac = num(si.get("bac"), 0.0)
     ordered = sorted([1.00, 1.04, 1.10, 1.14, 1.15, 1.26, 1.38, 1.45, 1.52])
@@ -211,7 +216,7 @@ def run_rcf(si: dict, rand: Callable[[], float]) -> dict[str, Any]:
 # ---------------------------------------------------------------- A5.1 DSM
 
 
-def run_dsm(si: dict, rand: Callable[[], float]) -> dict[str, Any]:
+def run_dsm(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
     Design structure matrix rework propagation across Arch, Structural and MEP.
 
@@ -260,17 +265,17 @@ def run_dsm(si: dict, rand: Callable[[], float]) -> dict[str, Any]:
 SEED_HOLDER: dict = {}
 
 
-def run_monte_carlo_module(si, rand):
+def run_monte_carlo_module(si, rand, period_cutoff):
     from .models_sim import run_monte_carlo
     return run_monte_carlo(si, rand, SEED_HOLDER.get("seed", 0))
 
 
-def run_cusum_module(si, rand):
+def run_cusum_module(si, rand, period_cutoff):
     from .models_sim import run_cusum
     return run_cusum(si, rand, SEED_HOLDER.get("seed", 0))
 
 
-VALIDATED: dict[str, tuple[str, Callable[[dict, Callable[[], float]], dict]]] = {
+VALIDATED: dict[str, tuple[str, Callable[[dict, Callable[[], float], object], dict]]] = {
     "A1.1": ("Monte_Carlo", run_monte_carlo_module),
     "A1.2": ("CUSUM", run_cusum_module),
     "A2.1": ("PERT_Network_Criticality", run_pert),

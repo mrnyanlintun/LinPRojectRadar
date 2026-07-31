@@ -56,7 +56,8 @@ def group_of(new_id: str) -> str:
     return row["group"] if row else ""
 
 
-def run_module(new_id: str, si: dict, rand: Callable[[], float]) -> dict[str, Any]:
+def run_module(new_id: str, si: dict, rand: Callable[[], float],
+               period_cutoff) -> dict[str, Any]:
     """
     Compute one module. Raises rather than approximating.
 
@@ -78,10 +79,10 @@ def run_module(new_id: str, si: dict, rand: Callable[[], float]) -> dict[str, An
             f"against the JavaScript implementation; this server refuses to compute it"
         )
     _, fn = VALIDATED[new_id]
-    return fn(si, rand)
+    return fn(si, rand, period_cutoff)
 
 
-def run_all(si: dict, scenario_id: str, period: str,
+def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
             only: list[str] | None = None) -> dict[str, Any]:
     """
     Run every module this server can compute, on one project's signalInputs.
@@ -89,6 +90,10 @@ def run_all(si: dict, scenario_id: str, period: str,
     The generator is seeded once from (scenario_id, period) and shared, so the sequence a
     stochastic model draws depends only on the scenario and period, never on the participant or on
     how many modules ran before it.
+
+    period_cutoff is required, not optional. A module needing a reference date receives it; no
+    module reads the system clock. Making it optional would let a caller omit it and let a
+    future module quietly fall back to the wall clock.
     """
     seed = seed_from(scenario_id, period)
     rand = make_rng(seed)
@@ -103,7 +108,7 @@ def run_all(si: dict, scenario_id: str, period: str,
     results = []
     abstained = []
     for new_id in ids:
-        out = run_module(new_id, si, rand)
+        out = run_module(new_id, si, rand, period_cutoff)
         if out.get("insufficient_data") or out.get("status_color") is None:
             abstained.append(new_id)
             continue
@@ -120,6 +125,7 @@ def run_all(si: dict, scenario_id: str, period: str,
         "seed": seed,
         "scenario_id": scenario_id,
         "period": period,
+        "period_cutoff": str(period_cutoff),
         "computed": results,
         "abstained": abstained,
         "unported": unported_modules(),

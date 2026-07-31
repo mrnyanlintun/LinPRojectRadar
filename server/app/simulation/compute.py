@@ -28,9 +28,16 @@ def contributes_to_project_status(group: str) -> bool:
     return group not in ("C", "D")
 
 
-def compute_project(si: dict, scenario_id: str, period: str) -> dict[str, Any]:
-    """Run the analytical layer and fuse it into a project status."""
-    run = run_all(si, scenario_id, period)
+def compute_project(si: dict, scenario_id: str, period: str,
+                    period_cutoff) -> dict[str, Any]:
+    """
+    Run the analytical layer and fuse it into a project status.
+
+    period_cutoff is the reporting period's data cutoff date, and it is required. It is the
+    only notion of "now" available to any module: nothing in this layer reads the system
+    clock, because the same documents must produce the same result on any day they are run.
+    """
+    run = run_all(si, scenario_id, period, period_cutoff)
     index = registry_index()
 
     # Category rollup, then project rollup, matching the frontend's two-stage fusion.
@@ -60,6 +67,7 @@ def compute_project(si: dict, scenario_id: str, period: str) -> dict[str, Any]:
         "seed": run["seed"],
         "scenario_id": scenario_id,
         "period": period,
+        "period_cutoff": str(period_cutoff),
         "modules": run["computed"],
         "abstained": run["abstained"],
         "unported": run["unported"],

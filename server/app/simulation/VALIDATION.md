@@ -122,6 +122,23 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 - declared but not ported: **94**
 - maximum relative divergence across every validated module and case: **0.0e+00** (exact match)
 
+## Rule: no module reads the system clock
+
+`compute_project`, `run_all` and `run_module` all take a **required** `period_cutoff`, the
+reporting period's data cutoff date. Every model receives it; most ignore it. Where a module needs
+a notion of "now", it uses the cutoff and nothing else.
+
+It is required rather than optional on purpose. An optional parameter lets a caller omit it, and a
+future module then quietly falls back to the wall clock. `tools/test_simulation.py` asserts both
+halves: that omitting it raises, and that no file under `app/simulation/` contains
+`datetime.now(`, `time.time(`, `date.today(` or `datetime.utcnow(`.
+
+**If you find another clock read while porting, treat it the same way: pass the cutoff, do not
+read the clock, and record the finding in the table below.**
+
+The one known offender is `runDataTimeliness` (C1.2), which computes `days_since_last_doc` from
+`new Date()`. It is unported pending batch 4 and must take the cutoff when it lands.
+
 ## Known non-determinism found in the JavaScript (Stage 1)
 
 | site | function | affects | treatment |
