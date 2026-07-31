@@ -63,12 +63,17 @@ def main() -> int:
                     help="Initial password. Generated if omitted. Printed once either way.")
     args = ap.parse_args()
 
-    url = os.environ.get("DATABASE_URL")
-    if not url:
+    if not os.environ.get("DATABASE_URL"):
         print("DATABASE_URL is not set. Refusing to guess a target database.", file=sys.stderr)
         return 2
 
-    engine = create_engine(url, future=True)
+    # Via settings, not os.environ directly: Render hands out a bare `postgresql://` URL, which
+    # SQLAlchemy resolves to psycopg2 — a driver this build does not install. settings.py
+    # already normalises that to the psycopg 3 dialect, and duplicating the rule here would
+    # give the bootstrap path its own way of failing to connect.
+    from app.settings import load_settings
+
+    engine = create_engine(load_settings().database_url, future=True)
     Session = sessionmaker(bind=engine, future=True)
 
     with Session() as session:
