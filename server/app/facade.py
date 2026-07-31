@@ -297,12 +297,26 @@ def _implemented_post_actions() -> set[str]:
     return set(POST_ACTIONS)
 
 
-def dispatch_post(session: Session, payload: dict) -> dict[str, Any]:
-    # writes imports facade for err/now_iso, so this import is local to break the cycle.
+def dispatch_post(session: Session, payload: dict, settings=None) -> dict[str, Any]:
+    # writes and research_identity import facade for err/now_iso, so these imports are local to
+    # break the cycle.
+    from .research_consent import ConsentRequired
+    from .research_identity import IDENTITY_ACTIONS
     from .writes import DEFERRED_AI_ACTIONS, POST_ACTIONS
 
     # Rule 2: lowercase before matching, so the frontend's camelCase identifyOnly still resolves.
     action = str(payload.get("action") or "").lower()
+
+    identity = IDENTITY_ACTIONS.get(action)
+    if identity is not None:
+        if settings is None:
+            return err("research identity is not configured on this build")
+        try:
+            return identity(session, payload, settings.session_secret, settings.session_ttl_seconds)
+        except ConsentRequired as exc:
+            # The consent gate fires during flush, so it can surface from any handler that writes.
+            session.rollback()
+            return err(str(exc))
 
     handler = POST_ACTIONS.get(action)
     if handler is not None:

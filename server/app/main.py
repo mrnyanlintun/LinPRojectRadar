@@ -30,8 +30,9 @@ from fastapi import Request
 
 from .db import ReadinessResult, build_engine, build_session_factory, check_readiness, check_schema
 from .facade import dispatch_get, dispatch_post, err
+from .research_consent import ConsentRequired, install as install_consent_gate
 from .logging_config import configure_logging
-from .settings import SettingsError, load_settings
+from .settings import SettingsError, load_settings, session_secret_is_ephemeral
 
 SERVICE_NAME = "opus-gubernatio-server"
 SERVICE_VERSION = "m1-beachhead"
@@ -50,6 +51,10 @@ except SettingsError as exc:
 
 engine = build_engine(settings)
 SessionFactory = build_session_factory(engine)
+
+# Registered on the Session class, so it covers every session including ones created by code
+# written later. See research_consent for why this is not a per-endpoint check.
+install_consent_gate()
 
 app = FastAPI(
     title="Opus Gubernatio Server",
@@ -80,6 +85,13 @@ def on_startup() -> None:
             "cors_origin_count": len(settings.cors_origins),
         },
     )
+    if session_secret_is_ephemeral():
+        # Never a silent downgrade: sessions will not survive a restart or a second instance.
+        log.warning(
+            "session_secret_ephemeral",
+            extra={"detail": "SESSION_SECRET is unset; a per-process secret was generated, so "
+                             "research sessions will not survive a restart. Set SESSION_SECRET."},
+        )
 
 
 @app.get("/healthz", tags=["health"])
@@ -214,7 +226,12 @@ async def exec_post(request: Request) -> JSONResponse:
 
     try:
         with SessionFactory() as session:
-            return _exec_response(dispatch_post(session, payload))
+            return _exec_response(dispatch_post(session, payload, settings))
+    except ConsentRequired as exc:
+        # Reported in the contract's error shape, not as a 500: it is an application outcome.
+        log.warning("consent_gate_blocked", extra={"action": payload.get("action"),
+                                                   "detail": str(exc)})
+        return _exec_response(err(str(exc)))
     except Exception as exc:  # noqa: BLE001
         log.exception("exec_post_failed", extra={"action": payload.get("action")})
         return _exec_response(err(f"Server error: {type(exc).__name__}"))

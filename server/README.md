@@ -83,6 +83,8 @@ not read a value from the repository.
 | `CORS_ORIGINS` | no | `https://mrnyanlintun.github.io` | Comma separated. Omit or leave empty to disable CORS entirely. |
 | `PYTHON_VERSION` | set in `render.yaml` | `3.12.7` | Secondary pin. See below. |
 | `LOG_LEVEL` | no | `INFO` | Defaults to `INFO`. |
+| `SESSION_SECRET` | recommended | random 48+ chars | Signs research session tokens. If unset, a per-process secret is generated and `session_secret_ephemeral` is logged; sessions then break on restart. |
+| `SESSION_TTL_SECONDS` | no | `28800` | Session lifetime. Defaults to 8 hours. |
 
 ## Interpreter version: pinned in two places
 
@@ -185,6 +187,8 @@ server/
     writes.py           POST dispatch: concurrency, server clocks, verified writes
     research_models.py  research schema ORM, ULID ids
     research_audit.py   durable audit writes on a separate connection
+    research_identity.py login, sessions, roles, consent actions
+    research_consent.py consent gate as a before_flush listener
     models.py           projects, project_snapshots, files
     settings.py         environment parsing, fail-fast, credential-free accessors
     db.py               engine, session factory, readiness probe, declarative Base
@@ -197,6 +201,7 @@ server/
   tools/
     seed_from_fixtures.py  loads M0 fixtures for contract verification
     test_pre_lock_guard.py migration test for the pre-judgment lock
+    test_research_identity.py B2 identity, roles and consent gate
 ```
 
 ## Migrations
@@ -413,3 +418,73 @@ values unchanged, and the non-protected columns still writable.
 
 The migration refuses to create the schema on any other dialect rather than silently omitting the
 trigger, because the lock is not optional.
+
+## Research identity, roles and consent (B2)
+
+Identity runs on the same `/exec` contract as the facade: application errors are HTTP 200 with
+`{"ok":false,"error":...}`, actions match case-insensitively, timestamps are server-assigned.
+**No migration is included in B2**, so `/readyz` stays green on deploy.
+
+| Action | Role | Notes |
+|---|---|---|
+| `researchlogin` | any | access token in, session token + role + stage + consent state out |
+| `researchwhoami` | any | identity and role from the session |
+| `researchparticipantget` | any | own record only, unless ResearchAdmin |
+| `consentgrant` | any | records a `consents` row; `granted_at` server-assigned |
+| `consentwithdraw` | any | sets `withdrawn_at`; never deletes |
+| `adminparticipantcreate` | ResearchAdmin | server-generated `PM-001` code, returns the plaintext token once |
+| `adminparticipantlist` | ResearchAdmin | never returns token hashes |
+
+### Sessions are signed, not stored
+
+B2 ships no migration, so there is no sessions table. A session token is an HMAC-signed assertion
+of **one** thing: the participant id. Role, stage and consent state are read from the database on
+every request, so a token cannot carry a stale or elevated role, and a change to a participant
+takes effect immediately rather than when their token expires. Signature comparison is
+timing-safe.
+
+`SESSION_SECRET` signs them. **If it is unset the service still starts**, with a per-process
+secret, and logs `session_secret_ephemeral` at startup. Sessions then stop working across a
+restart or a second instance, which is visible and explainable, unlike a hardcoded default that
+would be a forgeable signing key in a public repository.
+
+### Access tokens
+
+256 bits of randomness, stored as an unsalted SHA-256. Unsalted is deliberate: the input is
+high-entropy random, not a human-chosen password, so there is no dictionary or rainbow-table
+attack to defend against, and a deterministic hash allows an indexed lookup instead of scanning
+every participant and comparing salted hashes. The plaintext is returned exactly once at creation
+and cannot be recovered afterwards.
+
+### The consent gate
+
+No write to `participant_profiles`, `assignments`, `decisions`, `transitions` or
+`research_exports` is permitted for a participant without an active consent row.
+
+Enforced by a SQLAlchemy `before_flush` listener registered on the `Session` class, **not** by a
+check at the top of each endpoint. An endpoint-level check is only as good as the discipline of
+whoever writes the next endpoint, and its failure mode is silent: research data captured from a
+participant who never consented, which cannot be repaired afterwards because the consent did not
+exist at the time. The listener sees every INSERT and UPDATE the ORM performs, including from code
+written later that never heard of the gate.
+
+`decisions` and `transitions` have no `participant_id`; the gate resolves them through their
+assignment, checking `session.new` first because a row created in the same flush is not yet
+queryable. A `research_exports` row with no `initiated_by` is an administrative act with no owning
+participant and must be marked explicitly rather than passing by default.
+
+Not gated: `audit_events`, `participants`, `consents`. Audit rows must record what happened
+regardless of consent state, a participant must exist before it can consent, and the consents row
+*is* the act of consenting.
+
+Withdrawal re-closes the gate immediately, and the consent row is retained rather than deleted so
+the evidence that consent was given and later withdrawn survives.
+
+### Running the test
+
+```bash
+DATABASE_URL=... SESSION_SECRET=... python tools/test_research_identity.py
+```
+
+41 checks, driven through the real HTTP surface rather than by calling functions, covering all
+five rules including every one of the five gated tables.

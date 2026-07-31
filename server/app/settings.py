@@ -12,6 +12,7 @@ credential-free description is exposed for diagnostics.
 from __future__ import annotations
 
 import os
+import secrets
 from dataclasses import dataclass, field
 from urllib.parse import urlsplit
 
@@ -28,6 +29,9 @@ def _split_origins(raw: str) -> list[str]:
 class Settings:
     database_url: str
     cors_origins: list[str] = field(default_factory=list)
+    # Signs research session tokens. See load_settings for the fallback behaviour.
+    session_secret: str = ""
+    session_ttl_seconds: int = 8 * 3600
 
     @property
     def database_backend(self) -> str:
@@ -65,7 +69,29 @@ def load_settings(environ: dict[str, str] | None = None) -> Settings:
     elif database_url.startswith("postgresql://"):
         database_url = "postgresql+psycopg://" + database_url[len("postgresql://"):]
 
+    # SESSION_SECRET signs research session tokens. If it is unset the service still starts, with
+    # a secret generated per process: sessions then stop working across a restart or a second
+    # instance. That is a visible, explainable failure (participants are asked to log in again),
+    # unlike a hardcoded default, which would be a forgeable signing key in a public repository.
+    # The condition is logged at startup so it is never a silent downgrade.
+    session_secret = (env.get("SESSION_SECRET") or "").strip()
+    if not session_secret:
+        session_secret = secrets.token_urlsafe(48)
+
+    try:
+        ttl = int(env.get("SESSION_TTL_SECONDS") or 8 * 3600)
+    except ValueError:
+        raise SettingsError("SESSION_TTL_SECONDS must be an integer number of seconds.")
+
     return Settings(
         database_url=database_url,
         cors_origins=_split_origins(env.get("CORS_ORIGINS", "")),
+        session_secret=session_secret,
+        session_ttl_seconds=ttl,
     )
+
+
+def session_secret_is_ephemeral(environ: dict[str, str] | None = None) -> bool:
+    """True when SESSION_SECRET was absent and a per-process secret was generated."""
+    env = os.environ if environ is None else environ
+    return not (env.get("SESSION_SECRET") or "").strip()
