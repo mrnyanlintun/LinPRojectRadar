@@ -190,6 +190,7 @@ server/
     research_identity.py login, sessions, roles, consent actions
     research_consent.py consent gate as a before_flush listener
     research_assignment.py assignment, counterbalancing, blinding
+    research_decision.py  evidence, locked judgment, reveal, disposition
     models.py           projects, project_snapshots, files
     settings.py         environment parsing, fail-fast, credential-free accessors
     db.py               engine, session factory, readiness probe, declarative Base
@@ -204,6 +205,7 @@ server/
     test_pre_lock_guard.py migration test for the pre-judgment lock
     test_research_identity.py B2 identity, roles and consent gate
     test_assignment_blinding.py B3 assignment and blinding
+    test_decision_sequence.py B4 the experimental sequence
 ```
 
 ## Migrations
@@ -552,3 +554,59 @@ DATABASE_URL=... SESSION_SECRET=... python tools/test_assignment_blinding.py
 ```
 
 44 checks, all driven through the `/exec` HTTP surface.
+
+## The experimental sequence (B4)
+
+**No migration is included.** `/readyz` stays green; head remains `0004_condition_sequences`.
+Packages attach to an assignment through the existing `assignments.package_id`.
+
+| Action | Role | Refuses when |
+|---|---|---|
+| `researchevidenceget` | Participant | not the current assignment |
+| `researchprejudgment` | Participant | already locked |
+| `researchreveal` | Participant | judgment not locked, or package not frozen |
+| `researchdecision` | Participant | `reveal_at` is null, or already submitted |
+| `adminpackagecreate` / `adminpackagelist` / `adminpackageattach` | ResearchAdmin | |
+
+### Why this is the phase that carries the study
+
+The claim the study makes is that the preliminary judgment was formed without sight of the
+decision support package. Four properties make that verifiable rather than asserted.
+
+**The lock is atomic and server-assigned.** `pre_submitted_at`, `pre_locked_at` and
+`pre_judgment_locked` are written in one INSERT, so there is no window in which a judgment exists
+unlocked. The test asserts the two timestamps are equal, which is only possible if they were set
+in the same statement. No client can supply any of the three.
+
+**Reveal is gated on the lock, and the refusal is silent about content.** A refusal that named the
+recommendation would defeat the gate it enforces, so the test greps the refusal body for the
+recommendation text, the alternatives, the detected condition, the package id and the hash.
+
+**Stage is derived on every read, never stored or asserted.** Computed from the decisions row:
+no row → `evidence`; `pre_submitted_at` set → `awaiting_reveal`; `reveal_at` set → `deciding`;
+`final_submitted_at` set → `complete`. `participants.current_stage` is no longer read anywhere,
+and a `current_stage` in a request body is ignored.
+
+**Nothing calls a model.** `research_decision.py` imports no HTTP client. The test asserts the
+absence of `requests`, `httpx`, `urllib.request`, `http.client`, `socket`, `openai`, `anthropic`
+and `fetch(` in the module source, and that the revealed content is byte-identical to the stored
+row.
+
+### Package integrity
+
+A package is frozen by computing a sha256 over an explicit, ordered list of content fields
+(`HASHED_FIELDS`) and setting `frozen_at`. Only a frozen package with a hash can be revealed. At
+reveal the hash is copied onto the decisions row, so a later edit to a package is detectable
+against the decisions that were made under it. Re-revealing is idempotent and does not move
+`reveal_at`, because `reveal_at` measures when the participant first saw the package.
+
+Attaching a package to an assignment that has already been revealed is refused: changing it would
+silently rewrite what the participant was shown.
+
+### Running the test
+
+```bash
+DATABASE_URL=... SESSION_SECRET=... python tools/test_decision_sequence.py
+```
+
+59 checks, all through `/exec`, covering all seven guarantees.

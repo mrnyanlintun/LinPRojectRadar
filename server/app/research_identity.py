@@ -166,6 +166,34 @@ def consent_state(session: Session, participant_id: str) -> dict[str, Any]:
     }
 
 
+def derived_stage(session: Session, participant_id: str) -> str:
+    """
+    Current stage, computed from the decisions row.
+
+    participants.current_stage is never read here and is never written from a request. A stored
+    stage is a second source of truth that can disagree with the data it describes, and in a
+    blinded flow a stage running ahead of the data would itself be a disclosure. Imported locally
+    because research_decision imports this module.
+    """
+    from .research_assignment import current_sequence_number
+    from .research_decision import STAGE_EVIDENCE, derive_stage
+    from .research_models import Assignment, Decision
+
+    current = current_sequence_number(session, participant_id)
+    if current is None:
+        return STAGE_EVIDENCE
+    assignment = session.scalar(
+        select(Assignment).where(Assignment.participant_id == participant_id,
+                                 Assignment.sequence_number == current)
+    )
+    if assignment is None:
+        return STAGE_EVIDENCE
+    decision = session.scalar(
+        select(Decision).where(Decision.assignment_id == assignment.assignment_id)
+    )
+    return derive_stage(decision)
+
+
 def _participant_view(session: Session, p: Participant) -> dict[str, Any]:
     """The self-view. Never includes access_token_hash: rule 2."""
     return {
@@ -174,7 +202,7 @@ def _participant_view(session: Session, p: Participant) -> dict[str, Any]:
         "role": p.role,
         "eligibility_status": p.eligibility_status,
         "current_scenario": p.current_scenario,
-        "current_stage": p.current_stage,
+        "current_stage": derived_stage(session, p.participant_id),
         "completion_status": p.completion_status,
         "consent": consent_state(session, p.participant_id),
     }
@@ -347,7 +375,7 @@ def a_adminparticipantlist(session: Session, payload: dict, secret: str, ttl: in
             "role": p.role,
             "eligibility_status": p.eligibility_status,
             "current_scenario": p.current_scenario,
-            "current_stage": p.current_stage,
+            "current_stage": derived_stage(session, p.participant_id),
             "completion_status": p.completion_status,
             "consent": consent_state(session, p.participant_id),
         }
