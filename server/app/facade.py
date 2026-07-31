@@ -300,6 +300,7 @@ def _implemented_post_actions() -> set[str]:
 def dispatch_post(session: Session, payload: dict, settings=None) -> dict[str, Any]:
     # writes and research_identity import facade for err/now_iso, so these imports are local to
     # break the cycle.
+    from .research_assignment import ASSIGNMENT_ACTIONS
     from .research_consent import ConsentRequired
     from .research_identity import IDENTITY_ACTIONS
     from .writes import DEFERRED_AI_ACTIONS, POST_ACTIONS
@@ -307,7 +308,7 @@ def dispatch_post(session: Session, payload: dict, settings=None) -> dict[str, A
     # Rule 2: lowercase before matching, so the frontend's camelCase identifyOnly still resolves.
     action = str(payload.get("action") or "").lower()
 
-    identity = IDENTITY_ACTIONS.get(action)
+    identity = IDENTITY_ACTIONS.get(action) or ASSIGNMENT_ACTIONS.get(action)
     if identity is not None:
         if settings is None:
             return err("research identity is not configured on this build")

@@ -189,19 +189,21 @@ server/
     research_audit.py   durable audit writes on a separate connection
     research_identity.py login, sessions, roles, consent actions
     research_consent.py consent gate as a before_flush listener
+    research_assignment.py assignment, counterbalancing, blinding
     models.py           projects, project_snapshots, files
     settings.py         environment parsing, fail-fast, credential-free accessors
     db.py               engine, session factory, readiness probe, declarative Base
     logging_config.py   JSON formatter with credential redaction backstop
   alembic/
     env.py              reads DATABASE_URL via app.settings, never from alembic.ini
-    versions/           0001 facade, 0002 nullable snapshot owner, 0003 research schema
+    versions/           0001 facade, 0002 nullable snapshot owner, 0003 research, 0004 sequences
   alembic.ini           contains no sqlalchemy.url, so no connection string is ever committed
   requirements.txt      pinned
   tools/
     seed_from_fixtures.py  loads M0 fixtures for contract verification
     test_pre_lock_guard.py migration test for the pre-judgment lock
     test_research_identity.py B2 identity, roles and consent gate
+    test_assignment_blinding.py B3 assignment and blinding
 ```
 
 ## Migrations
@@ -488,3 +490,65 @@ DATABASE_URL=... SESSION_SECRET=... python tools/test_research_identity.py
 
 41 checks, driven through the real HTTP surface rather than by calling functions, covering all
 five rules including every one of the five gated tables.
+
+## Assignment and counterbalancing (B3)
+
+**A migration IS included** (`0004_condition_sequences`). `/readyz` reports 503 with
+`SchemaOutOfDate` until `alembic upgrade head` is run against the target database.
+
+| Action | Role | Notes |
+|---|---|---|
+| `adminscenariocreate` / `adminscenariolist` | ResearchAdmin | |
+| `adminconfigurationcreate` / `adminconfigurationlist` | ResearchAdmin | `freeze: true` sets `frozen_at`; list reports `assignable` |
+| `adminsequencecreate` / `adminsequencelist` | ResearchAdmin | preregistered condition orders, stored as data |
+| `adminassign` | ResearchAdmin | one `assignments` row per scenario, with `sequence_number` and `config_id` |
+| `adminassignmentlist` | ResearchAdmin | any participant; includes `config_id` |
+| `researchmyassignments` | Participant | own rows only, up to the current position |
+| `researchcurrent` | Participant | the single current assignment |
+
+### Sequences are data, not code
+
+`condition_sequences` holds one row per position: `(order_group, scenario_set, version, position)
+-> config_code`. A preregistered order is a design decision the committee owns, so encoding it in
+Python would mean a code change, review and deploy every time the design is revised, and would put
+the allocation rule somewhere the design record cannot see.
+
+A sequence must be **frozen** before it can allocate, exactly as a configuration must. When
+`adminassign` is called without an explicit `sequence_version` it uses the latest frozen version,
+so an allocation can never silently pick up an unapproved draft.
+
+### Determinism
+
+Allocation is deterministic given `(participant, order_group, scenario_set)`. The scenario list is
+sorted before pairing, so request order cannot change the result; the frozen sequence supplies the
+condition at each position; and the `sequence_version` used, plus the full position-by-position
+allocation, is written to `audit_events`. An assignment can therefore be reproduced years later
+even after the sequence is revised. Re-assigning a participant who already has assignments is
+refused rather than silently producing a second allocation.
+
+### Blinding, enforced server-side
+
+1. **No cross-participant access.** The participant id comes from the session. An explicit
+   `participant_id` in the body is refused and audited rather than ignored, because the attempt is
+   itself something the audit trail should hold.
+2. **Nothing beyond the current position.** The current position is the lowest `sequence_number`
+   not yet `completed`, derived from the assignment rows rather than stored, so it cannot drift out
+   of step. Future rows are filtered out, so even the length of the response does not reveal how
+   many scenarios remain.
+3. **No condition-revealing field.** Every participant-visible assignment is built by one function,
+   `_blind_row`, returning only `sequence_number`, `scenario_id`, `status`. Adding a field there is
+   the only way to leak one, which keeps the leak reviewable in a single place.
+4. **Unfrozen configurations cannot be assigned.** Configurations are resolved for every position
+   before any row is written, so an unfrozen configuration fails the whole allocation rather than
+   half of it.
+5. **The B2 consent gate still applies.** `assignments` is a gated table, so allocation for a
+   participant without active consent is refused by the flush listener, and withdrawal re-closes
+   the gate.
+
+### Running the test
+
+```bash
+DATABASE_URL=... SESSION_SECRET=... python tools/test_assignment_blinding.py
+```
+
+44 checks, all driven through the `/exec` HTTP surface.

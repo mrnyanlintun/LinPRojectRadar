@@ -23,7 +23,8 @@ import time
 from datetime import datetime
 
 from sqlalchemy import (
-    Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text, func,
+    Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text,
+    UniqueConstraint, func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -302,6 +303,35 @@ class AuditEvent(Base):
     event_type: Mapped[str] = mapped_column(Text, nullable=False, index=True)
     server_ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     event_metadata: Mapped[dict] = mapped_column("metadata", JSONType, nullable=True)
+
+
+class ConditionSequence(Base):
+    """
+    One position in a preregistered counterbalancing sequence. See migration 0004.
+
+    Sequences are data so the design can change without a code change, and the version used is
+    recorded on every allocation so an assignment stays reproducible after the design is revised.
+    """
+
+    __tablename__ = "condition_sequences"
+
+    sequence_id: Mapped[str] = mapped_column(ULID, primary_key=True, default=new_ulid)
+    order_group: Mapped[str] = mapped_column(Text, nullable=False, index=True)
+    scenario_set: Mapped[str] = mapped_column(Text, nullable=False, index=True)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    config_code: Mapped[str] = mapped_column(Text, nullable=False)
+    version: Mapped[str] = mapped_column(Text, nullable=False)
+    # Must be set before the sequence can allocate, as for configurations.
+    frozen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False,
+                                                 server_default=func.now())
+
+    __table_args__ = (
+        CheckConstraint("config_code IN ('C0','C1','C2')", name="ck_condition_sequences_code"),
+        CheckConstraint("position >= 1", name="ck_condition_sequences_position"),
+        UniqueConstraint("order_group", "scenario_set", "version", "position",
+                         name="uq_condition_sequences_position"),
+    )
 
 
 class ResearchExport(Base):
