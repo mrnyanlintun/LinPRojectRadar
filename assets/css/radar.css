@@ -1345,9 +1345,13 @@ body.t-light .lwr-robot-svg {
   position: fixed;
   inset: 0;
   background: var(--page-bg);
+  /* Centring is `margin:auto` on the panel (below) rather than `align-items:center`, because a
+     centred flex item that outgrows its container overflows in BOTH directions and the top
+     becomes unreachable — the expanders can grow the panel past a short viewport. In a flex
+     COLUMN, `margin:auto` centres identically while still yielding to the scroll container. */
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  overflow-y: auto;
   z-index: 9999;
   padding: 24px;
 }
@@ -1356,15 +1360,17 @@ body.t-light .lwr-robot-svg {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  max-width: 400px;
-  padding: 48px 32px;
+  width: 100%;
+  max-width: 500px;
+  margin: auto;
+  padding: 28px 36px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 20px;
-  gap: 16px;
+  gap: 8px;
   box-shadow: 0 24px 60px rgba(0,0,0,.35);
 }
-.login-logo { margin-bottom: 8px; }
+.login-logo { margin-bottom: 4px; }
 .login-logo img { display: block; border-radius: 12px; }
 .login-eyebrow {
   font-family: var(--font-mono);
@@ -1391,19 +1397,47 @@ body.t-light .lwr-robot-svg {
 .login-footnote {
   font-size: 11px;
   color: var(--faint);
-  line-height: 1.6;
-  margin: 8px 0 0;
+  line-height: 1.5;
+  margin: 4px 0 0;
 }
 .login-disclaimer {
-  max-width: 340px;
-  margin: 14px auto 0;
+  max-width: 100%;
+  margin: 7px auto 0;
   font-size: 11px;
   line-height: 1.5;
   color: var(--muted);
   text-align: center;
 }
 .login-disclaimer strong { color: var(--radar-amber); }
-.login-copyright { margin-top: 8px; font-size: 10px; color: var(--muted); text-align: center; }
+.login-copyright { margin-top: 4px; font-size: 10px; color: var(--muted); text-align: center; }
+
+/* Native <details> expanders. Used for the no-self-registration help and for the NOTICE blocks,
+   which stay on the page — and readable — before sign-in; only their body is collapsed. */
+.login-expander { width: 100%; text-align: center; }
+.login-expander > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 3px 0;
+  color: var(--ink-dim);
+  line-height: 1.5;
+}
+.login-expander > summary::-webkit-details-marker { display: none; }
+.login-expander > summary::after {
+  content: " \25BE";           /* caret; rotates via the [open] rule below */
+  display: inline-block;
+  color: var(--faint);
+  transition: transform .15s ease;
+}
+.login-expander[open] > summary::after { transform: rotate(180deg); }
+.login-expander > summary:hover { color: var(--text); }
+.login-expander > summary:focus-visible { outline: 1px solid var(--line); outline-offset: 2px; }
+.login-expander-cue { color: var(--faint); text-decoration: underline; white-space: nowrap; }
+.login-expander-body {
+  padding: 6px 0 2px;
+  text-align: left;
+  line-height: 1.5;
+  color: var(--muted);
+}
 .upload-disclaimer {
   margin-top: 8px;
   font-size: 11px;
@@ -3821,11 +3855,11 @@ body.og-account-operational .notice-research { display: none; }
 body.og-account-operational .notice-operational { display: block; }
 
 /* ---------- T2: login form, consent screen, admin interface ---------- */
-.login-form { width: 100%; display: flex; flex-direction: column; gap: 4px; text-align: left; margin-top: 8px; }
-.login-field-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin: 6px 0 2px; }
-.login-submit { width: 100%; margin-top: 8px; }
+.login-form { width: 100%; display: flex; flex-direction: column; gap: 2px; text-align: left; margin-top: 4px; }
+.login-field-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin: 3px 0 1px; }
+.login-submit { width: 100%; margin-top: 4px; }
 .login-error { color: var(--alarm-red); font-size: 12px; margin: 6px 0 0; text-align: left; }
-.login-divider { display: flex; align-items: center; width: 100%; margin: 14px 0; color: var(--faint); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+.login-divider { display: flex; align-items: center; width: 100%; margin: 7px 0; color: var(--faint); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
 .login-divider::before, .login-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .login-divider span { padding: 0 10px; }
 .login-no-selfserve { max-width: 340px; }
