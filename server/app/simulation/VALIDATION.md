@@ -21,15 +21,15 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 | A2.3 | CCPM Buffer Health | simulations.js | **yes** | 0.0e+00 | exact match |
 | A3.1 | Reference Class Forecasting | simulations.js | **yes** | 0.0e+00 | exact match |
 | A5.1 | DSM Rework Propagation | simulations.js | **yes** | 0.0e+00 | exact match |
-| A1.3 | Bayesian EAC | simulations.js | no | - | not ported in this pass |
-| A1.4 | Kalman Filter SPI Smoother | simulations.js | no | - | not ported in this pass |
-| A1.5 | ARIMA CPI Forecast | simulations.js | no | - | not ported in this pass |
-| A1.6 | Earned Schedule | simulations.js | no | - | not ported in this pass |
-| A1.7 | TCPI | simulations.js | no | - | not ported in this pass |
-| A1.8 | Variance at Completion | simulations.js | no | - | not ported in this pass |
-| A1.9 | Budget Execution Rate | simulations.js | no | - | not ported in this pass |
-| A1.10 | Regression to Mean CPI | simulations.js | no | - | not ported in this pass |
-| A1.11 | ICE Ratio | simulations.js | no | - | not ported in this pass |
+| A1.3 | Bayesian EAC | simulations.js | **yes** | 0.0e+00 | exact match; batch 3; cpi exactly 1 or 0 abstains where the JS NaN/Infinity fallthrough conjures a Red — see the divergence note below |
+| A1.4 | Kalman Filter SPI Smoother | simulations.js | **yes** | 0.0e+00 | exact match; batch 3; abstains below 2 periods of spiHistory, validated including the `[si.spi]` single-period fallback and the empty-array arm |
+| A1.5 | ARIMA CPI Forecast | simulations.js | **yes** | 0.0e+00 | exact match; batch 3; abstains below 3 periods of cpiHistory |
+| A1.6 | Earned Schedule | simulations.js | **yes** | 0.0e+00 | exact match; batch 3; JS `!SPI_t` treats 0% actual progress as insufficient, reproduced |
+| A1.7 | TCPI | simulations.js | **yes** | 0.0e+00 | exact match; batch 3; includes the budget-exhausted Red with `tcpi: null` |
+| A1.8 | Variance at Completion | simulations.js | **yes** | 0.0e+00 | exact match; batch 3; cpi 0 abstains (JS Infinity) |
+| A1.9 | Budget Execution Rate | simulations.js | **yes** | 0.0e+00 | exact match; batch 3; JS `!executionRate` treats ac=0 as insufficient, reproduced |
+| A1.10 | Regression to Mean CPI | simulations.js | **yes** | 0.0e+00 | exact match; batch 3; abstains below 2 periods of cpiHistory |
+| A1.11 | ICE Ratio | simulations.js | **yes** | 0.0e+00 | exact match; batch 3; cpi 0 abstains (JS Infinity) |
 | A2.4 | Schedule Compression Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
 | A2.5 | Float Consumption Rate | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
 | A2.6 | S-Curve Deviation | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
@@ -118,9 +118,21 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 
 ## Summary
 
-- validated and shipped: **23** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
-  A2.4–A2.11 and A3.2–A3.9, the simulations.js schedule and cost extensions)
-- declared but not ported: **78**
+- validated and shipped: **32** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
+  A2.4–A2.11 and A3.2–A3.9; batch 3 added A1.3–A1.11, the EVM and statistical forecasters)
+- declared but not ported: **69**
+
+## Batch 3 divergence note: NaN/Infinity fallthrough refused
+
+Bayesian EAC at cpi exactly 1 divides by a zero likelihood variance; VAC, ICE Ratio and
+Bayesian EAC at cpi exactly 0 divide by zero outright. In JavaScript the resulting NaN or
+Infinity falls through every status comparison and lands on `Red` with null/NaN metric fields —
+a Red conjured from arithmetic breakdown, not from evidence. The port abstains at those exact
+values instead, the same refusing direction as the batch-2 malformed-date treatment. A cpi of
+exactly 1.0 is a plausible real input, so this divergence is deliberately load-bearing: an
+on-budget project must not receive a Red from a division artefact. Every other input, including
+the history fallbacks (`spiHistory || [si.spi]`, empty-array truthiness) and the falsy-zero
+guards (`!SPI_t`, `!executionRate`), was validated to exact agreement on seven fixture cases.
 - maximum relative divergence across every validated module and case: **0.0e+00** (exact match)
 
 ## Rule: no module reads the system clock
