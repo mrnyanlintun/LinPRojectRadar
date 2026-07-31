@@ -217,3 +217,31 @@ clock frozen, the two implementations agreed exactly on every case.
 | `simulations.js:1102,1216,1281,2953` | date parsing from `signalInputs` | value, but deterministic given input | timezone-sensitive parsing is a porting hazard to watch. **Batch 2 treatment**: the port parses date-only `YYYY-MM-DD` strings as UTC midnight, exactly as JavaScript does, and refuses (abstains on) anything else. Two deliberate divergences from the JavaScript, both in the refusing direction: a datetime string with a `T` and no zone, which JavaScript parses as *local* time (the confound itself), and a malformed date, where JavaScript's NaN falls through every comparison and lands on `Red` (A2.4/A2.10) — the port abstains rather than reproducing a Red conjured from an unparseable string. Neither input shape occurs in signalInputs; both are recorded here so a validation case that ever hits one is explained. |
 | `sim.js:108,213` | `monteCarloEAC`, `deriveSeries` | deterministic already, but scenario-blind | **ported in batch 1**, reseeded from `(scenario_id, period)`. `deriveSeries` seeds via `hashSeed("series-" + seed)` (FNV-1a); skipping that transform produced a different series, sigma, H and breach index, which is how the first validation attempt failed. |
 
+
+## A4.1 Document Risk Score — a discrepancy between the description and the implementation
+
+Recorded during B7b, when the extraction pipeline that produces A4.1 was built. Documentation
+only: nothing in this package changed, and no validated module was touched.
+
+A4.1 stays **declared but not ported** here, and asking the analytical layer for it still raises
+`MissingModuleError`. That remains correct — it is produced by the extraction pipeline, not by a
+model. What B7b established is *what that pipeline actually does*, and it does not match how A4.1
+is described elsewhere in the instrument.
+
+- `assets/js/knowledge.js:2429` describes A4.1 as "a transparent keyword-and-pattern score".
+- The shipped legacy implementation contains **no keyword rules and no pattern matching**. The
+  extraction prompt asks the model to emit a `document_risk_score` field directly, and
+  `extractSignals_` (`apps_script/reference/Code_v10.36_editor_head.gs:910-913`, and again at
+  `:1061-1063` for `commissioning_report`) copies that number straight through to
+  `signalInputs.docRiskScore`. It is a model judgment, not a computed score.
+
+A second, related defect: the legacy prompt never constrained the value's scale, while `sim.js`
+clamps `docScore` to [0,1] and bands it at 0.30 / 0.70, and `assets/js/decision.js:80` carries a
+standing comment that the field "carries inconsistent scales — raw counts as well". An
+unconstrained emission is therefore silently misread as a band.
+
+B7b's port constrains the prompt to 0..1 explicitly (`server/app/extraction_client.py`,
+`build_prompt`). The *description* is deliberately left alone: which of the two is authoritative
+is a praxis-document decision, not a porting one. It is recorded here so that a reader comparing
+the description against the collected data has the discrepancy in front of them rather than
+discovering it in the results.

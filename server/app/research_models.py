@@ -20,19 +20,20 @@ from __future__ import annotations
 
 import os
 import time
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import (
-    Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text,
-    UniqueConstraint, func,
+    Boolean, CheckConstraint, Date, DateTime, ForeignKey, Integer, LargeBinary, String, Text,
+    UniqueConstraint, Uuid, func,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import BYTEA, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import JSON
 
 from .db import Base
 
 JSONType = JSONB().with_variant(JSON(), "sqlite")
+BytesType = BYTEA().with_variant(LargeBinary(), "sqlite")
 ULID = String(26)
 
 _CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
@@ -238,6 +239,12 @@ class Decision(Base):
     # affected decisions are identifiable rather than silently reinterpreted.
     package_hash: Mapped[str] = mapped_column(String(64), nullable=True)
     period: Mapped[str] = mapped_column(Text, nullable=True)
+    # B7b. The computed result this participant actually saw. Once pre_submitted_at is set, the
+    # referenced row is frozen by a database trigger (migration 0009) — rewriting the numbers
+    # underneath a submitted decision would silently change what the collected data means.
+    # Nullable, because a decision recorded before B7b has no computed result behind it and
+    # back-filling one would be inventing provenance.
+    result_id: Mapped[str] = mapped_column(ULID, nullable=True)
 
     pre_action: Mapped[str] = mapped_column(Text, nullable=True)
     pre_confidence: Mapped[int] = mapped_column(Integer, nullable=True)
@@ -444,3 +451,105 @@ class ResearchExport(Base):
     date_range: Mapped[str] = mapped_column(Text, nullable=True)
     initiated_by: Mapped[str] = mapped_column(Text, nullable=True)
     completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+# --------------------------------------------------------------------- B7b: documents & results
+
+
+class Document(Base):
+    """
+    One row per UNIQUE FILE, ever — keyed on the sha256 of the bytes.
+
+    The extraction lives here rather than on the upload event, and that placement is the whole
+    design. Two PMs who upload the identical file get byte-identical signalInputs because they
+    are reading the SAME extraction row, not because some later step compared two extractions
+    and found them equal. Identity of the research stimulus is established by construction
+    rather than by verification. It also means one model call per unique document for the
+    lifetime of the platform.
+    """
+
+    __tablename__ = "documents"
+
+    document_id: Mapped[str] = mapped_column(ULID, primary_key=True, default=new_ulid)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    # As FIRST uploaded. A later uploader's filename does not overwrite it: the extraction was
+    # performed against this name, and the classifier may have used it.
+    filename: Mapped[str] = mapped_column(Text, nullable=False)
+    mime_type: Mapped[str] = mapped_column(Text, nullable=True)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=True)
+    content: Mapped[bytes] = mapped_column(BytesType, nullable=True)
+    doc_type: Mapped[str] = mapped_column(Text, nullable=True)
+    extraction: Mapped[dict] = mapped_column(JSONType, nullable=True)
+    # Model identifier AND version — "claude-opus" alone would not let a later reader tell which
+    # weights produced a stored figure.
+    extraction_model: Mapped[str] = mapped_column(Text, nullable=True)
+    extracted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=True, server_default=func.now()
+    )
+    first_uploaded_by: Mapped[str] = mapped_column(Text, nullable=True)
+
+
+class DocumentUpload(Base):
+    """
+    One row per upload EVENT. Three PMs uploading the same file produce three rows here and one
+    row in `documents`.
+
+    Keeping these separate is what makes "which documents does this project hold for period 2"
+    answerable without conflating it with "what have we ever extracted", and it is where
+    `was_cached` records whether that particular upload paid for a model call.
+    """
+
+    __tablename__ = "document_uploads"
+
+    upload_id: Mapped[str] = mapped_column(ULID, primary_key=True, default=new_ulid)
+    project_id: Mapped[str] = mapped_column(
+        Uuid(), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    period: Mapped[int] = mapped_column(Integer, nullable=False)
+    document_id: Mapped[str] = mapped_column(
+        ULID, ForeignKey("documents.document_id"), nullable=False, index=True
+    )
+    # From the session, never the request body.
+    uploaded_by: Mapped[str] = mapped_column(Text, nullable=False)
+    uploaded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    was_cached: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false",
+                                             default=False)
+
+
+class ComputedResult(Base):
+    """
+    One row per (project, period) computation. Every surface downstream READS this; none of them
+    recompute.
+
+    Append-only. A recompute writes a NEW row and sets `superseded_by` on the old one, which
+    stays readable forever — a decision that referenced it must still resolve years later. Once
+    a submitted decision references a row, a database trigger (migration 0009) rejects any
+    UPDATE to it except setting `superseded_by`. Superseding is permitted; changing is not.
+
+    `simulation_version`, `seed` and `period_cutoff` are NOT NULL by design. A stored result
+    without them cannot be reproduced, and a later change to the analytical layer becomes
+    undetectable in already-collected data.
+    """
+
+    __tablename__ = "computed_results"
+
+    result_id: Mapped[str] = mapped_column(ULID, primary_key=True, default=new_ulid)
+    project_id: Mapped[str] = mapped_column(
+        Uuid(), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    period: Mapped[int] = mapped_column(Integer, nullable=False)
+    signal_inputs: Mapped[dict] = mapped_column(JSONType, nullable=True)
+    module_results: Mapped[dict] = mapped_column(JSONType, nullable=True)
+    category_statuses: Mapped[dict] = mapped_column(JSONType, nullable=True)
+    project_status: Mapped[str] = mapped_column(Text, nullable=True)
+    # Null below the portfolio threshold — distinct from "computed and came back empty".
+    portfolio_snapshot: Mapped[dict] = mapped_column(JSONType, nullable=True)
+    simulation_version: Mapped[str] = mapped_column(Text, nullable=False)
+    seed: Mapped[str] = mapped_column(Text, nullable=False)
+    period_cutoff: Mapped[date] = mapped_column(Date, nullable=False)
+    computed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    superseded_by: Mapped[str] = mapped_column(ULID, nullable=True)
