@@ -15,6 +15,7 @@ Run:
 from __future__ import annotations
 
 import json
+import os
 import sys
 
 sys.path.insert(0, __file__.rsplit("tools", 1)[0])
@@ -199,6 +200,23 @@ check(len(ping.get("postActionsRegistered", [])) == 10,
       "ping advertises exactly the 10 implemented write actions",
       str(ping.get("postActionsRegistered")))
 check(ping.get("portfolioanalyzeRegistered") is False, "portfolioanalyze not advertised")
+
+# The provider-key flags report configuration, read from settings — they were hardcoded false
+# and stayed false after the keys were set on Render. Asserted against the environment rather
+# than a literal, so this holds whether or not a key is configured where the suite runs.
+health = get({"action": "health"})
+for field, env_var in (("anthropicKeyPresent", "ANTHROPIC_API_KEY"),
+                       ("openaiKeyPresent", "OPENAI_API_KEY")):
+    expected = bool((os.environ.get(env_var) or "").strip())
+    check(ping.get(field) is expected,
+          f"ping {field} tracks {env_var} (expected {expected})", str(ping.get(field)))
+    check(health.get(field) is expected,
+          f"health {field} tracks {env_var} (expected {expected})", str(health.get(field)))
+for secret_var in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY"):
+    secret = (os.environ.get(secret_var) or "").strip()
+    if secret:
+        check(secret not in json.dumps(ping) + json.dumps(health),
+              f"{secret_var} value never appears in a health or ping body")
 
 print()
 print("=" * 78)

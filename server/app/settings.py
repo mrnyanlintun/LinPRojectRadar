@@ -32,6 +32,18 @@ class Settings:
     # Signs research session tokens. See load_settings for the fallback behaviour.
     session_secret: str = ""
     session_ttl_seconds: int = 8 * 3600
+    # Whether an AI provider key is configured, NOT the key itself. These back the
+    # anthropicKeyPresent / openaiKeyPresent flags the /exec health and ping actions report,
+    # which the live backend uses to mean "this deployment has a key", nothing more.
+    #
+    # Presence rather than value is deliberate. Nothing on this service makes a provider call
+    # yet — every AI action is still deferred — so holding the secret in a long-lived object
+    # would add an exposure surface (a stray repr, a debugger frame, a future log line) that
+    # buys nothing today. When an AI action lands it should read its key at the point of use.
+    # This mirrors the rule the module already follows for DATABASE_URL: expose the derived,
+    # credential-free fact, never the credential.
+    anthropic_key_present: bool = False
+    openai_key_present: bool = False
 
     @property
     def database_backend(self) -> str:
@@ -88,6 +100,10 @@ def load_settings(environ: dict[str, str] | None = None) -> Settings:
         cors_origins=_split_origins(env.get("CORS_ORIGINS", "")),
         session_secret=session_secret,
         session_ttl_seconds=ttl,
+        # Absent and empty are the same thing: a variable set to "" is not a usable key, and
+        # reporting it as present would send whoever debugs it looking in the wrong place.
+        anthropic_key_present=bool((env.get("ANTHROPIC_API_KEY") or "").strip()),
+        openai_key_present=bool((env.get("OPENAI_API_KEY") or "").strip()),
     )
 
 

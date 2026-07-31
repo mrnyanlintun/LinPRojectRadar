@@ -32,7 +32,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi import Request
 
 from .db import ReadinessResult, build_engine, build_session_factory, check_readiness, check_schema
-from .facade import dispatch_get, dispatch_post, err
+from .facade import configure as configure_facade, dispatch_get, dispatch_post, err
 from .features import FEATURE_ACTIONS, gate_action
 from .research_consent import ConsentRequired, install as install_consent_gate
 from .logging_config import configure_logging
@@ -55,6 +55,11 @@ except SettingsError as exc:
 
 engine = build_engine(settings)
 SessionFactory = build_session_factory(engine)
+
+# The facade's GET handlers have no settings argument; give them a read-only view of the one
+# Settings instance so health and ping can report which provider keys are actually configured
+# instead of a hardcoded false.
+configure_facade(settings)
 
 # Registered on the Session class, so it covers every session including ones created by code
 # written later. See research_consent for why this is not a per-endpoint check.

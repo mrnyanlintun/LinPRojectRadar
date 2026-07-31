@@ -47,6 +47,28 @@ HEALTH_ENDPOINTS = [
 ]
 
 
+# ---------------------------------------------------------------- runtime settings
+#
+# The GET handlers take (session, params) and have no settings argument, so main injects the
+# resolved Settings here once at startup.
+#
+# Injected rather than built here on demand: when SESSION_SECRET is unset, load_settings() mints
+# a RANDOM per-process secret, so a second Settings instance would disagree with main's about how
+# to verify a session token. One instance, one secret.
+_runtime_settings: Any = None
+
+
+def configure(settings: Any) -> None:
+    """Called once by main after settings load. Idempotent; safe to call again in tests."""
+    global _runtime_settings
+    _runtime_settings = settings
+
+
+def _setting(attr: str, default: Any = False) -> Any:
+    """Read an injected setting, defaulting when the facade is used without configure()."""
+    return getattr(_runtime_settings, attr, default) if _runtime_settings is not None else default
+
+
 def now_iso() -> str:
     """Match the live format: ISO 8601, milliseconds, trailing Z."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.") + \
@@ -123,8 +145,12 @@ def a_health(session: Session, params: dict) -> dict[str, Any]:
         "apiVersion": FACADE_API_VERSION,          # rule 4: health uses "apiVersion"
         "parentFolder": "postgres",                 # no Drive folder exists; see PR notes
         "parentFolderId": "",
-        "openaiKeyPresent": False,                  # no AI action is implemented by the facade
-        "anthropicKeyPresent": False,
+        # Whether a provider key is configured on THIS service, which is what the live backend
+        # reported. It is not a claim that the AI actions work: they are still deferred, and
+        # `endpoints` below advertises only what is served.
+        "openaiKeyPresent": bool(_setting("openai_key_present")),
+        "anthropicKeyPresent": bool(_setting("anthropic_key_present")),
+        # Still literally false: there is no Drive knowledge library on this service.
         "libPresent": False,
         "libFileCount": 0,
         "timestamp": now_iso(),
@@ -137,8 +163,10 @@ def a_ping(session: Session, params: dict) -> dict[str, Any]:
         "ok": True,
         "version": FACADE_API_VERSION,              # rule 4: ping/version use "version"
         "deployedAt_note": f"Facade build {FACADE_API_VERSION}. AI and ingestion actions are not implemented.",
-        "anthropicKeyPresent": False,
-        "openaiKeyPresent": False,
+        # Key configured on this service, not "AI is available". deployedAt_note above and
+        # postActionsRegistered below are what say which actions actually run.
+        "anthropicKeyPresent": bool(_setting("anthropic_key_present")),
+        "openaiKeyPresent": bool(_setting("openai_key_present")),
         # Only the actions this build actually serves. AI and ingestion paths are omitted
         # deliberately: advertising them would promise writes that return an error.
         "postActionsRegistered": sorted(_implemented_post_actions()),
