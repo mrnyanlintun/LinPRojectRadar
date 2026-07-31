@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# The interpreter pin must never be CRLF: Render reads it on Linux and a trailing
+# carriage return would make the version string unparseable.
+server/.python-version text eol=lf

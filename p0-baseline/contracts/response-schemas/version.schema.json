@@ -1,0 +1,36 @@
+{
+  "action": "version",
+  "schema": {
+    "properties": {
+      "anthropicKeyPresent": {
+        "type": "boolean"
+      },
+      "deployedAt_note": {
+        "type": "string"
+      },
+      "ok": {
+        "type": "boolean"
+      },
+      "openaiKeyPresent": {
+        "type": "boolean"
+      },
+      "portfolioanalyzeRegistered": {
+        "type": "boolean"
+      },
+      "postActionsRegistered": {
+        "items": {
+          "type": "string"
+        },
+        "observed_length": 17,
+        "type": "array"
+      },
+      "timestamp": {
+        "type": "string"
+      },
+      "version": {
+        "type": "string"
+      }
+    },
+    "type": "object"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "action": "health",
+  "schema": {
+    "properties": {
+      "anthropicKeyPresent": {
+        "type": "boolean"
+      },
+      "apiVersion": {
+        "type": "string"
+      },
+      "endpoints": {
+        "items": {
+          "type": "string"
+        },
+        "observed_length": 24,
+        "type": "array"
+      },
+      "libFileCount": {
+        "type": "integer"
+      },
+      "libPresent": {
+        "type": "boolean"
+      },
+      "ok": {
+        "type": "boolean"
+      },
+      "openaiKeyPresent": {
+        "type": "boolean"
+      },
+      "parentFolder": {
+        "type": "string"
+      },
+      "parentFolderId": {
+        "type": "string"
+      },
+      "timestamp": {
+        "type": "string"
+      }
+    },
+    "type": "object"
+  }
+}

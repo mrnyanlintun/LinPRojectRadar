@@ -1,0 +1,244 @@
+# server/ — migration beachhead (M1) and /exec facade (A1)
+
+A FastAPI service with health endpoints, a Postgres schema, and a read-only `/exec` compatibility
+facade. **No traffic is pointed at it.**
+
+`assets/js/config.js` is untouched and still points at the Apps Script endpoint, so deploying this
+moves no production traffic. `LinPRojectRadar/backend/` (the v9-era prototype) is also untouched.
+
+## Endpoints
+
+| Path | Purpose | Success | Failure |
+|---|---|---|---|
+| `GET /healthz` | Liveness. Process is running. **No database call.** Also reports the running interpreter. | `200` | only if the process is down |
+| `GET /readyz` | Readiness. Real `SELECT 1` round-trip. | `200` | `503` with a structured reason |
+
+`/healthz` returns:
+
+```json
+{
+  "status": "ok",
+  "service": "opus-gubernatio-server",
+  "version": "m1-beachhead",
+  "python_version": "3.12.7",
+  "python_version_info": [3, 12, 7, "final", 0],
+  "checks": []
+}
+```
+
+It exposes the interpreter version and nothing else about the environment: no paths, no
+environment variables, no package list, and not `sys.version`, whose build string would leak
+compiler and build-host detail.
+
+`healthCheckPath` in `render.yaml` is `/healthz`, not `/readyz`, deliberately. If Render probed
+readiness, a database outage would cause it to restart a process that is running correctly, turning
+a dependency failure into an availability failure. Use `/readyz` for diagnosis, not for restarts.
+
+## Environment variables
+
+Set both in the Render dashboard. Both are declared `sync: false` in `render.yaml`, so Render will
+not read a value from the repository.
+
+| Variable | Required | Example | Notes |
+|---|---|---|---|
+| `DATABASE_URL` | **yes** | `postgresql://user:pass@dpg-xxxx.oregon-postgres.render.com:5432/og` | Service refuses to boot without it. `postgres://` and `postgresql://` are normalised to the psycopg 3 dialect automatically. **Never commit this.** |
+| `CORS_ORIGINS` | no | `https://mrnyanlintun.github.io` | Comma separated. Omit or leave empty to disable CORS entirely. |
+| `PYTHON_VERSION` | set in `render.yaml` | `3.12.7` | Secondary pin. See below. |
+| `LOG_LEVEL` | no | `INFO` | Defaults to `INFO`. |
+
+## Interpreter version: pinned in two places
+
+The Python version is pinned **twice**, deliberately:
+
+1. **`server/.python-version`** containing `3.12.7`. This is the primary pin. Render reads it from
+   the service root directory, and it is the more reliable of the two for interpreter selection.
+2. **`PYTHON_VERSION: "3.12.7"`** in `render.yaml`. Retained as a belt-and-braces setting.
+
+Both must be kept in step. Changing one alone will produce a build whose interpreter does not match
+the file that claims to pin it.
+
+### `/healthz` is the authoritative check
+
+**The build log is no longer the only evidence of which interpreter is running.** Ask the service:
+
+```bash
+curl https://<service>.onrender.com/healthz
+```
+
+`python_version` in the response is the interpreter actually executing the application, which is
+the fact that matters. A build log records what the builder selected; it can be stale, hard to
+retrieve after later deploys, and it does not prove what the running process is using.
+
+If `python_version` is not `3.12.7`, neither pin is taking effect. The next thing to check is the
+service's **Root Directory** setting: `.python-version` is only read from the service root, so if
+Root Directory is empty rather than `server`, the file is in the wrong place.
+
+### Why two pins
+
+A build ran on Python 3.14 despite `PYTHON_VERSION: "3.12.7"` being set in `render.yaml`. Two
+things went wrong, only one of them loudly:
+
+- **`psycopg[binary]` failed to resolve.** `psycopg-binary` ships wheels only and has no sdist, so
+  pip could not build from source and reported only the versions carrying a wheel for the running
+  interpreter. `cp314` wheels first appear in 3.2.10, so 3.2.3 was unreachable on 3.14. This is why
+  the pin is now 3.2.13, which carries both `cp312` and `cp314` wheels.
+- **SQLAlchemy silently lost its C extensions.** SQLAlchemy 2.0.36 has no `cp314` wheel, so on 3.14
+  pip installs the pure-python fallback. It works, just slower, and nothing in the build log says
+  so. This is the failure mode the two pins exist to prevent: a wrong interpreter does not always
+  announce itself.
+
+`server/.python-version` is forced to LF in `.gitattributes`. A trailing carriage return would make
+the version string unparseable on Render's Linux builder.
+
+## Render dashboard steps
+
+1. **Create the Postgres instance.** Dashboard, New, Postgres. Choose name, region and plan. Wait
+   until status is Available.
+2. **Copy the Internal Database URL** from the instance's Info tab. Prefer Internal over External:
+   it keeps traffic inside Render's network and is not reachable from the public internet.
+3. **Create the web service.** New, Web Service, connect this repository, select the branch. Render
+   reads `render.yaml` at the repository root and picks up `rootDir: server`.
+4. **Set the region** to match the database, and **set the plan**. Neither is in `render.yaml`, by
+   design, so both stay explicit decisions.
+5. **Add the environment variables.** Under Environment, set `DATABASE_URL` to the Internal
+   Database URL from step 2, and `CORS_ORIGINS` to the GitHub Pages origin.
+6. **Deploy**, then watch the log stream. A successful boot emits one JSON line:
+   `{"ts": "...", "level": "INFO", "message": "service_start", "db_backend": "postgresql", ...}`.
+   The connection string never appears in the logs.
+
+### Verification URLs
+
+Replace `<service>` with the service name Render assigns.
+
+```
+https://<service>.onrender.com/healthz
+https://<service>.onrender.com/readyz
+```
+
+`/healthz` must return `200` immediately. `/readyz` must return `200` once `DATABASE_URL` is set
+correctly. If `/readyz` returns `503`, the JSON body names the failure in
+`checks[0].detail` and `checks[0].error_type`.
+
+The first request after idle can be slow on Render's free plan, which spins the service down.
+
+## Local development
+
+```bash
+cd server
+python -m venv .venv
+.venv/Scripts/activate          # Windows; use source .venv/bin/activate elsewhere
+pip install -r requirements.txt
+
+export DATABASE_URL="sqlite:///./local.db"
+export CORS_ORIGINS="http://localhost:8000"
+uvicorn app.main:app --reload --port 8001
+```
+
+SQLite is supported for local verification only. Production is Postgres.
+
+## Layout
+
+```
+server/
+  app/
+    __init__.py
+    main.py             FastAPI app, /healthz, /readyz, GET+POST /exec
+    facade.py           action dispatch, projections, contract rules
+    models.py           projects, project_snapshots, files
+    settings.py         environment parsing, fail-fast, credential-free accessors
+    db.py               engine, session factory, readiness probe, declarative Base
+    logging_config.py   JSON formatter with credential redaction backstop
+  alembic/
+    env.py              reads DATABASE_URL via app.settings, never from alembic.ini
+    versions/           0001_facade_schema: projects, project_snapshots, files
+  alembic.ini           contains no sqlalchemy.url, so no connection string is ever committed
+  requirements.txt      pinned
+  tools/
+    seed_from_fixtures.py  loads M0 fixtures for contract verification
+```
+
+## Migrations
+
+`0001_facade_schema` creates the three facade tables. No research tables yet; those arrive at B1.
+
+```bash
+alembic current
+alembic revision --autogenerate -m "description"
+alembic upgrade head
+```
+
+The migration step is **not** wired into `buildCommand`. Running migrations automatically on every
+deploy would let a schema change ship without a human deciding to apply it.
+
+## Secrets
+
+- `DATABASE_URL` is read from the environment only. It is never written to a tracked file, and
+  `alembic.ini` deliberately omits `sqlalchemy.url`.
+- Logs record the database **scheme and host only**, never the URL.
+- The JSON formatter redacts URL userinfo as a backstop, so a driver exception that embeds the DSN
+  is scrubbed. The redaction consumes up to the final `@`, so a password containing `@` does not
+  leak its tail. The backstop is not the primary control: no call site passes a secret.
+
+## /exec compatibility facade (A1)
+
+`GET /exec` and `POST /exec` reproduce the Apps Script action API on Postgres, so the existing
+frontend could talk to this service unchanged. **Read paths only**; writes land in A1b.
+`assets/js/config.js` is untouched and no traffic is pointed here.
+
+### Contract rules
+
+These come from the M0 live capture, not from source.
+
+1. **Application errors are HTTP 200** with `{"ok": false, "error": "..."}`. The frontend reads
+   `ok` from the body and never inspects the status code. Non-200 is reserved for transport faults.
+   Even an unhandled exception is returned in this shape, because a 500 body would not parse as
+   `{ok:false}` and the frontend would surface nothing useful.
+2. **Actions match case-insensitively.** The frontend sends `identifyOnly` at `store.js:508` while
+   the backend registers `identifyonly`; exact matching would break document identification
+   silently.
+3. **Key sets and types match `p0-baseline/contracts/`**, verified with `compare.py`.
+4. **`ping` and `version` are aliases** reporting the version under `version`; `health` reports it
+   under `apiVersion`. Both conventions preserved.
+
+### Schema
+
+`projects` (id, legacy_id, doc jsonb, record_version, archived, created_at, updated_at),
+`project_snapshots` (id, project_id, period, snapshot jsonb, saved_at),
+`files` (id, project_id, drive_file_id, name, doc_type, sha256, ingested_at).
+
+JSONB first: the whole `project.json` lives in `projects.doc` rather than being shredded into
+columns. The Apps Script backend has no fixed project schema. The captured fixtures show `list`
+rows carrying geocode fields that `listarchived` rows lack, and each project carries a different
+set of `signalInputs` keys. Shredding would force a column set the data does not have and would
+silently drop anything unanticipated, which is the one failure a compatibility facade must not
+have.
+
+Two storage decisions were forced by evidence rather than by the schema brief:
+
+- **`project_snapshots` is not `doc["history"]`.** PRJ-08421 carries four entries in
+  `doc["history"]` while `gethistory` returns `[]`. They are different stores, so reading history
+  out of the document would have invented four rows.
+- **`docCount` is not a file count.** It is the number of `signals_extracted` events in the
+  document. PRJ-08421 reports `docCount` 36 while `listcorpus` returns 3 entries. This derivation
+  reproduces all 15 live slim rows exactly and is corroborated by the v10.25 note in the backend
+  source: *resetSignals_ preserves signals_extracted events so the Uploaded Documents table
+  survives resets*.
+
+### Verifying against the live contract
+
+```bash
+export DATABASE_URL="sqlite:///./facade.db"     # or a Postgres URL
+alembic upgrade head
+python tools/seed_from_fixtures.py --project-id PRJ-08421
+uvicorn app.main:app --port 8123
+```
+
+Then capture from the facade and diff against the live baseline:
+
+```bash
+python tools/contract-fixtures/capture.py --config <facade-config>.json --confirm --repo-root <tmp>
+python tools/contract-fixtures/compare.py --baseline p0-baseline/contracts --candidate <tmp>/facade-fixtures
+```
+
+`tools/seed_from_fixtures.py` loads the M0 fixtures into the database so the facade can be compared
+against the live contract using the same data. It is a verification aid, not a migration path.
