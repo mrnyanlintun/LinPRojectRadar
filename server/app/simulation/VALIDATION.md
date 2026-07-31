@@ -47,15 +47,15 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 | A3.8 | Parametric Cost Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 2; the JS divides by an unlisted `si.cpi` — a missing/zero cpi yields NaN there and routes to insufficient; the port refuses those explicitly |
 | A3.9 | Inflation Adjustment Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
 | A4.1 | Document Risk Score | signals.js | no | - | not ported: produced by the extraction pipeline, not a model |
-| A4.2 | RFI Velocity | simulations.js | no | - | not ported in this pass |
-| A4.3 | Submittal Rejection Rate | simulations.js | no | - | not ported in this pass |
-| A4.4 | NCR Rate | simulations.js | no | - | not ported in this pass |
-| A4.5 | Weather Day Impact | simulations.js | no | - | not ported in this pass |
-| A4.6 | Change Order Frequency | simulations.js | no | - | not ported in this pass |
-| A4.7 | Dispute Escalation Index | simulations.js | no | - | not ported in this pass |
-| A4.8 | Subcontractor Performance | simulations.js | no | - | not ported in this pass |
-| A4.9 | Procurement Lead Time Monitor | simulations.js | no | - | not ported in this pass |
-| A4.10 | Specification Conflict Density | simulations.js | no | - | not ported in this pass |
+| A4.2 | RFI Velocity | simulations.js | **yes** | 0.0e+00 | exact match; batch 4; both the RFI-log path and the rfiNumber fallback validated, worst-of velocity/overdue banding |
+| A4.3 | Submittal Rejection Rate | simulations.js | **yes** | 0.0e+00 | exact match; batch 4; RFA-log path and submittal-register fallback both validated |
+| A4.4 | NCR Rate | simulations.js | **yes** | 0.0e+00 | exact match; batch 4; includes the zero-issued Green special case |
+| A4.5 | Weather Day Impact | simulations.js | **yes** | 0.0e+00 | exact match; batch 4; Green iff exactly 0 days lost, reproduced |
+| A4.6 | Change Order Frequency | simulations.js | **yes** | 0.0e+00 | exact match; batch 4 |
+| A4.7 | Dispute Escalation Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 4; JS-truthy rfiCount/changeOrderCount contributions reproduced |
+| A4.8 | Subcontractor Performance | simulations.js | **yes** | 0.0e+00 | exact match; batch 4; the browser's lazy deriveExtendedFields safety net is NOT ported — the extraction pipeline supplies subcontractorComplianceScore or the module abstains; compared against the JS with signals.js absent, i.e. identical semantics |
+| A4.9 | Procurement Lead Time Monitor | simulations.js | **yes** | 0.0e+00 | exact match; batch 4 |
+| A4.10 | Specification Conflict Density | simulations.js | **yes** | 0.0e+00 | exact match; batch 4 |
 | A5.2 | Sensitivity Analysis | simulations.js | no | - | not ported in this pass |
 | A5.3 | Tornado Risk Ranking | simulations.js | no | - | not ported in this pass |
 | A5.4 | Scenario Modeling | simulations.js | no | - | not ported in this pass |
@@ -118,9 +118,10 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 
 ## Summary
 
-- validated and shipped: **32** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
-  A2.4–A2.11 and A3.2–A3.9; batch 3 added A1.3–A1.11, the EVM and statistical forecasters)
-- declared but not ported: **69**
+- validated and shipped: **41** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
+  A2.4–A2.11 and A3.2–A3.9; batch 3 added A1.3–A1.11; batch 4 added A4.2–A4.10, the
+  document-derived condition signals)
+- declared but not ported: **60**
 
 ## Batch 3 divergence note: NaN/Infinity fallthrough refused
 
