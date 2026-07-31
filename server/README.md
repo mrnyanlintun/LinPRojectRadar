@@ -447,6 +447,11 @@ Identity runs on the same `/exec` contract as the facade: application errors are
 | `consentwithdraw` | any | sets `withdrawn_at`; never deletes |
 | `adminparticipantcreate` | ResearchAdmin | server-generated `PM-001` code, returns the plaintext token once |
 | `adminparticipantlist` | ResearchAdmin | never returns token hashes |
+| `projectupload` | project PM | hash-cached; reports matched-vs-extracted and which files contributed nothing |
+| `projectuploadstatus` | any active member | which documents are present, and whether the period is computed |
+| `projectcompute` | project PM | runs the analytical layer once; refuses to overwrite an existing result |
+| `projectresults` | any active member | READS the stored row; never computes; recommendation gated by `recommendation_visible` |
+| `adminrecompute` | ResearchAdmin | requires a reason; writes a new row and supersedes the old one |
 
 ### Sessions are signed, not stored
 

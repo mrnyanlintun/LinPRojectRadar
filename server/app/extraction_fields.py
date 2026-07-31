@@ -1,0 +1,350 @@
+"""
+Document-type vocabulary and per-type extraction field lists, ported from Apps Script.
+
+WHY THIS FILE EXISTS AT ALL. The legacy extraction pipeline lives in
+`apps_script/reference/Code_v10.36_editor_head.gs`, where the document-type list, the per-type
+field list, the filename heuristic and the classifier prompt are four separate literals scattered
+across ~400 lines of a single .gs file. They drifted: field names appear in `extractionFieldsFor_`
+that are absent from the 86-key `allFields` superset, and the frontend dropdown offers doc types
+that no extraction mapping has ever heard of. Porting them into one pure-data module makes the
+drift visible and testable instead of latent. Nothing here does I/O, calls a model, or imports
+another app module — that is deliberate, so this can be imported from a request handler, a test,
+or a migration script without dragging in settings, a database session, or a network client.
+
+FIDELITY OVER TIDINESS. Every field list below is a verbatim transcription of the legacy switch,
+in legacy order, including names the legacy never populated. Reordering or "correcting" a field
+name here silently changes what the extractor is asked for, and therefore changes the numbers a
+PM sees, with no test able to catch it — the prompt is the contract. If a name looks wrong, it
+should be fixed as an explicit, reviewed behaviour change, not as a cleanup.
+
+THE ONE DELIBERATE DIVERGENCE is `guess_type_from_filename`, which returns None where the legacy
+returned 'monthly_report'. See the comment at that function; it was a real defect, not a style
+preference.
+
+UNMAPPED is the vocabulary this module contributes for the "we do not know what this is" case,
+which the legacy had no way to express.
+"""
+
+from __future__ import annotations
+
+# The sentinel a caller records when classification produced nothing usable. The legacy had no
+# such state — every document became *some* type — so this string is new, not a port.
+UNMAPPED: str = "unmapped"
+
+# `validTypes`, verbatim and in legacy order (Code_v10.36 lines 691-695 and 758-762 — the literal
+# is duplicated in identifyOnly_ and extractAuto_; both copies are identical, checked).
+DOC_TYPES: tuple[str, ...] = (
+    "pay_application",
+    "monthly_report",
+    "rfi",
+    "oac_minutes",
+    "schedule_update",
+    "change_order",
+    "field_report",
+    "inspection_report",
+    "ncr_log",
+    "subcontractor_report",
+    "procurement_log",
+    "lookahead_schedule",
+    "resource_report",
+    "cost_report",
+    "past_performance_report",
+    "safety_report",
+    "quality_audit_report",
+    "environmental_report",
+    "historical_data",
+    "time_phased_schedule",
+    "contract_value",
+    "schedule_of_values",
+    "submittal",
+    "correspondence_notice",
+    "risk_register",
+    "commissioning_report",
+    "rfi_log",
+    "rfa_log",
+)
+
+# `allFields` from extractAuto_ (line 763), verbatim. The legacy used this as a single 86-key
+# kitchen-sink prompt for "auto" mode: ask for everything, keep whatever comes back. That is the
+# opposite of the per-type approach and produced a lot of hallucinated nulls-turned-numbers, so it
+# is kept here for reference and for tests that check per-type lists against the historical
+# vocabulary — NOT for building prompts.
+ALL_FIELDS: tuple[str, ...] = (
+    "activities_constrained", "activities_planned", "actual_cost", "actual_labor_hours",
+    "actual_percent_complete", "amount_paid_to_date", "analogous_overrun_pct", "application_date",
+    "at_risk", "audit_date", "audit_score", "baseline_contract_sum", "budget_at_completion",
+    "change_order_count", "completed_to_date", "completion_year", "compliance_rate",
+    "compliance_score", "consumed_float", "cost_rating", "critical_deficiency_count",
+    "critical_findings", "data_date", "deficiency_count", "delayed", "document_date",
+    "document_risk_score", "earned_value", "environmental_issues_discussed", "float_remaining",
+    "incident_rate", "indirect_cost_actual", "indirect_cost_plan", "items_failed",
+    "items_inspected", "long_lead_items_total", "lookahead_weeks", "material_cost_baseline",
+    "material_cost_current", "ncr_closed", "ncr_issued", "ncr_open", "on_time_deliveries",
+    "original_contingency", "original_contract_sum", "osha_recordable_incidents",
+    "outstanding_action_items", "overall_rating", "percent_complete_verified", "period_to_date",
+    "planned_labor_hours", "planned_percent_complete", "planned_value", "planned_value_to_date",
+    "project_end_date", "project_start_date", "quality_deficiencies_noted",
+    "quality_issues_discussed", "quality_rating", "remaining_contingency", "report_date",
+    "report_period", "response_time_days", "revised_completion_date", "revised_contract_sum",
+    "rfi_count", "rfi_number", "rfi_period_days", "safety_actions_open",
+    "safety_incidents_discussed", "schedule_rating", "scheduled_deliveries",
+    "scheduled_value_total", "similar_project_bac", "similar_project_final_cost",
+    "subcontractor_disputes", "subcontractor_issues_discussed", "submittals_rejected",
+    "submittals_total", "total_findings", "total_float", "total_manhours", "violations",
+    "weather_days_discussed", "weather_days_lost", "work_period_from", "work_period_to",
+)
+
+# The content-sniffing hints from the identifyOnly_ classifier prompt (line 709-711), verbatim.
+# Only eight of the 28 types get a hint; the rest rely on the model's priors. Kept as one string
+# rather than a dict because it is a prompt fragment, and splitting it would invite someone to
+# reassemble it in a different order and change classifier behaviour by accident.
+CLASSIFY_HINTS: str = (
+    "Match on content: pay application has contract sum and amount paid; "
+    "monthly report has EV/AC/PV; "
+    "RFI has request for information; OAC minutes has meeting attendees; "
+    "change order has revised contract sum; "
+    "NCR log has non-conformance; cost report has indirect/material cost; "
+    "safety report has OSHA incidents."
+)
+
+# The "Planning & Governance Documents" optgroup from assets/js/signals.js DOC_TYPE_GROUPS
+# (lines 59-75). These 15 types are offered to the PM in the upload dropdown, but they appear in
+# NO extraction mapping, NO validTypes, and NO filename heuristic — a PM can select "BIM Execution
+# Plan", upload it, get a success response, and have contributed exactly nothing to signalInputs.
+# Silence there reads as "ingested and understood". This tuple exists so the upload response can
+# say so out loud: accepted, stored, but no project-controls signal was derived.
+UI_ONLY_DOC_TYPES: tuple[str, ...] = (
+    "airport_layout_plan",
+    "airport_master_plan",
+    "project_delivery_charter",
+    "owners_project_requirements",
+    "grant_assurances",
+    "bim_execution_plan",
+    "front_end_project_manual",
+    "technical_specifications",
+    "schematic_design",
+    "design_development",
+    "construction_documents",
+    "basis_of_design",
+    "construction_safety_phasing",
+    "project_execution_plan",
+    "as_built_drawings",
+)
+
+# Verbatim port of extractionFieldsFor_ (lines 1102-1134). A dict rather than a chain of ifs
+# because the legacy switch has no ordering semantics — unlike the filename heuristic below, which
+# does. Several names here are NOT in ALL_FIELDS (milestones_json, items_passed, change_order_date,
+# ncr_overdue, on_schedule, constraint_rate, permit_conditions_total, the rfi_log/rfa_log keys,
+# planned_equipment_days, actual_equipment_days, safety_observations, environmental_observations,
+# subcontractor_observations, analogous_project_type, submitted_date, response_date, source). That
+# is legacy drift, faithfully preserved: the per-type prompt asked for them regardless.
+_EXTRACTION_FIELDS: dict[str, list[str]] = {
+    "contract_value": ["original_contract_sum", "project_start_date", "project_end_date"],
+    "schedule_of_values": ["completed_to_date", "scheduled_value_total", "period_to_date"],
+    "pay_application": [
+        "amount_paid_to_date", "percent_complete_verified", "original_contract_sum",
+        "completed_to_date", "work_period_from", "work_period_to", "application_date",
+        "original_contingency", "remaining_contingency",
+    ],
+    "time_phased_schedule": [
+        "planned_value_to_date", "planned_percent_complete", "data_date", "total_float",
+        "consumed_float",
+    ],
+    "schedule_update": [
+        "planned_percent_complete", "planned_value_to_date", "data_date", "total_float",
+        "consumed_float", "activities_planned", "activities_constrained", "lookahead_weeks",
+        "milestones_json",
+    ],
+    "change_order": [
+        "revised_contract_sum", "revised_completion_date", "change_order_date",
+        "change_order_count", "baseline_contract_sum",
+    ],
+    "monthly_report": [
+        "earned_value", "actual_cost", "planned_value", "actual_percent_complete",
+        "planned_percent_complete", "budget_at_completion", "report_date", "milestones_json",
+    ],
+    "rfi": [
+        "document_risk_score", "document_date", "rfi_count", "rfi_period_days", "rfi_number",
+        "submitted_date", "response_date", "response_time_days",
+    ],
+    "submittal": [
+        "document_risk_score", "document_date", "submittals_total", "submittals_rejected",
+    ],
+    "oac_minutes": [
+        "document_risk_score", "document_date", "subcontractor_issues_discussed",
+        "outstanding_action_items", "subcontractor_disputes", "safety_incidents_discussed",
+        "safety_actions_open", "environmental_issues_discussed", "quality_issues_discussed",
+        "weather_days_discussed",
+    ],
+    # The legacy `case 'correspondence_notice':` has no body and falls through to
+    # `case 'risk_register':`. That fall-through is intentional, not a missing break: both are
+    # narrative documents with no structured project-controls content, so all the extractor is
+    # asked for is a risk score and a date. Duplicated explicitly here; the self-check asserts
+    # the two lists stay equal so a future edit to one is caught.
+    "correspondence_notice": ["document_risk_score", "document_date"],
+    "risk_register": ["document_risk_score", "document_date"],
+    "inspection_report": [
+        "document_risk_score", "document_date", "items_inspected", "items_passed", "items_failed",
+        "deficiency_count", "critical_deficiency_count",
+    ],
+    "field_report": [
+        "document_risk_score", "document_date", "weather_days_lost", "float_remaining",
+        "quality_deficiencies_noted", "safety_observations", "environmental_observations",
+        "subcontractor_observations",
+    ],
+    "commissioning_report": ["document_risk_score", "document_date"],
+    "safety_report": [
+        "osha_recordable_incidents", "total_manhours", "incident_rate", "report_period",
+    ],
+    "quality_audit_report": [
+        "total_findings", "critical_findings", "deficiency_count", "audit_score", "audit_date",
+    ],
+    "environmental_report": [
+        "permit_conditions_total", "violations", "compliance_rate", "report_date",
+    ],
+    "ncr_log": ["ncr_issued", "ncr_closed", "ncr_open", "ncr_overdue", "report_period"],
+    "subcontractor_report": [
+        "scheduled_deliveries", "on_time_deliveries", "compliance_score", "report_period",
+    ],
+    "procurement_log": [
+        "long_lead_items_total", "on_schedule", "at_risk", "delayed", "report_date",
+    ],
+    "lookahead_schedule": [
+        "activities_planned", "activities_constrained", "constraint_rate", "lookahead_weeks",
+    ],
+    "resource_report": [
+        "planned_labor_hours", "actual_labor_hours", "planned_equipment_days",
+        "actual_equipment_days",
+    ],
+    "cost_report": [
+        "indirect_cost_plan", "indirect_cost_actual", "material_cost_baseline",
+        "material_cost_current", "report_date",
+    ],
+    "past_performance_report": [
+        "overall_rating", "schedule_rating", "cost_rating", "quality_rating", "source",
+    ],
+    "historical_data": [
+        "analogous_overrun_pct", "analogous_project_type", "completion_year",
+        "similar_project_bac", "similar_project_final_cost",
+    ],
+    "rfi_log": [
+        "rfi_total", "rfi_open", "rfi_answered", "rfi_overdue", "avg_response_days",
+        "rfi_period_days", "oldest_open_days", "log_date",
+    ],
+    "rfa_log": [
+        "rfa_total", "rfa_approved", "rfa_rejected", "rfa_resubmit", "rfa_open",
+        "avg_review_days", "log_date",
+    ],
+}
+
+# The legacy `default:` arm. Note it is the same pair as risk_register — an unknown type is
+# treated as narrative, which is the conservative choice: ask for a risk score and a date, never
+# for numbers that would flow into CPI/SPI.
+_DEFAULT_FIELDS: list[str] = ["document_risk_score", "document_date"]
+
+
+def extraction_fields_for(doc_type: str) -> list[str]:
+    """Fields to request from the extractor for `doc_type`.
+
+    Returns a fresh list each call — callers historically mutated the result (appending a
+    project-specific key before prompting), and a shared list would corrupt the table.
+    """
+    return list(_EXTRACTION_FIELDS.get(doc_type, _DEFAULT_FIELDS))
+
+
+def guess_type_from_filename(filename: str) -> str | None:
+    """Filename heuristic, ported from guessTypeFromFilename_ (lines 731-755).
+
+    Order is load-bearing, not incidental — three pairs of rules overlap and the legacy resolved
+    them by position. Preserved exactly:
+      * 'rfa'+'log' before 'rfi'+'log'  (an "RFI/RFA log" filename resolves to rfa_log)
+      * 'rfi'+'log' before bare 'rfi'   (a log is a register, not a single request)
+      * 'schedule'+'look' before bare 'schedule'  (a lookahead is not a schedule update)
+    Rewriting this as a data-driven table would lose the ordering guarantee, so it stays as a
+    sequence of ifs.
+
+    DELIBERATE DIVERGENCE FROM LEGACY: the legacy final line was `return 'monthly_report'`. Every
+    unrecognised filename — a contract, a photo log, a scanned letter — was therefore labelled a
+    monthly progress report, and the monthly_report extraction mapping asks for EV, AC, PV, BAC
+    and percent-complete. The model, told the document *is* a monthly report, obligingly produced
+    numbers, and those fabricated project-controls inputs flowed into CPI/SPI. That is a
+    correctness defect, not a UX wrinkle. Returning None instead lets the caller record the
+    document as UNMAPPED and extract nothing, which is the honest outcome.
+    """
+    f = str(filename).lower()
+    if "pay" in f or "payapp" in f:
+        return "pay_application"
+    if "monthly" in f or "progress" in f:
+        return "monthly_report"
+    if "rfa" in f and "log" in f:
+        return "rfa_log"
+    if "rfi" in f and "log" in f:
+        return "rfi_log"
+    if "rfi" in f:
+        return "rfi"
+    if "oac" in f or "minutes" in f:
+        return "oac_minutes"
+    if "schedule" in f and "look" in f:
+        return "lookahead_schedule"
+    if "schedule" in f:
+        return "schedule_update"
+    if "change" in f or "_co_" in f:
+        return "change_order"
+    if "field" in f:
+        return "field_report"
+    if "inspect" in f:
+        return "inspection_report"
+    if "ncr" in f:
+        return "ncr_log"
+    if "subcontractor" in f or "subcon" in f:
+        return "subcontractor_report"
+    if "procurement" in f:
+        return "procurement_log"
+    if "resource" in f:
+        return "resource_report"
+    if "cost" in f:
+        return "cost_report"
+    if "past" in f or "performance" in f:
+        return "past_performance_report"
+    if "safety" in f:
+        return "safety_report"
+    if "quality" in f or "audit" in f:
+        return "quality_audit_report"
+    if "environ" in f:
+        return "environmental_report"
+    if "historic" in f:
+        return "historical_data"
+    return None
+
+
+def is_mapped(doc_type: str) -> bool:
+    """True iff `doc_type` is one the extraction pipeline recognises.
+
+    Deliberately checks DOC_TYPES rather than the _EXTRACTION_FIELDS keys: the two happen to
+    coincide today, but DOC_TYPES is what the classifier prompt offers, and a type the classifier
+    cannot emit is not "mapped" no matter what the field table says.
+    """
+    return doc_type in DOC_TYPES
+
+
+if __name__ == "__main__":
+    for _t in DOC_TYPES:
+        _fields = extraction_fields_for(_t)
+        assert _fields, f"empty field list for doc type {_t!r}"
+        for _f in _fields:
+            assert isinstance(_f, str), f"non-str field {_f!r} for {_t!r}"
+
+    # The divergence itself, asserted so nobody "restores" the monthly_report fallback.
+    assert guess_type_from_filename("totally-unknown-thing.pdf") is None
+
+    # The three ordering traps, resolving the legacy way.
+    assert guess_type_from_filename("project-rfa-log.pdf") == "rfa_log"
+    assert guess_type_from_filename("project-rfi-log.pdf") == "rfi_log"
+    assert guess_type_from_filename("rfi-0042.pdf") == "rfi"
+    assert guess_type_from_filename("weekly-lookahead-schedule.pdf") == "lookahead_schedule"
+    assert guess_type_from_filename("schedule-update-may.pdf") == "schedule_update"
+
+    # The intentional legacy fall-through.
+    assert extraction_fields_for("correspondence_notice") == extraction_fields_for("risk_register")
+
+    print("extraction_fields self-check: OK")

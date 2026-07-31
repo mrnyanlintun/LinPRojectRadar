@@ -328,6 +328,7 @@ def _implemented_post_actions() -> set[str]:
 def dispatch_post(session: Session, payload: dict, settings=None) -> dict[str, Any]:
     # writes and research_identity import facade for err/now_iso, so these imports are local to
     # break the cycle.
+    from .documents import DOCUMENT_ACTIONS
     from .research_assignment import ASSIGNMENT_ACTIONS
     from .research_consent import ConsentRequired
     from .research_decision import DECISION_ACTIONS
@@ -351,7 +352,8 @@ def dispatch_post(session: Session, payload: dict, settings=None) -> dict[str, A
 
     identity = (IDENTITY_ACTIONS.get(action) or ASSIGNMENT_ACTIONS.get(action)
                 or DECISION_ACTIONS.get(action) or TRANSITION_ACTIONS.get(action)
-                or EXPORT_ACTIONS.get(action) or MEMBERSHIP_ACTIONS.get(action))
+                or EXPORT_ACTIONS.get(action) or MEMBERSHIP_ACTIONS.get(action)
+                or DOCUMENT_ACTIONS.get(action))
     if identity is not None:
         if settings is None:
             return err("research identity is not configured on this build")
