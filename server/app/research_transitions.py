@@ -322,6 +322,10 @@ def a_researchadvance(session: Session, payload: dict, secret: str, ttl: int) ->
     assignment, problem = _resolve_advance_target(session, caller, payload)
     if problem:
         return problem
+    from .research_membership import refuse_unless_pm_for_assignment
+    problem = refuse_unless_pm_for_assignment(session, caller, assignment, "researchadvance")
+    if problem:
+        return problem
 
     scenario = session.get(Scenario, assignment.scenario_id)
     if scenario is None:

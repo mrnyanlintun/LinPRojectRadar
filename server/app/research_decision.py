@@ -247,6 +247,10 @@ def a_researchprejudgment(session: Session, payload: dict, secret: str, ttl: int
     assignment, problem = _resolve_target(session, caller, payload, "researchprejudgment")
     if problem:
         return problem
+    from .research_membership import refuse_unless_pm_for_assignment
+    problem = refuse_unless_pm_for_assignment(session, caller, assignment, "researchprejudgment")
+    if problem:
+        return problem
 
     pre_action = str(payload.get("pre_action") or "").strip()
     if not pre_action:
@@ -339,14 +343,19 @@ def a_researchreveal(session: Session, payload: dict, secret: str, ttl: int) -> 
     assignment, problem = _resolve_target(session, caller, payload, "researchreveal")
     if problem:
         return problem
+    from .research_membership import recommendation_visible, refuse_unless_pm_for_assignment
+    problem = refuse_unless_pm_for_assignment(session, caller, assignment, "researchreveal")
+    if problem:
+        return problem
 
     scenario = session.get(Scenario, assignment.scenario_id)
     period = current_period(session, assignment, scenario)
     decision = _decision_for(session, assignment.assignment_id, period)
 
-    # Guarantee 1. The refusal names only the state, never any package content: a refusal that
-    # leaked the recommendation would defeat the gate it is enforcing.
-    if decision is None or not decision.pre_judgment_locked:
+    # Guarantee 1, through THE reveal predicate (research_membership.recommendation_visible,
+    # shared with every member read path). The refusal names only the state, never any package
+    # content: a refusal that leaked the recommendation would defeat the gate it is enforcing.
+    if not recommendation_visible(decision):
         audit(session, "reveal_denied_unlocked", participant_id=caller.participant_id,
               scenario_id=assignment.scenario_id, sequence_number=assignment.sequence_number)
         session.commit()
@@ -411,6 +420,10 @@ def a_researchdecision(session: Session, payload: dict, secret: str, ttl: int) -
         return problem
 
     assignment, problem = _resolve_target(session, caller, payload, "researchdecision")
+    if problem:
+        return problem
+    from .research_membership import refuse_unless_pm_for_assignment
+    problem = refuse_unless_pm_for_assignment(session, caller, assignment, "researchdecision")
     if problem:
         return problem
 

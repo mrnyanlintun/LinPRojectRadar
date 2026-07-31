@@ -65,6 +65,11 @@ class Participant(Base):
     # The only identifier that may appear in an export or a transcript.
     pseudonymous_code: Mapped[str] = mapped_column(Text, nullable=False, unique=True, index=True)
     role: Mapped[str] = mapped_column(Text, nullable=False)
+    # Structural separation between research subjects and practising staff (B8). An operational
+    # account can never obtain a consents row, so the consent gate blocks every research write at
+    # source, and adminexportcreate filters on this column unconditionally.
+    account_type: Mapped[str] = mapped_column(Text, nullable=False, server_default="research",
+                                              default="research")
     # Hash only. A recoverable token would make the pseudonymous code re-identifiable.
     access_token_hash: Mapped[str] = mapped_column(Text, nullable=True)
     eligibility_status: Mapped[str] = mapped_column(Text, nullable=True)
@@ -83,6 +88,10 @@ class Participant(Base):
         CheckConstraint(
             "role IN ('ResearchAdmin','Participant','Expert','Demo')",
             name="ck_participants_role",
+        ),
+        CheckConstraint(
+            "account_type IN ('research','operational')",
+            name="ck_participants_account_type",
         ),
     )
 
@@ -284,6 +293,38 @@ class ExpertReference(Base):
     locked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     # Written only after locking, during the realism review stage.
     realism_review: Mapped[dict] = mapped_column(JSONType, nullable=True)
+
+
+class ProjectMember(Base):
+    """
+    Per-project membership (B8). One active PM who decides; any number of observers who watch.
+
+    project_id is a real foreign key into the facade's projects table — a deliberate departure
+    from this schema's no-facade-FK rule, because membership is ABOUT a facade project and is
+    meaningless without it. Revocation sets revoked_at; rows are never deleted, so membership
+    history is itself audit evidence. The one-active-PM rule is enforced by a partial unique
+    index in migration 0006, not only here.
+    """
+
+    __tablename__ = "project_members"
+
+    member_id: Mapped[str] = mapped_column(ULID, primary_key=True, default=new_ulid)
+    project_id = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"),
+                               nullable=False, index=True)
+    user_key: Mapped[str] = mapped_column(
+        ULID, ForeignKey("participants.participant_id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    project_role: Mapped[str] = mapped_column(Text, nullable=False)
+    added_by: Mapped[str] = mapped_column(Text, nullable=True)
+    added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False,
+                                               server_default=func.now())
+    revoked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_by: Mapped[str] = mapped_column(Text, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("project_role IN ('PM','Observer')", name="ck_project_members_role"),
+    )
 
 
 class AuditEvent(Base):
