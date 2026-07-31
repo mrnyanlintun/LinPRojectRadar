@@ -110,15 +110,15 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 | C1.5 | Information Completeness Ratio | simulations.js | **yes** | 0.0e+00 | exact match; batch 9 |
 | C1.6 | Cross-document Consistency Score | simulations.js | **yes** | 0.0e+00 | exact match; batch 9; three derivation checks at thresholds 0.005/0.005/5 |
 | C1.7 | Reporting Frequency Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 9; below 2 extraction events emits the Yellow stub the JS emits, not an abstention |
-| D1.1 | Isolation Forest | Apps Script portfolioanalyze | no | - | Group D: portfolio-level, requires 3+ projects; refused on a single-project path |
-| D1.2 | Portfolio Outlier Detection | Apps Script portfolioanalyze | no | - | Group D: portfolio-level, requires 3+ projects; refused on a single-project path |
-| D1.3 | Signal Trajectory Classifier | Apps Script portfolioanalyze | no | - | Group D: portfolio-level, requires 3+ projects; refused on a single-project path |
-| D1.4 | Cross-project Pattern Detector | Apps Script portfolioanalyze | no | - | Group D: portfolio-level, requires 3+ projects; refused on a single-project path |
-| D1.5 | Anomaly Score | Apps Script portfolioanalyze | no | - | Group D: portfolio-level, requires 3+ projects; refused on a single-project path |
+| D1.1 | Isolation Forest | Apps Script portfolioanalyze | **yes** | 0.0e+00 | exact match vs the LIVE deployment; batch 11; computed only via compute_portfolio — the single-project path still raises PortfolioModuleError |
+| D1.2 | Portfolio Outlier Detection | Apps Script portfolioanalyze | **yes** | 0.0e+00 | exact match vs live; batch 11 |
+| D1.3 | Signal Trajectory Classifier | Apps Script portfolioanalyze | **yes** | 0.0e+00 | exact match vs live; batch 11; carries its own insufficient_data flag below 2 history periods while still emitting a status, as the Apps Script does |
+| D1.4 | Cross-project Pattern Detector | Apps Script portfolioanalyze | **yes** | 0.0e+00 | exact match vs live; batch 11; similarity over the first three vector dimensions, self excluded by id |
+| D1.5 | Anomaly Score | Apps Script portfolioanalyze | **yes** | 0.0e+00 | exact match vs live; batch 11; the trend term joins the composite only with 2+ history periods and a nonzero trend |
 
 ## Summary
 
-- validated and shipped: **95** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
+- validated and shipped: **100** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
   A2.4–A2.11 and A3.2–A3.9; batch 3 added A1.3–A1.11; batch 4 added A4.2–A4.10, the
   document-derived condition signals; batch 5 added A5.2–A5.8 and A6.1–A6.4; batch 6 added
   B2.1, B1.2–B1.4 and B3.2–B3.5; batch 7 added B4.1–B4.7 and B2.2–B2.9; batch 8 added
@@ -126,8 +126,36 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
   computes but does not contribute to project status, an exclusion asserted by Guarantee 4 of
   the test suite). Group A is complete except A4.1, which is produced by the extraction
   pipeline, not a model. Batch 10 added B1.1 and B3.1 from decision.js, validated by loading
-  decision.js alone in the browser and comparing deriveDecision field-for-field.
-- declared but not ported: **6**
+  decision.js alone in the browser and comparing deriveDecision field-for-field. Batch 11
+  added Group D (D1.1–D1.5) via the separate `compute_portfolio` entry point.
+- declared but not ported: **1** — A4.1 Document Risk Score, which is produced by the
+  document-extraction pipeline (signals.js / backend extraction), not computed by a model.
+  It stays refused: asking the analytical layer for it raises MissingModuleError.
+
+## Group D: no longer refused by design (batch 11)
+
+An earlier revision of this file recorded Group D as "refused on a single-project path" as if
+that were permanent. That was wrong as a design statement and is corrected here: participants
+create projects one at a time — six is a target, not a constraint — so Portfolio Health
+computes over whatever projects a participant has created at that moment and is relevant to
+the study. What remains true is the ROUTING rule: `compute_project`/`run_module` never reach
+Group D (PortfolioModuleError, asserted by Guarantee 5); the entry point is
+`compute_portfolio(projects, current_id, history, period_cutoff)`. Fewer than 3 projects with
+signal data returns `insufficient_data: true` with an empty result set — correct behaviour,
+not an error and not an abstention. One recorded quirk: the Apps Script guard is
+`portfolio.length < 2` while its message says "need at least 3 projects", so a 2-project
+portfolio DOES compute (confirmed against the live deployment); the port reproduces both the
+guard and the message verbatim.
+
+Validation method: Code.gs cannot run in a browser, so the port was compared against the LIVE
+Apps Script deployment's read-only `portfolioanalyze` POST action on seven cases (1 project,
+2 projects, exactly 3, a clear outlier, a clear non-outlier, a no-signal current project, and
+a 3-period history for the trajectory classifier): every compared field exact at 0.0e+00. The
+live deployment is v10.29-geocode; the reference source read for the port is
+Code_v10.36_editor_head.gs — no behavioural difference between the two was observed for
+portfolioAnalyze_ on any case. The Apps Script stamps `timestamp: new Date().toISOString()`;
+the port stamps `period_cutoff` instead (no module reads the system clock), and the timestamp
+was the one field excluded from comparison.
 
 ## Group B input contracts (batch 6)
 
