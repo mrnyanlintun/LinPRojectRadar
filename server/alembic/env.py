@@ -5,8 +5,8 @@ The database URL is read from DATABASE_URL through app.settings, never from alem
 connection string is never committed. Settings also normalises Render's postgres:// form to the
 psycopg 3 dialect.
 
-No application tables exist at M1. target_metadata points at the declarative Base so that
-autogenerate has something to compare against once the research schema arrives at B1.
+target_metadata points at the declarative Base. Both the facade models and the research models
+are imported below so that every table is registered before autogenerate compares.
 """
 
 from __future__ import annotations
@@ -21,6 +21,9 @@ from sqlalchemy import engine_from_config, pool
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.db import Base  # noqa: E402
+# Imported for their side effect: registering tables on Base.metadata so autogenerate can see
+# them. Without these imports autogenerate would propose dropping every table it cannot find.
+from app import models, research_models  # noqa: E402,F401
 from app.settings import load_settings  # noqa: E402
 
 config = context.config

@@ -145,17 +145,20 @@ server/
     main.py             FastAPI app, /healthz, /readyz, GET+POST /exec
     facade.py           GET dispatch, projections, contract rules
     writes.py           POST dispatch: concurrency, server clocks, verified writes
+    research_models.py  research schema ORM, ULID ids
+    research_audit.py   durable audit writes on a separate connection
     models.py           projects, project_snapshots, files
     settings.py         environment parsing, fail-fast, credential-free accessors
     db.py               engine, session factory, readiness probe, declarative Base
     logging_config.py   JSON formatter with credential redaction backstop
   alembic/
     env.py              reads DATABASE_URL via app.settings, never from alembic.ini
-    versions/           0001 facade schema, 0002 nullable snapshot owner
+    versions/           0001 facade, 0002 nullable snapshot owner, 0003 research schema
   alembic.ini           contains no sqlalchemy.url, so no connection string is ever committed
   requirements.txt      pinned
   tools/
     seed_from_fixtures.py  loads M0 fixtures for contract verification
+    test_pre_lock_guard.py migration test for the pre-judgment lock
 ```
 
 ## Migrations
@@ -302,3 +305,73 @@ matches the v10.25 fix noted in the backend source.
 `period`. Migration `0002` makes `project_id` nullable for it. Attaching it to a synthetic owner
 would have surfaced it in that project's `gethistory` and corrupted the project's history;
 `a_gethistory` also excludes the reserved period explicitly.
+
+## Research schema (B1)
+
+Migration `0003_research_schema` creates twelve tables: `participants`, `participant_profiles`,
+`consents`, `configurations`, `scenarios`, `assignments`, `decision_support_packages`,
+`decisions`, `transitions`, `expert_references`, `audit_events`, `research_exports`.
+
+They share **no foreign key** with `projects` / `project_snapshots` / `files`. The facade tables
+mirror an external system that is still authoritative and still changing; the research record must
+outlive it and must never be cascade-deleted by a project cleanup. The one link,
+`scenarios.evidence_package_id`, is an opaque reference rather than a constraint.
+
+Identifiers are ULIDs in `CHAR(26)`: they sort by creation time, so the primary key index is also
+a time index. All timestamps are `timestamptz` and server-assigned.
+
+### The pre-judgment lock
+
+Two guarantees live in the database, not the application, because the preliminary judgment is the
+measurement the study rests on and application code is the thing most likely to change.
+
+**CHECK `ck_decisions_reveal_after_pre_lock`** — `reveal_at IS NULL OR (pre_locked_at IS NOT NULL
+AND pre_locked_at <= reveal_at)`. A package cannot be revealed before the judgment is locked, and
+the lock cannot be backdated to after the reveal.
+
+**Trigger `trg_decisions_pre_lock_guard`** — rejects any UPDATE that would change `pre_action` or
+`pre_confidence` once `pre_locked_at` is set. Columns that are not part of the preliminary
+judgment stay writable, because the final decision is recorded on the same row.
+
+### Why the trigger does not write its own audit row
+
+**A trigger that raises cannot durably record its own rejection, on any dialect.** Whatever it
+inserts belongs to the same transaction as the rejected UPDATE and is discarded when that
+transaction unwinds.
+
+This was measured, not assumed. An earlier version of this migration inserted from inside the
+trigger; **zero rows survived on SQLite**, despite `RAISE(FAIL)` preserving statement-level
+changes, because the caller's rollback removed them anyway. Postgres behaves the same and has no
+autonomous transactions without an extension such as `dblink`.
+
+The alternative — a trigger that silently reverts the protected columns and audits durably — was
+rejected. A database that accepts an UPDATE and quietly discards it is precisely the silent
+failure this project forbids, and a participant's attempt to revise a locked judgment must not
+look like it succeeded.
+
+So the trigger rejects loudly and `app/research_audit.py` writes the audit row **on a separate
+connection with its own transaction**, which commits whether or not the caller's transaction
+survives. The Postgres exception carries SQLSTATE `OG001` so callers can recognise it precisely;
+SQLite carries no SQLSTATE, so that path falls back to a message marker.
+
+### Running the test
+
+```bash
+DATABASE_URL=... python tools/test_pre_lock_guard.py
+```
+
+20 checks: the CHECK constraint in both directions, all three modification paths (Core UPDATE, ORM
+update, raw driver SQL) rejected, three durable audit rows each identifying its path, the locked
+values unchanged, and the non-protected columns still writable.
+
+### Dialect differences
+
+| | PostgreSQL (authoritative) | SQLite (local only) |
+|---|---|---|
+| Trigger | `BEFORE UPDATE` + PL/pgSQL function, checks both columns internally | `BEFORE UPDATE OF pre_action, pre_confidence` with a `WHEN` clause |
+| Rejection | `RAISE EXCEPTION` with SQLSTATE `OG001` | `RAISE(ABORT)`, no SQLSTATE |
+| JSON | `JSONB` | `JSON` |
+| Migration `0002` | direct `ALTER COLUMN` | table rebuild via `batch_alter_table` |
+
+The migration refuses to create the schema on any other dialect rather than silently omitting the
+trigger, because the lock is not optional.
