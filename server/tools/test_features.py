@@ -91,8 +91,10 @@ r = client.get("/readyz")
 check(r.status_code == 200 and r.json().get("status") == "ready",
       "/readyz returns 200 after the static mount", f"HTTP {r.status_code} {r.text[:120]}")
 schema = next((c for c in client.get("/readyz").json()["checks"] if c["name"] == "schema"), {})
-check("0007_feature_flags" in (schema.get("detail") or ""),
-      "schema reports head 0007_feature_flags", str(schema))
+# Not pinned to a literal revision id: that would make this check fail at every later migration
+# for a reason unrelated to what it's actually verifying (that /readyz agrees the schema is
+# current). schema.ok already reports pass/fail against whatever head alembic computes.
+check(schema.get("ok") is True, "schema reports itself at head", str(schema))
 
 r = client.get("/")
 check(r.status_code == 200 and "<!doctype html>" in r.text[:200].lower(),
