@@ -80,17 +80,17 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 | B2.7 | Plithogenic Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; AMBER stub on no signal |
 | B2.8 | Belief Rule Base | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; always computes (fallback rule R0 when nothing matches) |
 | B2.9 | Quantum Probability | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; always computes (default amplitudes when signals missing) |
-| B2.10 | Pythagorean Fuzzy Sets | simulations.js | no | - | not ported in this pass |
-| B2.11 | Picture Fuzzy Sets | simulations.js | no | - | not ported in this pass |
-| B2.12 | Hesitant Fuzzy Sets | simulations.js | no | - | not ported in this pass |
-| B2.13 | Type-2 Fuzzy Sets | simulations.js | no | - | not ported in this pass |
-| B2.14 | Maximum Entropy | simulations.js | no | - | not ported in this pass |
-| B2.15 | Possibility Theory | simulations.js | no | - | not ported in this pass |
-| B2.16 | Spherical Fuzzy Sets | simulations.js | no | - | not ported in this pass |
-| B2.17 | Fermatean Fuzzy Sets | simulations.js | no | - | not ported in this pass |
-| B2.18 | MARCOS Ranking | simulations.js | no | - | not ported in this pass |
-| B2.19 | CRITIC-TOPSIS | simulations.js | no | - | not ported in this pass |
-| B2.20 | Hypersoft Sets | simulations.js | no | - | not ported in this pass |
+| B2.10 | Pythagorean Fuzzy Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 8 |
+| B2.11 | Picture Fuzzy Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 8 |
+| B2.12 | Hesitant Fuzzy Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 8 |
+| B2.13 | Type-2 Fuzzy Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 8 |
+| B2.14 | Maximum Entropy | simulations.js | **yes** | 0.0e+00 | exact match; batch 8 |
+| B2.15 | Possibility Theory | simulations.js | **yes** | 0.0e+00 | exact match; batch 8 |
+| B2.16 | Spherical Fuzzy Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 8 |
+| B2.17 | Fermatean Fuzzy Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 8 |
+| B2.18 | MARCOS Ranking | simulations.js | **yes** | 0.0e+00 | exact match; batch 8 |
+| B2.19 | CRITIC-TOPSIS | simulations.js | **yes** | 0.0e+00 | exact match; batch 8 |
+| B2.20 | Hypersoft Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 8 |
 | B3.1 | ABM Governance Layer | decision.js | no | - | not ported: computed in decision.js |
 | B3.2 | FAR Threshold Monitor | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; cpi/bac exactly 0 abstains (JS Infinity/NaN fallthrough) |
 | B3.3 | OMB A-11 Check | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; cpi exactly 0 abstains |
@@ -118,12 +118,13 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 
 ## Summary
 
-- validated and shipped: **75** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
+- validated and shipped: **86** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
   A2.4–A2.11 and A3.2–A3.9; batch 3 added A1.3–A1.11; batch 4 added A4.2–A4.10, the
   document-derived condition signals; batch 5 added A5.2–A5.8 and A6.1–A6.4; batch 6 added
-  B2.1, B1.2–B1.4 and B3.2–B3.5; batch 7 added B4.1–B4.7 and B2.2–B2.9). Group A is complete
-  except A4.1, which is produced by the extraction pipeline, not a model.
-- declared but not ported: **26**
+  B2.1, B1.2–B1.4 and B3.2–B3.5; batch 7 added B4.1–B4.7 and B2.2–B2.9; batch 8 added
+  B2.10–B2.20, completing Group B's simulations.js modules). Group A is complete except A4.1,
+  which is produced by the extraction pipeline, not a model.
+- declared but not ported: **15**
 
 ## Group B input contracts (batch 6)
 
