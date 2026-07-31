@@ -1,7 +1,7 @@
-# server/ — migration beachhead (M1) and /exec facade (A1)
+# server/ — migration beachhead (M1) and /exec facade (A1, A1b)
 
-A FastAPI service with health endpoints, a Postgres schema, and a read-only `/exec` compatibility
-facade. **No traffic is pointed at it.**
+A FastAPI service with health endpoints, a Postgres schema, and an `/exec` compatibility facade
+covering read and write actions. **No traffic is pointed at it.**
 
 `assets/js/config.js` is untouched and still points at the Apps Script endpoint, so deploying this
 moves no production traffic. `LinPRojectRadar/backend/` (the v9-era prototype) is also untouched.
@@ -143,14 +143,15 @@ server/
   app/
     __init__.py
     main.py             FastAPI app, /healthz, /readyz, GET+POST /exec
-    facade.py           action dispatch, projections, contract rules
+    facade.py           GET dispatch, projections, contract rules
+    writes.py           POST dispatch: concurrency, server clocks, verified writes
     models.py           projects, project_snapshots, files
     settings.py         environment parsing, fail-fast, credential-free accessors
     db.py               engine, session factory, readiness probe, declarative Base
     logging_config.py   JSON formatter with credential redaction backstop
   alembic/
     env.py              reads DATABASE_URL via app.settings, never from alembic.ini
-    versions/           0001_facade_schema: projects, project_snapshots, files
+    versions/           0001 facade schema, 0002 nullable snapshot owner
   alembic.ini           contains no sqlalchemy.url, so no connection string is ever committed
   requirements.txt      pinned
   tools/
@@ -159,7 +160,9 @@ server/
 
 ## Migrations
 
-`0001_facade_schema` creates the three facade tables. No research tables yet; those arrive at B1.
+`0001_facade_schema` creates the three facade tables. `0002_snapshot_project_nullable` makes
+`project_snapshots.project_id` nullable for the portfolio-health singleton. No research tables yet;
+those arrive at B1.
 
 ```bash
 alembic current
@@ -182,8 +185,9 @@ deploy would let a schema change ship without a human deciding to apply it.
 ## /exec compatibility facade (A1)
 
 `GET /exec` and `POST /exec` reproduce the Apps Script action API on Postgres, so the existing
-frontend could talk to this service unchanged. **Read paths only**; writes land in A1b.
-`assets/js/config.js` is untouched and no traffic is pointed here.
+frontend could talk to this service unchanged. Read paths (A1) and write paths (A1b) are
+implemented; AI and file-ingestion actions are still deferred. `assets/js/config.js` is untouched
+and no traffic is pointed here.
 
 ### Contract rules
 
@@ -242,3 +246,59 @@ python tools/contract-fixtures/compare.py --baseline p0-baseline/contracts --can
 
 `tools/seed_from_fixtures.py` loads the M0 fixtures into the database so the facade can be compared
 against the live contract using the same data. It is a verification aid, not a migration path.
+
+## Write actions (A1b)
+
+Implemented: `create`, `save`, `archive`, `restore`, `setprojectnumber`, `resetsignals`,
+`overwritesignal`, `savehistory`, `saveauditresult`, `saveportfoliohealth`.
+
+Deferred, returning `Action not implemented in this build: <action>`: `chat`, `analyze`,
+`extractsignals`, `identifyonly`, `audit`, `portfolioanalyze`, `ingestcorpus`, `tts`. These are
+the AI and file-ingestion paths; they land after the write paths are proven. The error says
+"not implemented" rather than "unknown" so nobody debugging it goes looking for a typo.
+
+Response shapes come from the v10.36 reference, since no live POST fixture exists: every write was
+`DEFERRED_TO_MANUAL` at M0 and never captured. Error wording is reproduced verbatim because
+`store.js` surfaces `error` straight to the user.
+
+### Four rules every write follows
+
+**Server clocks only.** Client timestamps are discarded and replaced. A client clock can be wrong,
+skewed, or forged, and `updatedAt` doubles as the concurrency token.
+
+**Verified write.** Each handler commits, re-reads, and confirms the change landed before returning
+`ok:true`. A write that cannot be confirmed returns `ok:false` with a specific reason. There is no
+path that reports a success it did not check.
+
+**Conflicts are `ok:false`, never 409.** Contract rule 1 admits no non-200 for an application
+outcome.
+
+**JSON is replaced, never mutated.** SQLAlchemy does not track in-place mutation of a JSON/JSONB
+value, so `doc["x"] = y` is dropped silently at flush. Every handler builds a new dict.
+
+### Optimistic concurrency
+
+`projects.record_version` increments on every write. The check uses whichever token the client
+supplies:
+
+1. `record_version` when present. Nothing sends it today; it is accepted so a future same-origin
+   client can use the stronger token without a contract change.
+2. Otherwise `project.updatedAt`. This is what the existing frontend round-trips: `store.js:359`
+   posts `{action:"save", project}` and nothing else. Because the server assigns `updatedAt` on
+   every write, a client that has not re-read since the last write presents a stale value and is
+   rejected.
+
+If neither token is present the write proceeds. Rejecting would break the frontend for any project
+whose document has never carried `updatedAt`.
+
+### Two behaviours worth knowing
+
+`resetsignals` **preserves `signals_extracted` events** while clearing everything else. They are
+what the Uploaded Documents table renders and they are the source of the slim `docCount`, so
+dropping them would silently zero `docCount` for every project that had ingested a document. This
+matches the v10.25 fix noted in the backend source.
+
+`saveportfoliohealth` stores a **singleton** with `project_id NULL`, identified by a reserved
+`period`. Migration `0002` makes `project_id` nullable for it. Attaching it to a synthetic owner
+would have surfaced it in that project's `gethistory` and corrupted the project's history;
+`a_gethistory` also excludes the reserved period explicitly.

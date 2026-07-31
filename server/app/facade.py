@@ -2,7 +2,8 @@
 /exec compatibility facade.
 
 Reproduces the Apps Script action API on Postgres so the existing frontend could talk to this
-service unchanged. Read paths only in this PR; writes land in A1b.
+service unchanged. Read paths live here; write paths live in writes.py. AI and file-ingestion
+actions are still deferred.
 
 Four contract rules, all taken from the M0 live capture rather than from source:
 
@@ -28,7 +29,11 @@ from sqlalchemy.orm import Session
 
 from .models import File, Project, ProjectSnapshot
 
-FACADE_API_VERSION = "opus-gubernatio-facade-a1"
+FACADE_API_VERSION = "opus-gubernatio-facade-a1b"
+
+# Portfolio health is a singleton snapshot with no owning project. It lives in
+# project_snapshots under this reserved period so it can never be mistaken for project history.
+PORTFOLIO_HEALTH_PERIOD = "__portfolio_health__"
 
 # Mirrors the live okHealth_ endpoints array. Advertising strings only; it does not gate dispatch.
 HEALTH_ENDPOINTS = [
@@ -131,12 +136,12 @@ def a_ping(session: Session, params: dict) -> dict[str, Any]:
     return {
         "ok": True,
         "version": FACADE_API_VERSION,              # rule 4: ping/version use "version"
-        "deployedAt_note": f"Facade build {FACADE_API_VERSION}. Read paths only; writes land in A1b.",
+        "deployedAt_note": f"Facade build {FACADE_API_VERSION}. AI and ingestion actions are not implemented.",
         "anthropicKeyPresent": False,
         "openaiKeyPresent": False,
-        # Honest: no POST action is registered yet. Deliberately not populated with the live list,
-        # which would advertise writes this build cannot perform.
-        "postActionsRegistered": [],
+        # Only the actions this build actually serves. AI and ingestion paths are omitted
+        # deliberately: advertising them would promise writes that return an error.
+        "postActionsRegistered": sorted(_implemented_post_actions()),
         "portfolioanalyzeRegistered": False,
         "timestamp": now_iso(),
     }
@@ -224,7 +229,9 @@ def a_gethistory(session: Session, params: dict) -> dict[str, Any]:
     if not project:
         return err(f"Project not found: {params.get('id')}")
     rows = session.scalars(
-        select(ProjectSnapshot).where(ProjectSnapshot.project_id == project.id)
+        select(ProjectSnapshot)
+        .where(ProjectSnapshot.project_id == project.id,
+               ProjectSnapshot.period.is_distinct_from(PORTFOLIO_HEALTH_PERIOD))
         .order_by(ProjectSnapshot.saved_at)
     ).all()
     # Reads project_snapshots, never doc["history"]. The capture proves they are different stores.
@@ -250,7 +257,7 @@ def a_getportfoliohealth(session: Session, params: dict) -> dict[str, Any]:
     no snapshot has been computed yet.
     """
     row = session.scalars(
-        select(ProjectSnapshot).where(ProjectSnapshot.period == "__portfolio_health__")
+        select(ProjectSnapshot).where(ProjectSnapshot.period == PORTFOLIO_HEALTH_PERIOD)
         .order_by(ProjectSnapshot.saved_at.desc())
     ).first()
     if row is None or not isinstance(row.snapshot, dict):
@@ -275,15 +282,6 @@ GET_ACTIONS: dict[str, Callable[[Session, dict], dict]] = {
     "getportfoliohealth": a_getportfoliohealth,
 }
 
-# Recognised but not yet implemented. Writes land in A1b. Listed so the error can say "not
-# implemented" rather than "unknown", which would misdescribe a known action.
-DEFERRED_POST_ACTIONS = {
-    "create", "save", "archive", "restore", "setprojectnumber", "resetsignals",
-    "overwritesignal", "savehistory", "saveauditresult", "saveportfoliohealth",
-    "ingestcorpus", "chat", "analyze", "audit", "portfolioanalyze", "extractsignals",
-    "identifyonly", "tts",
-}
-
 
 def dispatch_get(session: Session, params: dict) -> dict[str, Any]:
     # Rule 2: lowercase before matching. Default matches the live dispatcher's default of 'health'.
@@ -294,8 +292,25 @@ def dispatch_get(session: Session, params: dict) -> dict[str, Any]:
     return handler(session, params)
 
 
+def _implemented_post_actions() -> set[str]:
+    from .writes import POST_ACTIONS
+    return set(POST_ACTIONS)
+
+
 def dispatch_post(session: Session, payload: dict) -> dict[str, Any]:
+    # writes imports facade for err/now_iso, so this import is local to break the cycle.
+    from .writes import DEFERRED_AI_ACTIONS, POST_ACTIONS
+
+    # Rule 2: lowercase before matching, so the frontend's camelCase identifyOnly still resolves.
     action = str(payload.get("action") or "").lower()
-    if action in DEFERRED_POST_ACTIONS:
+
+    handler = POST_ACTIONS.get(action)
+    if handler is not None:
+        return handler(session, payload)
+
+    if action in DEFERRED_AI_ACTIONS:
+        # Deferred, not unknown. Saying "unknown" about an action the backend is known to support
+        # would send whoever debugs it looking for a typo.
         return err(f"Action not implemented in this build: {action}")
+
     return err(f"Unknown POST action: {action}")

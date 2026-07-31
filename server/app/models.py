@@ -77,10 +77,11 @@ class ProjectSnapshot(Base):
     __tablename__ = "project_snapshots"
 
     id: Mapped[uuid.UUID] = mapped_column(UUIDType, primary_key=True, default=_uuid)
+    # Nullable: the portfolio-health singleton has no owning project. See migration 0002.
     project_id: Mapped[uuid.UUID] = mapped_column(
-        UUIDType, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True
+        UUIDType, ForeignKey("projects.id", ondelete="CASCADE"), nullable=True, index=True
     )
-    period: Mapped[str] = mapped_column(Text, nullable=True)
+    period: Mapped[str] = mapped_column(Text, nullable=True, index=True)
     snapshot: Mapped[dict] = mapped_column(JSONType, nullable=False)
     saved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
