@@ -3801,3 +3801,13 @@ body.t-light .map-scan-texture { display: none; }   /* CRT texture is a dark-the
 /* server-side geocode outcome, surfaced inline after a save */
 .pe-msg-ok { color: var(--clear-green) !important; }
 .pe-msg-error { color: var(--alarm-red) !important; }
+
+/* ---------- Per-user feature flags (T1) ----------
+   Set by assets/js/features.js from the server's resolved flags. Hiding only;
+   server/app/features.py refuses the action itself. ---------- */
+body.og-no-chat #lin-assistant,
+body.og-no-knowledge-library [data-tab="methods"],
+body.og-no-health-dialog [data-action="portfolio-health"],
+body.og-no-health-dialog .health-pill,
+body.og-no-auditor [data-page-link="auditor"],
+body.og-no-auditor [data-page="auditor"] { display: none !important; }

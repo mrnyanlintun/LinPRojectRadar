@@ -220,15 +220,15 @@
     wrap.id = "lin-assistant";
     wrap.innerHTML =
       `<button id="la-launcher" class="la-launcher is-idle" aria-expanded="false" aria-controls="la-panel"
-               aria-label="Ask Lin — assistant" title="Ask Lin">
-         <span class="la-greet" aria-hidden="true">Ask Lin</span>
+               aria-label="Ask the assistant" title="Ask the assistant">
+         <span class="la-greet" aria-hidden="true">Ask Assistant</span>
          <span class="la-invite" aria-hidden="true"></span>
          ${ROBOT_SVG}
        </button>
        <span id="la-live" class="la-sr-only" aria-live="polite"></span>
-       <div id="la-panel" class="la-panel" role="dialog" aria-label="Lin assistant" hidden>
+       <div id="la-panel" class="la-panel" role="dialog" aria-label="Opus Gubernatio assistant" hidden>
          <div class="la-head">
-           <div><strong>Lin</strong></div>
+           <div><strong>Assistant</strong></div>
            <div class="la-head-actions">
              <button id="la-voice-toggle" class="la-icon-btn" type="button" aria-pressed="true" title="Speak answers aloud" hidden>
                <span class="la-voice-on" aria-hidden="true">🔊</span><span class="la-voice-off" aria-hidden="true">🔇</span>
@@ -244,7 +244,7 @@
          <div class="la-suggest">${SUGGESTIONS.map((s) => `<button class="la-chip">${esc(s)}</button>`).join("")}</div>
          <form id="la-form" class="la-form">
            <button id="la-mic" class="la-icon-btn la-mic" type="button" title="Ask by voice" aria-label="Ask by voice" hidden>🎙️</button>
-           <input id="la-input" type="text" placeholder="Ask about the demo…" aria-label="Question for the Lin assistant" maxlength="200" autocomplete="off" />
+           <input id="la-input" type="text" placeholder="Ask about the demo…" aria-label="Question for the assistant" maxlength="200" autocomplete="off" />
            <button type="submit" class="btn primary la-send">Ask</button>
          </form>
        </div>`;
@@ -277,8 +277,8 @@
       curState = s;
       launcher.classList.remove("is-idle", "is-listening", "is-answering");
       launcher.classList.add("is-" + s);
-      live.textContent = s === "listening" ? "Lin is listening"
-                       : s === "answering" ? "Lin is answering" : "";
+      live.textContent = s === "listening" ? "Assistant is listening"
+                       : s === "answering" ? "Assistant is answering" : "";
     }
     // one-shot flourishes (happy double-bob on success, head-shake on error)
     function flourish(cls) {

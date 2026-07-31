@@ -7,7 +7,7 @@
 // from the registry are intentionally NOT emitted into this object.
 const DS_DEFENSIBILITY = {
  "title": "Statistical Defensibility - A Data Science Perspective on PCEIF",
- "intro": "This handbook explains how every analytical capability in Lin Opus Gubernatio is designed, what uncertainty model it rests on, and how it is validated. It is organized by data science method, not by module number: readers meet the probabilistic reasoning first and the framework second. PCEIF (Probabilistic Capital-project Executive Intelligence Framework) fuses three signal types - EVM forecasting, statistical anomaly detection, and NLP document-signal extraction - into governed status verdicts through evidence fusion, with a human judgment layer recording every concurrence or override. The research artifact is evaluated under a Design Science Research methodology with qualitative validation from practicing professionals.",
+ "intro": "This handbook explains how every analytical capability in Opus Gubernatio is designed, what uncertainty model it rests on, and how it is validated. It is organized by data science method, not by module number: readers meet the probabilistic reasoning first and the framework second. PCEIF (Probabilistic Capital-project Executive Intelligence Framework) fuses three signal types - EVM forecasting, statistical anomaly detection, and NLP document-signal extraction - into governed status verdicts through evidence fusion, with a human judgment layer recording every concurrence or override. The research artifact is evaluated under a Design Science Research methodology with qualitative validation from practicing professionals.",
  "oneSentence": "PCEIF does not dress business rules as statistics; it separates estimation, calibrated measurement, and evidence combination under epistemic uncertainty, and validates each by the standard appropriate to its tier.",
  "executiveFindings": [
   "The 103-row module registry is now present and code-aligned. Module names, method classes, required inputs, computation source, and current implementation status are no longer unspecified.",
@@ -3659,7 +3659,7 @@ const DS_DEFENSIBILITY = {
  ],
  "praxisOutline": {
   "heading": "The Praxis Behind the Platform",
-  "lead": "Lin Opus Gubernatio is the proof-of-concept instrument for a Doctor of Engineering praxis on AI-driven probabilistic governance for public capital project controls. The research problem is the signal-to-action gap: modern platforms generate predictive signals faster than public-sector governance can responsibly act on them. PCEIF closes that gap by pairing every analytical signal with governed human judgment.",
+  "lead": "Opus Gubernatio is the proof-of-concept instrument for a Doctor of Engineering praxis on AI-driven probabilistic governance for public capital project controls. The research problem is the signal-to-action gap: modern platforms generate predictive signals faster than public-sector governance can responsibly act on them. PCEIF closes that gap by pairing every analytical signal with governed human judgment.",
   "chapters": [
    [
     "Introduction",
@@ -3683,7 +3683,7 @@ const DS_DEFENSIBILITY = {
    ],
    [
     "The Proof-of-Concept Instrument",
-    "Lin Opus Gubernatio as built: document ingestion, signal extraction, probabilistic computation, evidence fusion, and the executive interfaces that surface every red signal regardless of overall status."
+    "Opus Gubernatio as built: document ingestion, signal extraction, probabilistic computation, evidence fusion, and the executive interfaces that surface every red signal regardless of overall status."
    ],
    [
     "Practitioner Validation and Refinement",

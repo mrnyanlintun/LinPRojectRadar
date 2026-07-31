@@ -1,16 +1,34 @@
 /* ============================================================
-   lin-project-radar — config.js  (Phase 2)
+   Opus Gubernatio — config.js
    ------------------------------------------------------------
-   Single backend endpoint for the whole app. Paste the Google
-   Apps Script Web App /exec URL here. This is the ONLY network
-   endpoint the front end is permitted to call in Phase 2.
+   Single backend endpoint for the whole app.
 
-   Leave as the placeholder to run in offline/cache mode (the UI
-   degrades gracefully and shows a non-fatal "can't reach store"
-   state instead of crashing).
+   SAME-ORIGIN (T1). The app is served by the Render service that
+   also serves /exec, so this is a relative path. Three things
+   follow from that and none of them are incidental:
+
+     - No CORS request is issued at all, so no preflight to avoid
+       and no origin allowlist to keep in step with a deploy.
+     - No Apps Script redirect hop, which is what
+       script.googleusercontent.com in the CSP existed to allow.
+     - Session cookies and tokens stay first-party.
+
+   ROLLBACK. To point the frontend back at the Apps Script
+   backend, comment the line below and uncomment the one after
+   it. It is kept as a comment rather than a runtime fallback on
+   purpose: a fallback that silently reaches a second backend
+   would write research data to whichever one happened to answer.
+
+   Note the GitHub Pages copy still loads this file, so it will
+   resolve /exec against github.io and degrade to the non-fatal
+   "can't reach store" state. That origin is now a static mirror,
+   not a working deployment.
    ============================================================ */
 
+window.LIN_API_URL = "/exec";
+/* ROLLBACK ONLY — do not enable alongside the line above:
 window.LIN_API_URL = "https://script.google.com/macros/s/AKfycbwhmg_1L_RjbxPTR0IF3xpmHgLLzHA67O3mH27uqrAFfv8bF9U359yBqwjqbZO3YNTO/exec";
+*/
 
 /* ---------- Google OAuth — Stage 1 auth (PCEIF commercialization) ----------
    Only LIN_AUTHORIZED_EMAIL may access the app. The Client ID is bound to the

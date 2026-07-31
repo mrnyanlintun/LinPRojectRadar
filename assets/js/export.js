@@ -45,7 +45,7 @@
     const brief = snapshot.executive_brief || project.executiveBrief || null;
 
     const summaryRows = [
-      ["LIN OPUS GUBERNATIO — PROJECT REPORT"],
+      ["OPUS GUBERNATIO — PROJECT REPORT"],
       [""],
       ["Project:",       snapshot.project_name || ""],
       ["Project ID:",    snapshot.project_id || ""],
@@ -160,7 +160,7 @@
       XLSX.utils.book_append_sheet(wb, wsHist, "Signal History");
     }
 
-    const filename = "LinPR_Project" + (snapshot.project_id || project.id) +
+    const filename = "OpusGubernatio_Project" + (snapshot.project_id || project.id) +
       "_" + (snapshot.period || "current") + "_Report.xlsx";
     XLSX.writeFile(wb, filename);
   }

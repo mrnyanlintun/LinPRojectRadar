@@ -1251,13 +1251,13 @@
       <div class="doc-type-reference">
         <div class="dtr-title">Supported document types</div>
         <div class="dtr-grid">${DROPZONE_REFERENCE.map((t) => `<span class="dtr-pill">${esc(t)}</span>`).join("")}</div>
-        <p class="dtr-note">Upload any combination — Lin identifies each document automatically.</p>
+        <p class="dtr-note">Upload any combination — documents are identified automatically.</p>
       </div>
       <div class="dz-project-row">${projectField}</div>
       <div class="dropzone">
         <div class="dz-icon" aria-hidden="true">↑</div>
         <div class="dz-title">Drop documents here</div>
-        <div class="dz-sub">PDF · multiple files at once · Lin identifies type automatically</div>
+        <div class="dz-sub">PDF · multiple files at once · type identified automatically</div>
         <p class="upload-disclaimer">Notice: Do not upload confidential, proprietary, or personally identifiable information, or documents relating to actual projects. Content is processed by third-party AI services. Uploads are made at the user's sole risk.</p>
         <button type="button" class="dz-browse">Browse files</button>
         <input type="file" class="dz-input" multiple accept="${ACCEPT}" hidden />
@@ -1289,30 +1289,11 @@
       handleFiles(e.dataTransfer && e.dataTransfer.files);
     });
 
-    // CORS-safe POST with 45s timeout — text/plain bypasses preflight for Apps Script.
+    // Routed through the shared client (T1). This was the only direct fetch() outside
+    // store.js; its 45s timeout and 20/40/60s rate-limit backoff moved to
+    // LinStore.postResilient rather than being dropped. See store.js.
     function postJSON(payload) {
-      var controller = new AbortController();
-      var timedOut = false;
-      var timer = setTimeout(function () { timedOut = true; controller.abort(); }, 45000);
-      return fetch(window.LIN_API_URL || "", {
-        method: "POST",
-        headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify(payload),
-        signal: controller.signal
-      })
-        .then(function (r) { return r.text(); })
-        .then(function (t) {
-          try { return JSON.parse(t); }
-          catch (e) { throw new Error("Bad response: " + t.substring(0, 120)); }
-        })
-        .catch(function (e) {
-          // Translate the browser's generic AbortError into a clear timeout message.
-          if (timedOut || (e && e.name === "AbortError")) {
-            throw new Error("Request timed out after 45s — try a smaller file or retry");
-          }
-          throw e;
-        })
-        .finally(function () { clearTimeout(timer); });
+      return LinStore.postWithTimeout(payload);
     }
 
     function fileToBase64(file) {
@@ -1343,16 +1324,10 @@
 
     // Detect an Anthropic rate-limit (HTTP 429 / rate_limit_error). The backend
     // reports it INSIDE the resolved response (e.g. "Auto extraction failed:
-    // Error: Claude PDF 429: {...rate_limit_error...}"), so check the response
-    // object/text as well as any thrown error.
-    function isRateLimited(x) {
-      if (x == null) return false;
-      let s;
-      if (typeof x === "string") s = x;
-      else if (x instanceof Error) s = x.message || "";
-      else { try { s = JSON.stringify(x); } catch (e) { s = String(x); } }
-      return /\b429\b/.test(s) || /rate[_\s-]?limit/i.test(s);
-    }
+    // Error: Claude PDF 429: {...rate_limit_error...}"), so the check covers the
+    // response object/text as well as any thrown error. Canonical copy lives in
+    // store.js so the retry policy and its trigger cannot drift apart.
+    const isRateLimited = (x) => LinStore.isRateLimited(x);
 
     // Wait out a rate-limit window with a live countdown in the item's status span.
     function rateLimitWait(item, ms) {
@@ -1373,31 +1348,16 @@
     // Returns the successful response. Throws on a non-rate-limit failure (→ the
     // existing setError path) or when all 4 attempts are exhausted.
     async function extractWithRetry(payload, item) {
-      const BACKOFF = [20000, 40000, 60000]; // before attempts 2, 3, 4
-      const MAX = 4;
-      for (let attempt = 1; attempt <= MAX; attempt++) {
-        let resp = null, threw = null;
-        try {
-          resp = await postJSON(payload);
+      // The loop, the 4-attempt cap and the 20/40/60s waits now live in the shared
+      // client; what stays here is the countdown UI, because only this scope has the
+      // queue item to render it into.
+      return LinStore.postResilient(payload, {
+        onAttempt: function (attempt, resp) {
           // Full response, logged before any success/failure decision.
           console.log("[upload] extractsignals response (attempt " + attempt + "):", resp);
-        } catch (e) { threw = e; }
-
-        if (!threw) {
-          // SUCCESS whenever the backend returned ok:true, OR an `applied` list with
-          // no error — a valid response with no CPI/SPI fields (Cost/Environmental
-          // report) still succeeded. (Success logic unchanged.)
-          const ok = resp && (resp.ok === true || (!resp.error && resp.applied !== undefined));
-          if (ok) return resp;
-        }
-        const limited = threw ? isRateLimited(threw) : isRateLimited(resp);
-        if (!limited) {                                   // non-rate-limit → fail as today
-          if (threw) throw threw;
-          throw new Error((resp && resp.error) || "extract failed");
-        }
-        if (attempt === MAX) throw new Error("Rate limited — wait a minute and Retry");
-        await rateLimitWait(item, BACKOFF[attempt - 1]);  // wait, then retry
-      }
+        },
+        onRetryWait: function (ms) { return rateLimitWait(item, ms); }
+      });
     }
 
     async function processOne(id, file) {

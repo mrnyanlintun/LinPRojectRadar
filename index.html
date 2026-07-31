@@ -8,7 +8,10 @@
          and for the dynamic innerHTML templates used throughout the app.
        - script-src CDN list covers PDF.js, SheetJS (cdnjs) and is forward-compatible
          with jsdelivr/esm.sh/unpkg if they're added later.
-       - connect-src allows the Google Apps Script backend (LIN_API_URL) and OpenAI.
+       - connect-src: the API is now SAME-ORIGIN ('self'), so no backend host is listed for it.
+         script.googleusercontent.com has been removed — it existed only to allow the Apps
+         Script redirect hop, which the same-origin /exec does not perform. script.google.com
+         remains solely for the documented rollback in assets/js/config.js.
        - frame-ancestors 'none' is a hard clickjacking block. -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
@@ -17,13 +20,13 @@
     font-src 'self' https://fonts.gstatic.com;
     img-src 'self' data: blob: https:;
     worker-src 'self' blob:;
-    connect-src 'self' https://script.google.com https://script.googleusercontent.com https://api.openai.com https://accounts.google.com https://tiles.openfreemap.org;
+    connect-src 'self' https://script.google.com https://api.openai.com https://accounts.google.com https://tiles.openfreemap.org;
     frame-src 'self' https://accounts.google.com;
     frame-ancestors 'none';
   " />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lin Opus Gubernatio</title>
-  <meta name="description" content="Synthetic demonstration of the PCEIF signal-to-action governance workflow for public AEC capital programs. Doctor of Engineering praxis, GWU." />
+  <title>Opus Gubernatio — Project Decision Support</title>
+  <meta name="description" content="Opus Gubernatio — project decision support for public AEC capital programs. Doctor of Engineering praxis research, The George Washington University." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -267,9 +270,9 @@
   <!-- Login Screen (Stage 1 Google OAuth — see assets/js/auth.js) -->
   <div id="lin-login" style="display:none;">
     <div class="login-panel">
-      <div class="login-logo"><img src="logo.png" alt="Lin Opus Gubernatio" width="56" height="56"></div>
+      <div class="login-logo"><img src="logo.png" alt="Opus Gubernatio" width="56" height="56"></div>
       <p class="login-eyebrow">PCEIF: Public Capital EVM Intelligence Framework</p>
-      <h1 class="login-title">Lin Opus Gubernatio</h1>
+      <h1 class="login-title">Opus Gubernatio</h1>
       <p class="login-sub">Sign in with your authorized Google account to access the platform.</p>
       <div id="google-signin-btn"></div>
       <p class="login-disclaimer">
@@ -296,11 +299,11 @@
   <!-- Access Denied Screen -->
   <div id="lin-access-denied" style="display:none;">
     <div class="login-panel">
-      <div class="login-logo"><img src="logo.png" alt="Lin Opus Gubernatio" width="56" height="56"></div>
+      <div class="login-logo"><img src="logo.png" alt="Opus Gubernatio" width="56" height="56"></div>
       <h2 class="login-title" style="color:var(--alarm-red)">Access Restricted</h2>
       <p class="login-sub">
         The account <strong id="denied-email"></strong> is not authorized
-        to access Lin Opus Gubernatio.
+        to access Opus Gubernatio.
       </p>
       <p class="login-sub">This platform is restricted to authorized users only.</p>
       <button onclick="LinAuth.logout()" class="btn-secondary">Sign in with a different account</button>
@@ -313,10 +316,10 @@
 
     <header class="topbar">
       <a class="nav-logo" href="#" onclick="event.preventDefault(); if (window.LinApp) LinApp.showPage('portfolio');">
-        <img src="logo.png" alt="Lin Opus Gubernatio" class="nav-logo-img">
+        <img src="logo.png" alt="Opus Gubernatio" class="nav-logo-img">
         <span class="brand-lockup">
-          <span class="nav-logo-text"><span class="brand-init">L</span>in <span class="brand-init">O</span>pus <span class="brand-init">G</span>ubernatio</span>
-          <span class="brand-tagline">SIGNAL TO ACTION</span>
+          <span class="nav-logo-text"><span class="brand-init">O</span>pus <span class="brand-init">G</span>ubernatio</span>
+          <span class="brand-tagline">PROJECT DECISION SUPPORT</span>
         </span>
       </a>
       <div class="topbar-right">
@@ -433,7 +436,7 @@
       <section class="intro">
         <p class="eyebrow">Handbook</p>
         <h1>About the platform &amp; how it works</h1>
-        <p>What Lin Opus Gubernatio is and how it is built, plus the methods and framework behind every signal and decision.</p>
+        <p>What Opus Gubernatio is and how it is built, plus the methods and framework behind every signal and decision.</p>
       </section>
 
       <div class="hb-head">
@@ -450,12 +453,12 @@
         <!-- What it does -->
         <section class="panel about-section about-section-wide">
           <h2 class="about-h">What it does</h2>
-          <p>Lin Opus Gubernatio implements the Public Capital EVM Intelligence Framework (PCEIF): it turns the records a capital program already produces into an accountable, auditable governance recommendation. The pipeline runs in four steps.</p>
+          <p>Opus Gubernatio implements the Public Capital EVM Intelligence Framework (PCEIF): it turns the records a capital program already produces into an accountable, auditable governance recommendation. The pipeline runs in four steps.</p>
           <ol class="about-list about-steps">
-            <li><span class="about-step-num">1.</span> <strong>Ingests</strong> 26 document types (pay applications, schedules, change orders, RFIs, submittals, inspection and compliance reports), extracting the cost, schedule, and risk figures automatically.</li>
-            <li><span class="about-step-num">2.</span> <strong>Runs</strong> 103 signal modules across 10 project-level categories plus the portfolio-level Health suite: earned-value analysis, schedule and cost simulation, document risk, system dynamics, and machine-learning anomaly detection.</li>
+            <li><span class="about-step-num">1.</span> <strong>Ingests</strong> the document types a capital program already produces (pay applications, schedules, change orders, RFIs, submittals, inspection and compliance reports), extracting the cost, schedule, and risk figures automatically.</li>
+            <li><span class="about-step-num">2.</span> <strong>Runs</strong> an integrated multi-model analytical architecture spanning earned-value analysis, schedule and cost simulation, document risk, system dynamics, and machine-learning anomaly detection.</li>
             <li><span class="about-step-num">3.</span> <strong>Fuses</strong> the evidence with Dempster–Shafer combination into a single five-state status (Complete, Green, Yellow, Amber, or Red) that surfaces disagreement between signals rather than averaging it away.</li>
-            <li><span class="about-step-num">4.</span> <strong>Produces</strong> a signal-traced recommended action plan, each action tied to the category and module that triggered it, with a named authority and required documentation, which a named human reviewer records. The platform advises; it never decides.</li>
+            <li><span class="about-step-num">4.</span> <strong>Produces</strong> a signal-traced recommended action plan, each action tied to the analysis that triggered it, with a named authority and required documentation, which a named human reviewer records. The platform advises; it never decides.</li>
           </ol>
           <p>A separate <strong>Technical Auditor</strong> maintains a reference corpus (specifications, codes of practice, and user requirements) and audits submittals and drawings against it, returning traceable findings and recommendations for named human review.</p>
           <p class="about-note">All project data on this site is synthetic. No real project, agency, employer, contractor, or vendor is referenced.</p>
@@ -464,16 +467,15 @@
         <!-- Architecture -->
         <section class="panel about-section about-section-wide">
           <h2 class="about-h">Architecture</h2>
-          <p>103 analytical modules across 10 project-level categories plus the portfolio-level Health suite run client-side in the browser; a single serverless endpoint brokers persistence and AI, holding every API key server-side. Portfolio Health is computed server-side and persisted separately in portfolio_health.json.</p>
+          <p>An integrated multi-model analytical architecture is computed and stored server-side; the interface reads the stored results rather than recomputing them, so what a reviewer sees is exactly what was recorded.</p>
           <div class="about-arch">
             <div class="about-arch-layer" style="--layer-color: var(--phosphor)">
-              <div class="about-arch-label">Frontend: GitHub Pages (static)</div>
-              <p>Vanilla JavaScript, HTML5, CSS3. No framework. All 103 analytical modules run client-side in the browser.</p>
+              <div class="about-arch-label">Frontend: served same-origin with the API</div>
+              <p>Vanilla JavaScript, HTML5, CSS3. No framework. The interface renders stored results; it does not recompute them.</p>
             </div>
             <div class="about-arch-layer" style="--layer-color: var(--clear-green)">
-              <div class="about-arch-label">Backend: Google Apps Script Web App</div>
-              <p>Single <code>/exec</code> endpoint. Serverless, running as the owner. Routes requests, holds API keys in Script Properties, brokers persistence and AI. The browser never holds an API key.</p>
-              <p class="about-endpoints">Endpoints: health, list, listslim, get, create, save, setprojectnumber, archive, restore, chat, analyze, extractsignals, overwritesignal, resetsignals, tts, ingestcorpus, audit</p>
+              <div class="about-arch-label">Backend: single <code>/exec</code> endpoint</div>
+              <p>Routes requests, holds API keys server-side, brokers persistence and AI, and computes the analytical layer. The browser never holds an API key.</p>
             </div>
             <div class="about-arch-layer" style="--layer-color: var(--radar-amber)">
               <div class="about-arch-label">Persistence: Google Drive</div>
@@ -481,7 +483,7 @@
             </div>
             <div class="about-arch-layer" style="--layer-color: var(--alarm-red)">
               <div class="about-arch-label">AI Engine: Anthropic Claude API</div>
-              <p>All AI calls are server-side via Apps Script. Signal extraction, Lin chat, document identification: <code>claude-sonnet-4-6</code>. Technical auditor, executive brief: <code>claude-opus-4-8</code>. Knowledge retrieval: keyword-matched retrieval from the knowledge library.</p>
+              <p>All AI calls are made server-side. Signal extraction, assistant chat, document identification: <code>claude-sonnet-4-6</code>. Technical auditor, executive brief: <code>claude-opus-4-8</code>. Knowledge retrieval: keyword-matched retrieval from the knowledge library.</p>
             </div>
             <div class="about-arch-layer" style="--layer-color: var(--muted)">
               <div class="about-arch-label">Speech: OpenAI TTS-1</div>
@@ -501,9 +503,9 @@
             <table class="about-table">
               <thead><tr><th>Component</th><th>Technology</th></tr></thead>
               <tbody>
-                <tr><td>Frontend</td><td>Vanilla JavaScript, HTML5, CSS3, GitHub Pages (static)</td></tr>
-                <tr><td>Backend</td><td>Google Apps Script Web App (single /exec endpoint)</td></tr>
-                <tr><td>Persistence</td><td>Google Drive: file-based, JSON per project</td></tr>
+                <tr><td>Frontend</td><td>Vanilla JavaScript, HTML5, CSS3, served same-origin with the API</td></tr>
+                <tr><td>Backend</td><td>Single /exec endpoint</td></tr>
+                <tr><td>Persistence</td><td>Relational store, one record per project</td></tr>
                 <tr><td>AI: signal extraction, chat, doc ID</td><td>Anthropic claude-sonnet-4-6</td></tr>
                 <tr><td>AI: auditor, brief</td><td>Anthropic claude-opus-4-8</td></tr>
                 <tr><td>Speech</td><td>OpenAI tts-1, onyx voice</td></tr>
@@ -521,13 +523,13 @@
             <table class="about-table">
               <thead><tr><th>Capability</th><th>Description</th></tr></thead>
               <tbody>
-                <tr><td>Drag-and-drop ingest</td><td>Multi-file document upload with AI type identification: drop any combination of PDFs and Lin classifies, extracts, and runs models automatically</td></tr>
-                <tr><td>3D module charts</td><td>Zoom / pan / rotate 3D canvas charts for all 10 project categories plus Portfolio Health, dozens of chart types including scatter, network, line, Pareto, and flat 2D donuts</td></tr>
-                <tr><td>Force network visualization</td><td>101-computation signal network rendered in 3D: inner ring generators, outer ring synthesis / evidence / governance, live status colour-coded from project data</td></tr>
-                <tr><td>Portfolio Health anomaly detection</td><td>Portfolio Health (PH): Isolation Forest, outlier ranking, trajectory classification, cross-project pattern detection, composite anomaly score</td></tr>
-                <tr><td>Evidence combination</td><td>Cat 7: 20 independent uncertainty-reasoning frameworks (Dempster-Shafer, Rough Sets, Neutrosophic, Z-numbers, Plithogenic, Quantum Probability, and 14 others)</td></tr>
+                <tr><td>Drag-and-drop ingest</td><td>Multi-file document upload with AI type identification: drop any combination of PDFs and the platform classifies, extracts, and runs the analysis automatically</td></tr>
+                <tr><td>3D analytical charts</td><td>Zoom / pan / rotate 3D canvas charts across the analytical layer and Portfolio Health, with chart types including scatter, network, line, Pareto, and flat 2D donuts</td></tr>
+                <tr><td>Force network visualization</td><td>Signal network rendered in 3D: inner ring generators, outer ring synthesis / evidence / governance, live status colour-coded from project data</td></tr>
+                <tr><td>Portfolio Health anomaly detection</td><td>Isolation Forest, outlier ranking, trajectory classification, cross-project pattern detection, composite anomaly score</td></tr>
+                <tr><td>Evidence combination</td><td>Independent uncertainty-reasoning frameworks including Dempster-Shafer, Rough Sets, Neutrosophic, Z-numbers, Plithogenic, and Quantum Probability</td></tr>
                 <tr><td>Executive brief</td><td>Grouped-status AI summary: Recommendation, Signal Pattern by status tier, Key Drivers with actual values, Required Actions with named authority</td></tr>
-                <tr><td>Decision optimization</td><td>Cat 10: multi-objective optimization, LP feasibility, constraint satisfaction, what-if scenarios, regret minimization</td></tr>
+                <tr><td>Decision optimization</td><td>Multi-objective optimization, LP feasibility, constraint satisfaction, what-if scenarios, regret minimization</td></tr>
               </tbody>
             </table>
           </div>
@@ -554,7 +556,7 @@
         <!-- Research context -->
         <section class="panel about-section about-section-wide">
           <h2 class="about-h">Research context</h2>
-          <p>Lin Opus Gubernatio is the demonstration artifact for a Doctor of Engineering praxis by Nyan Lin Tun at The George Washington University, Department of Engineering Management and Systems Engineering. The work follows the Design Science Research (DSR) methodology (Hevner, Peffers): the platform is the designed artifact, evaluated through practitioner validation with public-program controls professionals.</p>
+          <p>Opus Gubernatio is the demonstration artifact for a Doctor of Engineering praxis by Nyan Lin Tun at The George Washington University, Department of Engineering Management and Systems Engineering. The work follows the Design Science Research (DSR) methodology (Hevner, Peffers): the platform is the designed artifact, evaluated through practitioner validation with public-program controls professionals.</p>
           <p>AI explains and summarizes; governance decisions come from explicit rule-based logic, and every recommended action requires named human approval before it is recorded. The platform is not a validated production system.</p>
           <p class="about-note">All project data on this site is synthetic. No real project, agency, employer, contractor, or vendor is referenced.</p>
         </section>
@@ -573,7 +575,8 @@
     </div><!-- /layout -->
 
     <footer class="site-footer">
-      <p class="footer-copyright">© 2026 Nyan Lin Tun. All rights reserved. Lin Opus Gubernatio™ and the associated framework, software, and documentation are the intellectual property of the author. Unauthorized reproduction, distribution, or use is prohibited.</p>
+      <p class="footer-praxis-notice">Opus Gubernatio is a decision-support platform developed for Doctor of Engineering praxis research at The George Washington University. Analytical outputs are advisory and do not constitute a validated compliance determination.</p>
+      <p class="footer-copyright">© 2026 Nyan Lin Tun. All rights reserved. Opus Gubernatio™ and the associated framework, software, and documentation are the intellectual property of the author. Unauthorized reproduction, distribution, or use is prohibited.</p>
       <ul class="footer-legal">
         <li><strong>Synthetic demonstration data only.</strong> All project data is synthetic; no real project, agency, employer, contractor, or vendor is referenced.</li>
         <li><strong>Not a validated production system.</strong> It does not validate predictive accuracy, diagnose live projects, or issue contractual direction.</li>
@@ -602,6 +605,8 @@
   <script src="assets/js/data.js"></script>
   <script src="assets/js/categories.js"></script>
   <script src="assets/js/store.js"></script>
+  <!-- Per-user feature flags: hides disabled affordances. Enforcement is server-side. -->
+  <script src="assets/js/features.js"></script>
   <script src="assets/js/decision.js"></script>
   <script src="assets/js/sim.js"></script>
   <script src="assets/js/simulations.js"></script>

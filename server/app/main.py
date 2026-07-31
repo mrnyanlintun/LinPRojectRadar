@@ -22,14 +22,18 @@ import platform
 import sys
 from typing import Any
 
+import pathlib
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from fastapi import Request
 
 from .db import ReadinessResult, build_engine, build_session_factory, check_readiness, check_schema
 from .facade import dispatch_get, dispatch_post, err
+from .features import FEATURE_ACTIONS, gate_action
 from .research_consent import ConsentRequired, install as install_consent_gate
 from .logging_config import configure_logging
 from .settings import SettingsError, load_settings, session_secret_is_ephemeral
@@ -201,6 +205,12 @@ def exec_get(request: Request) -> JSONResponse:
     params = dict(request.query_params)
     try:
         with SessionFactory() as session:
+            # T1: feature flags are enforced server-side, before dispatch. Hiding a feature in
+            # the UI is not enforcement, and a per-handler check is only as reliable as whoever
+            # adds the next handler.
+            refused = gate_action(session, str(params.get("action") or ""), params, settings)
+            if refused is not None:
+                return _exec_response(refused)
             return _exec_response(dispatch_get(session, params))
     except Exception as exc:  # noqa: BLE001
         # Even an unexpected fault is reported in the contract's error shape, because a 500 body
@@ -224,8 +234,18 @@ async def exec_post(request: Request) -> JSONResponse:
     except (ValueError, UnicodeDecodeError) as exc:
         return _exec_response(err(f"Bad request body: {exc}"))
 
+    action = str(payload.get("action") or "").lower()
     try:
         with SessionFactory() as session:
+            refused = gate_action(session, action, payload, settings)
+            if refused is not None:
+                return _exec_response(refused)
+            # The feature-flag admin actions are dispatched here rather than from facade.py,
+            # which this phase must not modify: another session may be editing it concurrently.
+            handler = FEATURE_ACTIONS.get(action)
+            if handler is not None:
+                return _exec_response(handler(session, payload, settings.session_secret,
+                                              settings.session_ttl_seconds))
             return _exec_response(dispatch_post(session, payload, settings))
     except ConsentRequired as exc:
         # Reported in the contract's error shape, not as a 500: it is an application outcome.
@@ -235,3 +255,54 @@ async def exec_post(request: Request) -> JSONResponse:
     except Exception as exc:  # noqa: BLE001
         log.exception("exec_post_failed", extra={"action": payload.get("action")})
         return _exec_response(err(f"Server error: {type(exc).__name__}"))
+
+
+# ---------------------------------------------------------------- static SPA (T1)
+#
+# The frontend is served from this origin so it can call /exec same-origin, with no CORS
+# request and no Apps Script redirect.
+#
+# WHY THIS CANNOT SHADOW THE HEALTH ENDPOINTS, which is the thing most likely to go wrong here:
+#
+#   1. There is no catch-all. Only three things are served — the /assets prefix, "/" and
+#      "/index.html" as exact paths, and "/logo.png" as an exact path. A request to /healthz,
+#      /readyz or /exec matches none of them, so it can only ever reach its own route. Mounting
+#      StaticFiles at "/" would have introduced exactly that risk, and is deliberately not done.
+#   2. Registration order reinforces it. Starlette matches routes in order and takes the first
+#      full match; these are declared after the health and facade routes.
+#
+# It also serves only what the SPA actually loads. Serving the repository root would have
+# published server/app/*.py, apps_script/, p0-baseline/ and .git/ to the public internet.
+# The allowlist below is the whole delivery surface.
+
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
+_ASSETS_DIR = REPO_ROOT / "assets"
+_INDEX_HTML = REPO_ROOT / "index.html"
+_LOGO_PNG = REPO_ROOT / "logo.png"
+
+if _ASSETS_DIR.is_dir():
+    app.mount("/assets", StaticFiles(directory=str(_ASSETS_DIR)), name="assets")
+
+
+def _static_file(path: pathlib.Path, media_type: str) -> FileResponse | JSONResponse:
+    if not path.is_file():
+        # A JSON body rather than FastAPI's HTML 404: everything else this service returns is
+        # JSON, and a missing bundle should read as a deployment fault, not a routing mystery.
+        return JSONResponse(status_code=404,
+                            content={"ok": False, "error": f"not deployed: {path.name}"})
+    return FileResponse(path, media_type=media_type)
+
+
+@app.get("/", include_in_schema=False)
+def spa_root():
+    return _static_file(_INDEX_HTML, "text/html")
+
+
+@app.get("/index.html", include_in_schema=False)
+def spa_index():
+    return _static_file(_INDEX_HTML, "text/html")
+
+
+@app.get("/logo.png", include_in_schema=False)
+def spa_logo():
+    return _static_file(_LOGO_PNG, "image/png")
