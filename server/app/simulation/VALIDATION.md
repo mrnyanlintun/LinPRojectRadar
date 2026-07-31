@@ -30,14 +30,14 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 | A1.9 | Budget Execution Rate | simulations.js | no | - | not ported in this pass |
 | A1.10 | Regression to Mean CPI | simulations.js | no | - | not ported in this pass |
 | A1.11 | ICE Ratio | simulations.js | no | - | not ported in this pass |
-| A2.4 | Schedule Compression Index | simulations.js | no | - | not ported in this pass |
-| A2.5 | Float Consumption Rate | simulations.js | no | - | not ported in this pass |
-| A2.6 | S-Curve Deviation | simulations.js | no | - | not ported in this pass |
-| A2.7 | Milestone Trend Analysis | simulations.js | no | - | not ported in this pass |
-| A2.8 | Look-Ahead Schedule Health | simulations.js | no | - | not ported in this pass |
-| A2.9 | Resource Loading Index | simulations.js | no | - | not ported in this pass |
-| A2.10 | Schedule Risk Analysis P80 | simulations.js | no | - | not ported in this pass |
-| A2.11 | Critical Path Index | simulations.js | no | - | not ported in this pass |
+| A2.4 | Schedule Compression Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
+| A2.5 | Float Consumption Rate | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
+| A2.6 | S-Curve Deviation | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
+| A2.7 | Milestone Trend Analysis | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
+| A2.8 | Look-Ahead Schedule Health | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
+| A2.9 | Resource Loading Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
+| A2.10 | Schedule Risk Analysis P80 | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
+| A2.11 | Critical Path Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
 | A3.2 | Contingency Burn Rate | simulations.js | no | - | not ported in this pass |
 | A3.3 | Labor Productivity Index | simulations.js | no | - | not ported in this pass |
 | A3.4 | Material Cost Variance | simulations.js | no | - | not ported in this pass |
@@ -118,8 +118,9 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 
 ## Summary
 
-- validated and shipped: **7** (batch 1 added A1.1 and A1.2 from sim.js)
-- declared but not ported: **94**
+- validated and shipped: **15** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
+  A2.4–A2.11, the simulations.js schedule extensions)
+- declared but not ported: **86**
 - maximum relative divergence across every validated module and case: **0.0e+00** (exact match)
 
 ## Rule: no module reads the system clock
@@ -148,6 +149,6 @@ The one known offender is `runDataTimeliness` (C1.2), which computes `days_since
 | `sim.js:230` | derived-series builder | `dataDate` field | not ported |
 | `decision.js:395` | export payload | presentation only (`exported_at`) | not ported |
 | `simulations.js` x11 | `Object.keys` reductions | float accumulation order | insertion order preserved in both languages. **Do not sort these.** Sorting would look like a determinism fix but would silently change results relative to the instrument's own history; the two languages already agree because both preserve insertion order. |
-| `simulations.js:1102,1216,1281,2953` | date parsing from `signalInputs` | value, but deterministic given input | timezone-sensitive parsing is a porting hazard to watch |
+| `simulations.js:1102,1216,1281,2953` | date parsing from `signalInputs` | value, but deterministic given input | timezone-sensitive parsing is a porting hazard to watch. **Batch 2 treatment**: the port parses date-only `YYYY-MM-DD` strings as UTC midnight, exactly as JavaScript does, and refuses (abstains on) anything else. Two deliberate divergences from the JavaScript, both in the refusing direction: a datetime string with a `T` and no zone, which JavaScript parses as *local* time (the confound itself), and a malformed date, where JavaScript's NaN falls through every comparison and lands on `Red` (A2.4/A2.10) — the port abstains rather than reproducing a Red conjured from an unparseable string. Neither input shape occurs in signalInputs; both are recorded here so a validation case that ever hits one is explained. |
 | `sim.js:108,213` | `monteCarloEAC`, `deriveSeries` | deterministic already, but scenario-blind | **ported in batch 1**, reseeded from `(scenario_id, period)`. `deriveSeries` seeds via `hashSeed("series-" + seed)` (FNV-1a); skipping that transform produced a different series, sigma, H and breach index, which is how the first validation attempt failed. |
 

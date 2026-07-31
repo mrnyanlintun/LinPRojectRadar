@@ -285,5 +285,14 @@ VALIDATED: dict[str, tuple[str, Callable[[dict, Callable[[], float], object], di
     "A5.1": ("DSM_Rework_Cat5", run_dsm),
 }
 
+
+def _register_extensions() -> None:
+    # Imported late: models_ext imports helpers from this module.
+    from .models_ext import A2_EXTENSIONS
+    VALIDATED.update(A2_EXTENSIONS)
+
+
+_register_extensions()
+
 # Stochastic models, for the seed record on the result set.
 STOCHASTIC: frozenset[str] = frozenset({"A1.1", "A1.2", "A2.1"})
