@@ -541,7 +541,7 @@
       title: "1. What is PCEIF",
       eyebrow: "Framework foundation",
       build: () => `
-        <p class="kn-lead">PCEIF, the <strong>Public Capital EVM Intelligence Framework</strong>, converts the signals that a public capital program already generates into a structured, accountable governance action with a named authority and a documented audit trail, using 103 analytical modules across 10 project-level categories and the portfolio-level Health suite. Lin Opus Gubernatio is the platform that implements the framework.</p>
+        <p class="kn-lead">PCEIF, the <strong>Public Capital EVM Intelligence Framework</strong>, converts the signals that a public capital program already generates into a structured, accountable governance action with a named authority and a documented audit trail, using 103 analytical modules across 10 project-level categories and the portfolio-level Health suite. Opus Gubernatio is the platform that implements the framework.</p>
 
         <h3>The problem it solves</h3>
         <p>Standard Earned Value Management produces excellent data. It does not produce a decision. A PM looking at CPI 0.88 in period 4 has no structured path to a defensible escalation: who must act, on what timeframe, with what documentation, under whose authority. The data exists; the governance link is missing.</p>
@@ -2653,7 +2653,7 @@ Named Human Approval → Audit Record</pre>
     id: "pceif-framework", title: "PCEIF Framework Overview",
     eyebrow: "Methods & Framework · the governance spine",
     build: () => `
-      <p class="kn-lead">PCEIF, the Public Capital EVM Intelligence Framework, is a model-agnostic governance architecture for converting project-control signals into accountable action. It treats every analytical output as evidence, and defines the minimum conditions under which that evidence can support monitoring, clarification, investigation, escalation, recovery planning, executive review, or formal authority review, and what must be recorded when a PM accepts, rejects, overrides, defers, or requests more evidence. Lin Opus Gubernatio is the current reference implementation, but PCEIF can be instantiated above commercial platforms, spreadsheets, simulations, or future digital-twin environments.</p>
+      <p class="kn-lead">PCEIF, the Public Capital EVM Intelligence Framework, is a model-agnostic governance architecture for converting project-control signals into accountable action. It treats every analytical output as evidence, and defines the minimum conditions under which that evidence can support monitoring, clarification, investigation, escalation, recovery planning, executive review, or formal authority review, and what must be recorded when a PM accepts, rejects, overrides, defers, or requests more evidence. Opus Gubernatio is the current reference implementation, but PCEIF can be instantiated above commercial platforms, spreadsheets, simulations, or future digital-twin environments.</p>
 
       <h3>Architectural principles</h3>
       <ul class="kn-list">
@@ -2682,7 +2682,7 @@ Named Human Approval → Audit Record</pre>
       <p>Records (documents, schedule, cost) become signals (Cat 1 to Cat 5), which are synthesised into a baseline health state (Cat 6), cross-checked for confidence (Cat 7), checked for data quality and optimal response (Cat 9, Cat 10), governed into a decision card with a named authority (Cat 8), approved by a named human, and preserved as an exportable audit record. Portfolio Health (PH) runs alongside as program-level context, not a project-level trigger.</p>
 
       <h3>Conformance</h3>
-      <p>An implementation conforms to PCEIF only when it preserves the evidence-to-action separation, exposes method and source metadata, supports abstention, records human judgment, enforces authority and fairness controls, and produces an exportable audit record. Visual similarity to Lin is not a conformance requirement.</p>
+      <p>An implementation conforms to PCEIF only when it preserves the evidence-to-action separation, exposes method and source metadata, supports abstention, records human judgment, enforces authority and fairness controls, and produces an exportable audit record. Visual similarity to Opus Gubernatio is not a conformance requirement.</p>
     `
   };
 

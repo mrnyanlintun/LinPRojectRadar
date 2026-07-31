@@ -190,6 +190,93 @@
     return j;
   }
 
+  /* ---------- resilient POST: per-attempt timeout + rate-limit backoff ----------
+     Moved here from signals.js (T1), which was the one place outside this module
+     that called fetch() directly. The POLICY moved with it rather than being
+     dropped, because it is the difference between a 3 MB PDF extraction that
+     survives an Anthropic rate-limit window and one that fails in front of a user:
+
+       - 45s AbortController timeout per attempt, reported as a timeout rather
+         than the browser's generic AbortError.
+       - up to 4 attempts, waiting 20s / 40s / 60s before attempts 2, 3 and 4.
+         Each wait clears a 60s token window.
+       - retries ONLY on a rate limit. Any other failure fails immediately, as
+         before: retrying a malformed document three times helps nobody.
+
+     Unlike apiPost, this deliberately does NOT throw on {ok:false}. The caller
+     inspects the resolved body, because the backend reports a rate limit inside
+     a 200 response ("Auto extraction failed: ... 429 ... rate_limit_error"). */
+  const RESILIENT_TIMEOUT_MS = 45000;
+  const RESILIENT_BACKOFF_MS = [20000, 40000, 60000]; // before attempts 2, 3, 4
+
+  function isRateLimited(x) {
+    if (x == null) return false;
+    let s;
+    if (typeof x === "string") s = x;
+    else if (x instanceof Error) s = x.message || "";
+    else { try { s = JSON.stringify(x); } catch (e) { s = String(x); } }
+    return /\b429\b/.test(s) || /rate[_\s-]?limit/i.test(s);
+  }
+
+  function postWithTimeout(payload, timeoutMs) {
+    const ms = timeoutMs || RESILIENT_TIMEOUT_MS;
+    const controller = new AbortController();
+    let timedOut = false;
+    const timer = setTimeout(function () { timedOut = true; controller.abort(); }, ms);
+    return fetch(url(), {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=UTF-8" },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    })
+      .then(function (r) { return r.text(); })
+      .then(function (t) {
+        try { return JSON.parse(t); }
+        catch (e) { throw new Error("Bad response: " + String(t).substring(0, 120)); }
+      })
+      .catch(function (e) {
+        // Translate the browser's generic AbortError into a clear timeout message.
+        if (timedOut || (e && e.name === "AbortError")) {
+          throw new Error("Request timed out after " + Math.round(ms / 1000) +
+                          "s — try a smaller file or retry");
+        }
+        throw e;
+      })
+      .finally(function () { clearTimeout(timer); });
+  }
+
+  /* opts: { attempts, backoff, timeoutMs, isSuccess(resp), onRetryWait(ms, attempt) }
+     onRetryWait lets the caller render a countdown against its own DOM node and
+     must resolve when the wait is over; the default simply sleeps. */
+  async function postResilient(payload, opts) {
+    const o = opts || {};
+    const backoff = o.backoff || RESILIENT_BACKOFF_MS;
+    const max = o.attempts || (backoff.length + 1);
+    const isSuccess = o.isSuccess || function (resp) {
+      // ok:true, OR an `applied` list with no error — a valid extraction that
+      // carried no CPI/SPI (a Cost or Environmental report) still succeeded.
+      return resp && (resp.ok === true || (!resp.error && resp.applied !== undefined));
+    };
+    for (let attempt = 1; attempt <= max; attempt++) {
+      let resp = null, threw = null;
+      try { resp = await postWithTimeout(payload, o.timeoutMs); }
+      catch (e) { threw = e; }
+      if (o.onAttempt) { try { o.onAttempt(attempt, resp, threw); } catch (e) {} }
+
+      if (!threw && isSuccess(resp)) return resp;
+
+      const limited = threw ? isRateLimited(threw) : isRateLimited(resp);
+      if (!limited) {
+        if (threw) throw threw;
+        throw new Error((resp && resp.error) || "request failed");
+      }
+      if (attempt === max) throw new Error("Rate limited — wait a minute and Retry");
+      const waitMs = backoff[Math.min(attempt - 1, backoff.length - 1)];
+      if (o.onRetryWait) await o.onRetryWait(waitMs, attempt);
+      else await new Promise(function (r) { setTimeout(r, waitMs); });
+    }
+  }
+
   let lastError = null;
   function errored() { return lastError; }
 
@@ -568,6 +655,9 @@
     hydratePortfolio: hydrate,
     // generic POST passthrough (used by the Portfolio Health portfolioanalyze call)
     post: apiPost,
+    // resilient POST — 45s per-attempt timeout + 20/40/60s rate-limit backoff.
+    // Used by the document upload path; see the comment above postResilient.
+    postResilient, postWithTimeout, isRateLimited,
     // sync mirror accessors used by render code
     cachedActive, cachedArchived, getCached, listActive: cachedActive,
     hasSignals, errored, configured, banner, loading

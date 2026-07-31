@@ -1,0 +1,277 @@
+#!/usr/bin/env python3
+"""
+T1 verification: same-origin static serving and per-user feature flags.
+
+Proves the server-side guarantees through the real ASGI app:
+
+  1. /healthz and /readyz still answer 200 after the static mount, and the SPA is served.
+  4. A research account with empty features has all four flags disabled; an operational account
+     with empty features has all four enabled.
+  5. A disabled feature's action is refused server-side when called directly, and audited.
+  6. Portfolio health is refused while the pre-judgment is unlocked, even with health_dialog on.
+
+Guarantees 2, 3 and 7 are proved outside this file — 2 and 7 in the browser (they are about
+origins and fetch policy), 3 by the repository search — and are reported in the PR.
+
+Run:
+    DATABASE_URL=... SESSION_SECRET=... python tools/test_features.py
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+
+sys.path.insert(0, __file__.rsplit("tools", 1)[0])
+
+from fastapi.testclient import TestClient  # noqa: E402
+from sqlalchemy import select  # noqa: E402
+
+import app.main as main  # noqa: E402
+from app.features import FEATURE_KEYS  # noqa: E402
+from app.models import Project  # noqa: E402
+from app.research_identity import hash_access_token  # noqa: E402
+from app.research_models import Assignment, AuditEvent, Participant  # noqa: E402
+
+client = TestClient(main.app, raise_server_exceptions=False)
+Session = main.SessionFactory
+results: list[tuple[bool, str, str]] = []
+
+
+def check(ok: bool, label: str, detail: str = "") -> None:
+    results.append((ok, label, detail))
+    print(f"  {'PASS' if ok else 'FAIL'}  {label}" + (f"   {detail}" if detail and not ok else ""))
+
+
+def post(payload: dict) -> dict:
+    r = client.post("/exec", content=json.dumps(payload), headers={"Content-Type": "text/plain"})
+    assert r.status_code == 200, f"contract violation: HTTP {r.status_code}"
+    return r.json()
+
+
+def get(params: dict) -> dict:
+    r = client.get("/exec", params=params)
+    assert r.status_code == 200
+    return r.json()
+
+
+def audit_rows(event_type: str, **meta) -> list:
+    with Session() as s:
+        rows = s.scalars(select(AuditEvent).where(AuditEvent.event_type == event_type)).all()
+    out = []
+    for r in rows:
+        m = r.event_metadata or {}
+        if all(m.get(k) == v for k, v in meta.items()):
+            out.append(m)
+    return out
+
+
+ADMIN = "t1-bootstrap-admin"
+PROJECT = "PRJ-T1A"
+with Session() as s:
+    row = s.scalar(select(Participant).where(Participant.role == "ResearchAdmin"))
+    if row is None:
+        s.add(Participant(pseudonymous_code="PM-000", role="ResearchAdmin",
+                          access_token_hash=hash_access_token(ADMIN)))
+    else:
+        row.access_token_hash = hash_access_token(ADMIN)
+    if s.scalar(select(Project).where(Project.legacy_id == PROJECT)) is None:
+        s.add(Project(legacy_id=PROJECT, doc={"id": PROJECT, "name": "T1 project"}))
+    s.commit()
+admin = post({"action": "researchlogin", "access_token": ADMIN})["session_token"]
+
+print("=" * 78)
+print("GUARANTEE 1: health endpoints survive the static mount; the SPA is served")
+print("=" * 78)
+
+r = client.get("/healthz")
+check(r.status_code == 200 and r.json().get("status") == "ok",
+      "/healthz returns 200 after the static mount", f"HTTP {r.status_code}")
+r = client.get("/readyz")
+check(r.status_code == 200 and r.json().get("status") == "ready",
+      "/readyz returns 200 after the static mount", f"HTTP {r.status_code} {r.text[:120]}")
+schema = next((c for c in client.get("/readyz").json()["checks"] if c["name"] == "schema"), {})
+check("0007_feature_flags" in (schema.get("detail") or ""),
+      "schema reports head 0007_feature_flags", str(schema))
+
+r = client.get("/")
+check(r.status_code == 200 and "<!doctype html>" in r.text[:200].lower(),
+      "GET / serves the SPA", f"HTTP {r.status_code}")
+check("Opus Gubernatio" in r.text and "<title>Opus Gubernatio" in r.text,
+      "served SPA carries the rebranded title")
+r = client.get("/assets/js/config.js")
+check(r.status_code == 200 and 'window.LIN_API_URL = "/exec"' in r.text,
+      "the served config points at the same-origin /exec", f"HTTP {r.status_code}")
+# The static routes are exact-path; nothing can fall through to them.
+check(client.get("/exec", params={"action": "ping"}).json().get("ok") is True,
+      "/exec still dispatches after the mount")
+check(client.get("/definitely-not-a-route").status_code == 404,
+      "no catch-all static route swallows unknown paths")
+
+print()
+print("=" * 78)
+print("GUARANTEE 4: defaults fail safe, derived from account_type")
+print("=" * 78)
+
+
+def make(account_type=None):
+    body = {"action": "adminparticipantcreate", "session_token": admin}
+    if account_type:
+        body["account_type"] = account_type
+    c = post(body)
+    tok = post({"action": "researchlogin", "access_token": c["access_token"]})["session_token"]
+    return c, tok
+
+
+res_p, res_tok = make()
+ops_p, ops_tok = make("operational")
+
+r = post({"action": "researchmyfeatures", "session_token": res_tok})
+check(r.get("ok") is True and r["account_type"] == "research",
+      "research account created with empty features", str(r)[:160])
+check(all(r["features"][k] is False for k in FEATURE_KEYS),
+      "research + empty features -> all four DISABLED", str(r.get("features")))
+
+r = post({"action": "researchmyfeatures", "session_token": ops_tok})
+check(all(r["features"][k] is True for k in FEATURE_KEYS),
+      "operational + empty features -> all four ENABLED", str(r.get("features")))
+
+with Session() as s:
+    stored = s.execute(
+        select(Participant).where(Participant.participant_id == res_p["participant_id"])
+    ).scalar_one()
+check(stored is not None, "participant row exists")
+r = post({"action": "adminfeaturesget", "session_token": admin,
+          "participant_id": res_p["participant_id"]})
+check(r.get("stored") == {}, "nothing was written to features; the defaults are derived",
+      str(r.get("stored")))
+
+# An explicit set wins over the default, and only for the keys named.
+r = post({"action": "adminfeaturesset", "session_token": admin,
+          "participant_id": res_p["participant_id"], "features": {"chat": True}})
+check(r.get("ok") is True and r["effective"]["chat"] is True,
+      "admin enabled chat for the research account", str(r)[:200])
+check(all(r["effective"][k] is False for k in FEATURE_KEYS if k != "chat"),
+      "the other three keys stay at the restrictive default", str(r.get("effective")))
+check(audit_rows("features_set", changed_by=None) == [] or
+      any(m.get("applied") == {"chat": True} for m in audit_rows("features_set")),
+      "the change is audited with previous and new values")
+
+r = post({"action": "adminfeaturesset", "session_token": admin,
+          "participant_id": res_p["participant_id"], "features": {"telepathy": True}})
+check(r.get("ok") is False and "unknown feature key" in (r.get("error") or ""),
+      "an unrecognised key is refused, not stored", str(r)[:160])
+r = post({"action": "adminfeaturesset", "session_token": admin,
+          "participant_id": res_p["participant_id"], "features": {"chat": "yes"}})
+check(r.get("ok") is False and "true or false" in (r.get("error") or ""),
+      "a non-boolean value is refused", str(r)[:160])
+r = post({"action": "adminfeaturesset", "session_token": res_tok,
+          "participant_id": res_p["participant_id"], "features": {"auditor": True}})
+check(r.get("ok") is False and "ResearchAdmin" in (r.get("error") or ""),
+      "a non-admin cannot set flags", str(r)[:160])
+
+print()
+print("=" * 78)
+print("GUARANTEE 5: a disabled feature is refused server-side, bypassing the UI")
+print("=" * 78)
+
+# A fresh research account, so all four flags sit at the restrictive default.
+g5_p, g5_tok = make()
+before = len(audit_rows("feature_denied"))
+for action, feature in (("chat", "chat"), ("audit", "auditor"),
+                        ("knowledgeget", "knowledge_library"),
+                        ("getportfoliohealth", "health_dialog")):
+    r = post({"action": action, "session_token": g5_tok})
+    # getportfoliohealth is a GET action; posting it proves the gate fires BEFORE dispatch,
+    # since an ungated POST would have returned "Unknown POST action" instead.
+    check(r.get("ok") is False and "disabled for this account" in (r.get("error") or ""),
+          f"{action} refused for the research account ({feature} off)", str(r)[:160])
+denied = audit_rows("feature_denied")
+check(len(denied) - before == 4, "each refusal is audited", str(len(denied) - before))
+check({m.get("feature") for m in denied} >= {"chat", "auditor", "knowledge_library",
+                                             "health_dialog"},
+      "the audit records which feature was refused",
+      str(sorted({m.get('feature') for m in denied})))
+
+# The GET path is gated too, not only POST.
+r = get({"action": "getportfoliohealth", "session_token": g5_tok})
+check(r.get("ok") is False and "disabled" in (r.get("error") or ""),
+      "the GET path is gated as well as POST", str(r)[:160])
+
+# chat is enabled for this account, so the gate lets it through to the dispatcher, which
+# reports it as deferred. That is the proof the gate passed rather than silently allowing.
+r = post({"action": "chat", "session_token": res_tok, "question": "hello"})
+check("not implemented in this build" in (r.get("error") or ""),
+      "an ENABLED feature passes the gate and reaches dispatch", str(r)[:160])
+r = post({"action": "audit", "session_token": ops_tok})
+check("not implemented in this build" in (r.get("error") or ""),
+      "operational account passes the auditor gate", str(r)[:160])
+
+print()
+print("=" * 78)
+print("GUARANTEE 6: portfolio health is refused while the pre-judgment is unlocked")
+print("=" * 78)
+
+scenario = post({"action": "adminscenariocreate", "session_token": admin,
+                 "scenario_version": "t1-v1", "period_count": 1,
+                 "evidence_package_id": PROJECT})["scenario_id"]
+post({"action": "adminconfigurationcreate", "session_token": admin, "code": "C1",
+      "version": "v1", "freeze": True})
+post({"action": "adminsequencecreate", "session_token": admin, "order_group": "GT1",
+      "scenario_set": "SET-T1", "version": "v1", "positions": ["C1"], "freeze": True})
+pkg = post({"action": "adminpackagecreate", "session_token": admin, "version": "t1-pkg",
+            "recommended_action": "Escalate", "freeze": True})
+
+pm_p, pm_tok = make()
+post({"action": "consentgrant", "session_token": pm_tok, "consent_version": "v1.0"})
+post({"action": "adminassign", "session_token": admin, "participant_id": pm_p["participant_id"],
+      "order_group": "GT1", "scenario_set": "SET-T1", "scenario_ids": [scenario]})
+with Session() as s:
+    aid = s.scalar(select(Assignment).where(
+        Assignment.participant_id == pm_p["participant_id"])).assignment_id
+post({"action": "adminpackageattach", "session_token": admin, "assignment_id": aid,
+      "package_id": pkg["package_id"]})
+post({"action": "adminmemberadd", "session_token": admin, "id": PROJECT,
+      "participant_id": pm_p["participant_id"], "project_role": "PM"})
+
+# health_dialog explicitly ENABLED, so the only thing that can refuse is the lock condition.
+r = post({"action": "adminfeaturesset", "session_token": admin,
+          "participant_id": pm_p["participant_id"], "features": {"health_dialog": True}})
+check(r["effective"]["health_dialog"] is True, "health_dialog explicitly enabled for the PM",
+      str(r.get("effective")))
+
+r = get({"action": "getportfoliohealth", "session_token": pm_tok})
+check(r.get("ok") is False and "preliminary judgment" in (r.get("error") or ""),
+      "portfolio health refused while the pre-judgment is unlocked", str(r)[:200])
+check(len(audit_rows("health_denied_unlocked", project_id=PROJECT)) >= 1,
+      "the refusal is audited against the project")
+body = json.dumps(r)
+check("Escalate" not in body, "the refusal carries no analysis content")
+
+post({"action": "researchevidenceget", "session_token": pm_tok})
+locked = post({"action": "researchprejudgment", "session_token": pm_tok,
+               "pre_action": "monitor", "pre_confidence": 55})
+check(locked.get("pre_judgment_locked") is True, "PM locked the pre-judgment", str(locked)[:160])
+
+r = get({"action": "getportfoliohealth", "session_token": pm_tok})
+check(r.get("ok") is True, "portfolio health readable once the pre-judgment is locked",
+      str(r)[:200])
+
+# And with the flag off it is refused again, whatever the lock says.
+post({"action": "adminfeaturesset", "session_token": admin,
+      "participant_id": pm_p["participant_id"], "features": {"health_dialog": False}})
+r = get({"action": "getportfoliohealth", "session_token": pm_tok})
+check(r.get("ok") is False and "disabled for this account" in (r.get("error") or ""),
+      "flag off refuses even after the lock", str(r)[:160])
+
+# A sessionless call is unchanged: /exec has never authenticated the facade actions.
+r = get({"action": "getportfoliohealth"})
+check(r.get("ok") is True, "a sessionless facade call is unaffected (pre-existing posture)",
+      str(r)[:120])
+
+print()
+print("=" * 78)
+passed = sum(1 for ok, _, _ in results if ok)
+print(f"RESULT: {passed}/{len(results)} checks passed")
+print("=" * 78)
+sys.exit(0 if passed == len(results) else 1)

@@ -442,7 +442,7 @@
       },
       mount: (body, close) => {
         body.innerHTML =
-          `<p class="kn-sub">${locked ? `Uploading to <strong>${esc(preselectId)}${projName && projName !== preselectId ? " · " + esc(projName) : ""}</strong>. ` : ""}Drop one or more documents below. Lin identifies each document type automatically and extracts the signals, no need to label them first.</p>
+          `<p class="kn-sub">${locked ? `Uploading to <strong>${esc(preselectId)}${projName && projName !== preselectId ? " · " + esc(projName) : ""}</strong>. ` : ""}Drop one or more documents below. The platform identifies each document type automatically and extracts the signals, no need to label them first.</p>
            <div class="up-progress" hidden>
              <div class="up-robot"></div>
            </div>
