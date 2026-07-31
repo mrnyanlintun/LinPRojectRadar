@@ -68,10 +68,10 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 | A6.3 | Environmental Compliance Rate | simulations.js | **yes** | 0.0e+00 | exact match; batch 5; max(50, …) fallback floor validated |
 | A6.4 | Contractor Performance Score | simulations.js | **yes** | 0.0e+00 | exact match; batch 5; worst-of-three rating |
 | B1.1 | Conservative Dominance | decision.js | no | - | not ported: computed in decision.js |
-| B1.2 | Weighted Voting | simulations.js | no | - | not ported in this pass |
-| B1.3 | Majority Rules | simulations.js | no | - | not ported in this pass |
-| B1.4 | Worst-N-of-M | simulations.js | no | - | not ported in this pass |
-| B2.1 | Dempster-Shafer | simulations.js | no | - | not ported: runDST is defined but not wired into runAll |
+| B1.2 | Weighted Voting | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; consumes the ASSEMBLED PROJECT (see input-contract note below); Object.keys reduce in insertion order, later key wins ties |
+| B1.3 | Majority Rules | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; project input; voteBucket quirks validated (light-amber→Green, Red-Review→Red, Complete→Green) |
+| B1.4 | Worst-N-of-M | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; project input; null statuses from present signals count toward M |
+| B2.1 | Dempster-Shafer | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; runDST is defined but not wired into runAll in the JS — validated by calling it directly, per the browser harness; consumes assembled signal keys (evm/mc/cusum/doc/decision) from si; the present-doc-with-undefined-score → Red-branch quirk and the JS empty-object-truthiness of mc/cusum/doc are both reproduced and covered by the edge case |
 | B2.2 | Rough Sets | simulations.js | no | - | not ported in this pass |
 | B2.3 | Neutrosophic Logic | simulations.js | no | - | not ported in this pass |
 | B2.4 | Interval Fuzzy Sets | simulations.js | no | - | not ported in this pass |
@@ -92,10 +92,10 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 | B2.19 | CRITIC-TOPSIS | simulations.js | no | - | not ported in this pass |
 | B2.20 | Hypersoft Sets | simulations.js | no | - | not ported in this pass |
 | B3.1 | ABM Governance Layer | decision.js | no | - | not ported: computed in decision.js |
-| B3.2 | FAR Threshold Monitor | simulations.js | no | - | not ported in this pass |
-| B3.3 | OMB A-11 Check | simulations.js | no | - | not ported in this pass |
-| B3.4 | EVM Reporting Threshold | simulations.js | no | - | not ported in this pass |
-| B3.5 | Contract Modification Frequency | simulations.js | no | - | not ported in this pass |
+| B3.2 | FAR Threshold Monitor | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; cpi/bac exactly 0 abstains (JS Infinity/NaN fallthrough) |
+| B3.3 | OMB A-11 Check | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; cpi exactly 0 abstains |
+| B3.4 | EVM Reporting Threshold | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; cpi/bac exactly 0 abstains |
+| B3.5 | Contract Modification Frequency | simulations.js | **yes** | 0.0e+00 | exact match; batch 6 |
 | B4.1 | Multi-Objective Optimization | simulations.js | no | - | not ported in this pass |
 | B4.2 | Linear Programming | simulations.js | no | - | not ported in this pass |
 | B4.3 | Constraint Satisfaction Analysis | simulations.js | no | - | not ported in this pass |
@@ -118,11 +118,26 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 
 ## Summary
 
-- validated and shipped: **52** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
+- validated and shipped: **60** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
   A2.4–A2.11 and A3.2–A3.9; batch 3 added A1.3–A1.11; batch 4 added A4.2–A4.10, the
-  document-derived condition signals; batch 5 added A5.2–A5.8 and A6.1–A6.4). Group A is now
-  complete except A4.1, which is produced by the extraction pipeline, not a model.
-- declared but not ported: **49**
+  document-derived condition signals; batch 5 added A5.2–A5.8 and A6.1–A6.4; batch 6 added
+  B2.1, B1.2–B1.4 and B3.2–B3.5). Group A is complete except A4.1, which is produced by the
+  extraction pipeline, not a model.
+- declared but not ported: **41**
+
+## Group B input contracts (batch 6)
+
+Three input shapes share the registry's one signature `fn(si, rand, period_cutoff)`:
+
+- **B1.2–B1.4** consume the ASSEMBLED PROJECT: `si["signals"]` ({mc, cusum, doc} each with
+  `.status`, {decision} with `.state`) plus `si["simulationSignals"]["signal_array"]`
+  (per-module results with `.status_color`). An empty project abstains.
+- **B2.1** (and B2.2–B2.9 when they land) consume the assembled signal keys directly from si:
+  `si["evm"]` ({cpi, spi}), `si["mc"]` ({p80DeltaPct}), `si["cusum"]` ({breached}),
+  `si["doc"]` ({score}), `si["decision"]` ({state}). Missing keys take the same
+  missing-signal branches the JavaScript takes; a present-but-empty object is a PRESENT
+  signal, exactly as a truthy `{}` is in JavaScript.
+- **B2.10–B2.20, B3.x, B4.x** consume flat signalInputs, as Group A does.
 
 ## Batch 3 divergence note: NaN/Infinity fallthrough refused
 
