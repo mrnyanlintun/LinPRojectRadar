@@ -103,13 +103,13 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 | B4.5 | Decision Sensitivity Matrix | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; `total || 1` zero-impact fallback reproduced |
 | B4.6 | Pareto Frontier Analysis | simulations.js | **yes** | 0.0e+00 | exact match; batch 7 |
 | B4.7 | Regret Minimization Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; expected-regret Object.keys order preserved (monitor, investigate, escalate) |
-| C1.1 | Missing Data Index | simulations.js | no | - | not ported in this pass |
-| C1.2 | Data Timeliness Score | simulations.js | no | - | not ported in this pass |
-| C1.3 | Source Reliability Weighting | simulations.js | no | - | not ported in this pass |
-| C1.4 | Audit Trail Completeness | simulations.js | no | - | not ported in this pass |
-| C1.5 | Information Completeness Ratio | simulations.js | no | - | not ported in this pass |
-| C1.6 | Cross-document Consistency Score | simulations.js | no | - | not ported in this pass |
-| C1.7 | Reporting Frequency Index | simulations.js | no | - | not ported in this pass |
+| C1.1 | Missing Data Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 9; always computes (a completeness meter, not a signal) |
+| C1.2 | Data Timeliness Score | simulations.js | **yes** | 0.0e+00 | exact match; batch 9; the known wall-clock offender — the port takes period_cutoff as its reference date instead of `new Date()`; validated against the JS with the browser Date constructor frozen to the cutoff (see the clock note below) |
+| C1.3 | Source Reliability Weighting | simulations.js | **yes** | 0.0e+00 | exact match; batch 9; array-form sources use the LAST entry's docType; unknown types weight 0.50 |
+| C1.4 | Audit Trail Completeness | simulations.js | **yes** | 0.0e+00 | exact match; batch 9; events ride on si["events"]; simulation_run counts as extraction evidence |
+| C1.5 | Information Completeness Ratio | simulations.js | **yes** | 0.0e+00 | exact match; batch 9 |
+| C1.6 | Cross-document Consistency Score | simulations.js | **yes** | 0.0e+00 | exact match; batch 9; three derivation checks at thresholds 0.005/0.005/5 |
+| C1.7 | Reporting Frequency Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 9; below 2 extraction events emits the Yellow stub the JS emits, not an abstention |
 | D1.1 | Isolation Forest | Apps Script portfolioanalyze | no | - | Group D: portfolio-level, requires 3+ projects; refused on a single-project path |
 | D1.2 | Portfolio Outlier Detection | Apps Script portfolioanalyze | no | - | Group D: portfolio-level, requires 3+ projects; refused on a single-project path |
 | D1.3 | Signal Trajectory Classifier | Apps Script portfolioanalyze | no | - | Group D: portfolio-level, requires 3+ projects; refused on a single-project path |
@@ -118,13 +118,15 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 
 ## Summary
 
-- validated and shipped: **86** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
+- validated and shipped: **93** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
   A2.4–A2.11 and A3.2–A3.9; batch 3 added A1.3–A1.11; batch 4 added A4.2–A4.10, the
   document-derived condition signals; batch 5 added A5.2–A5.8 and A6.1–A6.4; batch 6 added
   B2.1, B1.2–B1.4 and B3.2–B3.5; batch 7 added B4.1–B4.7 and B2.2–B2.9; batch 8 added
-  B2.10–B2.20, completing Group B's simulations.js modules). Group A is complete except A4.1,
-  which is produced by the extraction pipeline, not a model.
-- declared but not ported: **15**
+  B2.10–B2.20, completing Group B's simulations.js modules; batch 9 added C1.1–C1.7 — Group C
+  computes but does not contribute to project status, an exclusion asserted by Guarantee 4 of
+  the test suite). Group A is complete except A4.1, which is produced by the extraction
+  pipeline, not a model.
+- declared but not ported: **8**
 
 ## Group B input contracts (batch 6)
 
@@ -167,8 +169,12 @@ halves: that omitting it raises, and that no file under `app/simulation/` contai
 **If you find another clock read while porting, treat it the same way: pass the cutoff, do not
 read the clock, and record the finding in the table below.**
 
-The one known offender is `runDataTimeliness` (C1.2), which computes `days_since_last_doc` from
-`new Date()`. It is unported pending batch 4 and must take the cutoff when it lands.
+The one known offender was `runDataTimeliness` (C1.2), which computed `days_since_last_doc`
+from `new Date()`. **Ported in batch 9 with `period_cutoff` as its only reference date.** To
+validate against a fixed target rather than a moving one, the browser harness patched the Date
+constructor before loading simulations.js so a no-argument `new Date()` (and `Date.now()`)
+returned UTC midnight of the cutoff, leaving Date parsing and arithmetic untouched. With the
+clock frozen, the two implementations agreed exactly on every case.
 
 ## Known non-determinism found in the JavaScript (Stage 1)
 
