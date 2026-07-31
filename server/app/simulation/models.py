@@ -289,6 +289,7 @@ VALIDATED: dict[str, tuple[str, Callable[[dict, Callable[[], float], object], di
 def _register_extensions() -> None:
     # Imported late: models_ext imports helpers from this module.
     from .models_doc import A4_EXTENSIONS, A5_EXTENSIONS, A6_EXTENSIONS
+    from .models_evc import EVC_EXTENSIONS
     from .models_gov import GOV_BATCH_A, GOV_BATCH_B
     from .models_evm import A1_EXTENSIONS
     from .models_ext import A2_EXTENSIONS, A3_EXTENSIONS
@@ -300,6 +301,7 @@ def _register_extensions() -> None:
     VALIDATED.update(A6_EXTENSIONS)
     VALIDATED.update(GOV_BATCH_A)
     VALIDATED.update(GOV_BATCH_B)
+    VALIDATED.update(EVC_EXTENSIONS)
 
 
 _register_extensions()

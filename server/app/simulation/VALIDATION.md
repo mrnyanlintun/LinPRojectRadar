@@ -72,14 +72,14 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 | B1.3 | Majority Rules | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; project input; voteBucket quirks validated (light-amber→Green, Red-Review→Red, Complete→Green) |
 | B1.4 | Worst-N-of-M | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; project input; null statuses from present signals count toward M |
 | B2.1 | Dempster-Shafer | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; runDST is defined but not wired into runAll in the JS — validated by calling it directly, per the browser harness; consumes assembled signal keys (evm/mc/cusum/doc/decision) from si; the present-doc-with-undefined-score → Red-branch quirk and the JS empty-object-truthiness of mc/cusum/doc are both reproduced and covered by the edge case |
-| B2.2 | Rough Sets | simulations.js | no | - | not ported in this pass |
-| B2.3 | Neutrosophic Logic | simulations.js | no | - | not ported in this pass |
-| B2.4 | Interval Fuzzy Sets | simulations.js | no | - | not ported in this pass |
-| B2.5 | Z-numbers | simulations.js | no | - | not ported in this pass |
-| B2.6 | PLTS | simulations.js | no | - | not ported in this pass |
-| B2.7 | Plithogenic Sets | simulations.js | no | - | not ported in this pass |
-| B2.8 | Belief Rule Base | simulations.js | no | - | not ported in this pass |
-| B2.9 | Quantum Probability | simulations.js | no | - | not ported in this pass |
+| B2.2 | Rough Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; assembled-signal input (evm/mc/cusum/doc) |
+| B2.3 | Neutrosophic Logic | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; no-signal case emits the AMBER stub the JS emits, not an abstention |
+| B2.4 | Interval Fuzzy Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; AMBER stub on no signal |
+| B2.5 | Z-numbers | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; AMBER stub on no signal |
+| B2.6 | PLTS | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; AMBER stub on no signal |
+| B2.7 | Plithogenic Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; AMBER stub on no signal |
+| B2.8 | Belief Rule Base | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; always computes (fallback rule R0 when nothing matches) |
+| B2.9 | Quantum Probability | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; always computes (default amplitudes when signals missing) |
 | B2.10 | Pythagorean Fuzzy Sets | simulations.js | no | - | not ported in this pass |
 | B2.11 | Picture Fuzzy Sets | simulations.js | no | - | not ported in this pass |
 | B2.12 | Hesitant Fuzzy Sets | simulations.js | no | - | not ported in this pass |
@@ -118,12 +118,12 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 
 ## Summary
 
-- validated and shipped: **67** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
+- validated and shipped: **75** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
   A2.4–A2.11 and A3.2–A3.9; batch 3 added A1.3–A1.11; batch 4 added A4.2–A4.10, the
   document-derived condition signals; batch 5 added A5.2–A5.8 and A6.1–A6.4; batch 6 added
-  B2.1, B1.2–B1.4 and B3.2–B3.5; batch 7 added B4.1–B4.7). Group A is complete except A4.1,
-  which is produced by the extraction pipeline, not a model.
-- declared but not ported: **34**
+  B2.1, B1.2–B1.4 and B3.2–B3.5; batch 7 added B4.1–B4.7 and B2.2–B2.9). Group A is complete
+  except A4.1, which is produced by the extraction pipeline, not a model.
+- declared but not ported: **26**
 
 ## Group B input contracts (batch 6)
 
