@@ -267,13 +267,37 @@
     </svg>
   </div>
 
-  <!-- Login Screen (Stage 1 Google OAuth — see assets/js/auth.js) -->
+  <!-- Login Screen — two paths (T2). See assets/js/auth.js. -->
   <div id="lin-login" style="display:none;">
     <div class="login-panel">
       <div class="login-logo"><img src="logo.png" alt="Opus Gubernatio" width="56" height="56"></div>
       <p class="login-eyebrow">PROJECT DECISION SUPPORT PLATFORM</p>
       <h1 class="login-title">Opus Gubernatio</h1>
-      <p class="login-sub">Sign in with your authorized Google account to access the platform.</p>
+      <p class="login-sub">Research participants sign in with the username and password supplied
+        by the researcher. Operational users sign in with their organisation Google account.</p>
+
+      <!-- Path 1: research participant — username (pseudonymous code) + password (access
+           token). The username is a convenience, not the credential: research_identity.py's
+           a_researchlogin checks it only AFTER the password already matched, so a wrong
+           username never narrows a guess and both fields fail with the identical message. -->
+      <form id="password-login-form" class="login-form" autocomplete="on">
+        <label class="login-field-label" for="login-username">Username</label>
+        <input id="login-username" name="username" type="text" class="ig-input"
+               autocomplete="username" placeholder="PM-001" required>
+        <label class="login-field-label" for="login-password">Password</label>
+        <input id="login-password" name="password" type="password" class="ig-input"
+               autocomplete="current-password" required>
+        <p id="login-error" class="login-error" role="alert" style="display:none;"></p>
+        <button type="submit" class="btn primary login-submit">Sign in</button>
+      </form>
+      <p class="login-footnote login-no-selfserve">
+        No self-registration. Accounts are created by an administrator.<br>
+        Forgot your password? There is no automated reset — an administrator resets it for you;
+        no email address is kept on file for a research account to send one to.
+      </p>
+
+      <div class="login-divider" role="separator" aria-label="or"><span>or</span></div>
+
       <div id="google-signin-btn"></div>
       <!-- Two notices, selected by account_type. The research notice is the DEFAULT and is
            what shows before sign-in, when no account type is known: the restrictive text is
@@ -316,19 +340,60 @@
     </div>
   </div>
 
-  <!-- Access Denied Screen -->
+  <!-- Access Denied Screen. Populated entirely by JS (auth.js showAccessDenied): covers an
+       unregistered Google account, a research account attempting SSO (Guarantee 3), and a
+       deactivated account. -->
   <div id="lin-access-denied" style="display:none;">
     <div class="login-panel">
       <div class="login-logo"><img src="logo.png" alt="Opus Gubernatio" width="56" height="56"></div>
-      <h2 class="login-title" style="color:var(--alarm-red)">Access Restricted</h2>
-      <p class="login-sub">
-        The account <strong id="denied-email"></strong> is not authorized
-        to access Opus Gubernatio.
-      </p>
-      <p class="login-sub">This platform is restricted to authorized users only.</p>
-      <button onclick="LinAuth.logout()" class="btn-secondary">Sign in with a different account</button>
-      <p class="login-disclaimer">Access restricted to authorized research use. This platform is an academic proof-of-concept; no warranty is provided.</p>
+      <h2 class="login-title" style="color:var(--alarm-red)">Sign-in Not Accepted</h2>
+      <p class="login-sub" id="access-denied-message">This platform is restricted to authorized users only.</p>
+      <button onclick="LinAuth.logout()" class="btn-secondary">Back to sign-in</button>
+      <p class="login-disclaimer">Access restricted to authorized use. This platform is an academic proof-of-concept; no warranty is provided.</p>
       <p class="login-footnote">GWU Doctor of Engineering Praxis, Nyan Lin Tun</p>
+    </div>
+  </div>
+
+  <!-- Consent Screen (T2 Part 2). Gates every other route for a research participant until
+       consent is granted. THE TEXT BELOW IS A CLEARLY MARKED PLACEHOLDER — see the banner —
+       and requires the researcher's review and IRB approval before it is relied upon. No
+       consent-to-participate-in-research language exists elsewhere in this repository; the
+       login-disclaimer text nearby is a liability/terms notice, not an informed-consent
+       document, and the two are not interchangeable. -->
+  <div id="lin-consent" style="display:none;">
+    <div class="login-panel consent-panel">
+      <div class="login-logo"><img src="logo.png" alt="Opus Gubernatio" width="56" height="56"></div>
+      <p class="consent-draft-banner">DRAFT — NOT YET REVIEWED. Placeholder pending researcher
+        and IRB review. This is not approved consent language.</p>
+      <h1 class="login-title">Research Consent</h1>
+      <div class="consent-body">
+        <p><strong>[PLACEHOLDER — Purpose of the study.]</strong> Describe, in plain language,
+          what this study investigates and why the participant's decisions are being recorded.</p>
+        <p><strong>[PLACEHOLDER — Procedures.]</strong> Describe what happens at each stage the
+          participant will move through (evidence review, preliminary judgment, reveal, final
+          decision) and approximately how long it takes.</p>
+        <p><strong>[PLACEHOLDER — Risks and benefits.]</strong> State any foreseeable risks of
+          participation and any anticipated benefits, to the participant or otherwise.</p>
+        <p><strong>[PLACEHOLDER — Confidentiality and data use.]</strong> Explain what is
+          recorded, that only a pseudonymous code identifies the participant in that record, how
+          the mapping from code to identity is held separately by the researcher, and how the
+          data will be used, stored, and eventually reported or destroyed.</p>
+        <p><strong>[PLACEHOLDER — Voluntary participation.]</strong> State plainly that
+          participation is voluntary and that the participant may withdraw at any time without
+          penalty — and that withdrawing consent here does exactly that: it stops further data
+          collection and does not delete what was already recorded, consistent with the
+          consent-withdrawal record itself being part of the research evidence.</p>
+        <p><strong>[PLACEHOLDER — Contact information.]</strong> Name and contact information for
+          the principal investigator and for the IRB of record, for questions about the study or
+          about participants' rights.</p>
+      </div>
+      <p id="consent-error" class="login-error" role="alert" style="display:none;"></p>
+      <div class="consent-actions">
+        <button type="button" id="consent-grant-btn" class="btn primary">I consent to participate</button>
+        <button type="button" id="consent-signout-btn" class="btn-secondary" onclick="LinAuth.logout()">Sign out</button>
+      </div>
+      <p class="login-footnote">No other part of the platform is reachable until consent is
+        recorded. Signing out is always available.</p>
     </div>
   </div>
 
@@ -345,6 +410,13 @@
       <div class="topbar-right">
         <div class="auth-user">
           <span class="auth-email" id="auth-email-display"></span>
+          <!-- ResearchAdmin only. Hidden by default, revealed by auth.js's
+               setAdminNavVisible(); the click itself is wired generically by app.js's existing
+               `[data-nav]` handler. Hiding is a convenience, not the guard: every admin action
+               this page calls is refused server-side (Guarantee 5) regardless of whether this
+               button is visible. -->
+          <button type="button" data-nav="admin" data-nav-admin-only hidden
+                  class="btn-secondary" title="Admin">Admin</button>
           <button onclick="LinAuth.logout()" class="btn-logout" title="Sign out">Sign out</button>
         </div>
         <span class="clock" id="tz-clock" aria-label="Current time in selected timezone">--:--:--</span>
@@ -591,6 +663,20 @@
       </div>
     </section><!-- /page handbook -->
 
+    <!-- Admin (T2 Part 4). Rendered by assets/js/admin.js (LinAdmin.render()), called from
+         app.js's showPage() the same way the auditor/handbook pages are. Reachable only by a
+         ResearchAdmin: the nav trigger is hidden for anyone else, and every action this page
+         calls is refused server-side regardless (Guarantee 5). -->
+    <section class="page" data-page="admin" hidden>
+      <section class="intro">
+        <p class="eyebrow">Administration</p>
+        <h1>Users &amp; access</h1>
+        <p>Create accounts, reset passwords, activate or deactivate, and set per-user feature
+          availability.</p>
+      </section>
+      <div id="admin-root"></div>
+    </section><!-- /page admin -->
+
     </main><!-- /content -->
     </div><!-- /layout -->
 
@@ -638,6 +724,7 @@
   <script src="assets/js/ingest.js"></script>
   <script src="assets/js/signals.js"></script>
   <script src="assets/js/auditor.js"></script>
+  <script src="assets/js/admin.js"></script>
   <script src="assets/js/charts3d.js"></script>
   <script src="assets/js/deepdive.js"></script>
   <script src="assets/js/projectnet2d.js"></script>

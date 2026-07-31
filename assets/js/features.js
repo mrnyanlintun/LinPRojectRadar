@@ -11,28 +11,23 @@
    list in devtools; the point is that doing so gets them a
    refusal from the server, not the feature.
 
-   DORMANT UNTIL THE RESEARCH SESSION EXISTS. The SPA does not
-   sign a participant in yet — that is T4 — so with no session
-   token this is a no-op and every feature stays visible, which
-   is exactly today's behaviour for the researcher and for
-   operational use. Once T4 stores a token, the flags resolve on
-   load and the body classes below drive the CSS.
+   SESSION-BACKED SINCE T2. auth.js signs a participant in and stores the token in
+   sessionStorage under "og-session-token" (plus an in-memory mirror at
+   window.OG_SESSION_TOKEN) — deliberately not localStorage; see auth.js. Before any sign-in,
+   or for a sessionless/legacy caller, there is no token and this stays a no-op with every
+   feature visible, same as before T2.
    ============================================================ */
 (function () {
   "use strict";
 
   var KEYS = ["chat", "knowledge_library", "health_dialog", "auditor"];
-  var SESSION_KEYS = ["og-session-token", "lin-research-session"];
+  var TOKEN_KEY = "og-session-token";
 
   function sessionToken() {
     if (window.OG_SESSION_TOKEN) return window.OG_SESSION_TOKEN;
-    for (var i = 0; i < SESSION_KEYS.length; i++) {
-      try {
-        var v = localStorage.getItem(SESSION_KEYS[i]);
-        if (v) return v;
-      } catch (e) { /* storage disabled */ }
-    }
-    return null;
+    try {
+      return sessionStorage.getItem(TOKEN_KEY) || null;
+    } catch (e) { return null; } // storage disabled
   }
 
   var state = null;

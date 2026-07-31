@@ -72,6 +72,17 @@ class Participant(Base):
                                               default="research")
     # Hash only. A recoverable token would make the pseudonymous code re-identifiable.
     access_token_hash: Mapped[str] = mapped_column(Text, nullable=True)
+    # T2. Checked once, in resolve_caller — every authenticated action passes through there, so
+    # deactivation takes effect everywhere at once rather than needing a check per endpoint.
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true",
+                                            default=True)
+    # T2. Only ever set for an operational account: research accounts authenticate with the
+    # pseudonymous access token and never carry a real identity. Nullable and partial-unique
+    # (migration 0008) rather than NOT NULL UNIQUE, since most rows never have one.
+    google_email: Mapped[str] = mapped_column(Text, nullable=True)
+    # T2. Display label for an operational account. Never set for a research participant, whose
+    # only identifier anywhere in the system stays the pseudonymous code.
+    display_name: Mapped[str] = mapped_column(Text, nullable=True)
     eligibility_status: Mapped[str] = mapped_column(Text, nullable=True)
     scenario_set: Mapped[str] = mapped_column(Text, nullable=True)
     condition_sequence: Mapped[str] = mapped_column(Text, nullable=True)

@@ -1629,6 +1629,7 @@
       if (page === "handbook") renderHandbook();
       if (page === "auditor" && window.LinAuditor) LinAuditor.renderAuditorPage();
       if (page === "detail" && window.LinDetail && selectedId) LinDetail.render(selectedId);
+      if (page === "admin" && window.LinAdmin) LinAdmin.render();
     } catch (e) { /* page is already visible; a render hiccup must not block nav */ }
     window.scrollTo({ top: 0 });
   }
