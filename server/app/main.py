@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import logging
 import os
+import platform
+import sys
 from typing import Any
 
 from fastapi import FastAPI
@@ -78,8 +80,25 @@ def on_startup() -> None:
 
 @app.get("/healthz", tags=["health"])
 def healthz() -> dict[str, Any]:
-    """Liveness. No database call by design."""
-    return {"status": "ok", "service": SERVICE_NAME, "version": SERVICE_VERSION, "checks": []}
+    """
+    Liveness. No database call by design.
+
+    Also reports the running interpreter version. A wrong interpreter has already caused one loud
+    failure (psycopg-binary could not resolve) and one silent one (SQLAlchemy dropped its C
+    extensions with nothing in the build log saying so). Reporting it here makes the pin verifiable
+    at runtime instead of only by reading a build log.
+
+    Deliberately limited to the version. No paths, environment variables, package list, or
+    sys.version build string, which would leak compiler and build-host detail.
+    """
+    return {
+        "status": "ok",
+        "service": SERVICE_NAME,
+        "version": SERVICE_VERSION,
+        "python_version": platform.python_version(),
+        "python_version_info": list(sys.version_info),
+        "checks": [],
+    }
 
 
 @app.get("/readyz", tags=["health"])

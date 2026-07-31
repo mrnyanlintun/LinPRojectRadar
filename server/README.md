@@ -10,8 +10,25 @@ moves no production traffic. `LinPRojectRadar/backend/` (the v9-era prototype) i
 
 | Path | Purpose | Success | Failure |
 |---|---|---|---|
-| `GET /healthz` | Liveness. Process is running. **No database call.** | `200` | only if the process is down |
+| `GET /healthz` | Liveness. Process is running. **No database call.** Also reports the running interpreter. | `200` | only if the process is down |
 | `GET /readyz` | Readiness. Real `SELECT 1` round-trip. | `200` | `503` with a structured reason |
+
+`/healthz` returns:
+
+```json
+{
+  "status": "ok",
+  "service": "opus-gubernatio-server",
+  "version": "m1-beachhead",
+  "python_version": "3.12.7",
+  "python_version_info": [3, 12, 7, "final", 0],
+  "checks": []
+}
+```
+
+It exposes the interpreter version and nothing else about the environment: no paths, no
+environment variables, no package list, and not `sys.version`, whose build string would leak
+compiler and build-host detail.
 
 `healthCheckPath` in `render.yaml` is `/healthz`, not `/readyz`, deliberately. If Render probed
 readiness, a database outage would cause it to restart a process that is running correctly, turning
@@ -39,6 +56,22 @@ The Python version is pinned **twice**, deliberately:
 
 Both must be kept in step. Changing one alone will produce a build whose interpreter does not match
 the file that claims to pin it.
+
+### `/healthz` is the authoritative check
+
+**The build log is no longer the only evidence of which interpreter is running.** Ask the service:
+
+```bash
+curl https://<service>.onrender.com/healthz
+```
+
+`python_version` in the response is the interpreter actually executing the application, which is
+the fact that matters. A build log records what the builder selected; it can be stale, hard to
+retrieve after later deploys, and it does not prove what the running process is using.
+
+If `python_version` is not `3.12.7`, neither pin is taking effect. The next thing to check is the
+service's **Root Directory** setting: `.python-version` is only read from the service root, so if
+Root Directory is empty rather than `server`, the file is in the wrong place.
 
 ### Why two pins
 
