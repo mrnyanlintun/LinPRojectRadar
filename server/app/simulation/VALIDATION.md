@@ -96,13 +96,13 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 | B3.3 | OMB A-11 Check | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; cpi exactly 0 abstains |
 | B3.4 | EVM Reporting Threshold | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; cpi/bac exactly 0 abstains |
 | B3.5 | Contract Modification Frequency | simulations.js | **yes** | 0.0e+00 | exact match; batch 6 |
-| B4.1 | Multi-Objective Optimization | simulations.js | no | - | not ported in this pass |
-| B4.2 | Linear Programming | simulations.js | no | - | not ported in this pass |
-| B4.3 | Constraint Satisfaction Analysis | simulations.js | no | - | not ported in this pass |
-| B4.4 | What-If Scenario Matrix | simulations.js | no | - | not ported in this pass |
-| B4.5 | Decision Sensitivity Matrix | simulations.js | no | - | not ported in this pass |
-| B4.6 | Pareto Frontier Analysis | simulations.js | no | - | not ported in this pass |
-| B4.7 | Regret Minimization Index | simulations.js | no | - | not ported in this pass |
+| B4.1 | Multi-Objective Optimization | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; stable ascending sort of objectives |
+| B4.2 | Linear Programming | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; budget-exhausted Red special case; required-CPI of exactly 0 yields lp_score 1 via the JS Infinity limit, reproduced not refused |
+| B4.3 | Constraint Satisfaction Analysis | simulations.js | **yes** | 0.0e+00 | exact match; batch 7 |
+| B4.4 | What-If Scenario Matrix | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; cpi/bac exactly 0 abstains (JS Infinity/NaN fallthrough) |
+| B4.5 | Decision Sensitivity Matrix | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; `total || 1` zero-impact fallback reproduced |
+| B4.6 | Pareto Frontier Analysis | simulations.js | **yes** | 0.0e+00 | exact match; batch 7 |
+| B4.7 | Regret Minimization Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; expected-regret Object.keys order preserved (monitor, investigate, escalate) |
 | C1.1 | Missing Data Index | simulations.js | no | - | not ported in this pass |
 | C1.2 | Data Timeliness Score | simulations.js | no | - | not ported in this pass |
 | C1.3 | Source Reliability Weighting | simulations.js | no | - | not ported in this pass |
@@ -118,12 +118,12 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 
 ## Summary
 
-- validated and shipped: **60** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
+- validated and shipped: **67** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
   A2.4–A2.11 and A3.2–A3.9; batch 3 added A1.3–A1.11; batch 4 added A4.2–A4.10, the
   document-derived condition signals; batch 5 added A5.2–A5.8 and A6.1–A6.4; batch 6 added
-  B2.1, B1.2–B1.4 and B3.2–B3.5). Group A is complete except A4.1, which is produced by the
-  extraction pipeline, not a model.
-- declared but not ported: **41**
+  B2.1, B1.2–B1.4 and B3.2–B3.5; batch 7 added B4.1–B4.7). Group A is complete except A4.1,
+  which is produced by the extraction pipeline, not a model.
+- declared but not ported: **34**
 
 ## Group B input contracts (batch 6)
 
