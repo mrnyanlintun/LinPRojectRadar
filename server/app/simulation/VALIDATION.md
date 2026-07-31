@@ -56,13 +56,13 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 | A4.8 | Subcontractor Performance | simulations.js | **yes** | 0.0e+00 | exact match; batch 4; the browser's lazy deriveExtendedFields safety net is NOT ported — the extraction pipeline supplies subcontractorComplianceScore or the module abstains; compared against the JS with signals.js absent, i.e. identical semantics |
 | A4.9 | Procurement Lead Time Monitor | simulations.js | **yes** | 0.0e+00 | exact match; batch 4 |
 | A4.10 | Specification Conflict Density | simulations.js | **yes** | 0.0e+00 | exact match; batch 4 |
-| A5.2 | Sensitivity Analysis | simulations.js | no | - | not ported in this pass |
-| A5.3 | Tornado Risk Ranking | simulations.js | no | - | not ported in this pass |
-| A5.4 | Scenario Modeling | simulations.js | no | - | not ported in this pass |
-| A5.5 | Rework Feedback Loop | simulations.js | no | - | not ported in this pass |
-| A5.6 | Queueing Theory Bottleneck | simulations.js | no | - | not ported in this pass |
-| A5.7 | Agent-Based Supply Chain | simulations.js | no | - | not ported in this pass |
-| A5.8 | Discrete Event Simulation | simulations.js | no | - | not ported in this pass |
+| A5.2 | Sensitivity Analysis | simulations.js | **yes** | 0.0e+00 | exact match; batch 5; cpi exactly 0 or ±0.05 abstains (JS division-by-zero fallthrough); descending sort of drivers is stable in both languages |
+| A5.3 | Tornado Risk Ranking | simulations.js | **yes** | 0.0e+00 | exact match; batch 5; stable descending sort of the four risks |
+| A5.4 | Scenario Modeling | simulations.js | **yes** | 0.0e+00 | exact match on every case except the edge case, where the port abstains and the JS emits a Red with `pessimistic_eac: null` and "worst $Infinityk" — the min(cpi, spi)=0 Infinity fallthrough, refused per the standing rule; recorded in the batch-3 divergence note |
+| A5.5 | Rework Feedback Loop | simulations.js | **yes** | 0.0e+00 | exact match; batch 5; JS-truthy rfiCount/changeOrderCount contributions reproduced |
+| A5.6 | Queueing Theory Bottleneck | simulations.js | **yes** | 0.0e+00 | exact match; batch 5 |
+| A5.7 | Agent-Based Supply Chain | simulations.js | **yes** | 0.0e+00 | exact match; batch 5 |
+| A5.8 | Discrete Event Simulation | simulations.js | **yes** | 0.0e+00 | exact match; batch 5 |
 | A6.1 | Quality Compliance Index | simulations.js | no | - | not ported in this pass |
 | A6.2 | Safety Performance Index | simulations.js | no | - | not ported in this pass |
 | A6.3 | Environmental Compliance Rate | simulations.js | no | - | not ported in this pass |
@@ -118,10 +118,10 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 
 ## Summary
 
-- validated and shipped: **41** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
+- validated and shipped: **48** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
   A2.4–A2.11 and A3.2–A3.9; batch 3 added A1.3–A1.11; batch 4 added A4.2–A4.10, the
-  document-derived condition signals)
-- declared but not ported: **60**
+  document-derived condition signals; batch 5 added A5.2–A5.8, system dynamics)
+- declared but not ported: **53**
 
 ## Batch 3 divergence note: NaN/Infinity fallthrough refused
 
