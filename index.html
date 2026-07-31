@@ -273,8 +273,8 @@
       <div class="login-logo"><img src="logo.png" alt="Opus Gubernatio" width="56" height="56"></div>
       <p class="login-eyebrow">PROJECT DECISION SUPPORT PLATFORM</p>
       <h1 class="login-title">Opus Gubernatio</h1>
-      <p class="login-sub">Research participants sign in with the username and password supplied
-        by the researcher. Operational users sign in with their organisation Google account.</p>
+      <p class="login-sub">Sign in with the username and password supplied by the researcher, or
+        with your organisation Google account.</p>
 
       <!-- Path 1: research participant — username (pseudonymous code) + password (access
            token). The username is a convenience, not the credential: research_identity.py's
@@ -283,18 +283,24 @@
       <form id="password-login-form" class="login-form" autocomplete="on">
         <label class="login-field-label" for="login-username">Username</label>
         <input id="login-username" name="username" type="text" class="ig-input"
-               autocomplete="username" placeholder="PM-001" required>
+               autocomplete="username" placeholder="username" required>
         <label class="login-field-label" for="login-password">Password</label>
         <input id="login-password" name="password" type="password" class="ig-input"
                autocomplete="current-password" required>
         <p id="login-error" class="login-error" role="alert" style="display:none;"></p>
         <button type="submit" class="btn primary login-submit">Sign in</button>
       </form>
-      <p class="login-footnote login-no-selfserve">
-        No self-registration. Accounts are created by an administrator.<br>
-        Forgot your password? There is no automated reset — an administrator resets it for you;
-        no email address is kept on file for a research account to send one to.
-      </p>
+      <!-- Four lines of always-visible small print pushed the panel past the viewport. The text
+           is unchanged, only collapsed: it answers a question a user asks at most once, so it
+           belongs one click away rather than permanently occupying the fold. -->
+      <details class="login-footnote login-no-selfserve login-expander">
+        <summary>Need an account, or forgot your password?</summary>
+        <div class="login-expander-body">
+          No self-registration. Accounts are created by an administrator.<br>
+          Forgot your password? There is no automated reset — an administrator resets it for you;
+          no email address is kept on file for a research account to send one to.
+        </div>
+      </details>
 
       <div class="login-divider" role="separator" aria-label="or"><span>or</span></div>
 
@@ -303,7 +309,11 @@
            what shows before sign-in, when no account type is known: the restrictive text is
            the fail-safe. assets/js/features.js adds body.og-account-operational only after
            the server has resolved the caller as an operational account. -->
-      <p class="login-disclaimer notice-research">
+      <details class="login-disclaimer notice-research login-expander">
+        <summary><strong>NOTICE:</strong> Academic research instrument — do not upload
+          confidential or real-project material. <span class="login-expander-cue">Read full
+          notice</span></summary>
+        <div class="login-expander-body">
         NOTICE: ACADEMIC RESEARCH INSTRUMENT. This platform is a proof-of-concept
         developed solely for doctoral research and demonstration purposes. It is not
         a commercial service and is provided &quot;as is,&quot; without warranty of any kind,
@@ -315,12 +325,16 @@
         sole responsibility for any content submitted. The operator disclaims all
         liability arising from or relating to uploaded content to the fullest extent
         permitted by law.
-      </p>
+        </div>
+      </details>
       <!-- DRAFT — NOT YET REVIEWED. This is a liability notice drafted for the researcher's
            review (T1a Task 2); it must be approved before it is relied upon. It cannot
            display yet: the SPA does not sign a participant in until T4, so no account type
            ever resolves to operational in this build. -->
-      <p class="login-disclaimer notice-operational">
+      <details class="login-disclaimer notice-operational login-expander">
+        <summary><strong>NOTICE:</strong> Proof-of-concept platform — you are responsible for
+          upload authorisation. <span class="login-expander-cue">Read full notice</span></summary>
+        <div class="login-expander-body">
         NOTICE: PROOF-OF-CONCEPT PLATFORM. Opus Gubernatio is a proof-of-concept developed
         for doctoral research and is provided &quot;as is,&quot; without warranty of any kind,
         express or implied. Uploaded content is transmitted to third-party
@@ -331,7 +345,8 @@
         advisory and <strong>do not constitute a validated compliance determination</strong>.
         The operator disclaims all liability arising from or relating to uploaded content to
         the fullest extent permitted by law.
-      </p>
+        </div>
+      </details>
       <p class="login-copyright">© 2026 Nyan Lin Tun. All rights reserved.</p>
       <p class="login-footnote">
         Access is restricted to authorized users only.<br>
