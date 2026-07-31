@@ -1,5 +1,5 @@
 // PCEIF Statistical Defensibility handbook content.
-// Generated from PCEIF_Module_Defensibility_Registry_v3.json (103 module
+// Generated from PCEIF_Module_Defensibility_Registry_v3.json (101 distinct computation
 // records, authoritative) with front-matter sections (Executive Findings,
 // two-axis Defensibility Model, Standards Crosswalk, Priority Refactor
 // Register) drawn from the v2 handbook docx. Em dashes stripped to hyphens.
@@ -121,163 +121,163 @@ const DS_DEFENSIBILITY = {
   "framing": "Class C does not mean the idea is useless. It means the current code and the current method label do not support the same scientific claim. These items should be renamed, reimplemented, or explicitly moved to future work before a formal defense.",
   "rows": [
    {
-    "id_display": "1.6",
+    "id_display": "A1.5",
     "currentName": "ARIMA CPI Forecast",
     "finding": "The current code estimates one autoregressive coefficient on first differences. It is not a complete Box-Jenkins ARIMA identification, diagnostic, and forecast workflow. Rename it as an AR(1)-difference proxy or implement a full ARIMA model.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "1.7",
+    "id_display": "A1.6",
     "currentName": "Earned Schedule",
     "finding": "The current code computes actual-percent-complete divided by planned-percent-complete. That is a time-based progress ratio, not Lipke earned-schedule interpolation. Rename it as an SPI(t) proxy or implement the canonical earned-schedule algorithm.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "1.12",
+    "id_display": "A1.11",
     "currentName": "ICE Ratio",
     "finding": "Both compared EACs are derived from the same project inputs; the second estimate is not organizationally independent. Rename this as an EAC divergence ratio unless an independently produced estimate is ingested.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "2.2",
+    "id_display": "A2.2",
     "currentName": "Line of Balance",
     "finding": "The code uses fixed grading and paving rates adjusted by SPI. It does not ingest a project-specific repetitive-work Line-of-Balance dataset; defend it only as a production-flow proxy.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "2.3",
+    "id_display": "A2.3",
     "currentName": "CCPM Buffer Health",
     "finding": "Buffer consumption is inferred from SPI and percent complete rather than measured from a Critical Chain buffer. The current label overstates implementation fidelity.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "2.10",
+    "id_display": "A2.10",
     "currentName": "Schedule Risk Analysis P80",
     "finding": "The code applies an analytical uplift using 1.28 as a percentile factor; it does not sample an activity network. Rename as a P80-style schedule-risk proxy or implement true schedule risk simulation.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "2.11",
+    "id_display": "A2.11",
     "currentName": "Critical Path Index",
     "finding": "The code averages a progress ratio and SPI. It does not identify or analyze a CPM critical path. Rename before defense.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "3.7",
+    "id_display": "A3.6",
     "currentName": "Cost Risk Analysis P80",
     "finding": "The code calculates a deterministic EAC uplift and calls it P80. It is not a Monte Carlo cost-risk analysis. Rename or replace with sampled cost-element distributions and correlations.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "3.9",
+    "id_display": "A3.8",
     "currentName": "Parametric Cost Index",
     "finding": "The code compares two EAC formulas and does not fit a parametric regression or unit-cost model. The current name is not defensible as a parametric cost model.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "5.1",
+    "id_display": "A5.1",
     "currentName": "DSM Rework Propagation",
     "finding": "This category entry aliases the same DSM result used by Module 3.2. The duplication must be removed or the cost-oriented and system-oriented computations must be made materially different.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "5.5",
+    "id_display": "A5.5",
     "currentName": "Rework Feedback Loop",
     "finding": "The code forms a weighted index from CPI, RFI count, and change-order count. It does not implement stock-flow equations or a system-dynamics feedback simulation.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "5.6",
+    "id_display": "A5.6",
     "currentName": "Queueing Theory Bottleneck",
     "finding": "The code computes constrained activities divided by planned activities. It does not calculate queue utilization, waiting time, or an M/M/c model. Rename as a constraint-bottleneck ratio or implement queueing equations.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "5.7",
+    "id_display": "A5.7",
     "currentName": "Agent-Based Supply Chain",
     "finding": "The code computes the share of long-lead items at risk. There are no agents, interactions, state transitions, or emergent outcomes. Rename as a supply-risk ratio or implement an ABM.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "5.8",
+    "id_display": "A5.8",
     "currentName": "Discrete Event Simulation",
     "finding": "The code computes an algebraic throughput index from progress and SPI. There is no event calendar, entity queue, resource seizure, or sampled service time. Rename or implement a discrete-event model.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "7.9",
+    "id_display": "B2.9",
     "currentName": "Quantum Probability",
     "finding": "The code is a heuristic amplitude-interference demonstration. Unless the praxis specifically studies order effects and validates the parameterization against judgment data, remove or relegate it to future work.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "8.1",
+    "id_display": "B3.1",
     "currentName": "ABM Governance Layer",
     "finding": "The implementation is a deterministic authority and decision tree in decision.js. That is a strong explainable governance mechanism, but it is not an agent-based simulation. Rename as Governance Decision Rules.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "8.2",
+    "id_display": "B3.2",
     "currentName": "FAR Threshold Monitor",
     "finding": "The hard-coded FAR Part 34 and 25-percent overrun logic must not be presented as a legal compliance determination. Replace with a versioned, cited, configurable rule set reviewed by a contracting specialist.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "8.3",
+    "id_display": "B3.3",
     "currentName": "OMB A-11 Check",
     "finding": "A BAC/CPI trigger does not constitute an OMB Circular A-11 compliance assessment. Treat the current output as a demonstration flag only.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "8.4",
+    "id_display": "B3.4",
     "currentName": "EVM Reporting Threshold",
     "finding": "The module applies custom CPI/SPI bands. It is not an authoritative reporting threshold unless the governing agency requirement, effective date, and applicability are configured and cited.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "10.1",
+    "id_display": "B4.1",
     "currentName": "Multi-Objective Optimization",
     "finding": "The code averages three normalized scores. It does not optimize decision variables over multiple objectives or generate a Pareto set.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "10.2",
+    "id_display": "B4.2",
     "currentName": "Linear Programming",
     "finding": "The code is a TCPI-style feasibility check and does not formulate or solve a linear program with decision variables, objective coefficients, and constraints.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "10.3",
+    "id_display": "B4.3",
     "currentName": "Constraint Satisfaction Analysis",
     "finding": "The code counts satisfaction of four rules. It is an explainable constraint checklist, not a general constraint-satisfaction solver.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "10.4",
+    "id_display": "B4.4",
     "currentName": "What-If Scenario Matrix",
     "finding": "The code creates four deterministic EAC scenarios. It is a useful scenario table but not an optimization algorithm.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "10.5",
+    "id_display": "B4.5",
     "currentName": "Decision Sensitivity Matrix",
     "finding": "The code ranks current deviations; it does not perturb inputs and measure decision-boundary changes. Rename or implement true decision sensitivity.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "10.6",
+    "id_display": "B4.6",
     "currentName": "Pareto Frontier Analysis",
     "finding": "The code evaluates threshold booleans and does not construct a frontier of non-dominated alternatives. Rename or implement multi-alternative Pareto analysis.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "10.7",
+    "id_display": "B4.7",
     "currentName": "Regret Minimization Index",
     "finding": "The expected-regret table is mathematically inspectable, but state probabilities and regret values are hard-coded and signal overrides bypass the stated minimax result. Defend only as a toy decision-analysis demonstration.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
-    "id_display": "PH.1",
+    "id_display": "D1.1",
     "currentName": "Isolation Forest",
     "finding": "The backend computes a standardized distance from the portfolio centroid. It does not construct isolation trees and therefore is not an Isolation Forest implementation.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."

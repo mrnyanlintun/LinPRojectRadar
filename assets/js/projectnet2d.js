@@ -249,7 +249,7 @@
 
     function cssSize() {
       var w = wrap.clientWidth || 720;
-      return { w: w, h: 520 };   // taller to give the 103 module dots room at default zoom
+      return { w: w, h: 520 };   // taller to give the 101 computation dots room at default zoom
     }
 
     function resize() {

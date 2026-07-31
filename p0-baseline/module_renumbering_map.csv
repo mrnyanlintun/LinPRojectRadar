@@ -1,0 +1,104 @@
+new_id,module_name,old_id,group,group_name,category,category_name,notes
+A1.1,Monte Carlo EAC,1.1,A,Project Health,A1,Cost & EVM Performance,
+A1.2,CUSUM Anomaly Monitor,1.2,A,Project Health,A1,Cost & EVM Performance,
+A1.3,Bayesian EAC,1.4,A,Project Health,A1,Cost & EVM Performance,
+A1.4,Kalman Filter SPI Smoother,1.5,A,Project Health,A1,Cost & EVM Performance,
+A1.5,ARIMA CPI Forecast,1.6,A,Project Health,A1,Cost & EVM Performance,
+A1.6,Earned Schedule,1.7,A,Project Health,A1,Cost & EVM Performance,
+A1.7,TCPI,1.8,A,Project Health,A1,Cost & EVM Performance,
+A1.8,Variance at Completion,1.9,A,Project Health,A1,Cost & EVM Performance,
+A1.9,Budget Execution Rate,1.10,A,Project Health,A1,Cost & EVM Performance,
+A1.10,Regression to Mean CPI,1.11,A,Project Health,A1,Cost & EVM Performance,
+A1.11,ICE Ratio,1.12,A,Project Health,A1,Cost & EVM Performance,
+A2.1,PERT Network Criticality,2.1,A,Project Health,A2,Schedule Performance,
+A2.2,Line of Balance,2.2,A,Project Health,A2,Schedule Performance,
+A2.3,CCPM Buffer Health,2.3,A,Project Health,A2,Schedule Performance,
+A2.4,Schedule Compression Index,2.4,A,Project Health,A2,Schedule Performance,
+A2.5,Float Consumption Rate,2.5,A,Project Health,A2,Schedule Performance,
+A2.6,S-Curve Deviation,2.6,A,Project Health,A2,Schedule Performance,
+A2.7,Milestone Trend Analysis,2.7,A,Project Health,A2,Schedule Performance,
+A2.8,Look-Ahead Schedule Health,2.8,A,Project Health,A2,Schedule Performance,
+A2.9,Resource Loading Index,2.9,A,Project Health,A2,Schedule Performance,
+A2.10,Schedule Risk Analysis P80,2.10,A,Project Health,A2,Schedule Performance,
+A2.11,Critical Path Index,2.11,A,Project Health,A2,Schedule Performance,
+A3.1,Reference Class Forecasting,3.1,A,Project Health,A3,Cost Risk,
+A3.2,Contingency Burn Rate,3.3,A,Project Health,A3,Cost Risk,
+A3.3,Labor Productivity Index,3.4,A,Project Health,A3,Cost Risk,
+A3.4,Material Cost Variance,3.5,A,Project Health,A3,Cost Risk,
+A3.5,Overhead Absorption Rate,3.6,A,Project Health,A3,Cost Risk,
+A3.6,Cost Risk Analysis P80,3.7,A,Project Health,A3,Cost Risk,
+A3.7,Analogous Estimating Ratio,3.8,A,Project Health,A3,Cost Risk,
+A3.8,Parametric Cost Index,3.9,A,Project Health,A3,Cost Risk,
+A3.9,Inflation Adjustment Index,3.10,A,Project Health,A3,Cost Risk,
+A4.1,Document Risk Score,4.1,A,Project Health,A4,Document-Derived Condition Signals,absorbs former 1.3 Document Risk Extraction (alias)
+A4.2,RFI Velocity,4.2,A,Project Health,A4,Document-Derived Condition Signals,
+A4.3,Submittal Rejection Rate,4.3,A,Project Health,A4,Document-Derived Condition Signals,
+A4.4,NCR Rate,4.4,A,Project Health,A4,Document-Derived Condition Signals,
+A4.5,Weather Day Impact,4.5,A,Project Health,A4,Document-Derived Condition Signals,
+A4.6,Change Order Frequency,4.6,A,Project Health,A4,Document-Derived Condition Signals,
+A4.7,Dispute Escalation Index,4.7,A,Project Health,A4,Document-Derived Condition Signals,
+A4.8,Subcontractor Performance,4.8,A,Project Health,A4,Document-Derived Condition Signals,
+A4.9,Procurement Lead Time Monitor,4.9,A,Project Health,A4,Document-Derived Condition Signals,
+A4.10,Specification Conflict Density,4.10,A,Project Health,A4,Document-Derived Condition Signals,
+A5.1,DSM Rework Propagation,5.1,A,Project Health,A5,System Dynamics & Complexity,absorbs former 3.2 DSM Rework Propagation (alias)
+A5.2,Sensitivity Analysis,5.2,A,Project Health,A5,System Dynamics & Complexity,
+A5.3,Tornado Risk Ranking,5.3,A,Project Health,A5,System Dynamics & Complexity,
+A5.4,Scenario Modeling,5.4,A,Project Health,A5,System Dynamics & Complexity,
+A5.5,Rework Feedback Loop,5.5,A,Project Health,A5,System Dynamics & Complexity,
+A5.6,Queueing Theory Bottleneck,5.6,A,Project Health,A5,System Dynamics & Complexity,
+A5.7,Agent-Based Supply Chain,5.7,A,Project Health,A5,System Dynamics & Complexity,
+A5.8,Discrete Event Simulation,5.8,A,Project Health,A5,System Dynamics & Complexity,
+A6.1,Quality Compliance Index,8.6,A,Project Health,A6,Delivery Quality Performance,moved from former Cat 8 Governance; describes project performance not authority
+A6.2,Safety Performance Index,8.7,A,Project Health,A6,Delivery Quality Performance,moved from former Cat 8 Governance; describes project performance not authority
+A6.3,Environmental Compliance Rate,8.8,A,Project Health,A6,Delivery Quality Performance,moved from former Cat 8 Governance; describes project performance not authority
+A6.4,Contractor Performance Score,8.9,A,Project Health,A6,Delivery Quality Performance,moved from former Cat 8 Governance; describes project performance not authority
+B1.1,Conservative Dominance,6.1,B,Recommendation & Governance,B1,Signal Synthesis,
+B1.2,Weighted Voting,6.2,B,Recommendation & Governance,B1,Signal Synthesis,
+B1.3,Majority Rules,6.3,B,Recommendation & Governance,B1,Signal Synthesis,
+B1.4,Worst-N-of-M,6.4,B,Recommendation & Governance,B1,Signal Synthesis,
+B2.1,Dempster-Shafer,7.1,B,Recommendation & Governance,B2,Evidence Combination,
+B2.2,Rough Sets,7.2,B,Recommendation & Governance,B2,Evidence Combination,
+B2.3,Neutrosophic Logic,7.3,B,Recommendation & Governance,B2,Evidence Combination,
+B2.4,Interval Fuzzy Sets,7.4,B,Recommendation & Governance,B2,Evidence Combination,
+B2.5,Z-numbers,7.5,B,Recommendation & Governance,B2,Evidence Combination,
+B2.6,PLTS,7.6,B,Recommendation & Governance,B2,Evidence Combination,
+B2.7,Plithogenic Sets,7.7,B,Recommendation & Governance,B2,Evidence Combination,
+B2.8,Belief Rule Base,7.8,B,Recommendation & Governance,B2,Evidence Combination,
+B2.9,Quantum Probability,7.9,B,Recommendation & Governance,B2,Evidence Combination,
+B2.10,Pythagorean Fuzzy Sets,7.10,B,Recommendation & Governance,B2,Evidence Combination,
+B2.11,Picture Fuzzy Sets,7.11,B,Recommendation & Governance,B2,Evidence Combination,
+B2.12,Hesitant Fuzzy Sets,7.12,B,Recommendation & Governance,B2,Evidence Combination,
+B2.13,Type-2 Fuzzy Sets,7.13,B,Recommendation & Governance,B2,Evidence Combination,
+B2.14,Maximum Entropy,7.14,B,Recommendation & Governance,B2,Evidence Combination,
+B2.15,Possibility Theory,7.15,B,Recommendation & Governance,B2,Evidence Combination,
+B2.16,Spherical Fuzzy Sets,7.16,B,Recommendation & Governance,B2,Evidence Combination,
+B2.17,Fermatean Fuzzy Sets,7.17,B,Recommendation & Governance,B2,Evidence Combination,
+B2.18,MARCOS Ranking,7.18,B,Recommendation & Governance,B2,Evidence Combination,
+B2.19,CRITIC-TOPSIS,7.19,B,Recommendation & Governance,B2,Evidence Combination,
+B2.20,Hypersoft Sets,7.20,B,Recommendation & Governance,B2,Evidence Combination,
+B3.1,ABM Governance Layer,8.1,B,Recommendation & Governance,B3,Regulatory & Authority Thresholds,
+B3.2,FAR Threshold Monitor,8.2,B,Recommendation & Governance,B3,Regulatory & Authority Thresholds,
+B3.3,OMB A-11 Check,8.3,B,Recommendation & Governance,B3,Regulatory & Authority Thresholds,
+B3.4,EVM Reporting Threshold,8.4,B,Recommendation & Governance,B3,Regulatory & Authority Thresholds,
+B3.5,Contract Modification Frequency,8.5,B,Recommendation & Governance,B3,Regulatory & Authority Thresholds,
+B4.1,Multi-Objective Optimization,10.1,B,Recommendation & Governance,B4,Decision Optimization,
+B4.2,Linear Programming,10.2,B,Recommendation & Governance,B4,Decision Optimization,
+B4.3,Constraint Satisfaction Analysis,10.3,B,Recommendation & Governance,B4,Decision Optimization,
+B4.4,What-If Scenario Matrix,10.4,B,Recommendation & Governance,B4,Decision Optimization,
+B4.5,Decision Sensitivity Matrix,10.5,B,Recommendation & Governance,B4,Decision Optimization,
+B4.6,Pareto Frontier Analysis,10.6,B,Recommendation & Governance,B4,Decision Optimization,
+B4.7,Regret Minimization Index,10.7,B,Recommendation & Governance,B4,Decision Optimization,
+C1.1,Missing Data Index,9.1,C,Data & Evidence Health,C1,Data Integrity,authoring-time quality gate; not participant-facing; must not enter project status aggregation
+C1.2,Data Timeliness Score,9.2,C,Data & Evidence Health,C1,Data Integrity,authoring-time quality gate; not participant-facing; must not enter project status aggregation
+C1.3,Source Reliability Weighting,9.3,C,Data & Evidence Health,C1,Data Integrity,authoring-time quality gate; not participant-facing; must not enter project status aggregation
+C1.4,Audit Trail Completeness,9.4,C,Data & Evidence Health,C1,Data Integrity,authoring-time quality gate; not participant-facing; must not enter project status aggregation
+C1.5,Information Completeness Ratio,9.5,C,Data & Evidence Health,C1,Data Integrity,authoring-time quality gate; not participant-facing; must not enter project status aggregation
+C1.6,Cross-document Consistency Score,9.6,C,Data & Evidence Health,C1,Data Integrity,authoring-time quality gate; not participant-facing; must not enter project status aggregation
+C1.7,Reporting Frequency Index,9.7,C,Data & Evidence Health,C1,Data Integrity,authoring-time quality gate; not participant-facing; must not enter project status aggregation
+D1.1,Isolation Forest,PH.1,D,Portfolio Level,D1,Portfolio Health,parked on portfolio page; requires 3+ projects
+D1.2,Portfolio Outlier Detection,PH.2,D,Portfolio Level,D1,Portfolio Health,parked on portfolio page; requires 3+ projects
+D1.3,Signal Trajectory Classifier,PH.3,D,Portfolio Level,D1,Portfolio Health,parked on portfolio page; requires 3+ projects
+D1.4,Cross-project Pattern Detector,PH.4,D,Portfolio Level,D1,Portfolio Health,parked on portfolio page; requires 3+ projects
+D1.5,Anomaly Score,PH.5,D,Portfolio Level,D1,Portfolio Health,parked on portfolio page; requires 3+ projects
+RETIRED,Document Risk Extraction,1.3,-,-,-,-,alias of 4.1; consolidated into A4.1
+RETIRED,DSM Rework Propagation (Cat 3 entry),3.2,-,-,-,-,alias of 5.1; consolidated into A5.1

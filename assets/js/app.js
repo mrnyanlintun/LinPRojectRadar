@@ -2256,7 +2256,7 @@
   }
 
   /* ---------- "Recompute all signals" button ----------
-     Runs the full 103-module set for every ingested project from stored
+     Runs the full 101-computation set for every ingested project from stored
      signalInputs — no document re-upload, no extraction API calls.
      Network: only GET (?action=get) and save (?action=save). */
   (function wireRecomputeAll() {

@@ -2287,11 +2287,11 @@
   // recomputes. Falls back to scanning the in-memory mirror only when the
   // stored snapshot is unavailable (e.g. backend not yet on v10.35).
   const CAT8_MODULES = [
-    { mc: "Isolation_Forest",     num: "PH.1", name: "Isolation Forest" },
-    { mc: "Portfolio_Outlier",    num: "PH.2", name: "Portfolio Outlier" },
-    { mc: "Trajectory_Classifier",num: "PH.3", name: "Trajectory Classifier" },
-    { mc: "Cross_Project_Pattern",num: "PH.4", name: "Cross-project Pattern" },
-    { mc: "Anomaly_Score",        num: "PH.5", name: "Anomaly Score" }
+    { mc: "Isolation_Forest",     num: "D1.1", name: "Isolation Forest" },
+    { mc: "Portfolio_Outlier",    num: "D1.2", name: "Portfolio Outlier" },
+    { mc: "Trajectory_Classifier",num: "D1.3", name: "Trajectory Classifier" },
+    { mc: "Cross_Project_Pattern",num: "D1.4", name: "Cross-project Pattern" },
+    { mc: "Anomaly_Score",        num: "D1.5", name: "Anomaly Score" }
   ];
   function cat8HealthDataFromLive() {
     const projects = (window.LIN_PROJECTS || []).filter((p) => p && p.id);

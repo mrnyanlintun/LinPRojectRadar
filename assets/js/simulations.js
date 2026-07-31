@@ -990,7 +990,7 @@
   }
 
   /* ===========================================================
-     Stage-2 full-103 module calculations (103 = 89 baseline + Cat
+     Stage-2 computations (101 distinct; historically counted as 103 = 89 baseline + Cat
      10/11 from the module-set bumps in signals.js).
      ------------------------------------------------------------
      These run from the project's signalInputs (si) directly —
@@ -3125,7 +3125,7 @@
     runPERT, runLOB, runCCPM, runRCF, runDSM,
     runDST, runRoughSets, runNeutrosophic, runIntervalFuzzy,
     runZNumbers, runPLTS, runPlithogenic, runBRB, runQuantumProbability,
-    // Stage-2 modules (full 103-module rollout)
+    // Stage-2 modules (full rollout; 101 distinct computations)
     runBayesianEAC, runKalmanFilter, runARIMAForecast, runEarnedSchedule,
     runTCPI, runVAC, runBudgetExecutionRate, runRegressionToMean, runICERatio,
     runScheduleCompression, runFloatConsumption, runSCurveDeviation,

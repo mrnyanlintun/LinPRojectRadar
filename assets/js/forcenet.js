@@ -1,6 +1,6 @@
 /* ============================================================
    Lin — 3D Force Network Visualization
-   103 modules · 10 categories + Portfolio Health · signal flow connections
+   101 distinct computations across four groups (A/B/C/D) · signal flow connections
    Exposes window.LinForceNet
    ============================================================ */
 (function () {

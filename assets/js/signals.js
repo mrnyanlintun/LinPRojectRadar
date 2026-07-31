@@ -20,7 +20,7 @@
   // stale signal_array get recomputed instead of short-circuiting on a
   // non-empty-but-stale array. v2 = the full 89-module rollout; v3 added
   // Cat 10 (Data Integrity) and Cat 11 (Decision Optimization); v4 removes
-  // the Cat 12 (Systems Engineering) stubs — 103 modules total; v5 upgrades
+  // the Cat 12 (Systems Engineering) stubs — 101 distinct computations total; v5 upgrades
   // RFI_Velocity / Submittal_Rejection to the v10.27 RFI/RFA-log fields; v6
   // activates 9 dormant modules (8 arithmetic paths + multi-period Milestone
   // Trend) so stale arrays computed before them get rerun.

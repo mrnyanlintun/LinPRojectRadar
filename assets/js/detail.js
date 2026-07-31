@@ -252,7 +252,7 @@
     return null;
   }
 
-  // Flatten the 103 modules into axis entries with angles, leaving a one-slot
+  // Flatten the 101 computations into axis entries with angles, leaving a one-slot
   // gap between categories so the clusters read as distinct petals.
   function buildModuleAxes(project) {
     const cats = LIN_CATEGORIES;
@@ -342,7 +342,7 @@
   }
 
   /* ============================================================
-     Ensemble analysis panel — three views of the 103-module output:
+     Ensemble analysis panel — three views of the 101-computation output:
        1) per-module scatter across status columns
        2) ensemble distribution bar (count per status + trend line)
        3) consensus stacked bar (single proportional bar)
