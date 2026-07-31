@@ -887,7 +887,7 @@
         ${cs("d-projnet", "Project Signal Network", `<div class="detail-projnet2d"></div>`, false, totalCats + " categories")}
         ${cs("d-neural", "Signal Flow", `<div class="detail-neural-flow" data-project-id="${esc(p.id)}"></div>`, false, `${totalModulesForBadge} modules`)}
         ${cs("d-brief", "Executive Brief", executiveBriefHtml(p), false, "")}
-        ${cs("d-decision", "Governance Decision", `<section class="panel detail-decision" aria-label="PCEIF governance decision (project detail)"></section>`, false, pillBadge(overallState))}
+        ${cs("d-decision", "Governance Decision", `<section class="panel detail-decision" aria-label="Governance decision (project detail)"></section>`, false, pillBadge(overallState))}
         ${cs("d-web", "Signal Web", signalWebHtml(p), false, totalModulesForBadge + " modules")}
         ${cs("d-ledger", "Signal Inputs", `<section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>`, false, pillBadge(overallState))}
         ${cs("d-docsignals", "Documents & Extracted Signals",
@@ -1116,7 +1116,7 @@
     const advisor =
       "You are a senior project controls advisor writing an evidence-based briefing for a program director. " +
       "Your role is to present findings from computational analysis and offer considered recommendations — not to command action. " +
-      "PCEIF is a prediction and advisory platform: it presents evidence and surfaces recommendations; it does not issue commands or directives. " +
+      "Opus Gubernatio is a prediction and advisory platform: it presents evidence and surfaces recommendations; it does not issue commands or directives. " +
       "The program director is the decision-maker; you are the advisor.\n\n" +
       "Tone:\n" +
       "- DIPLOMATIC: present findings as evidence, not verdicts.\n" +
