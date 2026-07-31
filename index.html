@@ -271,11 +271,15 @@
   <div id="lin-login" style="display:none;">
     <div class="login-panel">
       <div class="login-logo"><img src="logo.png" alt="Opus Gubernatio" width="56" height="56"></div>
-      <p class="login-eyebrow">PCEIF: Public Capital EVM Intelligence Framework</p>
+      <p class="login-eyebrow">PROJECT DECISION SUPPORT PLATFORM</p>
       <h1 class="login-title">Opus Gubernatio</h1>
       <p class="login-sub">Sign in with your authorized Google account to access the platform.</p>
       <div id="google-signin-btn"></div>
-      <p class="login-disclaimer">
+      <!-- Two notices, selected by account_type. The research notice is the DEFAULT and is
+           what shows before sign-in, when no account type is known: the restrictive text is
+           the fail-safe. assets/js/features.js adds body.og-account-operational only after
+           the server has resolved the caller as an operational account. -->
+      <p class="login-disclaimer notice-research">
         NOTICE: ACADEMIC RESEARCH INSTRUMENT. This platform is a proof-of-concept
         developed solely for doctoral research and demonstration purposes. It is not
         a commercial service and is provided &quot;as is,&quot; without warranty of any kind,
@@ -287,6 +291,22 @@
         sole responsibility for any content submitted. The operator disclaims all
         liability arising from or relating to uploaded content to the fullest extent
         permitted by law.
+      </p>
+      <!-- DRAFT — NOT YET REVIEWED. This is a liability notice drafted for the researcher's
+           review (T1a Task 2); it must be approved before it is relied upon. It cannot
+           display yet: the SPA does not sign a participant in until T4, so no account type
+           ever resolves to operational in this build. -->
+      <p class="login-disclaimer notice-operational">
+        NOTICE: PROOF-OF-CONCEPT PLATFORM. Opus Gubernatio is a proof-of-concept developed
+        for doctoral research and is provided &quot;as is,&quot; without warranty of any kind,
+        express or implied. Uploaded content is transmitted to third-party
+        artificial-intelligence services for extraction and is stored in research
+        infrastructure. <strong>You are responsible for confirming that you are authorised
+        to upload each document</strong>, and for compliance with your organisation&#39;s
+        data-handling, confidentiality, and records obligations. Analytical outputs are
+        advisory and <strong>do not constitute a validated compliance determination</strong>.
+        The operator disclaims all liability arising from or relating to uploaded content to
+        the fullest extent permitted by law.
       </p>
       <p class="login-copyright">© 2026 Nyan Lin Tun. All rights reserved.</p>
       <p class="login-footnote">
@@ -343,7 +363,7 @@
     <section class="intro">
       <p class="eyebrow">Portfolio · signal to action</p>
       <h1>From multi-model signals to a governed decision</h1>
-      <p>Each project is a blip on the scope. Distance from center is drift from baseline; angle is delivery sector. Select a project to see its signal ledger, the signal-conflict classification, and the PCEIF governance decision, with explicit authority, documentation, and a contractor fairness gate where required.</p>
+      <p>Each project is a blip on the scope. Distance from center is drift from baseline; angle is delivery sector. Select a project to see its signal ledger, the signal-conflict classification, and the governance decision, with explicit authority, documentation, and a contractor fairness gate where required.</p>
     </section>
 
     <!-- RADAR / MAP (full-width rectangular stage; buildRadar() sets the
@@ -453,7 +473,7 @@
         <!-- What it does -->
         <section class="panel about-section about-section-wide">
           <h2 class="about-h">What it does</h2>
-          <p>Opus Gubernatio implements the Public Capital EVM Intelligence Framework (PCEIF): it turns the records a capital program already produces into an accountable, auditable governance recommendation. The pipeline runs in four steps.</p>
+          <p>Opus Gubernatio turns the records a capital program already produces into an accountable, auditable governance recommendation. The pipeline runs in four steps.</p>
           <ol class="about-list about-steps">
             <li><span class="about-step-num">1.</span> <strong>Ingests</strong> the document types a capital program already produces (pay applications, schedules, change orders, RFIs, submittals, inspection and compliance reports), extracting the cost, schedule, and risk figures automatically.</li>
             <li><span class="about-step-num">2.</span> <strong>Runs</strong> an integrated multi-model analytical architecture spanning earned-value analysis, schedule and cost simulation, document risk, system dynamics, and machine-learning anomaly detection.</li>
@@ -543,7 +563,7 @@
               <tbody>
                 <tr><td>Version</td><td>v1.0-praxis-demo</td></tr>
                 <tr><td>Backend</td><td>v10.28+</td></tr>
-                <tr><td>Framework</td><td>PCEIF Layer 1 + Layer 2</td></tr>
+                <tr><td>Framework</td><td>Decision-support framework, Layers 1 and 2</td></tr>
                 <tr><td>Last updated</td><td id="about-date">—</td></tr>
                 <tr><td>Institution</td><td>George Washington University</td></tr>
                 <tr><td>Program</td><td>Doctor of Engineering, Engineering Management</td></tr>
@@ -582,7 +602,7 @@
         <li><strong>Not a validated production system.</strong> It does not validate predictive accuracy, diagnose live projects, or issue contractual direction.</li>
         <li><strong>Academic research instrument, provided &quot;as is&quot; without warranty.</strong> Do not submit confidential or actual project documents; the operator disclaims all liability for uploaded content.</li>
       </ul>
-      <p class="footer-praxis">Built for a Doctor of Engineering praxis (The George Washington University, Engineering Management). PCEIF&nbsp;L2-v0.5-demo.</p>
+      <p class="footer-praxis">Built for a Doctor of Engineering praxis (The George Washington University, Engineering Management). Governance ruleset&nbsp;L2-v0.5-demo.</p>
     </footer>
 
   </div>

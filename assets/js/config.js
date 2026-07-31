@@ -30,10 +30,24 @@ window.LIN_API_URL = "/exec";
 window.LIN_API_URL = "https://script.google.com/macros/s/AKfycbwhmg_1L_RjbxPTR0IF3xpmHgLLzHA67O3mH27uqrAFfv8bF9U359yBqwjqbZO3YNTO/exec";
 */
 
-/* ---------- Google OAuth — Stage 1 auth (PCEIF commercialization) ----------
-   Only LIN_AUTHORIZED_EMAIL may access the app. The Client ID is bound to the
-   GitHub Pages origin in the Google Cloud console (Authorized JavaScript
-   origins / redirect URIs). Leave the client id unset to bypass auth locally. */
+/* ---------- Google OAuth — Stage 1 auth ----------
+   Only LIN_AUTHORIZED_EMAIL may access the app.
+
+   ORIGINS, not redirect URIs. auth.js uses Google Identity Services
+   (google.accounts.id.initialize + renderButton) with an in-page JavaScript
+   callback. There is no ux_mode:'redirect', no login_uri and no redirect_uri
+   anywhere in this codebase, so the Google Cloud console's "Authorized redirect
+   URIs" list is not consulted and can stay empty. Only "Authorized JavaScript
+   origins" is checked, and a missing entry there is what produces
+   Error 400: origin_mismatch.
+
+   Both origins need to be listed while the move off GitHub Pages completes:
+     https://linprojectradar.onrender.com   (serves the app and /exec)
+     https://mrnyanlintun.github.io         (static mirror; see the note above -
+                                             sign-in works, but /exec resolves
+                                             against github.io and finds nothing)
+
+   Leave the client id unset to bypass auth locally. */
 window.LIN_GOOGLE_CLIENT_ID = "604934233462-99079h2pcs0di52h4khj393cj0uu4rbt.apps.googleusercontent.com";
 window.LIN_AUTHORIZED_EMAIL = "mrnyanlintun@gmail.com";
 

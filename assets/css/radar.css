@@ -3811,3 +3811,11 @@ body.og-no-health-dialog [data-action="portfolio-health"],
 body.og-no-health-dialog .health-pill,
 body.og-no-auditor [data-page-link="auditor"],
 body.og-no-auditor [data-page="auditor"] { display: none !important; }
+
+/* ---------- Account-type notices (T1a) ----------
+   The research notice is the DEFAULT, so it is what shows before sign-in and whenever the
+   account type is unknown or unresolved. Only an explicit operational account, resolved by
+   the server, swaps it. Fail-safe direction for a liability notice. ---------- */
+.notice-operational { display: none; }
+body.og-account-operational .notice-research { display: none; }
+body.og-account-operational .notice-operational { display: block; }

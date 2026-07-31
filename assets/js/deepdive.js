@@ -1021,11 +1021,11 @@
       `Agreement is itself recorded: the decision card still logs the evidence package for auditability.`
     ] : [
       `Conflict type "${conflict}": ${redN} red and ${ambN} amber signal class(es) against ${4 - redN - ambN} green.`,
-      `PCEIF surfaces this disagreement instead of averaging it away: the gap between signal classes is the finding.`,
+      `The platform surfaces this disagreement instead of averaging it away: the gap between signal classes is the finding.`,
       `The classification feeds Cat 8.1, which maps it to an action and an authority.`
     ];
     return panel("09", "Conservative Dominance: Signal Synthesis", st,
-      note("Agreement map across all signal classes. When signals diverge, the gap between classes is the finding. PCEIF surfaces disagreement instead of averaging it away. Conservative dominance: the worst single-signal status drives the overall classification.") +
+      note("Agreement map across all signal classes. When signals diverge, the gap between classes is the finding. The platform surfaces disagreement instead of averaging it away. Conservative dominance: the worst single-signal status drives the overall classification.") +
       synthChart(p) +
       `<div class="dd-grid">${
         metricBox("Conflict", conflict.length > 20 ? conflict.slice(0, 19) + "…" : conflict, st) +
@@ -1073,7 +1073,7 @@
                           : stateKey === "Amber"    ? "amber" : "red";
 
     return panel("19", "Agent-Based Model (ABM) Governance Layer", st,
-      note("Governance decision derived from the full signal package using the PCEIF authority matrix. Maps the conflict classification to a specific action, a named authority, and required documentation.") +
+      note("Governance decision derived from the full signal package using the governance authority matrix. Maps the conflict classification to a specific action, a named authority, and required documentation.") +
       `<p class="dd-chart-note" style="text-transform:none; letter-spacing:.02em">The authority matrix is set at the agency level (Layer 1) before any project starts. It maps each signal state to the authority entitled to act, the required timeframe, and the documentation that must be on record. Program Director / PMO Lead is assigned to Red-review because sustained underperformance typically exceeds PM delegated authority and triggers OMB Circular A-11 and FAR Part 34 reporting requirements. The 48-hour timeframe ensures the decision is recorded before the reporting cycle closes.</p>` +
       abmChart(p, d) +
       `<div class="dd-grid">${
@@ -1090,7 +1090,7 @@
         metricBox("Regulatory basis", regulatoryBasis, stateKey === "Red-review" ? "red" : "green")
       }</div>` +
       reasons(why, st) +
-      rule("GREEN → routine monitoring (PM/Controls); AMBER → early-warning review (PM + Controls lead); RED-REVIEW when >=2 red signals or CUSUM breach + red forecast (Program director/PMO); fairness-sensitive red-reviews additionally require the contractor fairness gate (deriveDecision in decision.js). Authority assignments reflect the PCEIF Layer 1 authority matrix derived from agency program controls policy, OMB Circular A-11, and FAR Part 34."));
+      rule("GREEN → routine monitoring (PM/Controls); AMBER → early-warning review (PM + Controls lead); RED-REVIEW when >=2 red signals or CUSUM breach + red forecast (Program director/PMO); fairness-sensitive red-reviews additionally require the contractor fairness gate (deriveDecision in decision.js). Authority assignments reflect the Layer 1 authority matrix derived from agency program controls policy, OMB Circular A-11, and FAR Part 34."));
   }
 
   /* ---------- simulation modules (04–08, 11) ----------
@@ -1682,7 +1682,7 @@
   function m18(s) {
     const st = simCls(s.status_color);
     return panel("17", "BRB: Belief Rule Base", st,
-      note("The Belief Rule Base (Yang, 2006) encodes expert knowledge as IF-THEN rules whose consequent is a belief distribution rather than a crisp state. \"If EVM is Red and CUSUM has breached, belief is 90% Red, 8% Amber, 2% Green.\" Multiple rules can fire simultaneously and are combined by their rule weights, bridging the explicit governance rules of PCEIF with probabilistic expert judgment.") +
+      note("The Belief Rule Base (Yang, 2006) encodes expert knowledge as IF-THEN rules whose consequent is a belief distribution rather than a crisp state. \"If EVM is Red and CUSUM has breached, belief is 90% Red, 8% Amber, 2% Green.\" Multiple rules can fire simultaneously and are combined by their rule weights, bridging the platform's explicit governance rules with probabilistic expert judgment.") +
       brbChart(s) +
       `<div class="dd-grid">${
         metricBox("Belief Green", (s.belief_green || 0) + "%", s.belief_green >= 60 ? "green" : "amber") +
@@ -2139,7 +2139,7 @@
       root.innerHTML =
         `<section class="panel awaiting-state">
            <p><strong>Awaiting ingest: no signals yet.</strong></p>
-           <p class="kn-sub">The modules compute from this project's signals. Populate signals (Manage Projects, or the "Ingest" panel above) to run the real Monte Carlo (5,000 iterations) and CUSUM, the keyword document-risk extraction, and the PCEIF synthesis + governance decision. Nothing is computed or fabricated until inputs are ingested.</p>
+           <p class="kn-sub">The modules compute from this project's signals. Populate signals (Manage Projects, or the "Ingest" panel above) to run the real Monte Carlo (5,000 iterations) and CUSUM, the keyword document-risk extraction, and the synthesis + governance decision. Nothing is computed or fabricated until inputs are ingested.</p>
          </section>`;
       return;
     }

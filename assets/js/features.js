@@ -37,7 +37,7 @@
 
   var state = null;
 
-  function apply(features) {
+  function apply(features, accountType) {
     state = features;
     var body = document.body;
     if (!body) return;
@@ -45,6 +45,10 @@
       // og-no-<feature> is the hook radar.css hides against.
       body.classList.toggle("og-no-" + k.replace(/_/g, "-"), features[k] === false);
     });
+    // Which upload/liability notice to show. Only an explicit "operational" from the server
+    // switches away from the restrictive research notice: unknown, unresolved and research
+    // all keep the restrictive text, which is the fail-safe direction for a liability notice.
+    body.classList.toggle("og-account-operational", accountType === "operational");
     try {
       document.dispatchEvent(new CustomEvent("og:features", { detail: features }));
     } catch (e) { /* older browsers */ }
@@ -64,7 +68,7 @@
       var r = await LinStore.postWithTimeout({
         action: "researchmyfeatures", session_token: token
       });
-      if (r && r.ok && r.features) { apply(r.features); return r.features; }
+      if (r && r.ok && r.features) { apply(r.features, r.account_type); return r.features; }
     } catch (e) { /* non-fatal: the server still refuses what is disabled */ }
     return null;
   }

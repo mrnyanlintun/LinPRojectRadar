@@ -30,7 +30,7 @@
     if (!(window.hasSignals && hasSignals(p))) {
       return {
         title: `${p.id} — awaiting ingest`,
-        body: `${p.name} (${SECTOR_LABEL[p.sector] || p.sector} sector) has no signals yet. Populate its signals on Manage Projects (or the Ingest panel on its Detail page) to run the Monte Carlo forecast, CUSUM monitor, document-risk extraction, and the PCEIF decision. Nothing is fabricated until inputs are ingested.`
+        body: `${p.name} (${SECTOR_LABEL[p.sector] || p.sector} sector) has no signals yet. Populate its signals on Manage Projects (or the Ingest panel on its Detail page) to run the Monte Carlo forecast, CUSUM monitor, document-risk extraction, and the governance decision. Nothing is fabricated until inputs are ingested.`
       };
     }
     const d = deriveDecision(p);

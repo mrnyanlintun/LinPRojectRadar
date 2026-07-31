@@ -1206,7 +1206,7 @@
       </div></div>
       <div class="awaiting-state">
         <p><strong>Awaiting ingest.</strong> This project has no signals yet.</p>
-        <p class="kn-sub">Populate signals on the <em>Manage Projects</em> page (or the “Ingest” panel on this project) to run the Monte Carlo forecast, CUSUM monitor, document-risk extraction, and the PCEIF decision. Nothing is fabricated until real inputs are ingested.</p>
+        <p class="kn-sub">Populate signals on the <em>Manage Projects</em> page (or the “Ingest” panel on this project) to run the Monte Carlo forecast, CUSUM monitor, document-risk extraction, and the governance decision. Nothing is fabricated until real inputs are ingested.</p>
       </div>`;
   }
 
@@ -1383,13 +1383,13 @@
           <tbody>${body}</tbody>
         </table>
         </div>
-        <p class="dc-note">Actions are deterministic PCEIF rules traced to signal categories: recommendation only; a named human reviewer records the decision.</p>
+        <p class="dc-note">Actions are deterministic governance rules traced to signal categories: recommendation only; a named human reviewer records the decision.</p>
       </div>`;
   }
 
   function renderDecisionCard(p, root = $("#decision-card")) {
     if (!root) return;   // portfolio no longer hosts the decision card; only the detail page does
-    if (!hasSignals(p)) { root.innerHTML = awaitingHtml(p, "PCEIF governance decision"); return; }
+    if (!hasSignals(p)) { root.innerHTML = awaitingHtml(p, "governance decision"); return; }
     const d = deriveDecision(p);
     const stateClass = d.healthState.toLowerCase().replace("-review", "");
 
@@ -1404,7 +1404,7 @@
     root.innerHTML =
       `<div class="dc-head">
          <div>
-           <p class="eyebrow">PCEIF governance decision</p>
+           <p class="eyebrow">Governance decision</p>
            <h2>Recommended action</h2>
          </div>
          <span class="state-badge state-${esc(stateClass)}">${esc(d.healthState)}</span>
