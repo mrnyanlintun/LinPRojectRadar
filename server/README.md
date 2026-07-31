@@ -1,7 +1,7 @@
-# server/ — migration beachhead (M1)
+# server/ — migration beachhead (M1) and /exec facade (A1)
 
-A FastAPI service with health endpoints and a database connection. It serves **no application
-traffic** and implements **no Apps Script action**.
+A FastAPI service with health endpoints, a Postgres schema, and a read-only `/exec` compatibility
+facade. **No traffic is pointed at it.**
 
 `assets/js/config.js` is untouched and still points at the Apps Script endpoint, so deploying this
 moves no production traffic. `LinPRojectRadar/backend/` (the v9-era prototype) is also untouched.
@@ -142,21 +142,24 @@ SQLite is supported for local verification only. Production is Postgres.
 server/
   app/
     __init__.py
-    main.py             FastAPI app, /healthz and /readyz
+    main.py             FastAPI app, /healthz, /readyz, GET+POST /exec
+    facade.py           action dispatch, projections, contract rules
+    models.py           projects, project_snapshots, files
     settings.py         environment parsing, fail-fast, credential-free accessors
     db.py               engine, session factory, readiness probe, declarative Base
     logging_config.py   JSON formatter with credential redaction backstop
   alembic/
     env.py              reads DATABASE_URL via app.settings, never from alembic.ini
-    versions/           empty: no application tables at M1
+    versions/           0001_facade_schema: projects, project_snapshots, files
   alembic.ini           contains no sqlalchemy.url, so no connection string is ever committed
   requirements.txt      pinned
+  tools/
+    seed_from_fixtures.py  loads M0 fixtures for contract verification
 ```
 
 ## Migrations
 
-Alembic is initialised with no revisions. `target_metadata` points at the declarative `Base`, which
-has no subclasses yet, so autogenerate has a target once the research schema arrives at B1.
+`0001_facade_schema` creates the three facade tables. No research tables yet; those arrive at B1.
 
 ```bash
 alembic current
@@ -175,3 +178,67 @@ deploy would let a schema change ship without a human deciding to apply it.
 - The JSON formatter redacts URL userinfo as a backstop, so a driver exception that embeds the DSN
   is scrubbed. The redaction consumes up to the final `@`, so a password containing `@` does not
   leak its tail. The backstop is not the primary control: no call site passes a secret.
+
+## /exec compatibility facade (A1)
+
+`GET /exec` and `POST /exec` reproduce the Apps Script action API on Postgres, so the existing
+frontend could talk to this service unchanged. **Read paths only**; writes land in A1b.
+`assets/js/config.js` is untouched and no traffic is pointed here.
+
+### Contract rules
+
+These come from the M0 live capture, not from source.
+
+1. **Application errors are HTTP 200** with `{"ok": false, "error": "..."}`. The frontend reads
+   `ok` from the body and never inspects the status code. Non-200 is reserved for transport faults.
+   Even an unhandled exception is returned in this shape, because a 500 body would not parse as
+   `{ok:false}` and the frontend would surface nothing useful.
+2. **Actions match case-insensitively.** The frontend sends `identifyOnly` at `store.js:508` while
+   the backend registers `identifyonly`; exact matching would break document identification
+   silently.
+3. **Key sets and types match `p0-baseline/contracts/`**, verified with `compare.py`.
+4. **`ping` and `version` are aliases** reporting the version under `version`; `health` reports it
+   under `apiVersion`. Both conventions preserved.
+
+### Schema
+
+`projects` (id, legacy_id, doc jsonb, record_version, archived, created_at, updated_at),
+`project_snapshots` (id, project_id, period, snapshot jsonb, saved_at),
+`files` (id, project_id, drive_file_id, name, doc_type, sha256, ingested_at).
+
+JSONB first: the whole `project.json` lives in `projects.doc` rather than being shredded into
+columns. The Apps Script backend has no fixed project schema. The captured fixtures show `list`
+rows carrying geocode fields that `listarchived` rows lack, and each project carries a different
+set of `signalInputs` keys. Shredding would force a column set the data does not have and would
+silently drop anything unanticipated, which is the one failure a compatibility facade must not
+have.
+
+Two storage decisions were forced by evidence rather than by the schema brief:
+
+- **`project_snapshots` is not `doc["history"]`.** PRJ-08421 carries four entries in
+  `doc["history"]` while `gethistory` returns `[]`. They are different stores, so reading history
+  out of the document would have invented four rows.
+- **`docCount` is not a file count.** It is the number of `signals_extracted` events in the
+  document. PRJ-08421 reports `docCount` 36 while `listcorpus` returns 3 entries. This derivation
+  reproduces all 15 live slim rows exactly and is corroborated by the v10.25 note in the backend
+  source: *resetSignals_ preserves signals_extracted events so the Uploaded Documents table
+  survives resets*.
+
+### Verifying against the live contract
+
+```bash
+export DATABASE_URL="sqlite:///./facade.db"     # or a Postgres URL
+alembic upgrade head
+python tools/seed_from_fixtures.py --project-id PRJ-08421
+uvicorn app.main:app --port 8123
+```
+
+Then capture from the facade and diff against the live baseline:
+
+```bash
+python tools/contract-fixtures/capture.py --config <facade-config>.json --confirm --repo-root <tmp>
+python tools/contract-fixtures/compare.py --baseline p0-baseline/contracts --candidate <tmp>/facade-fixtures
+```
+
+`tools/seed_from_fixtures.py` loads the M0 fixtures into the database so the facade can be compared
+against the live contract using the same data. It is a verification aid, not a migration path.

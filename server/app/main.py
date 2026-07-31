@@ -15,6 +15,7 @@ Endpoint contract:
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import platform
@@ -25,7 +26,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from fastapi import Request
+
 from .db import build_engine, build_session_factory, check_readiness
+from .facade import dispatch_get, dispatch_post, err
 from .logging_config import configure_logging
 from .settings import SettingsError, load_settings
 
@@ -130,3 +134,51 @@ def readyz() -> JSONResponse:
         )
 
     return JSONResponse(status_code=200 if result.ready else 503, content=body)
+
+
+# ---------------------------------------------------------------- /exec facade
+
+
+def _exec_response(payload: dict[str, Any]) -> JSONResponse:
+    """
+    Contract rule 1: application errors are HTTP 200 with ok:false. The frontend reads `ok` from
+    the body and never inspects the status code, so returning 4xx here would break it. Non-200 is
+    reserved for genuine transport faults.
+    """
+    return JSONResponse(status_code=200, content=payload)
+
+
+@app.get("/exec", tags=["facade"])
+def exec_get(request: Request) -> JSONResponse:
+    params = dict(request.query_params)
+    try:
+        with SessionFactory() as session:
+            return _exec_response(dispatch_get(session, params))
+    except Exception as exc:  # noqa: BLE001
+        # Even an unexpected fault is reported in the contract's error shape, because a 500 body
+        # would not parse as {ok:false} and the frontend would surface nothing useful.
+        log.exception("exec_get_failed", extra={"action": params.get("action")})
+        return _exec_response(err(f"Server error: {type(exc).__name__}"))
+
+
+@app.post("/exec", tags=["facade"])
+async def exec_post(request: Request) -> JSONResponse:
+    """
+    The frontend posts text/plain to avoid a CORS preflight Apps Script cannot answer, so the body
+    is JSON but the content type is not application/json. Parse the raw body rather than relying on
+    FastAPI's JSON binding, which would reject it.
+    """
+    raw = await request.body()
+    try:
+        payload = json.loads(raw.decode("utf-8") or "{}")
+        if not isinstance(payload, dict):
+            raise ValueError("payload is not an object")
+    except (ValueError, UnicodeDecodeError) as exc:
+        return _exec_response(err(f"Bad request body: {exc}"))
+
+    try:
+        with SessionFactory() as session:
+            return _exec_response(dispatch_post(session, payload))
+    except Exception as exc:  # noqa: BLE001
+        log.exception("exec_post_failed", extra={"action": payload.get("action")})
+        return _exec_response(err(f"Server error: {type(exc).__name__}"))
