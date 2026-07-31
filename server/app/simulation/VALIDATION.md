@@ -67,7 +67,7 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 | A6.2 | Safety Performance Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 5; OSHA-rate fallback to incidents×10 validated |
 | A6.3 | Environmental Compliance Rate | simulations.js | **yes** | 0.0e+00 | exact match; batch 5; max(50, …) fallback floor validated |
 | A6.4 | Contractor Performance Score | simulations.js | **yes** | 0.0e+00 | exact match; batch 5; worst-of-three rating |
-| B1.1 | Conservative Dominance | decision.js | no | - | not ported: computed in decision.js |
+| B1.1 | Conservative Dominance | decision.js | **yes** | 0.0e+00 | exact match; batch 10; a projection of deriveDecision(project) — records {state, conflict} (the instrument's m09_conservative); consumes the ASSEMBLED PROJECT (signals.{evm,mc,cusum,doc}.status + cusum.breached + fairnessSensitive); classifyConflict compares statuses in LOWERCASE, so capitalized statuses do not count — reproduced and case-covered; the browser getProjectFusion primary path is signals.js-only, so the server (like the harness) uses the signal-class fallback rule; a project with no cusum signal THROWS in JS — the port abstains instead (refusing direction) |
 | B1.2 | Weighted Voting | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; consumes the ASSEMBLED PROJECT (see input-contract note below); Object.keys reduce in insertion order, later key wins ties |
 | B1.3 | Majority Rules | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; project input; voteBucket quirks validated (light-amber→Green, Red-Review→Red, Complete→Green) |
 | B1.4 | Worst-N-of-M | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; project input; null statuses from present signals count toward M |
@@ -91,7 +91,7 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 | B2.18 | MARCOS Ranking | simulations.js | **yes** | 0.0e+00 | exact match; batch 8 |
 | B2.19 | CRITIC-TOPSIS | simulations.js | **yes** | 0.0e+00 | exact match; batch 8 |
 | B2.20 | Hypersoft Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 8 |
-| B3.1 | ABM Governance Layer | decision.js | no | - | not ported: computed in decision.js |
+| B3.1 | ABM Governance Layer | decision.js | **yes** | 0.0e+00 | exact match; batch 10; the second projection of the same deriveDecision — records {state, authority, action, fairness_gate} (m19_abm); all six deriveDecision fields compared on 8 project cases including the fairness-gate escalation and the capitalized-status quirk |
 | B3.2 | FAR Threshold Monitor | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; cpi/bac exactly 0 abstains (JS Infinity/NaN fallthrough) |
 | B3.3 | OMB A-11 Check | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; cpi exactly 0 abstains |
 | B3.4 | EVM Reporting Threshold | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; cpi/bac exactly 0 abstains |
@@ -118,15 +118,16 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 
 ## Summary
 
-- validated and shipped: **93** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
+- validated and shipped: **95** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
   A2.4–A2.11 and A3.2–A3.9; batch 3 added A1.3–A1.11; batch 4 added A4.2–A4.10, the
   document-derived condition signals; batch 5 added A5.2–A5.8 and A6.1–A6.4; batch 6 added
   B2.1, B1.2–B1.4 and B3.2–B3.5; batch 7 added B4.1–B4.7 and B2.2–B2.9; batch 8 added
   B2.10–B2.20, completing Group B's simulations.js modules; batch 9 added C1.1–C1.7 — Group C
   computes but does not contribute to project status, an exclusion asserted by Guarantee 4 of
   the test suite). Group A is complete except A4.1, which is produced by the extraction
-  pipeline, not a model.
-- declared but not ported: **8**
+  pipeline, not a model. Batch 10 added B1.1 and B3.1 from decision.js, validated by loading
+  decision.js alone in the browser and comparing deriveDecision field-for-field.
+- declared but not ported: **6**
 
 ## Group B input contracts (batch 6)
 
