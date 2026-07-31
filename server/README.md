@@ -85,6 +85,8 @@ not read a value from the repository.
 | `LOG_LEVEL` | no | `INFO` | Defaults to `INFO`. |
 | `SESSION_SECRET` | recommended | random 48+ chars | Signs research session tokens. If unset, a per-process secret is generated and `session_secret_ephemeral` is logged; sessions then break on restart. |
 | `SESSION_TTL_SECONDS` | no | `28800` | Session lifetime. Defaults to 8 hours. |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | import only | JSON or a path to it | Read-only Drive key. Never committed. Used by `tools/import_from_drive.py`, not by the running service. |
+| `DRIVE_PARENT_FOLDER_ID` | no | `14u6LT8...` | Overrides the default parent folder. |
 
 ## Interpreter version: pinned in two places
 
@@ -193,6 +195,7 @@ server/
     research_decision.py  evidence, locked judgment, reveal, disposition
     research_transitions.py branch selection, action families, follow-up periods
     research_export.py    de-identified export, allowlist, checksum chain
+    drive_adapter.py      read-only Google Drive adapter
     models.py           projects, project_snapshots, files
     settings.py         environment parsing, fail-fast, credential-free accessors
     db.py               engine, session factory, readiness probe, declarative Base
@@ -210,6 +213,8 @@ server/
     test_decision_sequence.py B4 the experimental sequence
     test_transitions.py   B5 transitions and follow-up decisions
     test_export.py        B6 de-identified export and archive chain
+    import_from_drive.py  A2 one-way Drive import + reconciliation
+    test_drive_import.py  A2 offline verification against a stub
 ```
 
 ## Migrations
@@ -744,3 +749,64 @@ DATABASE_URL=... SESSION_SECRET=... python tools/test_export.py
 ```
 
 64 checks, seeding a full two-period run for two participants in different conditions.
+
+## Drive import (A2)
+
+**No migration is included.** `/readyz` stays green; head remains `0005_transition_rules`.
+
+```bash
+DATABASE_URL=... GOOGLE_SERVICE_ACCOUNT_JSON=... python tools/import_from_drive.py           # dry run
+DATABASE_URL=... GOOGLE_SERVICE_ACCOUNT_JSON=... python tools/import_from_drive.py --apply   # writes
+```
+
+### One-way, read-only
+
+`app/drive_adapter.py` requests `drive.readonly` and has **no write path at all** — no `create`,
+`update`, `delete` or permission call. Apps Script remains the authoritative writer until M7, and
+the failure this guards against is a split brain where both stores accept writes and neither is
+authoritative. A read-only adapter cannot cause that even if a caller asks it to.
+
+`GOOGLE_SERVICE_ACCOUNT_JSON` holds the key, never a committed file — the repository is public. It
+accepts either the JSON itself or a path to it, because a long blob in a shell variable is easy to
+truncate. Absent, the script fails immediately naming the variable: a missing credential that
+surfaced later as an empty project list would look exactly like an empty Drive folder, and the
+reconciliation would then cheerfully report a clean run of nothing against nothing.
+
+### Dry run by default
+
+`--apply` is required to write. Exit codes distinguish the outcomes so a caller checking only the
+code cannot mistake one for another: `0` applied and clean, `1` unexplained discrepancies, `2`
+could not reach Drive, `3` dry run completed.
+
+### The reconciliation is the deliverable
+
+An import that "worked" but moved 11 of 12 projects is worse than one that failed, because nothing
+announces the missing one. Every run therefore ends by comparing both stores and writing
+`p0-baseline/reconciliation/<timestamp>/report.md` and `report.json`, covering project counts,
+per-project history/corpus/audit counts, unparseable `project.json` files by name, orphaned Drive
+file ids, and projects present in only one store.
+
+Differences with a known cause appear under **Explained differences** rather than being counted as
+clean — an unparseable `project.json`, or a history file whose name carries no recognisable period.
+The run is successful only when there are zero *unexplained* discrepancies.
+
+### What is imported
+
+`project.json` unchanged into `projects.doc`; `_history/*.json` into `project_snapshots` with the
+period parsed from the filename; `_corpus`, `_audits` and `_signals` as **metadata only** into
+`files`. No file bytes are downloaded in this phase, so `sha256` stays null rather than being
+filled with Drive's md5 under a sha256 column name.
+
+Idempotent by `legacy_id` and by `(project, period)`: an existing row is updated in place, so its
+primary key, `created_at` and any research reference to it survive a re-run.
+
+### Offline verification
+
+```bash
+DATABASE_URL=... python tools/test_drive_import.py
+```
+
+37 checks against a stub that mimics the Drive v3 responses this adapter uses, including forced
+paging. It proves dry-run safety, idempotency, discrepancy detection and the explained-difference
+path. It cannot prove the live API contract: field names, paging behaviour and permissions are
+confirmed only by a real run with the service account.
