@@ -125,11 +125,15 @@ def enforce_consent(session: Session) -> None:
         if obj in session.dirty and not session.is_modified(obj, include_collections=False):
             continue
 
-        # An administrative export with no participant is allowed only when explicitly marked.
-        if isinstance(obj, ResearchExport) and not obj.initiated_by:
+        # An export is an administrative act gated by role, not by participant consent. The
+        # flag is set only by a handler that has already checked the caller is a
+        # ResearchAdmin. It is honoured regardless of initiated_by, so recording WHO ran the
+        # export does not make the write fail: an administrator never consents as a subject.
+        if isinstance(obj, ResearchExport):
             if getattr(obj, "_admin_authorised", False):
                 continue
-            raise ConsentRequired(None, "research_exports")
+            if not obj.initiated_by:
+                raise ConsentRequired(None, "research_exports")
 
         participant_id = _resolve_participant(session, obj)
         if not has_active_consent(session, participant_id):

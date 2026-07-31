@@ -192,6 +192,7 @@ server/
     research_assignment.py assignment, counterbalancing, blinding
     research_decision.py  evidence, locked judgment, reveal, disposition
     research_transitions.py branch selection, action families, follow-up periods
+    research_export.py    de-identified export, allowlist, checksum chain
     models.py           projects, project_snapshots, files
     settings.py         environment parsing, fail-fast, credential-free accessors
     db.py               engine, session factory, readiness probe, declarative Base
@@ -208,6 +209,7 @@ server/
     test_assignment_blinding.py B3 assignment and blinding
     test_decision_sequence.py B4 the experimental sequence
     test_transitions.py   B5 transitions and follow-up decisions
+    test_export.py        B6 de-identified export and archive chain
 ```
 
 ## Migrations
@@ -671,3 +673,74 @@ DATABASE_URL=... SESSION_SECRET=... python tools/test_transitions.py
 ```
 
 58 checks, including a full two-period run, all through `/exec`.
+
+## De-identified export (B6)
+
+**No migration is included.** `/readyz` stays green; head remains `0005_transition_rules`.
+
+| Action | Role |
+|---|---|
+| `adminexportcreate` | ResearchAdmin |
+| `adminexportlist` | ResearchAdmin |
+| `adminexportfetch` | ResearchAdmin |
+
+### De-identification is an allowlist, never a denylist
+
+`EXPORT_COLUMNS` in `research_export.py` names every field that may leave the system, and each row
+is assembled by naming each field explicitly. There is no `dict(row)`, no model introspection and
+no `**kwargs`.
+
+A denylist would invert the failure: the day someone adds an `ip_hash` column, every export
+silently starts carrying it and the leak is found after the data has been shared. With an
+allowlist, a new column simply does not appear. The test proves this by adding a real column to
+`decisions`, populating it with a canary value, and asserting neither the name nor the value
+reaches the export.
+
+A defensive assertion inside `build_rows` fails the export outright if the assembled row and the
+allowlist ever disagree.
+
+`rationale` **is** exported, because it is a dependent variable, but participants can type
+anything into it. Every export declares `review_required`, `free_text_columns` and a note that the
+text must be reviewed before it is shared outside the study team.
+
+### The payload is regenerated on fetch, not stored
+
+`research_exports` records the checksum, not the bytes. `adminexportfetch` re-derives the payload
+from current data and compares. This is stronger than reading back a blob: it detects the
+underlying rows changing after the export was taken, which is exactly the drift that would
+silently invalidate an analysis quoting that checksum. On mismatch the payload is **withheld** and
+the event is audited.
+
+It also means B6 needs no migration.
+
+### Format and derived variables
+
+Long format, one row per decision (participant x scenario x period), for mixed-effects models with
+crossed random effects. JSON and CSV; the checksum covers the payload bytes as delivered.
+
+Derived in the export so the analyst does not reconstruct them: `judgment_shift_action`,
+`confidence_shift`, `deliberation_seconds` (final minus reveal), `pre_assessment_seconds`
+(pre-submission minus first `evidence_viewed`), plus `period`, `sequence_number`, `config_code`,
+`order_group`, `scenario_id`, `branch_id` and `branch_version`.
+
+`config_code` is present deliberately: this is the analyst's view, not the participant's, so the
+condition must be visible here even though it is hidden everywhere a participant can reach.
+
+`pre_assessment_seconds` is measured from the earliest `evidence_viewed` audit event rather than a
+column, because no column records when a participant opened an assignment. The derived variable is
+therefore traceable to a recorded event.
+
+### Consent gate interaction
+
+An export is an administrative act gated by role, not by participant consent. The gate honours an
+`_admin_authorised` flag set only by a handler that has already verified the caller is a
+ResearchAdmin, so recording *who* ran the export does not make the write fail against an
+administrator who has never consented as a subject.
+
+### Running the test
+
+```bash
+DATABASE_URL=... SESSION_SECRET=... python tools/test_export.py
+```
+
+64 checks, seeding a full two-period run for two participants in different conditions.
