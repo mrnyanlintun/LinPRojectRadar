@@ -263,6 +263,15 @@ def a_consentgrant(session: Session, payload: dict, secret: str, ttl: int) -> di
     if not version:
         return err("consent_version is required")
 
+    # B8 account separation, enforced at source: an operational account can never obtain a
+    # consents row, so the B2 consent gate blocks every research write for it. This is
+    # structural, not procedural — no username convention is involved.
+    if caller.participant.account_type == "operational":
+        audit(session, "consent_denied_operational", participant_id=caller.participant_id)
+        session.commit()
+        return err("operational accounts cannot grant research consent: this account is not "
+                   "a research participant")
+
     if has_active_consent(session, caller.participant_id):
         return err("consent already granted; withdraw it before granting again")
 
@@ -335,11 +344,16 @@ def a_adminparticipantcreate(session: Session, payload: dict, secret: str, ttl: 
     if role not in (ROLE_ADMIN, ROLE_PARTICIPANT, ROLE_EXPERT, ROLE_DEMO):
         return err(f"unknown role: {role}")
 
+    account_type = str(payload.get("account_type") or "research")
+    if account_type not in ("research", "operational"):
+        return err("account_type must be 'research' or 'operational'")
+
     plaintext, token_hash = issue_access_token()
     code = _next_code(session)
     participant = Participant(
         pseudonymous_code=code,
         role=role,
+        account_type=account_type,
         access_token_hash=token_hash,
         eligibility_status=payload.get("eligibility_status"),
         scenario_set=payload.get("scenario_set"),
@@ -350,7 +364,8 @@ def a_adminparticipantcreate(session: Session, payload: dict, secret: str, ttl: 
     session.add(participant)
     session.flush()
     audit(session, "participant_created", participant_id=participant.participant_id,
-          created_by=caller.participant_id, role=role, pseudonymous_code=code)
+          created_by=caller.participant_id, role=role, pseudonymous_code=code,
+          account_type=account_type)
     session.commit()
 
     return {
@@ -358,6 +373,7 @@ def a_adminparticipantcreate(session: Session, payload: dict, secret: str, ttl: 
         "participant_id": participant.participant_id,
         "pseudonymous_code": code,
         "role": role,
+        "account_type": account_type,
         # Returned exactly once. Only its hash is stored, so it cannot be recovered later.
         "access_token": plaintext,
         "access_token_notice": "Shown once. It is stored hashed and cannot be retrieved again.",
@@ -421,6 +437,41 @@ def a_researchparticipantget(session: Session, payload: dict, secret: str, ttl: 
     return view
 
 
+def a_adminaccounttypeset(session: Session, payload: dict, secret: str, ttl: int) -> dict[str, Any]:
+    """
+    Change an existing account's type. An admin action, and audited: retyping an account moves
+    it across the research/operational boundary, which is exactly the change the audit trail
+    must be able to reconstruct.
+    """
+    caller, problem = resolve_caller(session, payload, secret)
+    if problem:
+        return problem
+    if not caller.is_admin:
+        audit(session, "admin_action_denied", participant_id=caller.participant_id,
+              action="adminaccounttypeset", role=caller.role)
+        session.commit()
+        return err("not authorised: ResearchAdmin role required")
+
+    target_id = str(payload.get("participant_id") or "").strip()
+    account_type = str(payload.get("account_type") or "").strip()
+    if not target_id:
+        return err("participant_id is required")
+    if account_type not in ("research", "operational"):
+        return err("account_type must be 'research' or 'operational'")
+
+    target = session.get(Participant, target_id)
+    if target is None:
+        return err(f"participant not found: {target_id}")
+
+    previous = target.account_type
+    target.account_type = account_type
+    audit(session, "account_type_changed", participant_id=target_id,
+          changed_by=caller.participant_id, from_type=previous, to_type=account_type)
+    session.commit()
+    return {"ok": True, "participant_id": target_id,
+            "account_type": account_type, "previous_account_type": previous}
+
+
 IDENTITY_ACTIONS: dict[str, Callable[[Session, dict, str, int], dict]] = {
     "researchlogin": a_researchlogin,
     "researchwhoami": a_researchwhoami,
@@ -428,5 +479,6 @@ IDENTITY_ACTIONS: dict[str, Callable[[Session, dict, str, int], dict]] = {
     "consentwithdraw": a_consentwithdraw,
     "adminparticipantcreate": a_adminparticipantcreate,
     "adminparticipantlist": a_adminparticipantlist,
+    "adminaccounttypeset": a_adminaccounttypeset,
     "researchparticipantget": a_researchparticipantget,
 }

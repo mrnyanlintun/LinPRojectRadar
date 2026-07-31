@@ -175,6 +175,12 @@ def build_rows(session: Session, start: datetime | None, end: datetime | None) -
         if assignment is None:
             continue
         participant = session.get(Participant, assignment.participant_id)
+        # B8 account separation, UNCONDITIONAL: only research accounts enter an export. This is
+        # not a parameter, cannot be overridden by any payload field, and applies to every
+        # export ever taken, including refetches of exports created before B8. An operational
+        # account's rows never leave the system through this path.
+        if participant is None or participant.account_type != "research":
+            continue
         scenario = session.get(Scenario, assignment.scenario_id)
         config = session.get(Configuration, assignment.config_id) if assignment.config_id else None
         package = (session.get(DecisionSupportPackage, decision.package_id)

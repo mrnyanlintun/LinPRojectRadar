@@ -304,6 +304,9 @@ def dispatch_post(session: Session, payload: dict, settings=None) -> dict[str, A
     from .research_consent import ConsentRequired
     from .research_decision import DECISION_ACTIONS
     from .research_export import EXPORT_ACTIONS
+    from .research_membership import (
+        MEMBERSHIP_ACTIONS, PROJECT_WRITE_ACTIONS, guard_project_write,
+    )
     from .research_transitions import TRANSITION_ACTIONS
     from .research_identity import IDENTITY_ACTIONS
     from .writes import DEFERRED_AI_ACTIONS, POST_ACTIONS
@@ -311,9 +314,16 @@ def dispatch_post(session: Session, payload: dict, settings=None) -> dict[str, A
     # Rule 2: lowercase before matching, so the frontend's camelCase identifyOnly still resolves.
     action = str(payload.get("action") or "").lower()
 
+    # B8: facade writes and upload actions on a membered project are PM-only for authenticated
+    # callers. Sessionless calls are unchanged; the guard adds authorisation, not authentication.
+    if action in PROJECT_WRITE_ACTIONS:
+        refused = guard_project_write(session, payload, settings)
+        if refused is not None:
+            return refused
+
     identity = (IDENTITY_ACTIONS.get(action) or ASSIGNMENT_ACTIONS.get(action)
                 or DECISION_ACTIONS.get(action) or TRANSITION_ACTIONS.get(action)
-                or EXPORT_ACTIONS.get(action))
+                or EXPORT_ACTIONS.get(action) or MEMBERSHIP_ACTIONS.get(action))
     if identity is not None:
         if settings is None:
             return err("research identity is not configured on this build")
