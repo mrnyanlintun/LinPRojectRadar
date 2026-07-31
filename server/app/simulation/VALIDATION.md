@@ -38,14 +38,14 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 | A2.9 | Resource Loading Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
 | A2.10 | Schedule Risk Analysis P80 | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
 | A2.11 | Critical Path Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
-| A3.2 | Contingency Burn Rate | simulations.js | no | - | not ported in this pass |
-| A3.3 | Labor Productivity Index | simulations.js | no | - | not ported in this pass |
-| A3.4 | Material Cost Variance | simulations.js | no | - | not ported in this pass |
-| A3.5 | Overhead Absorption Rate | simulations.js | no | - | not ported in this pass |
-| A3.6 | Cost Risk Analysis P80 | simulations.js | no | - | not ported in this pass |
-| A3.7 | Analogous Estimating Ratio | simulations.js | no | - | not ported in this pass |
-| A3.8 | Parametric Cost Index | simulations.js | no | - | not ported in this pass |
-| A3.9 | Inflation Adjustment Index | simulations.js | no | - | not ported in this pass |
+| A3.2 | Contingency Burn Rate | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
+| A3.3 | Labor Productivity Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
+| A3.4 | Material Cost Variance | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
+| A3.5 | Overhead Absorption Rate | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
+| A3.6 | Cost Risk Analysis P80 | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
+| A3.7 | Analogous Estimating Ratio | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
+| A3.8 | Parametric Cost Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 2; the JS divides by an unlisted `si.cpi` — a missing/zero cpi yields NaN there and routes to insufficient; the port refuses those explicitly |
+| A3.9 | Inflation Adjustment Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 2 |
 | A4.1 | Document Risk Score | signals.js | no | - | not ported: produced by the extraction pipeline, not a model |
 | A4.2 | RFI Velocity | simulations.js | no | - | not ported in this pass |
 | A4.3 | Submittal Rejection Rate | simulations.js | no | - | not ported in this pass |
@@ -118,9 +118,9 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 
 ## Summary
 
-- validated and shipped: **15** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
-  A2.4–A2.11, the simulations.js schedule extensions)
-- declared but not ported: **86**
+- validated and shipped: **23** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
+  A2.4–A2.11 and A3.2–A3.9, the simulations.js schedule and cost extensions)
+- declared but not ported: **78**
 - maximum relative divergence across every validated module and case: **0.0e+00** (exact match)
 
 ## Rule: no module reads the system clock
