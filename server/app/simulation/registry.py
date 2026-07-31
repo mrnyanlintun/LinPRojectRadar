@@ -92,6 +92,10 @@ def run_all(si: dict, scenario_id: str, period: str,
     """
     seed = seed_from(scenario_id, period)
     rand = make_rng(seed)
+    # The sim.js pair derive their own streams from the seed rather than sharing this generator,
+    # so they need the seed value itself. Published here so every module keeps one call signature.
+    from .models import SEED_HOLDER
+    SEED_HOLDER["seed"] = seed
 
     index = registry_index()
     ids = only if only is not None else available_modules()

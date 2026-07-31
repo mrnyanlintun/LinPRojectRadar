@@ -44,11 +44,14 @@ check(set(available_modules()) == set(VALIDATED),
       f"available == validated ({len(VALIDATED)} modules)", str(available_modules()))
 check(len(unported_modules()) == 101 - len(VALIDATED),
       f"unported = 101 - {len(VALIDATED)} = {101 - len(VALIDATED)}", str(len(unported_modules())))
+# Pick a module that is genuinely still unported, so this assertion stays meaningful as batches
+# land. A1.1 was used here until it was ported in batch 1.
+still_unported = unported_modules()[0]
 try:
-    run_module("A1.1", HEALTHY, make_rng(1))
+    run_module(still_unported, HEALTHY, make_rng(1))
     check(False, "an unported module raises rather than approximating", "no raise")
 except MissingModuleError as exc:
-    check("refuses to compute" in str(exc), "an unported module raises MissingModuleError",
+    check("refuses to compute" in str(exc), f"unported {still_unported} raises MissingModuleError",
           str(exc)[:70])
 
 print()

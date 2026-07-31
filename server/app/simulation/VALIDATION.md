@@ -14,13 +14,13 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 
 | new id | name | source | validated | max rel. divergence | notes |
 |---|---|---|---|---|---|
+| A1.1 | Monte Carlo EAC | sim.js | **yes** | 0.0e+00 | exact match; batch 1 |
+| A1.2 | CUSUM Anomaly Monitor | sim.js | **yes** | 0.0e+00 | exact match; batch 1 |
 | A2.1 | PERT Network Criticality | simulations.js | **yes** | 0.0e+00 | exact match |
 | A2.2 | Line of Balance | simulations.js | **yes** | 0.0e+00 | exact match |
 | A2.3 | CCPM Buffer Health | simulations.js | **yes** | 0.0e+00 | exact match |
 | A3.1 | Reference Class Forecasting | simulations.js | **yes** | 0.0e+00 | exact match |
 | A5.1 | DSM Rework Propagation | simulations.js | **yes** | 0.0e+00 | exact match |
-| A1.1 | Monte Carlo EAC | sim.js | no | - | not ported: lives in sim.js (monteCarloEAC), not simulations.js |
-| A1.2 | CUSUM Anomaly Monitor | sim.js | no | - | not ported: lives in sim.js (cusumSeries), not simulations.js |
 | A1.3 | Bayesian EAC | simulations.js | no | - | not ported in this pass |
 | A1.4 | Kalman Filter SPI Smoother | simulations.js | no | - | not ported in this pass |
 | A1.5 | ARIMA CPI Forecast | simulations.js | no | - | not ported in this pass |
@@ -118,8 +118,8 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 
 ## Summary
 
-- validated and shipped: **5**
-- declared but not ported: **96**
+- validated and shipped: **7** (batch 1 added A1.1 and A1.2 from sim.js)
+- declared but not ported: **94**
 - maximum relative divergence across every validated module and case: **0.0e+00** (exact match)
 
 ## Known non-determinism found in the JavaScript (Stage 1)
@@ -130,7 +130,7 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 | `simulations.js:2377` | `runDataTimeliness` | **output value** (`days_since_last_doc` and `status_color` both move with the wall clock) | not ported; needs a reference date rather than `new Date()` |
 | `sim.js:230` | derived-series builder | `dataDate` field | not ported |
 | `decision.js:395` | export payload | presentation only (`exported_at`) | not ported |
-| `simulations.js` x11 | `Object.keys` reductions | float accumulation order | insertion order preserved in both languages; do **not** sort, or results diverge from the instrument |
+| `simulations.js` x11 | `Object.keys` reductions | float accumulation order | insertion order preserved in both languages. **Do not sort these.** Sorting would look like a determinism fix but would silently change results relative to the instrument's own history; the two languages already agree because both preserve insertion order. |
 | `simulations.js:1102,1216,1281,2953` | date parsing from `signalInputs` | value, but deterministic given input | timezone-sensitive parsing is a porting hazard to watch |
-| `sim.js:108,213` | `monteCarloEAC` | deterministic already (mulberry32 seeded from inputs) | reseed from `(scenario_id, period)` when ported |
+| `sim.js:108,213` | `monteCarloEAC`, `deriveSeries` | deterministic already, but scenario-blind | **ported in batch 1**, reseeded from `(scenario_id, period)`. `deriveSeries` seeds via `hashSeed("series-" + seed)` (FNV-1a); skipping that transform produced a different series, sigma, H and breach index, which is how the first validation attempt failed. |
 

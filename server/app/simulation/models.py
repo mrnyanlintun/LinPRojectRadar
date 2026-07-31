@@ -253,7 +253,26 @@ def run_dsm(si: dict, rand: Callable[[], float]) -> dict[str, Any]:
 
 
 # Validated against the JavaScript. Keyed by the registry's new id.
+#
+# A1.1 and A1.2 come from sim.js and need the seed itself, not just a generator, because they
+# derive their own streams from it. They are adapted here so the registry can call every module
+# through one signature.
+SEED_HOLDER: dict = {}
+
+
+def run_monte_carlo_module(si, rand):
+    from .models_sim import run_monte_carlo
+    return run_monte_carlo(si, rand, SEED_HOLDER.get("seed", 0))
+
+
+def run_cusum_module(si, rand):
+    from .models_sim import run_cusum
+    return run_cusum(si, rand, SEED_HOLDER.get("seed", 0))
+
+
 VALIDATED: dict[str, tuple[str, Callable[[dict, Callable[[], float]], dict]]] = {
+    "A1.1": ("Monte_Carlo", run_monte_carlo_module),
+    "A1.2": ("CUSUM", run_cusum_module),
     "A2.1": ("PERT_Network_Criticality", run_pert),
     "A2.2": ("Line_of_Balance_Velocity", run_lob),
     "A2.3": ("CCPM_Buffer_Health", run_ccpm),
@@ -262,4 +281,4 @@ VALIDATED: dict[str, tuple[str, Callable[[dict, Callable[[], float]], dict]]] = 
 }
 
 # Stochastic models, for the seed record on the result set.
-STOCHASTIC: frozenset[str] = frozenset({"A2.1"})
+STOCHASTIC: frozenset[str] = frozenset({"A1.1", "A1.2", "A2.1"})
