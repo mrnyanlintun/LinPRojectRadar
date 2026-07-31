@@ -303,6 +303,7 @@ def dispatch_post(session: Session, payload: dict, settings=None) -> dict[str, A
     from .research_assignment import ASSIGNMENT_ACTIONS
     from .research_consent import ConsentRequired
     from .research_decision import DECISION_ACTIONS
+    from .research_transitions import TRANSITION_ACTIONS
     from .research_identity import IDENTITY_ACTIONS
     from .writes import DEFERRED_AI_ACTIONS, POST_ACTIONS
 
@@ -310,7 +311,7 @@ def dispatch_post(session: Session, payload: dict, settings=None) -> dict[str, A
     action = str(payload.get("action") or "").lower()
 
     identity = (IDENTITY_ACTIONS.get(action) or ASSIGNMENT_ACTIONS.get(action)
-                or DECISION_ACTIONS.get(action))
+                or DECISION_ACTIONS.get(action) or TRANSITION_ACTIONS.get(action))
     if identity is not None:
         if settings is None:
             return err("research identity is not configured on this build")

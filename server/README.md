@@ -191,13 +191,14 @@ server/
     research_consent.py consent gate as a before_flush listener
     research_assignment.py assignment, counterbalancing, blinding
     research_decision.py  evidence, locked judgment, reveal, disposition
+    research_transitions.py branch selection, action families, follow-up periods
     models.py           projects, project_snapshots, files
     settings.py         environment parsing, fail-fast, credential-free accessors
     db.py               engine, session factory, readiness probe, declarative Base
     logging_config.py   JSON formatter with credential redaction backstop
   alembic/
     env.py              reads DATABASE_URL via app.settings, never from alembic.ini
-    versions/           0001 facade, 0002 nullable snapshot owner, 0003 research, 0004 sequences
+    versions/           0001 facade, 0002 snapshot owner, 0003 research, 0004 sequences, 0005 transitions
   alembic.ini           contains no sqlalchemy.url, so no connection string is ever committed
   requirements.txt      pinned
   tools/
@@ -206,6 +207,7 @@ server/
     test_research_identity.py B2 identity, roles and consent gate
     test_assignment_blinding.py B3 assignment and blinding
     test_decision_sequence.py B4 the experimental sequence
+    test_transitions.py   B5 transitions and follow-up decisions
 ```
 
 ## Migrations
@@ -610,3 +612,62 @@ DATABASE_URL=... SESSION_SECRET=... python tools/test_decision_sequence.py
 ```
 
 59 checks, all through `/exec`, covering all seven guarantees.
+
+## Decision-dependent transitions (B5)
+
+**A migration IS included** (`0005_transition_rules`). `/readyz` reports 503 with
+`SchemaOutOfDate` until `alembic upgrade head` is run against the target database.
+
+| Action | Role |
+|---|---|
+| `adminactionfamilycreate` / `adminactionfamilylist` | ResearchAdmin |
+| `admintransitionrulecreate` / `admintransitionrulelist` | ResearchAdmin |
+| `researchadvance` | Participant |
+
+### Rules and the action taxonomy are data
+
+`transition_rules` holds one row per candidate branch for a
+`(scenario_id, period, action_family)`. `action_families` maps each literal action to its family.
+Both are versioned and must be frozen before use, like configurations, packages and condition
+sequences.
+
+**An unmapped action is an error, never a default.** There is deliberately no fallback family: a
+fallback would silently absorb a typo or a newly added action and route a participant down a
+branch nobody chose.
+
+### Reproducibility
+
+The seed is `sha256(participant_id | scenario_id | period)`. There is no call to `random()`: a
+generator seeded at process start would make a run depend on process history, which cannot be
+reproduced from the data. Candidates are ordered by `branch_id` rather than insertion order, so
+re-inserting rows cannot change a selection.
+
+The `transitions` row stores `branch_id`, `branch_version`, `seed`, `probability`,
+`next_state_id` and `displayed_at`, so an allocation is reconstructible from the row alone and can
+be re-derived *against* the rules table to detect drift. `probability` is stored as text so a
+preregistered `0.30` survives the round trip exactly instead of becoming `0.29999999999999999`.
+
+Because `branch_version` is on the row, a rule edited afterwards cannot change what an earlier
+participant experienced.
+
+### Periods
+
+`decisions` now holds one row per `(assignment, period)`, and the period is **derived**, like the
+stage and the sequence position. A completed period advances only once `researchadvance` has
+actually executed, which makes "decided but not yet advanced" a distinguishable state rather than
+a gap. From period 2 onward, `researchevidenceget` returns the state the transition produced, not
+the scenario's opening evidence: re-reading the opening evidence would hide the consequence of the
+participant's own decision, which is the thing this design measures.
+
+**Behaviour change from B4:** an assignment now completes only after its *final* period. Before
+B5, completing period 1 marked the whole assignment complete and moved the participant to their
+next scenario with a period still outstanding. One assertion in `test_decision_sequence.py` had
+encoded that bug and was updated.
+
+### Running the test
+
+```bash
+DATABASE_URL=... SESSION_SECRET=... python tools/test_transitions.py
+```
+
+58 checks, including a full two-period run, all through `/exec`.

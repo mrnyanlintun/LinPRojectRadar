@@ -188,8 +188,16 @@ def derived_stage(session: Session, participant_id: str) -> str:
     )
     if assignment is None:
         return STAGE_EVIDENCE
+    # The current period, not "the" decision: an assignment has one decisions row per period,
+    # so querying by assignment alone would be ambiguous once period 2 exists.
+    from .research_decision import current_period
+    from .research_models import Scenario
+
+    scenario = session.get(Scenario, assignment.scenario_id)
+    period = current_period(session, assignment, scenario)
     decision = session.scalar(
-        select(Decision).where(Decision.assignment_id == assignment.assignment_id)
+        select(Decision).where(Decision.assignment_id == assignment.assignment_id,
+                               Decision.period == period)
     )
     return derive_stage(decision)
 

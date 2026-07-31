@@ -334,6 +334,53 @@ class ConditionSequence(Base):
     )
 
 
+class ActionFamily(Base):
+    """Maps a literal action to its family. Data, versioned, frozen before use. See migration 0005."""
+
+    __tablename__ = "action_families"
+
+    map_id: Mapped[str] = mapped_column(ULID, primary_key=True, default=new_ulid)
+    action: Mapped[str] = mapped_column(Text, nullable=False, index=True)
+    family: Mapped[str] = mapped_column(Text, nullable=False)
+    version: Mapped[str] = mapped_column(Text, nullable=False)
+    frozen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False,
+                                                 server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("action", "version", name="uq_action_families_action_version"),
+    )
+
+
+class TransitionRule(Base):
+    """
+    One candidate branch for a (scenario, period, action_family).
+
+    probability is text so a preregistered decimal survives the round trip exactly; a float would
+    turn 0.30 into 0.29999999999999999 in the audit record.
+    """
+
+    __tablename__ = "transition_rules"
+
+    rule_id: Mapped[str] = mapped_column(ULID, primary_key=True, default=new_ulid)
+    scenario_id: Mapped[str] = mapped_column(ULID, nullable=False, index=True)
+    period: Mapped[str] = mapped_column(Text, nullable=False)
+    action_family: Mapped[str] = mapped_column(Text, nullable=False)
+    branch_id: Mapped[str] = mapped_column(Text, nullable=False)
+    branch_version: Mapped[str] = mapped_column(Text, nullable=False)
+    probability: Mapped[str] = mapped_column(Text, nullable=False)
+    next_state_id: Mapped[str] = mapped_column(Text, nullable=False)
+    version: Mapped[str] = mapped_column(Text, nullable=False)
+    frozen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False,
+                                                 server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("scenario_id", "period", "action_family", "branch_id", "version",
+                         name="uq_transition_rules_branch"),
+    )
+
+
 class ResearchExport(Base):
     __tablename__ = "research_exports"
 

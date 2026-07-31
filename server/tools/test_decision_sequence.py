@@ -303,9 +303,17 @@ dup = post({"action": "researchdecision", "session_token": p, "final_action": "a
 check(dup.get("ok") is False, "a second final decision is refused")
 
 cur = post({"action": "researchcurrent", "session_token": p})
-check(cur.get("current_sequence_number") == 2, "current advances to position 2 after completion",
+# The scenario has period_count 2, so completing period 1 does NOT finish the assignment. Before
+# B5 this asserted the position advanced to 2, which was the bug: a participant was moved to their
+# next scenario with a period still outstanding. The assignment now completes only after the final
+# period, so the position stays at 1 and the period advances instead.
+check(cur.get("current_sequence_number") == 1,
+      "position stays at 1 while period 2 is outstanding",
       str(cur.get("current_sequence_number")))
-check("config_id" not in json.dumps(cur), "advanced position still leaks no config_id")
+check(cur.get("period") == "P1",
+      "period stays at P1 until researchadvance executes the transition",
+      str(cur.get("period")))
+check("config_id" not in json.dumps(cur), "current position still leaks no config_id")
 
 print()
 print("=" * 78)

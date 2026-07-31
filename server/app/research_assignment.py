@@ -466,13 +466,21 @@ def a_researchcurrent(session: Session, payload: dict, secret: str, ttl: int) ->
     # Stage is derived from the decisions row, never read from participants.current_stage and
     # never taken from the request. A stored stage is a second source of truth that can disagree
     # with the data, and in a blinded flow a stage running ahead of the data is a disclosure.
-    from .research_decision import derive_stage
+    from .research_decision import current_period, derive_stage
     from .research_models import Decision
-    decision = session.scalar(
-        select(Decision).where(Decision.assignment_id == row.assignment_id)
-    ) if row else None
+
+    period = None
+    decision = None
+    if row is not None:
+        scenario = session.get(Scenario, row.scenario_id)
+        period = current_period(session, row, scenario)
+        decision = session.scalar(
+            select(Decision).where(Decision.assignment_id == row.assignment_id,
+                                   Decision.period == period)
+        )
 
     return {"ok": True, "current_sequence_number": current,
+            "period": period,
             "assignment": _blind_row(row) if row else None,
             "current_stage": derive_stage(decision)}
 

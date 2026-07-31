@@ -99,8 +99,47 @@ def _current_assignment(session: Session, participant_id: str) -> tuple[Assignme
     return row, current
 
 
-def _decision_for(session: Session, assignment_id: str) -> Decision | None:
-    return session.scalar(select(Decision).where(Decision.assignment_id == assignment_id))
+def _decision_for(session: Session, assignment_id: str, period: str) -> Decision | None:
+    return session.scalar(select(Decision).where(Decision.assignment_id == assignment_id,
+                                                 Decision.period == period))
+
+
+def _period_number(period: str) -> int:
+    digits = "".join(c for c in str(period) if c.isdigit())
+    return int(digits) if digits else 1
+
+
+def current_period(session: Session, assignment: Assignment,
+                   scenario: Scenario | None = None) -> str:
+    """
+    The period the participant is currently working in.
+
+    Derived, like the stage and the sequence position, so it cannot drift from the rows it
+    describes. A completed period only advances once a transition has actually been executed:
+    the participant stays in the completed period until researchadvance runs, which makes
+    "decided but not yet advanced" a distinguishable state rather than a gap.
+    """
+    from .research_models import Transition
+
+    rows = session.scalars(
+        select(Decision).where(Decision.assignment_id == assignment.assignment_id)
+    ).all()
+    if not rows:
+        return "P1"
+
+    latest = max(rows, key=lambda d: _period_number(d.period or "P1"))
+    if latest.final_submitted_at is None:
+        return latest.period or "P1"
+
+    transitioned = session.scalar(
+        select(Transition).where(Transition.decision_id == latest.decision_id)
+    )
+    if transitioned is None:
+        return latest.period or "P1"
+
+    nxt = _period_number(latest.period or "P1") + 1
+    limit = (scenario.period_count if scenario else None) or nxt
+    return "P" + str(min(nxt, limit))
 
 
 def _resolve_target(session: Session, caller, payload: dict, action: str):
@@ -150,20 +189,35 @@ def a_researchevidenceget(session: Session, payload: dict, secret: str, ttl: int
     if scenario is None:
         return err(f"scenario not found: {assignment.scenario_id}")
 
-    evidence: dict[str, Any] | None = None
-    if scenario.evidence_package_id:
-        project = session.scalar(
-            select(Project).where(Project.legacy_id == scenario.evidence_package_id)
-        )
-        evidence = project.doc if project else None
+    period = current_period(session, assignment, scenario)
+    decision = _decision_for(session, assignment.assignment_id, period)
 
-    decision = _decision_for(session, assignment.assignment_id)
+    # From period 2 onward the state is the one the transition produced, not the scenario
+    # opening evidence. Re-reading the opening evidence would hide the consequence of the
+    # participant own decision, which is the thing this design exists to measure.
+    state_ref = scenario.evidence_package_id
+    if _period_number(period) > 1:
+        from .research_models import Transition
+        prior = _decision_for(session, assignment.assignment_id,
+                              "P" + str(_period_number(period) - 1))
+        if prior is not None:
+            tr = session.scalar(
+                select(Transition).where(Transition.decision_id == prior.decision_id))
+            if tr is not None:
+                state_ref = tr.next_state_id
+
+    evidence: dict[str, Any] | None = None
+    if state_ref:
+        project = session.scalar(select(Project).where(Project.legacy_id == state_ref))
+        evidence = project.doc if project else None
     audit(session, "evidence_viewed", participant_id=caller.participant_id,
-          scenario_id=scenario.scenario_id, sequence_number=assignment.sequence_number)
+          scenario_id=scenario.scenario_id, sequence_number=assignment.sequence_number,
+          period=period)
     session.commit()
 
     return {
         "ok": True,
+        "period": period,
         "sequence_number": assignment.sequence_number,
         "scenario_id": scenario.scenario_id,
         "scenario_version": scenario.scenario_version,
@@ -207,7 +261,9 @@ def a_researchprejudgment(session: Session, payload: dict, secret: str, ttl: int
     if not 0 <= confidence <= 100:
         return err("pre_confidence must be between 0 and 100")
 
-    existing = _decision_for(session, assignment.assignment_id)
+    scenario = session.get(Scenario, assignment.scenario_id)
+    period = current_period(session, assignment, scenario)
+    existing = _decision_for(session, assignment.assignment_id, period)
     if existing is not None and existing.pre_judgment_locked:
         # Guarantee 2, application layer. The database trigger is the last line, not the first.
         audit(session, "pre_judgment_resubmission_denied", participant_id=caller.participant_id,
@@ -218,7 +274,9 @@ def a_researchprejudgment(session: Session, payload: dict, secret: str, ttl: int
     now = func.now()
     decision = Decision(
         assignment_id=assignment.assignment_id,
-        period=str(payload.get("period") or "P1"),
+        # Server-derived. A client-supplied period would let a participant write into a
+        # period they have not reached.
+        period=period,
         pre_action=pre_action,
         pre_confidence=confidence,
         pre_submitted_at=now,
@@ -237,6 +295,7 @@ def a_researchprejudgment(session: Session, payload: dict, secret: str, ttl: int
     return {
         "ok": True,
         "decision_id": decision.decision_id,
+        "period": period,
         "pre_action": decision.pre_action,
         "pre_confidence": decision.pre_confidence,
         "pre_submitted_at": decision.pre_submitted_at.isoformat(),
@@ -281,7 +340,9 @@ def a_researchreveal(session: Session, payload: dict, secret: str, ttl: int) -> 
     if problem:
         return problem
 
-    decision = _decision_for(session, assignment.assignment_id)
+    scenario = session.get(Scenario, assignment.scenario_id)
+    period = current_period(session, assignment, scenario)
+    decision = _decision_for(session, assignment.assignment_id, period)
 
     # Guarantee 1. The refusal names only the state, never any package content: a refusal that
     # leaked the recommendation would defeat the gate it is enforcing.
@@ -353,7 +414,9 @@ def a_researchdecision(session: Session, payload: dict, secret: str, ttl: int) -
     if problem:
         return problem
 
-    decision = _decision_for(session, assignment.assignment_id)
+    scenario = session.get(Scenario, assignment.scenario_id)
+    period = current_period(session, assignment, scenario)
+    decision = _decision_for(session, assignment.assignment_id, period)
     if decision is None or decision.reveal_at is None:
         audit(session, "decision_denied_unrevealed", participant_id=caller.participant_id,
               scenario_id=assignment.scenario_id)
@@ -390,7 +453,11 @@ def a_researchdecision(session: Session, payload: dict, secret: str, ttl: int) -
     decision.resource_constraint = payload.get("resource_constraint")
     decision.final_submitted_at = func.now()
 
-    assignment.status = "completed"
+    # Only the final period completes the assignment. Marking it complete after period 1
+    # would advance the participant to their next scenario with periods outstanding.
+    period_count = (scenario.period_count if scenario else None) or 1
+    assignment.status = ("completed" if _period_number(period) >= period_count
+                         else "in_progress")
 
     audit(session, "final_decision_submitted", participant_id=caller.participant_id,
           scenario_id=assignment.scenario_id, disposition=disposition,
@@ -401,6 +468,7 @@ def a_researchdecision(session: Session, payload: dict, secret: str, ttl: int) -
     return {
         "ok": True,
         "decision_id": decision.decision_id,
+        "period": period,
         "final_action": decision.final_action,
         "disposition": decision.disposition,
         "final_confidence": decision.final_confidence,
@@ -515,8 +583,11 @@ def a_adminpackageattach(session: Session, payload: dict, secret: str, ttl: int)
     if pkg is None:
         return err(f"package not found: {package_id}")
 
-    decision = _decision_for(session, assignment_id)
-    if decision is not None and decision.reveal_at is not None:
+    revealed = session.scalar(
+        select(Decision).where(Decision.assignment_id == assignment_id,
+                               Decision.reveal_at.is_not(None))
+    )
+    if revealed is not None:
         # Changing the package after the participant has seen it would silently rewrite what they
         # were shown.
         return err("package already revealed for this assignment and cannot be changed")
