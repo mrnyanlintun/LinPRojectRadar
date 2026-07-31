@@ -28,7 +28,7 @@ from fastapi.responses import JSONResponse
 
 from fastapi import Request
 
-from .db import build_engine, build_session_factory, check_readiness
+from .db import ReadinessResult, build_engine, build_session_factory, check_readiness, check_schema
 from .facade import dispatch_get, dispatch_post, err
 from .logging_config import configure_logging
 from .settings import SettingsError, load_settings
@@ -107,33 +107,69 @@ def healthz() -> dict[str, Any]:
 
 @app.get("/readyz", tags=["health"])
 def readyz() -> JSONResponse:
-    """Readiness. 200 only when a real database round-trip succeeds; 503 with a reason otherwise."""
-    result = check_readiness(engine)
+    """
+    Readiness. 200 only when connectivity AND schema-at-head both hold; 503 with a structured
+    reason otherwise.
+
+    The schema check is not decoration. SELECT 1 succeeds against an empty database, and this
+    endpoint reported ready for hours in production while every table-touching action failed,
+    because the migrations had never been applied. Connectivity is a precondition for readiness,
+    not readiness itself.
+
+    Migrations are still applied by hand, deliberately: they are not in buildCommand, so a schema
+    change cannot ship without someone deciding to apply it. This check does not change that. It
+    stops the health endpoint from claiming everything is fine while it has not been done.
+    """
+    database = check_readiness(engine)
+
+    checks: list[dict[str, Any]] = [
+        {
+            "name": "database",
+            "ok": database.ready,
+            "backend": settings.database_backend,
+            "host": settings.database_host,
+            "detail": database.detail,
+            **({"error_type": database.error_type} if database.error_type else {}),
+        }
+    ]
+
+    # Only meaningful if the database answered. Reporting a schema failure on an unreachable
+    # database would name the wrong cause.
+    if database.ready:
+        schema = check_schema(engine)
+        checks.append({
+            "name": "schema",
+            "ok": schema.ready,
+            "detail": schema.detail,
+            **({"error_type": schema.error_type} if schema.error_type else {}),
+        })
+    else:
+        schema = ReadinessResult(False, "not evaluated: database unreachable", "NotEvaluated")
+        checks.append({
+            "name": "schema", "ok": False,
+            "detail": schema.detail, "error_type": schema.error_type,
+        })
+
+    ready = database.ready and schema.ready
 
     body: dict[str, Any] = {
-        "status": "ready" if result.ready else "not_ready",
+        "status": "ready" if ready else "not_ready",
         "service": SERVICE_NAME,
         "version": SERVICE_VERSION,
-        "checks": [
-            {
-                "name": "database",
-                "ok": result.ready,
-                "backend": settings.database_backend,
-                "host": settings.database_host,
-                "detail": result.detail,
-                **({"error_type": result.error_type} if result.error_type else {}),
-            }
-        ],
+        "checks": checks,
     }
 
-    if not result.ready:
+    if not ready:
+        failed = [c for c in checks if not c["ok"]]
         log.warning(
             "readiness_failed",
-            extra={"error_type": result.error_type, "detail": result.detail,
+            extra={"failed_checks": [c["name"] for c in failed],
+                   "error_type": failed[0].get("error_type") if failed else None,
+                   "detail": failed[0].get("detail") if failed else None,
                    "db_backend": settings.database_backend, "db_host": settings.database_host},
         )
 
-    return JSONResponse(status_code=200 if result.ready else 503, content=body)
+    return JSONResponse(status_code=200 if ready else 503, content=body)
 
 
 # ---------------------------------------------------------------- /exec facade

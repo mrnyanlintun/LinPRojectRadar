@@ -11,7 +11,7 @@ moves no production traffic. `LinPRojectRadar/backend/` (the v9-era prototype) i
 | Path | Purpose | Success | Failure |
 |---|---|---|---|
 | `GET /healthz` | Liveness. Process is running. **No database call.** Also reports the running interpreter. | `200` | only if the process is down |
-| `GET /readyz` | Readiness. Real `SELECT 1` round-trip. | `200` | `503` with a structured reason |
+| `GET /readyz` | Readiness. Real `SELECT 1` round-trip **and** schema at head. | `200` | `503` with a structured reason |
 
 `/healthz` returns:
 
@@ -29,6 +29,44 @@ moves no production traffic. `LinPRojectRadar/backend/` (the v9-era prototype) i
 It exposes the interpreter version and nothing else about the environment: no paths, no
 environment variables, no package list, and not `sys.version`, whose build string would leak
 compiler and build-host detail.
+
+### `/readyz` checks connectivity AND schema
+
+**Every deploy that includes a migration requires `alembic upgrade head` against the target
+database, and `/readyz` will report 503 until it is run.** Migrations are deliberately not in
+`buildCommand`, so applying them stays an explicit decision.
+
+`/readyz` returns 200 only when both checks pass:
+
+| check | passes when |
+|---|---|
+| `database` | a real `SELECT 1` round-trip succeeds |
+| `schema` | `alembic_version` matches the head revision derived from `alembic/versions/` |
+
+The head revision is **derived from the migration scripts at runtime**, never hardcoded. A literal
+revision string in application code is a second source of truth that drifts the moment someone adds
+a migration and forgets to update it, and the failure mode is a health check reporting ready
+against the wrong schema.
+
+Failure shapes:
+
+```json
+{"name":"schema","ok":false,
+ "detail":"alembic_version is 0002_snapshot_project_nullable, expected 0003_research_schema",
+ "error_type":"SchemaOutOfDate"}
+```
+
+| `error_type` | meaning | fix |
+|---|---|---|
+| `SchemaMissing` | no `alembic_version` table; migrations never ran here | `alembic upgrade head` |
+| `SchemaOutOfDate` | present but not at head | `alembic upgrade head` |
+| `SchemaUnknown` | migration scripts or version table unreadable | inspect the deploy |
+| `NotEvaluated` | database unreachable, so schema was not checked | fix connectivity first |
+
+**Why this exists.** `SELECT 1` succeeds against a completely empty database. `/readyz` reported
+ready for hours in production while every table-touching action returned `ProgrammingError`,
+because the migrations had never been applied. A health check that cannot tell "reachable" from
+"usable" is worse than none, because it is trusted.
 
 `healthCheckPath` in `render.yaml` is `/healthz`, not `/readyz`, deliberately. If Render probed
 readiness, a database outage would cause it to restart a process that is running correctly, turning
