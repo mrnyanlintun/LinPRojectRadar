@@ -63,10 +63,10 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 | A5.6 | Queueing Theory Bottleneck | simulations.js | **yes** | 0.0e+00 | exact match; batch 5 |
 | A5.7 | Agent-Based Supply Chain | simulations.js | **yes** | 0.0e+00 | exact match; batch 5 |
 | A5.8 | Discrete Event Simulation | simulations.js | **yes** | 0.0e+00 | exact match; batch 5 |
-| A6.1 | Quality Compliance Index | simulations.js | no | - | not ported in this pass |
-| A6.2 | Safety Performance Index | simulations.js | no | - | not ported in this pass |
-| A6.3 | Environmental Compliance Rate | simulations.js | no | - | not ported in this pass |
-| A6.4 | Contractor Performance Score | simulations.js | no | - | not ported in this pass |
+| A6.1 | Quality Compliance Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 5; audit-score fallback to pass rate and the default 20-inspected validated |
+| A6.2 | Safety Performance Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 5; OSHA-rate fallback to incidents×10 validated |
+| A6.3 | Environmental Compliance Rate | simulations.js | **yes** | 0.0e+00 | exact match; batch 5; max(50, …) fallback floor validated |
+| A6.4 | Contractor Performance Score | simulations.js | **yes** | 0.0e+00 | exact match; batch 5; worst-of-three rating |
 | B1.1 | Conservative Dominance | decision.js | no | - | not ported: computed in decision.js |
 | B1.2 | Weighted Voting | simulations.js | no | - | not ported in this pass |
 | B1.3 | Majority Rules | simulations.js | no | - | not ported in this pass |
@@ -118,10 +118,11 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 
 ## Summary
 
-- validated and shipped: **48** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
+- validated and shipped: **52** (batch 1 added A1.1 and A1.2 from sim.js; batch 2 added
   A2.4–A2.11 and A3.2–A3.9; batch 3 added A1.3–A1.11; batch 4 added A4.2–A4.10, the
-  document-derived condition signals; batch 5 added A5.2–A5.8, system dynamics)
-- declared but not ported: **53**
+  document-derived condition signals; batch 5 added A5.2–A5.8 and A6.1–A6.4). Group A is now
+  complete except A4.1, which is produced by the extraction pipeline, not a model.
+- declared but not ported: **49**
 
 ## Batch 3 divergence note: NaN/Infinity fallthrough refused
 
