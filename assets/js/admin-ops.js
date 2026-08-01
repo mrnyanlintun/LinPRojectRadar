@@ -193,7 +193,7 @@
       var sel = $(id);
       if (!sel) return;
       // The PM picker on project creation is optional, so it alone gets an empty first option.
-      sel.innerHTML = (id === "ao-proj-owner" ? '<option value="">— nobody yet —</option>' : "")
+      sel.innerHTML = (id === "ao-proj-owner" ? '<option value="">(nobody yet)</option>' : "")
         + options;
     });
   }
@@ -399,7 +399,7 @@
     if (!resp || resp.ok !== true) {
       var tampered = resp && /checksum verification failed/.test(resp.error || "");
       target.innerHTML = '<div class="ws-warning" style="border-color:var(--status-red);">' +
-        "<strong>" + (tampered ? "Checksum verification failed — payload withheld." :
+        "<strong>" + (tampered ? "Checksum verification failed. The payload was withheld." :
           "Fetch failed.") + "</strong><br>" + esc((resp && resp.error) || "") + "</div>";
       return;
     }

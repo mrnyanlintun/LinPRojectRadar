@@ -102,7 +102,7 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "You are a precise construction project-controls data extractor. Read this ONE document "
         f"(type: {doc_type}) and return ONLY these fields as clean JSON: "
         f"{json.dumps(fields)}. "
-        "Use null for any field that is not present in the document — never guess, infer, or "
+        "Use null for any field that is not present in the document. Never guess, infer, or "
         "carry a value over from a different field. Do not compute indices. "
         "Numbers as plain numbers (no currency symbols, no thousands separators). "
         "Percentages as numbers 0-100. Dates as YYYY-MM-DD. "

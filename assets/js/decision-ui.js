@@ -346,7 +346,7 @@
           var name = categoryName(e.id);
           labels.push(name);
           var informational = e.c.contributes_to_project_status === false
-            ? '<span class="dc-note"> (informational — does not affect project status)</span>'
+            ? '<span class="dc-note"> (informational, does not affect project status)</span>'
             : "";
           html += '<div class="dc-row"><span class="dc-dot" style="background:' +
             statusColor(e.c.status) + ';"></span><span class="dc-row-name">' + esc(name) +
@@ -378,7 +378,7 @@
         html += "</div>";
       }
 
-      html += '<p class="dc-note" style="margin-top:14px;">Stored result — computed ' +
+      html += '<p class="dc-note" style="margin-top:14px;">Stored result, computed ' +
         esc(r.computed_at ? new Date(r.computed_at).toLocaleString() : "—") + ".</p>";
     } else {
       html += '<p class="dc-empty">No stored analysis for this period yet.</p>';
