@@ -181,13 +181,19 @@
     if (note) note.textContent = message;
   }
 
-  async function render() {
+  // NAMED `mount`, NOT `render`. This file already has an internal `render()` at the foot of the
+  // stage machinery, and a second `function render()` in the same scope silently replaces it —
+  // function declarations hoist, so the LAST one wins and the export below would have captured
+  // the internal stage renderer instead of this entry point. That fails at the first call with
+  // "cannot read current_stage of null", because the stage renderer assumes STATE.server is
+  // already populated and only refresh() populates it.
+  async function mount() {
     if (!token()) { gate("You need to be signed in to work on a decision."); return; }
     if (!wired) { wire(); wired = true; }
     await refresh();
   }
 
-  window.LinDecisionUI = { render: render };
+  window.LinDecisionUI = { mount: mount };
 
   /* Re-read the server and re-render. Called on load and after EVERY mutation —
      never assume a transition succeeded, ask. */

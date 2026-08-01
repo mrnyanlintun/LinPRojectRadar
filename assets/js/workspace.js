@@ -188,8 +188,8 @@
     // The decision sequence renders lazily: it is the last step of the period and asking the
     // server for its state on every project-page visit would audit an evidence view that the
     // participant did not make.
-    if (name === "decision" && window.LinDecisionUI && LinDecisionUI.render) {
-      try { LinDecisionUI.render(); } catch (e) { /* a render fault must not trap the tab */ }
+    if (name === "decision" && window.LinDecisionUI && LinDecisionUI.mount) {
+      try { LinDecisionUI.mount(); } catch (e) { /* a render fault must not trap the tab */ }
     }
   }
 

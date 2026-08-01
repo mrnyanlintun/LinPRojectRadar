@@ -4,8 +4,8 @@
     {
       "name": "lin-project-radar",
       "runtimeExecutable": "server/.venv/Scripts/python.exe",
-      "runtimeArgs": ["-m", "http.server", "5500"],
-      "port": 5500
+      "runtimeArgs": ["server/tools/dev_serve.py", "8010"],
+      "port": 8010
     }
   ]
 }
