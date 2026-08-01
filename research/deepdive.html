@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module deep dive — research tooling</title>
+<!--
+  THE RESEARCHER-SIDE DEEP DIVE.
+
+  This is the one surface on the platform that computes in the browser, and it does so on
+  purpose. It re-runs each model live — 5,000 Monte Carlo iterations, the CUSUM series, the
+  evidence-combination models — so the working can be watched rather than described. Reading a
+  stored result would defeat the point: the stored result is the answer, and this page is about
+  how the answer was reached.
+
+  That is why it is here and not in the application. index.html does not load sim.js,
+  simulations.js or categories.js, because computing a status in the browser produced false Red
+  statuses on healthy projects: five per cent under budget came out Red in 40 of 40 seeds, from a
+  time series the ingest path had fabricated rather than observed. A participant must never see a
+  number derived that way, and the only reliable way to guarantee that is for the code that
+  derives it not to be on their page.
+
+  NOT LINKED FROM THE APPLICATION. There is no navigation item pointing here and nothing in
+  index.html references it. It is opened deliberately, by someone who knows what it is for.
+
+  NOT A SECURITY BOUNDARY, AND NOT PRETENDING TO BE. Anyone who knows the URL can open this
+  page. What they cannot do is read project data through it: every /exec action it would need is
+  authenticated and refused server-side for a caller without the right role and membership, and
+  this page holds no data of its own. The guarantee it carries is narrower and worth stating
+  exactly: no participant-facing route loads a client-side model.
+-->
+<link rel="stylesheet" href="../assets/css/radar.css">
+</head>
+<body data-theme="dark">
+
+<div class="ws-fold" style="max-width:1280px;margin:0 auto;padding:24px 28px 64px;">
+  <section class="intro">
+    <p class="eyebrow">Research tooling</p>
+    <h1>Module deep dive</h1>
+    <p class="ws-note">
+      Re-runs each model in the browser so the working can be watched. Everything here is
+      recomputed live and is not what any project was scored on. The scored figures are the
+      stored analysis shown in the application.
+    </p>
+  </section>
+
+  <div class="ws-card">
+    <label class="ws-field-label" for="dd-project">Project</label>
+    <div class="ws-inline-row">
+      <input id="dd-project" class="ws-input" placeholder="e.g. PRJ-08421">
+      <button id="dd-load" class="ws-btn">Load</button>
+    </div>
+    <p id="dd-error" class="ws-error" style="display:none;"></p>
+  </div>
+
+  <div class="ws-card">
+    <div class="detail-modules" id="dd-host">
+      <p class="ws-note">Load a project to re-run its models.</p>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/config.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/store.js"></script>
+<!-- The three the application deliberately does not load. -->
+<script src="../assets/js/categories.js"></script>
+<script src="../assets/js/decision.js"></script>
+<script src="../assets/js/sim.js"></script>
+<script src="../assets/js/simulations.js"></script>
+<script src="../assets/js/deepdive.js"></script>
+<script>
+  (function () {
+    "use strict";
+    function $(id) { return document.getElementById(id); }
+
+    $("dd-load").addEventListener("click", async function () {
+      var err = $("dd-error");
+      err.style.display = "none";
+      var id = $("dd-project").value.trim();
+      if (!id) {
+        err.textContent = "Enter a project id.";
+        err.style.display = "block";
+        return;
+      }
+      var project;
+      try {
+        project = await LinStore.getProject(id);
+      } catch (e) {
+        project = null;
+      }
+      if (!project) {
+        // Verbatim rather than dressed up: on this page the reader is the person who would
+        // debug it.
+        err.textContent = "Could not load " + id + ". Check the id, and that you are signed in "
+          + "with an account that may read it.";
+        err.style.display = "block";
+        return;
+      }
+      LinDeepDive.render(project, $("dd-host"));
+    });
+  })();
+</script>
+</body>
+</html>

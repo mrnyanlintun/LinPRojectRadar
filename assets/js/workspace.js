@@ -601,6 +601,10 @@
     var body = $("ws-detail-body");
     body.innerHTML = '<p class="ws-note">Loading…</p>';
     var resp = await call("projectresults", { id: pid, period: 1 });
+    // Share the stored row with the rest of the application. taxonomy.js reads statuses from
+    // here, so the radar, the project list and this panel all show the same number without any
+    // of them recomputing it — and without a second request for a row already in hand.
+    if (resp && resp.ok === true && window.LinResults) LinResults.prime(pid, resp.result);
     if (!resp || resp.ok !== true) {
       body.innerHTML = '<p class="ws-empty">' + esc((resp && resp.error) ||
         "No computed result yet for this period — upload documents and run analysis " +
@@ -695,6 +699,10 @@
     listEl.innerHTML = '<p class="ws-note">Loading…</p>';
     var rows = await Promise.all(mine.map(async function (p) {
       var resp = await call("projectresults", { id: p.project_id, period: p.period || 1 });
+      // Same reason as the detail panel: this is the loader that already has the row, so it is
+      // the one that shares it. The portfolio radar reads statuses through taxonomy.js and
+      // never fetches anything of its own.
+      if (resp && resp.ok === true && window.LinResults) LinResults.prime(p.project_id, resp.result);
       return { project: p, resp: resp };
     }));
     listEl.innerHTML = rows.map(function (row) {

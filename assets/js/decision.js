@@ -146,18 +146,32 @@ function classifyConflict(project) {
    Amber       — every other early-warning combination.
    ------------------------------------------------------------ */
 function deriveHealthState(project) {
-  // Primary path: Dempster-Shafer category->project fusion (5 states:
-  // Complete/Green/Yellow/Amber/Red). High disagreement surfaces as a separate
-  // "Red-review" advisory flag (getProjectFusion().redReview), NOT as the status
-  // band — no single Red hard-overrides. Falls back to the signal-class rule for
-  // sparse projects (signals present but few/no computed category modules).
+  // The status is the one the server computed and stored. getProjectFusion reads that row.
   try {
     if (typeof window !== "undefined" && window.getProjectFusion) {
       const f = window.getProjectFusion(project);
       if (f && f.status) return f.status;
+      // A stored row exists and carries no status: say so, do not invent one.
+      if (f && f.stored) return "Awaiting analysis";
     }
-  } catch (e) { /* fall through to the signal-class rule */ }
+  } catch (e) { /* fall through */ }
 
+  // NO STORED ROW, AND DELIBERATELY NO FALLBACK DERIVATION.
+  //
+  // This used to fall through to the signal-class rule below, deriving a status in the browser
+  // from project.signals. That derivation is what produced Red on projects five per cent under
+  // budget, in 40 of 40 seeds, because the signals it read had been built from a synthesised
+  // time series. Falling back to it would mean a project whose analysis has not been run gets a
+  // confident colour anyway, and a wrong one.
+  //
+  // "Awaiting analysis" is the honest answer for a project with no computed result: it has not
+  // been analysed, which is a different thing from being healthy and a different thing again
+  // from being at risk.
+  if (typeof window !== "undefined" && window.LinResults) return "Awaiting analysis";
+
+  // Retained for the researcher-side deep-dive route, which loads categories.js and simulations.js
+  // deliberately and re-runs the models live to show its working. LinResults is absent there, so
+  // this arm is reachable only from that surface.
   const s = signalStatuses(project);
   const reds = countStatus(s, "red");
   const ambers = countStatus(s, "amber");

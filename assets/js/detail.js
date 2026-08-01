@@ -922,7 +922,16 @@
       "d-ledger": () => { LinApp.renderLedger(p, root.querySelector(".detail-ledger")); },
       "d-decision": () => { LinApp.renderDecisionCard(p, root.querySelector(".detail-decision")); },
       // HUD-depth per-project deep dive (chart + why-grid + reasoning + rule)
-      "d-stack": () => { LinDeepDive.render(p, root.querySelector(".detail-modules")); }
+      // T6 Part 3. The deep dive re-runs the models live and needs sim.js/simulations.js, which
+      // this application deliberately does not load. It moved to research/deepdive.html.
+      "d-stack": () => {
+        const host = root.querySelector(".detail-modules");
+        if (!host) return;
+        if (window.LinDeepDive) { LinDeepDive.render(p, host); return; }
+        host.innerHTML = '<p class="ws-note">The module deep dive re-runs each model live to '
+          + 'show its working. It is part of the research tooling and is not shown here. '
+          + 'The module results above are the stored analysis this project was scored on.</p>';
+      }
     };
     Object.keys(lazyDone).forEach((k) => { delete lazyDone[k]; });
 
