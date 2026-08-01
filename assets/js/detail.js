@@ -314,7 +314,7 @@
     return `<section class="panel signal-web-panel sphere3d-panel">
       <div class="sw-head">
         <div>
-          <p class="eyebrow">Signal Sphere — ${esc(periodTitle(cur && cur.period))}</p>
+          <p class="eyebrow">Signal Sphere: ${esc(periodTitle(cur && cur.period))}</p>
           <p class="kn-sub sw-vs">${totalModules}-module sphere · ${activeCount} active · drag to rotate · scroll to zoom</p>
         </div>
         <div class="sw-legend" aria-label="Signal sphere legend">
@@ -502,7 +502,7 @@
     const pts = values.map((v, i) => ({ i, v })).filter((p) => p.v != null);
     const W = 160, H = 36, PAD = 3;
     if (pts.length < 2) {
-      return `<svg viewBox="0 0 ${W} ${H}" class="pc-spark" role="img" aria-label="${esc(label)} — insufficient points">` +
+      return `<svg viewBox="0 0 ${W} ${H}" class="pc-spark" role="img" aria-label="${esc(label)}, insufficient points">` +
         `<text x="${W / 2}" y="${H / 2 + 4}" text-anchor="middle" class="pc-spark-empty">n/a</text></svg>`;
     }
     const vals = pts.map((p) => p.v);
@@ -658,7 +658,7 @@
          </tr></thead><tbody>${rows}</tbody></table>`
       : `<p class="kn-sub up-empty">No documents uploaded. Use the Upload panel to add project documents.</p>`;
     return `<section class="panel detail-uploads" aria-label="Uploaded documents">
-        <p class="eyebrow">Documents — ${evs.length} ${evs.length === 1 ? "document" : "documents"}</p>
+        <p class="eyebrow">Documents: ${evs.length} ${evs.length === 1 ? "document" : "documents"}</p>
         ${body}
       </section>`;
   }
@@ -770,7 +770,7 @@
     const docDate = t.source && t.source.at ? (window.LinTZ ? LinTZ.format(t.source.at) : String(t.source.at).slice(0, 10)) : null;
     const tieNote = t.catTieCount > 1 ? " and " + (t.catTieCount - 1) + " other" + (t.catTieCount - 1 === 1 ? "" : "s") : "";
     const parts = [
-      esc(t.projStatus) + " — driven by " + esc(t.worstCat.num) + " " + esc(t.worstCat.name) + tieNote,
+      esc(t.projStatus) + ", driven by " + esc(t.worstCat.num) + " " + esc(t.worstCat.name) + tieNote,
       esc(t.worstMod.num) + " " + esc(t.worstMod.name) + (metricNum ? " (" + esc(metricNum) + ")" : "")
     ];
     if (docLabel) {
@@ -787,15 +787,15 @@
 
   function provenancePanelHtml(t) {
     const rows = [];
-    rows.push(`<div class="det-prov-hop"><b>Project</b> — ${esc(t.projStatus)}</div>`);
-    rows.push(`<div class="det-prov-hop"><b>${esc(t.worstCat.num)} ${esc(t.worstCat.name)}</b> — ${esc(t.worstCatStatus)}${t.catTieCount > 1 ? ` (tied with ${t.catTieCount - 1} other category${t.catTieCount - 1 === 1 ? "" : "ies"} at this severity — first shown)` : ""}</div>`);
-    rows.push(`<div class="det-prov-hop"><b>${esc(t.worstMod.num)} ${esc(t.worstMod.name)}</b> — ${esc(t.worstModStatus)}${t.modTieCount > 1 ? ` (tied with ${t.modTieCount - 1} other module${t.modTieCount - 1 === 1 ? "" : "s"} at this severity — first shown)` : ""}${t.evidenceMetric ? `<div class="kn-sub">${esc(t.evidenceMetric)}</div>` : ""}</div>`);
+    rows.push(`<div class="det-prov-hop"><b>Project</b>: ${esc(t.projStatus)}</div>`);
+    rows.push(`<div class="det-prov-hop"><b>${esc(t.worstCat.num)} ${esc(t.worstCat.name)}</b>: ${esc(t.worstCatStatus)}${t.catTieCount > 1 ? ` (tied with ${t.catTieCount - 1} other category${t.catTieCount - 1 === 1 ? "" : "ies"} at this severity — first shown)` : ""}</div>`);
+    rows.push(`<div class="det-prov-hop"><b>${esc(t.worstMod.num)} ${esc(t.worstMod.name)}</b>: ${esc(t.worstModStatus)}${t.modTieCount > 1 ? ` (tied with ${t.modTieCount - 1} other module${t.modTieCount - 1 === 1 ? "" : "s"} at this severity — first shown)` : ""}${t.evidenceMetric ? `<div class="kn-sub">${esc(t.evidenceMetric)}</div>` : ""}</div>`);
     if (t.source) {
       const docLabel = (window.LinSignals && LinSignals.DOC_TYPE_LABEL && LinSignals.DOC_TYPE_LABEL[t.source.docType]) || t.source.docType;
       const docDate = t.source.at ? (window.LinTZ ? LinTZ.format(t.source.at) : String(t.source.at).slice(0, 10)) : "date unknown";
-      rows.push(`<div class="det-prov-hop"><b>Source</b> — ${esc(docLabel)}${t.source.fileName ? " (" + esc(t.source.fileName) + ")" : ""}, ${esc(docDate)}${t.source.derived ? " — estimated field, not a direct extraction" : ""}</div>`);
+      rows.push(`<div class="det-prov-hop"><b>Source</b>: ${esc(docLabel)}${t.source.fileName ? " (" + esc(t.source.fileName) + ")" : ""}, ${esc(docDate)}${t.source.derived ? " — estimated field, not a direct extraction" : ""}</div>`);
     } else {
-      rows.push(`<div class="det-prov-hop"><b>Source</b> — no traceable document for this module's inputs.</div>`);
+      rows.push(`<div class="det-prov-hop"><b>Source</b>: no traceable document for this module's inputs.</div>`);
     }
     if (t.otherFlags.length) {
       const shown = t.otherFlags.slice(0, 6);
@@ -897,7 +897,7 @@
         ${cs("d-ensemble", "Ensemble Analysis", ensembleHtml(p), false, `${ensActive} active · ${ensEst} est.`)}
         ${cs("d-periods", "Period Comparison", periodComparisonHtml(p), false,
              storedHistory(p).length >= 2 ? `${storedHistory(p).length} periods` : "")}
-       ${cs("d-stack", "Signal Stack — " + totalCats + " Categories", `<div class="detail-modules"></div>`, false, "")}`;
+       ${cs("d-stack", "Signal Stack: " + totalCats + " Categories", `<div class="detail-modules"></div>`, false, "")}`;
 
     // Every section starts collapsed (sessionStorage may restore an open one);
     // the badges above still summarise what's inside. Heavy visuals render on
@@ -1089,7 +1089,7 @@
   function buildBriefPrompt(project) {
     const snapshot = briefSnapshot(project);
     if (!snapshot || !snapshot.categories) {
-      console.log("[brief] no stored category snapshot for " + (project && project.id) + " — skipping chat");
+      console.log("[brief] no stored category snapshot for " + (project && project.id) + ". Skipping chat");
       return null;
     }
 
@@ -1124,23 +1124,23 @@
     // diplomatic, advisory tone for the whole brief.
     const advisor =
       "You are a senior project controls advisor writing an evidence-based briefing for a program director. " +
-      "Your role is to present findings from computational analysis and offer considered recommendations — not to command action. " +
+      "Your role is to present findings from computational analysis and offer considered recommendations, not to command action. " +
       "Opus Gubernatio is a prediction and advisory platform: it presents evidence and surfaces recommendations; it does not issue commands or directives. " +
       "The program director is the decision-maker; you are the advisor.\n\n" +
       "Tone:\n" +
       "- DIPLOMATIC: present findings as evidence, not verdicts.\n" +
-      "- ADVISORY: suggest, recommend, consider — never command or direct.\n" +
-      "- RESPECTFUL: the program director is the decision-maker — acknowledge their judgment.\n" +
-      "- MEASURED: match urgency to the evidence — never amplify beyond what the data supports.\n" +
-      "- PRECISE: be specific about what the models found, and deferential about what must happen — that is the PM's call.\n\n" +
+      "- ADVISORY: suggest, recommend, consider. Never command or direct.\n" +
+      "- RESPECTFUL: the program director is the decision-maker, so acknowledge their judgment.\n" +
+      "- MEASURED: match urgency to the evidence. Never amplify beyond what the data supports.\n" +
+      "- PRECISE: be specific about what the models found, and deferential about what must happen, because that is the PM's call.\n\n" +
       "USE phrasing such as: 'The computational analysis suggests…', 'The evidence indicates…', " +
       "'The models collectively point to…', 'It may be worth considering…', 'The data supports a closer look at…', " +
       "'The program director may wish to review…', 'The signals are consistent with…', 'One area that warrants attention is…'.\n" +
       "AVOID: 'You must…' / 'The PM must…', 'Immediate action required', 'Recovery plan required', " +
       "'Escalate immediately', 'Critical failure', and any commanding or alarming language. " +
-      "Stay diplomatic even for a Red state — for example: 'The evidence across multiple analytical methods consistently points to " +
+      "Stay diplomatic even for a Red state. For example: 'The evidence across multiple analytical methods consistently points to " +
       "significant cost and schedule pressure. The program director may wish to consider bringing the controls lead into a focused review " +
-      "before the next reporting cycle closes.' — and NOT 'This project is in critical failure. Recovery plan required within 48 hours.'\n\n" +
+      "before the next reporting cycle closes.', and NOT 'This project is in critical failure. Recovery plan required within 48 hours.'\n\n" +
       "This is advice from a trusted analytical system to a senior professional. Treat the reader accordingly.\n\n";
 
     const groups = briefCategoryGroups(project);
@@ -1159,32 +1159,32 @@
     return advisor +
       "Briefing subject: " + (snapshot.project_name || project.name) + " (Project " + snapshot.project_id + ", " + (snapshot.sector || "unknown") + " sector). " +
       "The platform computed " + totalModules + " signal modules across " + LIN_CATEGORIES.length + " analytical categories from a stored log dated " + computedDay + ".\n\n" +
-      "Category statuses grouped by color (internal context — use these groupings, do NOT re-list each category individually):\n" + groupsText +
-      "\n\nComputed key signal values (internal context — quote these ACTUAL numbers in Key Drivers):\n" + signalsText +
-      "\n\nPer-category worst module (internal context — do NOT quote raw module names or metrics):\n" + catSummary +
+      "Category statuses grouped by color (internal context, use these groupings, do NOT re-list each category individually):\n" + groupsText +
+      "\n\nComputed key signal values (internal context, quote these ACTUAL numbers in Key Drivers):\n" + signalsText +
+      "\n\nPer-category worst module (internal context, do NOT quote raw module names or metrics):\n" + catSummary +
       "\n\nOverall governance state: " + (gov.state || "unknown") +
       "\nNamed authority: " + (gov.authority || "unknown") +
       "\nRecommended action on file: " + (gov.action || "unknown") +
       "\nEvidence agreement: " + confText +
       "\n\nWrite the briefing with EXACTLY these four sections, each introduced by its '### ' header line verbatim. " +
-      "LEAD WITH THE RECOMMENDATION — the first thing the reader sees is what to do, not a data summary. " +
+      "LEAD WITH THE RECOMMENDATION. The first thing the reader sees is what to do, not a data summary. " +
       "Do NOT mention category numbers except when grouping them in Signal Pattern; a program director does not think in Cat 1-12.\n\n" +
       "### Recommendation\n" +
       "Begin with the overall status in CAPS followed by ' · ' and a single short action clause (e.g. 'RED-REVIEW · bring the controls lead into a focused review this cycle'). " +
-      "Then ONE sentence beginning 'The evidence suggests…' that frames the overall picture. Diplomatic and advisory — never a command.\n\n" +
+      "Then ONE sentence beginning 'The evidence suggests…' that frames the overall picture. Diplomatic and advisory, never a command.\n\n" +
       "### Signal Pattern\n" +
       "Group the categories by status. For each non-empty group, output a line starting with '● ' then the status word in CAPS and the count in parentheses, " +
-      "then on the SAME line ' — ' followed by a 2-3 sentence synthesis of what those categories have in common and what they indicate. " +
+      "then on the SAME line ': ' followed by a 2-3 sentence synthesis of what those categories have in common and what they indicate. " +
       "List the grouped Cat numbers inside the synthesis once. Order groups RED, then AMBER, then GREEN, then CONDITIONAL / NO DATA. Skip empty groups. " +
-      "Do NOT write one line per category — synthesise the group.\n\n" +
+      "Do NOT write one line per category. Synthesize the group.\n\n" +
       "### Key Drivers\n" +
       "3-4 bullet points, each line starting with '- ', each naming a SPECIFIC computed signal value from the list above (e.g. '- CPI 0.929 indicates…', " +
       "'- P80 EAC is +10% above BAC…'). Use the actual numbers. These are the signals that most explain the overall status.\n\n" +
       "### Required Actions\n" +
       "2-4 bullet points, each line starting with '- ', each a specific advisory action that NAMES a plausible authority (e.g. controls lead, program director) " +
-      "and a sensible horizon (e.g. 'before the next reporting cycle closes'). Use diplomatic advisory language throughout — 'the evidence suggests', " +
-      "'the program director may wish to' — never an imperative command, never an ultimatum, and never 48-hour or recovery-plan language, not even for a Red state.\n\n" +
-      "Output ONLY the four sections with the exact '### ' headers above — no preamble and no closing remarks.";
+      "and a sensible horizon (e.g. 'before the next reporting cycle closes'). Use diplomatic advisory language throughout: 'the evidence suggests', " +
+      "'the program director may wish to'. Never an imperative command, never an ultimatum, and never 48-hour or recovery-plan language, not even for a Red state.\n\n" +
+      "Output ONLY the four sections with the exact '### ' headers above. No preamble and no closing remarks.";
   }
 
   // Friendly category labels used by the structured brief (Section 2).
@@ -1194,7 +1194,7 @@
     "Cat 5": "System Dynamics (Cat 5)", "Cat 6": "Signal Synthesis (Cat 6)",
     "Cat 7": "Evidence Combination (Cat 7)", "Cat 8": "Governance & Compliance (Cat 8)",
     "Cat 9": "Data Integrity (Cat 9)", "Cat 10": "Decision Optimization (Cat 10)",
-    "PH": "Portfolio Health — ML & AI (portfolio-scale, not a numbered category)"
+    "PH": "Portfolio Health: ML & AI (portfolio-scale, not a numbered category)"
   };
 
   /* Parse the structured 4-section brief into its parts. Returns null when the
@@ -1447,7 +1447,7 @@
       </div>`;
     }
     if (state === "skipped") {
-      return `<div class="eb-body eb-skipped">Upload project documents to generate the stored log. The executive brief is generated from that log — not from recomputed signals.</div>`;
+      return `<div class="eb-body eb-skipped">Upload project documents to generate the stored log. The executive brief is generated from that log, not from recomputed signals.</div>`;
     }
     if (state === "error") {
       return `<div class="eb-body eb-error" role="alert">Brief unavailable: ${esc(errMsg || "unknown error")}</div>`;
@@ -1480,14 +1480,14 @@
     }
     if (f.redReview) {
       parts.push('<p class="eb-flag eb-flag-review">⚑ Red-review: high disagreement among categories (conflict ' +
-        Math.round((f.conflict || 0) * 100) + '%) — recommend named human review. This advisory does not change the fused status band.</p>');
+        Math.round((f.conflict || 0) * 100) + '%). Recommend named human review. This advisory does not change the fused status band.</p>');
     }
     const reds = f.redFlags || [];
     if (reds.length) {
       const items = reds.map((r) =>
         '<li><span class="eb-flag-cat">' + esc(r.category) + '</span> ' + esc(r.module) + '</li>').join("");
       parts.push('<div class="eb-flags-red"><p class="eb-flag eb-flag-red">⚑ Red modules (' + reds.length +
-        ') — flagged regardless of overall status:</p><ul class="eb-flag-list">' + items + '</ul></div>');
+        '), flagged regardless of overall status:</p><ul class="eb-flag-list">' + items + '</ul></div>');
     }
     if (!parts.length) return "";
     return '<div class="eb-flags" aria-label="Brief flags">' + parts.join("") + '</div>';
@@ -1553,7 +1553,7 @@
     // (the backend prompt would be all-empty signal lines).
     const prompt = buildBriefPrompt(project);
     if (prompt == null) {
-      console.log("[brief] skipped " + project.id + " — no signals to brief on");
+      console.log("[brief] skipped " + project.id + ". No signals to brief on");
       setBriefState(root, "skipped", project, null);
       return;
     }
@@ -1682,7 +1682,7 @@
         render(id); // re-render → awaiting ingest
       } catch (e) {
         btn.disabled = false;
-        if (msg) msg.textContent = "Reset failed — store unreachable. Retry.";
+        if (msg) msg.textContent = "Reset failed. The store is unreachable, so please retry.";
       }
     });
   }
@@ -1715,7 +1715,7 @@
     const R = 160;
     const goldenAngle = Math.PI * (3 - Math.sqrt(5));
 
-    const sectorNA = "N/A — not applicable to " +
+    const sectorNA = "N/A, not applicable to " +
       ((window.normalizeSector ? normalizeSector(project.sector) : (project.sector || "hybrid"))
         .replace(/^./, (c) => c.toUpperCase())) + "-sector projects";
     const moduleList = [];
