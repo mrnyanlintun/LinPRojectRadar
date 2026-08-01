@@ -49,34 +49,29 @@ check(set(available_modules()) == set(VALIDATED),
       f"available == validated ({len(VALIDATED)} modules)", str(available_modules()))
 # THE CHECK THAT USED TO BE HERE COULD NOT FAIL.
 #
-# It asserted `len(unported_modules()) == 101 - len(VALIDATED)`. unported_modules() is
-# `sorted(set(registry_index()) - set(VALIDATED))`, and registry_index() is exactly the 101 live
-# CSV rows, so the left side IS 101 - len(VALIDATED) by construction. It was true whatever the
-# code did, and it did not notice that Document Risk Score is declared and never implemented.
+# It asserted `len(unported_modules()) == 101 - len(VALIDATED)`. unported_modules() was
+# `registry_index() - VALIDATED`, and registry_index() is exactly the live CSV rows, so the left
+# side WAS 101 - len(VALIDATED) by construction. It compared a number to itself: with 1, 5 or 20
+# modules silently dropped from VALIDATED it still passed, and it never noticed that Document Risk
+# Score is declared and implemented nowhere.
 #
-# It is replaced by a check against the genuinely unported set, computed here rather than taken
-# from unported_modules(), because that function counts the five Group D modules as unported
-# although portfolio.py implements them: it reports six where exactly one is. The over-report is
-# asserted below rather than silently worked around, so that if the function is ever corrected
-# this check fails loudly and is updated deliberately.
-#
-# Correcting unported_modules() itself means editing server/app/simulation/, which the work that
-# wrote this check was not permitted to touch.
-GENUINELY_UNPORTED = sorted(set(registry_index()) - set(VALIDATED) - set(PORTFOLIO_VALIDATED))
-check(GENUINELY_UNPORTED == ["A4.1"],
+# unported_modules() has since been corrected to subtract PORTFOLIO_VALIDATED as well, so it now
+# answers the question its name asks and can be trusted directly. The workaround that computed the
+# set here is gone with it.
+check(unported_modules() == ["A4.1"],
       "exactly one declared computation is unported, and it is A4.1",
-      str(GENUINELY_UNPORTED))
+      str(unported_modules()))
 check(len(VALIDATED) + len(PORTFOLIO_VALIDATED) == 100,
       "the server registers 100 computations",
       str(len(VALIDATED) + len(PORTFOLIO_VALIDATED)))
-check(sorted(set(unported_modules()) - set(GENUINELY_UNPORTED)) == sorted(PORTFOLIO_VALIDATED),
-      "unported_modules() over-reports by exactly the Group D set (known defect, not yet fixed)",
-      str(sorted(set(unported_modules()) - set(GENUINELY_UNPORTED))))
-# Taken from the genuinely unported set, not unported_modules()[0]. That index happened to be
-# A4.1 only because A sorts before D; had Document Risk Score been ported, [0] would have become
-# a Group D id and run_module would have raised PortfolioModuleError, which the except clause
-# below does not catch.
-still_unported = GENUINELY_UNPORTED[0]
+check(not [m for m in unported_modules() if m in PORTFOLIO_VALIDATED],
+      "unported_modules() does not report Group D, which portfolio.py implements",
+      str([m for m in unported_modules() if m in PORTFOLIO_VALIDATED]))
+# Taken from the front of a set that is now genuinely unported. It used to be unported_modules()[0]
+# when that list still held Group D: the index happened to be A4.1 only because A sorts before D,
+# and had Document Risk Score been ported, [0] would have become a Group D id and run_module would
+# have raised PortfolioModuleError, which the except clause below does not catch.
+still_unported = unported_modules()[0]
 try:
     run_module(still_unported, HEALTHY, make_rng(1), CUTOFF)
     check(False, "an unported module raises rather than approximating", "no raise")

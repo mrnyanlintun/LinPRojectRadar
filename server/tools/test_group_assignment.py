@@ -10,17 +10,15 @@ GROUP_ASSIGNMENT.md is the authority every user-facing surface is written agains
 that silently goes stale is worse than no artifact, because the next sweep rewrites real prose
 against it and nothing complains.
 
-WHY THIS DOES NOT USE unported_modules().
+THE UNPORTED SET COMES FROM unported_modules() NOW.
 
-The obvious way to write this check is to compare against registry.unported_modules(). That
-function is `set(registry_index()) - set(VALIDATED)`, which counts the five Group D modules as
-unported even though portfolio.py implements them: it reports six unported where exactly one is.
-A check built on it would inherit that error and would agree with itself forever.
+This check used to compute that set itself. registry.unported_modules() was
+`registry_index() - VALIDATED`, and VALIDATED holds only the single-project modules, so it counted
+all five Group D modules as unported although portfolio.py implements them: six where exactly one
+is. A check built on it would have inherited the error.
 
-So the genuinely unported set is computed here, from the two registries plus the CSV, and the
-disagreement with unported_modules() is asserted explicitly rather than left to be rediscovered.
-Correcting the function itself means editing server/app/simulation/, which this work is not
-permitted to touch.
+The function has since been corrected to subtract PORTFOLIO_VALIDATED as well, so it is now the
+single source for this and the local reimplementation is gone.
 
 THIS FILE MUST BE ABLE TO FAIL. Every assertion below was proven by breaking it: an id was moved
 between groups in the artifact, an id was deleted from it, and a fake unported module was added to
@@ -37,6 +35,7 @@ sys.path.insert(0, __file__.rsplit("tools", 1)[0])
 
 from app.simulation.models import VALIDATED          # noqa: E402
 from app.simulation.portfolio import PORTFOLIO_VALIDATED  # noqa: E402
+from app.simulation.registry import unported_modules  # noqa: E402
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 ARTIFACT = REPO_ROOT / "GROUP_ASSIGNMENT.md"
@@ -149,11 +148,13 @@ def main() -> int:
           f"{EXCLUDED_ID} is not counted in any group")
 
     print("\n-- the genuinely unported set --")
-    # Computed here rather than taken from unported_modules(); see the module docstring.
-    genuinely_unported = set(live) - reg
-    check(genuinely_unported == {EXCLUDED_ID},
+    check(unported_modules() == [EXCLUDED_ID],
           f"exactly one declared computation is unported, and it is {EXCLUDED_ID} "
-          f"(found: {sorted(genuinely_unported)})")
+          f"(found: {unported_modules()})")
+    # The registry's answer and the artifact's must agree about what is missing. Asserted
+    # separately so a divergence names itself rather than showing up as a confusing count.
+    check(set(live) - reg == set(unported_modules()),
+          "unported_modules() agrees with the CSV minus what the server registers")
 
     print(f"\nRESULT: {_checks - len(_failures)}/{_checks} checks passed")
     if _failures:

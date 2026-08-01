@@ -14,7 +14,7 @@ const DS_DEFENSIBILITY = {
   "The handbook uses two independent assurance axes: an uncertainty-method tier (statistical/stochastic; calibrated indicator; epistemic fusion) and an implementation-assurance class (A, B, or C). A respected method name does not validate an implementation that only approximates or renames it.",
   "Each module now includes the four missing defense fields: deterministic/probabilistic step split, explainability method, failure modes, and human-oversight classification.",
   "Standards alignment is added as a governance wrapper using NIST AI RMF, NIST TEVV, ISO/IEC 42001, ISO/IEC 23894, ISO/IEC 25059, W3C PROV-O, model cards, and datasheets. This crosswalk is not a certification claim.",
-  "SHAP and LIME are not recommended by default. Most PCEIF modules are transparent formulas, rules, simulations, or symbolic uncertainty methods. For the very small portfolio suite, feature-standardization, distance/percentile traces, and leave-one-feature-out sensitivity are more fit for purpose.",
+  "SHAP and LIME are not recommended by default. Most modules are transparent formulas, rules, simulations, or symbolic uncertainty methods. For the very small portfolio suite, feature-standardization, distance/percentile traces, and leave-one-feature-out sensitivity are more fit for purpose.",
   "The code review identifies several label-to-algorithm mismatches that should be renamed or reimplemented before a formal defense. The highest-priority items include ARIMA, Earned Schedule, ICE, SRA P80, CRA P80, Critical Path Index, Queueing, ABM Supply Chain, DES, ABM Governance, regulatory compliance labels, Linear Programming, Pareto Frontier, and Isolation Forest."
  ],
  "defensibilityModel": {
@@ -532,7 +532,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; Opus Gubernatio explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
      "implementationFidelity": "The TCPI formula is directly implemented and banded. The formula is defensible; the status bands require cited policy or calibration evidence.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -569,7 +569,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; Opus Gubernatio explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
      "implementationFidelity": "VAC is calculated from BAC minus BAC/CPI. The arithmetic is transparent; the forecast quality inherits all assumptions of the selected EAC formula.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -605,7 +605,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; Opus Gubernatio explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
      "implementationFidelity": "The code compares actual expenditure with a progress-proportional expected spend. It is a transparent custom control ratio, not a standardized statistical test.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -674,7 +674,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; Opus Gubernatio explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
      "implementationFidelity": "Both compared EACs are derived from the same project inputs; the second estimate is not organizationally independent. Rename this as an EAC divergence ratio unless an independently produced estimate is ingested.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -795,7 +795,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "Aren't fever zones arbitrary?",
-       "answer": "They are published CCPM conventions (Goldratt); PCEIF cites them as adopted practice standards, and the zone edges are covered by the band harness."
+       "answer": "They are published CCPM conventions (Goldratt); the platform cites them as adopted practice standards, and the zone edges are covered by the band harness."
       }
      ],
      "requiredInputs": [
@@ -1045,7 +1045,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; Opus Gubernatio explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
      "implementationFidelity": "The code averages a progress ratio and SPI. It does not identify or analyze a CPM critical path. Rename before defense.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1158,7 +1158,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; Opus Gubernatio explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1195,7 +1195,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; Opus Gubernatio explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1232,7 +1232,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; Opus Gubernatio explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1268,7 +1268,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; Opus Gubernatio explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1338,7 +1338,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; Opus Gubernatio explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1374,7 +1374,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; Opus Gubernatio explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
      "implementationFidelity": "The code compares two EAC formulas and does not fit a parametric regression or unit-cost model. The current name is not defensible as a parametric cost model.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1412,7 +1412,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; Opus Gubernatio explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -3140,7 +3140,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "Missingness mechanism?",
-       "answer": "PCEIF treats missingness as informative (MNAR-leaning): absent risk documents on a distressed project are themselves a signal, which is why completeness feeds fusion rather than being silently imputed."
+       "answer": "Opus Gubernatio treats missingness as informative (MNAR-leaning): absent risk documents on a distressed project are themselves a signal, which is why completeness feeds fusion rather than being silently imputed."
       }
      ],
      "requiredInputs": [

@@ -79,7 +79,7 @@
       id: "five-status",
       keywords: ["status", "five status", "5 status", "complete", "yellow", "blue", "rag", "red amber green", "why five", "authority matrix", "closeout"],
       title: "Why five status levels (Complete / Green / Yellow / Amber / Red)",
-      body: "Traditional RAG collapses important distinctions. PCEIF uses five status levels for three reasons. (1) RAG hides the gap between 'slightly off' and 'stalled', both show as Red. (2) Complete (blue) marks projects that have hit their milestone and transition to closeout governance, different authority, different documentation. (3) Yellow is an early-warning band between Green and Amber: minor variance, still recoverable, requiring a PM weekly check-in before it escalates. Each status maps to a distinct authority/timeframe in the Cat 8.1 matrix."
+      body: "Traditional RAG collapses important distinctions. Opus Gubernatio uses five status levels for three reasons. (1) RAG hides the gap between 'slightly off' and 'stalled', both show as Red. (2) Complete (blue) marks projects that have hit their milestone and transition to closeout governance, different authority, different documentation. (3) Yellow is an early-warning band between Green and Amber: minor variance, still recoverable, requiring a PM weekly check-in before it escalates. Each status maps to a distinct authority/timeframe in the Cat 8.1 matrix."
     },
     {
       id: "radar",
@@ -216,7 +216,7 @@
         { label: "Red: CUSUM breaches threshold", color: T.red },
       ] },
     { term: "SPC, Statistical Process Control",
-      definition: "The use of statistical methods to monitor and control a process. CUSUM is the SPC method used in PCEIF to detect schedule drift." },
+      definition: "The use of statistical methods to monitor and control a process. CUSUM is the SPC method used here to detect schedule drift." },
     { term: "PERT, Program Evaluation & Review Technique",
       definition: "Stochastic network scheduling method. Each activity has optimistic (a), most likely (m), and pessimistic (b) durations sampled from a triangular distribution. P80 project duration and path criticality index are computed from 5,000 iterations. Formula: te = (a + 4m + b) / 6" },
     { term: "LOB, Line of Balance",
@@ -228,11 +228,11 @@
     { term: "DSM, Design Structure Matrix",
       definition: "Models information dependencies between design disciplines (Arch, Structural, MEP). Simulates how a scope change propagates through design iterations. Rework multiplier > 2.5 indicates high coordination risk." },
     { term: "ABM, Agent-Based Model",
-      definition: "The governance decision layer in PCEIF. Takes the signal package from all modules and derives a conflict classification, recommended action, named authority, and fairness gate requirement. Does not make decisions, surfaces the structured recommendation for human approval." },
+      definition: "The governance decision layer. Takes the signal package from all modules and derives a conflict classification, recommended action, named authority, and fairness gate requirement. Does not make decisions, surfaces the structured recommendation for human approval." },
     { term: "Fairness Gate",
       definition: "A mandatory step requiring contractor explanation before formal action is recorded. Triggered when a fairness-sensitive signal (document risk, LOB, CCPM) reaches Red. Prevents automated model outputs from driving contractual consequences without human review." },
     { term: "Red-review",
-      definition: "PCEIF governance state requiring Program Director / PMO lead review. Triggered when ≥2 signal classes are Red, or CUSUM breach + Red forecast. Requires full signal package, assigned owner, rationale, response timeframe, and audit record." },
+      definition: "Governance state requiring Program Director / PMO lead review. Triggered when ≥2 signal classes are Red, or CUSUM breach + Red forecast. Requires full signal package, assigned owner, rationale, response timeframe, and audit record." },
   ];
 
   /* ---------- Cat 2.1–Cat 3.2, 11, Method Library accordion entries ---------- */
@@ -349,7 +349,7 @@
     const row2X = pad + (w - pad * 2 - row2Width) / 2;
     const arrowReserve = 12;
 
-    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="auto" preserveAspectRatio="xMidYMid meet" class="kn-svg kn-svg-flow" role="img" aria-label="PCEIF signal-to-action flow (two rows)">`;
+    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="auto" preserveAspectRatio="xMidYMid meet" class="kn-svg kn-svg-flow" role="img" aria-label="Signal-to-action flow (two rows)">`;
     out += `<defs><marker id="kn-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--phosphor)"/></marker></defs>`;
 
     // Helper: draw a labelled box with wrapped text + a right-pointing arrow to
@@ -588,7 +588,7 @@ Named Human Approval → Audit Record</pre>
       title: "Why 101 distinct computations across four groups",
       eyebrow: "Framework depth",
       build: () => `
-        <p class="kn-lead">Public capital projects are complex adaptive systems. A single EVM index (CPI or SPI) captures cost and schedule performance but misses the systemic, probabilistic, and qualitative dimensions that determine whether a project will succeed. PCEIF addresses this through four principles.</p>
+        <p class="kn-lead">Public capital projects are complex adaptive systems. A single EVM index (CPI or SPI) captures cost and schedule performance but misses the systemic, probabilistic, and qualitative dimensions that determine whether a project will succeed. Opus Gubernatio addresses this through four principles.</p>
 
         <h3>1. No human can compute 103 analyzes simultaneously</h3>
         <p>A senior PM reviewing a monthly report might check CPI, SPI, and open RFIs. PCEIF runs 103 analytical methods in milliseconds, probabilistic forecasts, anomaly detection, uncertainty reasoning, optimization, data integrity checks, and governance compliance, all before the PM opens their laptop. The platform does not replace human judgment; it gives the PM a complete evidence package to exercise that judgment.</p>
@@ -619,7 +619,7 @@ Named Human Approval → Audit Record</pre>
       title: "Why five status levels",
       eyebrow: "Governance model",
       build: () => `
-        <p class="kn-lead">Traditional RAG (Red-Amber-Green) systems use three states. PCEIF uses five, Complete, Green, Yellow, Amber, Red, for three concrete reasons.</p>
+        <p class="kn-lead">Traditional RAG (Red-Amber-Green) systems use three states. Opus Gubernatio uses five, Complete, Green, Yellow, Amber, Red, for three concrete reasons.</p>
 
         <h3>1. RAG collapses important distinctions</h3>
         <p>A project that is slightly behind schedule and a project that has completely stalled both show as Red under RAG. A PM responding to a slightly-behind project applies very different actions than one responding to a stalled project. Collapsing them to the same status loses the governance signal.</p>
@@ -658,7 +658,7 @@ Named Human Approval → Audit Record</pre>
         <p class="kn-lead">EVM integrates scope, schedule, and cost on a single measurement plane. On U.S. public capital programs it is required under OMB Circular A-11 and FAR Part 34 for major investments; under most agency policies a CPI shortfall sustained over multiple reporting periods is itself a reporting trigger.</p>
 
         <h3>The three curves</h3>
-        <p><strong>PV</strong> (Planned Value), <strong>EV</strong> (Earned Value), and <strong>AC</strong> (Actual Cost) plotted against project time form the classic EVM S-curve. The gaps between them are the variances PCEIF acts on:</p>
+        <p><strong>PV</strong> (Planned Value), <strong>EV</strong> (Earned Value), and <strong>AC</strong> (Actual Cost) plotted against project time form the classic EVM S-curve. The gaps between them are the variances the platform acts on:</p>
         ${svgEvmSCurve()}
 
         <p>EV − AC is the <strong>cost variance</strong>: are we paying more or less than the work is worth? EV − PV is the <strong>schedule variance</strong> expressed in cost terms: are we ahead of or behind the planned burn? They measure different problems and demand different responses.</p>
@@ -670,7 +670,7 @@ Named Human Approval → Audit Record</pre>
           ["CV  = EV − AC", "Cost Variance ($)"],
           ["SV  = EV − PV", "Schedule Variance ($)"],
           "",
-          ["EAC = BAC / CPI", "PCEIF default, assumes current efficiency continues"],
+          ["EAC = BAC / CPI", "Platform default, assumes current efficiency continues"],
           ["EAC = AC + (BAC − EV)", "Optimistic, assumes future work on budget"],
           ["EAC = AC + (BAC − EV) / CPI", "Pessimistic, current CPI continues to completion"],
           ["VAC = BAC − EAC", "Variance at Completion"],
@@ -685,7 +685,7 @@ Named Human Approval → Audit Record</pre>
         <p>Worked example: if EV is $720,000 and PV is $900,000, then <code>SPI = 720,000 / 900,000 = 0.80</code>. Only 80 cents of every planned dollar of progress has been earned, the project is 20% behind schedule as measured in cost terms. Note that SPI naturally converges toward 1.00 as the project nears closeout (all work must eventually be earned); it is most informative in the early and middle periods. CUSUM is used to detect the sustained SPI drift that single-period readings obscure.</p>
         <p>Both CPI and SPI should be read together. A CPI of 0.92 with an SPI of 0.88 tells a different story from a CPI of 0.92 with an SPI of 1.05, the first is over budget and behind schedule; the second is over budget but ahead of schedule, which may justify a different governance response.</p>
 
-        <h3>Why PCEIF defaults to BAC / CPI</h3>
+        <h3>Why the platform defaults to BAC / CPI</h3>
         <p>On public capital programs cost overruns compound. A project 10% over budget at month 6 rarely recovers to baseline by closeout, the inefficiency rate is sticky. <code>BAC / CPI</code> assumes the current rate continues, which is the most defensible assumption for an escalation conversation. The optimistic formula is for the contractor; the pessimistic for risk reserves; the default is for the program controls record.</p>
 
         <h3>RAG thresholds</h3>
@@ -784,7 +784,7 @@ Named Human Approval → Audit Record</pre>
         )}
 
         <h3>A real limitation</h3>
-        <p>Keyword extraction is rule-based, not semantic. A sophisticated contractor writes around keyword rules. The score is a <em>leading indicator</em>, never a verdict. PCEIF treats Cat 1.3 Red as a flag that requires Cat 6.1 corroboration before it drives an action, never as a standalone trigger.</p>
+        <p>Keyword extraction is rule-based, not semantic. A sophisticated contractor writes around keyword rules. The score is a <em>leading indicator</em>, never a verdict. The platform treats Cat 1.3 Red as a flag that requires Cat 6.1 corroboration before it drives an action, never as a standalone trigger.</p>
       `,
     },
     {
@@ -913,7 +913,7 @@ Named Human Approval → Audit Record</pre>
       title: "12. Cat 6.1: Conservative Dominance (Signal Synthesis)",
       eyebrow: "Cat 6.1 · baseline synthesis",
       build: () => `
-        <p class="kn-lead">A CPI of 1.02 and a CUSUM breach do <strong>not</strong> average to "slightly above baseline." The breach is the finding. PCEIF surfaces disagreement between signal classes instead of averaging it away, and names the disagreement so the reviewer knows what to investigate.</p>
+        <p class="kn-lead">A CPI of 1.02 and a CUSUM breach do <strong>not</strong> average to "slightly above baseline." The breach is the finding. Opus Gubernatio surfaces disagreement between signal classes instead of averaging it away, and names the disagreement so the reviewer knows what to investigate.</p>
 
         <h3>The six conflict types</h3>
         ${ragTable(
@@ -1174,7 +1174,7 @@ Named Human Approval → Audit Record</pre>
         <p class="kn-lead">A Belief Rule Base encodes expert knowledge as IF-THEN rules whose consequent is a belief distribution rather than a crisp state. "If EVM is Red and CUSUM has breached, belief is 90% Red, 8% Amber, 2% Green." Multiple matching rules are combined by rule weight to produce the aggregate belief.</p>
 
         <h3>What BRB adds</h3>
-        <p>BRB bridges the explicit governance rules of PCEIF and probabilistic expert judgment. The rule conditions are crisp (matching the PCEIF authority matrix structure), but the consequents are graded probability distributions (matching how experts actually express confidence). Each rule carries a weight that captures how strongly it should drive the aggregate when it fires.</p>
+        <p>BRB bridges the platform's explicit governance rules and probabilistic expert judgment. The rule conditions are crisp (matching the authority matrix structure), but the consequents are graded probability distributions (matching how experts actually express confidence). Each rule carries a weight that captures how strongly it should drive the aggregate when it fires.</p>
 
         ${formulaBlock([
           "Rule R_k: IF antecedent_k THEN belief = (b_G, b_A, b_R) with weight w_k",
@@ -1370,7 +1370,7 @@ Named Human Approval → Audit Record</pre>
         ${ragTable(
           ["Field", "Why it matters"],
           [
-            ["Derived state", "The PCEIF rule output, Green / Amber / Red-review / Critical, that triggered this card."],
+            ["Derived state", "The rule output, Green / Amber / Red-review / Critical, that triggered this card."],
             ["Conflict type", "The named disagreement Cat 6.1 surfaced; tells the reviewer what to investigate."],
             ["Recommended action", "The specific governance step the authority matrix returned; not a directive, a recommendation."],
             ["Authority", "The role entitled to record the decision. A different role recording it must document the override rationale."],
@@ -1382,7 +1382,7 @@ Named Human Approval → Audit Record</pre>
         )}
 
         <h3>What "named human approval" means</h3>
-        <p>A status change is not a decision. A decision has a name attached, a role attached, a rationale attached, and a timestamp. PCEIF will not let a Red-review be recorded as Approved without a rationale that meets the minimum length and a reviewer identifier. This is the same reason the fairness gate cannot be auto-acknowledged.</p>
+        <p>A status change is not a decision. A decision has a name attached, a role attached, a rationale attached, and a timestamp. The platform will not let a Red-review be recorded as Approved without a rationale that meets the minimum length and a reviewer identifier. This is the same reason the fairness gate cannot be auto-acknowledged.</p>
 
         <h3>Audit export</h3>
         <p>The Export Audit JSON action writes the full signal package, derived decision, rationale, fairness acknowledgement, and timestamps to a structured file suitable for ingestion into a program-level audit register. UTC ISO timestamps are preserved alongside the local display time, so the record is unambiguous across time zones.</p>
@@ -1414,7 +1414,7 @@ Named Human Approval → Audit Record</pre>
   // autonomous decision" framing required by PCEIF, not the full boilerplate.
   function modGov(m) {
     if (m.gov) return m.gov;
-    return `Within PCEIF this module contributes one signal to an evidence package; it is evidence, not an instruction, and it never authorises action on its own. Its output must trace to the source record, data date, method (<code>${esc(m.mc)}</code>), threshold or trigger reason, and code version, and it abstains rather than fabricating a status when a required input is absent. Any conflict with the other signals in its category stays visible and routes to human review, where a named authority may accept, override, defer, or escalate the recommendation with a recorded rationale.`;
+    return `Within Opus Gubernatio this module contributes one signal to an evidence package; it is evidence, not an instruction, and it never authorises action on its own. Its output must trace to the source record, data date, method (<code>${esc(m.mc)}</code>), threshold or trigger reason, and code version, and it abstains rather than fabricating a status when a required input is absent. Any conflict with the other signals in its category stays visible and routes to human review, where a named authority may accept, override, defer, or escalate the recommendation with a recorded rationale.`;
   }
   // Human-judgment note: the anchoring/over- or under-reaction risk this class
   // of signal invites, and the discipline that counters it. Override via m.hj.
@@ -1491,7 +1491,7 @@ Named Human Approval → Audit Record</pre>
       risks: "It provides program-level context only: it does not automatically trigger project-level formal action without project-level evidence review, and its outputs are noisier for small portfolios (fewer than roughly three to five active projects)."
     }
   };
-  const CAT_PRAXIS_GOV = "PCEIF treats this category's output as evidence, not instruction. The governance role is to convert each module result into a reviewable signal package carrying source record, data date, method, threshold or trigger reason, confidence or uncertainty, input completeness, action implication, and reviewer role. If required inputs are missing, the module abstains rather than fabricating a status.";
+  const CAT_PRAXIS_GOV = "The platform treats this group's output as evidence, not instruction. The governance role is to convert each module result into a reviewable signal package carrying source record, data date, method, threshold or trigger reason, confidence or uncertainty, input completeness, action implication, and reviewer role. If required inputs are missing, the module abstains rather than fabricating a status.";
   function praxisIntro(key) {
     const p = CAT_PRAXIS[key];
     if (!p) return "";
@@ -2007,7 +2007,7 @@ Named Human Approval → Audit Record</pre>
       purpose: "Applies eight fixed, explicit IF-THEN governance rules matched against the current EVM state, CUSUM breach status, and document-risk state, then combines the belief distributions of every matching rule.",
       formula: "8 rules (R1-R8), each a fixed belief distribution over {Green,Amber,Red} with an associated weight, matched by condition; matched rules combine via weighted average: aggregate = Σ(belief × weight) / Σweight; status = argmax of the aggregate.",
       sources: "Consumes existing Cat 1 EVM/CUSUM/Doc Risk and Cat 1.1 Monte Carlo outputs.",
-      interp: "Because the rules are fixed and enumerable (not learned from data), every classification this module produces traces back to a specific, readable IF-THEN rule, the same auditability principle that governs decision.js's escalation logic elsewhere in PCEIF.",
+      interp: "Because the rules are fixed and enumerable (not learned from data), every classification this module produces traces back to a specific, readable IF-THEN rule, the same auditability principle that governs decision.js's escalation logic elsewhere in the platform.",
       ground: "The Belief Rule Base methodology (Yang, Liu, Wang, Sii &amp; Wang, 2006) combines expert-authored IF-THEN rules with Dempster-Shafer-style belief distributions, an interpretable alternative to a learned (black-box) classifier for the same evidence-combination task." },
     { n: "B2.9", name: "Quantum Probability", mc: "Quantum_Probability",
       purpose: "Models the possibility that evidence sources interfere constructively or destructively with each other (rather than combining additively), capturing a form of correlation that classical probability combination misses.",
@@ -2229,7 +2229,7 @@ Named Human Approval → Audit Record</pre>
       bands: [["green","Green","≤ 14 days"], ["yellow","Yellow","≤ 30 days, or fewer than 2 uploads recorded"], ["amber","Amber","≤ 60 days"], ["red","Red","&gt; 60 days"]],
       sources: "The project's own internal event log; not an external document type.",
       interp: "This is the cadence read, distinct from Cat 9.2's single-point-in-time staleness read; a project can pass Cat 9.2 (recent upload) but still score poorly here if that recent upload was preceded by a long gap, an irregular reporting pattern rather than a chronically stale one.",
-      ground: "Reporting-cadence tracking against an expected monthly (or more frequent) update cycle is standard program-controls discipline; PCEIF makes the interval itself an explicit, auditable signal rather than an assumed constant." }
+      ground: "Reporting-cadence tracking against an expected monthly (or more frequent) update cycle is standard program-controls discipline; The platform makes the interval itself an explicit, auditable signal rather than an assumed constant." }
   ];
 
   /* ---------- Cat 10, Decision Optimization (10.1-10.7) ---------- */
@@ -2426,7 +2426,7 @@ Named Human Approval → Audit Record</pre>
       <p>Where document text is summarized or classified by an LLM (the scripted-fallback assistant and the AI-assisted document review path), the same source document can extract marginally differently between runs, language models are not perfectly deterministic even at low temperature. This is mitigated two ways: source documents are kept to raw, primary figures rather than requiring the model to infer or estimate, and every downstream calculation, once a figure is extracted, is fully deterministic arithmetic in simulations.js with no further model involvement. The extraction step is the only place variance can enter; the 101-computation stack that follows it is exact and reproducible given the same inputs.</p>
 
       <h3>Single-source document risk scoring</h3>
-      <p>Cat 1.3 / Cat 4.1 document risk (Doc_Risk / Doc_Risk_Cat4) is a transparent keyword-and-pattern score, not a semantic understanding of the text. It is deliberately treated throughout PCEIF as a leading indicator requiring Cat 6.1 corroboration, never as a standalone trigger, precisely because a rule-based score over a single document type is a narrow, gameable signal on its own. A sophisticated author can write around keyword rules; the score's value is in its transparency and auditability (every match and excerpt is inspectable), not in claimed semantic accuracy.</p>
+      <p>Cat 1.3 / Cat 4.1 document risk (Doc_Risk / Doc_Risk_Cat4) is a transparent keyword-and-pattern score, not a semantic understanding of the text. It is deliberately treated throughout the platform as a leading indicator requiring Cat 6.1 corroboration, never as a standalone trigger, precisely because a rule-based score over a single document type is a narrow, gameable signal on its own. A sophisticated author can write around keyword rules; the score's value is in its transparency and auditability (every match and excerpt is inspectable), not in claimed semantic accuracy.</p>
 
       <h3>What module abstention does and does not mean</h3>
       <p>When a module reports "Insufficient data" (the insufficientData() stub in simulations.js), that means specifically that one or more required input fields were null or undefined for that computation, nothing more. It does NOT mean the project is healthy, it does not mean the underlying condition is absent, and it is not itself a status band, an abstaining module is excluded from category fusion (Cat 6-8) rather than defaulting to Green. A project with many abstaining modules should be read through Cat 9 (Data Integrity), specifically Cat 9.1 Missing Data Index and Cat 9.5 Information Completeness Ratio, before its fused status is treated as a confident read.</p>
@@ -2719,7 +2719,7 @@ Named Human Approval → Audit Record</pre>
     id: "human-judgment-record", title: "Human Judgment Record",
     eyebrow: "Methods & Framework · accountable judgment",
     build: () => `
-      <p class="kn-lead">PCEIF never lets a model output become an action on its own. Whenever a recommendation is approved, modified, overridden, deferred, escalated, or converted into an evidence request, the PM judgment record is mandatory. No silent override is permitted: the reasoning is always written down and always enters the audit trail.</p>
+      <p class="kn-lead">Opus Gubernatio never lets a model output become an action on its own. Whenever a recommendation is approved, modified, overridden, deferred, escalated, or converted into an evidence request, the PM judgment record is mandatory. No silent override is permitted: the reasoning is always written down and always enters the audit trail.</p>
 
       <h3>Mandatory rationale, no silent override</h3>
       <p>The decision card exposes the derived state, the dominant signal, the recommended action, the required authority, the fairness requirement, and the documentation required. A named reviewer must record a rationale before the decision is committed. Accepting the recommendation is a judgment; departing from it is a judgment; both are recorded. This is what separates a governed decision from an automated one.</p>
@@ -2852,7 +2852,7 @@ Named Human Approval → Audit Record</pre>
       id: "cat10-overview",
       title: "Cat 9, Data Integrity & Information Quality",
       eyebrow: "Cat 9 · data quality of the inputs",
-      body: "Every analytical output in PCEIF is only as good as its inputs. A CPI derived from an unverified pay application is less reliable than one from an audited schedule of values. A document risk score estimated from proxy signals is less precise than one extracted directly from RFI logs. Cat 9 makes this uncertainty explicit, it does not hide it.",
+      body: "Every analytical output is only as good as its inputs. A CPI derived from an unverified pay application is less reliable than one from an audited schedule of values. A document risk score estimated from proxy signals is less precise than one extracted directly from RFI logs. Cat 9 makes this uncertainty explicit, it does not hide it.",
       modules: [
         ["9.1 Missing Data Index", "Counts how many of the 11 core signal fields are populated. A project with 6 of 11 fields missing may still generate a governance recommendation, but Cat 9.1 flags that the recommendation rests on incomplete information."],
         ["9.2 Data Timeliness Score", "Measures days since the most recent document upload. Data older than 60 days warrants a Yellow flag, the signals may not reflect current project conditions. Data older than 90 days warrants Amber."],
@@ -2876,7 +2876,7 @@ Named Human Approval → Audit Record</pre>
         ["10.4 What-If Scenario Matrix", "Projects four futures: optimistic (CPI recovers to 1.0), base (current CPI continues), pessimistic (CPI degrades 5%), and recovery (CPI improves 5%). The range across scenarios quantifies decision uncertainty."],
         ["10.5 Decision Sensitivity Matrix", "Identifies which input variable most affects the governance recommendation. If cost performance accounts for 70% of decision sensitivity, a small CPI change changes the recommendation significantly, the PM should focus verification efforts there first."],
         ["10.6 Pareto Frontier Analysis", "Determines whether the project is Pareto-efficient (all objectives met), Pareto-dominated (multiple objectives failing simultaneously, suggesting systemic problems), or in a trade-off zone (improving one objective requires accepting degradation in another)."],
-        ["10.7 Regret Minimization Index", "Applies minimax regret theory to the PM's decision under uncertainty. Given three possible futures (improvement, stability, deterioration) and three possible decisions (monitor, investigate, escalate), which decision minimizes the worst-case regret? This is the most theoretically grounded decision-theoretic module in PCEIF."]
+        ["10.7 Regret Minimization Index", "Applies minimax regret theory to the PM's decision under uncertainty. Given three possible futures (improvement, stability, deterioration) and three possible decisions (monitor, investigate, escalate), which decision minimizes the worst-case regret? This is the most theoretically grounded decision-theoretic module in the platform."]
       ],
       pmReading: "Cat 10 is read AFTER Cat 6 and Cat 7, it does not replace the conservative-dominance classification or the evidence-combination cross-check, it operationalises them. The PM reads Cat 6/7 to understand the state, then reads Cat 10 to choose the action."
     }
