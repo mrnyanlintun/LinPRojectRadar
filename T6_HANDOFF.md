@@ -3,6 +3,56 @@
 > user-facing surface quotes verbatim. It lives in the repository so it cannot fail to reach a
 > session, which it did three times while it lived outside. Read it before this handoff, not after.
 
+# T14 — SWEEP: ONE CATEGORY OF FOUR DONE. Read this before continuing it.
+
+Branch `t14-naming-authority-sweep`. Full detail in `REPORT_2026-08-01_naming-authority-and-sweep.md`.
+
+**Category 1, PCEIF and PDAF: done in the only sense it can be.** 39 occurrences replaced where the
+name was merely a name. Roughly 45 remain in `knowledge.js` and `ds_defensibility_data.js` whose
+meaning rests on the retired framing, including a chapter asserting the contribution IS a governance
+framework and twenty strings defining accreditation as a property of it. Those are **step 5**, not
+omissions. **PDAF appears nowhere in the repository.**
+
+**Categories 2, 3 and 4: NOT STARTED.** Actual counts, against an estimate of "roughly 60":
+
+| Category | Found, user-facing |
+|---|---|
+| 2. "Cat N" and module ids | **~366 across 12 files** |
+| 3. Em dashes | **76** |
+| 4. Bare export paths | 2, both confirmed bare |
+
+**TWO THINGS TO READ BEFORE STARTING CATEGORY 2.** A naive sweep is worse than none here.
+
+1. **The new A/B/C/D scheme leaks exactly as "Cat N" does.** `taxonomy.js` and `categories.js`
+   define `num: 'A1.1'` and it is a RENDERED field, not an internal key, printed at sixteen
+   confirmed sites (`app.js:1502`, `detail.js:788`, `forcenet.js:95`, `export.js:114`,
+   `decision.js:392` which prints "Module " then an id, and more). Fixing only "Cat N" trades one
+   violation of the no-ids rule for another.
+2. **`detail.js:1243` tells the model to print ids**: "List the grouped Cat numbers inside the
+   synthesis once." Until that changes, briefs contain ids however clean the static strings are.
+
+Also: `taxonomy.js` and `categories.js` are near-duplicates with the same ~210 `num:` literals, and
+`deepdive.js:103` synthesises `"Cat " + key` for unmapped ids, so editing its map alone leaks on.
+
+For category 3, `detail.js:1336-1338` uses an em dash as a **parsing delimiter**. For category 4,
+the `research_export.py` notice must go in the response envelope, not `serialise()`, or every
+previously created export fails checksum verification.
+
+**`unported_modules()` IS FIXED.** It subtracts `PORTFOLIO_VALIDATED` and answers `['A4.1']` instead
+of six. The two checks that worked around it now call it directly.
+
+## A pre-existing defect found while sweeping, and it matters for step 5
+
+**The Knowledge Library does not render.** `LIN_KNOWLEDGE`, `LinKnowledge` and `DS_DEFENSIBILITY`
+are all undefined on the running app, and `#knowledge-root` is empty. Both files load and are
+fetched, but neither defines its global. **Verified to predate the sweep** by stashing and
+reloading at HEAD. Cause not diagnosed.
+
+Step 5 plans to rewrite the assistant's knowledge files and the Methods tab. A large part of that
+surface may currently be dead, which changes both its priority and the meaning of rewriting it.
+
+---
+
 # T13b — THE TAXONOMY IS SETTLED AND COMMITTED. 100, not 101.
 
 `GROUP_ASSIGNMENT.md` at the repository root is the authority. Merged to `main`.
