@@ -1065,7 +1065,10 @@
      MapLibre needed tiles from a host a corporate network may well block — the fallback was
      itself the most fragile link. */
   function setPortfolioView(view, persist) {
-    if (view !== "map" && view !== "globe" && view !== "radar") view = "map";
+    // An unrecognised value is a corrupt or legacy preference; send it to the default rather than
+    // to a particular view, so there is one answer to "what does a user with no valid preference
+    // get". The globe still degrades to the map on its own if it cannot draw.
+    if (view !== "map" && view !== "globe" && view !== "radar") view = "globe";
     const wantsGeo = view === "globe" || view === "map";
     if (!wantsGeo) hideMapCard();   // the pinned card is fixed-positioned — never leave it over the radar
     const radarWrap = document.querySelector(".radar-wrap");
@@ -2829,8 +2832,13 @@
     // off-origin host at all. Nothing warms anything now: the atlas needs only geometry that is
     // already vendored, and the globe's assets load when the globe is selected and not before.
     wireViewToggle();
-    let savedView = "map";
-    try { savedView = localStorage.getItem(VIEW_KEY) || "map"; } catch (e) {}
+    // T11b. GLOBE is the default for a user with no stored preference. It was Map while nobody
+    // had ever seen the globe render and a black sphere in front of a director could not be ruled
+    // out; the globe has since been confirmed by eye, so that argument no longer holds. Map stays
+    // available as its own view and remains what the globe falls back to when WebGL is missing or
+    // the scene never builds, so the safety property is unchanged — only the starting point.
+    let savedView = "globe";
+    try { savedView = localStorage.getItem(VIEW_KEY) || "globe"; } catch (e) {}
     setPortfolioView(savedView, false);
 
     // default selection: first project in the portfolio (may be empty →

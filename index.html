@@ -492,11 +492,11 @@
                3D library, no animation loop. It replaced the globe as the default because the
                globe could not be verified to render at all in two consecutive sessions, and a
                black sphere in front of a director is not a risk worth carrying. -->
-          <button type="button" class="stage-btn active" data-view="map">Map</button>
+          <button type="button" class="stage-btn" data-view="map">Map</button>
           <!-- The globe is kept and is a view you choose. It loads globe.gl and its texture only
                when selected, and falls back to the Map above if WebGL is missing or it fails to
                build — never to an empty panel. -->
-          <button type="button" class="stage-btn" data-view="globe">Globe</button>
+          <button type="button" class="stage-btn active" data-view="globe">Globe</button>
         </div>
       </div>
       <p class="radar-note">Radial distance indicates drift from baseline: projects near the center are performing to plan. Angular sectors group projects by delivery type: Design, Construction, and Hybrid. Select any project marker, or the corresponding row in the list below, to open its detail view.</p>
