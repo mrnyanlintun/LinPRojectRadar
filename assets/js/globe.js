@@ -424,7 +424,22 @@
         } catch (e) {}
       },
 
-      isRunning: function () { return !handle.destroyed; }
+      isRunning: function () { return !handle.destroyed; },
+
+      // T11. Whether globe.gl has actually BUILT its scene, which is not the same as mount()
+      // having resolved. The scene is assembled inside the animation loop, so on a machine where
+      // that loop never runs — a browser that is not compositing, and possibly a locked-down
+      // driver — mount() resolves ok and the panel stays black. The caller's watchdog asks this
+      // rather than trusting the resolve, because a black panel in front of a director is the
+      // failure the flat atlas exists to prevent.
+      hasScene: function () {
+        try {
+          var sc = globe.scene();
+          return !!(sc && sc.children && sc.children.filter(function (c) {
+            return c && c.type === "Group";
+          })[0]);
+        } catch (e) { return false; }
+      }
     };
     return handle;
   }

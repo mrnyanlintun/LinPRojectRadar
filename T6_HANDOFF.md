@@ -1,3 +1,35 @@
+# T11 — the default geographic view is now the flat SVG atlas, and it is MERGED
+
+`assets/js/atlas.js`. SVG, no WebGL, no 3D library, **no animation loop**. It is the default on the
+portfolio and on project detail, and it draws the country geometry already vendored for the globe,
+so it needed no new assets.
+
+**This is the view that cannot fail to render**, and that is why it exists: two sessions could not
+verify the globe because the pane does not composite, and a globe that resolves `ok` while drawing
+nothing is a black panel in front of a director. Verified with **0 rAF frames**: 177 country paths,
+markers, 215 nodes, 11 ms — and at pixel level, marker centre `#26344f`, halo ring `#05080b`,
+ocean beyond `#0e3049`, all exactly their variables. Full detail in
+`REPORT_2026-08-01_flat-atlas-default-view.md`.
+
+**The globe is kept, demoted to a third stage button, and now has a watchdog.** `mount()` resolving
+is not the same as the globe drawing, so `LinGlobe` exposes `hasScene()` and the caller falls back
+to the atlas after 4 s if the scene was never built. That watchdog fired for real in this session
+and the fallback worked end to end.
+
+**Marker legibility is solved by the halo, not by the background.** Without the dark disc, Yellow on
+Miami/Maria land is **1.01:1** — invisible. With it, every status is ≥5.66:1 in every theme. Do not
+"simplify" the halo away, and do not try to fix legibility by darkening the land; that was measured
+on the globe's texture and only changes which status fails.
+
+**MapLibre is now orphaned** — `scheduleMapWarmup()` has no callers and `buildMap()` is unreachable.
+It is left in place, clearly marked, and deleting it (~400 lines, 837 KB of vendored files, the map
+markup, and the `tiles.openfreemap.org` CSP entry) is a clean scoped follow-up.
+
+**Nobody has looked at the atlas.** Everything above is measurement and pixel sampling, not a
+picture. That is the first thing to do with a visible pane.
+
+---
+
 # READ FIRST — check the browser pane before planning any visual work
 
 **Two consecutive sessions have now been lost to this.** Before anything else:
@@ -9,7 +41,8 @@ document.visibilityState            // must be "visible"
 
 If it is `"hidden"` with 0 frames, **globe.gl never builds its scene**, screenshots fail, and no
 visual check or frame-rate measurement is possible. Say so and stop; do not spend the session
-discovering it late. `preview_start` reporting "Browser pane opened", and the `PostToolUse` hook
+discovering it late. **This now applies only to GLOBE work** — since T11 the default geographic
+view is the flat atlas, which renders fully with 0 rAF frames and is checkable either way. `preview_start` reporting "Browser pane opened", and the `PostToolUse` hook
 saying a file "is now visible in the Browser pane", **both appear even when the pane is hidden** —
 neither is evidence. Only the two checks above are.
 

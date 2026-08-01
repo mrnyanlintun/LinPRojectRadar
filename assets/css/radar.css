@@ -27,6 +27,22 @@
   --globe-atmosphere: #63b6a2;    /* the rim glow */
   --globe-graticule-opacity: 0.16;
 
+  /* ---------- the flat map's palette ----------
+     T11. atlas.js declares its fills as style="fill:var(--atlas-…)", so a theme switch repaints
+     the map through the cascade alone — no JavaScript, no reload, nothing to re-resolve. That is
+     why these are separate variables rather than resolved colours passed in.
+
+     STATUS COLOURS ARE NOT HERE, exactly as with the globe. A marker's colour is its status and
+     nothing on this list may tint it. --atlas-marker-halo is the dark disc every marker sits on,
+     which is what gives a status guaranteed contrast against land, ocean and cloud alike.
+
+     Base is the dark map; the light themes override below. */
+  --atlas-ocean: #0b1116;
+  --atlas-land: #1d2b31;
+  --atlas-land-stroke: #33474e;
+  --atlas-graticule: rgba(255, 255, 255, 0.06);
+  --atlas-marker-halo: #05080b;
+
   /* Which of the two globe treatments this theme gets. Read as a string by globe.js, so it is
      the theme — not the JavaScript — that decides, exactly like the colours above.
        abstract     — dark base, continents as dot clusters, bright rim
@@ -190,6 +206,14 @@ body[data-theme="light"] {
   --globe-graticule: #7fc4e8;
   --globe-atmosphere: #8fd3f0;
   --globe-graticule-opacity: 0.14;
+
+  /* Map: blue ocean, pale land. Miami and Maria share it, as they share the globe's planet —
+     the brief asks for two map palettes, not three. The ocean is the same #0e3049 the globe's
+     sphere uses, so switching between the two views is not a change of subject. */
+  --atlas-ocean: #0e3049;
+  --atlas-land: #cfe3ef;
+  --atlas-land-stroke: #9dc2d8;
+  --atlas-graticule: rgba(255, 255, 255, 0.14);
 
   --sun-gold: #d69e2e;                    /* decorative gold: hairlines, borders, glow */
   --coral: #e8795a;                       /* secondary: hover borders, scan-line */
@@ -3251,6 +3275,13 @@ body[data-theme="newyork"] {
   --globe-land: #46c8e0;
   --globe-land-opacity: 0.9;
 
+  /* Map: dark, matching the abstract globe rather than the photographic one, so the two NYC
+     geographic views agree with each other. Gilt coastlines keep it in the monument palette. */
+  --atlas-ocean: #0b1116;
+  --atlas-land: #16232a;
+  --atlas-land-stroke: rgba(212, 175, 90, 0.45);
+  --atlas-graticule: rgba(212, 175, 90, 0.10);
+
   /* wordmark solids — bright pair (dark theme): bronze 8.6:1, verdigris 8.0:1 */
   --brand-bronze: #d9a441;
   --brand-verdigris: #63b6a2;
@@ -3396,6 +3427,13 @@ body[data-theme="maria"] {
   --globe-graticule: #7fc4e8;
   --globe-atmosphere: #8fd3f0;
   --globe-graticule-opacity: 0.14;
+
+  /* Map: the same blue ocean and pale land as Miami. Maria's rose belongs to the page, not to
+     the world drawn on it. */
+  --atlas-ocean: #0e3049;
+  --atlas-land: #cfe3ef;
+  --atlas-land-stroke: #9dc2d8;
+  --atlas-graticule: rgba(255, 255, 255, 0.14);
 
   --rose: #d16a9e;                        /* structural rose — hairlines, borders, scan */
   --maria-blush: #f7b6d2;                 /* baby pink — soft secondary (chips/hovers) */
@@ -4111,9 +4149,40 @@ body.og-account-operational .notice-operational { display: block; }
 .globe-note { text-align: center; margin: 6px 0 0; }
 @media (max-width: 900px) { #globe-canvas { height: 340px; } }
 
-/* T9 — the focused globe on project detail. Layout only. */
-.detail-globe { width: 100%; height: 300px; display: flex; align-items: center;
-                justify-content: center; }
+/* T11 — the flat map. Layout and interaction only; every colour is a var() set on the nodes
+   themselves in atlas.js, which is what lets a theme switch repaint it through the cascade
+   with no JavaScript and no reload.
+
+   The SVG carries its own aspect ratio through the viewBox, so there is no fixed height to keep
+   in sync with anything and it stays crisp at 1280, 1920 and 3840 without redrawing. */
+.atlas-wrap { position: relative; }
+.atlas-wrap[hidden] { display: none; }
+#atlas-canvas { width: 100%; }
+.atlas-svg { display: block; width: 100%; height: auto; border-radius: var(--radius-md); }
+.atlas-note { text-align: center; margin: 6px 0 0; }
+
+.atlas-graticule line { stroke-width: 0.6; }
+.atlas-country { stroke-width: 0.5; vector-effect: non-scaling-stroke; }
+
+/* Markers are the subject: they keep full opacity while the map behind them does not compete. */
+.atlas-marker { cursor: pointer; }
+.atlas-marker .atlas-letter { font-family: var(--font-display); font-weight: 700;
+                              pointer-events: none; user-select: none; }
+.atlas-marker:hover .atlas-halo,
+.atlas-marker:focus-visible .atlas-halo { stroke: var(--accent); stroke-width: 1.5; }
+.atlas-marker:focus-visible { outline: none; }
+.atlas-marker-focus .atlas-halo { stroke: var(--accent); stroke-width: 1.2; }
+
+/* Reduced motion has nothing to disable here — this view has no animation at all — but the
+   hover transition is still a motion cue, so it goes. */
+@media (prefers-reduced-motion: no-preference) {
+  .atlas-marker .atlas-halo { transition: stroke-width 120ms ease; }
+}
+
+/* T9/T11 — the Location panel on project detail. It holds the flat atlas now, which carries its
+   own aspect ratio through the viewBox, so the height is auto rather than the fixed 300px the
+   globe's canvas needed. The canvas rules stay for anything that still mounts a globe here. */
+.detail-globe { width: 100%; display: flex; align-items: center; justify-content: center; }
 .detail-globe canvas { display: block; }
+.detail-globe .atlas-svg { width: 100%; height: auto; }
 .detail-globe-note { text-align: center; margin: 6px 0 0; }
-@media (max-width: 900px) { .detail-globe { height: 240px; } }

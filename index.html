@@ -487,10 +487,15 @@
              extends left from the dock). The stage toolbar now carries only the
              Radar | Map view toggle. -->
         <div class="stage-toggle" role="group" aria-label="Portfolio view">
-          <button type="button" class="stage-btn active" data-view="radar">Radar</button>
-          <!-- T8: this was "Map". The globe replaces it as the second view; the map is still
-               here, but as the FALLBACK the globe degrades to rather than as a tab of its own.
-               A user who cannot run WebGL still gets a map, and never an empty panel. -->
+          <button type="button" class="stage-btn" data-view="radar">Radar</button>
+          <!-- T11: Map is the DEFAULT geographic view and is drawn as flat SVG — no WebGL, no
+               3D library, no animation loop. It replaced the globe as the default because the
+               globe could not be verified to render at all in two consecutive sessions, and a
+               black sphere in front of a director is not a risk worth carrying. -->
+          <button type="button" class="stage-btn active" data-view="map">Map</button>
+          <!-- The globe is kept and is a view you choose. It loads globe.gl and its texture only
+               when selected, and falls back to the Map above if WebGL is missing or it fails to
+               build — never to an empty panel. -->
           <button type="button" class="stage-btn" data-view="globe">Globe</button>
         </div>
       </div>
@@ -499,6 +504,15 @@
         <svg id="radar-svg" viewBox="0 0 1200 460" preserveAspectRatio="xMidYMid meet" role="img"
              aria-label="Radar scope. Radial distance indicates drift from baseline; angular sectors group projects by delivery type (Design, Construction, Hybrid); marker color indicates status. Selecting a project marker opens its detail view; the project list below is an equivalent keyboard control path.">
         </svg>
+      </div>
+      <!-- T11. The default geographic view: flat SVG, no WebGL. One marker per located project,
+           coloured AND lettered by the status the SERVER computed and stored. Selecting a marker
+           opens that project's detail view, the same path the map has always used. Projects
+           without coordinates cannot be placed and are counted in the note below rather than
+           silently dropped; they remain in the project list, which is the keyboard path. -->
+      <div class="atlas-wrap">
+        <div id="atlas-canvas"></div>
+        <p class="atlas-note ws-note" id="atlas-note"></p>
       </div>
       <div class="globe-wrap" hidden>
         <!-- One point per project with a stored location, coloured by the status the SERVER
@@ -1130,6 +1144,9 @@
   <script src="assets/js/admin-ops.js"></script>
   <script src="assets/js/questionnaires.js"></script>
   <script src="assets/js/decision-ui.js"></script>
+  <!-- The flat map. ~9 KB and no dependencies; the country geometry it draws is fetched only
+       when the view is actually rendered. -->
+  <script src="assets/js/atlas.js"></script>
   <script src="assets/js/globe.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
