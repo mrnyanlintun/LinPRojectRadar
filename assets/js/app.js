@@ -587,6 +587,10 @@
   let glFailed = false;
   let mapBootRobot = null;   // 'loading' working-robot shown while tiles/style init
   let focusedPinId = null;   // the flown-to / selected marker
+  // The portfolio globe's own handle. LinGlobe is no longer a singleton — the project detail
+  // view keeps its own — so each caller holds and tears down the one it made.
+  let portfolioGlobe = null;
+  let globeMountToken = 0;
 
   // VENDORED, NOT CDN. These were cdnjs URLs, which meant the map failed on any corporate
   // network that blocks a public CDN — a realistic case for the directors this platform is for,
@@ -1062,7 +1066,7 @@
       // afternoon, and this service is one small instance.
       if (globeWrap) globeWrap.hidden = true;
       if (mapWrap) mapWrap.hidden = true;
-      try { if (window.LinGlobe) LinGlobe.destroy(); } catch (e) {}
+      try { if (portfolioGlobe) { portfolioGlobe.destroy(); portfolioGlobe = null; } } catch (e) {}
     } else {
       buildGeoStage(globeWrap, mapWrap);
     }
@@ -1081,12 +1085,26 @@
     const noteEl = document.getElementById("globe-note");
     if (noteEl) noteEl.textContent = "Locating projects…";
     await hydrateProjectsForGeo();
+    // GUARD AGAINST A DOUBLE MOUNT. setPortfolioView can run twice in quick succession — the
+    // persisted-view restore and a user click — and mount() is async, so a check on the handle
+    // alone misses: the first mount has not resolved when the second starts, and both end up
+    // live. Observed as liveCount() reporting 2 for one visible globe, which is a leaked WebGL
+    // context. The token is taken synchronously, so only the most recent mount keeps its handle.
+    if (portfolioGlobe) { try { portfolioGlobe.destroy(); } catch (e) {} portfolioGlobe = null; }
+    const token = ++globeMountToken;
     LinGlobe.mount(host, LIN_PROJECTS, {
       // Selecting a point does exactly what double-clicking a map marker has always done.
       // Deliberately not a new navigation idea.
       onSelect: (id) => openDetail(id)
     }).then((res) => {
+      if (token !== globeMountToken) {
+        // A newer mount superseded this one while it was resolving. Release it rather than
+        // leaving an orphan renderer holding a context nothing will ever tear down.
+        try { if (res && res.handle) res.handle.destroy(); } catch (e) {}
+        return;
+      }
       if (!res || !res.ok) { showMapInstead(globeWrap, mapWrap); return; }
+      portfolioGlobe = res.handle;
       if (noteEl) {
         // Say plainly that some projects are not shown, rather than letting a director count
         // the points and wonder. They are still in the list below.
@@ -1681,6 +1699,9 @@
       if (page === "about") pendingHandbookTab = "about";
       page = PAGE_REDIRECT[page];
     }
+    // T9. Leaving detail releases its globe's WebGL context. The portfolio globe is handled by
+    // setPortfolioView; each view tears down the instance it made.
+    if (page !== "detail") { try { if (window.LinDetail && LinDetail.teardown) LinDetail.teardown(); } catch (e) {} }
     document.querySelectorAll(".page").forEach((s) =>
       s.toggleAttribute("hidden", s.dataset.page !== page));
     document.querySelectorAll("[data-nav]").forEach((b) =>

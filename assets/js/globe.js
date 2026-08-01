@@ -3,7 +3,18 @@
    ------------------------------------------------------------
    The portfolio globe, and the focused globe on project detail.
 
-   IT COMPUTES NOTHING. Every colour here comes from the status the server stored in
+   ONE INSTANCE PER MOUNT POINT. This was a singleton, which meant a second mount destroyed
+   the first and the two views could not coexist. They now each own a renderer, a context and
+   a destructor. Two WebGL contexts is not a problem — browsers allow well beyond two — and the
+   alternative was tearing the portfolio globe down and rebuilding it every time a project was
+   opened and closed, which is slower and has more ways to go wrong than simply letting each
+   view keep its own.
+
+   The portfolio view is hidden while detail is open, so its loop is already stopped by the same
+   visibility and teardown mechanism the portfolio globe uses; an idle second context costs
+   nothing while it is not animating.
+
+   IT COMPUTES NOTHING. Every colour comes from the status the server stored in
    computed_results, read through taxonomy.js's getProjectFusion(). That is the rule Part 3
    established after the browser derivation was found returning Red on projects five per cent
    under budget, and a visualisation is exactly where it would be tempting to break it.
@@ -17,13 +28,9 @@
    there are three steps and none of them is a blank panel:
 
        WebGL and globe.gl available   -> the globe
-       either missing                 -> the existing MapLibre map
-       MapLibre missing too           -> the plain project list, which is always in the DOM
-
-   THE ANIMATION LOOP IS A LIABILITY IF IT OUTLIVES THE VIEW. This service is one small
-   instance and a director may leave a tab open all afternoon. The loop is paused when the
-   document is hidden and stopped entirely when the view is left, and the WebGL context is
-   released rather than left for the garbage collector to find later.
+       either missing                 -> whatever the caller falls back to (the map, or a
+                                         plain no-position message on project detail)
+       nothing available              -> the project list, which is always in the DOM
 
    PROJECTS WITHOUT COORDINATES ARE NOT LOST. They cannot be placed, so they are not points, but
    they remain in the project list below the stage, which is the same keyboard path the radar
@@ -35,9 +42,11 @@
 
   var VENDOR_URL = "assets/vendor/globe.gl.min.js";
 
-  var instance = null;      // the live Globe(), or null
-  var host = null;          // the element it was mounted into
+  // Earth's axial tilt, in radians. 23.4 degrees.
+  var AXIAL_TILT = 23.4 * Math.PI / 180;
+
   var loadPromise = null;
+  var live = [];            // every mounted instance, so visibility can reach all of them
   var visibilityBound = false;
 
   /* ---------- capability ---------- */
@@ -63,7 +72,7 @@
       s.async = true;
       s.onload = function () { resolve(typeof window.Globe === "function"); };
       // Resolves false rather than rejecting. A missing globe is a fallback, not an exception:
-      // the caller's job is to show the map, not to handle an error.
+      // the caller's job is to show something else, not to handle an error.
       s.onerror = function () { resolve(false); };
       document.head.appendChild(s);
     });
@@ -74,10 +83,21 @@
 
   // Read from the live computed style so a theme switch is picked up, rather than hard-coding
   // anything. No screen defines its own palette.
+  // three.js Color.set() parses hex and rgb(), but NOT rgba(). Several theme surfaces are
+  // declared with alpha (newyork's --surface-soft is rgba(21,28,32,.86)), so passing the raw
+  // value through made Color.set throw and the globe silently kept its default material. The
+  // alpha is dropped rather than approximated: the globe is opaque, and compositing a
+  // translucent surface colour against an unknown backdrop is not something this can know.
+  function stripAlpha(v) {
+    var m = /^rgba\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/i.exec(v);
+    if (!m) return v;
+    return "rgb(" + Math.round(+m[1]) + "," + Math.round(+m[2]) + "," + Math.round(+m[3]) + ")";
+  }
+
   function themeColor(name, fallback) {
     try {
       var v = getComputedStyle(document.body).getPropertyValue(name);
-      v = (v || "").trim();
+      v = stripAlpha((v || "").trim());
       return v || fallback;
     } catch (e) {
       return fallback;
@@ -124,15 +144,23 @@
     return pts;
   }
 
-  /* ---------- lifecycle ---------- */
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  /* ---------- shared visibility ----------
+     One listener for every instance. A globe spinning in a tab nobody is looking at is pure
+     cost on a single small instance, and that is as true of two globes as of one. */
 
   function onVisibility() {
-    if (!instance) return;
-    // A globe spinning in a tab nobody is looking at is pure cost on a single small instance.
-    try {
-      if (document.hidden) instance.pauseAnimation();
-      else instance.resumeAnimation();
-    } catch (e) { /* older builds may lack these; not worth failing the view over */ }
+    live.forEach(function (g) {
+      try {
+        if (document.hidden) g.globe.pauseAnimation();
+        else g.globe.resumeAnimation();
+      } catch (e) { /* older builds may lack these; not worth failing a view over */ }
+    });
   }
 
   function bindVisibility() {
@@ -141,54 +169,106 @@
     visibilityBound = true;
   }
 
-  function destroy() {
-    if (!instance) return;
-    try { instance.pauseAnimation(); } catch (e) {}
+  /* ---------- axial tilt ----------
+     T9 Task 3. Earth's tilt, so the globe reads as a planet rather than a sphere.
+
+     Applied to globe.gl's own group — the one holding the sphere, the graticules and the
+     points — rather than to the camera. Tilting the camera would look the same on the first
+     frame, but pointOfView() and the focus option both reason in camera space, so the focused
+     detail globe would then be fighting it. Tilting the group instead means the points stay
+     attached to their coordinates on a tilted planet, which is what a tilt actually means.
+
+     The group does not exist yet when mount() returns: globe.gl builds it over the following
+     frames, and setting rotation on the scene at construction time silently did nothing. So
+     this retries across a bounded number of frames and stops as soon as it lands. */
+
+  function applyTilt(globe, tries) {
+    tries = tries || 0;
     try {
-      // globe.gl's own teardown. It disposes the renderer, which is what actually releases the
-      // WebGL context; dropping the reference alone would leave the context alive until the
-      // driver reclaimed it, and browsers cap how many a page may hold.
-      if (typeof instance._destructor === "function") instance._destructor();
-    } catch (e) {}
-    try {
-      if (host) host.innerHTML = "";
-    } catch (e) {}
-    instance = null;
-    host = null;
+      var scene = typeof globe.scene === "function" && globe.scene();
+      var grp = scene && scene.children && scene.children.filter(function (c) {
+        return c && c.type === "Group";
+      })[0];
+      if (grp && grp.rotation) { grp.rotation.z = AXIAL_TILT; return; }
+    } catch (e) {
+      // Deliberately falls through to the retry rather than giving up. Reading .scene() before
+      // globe.gl has built it can throw, and returning here was why the first version of this
+      // silently left every globe upright: the one early throw killed the retry for good.
+    }
+    // A timer, not requestAnimationFrame. rAF does not fire while the page is not compositing
+    // — a background tab, or an automated browser whose pane is not displayed — and globe.gl
+    // builds its group from its own timers regardless. On rAF the globe finished building and
+    // then stayed upright forever, because the retry that was meant to catch it never ran.
+    // Bounded at ~1s so a build that never produces a group cannot retry forever.
+    if (tries < 60) setTimeout(function () { applyTilt(globe, tries + 1); }, 16);
   }
 
-  /* ---------- mount ---------- */
+  /* ---------- an instance ---------- */
+
+  function makeHandle(globe, host) {
+    var handle = {
+      globe: globe,
+      host: host,
+      destroyed: false,
+
+      destroy: function () {
+        if (handle.destroyed) return;
+        handle.destroyed = true;
+        try { globe.pauseAnimation(); } catch (e) {}
+        try {
+          // globe.gl's own teardown. It disposes the renderer, which is what actually releases
+          // the WebGL context; dropping the reference alone would leave the context alive until
+          // the driver reclaimed it, and browsers cap how many a page may hold.
+          if (typeof globe._destructor === "function") globe._destructor();
+        } catch (e) {}
+        try { if (host) host.innerHTML = ""; } catch (e) {}
+        var i = live.indexOf(handle);
+        if (i >= 0) live.splice(i, 1);
+      },
+
+      resize: function () {
+        if (handle.destroyed || !host) return;
+        var rect = host.getBoundingClientRect();
+        var w = Math.max(240, Math.round(rect.width));
+        var h = Math.max(240, Math.round(rect.height || w * 0.5));
+        try { globe.width(w).height(h); } catch (e) {}
+      },
+
+      refresh: function (projects) {
+        if (handle.destroyed) return;
+        try { globe.pointsData(pointsFrom(projects)); } catch (e) {}
+      },
+
+      isRunning: function () { return !handle.destroyed; }
+    };
+    return handle;
+  }
 
   /**
-   * Build the globe into `container`.
+   * Build a globe into `container`.
    *
-   * Resolves { ok: true } when the globe is showing, or { ok: false, reason } when the caller
-   * should fall back. It never throws and never leaves the container empty on failure: an empty
-   * panel is the one outcome that is not allowed.
+   * Resolves { ok: true, handle } when the globe is showing, or { ok: false, reason } when the
+   * caller should fall back. It never throws and never leaves the container empty on failure:
+   * an empty panel is the one outcome that is not allowed.
    *
-   * opts.focus  — { lat, lng } to centre on, for the project detail view.
+   * opts.focus    — { lat, lng } to centre on, for the project detail view.
    * opts.onSelect — called with a project id. The portfolio passes openDetail, so selecting a
    *                 point does exactly what selecting a map marker has always done.
+   * opts.interactive — false to disable rotate/zoom, for a focused single-project view.
    */
   function mount(container, projects, opts) {
     opts = opts || {};
     if (!container) return Promise.resolve({ ok: false, reason: "no container" });
-
-    if (!webglAvailable()) {
-      return Promise.resolve({ ok: false, reason: "webgl-unavailable" });
-    }
+    if (!webglAvailable()) return Promise.resolve({ ok: false, reason: "webgl-unavailable" });
 
     return loadLibrary().then(function (available) {
       if (!available) return { ok: false, reason: "library-unavailable" };
 
-      destroy();                     // never two globes, never two contexts
-      host = container;
       container.innerHTML = "";
-
       var pts = pointsFrom(projects);
 
       try {
-        instance = window.Globe()(container)
+        var globe = window.Globe()(container)
           .backgroundColor("rgba(0,0,0,0)")
           .showAtmosphere(true)
           .atmosphereColor(themeColor("--brand-verdigris", "#4fa393"))
@@ -199,7 +279,7 @@
           .pointLng("lng")
           .pointColor("color")
           .pointAltitude(0.06)
-          .pointRadius(0.6)
+          .pointRadius(opts.focus ? 1.0 : 0.6)
           .pointLabel(function (d) {
             // Name, status and what the geocoder matched. The matched address is here for the
             // same reason it is on every other surface: a pin on the wrong building looks
@@ -216,55 +296,56 @@
 
         // Solid material from the theme rather than a texture image, which would be a CDN fetch.
         try {
-          var mat = instance.globeMaterial();
+          var mat = globe.globeMaterial();
           if (mat && mat.color && typeof mat.color.set === "function") {
             mat.color.set(themeColor("--surface-soft", "#12242a"));
             if ("shininess" in mat) mat.shininess = 4;
           }
         } catch (e) { /* the globe still renders without the tint */ }
 
-        sizeToHost();
+        applyTilt(globe);
+
+        var handle = makeHandle(globe, container);
+        live.push(handle);
+        handle.resize();
+
         if (opts.focus && isFinite(opts.focus.lat) && isFinite(opts.focus.lng)) {
           try {
-            instance.pointOfView({ lat: opts.focus.lat, lng: opts.focus.lng, altitude: 1.6 }, 0);
+            globe.pointOfView({ lat: opts.focus.lat, lng: opts.focus.lng, altitude: 1.4 }, 0);
+          } catch (e) {}
+        }
+        // T9 Task 3. The empty state is the platform's resting visual, not an error. A portfolio
+        // with nothing placeable still gets a globe, turning slowly, rather than a blank stage or
+        // a message. It stays interactive — the user can still spin it — the rotation only gives
+        // it life while nothing is on it, and any later refresh() with points leaves it as it is.
+        var idle = pts.length === 0;
+        if (opts.interactive === false || idle) {
+          try {
+            var controls = globe.controls();
+            if (controls) {
+              if (opts.interactive === false) controls.enableZoom = false;
+              controls.autoRotate = true;
+              controls.autoRotateSpeed = 0.35;
+            }
           } catch (e) {}
         }
         bindVisibility();
-        return { ok: true, points: pts.length, unplaceable: (projects || []).length - pts.length };
+        return {
+          ok: true,
+          handle: handle,
+          points: pts.length,
+          unplaceable: (projects || []).length - pts.length
+        };
       } catch (e) {
-        destroy();
         return { ok: false, reason: "construction-failed" };
       }
     });
   }
 
-  function sizeToHost() {
-    if (!instance || !host) return;
-    var rect = host.getBoundingClientRect();
-    var w = Math.max(240, Math.round(rect.width));
-    // Height follows the container; the stage is a fixed-height band on every viewport width.
-    var h = Math.max(240, Math.round(rect.height || w * 0.5));
-    try { instance.width(w).height(h); } catch (e) {}
-  }
-
-  function refresh(projects) {
-    if (!instance) return;
-    try { instance.pointsData(pointsFrom(projects)); } catch (e) {}
-  }
-
-  function escapeHtml(s) {
-    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
-    });
-  }
-
   window.LinGlobe = {
     mount: mount,
-    destroy: destroy,
-    refresh: refresh,
-    resize: sizeToHost,
     webglAvailable: webglAvailable,
-    // Exposed so a check can observe the loop rather than take it on trust.
-    isRunning: function () { return !!instance; }
+    // Exposed so a check can observe the loops rather than take them on trust.
+    liveCount: function () { return live.length; }
   };
 })();

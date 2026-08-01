@@ -4035,3 +4035,10 @@ body.og-account-operational .notice-operational { display: block; }
 #globe-canvas canvas { display: block; }
 .globe-note { text-align: center; margin: 6px 0 0; }
 @media (max-width: 900px) { #globe-canvas { height: 340px; } }
+
+/* T9 — the focused globe on project detail. Layout only. */
+.detail-globe { width: 100%; height: 300px; display: flex; align-items: center;
+                justify-content: center; }
+.detail-globe canvas { display: block; }
+.detail-globe-note { text-align: center; margin: 6px 0 0; }
+@media (max-width: 900px) { .detail-globe { height: 240px; } }
