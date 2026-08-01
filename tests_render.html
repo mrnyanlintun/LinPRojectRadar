@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Opus Gubernatio: stored-result render regression net</title>
+<link rel="stylesheet" href="assets/css/radar.css">
+<style>
+  /* Layout only. Every colour resolves through radar.css, for the same reason tests.html gives:
+     a harness with its own palette desyncs silently and still reports green. */
+  body { padding: 24px; font-size: 13px; }
+  h1 { font-size: 16px; margin: 0 0 4px; }
+  p.sub { color: var(--muted); margin: 0 0 20px; max-width: 84ch; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: 28px; }
+  th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--surface); color: var(--heading); }
+  tr.pass td.result { color: var(--status-green); }
+  tr.fail td.result { color: var(--status-red); font-weight: 700; }
+  .summary { font-size: 14px; margin: 8px 0 24px; }
+  .summary.ok { color: var(--status-green); }
+  .summary.bad { color: var(--status-red); }
+  code { font-family: var(--font-mono); color: var(--accent); }
+  #harness-dom { position: absolute; left: -9999px; top: 0; width: 1200px; }
+</style>
+</head>
+<!--
+  WHAT THIS PAGE IS FOR
+
+  Nine hasSignals() bugs and one live TypeError passed all 854 server-side checks, because those
+  checks are Python and cannot render a DOM, and because no fixture anywhere carried the shape
+  that breaks: A PROJECT WITH A STORED COMPUTED RESULT AND NO LEGACY CLIENT-SIDE SIGNALS BLOB.
+
+  That shape is what the server actually produces. hasSignals(p) tests for p.signals.evm/.mc/
+  .cusum/.doc, which is the pre-Part-3 client-compute artifact. A project analysed server-side
+  carries a computed_results row, reachable through LinResults/getProjectFusion, and does not
+  necessarily carry that blob. Every gate that asked hasSignals() first therefore treated an
+  analysed project as unanalysed, and one of them (classifyConflict, via project.signals.cusum
+  .breached) threw rather than degrading.
+
+  tests.html is the sibling harness for signal MATH. This page is for RENDER PATHS: it asserts
+  that the surfaces a director actually looks at still draw when the only thing present is the
+  stored row.
+
+  WHY IT BOOTS THE WAY IT DOES
+
+  app.js self-boots on DOMContentLoaded, and boot() runs its full init() only when
+  LinAuth.init() returns true. The stub below returns false, so app.js exports window.LinApp
+  without starting the application, fetching a portfolio, or touching the network. That is the
+  whole trick, and it is why this harness is deterministic and offline.
+
+  It loads taxonomy.js, NOT categories.js. taxonomy.js is what the participant-facing
+  application loads; it defines the same LIN_CATEGORIES data and reads status from the stored
+  row instead of deriving it. Loading categories.js here would test the researcher-side stack
+  and miss the point.
+-->
+<body data-theme="dark">
+<h1>Opus Gubernatio: stored-result render regression net</h1>
+<p class="sub">
+  Asserts that the render paths still draw for a project whose only status source is the stored
+  server result. Zero dependency, offline, and it must fail if a
+  <code>hasSignals()</code> gate is reintroduced in front of a path that reads the stored row.
+  Run after any change to <code>app.js</code>, <code>detail.js</code>, <code>decision.js</code>,
+  or <code>taxonomy.js</code>.
+</p>
+<div id="summary" class="summary">Running…</div>
+<table id="results">
+  <thead><tr><th>#</th><th>Assertion</th><th>Expected</th><th>Actual</th><th class="result">Result</th></tr></thead>
+  <tbody></tbody>
+</table>
+
+<!-- Offscreen DOM the render functions write into. The ids match index.html because the
+     functions under test look them up by id. -->
+<div id="harness-dom" aria-hidden="true">
+  <div id="status-legend"></div>
+  <ul id="project-list"></ul>
+  <div id="ledger"></div>
+  <div id="decision-card"></div>
+  <div id="detail-root"></div>
+</div>
+
+<script>
+  // See the header note: this is what stops app.js from booting the real application.
+  window.LinAuth = { init: function () { return false; }, getEmail: function () { return ""; } };
+</script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/taxonomy.js"></script>
+<script src="assets/js/decision.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+(function () {
+  "use strict";
+  const rows = [];
+  function assert(name, expected, actual) {
+    rows.push({ name, expected, actual, pass: String(expected) === String(actual) });
+  }
+
+  /* THE FIXTURE, and the only thing that makes this page worth having.
+
+     signals is deliberately ABSENT, not empty: hasSignals() would accept neither, but an empty
+     object would still let a careless `p.signals.cusum` read succeed one level in and hide the
+     very TypeError this page exists to catch.
+
+     The stored row is the minimum the accessors in taxonomy.js actually read: project_status
+     for getProjectFusion, and the two collections getModuleStatus / getCategoryStatus index
+     into. Its shape is taken from those readers, not from a document. */
+  const FIXTURE_ID = "PRJ-STOREDONLY01";
+  function storedOnlyProject() {
+    return {
+      id: FIXTURE_ID,
+      name: "Stored result, no legacy blob",
+      sector: "construction"
+      // no .signals, no .simulationSignals, no .signalInputs
+    };
+  }
+  function storedRow(status) {
+    return {
+      project_status: status || "Amber",
+      red_review: false,
+      module_results: [],
+      category_statuses: {}
+    };
+  }
+
+  function fresh(status) {
+    const p = storedOnlyProject();
+    window.LIN_PROJECTS.length = 0;
+    window.LIN_PROJECTS.push(p);
+    window.LinResults.clear();
+    window.LinResults.prime(p.id, storedRow(status));
+    return p;
+  }
+  function scratch() {
+    const d = document.createElement("div");
+    document.getElementById("harness-dom").appendChild(d);
+    return d;
+  }
+
+  // 0. The fixture really is the shape under test. If this fails, nothing below means anything.
+  (function () {
+    const p = fresh("Amber");
+    assert("fixture has NO legacy signals blob",
+      true, !(window.hasSignals ? window.hasSignals(p) : !!(p.signals && p.signals.evm)));
+    assert("fixture HAS a stored result",
+      true, !!(window.LinResults && window.LinResults.hasResult(p)));
+    assert("stored status is readable through getProjectFusion",
+      "Amber", (window.getProjectFusion(p) || {}).status);
+  })();
+
+  // 1. The signal ledger renders its category rows.
+  //    Was: the whole ledger replaced by the awaiting-analysis panel.
+  (function () {
+    const p = fresh("Amber");
+    const host = scratch();
+    let threw = "";
+    try { window.LinApp.renderLedger(p, host); } catch (e) { threw = String(e && e.message); }
+    assert("ledger: renderLedger does not throw", "", threw);
+    assert("ledger: renders category rows (not the awaiting panel)",
+      true, host.querySelectorAll(".cat-row").length > 0);
+    assert("ledger: awaiting-analysis panel is absent",
+      false, !!host.querySelector(".awaiting-state"));
+  })();
+
+  // 2. The governance decision card renders a state.
+  //    Was: the whole card replaced by the awaiting-analysis panel.
+  (function () {
+    const p = fresh("Red");
+    const host = scratch();
+    let threw = "";
+    try { window.LinApp.renderDecisionCard(p, host); } catch (e) { threw = String(e && e.message); }
+    assert("decision card: renderDecisionCard does not throw", "", threw);
+    const badge = host.querySelector(".state-badge");
+    assert("decision card: state badge is present", true, !!badge);
+    assert("decision card: badge shows the STORED status",
+      "Red", badge ? badge.textContent.trim() : "(no badge)");
+    assert("decision card: awaiting-analysis panel is absent",
+      false, !!host.querySelector(".awaiting-state"));
+  })();
+
+  // 3. The detail page State badge renders.
+  //    stateLabel() is what the detail head and the list row both put in that slot; it used to
+  //    gate on hasSignals() and emit the retired "Awaiting ingest".
+  (function () {
+    const p = fresh("Yellow");
+    const label = window.LinApp.stateLabel
+      ? window.LinApp.stateLabel(p)
+      : (window.deriveHealthState ? window.deriveHealthState(p) : "(unavailable)");
+    assert("detail State badge: shows the stored status", "Yellow", label);
+    assert("detail State badge: does not say the retired 'Awaiting ingest'",
+      false, /awaiting ingest/i.test(String(label)));
+  })();
+
+  // 4. The list row is coloured.
+  //    The row's status word takes an inline colour only when the code believes the project has
+  //    a status. Under the old gate an analysed project rendered an uncoloured word.
+  (function () {
+    const p = fresh("Red");
+    const host = document.getElementById("project-list");
+    host.innerHTML = "";
+    let threw = "";
+    // Takes no argument: it looks up #project-list itself, which this page provides.
+    try { window.LinApp.buildFallbackList(); } catch (e) { threw = String(e && e.message); }
+    assert("list row: buildFallbackList does not throw", "", threw);
+    const st = host.querySelector(".li-state");
+    assert("list row: status element present", true, !!st);
+    assert("list row: status word carries an inline colour",
+      true, !!(st && st.getAttribute("style") && /color/.test(st.getAttribute("style"))));
+    assert("list row: status word is the stored status",
+      "Red", st ? st.textContent.trim() : "(none)");
+    // The row's state- CSS class comes from statusKey(), which is a DIFFERENT path from the
+    // inline colour above (that one goes through hasStatus and stateLabel). Added after the
+    // fail-proving loop showed a reverted statusKey() left every list-row assertion green while
+    // silently restoring the muted state-empty class. Without this the row checks did not cover
+    // statusKey at all.
+    assert("list row: state- class reflects the stored status, not state-empty",
+      true, !!(st && st.classList.contains("state-red")));
+  })();
+
+  // 5. The portfolio legend counts the project as analysed, not awaiting analysis.
+  (function () {
+    fresh("Green");
+    window.LinApp.renderStatusLegend();
+    const items = document.querySelectorAll("#status-legend .legend-item");
+    function countFor(name) {
+      for (let i = 0; i < items.length; i++) {
+        const n = items[i].querySelector(".legend-name");
+        if (n && n.textContent.trim() === name) {
+          return items[i].querySelector(".legend-count").textContent.trim();
+        }
+      }
+      return "(band missing)";
+    }
+    assert("legend: counts the project under its stored band", "1", countFor("Green"));
+    assert("legend: does NOT count it as awaiting analysis", "0", countFor("Awaiting analysis"));
+  })();
+
+  // 6. classifyConflict abstains rather than throwing or inventing a finding.
+  //    It read project.signals.cusum.breached unguarded, one line below a signalStatuses() call
+  //    that guards the same object down to nulls. Safe only while every caller gated on
+  //    hasSignals() first. "Mixed early warning" here would be a specific claim the platform has
+  //    no evidence for, so the abstention is asserted by name.
+  (function () {
+    const p = fresh("Amber");
+    let out = "", threw = "";
+    try { out = window.classifyConflict(p); } catch (e) { threw = String(e && e.message); }
+    assert("classifyConflict: does not throw on a stored-only project", "", threw);
+    assert("classifyConflict: returns its abstention value",
+      "Signal breakdown not available", out);
+    assert("classifyConflict: does not fall through to a specific finding",
+      false, out === "Mixed early warning" || out === "Agreement: low risk");
+  })();
+
+  // ---- render results ----
+  const tbody = document.querySelector("#results tbody");
+  let passed = 0;
+  rows.forEach(function (r, i) {
+    if (r.pass) passed++;
+    const tr = document.createElement("tr");
+    tr.className = r.pass ? "pass" : "fail";
+    tr.innerHTML = "<td>" + (i + 1) + "</td><td>" + r.name + "</td><td><code>" + r.expected
+      + "</code></td><td><code>" + r.actual + "</code></td><td class='result'>"
+      + (r.pass ? "PASS" : "FAIL") + "</td>";
+    tbody.appendChild(tr);
+  });
+  const sum = document.getElementById("summary");
+  sum.textContent = "RESULT: " + passed + "/" + rows.length + " checks passed";
+  sum.className = "summary " + (passed === rows.length ? "ok" : "bad");
+  // Read by the runner rather than scraped from the table.
+  window.LIN_RENDER_TESTS = { passed: passed, total: rows.length, rows: rows };
+})();
+</script>
+</body>
+</html>

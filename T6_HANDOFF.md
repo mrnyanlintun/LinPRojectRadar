@@ -1,3 +1,38 @@
+# T13 — THE GROUP TABLE DOES NOT MATCH THE CODE. Decision needed before the sweep.
+
+Branch `t13-fixture-and-taxonomy`, **unmerged on purpose**. Full detail in
+`REPORT_2026-08-01_fixture-and-taxonomy.md`.
+
+**A is 52 in code, 53 in the CSV.** Total 100 registered against 101 declared. B 36, C 7, D 5 all
+agree. The CSV is current and is read at runtime (`registry.py:35-36`), so this is not staleness.
+
+The whole difference is **`A4.1 Document Risk Score`**: declared in the CSV, not registered in
+code, and refused by name at `registry.py:76-80`. It is a *signal* produced by document extraction
+and copied through (`extraction_merge.py:106-108`), not a computation the analytical server
+performs. Both 52 and 53 are defensible and the code does not choose. **That choice is the
+researcher's and it gates the step 4 sweep.** Do not reconcile it in passing.
+
+Also: the code spells the groups with an ampersand, `Recommendation & Governance` and
+`Data & Evidence Health`, not "and". The sweep needs that settled too.
+
+**A tenth hasSignals instance was found, and it was the root.** `statusKey()` still had the legacy
+gate; the T12 legend fix had added a parallel `storedStatusKey()` beside it rather than correcting
+it. It drives eight call sites, so an analysed project was placed on the radar's neutral mid-ring
+and given the wrong marker colour, not merely mislabelled. Fixed, duplicate removed.
+
+**`tests_render.html` now exists** and is the regression net for that whole family. 22 assertions,
+every one proven able to fail by reverting its gate. It is NOT part of the 854 and will not run
+itself: open `http://127.0.0.1:8010/tests_render.html` with the dev server up, after any change to
+`app.js`, `detail.js`, `decision.js` or `taxonomy.js`. `dev_serve.py` serves it and `tests.html` by
+exact name; `app/main.py` is unchanged and still refuses to mount StaticFiles at `/`.
+
+**Two more vacuous checks found.** `test_simulation.py:49-50` asserts
+`len(unported_modules()) == 101 - len(VALIDATED)`, a tautology that cannot detect the A4.1 gap. And
+`unported_modules()` itself counts D1.1 to D1.5 as unported although they are implemented in
+`portfolio.py`, reporting 6 where 1 is genuine.
+
+---
+
 # T11a — THE GLOBE HAS BEEN SEEN, AND IT RENDERS
 
 The researcher confirmed by eye: hex-dot continents, cyan rim, atmosphere and the 23.4° tilt all

@@ -134,6 +134,38 @@ _main.app.add_middleware(_NoAssetCache)
 print("[dev_serve] /assets and every text/html response served no-store; "
       "edits take effect on reload")
 
+
+# --------------------------------------------------------------- test harnesses, DEV ONLY
+#
+# app.main serves a deliberately short list of EXACT paths and explicitly refuses to mount
+# StaticFiles at "/" (see the note at main.py:273). That is a good decision and this does not
+# change it: the two browser test harnesses at the repository root, tests.html (signal math) and
+# tests_render.html (stored-result render paths), are not reachable through the application and
+# should not be.
+#
+# They still have to be runnable. This adds them as two exact paths, by name, on the DEVELOPMENT
+# server only. Render runs uvicorn against app.main directly and never imports this module, so no
+# harness is reachable in production. Named individually rather than globbed, so dropping a file
+# into the repository root cannot make it web-reachable by accident.
+from fastapi.responses import FileResponse  # noqa: E402
+
+_HARNESSES = ("tests.html", "tests_render.html")
+
+
+def _make_harness_route(filename: str):
+    path = pathlib.Path(_main.__file__).resolve().parents[2] / filename
+
+    async def _serve() -> FileResponse:
+        return FileResponse(path, media_type="text/html; charset=utf-8")
+
+    return _serve
+
+
+for _name in _HARNESSES:
+    _main.app.add_api_route(f"/{_name}", _make_harness_route(_name),
+                            methods=["GET"], include_in_schema=False)
+print(f"[dev_serve] test harnesses served at /{' and /'.join(_HARNESSES)} (development only)")
+
 port = int(sys.argv[1]) if len(sys.argv) > 1 else 8010
 
 print(f"[dev_serve] database : {os.environ['DATABASE_URL']}")
