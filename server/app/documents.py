@@ -253,9 +253,7 @@ def _compute_and_store(session: Session, project: Project, period: int,
 
     run = compute_project(si, project.legacy_id, f"P{period}", cutoff)
 
-    # Portfolio snapshot: every other project's most recent live result. NULL below the
-    # threshold, which is a different fact from "computed and returned nothing".
-    snapshot = None
+    # Portfolio snapshot: every other project's most recent live result.
     others = session.scalars(
         select(ComputedResult).where(ComputedResult.superseded_by.is_(None))
     ).all()
@@ -277,11 +275,16 @@ def _compute_and_store(session: Session, project: Project, period: int,
     vectors.append({"id": project.legacy_id, "cpi": si.get("cpi"), "spi": si.get("spi"),
                     "docRiskScore": si.get("docRiskScore"),
                     "actualPctComplete": si.get("actualPctComplete")})
-    if len(vectors) >= PORTFOLIO_MIN_PROJECTS:
-        computed = compute_portfolio(vectors, project.legacy_id, None, cutoff)
-        # `compute_portfolio` signals "too small" with insufficient_data rather than by
-        # returning None, so translate that into the NULL the column documents.
-        snapshot = None if computed.get("insufficient_data") else computed
+    # Always call, and store whatever it returns — including the insufficient_data shape.
+    # `vectors` always has at least one entry (this project's own, appended above), so
+    # `compute_portfolio`'s own `len(portfolio) < 2` guard is what decides "below threshold",
+    # not a check duplicated here. Collapsing that shape to a bare NULL (the prior behaviour)
+    # discarded its message — "Portfolio too small for anomaly detection — need at least 3
+    # projects with signal data" (portfolio.py, reproducing a legacy off-by-one between the
+    # guard and its own wording) — which T5's portfolio view is required to render verbatim,
+    # not reconstruct. `PORTFOLIO_MIN_PROJECTS` stays as documentation of that guard's value,
+    # not as a second gate here.
+    snapshot = compute_portfolio(vectors, project.legacy_id, None, cutoff)
 
     row = ComputedResult(
         result_id=result_id or new_ulid(),
@@ -557,10 +560,31 @@ def a_projectuploadstatus(session: Session, payload: dict, secret: str,
     report = assembly_report(documents)
     result = _live_result(session, project, period)
 
-    present = [{"filename": d["filename"], "doc_type": d["doc_type"],
-                "contributes": is_mapped(d["doc_type"]),
-                "fields": report["fields_by_doc"].get(d["sha256"], [])}
-               for d in documents]
+    # T3's document viewer needs document_id (to build the content URL), upload time, and
+    # whether that upload was a cache hit — none of which `_period_documents` carries, since
+    # that helper's shape is fixed by what `assemble_signal_inputs` needs (see its docstring).
+    # Queried separately here rather than widening `_period_documents`, which stays the exact
+    # shape B7b's determinism guarantees were written against.
+    upload_rows = session.execute(
+        select(Document.sha256, Document.document_id, DocumentUpload.uploaded_at,
+              DocumentUpload.was_cached)
+        .join(DocumentUpload, DocumentUpload.document_id == Document.document_id)
+        .where(DocumentUpload.project_id == project.id, DocumentUpload.period == period)
+    ).all()
+    by_sha = {sha: (doc_id, uploaded_at, was_cached)
+             for sha, doc_id, uploaded_at, was_cached in upload_rows}
+
+    present = []
+    for d in documents:
+        doc_id, uploaded_at, was_cached = by_sha.get(d["sha256"], (None, None, None))
+        present.append({
+            "document_id": doc_id,
+            "filename": d["filename"], "doc_type": d["doc_type"],
+            "contributes": is_mapped(d["doc_type"]),
+            "fields": report["fields_by_doc"].get(d["sha256"], []),
+            "uploaded_at": uploaded_at.isoformat() if uploaded_at else None,
+            "was_cached": was_cached,
+        })
     have = {d["doc_type"] for d in documents}
 
     audit(session, "project_read", participant_id=caller.participant_id,

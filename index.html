@@ -432,6 +432,10 @@
                button is visible. -->
           <button type="button" data-nav="admin" data-nav-admin-only hidden
                   class="btn-secondary" title="Admin">Admin</button>
+          <!-- T3/T5. A separate page, not a route here — the workspace must never load
+               sim.js/simulations.js/categories.js, which this page always does. -->
+          <a href="workspace.html" class="btn-secondary" title="Project workspace"
+             style="text-decoration:none; display:inline-flex; align-items:center;">Workspace</a>
           <button onclick="LinAuth.logout()" class="btn-logout" title="Sign out">Sign out</button>
         </div>
         <span class="clock" id="tz-clock" aria-label="Current time in selected timezone">--:--:--</span>
