@@ -126,6 +126,15 @@ class ParticipantProfile(Base):
     risk_attitude: Mapped[dict] = mapped_column(JSONType, nullable=True)
     demand_effect_items: Mapped[dict] = mapped_column(JSONType, nullable=True)
     captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    # T7/T8, migration 0010. Raw, complete capture of every item's answer keyed by the item id
+    # from the JSON definition — see that migration's docstring for why this exists alongside
+    # the narrow columns above rather than instead of them. A non-null *_captured_at is itself
+    # the evidence that that questionnaire was actually submitted, not merely that this row
+    # exists (captured_at above is stamped at row creation, which is a different event).
+    intake_responses: Mapped[dict] = mapped_column(JSONType, nullable=True)
+    intake_captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    debrief_responses: Mapped[dict] = mapped_column(JSONType, nullable=True)
+    debrief_captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class Consent(Base):

@@ -288,6 +288,9 @@ _LOGO_PNG = REPO_ROOT / "logo.png"
 # index.html — it must never load sim.js/simulations.js/categories.js, and index.html already
 # does on every load.
 _WORKSPACE_HTML = REPO_ROOT / "workspace.html"
+# T7/T8: same reasoning — separate pages, never loading sim.js/simulations.js/categories.js.
+_ADMIN_OPS_HTML = REPO_ROOT / "admin-ops.html"
+_QUESTIONNAIRES_HTML = REPO_ROOT / "questionnaires.html"
 
 if _ASSETS_DIR.is_dir():
     app.mount("/assets", StaticFiles(directory=str(_ASSETS_DIR)), name="assets")
@@ -320,6 +323,16 @@ def spa_logo():
 @app.get("/workspace.html", include_in_schema=False)
 def spa_workspace():
     return _static_file(_WORKSPACE_HTML, "text/html")
+
+
+@app.get("/admin-ops.html", include_in_schema=False)
+def spa_admin_ops():
+    return _static_file(_ADMIN_OPS_HTML, "text/html")
+
+
+@app.get("/questionnaires.html", include_in_schema=False)
+def spa_questionnaires():
+    return _static_file(_QUESTIONNAIRES_HTML, "text/html")
 
 
 # ---------------------------------------------------------------- document content (T3)

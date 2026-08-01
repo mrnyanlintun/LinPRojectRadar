@@ -1,0 +1,142 @@
+{
+  "id": "intake-v0-placeholder",
+  "title": "Practitioner Background",
+  "presented": "after consent, before the first decision",
+  "note": "PLACEHOLDER INSTRUMENT — NOT FINAL. Item wording, response options, and the risk-attitude scale in particular are still being selected with the researcher's doctoral committee and require IRB approval before this instrument is used with real participants. Nothing here should be treated as the final measure.",
+  "sections": [
+    {
+      "id": "experience",
+      "title": "Experience",
+      "items": [
+        {
+          "id": "experience_level",
+          "field": "experience_level",
+          "type": "single-select",
+          "label": "How would you describe your level of experience in construction project controls?",
+          "required": true,
+          "options": [
+            { "value": "entry", "label": "Entry-level (0-2 years)" },
+            { "value": "mid", "label": "Mid-level (3-7 years)" },
+            { "value": "senior", "label": "Senior (8-15 years)" },
+            { "value": "executive", "label": "Executive / principal (15+ years)" }
+          ]
+        },
+        {
+          "id": "years_experience",
+          "field": "years_experience",
+          "type": "numeric",
+          "label": "Approximately how many years have you worked in project controls or project management?",
+          "required": true,
+          "min": 0,
+          "max": 60,
+          "step": 1
+        },
+        {
+          "id": "industry",
+          "field": "industry",
+          "type": "text",
+          "label": "What industry or project type do you primarily work in? (e.g. federal/aviation, healthcare, transportation)",
+          "required": false,
+          "multiline": false
+        }
+      ]
+    },
+    {
+      "id": "credentials",
+      "title": "Credentials",
+      "items": [
+        {
+          "id": "certifications",
+          "field": "certifications",
+          "type": "multi-select",
+          "label": "Which of the following certifications do you currently hold?",
+          "required": false,
+          "options": [
+            { "value": "PMP", "label": "PMP — Project Management Professional" },
+            { "value": "PgMP", "label": "PgMP — Program Management Professional" },
+            { "value": "PE", "label": "PE — Professional Engineer" },
+            { "value": "CCM", "label": "CCM — Certified Construction Manager" },
+            { "value": "other", "label": "Other" },
+            { "value": "none", "label": "None" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ai_background",
+      "title": "AI Familiarity",
+      "items": [
+        {
+          "id": "ai_familiarity",
+          "field": "ai_familiarity",
+          "type": "likert",
+          "label": "How familiar are you with AI-based decision support tools in a professional context?",
+          "required": true,
+          "scaleMin": 1,
+          "scaleMax": 5,
+          "scaleMinLabel": "Not at all familiar",
+          "scaleMaxLabel": "Extremely familiar"
+        },
+        {
+          "id": "ai_usage_items",
+          "type": "multi-select",
+          "label": "Which of the following have you personally used at work? (usage items — placeholder list)",
+          "required": false,
+          "options": [
+            { "value": "chat_assistant", "label": "A general-purpose AI chat assistant" },
+            { "value": "scheduling_ai", "label": "AI-assisted scheduling or forecasting software" },
+            { "value": "document_extraction", "label": "Automated document data-extraction tools" },
+            { "value": "none", "label": "None of the above" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "role",
+      "title": "Organisational Role",
+      "items": [
+        {
+          "id": "organizational_role",
+          "field": "organizational_role",
+          "type": "single-select",
+          "label": "Which best describes your role on a typical project?",
+          "required": true,
+          "options": [
+            { "value": "owner", "label": "Owner / owner's representative" },
+            { "value": "consultant", "label": "Consultant / construction manager" },
+            { "value": "contractor", "label": "Contractor" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "risk_attitude",
+      "title": "Risk Attitude",
+      "note": "PLACEHOLDER SCALE — the instrument owner has not yet selected the final risk-attitude measure with the committee. These items are illustrative only.",
+      "items": [
+        {
+          "id": "risk_attitude_general",
+          "field": "risk_attitude",
+          "type": "likert",
+          "label": "In general, I am willing to accept uncertainty in exchange for a potentially better outcome.",
+          "required": true,
+          "scaleMin": 1,
+          "scaleMax": 7,
+          "scaleMinLabel": "Strongly disagree",
+          "scaleMaxLabel": "Strongly agree"
+        },
+        {
+          "id": "risk_attitude_professional",
+          "field": "risk_attitude",
+          "type": "likert",
+          "label": "On a project I am responsible for, I would rather escalate a marginal issue early than wait and see.",
+          "required": true,
+          "scaleMin": 1,
+          "scaleMax": 7,
+          "scaleMinLabel": "Strongly disagree",
+          "scaleMaxLabel": "Strongly agree"
+        }
+      ]
+    }
+  ]
+}

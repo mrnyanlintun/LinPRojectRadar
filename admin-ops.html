@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Operations — Opus Gubernatio</title>
+<!--
+  T7 — project membership, assignment, completion monitoring, and export.
+  A separate page, same reasoning as workspace.html: never loads
+  sim.js/simulations.js/categories.js/knowledge.js. Every action here is
+  ResearchAdmin-gated server-side (_require_admin); this page's own gate is
+  a convenience, never the security boundary — every call below still gets
+  refused by the server for a non-admin regardless of what this page shows.
+-->
+<link rel="stylesheet" href="assets/css/radar.css">
+<style>
+  body { min-height: 100vh; padding: 0; }
+  .ao-shell { max-width: 1400px; margin: 0 auto; padding: 24px 28px 64px; }
+  .ao-header { display: flex; align-items: center; justify-content: space-between;
+              gap: 16px; padding: 14px 0 20px; border-bottom: 1px solid var(--line);
+              margin-bottom: 20px; flex-wrap: wrap; }
+  .ao-header h1 { font-family: var(--font-display); font-size: 20px; margin: 0; }
+  .ao-nav { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+  .ao-nav button { background: transparent; border: 1px solid var(--line); color: var(--muted);
+                   padding: 8px 14px; border-radius: var(--radius-sm); cursor: pointer;
+                   font-size: 13px; font-family: var(--font-body); }
+  .ao-nav button.active { background: var(--surface-soft); color: var(--text);
+                          border-color: var(--line-strong); font-weight: 600; }
+  .ao-panel { display: none; }
+  .ao-panel.active { display: block; }
+  .ao-card { background: var(--surface); border: 1px solid var(--line);
+            border-radius: var(--radius-md); padding: 18px 20px; margin-bottom: 14px;
+            overflow-x: auto; }
+  .ao-input, .ao-select { padding: 7px 9px; border-radius: var(--radius-sm);
+                          border: 1px solid var(--line); background: var(--page-bg);
+                          color: var(--text); font-size: 13px; }
+  .ao-btn { background: var(--brand-bronze); color: #fff; border: none; padding: 7px 14px;
+           border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; }
+  .ao-btn-secondary { background: transparent; border: 1px solid var(--line); color: var(--text); }
+  .ao-btn-danger { background: var(--status-red); color: #fff; border: none; }
+  table.ao-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 640px; }
+  table.ao-table th { text-align: left; font-size: 11px; text-transform: uppercase;
+                      letter-spacing: .04em; color: var(--muted); padding: 6px 8px;
+                      border-bottom: 1px solid var(--line-strong); }
+  table.ao-table td { padding: 7px 8px; border-bottom: 1px solid var(--line); }
+  table.ao-table tr.ao-revoked { opacity: .55; }
+  .ao-error { color: var(--status-red); font-size: 13px; margin: 8px 0; }
+  .ao-ok { color: var(--status-green); font-size: 13px; margin: 8px 0; }
+  .ao-note { font-size: 12px; color: var(--faint); }
+  .ao-warning { background: var(--surface-soft); border: 1px solid var(--status-amber);
+               border-radius: var(--radius-sm); padding: 10px 14px; font-size: 12px;
+               color: var(--muted); margin-bottom: 14px; }
+  .ao-form-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+  .ao-badge { display: inline-block; padding: 2px 9px; border-radius: 999px;
+             font-size: 11px; font-weight: 600; }
+  .ao-badge-pm { background: var(--brand-bronze); color: #fff; }
+  .ao-badge-observer { background: var(--surface-soft); color: var(--muted); border: 1px solid var(--line); }
+  .ao-gate { max-width: 480px; margin: 80px auto; text-align: center; }
+  @media (max-width: 700px) { .ao-shell { padding: 16px; } }
+</style>
+</head>
+<body>
+
+<div id="ao-gate" class="ao-shell ao-gate" style="display:none;">
+  <div class="ao-card">
+    <p id="ao-gate-message">You need to sign in as a ResearchAdmin to view this page.</p>
+    <a class="ao-btn" href="index.html" style="display:inline-block; text-decoration:none;">Go to sign-in</a>
+  </div>
+</div>
+
+<div id="ao-shell" class="ao-shell" style="display:none;">
+  <div class="ao-header">
+    <h1>Admin Operations</h1>
+    <div class="ao-note"><a href="index.html">Instrument home</a> · <a href="workspace.html">Workspace</a></div>
+  </div>
+
+  <div class="ao-nav">
+    <button data-panel="members" class="active">Membership</button>
+    <button data-panel="assignment">Assignment</button>
+    <button data-panel="monitoring">Monitoring</button>
+    <button data-panel="export">Export</button>
+  </div>
+
+  <!-- Part 1 -->
+  <div id="panel-members" class="ao-panel active">
+    <div class="ao-card">
+      <div class="ao-form-row">
+        <input id="ao-mem-project" class="ao-input" placeholder="Project id (e.g. PRJ-...)">
+        <button id="ao-mem-load" class="ao-btn-secondary ao-btn">Load members</button>
+      </div>
+      <div class="ao-form-row">
+        <select id="ao-mem-participant" class="ao-select"></select>
+        <select id="ao-mem-role" class="ao-select">
+          <option value="PM">PM</option>
+          <option value="Observer">Observer</option>
+        </select>
+        <button id="ao-mem-add" class="ao-btn">Add member</button>
+      </div>
+      <p id="ao-mem-error" class="ao-error" style="display:none;"></p>
+      <p id="ao-mem-ok" class="ao-ok" style="display:none;"></p>
+      <div id="ao-mem-table"></div>
+    </div>
+  </div>
+
+  <!-- Part 2 -->
+  <div id="panel-assignment" class="ao-panel">
+    <div class="ao-card">
+      <h3 style="margin-top:0;">Scenarios</h3>
+      <div class="ao-form-row">
+        <input id="ao-scenario-version" class="ao-input" placeholder="scenario_version">
+        <input id="ao-scenario-project-type" class="ao-input" placeholder="project_type (optional)">
+        <button id="ao-scenario-create" class="ao-btn">Create scenario</button>
+      </div>
+      <div id="ao-scenario-table"></div>
+    </div>
+    <div class="ao-card">
+      <h3 style="margin-top:0;">Assign a participant</h3>
+      <div class="ao-form-row">
+        <select id="ao-assign-participant" class="ao-select"></select>
+        <input id="ao-assign-order-group" class="ao-input" placeholder="order_group">
+        <input id="ao-assign-scenario-set" class="ao-input" placeholder="scenario_set">
+      </div>
+      <div class="ao-form-row">
+        <input id="ao-assign-scenario-ids" class="ao-input" style="flex:1;"
+               placeholder="scenario_ids, comma separated">
+        <button id="ao-assign-btn" class="ao-btn">Assign</button>
+      </div>
+      <p id="ao-assign-error" class="ao-error" style="display:none;"></p>
+      <p id="ao-assign-ok" class="ao-ok" style="display:none;"></p>
+    </div>
+    <div class="ao-card">
+      <h3 style="margin-top:0;">Assignments</h3>
+      <div class="ao-form-row">
+        <select id="ao-assignmentlist-participant" class="ao-select"></select>
+        <button id="ao-assignmentlist-load" class="ao-btn-secondary ao-btn">List</button>
+      </div>
+      <div id="ao-assignment-table"></div>
+    </div>
+  </div>
+
+  <!-- Part 3 -->
+  <div id="panel-monitoring" class="ao-panel">
+    <div class="ao-card">
+      <h3 style="margin-top:0;">Completion monitoring</h3>
+      <p class="ao-note">Completion state only — not started / in progress / complete. No
+        per-participant performance, acceptance, or agreement metric is shown here or ever
+        will be; that is a hard prohibition in the research design.</p>
+      <div id="ao-monitor-table"></div>
+    </div>
+  </div>
+
+  <!-- Part 4 -->
+  <div id="panel-export" class="ao-panel">
+    <div class="ao-card">
+      <div class="ao-warning">
+        This export filters <code>account_type = 'research'</code> unconditionally, in the
+        server, for every export ever taken. Operational accounts are never included, and there
+        is no option to change that.
+      </div>
+      <div class="ao-form-row">
+        <input id="ao-export-from" class="ao-input" type="datetime-local" placeholder="from">
+        <input id="ao-export-to" class="ao-input" type="datetime-local" placeholder="to">
+        <select id="ao-export-format" class="ao-select">
+          <option value="json">JSON</option>
+          <option value="csv">CSV</option>
+        </select>
+        <button id="ao-export-create" class="ao-btn">Create export</button>
+      </div>
+      <p id="ao-export-error" class="ao-error" style="display:none;"></p>
+      <div id="ao-export-table"></div>
+      <div id="ao-export-fetch-result"></div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/admin-ops.js"></script>
+</body>
+</html>
