@@ -164,6 +164,17 @@
     if (!who || who.ok !== true) return;
     booted = true;
 
+    // A research participant does not create projects — the researcher creates the project and
+    // its assignment together. Hiding the card is a courtesy, not the guard: gate_action refuses
+    // projectcreate (and the legacy `create`) for any research account before dispatch, so this
+    // could be deleted and nothing would change about what the server accepts.
+    //
+    // Operational accounts keep it. A director running a real project is who it is for.
+    if (who.account_type === "research") {
+      var createCard = document.getElementById("ws-create-card");
+      if (createCard) createCard.hidden = true;
+    }
+
     document.querySelectorAll("#ws-project-tabs button").forEach(function (btn) {
       btn.addEventListener("click", function () { switchPanel(btn.dataset.wstab); });
     });

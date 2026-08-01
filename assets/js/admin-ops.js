@@ -55,6 +55,7 @@
     booted = true;
 
     wireMembers();
+    wireProjects();
     wireExport();
 
     await loadParticipants();
@@ -62,10 +63,118 @@
   }
 
   // Called when an admin tab is revealed, so each tab fetches on first use rather than all
-  // four firing the moment Admin is opened.
+  // of them firing the moment Admin is opened.
   function showTab(name) {
     if (name === "monitoring") loadMonitoring();
     if (name === "export") loadExports();
+    if (name === "projects") loadScenarios();
+  }
+
+  /* ============================================================
+     Projects and assignment (T6)
+
+     These two live on one tab because they are one act. The researcher creates a participant's
+     project and the assignment that lets them decide on it in the same sitting; either alone
+     leaves a state the platform cannot use.
+     ============================================================ */
+
+  function wireProjects() {
+    $("ao-proj-create").addEventListener("click", createProject);
+    $("ao-assign-btn").addEventListener("click", assignParticipant);
+    $("ao-assignmentlist-load").addEventListener("click", loadAssignments);
+  }
+
+  async function loadScenarios() {
+    var resp = await call("adminscenariolist");
+    if (!resp || resp.ok !== true) return;
+    var sel = $("ao-assign-scenario");
+    if (!sel) return;
+    // The scenario is named by its version and project type, never by its identifier — an id is
+    // not a name, and an admin choosing between scenarios is choosing between descriptions.
+    sel.innerHTML = (resp.scenarios || []).map(function (s) {
+      var label = (s.scenario_version || "unnamed")
+        + (s.project_type ? " · " + s.project_type : "")
+        + (s.period_count ? " · " + s.period_count + " period(s)" : "");
+      return '<option value="' + esc(s.scenario_id) + '">' + esc(label) + "</option>";
+    }).join("");
+  }
+
+  async function createProject() {
+    var errEl = $("ao-proj-error"), okEl = $("ao-proj-ok");
+    errEl.style.display = "none"; okEl.style.display = "none";
+    var name = $("ao-proj-name").value.trim();
+    if (!name) {
+      errEl.textContent = "A project name is required.";
+      errEl.style.display = "block";
+      return;
+    }
+    var resp = await call("projectcreate", { name: name, sector: $("ao-proj-sector").value.trim() });
+    if (!resp || resp.ok !== true) {
+      errEl.textContent = (resp && resp.error) || "Could not create the project.";
+      errEl.style.display = "block";
+      return;
+    }
+    var pid = resp.project_id || resp.id;
+    var owner = $("ao-proj-owner").value;
+    var note = "Created " + name + ".";
+    if (owner) {
+      // Reported separately: a project that was created but could not be assigned is a state the
+      // admin has to know about, not one to hide behind a single success message.
+      var m = await call("adminmemberadd", { id: pid, participant_id: owner, project_role: "PM" });
+      note += (m && m.ok === true)
+        ? " Assigned as PM."
+        : " NOT assigned: " + ((m && m.error) || "membership failed");
+    }
+    okEl.textContent = note;
+    okEl.style.display = "block";
+    $("ao-proj-name").value = "";
+    $("ao-proj-sector").value = "";
+  }
+
+  async function assignParticipant() {
+    var errEl = $("ao-assign-error"), okEl = $("ao-assign-ok");
+    errEl.style.display = "none"; okEl.style.display = "none";
+    var scenario = $("ao-assign-scenario").value;
+    if (!scenario) {
+      errEl.textContent = "Create a scenario before assigning anyone to one.";
+      errEl.style.display = "block";
+      return;
+    }
+    var resp = await call("adminassign", {
+      participant_id: $("ao-assign-participant").value,
+      order_group: $("ao-assign-order-group").value.trim(),
+      scenario_set: $("ao-assign-scenario-set").value.trim(),
+      scenario_ids: [scenario]
+    });
+    if (!resp || resp.ok !== true) {
+      // Surfaced verbatim. B3 refuses an assignment whose condition sequence is not frozen, and
+      // an admin needs that sentence rather than a generic failure.
+      errEl.textContent = (resp && resp.error) || "Could not assign.";
+      errEl.style.display = "block";
+      return;
+    }
+    okEl.textContent = "Assigned " + (resp.pseudonymous_code || "") + ".";
+    okEl.style.display = "block";
+  }
+
+  async function loadAssignments() {
+    var resp = await call("adminassignmentlist",
+                          { participant_id: $("ao-assignmentlist-participant").value });
+    var target = $("ao-assignment-table");
+    if (!resp || resp.ok !== true) {
+      target.innerHTML = '<p class="ws-note">' + esc((resp && resp.error) || "Could not load.") + "</p>";
+      return;
+    }
+    var rows = (resp.assignments || []).map(function (a) {
+      // sequence_number and status only. config_id IS in this response — it names the condition —
+      // and is deliberately never rendered, which is the one part of the old blinding rule that
+      // still has something to protect.
+      return "<tr><td>" + esc(a.sequence_number) + "</td><td>" + esc(a.status || "—") + "</td></tr>";
+    }).join("");
+    target.innerHTML = rows
+      ? '<table class="ws-table"><thead><tr><th>Order</th><th>Status</th></tr></thead><tbody>'
+        + rows + "</tbody></table>"
+      : '<p class="ws-note">No assignments for this participant yet.</p>';
   }
 
   async function loadParticipants() {
@@ -79,8 +188,14 @@
     // T6 Part C: only the membership picker remains. The assignment pickers belonged to the
     // scenario-and-condition model, whose interface is withdrawn — see the note at the foot of
     // this file about why B3's backend is deliberately left intact.
-    var sel = $("ao-mem-participant");
-    if (sel) sel.innerHTML = options;
+    ["ao-mem-participant", "ao-proj-owner", "ao-assign-participant",
+     "ao-assignmentlist-participant"].forEach(function (id) {
+      var sel = $(id);
+      if (!sel) return;
+      // The PM picker on project creation is optional, so it alone gets an empty first option.
+      sel.innerHTML = (id === "ao-proj-owner" ? '<option value="">— nobody yet —</option>' : "")
+        + options;
+    });
   }
 
   /* ============================================================

@@ -89,6 +89,35 @@ GATED_ACTIONS: dict[str, str] = {
 }
 
 
+# ---------------------------------------------------------------- account-type gate
+#
+# Project creation is not a feature flag — it is a property of what kind of account is asking, so
+# it is refused by account_type rather than by a per-user toggle nobody would remember to set.
+#
+# WHY A RESEARCH PARTICIPANT MAY NOT CREATE A PROJECT
+#
+# The researcher creates the project and its assignment together. A participant who could create
+# their own would end up holding a project with no assignment, which the decision sequence cannot
+# act on: it is keyed to assignments, so such a project reaches upload and signals and then stops,
+# reporting that every assigned period is complete when in fact none was ever assigned. Removing
+# the ability to create one removes that state from the research population entirely, which is a
+# better fix than wording the dead end more carefully.
+#
+# Operational accounts keep it. A director running a real project is exactly who should be
+# creating one, and they are outside the research record by construction (account_type
+# 'operational' can never obtain a consents row, so nothing they do enters an export).
+#
+# Enforced HERE, before dispatch, for the same reason the feature flags are: hiding the control in
+# the interface is not enforcement, and a per-handler check is only as good as whoever adds the
+# next handler. `create` is listed alongside `projectcreate` because it is the legacy facade path
+# to the same outcome; sessionless callers are unaffected, exactly as with the flags above, so the
+# A1b contract fixtures are untouched.
+RESEARCH_FORBIDDEN_ACTIONS: frozenset[str] = frozenset({
+    "projectcreate",
+    "create",
+})
+
+
 # ---------------------------------------------------------------- storage
 
 
@@ -194,8 +223,11 @@ def gate_action(session: Session, action: str, payload: dict, settings) -> dict 
     never authenticated the facade actions, and requiring it here would break the legacy frontend
     and every A1b contract test. See the scope note in the module docstring.
     """
-    key = GATED_ACTIONS.get((action or "").lower())
-    if key is None or settings is None:
+    lowered = (action or "").lower()
+    key = GATED_ACTIONS.get(lowered)
+    # The account-type gate applies to actions that carry no feature key, so the early return
+    # below has to consider both before deciding there is nothing to check.
+    if (key is None and lowered not in RESEARCH_FORBIDDEN_ACTIONS) or settings is None:
         return None
     if not payload.get("session_token"):
         return None
@@ -203,6 +235,17 @@ def gate_action(session: Session, action: str, payload: dict, settings) -> dict 
     caller, problem = resolve_caller(session, payload, settings.session_secret)
     if problem:
         return problem
+
+    if lowered in RESEARCH_FORBIDDEN_ACTIONS \
+            and caller.participant.account_type == "research":
+        audit(session, "project_creation_denied", participant_id=caller.participant_id,
+              action=lowered, account_type=caller.participant.account_type)
+        session.commit()
+        return err("not available: projects are created by the researcher for this study. "
+                   "Your assigned projects appear in your portfolio.")
+
+    if key is None:
+        return None
 
     if not feature_enabled(session, caller.participant, key):
         audit(session, "feature_denied", participant_id=caller.participant_id,

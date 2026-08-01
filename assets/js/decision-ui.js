@@ -205,19 +205,35 @@
     }
     STATE.server = state;
 
-    if (!state.intake_completed) {
-      // The profile overlay handles this before the application is usable; this branch only
-      // fires if that was somehow bypassed, so it states the fact rather than offering a link
-      // to a page that no longer exists.
-      gate("Your background profile has to be recorded before your first decision.");
-      return;
-    }
-    if (state.all_assignments_complete) {
-      gate("You have completed every period of every project assigned to you.");
-      return;
-    }
+    // ORDER MATTERS HERE, and it was wrong.
+    //
+    // The intake check used to come first, so anyone without an assignment was told to record a
+    // background profile before their first decision. For an OPERATIONAL user that is a dead
+    // end: they never complete intake, because the profile is only ever offered to a consented
+    // research account and an operational account can never obtain a consents row. A director
+    // opening a project they created was told to do something they cannot do, about a decision
+    // they were never going to make.
+    //
+    // Whether an assignment exists is now asked first, because it is the question that decides
+    // whether the sequence applies at all. Only once we know it applies is it worth saying what
+    // is missing before it can start.
     if (!state.assignment) {
-      gate("You have no project assigned yet.");
+      // Covers both "never assigned" and "nothing assigned any more". The sequence is recorded
+      // against a scenario, not against a project, so this is the honest sentence for an
+      // operational user with their own project AND for a participant awaiting assignment.
+      // The old wording claimed every period was complete, which for someone who was never
+      // assigned anything was simply untrue.
+      gate(state.all_assignments_complete && state.current_sequence_number !== null
+        ? "You have completed every period assigned to you."
+        : "No decision sequence is assigned to this account. Period decisions are recorded "
+          + "against a scenario the researcher assigns.");
+      return;
+    }
+    if (!state.intake_completed) {
+      // Now meaningful: there IS an assignment, so intake genuinely is the thing standing in
+      // the way. The overlay normally captures it before the application is usable; this branch
+      // only fires if that was somehow bypassed.
+      gate("Your background profile has to be recorded before your first decision.");
       return;
     }
 

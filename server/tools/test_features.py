@@ -276,6 +276,45 @@ check(r.get("ok") is True, "a sessionless facade call is unaffected (pre-existin
 
 print()
 print("=" * 78)
+print("T6: project creation is refused for a research account, by account_type")
+print("=" * 78)
+
+# The researcher creates a participant's project together with its assignment. A participant who
+# could create their own would hold a project the decision sequence cannot act on, because the
+# sequence is keyed to assignments. This is enforced in gate_action, before dispatch, for the
+# same reason the flags above are: hiding the control is not enforcement.
+
+pc_res, pc_res_tok = make()
+pc_ops, pc_ops_tok = make("operational")
+
+for action, body in (("projectcreate", {"name": "Research Attempt"}),
+                     ("create", {"id": "PRJ-RESEARCH-ATTEMPT", "name": "Research Attempt"})):
+    r = post(dict(body, action=action, session_token=pc_res_tok))
+    check(r.get("ok") is False and "created by the researcher" in (r.get("error") or ""),
+          f"research account refused {action}", str(r)[:160])
+
+# The refusal is audited, so an attempt is visible rather than merely blocked. Two attempts were
+# made above, so two rows must exist for this participant specifically — a count over the whole
+# table would pass even if the rows belonged to someone else.
+with Session() as s:
+    denied = s.scalars(select(AuditEvent).where(
+        AuditEvent.event_type == "project_creation_denied",
+        AuditEvent.participant_id == pc_res["participant_id"])).all()
+check(len(denied) == 2, "both refusals are audited against that participant",
+      f"{len(denied)} row(s)")
+
+# Operational keeps it: a director running a real project is exactly who creates one.
+r = post({"action": "projectcreate", "session_token": pc_ops_tok, "name": "Operational Project"})
+check(r.get("ok") is True, "operational account may still create a project", str(r)[:160])
+
+# And the gate leaves sessionless callers alone, exactly as the feature flags do — the A1b
+# contract fixtures post `create` with no session and must stay green.
+r = post({"action": "create", "id": "PRJ-SESSIONLESS-T6", "name": "Sessionless"})
+check(r.get("ok") is True, "a sessionless create is unaffected by the account-type gate",
+      str(r)[:120])
+
+print()
+print("=" * 78)
 passed = sum(1 for ok, _, _ in results if ok)
 print(f"RESULT: {passed}/{len(results)} checks passed")
 print("=" * 78)

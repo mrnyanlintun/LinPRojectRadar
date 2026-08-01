@@ -540,7 +540,11 @@
          the browser, which is the property workspace.html held by being a separate page and
          which this markup has to keep now that it is not. -->
     <div class="ws-fold">
-      <div class="ws-card">
+      <!-- Operational accounts only. Hidden for a research participant by workspace.js, and
+           refused server-side for them by gate_action regardless of what this markup does —
+           the researcher creates a participant's project together with its assignment, so a
+           participant can never hold a project the decision sequence cannot act on. -->
+      <div class="ws-card" id="ws-create-card">
         <h3 style="margin-top:0;">Create a project</h3>
         <label class="ws-field-label" for="ws-new-name">Project name</label>
         <input id="ws-new-name" class="ws-input" placeholder="e.g. Clarksville USPS ARCH">
@@ -875,6 +879,7 @@
            design remains the researcher's advisor's to settle. -->
       <div class="ws-tabbar" id="admin-tabs">
         <button data-admintab="users" class="active">Users &amp; access</button>
+        <button data-admintab="projects">Projects &amp; assignment</button>
         <button data-admintab="members">Project membership</button>
         <button data-admintab="monitoring">Monitoring</button>
         <button data-admintab="export">Export</button>
@@ -882,6 +887,57 @@
 
       <div id="admintab-users" class="ws-panel active">
         <div id="admin-root"></div>
+      </div>
+
+      <!-- T6. Project creation and assignment sit together because they are one act: a
+           participant's project and the assignment that lets them decide on it are created in
+           the same sitting, and creating either alone produces a state the platform cannot use —
+           a project with no assignment stops after signals, an assignment with no project has
+           nothing to show. -->
+      <div id="admintab-projects" class="ws-panel">
+        <div class="ws-card">
+          <h3 style="margin-top:0;">Create a project</h3>
+          <p class="ws-note">Creates the project and puts a participant on it as PM in one step.
+            Research accounts cannot create their own — this is where theirs come from.</p>
+          <label class="ws-field-label" for="ao-proj-name">Project name</label>
+          <input id="ao-proj-name" class="ws-input" placeholder="e.g. Clarksville USPS ARCH">
+          <label class="ws-field-label" for="ao-proj-sector">Sector (optional)</label>
+          <input id="ao-proj-sector" class="ws-input" placeholder="e.g. Federal / Aviation">
+          <label class="ws-field-label" for="ao-proj-owner">Assign as PM (optional)</label>
+          <select id="ao-proj-owner" class="ws-input"></select>
+          <button id="ao-proj-create" class="ws-btn">Create project</button>
+          <p id="ao-proj-error" class="ws-error" style="display:none;"></p>
+          <p id="ao-proj-ok" class="ws-note" style="display:none;"></p>
+        </div>
+
+        <div class="ws-card">
+          <h3 style="margin-top:0;">Assign a participant to a scenario</h3>
+          <p class="ws-note">The assignment is what lets a participant record a period decision.
+            Without one their project stops after the signals.</p>
+          <label class="ws-field-label" for="ao-assign-participant">Participant</label>
+          <select id="ao-assign-participant" class="ws-input"></select>
+          <label class="ws-field-label" for="ao-assign-scenario">Scenario</label>
+          <select id="ao-assign-scenario" class="ws-input"></select>
+          <!-- B3's backend still resolves a frozen condition sequence from these two, so they
+               are shown rather than invented silently: an assignment made against a sequence
+               that does not exist is refused, and the admin needs to see why. Real labels, with
+               the placeholder carrying an example rather than the field name. -->
+          <label class="ws-field-label" for="ao-assign-order-group">Order group</label>
+          <input id="ao-assign-order-group" class="ws-input" value="G1" placeholder="e.g. G1">
+          <label class="ws-field-label" for="ao-assign-scenario-set">Scenario set</label>
+          <input id="ao-assign-scenario-set" class="ws-input" value="S1" placeholder="e.g. S1">
+          <button id="ao-assign-btn" class="ws-btn">Assign</button>
+          <p id="ao-assign-error" class="ws-error" style="display:none;"></p>
+          <p id="ao-assign-ok" class="ws-note" style="display:none;"></p>
+          <hr class="ws-rule">
+          <h4 style="margin:0 0 6px;">Current assignments</h4>
+          <label class="ws-field-label" for="ao-assignmentlist-participant">Show assignments for</label>
+          <div class="ws-inline-row">
+            <select id="ao-assignmentlist-participant" class="ws-input"></select>
+            <button id="ao-assignmentlist-load" class="ws-btn ws-btn-secondary">Show</button>
+          </div>
+          <div id="ao-assignment-table"></div>
+        </div>
       </div>
 
       <div id="admintab-members" class="ws-panel">

@@ -2055,7 +2055,7 @@
       btn.addEventListener("click", () => {
         const name = btn.dataset.admintab;
         tabs.forEach((b) => b.classList.toggle("active", b === btn));
-        ["users", "members", "monitoring", "export"].forEach((k) => {
+        ["users", "projects", "members", "monitoring", "export"].forEach((k) => {
           const panel = document.getElementById("admintab-" + k);
           if (panel) panel.classList.toggle("active", k === name);
         });
