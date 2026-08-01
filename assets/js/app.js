@@ -562,7 +562,7 @@
 
   /* ============================================================
      Real street-level map — the portfolio's second view.
-     MapLibre GL JS (cdnjs) + OpenFreeMap vector tiles: no API key,
+     MapLibre GL JS (vendored, assets/vendor/) + OpenFreeMap vector tiles: no API key,
      no account, no billing. Dark style for Gotham/NYC, positron for
      Miami; the style is swapped when the theme changes (markers are
      DOM overlays and survive the swap). One custom HTML building
@@ -588,8 +588,15 @@
   let mapBootRobot = null;   // 'loading' working-robot shown while tiles/style init
   let focusedPinId = null;   // the flown-to / selected marker
 
-  const GL_CSS_URL = "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css";
-  const GL_JS_URL  = "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js";
+  // VENDORED, NOT CDN. These were cdnjs URLs, which meant the map failed on any corporate
+  // network that blocks a public CDN — a realistic case for the directors this platform is for,
+  // and one that looks like a broken product rather than a blocked request. Serving them from
+  // /assets reduces the failure question to WebGL alone, which showMapFailure() already handles.
+  //
+  // Still loaded on demand rather than as static tags, unchanged: the map is one tab of one page
+  // and has never been worth blocking the initial load for.
+  const GL_CSS_URL = "assets/vendor/maplibre-gl.min.css";
+  const GL_JS_URL  = "assets/vendor/maplibre-gl.min.js";
   let mapAssetsPromise = null;
 
   /* inject the MapLibre CSS/JS on demand (background warm-up or first Map
@@ -969,24 +976,32 @@
   /* Lazy map build: on first use, swap slim portfolio records for full
      project JSON (the slim list carries no coordinates) — one GET per
      project, once per session, only when the map view is actually opened. */
+  /* Swap slim portfolio records for full project JSON. THE SLIM LIST CARRIES NO COORDINATES —
+     facade.slim_row() returns status and metrics and nothing about location — so any view that
+     places projects geographically has to do this first. Shared by the map and the globe so
+     there is one copy: a second one would eventually be the one that forgot. One GET per
+     project, once per session, only when a geographic view is actually opened. */
+  async function hydrateProjectsForGeo() {
+    if (mapHydrated) return;
+    if (!(window.LinStore && LinStore.getProject && LinStore.configured && LinStore.configured())) return;
+    mapHydrated = true;
+    const slims = LIN_PROJECTS.filter((p) => p && p.slim);
+    if (!slims.length) return;
+    try {
+      const fulls = await Promise.all(slims.map((p) => LinStore.getProject(p.id).catch(() => null)));
+      fulls.forEach((f) => {
+        if (f && !f.slim) {
+          const i = LIN_PROJECTS.findIndex((x) => x.id === f.id);
+          if (i >= 0) LIN_PROJECTS[i] = f;
+        }
+      });
+    } catch (e) { /* pins simply won't render for records we couldn't hydrate */ }
+  }
+
   async function buildMap() {
     const host = document.getElementById("map-gl");
     if (!host) return;
-    if (!mapHydrated && window.LinStore && LinStore.getProject && LinStore.configured && LinStore.configured()) {
-      mapHydrated = true;
-      const slims = LIN_PROJECTS.filter((p) => p && p.slim);
-      if (slims.length) {
-        try {
-          const fulls = await Promise.all(slims.map((p) => LinStore.getProject(p.id).catch(() => null)));
-          fulls.forEach((f) => {
-            if (f && !f.slim) {
-              const i = LIN_PROJECTS.findIndex((x) => x.id === f.id);
-              if (i >= 0) LIN_PROJECTS[i] = f;
-            }
-          });
-        } catch (e) { /* pins simply won't render for records we couldn't hydrate */ }
-      }
-    }
+    await hydrateProjectsForGeo();
     if (!glMap) {
       glFailed = false;
       try { await loadMapAssets(); } catch (e) { showMapFailure(); mapBuilt = true; return; }
@@ -1025,18 +1040,68 @@
 
   /* ---------- Radar | Map view toggle (persisted; radar default) ---------- */
   function setPortfolioView(view, persist) {
-    const isMap = view === "map";
-    if (!isMap) hideMapCard();   // the pinned card is fixed-positioned — never leave it over the radar
+    // T8. Two buttons, three possible stages. "globe" asks for the globe and settles for the
+    // map, because a director on a locked corporate laptop is a realistic user and an empty
+    // panel is the one outcome that is not allowed. "map" is still accepted so a persisted
+    // preference from before the globe existed still resolves to something.
+    const wantsGeo = view === "globe" || view === "map";
+    if (!wantsGeo) hideMapCard();   // the pinned card is fixed-positioned — never leave it over the radar
     const radarWrap = document.querySelector(".radar-wrap");
     const mapWrap = document.querySelector(".map-wrap");
+    const globeWrap = document.querySelector(".globe-wrap");
     const note = document.querySelector(".radar-note");
-    if (radarWrap) radarWrap.hidden = isMap;
-    if (note) note.hidden = isMap;              // radar caption; the map has its own
-    if (mapWrap) mapWrap.hidden = !isMap;
+    if (radarWrap) radarWrap.hidden = wantsGeo;
+    if (note) note.hidden = wantsGeo;           // radar caption; the geo views have their own
     document.querySelectorAll(".stage-btn").forEach((b) =>
-      b.classList.toggle("active", b.dataset.view === view));
-    if (isMap) buildMap();                       // lazy init on first switch
+      b.classList.toggle("active", b.dataset.view === view
+        || (b.dataset.view === "globe" && view === "map")));
+
+    if (!wantsGeo) {
+      // LEAVING THE GEO VIEW. Stop the loop and release the context rather than leaving a
+      // renderer running behind a hidden panel: a director may leave this tab open all
+      // afternoon, and this service is one small instance.
+      if (globeWrap) globeWrap.hidden = true;
+      if (mapWrap) mapWrap.hidden = true;
+      try { if (window.LinGlobe) LinGlobe.destroy(); } catch (e) {}
+    } else {
+      buildGeoStage(globeWrap, mapWrap);
+    }
     if (persist !== false) { try { localStorage.setItem(VIEW_KEY, view); } catch (e) {} }
+  }
+
+  /* The degradation chain, in one place so it cannot disagree with itself:
+         globe  ->  MapLibre map  ->  the project list that is always in the DOM
+     Each step is only reached because the one before it could not run. */
+  async function buildGeoStage(globeWrap, mapWrap) {
+    if (!window.LinGlobe) { showMapInstead(globeWrap, mapWrap); return; }
+    if (globeWrap) globeWrap.hidden = false;
+    if (mapWrap) mapWrap.hidden = true;
+
+    const host = document.getElementById("globe-canvas");
+    const noteEl = document.getElementById("globe-note");
+    if (noteEl) noteEl.textContent = "Locating projects…";
+    await hydrateProjectsForGeo();
+    LinGlobe.mount(host, LIN_PROJECTS, {
+      // Selecting a point does exactly what double-clicking a map marker has always done.
+      // Deliberately not a new navigation idea.
+      onSelect: (id) => openDetail(id)
+    }).then((res) => {
+      if (!res || !res.ok) { showMapInstead(globeWrap, mapWrap); return; }
+      if (noteEl) {
+        // Say plainly that some projects are not shown, rather than letting a director count
+        // the points and wonder. They are still in the list below.
+        noteEl.textContent = res.unplaceable > 0
+          ? res.points + " project(s) placed. " + res.unplaceable
+            + " have no location yet and are listed below."
+          : res.points + " project(s) placed. Select one to open it.";
+      }
+    });
+  }
+
+  function showMapInstead(globeWrap, mapWrap) {
+    if (globeWrap) globeWrap.hidden = true;
+    if (mapWrap) mapWrap.hidden = false;
+    buildMap();   // which itself falls back to showMapFailure() and the list
   }
   function wireViewToggle() {
     document.querySelectorAll(".stage-btn").forEach((b) =>

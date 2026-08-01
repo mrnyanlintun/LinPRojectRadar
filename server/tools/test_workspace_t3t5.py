@@ -255,6 +255,72 @@ check(isinstance(snap2, dict) and "results" in snap2 and len(snap2["results"]) =
       "the real snapshot carries all 5 D1 sub-results")
 
 
+# ---------------------------------------------------------------- T8: geocoding on create
+#
+# The Apps Script backend geocoded server-side and this service did not, so every project created
+# here had no coordinates and could never be placed on a map. These checks cover the restored
+# behaviour, and they never touch the network: app.geocode.geocode is replaced by a stub, so the
+# suite stays offline and Nominatim's rate limit is never spent on a test run.
+
+print("\nT8 — geocoding runs on create, and never blocks it")
+
+import app.geocode as _geo  # noqa: E402
+
+_geo_calls = []
+
+
+def _stub_geocode(address):
+    _geo_calls.append(address)
+    if "unfindable" in address.lower():
+        return _geo.Result(error="That address could not be found. Try the street address OR "
+                                 "the facility name, not both together.")
+    if "offline" in address.lower():
+        return _geo.Result(error="The location service could not be reached, so this project has "
+                                 "no map position yet. Saving the address again will retry it.")
+    return _geo.Result(lat=36.5298, lng=-87.3595, formatted="Clarksville, Tennessee, USA")
+
+
+_real_geocode = _geo.geocode
+_geo.geocode = _stub_geocode
+_geo._cache.clear()
+
+g1 = post({"action": "projectcreate", "session_token": pm, "name": "T8 Located",
+           "address": "1200 Terminal Road, Clarksville, TN"})
+check(g1.get("ok") is True, "a project with an address is created", str(g1)[:120])
+check(g1.get("lat") == 36.5298 and g1.get("lng") == -87.3595,
+      "and its coordinates are stored", str(g1.get("lat")) + "," + str(g1.get("lng")))
+check(g1.get("geocodeError") is None, "with no geocode error")
+
+# The address could not be resolved. The PROJECT MUST STILL EXIST: a geocoder is a third party,
+# and a project that fails to save because one could not place it would be the wrong trade.
+g2 = post({"action": "projectcreate", "session_token": pm, "name": "T8 Unfindable",
+           "address": "unfindable place"})
+check(g2.get("ok") is True, "a project whose address cannot be found is STILL created",
+      str(g2)[:120])
+check(g2.get("lat") is None and g2.get("lng") is None, "and carries no coordinates")
+check("could not be found" in (g2.get("geocodeError") or ""),
+      "and reports why, in a sentence a user can act on", str(g2.get("geocodeError"))[:90])
+
+# Same again for the geocoder being unreachable, which is a different failure with a different
+# message: one is about the address, the other is about the network.
+g3 = post({"action": "projectcreate", "session_token": pm, "name": "T8 Offline",
+           "address": "offline street"})
+check(g3.get("ok") is True, "an unreachable geocoder does not block project creation")
+check("could not be reached" in (g3.get("geocodeError") or ""),
+      "and is reported as a service problem, not a bad address",
+      str(g3.get("geocodeError"))[:90])
+
+# No address at all is not an error. Most of this platform's projects will not have one.
+g4 = post({"action": "projectcreate", "session_token": pm, "name": "T8 No Address"})
+check(g4.get("ok") is True, "a project with no address is created without complaint")
+check(g4.get("geocodeError") is None, "and reports no geocode error")
+
+before = len(_geo_calls)
+post({"action": "projectcreate", "session_token": pm, "name": "T8 No Address 2"})
+check(len(_geo_calls) == before, "and the geocoder is not called at all when there is no address")
+
+_geo.geocode = _real_geocode
+
 # ---------------------------------------------------------------- tail
 
 print()

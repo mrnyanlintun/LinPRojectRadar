@@ -485,7 +485,10 @@
              Radar | Map view toggle. -->
         <div class="stage-toggle" role="group" aria-label="Portfolio view">
           <button type="button" class="stage-btn active" data-view="radar">Radar</button>
-          <button type="button" class="stage-btn" data-view="map">Map</button>
+          <!-- T8: this was "Map". The globe replaces it as the second view; the map is still
+               here, but as the FALLBACK the globe degrades to rather than as a tab of its own.
+               A user who cannot run WebGL still gets a map, and never an empty panel. -->
+          <button type="button" class="stage-btn" data-view="globe">Globe</button>
         </div>
       </div>
       <p class="radar-note">Radial distance indicates drift from baseline: projects near the center are performing to plan. Angular sectors group projects by delivery type: Design, Construction, and Hybrid. Select any project marker, or the corresponding row in the list below, to open its detail view.</p>
@@ -493,6 +496,16 @@
         <svg id="radar-svg" viewBox="0 0 1200 460" preserveAspectRatio="xMidYMid meet" role="img"
              aria-label="Radar scope. Radial distance indicates drift from baseline; angular sectors group projects by delivery type (Design, Construction, Hybrid); marker color indicates status. Selecting a project marker opens its detail view; the project list below is an equivalent keyboard control path.">
         </svg>
+      </div>
+      <div class="globe-wrap" hidden>
+        <!-- One point per project with a stored location, coloured by the status the SERVER
+             computed and stored. Selecting a point opens that project's detail view, which is
+             what selecting a map marker has always done. Projects without coordinates cannot be
+             placed and are not points; they remain in the project list below, which is the same
+             keyboard path the radar has always had. -->
+        <div id="globe-canvas" role="application"
+             aria-label="Interactive globe. One point per project with a stored location; point color indicates the stored project status. Selecting a point opens that project's detail view. Projects without a location are not shown here and remain in the project list below, which is an equivalent keyboard control path."></div>
+        <p class="globe-note ws-note" id="globe-note"></p>
       </div>
       <div class="map-wrap" hidden>
         <!-- Real street-level map (MapLibre GL + OpenFreeMap vector tiles). One
@@ -554,6 +567,11 @@
         <input id="ws-new-name" class="ws-input" placeholder="e.g. Clarksville USPS ARCH">
         <label class="ws-field-label" for="ws-new-sector">Sector (optional)</label>
         <input id="ws-new-sector" class="ws-input" placeholder="e.g. Federal / Aviation">
+        <label class="ws-field-label" for="ws-new-address">Site address (optional)</label>
+        <input id="ws-new-address" class="ws-input"
+               placeholder="e.g. 1200 Terminal Road, Clarksville, TN">
+        <p class="ws-note">Used to place the project on the map. The more complete the
+          address, the more reliably it resolves.</p>
         <button id="ws-create-btn" class="ws-btn">Create project</button>
         <p id="ws-create-error" class="ws-error" style="display:none;"></p>
       </div>
@@ -907,6 +925,9 @@
           <input id="ao-proj-name" class="ws-input" placeholder="e.g. Clarksville USPS ARCH">
           <label class="ws-field-label" for="ao-proj-sector">Sector (optional)</label>
           <input id="ao-proj-sector" class="ws-input" placeholder="e.g. Federal / Aviation">
+          <label class="ws-field-label" for="ao-proj-address">Site address (optional)</label>
+          <input id="ao-proj-address" class="ws-input"
+                 placeholder="e.g. 1200 Terminal Road, Clarksville, TN">
           <label class="ws-field-label" for="ao-proj-owner">Assign as PM (optional)</label>
           <select id="ao-proj-owner" class="ws-input"></select>
           <button id="ao-proj-create" class="ws-btn">Create project</button>
@@ -1047,11 +1068,16 @@
     })();
   </script>
 
-  <!-- PDF.js: client-side PDF→text extraction before upload (Apps Script byte
-       parsing is unreliable for ReportLab PDFs). Used by signals.js. -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <!-- SheetJS: client-side XLSX generation for audit export. -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- PDF.js: client-side PDF to text extraction before upload (Apps Script byte
+       parsing is unreliable for ReportLab PDFs). Used by signals.js and auditor.js.
+       VENDORED. These were cdnjs URLs, which meant a corporate network blocking a public CDN
+       broke PDF extraction and the audit export rather than the map — the same failure the
+       MapLibre vendoring removed, on the surfaces operational users actually work on.
+       pdf.worker.min.js is vendored too: PDF.js loads it separately at runtime, so vendoring
+       only the main file would have left the worker fetching from a CDN that is not there. -->
+  <script src="assets/vendor/pdf.min.js"></script>
+  <!-- SheetJS: client-side XLSX generation for audit export. Vendored, same reasoning. -->
+  <script src="assets/vendor/xlsx.full.min.js"></script>
   <!-- MapLibre GL JS is injected on demand by app.js, not loaded here. -->
   <script src="assets/js/config.js"></script>
   <script src="assets/js/auth.js"></script>
@@ -1101,6 +1127,7 @@
   <script src="assets/js/admin-ops.js"></script>
   <script src="assets/js/questionnaires.js"></script>
   <script src="assets/js/decision-ui.js"></script>
+  <script src="assets/js/globe.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 </html>

@@ -108,7 +108,11 @@
       errEl.style.display = "block";
       return;
     }
-    var resp = await call("projectcreate", { name: name, sector: $("ao-proj-sector").value.trim() });
+    var resp = await call("projectcreate", {
+      name: name,
+      sector: $("ao-proj-sector").value.trim(),
+      address: $("ao-proj-address") ? $("ao-proj-address").value.trim() : ""
+    });
     if (!resp || resp.ok !== true) {
       errEl.textContent = (resp && resp.error) || "Could not create the project.";
       errEl.style.display = "block";
@@ -117,6 +121,9 @@
     var pid = resp.project_id || resp.id;
     var owner = $("ao-proj-owner").value;
     var note = "Created " + name + ".";
+    // Same reason as the workspace: show what the geocoder matched, not what was typed.
+    if (resp.geocodeError) note += " No map position: " + resp.geocodeError;
+    else if (resp.formattedAddress) note += " Matched to: " + resp.formattedAddress;
     if (owner) {
       // Reported separately: a project that was created but could not be assigned is a state the
       // admin has to know about, not one to hide behind a single success message.

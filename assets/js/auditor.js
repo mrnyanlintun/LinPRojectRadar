@@ -58,7 +58,7 @@
     if (typeof pdfjsLib === "undefined") return "";
     try {
       pdfjsLib.GlobalWorkerOptions.workerSrc =
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+        "assets/vendor/pdf.worker.min.js";
       const buf = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
       let text = "";

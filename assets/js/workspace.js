@@ -107,8 +107,21 @@
   };
 
   function moduleName(id) { return MODULE_NAMES[id] || "Unrecognized analytical module"; }
-  function categoryName(id) { return CATEGORY_NAMES[id] || id || "Uncategorised"; }
+  function categoryName(id) { return CATEGORY_NAMES[id] || id || "Uncategorized"; }
   function groupName(id) { return GROUP_NAMES[id] || id || ""; }
+
+  // The matched address, shown wherever a project's location is. Deliberately the geocoder's
+  // display_name rather than the typed address: they differ, and the difference is the whole
+  // point of showing it.
+  function locationLine(p) {
+    if (p.geocodeError) {
+      return '<div class="ws-note ws-geo-warn">No map position. ' + esc(p.geocodeError) + '</div>';
+    }
+    if (p.formattedAddress) {
+      return '<div class="ws-note">Matched to: ' + esc(p.formattedAddress) + '</div>';
+    }
+    return "";
+  }
 
   function statusDotColor(status) {
     var s = String(status || "").toLowerCase();
@@ -215,7 +228,11 @@
     if (p) {
       var t = $("ws-project-title"); if (t) t.textContent = p.name || "Project";
       var s = $("ws-project-sub");
-      if (s) s.textContent = (p.sector ? p.sector + " · " : "") + "Period " + (p.period || 1);
+      if (s) {
+        s.textContent = (p.sector ? p.sector + " · " : "") + "Period " + (p.period || 1)
+          + (p.formattedAddress ? " · Matched to: " + p.formattedAddress
+             : (p.geocodeError ? " · No map position" : ""));
+      }
     }
     if (window.LinApp && LinApp.showPage) LinApp.showPage("project");
     switchPanel("upload");
@@ -234,19 +251,41 @@
     $("ws-create-btn").addEventListener("click", async function () {
       var name = $("ws-new-name").value.trim();
       var sector = $("ws-new-sector").value.trim();
+      var address = $("ws-new-address") ? $("ws-new-address").value.trim() : "";
       var errEl = $("ws-create-error");
       errEl.style.display = "none";
       if (!name) { errEl.textContent = "Name is required."; errEl.style.display = "block"; return; }
       $("ws-create-btn").disabled = true;
-      var resp = await call("projectcreate", { name: name, sector: sector });
+      var resp = await call("projectcreate", { name: name, sector: sector, address: address });
       $("ws-create-btn").disabled = false;
       if (!resp || resp.ok !== true) {
+        errEl.className = "ws-error";
         errEl.textContent = (resp && resp.error) || "Could not create project.";
         errEl.style.display = "block";
         return;
       }
+      // The project was created either way. If the address could not be resolved, say so here
+      // rather than letting the PM discover later that their project is missing from the map.
+      // This is shown in the error slot but is not a failure: the sentence says what happened.
+      // The geocoder's top hit is not always the right one, and a wrong pin looks exactly like
+      // a right one. Show what was MATCHED so the PM can see it now, while they still have the
+      // address in mind, rather than discovering it on a map later.
+      // Colour has to match meaning. This slot is the error slot, so anything put in it reads
+      // as a failure unless the class is changed: a successful match shown in red says the
+      // opposite of what it means, and "no map position" is amber because the project is fine
+      // and only its position is missing.
+      if (resp.geocodeError) {
+        errEl.className = "ws-note ws-geo-warn";
+        errEl.textContent = "Project created. " + resp.geocodeError;
+        errEl.style.display = "block";
+      } else if (resp.formattedAddress) {
+        errEl.className = "ws-note";
+        errEl.textContent = "Project created. Matched to: " + resp.formattedAddress;
+        errEl.style.display = "block";
+      }
       $("ws-new-name").value = "";
       $("ws-new-sector").value = "";
+      if ($("ws-new-address")) $("ws-new-address").value = "";
       await refreshProjects();
     });
   }
@@ -275,7 +314,7 @@
           '<div><strong>' + esc(p.name || "Untitled project") + '</strong>' +
           '<div class="ws-note">' + (p.sector ? esc(p.sector) + " · " : "") +
           '<span class="ws-id" title="' + esc(p.project_id) + '">' + esc(shortId) + '</span>' +
-          '</div></div>' +
+          '</div>' + locationLine(p) + '</div>' +
           '<div style="display:flex; align-items:center; gap:10px;">' +
           '<button class="ws-btn ws-btn-secondary" data-open-project="' + esc(p.project_id) +
             '">Open</button>' +
