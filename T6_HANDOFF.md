@@ -1,3 +1,8 @@
+> **READ `NAMING_AUTHORITY.md` BEFORE ANY CONTENT WORK.** It is the authority for what the platform
+> and its analytical taxonomy are called, and it carries the standing description that every
+> user-facing surface quotes verbatim. It lives in the repository so it cannot fail to reach a
+> session, which it did three times while it lived outside. Read it before this handoff, not after.
+
 # T13b — THE TAXONOMY IS SETTLED AND COMMITTED. 100, not 101.
 
 `GROUP_ASSIGNMENT.md` at the repository root is the authority. Merged to `main`.
