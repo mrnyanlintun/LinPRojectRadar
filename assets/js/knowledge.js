@@ -163,7 +163,7 @@
       id: "boundaries",
       keywords: ["synthetic", "real data", "boundary", "production", "validated", "llm", "api", "backend"],
       title: "Demo boundaries",
-      body: "Everything here is synthetic demonstration data, no real project, agency, employer, contractor, or vendor. There is no backend, no LLM call, no analytics, and no tracking; this assistant is scripted from the knowledge library. No predictive-accuracy validation has been performed, and every recommended action requires named human approval."
+      body: "There is a server, and it does the analysis. The browser renders results the server computed and stored; it derives no project, category, or module status of its own. One AI call exists, and it runs server-side: reading uploaded documents to extract signal values. Everything after that extraction is deterministic arithmetic, and the governance decision comes from explicit rules. This assistant makes no model call at all; it answers only from the written knowledge library by keyword match, so it can be stale but it cannot invent. There is no analytics and no tracking. No predictive-accuracy validation has been performed, and every recommended action requires named human approval."
     }
   ];
 

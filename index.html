@@ -805,20 +805,21 @@
               <p>Routes requests, holds API keys server-side, brokers persistence and AI, and computes the analytical layer. The browser never holds an API key.</p>
             </div>
             <div class="about-arch-layer" style="--layer-color: var(--radar-amber)">
-              <div class="about-arch-label">Persistence: Google Drive</div>
-              <p>File-based store. Each project is a numbered folder containing <code>project.json</code>. No SQL database. Archived projects retained and restorable.</p>
+              <div class="about-arch-label">Persistence: relational database</div>
+              <p>A relational store holds projects, documents, computed results, membership, and the decision record. Computed results are append-only: a recompute writes a new row and marks the previous one superseded, and once a submitted decision references a row, the database refuses to change it. Archived projects are retained and restorable.</p>
             </div>
             <div class="about-arch-layer" style="--layer-color: var(--alarm-red)">
-              <div class="about-arch-label">AI Engine: Anthropic Claude API</div>
-              <p>All AI calls are made server-side. Signal extraction, assistant chat, document identification: <code>claude-sonnet-4-6</code>. Technical auditor, executive brief: <code>claude-opus-4-8</code>. Knowledge retrieval: keyword-matched retrieval from the knowledge library.</p>
+              <div class="about-arch-label">AI: document extraction only</div>
+              <p>One AI call exists, and it runs server-side: reading uploaded documents to extract signal values, using <code>claude-opus-4-6</code>. The browser never holds an API key. Extraction runs once per unique file and is cached by content hash, so the same document always yields the same values.</p>
+              <p>Nothing else on the platform calls a model. The analytical layer is deterministic arithmetic, the governance decision comes from explicit rules, and the guided assistant answers only from the written knowledge library by keyword match. Where a capability is not implemented in this build, the server refuses it by name rather than failing quietly.</p>
             </div>
             <div class="about-arch-layer" style="--layer-color: var(--muted)">
-              <div class="about-arch-label">Speech: OpenAI TTS-1</div>
-              <p>Text-to-speech via <code>tts-1</code>, onyx voice. Server-side via Apps Script.</p>
+              <div class="about-arch-label">Geocoding: Nominatim</div>
+              <p>Project addresses are geocoded server-side through Nominatim, rate limited to one request a second. The address the geocoder matched is shown back on every surface that displays a location, because a pin on the wrong building looks exactly like a pin on the right one. A project that cannot be placed is saved without coordinates and stays in the project list.</p>
             </div>
             <div class="about-arch-layer" style="--layer-color: var(--muted)">
-              <div class="about-arch-label">Auth: Google OAuth 2.0</div>
-              <p>Stage 1: single authorized user. Google Sign-In via Apps Script session.</p>
+              <div class="about-arch-label">Access: username and password, or Google sign-in</div>
+              <p>Accounts are issued by an administrator; there is no self-registration. Each project has one project manager who can decide, and observers who read. Membership is explicit, and adding or revoking it is recorded with who did it and when.</p>
             </div>
           </div>
         </section>
@@ -1065,15 +1066,41 @@
       </div>
     </div>
 
+    <!-- T12. The footer now carries the SAME account-type switch as the login and upload notices:
+         .notice-research is the default and is what shows before sign-in, when no account type is
+         known, because the restrictive text is the fail-safe direction for a liability notice.
+         features.js and auth.js both set body.og-account-operational only after the server has
+         resolved the caller as operational.
+
+         The research bullets were previously shown to EVERY account, which told an operational
+         user uploading real project documents by design that all project data is synthetic and
+         that they must not submit actual project documents. Both were wrong for them.
+
+         WHAT IS CONSTANT IN BOTH STATES, and must stay: the GWU attribution, the copyright and
+         trademark notice, and that outputs are advisory.
+
+         The "Governance ruleset L2-v0.5-demo" line that used to close this footer has been
+         REMOVED. Nothing implements a versioned governance ruleset under that name: the string
+         appeared exactly twice in the repository, once here and once as a constant in decision.js
+         that is stamped into an audit record as a label and gates nothing. The transition rules do
+         carry real versions, but they are operator-supplied and nothing seeds this one.
+
+         THE OPERATIONAL WORDING BELOW IS DRAFTED FOR THE RESEARCHER'S REVIEW AND IS NOT APPROVED
+         LIABILITY LANGUAGE. See REPORT_2026-08-01_content-inventory.md. -->
     <footer class="site-footer">
-      <p class="footer-praxis-notice">Opus Gubernatio is a decision-support platform developed for Doctor of Engineering praxis research at The George Washington University. Analytical outputs are advisory and do not constitute a validated compliance determination.</p>
+      <p class="footer-praxis-notice">Opus Gubernatio is a decision-support platform developed for Doctor of Engineering praxis research. Analytical outputs are advisory. They are not a validated compliance determination, a contractual direction, or a diagnosis of a live project.</p>
       <p class="footer-copyright">© 2026 Nyan Lin Tun. All rights reserved. Opus Gubernatio™ and the associated framework, software, and documentation are the intellectual property of the author. Unauthorized reproduction, distribution, or use is prohibited.</p>
-      <ul class="footer-legal">
+      <ul class="footer-legal notice-research">
         <li><strong>Synthetic demonstration data only.</strong> All project data is synthetic; no real project, agency, employer, contractor, or vendor is referenced.</li>
         <li><strong>Not a validated production system.</strong> It does not validate predictive accuracy, diagnose live projects, or issue contractual direction.</li>
-        <li><strong>Academic research instrument, provided &quot;as is&quot; without warranty.</strong> Do not submit confidential or actual project documents; the operator disclaims all liability for uploaded content.</li>
+        <li><strong>Academic research instrument, provided &quot;as is&quot; without warranty.</strong> Do not submit confidential or actual project documents; the operator disclaims all liability for uploaded content to the fullest extent permitted by law.</li>
       </ul>
-      <p class="footer-praxis">Built for a Doctor of Engineering praxis (The George Washington University, Engineering Management). Governance ruleset&nbsp;L2-v0.5-demo.</p>
+      <ul class="footer-legal notice-operational">
+        <li><strong>Provided as is, without warranty</strong> of any kind, express or implied.</li>
+        <li><strong>Outputs are advisory.</strong> They are not a validated compliance determination, a contractual direction, or a diagnosis of a live project.</li>
+        <li><strong>Uploaded content is sent to third-party AI services</strong> for extraction and is stored in the platform. You are responsible for confirming that you are authorized to upload each document, and for your organization's data handling, confidentiality, and records obligations. The operator disclaims all liability arising from or relating to uploaded content to the fullest extent permitted by law.</li>
+      </ul>
+      <p class="footer-praxis">Doctor of Engineering<br>The School of Engineering and Applied Science of The George Washington University</p>
     </footer>
 
   </div>
