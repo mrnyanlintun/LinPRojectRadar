@@ -270,9 +270,9 @@ def a_researchlogin(session: Session, payload: dict, secret: str, ttl: int) -> d
         # presented password nor the presented username is ever recorded, only that an attempt
         # failed — recording a rejected username would let the audit log itself become the
         # probing surface it exists to catch.
-        audit(session, "research_login_failed", reason="unrecognised credentials")
+        audit(session, "research_login_failed", reason="unrecognized credentials")
         session.commit()
-        return err("username or password not recognised")
+        return err("username or password not recognized")
 
     if not participant.is_active:
         # A distinct message is safe here: it is only reachable once the FULL credential pair
@@ -480,7 +480,7 @@ def a_adminparticipantcreate(session: Session, payload: dict, secret: str, ttl: 
         audit(session, "admin_action_denied", participant_id=caller.participant_id,
               action="adminparticipantcreate", role=caller.role)
         session.commit()
-        return err("not authorised: ResearchAdmin role required")
+        return err("not authorized: ResearchAdmin role required")
 
     role = str(payload.get("role") or ROLE_PARTICIPANT)
     if role not in (ROLE_ADMIN, ROLE_PARTICIPANT, ROLE_EXPERT, ROLE_DEMO):
@@ -555,7 +555,7 @@ def a_adminparticipantlist(session: Session, payload: dict, secret: str, ttl: in
         audit(session, "admin_action_denied", participant_id=caller.participant_id,
               action="adminparticipantlist", role=caller.role)
         session.commit()
-        return err("not authorised: ResearchAdmin role required")
+        return err("not authorized: ResearchAdmin role required")
 
     # Local import: features.py imports audit/resolve_caller from this module at load time, so
     # importing it back at module scope here would be circular. See features.py's own note on
@@ -606,7 +606,7 @@ def a_researchparticipantget(session: Session, payload: dict, secret: str, ttl: 
               participant_id=caller.participant_id, target_participant_id=target_id,
               role=caller.role)
         session.commit()
-        return err("not authorised: a participant may only read their own record")
+        return err("not authorized: a participant may only read their own record")
 
     target = session.get(Participant, target_id)
     if target is None:
@@ -630,7 +630,7 @@ def a_adminaccounttypeset(session: Session, payload: dict, secret: str, ttl: int
         audit(session, "admin_action_denied", participant_id=caller.participant_id,
               action="adminaccounttypeset", role=caller.role)
         session.commit()
-        return err("not authorised: ResearchAdmin role required")
+        return err("not authorized: ResearchAdmin role required")
 
     target_id = str(payload.get("participant_id") or "").strip()
     account_type = str(payload.get("account_type") or "").strip()
@@ -660,7 +660,7 @@ def _require_admin(session: Session, payload: dict, secret: str, action: str):
         audit(session, "admin_action_denied", participant_id=caller.participant_id,
               action=action, role=caller.role)
         session.commit()
-        return None, err("not authorised: ResearchAdmin role required")
+        return None, err("not authorized: ResearchAdmin role required")
     return caller, None
 
 

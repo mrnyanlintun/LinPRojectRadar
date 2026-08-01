@@ -79,7 +79,7 @@ def _require_expert(session: Session, payload: dict, secret: str, action: str):
         audit(session, "expert_action_denied", participant_id=caller.participant_id,
               action=action, role=caller.role)
         session.commit()
-        return None, err("not authorised: this action is for the expert review panel")
+        return None, err("not authorized: this action is for the expert review panel")
     return caller, None
 
 
@@ -105,7 +105,7 @@ def _resolve_expert_assignment(session: Session, caller, payload: dict, action: 
         audit(session, "expert_scenario_access_denied", participant_id=caller.participant_id,
               scenario_id=scenario_id, action=action)
         session.commit()
-        return None, None, err("not authorised: that scenario is not assigned to you")
+        return None, None, err("not authorized: that scenario is not assigned to you")
 
     scenario = session.get(Scenario, scenario_id)
     if scenario is None:
@@ -274,7 +274,7 @@ def a_expertreferencecommit(session: Session, payload: dict, secret: str,
         cleaned = [str(a).strip() for a in raw if str(a).strip()]
         unknown = [a for a in cleaned if a not in PARTICIPANT_ACTIONS]
         if unknown:
-            return None, err(f"{key} contains unrecognised actions: {', '.join(unknown)}")
+            return None, err(f"{key} contains unrecognized actions: {', '.join(unknown)}")
         if preferred in cleaned:
             return None, err(f"{key} cannot repeat the preferred action")
         return cleaned, None

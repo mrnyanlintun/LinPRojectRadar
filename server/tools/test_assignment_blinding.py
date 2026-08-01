@@ -241,7 +241,7 @@ check(audit_count("cross_participant_assignment_read_denied") == before + 2,
       "both refusals appended to audit_events")
 
 r = post({"action": "adminassignmentlist", "session_token": p1})
-check(r.get("ok") is False and "not authorised" in r.get("error", ""),
+check(r.get("ok") is False and "not authorized" in r.get("error", ""),
       "participant cannot use the admin listing action")
 
 r = post({"action": "adminassignmentlist", "session_token": p1, "role": "ResearchAdmin"})

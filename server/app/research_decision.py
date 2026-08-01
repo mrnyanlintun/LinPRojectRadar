@@ -160,7 +160,7 @@ def _resolve_target(session: Session, caller, payload: dict, action: str):
               action=action, requested_assignment_id=requested,
               current_assignment_id=assignment.assignment_id)
         session.commit()
-        return None, err("not authorised: only the current assignment may be acted on")
+        return None, err("not authorized: only the current assignment may be acted on")
 
     return assignment, None
 
@@ -594,7 +594,7 @@ def _require_admin(session: Session, payload: dict, secret: str, action: str):
         audit(session, "admin_action_denied", participant_id=caller.participant_id,
               action=action, role=caller.role)
         session.commit()
-        return None, err("not authorised: ResearchAdmin role required")
+        return None, err("not authorized: ResearchAdmin role required")
     return caller, None
 
 

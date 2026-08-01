@@ -299,7 +299,7 @@ with Session() as s:
 for act in ("adminexportcreate", "adminexportlist", "adminexportfetch"):
     r = post({"action": act, "session_token": pa_tok, "export_id": exp["export_id"],
               "role": "ResearchAdmin"})
-    check(r.get("ok") is False and "not authorised" in r.get("error", ""),
+    check(r.get("ok") is False and "not authorized" in r.get("error", ""),
           f"participant refused for {act}", str(r)[:120])
 with Session() as s:
     after_n = s.scalar(select(func.count()).select_from(AuditEvent)

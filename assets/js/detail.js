@@ -1159,7 +1159,7 @@
     return advisor +
       "Briefing subject: " + (snapshot.project_name || project.name) + " (Project " + snapshot.project_id + ", " + (snapshot.sector || "unknown") + " sector). " +
       "The platform computed " + totalModules + " signal modules across " + LIN_CATEGORIES.length + " analytical categories from a stored log dated " + computedDay + ".\n\n" +
-      "Category statuses grouped by colour (internal context — use these groupings, do NOT re-list each category individually):\n" + groupsText +
+      "Category statuses grouped by color (internal context — use these groupings, do NOT re-list each category individually):\n" + groupsText +
       "\n\nComputed key signal values (internal context — quote these ACTUAL numbers in Key Drivers):\n" + signalsText +
       "\n\nPer-category worst module (internal context — do NOT quote raw module names or metrics):\n" + catSummary +
       "\n\nOverall governance state: " + (gov.state || "unknown") +

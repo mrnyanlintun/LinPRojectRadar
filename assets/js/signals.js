@@ -964,7 +964,7 @@
         <div>
           <label class="rationale-label">Document</label>
           <p class="upload-disclaimer notice-research">Notice: Do not upload confidential, proprietary, or personally identifiable information, or documents relating to actual projects. Content is processed by third-party AI services. Uploads are made at the user's sole risk.</p>
-        <p class="upload-disclaimer notice-operational">Notice: You are responsible for confirming you are authorised to upload each document, and for your organisation's data-handling obligations. Content is processed by third-party AI services and stored in research infrastructure. Analytical outputs are advisory and do not constitute a validated compliance determination.</p>
+        <p class="upload-disclaimer notice-operational">Notice: You are responsible for confirming you are authorized to upload each document, and for your organization's data-handling obligations. Content is processed by third-party AI services and stored in research infrastructure. Analytical outputs are advisory and do not constitute a validated compliance determination.</p>
           <label class="aud-filebtn ds-filebtn">
             <input type="file" class="ds-file" accept="${ACCEPT}" />
             <span class="ds-filebtn-label aud-filebtn-label">Choose file</span>
@@ -1260,7 +1260,7 @@
         <div class="dz-title">Drop documents here</div>
         <div class="dz-sub">PDF · multiple files at once · type identified automatically</div>
         <p class="upload-disclaimer notice-research">Notice: Do not upload confidential, proprietary, or personally identifiable information, or documents relating to actual projects. Content is processed by third-party AI services. Uploads are made at the user's sole risk.</p>
-        <p class="upload-disclaimer notice-operational">Notice: You are responsible for confirming you are authorised to upload each document, and for your organisation's data-handling obligations. Content is processed by third-party AI services and stored in research infrastructure. Analytical outputs are advisory and do not constitute a validated compliance determination.</p>
+        <p class="upload-disclaimer notice-operational">Notice: You are responsible for confirming you are authorized to upload each document, and for your organization's data-handling obligations. Content is processed by third-party AI services and stored in research infrastructure. Analytical outputs are advisory and do not constitute a validated compliance determination.</p>
         <button type="button" class="dz-browse">Browse files</button>
         <input type="file" class="dz-input" multiple accept="${ACCEPT}" hidden />
       </div>

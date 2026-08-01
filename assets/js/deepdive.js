@@ -525,7 +525,7 @@
       `CPI ${cpi.toFixed(3)} meets or exceeds the required efficiency to finish within BAC.`
     ];
     return panel("1.8", "To-Complete Performance Index (TCPI)", st,
-      note("Required CPI on remaining work to finish within BAC. Two concentric gauge dials: outer = current CPI, inner = required TCPI. A TCPI > 1.10 (inner needle past the green tick) is the universally recognised red flag for contract recovery.") +
+      note("Required CPI on remaining work to finish within BAC. Two concentric gauge dials: outer = current CPI, inner = required TCPI. A TCPI > 1.10 (inner needle past the green tick) is the universally recognized red flag for contract recovery.") +
       `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="tcpi3d" data-nodrag="1"></canvas></div>` +
       `<div class="dd-grid">${
         metricBox("TCPI (BAC)", tcpi.toFixed(3), tcpiS) +

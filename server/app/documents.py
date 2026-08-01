@@ -111,7 +111,7 @@ def _refuse_unless_pm(session: Session, caller, member, project, action: str) ->
               action=action, project_id=project.legacy_id,
               project_role=member.project_role if member else None)
         session.commit()
-        return err("not authorised: only the project's PM may perform this action")
+        return err("not authorized: only the project's PM may perform this action")
     return None
 
 
@@ -564,7 +564,7 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
         "files": files,
         "summary": {
             "total": len(decoded),
-            "recognised": cached_count,
+            "recognized": cached_count,
             "extracted": extracted_count,
             "failed": failed_count,
             "unmapped": len(unmapped),

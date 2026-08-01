@@ -278,7 +278,7 @@ def _require_admin(session: Session, payload: dict, secret: str, action: str):
         audit(session, "admin_action_denied", participant_id=caller.participant_id,
               action=action, role=caller.role)
         session.commit()
-        return None, err("not authorised: ResearchAdmin role required")
+        return None, err("not authorized: ResearchAdmin role required")
     return caller, None
 
 
@@ -301,7 +301,7 @@ def a_adminfeaturesset(session: Session, payload: dict, secret: str, ttl: int) -
     unknown = sorted(set(requested) - set(FEATURE_KEYS))
     if unknown:
         return err(f"unknown feature key(s): {', '.join(unknown)}; "
-                   f"recognised keys are {', '.join(FEATURE_KEYS)}")
+                   f"recognized keys are {', '.join(FEATURE_KEYS)}")
     non_bool = sorted(k for k, v in requested.items() if not isinstance(v, bool))
     if non_bool:
         return err(f"feature values must be true or false: {', '.join(non_bool)}")

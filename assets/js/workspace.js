@@ -106,7 +106,7 @@
     "D1.5": "Anomaly Score"
   };
 
-  function moduleName(id) { return MODULE_NAMES[id] || "Unrecognised analytical module"; }
+  function moduleName(id) { return MODULE_NAMES[id] || "Unrecognized analytical module"; }
   function categoryName(id) { return CATEGORY_NAMES[id] || id || "Uncategorised"; }
   function groupName(id) { return GROUP_NAMES[id] || id || ""; }
 
@@ -510,7 +510,7 @@
     }
 
     var s = resp.summary || {};
-    label.textContent = s.recognised + " of " + s.total + " recognised from cache, " +
+    label.textContent = s.recognised + " of " + s.total + " recognized from cache, " +
       s.extracted + " extracted fresh" +
       (s.failed ? ", " + s.failed + " failed" : "") +
       (s.unmapped ? ", " + s.unmapped + " unmapped" : "") +
@@ -528,7 +528,7 @@
         note = f.error || "extraction failed";
       } else {
         tag = f.was_cached ?
-          '<span class="ws-note">recognised (cached — no model call)</span>' :
+          '<span class="ws-note">recognized (cached — no model call)</span>' :
           '<span class="ws-note">newly extracted</span>';
         note = f.contributes ? esc(f.doc_type) : (f.note || "did not contribute");
       }

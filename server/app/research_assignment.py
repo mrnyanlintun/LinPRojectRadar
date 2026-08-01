@@ -56,7 +56,7 @@ def _require_admin(session: Session, payload: dict, secret: str, action: str):
         audit(session, "admin_action_denied", participant_id=caller.participant_id,
               action=action, role=caller.role)
         session.commit()
-        return None, err("not authorised: ResearchAdmin role required")
+        return None, err("not authorized: ResearchAdmin role required")
     return caller, None
 
 
@@ -424,7 +424,7 @@ def a_researchmyassignments(session: Session, payload: dict, secret: str, ttl: i
               participant_id=caller.participant_id, target_participant_id=requested,
               role=caller.role)
         session.commit()
-        return err("not authorised: a participant may only read their own assignments")
+        return err("not authorized: a participant may only read their own assignments")
 
     current = current_sequence_number(session, caller.participant_id)
     rows = session.scalars(
@@ -452,7 +452,7 @@ def a_researchcurrent(session: Session, payload: dict, secret: str, ttl: int) ->
               participant_id=caller.participant_id, target_participant_id=requested,
               role=caller.role)
         session.commit()
-        return err("not authorised: a participant may only read their own assignments")
+        return err("not authorized: a participant may only read their own assignments")
 
     current = current_sequence_number(session, caller.participant_id)
     if current is None:
