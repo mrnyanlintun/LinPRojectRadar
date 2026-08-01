@@ -334,6 +334,7 @@ def dispatch_post(session: Session, payload: dict, settings=None) -> dict[str, A
     from .research_assignment import ASSIGNMENT_ACTIONS
     from .research_consent import ConsentRequired
     from .research_decision import DECISION_ACTIONS
+    from .research_expert import EXPERT_ACTIONS
     from .research_export import EXPORT_ACTIONS
     from .research_membership import (
         MEMBERSHIP_ACTIONS, PROJECT_WRITE_ACTIONS, guard_project_write,
@@ -356,7 +357,7 @@ def dispatch_post(session: Session, payload: dict, settings=None) -> dict[str, A
                 or DECISION_ACTIONS.get(action) or TRANSITION_ACTIONS.get(action)
                 or EXPORT_ACTIONS.get(action) or MEMBERSHIP_ACTIONS.get(action)
                 or DOCUMENT_ACTIONS.get(action) or WORKSPACE_ACTIONS.get(action)
-                or QUESTIONNAIRE_ACTIONS.get(action))
+                or QUESTIONNAIRE_ACTIONS.get(action) or EXPERT_ACTIONS.get(action))
     if identity is not None:
         if settings is None:
             return err("research identity is not configured on this build")
