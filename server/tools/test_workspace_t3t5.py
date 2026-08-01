@@ -272,8 +272,8 @@ _geo_calls = []
 def _stub_geocode(address):
     _geo_calls.append(address)
     if "unfindable" in address.lower():
-        return _geo.Result(error="That address could not be found. A more complete address, "
-                                 "with the city and state, usually resolves it.")
+        return _geo.Result(error="That address could not be found. Try the street address OR "
+                                 "the facility name, not both together.")
     if "offline" in address.lower():
         return _geo.Result(error="The location service could not be reached, so this project has "
                                  "no map position yet. Saving the address again will retry it.")

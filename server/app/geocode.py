@@ -135,8 +135,9 @@ def geocode(address: str) -> Result:
                                 "no map position yet. Saving the address again will retry it.")
 
         if not payload:
-            result = Result(error="That address could not be found. A more complete address, "
-                                  "with the city and state, usually resolves it.")
+            result = Result(error="That address could not be found. Try the street address OR "
+                                  "the facility name, not both together, with the city and "
+                                  "state. Check the result on the map before relying on it.")
             _cache[key] = result
             return result
 
