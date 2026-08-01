@@ -259,6 +259,7 @@
       var resp = await call("projectcreate", { name: name, sector: sector, address: address });
       $("ws-create-btn").disabled = false;
       if (!resp || resp.ok !== true) {
+        errEl.className = "ws-error";
         errEl.textContent = (resp && resp.error) || "Could not create project.";
         errEl.style.display = "block";
         return;
@@ -269,10 +270,16 @@
       // The geocoder's top hit is not always the right one, and a wrong pin looks exactly like
       // a right one. Show what was MATCHED so the PM can see it now, while they still have the
       // address in mind, rather than discovering it on a map later.
+      // Colour has to match meaning. This slot is the error slot, so anything put in it reads
+      // as a failure unless the class is changed: a successful match shown in red says the
+      // opposite of what it means, and "no map position" is amber because the project is fine
+      // and only its position is missing.
       if (resp.geocodeError) {
+        errEl.className = "ws-note ws-geo-warn";
         errEl.textContent = "Project created. " + resp.geocodeError;
         errEl.style.display = "block";
       } else if (resp.formattedAddress) {
+        errEl.className = "ws-note";
         errEl.textContent = "Project created. Matched to: " + resp.formattedAddress;
         errEl.style.display = "block";
       }
