@@ -234,19 +234,28 @@
     $("ws-create-btn").addEventListener("click", async function () {
       var name = $("ws-new-name").value.trim();
       var sector = $("ws-new-sector").value.trim();
+      var address = $("ws-new-address") ? $("ws-new-address").value.trim() : "";
       var errEl = $("ws-create-error");
       errEl.style.display = "none";
       if (!name) { errEl.textContent = "Name is required."; errEl.style.display = "block"; return; }
       $("ws-create-btn").disabled = true;
-      var resp = await call("projectcreate", { name: name, sector: sector });
+      var resp = await call("projectcreate", { name: name, sector: sector, address: address });
       $("ws-create-btn").disabled = false;
       if (!resp || resp.ok !== true) {
         errEl.textContent = (resp && resp.error) || "Could not create project.";
         errEl.style.display = "block";
         return;
       }
+      // The project was created either way. If the address could not be resolved, say so here
+      // rather than letting the PM discover later that their project is missing from the map.
+      // This is shown in the error slot but is not a failure: the sentence says what happened.
+      if (resp.geocodeError) {
+        errEl.textContent = "Project created. " + resp.geocodeError;
+        errEl.style.display = "block";
+      }
       $("ws-new-name").value = "";
       $("ws-new-sector").value = "";
+      if ($("ws-new-address")) $("ws-new-address").value = "";
       await refreshProjects();
     });
   }

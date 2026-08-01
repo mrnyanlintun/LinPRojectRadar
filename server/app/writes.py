@@ -175,6 +175,27 @@ def w_save(session: Session, payload: dict) -> dict[str, Any]:
 
     stored_created = (project.doc or {}).get("createdAt")
     fresh = _touch(incoming, created=stored_created)
+
+    # Geocode only when the address CHANGED, which is what v10.29 did and what the comment in
+    # assets/js/ingest.js still describes. Re-geocoding an unchanged address on every save would
+    # spend the rate limit answering a question already answered, and the cache would make it
+    # free but pointless.
+    #
+    # Non-fatal by construction: apply_to_doc never raises, so a save cannot fail because a
+    # geocoder was unreachable. The project stores a geocodeError instead and the interface
+    # shows it.
+    from .geocode import normalize as _norm
+    old_address = (project.doc or {}).get("address") or ""
+    new_address = str(fresh.get("address") or "").strip()
+    if new_address and _norm(new_address) != _norm(old_address):
+        from .geocode import apply_to_doc
+        apply_to_doc(fresh, new_address)
+    elif not new_address:
+        # The address was cleared, so the coordinates it produced must go with it rather than
+        # leaving the project pinned where it used to be.
+        for stale in ("lat", "lng", "formattedAddress", "geocodeError"):
+            fresh.pop(stale, None)
+
     expected_version = project.record_version + 1
 
     project.doc = fresh

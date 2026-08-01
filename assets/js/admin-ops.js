@@ -108,7 +108,11 @@
       errEl.style.display = "block";
       return;
     }
-    var resp = await call("projectcreate", { name: name, sector: $("ao-proj-sector").value.trim() });
+    var resp = await call("projectcreate", {
+      name: name,
+      sector: $("ao-proj-sector").value.trim(),
+      address: $("ao-proj-address") ? $("ao-proj-address").value.trim() : ""
+    });
     if (!resp || resp.ok !== true) {
       errEl.textContent = (resp && resp.error) || "Could not create the project.";
       errEl.style.display = "block";

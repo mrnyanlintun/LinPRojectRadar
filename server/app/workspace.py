@@ -59,6 +59,7 @@ def a_projectcreate(session: Session, payload: dict, secret: str, ttl: int) -> d
     if not name:
         return err("name is required")
     sector = str(payload.get("sector") or "").strip()
+    address = str(payload.get("address") or "").strip()
 
     pid = _generate_legacy_id()
     now = now_iso()
@@ -74,6 +75,18 @@ def a_projectcreate(session: Session, payload: dict, secret: str, ttl: int) -> d
         "createdAt": now,
         "updatedAt": now,
     }
+    # Geocode before the insert, so the project is stored complete rather than written twice.
+    #
+    # This CANNOT stop the project being created. geocode.apply_to_doc never raises and never
+    # waits longer than its own timeout, so an unreachable geocoder costs a few seconds and then
+    # the project saves with a geocodeError the interface shows the user. Reporting that plainly
+    # is the point: a project silently without coordinates looks identical to one the geocoder
+    # could not find, and those need different things done about them.
+    geo = None
+    if address:
+        from .geocode import apply_to_doc
+        geo = apply_to_doc(doc, address)
+
     project = Project(legacy_id=pid, doc=doc, archived=False, record_version=1)
     session.add(project)
     session.flush()
@@ -88,6 +101,12 @@ def a_projectcreate(session: Session, payload: dict, secret: str, ttl: int) -> d
 
     return {"ok": True, "project_id": pid, "name": name, "sector": sector,
            "project_role": ROLE_PM, "period": 1, "computed": False,
+           # Reported so the interface can say what happened rather than leaving the PM to
+           # notice later that their project is missing from the map.
+           "address": address or None,
+           "lat": doc.get("lat"), "lng": doc.get("lng"),
+           "formattedAddress": doc.get("formattedAddress"),
+           "geocodeError": doc.get("geocodeError"),
            "server_time": now_iso()}
 
 
