@@ -34,11 +34,23 @@ log = logging.getLogger("opus-gubernatio-server")
 
 REJECTED_EVENT = "pre_judgment_modification_rejected"
 
+# T6: the expert reference lock is the same mechanism guarding a different row, so it gets its own
+# event type and its own SQLSTATE rather than a second implementation. Keeping the codes distinct
+# means a rejection can be attributed to the lock that actually fired.
+EXPERT_REJECTED_EVENT = "expert_reference_modification_rejected"
+
 # SQLSTATE raised by the Postgres trigger. Matching on this is precise; matching on message text
 # would break the moment the wording changes.
 PRE_LOCK_SQLSTATE = "OG001"
+EXPERT_LOCK_SQLSTATE = "OG002"
 
 _MESSAGE_MARKER = "pre-judgment is locked"
+_EXPERT_MESSAGE_MARKER = "expert reference is locked"
+
+
+def _sqlstate(exc: BaseException) -> str | None:
+    return getattr(getattr(exc, "orig", None), "sqlstate", None) or \
+        getattr(getattr(exc, "orig", None), "pgcode", None)
 
 
 def is_pre_lock_violation(exc: BaseException) -> bool:
@@ -47,11 +59,20 @@ def is_pre_lock_violation(exc: BaseException) -> bool:
 
     Checks SQLSTATE first and falls back to the message, because SQLite carries no SQLSTATE.
     """
-    sqlstate = getattr(getattr(exc, "orig", None), "sqlstate", None) or \
-        getattr(getattr(exc, "orig", None), "pgcode", None)
-    if sqlstate == PRE_LOCK_SQLSTATE:
+    if _sqlstate(exc) == PRE_LOCK_SQLSTATE:
         return True
     return _MESSAGE_MARKER in str(exc)
+
+
+def is_expert_lock_violation(exc: BaseException) -> bool:
+    """
+    True when an exception is the expert reference lock rejecting a write.
+
+    Same two-step check as the pre-judgment lock, against OG002 and its own message marker.
+    """
+    if _sqlstate(exc) == EXPERT_LOCK_SQLSTATE:
+        return True
+    return _EXPERT_MESSAGE_MARKER in str(exc)
 
 
 def record_rejected_write(
@@ -62,12 +83,17 @@ def record_rejected_write(
     scenario_id: str | None = None,
     attempted: dict[str, Any] | None = None,
     path: str | None = None,
+    event_type: str = REJECTED_EVENT,
+    reference_id: str | None = None,
 ) -> bool:
     """
     Append one audit row on a fresh connection, outside the caller's transaction.
 
     Returns True when the row was committed. A failure here is logged and reported to the caller
     rather than raised: losing the audit must not also lose the rejection the caller is handling.
+
+    event_type defaults to the pre-judgment rejection so every existing caller is unchanged; T6
+    passes EXPERT_REJECTED_EVENT with a reference_id instead of a decision_id.
     """
     import json
     import os
@@ -83,7 +109,8 @@ def record_rejected_write(
         chars.append(crockford[rem])
     event_id = "".join(reversed(chars))
 
-    metadata = {"decision_id": decision_id, "path": path, "attempted": attempted or {}}
+    metadata = {"decision_id": decision_id, "reference_id": reference_id, "path": path,
+                "attempted": attempted or {}}
 
     try:
         # A separate connection with its own transaction. begin() commits on clean exit.
@@ -99,7 +126,7 @@ def record_rejected_write(
                         "event_id": event_id,
                         "participant_id": participant_id,
                         "scenario_id": scenario_id,
-                        "event_type": REJECTED_EVENT,
+                        "event_type": event_type,
                         # Bound as text and cast by the column type. Passing a dict would need a
                         # dialect-specific JSON bind, and this path must work on both.
                         "metadata": json.dumps(metadata),
@@ -109,7 +136,8 @@ def record_rejected_write(
     except Exception as exc:  # noqa: BLE001 - never let an audit failure mask the rejection
         log.error(
             "audit_write_failed",
-            extra={"event_type": REJECTED_EVENT, "decision_id": decision_id,
+            extra={"event_type": event_type, "decision_id": decision_id,
+                   "reference_id": reference_id,
                    "error_type": type(exc).__name__, "detail": str(exc)[:200]},
         )
         return False

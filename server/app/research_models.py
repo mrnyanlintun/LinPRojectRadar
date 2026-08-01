@@ -318,6 +318,9 @@ class ExpertReference(Base):
         ULID, ForeignKey("scenarios.scenario_id"), nullable=False, index=True
     )
     expert_id: Mapped[str] = mapped_column(Text, nullable=True)
+    # T6: a reference is scored against a participant decision, and decisions are per period.
+    # Nullable so references written before 0012 keep their meaning; see that migration.
+    period: Mapped[str] = mapped_column(Text, nullable=True)
     preferred_action: Mapped[str] = mapped_column(Text, nullable=True)
     acceptable_alternatives: Mapped[dict] = mapped_column(JSONType, nullable=True)
     unsupported_actions: Mapped[dict] = mapped_column(JSONType, nullable=True)
