@@ -3158,6 +3158,15 @@ body.t-light .about-step-num { color: var(--gold-text); }
   background: var(--surface-soft); border: 1px solid var(--line);
   border-radius: 4px; padding: 1px 5px; color: var(--phosphor);
 }
+/* The standing description, quoted verbatim from NAMING_AUTHORITY.md. Styled as a quote
+   because it IS one: the same words appear on every surface that describes the platform. */
+.about-standing {
+  margin: 12px 0 14px; padding: 12px 16px;
+  border-left: 3px solid var(--phosphor);
+  background: color-mix(in srgb, var(--phosphor) 6%, transparent);
+  border-radius: 0 6px 6px 0;
+}
+.about-standing p { margin: 0; font-size: 15px; line-height: 1.7; color: var(--text); }
 .about-note {
   background: color-mix(in srgb, var(--phosphor) 8%, transparent);
   border-left: 3px solid var(--phosphor);

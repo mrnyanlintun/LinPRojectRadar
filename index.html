@@ -782,24 +782,65 @@
       <div class="hb-panel" id="hb-panel-about" role="tabpanel" aria-labelledby="hb-tab-about">
       <div class="about-grid">
 
-        <!-- What it does -->
+        <!-- What it is. The paragraph in the blockquote is the standing description from
+             NAMING_AUTHORITY.md, quoted VERBATIM. Do not paraphrase it, and do not edit it
+             here without editing the authority first. -->
         <section class="panel about-section about-section-wide">
-          <h2 class="about-h">What it does</h2>
-          <p>Opus Gubernatio turns the records a capital program already produces into an accountable, auditable governance recommendation. The pipeline runs in four steps.</p>
+          <h2 class="about-h">What it is</h2>
+          <blockquote class="about-standing">
+            <p>Opus Gubernatio takes the documents a project produces each reporting period, reads the reported figures from them, and runs an analytical layer over that evidence to produce a recommendation. The project manager records an independent assessment before the recommendation is disclosed, then records a decision after it, with the reasoning and the evidence relied upon. Every computed result is stored with the inputs and the code version that produced it, so what was shown at the moment of a decision can be reproduced rather than re-derived. The platform does not decide anything. It analyses evidence, presents what it found, and keeps the record of what a professional decided in response.</p>
+          </blockquote>
+          <p>The platform serves two audiences from one codebase: research participants, whose work can enter a de-identified research export, and operational users, whose work never does. Which notices, features, and export rules apply is governed by the account type, resolved server-side.</p>
+        </section>
+
+        <!-- The framework -->
+        <section class="panel about-section about-section-wide">
+          <h2 class="about-h">The framework</h2>
+          <p>There is deliberately no named framework here. A name was considered more than once and set aside, because the contribution this platform supports is empirical evidence about how professionals respond to AI decision support, not a new governance framework. Naming the machinery would claim a kind of novelty the work does not need and does not assert.</p>
+          <p>What occupies that place is a described capability rather than a named one. In one sentence:</p>
+          <blockquote class="about-standing">
+            <p>Opus Gubernatio analyses the documents a project produces each reporting period and presents a recommendation that a project manager records a decision against, keeping the evidence, the recommendation, and the judgment as one reproducible record.</p>
+          </blockquote>
+        </section>
+
+        <!-- Method: what the platform does, in order. Not what any study will find. -->
+        <section class="panel about-section about-section-wide">
+          <h2 class="about-h">Method</h2>
+          <p>This section describes what the platform does. It makes no claim about what any study using it will find.</p>
           <ol class="about-list about-steps">
-            <li><span class="about-step-num">1.</span> <strong>Ingests</strong> the document types a capital program already produces (pay applications, schedules, change orders, RFIs, submittals, inspection and compliance reports), extracting the cost, schedule, and risk figures automatically.</li>
-            <li><span class="about-step-num">2.</span> <strong>Runs</strong> an integrated multi-model analytical architecture spanning earned-value analysis, schedule and cost simulation, document risk, system dynamics, and machine-learning anomaly detection.</li>
-            <li><span class="about-step-num">3.</span> <strong>Fuses</strong> the evidence with Dempster–Shafer combination into a single five-state status (Complete, Green, Yellow, Amber, or Red) that surfaces disagreement between signals rather than averaging it away.</li>
-            <li><span class="about-step-num">4.</span> <strong>Produces</strong> a signal-traced recommended action plan, each action tied to the analysis that triggered it, with a named authority and required documentation, which a named human reviewer records. The platform advises; it never decides.</li>
+            <li><span class="about-step-num">1.</span> <strong>Evidence.</strong> A reporting period's documents are uploaded. The server reads the reported figures from each unique file once, caches the result by content hash, and stores what was read, so the same document always yields the same values.</li>
+            <li><span class="about-step-num">2.</span> <strong>Analysis.</strong> The analytical layer runs server-side over that evidence and stores every computed result with its inputs, code version, and the reporting period's data cutoff. The browser renders stored results; it does not recompute them.</li>
+            <li><span class="about-step-num">3.</span> <strong>Independent assessment.</strong> Before the recommendation is disclosed, the project manager commits a preliminary judgment. Once committed it is locked, and the recommendation stays hidden from every member of the project, including observers, until that lock is in place.</li>
+            <li><span class="about-step-num">4.</span> <strong>Recommendation.</strong> The stored recommendation is then disclosed, with the evidence behind it.</li>
+            <li><span class="about-step-num">5.</span> <strong>Decision.</strong> The project manager records a disposition against the recommendation, with a rationale field captured alongside it. One named person decides per project; observers read.</li>
           </ol>
-          <p>A separate <strong>Technical Auditor</strong> maintains a reference corpus (specifications, codes of practice, and user requirements) and audits submittals and drawings against it, returning traceable findings and recommendations for named human review.</p>
-          <p class="about-note">All project data on this site is synthetic. No real project, agency, employer, contractor, or vendor is referenced.</p>
+          <p>Everything in the sequence is enforced server-side and recorded. The result is one reproducible record per decision: what the evidence was, what the platform recommended, what the professional judged before seeing it, and what they decided after.</p>
+        </section>
+
+        <!-- The analytical layer. The count and the grouping are the settled taxonomy in
+             GROUP_ASSIGNMENT.md; groups are referred to by name and purpose only. -->
+        <section class="panel about-section about-section-wide">
+          <h2 class="about-h">The analytical layer</h2>
+          <p>The analytical layer is 100 distinct computations, organised into four groups. Groups are described by what they are for.</p>
+          <div class="about-table-wrap">
+            <table class="about-table">
+              <thead><tr><th>Group</th><th>Purpose</th></tr></thead>
+              <tbody>
+                <tr><td>Project Health</td><td>What condition the project is in</td></tr>
+                <tr><td>Recommendation and Governance</td><td>What should be done, and by whom</td></tr>
+                <tr><td>Data and Evidence Health</td><td>How trustworthy the evidence base is</td></tr>
+                <tr><td>Portfolio Level</td><td>Patterns that need more than one project to exist</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="about-note">The count of 100 excludes one value, the document risk score, which is recorded as a value the extraction model supplies rather than one the analytical server computes.</p>
+          <p>Data and Evidence Health does not contribute to a project's status. Evidence quality describes what is known about a project, not the project's condition, and folding it in would make an early reporting period read worse for reasons that have nothing to do with the project. Portfolio Level computations require more than one project and never run on a single-project path. Statuses within a group are combined with Dempster-Shafer evidence combination, which surfaces disagreement between signals rather than averaging it away.</p>
         </section>
 
         <!-- Architecture -->
         <section class="panel about-section about-section-wide">
           <h2 class="about-h">Architecture</h2>
-          <p>An integrated multi-model analytical architecture is computed and stored server-side; the interface reads the stored results rather than recomputing them, so what a reviewer sees is exactly what was recorded.</p>
+          <p>The analytical layer is computed and stored server-side; the interface reads the stored results rather than recomputing them, so what a reviewer sees is exactly what was recorded.</p>
           <div class="about-arch">
             <div class="about-arch-layer" style="--layer-color: var(--phosphor)">
               <div class="about-arch-label">Frontend: served same-origin with the API</div>
@@ -807,7 +848,7 @@
             </div>
             <div class="about-arch-layer" style="--layer-color: var(--clear-green)">
               <div class="about-arch-label">Backend: single <code>/exec</code> endpoint</div>
-              <p>Routes requests, holds API keys server-side, brokers persistence and AI, and computes the analytical layer. The browser never holds an API key.</p>
+              <p>A Python service that routes requests, holds API keys server-side, brokers persistence and AI, and computes the analytical layer. The browser never holds an API key.</p>
             </div>
             <div class="about-arch-layer" style="--layer-color: var(--radar-amber)">
               <div class="about-arch-label">Persistence: relational database</div>
@@ -815,8 +856,8 @@
             </div>
             <div class="about-arch-layer" style="--layer-color: var(--alarm-red)">
               <div class="about-arch-label">AI: document extraction only</div>
-              <p>One AI call exists, and it runs server-side: reading uploaded documents to extract signal values, using <code>claude-opus-4-6</code>. The browser never holds an API key. Extraction runs once per unique file and is cached by content hash, so the same document always yields the same values.</p>
-              <p>Nothing else on the platform calls a model. The analytical layer is deterministic arithmetic, the governance decision comes from explicit rules, and the guided assistant answers only from the written knowledge library by keyword match. Where a capability is not implemented in this build, the server refuses it by name rather than failing quietly.</p>
+              <p>One AI call exists, and it runs server-side: reading the reported figures from uploaded documents, using <code>claude-opus-4-6</code>. The browser never holds an API key. Extraction runs once per unique file and is cached by content hash, so the same document always yields the same values.</p>
+              <p>Nothing else on the platform calls a model. The analytical layer is deterministic arithmetic, the governance recommendation comes from explicit rules, and the guided assistant is scripted: it answers from a written knowledge library by keyword match and makes no model call at all. Where a capability is not implemented in this build, for example conversational AI, automated document audit, or speech, the server refuses it by name rather than failing quietly.</p>
             </div>
             <div class="about-arch-layer" style="--layer-color: var(--muted)">
               <div class="about-arch-label">Geocoding: Nominatim</div>
@@ -829,56 +870,14 @@
           </div>
         </section>
 
-        <!-- Section 4 — Tech stack -->
-        <section class="panel about-section about-section-wide">
-          <h2 class="about-h">Tech stack</h2>
-          <div class="about-table-wrap">
-            <table class="about-table">
-              <thead><tr><th>Component</th><th>Technology</th></tr></thead>
-              <tbody>
-                <tr><td>Frontend</td><td>Vanilla JavaScript, HTML5, CSS3, served same-origin with the API</td></tr>
-                <tr><td>Backend</td><td>Single /exec endpoint</td></tr>
-                <tr><td>Persistence</td><td>Relational store, one record per project</td></tr>
-                <tr><td>AI: signal extraction, chat, doc ID</td><td>Anthropic claude-sonnet-4-6</td></tr>
-                <tr><td>AI: auditor, brief</td><td>Anthropic claude-opus-4-8</td></tr>
-                <tr><td>Speech</td><td>OpenAI tts-1, onyx voice</td></tr>
-                <tr><td>PDF extraction</td><td>PDF.js (client-side, browser)</td></tr>
-                <tr><td>Auth</td><td>Google OAuth 2.0 (Stage 1, single authorized user)</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <!-- Section 4b — Capabilities -->
-        <section class="panel about-section about-section-wide">
-          <h2 class="about-h">Capabilities</h2>
-          <div class="about-table-wrap">
-            <table class="about-table">
-              <thead><tr><th>Capability</th><th>Description</th></tr></thead>
-              <tbody>
-                <tr><td>Drag-and-drop ingest</td><td>Multi-file document upload with AI type identification: drop any combination of PDFs and the platform classifies, extracts, and runs the analysis automatically</td></tr>
-                <tr><td>3D analytical charts</td><td>Zoom / pan / rotate 3D canvas charts across the analytical layer and Portfolio Health, with chart types including scatter, network, line, Pareto, and flat 2D donuts</td></tr>
-                <tr><td>Force network visualization</td><td>Signal network rendered in 3D: inner ring generators, outer ring synthesis / evidence / governance, live status color-coded from project data</td></tr>
-                <tr><td>Portfolio Health anomaly detection</td><td>Isolation Forest, outlier ranking, trajectory classification, cross-project pattern detection, composite anomaly score</td></tr>
-                <tr><td>Evidence combination</td><td>Independent uncertainty-reasoning frameworks including Dempster-Shafer, Rough Sets, Neutrosophic, Z-numbers, Plithogenic, and Quantum Probability</td></tr>
-                <tr><td>Executive brief</td><td>Grouped-status AI summary: Recommendation, Signal Pattern by status tier, Key Drivers with actual values, Required Actions with named authority</td></tr>
-                <tr><td>Decision optimization</td><td>Multi-objective optimization, LP feasibility, constraint satisfaction, what-if scenarios, regret minimization</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
         <!-- Section 5 — Version -->
         <section class="panel about-section">
           <h2 class="about-h">Version</h2>
           <div class="about-table-wrap">
             <table class="about-table">
               <tbody>
-                <tr><td>Version</td><td>v1.0-praxis-demo</td></tr>
-                <tr><td>Backend</td><td>v10.28+</td></tr>
-                <tr><td>Framework</td><td>Decision-support framework, Layers 1 and 2</td></tr>
                 <tr><td>Last updated</td><td id="about-date">—</td></tr>
-                <tr><td>Institution</td><td>George Washington University</td></tr>
+                <tr><td>Institution</td><td>The George Washington University</td></tr>
                 <tr><td>Program</td><td>Doctor of Engineering, Engineering Management</td></tr>
                 <tr><td>Author</td><td>Nyan Lin Tun</td></tr>
               </tbody>
@@ -889,9 +888,8 @@
         <!-- Research context -->
         <section class="panel about-section about-section-wide">
           <h2 class="about-h">Research context</h2>
-          <p>Opus Gubernatio is the demonstration artifact for a Doctor of Engineering praxis by Nyan Lin Tun at The George Washington University, Department of Engineering Management and Systems Engineering. The work follows the Design Science Research (DSR) methodology (Hevner, Peffers): the platform is the designed artifact, evaluated through practitioner validation with public-program controls professionals.</p>
-          <p>AI explains and summarizes; governance decisions come from explicit rule-based logic, and every recommended action requires named human approval before it is recorded. The platform is not a validated production system.</p>
-          <p class="about-note">All project data on this site is synthetic. No real project, agency, employer, contractor, or vendor is referenced.</p>
+          <p>Opus Gubernatio was built for a Doctor of Engineering praxis by Nyan Lin Tun at The George Washington University. It is the instrument the research is conducted with: it presents evidence and a recommendation, and records what a professional decided in response. What that research will find is not claimed here or anywhere else on the platform.</p>
+          <p>The platform is not a validated production system, and analytical outputs are advisory. Every recorded decision is a named person's decision, never the platform's.</p>
         </section>
 
       </div><!-- /about-grid -->
