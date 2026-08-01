@@ -1,3 +1,99 @@
+# T9 — the detail globe is VERIFIED. Read this section first.
+
+## Task 1 is settled. The detail globe renders, and the fault was never in detail.js
+
+All three checks pass, measured live on a clean profile at `fe4f59b`:
+
+| Check | Result |
+|---|---|
+| `LinDetail.teardown` exists | **function** |
+| Location section renders on a project with coordinates | **yes** — badge "located", note "Matched to: …" |
+| `LinGlobe.liveCount()` 2 with both globes, 1 on leaving detail | **1 → 2 → 1**, detail canvas released |
+
+**The cause of the previous session's failure was a stale HTTP cache entry, not the code.**
+Do not go looking at the section markup again; it was always correct.
+
+- The browser held `detail.js` at **111,064 bytes** with `transferSize: 0` and
+  `deliveryType: "cache"`, while the server served **112,583 bytes**.
+- That entry was stored **before** `no-store` was added, so it carried the old freshness
+  lifetime and the browser reused it **without revalidating**. A new tab does not help: the HTTP
+  disk cache is per profile, not per tab.
+- `globe.js` was first fetched *after* `no-store` landed, so it never had a cacheable entry and
+  always updated. That is the whole of the "same directory, different behaviour" mystery.
+- **The fix that works:** `fetch(url, {cache:'reload'})` once, then reload. That overwrites the
+  poisoned entry. After that `no-store` keeps it correct.
+- **Diagnostic to reach for first:** compare `performance.getEntriesByType('resource')`
+  `encodedBodySize` against the bytes `curl` gets from the server. If they differ, it is the
+  cache, whatever the response headers currently say.
+
+## Two traps found while verifying, both of which cost time
+
+- **`requestAnimationFrame` does not fire when the pane is not displayed.** The automated
+  browser does not composite frames unless the Browser pane is visible, so rAF callbacks never
+  run — and screenshots fail with "not compositing" for the same reason. globe.gl still builds
+  its scene, because it uses its own timers. Anything that must run after a library finishes
+  building should be on `setTimeout`, not rAF. This silently left the globe upright.
+- **`[data-view]` is not `[data-nav]`.** `[data-view="globe"]` is the portfolio's radar/globe
+  toggle. Leaving the detail page — and therefore `LinDetail.teardown` — is `showPage`, driven
+  by `[data-nav]` (`app.js:1704`). Clicking the wrong one looks like a teardown leak.
+- Automated typing of `!` into the password field was rejected by the server while the identical
+  credentials succeeded through `LinStore.postWithTimeout`. A typing artefact, not a product
+  fault, but it will cost you a detour.
+
+## Running the suite: migrate first
+
+`854 checks across 17 suites` reproduced exactly at `fe4f59b`. The suites need a **freshly
+migrated** database and do not migrate themselves — run `python -m alembic upgrade head` against
+each throwaway SQLite before the suite, or every one of them dies on `no such table:
+participants` and reports nothing. A Git Bash `mktemp -d` path is not a valid SQLite URL on
+Windows; use a Windows-style absolute path.
+
+## What T9 completed, and what is untouched
+
+| Task | State |
+|---|---|
+| 1 — verify the detail globe | **Done, measured** |
+| 3 — axial tilt + empty state | **Done, measured** (`fe4f59b`) |
+| 2 — rewrite the About page | **Not started** |
+| 4 — globe follows the theme, Miami beach motif | **Not started** — but see below |
+| 5 — the 84 em dashes | **Not started**, deliberately: a partial pass is worse than none |
+
+### Task 4, before anyone starts it
+
+One real bug was found and fixed on the way to Task 3, and it is the mechanism Task 4 depends on:
+**`three.js` `Color.set()` cannot parse `rgba()`**, and several theme surfaces are declared with
+alpha (`newyork`'s `--surface-soft` is `rgba(21,28,32,.86)`). `Color.set` threw, the `try/catch`
+swallowed it, and the globe kept globe.gl's default material. `stripAlpha()` in `globe.js` now
+handles this. **Every further theme variable piped into the globe must go through `themeColor()`**,
+or it will hit the same wall.
+
+**Two things must be resolved before Task 4 can be built, and neither could be settled from the
+code alone:**
+
+1. **Which identifier is Miami.** `radar.css` defines `data-theme` blocks for `light`, `dark`,
+   `maria` and `newyork` — there is no `miami`. The brief says Miami is Blue, NYC Dark, Maria
+   Light, but `app.js:1653` comments that "Miami and Maria are both LIGHT themes" while testing
+   `theme === "light" || theme === "maria"`. The comment and the brief disagree. Ask, do not guess:
+   the Miami-only beach motif is keyed on whichever answer is right.
+2. **There is no theme switcher in the DOM.** `applyTheme` exists at `app.js:1651` and
+   `[data-set-theme]` is queried there, but **no element carries that attribute anywhere in
+   `index.html` or the JS**. So "switching theme must update the globe without a reload" has no UI
+   to drive it today. Either the switcher was removed, or it is yet to be built. Settle that first
+   — the acceptance criterion cannot be demonstrated otherwise.
+
+`LIN_STATUS_COLORS.refresh()` (`config.js`) is already the established "re-resolve the palette
+after a theme change" hook, and `applyTheme` already calls it. A globe repaint belongs there
+rather than in a new listener.
+
+### Screenshots were not possible this session
+
+The Browser pane is not displayed in a non-interactive session, so `computer{action:"screenshot"}`
+fails with "not compositing frames". Everything above is **measurement**, not a picture. Tasks 3
+and 4 ask for the globe to be shown at 1280 / 1920 / 3840 in three themes; that needs a session
+with the pane visible.
+
+---
+
 # T6 handoff — Part 4 (the copy audit) is all that remains
 
 | | Status | Where |
