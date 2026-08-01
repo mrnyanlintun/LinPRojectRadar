@@ -1280,13 +1280,17 @@
         btn.setAttribute("data-id", p.id);
         const state = stateLabel(p);
         // Colour the status word to the 5-status palette, reusing the canonical
-        // map (no second copy). "Awaiting ingest" rows have no normalized status
-        // → no inline colour → they stay muted via their class. Slim records
+        // map (no second copy). A row with no computed result has no normalized status
+        // and no inline colour, so it stays muted via its class. Slim records
         // carry a precomputed status string; full records derive it — either
         // way normalizeStatusLabel maps the label to a palette key.
+        //
+        // T12b. The full-record branch used to be hasSignals(p) — the legacy blob — which left
+        // every server-analysed project without that blob rendering as an uncoloured word, same
+        // family as the legend and the state badge. It now asks about the stored row.
         const hasStatus = (p && p.slim)
           ? (typeof slimStatusLabel === "function" && !!slimStatusLabel(p))
-          : hasSignals(p);
+          : (window.LinResults && LinResults.hasResult(p));
         const norm = (hasStatus && typeof normalizeStatusLabel === "function")
           ? normalizeStatusLabel(state) : null;
         const col = (norm && typeof PCEIF_STATUS_HEX !== "undefined") ? PCEIF_STATUS_HEX[norm] : null;
@@ -1428,49 +1432,34 @@
         <h2>${esc(p.id)}</h2><p class="ledger-sub">${esc(p.name)}</p>
       </div></div>
       <div class="awaiting-state">
-        <p><strong>Awaiting ingest.</strong> This project has no signals yet.</p>
-        <p class="kn-sub">Populate signals on the <em>Manage Projects</em> page (or the “Ingest” panel on this project) to run the Monte Carlo forecast, CUSUM monitor, document-risk extraction, and the governance decision. Nothing is fabricated until real inputs are ingested.</p>
+        <p><strong>Awaiting analysis.</strong> This project has no computed result yet.</p>
+        <p class="kn-sub">Upload this project's documents. The server reads them, extracts the signal values, runs the analysis, and stores the result with the version, seed, and period cutoff it used. Nothing is shown here until that has happened, and nothing is fabricated in the meantime.</p>
       </div>`;
   }
 
+  // T12b. The gate used to be hasSignals(p), which tests the legacy client-side
+  // p.signals.evm/cusum/mc/doc blob — the same fault as the status legend. Here it was hiding
+  // something worse: the function built a "rows" array from p.signals.evm.cpi, .mc.iterations,
+  // .cusum.drift and .doc.score, and then NEVER USED IT. The rendered HTML comes entirely from
+  // categoryLedgerHtml(p), which already reads the stored row through getCategoryStatus and
+  // getModuleStatus. The dead array was the only reason the gate existed at all: building it
+  // threw a TypeError the moment p.signals was undefined, so a project analysed server-side
+  // with no legacy blob crashed here instead of rendering its (perfectly available) ledger.
+  // The dead code is removed rather than repaired, since nothing read its output.
   function renderLedger(p, root = $("#ledger")) {
     if (!root) return;   // portfolio no longer hosts the ledger; only the detail page does
-    if (!hasSignals(p)) { root.innerHTML = awaitingHtml(p, "Signal ledger"); return; }
-    const s = p.signals;
+    if (!(window.LinResults && LinResults.hasResult(p))) {
+      root.innerHTML = awaitingHtml(p, "Signal ledger");
+      return;
+    }
     const conflict = classifyConflict(p);
 
-    const rows = [
-      {
-        name: "EVM cost / schedule", method: "Earned Value Management",
-        status: s.evm.status,
-        metric: `CPI ${s.evm.cpi.toFixed(2)} · SPI ${s.evm.spi.toFixed(2)}`,
-        detail: `Data date ${esc(s.evm.dataDate)}`
-      },
-      {
-        name: "Probabilistic forecast", method: `Monte Carlo · ${s.mc.iterations.toLocaleString()} iter`,
-        status: s.mc.status,
-        metric: `P80 EAC +${s.mc.p80eacOverrunPct.toFixed(1)}% · P(delay) ${s.mc.pMilestoneDelay.toFixed(2)}`,
-        detail: "Percentile exposure on cost and milestone finish"
-      },
-      {
-        name: "Anomaly / trend", method: "SPC / CUSUM",
-        status: s.cusum.status,
-        metric: `${esc(s.cusum.metric)} drift ${s.cusum.drift.toFixed(1)} / ${s.cusum.threshold.toFixed(1)}`,
-        detail: s.cusum.breached ? "Threshold breached" : "Within control limits"
-      },
-      {
-        name: "Document risk", method: "Keyword / rule extraction",
-        status: s.doc.status,
-        metric: `Risk score ${s.doc.score.toFixed(2)}`,
-        // s.doc.source and s.doc.excerpt come from extracted-document content,
-        // i.e. attacker-controllable input. Escape BEFORE wrapping in markup
-        // so the template literal itself remains static structural HTML.
-        detail: `<span class="src">${esc(s.doc.source)}</span><span class="excerpt">“${esc(s.doc.excerpt)}”</span>`
-      }
-    ];
-
+    // "Signal breakdown not available" is an honest abstention, not a finding, and must not
+    // read as an alert next to the four real conflict findings.
     const conflictClass =
-      conflict === "Agreement: low risk" ? "conflict-calm" : "conflict-alert";
+      conflict === "Agreement: low risk" ? "conflict-calm"
+      : conflict === "Signal breakdown not available" ? "conflict-unknown"
+      : "conflict-alert";
 
     root.innerHTML =
       `<div class="ledger-head">
@@ -1610,9 +1599,16 @@
       </div>`;
   }
 
+  // T12b. Same fault, same fix as renderLedger above: the gate asked hasSignals(p) for the
+  // legacy blob, but deriveDecision -> deriveHealthState reads the stored row through
+  // getProjectFusion, and deriveDecision -> classifyConflict is now defensive against a missing
+  // p.signals (see decision.js). Nothing left in this path needs the legacy blob to render.
   function renderDecisionCard(p, root = $("#decision-card")) {
     if (!root) return;   // portfolio no longer hosts the decision card; only the detail page does
-    if (!hasSignals(p)) { root.innerHTML = awaitingHtml(p, "governance decision"); return; }
+    if (!(window.LinResults && LinResults.hasResult(p))) {
+      root.innerHTML = awaitingHtml(p, "governance decision");
+      return;
+    }
     const d = deriveDecision(p);
     const stateClass = d.healthState.toLowerCase().replace("-review", "");
 

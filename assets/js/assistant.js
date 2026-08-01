@@ -13,7 +13,7 @@
   const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
   const SUGGESTIONS = [
-    "What is PCEIF?",
+    "What are the demo boundaries?",
     "Status of this project?",
     "Portfolio overview",
     "How does the fairness gate work?",
@@ -26,26 +26,68 @@
 
   const SECTOR_LABEL = { design: "Design", construction: "Construction", combined: "Hybrid" };
 
+  /* T12b. Server-created projects carry no sector and no reportingPeriod, so the old templates
+     rendered "( sector, period undefined)" straight at the user. Absent fields are omitted rather
+     than printed as empty or as the word undefined. */
+  function sectorPhrase(p) {
+    const sec = SECTOR_LABEL[p && p.sector] || (p && p.sector);
+    return sec ? ` (${sec} sector)` : "";
+  }
+  function sectorPeriodPhrase(p) {
+    const sec = SECTOR_LABEL[p && p.sector] || (p && p.sector);
+    const per = p && p.reportingPeriod;
+    const bits = [];
+    if (sec) bits.push(`${sec} sector`);
+    if (per) bits.push(`period ${per}`);
+    return bits.length ? ` (${bits.join(", ")})` : "";
+  }
+
+  // T12b. Three states, not two, and the assistant now says plainly which one it is in.
+  //
+  // The old code asked hasSignals(p), the legacy client-side p.signals blob, and treated its
+  // absence as "no signals yet, nothing has been ingested." That was wrong for a project the
+  // server has already analysed: it carries a stored result, readable through LinResults and
+  // getProjectFusion, and does not carry that blob. The assistant told the user a project was
+  // unanalysed when it was not, using the retired "awaiting ingest" wording besides.
+  //
+  // The per-signal numbers below (CPI, SPI, the Monte Carlo percentiles, the CUSUM drift) are
+  // read from that legacy blob and are NOT part of the stored server row in this form, so a
+  // stored-only project cannot honestly be given them. Rather than inventing them or hiding the
+  // status, the assistant says what it has and says what it does not have.
   function projectAnswer(p) {
-    if (!(window.hasSignals && hasSignals(p))) {
+    const legacy = !!(window.hasSignals && hasSignals(p));
+    const stored = !!(window.LinResults && LinResults.hasResult(p));
+
+    if (!legacy && !stored) {
       return {
-        title: `${p.id} — awaiting ingest`,
-        body: `${p.name} (${SECTOR_LABEL[p.sector] || p.sector} sector) has no signals yet. Populate its signals on Manage Projects (or the Ingest panel on its Detail page) to run the Monte Carlo forecast, CUSUM monitor, document-risk extraction, and the governance decision. Nothing is fabricated until inputs are ingested.`
+        title: `${p.id}: awaiting analysis`,
+        body: `${p.name}${sectorPhrase(p)} has not been analysed yet. Upload its documents to run extraction and computation. Nothing is fabricated until that has happened.`
       };
     }
+
     const d = deriveDecision(p);
+    if (!legacy) {
+      return {
+        title: `${p.id}: status`,
+        body: `${p.name}${sectorPeriodPhrase(p)}. ` +
+          `Status ${d.healthState}, signal breakdown: ${d.conflictType}. ` +
+          `Recommended action: ${d.action} Authority: ${d.authority}. ` +
+          `Fairness gate: ${d.fairnessGateRequired ? "required before any formal action" : "not required"}. ` +
+          `I do not have the per-signal figures (EVM, Monte Carlo, CUSUM, document risk) for this project; see its Detail page for the full signal ledger.`
+      };
+    }
+
     const s = p.signals;
     return {
-      title: `${p.id} — live status`,
-      body: `${p.name} (${SECTOR_LABEL[p.sector] || p.sector} sector, period ${p.reportingPeriod}). ` +
-        `Derived state ${d.healthState}, conflict "${d.conflictType}". ` +
-        `Signals — EVM: ${s.evm.status} (CPI ${s.evm.cpi.toFixed(2)}, SPI ${s.evm.spi.toFixed(2)}); ` +
+      title: `${p.id}: status`,
+      body: `${p.name}${sectorPeriodPhrase(p)}. ` +
+        `Status ${d.healthState}, signal breakdown: ${d.conflictType}. ` +
+        `Signals. EVM: ${s.evm.status} (CPI ${s.evm.cpi.toFixed(2)}, SPI ${s.evm.spi.toFixed(2)}); ` +
         `Monte Carlo: ${s.mc.status} (P80 EAC +${s.mc.p80eacOverrunPct.toFixed(1)}%, P(delay) ${s.mc.pMilestoneDelay.toFixed(2)}); ` +
-        `CUSUM: ${s.cusum.status} (drift ${s.cusum.drift.toFixed(1)} vs threshold ${s.cusum.threshold.toFixed(1)}${s.cusum.breached ? ", BREACHED" : ""}); ` +
+        `CUSUM: ${s.cusum.status} (drift ${s.cusum.drift.toFixed(1)} vs threshold ${s.cusum.threshold.toFixed(1)}${s.cusum.breached ? ", breached" : ""}); ` +
         `document risk: ${s.doc.status} (score ${s.doc.score.toFixed(2)}). ` +
         `Recommended action: ${d.action} Authority: ${d.authority}. ` +
-        `Fairness gate: ${d.fairnessGateRequired ? "REQUIRED before any formal action" : "not required"}. ` +
-        `(Computed live from the synthetic data by decision.js.)`
+        `Fairness gate: ${d.fairnessGateRequired ? "required before any formal action" : "not required"}.`
     };
   }
 
@@ -56,19 +98,18 @@
     const reds = [], gated = [];
     let empty = 0;
     LIN_PROJECTS.forEach((p) => {
-      // Shape-tolerant: full projects derive a decision; SLIM rows (listslim,
-      // which now fill LIN_PROJECTS) have no signals object, so bucket them by
-      // their precomputed status (slimStatusLabel → the same label the radar/list
-      // show). Without this every slim row read as "awaiting ingest" and the
-      // chat's portfolio overview reported 0 populated. The fairness gate needs
-      // full decision data, so it's only known for full rows.
+      // T12b. A full row used to be counted here only if it carried the legacy p.signals blob
+      // (hasSignals(p)); a project the server had analysed, without that blob, fell through to
+      // the slim branch, found nothing there either, and was counted as awaiting analysis. It
+      // now asks about the stored row directly. Slim rows are unaffected: they never carry
+      // p.signals and were always meant to be read through slimStatusLabel.
       let label = null;
-      if (window.hasSignals && hasSignals(p)) {
+      if (window.LinResults && LinResults.hasResult(p)) {
         const d = deriveDecision(p);
         label = d.healthState;
         if (d.fairnessGateRequired) gated.push(p.id);
       } else if (p && p.slim && typeof slimStatusLabel === "function") {
-        label = slimStatusLabel(p);           // null → genuinely awaiting ingest
+        label = slimStatusLabel(p);           // null → genuinely not yet analysed
       }
       if (!label) { empty++; return; }
       const isRed = String(label).indexOf("Red") >= 0;
@@ -77,27 +118,31 @@
       if (isRed) reds.push(p.id);
     });
     const archived = (window.LIN_ARCHIVED || []).length;
-    const populated = LIN_PROJECTS.length - empty;
+    const analysed = LIN_PROJECTS.length - empty;
     return {
-      title: "Portfolio — live status",
-      body: `${LIN_PROJECTS.length} active project(s): ${empty} awaiting ingest, ${populated} populated` +
+      title: "Portfolio: status",
+      body: `${LIN_PROJECTS.length} active project(s): ${empty} awaiting analysis, ${analysed} analysed` +
         `${archived ? ` (+${archived} archived)` : ""}. ` +
-        `Of the populated: ${counts["Complete"]} Complete, ${counts["Green"]} Green, ${counts["Yellow"]} Yellow, ${counts["Amber"]} Amber, ${counts["Red"]} Red. ` +
-        `Red (escalation): ${reds.length ? reds.join(", ") : "none"}. ` +
+        `Of the analysed: ${counts["Complete"]} Complete, ${counts["Green"]} Green, ${counts["Yellow"]} Yellow, ${counts["Amber"]} Amber, ${counts["Red"]} Red. ` +
+        `Red, escalation required: ${reds.length ? reds.join(", ") : "none"}. ` +
         `Fairness gate required: ${gated.length ? gated.join(", ") : "none"}. ` +
-        `(Computed live from the current synthetic data; empty projects are never given a fabricated status.)`
+        `Every figure above is read from the stored server result at the moment you asked; a project awaiting analysis is never given a status it does not have.`
     };
   }
 
   function liveAnswer(q) {
     // explicit project code anywhere in the question
-    const idMatch = q.match(/syn-[a-z]{3}-\d{3}/i);
+    // T12b. Was /syn-[a-z]{3}-\d{3}/i, which only matched the retired SYN-XXX-000 demo codes.
+    // The server has issued "PRJ-" plus ten ULID characters since B7b (workspace.py), so asking
+    // about any current project by its code fell straight through to "outside my script". Both
+    // shapes are matched now, because archived SYN- projects may still exist.
+    const idMatch = q.match(/prj-[0-9a-z]{6,12}/i) || q.match(/syn-[a-z]{3}-\d{3}/i);
     if (idMatch) {
       const id = idMatch[0].toUpperCase();
       const p = LIN_PROJECTS.find((x) => x.id === id);
       if (p) return projectAnswer(p);
       if ((window.LIN_ARCHIVED || []).some((x) => x.id === id)) {
-        return { title: id, body: `${id} is currently archived — it is off the portfolio scope but recoverable on the Manage Projects page.` };
+        return { title: id, body: `${id} is currently archived. It is off the portfolio scope but can be restored.` };
       }
       return { title: id, body: `I don't have a project with code ${id} in the current synthetic portfolio.` };
     }
@@ -146,10 +191,13 @@
     });
     if (term) return { title: term.term, body: `${term.definition} (${term.formula})` };
 
-    // 3. honest out-of-scope
+    // 3. honest out-of-scope, and what I do not know
+    //
+    // T12b. Was "PCEIF concepts, the five signals": a retired framework name, and a wrong
+    // count. There are four signal classes: EVM, Monte Carlo, CUSUM, and document risk.
     return {
       title: "Outside my script",
-      body: "I'm a scripted guide — I only answer from this demo's knowledge library (PCEIF concepts, the five signals, the fairness gate, EVM/CUSUM/Monte Carlo definitions, and how to use each page). Try the Knowledge page for the full reference, or ask me one of the suggested questions."
+      body: "I'm a scripted guide, not a model. I match your question against a written knowledge library and a few live project and portfolio lookups, and I answer only with what is written there or read from the stored server result. I have no access to anything outside this platform, I do not browse or fetch, and I cannot answer a question the library does not cover; this is one of those. Try the Knowledge page for the full reference (the four signal classes, the fairness gate, EVM, CUSUM, and Monte Carlo definitions, and how to use each page), or ask me one of the suggested questions."
     };
   }
 
@@ -238,7 +286,7 @@
          </div>
          <div id="la-msgs" class="la-msgs" aria-live="polite">
            <div class="la-msg la-bot">
-             <p>Ask me about the selected project's cost and schedule performance, signal analysis, and governance decision. I can explain the Monte Carlo forecast, CUSUM detection, PCEIF concepts, and the signal-to-action framework. Type a question or use the mic.</p>
+             <p>Ask me about the selected project's cost and schedule performance, signal analysis, and governance decision. I can explain the Monte Carlo forecast, CUSUM detection, and how a signal becomes a recommended action. I am scripted, not a model: I answer from a written knowledge library, not from live reasoning. Type a question or use the mic.</p>
            </div>
          </div>
          <div class="la-suggest">${SUGGESTIONS.map((s) => `<button class="la-chip">${esc(s)}</button>`).join("")}</div>
@@ -612,26 +660,32 @@
       if (!(window.LinStore && LinStore.configured && LinStore.configured())) {
         const s = scripted(text); addBot(s.html); speak(s.plain); endAnswering(true); return;
       }
-      // Live AI answer via Groq (scoped to the open project), with scripted fallback.
-      const thinking = document.createElement("div");
-      thinking.className = "la-msg la-bot la-thinking";
-      thinking.innerHTML = "<p><em>Thinking…</em></p>";
-      msgs.appendChild(thinking); msgs.scrollTop = msgs.scrollHeight;
+      /* T12b. THE SCRIPTED ANSWER IS THE PRODUCT, NOT A DEGRADED FALLBACK.
+         This used to call LinStore.chat() on every question, show "Thinking...", and then, when
+         that call failed, append "(scripted fallback, AI unreachable)". The chat action is in
+         DEFERRED_AI_ACTIONS server-side and answers "Action not implemented in this build"
+         (facade.py), so the call could not succeed and the note was shown every single time. It
+         told the user there is an AI assistant that is currently broken. There is not: this
+         assistant is scripted by design, which is what its own file header has always said.
+         Claiming a temporarily unavailable capability is worse than claiming none.
+
+         The call is kept, because if the chat action is ever implemented this is where its answer
+         arrives. What is removed is the pretence: no "Thinking..." for a request that is not
+         expected to return, and no apologetic note on an answer that is exactly what the platform
+         intends to give. */
       try {
         const id = window.LinApp && LinApp.getSelectedId ? LinApp.getSelectedId() : null;
         const answerText = await LinStore.chat(text, id);
-        thinking.remove();
         if (answerText && String(answerText).trim()) {
           addBot(esc(String(answerText))); speak(String(answerText));
         } else {
-          const s = scripted(text); addBot(s.html + ` <span class="la-fallback-note">(scripted fallback)</span>`); speak(s.plain);
+          const s = scripted(text); addBot(s.html); speak(s.plain);
         }
         endAnswering(true);
       } catch (e) {
-        thinking.remove();
         const s = scripted(text);
-        addBot(s.html + ` <span class="la-fallback-note">(scripted fallback — AI unreachable)</span>`); speak(s.plain);
-        endAnswering(false);
+        addBot(s.html); speak(s.plain);
+        endAnswering(true);
       }
     }
 

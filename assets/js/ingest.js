@@ -435,7 +435,7 @@
             const p = await LinStore.createProject({ id, name, sector });
             let outcome = null;
             if (address) { p.address = address; const saved = await LinStore.saveProject(p); outcome = geocodeOutcome(saved); }
-            logEvent(`Created EMPTY project ${p.id}: ${name} (${SECTOR_LABEL[sector] || sector}); awaiting ingest.`);
+            logEvent(`Created EMPTY project ${p.id}: ${name} (${SECTOR_LABEL[sector] || sector}); awaiting analysis.`);
             if (window.LinApp) LinApp.refresh();
             renderPortfolioAdmin();
             close();

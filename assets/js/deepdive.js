@@ -2138,8 +2138,8 @@
     if (!window.hasSignals || !hasSignals(project)) {
       root.innerHTML =
         `<section class="panel awaiting-state">
-           <p><strong>Awaiting ingest: no signals yet.</strong></p>
-           <p class="kn-sub">The modules compute from this project's signals. Populate signals (Manage Projects, or the "Ingest" panel above) to run the real Monte Carlo (5,000 iterations) and CUSUM, the keyword document-risk extraction, and the synthesis + governance decision. Nothing is computed or fabricated until inputs are ingested.</p>
+           <p><strong>Awaiting analysis: no signal inputs yet.</strong></p>
+           <p class="kn-sub">This page re-runs the models in the browser to show their working, so it needs the project's signal inputs. Upload the project's documents to extract them. Nothing is computed or fabricated until they exist.</p>
          </section>`;
       return;
     }

@@ -378,9 +378,13 @@
     return { counts, rows };
   }
 
+  // T12b. Gated on hasSignals(project) — the legacy client-side p.signals blob — though
+  // ensembleTally() below reads every module's status through getModuleStatus(), which is the
+  // stored row. A project analysed server-side with no legacy blob had this whole section
+  // silently return "" and vanish, even though the module ensemble it draws was fully available.
   function ensembleHtml(project) {
     if (!window.LIN_CATEGORIES) return "";
-    if (!window.hasSignals || !hasSignals(project)) return "";
+    if (!(window.LinResults && LinResults.hasResult(project))) return "";
     const { counts } = ensembleTally(project);
     const activeTotal = ["Complete","Green","Yellow","Amber","Red"].reduce((n, k) => n + counts[k], 0);
     if (!activeTotal) return "";
@@ -847,11 +851,14 @@
       return;
     }
 
-    const populated = hasSignals(p);
-    const state = populated
-      ? (typeof deriveHealthStateLabel === "function" ? deriveHealthStateLabel(p) : deriveHealthState(p))
-      : "Awaiting ingest";
-    const stateKey = populated ? String(state).toLowerCase().replace("-review", "") : "empty";
+    // T12b. The top-line "State:" badge, the most visible status text on this page. It used to
+    // gate on hasSignals(p) — the legacy blob — and say the retired "Awaiting ingest" when that
+    // blob was absent, even for a project the server had already analysed. deriveHealthState()
+    // already reads the stored row and already returns "Awaiting analysis" honestly when there
+    // is none, so it needs no gate at all; asking it directly is both simpler and correct.
+    const state = (typeof deriveHealthStateLabel === "function") ? deriveHealthStateLabel(p) : deriveHealthState(p);
+    const stateKey = (window.LinResults && LinResults.hasResult(p))
+      ? String(state).toLowerCase().replace("-review", "") : "empty";
 
     // ---- collapsible-section badges ----
     const cs = (window.collapsibleSection) || function (id, t, c) { return c; };
@@ -1918,7 +1925,9 @@
   const SC = window.LIN_STATUS_COLORS;   // central palette (radar.css --status-*)
     const canvas = root.querySelector(".scatter3d-canvas");
     if (!canvas || !window.LIN_CATEGORIES) return;
-    if (!window.hasSignals || !hasSignals(project)) return;
+    // T12b. Same correction as ensembleHtml just above: this scatter is built entirely from
+    // getModuleStatus() a few lines down, which is the stored row, not from p.signals.
+    if (!(window.LinResults && LinResults.hasResult(project))) return;
     const wrap = canvas.parentElement;
     const dpr = window.devicePixelRatio || 1;
     function resize() {

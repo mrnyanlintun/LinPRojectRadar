@@ -610,6 +610,9 @@ body.t-light .theme-switch button.active { color: #fff; }
 }
 .conflict-banner.conflict-alert { border-color: var(--radar-amber); background: color-mix(in srgb, var(--radar-amber) 10%, transparent); }
 .conflict-banner.conflict-calm { border-color: var(--clear-green); background: color-mix(in srgb, var(--clear-green) 8%, transparent); }
+/* T12b. An abstention ("Signal breakdown not available"), not a finding — must not read as an
+   alert next to the calm and alert states above. */
+.conflict-banner.conflict-unknown { border-color: var(--line); background: color-mix(in srgb, var(--muted) 8%, transparent); }
 .conflict-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .conflict-value { font-weight: 700; }
 

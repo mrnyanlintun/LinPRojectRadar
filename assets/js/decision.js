@@ -122,11 +122,26 @@ function slimStatusLabel(p) {
    ------------------------------------------------------------ */
 function classifyConflict(project) {
   const s = signalStatuses(project);
-  const reds = countStatus(s, "red");
+  // T12b. signalStatuses() already guards a missing project.signals down to nulls, but this
+  // function used to read project.signals.cusum.breached directly, unguarded, one line below.
+  // That was safe only because every caller was gated on hasSignals(project) first. Once that
+  // gate is corrected to ask about the STORED row instead of this legacy blob, a project that
+  // has been analysed server-side and carries no p.signals reaches this function and the direct
+  // read throws. Guarded here the same way deriveHealthState's client-side fallback arm already
+  // guards the identical field.
+  const cusumBreached = !!(project && project.signals && project.signals.cusum
+    && project.signals.cusum.breached);
 
+  // No legacy per-signal breakdown at all: every value in s is null, and none of the branches
+  // below can honestly distinguish "Agreement: low risk" from "Mixed early warning" without it.
+  // Falling through to "Mixed early warning" would report a specific finding the platform has no
+  // basis for. This is the classification a project with a stored server result and no such
+  // breakdown gets: honest about not being available, rather than a guess dressed as an answer.
+  if (Object.values(s).every((v) => v === null)) return "Signal breakdown not available";
+
+  const reds = countStatus(s, "red");
   if (reds >= 2) return "Multi-signal red-review";
-  if (project.signals.cusum.breached && s.doc === "green")
-    return "Anomaly without narrative";
+  if (cusumBreached && s.doc === "green") return "Anomaly without narrative";
   if (s.mc === "red" && s.evm !== "red") return "Forecast ahead of status";
   if ((s.doc === "amber" || s.doc === "red") && s.evm === "green")
     return "Leading document risk";
