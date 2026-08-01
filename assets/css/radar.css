@@ -27,6 +27,18 @@
   --globe-atmosphere: #63b6a2;    /* the rim glow */
   --globe-graticule-opacity: 0.16;
 
+  /* Which of the two globe treatments this theme gets. Read as a string by globe.js, so it is
+     the theme — not the JavaScript — that decides, exactly like the colours above.
+       abstract     — dark base, continents as dot clusters, bright rim
+       photographic — NASA Blue Marble, real terrain and cloud
+     Base is abstract; the light themes override. */
+  --globe-treatment: abstract;
+  --globe-land: #63b6a2;          /* abstract only: the continent dots */
+  --globe-land-opacity: 0.85;
+  /* The dark backing disc drawn under every marker on the photographic themes. See globe.js:
+     this is what makes a status legible over terrain, and it is why the texture is not dimmed. */
+  --globe-marker-halo: #05080b;
+
   --font-display: "Archivo", system-ui, sans-serif;
   --font-body: "Inter", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
@@ -169,11 +181,15 @@ body[data-theme="light"] {
      the 3:1 contrast floor for a graphical object — Red 3.85, Amber 5.86, Complete 5.07,
      Green 8.22, Yellow 10.47. The first blue tried, #14456e, put Red at 2.81 and failed that
      floor, which is exactly the "a Red project must look Red on a light theme" case. Anything
-     lighter than this fails it again; check Red before changing this value. */
+     lighter than this fails it again; check Red before changing this value.
+
+     The sphere colour still matters on a photographic theme: it is what shows before the texture
+     has loaded, and it is the empty-state planet. */
+  --globe-treatment: photographic;
   --globe-sphere: #0e3049;
   --globe-graticule: #7fc4e8;
   --globe-atmosphere: #8fd3f0;
-  --globe-graticule-opacity: 0.22;
+  --globe-graticule-opacity: 0.14;
 
   --sun-gold: #d69e2e;                    /* decorative gold: hairlines, borders, glow */
   --coral: #e8795a;                       /* secondary: hover borders, scan-line */
@@ -3221,13 +3237,19 @@ body.t-light .dd-verdict.status-yellow i { background: var(--yellow); }
    THEME — NEW YORK  (Manhattan twilight + gold Art Deco + Liberty bronze)
    ============================================================ */
 body[data-theme="newyork"] {
-  /* Globe: dark. Stated explicitly rather than inherited from :root so the theme owns its own
-     planet and a change to the base default cannot quietly alter NYC. Gilt graticules to match
-     the monument palette. */
-  --globe-sphere: #151c20;
+  /* Globe: the abstract data-network planet. Stated explicitly rather than inherited from :root
+     so the theme owns its own world and a change to the base default cannot quietly alter NYC.
+
+     The rim is cyan rather than the theme's verdigris: it is the one place the globe is allowed
+     to depart from the page palette, because a bright rim is what separates an unlit dark sphere
+     from the dark page behind it. Gilt graticules keep it inside the monument palette otherwise. */
+  --globe-treatment: abstract;
+  --globe-sphere: #0b1116;
   --globe-graticule: #d4af5a;
-  --globe-atmosphere: #63b6a2;
-  --globe-graticule-opacity: 0.14;
+  --globe-atmosphere: #3fe0ff;
+  --globe-graticule-opacity: 0.10;
+  --globe-land: #46c8e0;
+  --globe-land-opacity: 0.9;
 
   /* wordmark solids — bright pair (dark theme): bronze 8.6:1, verdigris 8.0:1 */
   --brand-bronze: #d9a441;
@@ -3367,12 +3389,13 @@ body[data-theme="newyork"] .kn-ask:hover { color: var(--nyc-verdigris); }
    the pinks. Every changed text var measured ≥4.5:1 (see PR).
    ============================================================ */
 body[data-theme="maria"] {
-  /* Globe: blue, the same planet as Miami. Maria's rose belongs to the page, not to the world
-     on it; a pink sphere would put the theme in front of the data. */
+  /* Globe: photographic Earth, the same world as Miami. Maria's rose belongs to the page, not to
+     the planet on it. The sphere colour below is the pre-texture and empty-state fallback. */
+  --globe-treatment: photographic;
   --globe-sphere: #0e3049;
   --globe-graticule: #7fc4e8;
   --globe-atmosphere: #8fd3f0;
-  --globe-graticule-opacity: 0.22;
+  --globe-graticule-opacity: 0.14;
 
   --rose: #d16a9e;                        /* structural rose — hairlines, borders, scan */
   --maria-blush: #f7b6d2;                 /* baby pink — soft secondary (chips/hovers) */

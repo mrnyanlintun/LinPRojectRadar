@@ -41,6 +41,22 @@
   "use strict";
 
   var VENDOR_URL = "assets/vendor/globe.gl.min.js";
+  var EARTH_TEXTURE_URL = "assets/vendor/earth-blue-marble-clouds.jpg";
+  var COUNTRIES_URL = "assets/vendor/ne_110m_admin_0_countries.geojson";
+
+  // Country outlines for the abstract treatment. Fetched once, shared by every instance, and
+  // only when a theme that needs them is actually shown — the photographic themes never pay for
+  // it. Resolves to [] on failure: a globe with no continents is a worse globe, not a broken one.
+  var countriesPromise = null;
+
+  function loadCountries() {
+    if (countriesPromise) return countriesPromise;
+    countriesPromise = fetch(COUNTRIES_URL)
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { return (j && j.features) || []; })
+      .catch(function () { return []; });
+    return countriesPromise;
+  }
 
   // Earth's axial tilt, in radians. 23.4 degrees.
   var AXIAL_TILT = 23.4 * Math.PI / 180;
@@ -119,11 +135,77 @@
      hardcoded light grey at opacity 0.1, which disappears against a blue planet. Its material is
      reached through the scene, the same way the tilt is, and for the same reason. */
 
+  // "photographic" or "abstract". The theme decides, not this file.
+  function treatment() {
+    return themeColor("--globe-treatment", "abstract") === "photographic"
+      ? "photographic" : "abstract";
+  }
+
+  /* ---------- the two treatments ----------
+     NYC gets the abstract data-network planet; Miami and Maria get the photographic Earth.
+     Switching between them is a repaint, never a remount — dropping and reacquiring a WebGL
+     context to change an appearance is the one thing this file is careful not to do.
+
+     CONTINENTS AS DOTS, NOT AS A NIGHT-LIGHTS TEXTURE. globe.gl's hexPolygonsData with
+     hexPolygonUseDots draws the country outlines as a dot field, and its colour comes from a
+     theme variable. A night-lights image would have been another megabyte of texture whose
+     colour is baked in and could not follow the theme at all, which is the whole point of this
+     work. The resolution is deliberately coarse (3): it is the dominant cost of this treatment
+     and the frame rate could not be measured in the session that built it, so it is set
+     conservatively rather than optimistically.
+
+     The "connecting lines across the surface" are the graticules the globe already draws. Arcs
+     between project points were considered and rejected: an arc between two projects asserts a
+     relationship between them that does not exist. */
+
+  function applyTreatment(globe) {
+    var mode = treatment();
+    if (mode === "photographic") {
+      try { globe.hexPolygonsData([]); } catch (e) {}
+      try { globe.globeImageUrl(EARTH_TEXTURE_URL); } catch (e) {}
+      return;
+    }
+    // abstract
+    try { globe.globeImageUrl(null); } catch (e) {}
+    var land = themeColor("--globe-land", "#63b6a2");
+    var landOp = themeNumber("--globe-land-opacity", 0.85);
+    try {
+      globe.hexPolygonColor(function () { return land; })
+           .hexPolygonResolution(3)
+           .hexPolygonMargin(0.35)
+           .hexPolygonUseDots(true)
+           .hexPolygonAltitude(0.006);
+      if (typeof globe.hexPolygonsData === "function") {
+        loadCountries().then(function (feats) {
+          try { globe.hexPolygonsData(feats); } catch (e) {}
+        });
+      }
+    } catch (e) {}
+    // landOp is carried in the colour when the theme wants it translucent; globe.gl has no
+    // separate opacity for this layer, so it is folded in rather than silently ignored.
+    if (landOp < 1) {
+      try {
+        globe.hexPolygonColor(function () { return rgbaFrom(land, landOp); });
+      } catch (e) {}
+    }
+  }
+
+  // globe.gl accepts CSS colour strings for hexPolygonColor (it is not Color.set), so an rgba()
+  // here is safe and is the only way to get a translucent dot field.
+  function rgbaFrom(col, alpha) {
+    var m = /^#?([0-9a-f]{6})$/i.exec(col.trim());
+    if (!m) return col;
+    var n = parseInt(m[1], 16);
+    return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + alpha + ")";
+  }
+
   function paintTheme(globe) {
     var sphere = themeColor("--globe-sphere", "#151c20");
     var atmos = themeColor("--globe-atmosphere", "#63b6a2");
     var grat = themeColor("--globe-graticule", "#4b7f74");
     var gratOp = themeNumber("--globe-graticule-opacity", 0.16);
+
+    applyTreatment(globe);
 
     try { globe.atmosphereColor(atmos); } catch (e) {}
 
@@ -150,6 +232,49 @@
           c.material.needsUpdate = true;
         }
       });
+    } catch (e) {}
+  }
+
+  /* ---------- marker legibility on the photographic themes ----------
+     A status marker on real terrain has no guaranteed contrast: the four status colours span a
+     wide luminance range, and whatever the terrain is, one of them will be close to it.
+
+     MEASURED, NOT ASSUMED. Sampling the actual texture at six places and computing WCAG contrast
+     for each status gave a worst case of 1.02:1 — Yellow over the Sahara. Dimming the texture,
+     which is the obvious fix and was tried first, does NOT solve it: at 62% brightness and 72%
+     saturation the worst case was still 1.01:1, because dimming only moves which status fails
+     (Red, once the sand is dark). A global brightness change cannot serve four colours at
+     different luminances at once. That is why the texture ships undimmed.
+
+     WHAT WORKS IS LOCAL CONTRAST. Every marker gets a dark disc drawn underneath it, slightly
+     larger and slightly lower, so the status colour is always read against near-black rather
+     than against whatever is there. Contrast becomes a property of the marker's own surround and
+     is therefore the same over ocean, desert, ice and cloud. Against #05080b every status clears
+     3:1 with room: Red 4.9, Amber 7.5, Green 10.5, Yellow 13.4.
+
+     The status colour itself is untouched, which is the constraint that ruled out the
+     alternatives — desaturating the markers, or tinting them per theme.
+
+     It is a labels layer with empty text rather than a second points layer, because globe.gl
+     allows only one pointsData. Both are real 3D layers, so the disc is depth-tested and
+     occluded by the globe exactly as the marker is; an HTML-overlay marker would have floated in
+     front of the far side of the planet. */
+
+  function haloData(pts) {
+    return pts.map(function (p) { return { lat: p.lat, lng: p.lng }; });
+  }
+
+  function applyHalos(globe, pts) {
+    var on = treatment() === "photographic";
+    try {
+      globe.labelsData(on ? haloData(pts) : [])
+           .labelLat("lat").labelLng("lng")
+           .labelText(function () { return ""; })
+           .labelSize(0)
+           .labelDotRadius(0.62)
+           .labelIncludeDot(true)
+           .labelAltitude(0.055)
+           .labelColor(function () { return themeColor("--globe-marker-halo", "#05080b"); });
     } catch (e) {}
   }
 
@@ -292,7 +417,11 @@
 
       refresh: function (projects) {
         if (handle.destroyed) return;
-        try { globe.pointsData(pointsFrom(projects)); } catch (e) {}
+        try {
+          var pts = pointsFrom(projects);
+          globe.pointsData(pts);
+          applyHalos(globe, pts);
+        } catch (e) {}
       },
 
       isRunning: function () { return !handle.destroyed; }
@@ -354,6 +483,7 @@
         // Sphere and atmosphere are available now; the graticules are not, so applyTilt paints
         // them again once globe.gl has built the group.
         paintTheme(globe);
+        applyHalos(globe, pts);
 
         applyTilt(globe);
 
@@ -412,6 +542,9 @@
         var pts = h.globe.pointsData() || [];
         pts.forEach(function (p) { p.color = statusColor(p.status); });
         h.globe.pointsData(pts);
+        // The halo belongs to the photographic treatment, so a switch in either direction has to
+        // add it or take it away, not just recolour it.
+        applyHalos(h.globe, pts);
       } catch (e) {}
     });
   }
@@ -429,6 +562,10 @@
     palette: function () {
       return live.map(function (h) {
         var out = { sphere: null, graticule: null, gratOpacity: null, tiltDeg: null, points: [] };
+        try { out.treatment = treatment(); } catch (e) {}
+        try { out.textureUrl = h.globe.globeImageUrl() || null; } catch (e) {}
+        try { out.hexPolygons = (h.globe.hexPolygonsData() || []).length; } catch (e) {}
+        try { out.halos = (h.globe.labelsData() || []).length; } catch (e) {}
         try { out.sphere = "#" + h.globe.globeMaterial().color.getHexString(); } catch (e) {}
         try { out.atmosphere = h.globe.atmosphereColor(); } catch (e) {}
         try {
