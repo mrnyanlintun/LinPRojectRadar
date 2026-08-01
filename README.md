@@ -1,140 +1,88 @@
-# Lin Opus Gubernatio
+# Opus Gubernatio
 
 (repo: `lin-project-radar`)
 
-A static, client-side demonstration of the **PCEIF** (Public Capital EVM
-Intelligence Framework) signal-to-action governance workflow — developed for a
-Doctor of Engineering praxis (The George Washington University, Engineering
-Management).
+Project Decision Support. Built for a Doctor of Engineering praxis by Nyan Lin Tun at The George
+Washington University.
 
-This is a **separate project** from the frozen `LinDemo` site. It reuses
-LinDemo's front-end layout (radar scope, three themes, left nav rail, Project
-Detail, decision card, signal ledger, scripted assistant shell, timezone
-selector, badges/footer) and rebuilds the data and computation layers.
+> Opus Gubernatio analyses the documents a project produces each reporting period and presents a
+> recommendation that a project manager records a decision against, keeping the evidence, the
+> recommendation, and the judgment as one reproducible record.
 
-> **Phase 1 of 3.** Phase 1 is front-end only: **no backend, no AI, no Google
-> Drive, no network calls.** Monte Carlo and CUSUM are *real* client-side
-> computations. Phase 2 adds an Apps Script + Drive backend (behind the existing
-> `store.js` seam); Phase 3 adds an explanatory AI layer and RFI-vs-spec compare.
+That sentence is the standing description from `NAMING_AUTHORITY.md`, quoted verbatim. Read that
+file before writing or changing anything user-facing: it is the authority for what the platform
+and its analytical taxonomy are called, and the description above is quoted, never paraphrased,
+on every surface that describes the platform.
 
-## What Phase 1 does
+## What this actually is
 
-- **Projects start empty.** A project is a numeric id (`"01"`, `"02"`, …), a
-  name, a sector (design | construction | hybrid, used only for the radar
-  angle), and an **empty `signals` object** until ingest populates it. There is
-  no fixed project count. Empty projects render as a hollow, dashed,
-  awaiting-ingest marker on the radar and an "awaiting ingest" state in Detail —
-  **never a fabricated green/amber/red.**
-- **Create project** assigns the next id, creates an empty project, and persists
-  to `localStorage`.
-- **Populate signals** (Manage Projects, or a project's Detail page) takes CPI /
-  SPI (and optionally a BAC, a metric series, and a document) and runs the real
-  models to derive the signal package.
-- **Module 01 — real Monte Carlo.** `sim.js` derives a Beta-PERT three-point
-  estimate from the project's EVM + risk signals (most-likely EAC = BAC / CPI;
-  spread driven by a documented blend of CPI, SPI, document score, and the CUSUM
-  result), runs a real **5,000-iteration** loop, and reads **P50 / P80** from the
-  sorted simulated array. The Detail chart is the actual histogram with P50/P80
-  markers. A higher-risk project yields a wider, more pessimistically skewed
-  distribution.
-- **Module 02 — real CUSUM.** `sim.js` runs the standard two-sided tabular CUSUM
-  recursion (`SHi`/`SLo`, slack `k = 0.5σ`, decision interval `H = hUnits·σ`)
-  over the project's metric series. A **breach is the statistic crossing H** —
-  never a hardcoded boolean. The Detail chart is the computed statistic vs H with
-  the breach point flagged.
-- **Modules 03–05** stay rule-based: document-risk is transparent keyword/rule
-  extraction (Phase 3 adds an explanatory AI layer); signal synthesis and the ABM
-  governance layer are driven by `decision.js`.
+A static frontend and a Python server, deployed together.
 
-These are **demonstration models** — the signal→spread mapping is a designed
-heuristic, not a calibrated or validated forecast. (The Monte Carlo seeds its RNG
-per inputs so a given project's distribution is reproducible across re-renders;
-it is still a genuine sampled draw, not a drawn curve.)
+- **Frontend**: vanilla JavaScript, HTML, CSS in `index.html` and `assets/`. No framework, no
+  build step. The browser renders results the server computed and stored; it derives no project,
+  category, or module status of its own.
+- **Server**: FastAPI in `server/`, exposing a single `/exec` facade. It authenticates callers,
+  computes and stores the analytical layer, brokers the one AI call, geocodes addresses through
+  Nominatim, and enforces the decision sequence. Persistence is a relational database through
+  SQLAlchemy with Alembic migrations (Postgres in production, throwaway SQLite for development
+  and tests).
+- **One AI call**: server-side document extraction, reading the reported figures from uploaded
+  documents, cached by content hash so extraction runs once per unique file. Nothing else on the
+  platform calls a model. Actions that would need one (chat, automated audit, speech) are refused
+  by name by the server rather than failing quietly. The in-app assistant is scripted: it answers
+  from the written knowledge library in `assets/js/knowledge.js` by keyword match.
 
-## Data layer (swappable seam)
+## The analytical layer
 
-All project reads/writes go through **`assets/js/store.js`**:
-`listProjects()`, `getProject(id)`, `createProject({name,sector})`,
-`saveProject(project)`, `archiveProject` / `restoreProject`. Phase 1 backs these
-with `localStorage` only. Phase 2 swaps the implementation for Apps Script/Drive
-**without touching the UI** — the UI never calls storage directly.
+100 distinct computations in four groups, verified against the code and recorded in
+`GROUP_ASSIGNMENT.md`, which is the authority for how the taxonomy is described. Groups are
+referred to by name and purpose: Project Health, Recommendation and Governance, Data and
+Evidence Health, and Portfolio Level. The count excludes the document risk score, which is
+recorded as a value the extraction model supplies rather than one the analytical server
+computes. A check in `server/tools/test_group_assignment.py` fails if the code and that
+artifact stop agreeing.
 
-## Boundaries
+Every computed result is stored with its inputs, simulation version, seed, and reporting-period
+cutoff, append-only: a recompute writes a new row and marks the previous one superseded, and once
+a submitted decision references a row, the database refuses to change it.
 
-- Platform name **Lin** only. Synthetic demonstration data only — no real
-  project, agency, employer, contractor, or vendor.
-- **No backend, no LLM/API calls, no analytics, no build step** in Phase 1.
-  Google Fonts is the only external resource.
-- No fabricated AI stats; the contractor fairness gate is a blocking workflow
-  step, never a percentage. The SYNTHETIC DEMONSTRATION DATA badge and the
-  academic-boundary footer stay.
-- `decision.js` is pure and DOM-free (governance + ABM rules), unchanged API.
+## The decision sequence
 
-## Structure
+Evidence first, then a preliminary judgment committed and locked before the recommendation is
+disclosed, then the recommendation, then a recorded disposition with a rationale field captured.
+Enforced server-side. One PM decides per project; observers read; membership is explicit and
+auditable.
 
-```
-index.html
-.nojekyll
-assets/css/radar.css        visual system + two themes (Dark default / Light)
-assets/js/data.js           empty-shell seed + live arrays
-assets/js/store.js          data-access seam (localStorage in Phase 1)
-assets/js/decision.js       PCEIF governance + ABM rules (pure functions)
-assets/js/sim.js            REAL Monte Carlo (Beta-PERT) + CUSUM + signal builder
-assets/js/modules.js        Signals overview (populated projects only)
-assets/js/deepdive.js       per-project deep dive (live MC + CUSUM charts)
-assets/js/ingest.js         create / populate / doc-ingest / archive (via store.js)
-assets/js/detail.js         Project Detail drill-down
-assets/js/assistant.js      scripted help assistant (no LLM)
-assets/js/knowledge.js      knowledge library + term lens
-assets/js/tz.js             timezone selector (default America/New_York)
-assets/js/app.js            radar, page orchestration, decision card, audit export
-```
+## Two audiences
 
-## Synthetic data calibration
+One codebase serves research participants and operational users, separated by an `account_type`
+field that governs notices, features, and whether data can enter the de-identified research
+export. Operational users are never included in an export. Research accounts do not create their
+own projects; the researcher creates and assigns them.
 
-Every project in this demo is authored from synthetic documents, not real
-project records — but "synthetic" doesn't mean "unverifiable." `calibration/`
-makes each project's *intended* signal outcome an explicit, auditable claim
-instead of something only held in the author's head:
+## Running it
 
-1. Author a set of calibration documents for a project — designed so the
-   extracted EVM figures, doc-risk language, etc. push the project toward a
-   specific intended status (e.g. "this project's documents are designed to
-   land on Amber, with Doc Risk as the worst module").
-2. Once you've confirmed (by uploading and inspecting the result) that the
-   documents actually produce that intended behavior, set that project's
-   `target_status` (and `intended_worst_module`) in `calibration/manifest.json`
-   — this is a one-time, human-confirmed record of intent. Leave it `"unset"`
-   until you've actually confirmed it; never guess.
-3. Upload the documents to the project as usual.
-4. Open `calibration/verify.html` in a browser. It fetches the manifest and
-   the live `?action=listslim` project list and shows PASS/FAIL per project —
-   PASS means the live computed status matches the manifest's target. A
-   project with `target_status: "unset"` always shows a distinct
-   **NO TARGET SET** badge, never a silent pass.
+- **Development server**: `python server/tools/dev_serve.py [port]` (default 8010). It fills
+  `DATABASE_URL` only if unset (defaulting to a gitignored repo-local SQLite file), migrates to
+  head, seeds development fixtures, and serves the frontend and API together on port 8010.
+- **Tests**: the suites in `server/tools/test_*.py` each need a freshly migrated throwaway
+  database; run `python -m alembic upgrade head` against each before the suite. Read counts from
+  each suite's own `RESULT: n/n` line. `tests.html` and `tests_render.html` are browser suites:
+  open them at `http://127.0.0.1:8010/` with the dev server up. `tests_render.html` is the
+  regression net for stored-result rendering and must be run after any change to `app.js`,
+  `detail.js`, `decision.js`, or `taxonomy.js`.
+- **Deployment**: Render, from `render.yaml`. A push to `main` deploys. `DATABASE_URL` and
+  secrets live in the Render dashboard, never in this repository.
 
-Re-run `calibration/verify.html` after any change to a module, the
-status-derivation rule, or the governance thresholds — it's the regression
-net for "did this change move a calibrated project off its intended
-status."
+## Rules that govern the content
 
-## Handbook → chatbot library export
+From `NAMING_AUTHORITY.md`, which carries the full list:
 
-The chatbot's Drive `_lib` folder (`pceif_definition`, `signal_taxonomy`,
-`governance_framework`, `escalation_logic`, `faq_simulated`) is meant to hold
-plain-text content **generated from the in-app Handbook**
-(`assets/js/knowledge.js`), not maintained separately — the Handbook is the
-single source of truth for both the in-app documentation and the chatbot's
-grounding text.
-
-After any Handbook content change in `knowledge.js`, open `tools/export_lib.html`,
-re-generate the five outputs, and manually re-upload them to the backend's
-Drive `_lib` folder (uploading stays a manual step — Drive is not reachable
-from this repo/environment). The five `.txt` outputs are GENERATED artifacts;
-do not hand-edit them on Drive — edit `knowledge.js` and re-export instead.
-
-## Run / deploy
-
-Open `index.html` directly, or serve the folder
-(`python -m http.server`). All paths are relative, so the site works under the
-GitHub Pages project subpath `/lin-project-radar/`. `.nojekyll` is present.
+- There is deliberately no named framework. Describe the capability, not a name. The names the
+  code still carries in places (`PCEIF_*` constants and development-era artifacts) are retired;
+  do not use them in anything user-facing and do not reason from their framing.
+- Quote the standing description verbatim; never paraphrase it into a new variant.
+- No module ids or numbers in user-facing text, and no em dashes.
+- Do not describe capability the platform does not have. Extraction has never run against a real
+  project document.
+- Do not adopt liability or consent language on your own judgement; draft it for review.
