@@ -189,3 +189,116 @@ Both changes from the 838 baseline, stated where they happened:
 - `test_features` 36 → **41**: five checks covering the project-creation gate.
 - `test_decision_ui_t4` holds at 73/73; its guarantee-10 scan was repointed from the deleted
   `decision.html` to `index.html` and indexed by filename rather than list position.
+
+---
+
+# PART A (copy) — progress, and exactly what is left
+
+Branch `t7-copy-and-globe`. **Not merged**: Part A merges only when complete, and 84 prose em
+dashes remain. 843 checks pass at every commit.
+
+## Done
+
+| | |
+|---|---|
+| `218618d` | American spelling (79 words), the sign-in page, `index.html` em dashes (17) |
+| `6cf2122` | Participant-facing em dashes (25) |
+| `84f74d4` | `detail.js` em dashes (35), including the assistant prompt |
+| `54d7338` | `COPY_GLOSSARY.md`, and the pre-judgment commit wording |
+
+**Spelling is finished.** 79 words, British to American, in strings only. The sweep only ever
+rewrites British into American, so it cannot touch `center` (CSS) or `analyze` (an `/exec` action
+name). Three tests asserted `"not authorised"` against server refusals and were updated:
+`test_assignment_blinding:244`, `test_export:302`, `test_research_identity:131`. They failed
+first, which is how they were found.
+
+**The assistant was instructed to write em dashes.** `detail.js:1155` told the model to put
+`' — '` on the same line as a group heading, so the platform generated them at runtime. Fixing
+static strings alone would have left that in place. Worth checking for again if new prompts land.
+
+**The conditional notice works** after the fold and the Part 3 rewrite. Verified in a browser:
+research is the pre-sign-in default with operational hidden, and they swap only when
+`og-account-operational` resolves. Footer order is now notice, attribution, copyright.
+
+## Left: 84 prose em dashes
+
+Run `python tools/copy_inventory.py`, and the classifier distinguishes prose from placeholders.
+**Of the original 212, only 165 were ever prose**; the other 47 are the standalone `—` meaning
+"no value" in a table cell, which must stay.
+
+| Count | File |
+|---|---|
+| 24 | `assets/js/signals.js` |
+| 14 | `assets/js/auditor.js` |
+| 11 | `assets/js/admin.js` |
+| ~11 | `assets/js/detail.js` (remainder) |
+| 7 | `assets/js/assistant.js` |
+| 4 | `assets/js/deepdive.js` |
+| 3 each | `tests.html`, `assets/js/export.js` |
+| 1–2 each | `projectnet2d.js`, `charts3d.js`, `forcenet.js`, `neural_flow.js`, `research/deepdive.html` |
+
+These are the legacy dashboard and researcher surfaces. The participant-facing path is done.
+
+**Method that worked:** dump the strings with the emdash script, write explicit before/after pairs
+in a script, run it, re-measure. Do not apply a blanket rule. A mechanical hyphen is its own tell,
+and a mechanical comma reads only slightly better; each sentence wants a specific mark.
+
+## Also left in Part A
+
+- Task 7 across the remaining screens: empty states, refusal messages a participant can actually
+  trigger, and tooltips on portfolio, project detail, upload, admin and the expert workflow.
+  The pre-judgment confirmation and "Awaiting analysis" are done.
+- Apply `COPY_GLOSSARY.md` consistently. The glossary exists; the sweep that enforces it does not.
+
+---
+
+# PART B (globe) — investigated, not started, awaiting approval
+
+The brief requires the library choice to be approved before building. Findings:
+
+## 1. What exists today
+
+**MapLibre GL 4.7.1, CDN-loaded from cdnjs**, in `assets/js/app.js` only:
+
+- `GL_CSS_URL` / `GL_JS_URL` at `app.js:591-592`
+- `loadMapLibre()` at `app.js:598` injects the tag and rejects on `onerror`
+- `showMapFailure()` at `app.js:714` is the existing fallback when the CDN is blocked or offline
+- markers built at `app.js:849`, popup at `app.js:905`, `hideMapCard()` at `app.js:890`
+- double-clicking a marker calls `openDetail(p.id)` (`app.js:856`) — that is the existing
+  selection behavior the globe must reproduce rather than replace
+
+**There is already a graceful-degradation path.** `app.js:733` checks `typeof maplibregl ===
+"undefined"` and calls `showMapFailure()`. Any globe should reuse this shape rather than invent
+one, and the existing map is the natural fallback target.
+
+## 2. Coordinates
+
+`hasCoords(p)` at `app.js:668` already gates on `p.lat`/`p.lng` being finite, and `app.js:845`
+already warns when latitude exceeds ±90 (a lat/lng ordering mistake). So **projects without
+coordinates are already a handled case on the map**, and the globe inherits the same question:
+they must remain listed and reachable, not silently dropped.
+
+Geocoding is referenced in `app.js`, `ingest.js` and `server/app/models.py`. **Confirm before
+building** whether geocoding actually runs at project creation on the current server path
+(`projectcreate` in `workspace.py`), because the projects created during Part 3 testing had no
+coordinates and still rendered in the project list.
+
+## 3. Library recommendation, for approval
+
+**Recommend: `globe.gl` or raw `three.js`, CDN-loaded, with the existing MapLibre map as the
+fallback.** Reasoning to weigh:
+
+- It matches the existing delivery model. MapLibre is already CDN-loaded with a working failure
+  path, so the globe adds no new *kind* of risk, only another asset on the same CDN.
+- The repository has been bitten twice by dependency availability, so **vendoring the library
+  into `assets/vendor/` is the safer option** and I would lean that way despite the size: it
+  removes the CDN from the critical path entirely and makes the fallback about WebGL only.
+- Fallback chain: WebGL unavailable or library fails → render the existing MapLibre map →
+  MapLibre also unavailable → the plain project list. No blank panel at any step.
+- Performance constraints from the brief are real on a single small instance: do not block page
+  load, stop the animation loop when the tab is hidden or the view is left, and release the WebGL
+  context on teardown. `hideMapCard()` and the existing view-switch are where that hooks in.
+
+**Decide before I build:** vendored or CDN, and `globe.gl` or `three.js` directly.
+
+Nothing in Part B has been written.
