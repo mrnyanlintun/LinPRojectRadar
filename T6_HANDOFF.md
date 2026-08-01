@@ -302,3 +302,118 @@ fallback.** Reasoning to weigh:
 **Decide before I build:** vendored or CDN, and `globe.gl` or `three.js` directly.
 
 Nothing in Part B has been written.
+
+---
+
+# T8 — geocoding, vendoring, and the globe
+
+Branch `t8-geocode-globe`, **not merged**. `main` is at `c17e4fd`. 854 checks across 17 suites
+pass at every commit. No migration anywhere in this branch.
+
+| Stage | Status |
+|---|---|
+| Server-side geocoding (Nominatim) | Done, tested, live-verified |
+| Near-miss handling (`Matched to:`) | Done, browser-verified |
+| Stage 1 — vendor MapLibre | Done, verified served |
+| Stage 2 — verify the four insertions | Done, found and fixed a colour bug |
+| Stage 3 — vendor globe.gl | Done, verified served |
+| **Stage 3 — build the globe** | **NOT STARTED** |
+
+## What was learned about Nominatim, from live calls
+
+Response shape: always HTTP 200 with a JSON array. No match is `[]`, not a 404. A match carries
+`lat`, **`lon`** (not `lng`), `display_name`, `class`, `type`, `importance`.
+
+Verified plausible: PHL `39.87397, -75.24382`; BNA `36.11958, -86.68266`.
+
+**Two failure modes matter more than the not-found case:**
+
+1. **A street address and a facility name concatenated returns `[]`.** "8000 Essington Avenue,
+   Philadelphia International Airport, Philadelphia, PA 19153" finds nothing, though each half
+   alone resolves. The original error message advised adding city and state, which that query
+   already had; it now says to try one or the other, not both.
+
+2. **The top hit is often nearby but wrong.** "Philadelphia International Airport, Philadelphia,
+   PA" returns a Hampton Inn 1.5 km away. "8000 Essington Ave" returns "Mezzogiorno", a business
+   at that street number. Both are correct for the string typed and wrong for the project.
+
+   This is why `formattedAddress` (the geocoder's `display_name`) is surfaced at create, in the
+   project list, on the project page and in the admin create flow. **Do not remove it.** A blank
+   map invites a fix; a pin on the wrong building signals nothing.
+
+   Deliberately NOT solved by raising `limit` and filtering on `class`/`type`: airports resolve
+   as aeroway, but a postal facility, an office fit-out or a highway package will not, and that
+   filter would encode an assumption that holds for one project type and fails for the rest.
+
+## Colour carries meaning
+
+Stage 2 found the create confirmation rendering a **successful** match in `--status-red`, because
+it reused the error slot. Fixed: `ws-note` for a match, `ws-note ws-geo-warn` (amber) for a
+missing position, `ws-error` only for an actual failure. Amber rather than red for "no map
+position" because the project is fine and only its position is missing.
+
+## Stage 3 — building the globe
+
+Everything below is investigated but unwritten.
+
+**Dependency is in place.** `assets/vendor/globe.gl.min.js`, 1.48 MB, verified served and
+exposing `window.Globe` as a function. It bundles three.js, so there is no second file and no
+version-compatibility question. `assets/vendor/` totals 2.3 MB with MapLibre; both load on demand.
+
+**Where the map lives**, all in `assets/js/app.js`:
+
+| | |
+|---|---|
+| `app.js:565` | the block comment describing the map view |
+| `app.js:591-592` | `GL_CSS_URL` / `GL_JS_URL`, now `assets/vendor/` |
+| `app.js:598` | `loadMapAssets()`, on-demand injection with an `onerror` reject |
+| `app.js:714` | `showMapFailure()` — the existing no-blank-panel path, reuse it |
+| `app.js:733` | the `typeof maplibregl === "undefined"` guard |
+| `app.js:849` | marker construction |
+| `app.js:856` | **`openDetail(p.id)` on double-click — the selection behaviour to reproduce** |
+| `app.js:890` | `hideMapCard()`, where teardown hooks in |
+| `app.js:668` | `hasCoords(p)` — projects without coordinates are already a handled case |
+
+**Data.** `workspaceprojects` already returns `address`, `formattedAddress`, `geocodeError`,
+`lat`, `lng` per project. Status comes from the stored row via `getProjectFusion(p)` in
+`taxonomy.js`, which reads `computed_results` and computes nothing. **The globe must not compute
+a status**, and `sim.js` / `simulations.js` / `categories.js` must still not load on any
+participant-facing route.
+
+**Degradation chain, no blank panel at any step:** WebGL unavailable or `Globe` fails to load →
+the existing MapLibre map → MapLibre unavailable → the plain project list. Test WebGL with a
+throwaway canvas and `getContext('webgl2') || getContext('webgl')` before constructing anything.
+
+**Lifecycle, which is where this kind of thing usually goes wrong:**
+- do not block page load — load on first open of the view, as the map already does
+- stop the animation loop on `document.visibilitychange` when hidden
+- stop it and release the WebGL context when the view is left; `hideMapCard()` and the
+  radar/globe toggle are the hooks
+- guarantee 6 asks you to *demonstrate* the loop stopping, so instrument it in a way that can be
+  observed from the console rather than asserted
+
+**Projects without coordinates stay listed and reachable.** They are not dropped because they
+cannot be placed. The project list already shows them with "No map position".
+
+**Theme variables only.** No private palette, same rule as every other screen. Status colours come
+from `--status-green` / `--status-amber` / `--status-red` / `--status-nodata`.
+
+**The radar is not to be touched.** Guarantee 1 is that it renders identically before and after.
+
+## Remaining Part A copy work, unchanged
+
+84 prose em dashes in the legacy dashboard and researcher surfaces: `signals.js` 24, `auditor.js`
+14, `admin.js` 11, `detail.js` ~11, `assistant.js` 7, then singles. The participant-facing path is
+done. Method that worked: dump the strings, write explicit before/after pairs in a script, run it,
+re-measure. Never a blanket rule.
+
+## Also worth knowing
+
+- **The browser caches edited JS** while the server serves the new file. It bit this session
+  again. Check `String(window.LinX.fn).includes(...)` if behaviour disagrees with the source; a
+  fresh tab clears it.
+- **PDF.js and SheetJS are still CDN-loaded** at `index.html:1060` and `:1062`. The same corporate
+  network that would have blocked MapLibre will block those, breaking client-side PDF extraction
+  and the audit export. Not in scope for T8, but the same argument applies.
+- The geocoding tests stub `app.geocode.geocode`, so the suite stays offline and never spends
+  Nominatim's rate limit. Keep it that way.
