@@ -10,6 +10,17 @@
 (function () {
   "use strict";
 
+  // T9. The detail view's own globe handle. LinGlobe is not a singleton, so this one is
+  // independent of the portfolio's and each is torn down by whoever made it.
+  let detailGlobe = null;
+
+  // A project is placeable when it has finite coordinates in range. Same test the portfolio
+  // globe and the map use; kept here rather than imported so detail.js stays free of app.js.
+  function hasCoordsFor(p) {
+    const lat = Number(p && p.lat), lng = Number(p && p.lng);
+    return isFinite(lat) && isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+  }
+
   const esc = (s) => String(s == null ? "" : s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -825,6 +836,9 @@
   function render(id) {
     const root = document.getElementById("detail-root");
     if (!root) return;
+    // render() replaces the whole subtree, so any globe from a previous project would lose its
+    // container while keeping its WebGL context. Release it before the DOM goes.
+    if (detailGlobe) { try { detailGlobe.destroy(); } catch (e) {} detailGlobe = null; }
     const p = (window.LinStore ? LinStore.getCached(id) : null) ||
               LIN_PROJECTS.find((x) => x.id === id);
     if (!p) {
@@ -884,6 +898,13 @@
              Extracted Signals (not in the named order) is kept adjacent to Signal
              Inputs. sessionStorage keys (the section ids) are unchanged, so saved
              open/closed states survive. */""}
+        ${/* T9. The focused globe. A NEW section rather than a replacement: project detail
+             never had a map view. First in the order because where a project is is context for
+             everything below it, and it collapses like every other section. */""}
+        ${cs("d-globe", "Location",
+             `<div class="detail-globe" data-project-id="${esc(p.id)}"></div>
+              <p class="detail-globe-note ws-note"></p>`,
+             false, hasCoordsFor(p) ? "located" : "no location")}
         ${cs("d-projnet", "Project Signal Network", `<div class="detail-projnet2d"></div>`, false, totalCats + " categories")}
         ${cs("d-neural", "Signal Flow", `<div class="detail-neural-flow" data-project-id="${esc(p.id)}"></div>`, false, `${totalModulesForBadge} modules`)}
         ${cs("d-brief", "Executive Brief", executiveBriefHtml(p), false, "")}
@@ -916,6 +937,49 @@
       // already rendered above — no post-expand work, but kept in lazyInits
       // to follow the same render-on-first-expand idiom as every other section.
       "d-periods": () => {},
+      // T9. One instance per mount point: this globe is the detail view's own and does not
+      // disturb the portfolio's. Same rules as the portfolio globe — status from the stored
+      // row, nothing computed, and never a blank panel.
+      "d-globe": () => {
+        const host = root.querySelector(".detail-globe");
+        const note = root.querySelector(".detail-globe-note");
+        if (!host) return;
+        if (!hasCoordsFor(p)) {
+          // A project with no coordinates gets the no-position state, not an empty sphere
+          // spinning over nothing.
+          host.innerHTML = "";
+          if (note) {
+            note.className = "detail-globe-note ws-note ws-geo-warn";
+            note.textContent = p.geocodeError
+              ? "No map position. " + p.geocodeError
+              : "No map position. Add a site address to place this project.";
+          }
+          return;
+        }
+        if (!window.LinGlobe) {
+          if (note) note.textContent = "The globe is unavailable on this device. "
+            + (p.formattedAddress || "Location recorded.");
+          return;
+        }
+        if (detailGlobe) { try { detailGlobe.destroy(); } catch (e) {} detailGlobe = null; }
+        LinGlobe.mount(host, [p], {
+          focus: { lat: Number(p.lat), lng: Number(p.lng) },
+          interactive: false
+        }).then((res) => {
+          if (!res || !res.ok) {
+            // No WebGL, or the library did not load. Say where the project is in words rather
+            // than leaving a panel that never fills.
+            host.innerHTML = "";
+            if (note) note.textContent = "The globe is unavailable on this device. "
+              + (p.formattedAddress || "Location recorded.");
+            return;
+          }
+          detailGlobe = res.handle;
+          if (note) note.textContent = p.formattedAddress
+            ? "Matched to: " + p.formattedAddress
+            : "Located.";
+        });
+      },
       // Uploaded-docs table is already in the section HTML; the extracted-
       // signals panel below it renders on expand.
       "d-docsignals": () => { if (window.LinSignals) LinSignals.renderSignalsPanel(root.querySelector(".detail-signals"), p); },
@@ -2054,5 +2118,11 @@
     animate();
   }
 
-  window.LinDetail = { render };
+  // teardown is exported so app.js can release the context when the detail page is left,
+  // rather than waiting for the next render that may never come.
+  function teardown() {
+    if (detailGlobe) { try { detailGlobe.destroy(); } catch (e) {} detailGlobe = null; }
+  }
+
+  window.LinDetail = { render, teardown };
 })();

@@ -100,6 +100,31 @@ set_extractor_override(StubExtractor(DEV_RECORDINGS))
 print(f"[dev_serve] stub extractor seeded with {len(DEV_RECORDINGS)} recordings; "
       f"fixture documents written to server/dev_fixtures/")
 
+# --------------------------------------------------------------------------- no stale assets
+#
+# The browser caches /assets aggressively, so an edited JS file keeps running its old version
+# while the server serves the new one. That has cost real time in three separate sessions: the
+# symptom is behaviour disagreeing with the source, and the diagnosis looks like a logic bug
+# until someone fetches the file and compares.
+#
+# DEVELOPMENT ONLY. Render runs uvicorn directly and never imports this module, so production
+# caching is untouched — and production wants those headers.
+from starlette.middleware.base import BaseHTTPMiddleware  # noqa: E402
+import app.main as _main  # noqa: E402
+
+
+class _NoAssetCache(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        if request.url.path.startswith("/assets") or request.url.path.endswith(".html"):
+            response.headers["Cache-Control"] = "no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+        return response
+
+
+_main.app.add_middleware(_NoAssetCache)
+print("[dev_serve] /assets served no-store; edits take effect on reload")
+
 port = int(sys.argv[1]) if len(sys.argv) > 1 else 8010
 
 print(f"[dev_serve] database : {os.environ['DATABASE_URL']}")

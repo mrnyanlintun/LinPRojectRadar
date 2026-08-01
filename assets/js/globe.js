@@ -3,7 +3,18 @@
    ------------------------------------------------------------
    The portfolio globe, and the focused globe on project detail.
 
-   IT COMPUTES NOTHING. Every colour here comes from the status the server stored in
+   ONE INSTANCE PER MOUNT POINT. This was a singleton, which meant a second mount destroyed
+   the first and the two views could not coexist. They now each own a renderer, a context and
+   a destructor. Two WebGL contexts is not a problem — browsers allow well beyond two — and the
+   alternative was tearing the portfolio globe down and rebuilding it every time a project was
+   opened and closed, which is slower and has more ways to go wrong than simply letting each
+   view keep its own.
+
+   The portfolio view is hidden while detail is open, so its loop is already stopped by the same
+   visibility and teardown mechanism the portfolio globe uses; an idle second context costs
+   nothing while it is not animating.
+
+   IT COMPUTES NOTHING. Every colour comes from the status the server stored in
    computed_results, read through taxonomy.js's getProjectFusion(). That is the rule Part 3
    established after the browser derivation was found returning Red on projects five per cent
    under budget, and a visualisation is exactly where it would be tempting to break it.
@@ -17,13 +28,9 @@
    there are three steps and none of them is a blank panel:
 
        WebGL and globe.gl available   -> the globe
-       either missing                 -> the existing MapLibre map
-       MapLibre missing too           -> the plain project list, which is always in the DOM
-
-   THE ANIMATION LOOP IS A LIABILITY IF IT OUTLIVES THE VIEW. This service is one small
-   instance and a director may leave a tab open all afternoon. The loop is paused when the
-   document is hidden and stopped entirely when the view is left, and the WebGL context is
-   released rather than left for the garbage collector to find later.
+       either missing                 -> whatever the caller falls back to (the map, or a
+                                         plain no-position message on project detail)
+       nothing available              -> the project list, which is always in the DOM
 
    PROJECTS WITHOUT COORDINATES ARE NOT LOST. They cannot be placed, so they are not points, but
    they remain in the project list below the stage, which is the same keyboard path the radar
@@ -35,9 +42,8 @@
 
   var VENDOR_URL = "assets/vendor/globe.gl.min.js";
 
-  var instance = null;      // the live Globe(), or null
-  var host = null;          // the element it was mounted into
   var loadPromise = null;
+  var live = [];            // every mounted instance, so visibility can reach all of them
   var visibilityBound = false;
 
   /* ---------- capability ---------- */
@@ -63,7 +69,7 @@
       s.async = true;
       s.onload = function () { resolve(typeof window.Globe === "function"); };
       // Resolves false rather than rejecting. A missing globe is a fallback, not an exception:
-      // the caller's job is to show the map, not to handle an error.
+      // the caller's job is to show something else, not to handle an error.
       s.onerror = function () { resolve(false); };
       document.head.appendChild(s);
     });
@@ -124,15 +130,23 @@
     return pts;
   }
 
-  /* ---------- lifecycle ---------- */
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  /* ---------- shared visibility ----------
+     One listener for every instance. A globe spinning in a tab nobody is looking at is pure
+     cost on a single small instance, and that is as true of two globes as of one. */
 
   function onVisibility() {
-    if (!instance) return;
-    // A globe spinning in a tab nobody is looking at is pure cost on a single small instance.
-    try {
-      if (document.hidden) instance.pauseAnimation();
-      else instance.resumeAnimation();
-    } catch (e) { /* older builds may lack these; not worth failing the view over */ }
+    live.forEach(function (g) {
+      try {
+        if (document.hidden) g.globe.pauseAnimation();
+        else g.globe.resumeAnimation();
+      } catch (e) { /* older builds may lack these; not worth failing a view over */ }
+    });
   }
 
   function bindVisibility() {
@@ -141,54 +155,72 @@
     visibilityBound = true;
   }
 
-  function destroy() {
-    if (!instance) return;
-    try { instance.pauseAnimation(); } catch (e) {}
-    try {
-      // globe.gl's own teardown. It disposes the renderer, which is what actually releases the
-      // WebGL context; dropping the reference alone would leave the context alive until the
-      // driver reclaimed it, and browsers cap how many a page may hold.
-      if (typeof instance._destructor === "function") instance._destructor();
-    } catch (e) {}
-    try {
-      if (host) host.innerHTML = "";
-    } catch (e) {}
-    instance = null;
-    host = null;
+  /* ---------- an instance ---------- */
+
+  function makeHandle(globe, host) {
+    var handle = {
+      globe: globe,
+      host: host,
+      destroyed: false,
+
+      destroy: function () {
+        if (handle.destroyed) return;
+        handle.destroyed = true;
+        try { globe.pauseAnimation(); } catch (e) {}
+        try {
+          // globe.gl's own teardown. It disposes the renderer, which is what actually releases
+          // the WebGL context; dropping the reference alone would leave the context alive until
+          // the driver reclaimed it, and browsers cap how many a page may hold.
+          if (typeof globe._destructor === "function") globe._destructor();
+        } catch (e) {}
+        try { if (host) host.innerHTML = ""; } catch (e) {}
+        var i = live.indexOf(handle);
+        if (i >= 0) live.splice(i, 1);
+      },
+
+      resize: function () {
+        if (handle.destroyed || !host) return;
+        var rect = host.getBoundingClientRect();
+        var w = Math.max(240, Math.round(rect.width));
+        var h = Math.max(240, Math.round(rect.height || w * 0.5));
+        try { globe.width(w).height(h); } catch (e) {}
+      },
+
+      refresh: function (projects) {
+        if (handle.destroyed) return;
+        try { globe.pointsData(pointsFrom(projects)); } catch (e) {}
+      },
+
+      isRunning: function () { return !handle.destroyed; }
+    };
+    return handle;
   }
 
-  /* ---------- mount ---------- */
-
   /**
-   * Build the globe into `container`.
+   * Build a globe into `container`.
    *
-   * Resolves { ok: true } when the globe is showing, or { ok: false, reason } when the caller
-   * should fall back. It never throws and never leaves the container empty on failure: an empty
-   * panel is the one outcome that is not allowed.
+   * Resolves { ok: true, handle } when the globe is showing, or { ok: false, reason } when the
+   * caller should fall back. It never throws and never leaves the container empty on failure:
+   * an empty panel is the one outcome that is not allowed.
    *
-   * opts.focus  — { lat, lng } to centre on, for the project detail view.
+   * opts.focus    — { lat, lng } to centre on, for the project detail view.
    * opts.onSelect — called with a project id. The portfolio passes openDetail, so selecting a
    *                 point does exactly what selecting a map marker has always done.
+   * opts.interactive — false to disable rotate/zoom, for a focused single-project view.
    */
   function mount(container, projects, opts) {
     opts = opts || {};
     if (!container) return Promise.resolve({ ok: false, reason: "no container" });
-
-    if (!webglAvailable()) {
-      return Promise.resolve({ ok: false, reason: "webgl-unavailable" });
-    }
+    if (!webglAvailable()) return Promise.resolve({ ok: false, reason: "webgl-unavailable" });
 
     return loadLibrary().then(function (available) {
       if (!available) return { ok: false, reason: "library-unavailable" };
 
-      destroy();                     // never two globes, never two contexts
-      host = container;
       container.innerHTML = "";
-
       var pts = pointsFrom(projects);
 
       try {
-        instance = window.Globe()(container)
+        var globe = window.Globe()(container)
           .backgroundColor("rgba(0,0,0,0)")
           .showAtmosphere(true)
           .atmosphereColor(themeColor("--brand-verdigris", "#4fa393"))
@@ -199,7 +231,7 @@
           .pointLng("lng")
           .pointColor("color")
           .pointAltitude(0.06)
-          .pointRadius(0.6)
+          .pointRadius(opts.focus ? 1.0 : 0.6)
           .pointLabel(function (d) {
             // Name, status and what the geocoder matched. The matched address is here for the
             // same reason it is on every other surface: a pin on the wrong building looks
@@ -216,55 +248,46 @@
 
         // Solid material from the theme rather than a texture image, which would be a CDN fetch.
         try {
-          var mat = instance.globeMaterial();
+          var mat = globe.globeMaterial();
           if (mat && mat.color && typeof mat.color.set === "function") {
             mat.color.set(themeColor("--surface-soft", "#12242a"));
             if ("shininess" in mat) mat.shininess = 4;
           }
         } catch (e) { /* the globe still renders without the tint */ }
 
-        sizeToHost();
+        var handle = makeHandle(globe, container);
+        live.push(handle);
+        handle.resize();
+
         if (opts.focus && isFinite(opts.focus.lat) && isFinite(opts.focus.lng)) {
           try {
-            instance.pointOfView({ lat: opts.focus.lat, lng: opts.focus.lng, altitude: 1.6 }, 0);
+            globe.pointOfView({ lat: opts.focus.lat, lng: opts.focus.lng, altitude: 1.4 }, 0);
+          } catch (e) {}
+        }
+        if (opts.interactive === false) {
+          try {
+            var controls = globe.controls();
+            if (controls) { controls.enableZoom = false; controls.autoRotate = true;
+                            controls.autoRotateSpeed = 0.35; }
           } catch (e) {}
         }
         bindVisibility();
-        return { ok: true, points: pts.length, unplaceable: (projects || []).length - pts.length };
+        return {
+          ok: true,
+          handle: handle,
+          points: pts.length,
+          unplaceable: (projects || []).length - pts.length
+        };
       } catch (e) {
-        destroy();
         return { ok: false, reason: "construction-failed" };
       }
     });
   }
 
-  function sizeToHost() {
-    if (!instance || !host) return;
-    var rect = host.getBoundingClientRect();
-    var w = Math.max(240, Math.round(rect.width));
-    // Height follows the container; the stage is a fixed-height band on every viewport width.
-    var h = Math.max(240, Math.round(rect.height || w * 0.5));
-    try { instance.width(w).height(h); } catch (e) {}
-  }
-
-  function refresh(projects) {
-    if (!instance) return;
-    try { instance.pointsData(pointsFrom(projects)); } catch (e) {}
-  }
-
-  function escapeHtml(s) {
-    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
-    });
-  }
-
   window.LinGlobe = {
     mount: mount,
-    destroy: destroy,
-    refresh: refresh,
-    resize: sizeToHost,
     webglAvailable: webglAvailable,
-    // Exposed so a check can observe the loop rather than take it on trust.
-    isRunning: function () { return !!instance; }
+    // Exposed so a check can observe the loops rather than take them on trust.
+    liveCount: function () { return live.length; }
   };
 })();
