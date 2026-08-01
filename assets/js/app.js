@@ -640,6 +640,17 @@
   /* background warm-up: after the portfolio list has painted and the browser
      is idle, preload the MapLibre assets and build the (hidden) map instance
      so style/fonts/sprites/tiles fetch while the user is still on the radar. */
+  /* ORPHANED AS OF T11 — READ BEFORE REUSING.
+     The MapLibre map is no longer reachable from any user path. It was two things: the second
+     portfolio stage, and the fallback the globe degraded to. The flat atlas is now both, so
+     nothing routes here any more — scheduleMapWarmup() has no callers, and buildMap() is only
+     reachable from a flag that buildMap() itself is the only thing to set.
+
+     It is left in place rather than deleted because removing it touches ~400 lines, two vendored
+     files (837 KB), the CSP, and the map markup, and that is its own change with its own
+     verification. It costs nothing where it stands: no path loads maplibre-gl, so the default
+     path never pays for it. Deleting it is a clean follow-up, not a loose end that will bite —
+     but do not "fix" it back into service by wiring a caller. */
   function scheduleMapWarmup() {
     if (shouldSkipMapWarmup()) return;
     const idle = window.requestIdleCallback || function (cb) { setTimeout(cb, 1200); };
@@ -1042,42 +1053,79 @@
   });
 
 
-  /* ---------- Radar | Map view toggle (persisted; radar default) ---------- */
+  /* ---------- Radar | Map | Globe view toggle (persisted; MAP is the default) ----------
+
+     T11. Three buttons, four possible stages. The default is "map", the flat SVG atlas, because
+     it is the only geographic view that cannot fail to draw: no WebGL, no 3D library, no
+     animation loop, every mark a DOM node the moment it is built. The globe stayed in the
+     codebase but stopped being the thing the portfolio depends on.
+
+     "globe" now degrades to the ATLAS rather than to MapLibre. That is a shorter chain and a
+     better one: the atlas needs no network at all beyond geometry already vendored, whereas
+     MapLibre needed tiles from a host a corporate network may well block — the fallback was
+     itself the most fragile link. */
   function setPortfolioView(view, persist) {
-    // T8. Two buttons, three possible stages. "globe" asks for the globe and settles for the
-    // map, because a director on a locked corporate laptop is a realistic user and an empty
-    // panel is the one outcome that is not allowed. "map" is still accepted so a persisted
-    // preference from before the globe existed still resolves to something.
+    if (view !== "map" && view !== "globe" && view !== "radar") view = "map";
     const wantsGeo = view === "globe" || view === "map";
     if (!wantsGeo) hideMapCard();   // the pinned card is fixed-positioned — never leave it over the radar
     const radarWrap = document.querySelector(".radar-wrap");
     const mapWrap = document.querySelector(".map-wrap");
     const globeWrap = document.querySelector(".globe-wrap");
+    const atlasWrap = document.querySelector(".atlas-wrap");
     const note = document.querySelector(".radar-note");
     if (radarWrap) radarWrap.hidden = wantsGeo;
     if (note) note.hidden = wantsGeo;           // radar caption; the geo views have their own
     document.querySelectorAll(".stage-btn").forEach((b) =>
-      b.classList.toggle("active", b.dataset.view === view
-        || (b.dataset.view === "globe" && view === "map")));
+      b.classList.toggle("active", b.dataset.view === view));
 
-    if (!wantsGeo) {
-      // LEAVING THE GEO VIEW. Stop the loop and release the context rather than leaving a
-      // renderer running behind a hidden panel: a director may leave this tab open all
-      // afternoon, and this service is one small instance.
+    // Whatever we are switching to, the globe's context goes if it is not the globe. A renderer
+    // left running behind a hidden panel costs a small instance all afternoon.
+    if (view !== "globe") {
       if (globeWrap) globeWrap.hidden = true;
-      if (mapWrap) mapWrap.hidden = true;
       try { if (portfolioGlobe) { portfolioGlobe.destroy(); portfolioGlobe = null; } } catch (e) {}
+      globeMountToken++;   // supersede any mount still resolving, so it releases itself
+    }
+    if (mapWrap) mapWrap.hidden = true;
+
+    if (view === "radar") {
+      if (atlasWrap) atlasWrap.hidden = true;
+    } else if (view === "map") {
+      if (atlasWrap) atlasWrap.hidden = false;
+      buildAtlasStage();
     } else {
-      buildGeoStage(globeWrap, mapWrap);
+      if (atlasWrap) atlasWrap.hidden = true;
+      buildGeoStage(globeWrap, mapWrap, atlasWrap);
     }
     if (persist !== false) { try { localStorage.setItem(VIEW_KEY, view); } catch (e) {} }
   }
 
+  /* The default stage. Nothing here can fail in a way that leaves an empty panel: the frame and
+     the markers are drawn synchronously, and the coastlines are a fetch of already-vendored
+     geometry that resolves to nothing rather than rejecting. */
+  async function buildAtlasStage() {
+    const host = document.getElementById("atlas-canvas");
+    const noteEl = document.getElementById("atlas-note");
+    if (!host || !window.LinAtlas) return;
+    if (noteEl) noteEl.textContent = "Locating projects…";
+    await hydrateProjectsForGeo();
+    const res = await LinAtlas.render(host, LIN_PROJECTS, {
+      onSelect: (id) => openDetail(id)
+    });
+    if (noteEl && res) {
+      // Say plainly that some projects are not shown, rather than letting a director count the
+      // markers and wonder. They are still in the list below.
+      noteEl.textContent = res.unplaced > 0
+        ? res.placed + " project(s) placed. " + res.unplaced
+          + " have no location yet and are listed below."
+        : res.placed + " project(s) placed. Select one to open it.";
+    }
+  }
+
   /* The degradation chain, in one place so it cannot disagree with itself:
-         globe  ->  MapLibre map  ->  the project list that is always in the DOM
+         globe  ->  the flat atlas  ->  the project list that is always in the DOM
      Each step is only reached because the one before it could not run. */
-  async function buildGeoStage(globeWrap, mapWrap) {
-    if (!window.LinGlobe) { showMapInstead(globeWrap, mapWrap); return; }
+  async function buildGeoStage(globeWrap, mapWrap, atlasWrap) {
+    if (!window.LinGlobe) { showAtlasInstead(globeWrap, atlasWrap); return; }
     if (globeWrap) globeWrap.hidden = false;
     if (mapWrap) mapWrap.hidden = true;
 
@@ -1092,6 +1140,20 @@
     // context. The token is taken synchronously, so only the most recent mount keeps its handle.
     if (portfolioGlobe) { try { portfolioGlobe.destroy(); } catch (e) {} portfolioGlobe = null; }
     const token = ++globeMountToken;
+
+    // T11. A WATCHDOG, because mount() resolving is not the same as the globe drawing. globe.gl
+    // builds its scene inside the animation loop, so on a machine where that loop never runs
+    // mount() still resolves ok and the panel stays black — which is the exact failure this
+    // whole change exists to stop a director from seeing. If the scene has not appeared in a
+    // few seconds, fall back to the atlas rather than trusting the resolve.
+    let settled = false;
+    const giveUp = setTimeout(() => {
+      if (settled || token !== globeMountToken) return;
+      settled = true;
+      try { if (portfolioGlobe) { portfolioGlobe.destroy(); portfolioGlobe = null; } } catch (e) {}
+      showAtlasInstead(globeWrap, atlasWrap);
+    }, 4000);
+
     LinGlobe.mount(host, LIN_PROJECTS, {
       // Selecting a point does exactly what double-clicking a map marker has always done.
       // Deliberately not a new navigation idea.
@@ -1101,10 +1163,20 @@
         // A newer mount superseded this one while it was resolving. Release it rather than
         // leaving an orphan renderer holding a context nothing will ever tear down.
         try { if (res && res.handle) res.handle.destroy(); } catch (e) {}
+        clearTimeout(giveUp);
         return;
       }
-      if (!res || !res.ok) { showMapInstead(globeWrap, mapWrap); return; }
+      if (!res || !res.ok) {
+        settled = true; clearTimeout(giveUp);
+        showAtlasInstead(globeWrap, atlasWrap);
+        return;
+      }
       portfolioGlobe = res.handle;
+      // Only now is the watchdog stood down: the scene has actually been built, which is a
+      // stronger statement than the promise having resolved.
+      if (res.handle && typeof res.handle.hasScene === "function") {
+        if (res.handle.hasScene()) { settled = true; clearTimeout(giveUp); }
+      } else { settled = true; clearTimeout(giveUp); }
       if (noteEl) {
         // Say plainly that some projects are not shown, rather than letting a director count
         // the points and wonder. They are still in the list below.
@@ -1116,10 +1188,13 @@
     });
   }
 
-  function showMapInstead(globeWrap, mapWrap) {
+  /* The globe could not run. Show the flat map instead — never an empty panel, and no longer
+     MapLibre, whose tiles are the one part of the old chain a blocked network could still take
+     out. */
+  function showAtlasInstead(globeWrap, atlasWrap) {
     if (globeWrap) globeWrap.hidden = true;
-    if (mapWrap) mapWrap.hidden = false;
-    buildMap();   // which itself falls back to showMapFailure() and the list
+    if (atlasWrap) atlasWrap.hidden = false;
+    buildAtlasStage();
   }
   function wireViewToggle() {
     document.querySelectorAll(".stage-btn").forEach((b) =>
@@ -1654,9 +1729,11 @@
     // rules key off this class so both get dark headings, status-marker
     // outlines, yellow-pill dark ink, light spider axes, etc.
     document.body.classList.toggle("t-light", theme === "light" || theme === "maria");
-    document.querySelectorAll("[data-set-theme]").forEach((b) =>
-      b.classList.toggle("active", b.dataset.setTheme === theme)
-    );
+    // NOTE: there is deliberately no [data-set-theme] sweep here. Nothing in the DOM has ever
+    // carried that attribute — the theme switcher is the fly-out pills built in openThemeFlyout(),
+    // which set their own active state on open and on click. The dead selector that used to sit
+    // here cost a session: grepping for [data-set-theme] found nothing and the switcher was
+    // reported as missing. If a declarative switcher is ever added, wire it here.
     try {
       localStorage.setItem("lin-theme", theme);        // new primary key
       localStorage.setItem("lin-radar-theme", theme);  // legacy key (kept for back-compat)
@@ -1668,6 +1745,10 @@
     // every live globe repaints in place. After LIN_STATUS_COLORS.refresh(), because the point
     // colours it re-resolves are status colours.
     try { if (window.LinGlobe && LinGlobe.retheme) LinGlobe.retheme(); } catch (e) {}
+    // T11. The atlas has almost nothing to do here — its fills are var() references, so the
+    // cascade has already repainted it. Only the status letters' ink is a resolved colour and
+    // has to be recomputed.
+    try { if (window.LinAtlas && LinAtlas.retheme) LinAtlas.retheme(); } catch (e) {}
     onMapThemeChange();   // swap the OpenFreeMap dark/positron style if the map is live
   }
 
@@ -2718,15 +2799,19 @@
     buildRadar();
     buildFallbackList();
 
-    // Radar | Map toggle — radar default; a persisted "map" choice restores
-    // (and lazily builds the map now that the portfolio is hydrated).
+    // T11. Radar | Map | Globe — MAP is the default, and it is the flat SVG atlas. A persisted
+    // "map" from before this change resolves to the atlas rather than to MapLibre, which is the
+    // better of the two for anyone who chose it.
+    //
+    // THE MAPLIBRE WARM-UP IS GONE. It used to fetch maplibre-gl (773 KB + 64 KB of CSS) and
+    // open a connection to tiles.openfreemap.org on idle, on the DEFAULT path, for a view the
+    // user had not asked for. That was the largest single reason the default path touched an
+    // off-origin host at all. Nothing warms anything now: the atlas needs only geometry that is
+    // already vendored, and the globe's assets load when the globe is selected and not before.
     wireViewToggle();
-    let savedView = "radar";
-    try { savedView = localStorage.getItem(VIEW_KEY) || "radar"; } catch (e) {}
-    if (savedView === "map") setPortfolioView("map", false);
-    // radar stayed the default view — warm the map up in the background now
-    // that the list has painted, so the first Map toggle is near-instant.
-    else scheduleMapWarmup();
+    let savedView = "map";
+    try { savedView = localStorage.getItem(VIEW_KEY) || "map"; } catch (e) {}
+    setPortfolioView(savedView, false);
 
     // default selection: first project in the portfolio (may be empty →
     // shows the awaiting-ingest state, not a fabricated status).

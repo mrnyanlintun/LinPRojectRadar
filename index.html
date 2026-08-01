@@ -16,8 +16,8 @@
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
     script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://unpkg.com https://accounts.google.com;
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com https://cdnjs.cloudflare.com;
-    font-src 'self' https://fonts.gstatic.com;
+    style-src 'self' 'unsafe-inline' https://accounts.google.com https://cdnjs.cloudflare.com;
+    font-src 'self';
     img-src 'self' data: blob: https:;
     worker-src 'self' blob:;
     connect-src 'self' https://script.google.com https://api.openai.com https://accounts.google.com https://tiles.openfreemap.org;
@@ -27,9 +27,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Opus Gubernatio: Project Decision Support</title>
   <meta name="description" content="Opus Gubernatio: project decision support for public AEC capital programs. Doctor of Engineering praxis research, The George Washington University." />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Fonts are VENDORED and same-origin. They used to come from fonts.googleapis.com, which is
+       the same corporate-network argument that got MapLibre, globe.gl, PDF.js and SheetJS
+       vendored: a blocked network fell back to system fonts and the platform stopped looking
+       like itself. Archivo, Inter and IBM Plex Mono, latin and latin-ext only — see
+       assets/vendor/ASSETS.md for the licences and how the file was generated. -->
+  <link rel="stylesheet" href="assets/vendor/fonts.css">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="assets/css/radar.css" />
   <!-- MapLibre GL JS (pinned) — real street-level map view; tiles from OpenFreeMap (no key).
@@ -484,10 +487,15 @@
              extends left from the dock). The stage toolbar now carries only the
              Radar | Map view toggle. -->
         <div class="stage-toggle" role="group" aria-label="Portfolio view">
-          <button type="button" class="stage-btn active" data-view="radar">Radar</button>
-          <!-- T8: this was "Map". The globe replaces it as the second view; the map is still
-               here, but as the FALLBACK the globe degrades to rather than as a tab of its own.
-               A user who cannot run WebGL still gets a map, and never an empty panel. -->
+          <button type="button" class="stage-btn" data-view="radar">Radar</button>
+          <!-- T11: Map is the DEFAULT geographic view and is drawn as flat SVG — no WebGL, no
+               3D library, no animation loop. It replaced the globe as the default because the
+               globe could not be verified to render at all in two consecutive sessions, and a
+               black sphere in front of a director is not a risk worth carrying. -->
+          <button type="button" class="stage-btn active" data-view="map">Map</button>
+          <!-- The globe is kept and is a view you choose. It loads globe.gl and its texture only
+               when selected, and falls back to the Map above if WebGL is missing or it fails to
+               build — never to an empty panel. -->
           <button type="button" class="stage-btn" data-view="globe">Globe</button>
         </div>
       </div>
@@ -496,6 +504,15 @@
         <svg id="radar-svg" viewBox="0 0 1200 460" preserveAspectRatio="xMidYMid meet" role="img"
              aria-label="Radar scope. Radial distance indicates drift from baseline; angular sectors group projects by delivery type (Design, Construction, Hybrid); marker color indicates status. Selecting a project marker opens its detail view; the project list below is an equivalent keyboard control path.">
         </svg>
+      </div>
+      <!-- T11. The default geographic view: flat SVG, no WebGL. One marker per located project,
+           coloured AND lettered by the status the SERVER computed and stored. Selecting a marker
+           opens that project's detail view, the same path the map has always used. Projects
+           without coordinates cannot be placed and are counted in the note below rather than
+           silently dropped; they remain in the project list, which is the keyboard path. -->
+      <div class="atlas-wrap">
+        <div id="atlas-canvas"></div>
+        <p class="atlas-note ws-note" id="atlas-note"></p>
       </div>
       <div class="globe-wrap" hidden>
         <!-- One point per project with a stored location, coloured by the status the SERVER
@@ -1127,6 +1144,9 @@
   <script src="assets/js/admin-ops.js"></script>
   <script src="assets/js/questionnaires.js"></script>
   <script src="assets/js/decision-ui.js"></script>
+  <!-- The flat map. ~9 KB and no dependencies; the country geometry it draws is fetched only
+       when the view is actually rendered. -->
+  <script src="assets/js/atlas.js"></script>
   <script src="assets/js/globe.js"></script>
   <script src="assets/js/app.js"></script>
 </body>

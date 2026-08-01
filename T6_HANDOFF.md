@@ -1,3 +1,162 @@
+# T11 — the default geographic view is now the flat SVG atlas, and it is MERGED
+
+`assets/js/atlas.js`. SVG, no WebGL, no 3D library, **no animation loop**. It is the default on the
+portfolio and on project detail, and it draws the country geometry already vendored for the globe,
+so it needed no new assets.
+
+**This is the view that cannot fail to render**, and that is why it exists: two sessions could not
+verify the globe because the pane does not composite, and a globe that resolves `ok` while drawing
+nothing is a black panel in front of a director. Verified with **0 rAF frames**: 177 country paths,
+markers, 215 nodes, 11 ms — and at pixel level, marker centre `#26344f`, halo ring `#05080b`,
+ocean beyond `#0e3049`, all exactly their variables. Full detail in
+`REPORT_2026-08-01_flat-atlas-default-view.md`.
+
+**The globe is kept, demoted to a third stage button, and now has a watchdog.** `mount()` resolving
+is not the same as the globe drawing, so `LinGlobe` exposes `hasScene()` and the caller falls back
+to the atlas after 4 s if the scene was never built. That watchdog fired for real in this session
+and the fallback worked end to end.
+
+**Marker legibility is solved by the halo, not by the background.** Without the dark disc, Yellow on
+Miami/Maria land is **1.01:1** — invisible. With it, every status is ≥5.66:1 in every theme. Do not
+"simplify" the halo away, and do not try to fix legibility by darkening the land; that was measured
+on the globe's texture and only changes which status fails.
+
+**MapLibre is now orphaned** — `scheduleMapWarmup()` has no callers and `buildMap()` is unreachable.
+It is left in place, clearly marked, and deleting it (~400 lines, 837 KB of vendored files, the map
+markup, and the `tiles.openfreemap.org` CSP entry) is a clean scoped follow-up.
+
+**Nobody has looked at the atlas.** Everything above is measurement and pixel sampling, not a
+picture. That is the first thing to do with a visible pane.
+
+---
+
+# READ FIRST — check the browser pane before planning any visual work
+
+**Two consecutive sessions have now been lost to this.** Before anything else:
+
+```js
+document.visibilityState            // must be "visible"
+// and count rAF frames over 1s     // must be > 0
+```
+
+If it is `"hidden"` with 0 frames, **globe.gl never builds its scene**, screenshots fail, and no
+visual check or frame-rate measurement is possible. Say so and stop; do not spend the session
+discovering it late. **This now applies only to GLOBE work** — since T11 the default geographic
+view is the flat atlas, which renders fully with 0 rAF frames and is checkable either way. `preview_start` reporting "Browser pane opened", and the `PostToolUse` hook
+saying a file "is now visible in the Browser pane", **both appear even when the pane is hidden** —
+neither is evidence. Only the two checks above are.
+
+Everything measurable works fine while hidden: `performance.getEntriesByType('resource')`,
+`LinGlobe.palette()`, DOM state, the action API. That is how everything below was verified.
+
+## Per-session report files
+
+From 2026-08-01 onward every session writes `REPORT_<yyyy-mm-dd>_<short-task-name>.md` at the
+repository root and commits it. The most recent is
+`REPORT_2026-08-01_globe-verification-and-vendoring.md`.
+
+## Dev-server caching — now fixed at the source
+
+`dev_serve.py` sent `no-store` for `/assets` **or** paths ending `.html`. `index.html` served at
+`/` matches neither, so the root document was still being cached — it hid an `index.html` edit in
+this session exactly as the old `/assets` gap hid `detail.js`. It now also keys on a `text/html`
+content type. If a page-level edit still seems not to apply, compare
+`performance.getEntriesByType('resource')` `encodedBodySize` against what `curl` returns before
+suspecting the code.
+
+---
+
+# T10 — two globe treatments. Built, NOT merged, and here is exactly what is missing.
+
+Branch `t10-globe-treatments` at `3b5ee7d`. `main` is at `5ccc395`. 854 checks across 17 suites
+pass. **Not merged**, for one reason: nothing was ever seen rendering.
+
+## The blocker, and how to clear it
+
+`document.visibilityState` was `"hidden"` for the whole session and `requestAnimationFrame`
+produced **0 frames per second**. globe.gl builds its scene inside that loop, so the scene graph
+never populated: no screenshot, no visual confirmation of either treatment, and **no frame rate**.
+
+**Guarantee 7 is unmet.** The hex-dot resolution (3) was chosen conservatively *because* it could
+not be measured, not because a measurement supported it.
+
+**What the next session must do, with the pane visible:**
+
+1. Look at both treatments. Nothing below has been seen.
+2. Measure frame rate on each. If the abstract globe costs more than a few fps against the plain
+   sphere, lower `hexPolygonResolution` from 3, or raise `hexPolygonMargin`.
+3. Confirm the marker halo actually reads. The argument for it is analytic (below) and I believe
+   it is sound, but it is not evidence.
+4. Capture the three themes at 1280 / 1920 / 3840.
+
+**Diagnostic that saves time:** `performance.getEntriesByType('resource')` and
+`LinGlobe.palette()` work regardless of compositing — that is how everything below was verified.
+But `globe.scene()` will show only a bare `Mesh` and `palette()` will return `tiltDeg: null` while
+the pane is hidden. **That is not a bug.** Do not go chasing the tilt again; it is verified at
+`fe4f59b` and unchanged.
+
+Also: a scene walk over the abstract globe enumerates thousands of hex objects and will time the
+tool out. Keep probes shallow.
+
+## Marker legibility — the reasoning, so it is not re-litigated
+
+The obvious fix does not work, and this was measured rather than assumed. Sampling the real
+texture at six sites and computing WCAG contrast per status:
+
+| Variant | Worst case |
+|---|---|
+| Texture as-is | **1.02:1** — Yellow over the Sahara |
+| Dimmed to 62% brightness / 72% saturation | **1.01:1** — Red, once the sand is dark |
+
+**Dimming only changes which status fails.** A single background brightness cannot serve four
+colours at four different luminances. That is why the texture ships undimmed — do not "fix" it by
+dimming.
+
+What ships instead is a dark disc under every marker (`--globe-marker-halo`, `#05080b`), so
+contrast is a property of the marker's own surround and is identical over ocean, desert, ice and
+cloud: Red 4.9, Amber 7.5, Green 10.5, Yellow 13.4. Status colours are untouched.
+
+It is a **labels layer with empty text**, not a second points layer — globe.gl allows only one
+`pointsData`. Both are real 3D layers, so the disc is depth-tested. An HTML-overlay marker was
+rejected: it would float in front of the far side of the planet.
+
+## Verified by measurement (these do not need redoing)
+
+| | |
+|---|---|
+| Treatment follows theme, both directions, real buttons | NYC abstract (177 hex polygons, cyan rim) ↔ Miami/Maria photographic |
+| Repaint, not remount | `liveCount` steady at 1 across every switch |
+| Texture only where used | 0 bytes under NYC; 529 KB same-origin on the photographic themes |
+| Status colours across themes | byte-identical on all three |
+| `rgba()` audit | all **14** variables the globe reads, all three themes — none |
+| Empty state | still rotates at 0.35 with zero points |
+
+## Guarantee 5 — Google Fonts is now vendored; two dependencies remain by necessity
+
+**Fonts are done.** 18 woff2 (Archivo, Inter, IBM Plex Mono; latin + latin-ext) plus a generated
+`assets/vendor/fonts.css`, all same-origin, SIL OFL 1.1. `unicode-range` is preserved so only 4
+files / 142 KB actually transfer on the sign-in page. Vendor total **4.5 MB → 5.9 MB**.
+
+Two remain and neither can be vendored. **Both failure paths are verified live, so neither needs
+re-testing:**
+
+- **`accounts.google.com`** — with the Google global deleted, the username and password form still
+  renders, stays enabled, and authenticates. A blocked network does not lock anyone out.
+- **`tiles.openfreemap.org`** — with `maplibregl` deleted, the map degrades to a muted panel
+  reading "Map tiles unavailable: check connection" with the project list still present. Not a
+  blank panel. A 9-second watchdog in `app.js` covers the style-never-loads case.
+
+Note the portfolio stage buttons are now **Radar** and **Globe** only — the MapLibre map is the
+globe's WebGL-off fallback rather than a stage the user picks, which makes the tile host a
+fallback-of-a-fallback.
+
+## The `[data-set-theme]` trap is gone
+
+`applyTheme` no longer sweeps `[data-set-theme]`; nothing ever carried it. A comment now names
+`openThemeFlyout()` as the real switcher, so the next grep does not repeat the false negative.
+
+---
+
 # T9 — the detail globe is VERIFIED. Read this section first.
 
 ## Task 1 is settled. The detail globe renders, and the fault was never in detail.js

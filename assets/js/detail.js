@@ -956,25 +956,19 @@
           }
           return;
         }
-        if (!window.LinGlobe) {
-          if (note) note.textContent = "The globe is unavailable on this device. "
-            + (p.formattedAddress || "Location recorded.");
+        // T11. The flat atlas, not the globe. Project detail gets the same default as the
+        // portfolio and for the same reason: this has to draw on any machine, and a section
+        // headed "Location" that renders black is worse than no section at all. The globe is
+        // still reachable from the portfolio's Globe view; it is not the thing detail depends on.
+        //
+        // Releases any globe this view previously built, so a detail page rendered before this
+        // change does not leave a WebGL context behind when it re-renders.
+        if (detailGlobe) { try { detailGlobe.destroy(); } catch (e) {} detailGlobe = null; }
+        if (!window.LinAtlas) {
+          if (note) note.textContent = p.formattedAddress || "Location recorded.";
           return;
         }
-        if (detailGlobe) { try { detailGlobe.destroy(); } catch (e) {} detailGlobe = null; }
-        LinGlobe.mount(host, [p], {
-          focus: { lat: Number(p.lat), lng: Number(p.lng) },
-          interactive: false
-        }).then((res) => {
-          if (!res || !res.ok) {
-            // No WebGL, or the library did not load. Say where the project is in words rather
-            // than leaving a panel that never fills.
-            host.innerHTML = "";
-            if (note) note.textContent = "The globe is unavailable on this device. "
-              + (p.formattedAddress || "Location recorded.");
-            return;
-          }
-          detailGlobe = res.handle;
+        LinAtlas.render(host, [p], { focusId: p.id }).then(() => {
           if (note) note.textContent = p.formattedAddress
             ? "Matched to: " + p.formattedAddress
             : "Located.";
