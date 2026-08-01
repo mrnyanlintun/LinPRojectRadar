@@ -284,6 +284,10 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 _ASSETS_DIR = REPO_ROOT / "assets"
 _INDEX_HTML = REPO_ROOT / "index.html"
 _LOGO_PNG = REPO_ROOT / "logo.png"
+# T3/T5: the participant-facing workspace, deliberately its own page rather than a route inside
+# index.html — it must never load sim.js/simulations.js/categories.js, and index.html already
+# does on every load.
+_WORKSPACE_HTML = REPO_ROOT / "workspace.html"
 
 if _ASSETS_DIR.is_dir():
     app.mount("/assets", StaticFiles(directory=str(_ASSETS_DIR)), name="assets")
@@ -311,3 +315,86 @@ def spa_index():
 @app.get("/logo.png", include_in_schema=False)
 def spa_logo():
     return _static_file(_LOGO_PNG, "image/png")
+
+
+@app.get("/workspace.html", include_in_schema=False)
+def spa_workspace():
+    return _static_file(_WORKSPACE_HTML, "text/html")
+
+
+# ---------------------------------------------------------------- document content (T3)
+#
+# The one thing /exec cannot serve: PDF bytes. /exec is JSON in, JSON out (see exec_post's
+# docstring), and base64-wrapping a multi-hundred-KB PDF into a JSON string the browser then
+# has to decode is exactly the inefficiency a dedicated binary route avoids.
+#
+# Auth here cannot be a session COOKIE — nothing in this app sets one; the session token is a
+# bearer value the frontend already holds in sessionStorage (research_identity.py's session
+# convention). So it travels as a query parameter on this GET, which is the only place a
+# <iframe>/<embed> or a plain browser navigation can attach it. It is authorization for a GET,
+# not a credential change, so this does not need the same "never touch a database credential in
+# a query string" caution that would apply to, say, a password reset link — but it does mean
+# this URL should not be pasted into a support ticket or shared casually, same as any bearer URL.
+#
+# Membership is checked here again rather than trusted from the frontend: any active member of
+# the project may read a document uploaded to it, but that document may ALSO be linked to other
+# projects via the sha256 cache (B7b) — a caller must not be able to read a document by knowing
+# its id if it never reached a project they belong to. The check is therefore "does a
+# document_uploads row link this document to a project this caller is an active member of",
+# not merely "does this document exist".
+
+
+@app.get("/documents/{document_id}/content", include_in_schema=False)
+def document_content(document_id: str, project_id: str, session_token: str):
+    from sqlalchemy import select
+    from fastapi.responses import StreamingResponse
+
+    from .research_identity import resolve_caller
+    from .research_membership import _project_by_legacy, active_membership
+    from .research_models import Document, DocumentUpload
+
+    with SessionFactory() as session:
+        caller, problem = resolve_caller(session, {"session_token": session_token},
+                                         settings.session_secret)
+        if problem:
+            return JSONResponse(status_code=403, content=problem)
+
+        project = _project_by_legacy(session, project_id)
+        if project is None:
+            return JSONResponse(status_code=404,
+                                content={"ok": False, "error": "Project not found"})
+        if active_membership(session, project, caller.participant_id) is None:
+            return JSONResponse(status_code=403,
+                                content={"ok": False,
+                                         "error": "not authorised: not a member of this project"})
+
+        doc = session.get(Document, document_id)
+        linked = doc is not None and session.scalar(
+            select(DocumentUpload).where(DocumentUpload.project_id == project.id,
+                                         DocumentUpload.document_id == document_id)
+        ) is not None
+        if not linked:
+            # Deliberately the same 404 whether the document_id is unknown or simply never
+            # reached this project — distinguishing them would confirm a document's existence
+            # to a caller who only guessed its id.
+            return JSONResponse(status_code=404,
+                                content={"ok": False, "error": "Document not found"})
+
+        # BYTEA has no server-side large-object streaming in this schema, so the driver round
+        # trip is one materialised column value — the framework does not offer a chunked-fetch
+        # path for BYTEA the way it would for a filesystem file. What StreamingResponse buys
+        # here is real: the bytes are handed to Starlette as a chunked iterator rather than
+        # built into one JSON/Response body first, so a multi-MB PDF is written to the socket
+        # in pieces instead of fully buffered a second time inside the response layer.
+        content = doc.content or b""
+
+        def chunks(data: bytes, size: int = 256 * 1024):
+            for i in range(0, len(data), size):
+                yield data[i:i + size]
+
+        return StreamingResponse(
+            chunks(content),
+            media_type=doc.mime_type or "application/octet-stream",
+            headers={"Content-Disposition": f'inline; filename="{doc.filename}"',
+                    "Content-Length": str(len(content))},
+        )

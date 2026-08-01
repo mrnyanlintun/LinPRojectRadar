@@ -544,7 +544,10 @@ class ComputedResult(Base):
     module_results: Mapped[dict] = mapped_column(JSONType, nullable=True)
     category_statuses: Mapped[dict] = mapped_column(JSONType, nullable=True)
     project_status: Mapped[str] = mapped_column(Text, nullable=True)
-    # Null below the portfolio threshold — distinct from "computed and came back empty".
+    # Holds `compute_portfolio`'s own return value verbatim, including its insufficient_data
+    # shape (with the human-readable message) when the portfolio is too small — see
+    # documents.py's `_compute_and_store`. Not stored as a bare NULL: a viewer needs the
+    # message, not just the absence of one.
     portfolio_snapshot: Mapped[dict] = mapped_column(JSONType, nullable=True)
     simulation_version: Mapped[str] = mapped_column(Text, nullable=False)
     seed: Mapped[str] = mapped_column(Text, nullable=False)
