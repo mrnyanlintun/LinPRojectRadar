@@ -34,15 +34,13 @@ against `Participant.completion_status`, which nothing in the codebase currently
 correct today and automatically correct once T4 starts marking decisions complete, with no
 further change needed here.
 
-What this module deliberately does NOT do: refuse a_researchprejudgment (B4, research_decision.py)
-for a participant who has not completed intake. B4's own test fixtures (tools/test_decision_
-sequence.py) grant consent and record decisions for participants who — by construction — predate
-this phase and have no profile row. Adding that guard there would refuse every one of those
-fixtures and regress B4's validated 60/60 suite for behaviour this phase did not change. The
-"cannot skip it before their first decision" guarantee is therefore proven here in its provable
-half — this module refuses debrief before completion, symmetrically — and intake-before-
-first-decision enforcement against an actual decision-write action is left for T4, which does not
-exist yet and will be the first UI able to reach that action at all.
+INTAKE IS NOW ENFORCED AT THE DECISION BOUNDARY (T4)
+
+T7/T8 built this module but deliberately left a_researchprejudgment (B4) ungated, because B4's
+fixtures predate the profile table and the guard would have failed a validated suite for
+behaviour B4 never claimed. T4 closed that: `intake_completed` below is called by
+a_researchprejudgment, and every enrolment helper across the affected suites now completes
+intake. The symmetric debrief-side guard (`_debrief_eligibility`) was always here.
 """
 from __future__ import annotations
 
@@ -75,6 +73,18 @@ _INTAKE_FIELD_MAP: dict[str, str] = {
 # "field" is "risk_attitude" are collected together into that JSONB column, keyed by item id,
 # rather than each overwriting a single scalar.
 _RISK_ATTITUDE_FIELD = "risk_attitude"
+
+
+def intake_completed(session: Session, participant_id: str) -> bool:
+    """
+    Whether this participant has actually submitted the intake questionnaire.
+
+    Keyed on intake_captured_at, not on the existence of a profile row: `captured_at` is stamped
+    when the row is created, which can happen for reasons unrelated to finishing the instrument,
+    so a row alone proves nothing. T4's guard on a_researchprejudgment calls this.
+    """
+    profile = _profile_for(session, participant_id)
+    return bool(profile and profile.intake_captured_at)
 
 
 def _profile_for(session: Session, participant_id: str) -> ParticipantProfile | None:

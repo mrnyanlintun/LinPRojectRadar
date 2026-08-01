@@ -306,22 +306,50 @@ def _compute_and_store(session: Session, project: Project, period: int,
     return {"row": row, "run": run, "documents": documents}
 
 
-# Keys inside a MODULE result that name or rank a course of action. Found by grepping the
-# analytical layer, which emits them from two modules:
-#   models_gov.py:633-634   B4.4 Regret Minimization -> "recommended_action", "expected_regret"
-#   models_decision.py:115,150  B1.1 / B3.1           -> "action"
+# Keys inside a MODULE result that name or rank a course of action, or name who should take it.
+# The analytical layer emits them from three modules:
+#   models_gov.py:632-634       B4.4 Regret Minimization -> recommended_action, expected_regret
+#   models_decision.py:150-151  B3.1 ABM Governance      -> action, authority
 #
 # These are recommendations. Returning them to a member before their PM has locked the period's
 # preliminary judgment would defeat the reveal gate just as surely as returning the package
-# itself — "the model says investigate" is the treatment, whatever field it arrives in. B8's
-# gate covers the package; nothing covered the module output, because until B7b nothing read
-# the analytical layer at all.
-_ACTION_KEYS = frozenset({"recommended_action", "expected_regret", "action"})
+# itself — "the model says investigate" is the treatment, whatever field it arrives in.
+#
+# T4: "authority" was added to this set. B3.1 emits `"authority": "Sponsor + Steering committee"`
+# alongside its action — naming who must act is part of prescribing the act, and a participant
+# who reads it before locking has been told what the model wants done and by whom.
+_ACTION_KEYS = frozenset({"recommended_action", "expected_regret", "action", "authority"})
+
+# T4: THE LEAK B7b LEFT OPEN, AND WHY STRIPPING KEYS WAS NEVER ENOUGH.
+#
+# B7b stripped action-bearing KEYS. It did not touch PROSE. Both action-bearing modules also
+# render their recommendation into `evidence_metric`, a free-text field that survived redaction
+# untouched and was rendered on the evidence screen:
+#
+#   models_gov.py:636-640   f"Minimax regret recommends: {recommended} (expected regret score
+#                            {min_regret}/30); this decision minimizes worst-case outcome..."
+#   models_decision.py:152  f"{d['healthState']}: {d['action']} ({d['authority']})"
+#
+# So before this change, a participant on the evidence screen — before locking anything — could
+# read "Minimax regret recommends: escalate". That is the entire treatment, delivered in the one
+# field nobody thought to redact, and it would have silently invalidated every decision made
+# through this interface.
+#
+# The fix is not to sanitise the prose. Scrubbing a substring out of a sentence is a guess about
+# wording that a later edit upstream would quietly defeat, and this package must not be edited
+# (it is the validated analytical layer). Instead, when a module is identified as action-bearing
+# — by carrying any `_ACTION_KEYS` field — its narrative field is REPLACED wholesale. A module
+# that recommends nothing keeps its evidence_metric untouched, so the evidence screen still
+# explains every non-prescriptive module in full.
+_NARRATIVE_KEYS = frozenset({"evidence_metric"})
+
+_WITHHELD_NARRATIVE = ("This module's finding is withheld until the preliminary judgment for "
+                       "this period is locked.")
 
 
 def _redact_module_actions(modules) -> list:
     """
-    Strip action-bearing keys from module results for a withheld read.
+    Strip action-bearing keys AND action-bearing prose from module results for a withheld read.
 
     Redaction happens in the VIEW, never in storage. The stored row keeps every field, because
     a result that has had values removed from it can no longer be reproduced or compared
@@ -337,6 +365,11 @@ def _redact_module_actions(modules) -> list:
             continue
         redacted = {k: v for k, v in m.items() if k not in _ACTION_KEYS}
         if len(redacted) != len(m):
+            # Action-bearing. Its narrative restates the recommendation, so replace it rather
+            # than ship prose that was written to explain a field we just removed.
+            for narrative in _NARRATIVE_KEYS:
+                if narrative in redacted:
+                    redacted[narrative] = _WITHHELD_NARRATIVE
             redacted["recommendation_withheld"] = True
         out.append(redacted)
     return out

@@ -273,6 +273,15 @@ class Decision(Base):
     owner_role: Mapped[str] = mapped_column(Text, nullable=True)
     authority_role: Mapped[str] = mapped_column(Text, nullable=True)
     resource_constraint: Mapped[str] = mapped_column(Text, nullable=True)
+    # T4, migration 0011. The structured content of the final decision — see that migration's
+    # docstring for why evidence_items is JSONB and deadline is Text. pre_assessment belongs to
+    # the PRE side and is written in the same INSERT as pre_action, so the lock covers it from
+    # the instant it exists.
+    pre_assessment: Mapped[str] = mapped_column(Text, nullable=True)
+    evidence_items: Mapped[dict] = mapped_column(JSONType, nullable=True)
+    reason_code: Mapped[str] = mapped_column(Text, nullable=True)
+    deadline: Mapped[str] = mapped_column(Text, nullable=True)
+    residual_risk: Mapped[str] = mapped_column(Text, nullable=True)
 
     __table_args__ = (
         # Constraint 1. A package can never be revealed before the preliminary judgment is locked,

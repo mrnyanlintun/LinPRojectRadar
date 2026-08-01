@@ -121,6 +121,9 @@ def enrol():
     c = post({"action": "adminparticipantcreate", "session_token": admin})
     tok = post({"action": "researchlogin", "access_token": c["access_token"]})["session_token"]
     post({"action": "consentgrant", "session_token": tok, "consent_version": "v1.0"})
+    # T4: a_researchprejudgment now requires a completed intake questionnaire.
+    post({"action": "intakesave", "session_token": tok,
+          "responses": {"experience_level": "mid", "years_experience": 8}})
     post({"action": "adminassign", "session_token": admin, "participant_id": c["participant_id"],
           "order_group": "GB5", "scenario_set": "SET-B5", "scenario_ids": [scenario]})
     with Session() as s:
@@ -228,6 +231,9 @@ check(same["branch_id"] != diff["branch_id"], "branch ids diverge on action fami
 unmapped = post({"action": "adminparticipantcreate", "session_token": admin})
 u_tok = post({"action": "researchlogin", "access_token": unmapped["access_token"]})["session_token"]
 post({"action": "consentgrant", "session_token": u_tok, "consent_version": "v1.0"})
+# T4: a_researchprejudgment now requires a completed intake questionnaire.
+post({"action": "intakesave", "session_token": u_tok,
+      "responses": {"experience_level": "mid", "years_experience": 8}})
 post({"action": "adminassign", "session_token": admin,
       "participant_id": unmapped["participant_id"], "order_group": "GB5",
       "scenario_set": "SET-B5", "scenario_ids": [scenario]})

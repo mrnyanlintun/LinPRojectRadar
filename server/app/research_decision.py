@@ -35,7 +35,7 @@ from typing import Any, Callable
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from .facade import err
+from .facade import err, now_iso
 from .models import Project
 from .research_assignment import current_sequence_number
 from .research_identity import audit, resolve_caller
@@ -252,6 +252,32 @@ def a_researchprejudgment(session: Session, payload: dict, secret: str, ttl: int
     if problem:
         return problem
 
+    # T4: the intake questionnaire must be complete before any judgment is recorded.
+    #
+    # The intake instrument captures the study's moderator variables — experience, industry,
+    # certifications, AI familiarity, organisational role, risk attitude. A decision recorded
+    # before they exist cannot be entered into the model that needs them, and asking for them
+    # afterwards means asking a participant to describe their own background AFTER they have
+    # seen how the system behaved, which is exactly the contamination the instrument exists to
+    # measure around.
+    #
+    # T7/T8 built the questionnaire but deliberately did not add this guard, because B4's
+    # fixtures predate the profile table and the guard would have failed B4's suite for
+    # behaviour B4 never claimed. Those fixtures now complete intake (one line in each
+    # enrolment helper), so the guard holds without weakening anything.
+    #
+    # Placed AFTER the PM check on purpose: test_membership.py asserts that an observer
+    # attempting a preliminary judgment is refused with the PM message specifically, and an
+    # observer has no reason to have completed intake either. Checking intake first would
+    # answer a question about role with a message about questionnaires.
+    from .questionnaires import intake_completed
+    if not intake_completed(session, caller.participant_id):
+        audit(session, "pre_judgment_denied_no_intake", participant_id=caller.participant_id,
+              scenario_id=assignment.scenario_id)
+        session.commit()
+        return err("the intake questionnaire must be completed before a preliminary judgment "
+                   "can be recorded")
+
     pre_action = str(payload.get("pre_action") or "").strip()
     if not pre_action:
         return err("pre_action is required")
@@ -283,6 +309,10 @@ def a_researchprejudgment(session: Session, payload: dict, secret: str, ttl: int
         period=period,
         pre_action=pre_action,
         pre_confidence=confidence,
+        # T4. The participant's reasoning BEFORE the package was shown — the only record of it
+        # there will ever be. Written in this same INSERT, so it is locked from creation.
+        pre_assessment=(str(payload.get("pre_assessment")).strip()
+                        if payload.get("pre_assessment") else None),
         pre_submitted_at=now,
         pre_locked_at=now,          # same statement, same server clock
         pre_judgment_locked=True,
@@ -411,7 +441,52 @@ def a_researchreveal(session: Session, payload: dict, secret: str, ttl: int) -> 
 # ---------------------------------------------------------------- final decision
 
 
-DISPOSITIONS = ("accept", "modify", "reject", "defer", "request_evidence")
+# T4 extended this from five to eight. The three additions — accept_with_conditions, escalate,
+# transfer_authority — are dispositions the research design names but B4 had no value for, so a
+# participant who wanted to express them had to flatten their answer into one of the five that
+# existed. Purely additive: every previously valid value is still valid, so nothing recorded
+# under B4 changes meaning.
+#
+# escalate appears here AND in the action vocabulary below, and that is deliberate rather than a
+# duplication: the action is what to do about the project, the disposition is what the
+# participant did with the recommendation. "I escalated, but that is not what the system advised"
+# is a distinguishable and analytically important answer.
+DISPOSITIONS = ("accept", "accept_with_conditions", "modify", "reject", "defer",
+                "request_evidence", "escalate", "transfer_authority")
+
+# THE ACTION VOCABULARY, AND WHY IT IS OFFERED BUT NOT ENFORCED.
+#
+# These are the actions the decision form presents for pre_action and final_action. They are the
+# three the analytical layer itself can recommend (simulation/models_gov.py's regret matrix keys:
+# monitor, investigate, escalate) plus the two the study's own fixtures have always used
+# (re-baseline, defer), so a participant can always answer, and a participant's action is drawn
+# from the same universe as the recommendation they are being compared against.
+#
+# The server deliberately does NOT reject an action outside this tuple. B5's transition suite
+# submits a literal "invent-a-new-action" to prove that researchadvance refuses an action with no
+# frozen family mapping — an important guarantee about the transition layer that a closed enum
+# here would make untestable. Validation therefore stays where B5 put it: at advance time,
+# against the ActionFamily table, where an unmapped action is an error rather than a default.
+# This constant is a UI contract, served to the client so the form and the server agree on one
+# list, not a second validation layer.
+#
+# OPERATIONAL NOTE: every action here needs an ActionFamily mapping registered before a
+# participant using it can advance a period. Registering them is an admin action
+# (adminactionfamilycreate), not a code change, which is why this tuple does not assert one.
+PARTICIPANT_ACTIONS = ("monitor", "investigate", "escalate", "re-baseline", "defer")
+
+# Primary reason codes. New in T4 — nothing equivalent existed. Closed, because the whole point
+# is comparability across participants; a free-text "why" is already captured in rationale.
+REASON_CODES = (
+    "cost_variance",
+    "schedule_variance",
+    "evidence_quality",
+    "risk_exposure",
+    "contractual_or_regulatory",
+    "stakeholder_or_authority",
+    "insufficient_information",
+    "disagree_with_analysis",
+)
 
 
 def a_researchdecision(session: Session, payload: dict, secret: str, ttl: int) -> dict[str, Any]:
@@ -456,6 +531,20 @@ def a_researchdecision(session: Session, payload: dict, secret: str, ttl: int) -
         if not 0 <= confidence <= 100:
             return err("final_confidence must be between 0 and 100")
 
+    # T4. reason_code is validated against a closed vocabulary because comparability across
+    # participants is the entire reason it exists; an unconstrained one would just be a second
+    # rationale field. It stays OPTIONAL so that B4/B5/B6's existing fixtures, which predate it,
+    # continue to record decisions unchanged.
+    reason_code = str(payload.get("reason_code") or "").strip() or None
+    if reason_code is not None and reason_code not in REASON_CODES:
+        return err(f"reason_code must be one of: {', '.join(REASON_CODES)}")
+
+    # Selected from what the evidence screen displayed. Stored as a list of labels — see
+    # migration 0011 for why these are labels rather than foreign keys.
+    evidence_items = payload.get("evidence_items")
+    if evidence_items is not None and not isinstance(evidence_items, list):
+        return err("evidence_items must be a list")
+
     decision.final_action = final_action
     decision.disposition = disposition
     decision.rationale = payload.get("rationale")
@@ -464,6 +553,10 @@ def a_researchdecision(session: Session, payload: dict, secret: str, ttl: int) -
     decision.owner_role = payload.get("owner_role")
     decision.authority_role = payload.get("authority_role")
     decision.resource_constraint = payload.get("resource_constraint")
+    decision.evidence_items = evidence_items
+    decision.reason_code = reason_code
+    decision.deadline = payload.get("deadline")
+    decision.residual_risk = payload.get("residual_risk")
     decision.final_submitted_at = func.now()
 
     # Only the final period completes the assignment. Marking it complete after period 1
@@ -613,8 +706,102 @@ def a_adminpackageattach(session: Session, payload: dict, secret: str, ttl: int)
     return {"ok": True, "assignment_id": assignment_id, "package_id": package_id}
 
 
+def a_researchsequencestate(session: Session, payload: dict, secret: str,
+                            ttl: int) -> dict[str, Any]:
+    """
+    Everything the decision interface needs to decide what to render, derived server-side.
+
+    THE CLIENT MUST NOT COMPUTE A STAGE. This action exists so it does not have to: it returns
+    the derived stage, the derived period, whether intake is outstanding, whether every
+    assignment is finished, and the vocabularies the form renders. A participant who reloads,
+    signs out and back in, or returns days later calls this and lands exactly where the rows say
+    they are — because nothing about where they are was ever stored on the client.
+
+    It returns NO package content at any stage, not even after the lock. The reveal is an
+    explicit participant action with a server-assigned timestamp, and an action that returned
+    package content as a side effect of asking "where am I" would make the reveal happen on page
+    load. Deliberation time is measured from reveal_at, so that would corrupt the measure.
+    """
+    caller, problem = resolve_caller(session, payload, secret)
+    if problem:
+        return problem
+
+    from .questionnaires import intake_completed
+
+    seq = current_sequence_number(session, caller.participant_id)
+    intake_done = intake_completed(session, caller.participant_id)
+
+    state: dict[str, Any] = {
+        "ok": True,
+        "current_sequence_number": seq,
+        # None means every assignment is complete — the signal to route to the debrief.
+        "all_assignments_complete": seq is None,
+        "intake_completed": intake_done,
+        "vocabularies": {
+            "actions": list(PARTICIPANT_ACTIONS),
+            "dispositions": list(DISPOSITIONS),
+            "reason_codes": list(REASON_CODES),
+        },
+        "server_time": now_iso(),
+    }
+
+    assignment, _current = _current_assignment(session, caller.participant_id)
+    if assignment is None:
+        state.update({"assignment": None, "period": None, "current_stage": None,
+                      "scenario_id": None, "period_count": None, "evidence_project_id": None})
+        return state
+
+    scenario = session.get(Scenario, assignment.scenario_id)
+    period = current_period(session, assignment, scenario)
+    decision = _decision_for(session, assignment.assignment_id, period)
+
+    # Which facade project holds the evidence for THIS period — period 1 is the scenario's
+    # opening package, later periods are whatever the participant's own transition produced.
+    # Same resolution a_researchevidenceget performs, so the two cannot disagree.
+    state_ref = scenario.evidence_package_id if scenario else None
+    if _period_number(period) > 1:
+        from .research_models import Transition
+        prior = _decision_for(session, assignment.assignment_id,
+                              "P" + str(_period_number(period) - 1))
+        if prior is not None:
+            tr = session.scalar(
+                select(Transition).where(Transition.decision_id == prior.decision_id))
+            if tr is not None:
+                state_ref = tr.next_state_id
+
+    state.update({
+        "assignment": _blind_assignment(assignment),
+        "period": period,
+        "period_count": scenario.period_count if scenario else None,
+        "scenario_id": assignment.scenario_id,
+        "evidence_project_id": state_ref,
+        "current_stage": derive_stage(decision),
+        # Timestamps only — never pre_action or pre_confidence, which would put the participant's
+        # locked judgment back on the client where a form could re-post it.
+        "pre_locked_at": decision.pre_locked_at.isoformat()
+                         if decision and decision.pre_locked_at else None,
+        "reveal_at": decision.reveal_at.isoformat()
+                     if decision and decision.reveal_at else None,
+        "final_submitted_at": decision.final_submitted_at.isoformat()
+                              if decision and decision.final_submitted_at else None,
+    })
+    return state
+
+
+def _blind_assignment(assignment) -> dict[str, Any]:
+    """
+    The same three fields research_assignment._blind_row exposes, for the same reason: config_id
+    names the condition. Reimplemented rather than imported only to avoid a circular import at
+    module scope; the field list is asserted identical by the T4 suite.
+    """
+    return {"sequence_number": assignment.sequence_number,
+            "scenario_id": assignment.scenario_id,
+            "status": assignment.status}
+
+
 DECISION_ACTIONS: dict[str, Callable[[Session, dict, str, int], dict]] = {
     "researchevidenceget": a_researchevidenceget,
+    "researchsequencestate": a_researchsequencestate,
     "researchprejudgment": a_researchprejudgment,
     "researchreveal": a_researchreveal,
     "researchdecision": a_researchdecision,

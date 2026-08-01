@@ -291,6 +291,7 @@ _WORKSPACE_HTML = REPO_ROOT / "workspace.html"
 # T7/T8: same reasoning — separate pages, never loading sim.js/simulations.js/categories.js.
 _ADMIN_OPS_HTML = REPO_ROOT / "admin-ops.html"
 _QUESTIONNAIRES_HTML = REPO_ROOT / "questionnaires.html"
+_DECISION_HTML = REPO_ROOT / "decision.html"
 
 if _ASSETS_DIR.is_dir():
     app.mount("/assets", StaticFiles(directory=str(_ASSETS_DIR)), name="assets")
@@ -333,6 +334,11 @@ def spa_admin_ops():
 @app.get("/questionnaires.html", include_in_schema=False)
 def spa_questionnaires():
     return _static_file(_QUESTIONNAIRES_HTML, "text/html")
+
+
+@app.get("/decision.html", include_in_schema=False)
+def spa_decision():
+    return _static_file(_DECISION_HTML, "text/html")
 
 
 # ---------------------------------------------------------------- document content (T3)
