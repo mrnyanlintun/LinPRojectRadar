@@ -1,19 +1,40 @@
-# T13 — THE GROUP TABLE DOES NOT MATCH THE CODE. Decision needed before the sweep.
+# T13b — THE TAXONOMY IS SETTLED AND COMMITTED. 100, not 101.
 
-Branch `t13-fixture-and-taxonomy`, **unmerged on purpose**. Full detail in
-`REPORT_2026-08-01_fixture-and-taxonomy.md`.
+`GROUP_ASSIGNMENT.md` at the repository root is the authority. Merged to `main`.
 
-**A is 52 in code, 53 in the CSV.** Total 100 registered against 101 declared. B 36, C 7, D 5 all
-agree. The CSV is current and is read at runtime (`registry.py:35-36`), so this is not staleness.
+| Group | Name in user-facing text | Count |
+|---|---|---|
+| A | Project Health | 52 |
+| B | Recommendation and Governance | 36 |
+| C | Data and Evidence Health | 7 |
+| D | Portfolio Level | 5 |
+| | **Total** | **100** |
 
-The whole difference is **`A4.1 Document Risk Score`**: declared in the CSV, not registered in
-code, and refused by name at `registry.py:76-80`. It is a *signal* produced by document extraction
-and copied through (`extraction_merge.py:106-108`), not a computation the analytical server
-performs. Both 52 and 53 are defensible and the code does not choose. **That choice is the
-researcher's and it gates the step 4 sweep.** Do not reconcile it in passing.
+**Document Risk Score is not counted.** It is a value the extraction model supplies and the server
+carries through, not a computation the analytical server performs. **100 is current, not
+permanent**: if it is ever implemented server-side the count becomes 101 and Group A becomes 53.
 
-Also: the code spells the groups with an ampersand, `Recommendation & Governance` and
-`Data & Evidence Health`, not "and". The sweep needs that settled too.
+**Do not describe the registry refusal as a Document Risk Score exclusion.** It is a generic
+catch-all for anything absent from `VALIDATED`, and its message is the wording of work outstanding.
+Whether the value is unported by design or by accident is still unestablished.
+
+**User-facing text uses "and", not the ampersand the code constants use.** Do not rename the
+constants.
+
+`server/tools/test_group_assignment.py` fails if the code and the artifact diverge. If it goes red,
+the published taxonomy and the code have parted company and no sweep should run until that is
+understood.
+
+**`unported_modules()` is still wrong and is deliberately not fixed.** It counts the five Group D
+modules as unported although `portfolio.py` implements them, reporting six where exactly one is.
+The fix is inside `server/app/simulation/`, which the task forbade modifying. Both new checks
+compute the genuinely unported set themselves and assert the over-report explicitly, so nothing
+inherits the error. **This needs a decision: lift the prohibition for that function, or leave it.**
+
+**STEP 4, THE MECHANICAL SWEEP, HAS NOT STARTED.** The naming authority document has now failed to
+reach three consecutive sessions, and step 4 stops without it by its own terms: it rewrites
+surfaces that must quote that document's standing description wording verbatim, and the task
+summary carries the taxonomy but not the wording.
 
 **A tenth hasSignals instance was found, and it was the root.** `statusKey()` still had the legacy
 gate; the T12 legend fix had added a parallel `storedStatusKey()` beside it rather than correcting
