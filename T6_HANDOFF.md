@@ -3,6 +3,36 @@
 > user-facing surface quotes verbatim. It lives in the repository so it cannot fail to reach a
 > session, which it did three times while it lived outside. Read it before this handoff, not after.
 
+# T14 — STEP 5, THE JUDGMENT PROSE, IS DONE FOR ITS FOUR SURFACES
+
+Full detail in `REPORT_2026-08-01_judgment-prose.md`, including the judgment calls awaiting
+Lin's review. 873 checks across 18 suites pass; `tests_render.html` 22/22 in a real browser.
+
+**Done:** the About tab (standing description quoted verbatim, new framework and method
+sections, false Tech stack / Capabilities tables removed), the assistant (says scripted plainly;
+its TERMS and TOPICS carry no PCEIF, no module ids, no retired-behaviour claims), `README.md`
+(rewritten against the shipped system), and `DISCLAIMERS_DRAFT.md` (drafted, NOT live, requires
+Lin's review).
+
+**Found and fixed: `knowledge.js` did not parse since the module renumbering (`e34fa50`).** Two
+module entries were removed by deleting only each object's opening line, a fatal syntax error,
+so `LIN_KNOWLEDGE` never loaded: the Methods tab rendered nothing and the assistant had no
+library in every build since. Fixed by removing the orphan bodies. Nothing tests that file in a
+browser; a `window.LIN_KNOWLEDGE` assertion in `tests_render.html` is a cheap next item.
+
+**The big remaining content item is unchanged: the Methods and Framework tab.** `knowledge.js`
+LIBRARY still carries 37 PCEIF occurrences (including a topic titled "PCEIF Framework
+Overview") and `ds_defensibility_data.js` 49 more, plus the Cat N titles. Because the parse fix
+makes that tab render again, deploying makes that stale content VISIBLE for the first time since
+the renumbering, one click from an About tab that now says there is deliberately no named
+framework. Weigh that before pushing to `main`.
+
+Also still open: export paths carry no notice (a liability decision, see the draft file), the
+em dash sweep on `auditor.js` and the legacy researcher surfaces, and the live operational
+notice which is unreviewed but can now display (flagged in `DISCLAIMERS_DRAFT.md`).
+
+---
+
 # T13b — THE TAXONOMY IS SETTLED AND COMMITTED. 100, not 101.
 
 `GROUP_ASSIGNMENT.md` at the repository root is the authority. Merged to `main`.
