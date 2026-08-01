@@ -1,10 +1,10 @@
 /* ============================================================
    Lin Project Radar, knowledge.js
-   Curated static knowledge library: PCEIF method definitions,
-   module explanations, and the term-definition lens.
-   The assistant (assistant.js) draws on this curated library for its
-   scripted fallback; the library's static definition + impact text is the
-   dependable reference, with a live-AI 'Ask the AI' option per term.
+   Curated static knowledge library: method definitions, module
+   explanations, and the term-definition lens.
+   The assistant (assistant.js) answers ONLY from this curated
+   library (TERMS + TOPICS): it is scripted by design, and the
+   static definition + impact text is the dependable reference.
    ============================================================ */
 
 (function () {
@@ -46,7 +46,7 @@
     { term: "RFI", definition: "Request for Information. A formal project question or clarification record. Flagged RFIs contribute to document-risk evidence.", formula: "Document evidence input",
       impact: "Clusters of aging or scope-disputed RFIs often predict cost/schedule impact before EVM moves, leading document-risk evidence reviewers should act on early." },
     { term: "RFA", definition: "Request for Approval (or Authorization), a formal request for a decision or sign-off, e.g. a substitution or deviation.", formula: "Document evidence input",
-      impact: "A pending RFA can hold up procurement or work; when it proposes a deviation from spec, it is exactly the kind of document the AI analyze layer compares against the spec for a CONFLICT/GAP verdict." },
+      impact: "A pending RFA can hold up procurement or work; when it proposes a deviation from spec, it is exactly the kind of document a reviewer needs to reconcile against the specification before approving." },
     { term: "Submittal", definition: "A contractor or supplier submission for review. Submittal status can affect schedule and procurement risk.", formula: "Document evidence input",
       impact: "Rejected or looping submittals on long-lead items are a procurement-risk early warning; repeated resubmittals quietly consume float a reviewer needs to protect." },
     { term: "Pay Application", definition: "A contractor request for payment documenting work completed in a period.", formula: "Document evidence input / progress claim",
@@ -63,59 +63,59 @@
       impact: "Defines the bright line where a project must get named, senior human attention with a full evidence package, never an automated penalty, always a review." },
     { term: "Governance Recommendation", definition: "The recommended action, responsible authority, and required documentation that the rules derive from a project's signal package.", formula: "Signal → Evidence → Threshold → Explanation → Consequence → Action",
       impact: "Converts analysis into an accountable next step with an owner and a paper trail; it is a recommendation a named human records, the tool never decides on its own." },
-    { term: "PCEIF", definition: "Public Capital EVM Intelligence Framework: a signal-to-action governance framework for public AEC capital programs. Signals from four model classes feed explicit governance rules that recommend an action, an authority, and required documentation.", formula: "Signal → Evidence → Threshold → Explanation → Consequence → Action",
-      impact: "Ties together the metrics, the anomaly and document evidence, and the decision rules so a public-program reviewer gets one explainable, auditable path from signal to governed action." }
+    { term: "Opus Gubernatio", definition: "Opus Gubernatio analyses the documents a project produces each reporting period and presents a recommendation that a project manager records a decision against, keeping the evidence, the recommendation, and the judgment as one reproducible record.", formula: "Evidence → analysis → recommendation → recorded decision",
+      impact: "Ties together the metrics, the anomaly and document evidence, and the decision rules so a reviewer gets one explainable, auditable path from signal to governed action." }
   ];
 
   /* ---------- assistant topics: keywords → curated answer ---------- */
   const TOPICS = [
     {
-      id: "pceif",
-      keywords: ["pceif", "framework", "what is this", "purpose", "praxis", "research"],
-      title: "What PCEIF is",
-      body: "PCEIF (Public Capital EVM Intelligence Framework) is a signal-to-action governance framework for public AEC capital programs. Four signal classes (EVM, Monte Carlo forecast, SPC/CUSUM anomaly, and document risk) feed explicit governance rules that derive a health state, classify signal conflict, and recommend an action with a named authority and required documentation. This site is a synthetic demonstration of that workflow."
+      id: "platform",
+      keywords: ["pceif", "framework", "what is this", "purpose", "praxis", "research", "opus", "gubernatio", "platform"],
+      title: "What Opus Gubernatio is",
+      body: "Opus Gubernatio analyses the documents a project produces each reporting period and presents a recommendation that a project manager records a decision against, keeping the evidence, the recommendation, and the judgment as one reproducible record. There is deliberately no named framework behind it: what matters is the capability, which is exactly what that sentence describes. The analytical layer runs server-side, every computed result is stored with its inputs and code version, and the platform never decides anything; a named professional does."
     },
     {
       id: "five-status",
-      keywords: ["status", "five status", "5 status", "complete", "yellow", "blue", "rag", "red amber green", "why five", "authority matrix", "closeout"],
+      keywords: ["status", "five status", "5 status", "complete", "yellow", "blue", "rag", "red amber green", "why five", "closeout"],
       title: "Why five status levels (Complete / Green / Yellow / Amber / Red)",
-      body: "Traditional RAG collapses important distinctions. PCEIF uses five status levels for three reasons. (1) RAG hides the gap between 'slightly off' and 'stalled', both show as Red. (2) Complete (blue) marks projects that have hit their milestone and transition to closeout governance, different authority, different documentation. (3) Yellow is an early-warning band between Green and Amber: minor variance, still recoverable, requiring a PM weekly check-in before it escalates. Each status maps to a distinct authority/timeframe in the Cat 8.1 matrix."
+      body: "Traditional red-amber-green collapses important distinctions, so the platform uses five status levels. (1) Three bands hide the gap between 'slightly off' and 'stalled'; both show as Red. (2) Complete marks projects that have hit their milestone and moved to closeout, which needs different attention than a healthy in-flight project. (3) Yellow is an early-warning band between Green and Amber: minor variance, still recoverable, worth a check-in before it escalates."
     },
     {
       id: "radar",
       keywords: ["radar", "portfolio", "blip", "scope", "circle", "ring", "sector", "distance", "center"],
-      title: "Reading the portfolio scope",
-      body: "Each blip is a synthetic project. Distance from center = drift from baseline (healthy projects sit near center). Angle = delivery sector: Design, Construction, or Hybrid. Blip color = derived health state. Click a blip, or use the equivalent list below the scope, to open that project's Detail page (ledger, decision card, and all five signals for that project)."
+      title: "Reading the portfolio radar",
+      body: "Each blip is a project. Distance from center reflects drift from baseline (healthy projects sit near center), angle is the delivery sector where one is recorded, and blip color is the project's stored status. Click a blip, or use the project list, to open that project's Detail page with its signal ledger and decision card. A project that has not been analysed yet renders as awaiting analysis, never with an invented status."
     },
     {
-      id: "module01",
-      keywords: ["module 01", "module 1", "hybrid", "dynamic simulation", "evm module", "cpi", "spi", "eac", "earned value"],
-      title: "Cat 1.1: Hybrid Dynamic Simulation",
-      body: "Cat 1.1 covers the EVM core: CPI (cost performance, EV/AC) and SPI (schedule performance, EV/PV) against the baseline. On a project's Detail page the Monte Carlo runs 5,000 iterations sampled from a signal-derived Beta-PERT distribution, with P50 and P80 read from the simulated array. P80 is the planning-conservative figure used for contingency and escalation decisions."
+      id: "evm-core",
+      keywords: ["hybrid", "dynamic simulation", "evm module", "cpi", "spi", "eac", "earned value"],
+      title: "The earned-value core (CPI, SPI, EAC)",
+      body: "The earned-value computations compare planned value, earned value, and actual cost. CPI (EV/AC) reads cost performance, SPI (EV/PV) reads schedule performance, and the estimate at completion projects the landing cost from current efficiency. The Monte Carlo forecast propagates uncertainty around that estimate and reports conservative percentiles such as P80, the planning figure with an estimated 80% chance the final cost lands at or below it. All of this runs server-side and is stored; the pages you see render the stored result."
     },
     {
-      id: "module02",
-      keywords: ["module 02", "module 2", "cusum", "spc", "anomaly", "drift", "trend", "control"],
-      title: "Cat 1.2: SPC / CUSUM Anomaly Monitor",
-      body: "Cat 1.2 watches for accumulating drift. On a project's Detail page CUSUM is a REAL computation: the standard two-sided tabular recursion runs over the project's metric series and a breach is flagged only when the cumulative statistic crosses the decision interval H. It feeds the governance rules, including the 'Anomaly without narrative' conflict when the document record offers no explanation."
+      id: "cusum",
+      keywords: ["cusum", "spc", "anomaly", "drift", "trend", "control"],
+      title: "CUSUM anomaly monitoring",
+      body: "CUSUM watches for accumulating drift: the standard two-sided cumulative-sum recursion runs over the project's metric series, and a breach is flagged only when the cumulative statistic crosses its decision interval. It catches the slow slide that single-period variance reports hide, and it feeds the governance rules, including the conflict raised when an anomaly appears without a supporting narrative in the document record."
     },
     {
-      id: "module03",
-      keywords: ["module 03", "module 3", "document", "doc risk", "rfi", "submittal", "extraction", "keyword"],
-      title: "Cat 1.3: Document-Risk Extraction",
-      body: "Cat 1.3 scores risk language in project records (RFIs, submittals, QC comments, procurement notes) using visible keyword rules, the same rules the Manage Projects page runs. The score and the matched excerpt feed the signal ledger. In this demo extraction is rule-based and transparent; there is no live NLP or LLM."
+      id: "doc-risk",
+      keywords: ["document", "doc risk", "rfi", "submittal", "extraction", "keyword"],
+      title: "Document risk",
+      body: "Document risk reads warning signs out of project records such as RFIs, submittals, QC comments, and procurement notes: the qualitative evidence that never reaches a cost report. The document risk score is recorded as a value the extraction model supplies rather than one the analytical server computes, and it is treated as a leading indicator that needs corroboration, never as a standalone trigger."
     },
     {
-      id: "module10",
-      keywords: ["module 10", "module 10", "synthesis", "conflict", "disagreement", "leading", "forecast ahead", "conservative dominance"],
-      title: "Cat 6.1: Conservative Dominance (Signal Synthesis)",
-      body: "Cat 6.1 classifies disagreement between signal classes instead of averaging it away. Conflict types: Multi-signal red-review, Anomaly without narrative, Forecast ahead of status, Leading document risk, Agreement, low risk, and Mixed early warning. The precedence order is deliberate and documented in decision.js. Conservative dominance: the worst single signal drives the overall state. Cat 6.1 is the baseline that Cat 7.1–Cat 7.9 cross-check before Cat 8.1 records the decision."
+      id: "synthesis",
+      keywords: ["synthesis", "conflict", "disagreement", "leading", "forecast ahead", "conservative dominance"],
+      title: "Signal synthesis and conflict",
+      body: "Signal synthesis classifies disagreement between signal classes instead of averaging it away. Named conflict types include multi-signal red-review, anomaly without narrative, forecast ahead of status, leading document risk, mixed early warning, and agreement at low risk. Under conservative dominance the worst single signal drives the overall state, so one green metric can never mask trouble elsewhere. Naming the conflict tells the reviewer what specifically to investigate."
     },
     {
-      id: "module19",
-      keywords: ["module 19", "module 09", "abm", "agent", "governance layer", "decision rules", "authority"],
-      title: "Cat 8.1: ABM Governance Layer",
-      body: "Cat 8.1 is the agent-based governance layer: each authority role (PM, controls lead, program director) is an agent with explicit decision rules. Those rules live in decision.js as pure, readable functions (deriveHealthState, classifyConflict, and deriveDecision), and the Signals page calls them directly. The decision card you see on the Portfolio and Project Detail pages IS this module's output. Cat 8.1 is the LAST module in the stack, the artefact that survives the reporting cycle."
+      id: "governance-rules",
+      keywords: ["abm", "agent", "governance layer", "decision rules", "authority"],
+      title: "The governance rules",
+      body: "The governance layer maps each signal package to a recommended action, a responsible authority role, and the documentation required, using explicit, readable rules rather than learned weights. Every recommendation traces to a rule a reviewer can read aloud. The decision card on the Portfolio and Project Detail pages is this layer's output, and it is always a recommendation: a named person records the decision."
     },
     {
       id: "fairness",
@@ -133,25 +133,25 @@
       id: "create",
       keywords: ["create project", "new project", "add project", "generate"],
       title: "Creating a project",
-      body: "On the Manage Projects page, set a name and delivery type (Design / Construction / Hybrid). The app generates the next SYN code, seeds baseline synthetic signals, runs the project through the same decision.js rules, and plots it on the portfolio scope immediately. Created projects persist in your browser's localStorage and are synthetic like everything else here."
+      body: "Operational accounts create projects from the Workspace: a name, an optional sector, and an optional site address, which the server geocodes and echoes back as the address it matched. The creator becomes the project's PM in the same step. Research accounts do not create their own projects; the researcher creates and assigns theirs, and they appear in the participant's portfolio."
     },
     {
       id: "archive",
       keywords: ["archive", "archived", "restore", "unarchive", "remove project", "hide project"],
       title: "Archiving a project",
-      body: "On the Manage Projects page, each active project has an Archive action. Archiving removes it from the portfolio scope and all active views without deleting it, it moves to the Archived list, persists in localStorage, and can be restored with one click. Every archive and restore is logged in the project event log."
+      body: "Archiving removes a project from the portfolio and other active views without deleting anything: the project and its record are retained, it moves to the Archived list, and it can be restored. Nothing about an archived project is lost."
     },
     {
       id: "ingest",
-      keywords: ["ingest", "upload", "paste", "doc type", "approve", "reject", "delta"],
-      title: "Ingesting a document",
-      body: "Pick a project and document type, then paste or upload text (.txt / .csv / PDF-extracted text). The app runs the same visible keyword rules as Cat 1.3, shows exactly which rule fired and the proposed signal delta, and nothing changes until a human clicks Approve. Reject discards the proposal. Every ingest event is logged."
+      keywords: ["ingest", "upload", "paste", "doc type", "approve", "reject", "delta", "document upload"],
+      title: "Uploading documents",
+      body: "Upload a reporting period's documents on the project page. The server reads the reported figures from each unique file once, caches the result by content hash so the same document always yields the same values, then runs the analytical layer and stores every computed result with its inputs and code version. What you see afterwards is the stored result, not a live recomputation."
     },
     {
       id: "themes",
-      keywords: ["theme", "light", "dark", "appearance"],
+      keywords: ["theme", "light", "dark", "appearance", "miami", "nyc", "maria"],
       title: "Themes",
-      body: "Two themes over the same structure, Dark (default) and Light, switchable in the menu. Your choice persists in localStorage."
+      body: "Three themes over the same structure: Miami, NYC, and Maria, switchable from the dock menu. Your choice persists in this browser."
     },
     {
       id: "timezone",
@@ -162,7 +162,7 @@
     {
       id: "boundaries",
       keywords: ["synthetic", "real data", "boundary", "production", "validated", "llm", "api", "backend"],
-      title: "Demo boundaries",
+      title: "Platform boundaries",
       body: "There is a server, and it does the analysis. The browser renders results the server computed and stored; it derives no project, category, or module status of its own. One AI call exists, and it runs server-side: reading uploaded documents to extract signal values. Everything after that extraction is deterministic arithmetic, and the governance decision comes from explicit rules. This assistant makes no model call at all; it answers only from the written knowledge library by keyword match, so it can be stale but it cannot invent. There is no analytics and no tracking. No predictive-accuracy validation has been performed, and every recommended action requires named human approval."
     }
   ];
@@ -216,7 +216,7 @@
         { label: "Red: CUSUM breaches threshold", color: T.red },
       ] },
     { term: "SPC, Statistical Process Control",
-      definition: "The use of statistical methods to monitor and control a process. CUSUM is the SPC method used in PCEIF to detect schedule drift." },
+      definition: "The use of statistical methods to monitor and control a process. CUSUM is the SPC method used here to detect schedule drift." },
     { term: "PERT, Program Evaluation & Review Technique",
       definition: "Stochastic network scheduling method. Each activity has optimistic (a), most likely (m), and pessimistic (b) durations sampled from a triangular distribution. P80 project duration and path criticality index are computed from 5,000 iterations. Formula: te = (a + 4m + b) / 6" },
     { term: "LOB, Line of Balance",
@@ -228,68 +228,71 @@
     { term: "DSM, Design Structure Matrix",
       definition: "Models information dependencies between design disciplines (Arch, Structural, MEP). Simulates how a scope change propagates through design iterations. Rework multiplier > 2.5 indicates high coordination risk." },
     { term: "ABM, Agent-Based Model",
-      definition: "The governance decision layer in PCEIF. Takes the signal package from all modules and derives a conflict classification, recommended action, named authority, and fairness gate requirement. Does not make decisions, surfaces the structured recommendation for human approval." },
+      definition: "The governance decision layer. Takes the signal package from all modules and derives a conflict classification, recommended action, named authority, and fairness gate requirement. Does not make decisions, surfaces the structured recommendation for human approval." },
     { term: "Fairness Gate",
       definition: "A mandatory step requiring contractor explanation before formal action is recorded. Triggered when a fairness-sensitive signal (document risk, LOB, CCPM) reaches Red. Prevents automated model outputs from driving contractual consequences without human review." },
     { term: "Red-review",
-      definition: "PCEIF governance state requiring Program Director / PMO lead review. Triggered when ≥2 signal classes are Red, or CUSUM breach + Red forecast. Requires full signal package, assigned owner, rationale, response timeframe, and audit record." },
+      definition: "Governance state requiring Program Director / PMO lead review. Triggered when ≥2 signal classes are Red, or CUSUM breach + Red forecast. Requires full signal package, assigned owner, rationale, response timeframe, and audit record." },
   ];
 
-  /* ---------- Cat 2.1–Cat 3.2, 11, Method Library accordion entries ---------- */
+  /* ---------- Method entries the assistant can answer with. These describe the METHODS,
+     not any specific implementation's thresholds: implementation parameters live in the
+     stored results and the server code, and quoting figures here that the code does not
+     guarantee is how stale claims accumulate. Titles carry no module ids. ---------- */
   TOPICS.push(
     {
-      id: "module04",
-      keywords: ["module 04", "module 4", "pert", "program evaluation", "network criticality", "triangular", "path criticality"],
-      title: "Cat 2.1: Program Evaluation & Review Technique (PERT)",
-      body: "PERT is a stochastic network scheduling method. Each activity has three duration estimates, optimistic (a), most likely (m), and pessimistic (b), and is sampled from a triangular distribution. The classic deterministic three-point estimate is te = (a + 4m + b) / 6; the simulation aggregates the dominant path across 5,000 runs. P80 duration is the conservative finish (80% of runs at or under). The path-criticality index is the fraction of runs in which the structural path was on the critical path, the higher it is, the less float you have to absorb a slip. In this implementation a lower project SPI widens the pessimistic bound, so an already-drifting schedule grows a fatter P80 tail. Thresholds: Green P80 within baseline; Amber P80 up to +20%; Red P80 > +20%.",
+      id: "pert",
+      keywords: ["pert", "program evaluation", "network criticality", "triangular", "path criticality"],
+      title: "Program Evaluation and Review Technique (PERT)",
+      body: "PERT is a stochastic network scheduling method. Each activity carries three duration estimates, optimistic (a), most likely (m), and pessimistic (b); the classic three-point estimate is te = (a + 4m + b) / 6, and simulation over the network turns those estimates into a distribution of finish dates. A conservative percentile of that distribution is the planning finish, and the path-criticality index is the fraction of runs in which a given path was critical: the higher it is, the less float there is to absorb a slip.",
     },
     {
-      id: "module05",
-      keywords: ["module 05", "module 5", "lob", "line of balance", "production velocity", "crew", "buffer"],
-      title: "Cat 2.2: Line of Balance (LOB)",
-      body: "LOB tracks production velocity for sequential, repetitive work, grading runs ahead of paving, paving runs ahead of striping, and so on. Each crew has a rate in units/day; the buffer is the schedule gap between leader and follower at every unit. When the follower's rate slips, that buffer compresses unit by unit and a crew-on-crew collision is being telegraphed before EVM moves. Here, lower project SPI slows the follower (paving) so the minimum crew buffer shrinks. Buffer collapse is a leading schedule indicator: it shows up in the LOB chart before it shows up in CPI or SPI. Thresholds: Green buffer > 3 days; Amber 1.5–3 days; Red ≤ 1.5 days.",
+      id: "lob",
+      keywords: ["lob", "line of balance", "production velocity", "crew", "buffer"],
+      title: "Line of Balance (LOB)",
+      body: "LOB tracks production velocity for sequential, repetitive work, grading runs ahead of paving, paving runs ahead of striping, and so on. Each crew has a rate in units per day; the buffer is the schedule gap between leader and follower at every unit. When the follower's rate slips, that buffer compresses unit by unit, telegraphing a crew-on-crew collision before it shows in CPI or SPI. Buffer collapse is a leading schedule indicator.",
     },
     {
-      id: "module06",
-      keywords: ["module 06", "module 6", "ccpm", "critical chain", "buffer", "fever chart"],
-      title: "Cat 2.3: Critical Chain Project Management (CCPM)",
-      body: "CCPM (Goldratt) aggregates the safety margin embedded in individual activity estimates into a single project buffer at the end of the critical chain. The fever chart plots buffer-consumed % against chain-complete %. Two thresholds drive the zones: the amber line tracks chain completion (buffer consumed ≥ % complete), burning buffer at the same rate progress is being made; the red line sits a third of the remaining range above (buffer consumed ≥ % complete + (100 − % complete) / 3), burning buffer faster than the chain can complete. Crossing into red means the buffer will run out before the work does. Thresholds: Green below the amber line; Amber buffer consumed ≥ % complete; Red buffer consumed ≥ % complete + (100 − % complete) / 3.",
+      id: "ccpm",
+      keywords: ["ccpm", "critical chain", "fever chart"],
+      title: "Critical Chain Project Management (CCPM)",
+      body: "CCPM (Goldratt) aggregates the safety margin embedded in individual activity estimates into a single project buffer at the end of the critical chain. The fever chart plots buffer consumed against chain completed: burning buffer at the same rate progress is being made is the warning zone, and burning it faster than the chain can complete means the buffer will run out before the work does.",
     },
     {
-      id: "module07",
-      keywords: ["module 07", "module 7", "rcf", "reference class", "forecasting", "flyvbjerg", "debias", "optimism bias"],
-      title: "Cat 3.1: Reference Class Forecasting (RCF)",
-      body: "Reference Class Forecasting comes from Bent Flyvbjerg's research on optimism bias in large infrastructure projects: bottom-up estimates systematically underestimate cost because they reason from the inside view (this project's plan) rather than the outside view (how comparable projects have actually performed). RCF replaces the inside-view estimate with an empirical prior, the distribution of historical overrun multipliers from a comparable reference class. This implementation uses an airport-infrastructure multiplier set [1.00 to 1.52]; the P80 multiplier is the conservative debiasing factor applied to BAC. The debiasing factor is the multiplier itself: x1.38 means the outside view says comparable projects finished 38% over their baseline. The P80 RCF prior is the realistic planning budget to compare against the bottom-up EAC. Thresholds: Green P80 within +10% of BAC; Amber +10–25%; Red > +25%.",
+      id: "rcf",
+      keywords: ["rcf", "reference class", "forecasting", "flyvbjerg", "debias", "optimism bias"],
+      title: "Reference Class Forecasting (RCF)",
+      body: "Reference Class Forecasting comes from Bent Flyvbjerg's research on optimism bias in large infrastructure projects: bottom-up estimates systematically underestimate cost because they reason from the inside view (this project's plan) rather than the outside view (how comparable projects actually performed). RCF replaces the inside-view estimate with an empirical prior, the distribution of historical overrun multipliers from a comparable reference class, and reads a conservative percentile of that distribution as the realistic planning budget to compare against the bottom-up estimate.",
     },
     {
-      id: "module08",
-      keywords: ["module 08", "module 8", "dsm", "design structure matrix", "rework", "propagation", "arch", "structural", "mep", "dependency"],
-      title: "Cat 3.2: Design Structure Matrix (DSM)",
-      body: "A DSM captures information-flow dependencies between work elements as a square matrix: each off-diagonal entry A[i][j] is the strength of i's dependence on j. Here the elements are the three design disciplines, Architectural, Structural, MEP, and the off-diagonals encode how much a unit change in one cascades into the others. Architectural decisions flow downstream into both Structural and MEP, so an arch scope change ripples through the matrix; structural and MEP changes also feed back. The simulation propagates a unit architectural change vector through the matrix for four passes and accumulates the rework absorbed in each discipline. The total cumulative rework multiplier is the coordination cost: a multiplier above 2.5 indicates that one unit of arch change is generating more than 2.5 units of downstream rework, high coordination risk. Thresholds: Green rework multiplier ≤ 2.5; Amber > 2.5.",
+      id: "dsm",
+      keywords: ["dsm", "design structure matrix", "rework", "propagation", "arch", "structural", "mep", "dependency"],
+      title: "Design Structure Matrix (DSM)",
+      body: "A DSM captures information-flow dependencies between work elements as a square matrix: each off-diagonal entry is the strength of one element's dependence on another. Between design disciplines, architectural decisions flow downstream into structural and MEP work, so a scope change in one discipline ripples through the matrix, and propagating a change vector through it accumulates the rework each discipline absorbs. The cumulative rework multiplier is the coordination cost: the higher it is, the more downstream rework one unit of change generates.",
     },
     {
-      id: "module11",
-      keywords: ["module 11", "module 11", "dst", "dempster", "shafer", "belief", "evidence combination", "conflict mass", "bpa"],
-      title: "Cat 7.1: Dempster-Shafer Evidence Combination (DST)",
-      body: "Dempster-Shafer Theory (DST) is a mathematical framework for reasoning under uncertainty when evidence comes from multiple independent sources. Unlike conservative dominance (Cat 6.1), which takes the worst single signal, DST combines all four signal classes into a belief distribution over {Green, Amber, Red, Unknown}. Each source assigns a basic probability assignment (BPA), a mass function over subsets of the frame of discernment. Dempster's combination rule then merges sources iteratively, redistributing conflict mass. The conflict mass K measures how much the sources disagree: K > 0.3 is flagged as high inter-signal disagreement, which is itself a governance signal. Academic context: Dempster (1967) and Shafer (1976). When DST agrees with Cat 6.1, both methods corroborate each other. When they diverge, the disagreement is a finding: it tells the governance layer that the evidence picture is genuinely ambiguous rather than clear-cut, and that no single framing captures the full risk.",
+      id: "dst",
+      keywords: ["dst", "dempster", "shafer", "belief", "evidence combination", "conflict mass", "bpa"],
+      title: "Dempster-Shafer evidence combination (DST)",
+      body: "Dempster-Shafer Theory is a mathematical framework for reasoning under uncertainty when evidence comes from multiple independent sources. Unlike conservative dominance, which takes the worst single signal, DST combines the signal classes into a belief distribution: each source assigns a basic probability assignment, a mass function over subsets of the possible states, and Dempster's combination rule merges sources while redistributing conflict mass. The conflict mass measures how much the sources disagree, and high disagreement is itself a governance signal. When DST agrees with conservative dominance the two corroborate each other; when they diverge, the divergence is the finding: the evidence picture is genuinely ambiguous. Academic context: Dempster (1967) and Shafer (1976).",
     },
     {
-      id: "module12",
-      keywords: ["module 12", "rough sets", "rough set theory", "lower approximation", "upper approximation", "boundary region", "indeterminate", "pawlak"],
-      title: "Cat 7.2: Rough Set Theory Classification",
-      body: "Rough Set Theory (Pawlak, 1982) provides a mathematical framework for classifying objects when available information is incomplete or imprecise. The core insight is that some concepts, like 'this project is Green', cannot be precisely defined with available attributes. Instead, rough sets define three regions: the lower approximation contains all objects (states) that definitely belong to the concept (over 75% of signals agree); the upper approximation contains all objects that possibly belong; and the boundary region, upper minus lower, is the indeterminate zone where evidence is insufficient to classify with certainty. A project falls in the definite Green region when the preponderance of evidence is unambiguous; it falls in the boundary when signals are mixed and classification is uncertain. A wide boundary region is itself a governance signal: it means the evidence does not yet support a confident classification. Unlike DST (Cat 7.1), rough sets do not assign probability masses, they provide a set-theoretic answer: yes, possibly, or unknown. Thresholds: Definite requires > 75% signal agreement for a state; any support places a state in the upper approximation.",
+      id: "rough-sets",
+      keywords: ["rough sets", "rough set theory", "lower approximation", "upper approximation", "boundary region", "indeterminate", "pawlak"],
+      title: "Rough set classification",
+      body: "Rough Set Theory (Pawlak, 1982) classifies objects when available information is incomplete or imprecise. Some concepts, like 'this project is Green', cannot be precisely defined with the available attributes, so rough sets define three regions: the lower approximation holds states the evidence definitely supports, the upper approximation holds states it possibly supports, and the boundary region between them is the indeterminate zone. A wide boundary region is itself a governance signal: the evidence does not yet support a confident classification. Unlike Dempster-Shafer combination, rough sets assign no probability masses; they give a set-theoretic answer: yes, possibly, or unknown.",
     },
     {
-      id: "module13",
-      keywords: ["module 13", "neutrosophic", "neutrosophic logic", "truth", "indeterminacy", "falsity", "t i f", "smarandache"],
-      title: "Cat 7.3: Neutrosophic Logic",
-      body: "Neutrosophic Logic (Smarandache, 1995) extends fuzzy logic by introducing three independent truth-value dimensions: Truth (T), Indeterminacy (I), and Falsity (F). Unlike classical logic (T + F = 1) and fuzzy logic (T + F = 1 as a constraint), neutrosophic values are independent, T + I + F need not equal 1, and can exceed 1 or be less than 1. This is a deliberate feature: it models genuine epistemic uncertainty as a separate dimension rather than forcing it to be the residual of known truths and falsehoods. In project risk terms: T represents the degree to which the evidence supports a given status; F represents evidence against it; I represents the portion of evidence that is genuinely undetermined or contradictory, measurement noise, missing data, or conflicting signals that cannot be resolved by collecting more of the same kind of data. High indeterminacy (I > 30%) is a governance signal: it means the evidence architecture itself needs strengthening before a confident classification is possible, not just that the project is 'in between' Green and Red. This module combines the four primary signal classes disjunctively for T (union of evidence) and conjunctively for I and F, producing a three-component characterization of the current signal package.",
+      id: "neutrosophic",
+      keywords: ["neutrosophic", "neutrosophic logic", "truth", "indeterminacy", "falsity", "t i f", "smarandache"],
+      title: "Neutrosophic logic",
+      body: "Neutrosophic Logic (Smarandache, 1995) extends fuzzy logic with three independent truth-value dimensions: Truth (T), Indeterminacy (I), and Falsity (F). Unlike classical and fuzzy logic, the three are independent and need not sum to one, which is a deliberate feature: it models genuine epistemic uncertainty as its own dimension rather than the residual of known truths and falsehoods. In project risk terms, T is the degree to which the evidence supports a status, F is the evidence against it, and I is the portion that is genuinely undetermined or contradictory. High indeterminacy is a governance signal: the evidence base itself needs strengthening before a confident classification is possible, which is different from a project merely sitting between Green and Red.",
     },
     {
-      id: "module14",
-      keywords: ["module 14", "interval fuzzy", "interval-valued fuzzy", "fuzzy interval", "membership interval", "uncertainty interval", "ifs"],
-      title: "Cat 7.4: Interval-valued Fuzzy Sets",
-      body: "Interval-valued Fuzzy Sets (IVFS) extend classical fuzzy sets by representing membership as a range [lower, upper] rather than a single value. The interval reflects measurement uncertainty in the underlying data, the range of possible membership values given the precision of the inputs. For airport construction EVM, the primary sources of input uncertainty are: Schedule of Values (SoV) line-item accuracy of approximately +/-2% of contract value affecting Earned Value, and Pay Application rounding of approximately +/-1% affecting Actual Cost. These compound into a CPI/SPI uncertainty range of approximately +/-3 percentage points. IVFS propagates this uncertainty through the fuzzy membership functions for Green, Amber, and Red states, producing an interval rather than a point estimate. A wide interval signals that the current input precision is insufficient to reliably distinguish between adjacent states, e.g., a Green/Amber boundary crossing falls within the uncertainty band. The uncertainty width metric summarizes the total interval spread: High (> 0.30 width) means the classification is sensitive to input noise; Moderate (0.15-0.30) means some sensitivity; Low (< 0.15) means the signal package is sufficiently precise for reliable classification. References: Sambuc (1975); Zadeh (1975); Turksen (1986).",
+      id: "ivfs",
+      keywords: ["interval fuzzy", "interval-valued fuzzy", "fuzzy interval", "membership interval", "uncertainty interval", "ifs"],
+      title: "Interval-valued fuzzy sets",
+      body: "Interval-valued fuzzy sets extend classical fuzzy sets by representing membership as a range rather than a single value, reflecting the measurement uncertainty in the underlying inputs. Propagating that uncertainty through the membership functions for each status produces an interval rather than a point: a wide interval means the current input precision cannot reliably distinguish adjacent states, for example a boundary crossing between Green and Amber that falls inside the uncertainty band. References: Sambuc (1975); Zadeh (1975); Turksen (1986).",
     },
   );
 
@@ -580,7 +583,7 @@ Named Human Approval → Audit Record</pre>
         </ul>
 
         <h3>The role of AI</h3>
-        <p>AI (Claude API, Anthropic) explains and summarizes using keyword-matched retrieval from the knowledge library. It does <strong>not</strong> make governance decisions. Every recommended action requires a named human approval before it is recorded; the AI's job is to make that approval well-informed, not to replace it. This is a design constraint, not a performance limitation.</p>
+        <p>One AI call exists on the platform, and it runs server-side: reading the reported figures from uploaded documents. Nothing else calls a model. The guided assistant is scripted; it answers from this written knowledge library by keyword match and makes no model call at all. AI does <strong>not</strong> make governance decisions. Every recommended action requires a named human approval before it is recorded. This is a design constraint, not a performance limitation.</p>
       `,
     },
     {
@@ -1294,7 +1297,7 @@ Named Human Approval → Audit Record</pre>
         <h3>Layer 1 vs Layer 2</h3>
         <p><strong>Layer 1 (Agency Governance):</strong> sets the matrix. Which thresholds trigger which authority, what documentation is required, whether a fairness gate applies. Established by the program owner before any project starts. Not changed per project.</p>
         <p><strong>Layer 2 (PM Decision Architecture):</strong> uses the matrix. Takes the signal package from all 19 modules, applies the matrix, and surfaces the specific recommendation for this reporting cycle. The PM sees the recommendation, records a decision (approve, defer, or override with rationale), and the audit trail captures everything.</p>
-        <p class="kn-callout">AI explains and summarizes. It does not make governance decisions. Every recommended action requires named human approval before it is recorded.</p>
+        <p class="kn-callout">AI reads document figures; it does not make governance decisions. Every recommended action requires named human approval before it is recorded.</p>
 
         <h3>The three core functions</h3>
         ${formulaBlock([
@@ -1519,12 +1522,12 @@ Named Human Approval → Audit Record</pre>
       sources: "Schedule Update / Look-ahead, Monthly Progress Report, supplies the SPI time series the recursion runs over.",
       interp: "A breach hands the finding to Cat 6.1/Cat 8.1 governance; on its own it is evidence of a systemic pattern, not noise, and if no document explains it the conflict type is 'Anomaly Without Narrative'.",
       ground: "Tabular CUSUM (Page, 1954) is a sequential change-detection method from statistical process control, chosen over a Shewhart 3σ chart because it is sensitive to small sustained shifts rather than only large single-period ones; construction SPI series carry higher natural variance than manufacturing measurements, so H is widened to 5σ to bound false positives." },
-      purpose: "Surfaces qualitative risk language in project records as a leading indicator, since EVM lags field conditions by weeks.",
-      formula: "Weighted sum of matched keyword/pattern rules across RFIs, submittals, OAC minutes, and correspondence, normalized to a 0-1 score. Each match carries a weight and an evidence excerpt; the ledger stores the matched rule and source document.",
-      bands: [["green","Green","score &lt; 0.30, routine language"], ["amber","Amber","0.30-0.70, possible cost/schedule/scope impact language"], ["red","Red","score ≥ 0.70, high-impact language converging across document types"]],
-      sources: "RFI / RFI Log, Submittal / Submittal Register, OAC Meeting Minutes, Correspondence / Notice, Risk Register, Inspection Report / NCR.",
-      interp: "Red is a flag requiring Cat 6.1 corroboration, never a standalone trigger, keyword extraction is rule-based, not semantic, and a sophisticated contractor can write around it.",
-      ground: "Rule-based text scoring for early warning is consistent with document-risk literature in project controls; it trades recall for full auditability, every matched rule and excerpt is inspectable, unlike a black-box NLP classifier." },
+    /* The "Document Risk Extraction" entry that stood here was removed in the module
+       renumbering: the value is supplied by the extraction model, not computed by the
+       analytical server, and it is excluded from the registered count (see
+       GROUP_ASSIGNMENT.md). The renumbering commit deleted only the object's opening
+       line, which left the file with a syntax error that stopped knowledge.js loading
+       at all; the rest of the object is now removed with it. */
     { n: "A1.3", name: "Bayesian EAC", mc: "Bayesian_EAC",
       purpose: "Blends a prior expectation (finish on budget) with the likelihood implied by current CPI, producing a posterior EAC that is more conservative than a naive CPI-only projection when current performance is thin on data.",
       formula: "priorMean = BAC, priorVariance = (BAC × 0.15)²; likelihoodMean = BAC/CPI, likelihoodVariance = (BAC × (1−CPI)/CPI)²; posteriorMean = (priorMean/priorVariance + likelihoodMean/likelihoodVariance) / (1/priorVariance + 1/likelihoodVariance); deltaPct = (posteriorMean − BAC)/BAC × 100.",
@@ -1697,12 +1700,10 @@ Named Human Approval → Audit Record</pre>
       sources: "Historical Project Data, Past Performance Report, the reference class itself is a fixed synthetic distribution, not per-project extracted data; only BAC is read from the project.",
       interp: "The debiasing multiplier is the outside-view answer to 'what do comparable projects actually cost'; when it diverges sharply from the project's own bottom-up EAC (Cat 1.1/1.4), the gap is itself the finding worth escalating.",
       ground: "Reference Class Forecasting (Flyvbjerg, 2008) replaces inside-view estimation with the empirical outside-view distribution of a comparable reference class, the method now embedded in UK Treasury Green Book guidance for major infrastructure business cases." },
-      purpose: "Estimates the cumulative downstream rework triggered by a single architectural change, by propagating it through a fixed inter-discipline dependency matrix.",
-      formula: "3×3 dependency matrix over {Arch, Structural, MEP}; unit change vector v0 = [1,0,0] is propagated for 4 passes (v(t+1) = A·v(t)); rework multiplier = sum of all accumulated values across the 4 passes and 3 disciplines. This module uses a fixed synthetic matrix, it does not read the project's live signal inputs.",
-      bands: [["green","Green","rework multiplier ≤ 2.5"], ["amber","Amber","&gt; 2.5"]],
-      sources: "BIM Execution Plan (BEP), Design Development (DD) Sets, conceptually informs the coupling strengths; the matrix itself is fixed/synthetic in this demo, not derived per-project.",
-      interp: "A multiplier above 2.5 means a single unit of architectural change is estimated to generate more than 2.5 units of downstream coordination rework, a high-coordination-risk design phase where even small scope changes should go through a formal impact review before approval.",
-      ground: "The Design Structure Matrix (Steward, 1981) captures dependency and feedback loops between design elements; propagating a unit change through the matrix to estimate cumulative rework underpins modern BIM clash-detection and integrated-project-delivery coordination practice." },
+    /* The "Design Structure Matrix" entry that stood here was removed in the module
+       renumbering (its id is not in the registered set). As with the Document Risk
+       Extraction entry above, the renumbering commit deleted only the object's opening
+       line, which was a syntax error; the rest of the object is now removed with it. */
     { n: "A3.2", name: "Contingency Burn Rate", mc: "Contingency_Burn_Rate",
       purpose: "Compares how much of the contingency reserve has been spent against how much of the physical work has been completed, flagging contingency being drawn down faster than the project is progressing.",
       formula: "burnRate = (originalContingency − remainingContingency) / originalContingency; expectedBurn = actualPctComplete/100; burnStress = burnRate / expectedBurn.",
