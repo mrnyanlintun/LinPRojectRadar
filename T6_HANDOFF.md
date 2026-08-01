@@ -1,3 +1,78 @@
+# T10 — two globe treatments. Built, NOT merged, and here is exactly what is missing.
+
+Branch `t10-globe-treatments` at `3b5ee7d`. `main` is at `5ccc395`. 854 checks across 17 suites
+pass. **Not merged**, for one reason: nothing was ever seen rendering.
+
+## The blocker, and how to clear it
+
+`document.visibilityState` was `"hidden"` for the whole session and `requestAnimationFrame`
+produced **0 frames per second**. globe.gl builds its scene inside that loop, so the scene graph
+never populated: no screenshot, no visual confirmation of either treatment, and **no frame rate**.
+
+**Guarantee 7 is unmet.** The hex-dot resolution (3) was chosen conservatively *because* it could
+not be measured, not because a measurement supported it.
+
+**What the next session must do, with the pane visible:**
+
+1. Look at both treatments. Nothing below has been seen.
+2. Measure frame rate on each. If the abstract globe costs more than a few fps against the plain
+   sphere, lower `hexPolygonResolution` from 3, or raise `hexPolygonMargin`.
+3. Confirm the marker halo actually reads. The argument for it is analytic (below) and I believe
+   it is sound, but it is not evidence.
+4. Capture the three themes at 1280 / 1920 / 3840.
+
+**Diagnostic that saves time:** `performance.getEntriesByType('resource')` and
+`LinGlobe.palette()` work regardless of compositing — that is how everything below was verified.
+But `globe.scene()` will show only a bare `Mesh` and `palette()` will return `tiltDeg: null` while
+the pane is hidden. **That is not a bug.** Do not go chasing the tilt again; it is verified at
+`fe4f59b` and unchanged.
+
+Also: a scene walk over the abstract globe enumerates thousands of hex objects and will time the
+tool out. Keep probes shallow.
+
+## Marker legibility — the reasoning, so it is not re-litigated
+
+The obvious fix does not work, and this was measured rather than assumed. Sampling the real
+texture at six sites and computing WCAG contrast per status:
+
+| Variant | Worst case |
+|---|---|
+| Texture as-is | **1.02:1** — Yellow over the Sahara |
+| Dimmed to 62% brightness / 72% saturation | **1.01:1** — Red, once the sand is dark |
+
+**Dimming only changes which status fails.** A single background brightness cannot serve four
+colours at four different luminances. That is why the texture ships undimmed — do not "fix" it by
+dimming.
+
+What ships instead is a dark disc under every marker (`--globe-marker-halo`, `#05080b`), so
+contrast is a property of the marker's own surround and is identical over ocean, desert, ice and
+cloud: Red 4.9, Amber 7.5, Green 10.5, Yellow 13.4. Status colours are untouched.
+
+It is a **labels layer with empty text**, not a second points layer — globe.gl allows only one
+`pointsData`. Both are real 3D layers, so the disc is depth-tested. An HTML-overlay marker was
+rejected: it would float in front of the far side of the planet.
+
+## Verified by measurement (these do not need redoing)
+
+| | |
+|---|---|
+| Treatment follows theme, both directions, real buttons | NYC abstract (177 hex polygons, cyan rim) ↔ Miami/Maria photographic |
+| Repaint, not remount | `liveCount` steady at 1 across every switch |
+| Texture only where used | 0 bytes under NYC; 529 KB same-origin on the photographic themes |
+| Status colours across themes | byte-identical on all three |
+| `rgba()` audit | all **14** variables the globe reads, all three themes — none |
+| Empty state | still rotates at 0.35 with zero points |
+
+## Guarantee 5 needs stating precisely
+
+**The globe loads nothing off-origin** — `globe.gl`, the GeoJSON and the texture are all
+`/vendor/`. But the *page* still does, and this predates T10: Google Fonts, `accounts.google.com`
+(SSO), and `tiles.openfreemap.org` for the MapLibre map. If "nothing loads from a CDN" is meant to
+cover the whole page, those three are the outstanding items, and the font and tile ones are the
+same corporate-network argument that got PDF.js and SheetJS vendored.
+
+---
+
 # T9 — the detail globe is VERIFIED. Read this section first.
 
 ## Task 1 is settled. The detail globe renders, and the fault was never in detail.js
