@@ -562,7 +562,7 @@
 
   /* ============================================================
      Real street-level map — the portfolio's second view.
-     MapLibre GL JS (cdnjs) + OpenFreeMap vector tiles: no API key,
+     MapLibre GL JS (vendored, assets/vendor/) + OpenFreeMap vector tiles: no API key,
      no account, no billing. Dark style for Gotham/NYC, positron for
      Miami; the style is swapped when the theme changes (markers are
      DOM overlays and survive the swap). One custom HTML building
@@ -588,8 +588,15 @@
   let mapBootRobot = null;   // 'loading' working-robot shown while tiles/style init
   let focusedPinId = null;   // the flown-to / selected marker
 
-  const GL_CSS_URL = "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css";
-  const GL_JS_URL  = "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js";
+  // VENDORED, NOT CDN. These were cdnjs URLs, which meant the map failed on any corporate
+  // network that blocks a public CDN — a realistic case for the directors this platform is for,
+  // and one that looks like a broken product rather than a blocked request. Serving them from
+  // /assets reduces the failure question to WebGL alone, which showMapFailure() already handles.
+  //
+  // Still loaded on demand rather than as static tags, unchanged: the map is one tab of one page
+  // and has never been worth blocking the initial load for.
+  const GL_CSS_URL = "assets/vendor/maplibre-gl.min.css";
+  const GL_JS_URL  = "assets/vendor/maplibre-gl.min.js";
   let mapAssetsPromise = null;
 
   /* inject the MapLibre CSS/JS on demand (background warm-up or first Map
