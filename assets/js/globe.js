@@ -42,6 +42,9 @@
 
   var VENDOR_URL = "assets/vendor/globe.gl.min.js";
 
+  // Earth's axial tilt, in radians. 23.4 degrees.
+  var AXIAL_TILT = 23.4 * Math.PI / 180;
+
   var loadPromise = null;
   var live = [];            // every mounted instance, so visibility can reach all of them
   var visibilityBound = false;
@@ -80,10 +83,21 @@
 
   // Read from the live computed style so a theme switch is picked up, rather than hard-coding
   // anything. No screen defines its own palette.
+  // three.js Color.set() parses hex and rgb(), but NOT rgba(). Several theme surfaces are
+  // declared with alpha (newyork's --surface-soft is rgba(21,28,32,.86)), so passing the raw
+  // value through made Color.set throw and the globe silently kept its default material. The
+  // alpha is dropped rather than approximated: the globe is opaque, and compositing a
+  // translucent surface colour against an unknown backdrop is not something this can know.
+  function stripAlpha(v) {
+    var m = /^rgba\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/i.exec(v);
+    if (!m) return v;
+    return "rgb(" + Math.round(+m[1]) + "," + Math.round(+m[2]) + "," + Math.round(+m[3]) + ")";
+  }
+
   function themeColor(name, fallback) {
     try {
       var v = getComputedStyle(document.body).getPropertyValue(name);
-      v = (v || "").trim();
+      v = stripAlpha((v || "").trim());
       return v || fallback;
     } catch (e) {
       return fallback;
@@ -153,6 +167,40 @@
     if (visibilityBound) return;
     document.addEventListener("visibilitychange", onVisibility);
     visibilityBound = true;
+  }
+
+  /* ---------- axial tilt ----------
+     T9 Task 3. Earth's tilt, so the globe reads as a planet rather than a sphere.
+
+     Applied to globe.gl's own group — the one holding the sphere, the graticules and the
+     points — rather than to the camera. Tilting the camera would look the same on the first
+     frame, but pointOfView() and the focus option both reason in camera space, so the focused
+     detail globe would then be fighting it. Tilting the group instead means the points stay
+     attached to their coordinates on a tilted planet, which is what a tilt actually means.
+
+     The group does not exist yet when mount() returns: globe.gl builds it over the following
+     frames, and setting rotation on the scene at construction time silently did nothing. So
+     this retries across a bounded number of frames and stops as soon as it lands. */
+
+  function applyTilt(globe, tries) {
+    tries = tries || 0;
+    try {
+      var scene = typeof globe.scene === "function" && globe.scene();
+      var grp = scene && scene.children && scene.children.filter(function (c) {
+        return c && c.type === "Group";
+      })[0];
+      if (grp && grp.rotation) { grp.rotation.z = AXIAL_TILT; return; }
+    } catch (e) {
+      // Deliberately falls through to the retry rather than giving up. Reading .scene() before
+      // globe.gl has built it can throw, and returning here was why the first version of this
+      // silently left every globe upright: the one early throw killed the retry for good.
+    }
+    // A timer, not requestAnimationFrame. rAF does not fire while the page is not compositing
+    // — a background tab, or an automated browser whose pane is not displayed — and globe.gl
+    // builds its group from its own timers regardless. On rAF the globe finished building and
+    // then stayed upright forever, because the retry that was meant to catch it never ran.
+    // Bounded at ~1s so a build that never produces a group cannot retry forever.
+    if (tries < 60) setTimeout(function () { applyTilt(globe, tries + 1); }, 16);
   }
 
   /* ---------- an instance ---------- */
@@ -255,6 +303,8 @@
           }
         } catch (e) { /* the globe still renders without the tint */ }
 
+        applyTilt(globe);
+
         var handle = makeHandle(globe, container);
         live.push(handle);
         handle.resize();
@@ -264,11 +314,19 @@
             globe.pointOfView({ lat: opts.focus.lat, lng: opts.focus.lng, altitude: 1.4 }, 0);
           } catch (e) {}
         }
-        if (opts.interactive === false) {
+        // T9 Task 3. The empty state is the platform's resting visual, not an error. A portfolio
+        // with nothing placeable still gets a globe, turning slowly, rather than a blank stage or
+        // a message. It stays interactive — the user can still spin it — the rotation only gives
+        // it life while nothing is on it, and any later refresh() with points leaves it as it is.
+        var idle = pts.length === 0;
+        if (opts.interactive === false || idle) {
           try {
             var controls = globe.controls();
-            if (controls) { controls.enableZoom = false; controls.autoRotate = true;
-                            controls.autoRotateSpeed = 0.35; }
+            if (controls) {
+              if (opts.interactive === false) controls.enableZoom = false;
+              controls.autoRotate = true;
+              controls.autoRotateSpeed = 0.35;
+            }
           } catch (e) {}
         }
         bindVisibility();
