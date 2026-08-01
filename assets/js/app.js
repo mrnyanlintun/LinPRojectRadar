@@ -1654,9 +1654,11 @@
     // rules key off this class so both get dark headings, status-marker
     // outlines, yellow-pill dark ink, light spider axes, etc.
     document.body.classList.toggle("t-light", theme === "light" || theme === "maria");
-    document.querySelectorAll("[data-set-theme]").forEach((b) =>
-      b.classList.toggle("active", b.dataset.setTheme === theme)
-    );
+    // NOTE: there is deliberately no [data-set-theme] sweep here. Nothing in the DOM has ever
+    // carried that attribute — the theme switcher is the fly-out pills built in openThemeFlyout(),
+    // which set their own active state on open and on click. The dead selector that used to sit
+    // here cost a session: grepping for [data-set-theme] found nothing and the switcher was
+    // reported as missing. If a declarative switcher is ever added, wire it here.
     try {
       localStorage.setItem("lin-theme", theme);        // new primary key
       localStorage.setItem("lin-radar-theme", theme);  // legacy key (kept for back-compat)

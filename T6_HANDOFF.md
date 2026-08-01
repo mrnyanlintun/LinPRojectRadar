@@ -1,3 +1,38 @@
+# READ FIRST — check the browser pane before planning any visual work
+
+**Two consecutive sessions have now been lost to this.** Before anything else:
+
+```js
+document.visibilityState            // must be "visible"
+// and count rAF frames over 1s     // must be > 0
+```
+
+If it is `"hidden"` with 0 frames, **globe.gl never builds its scene**, screenshots fail, and no
+visual check or frame-rate measurement is possible. Say so and stop; do not spend the session
+discovering it late. `preview_start` reporting "Browser pane opened", and the `PostToolUse` hook
+saying a file "is now visible in the Browser pane", **both appear even when the pane is hidden** —
+neither is evidence. Only the two checks above are.
+
+Everything measurable works fine while hidden: `performance.getEntriesByType('resource')`,
+`LinGlobe.palette()`, DOM state, the action API. That is how everything below was verified.
+
+## Per-session report files
+
+From 2026-08-01 onward every session writes `REPORT_<yyyy-mm-dd>_<short-task-name>.md` at the
+repository root and commits it. The most recent is
+`REPORT_2026-08-01_globe-verification-and-vendoring.md`.
+
+## Dev-server caching — now fixed at the source
+
+`dev_serve.py` sent `no-store` for `/assets` **or** paths ending `.html`. `index.html` served at
+`/` matches neither, so the root document was still being cached — it hid an `index.html` edit in
+this session exactly as the old `/assets` gap hid `detail.js`. It now also keys on a `text/html`
+content type. If a page-level edit still seems not to apply, compare
+`performance.getEntriesByType('resource')` `encodedBodySize` against what `curl` returns before
+suspecting the code.
+
+---
+
 # T10 — two globe treatments. Built, NOT merged, and here is exactly what is missing.
 
 Branch `t10-globe-treatments` at `3b5ee7d`. `main` is at `5ccc395`. 854 checks across 17 suites
@@ -63,13 +98,29 @@ rejected: it would float in front of the far side of the planet.
 | `rgba()` audit | all **14** variables the globe reads, all three themes — none |
 | Empty state | still rotates at 0.35 with zero points |
 
-## Guarantee 5 needs stating precisely
+## Guarantee 5 — Google Fonts is now vendored; two dependencies remain by necessity
 
-**The globe loads nothing off-origin** — `globe.gl`, the GeoJSON and the texture are all
-`/vendor/`. But the *page* still does, and this predates T10: Google Fonts, `accounts.google.com`
-(SSO), and `tiles.openfreemap.org` for the MapLibre map. If "nothing loads from a CDN" is meant to
-cover the whole page, those three are the outstanding items, and the font and tile ones are the
-same corporate-network argument that got PDF.js and SheetJS vendored.
+**Fonts are done.** 18 woff2 (Archivo, Inter, IBM Plex Mono; latin + latin-ext) plus a generated
+`assets/vendor/fonts.css`, all same-origin, SIL OFL 1.1. `unicode-range` is preserved so only 4
+files / 142 KB actually transfer on the sign-in page. Vendor total **4.5 MB → 5.9 MB**.
+
+Two remain and neither can be vendored. **Both failure paths are verified live, so neither needs
+re-testing:**
+
+- **`accounts.google.com`** — with the Google global deleted, the username and password form still
+  renders, stays enabled, and authenticates. A blocked network does not lock anyone out.
+- **`tiles.openfreemap.org`** — with `maplibregl` deleted, the map degrades to a muted panel
+  reading "Map tiles unavailable: check connection" with the project list still present. Not a
+  blank panel. A 9-second watchdog in `app.js` covers the style-never-loads case.
+
+Note the portfolio stage buttons are now **Radar** and **Globe** only — the MapLibre map is the
+globe's WebGL-off fallback rather than a stage the user picks, which makes the tile host a
+fallback-of-a-fallback.
+
+## The `[data-set-theme]` trap is gone
+
+`applyTheme` no longer sweeps `[data-set-theme]`; nothing ever carried it. A comment now names
+`openThemeFlyout()` as the real switcher, so the next grep does not repeat the false negative.
 
 ---
 

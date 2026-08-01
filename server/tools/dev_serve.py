@@ -116,14 +116,23 @@ import app.main as _main  # noqa: E402
 class _NoAssetCache(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         response = await call_next(request)
-        if request.url.path.startswith("/assets") or request.url.path.endswith(".html"):
+        # The content-type test is what catches index.html served at "/", which ends in neither
+        # "/assets" nor ".html" and was therefore the one file still being cached. That gap cost
+        # another session: the page kept its old <head> — and so kept loading fonts from a CDN
+        # that had already been vendored — while the server served the new file. Same symptom as
+        # the /assets problem above, one path short of the fix.
+        ctype = response.headers.get("content-type", "")
+        if (request.url.path.startswith("/assets")
+                or request.url.path.endswith(".html")
+                or ctype.startswith("text/html")):
             response.headers["Cache-Control"] = "no-store, must-revalidate"
             response.headers["Pragma"] = "no-cache"
         return response
 
 
 _main.app.add_middleware(_NoAssetCache)
-print("[dev_serve] /assets served no-store; edits take effect on reload")
+print("[dev_serve] /assets and every text/html response served no-store; "
+      "edits take effect on reload")
 
 port = int(sys.argv[1]) if len(sys.argv) > 1 else 8010
 

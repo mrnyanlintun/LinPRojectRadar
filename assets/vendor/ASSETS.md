@@ -15,8 +15,40 @@ licence below.
 | `xlsx.full.min.js` | 861 KB | [SheetJS](https://github.com/SheetJS/sheetjs) | Apache-2.0 |
 | `earth-blue-marble-clouds.jpg` | 529 KB | NASA Blue Marble Next Generation — composited, see below | **Public domain** |
 | `ne_110m_admin_0_countries.geojson` | 240 KB | [Natural Earth](https://www.naturalearthdata.com/) 1:110m Admin 0 Countries | **Public domain** |
+| `fonts.css` + `fonts/*.woff2` (18 files) | 679 KB | Google Fonts — Archivo, Inter, IBM Plex Mono | **SIL Open Font License 1.1** |
 
-Total: **5.2 MB**. The two entries added for the themed globe account for 769 KB of that.
+Total: **5.9 MB**.
+
+## The fonts, and why they are here
+
+They used to load from `fonts.googleapis.com`, which is the same corporate-network argument that
+got MapLibre, globe.gl, PDF.js and SheetJS vendored: on a blocked network the platform silently
+fell back to system fonts and stopped looking like itself.
+
+`fonts.css` was generated from the Google Fonts `css2` response for the exact families and weights
+`index.html` already asked for — Archivo 500/700/800, Inter 400/500/600, IBM Plex Mono 400/500/600
+— with the URLs rewritten to `fonts/`. All three families are SIL OFL 1.1.
+
+**Latin and latin-ext only.** Google serves seven subsets (adding Cyrillic, Cyrillic-ext, Greek,
+Greek-ext and Vietnamese), which would have been 45 files. The platform's audience is a US
+institution and US federal and commercial projects, and latin-ext already covers European
+diacritics, so the other five subsets would be dead weight. 18 files, 672 KB on disk.
+
+The `unicode-range` declarations are preserved, so a browser downloads only the faces it needs:
+measured on the sign-in page, **4 files / 142 KB** actually transfer, not all 18.
+
+## Still off-origin, and why
+
+Vendoring removed Google Fonts entirely. Two dependencies remain and neither can be vendored:
+
+- **`accounts.google.com`** — required for Google sign-in. **Verified** that with the Google
+  global absent the username and password form still renders, stays enabled and authenticates, so
+  a blocked network does not lock anyone out.
+- **`tiles.openfreemap.org`** — the tile source for the MapLibre map, which is the globe's
+  fallback when WebGL is unavailable. Tiles are a live service and cannot be vendored. **Verified**
+  that the failure path degrades to a muted panel reading "Map tiles unavailable: check
+  connection" with the project list still present, not a blank panel. A 9-second watchdog in
+  `app.js` covers the case where the style never loads.
 
 ## `earth-blue-marble-clouds.jpg` — how it was made
 

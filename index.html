@@ -16,8 +16,8 @@
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
     script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://unpkg.com https://accounts.google.com;
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com https://cdnjs.cloudflare.com;
-    font-src 'self' https://fonts.gstatic.com;
+    style-src 'self' 'unsafe-inline' https://accounts.google.com https://cdnjs.cloudflare.com;
+    font-src 'self';
     img-src 'self' data: blob: https:;
     worker-src 'self' blob:;
     connect-src 'self' https://script.google.com https://api.openai.com https://accounts.google.com https://tiles.openfreemap.org;
@@ -27,9 +27,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Opus Gubernatio: Project Decision Support</title>
   <meta name="description" content="Opus Gubernatio: project decision support for public AEC capital programs. Doctor of Engineering praxis research, The George Washington University." />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Fonts are VENDORED and same-origin. They used to come from fonts.googleapis.com, which is
+       the same corporate-network argument that got MapLibre, globe.gl, PDF.js and SheetJS
+       vendored: a blocked network fell back to system fonts and the platform stopped looking
+       like itself. Archivo, Inter and IBM Plex Mono, latin and latin-ext only — see
+       assets/vendor/ASSETS.md for the licences and how the file was generated. -->
+  <link rel="stylesheet" href="assets/vendor/fonts.css">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="assets/css/radar.css" />
   <!-- MapLibre GL JS (pinned) — real street-level map view; tiles from OpenFreeMap (no key).
