@@ -1664,6 +1664,10 @@
     // Canvas renderers can't read var(), so re-resolve the status palette from
     // the new theme's CSS vars; they pick it up on their next draw.
     try { if (window.LIN_STATUS_COLORS) LIN_STATUS_COLORS.refresh(); } catch (e) {}
+    // T9 Task 4. Same reason, same moment: the globe's palette is CSS vars it read at mount, so
+    // every live globe repaints in place. After LIN_STATUS_COLORS.refresh(), because the point
+    // colours it re-resolves are status colours.
+    try { if (window.LinGlobe && LinGlobe.retheme) LinGlobe.retheme(); } catch (e) {}
     onMapThemeChange();   // swap the OpenFreeMap dark/positron style if the map is live
   }
 
