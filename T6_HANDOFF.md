@@ -1,265 +1,283 @@
-# T6 handoff — Part F merged, Parts A–E outstanding
+# T6 handoff — read the finding in §1 before scoping anything
 
-T6 was scoped as one phase covering the expert reference lock (Part F), the integration of three
-standalone pages back into the application shell (Parts A, A.1, B), the admin surface rework
-(Part C), the role vocabulary (Part D), and an interface cleanup sweep (Part E).
+| | Status | Where |
+|---|---|---|
+| Part F — expert reference lock | Merged | `main` @ `8c1d67a` |
+| Parts A–E — the fold | Implemented and **browser-verified** | branch `t6-integration-cleanup` @ `f09e4ab` |
+| Project-creation gate + admin projects/assignment | Implemented and verified | same branch |
+| **Part 3 — the Group 1 rewrite** | **Not started** | — |
+| **Guarantee 5 (compute libraries)** | **Not met** | — |
 
-**Only Part F is merged.** It was split off because it is additive, self-contained, and fully
-tested, and because no interface depends on it yet. Parts A–E were deliberately left for a
-session with full context: the fold is all-or-nothing, and the guarantees attached to it have to
-be proven in a real browser at three viewport widths.
+`main` carries Part F only. Production is unaffected by the branch. No migration is pending
+beyond 0012, which is already applied.
 
 ---
 
-## 1. What Part F added
+## 1. THE FINDING THAT CHANGES THE SCOPE — the legacy dashboard reports false Reds
 
-The expert reference is the standard every participant decision is scored against. Its evidential
-value rests on one claim — it was committed before the expert saw the AI package. B1 created the
-`expert_references` table and its `locked_at` column but never created the lock; until this change
-`locked_at` was a timestamp like any other and nothing stopped a sealed reference from being
-rewritten.
+This is no longer a tidiness question about which library loads where.
 
-### Migration 0012 (`server/alembic/versions/0012_expert_reference_lock.py`)
+Two computations exist for the same project. The server computes status from documents and stores
+it in `computed_results`. The legacy dashboard recomputes it in the browser from
+`simulations.js`. **They disagree, and the browser one is wrong in the direction that destroys
+credibility.**
 
-- Installs `trg_expert_references_lock_guard`, which rejects any UPDATE to the seven fields that
-  constitute the reference once `locked_at` is set, and rejects moving or clearing `locked_at`
-  itself. Re-locking is as much a falsification as editing.
-- **This reuses 0003's mechanism rather than inventing a second one**, as T6 required. The trigger
-  rejects loudly with SQLSTATE `OG002` (distinct from the pre-judgment lock's `OG001`), and
-  `research_audit.py` writes the audit row on a separate connection — a trigger that raises cannot
-  durably record its own rejection, because whatever it inserts belongs to the transaction that is
-  about to unwind. That reasoning is 0003's, measured there, and unchanged here.
-- Adds a nullable `period` column. B1 scoped a reference to (scenario, expert); participant
-  decisions are per period, so a four-period scenario would have had one reference to score four
-  decisions against.
-- Adds a unique index on `(scenario_id, expert_id, period)`. A second INSERT is the trivial way
-  around a trigger that only guards UPDATE.
-- `realism_review` is deliberately **not** protected — it is the one thing written after the lock.
+Measured on identical earned-value inputs, server against browser:
 
-### `server/app/research_expert.py`
+| Case | CPI | SPI | Server (`computed_results`) | Legacy dashboard (browser) | Agree? |
+|---|---|---|---|---|---|
+| healthy | 1.05 | 1.05 | **Green** | **Red** | **no** |
+| on-budget | 1.00 | 1.00 | **Green** | **Amber** | **no** |
+| distressed | 0.833 | 0.80 | Red | Red | yes |
 
-Five actions, wired into `facade.dispatch_post`:
+Repeated across 40 different seeds:
 
-| Action | Purpose |
-|---|---|
-| `expertreferencelist` | The expert's assigned scenarios and per-period lock state. Package-free. |
-| `expertevidenceget` | Base project evidence only. Package-free. |
-| `expertreferencecommit` | Commits and locks in one statement. |
-| `expertpackageview` | The package, refused until the reference is locked. |
-| `expertrealismreview` | Post-lock realism review; does not touch the reference. |
+- **cpi 1.05 → Red in 40 of 40.** A project 5% under budget and 5% ahead of schedule is
+  **deterministically** Red on the legacy dashboard. This is not an edge case; it is the ordinary
+  healthy project.
+- **cpi 1.00 → Green 38, Amber 2.** Seed-dependent. The seed is derived from the project id
+  (`LinSim.hashSeed(project.id)`), so **two identical projects get different statuses because
+  they have different ids.**
 
-Two properties are worth knowing before extending this:
+The server says Green for both. The stored computation is right; the browser one is wrong.
+
+### The mechanism: a synthesised series trips the CUSUM monitor
+
+On the healthy case the legacy path reports `evm: green, mc: green, doc: green, cusum: red`, and
+the fusion promotes that single red to a project status of Red. The culprit is the **CUSUM
+Anomaly Monitor**, and specifically how it gets its input:
+
+`LinSim.buildSignals(inputs)` expects a time series. `ingest.js` never passes one — it calls
+`buildSignals({cpi, spi, bac, docScore, docSource, docExcerpt, seed})` with no `series`. So
+`buildSignals` falls through to:
+
+```js
+const series = (Array.isArray(inputs.series) && inputs.series.length >= 3)
+  ? inputs.series.map(Number)
+  : deriveSeries(metricValue, seed);     // <- synthesised from ONE value plus a seed
+```
+
+`deriveSeries` invents a series from a single metric value and the seed. That invented series
+trips the anomaly detector on a project with no anomaly in it. There is no real history behind the
+Red; it is manufactured by the fallback.
+
+### Why this matters for scoping Part 3
+
+The rewrite is what removes this. It is not cleanup deferred from a previous phase — it is the
+fix for a defect that will be visible to directors on their own healthy projects, deterministically,
+the first time they look. Scope Part 3 accordingly: the priority is getting the participant-facing
+surfaces onto the stored row, not the tidiness of dropping three script tags.
+
+**Reproduce it in one line.** `server/tools/dev_serve.py` seeds three fixture documents,
+including `on-budget` with earned value exactly equal to actual cost. Start the server, upload
+`server/dev_fixtures/monthly_report_healthy.txt`, compute, and compare the stored `project_status`
+against `getProjectFusion(p)` in the console.
+
+---
+
+## 2. What Part F added (merged, on `main`)
+
+The expert reference is the standard participant decisions are scored against, and its value rests
+on having been committed before the expert saw the AI package. B1 created `expert_references` and
+its `locked_at` column but never created the lock.
+
+**Migration 0012** installs an immutability trigger, reusing 0003's mechanism rather than inventing
+a second one: reject loudly with SQLSTATE `OG002`, audit row written on a separate connection
+because a trigger that raises cannot durably record its own rejection. Adds a `period` column (a
+scenario-level reference cannot be scored against per-period decisions) and a unique index (a
+second INSERT is the trivial way around an UPDATE trigger).
+
+**`server/app/research_expert.py`** — five actions. Two properties to preserve:
 
 - **Evidence is package-free by construction, not by gate.** `a_expertevidenceget` never reads
-  `assignments.package_id` and never touches `decision_support_packages`. That is a stronger
-  property than a conditional, because it cannot be got wrong by a future edit adding a branch.
-  Preserve it.
-- **`locked_at` is set in the same INSERT as the content.** There is no write-then-lock path,
-  because that would leave a window in which an unlocked reference exists. Do not add one.
+  `assignments.package_id`. Stronger than a conditional, because a future branch cannot get it
+  wrong.
+- **`locked_at` is set in the same INSERT as the content.** No write-then-lock path. Do not add one.
 
-### `server/tools/leak_detector.py`
+**`server/tools/leak_detector.py`** — shared by T4 and T6 so there is one definition of a leak.
+**`test_expert_reference_t6.py`** (59 checks) proves the detector can FAIL before trusting it,
+including against a real leak monkeypatched into the live handler. Guarantee 9 proved across four
+routes plus clearing `locked_at` plus a duplicate INSERT.
 
-T4's `scan_for_leak` was extracted here so T4 and T6 share **one** definition of what counts as a
-leak. Two copies would drift, and a drifted copy reports green while proving something weaker than
-it claims — the exact failure B7b already demonstrated once, where a leak survived eight phases
-behind a grep clause that could never be false. Adding a marker or field name here strengthens
-every importing suite at once.
-
-`test_decision_ui_t4.py` now imports from it. Its behaviour and check count are unchanged (73/73).
-
-### `server/tools/test_expert_reference_t6.py` — 59 checks
-
-Guarantee 8 (nothing action-bearing reaches an expert pre-lock) and guarantee 9 (post-lock
-immutability) are proven here. The detector is proven able to **fail** before it is trusted:
-
-1. Against planted blobs, in a self-test block.
-2. Against a **real** deliberate leak — the live evidence handler is monkeypatched to attach the
-   package, the identical assertion that passes on the real handler is run against it and required
-   to fail, then the patch is removed and the handler re-verified clean.
-
-Guarantee 9 is proven across four routes — API resubmission, ORM update, Core update, raw driver
-SQL — plus clearing `locked_at`, plus a duplicate INSERT. Three durable audit rows result.
-
-### Regression at merge
-
-All 16 prior suites unchanged; T6 adds 59. **838 checks total, all passing.**
-
-| Suite | Checks | | Suite | Checks |
-|---|---|---|---|---|
-| test_admin_ops_t7t8 | 59 | | test_export | 64 |
-| test_assignment_blinding | 44 | | test_features | 36 |
-| test_auth_session | 52 | | test_membership | 46 |
-| test_decision_sequence | 60 | | test_pre_lock_guard | 20 |
-| test_decision_ui_t4 | 73 | | test_research_identity | 41 |
-| test_documents_b7b | 66 | | test_simulation | 27 |
-| test_drive_import | 37 | | test_transitions | 58 |
-| **test_expert_reference_t6** | **59** | | test_workspace_t3t5 | 39 |
-| | | | test_writes_a1b | 57 |
-
-Two things that look like failures and are not:
-
-- `test_simulation` exits 1 on Windows with `UnicodeEncodeError: 'charmap' … 'μ'`. It is a
-  console encoding fault while printing `μ`, not a test failure. Run with `PYTHONIOENCODING=utf-8`
-  and it reports 27/27.
-- `test_decision_ui_t4` prints a line containing the word `FAIL` — it is the label of T4's own
-  self-test, *"the detector must FAIL on a planted leak before it is trusted"*. Grepping for
-  `FAIL` to count failures gives a false positive on this suite.
-
-### MIGRATION
-
-`/readyz` reports 503 with `SchemaOutOfDate` until `alembic upgrade head` is run against the
-target database. `expected_head()` in `server/app/db.py` derives the expected revision from the
-migration scripts, so this happens automatically on deploy of this commit.
+Proved at the **server layer only** — there is still no expert UI, so nothing is proved at the DOM
+layer.
 
 ---
 
-## 2. What Parts A–E still require
+## 3. What Parts A–E did, and what is now browser-verified
 
-Nothing below is started. No file was removed and no route was deleted.
+### Removed
+`workspace.html`, `admin-ops.html`, `questionnaires.html`, `decision.html` and their four routes.
+All four paths 404.
 
-### Part A — fold three pages into the shell
-`workspace.html`, `admin-ops.html` and `questionnaires.html` become `<section class="page"
-data-page="…">` inside `index.html`, using the existing pattern. Then delete the files and their
-routes in `server/app/main.py` (`spa_workspace`, `spa_admin_ops`, `spa_questionnaires`, and their
-`_WORKSPACE_HTML` / `_ADMIN_OPS_HTML` / `_QUESTIONNAIRES_HTML` constants) so they 404.
-`decision.html` and its route are also in scope — the decision sequence must be reachable without
-a page load, and the separate debrief page is to be dropped.
+### Where each capability went
+- **workspace.html** → Portfolio gained the project list and portfolio health; a new
+  `data-page="project"` section holds upload, documents and signals. `LinWorkspace.boot/openProject/switchPanel`.
+- **decision.html** → the Period decision tab of the Project page. `LinDecisionUI.mount`.
+- **questionnaires.html** → a first-run overlay with no route and no nav item.
+  `LinProfile.maybePrompt`, which asks the server rather than keeping a flag.
+- **admin-ops.html** → tabs in the Admin section. `LinAdminOps.boot/showTab`.
 
-The participant profile becomes a one-time first-run step after consent and before the first
-decision — same JSON definition (`assets/questionnaires/intake.json`), different placement. It
-must not be a navigation destination.
+### Verified in a real browser, against this repository
 
-### Part A.1 — navigation
-`index.html:433-448` currently carries five controls: Admin, Workspace, Decision, Questionnaire,
-Admin Ops. Target is that a participant and an operational user see an **identical** set with no
-admin, workspace or questionnaire item, and an admin sees exactly one more: Admin, tabbed, holding
-user management (T2) plus membership, monitoring and export (T7).
+| Guarantee | Result |
+|---|---|
+| 1. Full workflow, no page load | **Verified** — `navigation` entries stayed at 1. See caveat in §5. |
+| 2. Profile once, no questionnaire nav | **Verified** — absent on reload and on fresh sign-in |
+| 3. Nav sets | **Verified** — participant topbar `[]`, admin `["Admin"]`, dock identical |
+| 4. Platform theme | **Verified** — `radar.css` the only palette; the lone inline `<style>` is Google's injected sign-in widget |
+| 5. No raw ULIDs | **Verified** — zero across every page section |
+| 6. Every field labelled | **Verified** — zero unlabelled fields application-wide |
+| 7. No module ids in text | **Verified** — zero across every page section |
+| Layout | **Verified** — clamps to 1280px at 1920 and 3840, no overflow at 1280/1920/3840 |
 
-Note there are **two** navigation surfaces and both need changing: the topbar in `index.html`, and
-the runtime-built icon dock from the `DOCK_NAV` array at `app.js:1686`, which a comment at
-`app.js:1673` calls "the SOLE navigation".
-
-### Part B — participant workflow
-Portfolio → create project → project list → open project → upload documents → see signals →
-decide → advance, all without leaving the shell. Applies to every user; no separate participant
-mode.
-
-### Part C — admin surface
-Remove the Scenarios and Assignment UI. **Do not delete B3's backend** — `adminscenariocreate`,
-`adminscenariolist`, `adminassign`, `adminassignmentlist` stay and stay tested. Add project
-membership management in its place using B8's `adminmemberadd` / `adminmemberrevoke` /
-`adminmemberlist`. Keep Membership, Monitoring, Export.
-
-### Part D — roles
-Admin / Participant / User (operational), with PM or Observer per project; Expert presented as a
-research-panel role rather than a peer.
-
-**Reported as asked:** `Demo` is defined at `research_identity.py:65`, permitted by the CHECK
-constraint at `research_models.py:101`, and offered in `admin.js:165`'s role dropdown — but
-nothing anywhere branches on it. It is assignable and behaviourally inert. Not removed.
-
-### Part E — cleanup
-See §3 for the line-level inventory.
-
-### Outstanding guarantees
-1–7 and 10 are unproven and need a real browser at 1280 / 1920 / 3840. 8 and 9 are proven at the
-server layer by the T6 suite; they will need re-proving at the DOM layer once an expert UI exists
-(inspect DOM, every network response, every reachable JS variable).
+### The defect running it found
+`decision-ui.js` already had an internal `render()`; the exported wrapper was also `render()`.
+Declarations hoist, so `LinDecisionUI.render` bound to the internal **stage** renderer, which
+assumes `STATE.server` is populated. The decision tab threw `cannot read current_stage of null`.
+Renamed to `mount()`. **No static check would have caught this** — only running it did.
 
 ---
 
-## 3. What the next session should know before starting the fold
+## 4. This session's two changes
 
-These came out of two read-only surveys and are the main thing that would otherwise be
-rediscovered from scratch.
+### Research accounts cannot create projects
+`features.RESEARCH_FORBIDDEN_ACTIONS`, refused in `gate_action` before dispatch — same chokepoint
+and same reasoning as the feature flags. Covers `projectcreate` **and** the legacy facade
+`create`, which reaches the same outcome by another door. Sessionless callers untouched, so the
+A1b contract fixtures stay green. Operational accounts keep it.
 
-### The fold is mechanically safer than it looks
-`workspace.js`, `admin-ops.js` and `questionnaires.js` are each wrapped in a single top-level
-IIFE and **export nothing to `window`** — they only read `window.LinAuth` / `window.LinStore`.
-There are **zero DOM id collisions** with `index.html` and **zero global name collisions** with
-`app.js`. No renaming is required.
+Verified: research refused on both actions; operational created `PRJ-XNWKEJCRKC` successfully.
 
-### The stated reason these pages were kept separate does not hold as a runtime hazard
-`main.py:288-296` and the header comment in each of the three pages claim they must never load
-`sim.js` / `simulations.js` / `categories.js`, which `index.html` loads on every request. All
-three were read in full:
+**COVERAGE GAP THIS EXPOSED, AND HOW IT WAS CLOSED.** The gate initially had **no test coverage at
+all**, and the full suite passed anyway. The reason: **every account in every existing suite is
+`account_type: "operational"`** (e.g. `test_workspace_t3t5.py:87`), so the gate correctly never
+fired. That is not a bypass, but it means a research-account guard is invisible to the suite by
+default — worth remembering for any future gate keyed on `account_type`.
 
-- `sim.js` — one IIFE, sole top-level effect is `window.LinSim = {…}`. No `DOMContentLoaded`, no
-  timers, no `document.*` at all.
-- `simulations.js` — same shape, exports `window.LinSimulations`. Its only `window.` references
-  are inside a function body, checked at call time.
-- `categories.js` — not an IIFE, assigns ~12 globals at top level, but every one is static data or
-  a pure function declaration. No listeners, no timers, no DOM writes, no storage access.
+Closed with five checks in `test_features.py` (36 → 41): both actions refused for a research
+account, **both refusals audited against that participant specifically** (a whole-table count
+would pass on someone else's rows), operational still permitted, sessionless unaffected.
 
-They are load-and-wait libraries. Loading them alongside the folded sections changes nothing
-observable.
+### Admin gained Projects & assignment
+Five tabs: Users & access · Projects & assignment · Project membership · Monitoring · Export.
+Creation and assignment sit together because they are one act — a project with no assignment stops
+after signals; an assignment with no project has nothing to show. Scenarios are named by version
+and project type, never by identifier. Order group and scenario set are shown as real labelled
+fields rather than invented silently, because B3 still resolves a frozen condition sequence from
+them and refuses when there isn't one. `config_id` is still never rendered.
 
-**But the invariant they were protecting is real**, and the fold weakens how it is enforced. Today
-it is *structurally impossible* for `workspace.js` to call `LinSim.monteCarloEAC()`, because the
-function does not exist in that page's context. Once folded, `LinSim`, `LinSimulations` and
-`categories.js`'s helpers are ambiently available in the same document, and nothing stops a future
-edit — or a copy-paste from `app.js`/`detail.js`, which legitimately call these for the legacy
-dashboard — from silently substituting client computation for the stored `computed_results` row.
-The invariant moves from enforced-by-absence to enforced-by-discipline. Decide deliberately how to
-hold it, and say so in the fold's commit message.
+### The operational dead end, found while verifying the above
+The intake check in `decision-ui.js` ran **before** the assignment check, so an operational user
+with their own unassigned project was told *"Your background profile has to be recorded before your
+first decision."* They can never record one: the profile is only offered to a consented research
+account, and an operational account can never obtain a consents row. Assignment is now asked
+first. It reads:
 
-### One real behavioural hazard in the fold
-`workspace.js:164-166` does `window.location.href = "index.html"` on sign-out. Folded, that
-becomes a full SPA reload. It needs to call the shell's own sign-out path instead.
-`openDocument()` at `workspace.js:533` builds a root-absolute `/documents/…` URL, which is
-unaffected by nesting — that one is fine.
+> "No decision sequence is assigned to this account. Period decisions are recorded against a
+> scenario the researcher assigns."
 
-### Part E, line-level
+---
 
-**Theme.** `tests.html` is the only screen that does not link `radar.css` at all and defines a
-complete private dark palette — `tests.html:7,9,11,12,13,14,16,17,18`. It renders dark regardless
-of the selected theme, and some of its literals coincidentally match Gotham's tokens without being
-wired to them, so a palette edit in `radar.css` silently desyncs it. Elsewhere: `index.html:54-244`
-has hard-coded hex in the decorative SVG with no `var()` fallback (gradient stops and fills);
-`color:#fff` on brand buttons is duplicated as a literal in `admin-ops.html:37,40,56` and
-`decision.html:78` — `radar.css` has no `--on-brand` token, which is why.
+## 5. Part 3 — the work, unchanged in shape, changed in urgency
 
-**Typography.** Only `tests.html` declares a font stack outside `radar.css`
-(`ui-monospace,Menlo,Consolas,monospace`, 13px). Note `radar.css` defines `--font-display`,
-`--font-body`, `--font-mono` but **no numeric type scale**, so "one scale across the platform"
-means introducing one, not conforming to an existing one.
+`sim.js`, `simulations.js` and `categories.js` still load in the participant-facing application.
 
-**Raw ULIDs as content.** `admin-ops.js:196` (`scenario_id` under a "Scenario id" column),
-`admin-ops.js:252` (`scenario_id` under "Scenario"), `admin-ops.js:335` (`export_id` as the first
-column), `workspace.js:230-231` (`project_id` in the sub-line of every project card, and as the
-title fallback), `workspace.js:253` (`project_id` as the visible option label when name is empty).
-Ids used as `data-*` attributes, option `value`s and API arguments are correct and were not
-flagged. Worth knowing: `admin-ops.js:13-20,249-250` shows the same file deliberately *omitting*
-`config_id`/`package_id` for blinding — so the exposures above read as oversight, not intent.
+**Group 1 — visualisation rendering values already stored: 79 non-comment call sites.** Each has a
+direct equivalent in the `ComputedResult` row (`signal_inputs`, `module_results`,
+`category_statuses`, `project_status`, `portfolio_snapshot`), whose docstring says *"Every surface
+downstream READS this; none of them recompute."*
 
-**Placeholder-as-label.** Eleven fields, none with an associated `<label>`. The worst are
-`admin-ops.html:110` (`scenario_version`), `:111` (`project_type (optional)`), `:120`
-(`order_group`), `:121` (`scenario_set`), `:124` (`scenario_ids, comma separated`) — raw variable
-names as user-facing text. Also `admin-ops.html:88,161,162`, `workspace.html:131,133`, and
-`decision-ui.js:550,552,554` (plain English, but no `.dc-label` where sibling fields in the same
-file have one). `questionnaires.js:122` is the clean counter-example — every generated field gets
-a real `<label for=…>`. If the questionnaire markup survives the fold, keep that.
+| Symbol | Sites | Stored equivalent |
+|---|---|---|
+| `LIN_CATEGORIES` | 36 | static label/membership table — names, ordering, module→category |
+| `getModuleStatus` | 12 | `module_results[].status_color` |
+| `getCategoryStatus` | 11 | `category_statuses` |
+| `getProjectFusion` | 8 | `project_status` |
+| `normalizeSector` | 4 | static mapping |
+| `projectLevelCategories` | 4 | static table |
+| `deriveProjectStatus` | 2 | `project_status` |
+| `categoryNAModules` | 1 | static / served flag |
+| `projectCompletionDate` | 1 | stored project field |
 
-**Navigation language.** `index.html` shows "Admin" (in-page panel) beside "Admin Ops" (separate
-page) — two near-identical labels, two different surfaces. Separator differs: plain `·` at
-`admin-ops.html:74` vs `&nbsp;·&nbsp;` at `decision.html:116-117`, and the link order is reversed
-between them. `questionnaires.html` has no back-navigation at all. "Instrument home" and
-"Workspace" are otherwise used consistently — they are the strings to replace wholesale.
+`isModuleSectorNA`, `isPortfolioLevelCategory`, `contributesToProjectStatus`: **zero call sites** —
+exported but dead. `workspace.js` is the working model: same information, static name table plus
+server-supplied status strings, zero compute-library calls.
 
-**Module ids in user-facing text.** None found. `workspace.js:34-106` holds `A1.1`-style codes as
-object keys only, and `moduleName()` at `:100` falls back to `"Unrecognised analytical module"`
-rather than the raw code, so even its failure path does not leak one.
+**Group 2 — genuine client compute: 22 sites, four files.**
 
-### One gap the survey could not close
-`app.js` (2649 lines), `detail.js` (2049) and `signals.js` (1858) were **not** swept exhaustively
-for raw-id-as-content or hard-coded colours. They render most of `index.html`'s dynamic content.
-Treat the Part E inventory as complete for every screen except those three, and sweep them before
-claiming guarantees 4 and 5.
+| File | Sites | What it is | Disposition |
+|---|---|---|---|
+| `signals.js` | 10 | legacy browser ingest | retire — superseded |
+| `ingest.js` | 4 | legacy browser ingest | retire — superseded |
+| `deepdive.js` | 5 | live 5,000-iteration Monte Carlo re-run | move researcher-side |
+| `detail.js` | 3 | `LinSimulations[r.fn]` display recompute | backfill fallback, becomes dead |
 
-### Test environment
-Every suite and the app itself refuse to start without `DATABASE_URL` (`settings.py:69-74`); there
-is no default. For local work use a throwaway SQLite file outside the repository — the settings
-module itself suggests the form — and never point a suite at production. Suites are run as
-`DATABASE_URL=… SESSION_SECRET=… python tools/test_*.py`, one freshly migrated database per suite,
-and each prints its own `RESULT: n/n checks passed` line. Use that line for counts rather than
-grepping for `PASS`/`FAIL`.
+**No server ingest endpoint is required.** B7b already owns the path: `documents.py:420`
+`projectupload` extracts server-side, `projectcompute` (651) runs the analytical layer and stores
+the result, `projectresults` (703) *"READS ONLY — never computes."* The 14 browser-ingest sites are
+a legacy duplicate of a path the server already owns — **and they are the source of the false Red
+in §1**, because that is where `buildSignals` synthesises a series.
+
+`detail.js:121` and `deepdive.js:2085-2089` only compute **when the stored result is absent** —
+backfill fallbacks for legacy demo seeds, dead once `projectcompute` supplies full
+`module_results`. So the genuinely compute-only surface is **one**: `deepdive.js`'s re-run
+animation, which recomputes deliberately because the live run *is* the feature.
+
+### Caveat on guarantee 1 that Part 3 does not fix
+The decision sequence is keyed to **assignments**, not to projects. Since this session a research
+participant can no longer create an unassigned project, so the dead end is closed for them. But
+Part B's workflow still is not one continuous chain: a participant uploads to a project and
+decides against an assigned scenario, and nothing links the two.
+
+---
+
+## 6. Traps and environment
+
+- **`preview_start` resolves `launch.json` from the shell's working directory.** From `Demo` it
+  starts the dead `opus-gubernatio` app on port 8099 — same brand, same title. It was started
+  twice this session and stopped both times. The tell: it serves `api.js`/`boot.js` and has
+  **zero** `.page` sections. **Always check `preview_list`'s `cwd` before trusting a browser
+  session.** The workaround is `preview_start({url: "http://127.0.0.1:8010"})` attaching to a
+  server started separately.
+- **`server/tools/dev_serve.py`** starts the real app: fills `DATABASE_URL` only if unset, defaults
+  to a gitignored repo-local file, migrates to head, seeds B7b's StubExtractor with three
+  recordings (`healthy`, `on-budget`, `distressed`). Never on Render's path.
+- **Browser caching bit once.** After editing a JS file the page kept the old copy while the server
+  served the new one; a fresh tab was needed. Check `String(window.LinX.fn).includes(...)` if
+  behaviour disagrees with the source.
+- **`window.confirm` auto-dismisses** in the automated browser, so `commitPreJudgment` silently
+  returns. Stub it to `true` when driving the decision sequence.
+- **Re-renders clear programmatically set field values.** Set and submit in the same tick.
+- **No `DATABASE_URL` default exists** (`settings.py:69-74`). Use a throwaway SQLite outside the
+  repository, never production. One freshly migrated database per suite. Read counts from each
+  suite's own `RESULT: n/n` line, never by grepping `PASS`/`FAIL`.
+- `test_simulation` exits 1 on Windows from a `charmap` error printing mu; it is 27/27 under
+  `PYTHONIOENCODING=utf-8`. `test_decision_ui_t4` prints a line containing `FAIL` that is the label
+  of its own self-test.
+
+---
+
+## 7. Regression
+
+**843 checks across 17 suites, all passing.**
+
+Changes from the 838 baseline, both stated where they occurred:
+- `test_features` 36 → **41**: five new checks covering the project-creation gate.
+- `test_decision_ui_t4` stays 73/73, but its guarantee-10 scan was repointed from `decision.html`
+  (deleted) to `index.html`, and indexed by filename rather than list position.
+
+---
+
+## 8. Suggested order for the next session
+
+1. Read §1. Decide scope knowing the rewrite fixes a deterministic false Red, not a lint.
+2. Retire the legacy browser-ingest path in `ingest.js`/`signals.js` first — it is 14 of the 22
+   Group 2 sites, it is superseded by `projectupload`/`projectcompute`, and it is where the false
+   Red is manufactured.
+3. Rewrite Group 1's 79 sites onto the stored row, keeping the radar working — it draws from
+   status and drift, both stored.
+4. Move `deepdive.js`'s re-run animation researcher-side.
+5. Drop the three script tags and prove absence with
+   `performance.getEntriesByType('resource')` on every participant-facing route.
+6. Re-verify the guarantees in §3, then merge.

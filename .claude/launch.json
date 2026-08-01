@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "lin-project-radar",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "5500"],
-      "port": 5500
+      "runtimeExecutable": "server/.venv/Scripts/python.exe",
+      "runtimeArgs": ["server/tools/dev_serve.py", "8010"],
+      "port": 8010
     }
   ]
 }

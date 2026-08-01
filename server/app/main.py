@@ -284,14 +284,19 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 _ASSETS_DIR = REPO_ROOT / "assets"
 _INDEX_HTML = REPO_ROOT / "index.html"
 _LOGO_PNG = REPO_ROOT / "logo.png"
-# T3/T5: the participant-facing workspace, deliberately its own page rather than a route inside
-# index.html — it must never load sim.js/simulations.js/categories.js, and index.html already
-# does on every load.
-_WORKSPACE_HTML = REPO_ROOT / "workspace.html"
-# T7/T8: same reasoning — separate pages, never loading sim.js/simulations.js/categories.js.
-_ADMIN_OPS_HTML = REPO_ROOT / "admin-ops.html"
-_QUESTIONNAIRES_HTML = REPO_ROOT / "questionnaires.html"
-_DECISION_HTML = REPO_ROOT / "decision.html"
+# T6: workspace.html, admin-ops.html, questionnaires.html and decision.html were folded into
+# index.html as sections and deleted. Their routes are gone with them, so those paths now 404 —
+# which is the point: a participant must not be able to reach any part of the decision sequence
+# by typing a URL, and a route that still served a deleted page would be a second front door.
+#
+# research/deepdive.html is the exception, and deliberately a narrow one. It is the only surface
+# that still runs a model in the browser, because re-running one live IS what it is for. The
+# application does not load sim.js/simulations.js/categories.js at all, so that behaviour cannot
+# exist there; it exists here instead. Nothing links to this page and it holds no data of its
+# own — every action it would call is authenticated and refused server-side for a caller without
+# the role and membership. The guarantee is that no participant-facing route loads a client-side
+# model, not that this URL is secret.
+_DEEPDIVE_HTML = REPO_ROOT / "research" / "deepdive.html"
 
 if _ASSETS_DIR.is_dir():
     app.mount("/assets", StaticFiles(directory=str(_ASSETS_DIR)), name="assets")
@@ -321,24 +326,10 @@ def spa_logo():
     return _static_file(_LOGO_PNG, "image/png")
 
 
-@app.get("/workspace.html", include_in_schema=False)
-def spa_workspace():
-    return _static_file(_WORKSPACE_HTML, "text/html")
-
-
-@app.get("/admin-ops.html", include_in_schema=False)
-def spa_admin_ops():
-    return _static_file(_ADMIN_OPS_HTML, "text/html")
-
-
-@app.get("/questionnaires.html", include_in_schema=False)
-def spa_questionnaires():
-    return _static_file(_QUESTIONNAIRES_HTML, "text/html")
-
-
-@app.get("/decision.html", include_in_schema=False)
-def spa_decision():
-    return _static_file(_DECISION_HTML, "text/html")
+@app.get("/research/deepdive.html", include_in_schema=False)
+def research_deepdive():
+    """The researcher-side deep dive. See the note beside _DEEPDIVE_HTML for why it is separate."""
+    return _static_file(_DEEPDIVE_HTML, "text/html")
 
 
 # ---------------------------------------------------------------- document content (T3)

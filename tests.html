@@ -3,22 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <title>Opus Gubernatio — signal-math regression net</title>
+<link rel="stylesheet" href="assets/css/radar.css">
 <style>
-  body { background:#0b0e17; color:#c8d4e8; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px; padding:24px; }
-  h1 { font-size:16px; margin:0 0 4px; }
-  p.sub { color:#7a8aa8; margin:0 0 20px; }
-  table { border-collapse:collapse; width:100%; margin-bottom:28px; }
-  th, td { border:1px solid #22304a; padding:6px 10px; text-align:left; vertical-align:top; }
-  th { background:#141c2e; color:#9ab0d0; }
-  tr.pass td.result { color:#2ee66b; }
-  tr.fail td.result { color:#ff3b30; font-weight:700; }
-  .summary { font-size:14px; margin:8px 0 24px; }
-  .summary.ok { color:#2ee66b; }
-  .summary.bad { color:#ff3b30; }
-  code { color:#8ab4f8; }
+  /* Every value here resolves through radar.css. This page previously defined its own palette
+     and its own font stack, and two of its literals happened to equal the dark theme's
+     --status-green and --status-red — so a palette edit in radar.css would have desynced this
+     page silently, while it still reported green. Layout only below; no colours, no fonts. */
+  body { padding: 24px; font-size: 13px; }
+  h1 { font-size: 16px; margin: 0 0 4px; }
+  p.sub { color: var(--muted); margin: 0 0 20px; max-width: 78ch; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: 28px; }
+  th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--surface); color: var(--heading); }
+  tr.pass td.result { color: var(--status-green); }
+  tr.fail td.result { color: var(--status-red); font-weight: 700; }
+  .summary { font-size: 14px; margin: 8px 0 24px; }
+  .summary.ok { color: var(--status-green); }
+  .summary.bad { color: var(--status-red); }
+  code { font-family: var(--font-mono); color: var(--accent); }
 </style>
 </head>
-<body>
+<!-- data-theme="dark" rather than a private palette: this harness is read in a terminal-adjacent
+     context where dark is wanted, but it takes that from the platform's theme tokens like every
+     other screen. It is a researcher/developer surface, which is also why it legitimately loads
+     categories.js, decision.js and simulations.js — see the note in index.html about why the
+     participant-facing application does not. -->
+<body data-theme="dark">
 <h1>Opus Gubernatio — signal-math regression net</h1>
 <p class="sub">
   Zero-dependency page: imports the real assets/js/categories.js, decision.js and

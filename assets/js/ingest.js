@@ -53,6 +53,20 @@
 
   /* ---------- populate / rebuild a project's signals (runs sim.js) ---------- */
   async function rebuildWithDocScore(project, docScore, docSource, docExcerpt) {
+    // T6 Part 3. THE LEGACY BROWSER INGEST IS RETIRED ON THIS APPLICATION.
+    //
+    // This derived a project's signals in the browser, and it is where the false Red came from:
+    // buildSignals was called without a time series, so it synthesised one from a single metric
+    // value and a seed, and that fabricated series tripped the CUSUM detector on healthy work.
+    //
+    // The server owns this path now. projectupload extracts the documents, projectcompute runs
+    // the analytical layer and stores the result, and projectresults reads it back. sim.js is
+    // not loaded here, so this cannot run even by accident — the check below turns what would
+    // be a ReferenceError into a sentence someone can act on.
+    if (!window.LinSim) {
+      throw new Error("Signals are computed by the server. Upload the period documents on the "
+                      + "project page and run the analysis there.");
+    }
     const e = project.signals.evm;
     const cu = project.signals.cusum;
     project.signals = LinSim.buildSignals({
@@ -63,6 +77,20 @@
   }
 
   async function populateSignals(project, inputs) {
+    // T6 Part 3. THE LEGACY BROWSER INGEST IS RETIRED ON THIS APPLICATION.
+    //
+    // This derived a project's signals in the browser, and it is where the false Red came from:
+    // buildSignals was called without a time series, so it synthesised one from a single metric
+    // value and a seed, and that fabricated series tripped the CUSUM detector on healthy work.
+    //
+    // The server owns this path now. projectupload extracts the documents, projectcompute runs
+    // the analytical layer and stores the result, and projectresults reads it back. sim.js is
+    // not loaded here, so this cannot run even by accident — the check below turns what would
+    // be a ReferenceError into a sentence someone can act on.
+    if (!window.LinSim) {
+      throw new Error("Signals are computed by the server. Upload the period documents on the "
+                      + "project page and run the analysis there.");
+    }
     const doc = inputs.docText ? analyzeText(inputs.docText) : { fired: [], scoreDelta: 0, excerpt: "" };
     const docScore = inputs.docText ? Math.max(0, Math.min(1, 0.1 + doc.scoreDelta)) : (Number(inputs.docScore) || 0.1);
     const series = (inputs.seriesText || "").trim()

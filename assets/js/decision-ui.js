@@ -12,7 +12,7 @@
       There is exactly one call in this file that can return package content —
       `revealPackage()`, wired to a button the participant presses themselves
       after locking. Nothing calls it on load, nothing prefetches it, and there
-      is no markup for it in decision.html: the package DOM is constructed from
+      is no markup for it in index.html: the package DOM is constructed from
       the response and appended only then. A refused request would itself be a
       disclosure ("something exists to be refused"), so this file does not make
       one speculatively either.
@@ -159,57 +159,84 @@
      the participant never saw. */
   var STATE = { server: null, evidenceLabels: [] };
 
-  document.addEventListener("DOMContentLoaded", boot);
+  // T6. decision.html is gone. This renders into the Period decision tab of the Project page,
+  // so the sequence is a step in the period rather than a place a participant navigates to —
+  // which is the point: T4 put a page load between forming a judgment and recording it.
+  //
+  // Every former gate used to be a message plus a link to another page. There are no other
+  // pages now, so a gate states the position and stops. The two that pointed at
+  // questionnaires.html are gone entirely: the profile is captured before any of this can be
+  // reached, and the server refuses a preliminary judgment without it regardless.
+  var wired = false;
 
-  function gate(message, linkText, href) {
-    $("dc-gate-message").textContent = message;
-    var link = $("dc-gate-link");
-    link.textContent = linkText;
-    link.href = href;
-    $("dc-gate").style.display = "block";
-    $("dc-shell").style.display = "none";
+  // Hides the sequence and states why, WITHOUT rewriting #dc-root — the stage cards are markup
+  // in index.html now, and blowing them away would mean they could never come back when the
+  // reason for the gate cleared.
+  function gate(message) {
+    ["dc-evidence", "dc-prejudgment", "dc-reveal", "dc-decide", "dc-advance"].forEach(
+      function (id) { var el = $(id); if (el) el.style.display = "none"; });
+    var rail = document.querySelector("#dc-root .dc-rail");
+    if (rail) rail.style.display = "none";
+    var note = $("dc-position");
+    if (note) note.textContent = message;
   }
 
-  async function boot() {
-    if (!token()) {
-      gate("You need to sign in before you can work on a decision.",
-           "Go to sign-in", "index.html");
-      return;
-    }
-    wire();
+  // NAMED `mount`, NOT `render`. This file already has an internal `render()` at the foot of the
+  // stage machinery, and a second `function render()` in the same scope silently replaces it —
+  // function declarations hoist, so the LAST one wins and the export below would have captured
+  // the internal stage renderer instead of this entry point. That fails at the first call with
+  // "cannot read current_stage of null", because the stage renderer assumes STATE.server is
+  // already populated and only refresh() populates it.
+  async function mount() {
+    if (!token()) { gate("You need to be signed in to work on a decision."); return; }
+    if (!wired) { wire(); wired = true; }
     await refresh();
   }
+
+  window.LinDecisionUI = { mount: mount };
 
   /* Re-read the server and re-render. Called on load and after EVERY mutation —
      never assume a transition succeeded, ask. */
   async function refresh() {
     var state = await call("researchsequencestate");
     if (!state || state.ok !== true) {
-      gate((state && state.error) || "Could not read your current position.",
-           "Go to sign-in", "index.html");
+      gate((state && state.error) || "Could not read your current position.");
       return;
     }
     STATE.server = state;
 
-    if (!state.intake_completed) {
-      gate("Please complete the intake questionnaire before starting your first decision.",
-           "Go to the questionnaire", "questionnaires.html");
-      return;
-    }
-    if (state.all_assignments_complete) {
-      gate("You have completed every period of every project assigned to you. "
-           + "One short debrief questionnaire remains.",
-           "Go to the debrief", "questionnaires.html");
-      return;
-    }
+    // ORDER MATTERS HERE, and it was wrong.
+    //
+    // The intake check used to come first, so anyone without an assignment was told to record a
+    // background profile before their first decision. For an OPERATIONAL user that is a dead
+    // end: they never complete intake, because the profile is only ever offered to a consented
+    // research account and an operational account can never obtain a consents row. A director
+    // opening a project they created was told to do something they cannot do, about a decision
+    // they were never going to make.
+    //
+    // Whether an assignment exists is now asked first, because it is the question that decides
+    // whether the sequence applies at all. Only once we know it applies is it worth saying what
+    // is missing before it can start.
     if (!state.assignment) {
-      gate("You have no project assigned yet. Your researcher will assign one.",
-           "Back to the workspace", "workspace.html");
+      // Covers both "never assigned" and "nothing assigned any more". The sequence is recorded
+      // against a scenario, not against a project, so this is the honest sentence for an
+      // operational user with their own project AND for a participant awaiting assignment.
+      // The old wording claimed every period was complete, which for someone who was never
+      // assigned anything was simply untrue.
+      gate(state.all_assignments_complete && state.current_sequence_number !== null
+        ? "You have completed every period assigned to you."
+        : "No decision sequence is assigned to this account. Period decisions are recorded "
+          + "against a scenario the researcher assigns.");
+      return;
+    }
+    if (!state.intake_completed) {
+      // Now meaningful: there IS an assignment, so intake genuinely is the thing standing in
+      // the way. The overlay normally captures it before the application is usable; this branch
+      // only fires if that was somehow bypassed.
+      gate("Your background profile has to be recorded before your first decision.");
       return;
     }
 
-    $("dc-gate").style.display = "none";
-    $("dc-shell").style.display = "block";
     $("dc-position").textContent =
       "Project " + state.current_sequence_number + " · period "
       + String(state.period || "").replace(/^P/, "")
