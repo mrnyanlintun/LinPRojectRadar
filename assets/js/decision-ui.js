@@ -435,10 +435,14 @@
       $("dc-pre-confidence-value").textContent = this.value;
     });
 
+    // Said once, plainly. The previous wording said the same thing three times — "cannot be
+    // changed", then "permanently", then "no way to edit or withdraw it afterwards" — and
+    // stacked emphasis reads as anxiety rather than as a clear consequence. One statement of
+    // what happens, one of what follows.
     $("dc-commit-warning").innerHTML =
-      "<strong>This cannot be changed.</strong> Committing locks your preliminary judgment "
-      + "for this period permanently. Only after it is locked will the decision support "
-      + "package be shown to you. There is no way to edit or withdraw it afterwards.";
+      "<strong>You cannot change this afterwards.</strong> Committing locks your preliminary "
+      + "judgment for this period. The decision support package is shown only once it is "
+      + "locked.";
   }
 
   async function commitPreJudgment() {
@@ -454,8 +458,8 @@
 
     if (!window.confirm(
         "Commit your preliminary judgment?\n\n"
-        + "This locks it permanently and cannot be undone. "
-        + "The decision support package will be shown only after this step.")) {
+        + "You cannot change it afterwards. "
+        + "The decision support package is shown only after this step.")) {
       return;
     }
 
