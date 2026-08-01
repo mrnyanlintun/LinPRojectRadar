@@ -111,7 +111,7 @@ def _refuse_unless_pm(session: Session, caller, member, project, action: str) ->
               action=action, project_id=project.legacy_id,
               project_role=member.project_role if member else None)
         session.commit()
-        return err("not authorised: only the project's PM may perform this action")
+        return err("not authorized: only the project's PM may perform this action")
     return None
 
 
@@ -157,7 +157,7 @@ def _decode(entry: dict) -> tuple[bytes | None, dict | None]:
     if not b64:
         return None, err("dataBase64 is required for each document")
     if len(b64) > MAX_BASE64_CHARS:
-        return None, err("File too large — maximum ~3 MB. Please compress the PDF.")
+        return None, err("File too large. The maximum is about 3 MB, so please compress the PDF.")
     try:
         raw = base64.b64decode(b64, validate=True)
     except (binascii.Error, ValueError):
@@ -165,7 +165,7 @@ def _decode(entry: dict) -> tuple[bytes | None, dict | None]:
     if not raw:
         return None, err("decoded file is empty")
     if len(raw) > MAX_FILE_BYTES:
-        return None, err("File too large — maximum 20 MB")
+        return None, err("File too large. The maximum is 20 MB")
     return raw, None
 
 
@@ -564,7 +564,7 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
         "files": files,
         "summary": {
             "total": len(decoded),
-            "recognised": cached_count,
+            "recognized": cached_count,
             "extracted": extracted_count,
             "failed": failed_count,
             "unmapped": len(unmapped),

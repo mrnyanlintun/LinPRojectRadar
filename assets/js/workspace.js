@@ -106,7 +106,7 @@
     "D1.5": "Anomaly Score"
   };
 
-  function moduleName(id) { return MODULE_NAMES[id] || "Unrecognised analytical module"; }
+  function moduleName(id) { return MODULE_NAMES[id] || "Unrecognized analytical module"; }
   function categoryName(id) { return CATEGORY_NAMES[id] || id || "Uncategorised"; }
   function groupName(id) { return GROUP_NAMES[id] || id || ""; }
 
@@ -386,7 +386,7 @@
     if (!isPM) {
       $("ws-upload-status").innerHTML =
         '<span class="ws-error">Only this project\'s PM may upload documents. ' +
-        "You are an Observer on this project — server refuses upload regardless of what " +
+        "You are an Observer on this project. The server refuses uploads regardless of what " +
         "this page shows.</span>";
     }
 
@@ -411,7 +411,7 @@
       var bits = [];
       bits.push(resp.documents.length + " document(s) present for period " + resp.period + ".");
       if (resp.expected_missing && resp.expected_missing.length) {
-        bits.push("Still expected: " + resp.expected_missing.join(", ") + " (advisory only — " +
+        bits.push("Still expected: " + resp.expected_missing.join(", ") + " (advisory only. " +
           "compute never refuses on a missing document type).");
       }
       bits.push(resp.computed ?
@@ -435,7 +435,7 @@
       html += nonContributing.map(function (d) {
         return '<div class="ws-file-row"><span>' + esc(d.filename) + "</span>" +
           '<span class="ws-note">document type "' + esc(d.doc_type) +
-          '" is not mapped to any signal input — stored, but contributes nothing</span></div>';
+          '" is not mapped to any signal input. It is stored, but contributes nothing</span></div>';
       }).join("");
     }
     if (contributing.length) {
@@ -494,7 +494,7 @@
       return;
     }
 
-    label.textContent = "Uploading and extracting " + files.length + " file(s) — this can " +
+    label.textContent = "Uploading and extracting " + files.length + " file(s). This can " +
       "take a while for documents never seen before…";
     fill.style.width = "45%";
 
@@ -510,7 +510,7 @@
     }
 
     var s = resp.summary || {};
-    label.textContent = s.recognised + " of " + s.total + " recognised from cache, " +
+    label.textContent = s.recognised + " of " + s.total + " recognized from cache, " +
       s.extracted + " extracted fresh" +
       (s.failed ? ", " + s.failed + " failed" : "") +
       (s.unmapped ? ", " + s.unmapped + " unmapped" : "") +
@@ -528,7 +528,7 @@
         note = f.error || "extraction failed";
       } else {
         tag = f.was_cached ?
-          '<span class="ws-note">recognised (cached — no model call)</span>' :
+          '<span class="ws-note">recognized (cached, no model call)</span>' :
           '<span class="ws-note">newly extracted</span>';
         note = f.contributes ? esc(f.doc_type) : (f.note || "did not contribute");
       }
@@ -607,7 +607,7 @@
     if (resp && resp.ok === true && window.LinResults) LinResults.prime(pid, resp.result);
     if (!resp || resp.ok !== true) {
       body.innerHTML = '<p class="ws-empty">' + esc((resp && resp.error) ||
-        "No computed result yet for this period — upload documents and run analysis " +
+        "No computed result yet for this period. Upload documents and run analysis " +
         "from the Period upload tab.") + "</p>";
       return;
     }
@@ -634,7 +634,7 @@
       html += '<div class="ws-group"><h3>' + esc(groupName(g)) + "</h3>";
       entries.forEach(function (e) {
         var note = (e.c.contributes_to_project_status === false) ?
-          '<span class="ws-note"> (informational — does not contribute to project status)</span>' : "";
+          '<span class="ws-note"> (informational, does not contribute to project status)</span>' : "";
         html += '<div class="ws-module"><span class="ws-dot" style="background:' +
           statusDotColor(e.c.status) + ';"></span>' +
           '<span class="ws-mname">' + esc(categoryName(e.catId)) + "</span>" + note + "</div>";
@@ -675,7 +675,7 @@
     // not even a "recommendation available" placeholder — so there is nothing here for the
     // pre-lock redaction to leak around.
 
-    html += '<div class="ws-provenance">Stored result — not a live computation. ' +
+    html += '<div class="ws-provenance">Stored result, not a live computation. ' +
       "Computed at " + esc(fmtDate(r.computed_at)) +
       " · simulation " + esc(r.simulation_version || "—") +
       " · seed " + esc(r.seed || "—") +

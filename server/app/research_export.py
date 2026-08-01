@@ -310,7 +310,7 @@ def _require_admin(session: Session, payload: dict, secret: str, action: str):
         audit(session, "export_action_denied", participant_id=caller.participant_id,
               action=action, role=caller.role)
         session.commit()
-        return None, err("not authorised: ResearchAdmin role required")
+        return None, err("not authorized: ResearchAdmin role required")
     return caller, None
 
 

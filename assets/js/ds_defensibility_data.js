@@ -1898,7 +1898,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "Scenario probability?",
-       "answer": "None assigned - scenarios are conditional analyses; assigning probabilities would overstate knowledge (a deliberate epistemic-humility choice)."
+       "answer": "None assigned - scenarios are conditional analyzes; assigning probabilities would overstate knowledge (a deliberate epistemic-humility choice)."
       }
      ],
      "requiredInputs": [

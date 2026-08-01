@@ -238,7 +238,7 @@
         // Translate the browser's generic AbortError into a clear timeout message.
         if (timedOut || (e && e.name === "AbortError")) {
           throw new Error("Request timed out after " + Math.round(ms / 1000) +
-                          "s — try a smaller file or retry");
+                          "s. Try a smaller file, or retry");
         }
         throw e;
       })
@@ -270,7 +270,7 @@
         if (threw) throw threw;
         throw new Error((resp && resp.error) || "request failed");
       }
-      if (attempt === max) throw new Error("Rate limited — wait a minute and Retry");
+      if (attempt === max) throw new Error("Rate limited. Wait a minute, then retry");
       const waitMs = backoff[Math.min(attempt - 1, backoff.length - 1)];
       if (o.onRetryWait) await o.onRetryWait(waitMs, attempt);
       else await new Promise(function (r) { setTimeout(r, waitMs); });
@@ -315,7 +315,7 @@
         }
         if (n > 0) {
           banner(n + (n === 1 ? " project is" : " projects are") +
-            " archived — restore from the archive tab", "warn");
+            " archived. Restore it from the archive tab", "warn");
         }
       } catch (e2) { /* non-fatal — the archive check is advisory only */ }
       return LIN_PROJECTS.slice();
@@ -323,7 +323,7 @@
       lastError = e;
       const cached = readCache();
       hydrate(cached || []);
-      banner("Couldn't reach the project store" + (cached ? " — showing last cached projects. Retry." : ". Retry."), "warn");
+      banner("Couldn't reach the project store" + (cached ? ". Showing the last cached projects. Retry." : ". Retry."), "warn");
       return LIN_PROJECTS.slice();
     } finally {
       loading(false);
@@ -344,7 +344,7 @@
       return j.projects || [];
     } catch (e) {
       if (/HTTP 404/.test(String(e && e.message))) {
-        console.warn("[store] listslim unavailable (404) — falling back to full list");
+        console.warn("[store] listslim unavailable (404). Falling back to the full list");
         const j = await apiGet("?action=list");
         return j.projects || [];
       }
@@ -375,7 +375,7 @@
         const n = LIN_ARCHIVED.length;
         if (n > 0) {
           banner(n + (n === 1 ? " project is" : " projects are") +
-            " archived — restore from the archive tab", "warn");
+            " archived. Restore it from the archive tab", "warn");
         }
       } catch (e2) { /* non-fatal — archive check is advisory only */ }
       return LIN_PROJECTS.slice();
@@ -383,7 +383,7 @@
       lastError = e;
       const cached = readPortfolioCache() || readCache();
       hydrate(cached || []);
-      banner("Couldn't reach the project store" + (cached ? " — showing last cached projects. Retry." : ". Retry."), "warn");
+      banner("Couldn't reach the project store" + (cached ? ". Showing the last cached projects. Retry." : ". Retry."), "warn");
       return LIN_PROJECTS.slice();
     }
   }

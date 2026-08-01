@@ -25,8 +25,8 @@
     frame-ancestors 'none';
   " />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Opus Gubernatio — Project Decision Support</title>
-  <meta name="description" content="Opus Gubernatio — project decision support for public AEC capital programs. Doctor of Engineering praxis research, The George Washington University." />
+  <title>Opus Gubernatio: Project Decision Support</title>
+  <meta name="description" content="Opus Gubernatio: project decision support for public AEC capital programs. Doctor of Engineering praxis research, The George Washington University." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -273,8 +273,8 @@
       <div class="login-logo"><img src="logo.png" alt="Opus Gubernatio" width="56" height="56"></div>
       <p class="login-eyebrow">PROJECT DECISION SUPPORT PLATFORM</p>
       <h1 class="login-title">Opus Gubernatio</h1>
-      <p class="login-sub">Sign in with the username and password supplied by the researcher, or
-        with your organisation Google account.</p>
+      <p class="login-sub">Sign in with the credentials provided to you, or with your
+        organization Google account.</p>
 
       <!-- Path 1: research participant — username (pseudonymous code) + password (access
            token). The username is a convenience, not the credential: research_identity.py's
@@ -294,11 +294,11 @@
            is unchanged, only collapsed: it answers a question a user asks at most once, so it
            belongs one click away rather than permanently occupying the fold. -->
       <details class="login-footnote login-no-selfserve login-expander">
-        <summary>Need an account, or forgot your password?</summary>
+        <summary>Account help</summary>
         <div class="login-expander-body">
-          No self-registration. Accounts are created by an administrator.<br>
-          Forgot your password? There is no automated reset — an administrator resets it for you;
-          no email address is kept on file for a research account to send one to.
+          Accounts are created by the researcher. You cannot register yourself.<br>
+          Passwords are reset by hand. Ask the researcher to reset yours. Research accounts
+          hold no email address, so there is nowhere to send a reset link.
         </div>
       </details>
 
@@ -310,8 +310,8 @@
            the fail-safe. assets/js/features.js adds body.og-account-operational only after
            the server has resolved the caller as an operational account. -->
       <details class="login-disclaimer notice-research login-expander">
-        <summary><strong>NOTICE:</strong> Academic research instrument — do not upload
-          confidential or real-project material. <span class="login-expander-cue">Read full
+        <summary><strong>Notice.</strong> Academic research instrument. Do not upload
+          confidential or real-project material. <span class="login-expander-cue">Full
           notice</span></summary>
         <div class="login-expander-body">
         NOTICE: ACADEMIC RESEARCH INSTRUMENT. This platform is a proof-of-concept
@@ -327,31 +327,35 @@
         permitted by law.
         </div>
       </details>
-      <!-- DRAFT — NOT YET REVIEWED. This is a liability notice drafted for the researcher's
+      <!-- DRAFT. NOT YET REVIEWED. This is a liability notice drafted for the researcher's
            review (T1a Task 2); it must be approved before it is relied upon. It cannot
            display yet: the SPA does not sign a participant in until T4, so no account type
            ever resolves to operational in this build. -->
       <details class="login-disclaimer notice-operational login-expander">
-        <summary><strong>NOTICE:</strong> Proof-of-concept platform — you are responsible for
-          upload authorisation. <span class="login-expander-cue">Read full notice</span></summary>
+        <summary><strong>Notice.</strong> Provided for research and demonstration. You are
+          responsible for confirming you may upload each document.
+          <span class="login-expander-cue">Full notice</span></summary>
         <div class="login-expander-body">
-        NOTICE: PROOF-OF-CONCEPT PLATFORM. Opus Gubernatio is a proof-of-concept developed
-        for doctoral research and is provided &quot;as is,&quot; without warranty of any kind,
-        express or implied. Uploaded content is transmitted to third-party
-        artificial-intelligence services for extraction and is stored in research
-        infrastructure. <strong>You are responsible for confirming that you are authorised
-        to upload each document</strong>, and for compliance with your organisation&#39;s
+        Opus Gubernatio is provided for research and demonstration, and is provided
+        &quot;as is,&quot; without warranty of any kind, express or implied. Uploaded content is
+        transmitted to third-party artificial-intelligence services for extraction and is
+        stored in research infrastructure. <strong>You are responsible for confirming that
+        you are authorized
+        to upload each document</strong>, and for compliance with your organization&#39;s
         data-handling, confidentiality, and records obligations. Analytical outputs are
         advisory and <strong>do not constitute a validated compliance determination</strong>.
         The operator disclaims all liability arising from or relating to uploaded content to
         the fullest extent permitted by law.
         </div>
       </details>
-      <p class="login-copyright">© 2026 Nyan Lin Tun. All rights reserved.</p>
+      <!-- Order: notice, attribution, copyright. The copyright used to sit above both, which
+           put the least useful line first. The old "Access is restricted to authorized users
+           only" line is gone: it sat beside a sign-in form and told the reader what the form
+           already told them. -->
       <p class="login-footnote">
-        Access is restricted to authorized users only.<br>
-        GWU Doctor of Engineering Praxis, Nyan Lin Tun
+        The George Washington University · Doctor of Engineering praxis research
       </p>
+      <p class="login-copyright">© 2026 Nyan Lin Tun. All rights reserved.</p>
     </div>
   </div>
 
@@ -378,27 +382,27 @@
   <div id="lin-consent" style="display:none;">
     <div class="login-panel consent-panel">
       <div class="login-logo"><img src="logo.png" alt="Opus Gubernatio" width="56" height="56"></div>
-      <p class="consent-draft-banner">DRAFT — NOT YET REVIEWED. Placeholder pending researcher
+      <p class="consent-draft-banner">DRAFT. NOT YET REVIEWED. Placeholder pending researcher
         and IRB review. This is not approved consent language.</p>
       <h1 class="login-title">Research Consent</h1>
       <div class="consent-body">
-        <p><strong>[PLACEHOLDER — Purpose of the study.]</strong> Describe, in plain language,
+        <p><strong>[PLACEHOLDER: Purpose of the study.]</strong> Describe, in plain language,
           what this study investigates and why the participant's decisions are being recorded.</p>
-        <p><strong>[PLACEHOLDER — Procedures.]</strong> Describe what happens at each stage the
+        <p><strong>[PLACEHOLDER: Procedures.]</strong> Describe what happens at each stage the
           participant will move through (evidence review, preliminary judgment, reveal, final
           decision) and approximately how long it takes.</p>
-        <p><strong>[PLACEHOLDER — Risks and benefits.]</strong> State any foreseeable risks of
+        <p><strong>[PLACEHOLDER: Risks and benefits.]</strong> State any foreseeable risks of
           participation and any anticipated benefits, to the participant or otherwise.</p>
-        <p><strong>[PLACEHOLDER — Confidentiality and data use.]</strong> Explain what is
+        <p><strong>[PLACEHOLDER: Confidentiality and data use.]</strong> Explain what is
           recorded, that only a pseudonymous code identifies the participant in that record, how
           the mapping from code to identity is held separately by the researcher, and how the
           data will be used, stored, and eventually reported or destroyed.</p>
-        <p><strong>[PLACEHOLDER — Voluntary participation.]</strong> State plainly that
+        <p><strong>[PLACEHOLDER: Voluntary participation.]</strong> State plainly that
           participation is voluntary and that the participant may withdraw at any time without
-          penalty — and that withdrawing consent here does exactly that: it stops further data
+          penalty, and that withdrawing consent here does exactly that: it stops further data
           collection and does not delete what was already recorded, consistent with the
           consent-withdrawal record itself being part of the research evidence.</p>
-        <p><strong>[PLACEHOLDER — Contact information.]</strong> Name and contact information for
+        <p><strong>[PLACEHOLDER: Contact information.]</strong> Name and contact information for
           the principal investigator and for the IRB of record, for questions about the study or
           about participants' rights.</p>
       </div>
@@ -813,7 +817,7 @@
               <tbody>
                 <tr><td>Drag-and-drop ingest</td><td>Multi-file document upload with AI type identification: drop any combination of PDFs and the platform classifies, extracts, and runs the analysis automatically</td></tr>
                 <tr><td>3D analytical charts</td><td>Zoom / pan / rotate 3D canvas charts across the analytical layer and Portfolio Health, with chart types including scatter, network, line, Pareto, and flat 2D donuts</td></tr>
-                <tr><td>Force network visualization</td><td>Signal network rendered in 3D: inner ring generators, outer ring synthesis / evidence / governance, live status colour-coded from project data</td></tr>
+                <tr><td>Force network visualization</td><td>Signal network rendered in 3D: inner ring generators, outer ring synthesis / evidence / governance, live status color-coded from project data</td></tr>
                 <tr><td>Portfolio Health anomaly detection</td><td>Isolation Forest, outlier ranking, trajectory classification, cross-project pattern detection, composite anomaly score</td></tr>
                 <tr><td>Evidence combination</td><td>Independent uncertainty-reasoning frameworks including Dempster-Shafer, Rough Sets, Neutrosophic, Z-numbers, Plithogenic, and Quantum Probability</td></tr>
                 <tr><td>Executive brief</td><td>Grouped-status AI summary: Recommendation, Signal Pattern by status tier, Key Drivers with actual values, Required Actions with named authority</td></tr>
@@ -868,7 +872,7 @@
         <p class="eyebrow">Administration</p>
         <h1>Administration</h1>
         <p>Accounts and access, project membership, participant monitoring, and de-identified
-          export. One surface — these were two pages a word apart in name.</p>
+          export. One surface. These were two pages a word apart in name.</p>
       </section>
 
       <!-- T6 Part C. Admin Ops folded in as tabs. Its Scenarios and Assignment tabs are
@@ -898,7 +902,7 @@
         <div class="ws-card">
           <h3 style="margin-top:0;">Create a project</h3>
           <p class="ws-note">Creates the project and puts a participant on it as PM in one step.
-            Research accounts cannot create their own — this is where theirs come from.</p>
+            Research accounts cannot create their own, so this is where theirs come from.</p>
           <label class="ws-field-label" for="ao-proj-name">Project name</label>
           <input id="ao-proj-name" class="ws-input" placeholder="e.g. Clarksville USPS ARCH">
           <label class="ws-field-label" for="ao-proj-sector">Sector (optional)</label>
@@ -944,7 +948,7 @@
         <div class="ws-card">
           <h3 style="margin-top:0;">Project membership</h3>
           <p class="ws-note">One PM decides for a project; any number of observers may read it.
-            Revoking keeps the row — membership history is itself audit evidence.</p>
+            Revoking keeps the row, because membership history is itself audit evidence.</p>
           <label class="ws-field-label" for="ao-mem-project">Project</label>
           <div class="ws-inline-row">
             <input id="ao-mem-project" class="ws-input" placeholder="e.g. PRJ-08421">
@@ -957,8 +961,8 @@
           <select id="ao-mem-participant" class="ws-input"></select>
           <label class="ws-field-label" for="ao-mem-role">Project role</label>
           <select id="ao-mem-role" class="ws-input">
-            <option value="PM">PM — decides for this project</option>
-            <option value="Observer">Observer — reads only</option>
+            <option value="PM">PM (decides for this project)</option>
+            <option value="Observer">Observer (reads only)</option>
           </select>
           <button id="ao-mem-add" class="ws-btn">Add member</button>
           <p id="ao-mem-error" class="ws-error" style="display:none;"></p>
@@ -970,7 +974,7 @@
         <div class="ws-card">
           <h3 style="margin-top:0;">Monitoring</h3>
           <p class="ws-note">Where each participant has reached. This is progress, never
-            performance — nothing here says whether a decision was good.</p>
+            performance. Nothing here says whether a decision was good.</p>
           <div id="ao-monitor-table"></div>
         </div>
       </div>

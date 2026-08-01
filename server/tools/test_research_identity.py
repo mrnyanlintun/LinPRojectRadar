@@ -128,7 +128,7 @@ p_session = plogin.get("session_token")
 
 st, escalate = post({"action": "adminparticipantlist", "session_token": p_session,
                      "role": "ResearchAdmin"})
-check(escalate.get("ok") is False and "not authorised" in escalate.get("error", ""),
+check(escalate.get("ok") is False and "not authorized" in escalate.get("error", ""),
       "body-supplied role ignored; admin action refused", str(escalate)[:160])
 
 st, who = post({"action": "researchwhoami", "session_token": p_session,

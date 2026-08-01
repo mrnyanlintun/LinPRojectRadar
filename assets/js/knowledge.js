@@ -590,7 +590,7 @@ Named Human Approval → Audit Record</pre>
       build: () => `
         <p class="kn-lead">Public capital projects are complex adaptive systems. A single EVM index (CPI or SPI) captures cost and schedule performance but misses the systemic, probabilistic, and qualitative dimensions that determine whether a project will succeed. PCEIF addresses this through four principles.</p>
 
-        <h3>1. No human can compute 103 analyses simultaneously</h3>
+        <h3>1. No human can compute 103 analyzes simultaneously</h3>
         <p>A senior PM reviewing a monthly report might check CPI, SPI, and open RFIs. PCEIF runs 103 analytical methods in milliseconds, probabilistic forecasts, anomaly detection, uncertainty reasoning, optimization, data integrity checks, and governance compliance, all before the PM opens their laptop. The platform does not replace human judgment; it gives the PM a complete evidence package to exercise that judgment.</p>
 
         <h3>2. Convergence equals confidence</h3>
@@ -706,7 +706,7 @@ Named Human Approval → Audit Record</pre>
         <p>A single deterministic EAC gives false precision. A P50/P80 range is more honest and more useful: it lets program controls fund contingency to an explicit risk percentile rather than to a point estimate that pretends the future is known.</p>
 
         <h3>Why Beta-PERT</h3>
-        <p>For construction cost modelling the Beta-PERT distribution is preferred over a normal or triangular distribution: it is continuous, naturally bounded by optimistic and pessimistic limits, and weighted toward the most-likely value. Across 5,000 iterations the simulated EAC distribution captures both central tendency and tail risk.</p>
+        <p>For construction cost modeling the Beta-PERT distribution is preferred over a normal or triangular distribution: it is continuous, naturally bounded by optimistic and pessimistic limits, and weighted toward the most-likely value. Across 5,000 iterations the simulated EAC distribution captures both central tendency and tail risk.</p>
 
         <h3>Monte Carlo formulas</h3>
         ${formulaBlock([
@@ -771,7 +771,7 @@ Named Human Approval → Audit Record</pre>
         <p class="kn-lead">EVM lags field conditions by weeks. An RFI log showing 20 open disputes in period 4 predicts a CPI collapse in period 6, but EVM will not show that collapse until it has already happened. Document risk is the leading signal.</p>
 
         <h3>How extraction works</h3>
-        <p>Cat 1.3 applies transparent keyword and pattern rules over RFIs, submittal logs, OAC meeting minutes, and project correspondence. Each rule has a weight and an evidence excerpt; the document risk score is a weighted sum normalised to 0–1. Every score is inspectable: the matched rule, the source document, and the excerpt are carried into the ledger.</p>
+        <p>Cat 1.3 applies transparent keyword and pattern rules over RFIs, submittal logs, OAC meeting minutes, and project correspondence. Each rule has a weight and an evidence excerpt; the document risk score is a weighted sum normalized to 0–1. Every score is inspectable: the matched rule, the source document, and the excerpt are carried into the ledger.</p>
 
         <h3>The score</h3>
         ${ragTable(
@@ -905,7 +905,7 @@ Named Human Approval → Audit Record</pre>
         ])}
 
         <h3>Reference</h3>
-        <p>Steward, D.V. (1981). The Design Structure System: A Method for Managing the Design of Complex Systems. <em>IEEE Transactions on Engineering Management</em>, 28(3), 71–74. Modern DSM analysis underpins building-information-modelling clash detection and integrated-project-delivery coordination practice.</p>
+        <p>Steward, D.V. (1981). The Design Structure System: A Method for Managing the Design of Complex Systems. <em>IEEE Transactions on Engineering Management</em>, 28(3), 71–74. Modern DSM analysis underpins building-information-modeling clash detection and integrated-project-delivery coordination practice.</p>
       `,
     },
     {
@@ -1019,7 +1019,7 @@ Named Human Approval → Audit Record</pre>
           ["I_combined = prod_i(I_i)", "conjunctive (I shrinks as certainty increases)"],
           ["F_combined = prod_i(F_i)", "conjunctive (F shrinks as evidence resolves)"],
           "",
-          "Normalise: T, I, F each divided by (T + I + F)",
+          "Normalize: T, I, F each divided by (T + I + F)",
           "",
           "Status: Red if >= 2 sources Red; Amber if >= 2 Amber; else Green.",
           "If I_normalised > 0.30, upgrade Green to Amber (uncertainty warning).",
@@ -1137,7 +1137,7 @@ Named Human Approval → Audit Record</pre>
       title: "19. Cat 7.7: Plithogenic Sets",
       eyebrow: "Cat 7.7 · contradiction-degree weighting",
       build: () => `
-        <p class="kn-lead">Plithogenic Sets assign each signal a contradiction degree against the dominant value. A Green signal in a project where every other signal is Red has high contradiction, it is not cancelled, but it is weighted down to reflect that it is the outlier. High average contradiction means the signals are genuinely opposed, not merely mixed.</p>
+        <p class="kn-lead">Plithogenic Sets assign each signal a contradiction degree against the dominant value. A Green signal in a project where every other signal is Red has high contradiction, it is not canceled, but it is weighted down to reflect that it is the outlier. High average contradiction means the signals are genuinely opposed, not merely mixed.</p>
 
         <h3>What plithogenic adds</h3>
         <p>Most aggregation methods average opposing signals into a middle state. Plithogenic aggregation distinguishes "opposed" from "intermediate" by tracking how far each signal sits from the dominant value: a contradiction degree of 1.0 means the signal is at the opposite pole; 0.5 means it is mid-spectrum. The average contradiction across sources becomes a governance signal in its own right.</p>
@@ -1174,7 +1174,7 @@ Named Human Approval → Audit Record</pre>
         <p class="kn-lead">A Belief Rule Base encodes expert knowledge as IF-THEN rules whose consequent is a belief distribution rather than a crisp state. "If EVM is Red and CUSUM has breached, belief is 90% Red, 8% Amber, 2% Green." Multiple matching rules are combined by rule weight to produce the aggregate belief.</p>
 
         <h3>What BRB adds</h3>
-        <p>BRB bridges the explicit governance rules of PCEIF and probabilistic expert judgement. The rule conditions are crisp (matching the PCEIF authority matrix structure), but the consequents are graded probability distributions (matching how experts actually express confidence). Each rule carries a weight that captures how strongly it should drive the aggregate when it fires.</p>
+        <p>BRB bridges the explicit governance rules of PCEIF and probabilistic expert judgment. The rule conditions are crisp (matching the PCEIF authority matrix structure), but the consequents are graded probability distributions (matching how experts actually express confidence). Each rule carries a weight that captures how strongly it should drive the aggregate when it fires.</p>
 
         ${formulaBlock([
           "Rule R_k: IF antecedent_k THEN belief = (b_G, b_A, b_R) with weight w_k",
@@ -1452,7 +1452,7 @@ Named Human Approval → Audit Record</pre>
     },
     cat2: {
       why: "Category 2 addresses delivery timing, milestone exposure, float, resource feasibility, and near-term schedule health, the time-based leading indicators that move before SPI does. It surfaces schedule risk early enough to act while there is still room to recover.",
-      risks: "PMs may normalise incremental drift, accept aggressive recovery plans without feasibility evidence, or under-react to float consumption. The framework counters this with status rollup, dominant-signal display, evidence sufficiency, mandatory rationale, and audit-aware records."
+      risks: "PMs may normalize incremental drift, accept aggressive recovery plans without feasibility evidence, or under-react to float consumption. The framework counters this with status rollup, dominant-signal display, evidence sufficiency, mandatory rationale, and audit-aware records."
     },
     cat3: {
       why: "Category 3 addresses future budget exposure: productivity, contingency, rework, material cost, and escalation pressure, correcting for the optimism bias built into bottom-up contractor estimates.",
@@ -1463,7 +1463,7 @@ Named Human Approval → Audit Record</pre>
       risks: "PMs may over-read one strong phrase, ignore repeated weak warnings, or treat a document-risk flag as fault rather than review evidence. The framework counters this by requiring corroboration, mandatory rationale, and the fairness gate before any contractor-affecting action."
     },
     cat5: {
-      why: "Category 5 addresses interdependence, feedback loops, bottlenecks, rework propagation, supply coordination, and scenario behaviour, how project components amplify one another rather than fail in isolation.",
+      why: "Category 5 addresses interdependence, feedback loops, bottlenecks, rework propagation, supply coordination, and scenario behavior, how project components amplify one another rather than fail in isolation.",
       risks: "PMs may treat connected problems as isolated issues, underestimate rework loops, or miss queue effects because they look purely operational. The framework counters this with status rollup, evidence sufficiency, and audit-aware records."
     },
     cat6: {
@@ -1472,7 +1472,7 @@ Named Human Approval → Audit Record</pre>
     },
     cat7: {
       why: "Category 7 addresses uncertainty, incompleteness, vagueness, conflicting evidence, and multi-criteria ranking. Twenty independent uncertainty-reasoning frameworks cross-check the Category 6 baseline and quantify how much confidence the classification actually carries.",
-      risks: "PMs may treat vague evidence as certain, treat uncertain evidence as useless, or confuse weak evidence with conflicting evidence. The framework counters this by reporting agreement and conflict, not just a colour."
+      risks: "PMs may treat vague evidence as certain, treat uncertain evidence as useless, or confuse weak evidence with conflicting evidence. The framework counters this by reporting agreement and conflict, not just a color."
     },
     cat8: {
       why: "Category 8 addresses public-owner authority, procurement constraints, audit obligations, and procedural fairness. It is always the last step: the named authority, the required action, the compliance check, and the audit trail.",
@@ -1483,7 +1483,7 @@ Named Human Approval → Audit Record</pre>
       risks: "PMs may trust a complete-looking dashboard built on missing data, or treat extracted facts as verified facts. The framework counters this by surfacing missing, stale, and low-reliability inputs before the fused status is trusted."
     },
     cat10: {
-      why: "Category 10 addresses candidate management responses, action ranking, recovery options, and proportional response selection. Where Category 5 explains system behaviour, Category 10 takes the current state as given and asks which action is optimal under constraints.",
+      why: "Category 10 addresses candidate management responses, action ranking, recovery options, and proportional response selection. Where Category 5 explains system behavior, Category 10 takes the current state as given and asks which action is optimal under constraints.",
       risks: "PMs may choose the easiest action, escalate too quickly, or delay because the options are unclear. The framework counters this by ranking proportional responses and tying each to its constraint and authority."
     },
     ph: {
@@ -1520,7 +1520,7 @@ Named Human Approval → Audit Record</pre>
       interp: "A breach hands the finding to Cat 6.1/Cat 8.1 governance; on its own it is evidence of a systemic pattern, not noise, and if no document explains it the conflict type is 'Anomaly Without Narrative'.",
       ground: "Tabular CUSUM (Page, 1954) is a sequential change-detection method from statistical process control, chosen over a Shewhart 3σ chart because it is sensitive to small sustained shifts rather than only large single-period ones; construction SPI series carry higher natural variance than manufacturing measurements, so H is widened to 5σ to bound false positives." },
       purpose: "Surfaces qualitative risk language in project records as a leading indicator, since EVM lags field conditions by weeks.",
-      formula: "Weighted sum of matched keyword/pattern rules across RFIs, submittals, OAC minutes, and correspondence, normalised to a 0-1 score. Each match carries a weight and an evidence excerpt; the ledger stores the matched rule and source document.",
+      formula: "Weighted sum of matched keyword/pattern rules across RFIs, submittals, OAC minutes, and correspondence, normalized to a 0-1 score. Each match carries a weight and an evidence excerpt; the ledger stores the matched rule and source document.",
       bands: [["green","Green","score &lt; 0.30, routine language"], ["amber","Amber","0.30-0.70, possible cost/schedule/scope impact language"], ["red","Red","score ≥ 0.70, high-impact language converging across document types"]],
       sources: "RFI / RFI Log, Submittal / Submittal Register, OAC Meeting Minutes, Correspondence / Notice, Risk Register, Inspection Report / NCR.",
       interp: "Red is a flag requiring Cat 6.1 corroboration, never a standalone trigger, keyword extraction is rule-based, not semantic, and a sophisticated contractor can write around it.",
@@ -1773,7 +1773,7 @@ Named Human Approval → Audit Record</pre>
   const CAT4_MODULES = [
     { n: "A4.1", name: "Document Risk Score", mc: "Doc_Risk_Cat4",
       purpose: "The Cat 4 view of the same document-risk score computed in Cat 1.3, surfaced here alongside the other qualitative Cat 4 signals for category-level rollup.",
-      formula: "Identical computation to Cat 1.3 (Document Risk Extraction): a weighted sum of matched keyword/pattern rules across project records, normalised to 0-1.",
+      formula: "Identical computation to Cat 1.3 (Document Risk Extraction): a weighted sum of matched keyword/pattern rules across project records, normalized to 0-1.",
       bands: [["green","Green","score &lt; 0.30"], ["amber","Amber","0.30-0.70"], ["red","Red","≥ 0.70"]],
       sources: "RFI / RFI Log, Submittal / Submittal Register, OAC Meeting Minutes, Correspondence / Notice, Risk Register, Inspection Report / NCR.",
       interp: "Read this the same way as Cat 1.3, it is the same score; its presence in Cat 4 lets the document-risk category roll up alongside RFI velocity, submittal rejection, and the other qualitative Cat 4 signals rather than only living under EVM.",
@@ -1892,7 +1892,7 @@ Named Human Approval → Audit Record</pre>
       abstain: "cpi missing.",
       sources: "Pay Application (CPI), RFI / RFI Log, Change Order / PCO.",
       interp: "A high index concentrated in the RFI/CO terms (rather than the CPI term) suggests the cost drag is coordination-driven and may respond to a design-clarification push; a high index driven mainly by the CPI term suggests a broader execution problem.",
-      ground: "System-dynamics rework feedback loops (undiscovered rework generating further rework, compounding cost) are a well-documented mechanism in construction project system-dynamics modelling literature (e.g., Cooper's Rework Cycle models used in program-level system dynamics studies)." },
+      ground: "System-dynamics rework feedback loops (undiscovered rework generating further rework, compounding cost) are a well-documented mechanism in construction project system-dynamics modeling literature (e.g., Cooper's Rework Cycle models used in program-level system dynamics studies)." },
     { n: "A5.6", name: "Queueing Theory Bottleneck", mc: "Queueing_Bottleneck",
       purpose: "Reads the same near-term constraint data as Cat 2.8 through a queueing-theory lens: a high share of constrained activities means work is queuing up behind a bottleneck resource or predecessor.",
       formula: "constraintRatio = activitiesConstrained / activitiesPlanned. (Same underlying fields as Cat 2.8, with tighter thresholds appropriate to a bottleneck-severity read.)",
@@ -1908,7 +1908,7 @@ Named Human Approval → Audit Record</pre>
       abstain: "longLeadItemsTotal or longLeadAtRisk missing.",
       sources: "Procurement Log, same source as Cat 4.9.",
       interp: "Because this is the unweighted at-risk share, Cat 5.7 can read Green while Cat 4.9 (which double-weights delayed items) reads worse, or vice versa; reading both together separates 'many items are merely at risk' from 'a smaller number are already confirmed delayed'.",
-      ground: "Agent-based supply-chain modelling (Bonabeau, 2002) treats procurement as a network of interacting agents (suppliers, fabricators, the project) whose individual delay risk aggregates into program-level exposure; this implementation is a simplified aggregate proxy for that fuller agent-based simulation." },
+      ground: "Agent-based supply-chain modeling (Bonabeau, 2002) treats procurement as a network of interacting agents (suppliers, fabricators, the project) whose individual delay risk aggregates into program-level exposure; this implementation is a simplified aggregate proxy for that fuller agent-based simulation." },
     { n: "A5.8", name: "Discrete Event Simulation", mc: "Discrete_Event_Sim",
       purpose: "Estimates a throughput index representing how much schedule interruption (from progress lag and SPI shortfall combined) the project is absorbing, the closest Cat 5 module to a true process-simulation read.",
       formula: "progressRatio = actualPctComplete / plannedPctComplete; interruptionRate = max(0, 1 − progressRatio) + max(0, 1 − SPI) × 0.5; throughputIndex = 1 / (1 + interruptionRate).",
@@ -1958,7 +1958,7 @@ Named Human Approval → Audit Record</pre>
       bands: [["green","Low (K &lt; 0.10)","sources broadly agree, result is reliable"], ["amber","Moderate (0.10-0.30)","some inter-signal tension"], ["red","High (K &gt; 0.30)","strong disagreement, itself a governance finding"]],
       sources: "Consumes existing Cat 1 EVM/CUSUM/Doc Risk and Cat 1.1 Monte Carlo outputs.",
       interp: "When DST and Cat 6.1 agree, both corroborate each other; when they diverge, the divergence is recorded rather than resolved in favor of one method, telling the reviewer the evidence picture is genuinely ambiguous.",
-      ground: "Dempster-Shafer Theory (Dempster, 1967; Shafer, 1976) is a mathematical framework for combining evidence from multiple independent sources under uncertainty, explicitly modelling and quantifying inter-source conflict rather than assuming sources always agree." },
+      ground: "Dempster-Shafer Theory (Dempster, 1967; Shafer, 1976) is a mathematical framework for combining evidence from multiple independent sources under uncertainty, explicitly modeling and quantifying inter-source conflict rather than assuming sources always agree." },
     { n: "B2.2", name: "Rough Sets", mc: "Rough_Sets_Classification",
       purpose: "Classifies the project's state via lower/upper set approximations rather than a single point estimate, explicitly naming the indeterminate boundary region when evidence is insufficient for a definite classification.",
       formula: "Each of the four evidence sources is bucketed into Green/Amber/Red; lower approximation = states with &gt;75% signal agreement; upper approximation = states with any support; boundary = upper − lower.",
@@ -1968,7 +1968,7 @@ Named Human Approval → Audit Record</pre>
       ground: "Rough Set Theory (Pawlak, 1982) provides a set-theoretic framework for classification under incomplete or imprecise information, distinguishing what is definitely, possibly, and indeterminately true given the available attributes." },
     { n: "B2.3", name: "Neutrosophic Logic", mc: "Neutrosophic_Logic",
       purpose: "Adds indeterminacy (I) as an independent third dimension alongside truth (T) and falsity (F), so genuine unresolvable uncertainty is modelled explicitly rather than folded into a soft Amber reading.",
-      formula: "T_combined = 1 − ∏(1−Tᵢ) (disjunctive); I_combined = ∏Iᵢ; F_combined = ∏Fᵢ (both conjunctive); normalised so T+I+F sums consistently. Status: Red if ≥2 sources Red, Amber if ≥2 Amber, else Green; escalates Green→Amber if I &gt; 0.30.",
+      formula: "T_combined = 1 − ∏(1−Tᵢ) (disjunctive); I_combined = ∏Iᵢ; F_combined = ∏Fᵢ (both conjunctive); normalized so T+I+F sums consistently. Status: Red if ≥2 sources Red, Amber if ≥2 Amber, else Green; escalates Green→Amber if I &gt; 0.30.",
       abstain: "no evidence-source components are available (returns an Amber 'Insufficient signal data' stub rather than the standard insufficient-data flag).",
       sources: "Consumes existing Cat 1 EVM/CUSUM/Doc Risk and Cat 1.1 Monte Carlo outputs.",
       interp: "High indeterminacy (&gt;30%) triggers an automatic upgrade from Green to Amber, the module treats 'we genuinely don't know' as a governance-relevant state in its own right, distinct from 'we know it's fine' or 'we know it's a problem'.",
@@ -1980,7 +1980,7 @@ Named Human Approval → Audit Record</pre>
       abstain: "no CPI/SPI intervals are available (returns an Amber 'Insufficient signal data' stub).",
       sources: "Pay Application (AC rounding), Schedule of Values (EV line-item accuracy).",
       interp: "A wide uncertainty width means a Green/Amber boundary crossing is within reach of ordinary measurement noise; the practical response is to request more precise source documents (a verified pay app rather than an estimate), not to escalate on the classification alone.",
-      ground: "Interval-valued fuzzy sets (Sambuc, 1975; Zadeh, 1975; Turksen, 1986) represent membership as a range rather than a point, explicitly modelling measurement uncertainty rather than assuming perfectly precise inputs." },
+      ground: "Interval-valued fuzzy sets (Sambuc, 1975; Zadeh, 1975; Turksen, 1986) represent membership as a range rather than a point, explicitly modeling measurement uncertainty rather than assuming perfectly precise inputs." },
     { n: "B2.5", name: "Z-numbers", mc: "Z_Numbers",
       purpose: "Pairs each evidence source's classification (the restriction) with a fixed reliability weight for that source type (the reliability), so a verified pay-application-derived signal carries more weight than a less-reliable proxy source.",
       formula: "Fixed source reliabilities: EVM 0.85, CUSUM 0.90, Document Risk 0.65, Monte Carlo forecast 0.88. Reliability-weighted totals accumulate per bucket; status = the bucket with the highest total reliability-weighted mass.",
@@ -2024,13 +2024,13 @@ Named Human Approval → Audit Record</pre>
       interp: "The hesitancy term (π, the leftover 'unassigned' mass) reported alongside membership/non-membership quantifies how much of the judgment remains genuinely uncommitted, distinct from Cat 7.4's measurement-uncertainty interval.",
       ground: "Pythagorean Fuzzy Sets (Yager, 2013) relax the intuitionistic-fuzzy constraint from μ+ν≤1 to μ²+ν²≤1, allowing a wider, more expressive combination of simultaneous positive and negative evidence." },
     { n: "B2.11", name: "Picture Fuzzy Sets", mc: "Picture_Fuzzy",
-      purpose: "Extends fuzzy evaluation to four components, positive, neutral, negative, and refusal, modelling abstention (a source declining to commit) as its own explicit category rather than as residual uncertainty.",
+      purpose: "Extends fuzzy evaluation to four components, positive, neutral, negative, and refusal, modeling abstention (a source declining to commit) as its own explicit category rather than as residual uncertainty.",
       formula: "positive = clamp((evmMin−0.85)/0.15, 0, 0.95); negative = clamp((0.95−evmMin)/0.15, 0, 0.95) × (1 + docRisk×0.5), clamped 0.95; neutral = max(0, 0.6−positive−negative)×0.3; refusal = max(0, 1−positive−neutral−negative); score = positive − negative.",
       bands: [["green","Green","score ≥ 0.30"], ["yellow","Yellow","0.00-0.30"], ["amber","Amber","−0.30 to 0.00"], ["red","Red","&lt; −0.30"]],
       abstain: "cpi, spi or docRiskScore missing.",
       sources: "Pay Application, Schedule of Values, RFI / RFI Log.",
       interp: "A high refusal component means the evidence genuinely does not commit to a clear read in any direction, distinct from a high neutral component (evidence that is actively lukewarm); the evidence string reports all four components so the reviewer can tell which case applies.",
-      ground: "Picture Fuzzy Sets (Cuong, 2014) add a 'neutral' and a 'refusal' degree to the standard positive/negative fuzzy pair, useful for modelling voting-style or committee-style evaluations where abstention is a distinct outcome from a lukewarm rating." },
+      ground: "Picture Fuzzy Sets (Cuong, 2014) add a 'neutral' and a 'refusal' degree to the standard positive/negative fuzzy pair, useful for modeling voting-style or committee-style evaluations where abstention is a distinct outcome from a lukewarm rating." },
     { n: "B2.12", name: "Hesitant Fuzzy Sets", mc: "Hesitant_Fuzzy",
       purpose: "Instead of forcing a single membership value, evaluates three plausible membership readings (from the min, max, and average of CPI/SPI) and reports both their average and the spread between them as an explicit hesitancy measure.",
       formula: "memberships = [f(min(CPI,SPI)), f(max(CPI,SPI)), f(avg(CPI,SPI))] where f(x) = clamp((x−0.85)/0.15, 0, 1); score = mean(memberships); hesitancy = max(memberships) − min(memberships).",
@@ -2038,7 +2038,7 @@ Named Human Approval → Audit Record</pre>
       abstain: "cpi or spi missing.",
       sources: "Pay Application, Schedule of Values.",
       interp: "High hesitancy means CPI and SPI point in noticeably different directions, so the single composite score is masking a real cost/schedule split; check CPI and SPI individually rather than reading the composite alone when hesitancy is elevated.",
-      ground: "Hesitant Fuzzy Sets (Torra, 2010) allow an evaluator to consider several plausible membership values simultaneously rather than committing to one, modelling genuine hesitation between multiple reasonable readings of the same evidence." },
+      ground: "Hesitant Fuzzy Sets (Torra, 2010) allow an evaluator to consider several plausible membership values simultaneously rather than committing to one, modeling genuine hesitation between multiple reasonable readings of the same evidence." },
     { n: "B2.13", name: "Type-2 Fuzzy Sets", mc: "Type2_Fuzzy",
       purpose: "Fuzzy-membership itself carries uncertainty here: a lower and an upper membership bound (a footprint of uncertainty) are computed, driven by how far CPI and SPI diverge from each other.",
       formula: "primaryMembership = clamp((min(CPI,SPI)−0.85)/0.15, 0, 1); uncertainty = |CPI−SPI| × 2; lower = max(0, primary−uncertainty×0.5); upper = min(1, primary+uncertainty×0.5); centroid = (lower+upper)/2; footprint = upper−lower.",
@@ -2048,11 +2048,11 @@ Named Human Approval → Audit Record</pre>
       interp: "Green requires BOTH a high centroid AND a narrow footprint (uncertainty band); a project with a high centroid but a wide footprint (because CPI and SPI disagree sharply) will not read Green here even though a simpler single-value fuzzy read might.",
       ground: "Type-2 Fuzzy Sets (Mendel &amp; John, 2002) model uncertainty about the membership function itself (a 'fuzzy fuzzy set'), useful when the inputs feeding the membership calculation (here, CPI vs SPI) disagree with each other." },
     { n: "B2.14", name: "Maximum Entropy", mc: "Maximum_Entropy",
-      purpose: "Reports a full probability distribution over all four states (Green/Yellow/Amber/Red) alongside a normalised entropy score measuring how spread-out (uncertain) that distribution is.",
+      purpose: "Reports a full probability distribution over all four states (Green/Yellow/Amber/Red) alongside a normalized entropy score measuring how spread-out (uncertain) that distribution is.",
       formula: "Raw probabilities looked up from a fixed table keyed on min(CPI,SPI) band, adjusted upward on Amber/Red by document risk, renormalised; entropy = −Σp×log2(p); normalizedEntropy = entropy / log2(4); status = the state with the highest probability.",
       abstain: "cpi, spi or docRiskScore missing.",
       sources: "Pay Application, Schedule of Values, RFI / RFI Log.",
-      interp: "A high normalised entropy (probability mass spread relatively evenly across states) means the classification is genuinely uncertain even if one state narrowly wins the plurality; a low entropy means the dominant state is a confident read.",
+      interp: "A high normalized entropy (probability mass spread relatively evenly across states) means the classification is genuinely uncertain even if one state narrowly wins the plurality; a low entropy means the dominant state is a confident read.",
       ground: "The Maximum Entropy principle (Jaynes, 1957) selects the probability distribution consistent with known constraints that is otherwise maximally non-committal, i.e. the distribution that assumes the least beyond what the evidence actually supports, and reports its own uncertainty explicitly via the entropy measure." },
     { n: "B2.15", name: "Possibility Theory", mc: "Possibility_Theory",
       purpose: "Reports both a possibility (how plausible is this state, an upper bound) and a necessity (how certain is this state, a lower bound) for each of Green/Amber/Red, distinguishing 'this could be true' from 'this must be true'.",
@@ -2079,7 +2079,7 @@ Named Human Approval → Audit Record</pre>
       ground: "Fermatean Fuzzy Sets (Senapati &amp; Yager, 2020) extend the Pythagorean/Spherical family with a cubic constraint, allowing an even wider simultaneous expression of positive and negative evidence before the constraint binds." },
     { n: "B2.18", name: "MARCOS Ranking", mc: "MARCOS",
       purpose: "A multi-criteria decision-making (MCDM) method that ranks the project's evidence state by its utility relative to both an ideal (best-case) and an anti-ideal (worst-case) reference point simultaneously.",
-      formula: "Three weighted criteria (CPI w=0.40, SPI w=0.35, 1−docRiskScore w=0.25) each normalised against ideal/anti-ideal reference values; utilityIdeal = Σ(normalised value × weight); f_ideal and f_anti derived from utilityIdeal/Anti; marcosScore combines both via the MARCOS utility-function formula.",
+      formula: "Three weighted criteria (CPI w=0.40, SPI w=0.35, 1−docRiskScore w=0.25) each normalized against ideal/anti-ideal reference values; utilityIdeal = Σ(normalized value × weight); f_ideal and f_anti derived from utilityIdeal/Anti; marcosScore combines both via the MARCOS utility-function formula.",
       bands: [["green","Green","score ≥ 0.65"], ["yellow","Yellow","0.50-0.65"], ["amber","Amber","0.35-0.50"], ["red","Red","&lt; 0.35"]],
       abstain: "cpi, spi or docRiskScore missing.",
       sources: "Pay Application, Schedule of Values, RFI / RFI Log.",
@@ -2087,7 +2087,7 @@ Named Human Approval → Audit Record</pre>
       ground: "MARCOS (Measurement Alternatives and Ranking according to Compromise Solution; Stević, Pamučar, Puška &amp; Chatterjee, 2020) is a recent multi-criteria ranking method that anchors alternatives against both ideal and anti-ideal reference solutions simultaneously." },
     { n: "B2.19", name: "CRITIC-TOPSIS", mc: "CRITIC_TOPSIS",
       purpose: "Combines CRITIC (objective, data-driven criteria weighting) with TOPSIS (ranking by distance from ideal and anti-ideal solutions), so criteria weights are derived from the data itself rather than fixed a priori.",
-      formula: "CRITIC weights derived from each criterion's deviation from the mean, normalised to sum to 1; Euclidean distances to a fixed ideal [1.05, 1.05, 1.00] and anti-ideal [0.80, 0.80, 0.30] vector computed with those weights; topsisScore = distance-to-anti-ideal / (distance-to-ideal + distance-to-anti-ideal).",
+      formula: "CRITIC weights derived from each criterion's deviation from the mean, normalized to sum to 1; Euclidean distances to a fixed ideal [1.05, 1.05, 1.00] and anti-ideal [0.80, 0.80, 0.30] vector computed with those weights; topsisScore = distance-to-anti-ideal / (distance-to-ideal + distance-to-anti-ideal).",
       bands: [["green","Green","score ≥ 0.65"], ["yellow","Yellow","0.50-0.65"], ["amber","Amber","0.35-0.50"], ["red","Red","&lt; 0.35"]],
       abstain: "cpi, spi or docRiskScore missing.",
       sources: "Pay Application, Schedule of Values, RFI / RFI Log.",
@@ -2110,7 +2110,7 @@ Named Human Approval → Audit Record</pre>
       formula: "Each authority role (PM, controls lead, program director) is modelled as an agent with explicit decision rules implemented as pure functions (deriveHealthState, classifyConflict, deriveDecision) in decision.js, consuming the Cat 6.1 baseline and Cat 7 evidence-combination cross-checks. Runs in decision.js, not simulations.js.",
       sources: "Consumes every already-computed module's output; no independent document extraction of its own.",
       interp: "This module's output IS the decision card the PM sees; a status change here is not itself a decision, a decision requires a named human, a role, a rationale, and a timestamp before it is recorded.",
-      ground: "Agent-based governance modelling (Bonabeau, 2002) assigns explicit decision rules to distinct authority roles; here those rules are deliberately implemented as readable functions rather than a learned model, so every recommendation is traceable to an inspectable rule." },
+      ground: "Agent-based governance modeling (Bonabeau, 2002) assigns explicit decision rules to distinct authority roles; here those rules are deliberately implemented as readable functions rather than a learned model, so every recommendation is traceable to an inspectable rule." },
     { n: "B3.2", name: "FAR Threshold Monitor", mc: "FAR_Threshold",
       purpose: "Tracks projected cost overrun against the FAR Part 34 25% reporting threshold used on federal capital programs, converting a percentage into a specific reporting obligation.",
       formula: "eac = BAC/CPI; overrunPct = ((eac−BAC)/BAC) × 100; far34Threshold = 25%; distanceToThreshold = 25 − overrunPct.",
@@ -2314,7 +2314,7 @@ Named Human Approval → Audit Record</pre>
       ground: "Percentile-rank outlier detection is a standard relative-standing technique in portfolio management, appropriate when 'healthy' is contextual to the portfolio's own performance distribution rather than a fixed absolute standard." },
     { n: "D1.3", name: "Signal Trajectory Classifier", mc: "Trajectory_Classifier",
       purpose: "Classifies the direction and character of the project's CPI trend across its own reporting-period history (improving, stable, declining, deteriorating).",
-      formula: "Server-side (portfolioanalyze): analyses the CPI trend across the project's own stored snapshot history.",
+      formula: "Server-side (portfolioanalyze): analyzes the CPI trend across the project's own stored snapshot history.",
       abstain: "fewer than 2 reporting periods of CPI history are stored.",
       sources: "The project's own signal snapshot history across reporting cycles; not a portfolio-comparison signal despite sitting in the Portfolio Health suite.",
       interp: "This is the only Portfolio Health module that reads a single project's own trajectory rather than comparing it to peers; a 'deteriorating' classification alongside a still-Green current-period status is an early trend warning worth flagging before the current period itself turns Amber or Red.",
@@ -2423,7 +2423,7 @@ Named Human Approval → Audit Record</pre>
       <p>Every project on this site is synthetic: authored and calibrated to exercise the framework's status bands and conflict-classification logic, not sourced from a real program, agency, employer, or contractor. Numbers were chosen to populate the full Green-through-Red range across the module set, not sampled from field measurements. Nothing here should be read as a claim about how any real capital program has performed.</p>
 
       <h3>LLM extraction variance</h3>
-      <p>Where document text is summarised or classified by an LLM (the scripted-fallback assistant and the AI-assisted document review path), the same source document can extract marginally differently between runs, language models are not perfectly deterministic even at low temperature. This is mitigated two ways: source documents are kept to raw, primary figures rather than requiring the model to infer or estimate, and every downstream calculation, once a figure is extracted, is fully deterministic arithmetic in simulations.js with no further model involvement. The extraction step is the only place variance can enter; the 101-computation stack that follows it is exact and reproducible given the same inputs.</p>
+      <p>Where document text is summarized or classified by an LLM (the scripted-fallback assistant and the AI-assisted document review path), the same source document can extract marginally differently between runs, language models are not perfectly deterministic even at low temperature. This is mitigated two ways: source documents are kept to raw, primary figures rather than requiring the model to infer or estimate, and every downstream calculation, once a figure is extracted, is fully deterministic arithmetic in simulations.js with no further model involvement. The extraction step is the only place variance can enter; the 101-computation stack that follows it is exact and reproducible given the same inputs.</p>
 
       <h3>Single-source document risk scoring</h3>
       <p>Cat 1.3 / Cat 4.1 document risk (Doc_Risk / Doc_Risk_Cat4) is a transparent keyword-and-pattern score, not a semantic understanding of the text. It is deliberately treated throughout PCEIF as a leading indicator requiring Cat 6.1 corroboration, never as a standalone trigger, precisely because a rule-based score over a single document type is a narrow, gameable signal on its own. A sophisticated author can write around keyword rules; the score's value is in its transparency and auditability (every match and excerpt is inspectable), not in claimed semantic accuracy.</p>
@@ -2691,7 +2691,7 @@ Named Human Approval → Audit Record</pre>
     id: "status-evidence-rules", title: "Status & Evidence Rules",
     eyebrow: "Methods & Framework · how status is decided",
     build: () => `
-      <p class="kn-lead">PCEIF status is not a single averaged colour. Module states roll up into category states, category states fuse into a project state, and disagreement is surfaced at every step. The rules below are stated as implemented in <code>sim.js</code> and <code>simulations.js</code>, which are the ground truth for every threshold.</p>
+      <p class="kn-lead">PCEIF status is not a single averaged color. Module states roll up into category states, category states fuse into a project state, and disagreement is surfaced at every step. The rules below are stated as implemented in <code>sim.js</code> and <code>simulations.js</code>, which are the ground truth for every threshold.</p>
 
       <h3>The five states plus Abstain</h3>
       <p>A module or category reports one of five states, Complete, Green, Yellow, Amber, or Red, or it Abstains. Abstain is a governance state, not an error: it communicates that the evidence a module requires is absent or insufficient. An abstaining module (the <code>insufficientData()</code> path in simulations.js, triggered when a required input is null or undefined) contributes no mass to fusion and is excluded from the vote; it does not default to Green. Complete (blue) is a project-end flag set when actual percent complete reaches 100, independent of the fused band; a completed source contributes best-case (Green) evidence to any fusion it enters.</p>
@@ -2703,7 +2703,7 @@ Named Human Approval → Audit Record</pre>
       <p>Category status is produced by evidence combination, not worst-wins. The shared <code>dstFuse()</code> in simulations.js maps each module status to a belief mass over {Green, Yellow, Amber, Red, Unknown} (for example a Red source carries mass 0.76 to Red, 0.14 to Amber), combines sources by Dempster's rule, and reports the maximum-belief state. A Red-dominant source is applied at 1.5x weight (full once plus a half-strength Shafer-discounted re-combination) so a single Red cannot silently sink a category of greens, while genuine Red evidence still dominates. The combination also yields a conflict coefficient K measuring how much the sources disagree.</p>
 
       <h3>Project status: conservative dominance and the conflict advisory</h3>
-      <p>Project status follows conservative dominance in spirit, a severe, credible category is not averaged away, and is implemented by fusing all eleven registry category statuses (the ten project categories plus Portfolio Health) through the same Dempster-Shafer fuser with Red weighted 1.5x. The last-step conflict K feeds an advisory <code>redReview</code> flag when K is at least 0.55; this flags the package for accountable human review but never overrides the fused band. (Within an individual Cat 7 evidence module, the conflict level is labelled High above 0.30 and Moderate above 0.10.) Portfolio Health provides program-level review context but does not directly authorise project-level formal action.</p>
+      <p>Project status follows conservative dominance in spirit, a severe, credible category is not averaged away, and is implemented by fusing all eleven registry category statuses (the ten project categories plus Portfolio Health) through the same Dempster-Shafer fuser with Red weighted 1.5x. The last-step conflict K feeds an advisory <code>redReview</code> flag when K is at least 0.55; this flags the package for accountable human review but never overrides the fused band. (Within an individual Cat 7 evidence module, the conflict level is labeled High above 0.30 and Moderate above 0.10.) Portfolio Health provides program-level review context but does not directly authorize project-level formal action.</p>
 
       <h3>Cat 1 core thresholds (sim.js)</h3>
       ${modBands([
@@ -2744,7 +2744,7 @@ Named Human Approval → Audit Record</pre>
       <p>Where an action would affect a contractor or other responsible party and the state has reached red-review, the fairness gate is a mandatory procedural step: evidence review and a documented response opportunity must be acknowledged before a formal decision is recorded, unless urgent safety, compliance, or public-interest conditions apply. It is a workflow step, never a score or percentage.</p>
 
       <h3>Learning governance</h3>
-      <p>Repeated overrides, deferrals, and evidence-gap patterns are not noise; they are inputs to framework revision. Learning governance analyses them to identify thresholds, modules, data pipelines, or workflow steps that require change, so the framework improves from how it is actually used.</p>
+      <p>Repeated overrides, deferrals, and evidence-gap patterns are not noise; they are inputs to framework revision. Learning governance analyzes them to identify thresholds, modules, data pipelines, or workflow steps that require change, so the framework improves from how it is actually used.</p>
     `
   };
 

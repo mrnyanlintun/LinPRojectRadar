@@ -376,7 +376,7 @@ def document_content(document_id: str, project_id: str, session_token: str):
         if active_membership(session, project, caller.participant_id) is None:
             return JSONResponse(status_code=403,
                                 content={"ok": False,
-                                         "error": "not authorised: not a member of this project"})
+                                         "error": "not authorized: not a member of this project"})
 
         doc = session.get(Document, document_id)
         linked = doc is not None and session.scalar(

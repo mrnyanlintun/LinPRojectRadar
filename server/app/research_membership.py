@@ -108,7 +108,7 @@ def require_member(session: Session, caller, payload: dict,
         audit(session, "project_access_denied", participant_id=caller.participant_id,
               action=action, project_id=legacy_id)
         session.commit()
-        return None, None, err("not authorised: not a member of this project")
+        return None, None, err("not authorized: not a member of this project")
     return project, member, None
 
 
@@ -190,7 +190,7 @@ def refuse_unless_pm_for_assignment(session: Session, caller, assignment,
               action=action, project_id=project.legacy_id,
               project_role=member.project_role if member else None)
         session.commit()
-        return err("not authorised: only the project's PM may perform this action")
+        return err("not authorized: only the project's PM may perform this action")
     return None
 
 
@@ -226,7 +226,7 @@ def guard_project_write(session: Session, payload: dict, settings) -> dict | Non
               action=str(payload.get("action") or "").lower(), project_id=legacy_id,
               project_role=member.project_role if member else None)
         session.commit()
-        return err("not authorised: only the project's PM may perform this action")
+        return err("not authorized: only the project's PM may perform this action")
     return None
 
 
@@ -241,7 +241,7 @@ def _require_admin(session: Session, payload: dict, secret: str, action: str):
         audit(session, "admin_action_denied", participant_id=caller.participant_id,
               action=action, role=caller.role)
         session.commit()
-        return None, err("not authorised: ResearchAdmin role required")
+        return None, err("not authorized: ResearchAdmin role required")
     return caller, None
 
 

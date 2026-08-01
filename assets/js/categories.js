@@ -55,7 +55,7 @@ window.LIN_CATEGORIES = [
     id: 'a2', num: 'A2', name: 'Schedule Performance',
     group: 'A', groupName: 'Project Health',
     color: '#7c5cff',
-    description: 'Schedule simulation and critical-path behaviour.',
+    description: 'Schedule simulation and critical-path behavior.',
     modules: [
       { id: 'a2_1', num: 'A2.1', name: 'PERT Network Criticality', method_class: 'PERT_Network_Criticality', active: true, required: ['spi','bac'] },
       { id: 'a2_2', num: 'A2.2', name: 'Line of Balance', method_class: 'Line_of_Balance_Velocity', active: true, required: ['spi','actualPctComplete','plannedPctComplete'] },
@@ -74,7 +74,7 @@ window.LIN_CATEGORIES = [
     id: 'a3', num: 'A3', name: 'Cost Risk',
     group: 'A', groupName: 'Project Health',
     color: '#22c1a4',
-    description: 'Cost risk, contingency and parametric cost behaviour.',
+    description: 'Cost risk, contingency and parametric cost behavior.',
     modules: [
       { id: 'a3_1', num: 'A3.1', name: 'Reference Class Forecasting', method_class: 'Reference_Class_Forecasting', active: true, required: ['bac','cpi'] },
       { id: 'a3_2', num: 'A3.2', name: 'Contingency Burn Rate', method_class: 'Contingency_Burn_Rate', active: true, required: ['originalContingency','remainingContingency','actualPctComplete'] },
@@ -109,7 +109,7 @@ window.LIN_CATEGORIES = [
     id: 'a5', num: 'A5', name: 'System Dynamics & Complexity',
     group: 'A', groupName: 'Project Health',
     color: '#ff7ac6',
-    description: 'System dynamics, feedback and complexity behaviour.',
+    description: 'System dynamics, feedback and complexity behavior.',
     modules: [
       { id: 'a5_1', num: 'A5.1', name: 'DSM Rework Propagation', method_class: 'DSM_Rework_Cat5', active: true, required: ['cpi','spi'] },
       { id: 'a5_2', num: 'A5.2', name: 'Sensitivity Analysis', method_class: 'Sensitivity_Analysis', active: true, required: ['bac','ev','ac','pv','cpi','spi'] },
@@ -125,7 +125,7 @@ window.LIN_CATEGORIES = [
     id: 'a6', num: 'A6', name: 'Delivery Quality Performance',
     group: 'A', groupName: 'Project Health',
     color: '#8fb69a',
-    description: 'Delivery quality, safety, environmental and contractor performance. These describe how the work is being delivered, not who must authorise a response.',
+    description: 'Delivery quality, safety, environmental and contractor performance. These describe how the work is being delivered, not who must authorize a response.',
     modules: [
       { id: 'a6_1', num: 'A6.1', name: 'Quality Compliance Index', method_class: 'Quality_Compliance', active: true, required: ['qualityDeficienciesNoted'] },
       { id: 'a6_2', num: 'A6.2', name: 'Safety Performance Index', method_class: 'Safety_Performance', active: true, required: ['safetyIncidentsDiscussed'], sectors: ['construction','hybrid'] },

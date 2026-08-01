@@ -843,7 +843,7 @@
     LIN_PROJECTS.filter(hasCoords).forEach((p) => {
       // regression guard: |lat| > 90 means lat/lng got swapped upstream
       if (Math.abs(Number(p.lat)) > 90) {
-        console.warn(`[map] project ${p.id}: latitude ${p.lat} out of range (±90) — check lat/lng order`);
+        console.warn(`[map] project ${p.id}: latitude ${p.lat} out of range (±90). Check lat/lng order`);
       }
       const el = pinMarkerEl(p);
       const marker = new maplibregl.Marker({ element: el, anchor: "bottom" })
@@ -2507,9 +2507,9 @@
       "\n\nWrite a portfolio executive summary with exactly three sections:\n\n" +
       "PROJECT STATUS AT A GLANCE\n" +
       "One bullet per project. One sentence each. Plain English. No metric values. No module numbers. " +
-      'Format: "Project [ID] — [Name]: [one sentence]"\n\n' +
+      'Format: "Project [ID], [Name]: [one sentence]"\n\n' +
       "PORTFOLIO-LEVEL RECOMMENDATIONS\n" +
-      "3-5 bullet points. Advisory tone — suggest, recommend, consider. Portfolio-level observations only, not project-specific actions. Look for patterns across projects.\n\n" +
+      "3-5 bullet points. Advisory tone: suggest, recommend, consider. Portfolio-level observations only, not project-specific actions. Look for patterns across projects.\n\n" +
       "OVERALL PORTFOLIO HEALTH\n" +
       "One sentence. Diplomatic. Evidence-based.\n\n" +
       "Rules:\n- Never say 'you must' or issue commands.\n" +
