@@ -141,13 +141,27 @@
     return (h % 7) * 0.28;
   }
 
+  /* T13. THE ROOT OF THE hasSignals FAMILY, and the one the T12 fix went around rather than
+     through. It used to ask hasSignals(p) — the legacy client-side p.signals blob — and return
+     "empty" when that was absent, which is wrong for every project the server has analysed.
+
+     This drives EIGHT call sites, and they are not cosmetic: proxyHealth() places the project's
+     radar blip by it (an analysed project sat on the neutral mid-ring rather than its real band),
+     statusColorFor() colours markers by it, and the project list row takes its state- CSS class
+     from it. The T12 legend fix added a separate storedStatusKey() helper beside this one instead
+     of correcting it, so the legend read correctly while everything else kept reading "empty".
+     That duplicate is gone; the legend calls this.
+
+     Found by tests_render.html, which is the whole reason that harness exists: in a page without
+     store.js the unqualified hasSignals reference threw a ReferenceError, the list row silently
+     fell back to its minimal catch-block form, and the assertion went red. */
   function statusKey(p) {
     if (p && p.slim) {
       const lab = (typeof slimStatusLabel === "function") ? slimStatusLabel(p) : null;
       return lab ? lab.toLowerCase().replace("-review", "") : "empty";
     }
-    if (!hasSignals(p)) return "empty";
-    return deriveHealthState(p).toLowerCase().replace("-review", "");
+    if (!(window.LinResults && LinResults.hasResult(p))) return "empty";
+    return String(deriveHealthState(p)).toLowerCase().replace("-review", "");
   }
   /* ---------- the shared status key ----------
      T12. Rendered for ALL THREE stages. It used to be drawn inside the radar's own SVG, so
@@ -170,21 +184,6 @@
      result, and it is what deriveHealthState() returns. The legend said "Awaiting", and stateLabel
      still said the retired "Awaiting ingest". Both now match what the views render. */
 
-  function storedStatusKey(p) {
-    var s = null;
-    try {
-      var f = window.getProjectFusion ? window.getProjectFusion(p) : null;
-      s = f && f.status;
-    } catch (e) { s = null; }
-    s = String(s || "").toLowerCase();
-    if (s.indexOf("complete") >= 0 || s.indexOf("blue") >= 0) return "complete";
-    if (s.indexOf("green") >= 0) return "green";
-    if (s.indexOf("yellow") >= 0 || s.indexOf("light-amber") >= 0) return "yellow";
-    if (s.indexOf("amber") >= 0 || s.indexOf("orange") >= 0) return "amber";
-    if (s.indexOf("red") >= 0) return "red";
-    return "empty";
-  }
-
   const LEGEND_BANDS = [
     ["Complete", "complete", "--status-complete"],
     ["Green",    "green",    "--status-green"],
@@ -199,7 +198,7 @@
     if (!host) return;
     const counts = { complete: 0, green: 0, yellow: 0, amber: 0, red: 0, empty: 0 };
     (window.LIN_PROJECTS || []).forEach((p) => {
-      try { counts[storedStatusKey(p)]++; } catch (e) { counts.empty++; }
+      try { counts[statusKey(p)]++; } catch (e) { counts.empty++; }
     });
     host.innerHTML = LEGEND_BANDS.map(([name, key, cssVar]) =>
       `<span class="legend-item" data-status="${key}">`
@@ -2604,6 +2603,14 @@
     // shared renderers, reused by the Project Detail page (detail.js)
     renderLedger,
     renderDecisionCard,
+    // T13. Exposed for tests_render.html, the stored-result render regression net. These three
+    // are exactly the paths the hasSignals() gates broke, and all three were unreachable from
+    // outside this module, which is part of why nine such bugs passed 854 checks. They are
+    // internal renderers with no side effects beyond the DOM node they are handed or look up,
+    // so exporting them widens the surface without widening the behaviour.
+    stateLabel,
+    buildFallbackList,
+    renderStatusLegend,
     // sector-changed flag hooks (Release 2 · editable project type)
     markSectorDirty, clearSectorDirty, isSectorDirty
   };

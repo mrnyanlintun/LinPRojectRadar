@@ -1,3 +1,59 @@
+# T13b — THE TAXONOMY IS SETTLED AND COMMITTED. 100, not 101.
+
+`GROUP_ASSIGNMENT.md` at the repository root is the authority. Merged to `main`.
+
+| Group | Name in user-facing text | Count |
+|---|---|---|
+| A | Project Health | 52 |
+| B | Recommendation and Governance | 36 |
+| C | Data and Evidence Health | 7 |
+| D | Portfolio Level | 5 |
+| | **Total** | **100** |
+
+**Document Risk Score is not counted.** It is a value the extraction model supplies and the server
+carries through, not a computation the analytical server performs. **100 is current, not
+permanent**: if it is ever implemented server-side the count becomes 101 and Group A becomes 53.
+
+**Do not describe the registry refusal as a Document Risk Score exclusion.** It is a generic
+catch-all for anything absent from `VALIDATED`, and its message is the wording of work outstanding.
+Whether the value is unported by design or by accident is still unestablished.
+
+**User-facing text uses "and", not the ampersand the code constants use.** Do not rename the
+constants.
+
+`server/tools/test_group_assignment.py` fails if the code and the artifact diverge. If it goes red,
+the published taxonomy and the code have parted company and no sweep should run until that is
+understood.
+
+**`unported_modules()` is still wrong and is deliberately not fixed.** It counts the five Group D
+modules as unported although `portfolio.py` implements them, reporting six where exactly one is.
+The fix is inside `server/app/simulation/`, which the task forbade modifying. Both new checks
+compute the genuinely unported set themselves and assert the over-report explicitly, so nothing
+inherits the error. **This needs a decision: lift the prohibition for that function, or leave it.**
+
+**STEP 4, THE MECHANICAL SWEEP, HAS NOT STARTED.** The naming authority document has now failed to
+reach three consecutive sessions, and step 4 stops without it by its own terms: it rewrites
+surfaces that must quote that document's standing description wording verbatim, and the task
+summary carries the taxonomy but not the wording.
+
+**A tenth hasSignals instance was found, and it was the root.** `statusKey()` still had the legacy
+gate; the T12 legend fix had added a parallel `storedStatusKey()` beside it rather than correcting
+it. It drives eight call sites, so an analysed project was placed on the radar's neutral mid-ring
+and given the wrong marker colour, not merely mislabelled. Fixed, duplicate removed.
+
+**`tests_render.html` now exists** and is the regression net for that whole family. 22 assertions,
+every one proven able to fail by reverting its gate. It is NOT part of the 854 and will not run
+itself: open `http://127.0.0.1:8010/tests_render.html` with the dev server up, after any change to
+`app.js`, `detail.js`, `decision.js` or `taxonomy.js`. `dev_serve.py` serves it and `tests.html` by
+exact name; `app/main.py` is unchanged and still refuses to mount StaticFiles at `/`.
+
+**Two more vacuous checks found.** `test_simulation.py:49-50` asserts
+`len(unported_modules()) == 101 - len(VALIDATED)`, a tautology that cannot detect the A4.1 gap. And
+`unported_modules()` itself counts D1.1 to D1.5 as unported although they are implemented in
+`portfolio.py`, reporting 6 where 1 is genuine.
+
+---
+
 # T11a — THE GLOBE HAS BEEN SEEN, AND IT RENDERS
 
 The researcher confirmed by eye: hex-dot continents, cyan rim, atmosphere and the 23.4° tilt all

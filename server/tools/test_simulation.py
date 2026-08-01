@@ -14,6 +14,7 @@ from app.simulation import (  # noqa: E402
     compute_project, contributes_to_project_status, dst_fuse, unported_modules,
 )
 from app.simulation.models import VALIDATED, insufficient  # noqa: E402
+from app.simulation.portfolio import PORTFOLIO_VALIDATED  # noqa: E402
 from app.simulation.registry import registry_index, run_module  # noqa: E402
 from app.simulation.rng import make_rng, seed_from  # noqa: E402
 
@@ -46,11 +47,36 @@ print("GUARANTEE 2: every available module is a validated module")
 print("=" * 78)
 check(set(available_modules()) == set(VALIDATED),
       f"available == validated ({len(VALIDATED)} modules)", str(available_modules()))
-check(len(unported_modules()) == 101 - len(VALIDATED),
-      f"unported = 101 - {len(VALIDATED)} = {101 - len(VALIDATED)}", str(len(unported_modules())))
-# Pick a module that is genuinely still unported, so this assertion stays meaningful as batches
-# land. A1.1 was used here until it was ported in batch 1.
-still_unported = unported_modules()[0]
+# THE CHECK THAT USED TO BE HERE COULD NOT FAIL.
+#
+# It asserted `len(unported_modules()) == 101 - len(VALIDATED)`. unported_modules() is
+# `sorted(set(registry_index()) - set(VALIDATED))`, and registry_index() is exactly the 101 live
+# CSV rows, so the left side IS 101 - len(VALIDATED) by construction. It was true whatever the
+# code did, and it did not notice that Document Risk Score is declared and never implemented.
+#
+# It is replaced by a check against the genuinely unported set, computed here rather than taken
+# from unported_modules(), because that function counts the five Group D modules as unported
+# although portfolio.py implements them: it reports six where exactly one is. The over-report is
+# asserted below rather than silently worked around, so that if the function is ever corrected
+# this check fails loudly and is updated deliberately.
+#
+# Correcting unported_modules() itself means editing server/app/simulation/, which the work that
+# wrote this check was not permitted to touch.
+GENUINELY_UNPORTED = sorted(set(registry_index()) - set(VALIDATED) - set(PORTFOLIO_VALIDATED))
+check(GENUINELY_UNPORTED == ["A4.1"],
+      "exactly one declared computation is unported, and it is A4.1",
+      str(GENUINELY_UNPORTED))
+check(len(VALIDATED) + len(PORTFOLIO_VALIDATED) == 100,
+      "the server registers 100 computations",
+      str(len(VALIDATED) + len(PORTFOLIO_VALIDATED)))
+check(sorted(set(unported_modules()) - set(GENUINELY_UNPORTED)) == sorted(PORTFOLIO_VALIDATED),
+      "unported_modules() over-reports by exactly the Group D set (known defect, not yet fixed)",
+      str(sorted(set(unported_modules()) - set(GENUINELY_UNPORTED))))
+# Taken from the genuinely unported set, not unported_modules()[0]. That index happened to be
+# A4.1 only because A sorts before D; had Document Risk Score been ported, [0] would have become
+# a Group D id and run_module would have raised PortfolioModuleError, which the except clause
+# below does not catch.
+still_unported = GENUINELY_UNPORTED[0]
 try:
     run_module(still_unported, HEALTHY, make_rng(1), CUTOFF)
     check(False, "an unported module raises rather than approximating", "no raise")
