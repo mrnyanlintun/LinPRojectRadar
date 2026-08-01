@@ -55,6 +55,7 @@ EXPORT_COLUMNS: tuple[str, ...] = (
     # preliminary judgment
     "pre_action",
     "pre_confidence",
+    "pre_assessment",
     "pre_submitted_at",
     "pre_locked_at",
     # reveal
@@ -71,8 +72,13 @@ EXPORT_COLUMNS: tuple[str, ...] = (
     "owner_role",
     "authority_role",
     "resource_constraint",
+    # T4 structured capture (migration 0011)
+    "evidence_items",
+    "reason_code",
+    "deadline",
     # free text, flagged for review
     "rationale",
+    "residual_risk",
     # transition
     "branch_id",
     "branch_version",
@@ -94,7 +100,12 @@ FORBIDDEN_FIELDS: tuple[str, ...] = (
 )
 
 # Columns whose content is participant-authored and may contain identifiers.
-FREE_TEXT_COLUMNS: tuple[str, ...] = ("rationale",)
+# T4 added residual_risk. It is participant-authored prose in exactly the way rationale is — a
+# participant describing what risk they are accepting can and will name a project, a contractor,
+# or a colleague — so it carries the same review flag rather than shipping unreviewed.
+# reason_code and evidence_items are NOT here: the first is a closed vocabulary and the second is
+# a list of labels the interface itself generated, so neither can contain free composition.
+FREE_TEXT_COLUMNS: tuple[str, ...] = ("pre_assessment", "rationale", "residual_risk")
 
 
 def _iso(value: datetime | None) -> str | None:
@@ -212,6 +223,7 @@ def build_rows(session: Session, start: datetime | None, end: datetime | None) -
             "config_code": config.code if config else None,
             "pre_action": decision.pre_action,
             "pre_confidence": decision.pre_confidence,
+            "pre_assessment": decision.pre_assessment,
             "pre_submitted_at": _iso(decision.pre_submitted_at),
             "pre_locked_at": _iso(decision.pre_locked_at),
             "reveal_at": _iso(decision.reveal_at),
@@ -226,7 +238,11 @@ def build_rows(session: Session, start: datetime | None, end: datetime | None) -
             "owner_role": decision.owner_role,
             "authority_role": decision.authority_role,
             "resource_constraint": decision.resource_constraint,
+            "evidence_items": decision.evidence_items,
+            "reason_code": decision.reason_code,
+            "deadline": decision.deadline,
             "rationale": decision.rationale,
+            "residual_risk": decision.residual_risk,
             "branch_id": transition.branch_id if transition else None,
             "branch_version": transition.branch_version if transition else None,
             "transition_seed": transition.seed if transition else None,

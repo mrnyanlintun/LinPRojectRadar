@@ -226,6 +226,9 @@ pkg = post({"action": "adminpackagecreate", "session_token": admin, "version": "
 
 pm_p, pm_tok = make()
 post({"action": "consentgrant", "session_token": pm_tok, "consent_version": "v1.0"})
+# T4: a_researchprejudgment now requires a completed intake questionnaire.
+post({"action": "intakesave", "session_token": pm_tok,
+      "responses": {"experience_level": "mid", "years_experience": 8}})
 post({"action": "adminassign", "session_token": admin, "participant_id": pm_p["participant_id"],
       "order_group": "GT1", "scenario_set": "SET-T1", "scenario_ids": [scenario]})
 with Session() as s:

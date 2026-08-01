@@ -98,6 +98,9 @@ def run(group, final_1, pre_conf, final_conf, rationale):
     c = post({"action": "adminparticipantcreate", "session_token": admin})
     tok = post({"action": "researchlogin", "access_token": c["access_token"]})["session_token"]
     post({"action": "consentgrant", "session_token": tok, "consent_version": "v1.0"})
+    # T4: a_researchprejudgment now requires a completed intake questionnaire.
+    post({"action": "intakesave", "session_token": tok,
+          "responses": {"experience_level": "mid", "years_experience": 8}})
     post({"action": "adminassign", "session_token": admin, "participant_id": c["participant_id"],
           "order_group": group, "scenario_set": "SET-B6", "scenario_ids": [scenario]})
     with Session() as s:

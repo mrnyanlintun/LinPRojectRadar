@@ -99,6 +99,10 @@ def make_participant():
     c = post({"action": "adminparticipantcreate", "session_token": admin})
     tok = post({"action": "researchlogin", "access_token": c["access_token"]})["session_token"]
     post({"action": "consentgrant", "session_token": tok, "consent_version": "v1.0"})
+    # T4: a_researchprejudgment now requires a completed intake questionnaire. Must follow
+    # consentgrant — intakesave is itself consent-gated.
+    post({"action": "intakesave", "session_token": tok,
+          "responses": {"experience_level": "mid", "years_experience": 8}})
     post({"action": "adminassign", "session_token": admin, "participant_id": c["participant_id"],
           "order_group": "GB4", "scenario_set": "SET-B4", "scenario_ids": sc})
     return c["participant_id"], tok

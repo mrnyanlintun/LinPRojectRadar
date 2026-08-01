@@ -137,6 +137,11 @@ ops, ops_tok = make_participant(account_type="operational")
 
 post({"action": "consentgrant", "session_token": pm_tok, "consent_version": "v1.0"})
 post({"action": "consentgrant", "session_token": obs_tok, "consent_version": "v1.0"})
+# T4: a_researchprejudgment now requires a completed intake questionnaire. Only the PM needs
+# it — the observer's attempt is refused by the PM check, which runs first, so their refusal
+# message stays the role message rather than becoming a questionnaire message.
+post({"action": "intakesave", "session_token": pm_tok,
+      "responses": {"experience_level": "mid", "years_experience": 8}})
 assign(pm["participant_id"])
 assign(obs["participant_id"])  # the observer has their own assignment on the same scenario
 
@@ -301,6 +306,9 @@ scenario2 = post({"action": "adminscenariocreate", "session_token": admin,
                   "evidence_package_id": "ST-B8-NEXT"})["scenario_id"]
 ops2, ops2_tok = make_participant()
 post({"action": "consentgrant", "session_token": ops2_tok, "consent_version": "v1.0"})
+# T4: a_researchprejudgment now requires a completed intake questionnaire.
+post({"action": "intakesave", "session_token": ops2_tok,
+      "responses": {"experience_level": "mid", "years_experience": 8}})
 post({"action": "adminassign", "session_token": admin, "participant_id": ops2["participant_id"],
       "order_group": "G8", "scenario_set": "SET-B8", "scenario_ids": [scenario2]})
 with Session() as s:
