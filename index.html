@@ -432,10 +432,18 @@
                button is visible. -->
           <button type="button" data-nav="admin" data-nav-admin-only hidden
                   class="btn-secondary" title="Admin">Admin</button>
-          <!-- T3/T5. A separate page, not a route here — the workspace must never load
+          <!-- T3/T5, T7/T8. Separate pages, not routes here — none of them may load
                sim.js/simulations.js/categories.js, which this page always does. -->
           <a href="workspace.html" class="btn-secondary" title="Project workspace"
              style="text-decoration:none; display:inline-flex; align-items:center;">Workspace</a>
+          <a href="questionnaires.html" class="btn-secondary" title="Questionnaire"
+             style="text-decoration:none; display:inline-flex; align-items:center;">Questionnaire</a>
+          <!-- T7. Admin-only server-side (_require_admin); hidden here purely as a
+               convenience via the same data-nav-admin-only mechanism as the Admin button
+               above — the page itself refuses a non-admin regardless. -->
+          <a href="admin-ops.html" class="btn-secondary" data-nav-admin-only hidden
+             title="Admin operations"
+             style="text-decoration:none; display:inline-flex; align-items:center;">Admin Ops</a>
           <button onclick="LinAuth.logout()" class="btn-logout" title="Sign out">Sign out</button>
         </div>
         <span class="clock" id="tz-clock" aria-label="Current time in selected timezone">--:--:--</span>

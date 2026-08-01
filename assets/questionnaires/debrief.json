@@ -1,0 +1,60 @@
+{
+  "id": "debrief-v0-placeholder",
+  "title": "Study Debrief",
+  "presented": "after the participant's final decision",
+  "note": "PLACEHOLDER INSTRUMENT — NOT FINAL. Item wording requires the researcher's review and IRB approval before this instrument is used with real participants. These items are illustrative of the demand-effect indicators the study needs, not the final measure.",
+  "sections": [
+    {
+      "id": "demand_effects",
+      "title": "About This Study",
+      "items": [
+        {
+          "id": "familiarity_with_researcher",
+          "type": "single-select",
+          "label": "Before today, how well did you know the researcher conducting this study?",
+          "required": true,
+          "options": [
+            { "value": "not_at_all", "label": "Not at all" },
+            { "value": "know_of_them", "label": "I know of them, but we have not worked together" },
+            { "value": "colleague", "label": "We have worked together / are colleagues" },
+            { "value": "close", "label": "We know each other well (friend, close colleague, family)" }
+          ]
+        },
+        {
+          "id": "perceived_study_purpose",
+          "type": "text",
+          "label": "In your own words, what do you believe this study was testing?",
+          "required": true,
+          "multiline": true
+        },
+        {
+          "id": "expectation_to_agree",
+          "type": "likert",
+          "label": "During the study, I felt an expectation to agree with the AI system's recommendations.",
+          "required": true,
+          "scaleMin": 1,
+          "scaleMax": 7,
+          "scaleMinLabel": "Strongly disagree",
+          "scaleMaxLabel": "Strongly agree"
+        },
+        {
+          "id": "expectation_to_reject",
+          "type": "likert",
+          "label": "During the study, I felt an expectation to be skeptical of or reject the AI system's recommendations.",
+          "required": true,
+          "scaleMin": 1,
+          "scaleMax": 7,
+          "scaleMinLabel": "Strongly disagree",
+          "scaleMaxLabel": "Strongly agree"
+        },
+        {
+          "id": "additional_comments",
+          "type": "text",
+          "label": "Anything else you'd like the researcher to know? (optional)",
+          "required": false,
+          "multiline": true
+        }
+      ]
+    }
+  ]
+}
