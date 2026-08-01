@@ -70,6 +70,15 @@
   // Asked with a throwaway canvas rather than by trying to build a globe and catching the
   // failure: constructing one only to tear it down is slower and leaves a context behind on
   // some drivers.
+  // A turning globe is motion, and someone who has asked the operating system for less of it
+  // should not get a planet spinning under their cursor. Checked at mount rather than cached, so
+  // a change to the setting is picked up on the next view.
+  function reduceMotion() {
+    try {
+      return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    } catch (e) { return false; }
+  }
+
   function webglAvailable() {
     try {
       var c = document.createElement("canvas");
@@ -511,21 +520,29 @@
             globe.pointOfView({ lat: opts.focus.lat, lng: opts.focus.lng, altitude: 1.4 }, 0);
           } catch (e) {}
         }
-        // T9 Task 3. The empty state is the platform's resting visual, not an error. A portfolio
-        // with nothing placeable still gets a globe, turning slowly, rather than a blank stage or
-        // a message. It stays interactive — the user can still spin it — the rotation only gives
-        // it life while nothing is on it, and any later refresh() with points leaves it as it is.
-        var idle = pts.length === 0;
-        if (opts.interactive === false || idle) {
-          try {
-            var controls = globe.controls();
-            if (controls) {
-              if (opts.interactive === false) controls.enableZoom = false;
-              controls.autoRotate = true;
-              controls.autoRotateSpeed = 0.35;
-            }
-          } catch (e) {}
-        }
+        /* T11a. THE GLOBE TURNS IN BOTH STATES — empty, as the platform's resting visual, and
+           with projects placed. It used to turn only when it was empty or when it was the
+           non-interactive detail globe, so the one case a director actually sees — the portfolio
+           with projects on it — was the one case that never moved. That was a construction
+           mistake, not a tuning one.
+
+           SPEED, WITH THE ARITHMETIC, because the old value was not what it looked like.
+           three.js turns at 6 degrees per second per unit of autoRotateSpeed, so the previous
+           0.35 was 2.1 deg/s — about 171 seconds for one revolution, which reads as a still
+           image. It had never actually been watched: earlier sessions confirmed "rotating at
+           0.35" by reading the property, never by eye. 1.0 is 6 deg/s, one revolution a minute:
+           unmistakably alive, and still slow enough that it does not compete with the points.
+
+           OrbitControls suspends auto-rotation while the user is dragging and resumes after, so
+           this does not fight anyone trying to inspect a point. */
+        try {
+          var controls = globe.controls();
+          if (controls) {
+            if (opts.interactive === false) controls.enableZoom = false;
+            controls.autoRotate = !reduceMotion();
+            controls.autoRotateSpeed = 1.0;
+          }
+        } catch (e) {}
         bindVisibility();
         return {
           ok: true,

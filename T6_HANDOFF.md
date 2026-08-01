@@ -1,3 +1,38 @@
+# T11a — THE GLOBE HAS BEEN SEEN, AND IT RENDERS
+
+The researcher confirmed by eye: hex-dot continents, cyan rim, atmosphere and the 23.4° tilt all
+visible. After three sessions of measurement-only evidence, the globe is verified visually. Two
+bugs came out of that first look, both fixed — see
+`REPORT_2026-08-01_globe-view-sticks-and-rotates.md`.
+
+**The watchdog asked once and broke the working case.** `mount()` resolves in ~40 ms; globe.gl does
+not build its scene group until ~1 s later. A single `hasScene()` check at resolve always saw
+false, so four seconds later the watchdog destroyed a healthy globe and switched to the atlas — the
+symptom being "Globe switches back to Map on its own". It now **polls to a 6 s deadline** and stands
+down the moment a scene appears. Do not return it to a single check.
+
+**The globe was never rotating where it mattered.** `autoRotate` was only enabled for the empty
+state and the non-interactive detail globe, so the portfolio globe *with projects on it* — the one
+case a director sees — had rotation off by construction. It now rotates in every state.
+
+**"Verified rotating at 0.35" was a property read, never a look.** three.js turns at 6°/s per unit
+of `autoRotateSpeed`, so 0.35 was ~171 seconds per revolution: a still image. It is now `1.0`,
+6°/s, one revolution a minute, and it respects `prefers-reduced-motion`. **Check motion by watching
+it, not by reading the property** — that is precisely how this survived three sessions.
+
+**The globe does place points.** Confirmed with two located projects: `points: 2, unplaceable: 0`,
+tilt 23.4 after reload. A portfolio showing "0 project(s) placed" is a data condition — projects
+without coordinates — not a globe fault.
+
+**View selection sticks.** Radar, Map and Globe each persist and restore correctly, and globe assets
+stay unloaded unless Globe is the restored view.
+
+**The default is Map** for a user with no stored preference. A stored preference always wins, so
+anyone who has selected Globe will keep landing on Globe. Moving the default to Globe is now a
+defensible product decision rather than a safety question, but it has not been made.
+
+---
+
 # T11 — the default geographic view is now the flat SVG atlas, and it is MERGED
 
 `assets/js/atlas.js`. SVG, no WebGL, no 3D library, **no animation loop**. It is the default on the

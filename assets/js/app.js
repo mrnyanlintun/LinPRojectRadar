@@ -1141,18 +1141,36 @@
     if (portfolioGlobe) { try { portfolioGlobe.destroy(); } catch (e) {} portfolioGlobe = null; }
     const token = ++globeMountToken;
 
-    // T11. A WATCHDOG, because mount() resolving is not the same as the globe drawing. globe.gl
-    // builds its scene inside the animation loop, so on a machine where that loop never runs
-    // mount() still resolves ok and the panel stays black — which is the exact failure this
-    // whole change exists to stop a director from seeing. If the scene has not appeared in a
-    // few seconds, fall back to the atlas rather than trusting the resolve.
+    /* T11a. A WATCHDOG THAT POLLS, because mount() resolving is not the same as the globe
+       drawing. globe.gl builds its scene inside the animation loop, so on a machine where that
+       loop never runs mount() still resolves ok and the panel stays black — the exact failure
+       this whole change exists to stop a director from seeing.
+
+       THE FIRST VERSION OF THIS ASKED ONCE AND BROKE THE WORKING CASE. mount() resolves in about
+       40ms; the scene group does not exist until roughly a second later. Asking hasScene() a
+       single time at resolve therefore always saw false, the watchdog never stood down, and four
+       seconds later it destroyed a perfectly good globe and switched to the atlas by itself. The
+       symptom was "selecting Globe switches back to Map on its own after a moment", and it fired
+       precisely when the globe was working.
+
+       So it polls to a deadline instead: the moment a scene appears it stands down, and only a
+       deadline reached with no scene at all is treated as a failure. */
     let settled = false;
-    const giveUp = setTimeout(() => {
-      if (settled || token !== globeMountToken) return;
-      settled = true;
+    const DEADLINE_MS = 6000, POLL_MS = 150;
+    const startedAt = Date.now();
+    let poll = setInterval(() => {
+      if (settled || token !== globeMountToken) { clearInterval(poll); return; }
+      const handle = portfolioGlobe;
+      if (handle && typeof handle.hasScene === "function" && handle.hasScene()) {
+        settled = true; clearInterval(poll);
+        return;                                   // the globe drew; leave it alone
+      }
+      if (Date.now() - startedAt < DEADLINE_MS) return;
+      settled = true; clearInterval(poll);
       try { if (portfolioGlobe) { portfolioGlobe.destroy(); portfolioGlobe = null; } } catch (e) {}
       showAtlasInstead(globeWrap, atlasWrap);
-    }, 4000);
+    }, POLL_MS);
+    const giveUp = { stop: () => { settled = true; clearInterval(poll); } };
 
     LinGlobe.mount(host, LIN_PROJECTS, {
       // Selecting a point does exactly what double-clicking a map marker has always done.
@@ -1163,20 +1181,22 @@
         // A newer mount superseded this one while it was resolving. Release it rather than
         // leaving an orphan renderer holding a context nothing will ever tear down.
         try { if (res && res.handle) res.handle.destroy(); } catch (e) {}
-        clearTimeout(giveUp);
+        giveUp.stop();
         return;
       }
       if (!res || !res.ok) {
-        settled = true; clearTimeout(giveUp);
+        // WebGL missing, or the library never arrived — a real failure, and known immediately.
+        giveUp.stop();
         showAtlasInstead(globeWrap, atlasWrap);
         return;
       }
+      // Hand the handle to the poller and let it decide. Deliberately NOT stood down here: at
+      // this point the scene almost certainly does not exist yet, and treating "mounted" as
+      // "drew" is what this file used to get wrong in the other direction.
       portfolioGlobe = res.handle;
-      // Only now is the watchdog stood down: the scene has actually been built, which is a
-      // stronger statement than the promise having resolved.
-      if (res.handle && typeof res.handle.hasScene === "function") {
-        if (res.handle.hasScene()) { settled = true; clearTimeout(giveUp); }
-      } else { settled = true; clearTimeout(giveUp); }
+      if (!(res.handle && typeof res.handle.hasScene === "function")) {
+        giveUp.stop();   // an older build with no way to ask; trust the resolve rather than nag
+      }
       if (noteEl) {
         // Say plainly that some projects are not shown, rather than letting a director count
         // the points and wonder. They are still in the list below.
