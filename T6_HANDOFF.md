@@ -55,7 +55,8 @@ Windows; use a Windows-style absolute path.
 | 1 — verify the detail globe | **Done, measured** |
 | 3 — axial tilt + empty state | **Done, measured** (`fe4f59b`) |
 | 2 — rewrite the About page | **Not started** |
-| 4 — globe follows the theme, Miami beach motif | **Not started** — but see below |
+| 4 — globe follows the theme | **Colour done, measured** (`9dbf5c3`) |
+| 4 — the Miami-only beach motif | **Not started** — the one part of Task 4 still outstanding |
 | 5 — the 84 em dashes | **Not started**, deliberately: a partial pass is worse than none |
 
 ### Task 4, before anyone starts it
@@ -67,19 +68,26 @@ swallowed it, and the globe kept globe.gl's default material. `stripAlpha()` in 
 handles this. **Every further theme variable piped into the globe must go through `themeColor()`**,
 or it will hit the same wall.
 
-**Two things must be resolved before Task 4 can be built, and neither could be settled from the
-code alone:**
+**Both of the questions raised here have since been answered, and Task 4's colour work is done
+(`9dbf5c3`). The claim that there was no theme switcher was WRONG — corrected below.**
 
-1. **Which identifier is Miami.** `radar.css` defines `data-theme` blocks for `light`, `dark`,
-   `maria` and `newyork` — there is no `miami`. The brief says Miami is Blue, NYC Dark, Maria
-   Light, but `app.js:1653` comments that "Miami and Maria are both LIGHT themes" while testing
-   `theme === "light" || theme === "maria"`. The comment and the brief disagree. Ask, do not guess:
-   the Miami-only beach motif is keyed on whichever answer is right.
-2. **There is no theme switcher in the DOM.** `applyTheme` exists at `app.js:1651` and
-   `[data-set-theme]` is queried there, but **no element carries that attribute anywhere in
-   `index.html` or the JS**. So "switching theme must update the globe without a reload" has no UI
-   to drive it today. Either the switcher was removed, or it is yet to be built. Settle that first
-   — the acceptance criterion cannot be demonstrated otherwise.
+1. **The switcher exists.** It is built in JS as fly-out pills (`app.js:2065`, opened from
+   `.dock-menu`), whose `onClick` calls `applyTheme` directly. **Nothing carries
+   `[data-set-theme]`** — the `querySelectorAll` for it inside `applyTheme` matches nothing and is
+   dead code. Grepping for that attribute is what produced the false negative. Grep `THEME_META`
+   or `openThemeFlyout` instead.
+2. **The mapping**, from `THEME_META` (`app.js:1845`) and confirmed by clicking all three pills:
+
+   | Button | `data-theme` |
+   |---|---|
+   | Miami | `light` |
+   | NYC | `newyork` (default) |
+   | Maria | `maria` |
+
+   **`dark` is Gotham and is the unused fourth** — archived, still renders if forced, not offered
+   and not the default; a persisted `"dark"` falls through to `newyork` (`app.js:2658`).
+
+   So `app.js:1653` and the brief never actually disagreed: Miami's identifier *is* `light`.
 
 `LIN_STATUS_COLORS.refresh()` (`config.js`) is already the established "re-resolve the palette
 after a theme change" hook, and `applyTheme` already calls it. A globe repaint belongs there
