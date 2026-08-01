@@ -4,6 +4,29 @@
    ============================================================ */
 
 :root {
+  /* ---------- the globe's palette ----------
+     T9 Task 4. The globe reads these through globe.js's themeColor(), so a theme switch
+     repaints it without a reload.
+
+     THESE ARE THEIR OWN VARIABLES, not a reuse of --surface-soft. The globe was tinted with
+     --surface-soft, which is cream on Miami and pink on Maria: correct as a panel surface,
+     wrong as a planet. Two palettes are offered, blue and dark, and the surface colours could
+     not express that without changing what they mean everywhere else.
+
+     STATUS COLOURS ARE NOT HERE ON PURPOSE. --status-green / -yellow / -amber / -red are
+     already identical across all three themes, and the globe must keep reading those directly.
+     A point's colour is its status; nothing on this list may tint it.
+
+     VALUES MUST BE HEX OR rgb(). three.js Color.set() cannot parse rgba(), and globe.js drops
+     the alpha rather than compositing it against a backdrop it cannot know. Declaring one of
+     these with alpha would silently lose that alpha, so do not.
+
+     Base is the dark planet; the light themes override below. */
+  --globe-sphere: #151c20;        /* the sphere itself */
+  --globe-graticule: #4b7f74;     /* lat/long lines */
+  --globe-atmosphere: #63b6a2;    /* the rim glow */
+  --globe-graticule-opacity: 0.16;
+
   --font-display: "Archivo", system-ui, sans-serif;
   --font-body: "Inter", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
@@ -138,6 +161,20 @@ body {
    is the shared default — Gotham and NYC don't override these names, so a
    :root declaration would leak into them. */
 body[data-theme="light"] {
+  /* Globe: blue. Miami and Maria share one ocean-blue planet — the brief asks for two globe
+     palettes, not three, and a cream or pink sphere would read as an object rather than a
+     world.
+
+     THE DEPTH IS SET BY THE RED. #0e3049 is chosen, not styled: against it every status clears
+     the 3:1 contrast floor for a graphical object — Red 3.85, Amber 5.86, Complete 5.07,
+     Green 8.22, Yellow 10.47. The first blue tried, #14456e, put Red at 2.81 and failed that
+     floor, which is exactly the "a Red project must look Red on a light theme" case. Anything
+     lighter than this fails it again; check Red before changing this value. */
+  --globe-sphere: #0e3049;
+  --globe-graticule: #7fc4e8;
+  --globe-atmosphere: #8fd3f0;
+  --globe-graticule-opacity: 0.22;
+
   --sun-gold: #d69e2e;                    /* decorative gold: hairlines, borders, glow */
   --coral: #e8795a;                       /* secondary: hover borders, scan-line */
   --hairline-gold: rgba(214,158,46,0.45); /* panel top hairlines */
@@ -3184,6 +3221,14 @@ body.t-light .dd-verdict.status-yellow i { background: var(--yellow); }
    THEME — NEW YORK  (Manhattan twilight + gold Art Deco + Liberty bronze)
    ============================================================ */
 body[data-theme="newyork"] {
+  /* Globe: dark. Stated explicitly rather than inherited from :root so the theme owns its own
+     planet and a change to the base default cannot quietly alter NYC. Gilt graticules to match
+     the monument palette. */
+  --globe-sphere: #151c20;
+  --globe-graticule: #d4af5a;
+  --globe-atmosphere: #63b6a2;
+  --globe-graticule-opacity: 0.14;
+
   /* wordmark solids — bright pair (dark theme): bronze 8.6:1, verdigris 8.0:1 */
   --brand-bronze: #d9a441;
   --brand-verdigris: #63b6a2;
@@ -3322,6 +3367,13 @@ body[data-theme="newyork"] .kn-ask:hover { color: var(--nyc-verdigris); }
    the pinks. Every changed text var measured ≥4.5:1 (see PR).
    ============================================================ */
 body[data-theme="maria"] {
+  /* Globe: blue, the same planet as Miami. Maria's rose belongs to the page, not to the world
+     on it; a pink sphere would put the theme in front of the data. */
+  --globe-sphere: #0e3049;
+  --globe-graticule: #7fc4e8;
+  --globe-atmosphere: #8fd3f0;
+  --globe-graticule-opacity: 0.22;
+
   --rose: #d16a9e;                        /* structural rose — hairlines, borders, scan */
   --maria-blush: #f7b6d2;                 /* baby pink — soft secondary (chips/hovers) */
   --sun-gold: #d16a9e;                    /* map-stage border etc. reuse Miami's var name → rose */

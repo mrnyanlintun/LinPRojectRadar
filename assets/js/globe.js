@@ -104,6 +104,55 @@
     }
   }
 
+  function themeNumber(name, fallback) {
+    var v = parseFloat(themeColor(name, ""));
+    return isFinite(v) ? v : fallback;
+  }
+
+  /* ---------- painting a globe from the theme ----------
+     T9 Task 4. Every non-status colour the globe shows is resolved here, from the live computed
+     style, so this is also what a theme switch re-runs. Nothing below touches point colours:
+     those are statuses, and a status that changed shade with the theme would be a different
+     claim about the project.
+
+     The graticules have no globe.gl setter — showGraticules(true) builds a LineSegments with a
+     hardcoded light grey at opacity 0.1, which disappears against a blue planet. Its material is
+     reached through the scene, the same way the tilt is, and for the same reason. */
+
+  function paintTheme(globe) {
+    var sphere = themeColor("--globe-sphere", "#151c20");
+    var atmos = themeColor("--globe-atmosphere", "#63b6a2");
+    var grat = themeColor("--globe-graticule", "#4b7f74");
+    var gratOp = themeNumber("--globe-graticule-opacity", 0.16);
+
+    try { globe.atmosphereColor(atmos); } catch (e) {}
+
+    try {
+      var mat = globe.globeMaterial();
+      if (mat && mat.color && typeof mat.color.set === "function") {
+        mat.color.set(sphere);
+        if ("shininess" in mat) mat.shininess = 4;
+        mat.needsUpdate = true;
+      }
+    } catch (e) { /* the globe still renders without the tint */ }
+
+    try {
+      var scene = typeof globe.scene === "function" && globe.scene();
+      var grp = scene && scene.children && scene.children.filter(function (c) {
+        return c && c.type === "Group";
+      })[0];
+      var inner = grp && grp.children && grp.children[0];
+      (inner && inner.children ? inner.children : []).forEach(function (c) {
+        if (c && c.type === "LineSegments" && c.material && c.material.color) {
+          c.material.color.set(grat);
+          c.material.opacity = gratOp;
+          c.material.transparent = true;
+          c.material.needsUpdate = true;
+        }
+      });
+    } catch (e) {}
+  }
+
   function statusColor(status) {
     var s = String(status || "").toLowerCase();
     if (s.indexOf("green") >= 0) return themeColor("--status-green", "#2ee66b");
@@ -189,7 +238,14 @@
       var grp = scene && scene.children && scene.children.filter(function (c) {
         return c && c.type === "Group";
       })[0];
-      if (grp && grp.rotation) { grp.rotation.z = AXIAL_TILT; return; }
+      if (grp && grp.rotation) {
+        grp.rotation.z = AXIAL_TILT;
+        // The graticules land in the same build step as the group, so this is where they can
+        // first be recoloured. paintTheme is safe to run twice; mount has already set the
+        // sphere and atmosphere, which exist earlier.
+        paintTheme(globe);
+        return;
+      }
     } catch (e) {
       // Deliberately falls through to the retry rather than giving up. Reading .scene() before
       // globe.gl has built it can throw, and returning here was why the first version of this
@@ -295,13 +351,9 @@
           });
 
         // Solid material from the theme rather than a texture image, which would be a CDN fetch.
-        try {
-          var mat = globe.globeMaterial();
-          if (mat && mat.color && typeof mat.color.set === "function") {
-            mat.color.set(themeColor("--surface-soft", "#12242a"));
-            if ("shininess" in mat) mat.shininess = 4;
-          }
-        } catch (e) { /* the globe still renders without the tint */ }
+        // Sphere and atmosphere are available now; the graticules are not, so applyTilt paints
+        // them again once globe.gl has built the group.
+        paintTheme(globe);
 
         applyTilt(globe);
 
@@ -342,10 +394,61 @@
     });
   }
 
+  /* ---------- theme switching ----------
+     T9 Task 4. applyTheme() calls this after swapping body[data-theme], so every live globe
+     repaints in place. No reload, and no remount: rebuilding a globe to change its colour would
+     drop and reacquire a WebGL context, which is the one thing this file is careful not to do.
+
+     Point colours are re-resolved rather than left alone. They are status colours and are the
+     same in all three themes today, so in practice nothing about them changes — but re-reading
+     them means a theme that ever did override a --status-* would be honoured, and a stale
+     colour would not survive here unnoticed. */
+
+  function retheme() {
+    live.forEach(function (h) {
+      if (!h || h.destroyed) return;
+      try { paintTheme(h.globe); } catch (e) {}
+      try {
+        var pts = h.globe.pointsData() || [];
+        pts.forEach(function (p) { p.color = statusColor(p.status); });
+        h.globe.pointsData(pts);
+      } catch (e) {}
+    });
+  }
+
   window.LinGlobe = {
     mount: mount,
+    retheme: retheme,
     webglAvailable: webglAvailable,
     // Exposed so a check can observe the loops rather than take them on trust.
-    liveCount: function () { return live.length; }
+    liveCount: function () { return live.length; },
+
+    // Same reason as liveCount: the theme claim is "a live globe repaints without a reload",
+    // and that is worth being able to read off a running globe rather than infer from a fresh
+    // one. Returns what each live globe is actually painted with right now.
+    palette: function () {
+      return live.map(function (h) {
+        var out = { sphere: null, graticule: null, gratOpacity: null, tiltDeg: null, points: [] };
+        try { out.sphere = "#" + h.globe.globeMaterial().color.getHexString(); } catch (e) {}
+        try { out.atmosphere = h.globe.atmosphereColor(); } catch (e) {}
+        try {
+          var grp = h.globe.scene().children.filter(function (c) { return c.type === "Group"; })[0];
+          out.tiltDeg = +(grp.rotation.z * 180 / Math.PI).toFixed(2);
+          var line = grp.children[0].children.filter(function (c) {
+            return c.type === "LineSegments";
+          })[0];
+          if (line) {
+            out.graticule = "#" + line.material.color.getHexString();
+            out.gratOpacity = +line.material.opacity.toFixed(3);
+          }
+        } catch (e) {}
+        try {
+          out.points = (h.globe.pointsData() || []).map(function (p) {
+            return { status: p.status, color: p.color };
+          });
+        } catch (e) {}
+        return out;
+      });
+    }
   };
 })();
