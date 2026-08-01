@@ -4021,3 +4021,7 @@ body.og-account-operational .notice-operational { display: block; }
                     border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 16px;
                     font-size: 12px; color: var(--muted); }
 .dc-doclist a { font-size: 13px; }
+
+/* A project the geocoder could not place. Amber rather than red: the project is fine, only its
+   map position is missing, and colouring it like a failure would misreport the project itself. */
+.ws-geo-warn { color: var(--status-amber); }

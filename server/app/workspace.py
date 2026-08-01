@@ -138,6 +138,16 @@ def a_workspaceprojects(session: Session, payload: dict, secret: str,
             "project_id": project.legacy_id,
             "name": (project.doc or {}).get("name"),
             "sector": (project.doc or {}).get("sector"),
+            # WHAT THE GEOCODER MATCHED, not what the PM typed. These differ more often than is
+            # comfortable: "Philadelphia International Airport, Philadelphia, PA" resolves to a
+            # hotel on Bartram Avenue about 1.5 km from the airport. A blank map signals a
+            # problem; a pin on the wrong building signals nothing, so the matched address has to
+            # be visible rather than buried in the stored document.
+            "address": (project.doc or {}).get("address"),
+            "formattedAddress": (project.doc or {}).get("formattedAddress"),
+            "geocodeError": (project.doc or {}).get("geocodeError"),
+            "lat": (project.doc or {}).get("lat"),
+            "lng": (project.doc or {}).get("lng"),
             "project_role": m.project_role,
             "period": period,
             "computed": result is not None,
