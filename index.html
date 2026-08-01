@@ -499,6 +499,11 @@
           <button type="button" class="stage-btn active" data-view="globe">Globe</button>
         </div>
       </div>
+      <!-- T12. THE STATUS KEY, SHARED BY ALL THREE STAGES. It used to be drawn inside the radar's
+           own SVG, so switching to Map or Globe lost the key while those views went on using the
+           same status colours for their markers. It lives here instead, outside every stage, and
+           is rendered by renderStatusLegend() in app.js. -->
+      <div class="status-legend" id="status-legend" role="group" aria-label="Status key"></div>
       <p class="radar-note">Radial distance indicates drift from baseline: projects near the center are performing to plan. Angular sectors group projects by delivery type: Design, Construction, and Hybrid. Select any project marker, or the corresponding row in the list below, to open its detail view.</p>
       <div class="radar-wrap">
         <svg id="radar-svg" viewBox="0 0 1200 460" preserveAspectRatio="xMidYMid meet" role="img"

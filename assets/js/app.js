@@ -149,12 +149,77 @@
     if (!hasSignals(p)) return "empty";
     return deriveHealthState(p).toLowerCase().replace("-review", "");
   }
+  /* ---------- the shared status key ----------
+     T12. Rendered for ALL THREE stages. It used to be drawn inside the radar's own SVG, so
+     switching to Map or Globe lost the key while those views went on colouring markers by exactly
+     the same statuses.
+
+     IT COUNTS FROM THE STORED ROW, which is the fault that made it read zero. The old legend went
+     through statusKey(), and statusKey() asks hasSignals() FIRST:
+
+         if (!hasSignals(p)) return "empty";
+
+     hasSignals() tests for the legacy client-side p.signals.evm/cusum/mc/doc blob. A project that
+     has been analysed server-side and carries a stored computed_results row does not necessarily
+     carry that blob, so every such project fell into "empty" and the five real bands all read 0.
+     deriveHealthState() was already reading the stored row correctly through getProjectFusion; it
+     simply never got asked. This reads getProjectFusion() directly, which is the same source
+     atlas.js and globe.js colour their markers from, so the key and the markers cannot disagree.
+
+     "AWAITING ANALYSIS" is the wording the rest of the platform uses for a project with no stored
+     result, and it is what deriveHealthState() returns. The legend said "Awaiting", and stateLabel
+     still said the retired "Awaiting ingest". Both now match what the views render. */
+
+  function storedStatusKey(p) {
+    var s = null;
+    try {
+      var f = window.getProjectFusion ? window.getProjectFusion(p) : null;
+      s = f && f.status;
+    } catch (e) { s = null; }
+    s = String(s || "").toLowerCase();
+    if (s.indexOf("complete") >= 0 || s.indexOf("blue") >= 0) return "complete";
+    if (s.indexOf("green") >= 0) return "green";
+    if (s.indexOf("yellow") >= 0 || s.indexOf("light-amber") >= 0) return "yellow";
+    if (s.indexOf("amber") >= 0 || s.indexOf("orange") >= 0) return "amber";
+    if (s.indexOf("red") >= 0) return "red";
+    return "empty";
+  }
+
+  const LEGEND_BANDS = [
+    ["Complete", "complete", "--status-complete"],
+    ["Green",    "green",    "--status-green"],
+    ["Yellow",   "yellow",   "--status-yellow"],
+    ["Amber",    "amber",    "--status-amber"],
+    ["Red",      "red",      "--status-red"],
+    ["Awaiting analysis", "empty", "--status-nodata"]
+  ];
+
+  function renderStatusLegend() {
+    const host = document.getElementById("status-legend");
+    if (!host) return;
+    const counts = { complete: 0, green: 0, yellow: 0, amber: 0, red: 0, empty: 0 };
+    (window.LIN_PROJECTS || []).forEach((p) => {
+      try { counts[storedStatusKey(p)]++; } catch (e) { counts.empty++; }
+    });
+    host.innerHTML = LEGEND_BANDS.map(([name, key, cssVar]) =>
+      `<span class="legend-item" data-status="${key}">`
+      + `<span class="legend-dot" style="background:var(${cssVar})" aria-hidden="true"></span>`
+      + `<span class="legend-name">${esc(name)}</span>`
+      + `<span class="legend-count">${counts[key]}</span>`
+      + `</span>`).join("");
+  }
+
+  // T12. Same two corrections as the legend. It asked hasSignals() first, so a project with a
+  // stored result but no legacy client-side signals blob was labelled as having nothing; and
+  // "Awaiting ingest" is retired wording that no other surface uses. deriveHealthState() already
+  // reads the stored row and already returns "Awaiting analysis" when there is none, so it can
+  // simply be asked.
   function stateLabel(p) {
     if (p && p.slim) {
       const lab = (typeof slimStatusLabel === "function") ? slimStatusLabel(p) : null;
-      return lab || "Awaiting ingest";
+      return lab || "Awaiting analysis";
     }
-    return hasSignals(p) ? deriveHealthState(p) : "Awaiting ingest";
+    return deriveHealthState(p);
   }
   // health proxy → radius band, so distance still reads as drift:
   // green near center, amber mid, red outer. Empty sits at a neutral mid-ring.
@@ -183,40 +248,13 @@
   function buildStageColumns(svg, narrow, VW, VH, thresholdRings) {
     const mono = { "font-family": "var(--font-mono, monospace)", "font-size": "11", fill: "var(--muted)" };
 
-    // status counts from the live portfolio
-    const counts = { complete: 0, green: 0, yellow: 0, amber: 0, red: 0, empty: 0 };
-    LIN_PROJECTS.forEach((p) => {
-      try { const k = statusKey(p); counts[k in counts ? k : "empty"]++; } catch (e) { counts.empty++; }
-    });
-    const LEGEND_ROWS = [
-      ["Complete", STATUS_COLOR.complete, counts.complete],
-      ["Green",    STATUS_COLOR.green,    counts.green],
-      ["Yellow",   STATUS_COLOR.yellow,   counts.yellow],
-      ["Amber",    STATUS_COLOR.amber,    counts.amber],
-      ["Red",      STATUS_COLOR.red,      counts.red],
-      ["Awaiting", "var(--muted)",        counts.empty],
-    ];
-
-    function textEl(x, y, str, attrs) {
-      const t = el("text", Object.assign({ x, y, "dominant-baseline": "middle" }, mono, attrs || {}));
-      t.textContent = str;
-      return t;
-    }
-
-    // ── left column: STATUS legend ──
-    const legX = narrow ? 46 : 46;
-    let legY = narrow ? VH - 190 : 128;
-    const leg = el("g", { class: "scope-col scope-col-status" });
-    leg.appendChild(textEl(legX, legY, "STATUS", { fill: "var(--faint)", "letter-spacing": "0.2em", "font-size": "10" }));
-    legY += 22;
-    LEGEND_ROWS.forEach(([name, color, n]) => {
-      leg.appendChild(el("circle", { cx: legX + 5, cy: legY, r: 4, fill: color, opacity: name === "Awaiting" ? "0.5" : "0.9" }));
-      leg.appendChild(textEl(legX + 16, legY + 0.5, name));
-      leg.appendChild(textEl(legX + 92, legY + 0.5, String(n), { fill: "var(--text)" }));
-      legY += 24;
-    });
-    svg.appendChild(leg);
-    // (Right-hand ring-meaning column removed in Release 2 — see header note.)
+    // T12. THE STATUS LEGEND USED TO BE BUILT HERE, inside the radar's own SVG, which is why
+    // switching to Map or Globe lost the key while those views kept colouring markers by exactly
+    // the same statuses. It now lives in shared markup outside every stage and is rendered by
+    // renderStatusLegend(). Nothing else was drawn in this column, so this function is left as
+    // the seam rather than deleted: the right-hand ring-meaning column was removed in Release 2,
+    // and if a per-stage annotation is ever wanted again this is where it goes.
+    void svg; void narrow; void VW; void VH; void thresholdRings; void mono;
   }
 
   /* ---------- radar scope ---------- */
@@ -1099,6 +1137,10 @@
       if (atlasWrap) atlasWrap.hidden = true;
       buildGeoStage(globeWrap, mapWrap, atlasWrap);
     }
+    // The key is shared markup outside every stage, so switching view does not remove it. This
+    // re-render is here so it is correct on the first switch even if the portfolio hydrated after
+    // the last refresh, which is the ordering that made it read zero.
+    renderStatusLegend();
     if (persist !== false) { try { localStorage.setItem(VIEW_KEY, view); } catch (e) {} }
   }
 
@@ -2535,7 +2577,7 @@
   /* ---------- public API (used by ingest.js) ---------- */
   window.LinApp = {
     refresh() {
-      buildRadar(); buildFallbackList();
+      buildRadar(); buildFallbackList(); renderStatusLegend();
       if (mapBuilt) buildMap();   // keep the map view in sync once initialized
       // if the selected project was archived, fall back to the first active one
       if (selectedId && !LIN_PROJECTS.some((p) => p.id === selectedId) && LIN_PROJECTS.length) {
@@ -2802,6 +2844,7 @@
         LinStore.hydratePortfolio(cached);
         buildRadar();
         buildFallbackList();
+        renderStatusLegend();
         if (LIN_PROJECTS.length) selectProject(LIN_PROJECTS[0].id);
         setListRefreshing(true);
         paintedFromCache = true;
@@ -2821,6 +2864,7 @@
 
     buildRadar();
     buildFallbackList();
+    renderStatusLegend();
 
     // T11. Radar | Map | Globe — MAP is the default, and it is the flat SVG atlas. A persisted
     // "map" from before this change resolves to the atlas rather than to MapLibre, which is the
