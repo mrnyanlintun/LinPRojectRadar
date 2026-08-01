@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "lin-project-radar",
-      "runtimeExecutable": "python3",
+      "runtimeExecutable": "server/.venv/Scripts/python.exe",
       "runtimeArgs": ["-m", "http.server", "5500"],
       "port": 5500
     }

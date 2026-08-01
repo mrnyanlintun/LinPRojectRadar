@@ -430,22 +430,25 @@
                `[data-nav]` handler. Hiding is a convenience, not the guard: every admin action
                this page calls is refused server-side (Guarantee 5) regardless of whether this
                button is visible. -->
+          <!-- T6 Part A.1. This is the ONLY item beyond what every user sees. There were five
+               controls here — Admin, Workspace, Decision, Questionnaire, Admin Ops — of which
+               four named destinations that are now sections of this same application, reached
+               through the workflow rather than through the chrome:
+
+                 Workspace      folded into Portfolio and Project.
+                 Decision       folded into Project; it is a step in the period, not a place.
+                 Questionnaire  the participant profile is captured once in the first-run flow
+                                after consent. It was never a destination and must not read as
+                                one — a participant who can navigate to a questionnaire can
+                                answer it at the wrong moment.
+                 Admin Ops      merged into Admin as tabs. Two labels one word apart pointing at
+                                two different surfaces was the clearest sign the platform had
+                                fragmented.
+
+               A participant and an operational user now see an identical navigation set, which
+               is the point: there is no participant mode to notice. -->
           <button type="button" data-nav="admin" data-nav-admin-only hidden
-                  class="btn-secondary" title="Admin">Admin</button>
-          <!-- T3/T5, T7/T8. Separate pages, not routes here — none of them may load
-               sim.js/simulations.js/categories.js, which this page always does. -->
-          <a href="workspace.html" class="btn-secondary" title="Project workspace"
-             style="text-decoration:none; display:inline-flex; align-items:center;">Workspace</a>
-          <a href="decision.html" class="btn-secondary" title="Decision sequence"
-             style="text-decoration:none; display:inline-flex; align-items:center;">Decision</a>
-          <a href="questionnaires.html" class="btn-secondary" title="Questionnaire"
-             style="text-decoration:none; display:inline-flex; align-items:center;">Questionnaire</a>
-          <!-- T7. Admin-only server-side (_require_admin); hidden here purely as a
-               convenience via the same data-nav-admin-only mechanism as the Admin button
-               above — the page itself refuses a non-admin regardless. -->
-          <a href="admin-ops.html" class="btn-secondary" data-nav-admin-only hidden
-             title="Admin operations"
-             style="text-decoration:none; display:inline-flex; align-items:center;">Admin Ops</a>
+                  class="btn-secondary" title="Administration">Admin</button>
           <button onclick="LinAuth.logout()" class="btn-logout" title="Sign out">Sign out</button>
         </div>
         <span class="clock" id="tz-clock" aria-label="Current time in selected timezone">--:--:--</span>
@@ -531,11 +534,171 @@
          Archive/Reset are inline accordions on the list rows above. So the
          Portfolio body is just stage + toolbar + project list — nothing else. -->
 
+    <!-- T6 Part A/B. Folded in from workspace.html, which is now deleted.
+         The participant's workflow starts here: create a project, then open one. Everything
+         below reads a stored computed_results row through /exec — nothing here is computed in
+         the browser, which is the property workspace.html held by being a separate page and
+         which this markup has to keep now that it is not. -->
+    <div class="ws-fold">
+      <div class="ws-card">
+        <h3 style="margin-top:0;">Create a project</h3>
+        <label class="ws-field-label" for="ws-new-name">Project name</label>
+        <input id="ws-new-name" class="ws-input" placeholder="e.g. Clarksville USPS ARCH">
+        <label class="ws-field-label" for="ws-new-sector">Sector (optional)</label>
+        <input id="ws-new-sector" class="ws-input" placeholder="e.g. Federal / Aviation">
+        <button id="ws-create-btn" class="ws-btn">Create project</button>
+        <p id="ws-create-error" class="ws-error" style="display:none;"></p>
+      </div>
+      <div class="ws-card">
+        <h3 style="margin-top:0;">Your projects</h3>
+        <div id="ws-project-list"></div>
+      </div>
+      <div class="ws-card">
+        <h3 style="margin-top:0;">Portfolio health</h3>
+        <p class="ws-note">Portfolio Health for each project you are PM of, read from that
+          project's own stored result.</p>
+        <div id="ws-portfolio-list"></div>
+      </div>
+    </div>
+
     </section><!-- /page portfolio -->
 
     <section class="page" data-page="detail" hidden>
       <div id="detail-root"></div>
     </section>
+
+    <!-- T6 Part A/B. The project page: upload the period's documents, read the signals the
+         server computed from them, make the period decision, advance. Folded in from
+         workspace.html and decision.html, both now deleted. This is one continuous workflow on
+         one page precisely because it is one continuous act — T4's sequence was a separate page
+         load, which put a navigation between forming a judgment and recording it. -->
+    <section class="page" data-page="project" hidden>
+      <section class="intro">
+        <p class="eyebrow">Project</p>
+        <h1 id="ws-project-title">Project</h1>
+        <p id="ws-project-sub" class="ws-note"></p>
+      </section>
+
+      <div class="ws-tabbar" id="ws-project-tabs">
+        <button data-wstab="upload" class="active">Period documents</button>
+        <button data-wstab="documents">Document library</button>
+        <button data-wstab="detail">Signals</button>
+        <button data-wstab="decision">Period decision</button>
+      </div>
+
+      <div id="wstab-upload" class="ws-panel active">
+        <div class="ws-card">
+          <div class="ws-cardhead">
+            <h3 style="margin:0;">Period documents</h3>
+            <label class="ws-field-label" for="ws-upload-project">Project</label>
+            <select id="ws-upload-project" class="ws-input ws-input-inline"></select>
+          </div>
+          <div id="ws-upload-status" class="ws-note"></div>
+          <div id="ws-upload-drop" class="ws-drop">
+            Drag files here, or
+            <label style="text-decoration:underline; cursor:pointer;">
+              browse
+              <input id="ws-upload-input" type="file" multiple style="display:none;">
+            </label>
+          </div>
+          <div id="ws-upload-progress" style="display:none;">
+            <div class="ws-note" id="ws-upload-progress-label"></div>
+            <div class="ws-progress-bar"><div id="ws-upload-progress-fill" class="ws-progress-fill" style="width:0%;"></div></div>
+          </div>
+          <div id="ws-upload-results"></div>
+          <p id="ws-upload-error" class="ws-error" style="display:none;"></p>
+          <button id="ws-compute-btn" class="ws-btn ws-btn-secondary" style="margin-top:10px;">Run analysis for this period</button>
+          <p id="ws-compute-note" class="ws-note"></p>
+          <div id="ws-upload-period-docs" style="margin-top:6px;"></div>
+        </div>
+      </div>
+
+      <div id="wstab-documents" class="ws-panel">
+        <div class="ws-card">
+          <div class="ws-cardhead">
+            <h3 style="margin:0;">Document library</h3>
+            <label class="ws-field-label" for="ws-docs-project">Project</label>
+            <select id="ws-docs-project" class="ws-input ws-input-inline"></select>
+          </div>
+          <div id="ws-docs-list"></div>
+        </div>
+        <div id="ws-doc-reader-card" class="ws-card" style="display:none;">
+          <div class="ws-cardhead">
+            <h3 id="ws-doc-reader-title" style="margin:0;"></h3>
+            <button id="ws-doc-reader-close" class="ws-btn ws-btn-secondary">Close</button>
+          </div>
+          <iframe id="ws-doc-reader-frame" class="ws-pdf-frame" title="Document preview" style="margin-top:10px;"></iframe>
+        </div>
+      </div>
+
+      <div id="wstab-detail" class="ws-panel">
+        <div class="ws-card">
+          <div class="ws-cardhead">
+            <h3 style="margin:0;">Signals</h3>
+            <label class="ws-field-label" for="ws-detail-project">Project</label>
+            <select id="ws-detail-project" class="ws-input ws-input-inline"></select>
+          </div>
+          <div id="ws-detail-body"></div>
+        </div>
+      </div>
+
+      <div id="wstab-decision" class="ws-panel">
+        <div id="dc-root">
+          <div class="dc-rail">
+            <div class="dc-rail-step" data-step="evidence">1 · Evidence</div>
+            <div class="dc-rail-step" data-step="prejudgment">2 · Preliminary judgment</div>
+            <div class="dc-rail-step" data-step="reveal">3 · Decision support</div>
+            <div class="dc-rail-step" data-step="decide">4 · Final decision</div>
+          </div>
+          <p class="dc-note" id="dc-position"></p>
+
+          <!-- Always visible: the participant may re-read the evidence at every stage. -->
+          <div id="dc-evidence" class="dc-card">
+            <h2>Project evidence</h2>
+            <p class="dc-note" id="dc-evidence-sub"></p>
+            <div id="dc-evidence-body"><p class="ws-empty">Loading…</p></div>
+          </div>
+
+          <!-- Removed from the DOM entirely once locked — not hidden, removed. There is no
+               edit control and no draft, and the server never returns the locked pre_action,
+               so there is nothing for a form to repopulate even if one reappeared by mistake. -->
+          <div id="dc-prejudgment" class="dc-card" style="display:none;">
+            <h2>Your preliminary judgment</h2>
+            <p class="dc-note">Record what you would do based on the evidence above, before any
+              decision support is shown to you.</p>
+            <div id="dc-pre-form"></div>
+            <div class="dc-commit-warning" id="dc-commit-warning"></div>
+            <button id="dc-commit-btn" class="dc-btn">Commit preliminary judgment</button>
+            <p id="dc-pre-error" class="dc-error" style="display:none;"></p>
+          </div>
+
+          <!-- The reveal control. The package itself is appended by JS after the call — there
+               is deliberately no markup for it here, and nothing requests it on load. -->
+          <div id="dc-reveal" class="dc-card" style="display:none;">
+            <h2>Decision support</h2>
+            <p class="dc-note" id="dc-reveal-sub"></p>
+            <button id="dc-reveal-btn" class="dc-btn dc-btn-reveal">Show the decision support package</button>
+            <div id="dc-package"></div>
+            <p id="dc-reveal-error" class="dc-error" style="display:none;"></p>
+          </div>
+
+          <div id="dc-decide" class="dc-card" style="display:none;">
+            <h2>Your final decision</h2>
+            <p class="dc-note">Recorded against this period and locked on submission.</p>
+            <div id="dc-decide-form"></div>
+            <button id="dc-decide-btn" class="dc-btn">Submit final decision</button>
+            <p id="dc-decide-error" class="dc-error" style="display:none;"></p>
+          </div>
+
+          <div id="dc-advance" class="dc-card" style="display:none;">
+            <h2 id="dc-advance-title">Period complete</h2>
+            <p class="dc-note" id="dc-advance-sub"></p>
+            <button id="dc-advance-btn" class="dc-btn">Continue</button>
+            <p id="dc-advance-error" class="dc-error" style="display:none;"></p>
+          </div>
+        </div>
+      </div>
+    </section><!-- /page project -->
 
     <section class="page" data-page="auditor" hidden>
       <section class="intro">
@@ -699,15 +862,110 @@
     <section class="page" data-page="admin" hidden>
       <section class="intro">
         <p class="eyebrow">Administration</p>
-        <h1>Users &amp; access</h1>
-        <p>Create accounts, reset passwords, activate or deactivate, and set per-user feature
-          availability.</p>
+        <h1>Administration</h1>
+        <p>Accounts and access, project membership, participant monitoring, and de-identified
+          export. One surface — these were two pages a word apart in name.</p>
       </section>
-      <div id="admin-root"></div>
+
+      <!-- T6 Part C. Admin Ops folded in as tabs. Its Scenarios and Assignment tabs are
+           deliberately NOT here: participants create their own projects and there are no
+           conditions left to counterbalance, so assigning a participant to a pre-authored
+           scenario set no longer describes anything the platform does. B3's backend is
+           untouched and still tested — only this interface is withdrawn, because the research
+           design remains the researcher's advisor's to settle. -->
+      <div class="ws-tabbar" id="admin-tabs">
+        <button data-admintab="users" class="active">Users &amp; access</button>
+        <button data-admintab="members">Project membership</button>
+        <button data-admintab="monitoring">Monitoring</button>
+        <button data-admintab="export">Export</button>
+      </div>
+
+      <div id="admintab-users" class="ws-panel active">
+        <div id="admin-root"></div>
+      </div>
+
+      <div id="admintab-members" class="ws-panel">
+        <div class="ws-card">
+          <h3 style="margin-top:0;">Project membership</h3>
+          <p class="ws-note">One PM decides for a project; any number of observers may read it.
+            Revoking keeps the row — membership history is itself audit evidence.</p>
+          <label class="ws-field-label" for="ao-mem-project">Project</label>
+          <div class="ws-inline-row">
+            <input id="ao-mem-project" class="ws-input" placeholder="e.g. PRJ-08421">
+            <button id="ao-mem-load" class="ws-btn ws-btn-secondary">Load members</button>
+          </div>
+          <div id="ao-mem-table"></div>
+          <hr class="ws-rule">
+          <h4 style="margin:0 0 6px;">Add a member</h4>
+          <label class="ws-field-label" for="ao-mem-participant">Person</label>
+          <select id="ao-mem-participant" class="ws-input"></select>
+          <label class="ws-field-label" for="ao-mem-role">Project role</label>
+          <select id="ao-mem-role" class="ws-input">
+            <option value="PM">PM — decides for this project</option>
+            <option value="Observer">Observer — reads only</option>
+          </select>
+          <button id="ao-mem-add" class="ws-btn">Add member</button>
+          <p id="ao-mem-error" class="ws-error" style="display:none;"></p>
+          <p id="ao-mem-ok" class="ws-note" style="display:none;"></p>
+        </div>
+      </div>
+
+      <div id="admintab-monitoring" class="ws-panel">
+        <div class="ws-card">
+          <h3 style="margin-top:0;">Monitoring</h3>
+          <p class="ws-note">Where each participant has reached. This is progress, never
+            performance — nothing here says whether a decision was good.</p>
+          <div id="ao-monitor-table"></div>
+        </div>
+      </div>
+
+      <div id="admintab-export" class="ws-panel">
+        <div class="ws-card">
+          <h3 style="margin-top:0;">Export</h3>
+          <p class="ws-warning">The export is filtered to research accounts server-side, always.
+            Operational users are never included, whatever is requested here.</p>
+          <label class="ws-field-label" for="ao-export-from">From (start of window)</label>
+          <input id="ao-export-from" class="ws-input" type="datetime-local">
+          <label class="ws-field-label" for="ao-export-to">To (end of window)</label>
+          <input id="ao-export-to" class="ws-input" type="datetime-local">
+          <label class="ws-field-label" for="ao-export-format">File format</label>
+          <select id="ao-export-format" class="ws-input">
+            <option value="json">JSON</option>
+            <option value="csv">CSV</option>
+          </select>
+          <button id="ao-export-create" class="ws-btn">Create export</button>
+          <div id="ao-export-table" style="margin-top:12px;"></div>
+          <div id="ao-export-fetch-result"></div>
+        </div>
+      </div>
     </section><!-- /page admin -->
 
     </main><!-- /content -->
     </div><!-- /layout -->
+
+    <!-- T6 Part A/A.1. The participant profile, captured ONCE — after consent, before the first
+         decision — and never again. It is an overlay rather than a page because it is not a
+         destination: there is no navigation item for it, and nothing routes here. The same
+         JSON-driven definition and the same fields as the old questionnaires.html; only the
+         placement and the framing changed.
+
+         Why placement is the whole point. These items are the study's moderator variables —
+         experience, industry, certifications, AI familiarity, risk attitude. Asked afterwards,
+         a participant would be describing their own background AFTER seeing how the system
+         behaved, which is the contamination the instrument exists to measure around. The server
+         already refuses a preliminary judgment until intake is complete; this is the interface
+         agreeing with that rule instead of leaving a participant to discover it as an error. -->
+    <div id="profile-overlay" class="profile-overlay" hidden>
+      <div class="profile-panel">
+        <p class="eyebrow">Before you begin</p>
+        <h2 id="profile-title">A little about your background</h2>
+        <p class="ws-note" id="profile-intro">This is asked once, now, and never again. It
+          records the professional background your later decisions will be read against.</p>
+        <div id="q-form-root"></div>
+        <p id="q-error" class="ws-error" style="display:none;"></p>
+        <button id="q-submit-btn" class="ws-btn">Save and continue</button>
+      </div>
+    </div>
 
     <footer class="site-footer">
       <p class="footer-praxis-notice">Opus Gubernatio is a decision-support platform developed for Doctor of Engineering praxis research at The George Washington University. Analytical outputs are advisory and do not constitute a validated compliance determination.</p>
@@ -761,6 +1019,14 @@
   <script src="assets/js/neural_flow.js"></script>
   <script src="assets/js/export.js"></script>
   <script src="assets/js/assistant.js"></script>
+  <!-- T6 Part A. The four folded surfaces. Each was its own page load; each is now a section
+       above. They share config.js/auth.js/store.js with everything else here, which they always
+       did — that is why the fold needed no renaming: each of these files is a single IIFE that
+       exports nothing to window, so none of them can collide with app.js or with each other. -->
+  <script src="assets/js/workspace.js"></script>
+  <script src="assets/js/admin-ops.js"></script>
+  <script src="assets/js/questionnaires.js"></script>
+  <script src="assets/js/decision-ui.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 </html>

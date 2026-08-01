@@ -12,7 +12,7 @@
       There is exactly one call in this file that can return package content —
       `revealPackage()`, wired to a button the participant presses themselves
       after locking. Nothing calls it on load, nothing prefetches it, and there
-      is no markup for it in decision.html: the package DOM is constructed from
+      is no markup for it in index.html: the package DOM is constructed from
       the response and appended only then. A refused request would itself be a
       disclosure ("something exists to be refused"), so this file does not make
       one speculatively either.
@@ -159,57 +159,62 @@
      the participant never saw. */
   var STATE = { server: null, evidenceLabels: [] };
 
-  document.addEventListener("DOMContentLoaded", boot);
+  // T6. decision.html is gone. This renders into the Period decision tab of the Project page,
+  // so the sequence is a step in the period rather than a place a participant navigates to —
+  // which is the point: T4 put a page load between forming a judgment and recording it.
+  //
+  // Every former gate used to be a message plus a link to another page. There are no other
+  // pages now, so a gate states the position and stops. The two that pointed at
+  // questionnaires.html are gone entirely: the profile is captured before any of this can be
+  // reached, and the server refuses a preliminary judgment without it regardless.
+  var wired = false;
 
-  function gate(message, linkText, href) {
-    $("dc-gate-message").textContent = message;
-    var link = $("dc-gate-link");
-    link.textContent = linkText;
-    link.href = href;
-    $("dc-gate").style.display = "block";
-    $("dc-shell").style.display = "none";
+  // Hides the sequence and states why, WITHOUT rewriting #dc-root — the stage cards are markup
+  // in index.html now, and blowing them away would mean they could never come back when the
+  // reason for the gate cleared.
+  function gate(message) {
+    ["dc-evidence", "dc-prejudgment", "dc-reveal", "dc-decide", "dc-advance"].forEach(
+      function (id) { var el = $(id); if (el) el.style.display = "none"; });
+    var rail = document.querySelector("#dc-root .dc-rail");
+    if (rail) rail.style.display = "none";
+    var note = $("dc-position");
+    if (note) note.textContent = message;
   }
 
-  async function boot() {
-    if (!token()) {
-      gate("You need to sign in before you can work on a decision.",
-           "Go to sign-in", "index.html");
-      return;
-    }
-    wire();
+  async function render() {
+    if (!token()) { gate("You need to be signed in to work on a decision."); return; }
+    if (!wired) { wire(); wired = true; }
     await refresh();
   }
+
+  window.LinDecisionUI = { render: render };
 
   /* Re-read the server and re-render. Called on load and after EVERY mutation —
      never assume a transition succeeded, ask. */
   async function refresh() {
     var state = await call("researchsequencestate");
     if (!state || state.ok !== true) {
-      gate((state && state.error) || "Could not read your current position.",
-           "Go to sign-in", "index.html");
+      gate((state && state.error) || "Could not read your current position.");
       return;
     }
     STATE.server = state;
 
     if (!state.intake_completed) {
-      gate("Please complete the intake questionnaire before starting your first decision.",
-           "Go to the questionnaire", "questionnaires.html");
+      // The profile overlay handles this before the application is usable; this branch only
+      // fires if that was somehow bypassed, so it states the fact rather than offering a link
+      // to a page that no longer exists.
+      gate("Your background profile has to be recorded before your first decision.");
       return;
     }
     if (state.all_assignments_complete) {
-      gate("You have completed every period of every project assigned to you. "
-           + "One short debrief questionnaire remains.",
-           "Go to the debrief", "questionnaires.html");
+      gate("You have completed every period of every project assigned to you.");
       return;
     }
     if (!state.assignment) {
-      gate("You have no project assigned yet. Your researcher will assign one.",
-           "Back to the workspace", "workspace.html");
+      gate("You have no project assigned yet.");
       return;
     }
 
-    $("dc-gate").style.display = "none";
-    $("dc-shell").style.display = "block";
     $("dc-position").textContent =
       "Project " + state.current_sequence_number + " · period "
       + String(state.period || "").replace(/^P/, "")

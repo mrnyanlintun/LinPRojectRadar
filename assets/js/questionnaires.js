@@ -36,67 +36,56 @@
                                                    extra || {}), 30000);
   }
 
-  function showGate(message) {
-    $("q-gate-message").textContent = message;
-    $("q-gate").style.display = "block";
-    $("q-shell").style.display = "none";
-    $("q-done-shell").style.display = "none";
-  }
-  function showDone(message) {
-    $("q-done-message").textContent = message;
-    $("q-done-shell").style.display = "block";
-    $("q-shell").style.display = "none";
-    $("q-gate").style.display = "none";
-  }
-  function showForm() {
-    $("q-shell").style.display = "block";
-    $("q-gate").style.display = "none";
-    $("q-done-shell").style.display = "none";
-  }
+  // The gate/shell/done screens belonged to questionnaires.html, which had to handle being
+  // opened directly by someone not signed in. An overlay inside the application cannot be
+  // opened directly, so the only outcome left is "saved, now get on with it".
 
-  document.addEventListener("DOMContentLoaded", boot);
+  // T6 Part A/A.1. questionnaires.html is gone, and with it the idea that this is somewhere a
+  // participant goes. The profile is captured ONCE — after consent, before the first decision —
+  // in an overlay that has no route and no navigation item.
+  //
+  // Whether it is needed is decided by the SERVER, from profilestatus, not by a flag this file
+  // keeps. That matters: a participant who reloads, signs in on another machine, or comes back
+  // a week later must not be asked twice, and the only place that knows is the row.
+  //
+  // The debrief is no longer reachable from here at all. It was its own page, and a separate
+  // page a participant could visit at any moment is exactly the wrong shape for items that only
+  // mean anything at the end of the final decision — T6 moves them into that flow.
 
-  async function boot() {
-    if (!token()) { showGate("You need to sign in before you can complete this questionnaire."); return; }
+  async function maybePrompt() {
+    if (!token()) return;
 
     var status = await call("profilestatus");
-    if (!status || status.ok !== true) {
-      showGate((status && status.error) || "Could not verify your session. Please sign in again.");
-      return;
-    }
-    if (!status.consent_granted) {
-      showGate("You need to grant consent before this questionnaire is available.");
-      return;
-    }
-
-    var kind;
-    if (!status.intake_completed) {
-      kind = "intake";
-    } else if (status.debrief_completed) {
-      showDone("You have already completed the debrief questionnaire. Thank you.");
-      return;
-    } else if (status.debrief_eligible) {
-      kind = "debrief";
-    } else {
-      showDone("Intake is complete. The debrief questionnaire becomes available after your " +
-        "final decision" +
-        (status.debrief_eligibility_reason ? " (" + esc(status.debrief_eligibility_reason) + ")" : "") +
-        ".");
-      return;
-    }
+    if (!status || status.ok !== true) return;
+    // Consent first, always. auth.js owns that gate; if it has not been granted the application
+    // is not showing yet and this returns without touching the DOM.
+    if (!status.consent_granted) return;
+    // Already captured — the overlay never appears again.
+    if (status.intake_completed) return;
 
     var def;
     try {
-      var resp = await fetch("assets/questionnaires/" + kind + ".json", { cache: "no-store" });
+      var resp = await fetch("assets/questionnaires/intake.json", { cache: "no-store" });
       def = await resp.json();
     } catch (e) {
-      showGate("Could not load the questionnaire definition. Please try again.");
+      // Silent: a participant who cannot load the definition is better off in the application
+      // than behind an overlay they cannot dismiss. The server still refuses a preliminary
+      // judgment until intake exists, so nothing downstream is compromised by this returning.
       return;
     }
 
-    showForm();
-    renderForm(def, kind);
+    var overlay = $("profile-overlay");
+    if (!overlay) return;
+    renderForm(def, "intake");
+    overlay.hidden = false;
   }
+
+  function dismiss() {
+    var overlay = $("profile-overlay");
+    if (overlay) overlay.hidden = true;
+  }
+
+  window.LinProfile = { maybePrompt: maybePrompt };
 
   /* ---------- rendering ---------- */
 
@@ -233,8 +222,9 @@
       errEl.style.display = "block";
       return;
     }
-    showDone(kind === "intake" ?
-      "Thank you. You may now continue." :
-      "Thank you for completing the study.");
+    // Saved. The overlay closes and the participant is in the application — there is no
+    // confirmation screen to acknowledge, because this is a step in getting started rather
+    // than an errand that was completed.
+    dismiss();
   }
 })();

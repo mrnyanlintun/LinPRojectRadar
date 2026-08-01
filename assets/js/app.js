@@ -1630,6 +1630,8 @@
       if (page === "auditor" && window.LinAuditor) LinAuditor.renderAuditorPage();
       if (page === "detail" && window.LinDetail && selectedId) LinDetail.render(selectedId);
       if (page === "admin" && window.LinAdmin) LinAdmin.render();
+      // T6. The folded surfaces render on arrival like every other page here.
+      if (page === "admin" && window.LinAdminOps) LinAdminOps.boot();
     } catch (e) { /* page is already visible; a render hiccup must not block nav */ }
     window.scrollTo({ top: 0 });
   }
@@ -2039,6 +2041,28 @@
     document.querySelectorAll("[data-nav]").forEach((b) => {
       if (b.closest("#icon-dock")) return;
       b.addEventListener("click", () => { showPage(b.dataset.nav); });
+    });
+  }
+
+  /* ---------- T6: tabs inside the folded sections ----------
+     These are tabs WITHIN a page, not navigation. They deliberately do not use [data-nav]:
+     a tab is not a destination, it must not appear in the nav's active-state sync, and a
+     participant must never be able to reach the decision sequence or a questionnaire by
+     navigating rather than by working through the period. */
+  function wireFoldedTabs() {
+    const tabs = document.querySelectorAll("#admin-tabs button");
+    tabs.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const name = btn.dataset.admintab;
+        tabs.forEach((b) => b.classList.toggle("active", b === btn));
+        ["users", "members", "monitoring", "export"].forEach((k) => {
+          const panel = document.getElementById("admintab-" + k);
+          if (panel) panel.classList.toggle("active", k === name);
+        });
+        // Each admin tab loads its own data on first reveal, so opening Admin does not fire
+        // four queries a ResearchAdmin may not have wanted.
+        try { if (window.LinAdminOps) LinAdminOps.showTab(name); } catch (e) { /* non-fatal */ }
+      });
     });
   }
 
@@ -2561,6 +2585,17 @@
     } catch (e) { /* non-fatal */ }
     showPage("portfolio");
     renderDecisionLog();
+
+    // T6. The folded surfaces boot here, after auth has settled, rather than from their own
+    // DOMContentLoaded handlers — those would have raced the login screen and rendered a
+    // workspace behind it. Each is guarded independently so one failing cannot stop the others,
+    // and none of them is required for the legacy dashboard to work.
+    try { if (window.LinWorkspace) LinWorkspace.boot(); } catch (e) { /* non-fatal */ }
+    // The participant profile: shown once, after consent, before the first decision. It decides
+    // for itself whether it is needed by asking the server, so this call is idempotent and a
+    // returning participant never sees it.
+    try { if (window.LinProfile) LinProfile.maybePrompt(); } catch (e) { /* non-fatal */ }
+    wireFoldedTabs();
 
     // Portfolio load — stale-while-revalidate against the slim list (v10.28).
     // (1) Paint instantly from the slim portfolio cache if present (else show a

@@ -1,10 +1,19 @@
 /* ============================================================
    Opus Gubernatio — workspace.js (T3/T5)
    ------------------------------------------------------------
-   Project workspace and portfolio view. Loaded ONLY on workspace.html,
-   deliberately not on index.html, and deliberately does not import
-   sim.js / simulations.js / categories.js / knowledge.js. Every number
-   rendered here comes from a stored `computed_results` row, fetched
+   Project workspace and portfolio view. T6 folded workspace.html into
+   index.html, so this now renders the Portfolio project list and the
+   Project page rather than a page of its own.
+
+   It still calls nothing from sim.js / simulations.js / categories.js /
+   knowledge.js, and that is now a rule this file keeps rather than one
+   the page kept for it. While workspace.html existed, calling LinSim
+   here was impossible — the function was not in the document. It is in
+   the document now, so the discipline has to live here: this file has
+   zero references to any of those four bundles, and a change that adds
+   one is a change that puts a browser-computed number in front of a
+   participant. Every number rendered here comes from a stored
+   `computed_results` row, fetched
    through LinStore.postWithTimeout({action:...}) — nothing is computed
    in this file. The only "logic" below is presentation: grouping,
    labelling, and rendering what /exec already returns.
@@ -139,34 +148,24 @@
 
   /* ---------- boot ---------- */
 
-  document.addEventListener("DOMContentLoaded", function () {
-    if (!token()) { showGate(); return; }
-    boot();
-  });
-
-  function showGate() {
-    $("ws-signin-gate").style.display = "block";
-    $("ws-shell").style.display = "none";
-  }
+  // T6. This was its own page with its own sign-in gate. It is now two sections of the main
+  // application, so the gate is gone: index.html's auth flow decides whether anyone is signed in
+  // at all, and app.js calls boot() once that has been settled. Booting from DOMContentLoaded
+  // here would have raced that decision and rendered a workspace behind the login screen.
+  //
+  // There is deliberately no sign-out handler any more. The old one did
+  // `window.location.href = "index.html"`, which inside the shell would reload the whole
+  // application; the topbar's existing LinAuth.logout() control is the one path now.
+  var booted = false;
 
   async function boot() {
+    if (booted) return;
     var who = await call("researchwhoami");
-    if (!who || who.ok !== true) { showGate(); return; }
+    if (!who || who.ok !== true) return;
+    booted = true;
 
-    $("ws-signin-gate").style.display = "none";
-    $("ws-shell").style.display = "block";
-    $("ws-who-name").textContent = who.display_name || who.pseudonymous_code || "";
-
-    $("ws-signout-link").addEventListener("click", function (e) {
-      e.preventDefault();
-      // LinAuth.logout() clears the real TOKEN_KEY and any screen-toggling it does no-ops
-      // safely here (guarded by `if (el) ...` on ids this page does not have).
-      if (window.LinAuth && LinAuth.logout) LinAuth.logout();
-      window.location.href = "index.html";
-    });
-
-    document.querySelectorAll(".ws-nav button").forEach(function (btn) {
-      btn.addEventListener("click", function () { switchPanel(btn.dataset.panel); });
+    document.querySelectorAll("#ws-project-tabs button").forEach(function (btn) {
+      btn.addEventListener("click", function () { switchPanel(btn.dataset.wstab); });
     });
 
     wireProjectsPanel();
@@ -179,13 +178,42 @@
   }
 
   function switchPanel(name) {
-    document.querySelectorAll(".ws-nav button").forEach(function (b) {
-      b.classList.toggle("active", b.dataset.panel === name);
+    document.querySelectorAll("#ws-project-tabs button").forEach(function (b) {
+      b.classList.toggle("active", b.dataset.wstab === name);
     });
-    document.querySelectorAll(".ws-panel").forEach(function (p) {
-      p.classList.toggle("active", p.id === "panel-" + name);
-    });
+    document.querySelectorAll("#wstab-upload, #wstab-documents, #wstab-detail, #wstab-decision")
+      .forEach(function (p) {
+        p.classList.toggle("active", p.id === "wstab-" + name);
+      });
+    // The decision sequence renders lazily: it is the last step of the period and asking the
+    // server for its state on every project-page visit would audit an evidence view that the
+    // participant did not make.
+    if (name === "decision" && window.LinDecisionUI && LinDecisionUI.render) {
+      try { LinDecisionUI.render(); } catch (e) { /* a render fault must not trap the tab */ }
+    }
   }
+
+  // Opening a project from the portfolio list routes here and selects it in every picker, so
+  // the three tabs agree about which project is being looked at.
+  function openProject(pid) {
+    ["ws-upload-project", "ws-docs-project", "ws-detail-project"].forEach(function (id) {
+      var sel = $(id);
+      if (sel) sel.value = pid;
+    });
+    var p = (STATE.projects || []).filter(function (x) { return x.project_id === pid; })[0];
+    if (p) {
+      var t = $("ws-project-title"); if (t) t.textContent = p.name || "Project";
+      var s = $("ws-project-sub");
+      if (s) s.textContent = (p.sector ? p.sector + " · " : "") + "Period " + (p.period || 1);
+    }
+    if (window.LinApp && LinApp.showPage) LinApp.showPage("project");
+    switchPanel("upload");
+    onUploadProjectChange();
+    onDocsProjectChange();
+    onDetailProjectChange();
+  }
+
+  window.LinWorkspace = { boot: boot, openProject: openProject, switchPanel: switchPanel };
 
   /* ============================================================
      Part 1 — project list and creation
@@ -226,11 +254,20 @@
     } else {
       listEl.innerHTML = STATE.projects.map(function (p) {
         var badgeClass = p.project_role === "PM" ? "ws-badge-pm" : "ws-badge-observer";
+        // T6 Part E. The identifier was the subtitle of every row and the title of any row
+        // whose name was empty, which made an internal key the name of the thing. The name is
+        // the name; where there is none, say so in words. The id survives only as truncated
+        // metadata, because an operator reconciling against a log still needs to find it.
+        var shortId = String(p.project_id || "");
+        if (shortId.length > 10) shortId = shortId.slice(0, 8) + "…";
         return '<div class="ws-row">' +
-          '<div><strong>' + esc(p.name || p.project_id) + '</strong>' +
-          '<div class="ws-note">' + esc(p.project_id) + (p.sector ? " · " + esc(p.sector) : "") +
+          '<div><strong>' + esc(p.name || "Untitled project") + '</strong>' +
+          '<div class="ws-note">' + (p.sector ? esc(p.sector) + " · " : "") +
+          '<span class="ws-id" title="' + esc(p.project_id) + '">' + esc(shortId) + '</span>' +
           '</div></div>' +
           '<div style="display:flex; align-items:center; gap:10px;">' +
+          '<button class="ws-btn ws-btn-secondary" data-open-project="' + esc(p.project_id) +
+            '">Open</button>' +
           '<span class="ws-badge ' + badgeClass + '">' + esc(p.project_role) + '</span>' +
           '<span class="ws-note">Period ' + esc(p.period) + '</span>' +
           '<span class="ws-note">' + (p.computed ?
@@ -238,6 +275,9 @@
             '<span class="ws-dot" style="background:var(--status-nodata);"></span>Not yet computed') +
           '</span></div></div>';
       }).join("");
+      listEl.querySelectorAll("[data-open-project]").forEach(function (b) {
+        b.addEventListener("click", function () { openProject(b.dataset.openProject); });
+      });
     }
     populateProjectPickers();
     renderPortfolio();
@@ -250,7 +290,7 @@
       var sel = $(pair[0]);
       var current = sel.value;
       sel.innerHTML = STATE.projects.map(function (p) {
-        return '<option value="' + esc(p.project_id) + '">' + esc(p.name || p.project_id) +
+        return '<option value="' + esc(p.project_id) + '">' + esc(p.name || "Untitled project") +
           " (" + esc(p.project_role) + ")</option>";
       }).join("");
       if (current && STATE.projects.some(function (p) { return p.project_id === current; })) {
@@ -649,14 +689,14 @@
     listEl.innerHTML = rows.map(function (row) {
       var p = row.project, resp = row.resp;
       if (!resp || resp.ok !== true) {
-        return '<div class="ws-card"><strong>' + esc(p.name || p.project_id) + "</strong>" +
+        return '<div class="ws-card"><strong>' + esc(p.name || "Untitled project") + "</strong>" +
           '<p class="ws-note">No computed result yet.</p></div>';
       }
       var snap = resp.result.portfolio_snapshot;
       if (!snap || snap.insufficient_data) {
         var msg = snap && snap.message ? snap.message :
           "Portfolio Health has not been computed for this project.";
-        return '<div class="ws-card"><strong>' + esc(p.name || p.project_id) + "</strong>" +
+        return '<div class="ws-card"><strong>' + esc(p.name || "Untitled project") + "</strong>" +
           '<p class="ws-note">' + esc(msg) + "</p></div>";
       }
       var results = snap.results || {};
@@ -667,7 +707,7 @@
           '<span class="ws-mname">' + esc(moduleNameForPortfolioKey(key)) + "</span>" +
           '<span class="ws-note">' + esc(m.evidence_metric || "") + "</span></div>";
       }).join("");
-      return '<div class="ws-card"><strong>' + esc(p.name || p.project_id) + "</strong>" +
+      return '<div class="ws-card"><strong>' + esc(p.name || "Untitled project") + "</strong>" +
         '<div class="ws-note">portfolio size ' + esc(snap.portfolio_size) + "</div>" +
         rowsHtml + "</div>";
     }).join("");

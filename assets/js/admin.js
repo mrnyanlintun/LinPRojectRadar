@@ -157,12 +157,23 @@ var LinAdmin = (function () {
             '<option value="research">Research</option>' +
             '<option value="operational">Operational</option>' +
           '</select>' +
-          '<label class="login-field-label">Role</label>' +
+          // T6 Part D. One vocabulary, in the words the platform uses elsewhere.
+          //
+          // Demo is removed from this list. It is defined in research_identity.py, permitted by
+          // the participants CHECK constraint, and branched on NOWHERE — an account created with
+          // it behaves exactly like a Participant, so offering it here let an admin choose a role
+          // that silently meant nothing. The constraint and the data model are deliberately left
+          // alone: existing rows stay valid, and this is a presentation decision, reversible by
+          // putting the option back.
+          //
+          // Expert is grouped separately because it is not a peer of the other two. It is a
+          // research-panel role: an expert never runs a project, they record the reference
+          // standard participant decisions are scored against (T6 Part F).
+          '<label class="login-field-label" for="admin-new-role">Role</label>' +
           '<select id="admin-new-role" class="ig-input">' +
-            '<option value="Participant">Participant</option>' +
-            '<option value="ResearchAdmin">ResearchAdmin</option>' +
-            '<option value="Expert">Expert</option>' +
-            '<option value="Demo">Demo</option>' +
+            '<option value="Participant">Participant — research subject</option>' +
+            '<option value="ResearchAdmin">Admin — manages users, membership, export</option>' +
+            '<option value="Expert">Expert — research review panel</option>' +
           '</select>' +
           '<label class="login-field-label">Username (optional — generated as PM-### if left blank)</label>' +
           '<input type="text" id="admin-new-code" class="ig-input" placeholder="PM-001">' +

@@ -483,7 +483,10 @@ import re as _re
 # A module id is a letter, a digit, a dot, a digit — e.g. A1.1, B4.4, C1.2, D1.5.
 MODULE_ID = _re.compile(r"\b[ABCD]\d+\.\d+\b")
 ui_text = []
-for path in ("decision.html", "assets/js/decision-ui.js"):
+# T6 folded decision.html into index.html and deleted it, so the markup half of this pair is
+# now index.html. The check is unchanged in substance: both the markup that shows the decision
+# sequence and the script that renders it must be free of module ids.
+for path in ("index.html", "assets/js/decision-ui.js"):
     import pathlib
     f = pathlib.Path(__file__).resolve().parents[2] / path
     if f.is_file():
@@ -506,9 +509,13 @@ for path, body in ui_text:
           str(sorted(set(hits))[:6]))
 
 # The lookup itself must actually translate — an id that fell through would be rendered raw.
-check("moduleName(m.module_id)" in ui_text[1][1],
+# Indexed by name rather than position: the pair above is order-dependent and a future edit
+# that reorders it should not silently start asserting against the wrong file.
+_ui = dict(ui_text)
+check("moduleName(m.module_id)" in _ui.get("assets/js/decision-ui.js", ""),
       "module rows render moduleName(...), never the raw id")
-check('esc(m.module_id)' not in ui_text[1][1] and '+ m.module_id' not in ui_text[1][1],
+check('esc(m.module_id)' not in _ui.get("assets/js/decision-ui.js", "")
+      and '+ m.module_id' not in _ui.get("assets/js/decision-ui.js", ""),
       "the raw module_id is never concatenated into markup")
 
 
