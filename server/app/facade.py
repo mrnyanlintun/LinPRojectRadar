@@ -304,11 +304,18 @@ def a_getportfoliohealth(session: Session, params: dict) -> dict[str, Any]:
     An empty results object rather than null keeps deepdive.js:2332's Object.keys() check safe when
     no snapshot has been computed yet.
     """
-    row = session.scalars(
+    # The latest by the snapshot's OWN `savedAt` (millisecond resolution, stamped by
+    # `_server_now()`), not by the `saved_at` DB column: sqlite's `func.now()` default is
+    # second-resolution, so two saves in the same second would tie on the column and make
+    # "latest" ambiguous now that saves accumulate instead of replacing. `snapshot["savedAt"]`
+    # is a fixed-width ISO string, so max() over it is the same ordering a timestamp compare
+    # would give.
+    rows = session.scalars(
         select(ProjectSnapshot).where(ProjectSnapshot.period == PORTFOLIO_HEALTH_PERIOD)
-        .order_by(ProjectSnapshot.saved_at.desc())
-    ).first()
-    if row is None or not isinstance(row.snapshot, dict):
+    ).all()
+    candidates = [r for r in rows if isinstance(r.snapshot, dict) and r.snapshot.get("savedAt")]
+    row = max(candidates, key=lambda r: r.snapshot["savedAt"]) if candidates else None
+    if row is None:
         return {"ok": True, "results": {}, "projectCount": 0, "computedAt": None}
     payload = {"ok": True}
     payload.update(row.snapshot)

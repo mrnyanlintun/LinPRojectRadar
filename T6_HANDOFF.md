@@ -9,6 +9,71 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-02 — RUN 2: PORTFOLIO HEALTH APPENDS, OVERWRITESIGNAL VALIDATES ITS FIELD NAME, USER ARCHIVE AND DELETE BUILT
+
+Full detail in `REPORT_2026-08-02_facade-and-user-lifecycle.md`. **Server 1469/1469 across 27
+suites, `tests_render.html` 49/49, `tests.html` 51/51.** Sixteen faults injected across two
+campaigns, all detected, all reverted byte-identical, baseline re-run after every fault. Both
+admin controls also driven end to end in a real browser, confirmed by DOM read.
+
+## What delete reaches, the lead of the report
+
+Six tables are current relational state and are cleared EXPLICITLY in code, not left to the
+database: `participant_profiles`, `consents`, `assignments`, `decisions`, `transitions`,
+`project_members`. **SQLite — used for every local check in this run — does not enforce `ON
+DELETE CASCADE` without `PRAGMA foreign_keys=ON`, which this app does not set.** Relying on the
+declared FK cascade alone would have looked correct in Postgres and silently orphaned rows in
+every local verification. Four text columns (`audit_events.participant_id`,
+`document_uploads.uploaded_by`, `documents.first_uploaded_by`, `research_exports.initiated_by`,
+plus `added_by`/`revoked_by` on OTHER people's membership rows) are NOT foreign keys and are
+left exactly as they are, by the same design `AuditEvent`'s own docstring states: they must
+survive the deletion of whatever they describe.
+
+**Deleting a research participant destroys their decision records — `assignments` cascades to
+`decisions` and `transitions`.** Reported, not softened: that is why archive exists as an
+independent, non-destructive control rather than delete having a "keep the research data" mode.
+
+## Part 1: the one `session.delete` in the app is gone
+
+`w_saveportfoliohealth` appends now. **Nothing depended on there being exactly one row** —
+`a_getportfoliohealth` already SELECTS the latest rather than reading a singleton, verified
+before changing anything. **Fixing this surfaced a real ordering bug**: the DB's `saved_at`
+column is second-resolution on SQLite, so two saves in the same second tied, and `ORDER BY ...
+DESC` over a tie is not guaranteed stable — invisible while deletion removed the old row first,
+immediately visible once both rows persist. Both read and write-side verification now order by
+the snapshot's own `savedAt` string (millisecond resolution) instead of the column.
+
+## Part 2: overwritesignal's field name is now checked
+
+Restricted to `field_registry.ALL_SI_FIELDS` — verified by set equality to match
+`extraction_merge.SIGNAL_INPUT_KEYS` plus `cpi`/`spi` exactly, so the vocabulary cannot drift
+from what the merge can actually produce. An unknown name is refused, named, before the project
+is even looked up.
+
+## Part 3: archive already existed; delete is new
+
+**Archive needed no backend change.** `setactive(is_active=false)` already matches the
+definition exactly (cannot sign in, everything retained) — `resolve_caller` refuses an inactive
+account everywhere, and archiving never touches membership, consent, or anything else. Only the
+UI changed: relabelled "Archive"/"Restore" (was "Deactivate"/"Activate") to match the vocabulary
+the platform already uses for the same concept on projects. **Confirmed, not assumed: an
+archived user still appears in `adminmemberlist`** — that handler never filters on `is_active`.
+
+**Delete is `admindeleteparticipant`**, admin-only, no other condition (explicit instruction —
+`setactive`'s last-admin guard is deliberately NOT mirrored here). Reports exactly what it
+removed; writes `participant_deleted` to `audit_events` for the now-gone id.
+
+## Things worth knowing before the next session
+
+- **`add_repo`-style DB cascade assumptions are unsafe in this codebase's SQLite test path.**
+  Any future feature relying on `ON DELETE CASCADE` needs the same explicit-deletion treatment
+  this task gave user deletion, or `PRAGMA foreign_keys=ON` needs to be added to `db.py` first
+  (not done here — out of scope, and would need its own verification pass across every existing
+  cascade).
+- **The delete confirmation UI requires typing the exact username** before the submit button
+  enables — friction deliberately placed on an irreversible action.
+- Whether `getportfoliohealth` should be membership-scoped is still open, unrelated to this run.
+
 # 2026-08-02 — D2 CLOSED: MALFORMED NUMERICS REFUSE AT ALL FOUR ENTRY POINTS
 
 Full detail in `REPORT_2026-08-02_malformed-numerics.md`. **Server 1440/1440 across 26 suites,

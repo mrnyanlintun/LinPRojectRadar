@@ -291,7 +291,24 @@ r2 = post({"action": "saveportfoliohealth", "results": {"p2": {"modules": []}},
            "projectCount": 2, "computedAt": "2026-07-31T01:00:00.000Z"})
 health = get({"action": "getportfoliohealth"})
 check("p2" in health.get("results", {}) and "p1" not in health.get("results", {}),
-      "portfolio health snapshot is a replaced singleton")
+      "getportfoliohealth still answers with the LATEST snapshot only")
+# APPENDS, NOW. The prior snapshot used to be deleted — the only session.delete in the
+# application — before the new one was inserted. It is retained instead: the read behaviour
+# above is unchanged (latest wins), but the store itself keeps history the way every other
+# record in this module does.
+from app.models import ProjectSnapshot as _PS  # noqa: E402
+with Session() as _s:
+    from app.facade import PORTFOLIO_HEALTH_PERIOD as _PHP
+    _rows = _s.scalars(select(_PS).where(_PS.period == _PHP)).all()
+    _p1_rows = [r for r in _rows if isinstance(r.snapshot, dict)
+               and "p1" in (r.snapshot.get("results") or {})]
+    _p2_rows = [r for r in _rows if isinstance(r.snapshot, dict)
+               and "p2" in (r.snapshot.get("results") or {})]
+    check(len(_rows) >= 2, "the store holds at least two portfolio health rows",
+          str(len(_rows)))
+    check(bool(_p1_rows), "the p1 snapshot is still IN THE STORE, not deleted",
+          str(len(_p1_rows)))
+    check(bool(_p2_rows), "and the p2 snapshot is also stored", str(len(_p2_rows)))
 
 print()
 print("=" * 78)

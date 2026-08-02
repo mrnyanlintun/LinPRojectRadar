@@ -116,6 +116,17 @@ DATESTR_SI_FIELDS: frozenset[str] = frozenset(
 NUMERIC_SI_FIELDS: frozenset[str] = (
     frozenset(FIELD_KINDS) - DATESTR_SI_FIELDS) | frozenset({"cpi", "spi"})
 
+# THE COMPLETE SET OF NAMES A signalInputs FIELD MAY HAVE. Every emittable field (FIELD_KINDS),
+# every date-string field, the three keys nothing can emit any more but that the computation
+# layer still reads (UNEMITTABLE_FIELDS), and the two derived indices reachable through the
+# legacy overwritesignal action. This is the single declared vocabulary: a name outside it is
+# not a field this platform has ever read from or computed into, and writing one would be a
+# key nothing cleans up and no computation reads. `w_overwritesignal` refuses by this set
+# rather than carrying its own list, so the two can never drift apart.
+ALL_SI_FIELDS: frozenset[str] = (
+    frozenset(FIELD_KINDS) | DATESTR_SI_FIELDS | UNEMITTABLE_FIELDS | frozenset({"cpi", "spi"})
+)
+
 # Fields where a NEGATIVE value is a real project condition, not a contract violation:
 #   totalFloat / consumedFloat / floatRemaining — negative float is a genuine schedule state;
 #   analogousOverrunPct — a reference project that UNDERRAN is a negative overrun.

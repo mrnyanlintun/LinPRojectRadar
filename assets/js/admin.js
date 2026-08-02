@@ -115,6 +115,8 @@ var LinAdmin = (function () {
       if (flagsBtn) flagsBtn.addEventListener("click", function () { openFlagsModal(p); });
       var linkBtn = document.getElementById("admin-link-" + p.participant_id);
       if (linkBtn) linkBtn.addEventListener("click", function () { openLinkGoogleModal(p); });
+      var deleteBtn = document.getElementById("admin-delete-" + p.participant_id);
+      if (deleteBtn) deleteBtn.addEventListener("click", function () { openDeleteModal(p); });
     });
   }
 
@@ -128,18 +130,20 @@ var LinAdmin = (function () {
       '<td>' + esc(p.account_type) + '</td>' +
       '<td>' + (p.is_active
         ? '<span class="admin-pill admin-pill-on">Active</span>'
-        : '<span class="admin-pill admin-pill-off">Inactive</span>') + '</td>' +
+        : '<span class="admin-pill admin-pill-off">Archived</span>') + '</td>' +
       '<td>' + esc((p.consent && p.consent.status) || 'none') + '</td>' +
       '<td>' + onCount + '/' + FEATURE_KEYS.length + ' on ' +
         '<button type="button" class="btn small" id="admin-flags-' + p.participant_id + '">Edit</button></td>' +
       '<td class="admin-actions">' +
         '<button type="button" class="btn small" id="admin-reset-' + p.participant_id + '">Reset password</button> ' +
         '<button type="button" class="btn small" id="admin-toggle-' + p.participant_id + '">' +
-          (p.is_active ? 'Deactivate' : 'Activate') + '</button>' +
+          (p.is_active ? 'Archive' : 'Restore') + '</button>' +
         (p.account_type === 'operational'
           ? ' <button type="button" class="btn small" id="admin-link-' + p.participant_id + '">' +
             (p.google_email ? 'Change Google link' : 'Link Google') + '</button>'
           : '') +
+        ' <button type="button" class="btn small admin-delete-btn" id="admin-delete-' +
+          p.participant_id + '">Delete&hellip;</button>' +
       '</td>' +
     '</tr>';
   }
@@ -255,7 +259,11 @@ var LinAdmin = (function () {
     });
   }
 
-  /* ---------- activate / deactivate ---------- */
+  /* ---------- archive / restore ----------
+     Backend action is still "setactive": archiving is retention, not removal — the account
+     cannot sign in (resolve_caller refuses it everywhere) and every row stays exactly as it
+     was, including project membership history. Labelled "Archive"/"Restore" here to read as
+     the same operation the platform already uses that word for on projects. */
 
   async function toggleActive(p) {
     var resp = await call("setactive", { participant_id: p.participant_id, is_active: !p.is_active });
@@ -265,8 +273,52 @@ var LinAdmin = (function () {
       if (window.LinUI && LinUI.toast) LinUI.toast((resp && resp.error) || "Could not change active state", false);
       return;
     }
-    if (window.LinUI && LinUI.toast) LinUI.toast(resp.is_active ? "Activated" : "Deactivated", true);
+    if (window.LinUI && LinUI.toast) LinUI.toast(resp.is_active ? "Restored" : "Archived", true);
     render();
+  }
+
+  /* ---------- delete (permanent) ---------- */
+
+  function openDeleteModal(p) {
+    if (!window.LinUI || !LinUI.openModal) return;
+    var label = p.display_name || p.pseudonymous_code;
+    LinUI.openModal({
+      title: "Delete " + label + " permanently",
+      mount: function (body, close) {
+        body.innerHTML =
+          '<p class="login-error" style="display:block">This removes the account, its ' +
+            'project membership, and, for a research participant, its decision records. ' +
+            'It cannot be undone. If the account should be kept but locked out, use Archive ' +
+            'instead.</p>' +
+          '<label class="login-field-label">Type <strong>' + esc(p.pseudonymous_code) +
+            '</strong> to confirm</label>' +
+          '<input type="text" id="admin-delete-confirm-input" class="ig-input">' +
+          '<p id="admin-delete-error" class="login-error" role="alert" style="display:none;"></p>' +
+          '<button type="button" class="btn small" id="admin-delete-submit" disabled>' +
+            'Delete permanently</button>';
+
+        var input = body.querySelector("#admin-delete-confirm-input");
+        var submitBtn = body.querySelector("#admin-delete-submit");
+        input.addEventListener("input", function () {
+          submitBtn.disabled = input.value.trim() !== p.pseudonymous_code;
+        });
+        submitBtn.addEventListener("click", async function () {
+          var errEl = body.querySelector("#admin-delete-error");
+          errEl.style.display = "none";
+          submitBtn.disabled = true;
+          var resp = await call("admindeleteparticipant", { participant_id: p.participant_id });
+          if (!resp || resp.ok !== true) {
+            errEl.textContent = (resp && resp.error) || "Could not delete this account.";
+            errEl.style.display = "block";
+            submitBtn.disabled = false;
+            return;
+          }
+          if (window.LinUI && LinUI.toast) LinUI.toast("Deleted", true);
+          close();
+          render();
+        });
+      }
+    });
   }
 
   /* ---------- link Google (operational SSO) ---------- */
