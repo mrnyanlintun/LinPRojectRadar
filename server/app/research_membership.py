@@ -25,11 +25,13 @@ Every read path that can return package content calls this one predicate:
 There is intentionally no other path that returns a package to a member, and no per-endpoint
 re-implementation of the rule.
 
-Membership guards. Reads require an active membership of either role; the five decision-flow
-writes (prejudgment, reveal, decision, advance, upload/save) require the active PM. Projects
-with no membership rows at all — everything created before B8 — behave exactly as before, so
-the guard changes nothing for the existing flows until an admin grants membership. Observer
-reads are audited: who looked at what, and when, is recorded.
+Membership guards. Facade reads require an active membership of either role and facade writes
+require the active PM, both unconditionally: as of 2026-08-02 a project with no membership rows
+is refused rather than waved through, and both creation paths write the owner's PM row in the
+same transaction as the project so no project can exist without one. The decision-flow writes
+(prejudgment, reveal, decision, advance) are guarded differently and on purpose, because their
+subject is the caller's own assignment rather than a project — see
+refuse_unless_pm_for_assignment. Observer reads are audited: who looked at what, and when.
 """
 
 from __future__ import annotations
@@ -71,6 +73,18 @@ def active_membership(session: Session, project: Project,
 
 
 def has_members(session: Session, project: Project) -> bool:
+    """
+    Does this project have any membership rows at all, revoked ones included.
+
+    Three guards used to ask this and allow the action when the answer was False, which made an
+    unmembered project reachable by any authenticated caller. The two facade guards, read and
+    write, no longer ask: they authorise against membership unconditionally.
+    `refuse_unless_pm_for_assignment` no longer asks either; it reads the caller's own row.
+
+    So nothing calls this today. It is kept rather than deleted because "does this project have
+    any members at all" is a real question an administration surface or a data check may want to
+    ask, and because deleting it would erase the only place the old rule is named.
+    """
     return session.scalar(
         select(ProjectMember).where(ProjectMember.project_id == project.id).limit(1)
     ) is not None
@@ -175,20 +189,44 @@ def refuse_unless_pm_for_assignment(session: Session, caller, assignment,
     """
     The PM-only guard for the decision flow (prejudgment, reveal, decision, advance).
 
-    Resolves the assignment's scenario to its facade project. If that project has membership
-    rows, the caller must be its ACTIVE PM; an observer or a revoked member is refused and
-    audited. A project with no membership rows — everything that predates B8 — is unguarded,
-    so existing flows and their tests behave exactly as before.
+    Resolves the assignment's scenario to its facade project. If the CALLER holds a membership
+    row on that project, it must be an active PM row: an Observer or a revoked member is refused
+    and audited.
+
+    THE DISCRIMINATOR IS THE CALLER'S OWN ROW, NOT WHETHER THE PROJECT HAS ANY.
+
+    It used to be whether the project had any rows at all, and that could not survive
+    2026-08-02. The unmembered arm was closed on the two facade guards that day, because there
+    an unmembered project was reachable by any authenticated caller and that was a route from
+    one user to another user's project. Both creation paths now write the owner's PM row in the
+    same transaction as the project, so from that day no project is unmembered — which means the
+    old test here is true for every project and the guard would demand PM of everyone.
+
+    That cannot be what runs. A scenario names ONE evidence project, several participants are
+    assigned the same scenario, and migration 0006 permits exactly ONE active PM per project.
+    Demanding PM would let one evidence project serve exactly one participant, so a
+    counterbalanced design in which participants share scenarios could not run at all.
+
+    Reading the caller's own row instead is not a weakening, because this guard was never what
+    bound the action to a person. Every caller reaching it has already passed `_resolve_target`
+    (or `_resolve_advance_target`), which resolves the CALLER'S OWN current assignment and
+    refuses any other assignment_id the body names. There is no lateral route to close here. The
+    case this guard was written for — an Observer on an operational project attempting to judge,
+    reveal or decide — is exactly the case the caller's own row still catches.
     """
     scenario = session.get(Scenario, assignment.scenario_id)
     project = _project_by_legacy(session, scenario.evidence_package_id if scenario else None)
-    if project is None or not has_members(session, project):
+    if project is None:
         return None
     member = active_membership(session, project, caller.participant_id)
-    if member is None or member.project_role != ROLE_PM:
+    if member is None:
+        # No row on the evidence project. Permitted, on the strength of the assignment, which is
+        # already the caller's own. This is the shared-scenario participant.
+        return None
+    if member.project_role != ROLE_PM:
         audit(session, "pm_only_action_denied", participant_id=caller.participant_id,
               action=action, project_id=project.legacy_id,
-              project_role=member.project_role if member else None)
+              project_role=member.project_role)
         session.commit()
         return err("not authorized: only the project's PM may perform this action")
     return None
@@ -228,10 +266,12 @@ def guard_project_write(session: Session, payload: dict, settings) -> dict | Non
     or a token that does not resolve, is a refusal. Only then the B8 authorisation question of
     whether this caller is the project's PM.
 
-    A project with NO membership rows is still writable by any authenticated caller. That is the
-    pre-B8 legacy shape and it is an authorisation gap, not an authentication one; closing it
-    would lock every imported Apps Script project out of the interface at once and needs its own
-    decision. It is reported rather than changed here.
+    THE UNMEMBERED ARM IS NOW CLOSED TOO. A project with no membership rows used to be writable
+    by any authenticated caller, which was the last route from one authenticated user to
+    another user's project. It survived because closing it would have locked real owners out
+    until membership was backfilled. That dependency is gone: the site starts fresh, so there is
+    nothing imported to lock out, and both creation paths now write the PM row in the same
+    transaction as the project, so a project cannot come into existence without an owner.
     """
     if settings is None:
         # No session secret configured means no token can be verified, so nothing can be
@@ -252,6 +292,9 @@ def guard_project_write(session: Session, payload: dict, settings) -> dict | Non
     caller, problem = resolve_caller(session, payload, settings.session_secret)
     if problem:
         return problem
+    # Handed to the handler, the same way guard_project_read hands it to a collection read.
+    # w_create needs it to write a membership row in its own transaction; nothing else reads it.
+    payload["_caller_participant_id"] = caller.participant_id
 
     # `save` carries its project id NESTED, as payload["project"]["id"] — every other action puts
     # it at the top level. Reading only payload["id"] meant `save` resolved no project, fell into
@@ -263,10 +306,22 @@ def guard_project_write(session: Session, payload: dict, settings) -> dict | Non
                     or (payload.get("project") or {}).get("id")
                     or "").strip()
     project = _project_by_legacy(session, legacy_id)
-    if project is None or not has_members(session, project):
-        # Authenticated, and the project has no membership rows to authorise against. This is the
-        # pre-B8 legacy shape; see the docstring. Allowed, and reported as the remaining gap.
+    if project is None:
+        # Not found is the handler's answer to give, in its own existing wording. Replacing it
+        # with an authorisation error here would tell a caller the difference between a project
+        # that is absent and one they simply cannot see.
         return None
+    # A PROJECT WITH NO MEMBERSHIP ROWS IS NO LONGER UNGUARDED.
+    #
+    # This used to return allow, which made an unmembered project writable by any authenticated
+    # caller and was the last route from one authenticated user to another user's project. It
+    # survived because closing it would have locked real owners out until membership was
+    # backfilled. That dependency is gone: the site starts fresh, so there is nothing imported to
+    # lock out, and `a_projectcreate` now writes the PM row in the same transaction as the
+    # project, so a project cannot come into existence without one.
+    #
+    # Falling through to the membership check below is the whole change: no members means no
+    # active membership, which means refused.
     member = active_membership(session, project, caller.participant_id)
     if member is None or member.project_role != ROLE_PM:
         audit(session, "pm_only_action_denied", participant_id=caller.participant_id,
@@ -300,9 +355,9 @@ def guard_project_read(session: Session, params: dict, settings, action: str) ->
     PM here would break the role rather than protect anything, and `require_member` has drawn that
     line for the research read paths since B8.
 
-    A project with NO membership rows stays readable by any authenticated caller, exactly as it
-    stays writable by one. That is the pre-B8 legacy shape and closing it is a separate decision
-    that needs a membership backfill first; it is reported, not changed here.
+    A project with NO membership rows is no longer readable by any authenticated caller, exactly
+    as it is no longer writable by one. The backfill that arm was waiting on is not needed: the
+    site starts fresh and creation now writes the owner's membership row with the project.
 
     Collection reads are FILTERED, not refused. `list`, `listslim` and `listarchived` return rows
     the caller may see and omit the rest, because refusing the whole call would make a portfolio
@@ -325,11 +380,13 @@ def guard_project_read(session: Session, params: dict, settings, action: str) ->
 
     legacy_id = str(params.get("id") or "").strip()
     project = _project_by_legacy(session, legacy_id)
-    if project is None or not has_members(session, project):
-        # Either it does not exist — the handler returns its own "Not found", which is the
-        # existing wording and must not be replaced by an authorisation error that would tell an
-        # attacker the difference — or it predates B8 and has nobody to authorise against.
+    if project is None:
+        # The handler returns its own "Not found", which is the existing wording and must not be
+        # replaced by an authorisation error that would tell a caller the difference between a
+        # project that is absent and one they cannot see.
         return None
+    # No membership rows no longer means no authorisation. See guard_project_write for why that
+    # arm existed and why it is gone.
     if active_membership(session, project, caller.participant_id) is None:
         audit(session, "project_access_denied", participant_id=caller.participant_id,
               action=action, project_id=legacy_id)
@@ -351,9 +408,10 @@ def readable_project_ids(session: Session, params: dict) -> set | None:
         return None
     visible = set()
     for project in session.scalars(select(Project)).all():
-        if not has_members(session, project):
-            visible.add(project.legacy_id)          # pre-B8 legacy: unowned, see the docstring
-        elif active_membership(session, project, participant_id) is not None:
+        # Membership is the only reason to see a project. An unmembered project used to be listed
+        # for everyone; it is now listed for nobody, which is the same rule the two guards apply
+        # and is safe because a project can no longer be created without a PM.
+        if active_membership(session, project, participant_id) is not None:
             visible.add(project.legacy_id)
     return visible
 

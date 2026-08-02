@@ -31,7 +31,7 @@ from .documents import _live_result, _resolve_period
 from .facade import err, now_iso
 from .research_identity import audit, resolve_caller
 from .research_membership import ROLE_PM, ProjectMember
-from .research_models import new_ulid
+from .research_models import Participant, new_ulid
 from .models import Project
 
 
@@ -48,8 +48,19 @@ def _generate_legacy_id() -> str:
 
 def a_projectcreate(session: Session, payload: dict, secret: str, ttl: int) -> dict[str, Any]:
     """
-    Any signed-in participant. Creates a project and grants the caller PM on it in one
-    transaction — there is no window where the project exists with no PM.
+    Any signed-in participant. Creates a project and grants ONE named person PM on it in the same
+    transaction, so there is no window where the project exists with no PM and no later step that
+    can fail and leave it that way.
+
+    `pm_participant_id` names someone other than the caller and is ADMIN ONLY. It exists because
+    the administration surface creates projects on behalf of participants, and the two-step it
+    used before could not work: `projectcreate` made the ADMIN the PM, and the `adminmemberadd`
+    that followed was then refused by the one-active-PM rule ("this project already has an active
+    PM; revoke them first"). Measured through /exec before this change — the project was created,
+    the assignment failed, and the intended owner never saw it. The selector was labelled
+    optional, so the failure read as a partial success rather than a broken flow.
+
+    Omitted, the caller is the PM, which is the self-service path and is unchanged.
     """
     caller, problem = resolve_caller(session, payload, secret)
     if problem:
@@ -60,6 +71,18 @@ def a_projectcreate(session: Session, payload: dict, secret: str, ttl: int) -> d
         return err("name is required")
     sector = str(payload.get("sector") or "").strip()
     address = str(payload.get("address") or "").strip()
+
+    # Who will hold PM. Resolved BEFORE anything is written, so a bad participant id refuses the
+    # whole call rather than leaving a project behind for someone to notice later.
+    pm_id = str(payload.get("pm_participant_id") or "").strip() or caller.participant_id
+    if pm_id != caller.participant_id:
+        if not caller.is_admin:
+            audit(session, "admin_action_denied", participant_id=caller.participant_id,
+                  action="projectcreate", reason="assigning PM to another participant")
+            session.commit()
+            return err("not authorized: only a ResearchAdmin may assign another person as PM")
+        if session.get(Participant, pm_id) is None:
+            return err(f"participant not found: {pm_id}")
 
     pid = _generate_legacy_id()
     now = now_iso()
@@ -91,16 +114,24 @@ def a_projectcreate(session: Session, payload: dict, secret: str, ttl: int) -> d
     session.add(project)
     session.flush()
 
-    session.add(ProjectMember(project_id=project.id, user_key=caller.participant_id,
+    # THE SAME TRANSACTION as the project row above. Nothing is committed until both exist, so a
+    # failure anywhere below leaves neither and the unmembered state is unreachable by
+    # construction rather than by a later repair.
+    session.add(ProjectMember(project_id=project.id, user_key=pm_id,
                               project_role=ROLE_PM, added_by=caller.participant_id))
+    self_service = pm_id == caller.participant_id
     audit(session, "project_created", participant_id=caller.participant_id, project_id=pid,
-          name=name, sector=sector, self_service=True)
-    audit(session, "member_added", participant_id=caller.participant_id, project_id=pid,
-          project_role=ROLE_PM, self_service=True)
+          name=name, sector=sector, self_service=self_service, pm_participant_id=pm_id)
+    audit(session, "member_added", participant_id=pm_id, project_id=pid,
+          project_role=ROLE_PM, self_service=self_service, added_by=caller.participant_id)
     session.commit()
 
     return {"ok": True, "project_id": pid, "name": name, "sector": sector,
-           "project_role": ROLE_PM, "period": 1, "computed": False,
+           # The caller's OWN role on the project. An admin who assigned someone else is not a
+           # member, and saying "PM" to them would be false.
+           "project_role": ROLE_PM if self_service else None,
+           "pm_participant_id": pm_id,
+           "period": 1, "computed": False,
            # Reported so the interface can say what happened rather than leaving the PM to
            # notice later that their project is missing from the map.
            "address": address or None,

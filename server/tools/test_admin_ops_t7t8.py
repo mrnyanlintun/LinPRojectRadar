@@ -139,6 +139,16 @@ writer = post({"action": "researchlogin",
 proj_resp = post({"action": "create", "id": "PRJ-T7T8-A", "name": "T7T8 Membership Test",
                   "session_token": writer})
 check(proj_resp.get("ok") is True, "test project created", str(proj_resp)[:100])
+# Creation now writes a PM row in the same transaction, so the creator holds PM and this suite
+# has to hand it over before it can test adding one. That the handover is NECESSARY is itself the
+# new invariant: there is no moment when this project has no PM.
+_members = post({"action": "adminmemberlist", "session_token": admin, "id": "PRJ-T7T8-A"})
+check(len(_members.get("members") or []) == 1
+      and _members["members"][0]["project_role"] == "PM",
+      "creating a project also creates its PM, in the same transaction",
+      str(_members.get("members"))[:130])
+post({"action": "adminmemberrevoke", "session_token": admin,
+      "member_id": _members["members"][0]["member_id"]})
 
 pm1_id, pm1 = make_participant("T7T8-PM1")
 pm2_id, pm2 = make_participant("T7T8-PM2")

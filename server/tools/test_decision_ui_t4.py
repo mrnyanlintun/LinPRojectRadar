@@ -150,6 +150,23 @@ post({"action": "create", "id": "PRJ-T4-ANALYTICS", "name": "T4 Analytics Projec
       "session_token": writer})
 
 
+def hand_pm_to(legacy_id: str, participant_id: str) -> dict:
+    """
+    Move PM on a project that already has one.
+
+    Creating a project now writes its creator's PM row in the same transaction, and only one
+    active PM is permitted per project, so a fixture that wants a different owner must revoke
+    before it adds. Every check below that used a bare adminmemberadd goes through here instead.
+    """
+    for m in post({"action": "adminmemberlist", "session_token": admin,
+                   "id": legacy_id}).get("members") or []:
+        if m.get("active") and m.get("project_role") == "PM":
+            post({"action": "adminmemberrevoke", "session_token": admin,
+                  "member_id": m["member_id"]})
+    return post({"action": "adminmemberadd", "session_token": admin, "id": legacy_id,
+                 "participant_id": participant_id, "project_role": "PM"})
+
+
 def enrol(code: str, do_intake: bool = True, scen: str = None,
           group: str = "GT4", scen_set: str = "SET-T4"):
     c = post({"action": "adminparticipantcreate", "session_token": admin,
@@ -189,8 +206,7 @@ set_extractor_override(StubExtractor({
         "budget_at_completion": 10000000, "report_date": "2026-06-30",
     }),
 }))
-post({"action": "adminmemberadd", "session_token": admin, "id": "PRJ-T4-ANALYTICS",
-      "participant_id": p_id, "project_role": "PM"})
+hand_pm_to("PRJ-T4-ANALYTICS", p_id)
 import base64 as _b64
 up = post({"action": "projectupload", "session_token": p, "id": "PRJ-T4-ANALYTICS", "period": 1,
            "documents": [{"filename": "monthly-06.pdf", "mimeType": "application/pdf",
@@ -467,8 +483,7 @@ print("\nGuarantee 8 — an observer sees evidence but cannot judge, reveal, or 
 # assignment's project has membership rows, so this is the fixture that exercises it.
 pm2_id, pm2, _ = enrol("T4-OBS-PM", scen=scenario_obs, group="GT4OBS", scen_set="SET-T4OBS")
 obs_id, obs, _ = enrol("T4-OBS", scen=scenario_obs, group="GT4OBS", scen_set="SET-T4OBS")
-post({"action": "adminmemberadd", "session_token": admin, "id": "PRJ-T4-MEMBERED",
-      "participant_id": pm2_id, "project_role": "PM"})
+hand_pm_to("PRJ-T4-MEMBERED", pm2_id)
 post({"action": "adminmemberadd", "session_token": admin, "id": "PRJ-T4-MEMBERED",
       "participant_id": obs_id, "project_role": "Observer"})
 post({"action": "projectcompute", "session_token": pm2, "id": "PRJ-T4-MEMBERED", "period": 1})
