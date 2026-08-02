@@ -57,7 +57,13 @@ def post(payload: dict) -> dict:
 
 
 def get(params: dict) -> dict:
-    r = client.get("/exec", params=params)
+    # Reads are authenticated as of 2026-08-02, and the credential travels in a HEADER rather
+    # than the query string. Passing `session_token=None` in params forces a genuinely anonymous
+    # request, which is how the refusal checks are written.
+    q = dict(params)
+    tok = q.pop("session_token", SESSION)
+    headers = {"Authorization": "Bearer " + tok} if tok else {}
+    r = client.get("/exec", params=q, headers=headers)
     assert r.status_code == 200
     return r.json()
 
@@ -393,16 +399,38 @@ check(r.get("ok") is False, "a malformed session token is refused on an unmember
       str(r)[:160])
 
 # B8 authorisation still applies on top: a valid session that is not the project's PM is refused.
+# The document is captured BEFORE the member is added, because adding one also closes the project
+# to this suite's session for READS — which is the read guard doing its job and is asserted below.
+doc = get({"action": "get", "id": P1})["project"]
 member = post({"action": "adminparticipantcreate", "session_token": admin})
+member_tok = post({"action": "researchlogin",
+                   "access_token": member["access_token"]})["session_token"]
 post({"action": "adminmemberadd", "session_token": admin, "id": P1,
       "participant_id": member["participant_id"], "project_role": "PM"})
-doc = get({"action": "get", "id": P1})["project"]
 doc["name"] = "non-PM write on a membered project"
 r = post({"action": "save", "project": doc})
 check(r.get("ok") is False and "only the project's PM" in (r.get("error") or ""),
       "an authenticated non-PM is still refused on a membered project", str(r)[:160])
-check((get({"action": "get", "id": P1}).get("project") or {}).get("name")
+check((get({"action": "get", "id": P1}, ).get("project") or {}).get("name")
       != "non-PM write on a membered project", "and that write did not land either")
+
+# READS ARE AUTHORISED TOO, as of 2026-08-02. P1 now has a PM who is not this suite's session, so
+# this suite must no longer be able to read it — and the PM must still be able to.
+r = get({"action": "get", "id": P1})
+check(r.get("ok") is False and "not a member" in (r.get("error") or ""),
+      "a non-member is refused a READ of a membered project", str(r)[:120])
+check("project" not in r, "and the refusal carries no project payload at all", str(sorted(r)))
+r = client.get("/exec", params={"action": "get", "id": P1},
+               headers={"Authorization": "Bearer " + member_tok}).json()
+check(r.get("ok") is True and (r.get("project") or {}).get("id") == P1,
+      "while the project's own PM reads it normally", str(r)[:120])
+# Collections are FILTERED rather than refused: the membered project drops out of this session's
+# list, and the projects it does own stay.
+listed = [p["id"] for p in (get({"action": "list"}).get("projects") or [])]
+check(P1 not in listed, "the membered project is filtered out of a non-member's list",
+      str(listed)[:120])
+check(GUARDED in listed, "and the caller's own unmembered projects are still listed",
+      str(listed)[:120])
 
 print()
 print("=" * 78)

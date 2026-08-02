@@ -221,7 +221,9 @@ post({"action": "create", "id": PID, "name": "Doc risk range", "sector": "Aviati
 # empty set, and that refusal happens BEFORE the range guard. Without this seed every check
 # below would pass for the wrong reason: the action would refuse 85 because the project has no
 # signals, not because 85 is out of range, and the suite would be green with the guard deleted.
-doc = client.get("/exec", params={"action": "get", "id": PID}).json()["project"]
+# Reads are authenticated as of 2026-08-02; the credential goes in a header, not the query string.
+doc = client.get("/exec", params={"action": "get", "id": PID},
+                 headers={"Authorization": "Bearer " + SESSION}).json()["project"]
 doc["signals"] = {"evm": {"cpi": 0.9}}
 doc["signalInputs"] = {"cpi": 0.9, "docRiskScore": 0.4}
 post({"action": "save", "project": doc})
@@ -240,7 +242,8 @@ for value, _why in OUT_OF_RANGE[:4]:
 
 # And the refusal must not have written anything. Read back independently rather than trusting
 # the refusal's own response: the point is what is in storage, not what the handler said.
-stored = client.get("/exec", params={"action": "get", "id": PID}).json()
+stored = client.get("/exec", params={"action": "get", "id": PID},
+                    headers={"Authorization": "Bearer " + SESSION}).json()
 check(stored["project"]["signalInputs"]["docRiskScore"] == 0.55,
       "a refused overwrite left the stored value untouched",
       str(stored["project"]["signalInputs"].get("docRiskScore")))

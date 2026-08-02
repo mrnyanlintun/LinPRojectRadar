@@ -202,9 +202,25 @@
     }).finally(() => { staleRefetchQueued = false; });
   }
 
-  /* ---------- CORS-safe fetch helpers (simple requests only) ---------- */
+  /* ---------- fetch helpers ---------- */
+
+  /* The session travels in a HEADER on reads, not in the query string.
+
+     Every /exec GET that can return project data now requires a credential, and a token in a URL
+     is logged by every intermediary that logs URLs — the proxy, the access log, the browser's
+     own history. `Authorization: Bearer` keeps it out of all three.
+
+     The "no custom headers → no preflight" rule this function was written under came from Apps
+     Script, which could not answer a CORS preflight. That constraint expired at T1: the app is
+     served from the same origin as /exec (see config.js), and a same-origin request issues no
+     preflight whatever headers it carries. */
+  function authHeaders() {
+    const t = (window.LinAuth && LinAuth.getToken) ? LinAuth.getToken() : null;
+    return t ? { "Authorization": "Bearer " + t } : {};
+  }
+
   async function apiGet(qs) {
-    const r = await fetch(url() + qs);                       // no custom headers → no preflight
+    const r = await fetch(url() + qs, { headers: authHeaders() });
     if (!r.ok) throw new Error("HTTP " + r.status);
     const j = await r.json();
     if (!j || j.ok === false) throw new Error((j && j.error) || "backend error");

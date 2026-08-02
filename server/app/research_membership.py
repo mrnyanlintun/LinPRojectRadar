@@ -277,6 +277,87 @@ def guard_project_write(session: Session, payload: dict, settings) -> dict | Non
     return None
 
 
+# ---------------------------------------------------------------- facade read guard
+
+
+# Reads that name ONE project through an `id` parameter. Membership is checked against that
+# project. The rest of the guarded reads are collections and are filtered per row instead.
+_PROJECT_SCOPED_READS = frozenset({"get", "gethistory", "listcorpus", "listauditresults"})
+
+
+def guard_project_read(session: Session, params: dict, settings, action: str) -> dict | None:
+    """
+    Authentication and membership for facade READS, the mirror of guard_project_write.
+
+    Every GET that can return project data used to be open. Measured through /exec against a
+    project owned by a signed-in PM: `get` returned the whole document including its event log,
+    `listslim` returned cpi / spi / docRiskScore for every project on the deployment, `gethistory`
+    returned stored period snapshots, and none of it needed a credential.
+
+    THE TERMS ARE THE WRITE GUARD'S, with one difference that is deliberate. Authentication first,
+    for every caller. Then, where the project has membership rows, the caller must be an ACTIVE
+    MEMBER — not necessarily the PM. An Observer is a member precisely so they can read; requiring
+    PM here would break the role rather than protect anything, and `require_member` has drawn that
+    line for the research read paths since B8.
+
+    A project with NO membership rows stays readable by any authenticated caller, exactly as it
+    stays writable by one. That is the pre-B8 legacy shape and closing it is a separate decision
+    that needs a membership backfill first; it is reported, not changed here.
+
+    Collection reads are FILTERED, not refused. `list`, `listslim` and `listarchived` return rows
+    the caller may see and omit the rest, because refusing the whole call would make a portfolio
+    unusable for anyone who is a member of some projects and not others. The filtering lives in
+    the handlers, which is where the rows are; this function authenticates and hands them the
+    resolved caller.
+    """
+    if settings is None:
+        # No session secret means no token can be verified, so nothing can be authenticated.
+        return err("not authorized: this build cannot verify a session")
+
+    caller, problem = resolve_caller(session, params, settings.session_secret)
+    if problem:
+        return problem
+    # Handed to the handlers so a collection read can filter without resolving the caller again.
+    params["_caller_participant_id"] = caller.participant_id
+
+    if action not in _PROJECT_SCOPED_READS:
+        return None
+
+    legacy_id = str(params.get("id") or "").strip()
+    project = _project_by_legacy(session, legacy_id)
+    if project is None or not has_members(session, project):
+        # Either it does not exist — the handler returns its own "Not found", which is the
+        # existing wording and must not be replaced by an authorisation error that would tell an
+        # attacker the difference — or it predates B8 and has nobody to authorise against.
+        return None
+    if active_membership(session, project, caller.participant_id) is None:
+        audit(session, "project_access_denied", participant_id=caller.participant_id,
+              action=action, project_id=legacy_id)
+        session.commit()
+        return err("not authorized: not a member of this project")
+    return None
+
+
+def readable_project_ids(session: Session, params: dict) -> set | None:
+    """
+    The project ids a collection read may return, or None for "no filtering needed".
+
+    None is returned only when the caller could not be resolved, which cannot happen through
+    dispatch_get — guard_project_read refuses first. It exists so a handler called directly in a
+    test does not silently filter everything away.
+    """
+    participant_id = params.get("_caller_participant_id")
+    if not participant_id:
+        return None
+    visible = set()
+    for project in session.scalars(select(Project)).all():
+        if not has_members(session, project):
+            visible.add(project.legacy_id)          # pre-B8 legacy: unowned, see the docstring
+        elif active_membership(session, project, participant_id) is not None:
+            visible.add(project.legacy_id)
+    return visible
+
+
 # ---------------------------------------------------------------- admin actions
 
 
