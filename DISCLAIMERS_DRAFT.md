@@ -1,23 +1,31 @@
-# Disclaimers by account type. DRAFT. REQUIRES LIN'S REVIEW BEFORE ANY OF IT IS PUBLISHED.
+# Disclaimers by account type. APPROVED AND LIVE.
 
-**Nothing in this file is live.** These are drafts of the liability notices that vary by account
-type, written for review under the standing rule that liability and consent language is never
-adopted on a session's own judgement. No live surface has been changed to carry this text, and
-the operational notice currently live in `index.html` is untouched by this file.
+**This file is the source of the live text.** Lin approved these variants as drafted on
+2026-08-02 and they are now published. The filename keeps its original form because that is how
+the approval refers to it; the word "draft" in the name is historical, not a status.
 
-Two related facts, for the reviewer:
+**The two variants below are live verbatim.** Section 1 shows to research accounts and before
+sign-in; section 2 shows to operational accounts. Each appears on two surfaces, the sign-in
+notice and the site footer, in both cases quoting the blockquotes below character for character.
 
-- The operational notice at `index.html` (login expander and footer variant) is itself still
-  marked in comments as drafted and not yet reviewed, and it **can now display**: `auth.js` sets
-  the operational class from the login response, so an operational account sees that unreviewed
-  text today. Reviewing this file is also the opportunity to review or replace that.
+**Edit here first.** `server/tools/test_disclaimers.py` extracts the blockquotes in sections 1
+and 2 from this file and fails if the live text in `index.html` diverges from them by a single
+character, so the reviewable text and the live text cannot drift apart. Changing the wording is
+the researcher's decision; a session may not extend, strengthen, or add to it.
+
+Still open, and unchanged by this approval:
+
 - Both export paths (`assets/js/export.js` and `server/app/research_export.py`) carry no notice,
   attribution, or copyright at all. The exported file is the artifact most likely to leave the
   platform and be read by someone who never saw a footer. Whether a notice belongs in the export
-  is a decision this draft flags but does not make.
+  is a decision this file flags but does not make.
+- The sign-in page's own attribution and copyright lines are shorter forms that do not match
+  section 3 below. They were left alone: section 3 states what is constant across the two
+  account types, and reconciling the sign-in page's separate lines to it is an editorial
+  decision that was not part of this approval.
 
-The mechanism these drafts would ride on already exists and is verified: `.notice-research` is
-the default and shows before sign-in, because restrictive text is the fail-safe direction, and
+The mechanism these variants ride on is verified: `.notice-research` is the default and shows
+before sign-in, because restrictive text is the fail-safe direction, and
 `body.og-account-operational` switches to the operational variant only after the server resolves
 the caller as operational.
 

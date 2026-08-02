@@ -746,8 +746,12 @@ body.t-light .theme-switch button.active { color: #fff; }
   max-width: none;
 }
 .footer-copyright { margin: 0 0 10px; color: var(--muted); }
-.footer-legal { margin: 0 0 10px; padding-left: 18px; }
-.footer-legal li { margin-bottom: 4px; }
+/* The account-type notice blocks. Prose paragraphs, not bullets, because the approved source
+   (DISCLAIMERS_DRAFT.md) is written as three paragraphs per variant and the live text quotes it
+   verbatim. The display switch in the account-type block below keys on the class, not the tag. */
+.footer-legal { margin: 0 0 10px; }
+.footer-legal p { margin: 0 0 6px; }
+.footer-legal p:last-child { margin-bottom: 0; }
 .footer-legal strong { color: var(--radar-amber); font-weight: 600; }
 .footer-praxis { margin: 0; opacity: 0.8; }
 
@@ -1518,6 +1522,8 @@ body.t-light .lwr-robot-svg {
   line-height: 1.5;
   color: var(--muted);
 }
+.login-expander-body p { margin: 0 0 6px; }
+.login-expander-body p:last-child { margin-bottom: 0; }
 .upload-disclaimer {
   margin-top: 8px;
   font-size: 11px;

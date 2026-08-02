@@ -308,47 +308,33 @@
       <div class="login-divider" role="separator" aria-label="or"><span>or</span></div>
 
       <div id="google-signin-btn"></div>
-      <!-- Two notices, selected by account_type. The research notice is the DEFAULT and is
+      <!-- APPROVED LIABILITY TEXT. THE SOURCE IS DISCLAIMERS_DRAFT.md, AND THE WORDING BELOW IS
+           QUOTED FROM IT VERBATIM. Do not edit it here. Edit the source, then this, and keep the
+           two identical: server/tools/test_disclaimers.py fails if they diverge by a character.
+           Do not extend or strengthen it either; adopting liability wording is the researcher's
+           decision, not a session's.
+
+           Two notices, selected by account_type. The research notice is the DEFAULT and is
            what shows before sign-in, when no account type is known: the restrictive text is
-           the fail-safe. assets/js/features.js adds body.og-account-operational only after
-           the server has resolved the caller as an operational account. -->
+           the fail-safe. assets/js/features.js and assets/js/auth.js add
+           body.og-account-operational only after the server has resolved the caller as an
+           operational account. -->
       <details class="login-disclaimer notice-research login-expander">
-        <summary><strong>Notice.</strong> Academic research instrument. Do not upload
-          confidential or real-project material. <span class="login-expander-cue">Full
-          notice</span></summary>
-        <div class="login-expander-body">
-        NOTICE: ACADEMIC RESEARCH INSTRUMENT. This platform is a proof-of-concept
-        developed solely for doctoral research and demonstration purposes. It is not
-        a commercial service and is provided &quot;as is,&quot; without warranty of any kind,
-        express or implied. Users <strong>shall not upload confidential, proprietary,
-        personally identifiable, or otherwise sensitive information</strong>, nor any
-        document relating to an actual project. Uploaded content is transmitted to
-        third-party artificial-intelligence services and stored in research
-        infrastructure. By proceeding, the user acknowledges these terms and assumes
-        sole responsibility for any content submitted. The operator disclaims all
-        liability arising from or relating to uploaded content to the fullest extent
-        permitted by law.
-        </div>
-      </details>
-      <!-- DRAFT. NOT YET REVIEWED. This is a liability notice drafted for the researcher's
-           review (T1a Task 2); it must be approved before it is relied upon. It cannot
-           display yet: the SPA does not sign a participant in until T4, so no account type
-           ever resolves to operational in this build. -->
-      <details class="login-disclaimer notice-operational login-expander">
-        <summary><strong>Notice.</strong> Provided for research and demonstration. You are
-          responsible for confirming you may upload each document.
+        <summary><strong>Notice: academic research instrument.</strong>
           <span class="login-expander-cue">Full notice</span></summary>
         <div class="login-expander-body">
-        Opus Gubernatio is provided for research and demonstration, and is provided
-        &quot;as is,&quot; without warranty of any kind, express or implied. Uploaded content is
-        transmitted to third-party artificial-intelligence services for extraction and is
-        stored in research infrastructure. <strong>You are responsible for confirming that
-        you are authorized
-        to upload each document</strong>, and for compliance with your organization&#39;s
-        data-handling, confidentiality, and records obligations. Analytical outputs are
-        advisory and <strong>do not constitute a validated compliance determination</strong>.
-        The operator disclaims all liability arising from or relating to uploaded content to
-        the fullest extent permitted by law.
+          <p><strong>Notice: academic research instrument.</strong> Opus Gubernatio is a proof of concept developed solely for doctoral research and demonstration. It is not a commercial service and is provided as is, without warranty of any kind, express or implied.</p>
+          <p>All project data is synthetic. No real project, agency, employer, contractor, or vendor is referenced. Do not upload confidential, proprietary, personally identifiable, or otherwise sensitive information, or any document relating to an actual project.</p>
+          <p>Uploaded content is sent to third-party artificial intelligence services for extraction and is stored in research infrastructure. Analytical outputs are advisory. They are not a validated compliance determination, a contractual direction, or a diagnosis of a live project. The operator disclaims all liability arising from or relating to uploaded content to the fullest extent permitted by law.</p>
+        </div>
+      </details>
+      <details class="login-disclaimer notice-operational login-expander">
+        <summary><strong>Notice.</strong>
+          <span class="login-expander-cue">Full notice</span></summary>
+        <div class="login-expander-body">
+          <p><strong>Notice.</strong> Opus Gubernatio is provided as is, without warranty of any kind, express or implied.</p>
+          <p>Analytical outputs are advisory. They are not a validated compliance determination, a contractual direction, or a diagnosis of a live project.</p>
+          <p>Uploaded content is sent to third-party artificial intelligence services for extraction and is stored in the platform. You are responsible for confirming that you are authorized to upload each document, and for your organization's data handling, confidentiality, and records obligations. The operator disclaims all liability arising from or relating to uploaded content to the fullest extent permitted by law.</p>
         </div>
       </details>
       <!-- Order: notice, attribution, copyright. The copyright used to sit above both, which
@@ -1088,21 +1074,22 @@
          that is stamped into an audit record as a label and gates nothing. The transition rules do
          carry real versions, but they are operator-supplied and nothing seeds this one.
 
-         THE OPERATIONAL WORDING BELOW IS DRAFTED FOR THE RESEARCHER'S REVIEW AND IS NOT APPROVED
-         LIABILITY LANGUAGE. See REPORT_2026-08-01_content-inventory.md. -->
+         APPROVED LIABILITY TEXT. THE SOURCE IS DISCLAIMERS_DRAFT.md, AND BOTH VARIANTS BELOW ARE
+         QUOTED FROM IT VERBATIM, the same wording the login notice carries. Do not edit it here;
+         edit the source, then this, and keep the two identical. server/tools/test_disclaimers.py
+         fails if they diverge by a character. -->
     <footer class="site-footer">
-      <p class="footer-praxis-notice">Opus Gubernatio is a decision-support platform developed for Doctor of Engineering praxis research. Analytical outputs are advisory. They are not a validated compliance determination, a contractual direction, or a diagnosis of a live project.</p>
       <p class="footer-copyright">© 2026 Nyan Lin Tun. All rights reserved. Opus Gubernatio™ and the associated framework, software, and documentation are the intellectual property of the author. Unauthorized reproduction, distribution, or use is prohibited.</p>
-      <ul class="footer-legal notice-research">
-        <li><strong>Synthetic demonstration data only.</strong> All project data is synthetic; no real project, agency, employer, contractor, or vendor is referenced.</li>
-        <li><strong>Not a validated production system.</strong> It does not validate predictive accuracy, diagnose live projects, or issue contractual direction.</li>
-        <li><strong>Academic research instrument, provided &quot;as is&quot; without warranty.</strong> Do not submit confidential or actual project documents; the operator disclaims all liability for uploaded content to the fullest extent permitted by law.</li>
-      </ul>
-      <ul class="footer-legal notice-operational">
-        <li><strong>Provided as is, without warranty</strong> of any kind, express or implied.</li>
-        <li><strong>Outputs are advisory.</strong> They are not a validated compliance determination, a contractual direction, or a diagnosis of a live project.</li>
-        <li><strong>Uploaded content is sent to third-party AI services</strong> for extraction and is stored in the platform. You are responsible for confirming that you are authorized to upload each document, and for your organization's data handling, confidentiality, and records obligations. The operator disclaims all liability arising from or relating to uploaded content to the fullest extent permitted by law.</li>
-      </ul>
+      <div class="footer-legal notice-research">
+        <p><strong>Notice: academic research instrument.</strong> Opus Gubernatio is a proof of concept developed solely for doctoral research and demonstration. It is not a commercial service and is provided as is, without warranty of any kind, express or implied.</p>
+        <p>All project data is synthetic. No real project, agency, employer, contractor, or vendor is referenced. Do not upload confidential, proprietary, personally identifiable, or otherwise sensitive information, or any document relating to an actual project.</p>
+        <p>Uploaded content is sent to third-party artificial intelligence services for extraction and is stored in research infrastructure. Analytical outputs are advisory. They are not a validated compliance determination, a contractual direction, or a diagnosis of a live project. The operator disclaims all liability arising from or relating to uploaded content to the fullest extent permitted by law.</p>
+      </div>
+      <div class="footer-legal notice-operational">
+        <p><strong>Notice.</strong> Opus Gubernatio is provided as is, without warranty of any kind, express or implied.</p>
+        <p>Analytical outputs are advisory. They are not a validated compliance determination, a contractual direction, or a diagnosis of a live project.</p>
+        <p>Uploaded content is sent to third-party artificial intelligence services for extraction and is stored in the platform. You are responsible for confirming that you are authorized to upload each document, and for your organization's data handling, confidentiality, and records obligations. The operator disclaims all liability arising from or relating to uploaded content to the fullest extent permitted by law.</p>
+      </div>
       <p class="footer-praxis">Doctor of Engineering<br>The School of Engineering and Applied Science of The George Washington University</p>
     </footer>
 

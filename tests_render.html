@@ -86,6 +86,11 @@
 <script src="assets/js/taxonomy.js"></script>
 <script src="assets/js/decision.js"></script>
 <script src="assets/js/app.js"></script>
+<!-- knowledge.js is loaded ONLY so that assertion group 7 can prove it parsed. It defines two
+     globals and does no work until renderKnowledgePage() is called, which returns immediately
+     when #knowledge-root is absent, so it cannot disturb the fixtures above. See group 7 for
+     why a page that never renders the Methods tab nonetheless has to load this file. -->
+<script src="assets/js/knowledge.js"></script>
 <script>
 (function () {
   "use strict";
@@ -247,6 +252,31 @@
       "Signal breakdown not available", out);
     assert("classifyConflict: does not fall through to a specific finding",
       false, out === "Mixed early warning" || out === "Agreement: low risk");
+  })();
+
+  // 7. knowledge.js parsed, and its library is populated.
+  //
+  //    WHY THIS IS HERE, ON A PAGE ABOUT STORED-RESULT RENDERING. knowledge.js stopped parsing
+  //    at the module renumbering: two entries were removed by deleting only each object's
+  //    opening line, which is a syntax error, so the IIFE never ran. The cost was invisible and
+  //    total. LIN_KNOWLEDGE was never defined, the Methods tab rendered nothing at all, and the
+  //    scripted assistant had no library to answer from, for an unknown number of builds. The
+  //    854-check server suite stayed green throughout, because nothing loads that file in a
+  //    browser. These four lines are the check that was missing.
+  //
+  //    Existence alone is not enough: a file can parse and still lose its content. The counts
+  //    are asserted as non-empty because the assistant answers by matching against topics and
+  //    terms, so an empty collection is the same failure wearing a different face.
+  (function () {
+    assert("knowledge.js: LIN_KNOWLEDGE is defined (the file parsed)",
+      "object", typeof window.LIN_KNOWLEDGE);
+    const k = window.LIN_KNOWLEDGE || {};
+    assert("knowledge.js: the assistant has topics to match against",
+      true, Array.isArray(k.topics) && k.topics.length > 0);
+    assert("knowledge.js: the assistant has terms to define",
+      true, Array.isArray(k.terms) && k.terms.length > 0);
+    assert("knowledge.js: the Methods tab renderer is callable",
+      "function", typeof (window.LinKnowledge && window.LinKnowledge.renderKnowledgePage));
   })();
 
   // ---- render results ----

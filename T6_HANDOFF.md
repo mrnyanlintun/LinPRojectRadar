@@ -3,6 +3,96 @@
 > user-facing surface quotes verbatim. It lives in the repository so it cannot fail to reach a
 > session, which it did three times while it lived outside. Read it before this handoff, not after.
 
+# ACCEPTED STATES — DELIBERATE, DECIDED, NOT DEFECTS
+
+**Read this before "fixing" either of the two things below.** Both have been decided. A session
+that rediscovers one of them and treats it as a defect is repeating work that has already been
+done, and in the second case would undo a rule rather than a bug.
+
+## 1. The Methods tab navigates ten categories relabelled by group. That is deliberate.
+
+`GROUP_ASSIGNMENT.md` defines **four** groups. The Methods tab still navigates the **ten** legacy
+categories, each now labelled with the group its modules belong to (where a category's modules
+split across groups, the label follows the majority). The two are not in conflict: the taxonomy is
+four groups, and the navigation is a finer-grained index into it.
+
+**Restructuring the tab around the four groups is a rebuild, not a sweep, and it has been deferred
+on purpose.** It would mean re-cutting every module reference section, re-parenting every topic,
+and re-deciding what a group-level article says where a category-level one exists today. Nothing
+about the current arrangement is untrue; a reader expanding "Recommendation and Governance /
+Governance and Compliance" finds four delivery-quality methods that belong to Project Health,
+which is a granularity mismatch, not a false statement. Do not start the rebuild as a side effect
+of another task.
+
+## 2. Method thresholds appear in the module reference and NOT in the assistant. This is a rule.
+
+Stated as a rule so future surfaces follow it rather than re-deciding it each time:
+
+> **Numeric thresholds belong where a reader has navigated to method detail, and never where they
+> arrive unbidden as apparent fact.**
+
+The module reference in the Methods tab carries its `bands` values, because a method reference
+without thresholds is not a reference: the reader is there precisely to see where the boundaries
+fall. The scripted assistant carries none, because an answer to "what is CUSUM?" that volunteers
+"Red at five sigma" presents a number as established fact to someone who did not ask for it and
+has no context to weigh it.
+
+This is why the two surfaces differ, and the difference is **not** an inconsistency to reconcile.
+When adding a new surface, ask which of the two it resembles: a reference the reader navigated
+into, or an answer delivered to them. Only two thresholds have been verified against
+`server/app/simulation/` directly (the Monte Carlo 5%/10% bands and the CUSUM constants: target
+1.00, k = 0.5 sigma, H = 5 sigma, amber at 60% of H). The rest of the module reference's `bands`
+are carried from the pre-existing entries and have not been re-derived.
+
+---
+
+# T16 — PR #196 IS MERGED. THE DISCLAIMERS ARE LIVE.
+
+Full detail in `REPORT_2026-08-02_merge-and-disclaimers.md`, which includes the live text verbatim.
+
+**PR #196 merged to `main` and pushed** after 873 checks and `tests_render.html` passed on the
+merged result, not just on the branch.
+
+**The approved disclaimers are live on both surfaces, both account types.** Research variant on
+the sign-in notice and the footer for research accounts and before sign-in; operational variant on
+the same two surfaces for operational accounts. Verified in a browser: the class switch selects
+the right variant on both surfaces in all three states, and **"All project data is synthetic" is
+never visible to an operational account**, which is the sentence that must never reach a user
+uploading real project documents by design.
+
+**`DISCLAIMERS_DRAFT.md` is now the source of the live text, not a draft of it.** Its header says
+so; the filename is historical. **`server/tools/test_disclaimers.py` (28 checks) fails if the live
+text in `index.html` diverges from that file by a character**, in either direction, so the
+reviewable wording and the shipped wording cannot drift apart. Proven able to fail four ways: a
+one-word change live, research text leaking onto the operational surface, a surface losing its
+notice class, and the source edited without the live text following.
+
+**The suite count is now 901 across 19 suites** (873 + 28 from the new disclaimer check).
+
+**`tests_render.html` is 26, up from 22.** Four assertions now prove `knowledge.js` parsed and its
+library is populated: the exact gap that let a fatal syntax error hide the entire Methods tab and
+the assistant's knowledge library for an unknown number of builds while the server suite stayed
+green. Proven by reproducing the original fault (deleting one object's opening line): all four
+fail, then restore.
+
+**`taxonomy.js`'s stale header is corrected.** It claimed the project rollup fuses "all 11
+registry category statuses" and that "Portfolio Health still votes here", and described a
+Red-review advisory at conflict 0.55. All three are false against the shipped server, and all
+three had already been removed from the Methods tab for that reason. The corrected comment states
+what the block actually does and records why the old claims were wrong, so they are not
+reintroduced.
+
+**One thing removed that was not in the approved draft, flagged for review:** the footer's
+`footer-praxis-notice` line. Its liability sentence is now carried verbatim by both variants, and
+keeping it would have printed that sentence twice in adjacent paragraphs. See the report.
+
+**Still open, unchanged:** both export paths carry no notice, attribution, or copyright; and the
+sign-in page's own attribution and copyright lines are shorter forms that do not match section 3
+of the approved file. Both are flagged in `DISCLAIMERS_DRAFT.md` and neither was changed, because
+neither was part of the approval.
+
+---
+
 # T15 — THE METHODS TAB IS SWEPT. PR #196 IS READY TO REVIEW.
 
 Full detail in `REPORT_2026-08-02_methods-tab.md`, including ten judgement calls awaiting Lin's

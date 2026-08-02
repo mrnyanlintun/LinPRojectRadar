@@ -439,14 +439,28 @@ window.projectLevelCategories = function () {
 })();
 
 /* ------------------------------------------------------------
-   Project-level rollup — fuse all 11 registry category statuses (10 project
-   categories + Portfolio Health; again via Dempster-Shafer, Red weighted
-   1.5x) into the project status. UNCHANGED by the display renumber —
-   Portfolio Health still votes here, it just isn't shown as "Cat 8" anymore.
-   Also surfaces: the conflict K (Red-review advisory when >= 0.55),
-   every currently-Red module + its category (so the brief can flag
-   them even on a Green project), and Complete + liability handling.
-   ------------------------------------------------------------ */
+   Completion date and the Complete promotion. That is ALL this block does.
+
+   THE HEADER THAT USED TO SIT HERE DESCRIBED A ROLLUP THIS FILE NO LONGER PERFORMS, and three of
+   its claims were false against the shipped server. It said the project status is produced by
+   fusing "all 11 registry category statuses (10 project categories + Portfolio Health)", that
+   "Portfolio Health still votes here", and that a conflict coefficient raises a Red-review
+   advisory at 0.55. Corrected, because the same three claims were removed from the Methods tab
+   for being untrue and a comment repeating them is how they get reintroduced:
+
+     · The fusion is server-side (server/app/simulation/compute.py) and the browser reads its
+       stored result. getProjectFusion above does the reading; nothing here fuses anything.
+     · Only the categories that describe the CONDITION of the project vote.
+       contributes_to_project_status() excludes Group C (Data and Evidence Health) and Group D
+       (Portfolio Level), so Portfolio Health does NOT vote in a project's status. Group D needs
+       more than one project and the registry refuses it on a single-project path.
+     · Nothing writes red_review. getProjectFusion reads row.red_review because that is the
+       honest way to surface a server-set flag, but the server has never set one, so redReview
+       is always false today. Do not reintroduce a browser-side inference to fill the gap.
+
+   What remains below is the one place the Complete promotion and the liability rule live:
+   a project at full percent-complete is promoted to Complete, and Construction/Hybrid sectors
+   carry a defects-liability tail from the completion date. ------------------------------ */
 function projectCompletionDate_(project) {
   const si = (project && project.signalInputs) || {};
   if (si.baselineEnd) return si.baselineEnd;
