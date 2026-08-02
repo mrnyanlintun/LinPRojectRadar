@@ -3,6 +3,64 @@
 > user-facing surface quotes verbatim. It lives in the repository so it cannot fail to reach a
 > session, which it did three times while it lived outside. Read it before this handoff, not after.
 
+# T20 — THE MAP AND THE GLOBE ARE FIXED. THE CAUSE WAS IN NEITHER VIEW.
+
+Full detail in `REPORT_2026-08-02_map-globe-markers.md`. **1013 checks across 21 suites**;
+`tests_render.html` **33/33**, up from 26.
+
+**`hydrate()` in `store.js` read absence in the slim projection as deletion.**
+`facade.slim_row()` is thirteen fields and carries **nothing about location**. The geographic
+views hydrate full project JSON to get coordinates, and then every background portfolio refresh
+replaced those rows with slim rows and the coordinates went with them. `refreshPortfolio()` runs
+after **create, rename, archive, restore and recompute-all** — so creating a second project
+silently un-placed the first. Measured: Map draws 3 markers on first open, **0** after one
+refresh, "0 project(s) placed. 5 have no location yet".
+
+**IT AFFECTS EVERY PROJECT WITH COORDINATES, UNIFORMLY.** Nothing about a project distinguishes
+an affected one: not how it was created, not analysed versus awaiting analysis, not its status.
+The distinguishing factor is **when you look** — before or after the first portfolio-refreshing
+action in the session.
+
+**`statusColorFor` and `proxyHealth` were NOT the cause**, and were checked rather than assumed.
+Neither skips a marker; an unresolvable status costs a marker its letter, never its dot. The
+Radar is unaffected (it places by status, not position) and rendered throughout.
+
+**Fixed at root in two places, both genuine, neither a workaround for the other.**
+
+1. `store.js`: for a row carrying `slim: true`, `hydrate()` carries forward **every key the local
+   copy has that the incoming row does not**. **Deliberately general — do not narrow it back to
+   an allowlist.** It was already fixed once as an allowlist (graft simulationSignals, signals,
+   signalInputs, status, history), which is exactly why it recurred: a list only covers the
+   fields somebody remembered. Confined to slim rows, because a **full** row omitting a field is
+   a real deletion (clearing an address server-side drops lat/lng, and that must reach the client).
+2. `app.js`: `mapHydrated` was a one-shot boolean, so once coordinates were stripped nothing ever
+   re-fetched them and the views stayed empty until a page reload. It is now a **Set of ids** —
+   still at most one GET per project per session, but a project that arrives later is not locked
+   out, and a failed fetch is retried rather than remembered as done.
+
+**`tests_render.html` group 8, seven assertions, is the regression net, and its shape matters.**
+Three assertions cover the render site, four cover the round trip through `hydratePortfolio()`.
+Proven by reverting: 30/33, and **the three render-site assertions stayed GREEN**. A check written
+only at the render site would have passed through the entire defect.
+
+**Not covered by a test, stated plainly:** the `app.js` latch fix has no automated check.
+`hydrateProjectsForGeo()` is not exported and its failure mode is browser lifecycle ordering. It
+was verified by driving the real application; it is not defended against regression.
+
+**Nothing was backfilled.** The cause was a render-path defect, not missing or failed geocoding,
+so the stop-before-backfilling instruction did not come into play. Geocoding works: it runs on
+create and on address change, stores `lat`/`lng`/`formattedAddress`, and a failure clears the
+coordinates and stores a `geocodeError` the API returns. Production was not inspected.
+
+**ENVIRONMENT: THE BROWSER-PANE WARNING BELOW DID NOT APPLY.** There is no `preview_start` tooling
+in this container at all. The app was driven with the pre-installed Chromium through Playwright,
+which composites: `visibilityState` `"visible"`, rAF ~6 frames/s under software WebGL. **That is
+why the Globe could be checked rather than only measured** — `LinGlobe.mount()` returned
+`{ok: true, points: 3, unplaceable: 2}`, one canvas, watchdog stood down. Nominatim is not
+reachable through the proxy, so the geocoder was stubbed as the existing suite stubs it.
+
+---
+
 # T19 — DOCUMENT VERSIONING. MIGRATION 0013 IS WRITTEN AND **NOT** APPLIED TO PRODUCTION.
 
 Full detail in `REPORT_2026-08-02_document-versioning.md`. **1013 checks across 21 suites**;

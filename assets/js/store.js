@@ -105,12 +105,40 @@
     if (!Number.isFinite(rt)) return true;
     return lc > rt;
   }
+  /* A SLIM ROW IS A PROJECTION, NOT A WHOLE PROJECT, AND ABSENCE IN ONE IS NOT DELETION.
+     facade.slim_row() models thirteen fields. Everything else a project document holds —
+     lat, lng, address, formattedAddress, geocodeError, events, createdAt — is simply not
+     expressible in that shape. So a slim row saying nothing about a field cannot mean the
+     field is gone; it can only mean the projection did not carry it.
+
+     Reading absence as deletion is what broke the Map and the Globe. A geographic view
+     hydrates full project JSON to get coordinates, then the next background portfolio
+     refresh replaced those rows with slim rows and the coordinates went with them:
+     "0 project(s) placed", every project, until the page was reloaded.
+
+     That was fixed once before as an ad-hoc allowlist — graft simulationSignals, signals,
+     signalInputs, status, history — which is why it recurred: a list of remembered fields
+     only covers the fields somebody remembered. The rule below is the general one instead.
+     Do not narrow it back to a list. */
+  function isSlimRow(row) { return !!(row && row.slim); }
+  /* Carry forward every key the local copy has that the incoming projection does not. Only
+     for slim rows: a FULL row omitting a field is a real deletion (an address cleared on
+     the server drops lat/lng, and that must reach the client), so full rows keep replacing. */
+  function graftUnmodelledFields(merged, row, local) {
+    if (!isSlimRow(row) || !local) return merged;
+    Object.keys(local).forEach((k) => {
+      if (!Object.prototype.hasOwnProperty.call(row, k)) merged[k] = local[k];
+    });
+    return merged;
+  }
+
   // Reconciling hydrate. A background slim refresh must NOT clobber fresher
   // locally-computed state with a staler backend row (the symptom: status
   // reverts after upload on reload/background refresh). For each incoming row:
   //   • if the local copy is strictly newer, KEEP local and queue one re-fetch
   //     so the authoritative backend copy catches up (no refresh loop);
-  //   • otherwise take the incoming row but GRAFT the never-persisted computed
+  //   • otherwise take the incoming row, carry forward everything the projection
+  //     does not model (see above), and GRAFT the never-persisted computed
   //     fields (simulationSignals, and signals/signalInputs/status/history when
   //     the row lacks them) so they survive the refresh.
   let staleRefetchQueued = false;
@@ -127,11 +155,15 @@
         staleIds.push(row.id);
         return local;
       }
-      if (!hasComputedSignals(local) && local.status == null) return row;
+      if (!hasComputedSignals(local) && local.status == null) {
+        // Nothing computed locally to preserve, but the projection still cannot express
+        // what it does not model, so location and the rest still have to survive.
+        return graftUnmodelledFields(Object.assign({}, row), row, local);
+      }
       // Incoming row is same-or-newer, but the backend never stores
       // simulationSignals and may omit client-built fields — graft them so the
       // detail/radar/health surfaces don't lose their computed state.
-      const merged = Object.assign({}, row);
+      const merged = graftUnmodelledFields(Object.assign({}, row), row, local);
       if (hasComputedSignals(local)) merged.simulationSignals = local.simulationSignals;
       if (!(row.signals && row.signals.evm) && local.signals) merged.signals = local.signals;
       if (!row.signalInputs && local.signalInputs) merged.signalInputs = local.signalInputs;
