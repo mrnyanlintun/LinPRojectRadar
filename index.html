@@ -896,8 +896,9 @@
       <section class="intro">
         <p class="eyebrow">Administration</p>
         <h1>Administration</h1>
-        <p>Accounts and access, project membership, participant monitoring, and de-identified
-          export. One surface. These were two pages a word apart in name.</p>
+        <p>Two tabs. People and access holds the accounts, who runs and who reads each project,
+          and which scenario a person works through for the study. Monitoring and export holds
+          where each participant has reached and the de-identified extract.</p>
       </section>
 
       <!-- T6 Part C. Admin Ops folded in as tabs. Its Scenarios and Assignment tabs are
@@ -906,24 +907,29 @@
            scenario set no longer describes anything the platform does. B3's backend is
            untouched and still tested — only this interface is withdrawn, because the research
            design remains the researcher's advisor's to settle. -->
+      <!-- Consolidated on 2026-08-02. Five tabs became two, with nothing withdrawn: every
+           control that stood on Users and access, Projects and assignment, Project membership,
+           Monitoring and Export is still here, under one of the two headings below.
+
+           TWO DIFFERENT RELATIONSHIPS LIVE ON THE FIRST TAB AND MUST NOT READ AS ONE. Putting a
+           person on a project as PM or Observer is operational: it decides who may open and act
+           on that project today. Assigning a participant to a scenario is the study: it decides
+           what they work through as research. They take the same two nouns, a person and a
+           project, so merging them onto one surface without separating them would invite an
+           admin to make the study change they meant as an access change. They sit under their
+           own group headings, in that order, with a rule between them. -->
       <div class="ws-tabbar" id="admin-tabs">
-        <button data-admintab="users" class="active">Users &amp; access</button>
-        <button data-admintab="projects">Projects &amp; assignment</button>
-        <button data-admintab="members">Project membership</button>
-        <button data-admintab="monitoring">Monitoring</button>
-        <button data-admintab="export">Export</button>
+        <button data-admintab="access" class="active">People and access</button>
+        <button data-admintab="reporting">Monitoring and export</button>
       </div>
 
-      <div id="admintab-users" class="ws-panel active">
+      <div id="admintab-access" class="ws-panel active">
+        <h2 class="ws-group-heading">Accounts</h2>
         <div id="admin-root"></div>
-      </div>
 
-      <!-- T6. Project creation and assignment sit together because they are one act: a
-           participant's project and the assignment that lets them decide on it are created in
-           the same sitting, and creating either alone produces a state the platform cannot use —
-           a project with no assignment stops after signals, an assignment with no project has
-           nothing to show. -->
-      <div id="admintab-projects" class="ws-panel">
+        <h2 class="ws-group-heading">Who runs and who reads a project</h2>
+        <p class="ws-note ws-group-note">Operational access. This decides who may open a project
+          and act on it now. It is not the study.</p>
         <div class="ws-card">
           <h3 style="margin-top:0;">Create a project</h3>
           <p class="ws-note">Creates the project and puts a participant on it as PM in one step.
@@ -935,12 +941,46 @@
           <label class="ws-field-label" for="ao-proj-address">Site address (optional)</label>
           <input id="ao-proj-address" class="ws-input"
                  placeholder="e.g. 1200 Terminal Road, Clarksville, TN">
-          <label class="ws-field-label" for="ao-proj-owner">Assign as PM (optional)</label>
+          <!-- Required, not optional. A project with no PM would be a project nobody can open:
+               the facade refuses a caller with no active membership row on both read and write
+               as of 2026-08-02. The server writes this membership in the same transaction as
+               the project, so there is no moment when the project exists without an owner. -->
+          <label class="ws-field-label" for="ao-proj-owner">PM for this project (required)</label>
           <select id="ao-proj-owner" class="ws-input"></select>
           <button id="ao-proj-create" class="ws-btn">Create project</button>
           <p id="ao-proj-error" class="ws-error" style="display:none;"></p>
           <p id="ao-proj-ok" class="ws-note" style="display:none;"></p>
         </div>
+
+        <div class="ws-card">
+          <h3 style="margin-top:0;">Project membership</h3>
+          <p class="ws-note">One PM decides for a project; any number of observers may read it.
+            Revoking keeps the row, because membership history is itself audit evidence.</p>
+          <label class="ws-field-label" for="ao-mem-project">Project</label>
+          <div class="ws-inline-row">
+            <input id="ao-mem-project" class="ws-input" placeholder="e.g. PRJ-08421">
+            <button id="ao-mem-load" class="ws-btn ws-btn-secondary">Load members</button>
+          </div>
+          <div id="ao-mem-table"></div>
+          <hr class="ws-rule">
+          <h4 style="margin:0 0 6px;">Add a member</h4>
+          <label class="ws-field-label" for="ao-mem-participant">Person</label>
+          <select id="ao-mem-participant" class="ws-input"></select>
+          <label class="ws-field-label" for="ao-mem-role">Project role</label>
+          <select id="ao-mem-role" class="ws-input">
+            <option value="PM">PM (decides for this project)</option>
+            <option value="Observer">Observer (reads only)</option>
+          </select>
+          <button id="ao-mem-add" class="ws-btn">Add member</button>
+          <p id="ao-mem-error" class="ws-error" style="display:none;"></p>
+          <p id="ao-mem-ok" class="ws-note" style="display:none;"></p>
+        </div>
+
+        <hr class="ws-rule ws-group-rule">
+        <h2 class="ws-group-heading">What a participant works through for the study</h2>
+        <p class="ws-note ws-group-note">Study participation. This decides which scenario a
+          person is taken through as research. It grants no access to any project and changing
+          it does not change who may open one.</p>
 
         <div class="ws-card">
           <h3 style="margin-top:0;">Assign a participant to a scenario</h3>
@@ -972,42 +1012,14 @@
         </div>
       </div>
 
-      <div id="admintab-members" class="ws-panel">
-        <div class="ws-card">
-          <h3 style="margin-top:0;">Project membership</h3>
-          <p class="ws-note">One PM decides for a project; any number of observers may read it.
-            Revoking keeps the row, because membership history is itself audit evidence.</p>
-          <label class="ws-field-label" for="ao-mem-project">Project</label>
-          <div class="ws-inline-row">
-            <input id="ao-mem-project" class="ws-input" placeholder="e.g. PRJ-08421">
-            <button id="ao-mem-load" class="ws-btn ws-btn-secondary">Load members</button>
-          </div>
-          <div id="ao-mem-table"></div>
-          <hr class="ws-rule">
-          <h4 style="margin:0 0 6px;">Add a member</h4>
-          <label class="ws-field-label" for="ao-mem-participant">Person</label>
-          <select id="ao-mem-participant" class="ws-input"></select>
-          <label class="ws-field-label" for="ao-mem-role">Project role</label>
-          <select id="ao-mem-role" class="ws-input">
-            <option value="PM">PM (decides for this project)</option>
-            <option value="Observer">Observer (reads only)</option>
-          </select>
-          <button id="ao-mem-add" class="ws-btn">Add member</button>
-          <p id="ao-mem-error" class="ws-error" style="display:none;"></p>
-          <p id="ao-mem-ok" class="ws-note" style="display:none;"></p>
-        </div>
-      </div>
-
-      <div id="admintab-monitoring" class="ws-panel">
+      <div id="admintab-reporting" class="ws-panel">
         <div class="ws-card">
           <h3 style="margin-top:0;">Monitoring</h3>
           <p class="ws-note">Where each participant has reached. This is progress, never
             performance. Nothing here says whether a decision was good.</p>
           <div id="ao-monitor-table"></div>
         </div>
-      </div>
 
-      <div id="admintab-export" class="ws-panel">
         <div class="ws-card">
           <h3 style="margin-top:0;">Export</h3>
           <p class="ws-warning">The export is filtered to research accounts server-side, always.
@@ -1022,6 +1034,13 @@
             <option value="csv">CSV</option>
           </select>
           <button id="ao-export-create" class="ws-btn">Create export</button>
+          <!-- createExport in admin-ops.js writes into this on its FIRST line, before it calls
+               anything. It was never in the markup, so getElementById returned null and the
+               handler threw on the property assignment: the Create export button did nothing at
+               all, and no error was shown because showing the error was the statement that
+               threw. Added here rather than guarded there, because every other card on this page
+               carries its own error line and this one simply lacked it. -->
+          <p id="ao-export-error" class="ws-error" style="display:none;"></p>
           <div id="ao-export-table" style="margin-top:12px;"></div>
           <div id="ao-export-fetch-result"></div>
         </div>

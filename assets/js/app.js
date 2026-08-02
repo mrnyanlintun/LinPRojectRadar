@@ -2311,12 +2311,18 @@
       btn.addEventListener("click", () => {
         const name = btn.dataset.admintab;
         tabs.forEach((b) => b.classList.toggle("active", b === btn));
-        ["users", "projects", "members", "monitoring", "export"].forEach((k) => {
-          const panel = document.getElementById("admintab-" + k);
-          if (panel) panel.classList.toggle("active", k === name);
+        // Derived from the tab bar rather than a hardcoded list of panel names. The list here
+        // used to be ["users","projects","members","monitoring","export"], and a list written
+        // in a second place is a list that goes stale: renaming a tab in the markup would have
+        // left this loop toggling panels that no longer exist while never revealing the one
+        // that does, with no error anywhere. Consolidating five tabs into two on 2026-08-02 is
+        // exactly that rename.
+        tabs.forEach((b) => {
+          const panel = document.getElementById("admintab-" + b.dataset.admintab);
+          if (panel) panel.classList.toggle("active", b === btn);
         });
         // Each admin tab loads its own data on first reveal, so opening Admin does not fire
-        // four queries a ResearchAdmin may not have wanted.
+        // every query a ResearchAdmin may not have wanted.
         try { if (window.LinAdminOps) LinAdminOps.showTab(name); } catch (e) { /* non-fatal */ }
       });
     });
