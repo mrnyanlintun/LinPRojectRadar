@@ -6,6 +6,14 @@ Continues `REPORT_2026-08-02_pipeline-audit.md`, which covered stages 1 to 4 and
 and stopped. This covers the two stages it named as not started, and answers the three questions
 it left open.
 
+**Reconciliation, added after `REPORT_2026-08-02_d1-unobtainable-inputs.md` landed in parallel.**
+That session executed every module and corrected the unobtainable-key count from **eleven to
+twelve** (`cpiHistory` was missed by T20's source scan). Where this report says "eleven" it is
+quoting T20; twelve is the right figure. The two sessions reached the `events` finding
+independently and agree: the store exists, nothing wires it into `signalInputs`, and C1.4's
+"0 events recorded" is a wiring gap rather than a missing audit trail. Nothing here contradicts
+that report; read it for the corrected module membership.
+
 **Method, and its limit.** Everything below was established by reading the shipped code, plus one
 execution of `compute_portfolio` to confirm D7.1. **I did not drive a browser this session**, so
 where a finding depends on which route renders which panel I say so rather than asserting it. The

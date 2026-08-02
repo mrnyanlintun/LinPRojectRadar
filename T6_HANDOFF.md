@@ -3,7 +3,7 @@
 > user-facing surface quotes verbatim. It lives in the repository so it cannot fail to reach a
 > session, which it did three times while it lived outside. Read it before this handoff, not after.
 
-# T21 — STAGES 7 AND 8 AUDITED, AND THE SUITE SWEPT FOR CHECKS THAT CANNOT FAIL. READ-ONLY.
+# T23 — STAGES 7 AND 8 AUDITED, AND THE SUITE SWEPT FOR CHECKS THAT CANNOT FAIL. READ-ONLY.
 
 Two reports, both committed: `REPORT_2026-08-02_stages-7-8-audit.md` and
 `REPORT_2026-08-02_vacuity-sweep.md`. **No code was modified and no test file was edited.** T20's
@@ -77,15 +77,130 @@ inject faults. It is thorough on the mechanical patterns and **partial on the se
 which is where both cases named in the brief live. Three items are recorded as too expensive to
 judge rather than guessed.
 
+**RECONCILED WITH T22 BELOW, which landed in parallel.** T22 executed every module and corrected
+T20's count from eleven unobtainable keys to **twelve** (`cpiHistory` was missed), so where the
+stage 7/8 report says "eleven" it is quoting T20 and T22's figure is the right one. The two
+sessions reached the `events` finding independently and agree exactly: the store exists
+(`writes._append_event`), nothing passes it into `signalInputs`, and C1.4's "0 events recorded" is
+a wiring gap. **T22 additionally establishes that A2.7 Milestone_Trend abstains correctly**, which
+T20 recorded as unknown. Nothing in the stage 7/8 report contradicts T22; read T22 for the D1
+membership list.
+
 **NOT COVERED:** whether the `detail.js` executive brief renders anything on a server-computed
 project (it recomputes CPI/SPI bands in the browser with its own thresholds), and **which routes
 render the decision card for which account type — that decides whether D7.2 reaches a research
 participant and is the most useful thing to settle next.** Stage 6's remaining question (can a
 snapshot change under a stored decision by a route other than P1) is still open.
 
+# T22 — D1. STOPPED WITHOUT CHANGING CODE. AWAITING LIN'S DECISION.
+
+Full detail in `REPORT_2026-08-02_d1-unobtainable-inputs.md`. **No code changed. Nothing under
+`server/app/simulation/` was touched, no stored data altered, `assets/` untouched.**
+
+**WHY IT STOPPED.** The task said to stop if any fabrication path turned out to be deliberate and
+documented. **All of them are**, in three places each: the module docstring, the `VALIDATION.md`
+per-module note, and `VALIDATION.md`'s input-contract section. `models_evc.py`: *"These modules
+never abstain with the standard stub... That is the instrument's behaviour, reproduced."*
+`models_dq.py`: *"Both emit non-abstaining stubs on sparse input... the instrument's behaviour,
+reproduced."* `VALIDATION.md` C1.7: *"emits the Yellow stub the JS emits, not an abstention."*
+Authored deliberately in batches 1, 7b and 9.
+
+**The distinction that matters:** what was decided was "reproduce the JavaScript faithfully". What
+was never decided is whether the input contract those decisions assume would ever be satisfied
+server-side. In the browser the blob arrived and the fallback was an edge case; server-side the
+blob never arrives, so **the fallback is the only path that ever executes**. Sound as a port,
+unsound as a deployment. That is Lin's call, not a session's.
+
+**THE COLOUR ANSWER, measured: project colour does NOT move. One category does.** Executing
+`compute_project` twice on identical inputs, once as shipped and once with all twelve forced to
+abstain: healthy stays Green, on-budget stays Green, distressed stays Red. **B2 Evidence
+Combination moves, and in BOTH directions** (healthy Amber to Green, distressed Amber to Red) —
+the fabricated Amber was pulling B2 toward the middle regardless of evidence. Modules abstaining
+per computation go 48 to 60 of 95; note that **over half already abstain today**. Locally: 20 of
+20 stored results carry a fabricated verdict, **237 individual verdicts**. Production not
+inspected.
+
+**THE AUDIT (T20) UNDERCOUNTED — corrected by executing every module with a recording dict rather
+than by regex.** Twelve unobtainable keys, not eleven (`cpiHistory` was missed, read via
+`_history`). **Twenty-one modules touch one; nine ALREADY ABSTAIN correctly** — including
+**A2.7 Milestone_Trend, whose behaviour T20 recorded as unknown: it abstains, and needs no
+change.** **Twelve do not abstain**, one more than T20 said, and the membership differs: B2.1 and
+B2.4 were missing from that list. Ten of the twelve vote in status, not nine.
+
+**NONE of the twelve keys is permanently unobtainable. All are UNWIRED.** `events` is the clearest:
+`writes._append_event` already writes `{"event", "at"}` into `project.doc["events"]`, exactly the
+shape `models_dq` documents, and nothing passes it into `signalInputs` — which is why C1.4 reports
+"0 events recorded" on every project. `spiHistory`/`cpiHistory` are reconstructible from
+`ComputedResult.signal_inputs` across periods. `evm`/`mc`/`cusum`/`doc` are outputs of the same
+run, so an ordering problem. `fairnessSensitive` and `milestoneHistory`'s source remain UNKNOWN.
+
+**WHAT IS NEEDED TO PROCEED:** a decision between (1) abstain everywhere, accepting divergence from
+the JavaScript with `VALIDATION.md` annotated; (2) abstain only where the fallback is provably
+unreachable in the browser too, which needs the JavaScript examined and has not been done; or
+(3) wire the keys instead, starting with `events` and the histories. Not exclusive: 3 for `events`
+and the histories plus 1 for the rest is coherent. The session's recommendation is abstain and
+wire `events`, but it is a research-instrument decision.
 ---
 
-# T20 — PIPELINE AUDIT. READ-ONLY. STAGES 1 TO 4 AND PERIOD DONE; 7 AND 8 NOW COVERED BY T21.
+# T21 — THE MAP AND THE GLOBE ARE FIXED. THE CAUSE WAS IN NEITHER VIEW.
+
+Full detail in `REPORT_2026-08-02_map-globe-markers.md`. **1013 checks across 21 suites**;
+`tests_render.html` **33/33**, up from 26.
+
+**`hydrate()` in `store.js` read absence in the slim projection as deletion.**
+`facade.slim_row()` is thirteen fields and carries **nothing about location**. The geographic
+views hydrate full project JSON to get coordinates, and then every background portfolio refresh
+replaced those rows with slim rows and the coordinates went with them. `refreshPortfolio()` runs
+after **create, rename, archive, restore and recompute-all** — so creating a second project
+silently un-placed the first. Measured: Map draws 3 markers on first open, **0** after one
+refresh, "0 project(s) placed. 5 have no location yet".
+
+**IT AFFECTS EVERY PROJECT WITH COORDINATES, UNIFORMLY.** Nothing about a project distinguishes
+an affected one: not how it was created, not analysed versus awaiting analysis, not its status.
+The distinguishing factor is **when you look** — before or after the first portfolio-refreshing
+action in the session.
+
+**`statusColorFor` and `proxyHealth` were NOT the cause**, and were checked rather than assumed.
+Neither skips a marker; an unresolvable status costs a marker its letter, never its dot. The
+Radar is unaffected (it places by status, not position) and rendered throughout.
+
+**Fixed at root in two places, both genuine, neither a workaround for the other.**
+
+1. `store.js`: for a row carrying `slim: true`, `hydrate()` carries forward **every key the local
+   copy has that the incoming row does not**. **Deliberately general — do not narrow it back to
+   an allowlist.** It was already fixed once as an allowlist (graft simulationSignals, signals,
+   signalInputs, status, history), which is exactly why it recurred: a list only covers the
+   fields somebody remembered. Confined to slim rows, because a **full** row omitting a field is
+   a real deletion (clearing an address server-side drops lat/lng, and that must reach the client).
+2. `app.js`: `mapHydrated` was a one-shot boolean, so once coordinates were stripped nothing ever
+   re-fetched them and the views stayed empty until a page reload. It is now a **Set of ids** —
+   still at most one GET per project per session, but a project that arrives later is not locked
+   out, and a failed fetch is retried rather than remembered as done.
+
+**`tests_render.html` group 8, seven assertions, is the regression net, and its shape matters.**
+Three assertions cover the render site, four cover the round trip through `hydratePortfolio()`.
+Proven by reverting: 30/33, and **the three render-site assertions stayed GREEN**. A check written
+only at the render site would have passed through the entire defect.
+
+**Not covered by a test, stated plainly:** the `app.js` latch fix has no automated check.
+`hydrateProjectsForGeo()` is not exported and its failure mode is browser lifecycle ordering. It
+was verified by driving the real application; it is not defended against regression.
+
+**Nothing was backfilled.** The cause was a render-path defect, not missing or failed geocoding,
+so the stop-before-backfilling instruction did not come into play. Geocoding works: it runs on
+create and on address change, stores `lat`/`lng`/`formattedAddress`, and a failure clears the
+coordinates and stores a `geocodeError` the API returns. Production was not inspected.
+
+**ENVIRONMENT: THE BROWSER-PANE WARNING BELOW DID NOT APPLY.** There is no `preview_start` tooling
+in this container at all. The app was driven with the pre-installed Chromium through Playwright,
+which composites: `visibilityState` `"visible"`, rAF ~6 frames/s under software WebGL. **That is
+why the Globe could be checked rather than only measured** — `LinGlobe.mount()` returned
+`{ok: true, points: 3, unplaceable: 2}`, one canvas, watchdog stood down. Nominatim is not
+reachable through the proxy, so the geocoder was stubbed as the existing suite stubs it.
+
+---
+
+# T20 — PIPELINE AUDIT. READ-ONLY. STAGES 1 TO 4 AND PERIOD DONE; 7 AND 8 NOT STARTED.
 
 Full detail in `REPORT_2026-08-02_pipeline-audit.md`. **No code was modified.** Nothing here is
 fixed; this is a findings list.
