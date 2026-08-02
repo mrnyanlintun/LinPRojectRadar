@@ -114,13 +114,13 @@
   // display_name rather than the typed address: they differ, and the difference is the whole
   // point of showing it.
   function locationLine(p) {
-    if (p.geocodeError) {
-      return '<div class="ws-note ws-geo-warn">No map position. ' + esc(p.geocodeError) + '</div>';
-    }
-    if (p.formattedAddress) {
-      return '<div class="ws-note">Matched to: ' + esc(p.formattedAddress) + '</div>';
-    }
-    return "";
+    // Three states, from the one shared definition in config.js. The stale state exists because
+    // a failed geocode now RETAINS the previous coordinates rather than erasing them, and a
+    // retained pin shown as "Matched to:" would be the old address presented as the current one.
+    var note = window.linLocationNote ? linLocationNote(p) : null;
+    if (!note) return "";
+    if (note.kind === "none" && !p.geocodeError) return "";
+    return '<div class="ws-note' + (note.warn ? " ws-geo-warn" : "") + '">' + esc(note.text) + '</div>';
   }
 
   function statusDotColor(status) {
@@ -229,9 +229,11 @@
       var t = $("ws-project-title"); if (t) t.textContent = p.name || "Project";
       var s = $("ws-project-sub");
       if (s) {
+        var ln = window.linLocationNote ? linLocationNote(p) : null;
         s.textContent = (p.sector ? p.sector + " · " : "") + "Period " + (p.period || 1)
-          + (p.formattedAddress ? " · Matched to: " + p.formattedAddress
-             : (p.geocodeError ? " · No map position" : ""));
+          + (ln && ln.kind === "matched" ? " · " + ln.text
+             : ln && ln.kind === "stale" ? " · Map position is for the previous address"
+             : p.geocodeError ? " · No map position" : "");
       }
     }
     if (window.LinApp && LinApp.showPage) LinApp.showPage("project");

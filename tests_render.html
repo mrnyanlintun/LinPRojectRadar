@@ -233,6 +233,35 @@
     root.innerHTML = "";
   })();
 
+  // 3c. The decision card must not contradict the badge beside it.
+  //     Live on 2026-08-02: a Red badge above an action-plan table reading "All categories
+  //     Green / Routine monitoring". The badge reads the STORED project_status; the plan read
+  //     getCategoryStatus through CATEGORY_ACTIONS, which is keyed cat1..cat11 while
+  //     LIN_CATEGORIES ids are a1..d1, so the lookup never matched and the plan's all-clear
+  //     fallback was the only row it ever produced. The fallback is gone: an empty plan now
+  //     renders nothing, the same abstain-by-absence contract the server modules keep.
+  (function () {
+    const p = fresh("Red");
+    assert("action plan: derives no rows when nothing is established",
+      0, (window.deriveActionPlan ? deriveActionPlan(p) : ["(unavailable)"]).length);
+    const host = scratch();
+    let threw = "";
+    try { window.LinApp.renderDecisionCard(p, host); } catch (e) { threw = String(e && e.message); }
+    assert("action plan: renderDecisionCard does not throw", "", threw);
+    const text = host.textContent || "";
+    assert("action plan: card does not claim all categories are Green on a Red project",
+      false, /all categories green/i.test(text));
+    assert("action plan: card does not recommend routine monitoring on a Red project",
+      false, /routine monitoring/i.test(text));
+    assert("action plan: no action-plan table is rendered at all",
+      false, !!host.querySelector(".ap-table"));
+    // The badge itself must still be there and still Red — this check must not pass by the card
+    // having failed to render.
+    const badge = host.querySelector(".state-badge");
+    assert("action plan: the stored status is still shown",
+      "Red", badge ? badge.textContent.trim() : "(no badge)");
+  })();
+
   // 4. The list row is coloured.
   //    The row's status word takes an inline colour only when the code believes the project has
   //    a status. Under the old gate an analysed project rendered an uncoloured word.

@@ -189,11 +189,15 @@ def w_save(session: Session, payload: dict) -> dict[str, Any]:
     new_address = str(fresh.get("address") or "").strip()
     if new_address and _norm(new_address) != _norm(old_address):
         from .geocode import apply_to_doc
-        apply_to_doc(fresh, new_address)
+        # `project.doc` is the STORED document and is what a retained coordinate must come from:
+        # this handler replaces the stored doc wholesale with the client's copy, so reading the
+        # previous position out of `fresh` would trust a client that may not have sent it.
+        apply_to_doc(fresh, new_address, previous=project.doc or {})
     elif not new_address:
         # The address was cleared, so the coordinates it produced must go with it rather than
-        # leaving the project pinned where it used to be.
-        for stale in ("lat", "lng", "formattedAddress", "geocodeError"):
+        # leaving the project pinned where it used to be. This is the user saying there is no
+        # address, not a geocoder failing to answer, so nothing is retained.
+        for stale in ("lat", "lng", "formattedAddress", "geocodeError", "geocodeStale"):
             fresh.pop(stale, None)
 
     expected_version = project.record_version + 1

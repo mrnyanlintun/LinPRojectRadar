@@ -169,3 +169,51 @@ window.LIN_AUTHORIZED_EMAIL = "mrnyanlintun@gmail.com";
   };
 })();
 
+
+/* ============================================================
+   linLocationNote(project) — ONE definition of how a project's
+   location reads, because four surfaces render it (workspace's
+   locationLine and project sub-line, detail's globe note, and
+   ingest's geocodeOutcome) and they had already drifted apart
+   once. Same reasoning as disclaimers.js: a sentence rendered in
+   four places is a sentence that diverges in four places.
+
+   THREE STATES, NOT TWO. The third is the one that did not exist
+   before 2026-08-02, when a failed geocode erased the coordinates
+   it could not replace:
+
+     matched  — lat/lng belong to the address now stored.
+     stale    — lat/lng were RETAINED from an earlier address
+                because the new one could not be geocoded. The pin
+                is real but it is not this address's pin, and
+                saying so is the whole point of the state.
+     none     — no coordinates at all.
+
+   Returns { kind, text, warn }. `warn` is whether the surface
+   should use its warning styling; a stale position warns, because
+   an unlabelled old pin is exactly the failure being fixed.
+   ============================================================ */
+(function () {
+  window.linLocationNote = function (p) {
+    p = p || {};
+    var has = p.lat != null && p.lng != null;
+    var matched = p.formattedAddress || "";
+    if (has && p.geocodeStale) {
+      return {
+        kind: "stale",
+        warn: true,
+        text: "Map position is for the previous address" +
+          (matched ? " (" + matched + ")" : "") + ". " +
+          (p.geocodeError || "The new address has not been matched yet.")
+      };
+    }
+    if (p.geocodeError) {
+      return { kind: "none", warn: true, text: "No map position. " + p.geocodeError };
+    }
+    if (has || matched) {
+      return { kind: "matched", warn: false, text: matched ? "Matched to: " + matched : "Located." };
+    }
+    return { kind: "none", warn: true,
+             text: "No map position. Add a site address to place this project." };
+  };
+})();

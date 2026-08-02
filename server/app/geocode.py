@@ -131,8 +131,8 @@ def geocode(address: str) -> Result:
                                                  "detail": str(exc)[:200]})
             # NOT cached. This is a transport failure, not an answer about the address, and the
             # next attempt may well succeed. Caching it would make one bad minute permanent.
-            return Result(error="The location service could not be reached, so this project has "
-                                "no map position yet. Saving the address again will retry it.")
+            return Result(error="The location service could not be reached, so this address has "
+                                "not been matched yet. Saving the address again will retry it.")
 
         if not payload:
             result = Result(error="That address could not be found. Try the street address OR "
@@ -152,7 +152,7 @@ def geocode(address: str) -> Result:
         return result
 
 
-def apply_to_doc(doc: dict, address: str) -> Result:
+def apply_to_doc(doc: dict, address: str, previous: dict | None = None) -> Result:
     """
     Geocode `address` and write the outcome into a project document.
 
@@ -160,8 +160,28 @@ def apply_to_doc(doc: dict, address: str) -> Result:
     geocodeError. assets/js/ingest.js's geocodeOutcome() was written against those and has been
     waiting for something to populate them since the Apps Script backend went away.
 
-    On failure the coordinate fields are cleared rather than left stale, because a project whose
-    address changed to somewhere unfindable must not keep pointing at where it used to be.
+    A FAILED GEOCODE NO LONGER ERASES COORDINATES IT CANNOT REPLACE.
+
+    This used to clear lat/lng/formattedAddress on every failure, reasoning that a project whose
+    address changed to somewhere unfindable must not keep pointing at where it used to be. The
+    reasoning was sound about the pin and wrong about the data: Nominatim has never been reachable
+    from this deployment, so in practice EVERY address edit destroyed the project's location and
+    replaced it with nothing. A transport failure is not an answer about the address; it is the
+    absence of one, and discarding stored data on the strength of it is the same silent-loss shape
+    the rest of this codebase refuses.
+
+    So the coordinates stay, and `geocodeStale` marks them as belonging to a previous address.
+    Every surface that renders a location reads that flag and says so rather than presenting an
+    old match as the current one — the pin is still visibly wrong for the typed address, which was
+    the original concern, but it is labelled instead of deleted.
+
+    Nothing is retained when there was nothing to retain: a project geocoding for the first time
+    still ends with no coordinates and a geocodeError, exactly as before.
+
+    `previous` is the STORED document, when the caller has one. It matters because w_save replaces
+    the stored doc wholesale with the client's copy, so reading the retained coordinates out of
+    `doc` alone would trust a client that may not have sent them. Defaults to `doc` for callers
+    building a document from nothing.
     """
     result = geocode(address)
     doc["address"] = address
@@ -170,9 +190,23 @@ def apply_to_doc(doc: dict, address: str) -> Result:
         doc["lng"] = result.lng
         doc["formattedAddress"] = result.formatted
         doc.pop("geocodeError", None)
+        doc.pop("geocodeStale", None)
+        return result
+
+    prior = previous if previous is not None else doc
+    doc["geocodeError"] = result.error
+    if prior.get("lat") is not None and prior.get("lng") is not None:
+        # Retained, and flagged. formattedAddress is carried with the coordinates deliberately: it
+        # names the address they actually matched, which is precisely what a reader needs in order
+        # to see that it is not the address now stored in doc["address"].
+        doc["lat"] = prior.get("lat")
+        doc["lng"] = prior.get("lng")
+        if prior.get("formattedAddress") is not None:
+            doc["formattedAddress"] = prior.get("formattedAddress")
+        doc["geocodeStale"] = True
     else:
         doc.pop("lat", None)
         doc.pop("lng", None)
         doc.pop("formattedAddress", None)
-        doc["geocodeError"] = result.error
+        doc.pop("geocodeStale", None)
     return result

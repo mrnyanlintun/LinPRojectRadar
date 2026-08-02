@@ -399,18 +399,20 @@ function deriveActionPlan(project) {
     });
   });
 
-  // 3. All Green, no red flags — single routine-monitoring row
-  if (!rows.length) {
-    rows.push({
-      trigger: "All categories Green",
-      severity: "Green",
-      what: "Routine monitoring",
-      who: "Project Manager / Controls Lead",
-      how: "Continue monthly signal log; no corrective action indicated",
-      when: "Next monthly cycle",
-      inform: "N/A"
-    });
-  }
+  // 3. NO ALL-CLEAR FALLBACK. An empty plan means nothing was established, not that everything
+  //    is fine, and those must not render the same.
+  //
+  //    There used to be a "All categories Green / Routine monitoring" row here for the empty
+  //    case. Both branches above are unreachable today — CATEGORY_ACTIONS is keyed cat1..cat11
+  //    while LIN_CATEGORIES ids are a1..d1, so its lookup never matches, and getProjectFusion
+  //    has not returned redFlags since taxonomy.js replaced categories.js — so that row was the
+  //    ONLY output this function ever produced. It printed "All categories Green" beside a Red
+  //    badge on the same card, from a different source than the badge reads.
+  //
+  //    Returning nothing makes actionPlanHtml render nothing, which is the same abstain-by-
+  //    absence contract the project-level modules keep: a module with no evidence is absent from
+  //    module_results rather than present with a reassuring value. Restoring an all-clear here
+  //    would restore the contradiction.
   return rows;
 }
 

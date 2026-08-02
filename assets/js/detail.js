@@ -960,8 +960,8 @@
           host.innerHTML = "";
           if (note) {
             note.className = "detail-globe-note ws-note ws-geo-warn";
-            note.textContent = p.geocodeError
-              ? "No map position. " + p.geocodeError
+            note.textContent = window.linLocationNote
+              ? linLocationNote(p).text
               : "No map position. Add a site address to place this project.";
           }
           return;
@@ -979,9 +979,14 @@
           return;
         }
         LinAtlas.render(host, [p], { focusId: p.id }).then(() => {
-          if (note) note.textContent = p.formattedAddress
-            ? "Matched to: " + p.formattedAddress
-            : "Located.";
+          // A RETAINED position is drawn and labelled as belonging to the previous address.
+          // Drawing it under "Matched to:" would present an old pin as the current one, which
+          // is the failure the retention change exists to make visible rather than to hide.
+          if (!note) return;
+          const ln = window.linLocationNote ? linLocationNote(p) : null;
+          note.className = "detail-globe-note ws-note" + (ln && ln.warn ? " ws-geo-warn" : "");
+          note.textContent = ln ? ln.text
+            : (p.formattedAddress ? "Matched to: " + p.formattedAddress : "Located.");
         });
       },
       // Uploaded-docs table is already in the section HTML; the extracted-

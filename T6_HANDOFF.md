@@ -9,6 +9,67 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-02 — GEOCODE RETENTION, AND THE DECISION CARD STOPS CONTRADICTING ITSELF
+
+Full detail in `REPORT_2026-08-02_geocode-and-decision-card.md`. **1177 checks across 22 suites,
+`tests.html` 51/51, `tests_render.html` 43/43.** Playwright + pre-installed Chromium, compositing
+proven first (62 rAF/s). No coordinate data was written, repaired or backfilled.
+
+**A FAILED GEOCODE NO LONGER ERASES THE COORDINATES IT CANNOT REPLACE.** `apply_to_doc` cleared
+lat/lng/formattedAddress on every failure, and since Nominatim has never been reachable from this
+deployment that meant **every address edit destroyed the project's location**. The coordinates now
+stay, `geocodeStale` marks them as belonging to an earlier address, and `formattedAddress` is
+carried with them because it names the address they actually matched. Nothing is retained when
+there was nothing to retain; a later success clears the flag; clearing the address still drops
+everything, because that is the user saying there is no place. **Retention reads the STORED doc**
+(`apply_to_doc(..., previous=project.doc)`), since `w_save` replaces the stored doc wholesale and a
+client omitting lat/lng must not be able to delete a position by leaving it out.
+
+**THE SAME SHAPE ELSEWHERE: exactly one instance, and it was this one.** Every `.pop` on a stored
+document outside `simulation/` is either the defect above or `w_save`'s address-CLEARED branch,
+which is a success path. `_derive_cutoff` substitutes the wall clock for a missing value rather
+than discarding a stored one (still D3, still open). `extract_many` refuses and stores nothing.
+`store.js hydrate` was this shape and was fixed generally in PR #198.
+
+**ONE COMPOSED STRING, FLAGGED FOR REVIEW.** The unreachable-geocoder message said "so this project
+has **no map position yet**", which became false once a position was retained — it would have shown
+a pin while asserting there was none. It now reads "so this **address has not been matched** yet".
+The "Map position is for the previous address (X)." clause is also composed. Neither is liability
+language; one string each. `linLocationNote()` in `config.js` is now the single definition of how a
+location reads, because four surfaces render it (disclaimers.js reasoning).
+
+**THE CARD'S CONTRADICTION WAS TWO SOURCES, ONE OF THEM DEAD.** The badge reads stored
+`project_status`. `deriveActionPlan` has three branches and **only the third was ever reachable**:
+`CATEGORY_ACTIONS` is keyed cat1..cat11 while `LIN_CATEGORIES` ids have been a1..d1 since
+`fd5bf45`, so its lookup never matches; `fusion.redFlags` has not existed since taxonomy.js
+replaced categories.js. So its only output was a hardcoded "All categories Green / Routine
+monitoring" row, printed beside a Red badge. **The all-clear fallback is deleted and nothing
+replaces it** — `actionPlanHtml` already renders nothing for an empty plan, which is the same
+abstain-by-absence contract the server keeps. `CATEGORY_ACTIONS` was NOT repointed: that would
+switch on a recommendation engine that has never run, which is Lin's decision.
+
+**WHAT A FULL D7.2 FIX NEEDS, and it is not a wiring job.** Measured across every key on every
+stored module: **only `recommended_action` exists** (B4.7 Regret Minimization, vocabulary
+{monitor, investigate, escalate}, redaction-gated). **Nothing stored emits an authority, a
+documentation requirement, or a fairness gate.** `fairnessSensitive` is still absent from
+SIGNAL_INPUT_KEYS and still not wired by `documents.py` — D1 wired `events`/`spiHistory`/
+`cpiHistory` and left it in the permanently-abstaining set, so **the gate has never been able to
+fire and still cannot.** Three routes are laid out in the report; all three need a decision about
+`fairnessSensitive` of its own. The card's four derived fields are untouched and are NOT
+contradictory (they derive from the badge's own status); removing them needs wording that does not
+exist, so I stopped there as instructed.
+
+**A VACUOUS CHECK WAS WRITTEN AND CAUGHT BY FAULT INJECTION.** The address-cleared check first ran
+on a project whose flag had already been cleared by an earlier success, so it passed whatever the
+code did. It now asserts the precondition that the flag is set at that moment. Fifth session
+running that a check turned out to pass for the wrong reason, and again injection caught it, not
+review.
+
+**ALSO DEAD, REPORTED NOT TOUCHED:** `detail.js:1558` reads the same non-existent `f.redFlags`. It
+fails safe, so it makes no false statement.
+
+---
+
 # 2026-08-02 — THE BLANK DETAIL PAGE FIXED; MAP AND GLOBE HAVE NOTHING TO PLACE
 
 Full detail in `REPORT_2026-08-02_detail-page-and-markers.md`. **1159 checks across 22 suites,

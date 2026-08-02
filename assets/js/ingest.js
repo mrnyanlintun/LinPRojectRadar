@@ -161,6 +161,12 @@
      geocodeError on the returned project. PMs never type coordinates. */
   function geocodeOutcome(saved) {
     if (!saved) return null;
+    // A failed geocode now retains the previous coordinates. Saying "Couldn't locate this
+    // address" and nothing else would leave the PM believing the pin they can still see is the
+    // one they just typed.
+    if (saved.geocodeStale && saved.lat != null && window.linLocationNote) {
+      return { ok: false, text: linLocationNote(saved).text };
+    }
     if (saved.geocodeError) {
       // the backend message is already human-readable and usually carries its
       // own "refine and save again" instruction — don't repeat it

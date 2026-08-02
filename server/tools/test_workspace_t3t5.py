@@ -49,6 +49,12 @@ def post(payload: dict) -> dict:
     return r.json()
 
 
+def get(params: dict) -> dict:
+    r = client.get("/exec", params=params)
+    assert r.status_code == 200, f"contract violation: HTTP {r.status_code}"
+    return r.json()
+
+
 def b64(raw: bytes) -> str:
     return base64.b64encode(raw).decode("ascii")
 
@@ -284,8 +290,8 @@ def _stub_geocode(address):
         return _geo.Result(error="That address could not be found. Try the street address OR "
                                  "the facility name, not both together.")
     if "offline" in address.lower():
-        return _geo.Result(error="The location service could not be reached, so this project has "
-                                 "no map position yet. Saving the address again will retry it.")
+        return _geo.Result(error="The location service could not be reached, so this address has "
+                                 "not been matched yet. Saving the address again will retry it.")
     return _geo.Result(lat=36.5298, lng=-87.3595, formatted="Clarksville, Tennessee, USA")
 
 
@@ -327,6 +333,106 @@ check(g4.get("geocodeError") is None, "and reports no geocode error")
 before = len(_geo_calls)
 post({"action": "projectcreate", "session_token": pm, "name": "T8 No Address 2"})
 check(len(_geo_calls) == before, "and the geocoder is not called at all when there is no address")
+
+
+# ---------------------------------------------------------------- A FAILED GEOCODE MUST NOT
+# ERASE COORDINATES IT CANNOT REPLACE.
+#
+# apply_to_doc used to clear lat/lng/formattedAddress on EVERY failure. Since Nominatim has never
+# been reachable from this deployment, that meant every address edit destroyed the project's
+# location and replaced it with nothing. These checks pin the retention, the flag that marks the
+# retained position as belonging to an earlier address, and the two cases where nothing is
+# retained because there is nothing to retain.
+print("\nT8b — a failed geocode retains the previous position and flags it")
+
+# g1 above is located. Edit its address to one the geocoder cannot reach.
+located = get({"action": "get", "id": g1["project_id"]})["project"]
+check(located.get("lat") == 36.5298, "precondition: the project starts with stored coordinates",
+      str(located.get("lat")))
+
+located["address"] = "offline street, somewhere else"
+edited = post({"action": "save", "project": located})["project"]
+check(edited.get("lat") == 36.5298 and edited.get("lng") == -87.3595,
+      "an unreachable geocoder LEAVES the previous coordinates in place",
+      str(edited.get("lat")) + "," + str(edited.get("lng")))
+check(edited.get("geocodeStale") is True,
+      "and marks them as belonging to an earlier address", str(edited.get("geocodeStale")))
+check(edited.get("formattedAddress") == "Clarksville, Tennessee, USA",
+      "keeping the match those coordinates actually came from, so a reader can see which "
+      "address they are for", str(edited.get("formattedAddress")))
+check("could not be reached" in (edited.get("geocodeError") or ""),
+      "and still reports why the new address was not matched")
+check(edited.get("address") == "offline street, somewhere else",
+      "while the typed address is stored as typed", str(edited.get("address")))
+
+# Read it back from the store rather than trusting the response envelope.
+reread = get({"action": "get", "id": g1["project_id"]})["project"]
+check(reread.get("lat") == 36.5298 and reread.get("geocodeStale") is True,
+      "and that is what was PERSISTED, not just what was returned",
+      str(reread.get("lat")) + " stale=" + str(reread.get("geocodeStale")))
+
+# An address that is definitively NOT FOUND is a different failure from an unreachable service,
+# but the stored data is just as real, so it is retained on the same terms.
+reread["address"] = "unfindable place indeed"
+notfound = post({"action": "save", "project": reread})["project"]
+check(notfound.get("lat") == 36.5298 and notfound.get("geocodeStale") is True,
+      "an unfindable address also retains the previous position rather than erasing it",
+      str(notfound.get("lat")))
+
+# CLEARING THE ADDRESS IS THE USER SAYING THERE IS NO PLACE, NOT A GEOCODER FAILING TO ANSWER.
+# Done HERE, while the project is actually in the stale state — doing it after a later success
+# would pass whatever the code did, because the flag would already be gone. (It was written that
+# way first, and the fault-injection run caught it: removing geocodeStale from w_save's clear
+# list left the suite green.)
+check(notfound.get("geocodeStale") is True,
+      "precondition for the clear-address check: the project IS flagged stale right now",
+      str(notfound.get("geocodeStale")))
+notfound["address"] = ""
+cleared = post({"action": "save", "project": notfound})["project"]
+check(cleared.get("lat") is None and cleared.get("lng") is None,
+      "clearing the address DOES drop the coordinates", str(cleared.get("lat")))
+check("geocodeStale" not in cleared or cleared.get("geocodeStale") in (None, False),
+      "and drops the previous-address flag with them", str(cleared.get("geocodeStale")))
+
+# A LATER SUCCESS CLEARS THE FLAG. Without this a project would carry "previous address" forever
+# once it had failed once. Re-locate, fail, then succeed, so the flag is genuinely set first.
+cleared["address"] = "1200 Terminal Road, Clarksville, TN"
+relit = post({"action": "save", "project": cleared})["project"]
+relit["address"] = "offline street, once more"
+relit = post({"action": "save", "project": relit})["project"]
+check(relit.get("geocodeStale") is True,
+      "precondition for the later-success check: the flag is set", str(relit.get("geocodeStale")))
+relit["address"] = "1200 Terminal Road, Clarksville, TN, revisited"
+fixed = post({"action": "save", "project": relit})["project"]
+check(fixed.get("lat") == 36.5298 and fixed.get("geocodeError") is None,
+      "a later successful geocode stores the new match")
+check("geocodeStale" not in fixed or fixed.get("geocodeStale") in (None, False),
+      "and clears the previous-address flag", str(fixed.get("geocodeStale")))
+
+# NOTHING IS RETAINED WHEN THERE IS NOTHING TO RETAIN. g3 never had coordinates.
+never = get({"action": "get", "id": g3["project_id"]})["project"]
+never["address"] = "offline street, again"
+still_none = post({"action": "save", "project": never})["project"]
+check(still_none.get("lat") is None and still_none.get("lng") is None,
+      "a project that never had coordinates still ends with none")
+check("geocodeStale" not in still_none or still_none.get("geocodeStale") in (None, False),
+      "and is NOT flagged as carrying a previous position it never had",
+      str(still_none.get("geocodeStale")))
+
+# The retention must come from the STORED document, not from whatever the client posted: w_save
+# replaces the stored doc wholesale, so a client that omits lat/lng must not be able to delete a
+# position by leaving it out of the payload.
+relocated = get({"action": "get", "id": g4["project_id"]})["project"]
+relocated["address"] = "1200 Terminal Road, Clarksville, TN"
+relocated = post({"action": "save", "project": relocated})["project"]
+check(relocated.get("lat") == 36.5298, "precondition: a second project is now located",
+      str(relocated.get("lat")))
+stripped = {k: v for k, v in relocated.items() if k not in ("lat", "lng", "formattedAddress")}
+stripped["address"] = "offline street, third time"
+survived = post({"action": "save", "project": stripped})["project"]
+check(survived.get("lat") == 36.5298 and survived.get("geocodeStale") is True,
+      "a client payload WITHOUT lat/lng cannot delete the stored position through a failed "
+      "geocode", str(survived.get("lat")) + " stale=" + str(survived.get("geocodeStale")))
 
 _geo.geocode = _real_geocode
 

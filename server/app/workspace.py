@@ -107,6 +107,7 @@ def a_projectcreate(session: Session, payload: dict, secret: str, ttl: int) -> d
            "lat": doc.get("lat"), "lng": doc.get("lng"),
            "formattedAddress": doc.get("formattedAddress"),
            "geocodeError": doc.get("geocodeError"),
+           "geocodeStale": doc.get("geocodeStale"),
            "server_time": now_iso()}
 
 
@@ -146,6 +147,9 @@ def a_workspaceprojects(session: Session, payload: dict, secret: str,
             "address": (project.doc or {}).get("address"),
             "formattedAddress": (project.doc or {}).get("formattedAddress"),
             "geocodeError": (project.doc or {}).get("geocodeError"),
+            # Whether the coordinates above belong to an EARLIER address than the one stored.
+            # Without it a surface cannot tell a current match from a retained one.
+            "geocodeStale": (project.doc or {}).get("geocodeStale"),
             "lat": (project.doc or {}).get("lat"),
             "lng": (project.doc or {}).get("lng"),
             "project_role": m.project_role,
