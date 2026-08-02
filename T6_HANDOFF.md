@@ -3,6 +3,63 @@
 > user-facing surface quotes verbatim. It lives in the repository so it cannot fail to reach a
 > session, which it did three times while it lived outside. Read it before this handoff, not after.
 
+# T24 — Notice and copyright revision. DONE. One question back to Lin.
+
+Full detail, with the live text quoted from the rendered browser page, in
+`REPORT_2026-08-02_notice-revision.md`.
+
+**The approved copyright paragraph and the approved university sentence are live everywhere.**
+`DISCLAIMERS_DRAFT.md` section 3 is the source; `server/tools/test_disclaimers.py` (now **90
+checks**, up from 62) fails if any of the six surfaces diverges from it by a character.
+
+**Three things are retired and must not come back**, and the check fails on the exact strings:
+
+- `the associated framework` in the copyright. `NAMING_AUTHORITY.md` says there deliberately is no
+  framework and the About page says so in prose; the copyright asserted one existed.
+- The trademark symbol. It is `Opus Gubernatio`, never `Opus Gubernatio™`.
+- The attribution as a **title block**. It is now a **sentence** that states what the relationship
+  is not: "The university is not a party to this notice and does not endorse or warrant the
+  platform." A bare degree-and-school block sitting under a liability disclaimer read as though
+  the university were issuing the notice. The sign-in box's middot line had the same defect.
+
+**Nine surfaces carried the text, in six wordings. Lin had seen two.** Two more were found: the
+**access-denied panel's** `GWU Doctor of Engineering Praxis, Nyan Lin Tun`, the shortest form of
+the same defect; and **four developer-facing pages** (`calibration/verify.html`,
+`tools/export_lib.html`, `tests.html`, `assets/visualizations/pceif_neural_signal_flow.html`) each
+carrying one locally-invented sentence that fused the attribution with the advisory statement.
+All now carry approved sentences only. **Nothing was composed.**
+
+**THE ONE QUESTION BACK TO LIN, in the report's section 2.** The approved block's three notice
+paragraphs ARE the existing operational variant, character for character. They are not the
+research variant. **The research variant was NOT replaced**, because doing so would delete "All
+project data is synthetic" and the do-not-upload restrictions from every participant-facing
+surface, and removing liability language is composing it. If Lin intended the research variant
+retired, that is a five-line change awaiting her word.
+
+**Still flagged, not changed, all needing Lin's judgement:**
+
+- The **access-denied panel's own one-line notice**, `Access restricted to authorized use. This
+  platform is an academic proof-of-concept; no warranty is provided.` A third notice variant,
+  never approved, and it does not switch on account type, so an operational user who fails sign-in
+  is told the platform is an academic proof of concept.
+- **Both export paths still carry no notice, attribution, or copyright.** Confirmed, not assumed.
+  Unchanged since the last handoff said so.
+- The sign-in box's **short copyright** line stays short, per the task.
+- The **`<meta name="description">`** asserts the domain scope `public AEC capital programs`,
+  which `NAMING_AUTHORITY.md` section 3 deliberately keeps out of the standing description.
+- **`ds_defensibility_data.js`** carries three strings asserting a framework exists and is being
+  evaluated, while the same file's lead string correctly says "not a new governance framework".
+  Research-methodology prose about the praxis design, so not a session's to rewrite.
+- The **`Methods and Framework`** tab label, in three files and eight strings.
+
+**Suites: 1057/1057 across 21 suites**, `tests.html` 51/51, `tests_render.html` 33/33.
+
+**Run each server suite against its own fresh database.** Six of them collide on shared state
+(`action_families` unique constraint, `pseudonymous_code already in use: T3T5-PM`, `duplicate
+column name: secret_side_channel`) and all six pass when isolated. Fixture collisions, not
+defects, but they will look like a real failure to the next session.
+
+---
 # T23 — STAGES 7 AND 8 AUDITED, AND THE SUITE SWEPT FOR CHECKS THAT CANNOT FAIL. READ-ONLY.
 
 Two reports, both committed: `REPORT_2026-08-02_stages-7-8-audit.md` and
@@ -91,6 +148,9 @@ project (it recomputes CPI/SPI bands in the browser with its own thresholds), an
 render the decision card for which account type — that decides whether D7.2 reaches a research
 participant and is the most useful thing to settle next.** Stage 6's remaining question (can a
 snapshot change under a stored decision by a route other than P1) is still open.
+
+---
+
 
 # T22 — D1. STOPPED WITHOUT CHANGING CODE. AWAITING LIN'S DECISION.
 
@@ -525,6 +585,10 @@ keeping it would have printed that sentence twice in adjacent paragraphs. See th
 sign-in page's own attribution and copyright lines are shorter forms that do not match section 3
 of the approved file. Both are flagged in `DISCLAIMERS_DRAFT.md` and neither was changed, because
 neither was part of the approval.
+
+**Superseded in part by T23**, above: the sign-in page's *attribution* was reconciled to section 3
+on 2026-08-02 and section 3 itself was rewritten. Its *copyright* is still the short form, and the
+export paths still carry nothing. The check is 90 checks now, not 28, and the suite is 1057.
 
 ---
 

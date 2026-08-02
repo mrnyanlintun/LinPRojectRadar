@@ -19,10 +19,21 @@ Still open, and unchanged by this approval:
   attribution, or copyright at all. The exported file is the artifact most likely to leave the
   platform and be read by someone who never saw a footer. Whether a notice belongs in the export
   is a decision this file flags but does not make.
-- The sign-in page's own attribution and copyright lines are shorter forms that do not match
-  section 3 below. They were left alone: section 3 states what is constant across the two
-  account types, and reconciling the sign-in page's separate lines to it is an editorial
-  decision that was not part of this approval.
+- The sign-in page's **attribution** was a shorter form. It is no longer: on 2026-08-02 Lin
+  approved the section 3 sentence for that surface too, and the sign-in box and the access-denied
+  panel now carry it verbatim.
+- The sign-in page's **copyright** is still a shorter form, `© 2026 Nyan Lin Tun. All rights
+  reserved.`, and stays that way. The 2026-08-02 revision changed the wording each surface
+  carries, not which surfaces carry the full copyright paragraph.
+- The access-denied panel carries its own one-line notice, `Access restricted to authorized use.
+  This platform is an academic proof-of-concept; no warranty is provided.` It is a third notice
+  variant, is not derived from section 1 or 2, and was not part of any approval. Flagged, not
+  edited: replacing it would mean composing or selecting liability wording.
+- Four developer-facing pages (`calibration/verify.html`, `tools/export_lib.html`, `tests.html`,
+  `assets/visualizations/pceif_neural_signal_flow.html`) carried a fused attribution-plus-advisory
+  sentence of their own. On 2026-08-02 each was replaced by two sentences quoted verbatim from the
+  approved text: the advisory sentence from section 2 and the attribution sentence from section 3.
+  No new wording was composed for them.
 
 The mechanism these variants ride on is verified: `.notice-research` is the default and shows
 before sign-in, because restrictive text is the fail-safe direction, and
@@ -68,20 +79,31 @@ of those statements would be false for them.
 
 ## 3. Constant in both states
 
-Attribution, on two lines:
+Attribution, one sentence. Revised and approved by Lin on 2026-08-02:
 
-> Doctor of Engineering
-> The School of Engineering and Applied Science of The George Washington University
+> Developed as part of doctoral research at the School of Engineering and Applied Science, The
+> George Washington University. The university is not a party to this notice and does not endorse
+> or warrant the platform.
 
-Copyright:
+Copyright. Revised and approved by Lin on 2026-08-02:
 
-> © 2026 Nyan Lin Tun. All rights reserved. Opus Gubernatio™ and the associated framework,
-> software, and documentation are the intellectual property of the author. Unauthorized
-> reproduction, distribution, or use is prohibited.
+> © 2026 Nyan Lin Tun. All rights reserved. Opus Gubernatio and the associated software and
+> documentation are the intellectual property of the author. Unauthorized reproduction,
+> distribution, or use is prohibited.
 
-Note for review: the copyright line's phrase "the associated framework" survives from before the
-framework name was retired. Whether it stays is a legal wording decision, so it is flagged here
-rather than edited.
+Three things changed on 2026-08-02, and none of them may be reintroduced:
+
+- **"the associated framework" is gone.** `NAMING_AUTHORITY.md` states there is deliberately no
+  framework, and the About page says so in prose. The old copyright line asserted one existed.
+- **The trademark symbol is gone.** It is not "Opus Gubernatio™" anywhere.
+- **The attribution is a sentence, and it states what the relationship is not.** It previously sat
+  as a bare title block directly beneath a liability disclaimer, which read as though the
+  university were issuing or standing behind the notice. The sign-in box carried the same defect
+  in shorter form, as a middot-separated line, `The George Washington University · Doctor of
+  Engineering praxis research`. Both are replaced by the sentence above, verbatim.
+
+Do not compose a shorter form of either blockquote for a constrained surface. A surface either
+carries the approved sentence whole or does not carry it.
 
 ## 4. Out of scope for this draft
 
