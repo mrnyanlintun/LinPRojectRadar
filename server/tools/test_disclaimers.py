@@ -9,7 +9,14 @@ which wording was approved. This check makes that divergence a red suite rather 
 
 WHAT IT DOES NOT DO. It does not judge the wording, and it cannot: a session may not extend or
 strengthen liability language on its own judgement. It only asserts that what ships is what was
-approved, and that both account types carry their own variant on both surfaces.
+approved, and that both account types carry their own variant on every surface that shows one.
+
+THE UPLOAD PANELS. index.html carries the sign-in notice and the footer as static HTML. The four
+upload panels in signals.js and auditor.js are built as HTML strings at render time and cannot,
+so they share one constant in assets/js/disclaimers.js. That constant is checked against the same
+source here. It had already drifted before this check existed: the four panels carried wording
+that matched neither each other nor the approved notice, because they were a surface the approval
+did not originally cover.
 
 Reads files only. No database, no server, no network.
 """
@@ -24,6 +31,9 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "DISCLAIMERS_DRAFT.md"
 LIVE = ROOT / "index.html"
+SHARED = ROOT / "assets" / "js" / "disclaimers.js"
+PANEL_FILES = (ROOT / "assets" / "js" / "signals.js",
+               ROOT / "assets" / "js" / "auditor.js")
 
 PASSED = 0
 FAILED = 0
@@ -113,6 +123,7 @@ print()
 
 check(SOURCE.is_file(), "DISCLAIMERS_DRAFT.md present", str(SOURCE))
 check(LIVE.is_file(), "index.html present", str(LIVE))
+check(SHARED.is_file(), "assets/js/disclaimers.js present", str(SHARED))
 if FAILED:
     print("\nRESULT: cannot run")
     sys.exit(1)
@@ -166,6 +177,56 @@ for key in ("research", "operational"):
     joined = " ".join(variants[key])
     check("—" not in joined, f"{key} variant has no em dash")
     check(not re.search(r"\b[ABCD]\d+\.\d+\b", joined), f"{key} variant has no module id")
+
+print("\n6. The upload panels carry the same approved text, from one shared constant")
+shared_src = SHARED.read_text(encoding="utf-8")
+shared_norm = norm(shared_src)
+for key in ("research", "operational"):
+    for p, para in enumerate(variants[key], 1):
+        # The shared constant stores the paragraph as a JS string literal. Its apostrophes are
+        # plain, so a straight substring test on the normalised file is exact.
+        check(para in shared_norm,
+              f"disclaimers.js carries approved {key} paragraph {p} verbatim",
+              para[:60] + "...")
+
+# The panels must RENDER the shared constant, not their own copy of the words. A panel that
+# reintroduced a literal notice would pass the check above and still ship divergent text.
+for path in PANEL_FILES:
+    src = path.read_text(encoding="utf-8")
+    name = path.name
+    check("LinDisclaimers.uploadNoticeHtml()" in src,
+          f"{name} renders the shared notice")
+    check("upload-disclaimer notice-research" not in src
+          and "upload-disclaimer notice-operational" not in src,
+          f"{name} carries no literal notice of its own",
+          "a hardcoded upload-disclaimer block is present")
+    # `${...}` only interpolates inside a template literal. In an ordinary quoted string it
+    # ships to the user as the characters "${LinDisclaimers.uploadNoticeHtml()}". node --check
+    # accepts both, so the delimiter is asserted here rather than assumed.
+    for m in re.finditer(r"\$\{LinDisclaimers\.uploadNoticeHtml\(\)\}", src):
+        before = src[:m.start()]
+        ticks, i = 0, 0
+        while i < len(before):
+            if before[i] == "\\":
+                i += 2
+                continue
+            if before[i] == "`":
+                ticks += 1
+            i += 1
+        line = before.count("\n") + 1
+        check(ticks % 2 == 1,
+              f"{name}:{line} call site is inside a template literal (it interpolates)",
+              "even backtick count means it would ship as literal text")
+
+print("\n7. The shared constant is loaded before the files that use it")
+index_src = LIVE.read_text(encoding="utf-8")
+pos_shared = index_src.find('src="assets/js/disclaimers.js"')
+check(pos_shared != -1, "index.html loads assets/js/disclaimers.js")
+for path in PANEL_FILES:
+    pos_user = index_src.find(f'src="assets/js/{path.name}"')
+    check(pos_user != -1 and pos_shared != -1 and pos_shared < pos_user,
+          f"disclaimers.js loads before {path.name}",
+          f"shared at {pos_shared}, {path.name} at {pos_user}")
 
 print()
 print(f"RESULT: {PASSED}/{PASSED + FAILED} checks passed")

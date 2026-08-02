@@ -1140,6 +1140,11 @@
   <script src="assets/js/forcenet.js"></script>
   <script src="assets/js/workingrobot.js"></script>
   <script src="assets/js/ingest.js"></script>
+  <!-- Must load before signals.js and auditor.js: both call LinDisclaimers.uploadNoticeHtml()
+       at render time for their upload panels. The sign-in notice and the footer do NOT use it;
+       they carry the same approved text as static HTML so a liability notice never depends on
+       JavaScript having loaded. -->
+  <script src="assets/js/disclaimers.js"></script>
   <script src="assets/js/signals.js"></script>
   <script src="assets/js/auditor.js"></script>
   <script src="assets/js/admin.js"></script>

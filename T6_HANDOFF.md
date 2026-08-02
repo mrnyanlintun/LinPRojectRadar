@@ -3,6 +3,52 @@
 > user-facing surface quotes verbatim. It lives in the repository so it cannot fail to reach a
 > session, which it did three times while it lived outside. Read it before this handoff, not after.
 
+# T17 — STEP 6 (REAL EXTRACTION) DID NOT RUN. THE DEPENDENCY IS UNMET.
+
+Full detail in `REPORT_2026-08-02_real-extraction.md`. Branch `claude/step-6-real-extraction`,
+unmerged.
+
+**Treat the extraction verification as NOT STARTED, not as partial progress.** Parts 1 to 4 were
+not attempted. Three independent blockers, any one of them sufficient:
+
+1. **No real project document exists in the container.** Zero PDFs/DOCX/XLSX in the repo. The
+   three files in `server/dev_fixtures/` are **the stub in file form**: `dev_serve.py` writes them
+   itself at startup from hardcoded numbers, and their sha256 hashes *are* the StubExtractor's
+   recording keys. Using one would be running the stub against its own recording.
+2. **No `ANTHROPIC_API_KEY`, so the extraction path cannot run at all.** Measured, not assumed:
+   `build_extractor()` returns `StubExtractor`; `require_real=True` raises; and `extract()` on any
+   unrecorded bytes raises "refusing to invent an extraction". **This is decisive even if a real
+   document were supplied.** `render.yaml` marks the key `sync: false`, so it lives only in the
+   Render dashboard.
+3. **The Drive connector needs per-call approval** unavailable in a non-interactive session.
+
+**To unblock:** run one real document through the deployed platform on Render, where the key
+already is, and bring back the stored extraction; or attach a document to a session that also has
+the key. Local work cannot substitute.
+
+**`NAMING_AUTHORITY.md` is untouched and its wording still stands.** "Reads the reported figures"
+remains correct because extraction still has not run. Note for whoever gets the first successful
+run: **one clean extraction would not justify "extracts the figures" either.** That is a claim
+about reliability across real document structures. One run justifies only "has been run against a
+real project document". See section 3 of the report.
+
+**FINDING TO CARRY FORWARD: `document_risk_score` has no range guard, and the silent failure is in
+the safe-looking direction.** Measured through the merge path: `85` stores as `85` (pins every
+project Red), `"85%"` stores as `85.0`, and **`-3` stores as `-3` and reads as GREEN**. There is no
+validation anywhere on the server; the only guard is a sentence in the extraction prompt, and no
+test asserts the field stays in range. Not fixed, deliberately: it needs a decision about what to
+do on violation (refuse the document, clamp, or store and flag) before a check can be written.
+
+**Disclaimer wording gap: CLOSED.** The four upload panels in `signals.js` and `auditor.js` carried
+wording matching neither the approved notice nor each other. All four now render the approved text
+verbatim from one shared constant, `assets/js/disclaimers.js`. The sign-in notice and footer stay
+static HTML on purpose, so a liability notice never depends on JavaScript. `test_disclaimers.py`
+is now **46 checks** (was 28) and additionally asserts each call site sits **inside a template
+literal**, because `${...}` in an ordinary string is valid syntax that ships the placeholder text
+to the user and `node --check` accepts both. Server suite is **919 across 19 suites**.
+
+---
+
 # ACCEPTED STATES — DELIBERATE, DECIDED, NOT DEFECTS
 
 **Read this before "fixing" either of the two things below.** Both have been decided. A session

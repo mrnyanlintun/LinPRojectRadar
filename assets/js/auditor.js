@@ -304,8 +304,7 @@
           </label>
           <button class="btn primary" id="aud-a-upload" ${canUpload ? "" : "disabled"}>${state.uploadBusy ? "Uploading…" : "Upload"}</button>
         </div>
-        <p class="upload-disclaimer notice-research">Notice: Do not upload confidential, proprietary, or personally identifiable information, or documents relating to actual projects. Content is processed by third-party AI services. Uploads are made at the user's sole risk.</p>
-        <p class="upload-disclaimer notice-operational">Notice: You are responsible for confirming that you are authorized to upload each document, and for your organization's data handling, confidentiality, and records obligations. Content is processed by third-party AI services and stored in the platform. Analytical outputs are advisory and are not a validated compliance determination.</p>
+        ${LinDisclaimers.uploadNoticeHtml()}
         ${msg ? `<p class="aud-msg ${msg.startsWith("✓") ? "ok" : "warn"}" aria-live="polite">${esc(msg)}</p>` : ""}
       </div>
 
@@ -436,8 +435,7 @@
           <span class="aud-filebtn-label">${state.submission ? esc(state.submission.name) : "Submission (PDF or image)…"}</span>
           ${state.submission ? `<span class="kn-sub">· ${esc(fmtSize(state.submission.size))}</span>` : ""}
         </label>
-        <p class="upload-disclaimer notice-research">Notice: Do not upload confidential, proprietary, or personally identifiable information, or documents relating to actual projects. Content is processed by third-party AI services. Uploads are made at the user's sole risk.</p>
-        <p class="upload-disclaimer notice-operational">Notice: You are responsible for confirming that you are authorized to upload each document, and for your organization's data handling, confidentiality, and records obligations. Content is processed by third-party AI services and stored in the platform. Analytical outputs are advisory and are not a validated compliance determination.</p>
+        ${LinDisclaimers.uploadNoticeHtml()}
       </div>
 
       <div class="aud-step">
