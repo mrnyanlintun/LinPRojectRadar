@@ -3,13 +3,13 @@
 > user-facing surface quotes verbatim. It lives in the repository so it cannot fail to reach a
 > session, which it did three times while it lived outside. Read it before this handoff, not after.
 
-> **HANDOFF NUMBERING: APPEND, DO NOT ASSUME THE NEXT NUMBER IS FREE.** Three sessions collided
-> on section numbers on 2026-08-02 alone: T21 was taken twice and T23 was renumbered from T21
-> after the fact. Before writing a section, `grep -n "^# T" T6_HANDOFF.md` and take one above the
+> **HANDOFF NUMBERING: APPEND, DO NOT ASSUME THE NEXT NUMBER IS FREE.** Five sessions collided on
+> section numbers on 2026-08-02 alone: T21 was taken twice, T23 was renumbered from T21 after the
+> fact, T24 was taken twice, and this section was renumbered from T24 to T26 at merge time. Before writing a section, `grep -n "^# T" T6_HANDOFF.md` and take one above the
 > highest you see. If a merge conflict shows two sections with the same number, renumber yours
 > rather than the one already on `main`, and keep both.
 
-# T24 — THE PROJECT DETAIL PAGE IS BLANK, AND THAT IS WHY NOBODY SEES THE BROWSER-DERIVED RECOMMENDATION. BROWSER-VERIFIED. READ-ONLY.
+# T26 — THE PROJECT DETAIL PAGE IS BLANK, AND THAT IS WHY NOBODY SEES THE BROWSER-DERIVED RECOMMENDATION. BROWSER-VERIFIED. READ-ONLY.
 
 Full detail in `REPORT_2026-08-02_decision-card-routing.md`. **No code, no test and no data was
 modified.** Driven with Playwright against the pre-installed Chromium and `dev_serve.py` on 8010;
@@ -68,6 +68,14 @@ its Red dot**. `decision-ui.js:373` colours every row unconditionally and the se
 `evidence_metric` only. `test_decision_ui_t4`'s leak markers are prose, so on the face of it they
 do not cover a colour; I did not run the injection that would settle it.
 
+**MEASURED AT `a5c3da7`; RE-VERIFIED AT `c05d028` AFTER T25 MERGED.** The blank page and the D1.3
+green dot both survive T25 unchanged, and abstentions are still absent from `module_results` (36 of
+95 stored now, still 0 carrying the flag, still 0 with a null colour). **T25 supersedes the specific
+fabrication strings I recorded a participant seeing** — the five B2 Ambers and C1.4's "0 events
+recorded" are fixed; C1.4 now reads "Amber, 50% audit trail completeness, 1 events recorded". Read
+that part of the report as the record of what they looked like, not as live. **T25 does not touch
+`portfolio.py`**, so D1.3 is now the only place emitting a colour and an insufficiency flag together.
+
 **NOT ESTABLISHED:** whether the admin route or `research/deepdive.html` render a card (neither
 reached in a browser; no source reference in `admin.js`/`admin-ops.js`); whether anyone opened the
 detail page between `062731b` and now; whether the blank page differs on a project with no stored
@@ -75,6 +83,121 @@ result. Production not inspected.
 
 ---
 
+# T25 — D1 IMPLEMENTED. THE OBTAINABLE KEYS WIRED, THE REST ABSTAINING.
+
+Full detail in `REPORT_2026-08-02_d1-implementation.md`. **1157 checks across 22 suites**;
+`tests_render.html` **33/33**, `tests.html` **51/51**. No stored data altered, production not inspected, `assets/`
+untouched. Lin's decision: option 3 where the data exists, option 1 everywhere else.
+
+**T22'S COLOUR ANSWER WAS WRONG AND IS CORRECTED HERE. PROJECT COLOUR DOES MOVE.** Measured
+against the test suite's own fixtures rather than a hand-built variant: **healthy Red to Green**,
+**on-budget Amber to Green**, distressed Red to Red. **A healthy project was being reported as
+RED**, because with no `spiHistory` A1.2 synthesised twelve observations from the current SPI and
+drew a control chart over them; a project running ahead of plan drifts from the control target, so
+the chart breached, A1.2 went Red, category A1 went Red, and the project went Red. Direction
+matters: healthy improves, distressed's B2 gets **worse** (Amber to Red), distressed stays Red.
+Nothing softens a bad project.
+
+**END TO END, THE BIGGER RESULT IS C1.4.** Across three real periods: **C1.4 Red to GREEN in every
+period** — it was reporting "0 events recorded" about a platform that has recorded events in
+exactly that shape since `_append_event` was written. **Four modules that never computed now
+compute** (Kalman, ARIMA, Regression to Mean, and CUSUM on real data, where at period 3 it
+disagrees with its own fabrication: red becomes amber). **Category C1 now improves as the record
+builds**, Amber to Yellow to Green, where it was frozen by an immovable Red.
+
+**Abstaining: 48 of 95 before, 60 if everything abstained, implemented 58/55/54 at periods 1/2/3.**
+The count FALLS as history accumulates, because wiring gives evidence back. Twelve fabricated
+verdicts per stored result before; two or three of the twelve compute from real evidence after.
+
+**WIRED** in `documents.py` (not in `assemble_signal_inputs`, which must stay pure): `events` via
+`_events_as_of`, `spiHistory`/`cpiHistory` via `_period_history`. **ABSTAINING**: the eight legacy
+browser-blob keys. Every fabrication path DELETED — `derive_series`, `hash_seed`, R0, the five
+AMBER stubs, Rough Sets' `or 1`. `insufficient()` reused; no new abstention form.
+
+**NO LEAKAGE, and P1 IS NOT ENLARGED.** `_period_history` filters `period < period`, so recomputing
+period 1 with 2 and 3 stored reads neither. The event log is truncated at the period cutoff for the
+same reason C1.2 takes its "now" there. Both asserted, both fault-injected.
+
+**`milestoneHistory` STILL CANNOT BE SUPPLIED; A2.7 still abstains, correctly.** `milestones_json`
+is requested from the extraction model but is not in `ALL_FIELDS`, so it never reaches
+`signalInputs`. Merge-layer work, not this task.
+
+**TWO GAPS FOUND, REPORTED NOT FIXED. (a) No `signals_extracted` event is written on upload** by
+any current code path, so C1.4 is truthful about a log thinner than it should be; fixing it changes
+the user-facing **docCount**, which `facade.py` derives from that event count — Lin's call.
+**(b)** `_js_date_ms` refuses datetime strings by design while `_append_event` writes them, so
+`_events_as_of` narrows `at` to its date part at the boundary; without that C1.7 would abstain on
+every real project while LOOKING wired.
+
+**VALIDATION.md**: all twelve exact-match rows kept, each annotated `D1: DIVERGES`, plus a banner
+stating that a matched row establishes only that the server computes what the JavaScript computed,
+not that the module is correct.
+
+**NEW SUITE** `server/tools/test_d1_module_inputs.py`, 100 checks, **nine faults injected**
+including the two that leave the code looking correct (date narrowing removed; history reading all
+periods). **Three more vacuous checks were caught by that injection** — `all()` over an empty list
+— which is the fourth session running. **The pre-existing 1013 checks passed with every change in
+place before a single new test was written**: the suite could not detect twelve removed
+fabrications, one of which was turning a healthy project Red.
+---
+
+# T24 — Notice and copyright revision. DONE. One question back to Lin.
+
+Full detail, with the live text quoted from the rendered browser page, in
+`REPORT_2026-08-02_notice-revision.md`.
+
+**The approved copyright paragraph and the approved university sentence are live everywhere.**
+`DISCLAIMERS_DRAFT.md` section 3 is the source; `server/tools/test_disclaimers.py` (now **90
+checks**, up from 62) fails if any of the six surfaces diverges from it by a character.
+
+**Three things are retired and must not come back**, and the check fails on the exact strings:
+
+- `the associated framework` in the copyright. `NAMING_AUTHORITY.md` says there deliberately is no
+  framework and the About page says so in prose; the copyright asserted one existed.
+- The trademark symbol. It is `Opus Gubernatio`, never `Opus Gubernatio™`.
+- The attribution as a **title block**. It is now a **sentence** that states what the relationship
+  is not: "The university is not a party to this notice and does not endorse or warrant the
+  platform." A bare degree-and-school block sitting under a liability disclaimer read as though
+  the university were issuing the notice. The sign-in box's middot line had the same defect.
+
+**Nine surfaces carried the text, in six wordings. Lin had seen two.** Two more were found: the
+**access-denied panel's** `GWU Doctor of Engineering Praxis, Nyan Lin Tun`, the shortest form of
+the same defect; and **four developer-facing pages** (`calibration/verify.html`,
+`tools/export_lib.html`, `tests.html`, `assets/visualizations/pceif_neural_signal_flow.html`) each
+carrying one locally-invented sentence that fused the attribution with the advisory statement.
+All now carry approved sentences only. **Nothing was composed.**
+
+**THE ONE QUESTION BACK TO LIN, in the report's section 2.** The approved block's three notice
+paragraphs ARE the existing operational variant, character for character. They are not the
+research variant. **The research variant was NOT replaced**, because doing so would delete "All
+project data is synthetic" and the do-not-upload restrictions from every participant-facing
+surface, and removing liability language is composing it. If Lin intended the research variant
+retired, that is a five-line change awaiting her word.
+
+**Still flagged, not changed, all needing Lin's judgement:**
+
+- The **access-denied panel's own one-line notice**, `Access restricted to authorized use. This
+  platform is an academic proof-of-concept; no warranty is provided.` A third notice variant,
+  never approved, and it does not switch on account type, so an operational user who fails sign-in
+  is told the platform is an academic proof of concept.
+- **Both export paths still carry no notice, attribution, or copyright.** Confirmed, not assumed.
+  Unchanged since the last handoff said so.
+- The sign-in box's **short copyright** line stays short, per the task.
+- The **`<meta name="description">`** asserts the domain scope `public AEC capital programs`,
+  which `NAMING_AUTHORITY.md` section 3 deliberately keeps out of the standing description.
+- **`ds_defensibility_data.js`** carries three strings asserting a framework exists and is being
+  evaluated, while the same file's lead string correctly says "not a new governance framework".
+  Research-methodology prose about the praxis design, so not a session's to rewrite.
+- The **`Methods and Framework`** tab label, in three files and eight strings.
+
+**Suites: 1057/1057 across 21 suites**, `tests.html` 51/51, `tests_render.html` 33/33.
+
+**Run each server suite against its own fresh database.** Six of them collide on shared state
+(`action_families` unique constraint, `pseudonymous_code already in use: T3T5-PM`, `duplicate
+column name: secret_side_channel`) and all six pass when isolated. Fixture collisions, not
+defects, but they will look like a real failure to the next session.
+
+---
 # T23 — STAGES 7 AND 8 AUDITED, AND THE SUITE SWEPT FOR CHECKS THAT CANNOT FAIL. READ-ONLY.
 
 Two reports, both committed: `REPORT_2026-08-02_stages-7-8-audit.md` and
@@ -163,6 +286,9 @@ project (it recomputes CPI/SPI bands in the browser with its own thresholds), an
 render the decision card for which account type — that decides whether D7.2 reaches a research
 participant and is the most useful thing to settle next.** Stage 6's remaining question (can a
 snapshot change under a stored decision by a route other than P1) is still open.
+
+---
+
 
 # T22 — D1. STOPPED WITHOUT CHANGING CODE. AWAITING LIN'S DECISION.
 
@@ -597,6 +723,10 @@ keeping it would have printed that sentence twice in adjacent paragraphs. See th
 sign-in page's own attribution and copyright lines are shorter forms that do not match section 3
 of the approved file. Both are flagged in `DISCLAIMERS_DRAFT.md` and neither was changed, because
 neither was part of the approval.
+
+**Superseded in part by T23**, above: the sign-in page's *attribution* was reconciled to section 3
+on 2026-08-02 and section 3 itself was rewritten. Its *copyright* is still the short form, and the
+export paths still carry nothing. The check is 90 checks now, not 28, and the suite is 1057.
 
 ---
 

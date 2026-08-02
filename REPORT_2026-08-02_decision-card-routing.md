@@ -4,6 +4,31 @@
 
 ---
 
+## Which commit this was measured against, and what PR #201 supersedes
+
+**The measurements below were taken at `a5c3da7`. PR #201 (the D1 implementation, T25) merged
+while this branch was open and changes part of section 5.** Rather than restate stale numbers, I
+re-ran the two findings that matter against the merged tree at `c05d028`. Both survive:
+
+| Finding | At `a5c3da7` | Re-measured at `c05d028` |
+|---|---|---|
+| Detail page blank, `ReferenceError: populated is not defined` | yes | **unchanged**, `#detail-root` length 0, `.dc-field` 0, derived strings absent |
+| D1.3 Green dot beside "No history available" | yes | **unchanged**: `status_color: "Green"`, `insufficient_data: True`, rendered `var(--status-green)` |
+| Abstentions absent from `module_results` | 47 of 95 stored, 0 with the flag, 0 with a null colour | **36 of 95 stored, still 0 with the flag, still 0 with a null colour** |
+
+**What #201 supersedes, and it is the good half of section 5's evidence.** The specific strings I
+quote a research participant seeing — the five B2 "Insufficient signal data" Ambers, Audit Trail
+Completeness Red at "0 events recorded", Reporting Frequency Yellow at "no documents uploaded yet"
+— **are fixed and no longer appear**. Audit Trail Completeness now reads *"Amber | 50% audit trail
+completeness, 1 events recorded"*. Read that subsection as the record of what the fabrications
+looked like on a participant's screen, not as a live finding.
+
+**What #201 does not touch is `portfolio.py`.** Group D still emits all five results
+unconditionally, so D1.3 is unchanged and is now the only place in the platform where a colour and
+an insufficiency flag are emitted together.
+
+---
+
 ## The answer
 
 **No. A research participant does not see the browser-derived recommendation. Neither does an

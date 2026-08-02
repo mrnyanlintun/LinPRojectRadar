@@ -25,21 +25,6 @@ from .rng import clamp, make_rng, pctile
 DEMO_BAC = 100.0
 
 
-def hash_seed(value) -> int:
-    """
-    FNV-1a 32-bit, matching sim.js hashSeed exactly.
-
-    The JavaScript derives the synthesised-series generator from hashSeed("series-" + seed) rather
-    than from the seed directly. Skipping that transform produced a different series and therefore
-    a different sigma, H and breach index, which is how the first validation attempt failed.
-    """
-    h = 2166136261 & 0xFFFFFFFF
-    for ch in str(value):
-        h ^= ord(ch)
-        h = (h * 16777619) & 0xFFFFFFFF
-    return h & 0xFFFFFFFF
-
-
 def _normal(rand: Callable[[], float]) -> float:
     """Box-Muller, matching the JavaScript exactly including the reject-zero loops."""
     u = 0.0
@@ -158,23 +143,6 @@ def cusum_series(series, target: float = 1.0, sigma=None, h_units: float = 5) ->
             "breached": breached, "breachIndex": breach_index}
 
 
-def derive_series(metric_value: float, seed: int, n: int = 12) -> list[float]:
-    """
-    A short deterministic metric series when none was supplied.
-
-    The JavaScript hashes a string to seed this; here the caller supplies the seed derived from
-    (scenario_id, period), so the synthesised series is a property of the scenario period.
-    """
-    # Same derivation as the JavaScript: hash the tagged seed string, do not use the seed directly.
-    rand = make_rng(hash_seed("series-" + str(seed)))
-    out = []
-    for t in range(n):
-        frac = t / (n - 1)
-        base = 1.0 + (metric_value - 1.0) * frac
-        out.append(math.floor((base + (rand() - 0.5) * 0.02) * 1000 + 0.5) / 1000)
-    return out
-
-
 def mc_status(overrun_pct_p80: float) -> str:
     if overrun_pct_p80 >= 10:
         return "red"
@@ -222,14 +190,23 @@ def run_monte_carlo(si: dict, rand, seed: int) -> dict[str, Any]:
 
 
 def run_cusum(si: dict, rand, seed: int) -> dict[str, Any]:
-    """A1.2. Uses a supplied spiHistory when present, otherwise a seeded derived series."""
+    """
+    A1.2. Runs on the project's real SPI history and abstains without one.
+
+    D1. This module used to synthesise a twelve-point series from the current SPI whenever no
+    history was supplied, which server-side was every project: the browser's blob carried
+    spiHistory and the server's assembly never did. A control chart drawn over invented
+    observations reported a breach or a clean run about a project nothing had measured over
+    time. `spiHistory` is now assembled from the project's earlier periods (documents.py) and
+    absence abstains, matching Kalman, ARIMA and Regression to Mean, which read the same series.
+    """
     from .models import insufficient
     if si.get("spi") is None:
         return insufficient("CUSUM")
 
     series = si.get("spiHistory")
-    if not series:
-        series = derive_series(float(si["spi"]), seed)
+    if not isinstance(series, list) or len(series) < 2:
+        return insufficient("CUSUM", "Awaiting history (2 periods needed)")
     cu = cusum_series(series)
     return {
         "method_class": "CUSUM",

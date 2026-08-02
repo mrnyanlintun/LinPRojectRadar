@@ -35,6 +35,24 @@ SHARED = ROOT / "assets" / "js" / "disclaimers.js"
 PANEL_FILES = (ROOT / "assets" / "js" / "signals.js",
                ROOT / "assets" / "js" / "auditor.js")
 
+# Developer-facing pages that carry the approved attribution sentence in their own footer. They
+# used to carry a fused attribution-plus-advisory sentence of their own invention, four copies of
+# it, which is the same drift shape the upload panels had.
+ATTRIBUTION_PAGES = (ROOT / "calibration" / "verify.html",
+                     ROOT / "tools" / "export_lib.html",
+                     ROOT / "tests.html",
+                     ROOT / "assets" / "visualizations" / "pceif_neural_signal_flow.html")
+
+# Wording retired on 2026-08-02 that must not come back on any surface. "the associated framework"
+# asserted a framework exists; NAMING_AUTHORITY.md says there deliberately is none. The trademark
+# symbol was dropped. The attribution title block read as though the university issued the notice.
+RETIRED = (
+    "Opus Gubernatio™",
+    "the associated framework",
+    "The George Washington University · Doctor of Engineering praxis research",
+    "The School of Engineering and Applied Science of The George Washington University",
+)
+
 PASSED = 0
 FAILED = 0
 
@@ -68,7 +86,8 @@ def source_variants() -> dict[str, list[str]]:
     """
     text = SOURCE.read_text(encoding="utf-8")
     out: dict[str, list[str]] = {}
-    for key, heading in (("research", "## 1."), ("operational", "## 2.")):
+    for key, heading in (("research", "## 1."), ("operational", "## 2."),
+                         ("constant", "## 3.")):
         start = text.index(heading)
         rest = text[start + len(heading):]
         end = rest.find("\n## ")
@@ -227,6 +246,61 @@ for path in PANEL_FILES:
     check(pos_user != -1 and pos_shared != -1 and pos_shared < pos_user,
           f"disclaimers.js loads before {path.name}",
           f"shared at {pos_shared}, {path.name} at {pos_user}")
+
+print("\n8. Section 3 parses into the attribution sentence and the copyright paragraph")
+constant = variants["constant"]
+check(len(constant) == 2, "section 3 has 2 blockquote paragraphs", f"got {len(constant)}")
+ATTRIBUTION = next((p for p in constant if "George Washington" in p), "")
+COPYRIGHT = next((p for p in constant if p.startswith("©")), "")
+check(bool(ATTRIBUTION), "section 3 carries the university attribution sentence")
+check(bool(COPYRIGHT), "section 3 carries the copyright paragraph")
+# The three things the 2026-08-02 revision removed. Asserted against the SOURCE as well as the
+# live surfaces, so reintroducing them by "fixing" the source is also a red suite.
+check("is not a party to this notice" in ATTRIBUTION,
+      "the attribution states the university is not a party to the notice")
+check("does not endorse or warrant" in ATTRIBUTION,
+      "the attribution states the university does not endorse or warrant the platform")
+check("framework" not in COPYRIGHT, "the copyright no longer asserts an associated framework")
+check("™" not in COPYRIGHT, "the copyright carries no trademark symbol")
+
+if not ATTRIBUTION or not COPYRIGHT:
+    print("\nRESULT: section 3 did not parse; downstream checks would be vacuous")
+    sys.exit(1)
+
+print("\n9. The live surfaces carry section 3 verbatim")
+for cls, para, label in (("footer-copyright", COPYRIGHT, "copyright paragraph"),
+                         ("footer-praxis", ATTRIBUTION, "attribution sentence")):
+    blocks = live_blocks(cls)
+    check(len(blocks) == 1, f".{cls} appears once in index.html", f"found {len(blocks)}")
+    check(bool(blocks) and para in strip_tags(blocks[0]),
+          f"the footer carries the approved {label} verbatim", para[:60] + "...")
+
+# The sign-in box and the access-denied panel. Both used to carry their own short attribution, a
+# middot line and a "GWU ... Praxis" line, each sitting under a liability disclaimer where it read
+# as a signature block. Both now carry the same sentence as every other surface. .login-footnote
+# is also used by unrelated expanders, so this counts the ones that carry it rather than requiring
+# all of them to.
+footnotes = [b for b in live_blocks("login-footnote") if ATTRIBUTION in strip_tags(b)]
+check(len(footnotes) >= 2,
+      "at least 2 .login-footnote surfaces carry the approved attribution sentence",
+      f"found {len(footnotes)} (expected the sign-in box and the access-denied panel)")
+
+print("\n10. The developer-facing pages carry the approved attribution sentence")
+for path in ATTRIBUTION_PAGES:
+    check(path.is_file(), f"{path.name} present", str(path))
+    if path.is_file():
+        check(ATTRIBUTION in strip_tags(path.read_text(encoding="utf-8")),
+              f"{path.name} carries the approved attribution sentence verbatim")
+
+print("\n11. No retired wording survives on any surface")
+SURFACES = (LIVE, SHARED) + ATTRIBUTION_PAGES
+for path in SURFACES:
+    if not path.is_file():
+        continue
+    rendered = norm(path.read_text(encoding="utf-8"))
+    for phrase in RETIRED:
+        check(phrase not in rendered, f"{path.name} does not carry retired wording",
+              phrase[:60])
 
 print()
 print(f"RESULT: {PASSED}/{PASSED + FAILED} checks passed")
