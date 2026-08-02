@@ -3,6 +3,86 @@
 > user-facing surface quotes verbatim. It lives in the repository so it cannot fail to reach a
 > session, which it did three times while it lived outside. Read it before this handoff, not after.
 
+> **HANDOFF NUMBERING: APPEND, DO NOT ASSUME THE NEXT NUMBER IS FREE.** Five sessions collided on
+> section numbers on 2026-08-02 alone: T21 was taken twice, T23 was renumbered from T21 after the
+> fact, T24 was taken twice, and this section was renumbered from T24 to T26 at merge time. Before writing a section, `grep -n "^# T" T6_HANDOFF.md` and take one above the
+> highest you see. If a merge conflict shows two sections with the same number, renumber yours
+> rather than the one already on `main`, and keep both.
+
+# T26 — THE PROJECT DETAIL PAGE IS BLANK, AND THAT IS WHY NOBODY SEES THE BROWSER-DERIVED RECOMMENDATION. BROWSER-VERIFIED. READ-ONLY.
+
+Full detail in `REPORT_2026-08-02_decision-card-routing.md`. **No code, no test and no data was
+modified.** Driven with Playwright against the pre-installed Chromium and `dev_serve.py` on 8010;
+compositing proven first (`visibilityState: "visible"`, **62 rAF frames/s**). **There is no
+`preview_start` tooling in this container**, so the `Demo` trap could not arise.
+
+**`assets/js/detail.js:894` references `populated`, which does not exist.** Commit `062731b`
+(T12b, the hasSignals sweep, 2026-08-01) deleted `const populated = hasSignals(p);` and rewrote
+two of its three uses. The third survived, inside the template literal that builds
+`root.innerHTML`, so **`LinDetail.render` throws before assigning anything and the project detail
+page has rendered header-and-footer-with-nothing-between for a day.** Measured on both account
+types; screenshot in the report. **`showPage`'s `try/catch` at `app.js:1868` swallows it**, which
+is why the console is clean and the page is empty.
+
+**THAT ANSWERS T23's OPEN QUESTION, and not in either direction it anticipated. NOBODY sees the
+browser-derived recommendation.** `renderDecisionCard` has exactly two mount points: its default
+root `#decision-card`, **which does not exist in `index.html`** (so it returns at line one), and
+`detail.js:988` on the page that no longer renders. `.dc-field` count in the live DOM, both
+account types, every route: **0**. The four derived strings ("Recovery-plan review and management
+escalation", "Program director / PMO", …) appear **nowhere**. So D7.2 is not a research-instrument
+problem and not a live operational defect; it is unreachable code behind a blank page. **The blank
+page is the live defect.**
+
+**WHAT A PARTICIPANT ACTUALLY SEES AS THE DISCLOSED RECOMMENDATION: the frozen
+`DecisionSupportPackage`, printed verbatim from the server.** Every field in the revealed panel
+carried the `PKGMARK` markers planted in the seeded package. **Note carefully: that is not the
+browser's recommendation and it is also not the 36 Group B computations'** — it is a
+researcher-authored artefact from `adminpackagecreate`. The analytical layer reaches the
+participant through the *evidence* panel above the judgment form instead. Whether the frozen
+package is meant to be the disclosed recommendation is a design question, not a defect.
+
+**`tests_render.html` cannot catch this, and it is the harness written to.** Its group 3 is headed
+"The detail page State badge renders" and calls `LinApp.stateLabel(p)`, a pure function; its group
+2 renders the decision card into a synthetic host, bypassing the page. **Nothing anywhere calls
+`LinDetail.render`.** This belongs in the vacuity sweep and was not in it.
+
+**THE ABSTENTION QUESTION, and the answer is better than feared except in one place.**
+**Abstaining project-level modules are absent from `module_results` entirely** — the stored row
+carries 47 of 95 modules, **0 with `insufficient_data`, 0 with a null `status_color`** — so an
+abstention *disappears* from a surface rather than rendering Green. No rendered dot on any surface
+carried the `--status-nodata` colour. **So making modules abstain WOULD work on every
+project-level surface.** The exception is `portfolio.py`, the only path that emits a colour and an
+insufficiency flag together: **"Signal Trajectory Classifier | No history available | GREEN dot"
+seen on screen** on both operational projects. The distinction is not which surfaces read the flag
+(none do) but which code paths emit a colour beside one.
+
+**WHAT A RESEARCH PARTICIPANT SEES FROM D1, on the evidence screen, before committing anything:**
+five B2 modules Amber with the text "Insufficient signal data"; Audit Trail Completeness **Red**,
+"0 events recorded"; Reporting Frequency **Yellow**, "no documents uploaded yet" — on a screen
+that lists the uploaded document by filename fourteen rows below. The D1 fabrications reach the
+person whose judgment is the dependent variable.
+
+**ALSO FOUND, for Lin rather than for a session:** before the lock, the Regret Minimization Index
+evidence row withholds its prose ("This module's finding is withheld until…") **and still shows
+its Red dot**. `decision-ui.js:373` colours every row unconditionally and the server redacts
+`evidence_metric` only. `test_decision_ui_t4`'s leak markers are prose, so on the face of it they
+do not cover a colour; I did not run the injection that would settle it.
+
+**MEASURED AT `a5c3da7`; RE-VERIFIED AT `c05d028` AFTER T25 MERGED.** The blank page and the D1.3
+green dot both survive T25 unchanged, and abstentions are still absent from `module_results` (36 of
+95 stored now, still 0 carrying the flag, still 0 with a null colour). **T25 supersedes the specific
+fabrication strings I recorded a participant seeing** — the five B2 Ambers and C1.4's "0 events
+recorded" are fixed; C1.4 now reads "Amber, 50% audit trail completeness, 1 events recorded". Read
+that part of the report as the record of what they looked like, not as live. **T25 does not touch
+`portfolio.py`**, so D1.3 is now the only place emitting a colour and an insufficiency flag together.
+
+**NOT ESTABLISHED:** whether the admin route or `research/deepdive.html` render a card (neither
+reached in a browser; no source reference in `admin.js`/`admin-ops.js`); whether anyone opened the
+detail page between `062731b` and now; whether the blank page differs on a project with no stored
+result. Production not inspected.
+
+---
+
 # T25 — D1 IMPLEMENTED. THE OBTAINABLE KEYS WIRED, THE REST ABSTAINING.
 
 Full detail in `REPORT_2026-08-02_d1-implementation.md`. **1157 checks across 22 suites**;
