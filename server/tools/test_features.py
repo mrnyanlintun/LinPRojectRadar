@@ -269,10 +269,53 @@ r = get({"action": "getportfoliohealth", "session_token": pm_tok})
 check(r.get("ok") is False and "disabled for this account" in (r.get("error") or ""),
       "flag off refuses even after the lock", str(r)[:160])
 
-# A sessionless call is unchanged: /exec has never authenticated the facade actions.
+# A SESSIONLESS read is now REFUSED, and this check used to assert the opposite.
+#
+# It read "a sessionless facade call is unaffected (pre-existing posture)", which was true and was
+# the hole: gate_action deliberately leaves sessionless callers alone because an anonymous caller
+# has no flags to apply, so an anonymous GET of getportfoliohealth bypassed the feature gate that
+# a signed-in user with the flag OFF is held to. The read guard one layer up now refuses it, so
+# the flag can no longer be evaded by presenting no credential at all.
 r = get({"action": "getportfoliohealth"})
-check(r.get("ok") is True, "a sessionless facade call is unaffected (pre-existing posture)",
-      str(r)[:120])
+check(r.get("ok") is False and "session token" in (r.get("error") or ""),
+      "a sessionless facade read is refused, so the feature gate cannot be bypassed by "
+      "dropping the credential", str(r)[:120])
+check("results" not in r, "and the refusal carries no snapshot payload", str(sorted(r)))
+
+# THE CREDENTIAL CARRIER FOR READS. A token in a URL is logged by every intermediary that logs
+# URLs, so the header is the mechanism and the query string is a fallback kept only for the one
+# caller that cannot set headers (the document-viewer iframe). All three are asserted here, and
+# they are written defensively — `.get(...)` rather than indexing — because a broken header
+# reader would otherwise make this suite CRASH instead of fail, and a crash prints no RESULT line
+# and reads as clean. That failure mode is on the record from the previous two sessions.
+_pf_tok = pm_tok
+_pf_flag = post({"action": "adminfeaturesset", "session_token": admin,
+                 "participant_id": pm_p["participant_id"],
+                 "features": {"health_dialog": True}})
+check(_pf_flag.get("ok") is True,
+      "precondition: the reader's health_dialog flag is on, so a refusal below cannot be the "
+      "feature gate rather than the credential", str(_pf_flag)[:110])
+
+
+def _read_health(headers):
+    r = client.get("/exec", params={"action": "getportfoliohealth"}, headers=headers)
+    assert r.status_code == 200
+    return r.json()
+
+
+check(_read_health({"Authorization": "Bearer " + _pf_tok}).get("ok") is True,
+      "a read authenticated by the Authorization: Bearer header succeeds",
+      str(_read_health({"Authorization": "Bearer " + _pf_tok}))[:110])
+check(_read_health({"X-Session-Token": _pf_tok}).get("ok") is True,
+      "and by the X-Session-Token header")
+check(get({"action": "getportfoliohealth", "session_token": _pf_tok}).get("ok") is True,
+      "and by the query-string fallback, which the iframe viewer still needs")
+check(_read_health({"Authorization": "Bearer not-a-real-token"}).get("ok") is False,
+      "a Bearer header carrying a bad token is refused, not ignored",
+      str(_read_health({"Authorization": "Bearer not-a-real-token"}))[:110])
+check(_read_health({"Authorization": _pf_tok}).get("ok") is False,
+      "and a token sent WITHOUT the Bearer scheme is not accepted by accident",
+      str(_read_health({"Authorization": _pf_tok}))[:110])
 
 print()
 print("=" * 78)

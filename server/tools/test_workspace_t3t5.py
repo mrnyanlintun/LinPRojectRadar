@@ -49,8 +49,17 @@ def post(payload: dict) -> dict:
     return r.json()
 
 
-def get(params: dict) -> dict:
-    r = client.get("/exec", params=params)
+GET_SESSION: str | None = None
+
+
+def get(params: dict, token: str | None = None) -> dict:
+    # Reads are authenticated as of 2026-08-02, and the credential travels in a HEADER rather
+    # than the query string. Passing `session_token=None` in params forces a genuinely anonymous
+    # request, which is how the refusal checks are written.
+    q = dict(params)
+    tok = q.pop("session_token", token or GET_SESSION)
+    headers = {"Authorization": "Bearer " + tok} if tok else {}
+    r = client.get("/exec", params=q, headers=headers)
     assert r.status_code == 200, f"contract violation: HTTP {r.status_code}"
     return r.json()
 
@@ -98,6 +107,7 @@ def make_participant(code: str) -> tuple[str, str]:
 
 
 pm_id, pm = make_participant("T3T5-PM")
+GET_SESSION = pm            # reads are authenticated; the PM is this suite's default reader
 other_id, other = make_participant("T3T5-OTHER")
 
 print("=" * 78)

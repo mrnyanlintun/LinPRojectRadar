@@ -184,11 +184,12 @@ one this repository keeps relearning: verify the revert, not just the injection.
 
 ### Full suites, on merged `main`
 
-Run after fast-forwarding to `origin/main` at `ead2357`, because that merge touched eight test
-files and `assets/js/store.js`.
+`main` moved twice while this work was in progress. The suites were run after fast-forwarding to
+`ead2357`, and again after merging `aa681ab`, because between them those commits touched ten test
+files and `assets/js/store.js`. The numbers below are the final state, on the merge.
 
-- **Server: 23 suites, 1247 checks, 0 failures.** Including `test_workspace_t3t5.py` 70/70, which
-  is the suite that covers `apply_to_doc`, and `test_writes_a1b.py` 87/87.
+- **Server: 23 suites, 1259 checks, 0 failures.** Including `test_workspace_t3t5.py`, which is the
+  suite that covers `apply_to_doc`, and `test_writes_a1b.py`.
 - **`tests_render.html`: 43/43.** In a real browser, no console errors.
 - **`tests.html`: 51/51 assertions.** In a real browser.
 
@@ -272,9 +273,12 @@ was run.
 
 ## 7. Repository state
 
-`main` had moved: local was at `8b151a4` and `origin/main` at `ead2357`, one commit ahead. I
-fast-forwarded and re-ran everything on the merged tree before committing. There is no push in
-this report's scope beyond this commit; a push triggers a Render deploy.
+`main` had moved, twice. Local was at `8b151a4` and `origin/main` at `ead2357`, so I
+fast-forwarded and re-ran everything before committing. `origin/main` then moved again to
+`aa681ab` ("Reads fail closed too") while this work was in progress, overlapping on `T6_HANDOFF.md`
+and `server/tools/test_workspace_t3t5.py`. I merged it. The handoff conflicted and was resolved by
+keeping both sections whole, per the rule at the top of that file; the test file merged
+automatically. The full suite was re-run on the merge, which is where the 1259 figure comes from.
 
 Separately, and unresolved from an earlier session: the branch **`t15-local-unpushed`** (`9dc137d`)
 holds five commits that were never pushed. The only substantive code of mine in them is the

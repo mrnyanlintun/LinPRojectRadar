@@ -175,16 +175,36 @@ def a_ping(session: Session, params: dict) -> dict[str, Any]:
     }
 
 
+def _visible(session: Session, params: dict, rows: list) -> list:
+    """
+    Drop the projects this caller is not a member of.
+
+    Collections are filtered rather than refused: a portfolio call that fails because ONE of its
+    rows belongs to someone else would be unusable for anybody who is a member of some projects
+    and not others, which is every real user. `readable_project_ids` returns None only when no
+    caller was resolved, which dispatch_get makes impossible — it is the direct-call case, kept so
+    a handler exercised on its own does not silently filter everything away.
+    """
+    from .research_membership import readable_project_ids
+    allowed = readable_project_ids(session, params)
+    if allowed is None:
+        return rows
+    return [p for p in rows if p.legacy_id in allowed]
+
+
 def a_list(session: Session, params: dict) -> dict[str, Any]:
-    return {"ok": True, "projects": [p.doc for p in _ordered(session, archived=False)]}
+    rows = _visible(session, params, _ordered(session, archived=False))
+    return {"ok": True, "projects": [p.doc for p in rows]}
 
 
 def a_listslim(session: Session, params: dict) -> dict[str, Any]:
-    return {"ok": True, "projects": [slim_row(p.doc) for p in _ordered(session, archived=False)]}
+    rows = _visible(session, params, _ordered(session, archived=False))
+    return {"ok": True, "projects": [slim_row(p.doc) for p in rows]}
 
 
 def a_listarchived(session: Session, params: dict) -> dict[str, Any]:
-    return {"ok": True, "projects": [p.doc for p in _ordered(session, archived=True)]}
+    rows = _visible(session, params, _ordered(session, archived=True))
+    return {"ok": True, "projects": [p.doc for p in rows]}
 
 
 def a_get(session: Session, params: dict) -> dict[str, Any]:
@@ -311,12 +331,37 @@ GET_ACTIONS: dict[str, Callable[[Session, dict], dict]] = {
 }
 
 
-def dispatch_get(session: Session, params: dict) -> dict[str, Any]:
+# GET actions that are PUBLIC, each named here on purpose.
+#
+# The write side rotted because a permissive default let every new action inherit permission
+# without anyone deciding it should. This list is the opposite: a read is authenticated unless it
+# appears here, so an action added to GET_ACTIONS is closed by default and opening it is a visible
+# edit to this line rather than an omission somewhere else.
+#
+# All three return build and capability information and NO project data — verified by probing
+# them against a populated database: version strings, which API keys are present as booleans, the
+# advertised endpoint list, a timestamp. They stay public because a deployment has to be able to
+# say it is alive before anyone signs in, and because `health` is the readiness signal an operator
+# and a monitor both reach for. `/healthz` and `/readyz` are separate routes and are unaffected.
+PUBLIC_GET_ACTIONS: frozenset[str] = frozenset({"health", "ping", "version"})
+
+
+def dispatch_get(session: Session, params: dict, settings=None) -> dict[str, Any]:
     # Rule 2: lowercase before matching. Default matches the live dispatcher's default of 'health'.
     action = str(params.get("action") or "health").lower()
     handler = GET_ACTIONS.get(action)
     if handler is None:
         return err(f"Unknown GET action: {action}")
+
+    # EVERY READ THAT CAN RETURN PROJECT DATA IS AUTHENTICATED, on the same terms as the write
+    # guard. Measured before this existed: an anonymous GET returned any project's document, its
+    # event log, its legacy signalInputs, its stored period snapshots and the portfolio-health
+    # snapshot. `list` and `listslim` returned every project on the deployment to anyone.
+    if action not in PUBLIC_GET_ACTIONS:
+        from .research_membership import guard_project_read
+        refused = guard_project_read(session, params, settings, action)
+        if refused is not None:
+            return refused
     return handler(session, params)
 
 

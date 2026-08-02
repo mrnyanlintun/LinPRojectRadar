@@ -11,8 +11,8 @@
 
 # 2026-08-02 — GEOCODING: NOMINATIM IS GONE, GOOGLE IS PRIMARY, CENSUS IS THE FALLBACK
 
-Full detail in `REPORT_2026-08-02_geocoding-provider.md`. **Server 1247 checks across 23 suites,
-`tests_render.html` 43/43, `tests.html` 51/51, all green on merged `main`.**
+Full detail in `REPORT_2026-08-02_geocoding-provider.md`. **Server 1259 checks across 23 suites,
+`tests_render.html` 43/43, `tests.html` 51/51, all green after merging `origin/main` at `aa681ab`.**
 
 ## NOTHING GEOCODES WORLDWIDE UNTIL A KEY IS PROVISIONED. This is the first thing to check.
 
@@ -29,8 +29,8 @@ service is not configured rather than told their address is wrong.
 ## The seam is a tuple of functions. Do not build an abstraction layer on it.
 
 ```python
-# server/app/geocode.py
-_PROVIDERS = (_google, _census)   # order is precedence; append to add a third
+_PROVIDERS = (_google, _census)   # in server/app/geocode.py
+                                  # order is precedence; append to add a third
 ```
 
 `geocode()` walks it and stops at the first provider returning a position. `_get_json(url)` is the
@@ -88,6 +88,84 @@ Branch **`t15-local-unpushed`** (`9dc137d`) holds five never-pushed commits. The
 code in them is the `unported_modules()` correction at `server/app/simulation/registry.py:49`;
 `origin` still has the version that over-reports the five Group D modules as unported. Preserved,
 nothing lost, needs a decision. Acting on it means editing `server/app/simulation/`.
+# 2026-08-02 — READS FAIL CLOSED TOO: THE FACADE IS AUTHENTICATED END TO END
+
+Full detail in `REPORT_2026-08-02_read-authorisation.md`. **1228 checks across 22 suites,
+`tests.html` 51/51, `tests_render.html` 43/43.** Compositing proven (62–63 rAF/s). No stored data
+altered, production not inspected. **No overlap with the parallel geocoding session:
+`documents.py` and `geocode.py` are untouched.**
+
+**WHAT WAS READABLE WITH NO CREDENTIAL, probed against a PM-owned project with membership rows:**
+`list` and `listarchived` returned **every project's full document** (name, sector, status,
+`signals`, `signalInputs`, the whole event log); `listslim` returned every project's cpi / spi /
+docRiskScore; `get`, `gethistory`, `listcorpus`, `listauditresults` returned one project's
+document, stored period snapshots, corpus and audit rows; `getportfoliohealth` returned the
+deployment-wide snapshot. All eight now refuse. Verified over real HTTP, not only in a test.
+
+**WHAT STAYS PUBLIC: `health`, `ping`, `version`, and nothing else.** Probed against a populated
+database — build/capability info only, no project data. Named explicitly in `PUBLIC_GET_ACTIONS`,
+so **a read added to GET_ACTIONS is closed by default** and opening it is a visible edit to that
+line. That inversion is the fix for what let the write side rot.
+
+**NOTHING LEGITIMATELY PUBLIC BROKE, and I expected it to.** Instrumented the browser: **zero
+`/exec` GETs before sign-in** — `LinApp.init()` (which calls `loadSlim`) runs only after
+`LinAuth.init()` resolves a session, so the sign-in page needs no project read. The **static
+mirror** already degrades to "can't reach the store" and is unchanged. The **captured GET
+contract** is read from disk by `seed_from_fixtures.py` / `import_from_drive.py` and never
+replayed against the server, so no contract breaks; response shapes are unchanged.
+
+**THE CREDENTIAL IS A HEADER.** `Authorization: Bearer`, with `X-Session-Token` accepted.
+store.js's "no custom headers → no preflight" comment came from Apps Script; **that constraint
+expired at T1** when the app moved to the same origin as `/exec` (config.js says so). Verified in
+the browser: every GET after sign-in carried the header, **no token in any URL**.
+`session_token` in the query string is kept ONLY as a fallback for `/documents/{id}/content`,
+which is an iframe `src` and cannot set headers — the reasoning, including that URLs are logged by
+intermediaries, is written at `_session_token_from` so it is not re-adopted as the general
+mechanism.
+
+**MEMBERSHIP, ON THE WRITE GUARD'S TERMS.** `guard_project_read` authenticates first, then
+requires an ACTIVE MEMBER (not PM — an Observer exists to read) for the four project-scoped reads.
+A missing project still returns its own "Not found" rather than an authorisation error, so an
+attacker cannot tell absent from invisible. **Collections are FILTERED, not refused** — a
+portfolio call that failed because one row belongs to someone else would be unusable. Verified
+live: OPS-1's portfolio went from 3 projects to 2, dropping the research participant's.
+
+**A GAP CLOSED AS A SIDE EFFECT:** `gate_action` leaves sessionless callers alone (no flags to
+apply), so an anonymous `getportfoliohealth` used to **bypass the feature flag** a signed-in user
+with it off is held to. The read guard sits one layer up; dropping the credential is no longer a
+way round the flag. That was the previous report's authorisation gap 2.
+
+**REPORTED NOT FIXED, both hinging on the same missing membership rows.** (1) **An unmembered
+project is readable AND writable by any authenticated caller** — measured: an unrelated signed-in
+user read and archived one. It is now the only route from one authenticated user to another's
+project. Closing it makes every such project invisible and unwritable **to its real owner too**
+until membership is backfilled; locally 1 of 4 projects, **production unknown and not inspected**,
+and the imported Apps Script projects are exactly that population. Two-step change, and the
+backfill needs a decision about what "owner" means for a Drive-imported project. (2)
+`refuse_unless_pm_for_assignment` has the same unmembered arm on the decision flow; smaller,
+because those actions already require a session.
+
+**EIGHTH SESSION, AND THE TWO KNOWN FAILURE MODES BOTH RECURRED — both caught.** (a) Faults aimed
+at the header carrier made `test_writes_a1b` **crash with no RESULT line** rather than fail,
+because its fixture setup reads the facade everywhere; the carrier checks moved to `test_features`,
+whose reads are not load-bearing and whose assertions use `.get()`. (b) The injection harness now
+prints `fault applied` only when the anchor matched and `ANCHOR DID NOT MATCH` otherwise, so no
+result is read from a fault that never applied. **Seven faults, all confirmed applied, all clean
+reds:** 89/92, 41/43, 90/92, 91/92, 48/49, 47/49, 48/49.
+
+**A SEED ARTIFACT NEARLY READ AS A REGRESSION.** The research participant's browser check first
+showed 0 projects — which looks exactly like the filter over-refusing. It was not: the seed created
+that project through the sessionless `create` the PREVIOUS session had already closed, so it never
+existed. Worth knowing because "the legitimate user sees nothing" is the shape a real regression
+takes.
+
+**STILL OPEN:** whether `getportfoliohealth` should be membership-scoped (it is a cross-project
+aggregate with no owning project, so there is nothing to scope against; the feature flag still
+gates it per account). Reads leave **no trace**, so whether the exposure was exercised in
+production is less detectable than the write case, where the project event log at least records
+that something happened.
+
+---
 
 # 2026-08-02 — THE FACADE FAILS CLOSED: UNAUTHENTICATED WRITES ARE DENIED
 

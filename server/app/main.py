@@ -205,9 +205,41 @@ def _exec_response(payload: dict[str, Any]) -> JSONResponse:
     return JSONResponse(status_code=200, content=payload)
 
 
+def _session_token_from(request: Request, params: dict) -> str:
+    """
+    The session token for a GET, read from a HEADER in preference to the query string.
+
+    A token in a URL is logged by every intermediary that logs URLs — the reverse proxy, the
+    access log, the browser's history, a `Referer` on any outbound link — so it is the wrong place
+    to put a credential that grants read access to project data. `Authorization: Bearer` is the
+    standard carrier and is what assets/js/store.js now sends.
+
+    The no-custom-headers rule that store.js was written under came from Apps Script: a custom
+    header makes a cross-origin request non-simple and triggers a preflight the old backend could
+    not answer. That constraint expired at T1, when the app moved to the same origin as /exec —
+    config.js says so in its header. Same-origin requests issue no preflight whatever headers they
+    carry.
+
+    `session_token` in the query string is still accepted, for one reason: an EXISTING caller that
+    cannot set headers. `/documents/{id}/content` is loaded as an iframe `src` by the document
+    viewer (workspace.js:624), and a browser navigation carries no custom headers, so that route
+    has always taken the token as a parameter. Rejecting the parameter here would not improve that
+    route and would break any caller mid-session. It is a fallback, not the mechanism.
+    """
+    header = request.headers.get("authorization") or ""
+    if header.lower().startswith("bearer "):
+        return header[7:].strip()
+    return str(request.headers.get("x-session-token") or params.get("session_token") or "")
+
+
 @app.get("/exec", tags=["facade"])
 def exec_get(request: Request) -> JSONResponse:
     params = dict(request.query_params)
+    # The credential is resolved once, here, and put where every downstream guard already looks
+    # for it. Handlers keep taking (session, params) and need no new argument.
+    token = _session_token_from(request, params)
+    if token:
+        params["session_token"] = token
     try:
         with SessionFactory() as session:
             # T1: feature flags are enforced server-side, before dispatch. Hiding a feature in
@@ -216,7 +248,7 @@ def exec_get(request: Request) -> JSONResponse:
             refused = gate_action(session, str(params.get("action") or ""), params, settings)
             if refused is not None:
                 return _exec_response(refused)
-            return _exec_response(dispatch_get(session, params))
+            return _exec_response(dispatch_get(session, params, settings))
     except Exception as exc:  # noqa: BLE001
         # Even an unexpected fault is reported in the contract's error shape, because a 500 body
         # would not parse as {ok:false} and the frontend would surface nothing useful.
