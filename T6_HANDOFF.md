@@ -3,6 +3,57 @@
 > user-facing surface quotes verbatim. It lives in the repository so it cannot fail to reach a
 > session, which it did three times while it lived outside. Read it before this handoff, not after.
 
+# T21 — D1. STOPPED WITHOUT CHANGING CODE. AWAITING LIN'S DECISION.
+
+Full detail in `REPORT_2026-08-02_d1-unobtainable-inputs.md`. **No code changed. Nothing under
+`server/app/simulation/` was touched, no stored data altered, `assets/` untouched.**
+
+**WHY IT STOPPED.** The task said to stop if any fabrication path turned out to be deliberate and
+documented. **All of them are**, in three places each: the module docstring, the `VALIDATION.md`
+per-module note, and `VALIDATION.md`'s input-contract section. `models_evc.py`: *"These modules
+never abstain with the standard stub... That is the instrument's behaviour, reproduced."*
+`models_dq.py`: *"Both emit non-abstaining stubs on sparse input... the instrument's behaviour,
+reproduced."* `VALIDATION.md` C1.7: *"emits the Yellow stub the JS emits, not an abstention."*
+Authored deliberately in batches 1, 7b and 9.
+
+**The distinction that matters:** what was decided was "reproduce the JavaScript faithfully". What
+was never decided is whether the input contract those decisions assume would ever be satisfied
+server-side. In the browser the blob arrived and the fallback was an edge case; server-side the
+blob never arrives, so **the fallback is the only path that ever executes**. Sound as a port,
+unsound as a deployment. That is Lin's call, not a session's.
+
+**THE COLOUR ANSWER, measured: project colour does NOT move. One category does.** Executing
+`compute_project` twice on identical inputs, once as shipped and once with all twelve forced to
+abstain: healthy stays Green, on-budget stays Green, distressed stays Red. **B2 Evidence
+Combination moves, and in BOTH directions** (healthy Amber to Green, distressed Amber to Red) —
+the fabricated Amber was pulling B2 toward the middle regardless of evidence. Modules abstaining
+per computation go 48 to 60 of 95; note that **over half already abstain today**. Locally: 20 of
+20 stored results carry a fabricated verdict, **237 individual verdicts**. Production not
+inspected.
+
+**THE AUDIT (T20) UNDERCOUNTED — corrected by executing every module with a recording dict rather
+than by regex.** Twelve unobtainable keys, not eleven (`cpiHistory` was missed, read via
+`_history`). **Twenty-one modules touch one; nine ALREADY ABSTAIN correctly** — including
+**A2.7 Milestone_Trend, whose behaviour T20 recorded as unknown: it abstains, and needs no
+change.** **Twelve do not abstain**, one more than T20 said, and the membership differs: B2.1 and
+B2.4 were missing from that list. Ten of the twelve vote in status, not nine.
+
+**NONE of the twelve keys is permanently unobtainable. All are UNWIRED.** `events` is the clearest:
+`writes._append_event` already writes `{"event", "at"}` into `project.doc["events"]`, exactly the
+shape `models_dq` documents, and nothing passes it into `signalInputs` — which is why C1.4 reports
+"0 events recorded" on every project. `spiHistory`/`cpiHistory` are reconstructible from
+`ComputedResult.signal_inputs` across periods. `evm`/`mc`/`cusum`/`doc` are outputs of the same
+run, so an ordering problem. `fairnessSensitive` and `milestoneHistory`'s source remain UNKNOWN.
+
+**WHAT IS NEEDED TO PROCEED:** a decision between (1) abstain everywhere, accepting divergence from
+the JavaScript with `VALIDATION.md` annotated; (2) abstain only where the fallback is provably
+unreachable in the browser too, which needs the JavaScript examined and has not been done; or
+(3) wire the keys instead, starting with `events` and the histories. Not exclusive: 3 for `events`
+and the histories plus 1 for the rest is coherent. The session's recommendation is abstain and
+wire `events`, but it is a research-instrument decision.
+
+---
+
 # T20 — PIPELINE AUDIT. READ-ONLY. STAGES 1 TO 4 AND PERIOD DONE; 7 AND 8 NOT STARTED.
 
 Full detail in `REPORT_2026-08-02_pipeline-audit.md`. **No code was modified.** Nothing here is
