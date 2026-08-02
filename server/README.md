@@ -85,6 +85,7 @@ not read a value from the repository.
 | `LOG_LEVEL` | no | `INFO` | Defaults to `INFO`. |
 | `SESSION_SECRET` | recommended | random 48+ chars | Signs research session tokens. If unset, a per-process secret is generated and `session_secret_ephemeral` is logged; sessions then break on restart. |
 | `SESSION_TTL_SECONDS` | no | `28800` | Session lifetime. Defaults to 8 hours. |
+| `GOOGLE_GEOCODING_API_KEY` | recommended | a Google Cloud API key | Primary geocoding provider. Enable the **Geocoding API** in the Cloud project and enable billing, or the key returns `REQUEST_DENIED`. Restrict the key to the Geocoding API; use an **IP** application restriction, never an HTTP referrer one, because this key is used server side. If unset the module is inert and makes no request, the United States Census fallback still runs, and the user is told the service is not configured. **Never commit this.** |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | import only | JSON or a path to it | Read-only Drive key. Never committed. Used by `tools/import_from_drive.py`, not by the running service. |
 | `DRIVE_PARENT_FOLDER_ID` | no | `14u6LT8...` | Overrides the default parent folder. |
 

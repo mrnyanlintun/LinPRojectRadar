@@ -9,6 +9,86 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-02 — GEOCODING: NOMINATIM IS GONE, GOOGLE IS PRIMARY, CENSUS IS THE FALLBACK
+
+Full detail in `REPORT_2026-08-02_geocoding-provider.md`. **Server 1247 checks across 23 suites,
+`tests_render.html` 43/43, `tests.html` 51/51, all green on merged `main`.**
+
+## NOTHING GEOCODES WORLDWIDE UNTIL A KEY IS PROVISIONED. This is the first thing to check.
+
+- Environment variable: **`GOOGLE_GEOCODING_API_KEY`**, set on the Render web service.
+- Enable the **Geocoding API** in the existing Google Cloud project (the OAuth one).
+- Billing must be enabled on that project or the key returns `REQUEST_DENIED`.
+- Restrict the key to the **Geocoding API**. Application restriction: **IP, not HTTP referrer.**
+  This key is used server side and a referrer restriction would reject every request.
+
+Until then the code is inert and safe: with no key, `_google()` returns `NOT_CONFIGURED` **without
+making any request**, Census still handles United States addresses, and the user is told the
+service is not configured rather than told their address is wrong.
+
+## The seam is a tuple of functions. Do not build an abstraction layer on it.
+
+```python
+# server/app/geocode.py
+_PROVIDERS = (_google, _census)   # order is precedence; append to add a third
+```
+
+`geocode()` walks it and stops at the first provider returning a position. `_get_json(url)` is the
+single HTTP seam, and it is the one thing the tests replace, which is why they are fully offline.
+The public contract (`geocode`, `apply_to_doc`) is unchanged and both callers are untouched.
+
+## What must not regress
+
+1. A failed geocode does **not** erase coordinates it cannot replace. `apply_to_doc` reads
+   `previous`, the STORED doc, so a client payload cannot delete stored coordinates.
+2. The matched address is shown back to the user, as `formattedAddress`.
+3. A retained position is flagged `geocodeStale` and labelled as belonging to a previous address.
+4. Answers about the **address** are cached. Answers about the **service** (quota, rejected key,
+   absent key, timeout) are **never** cached, or one bad minute becomes permanent.
+5. A "not found" is never claimed on the strength of Census alone. Census is United States only.
+6. Google's `error_message` is logged, never shown. It can name the key restriction that refused
+   the request.
+
+All six are asserted by checks in `server/tools/test_geocode_providers.py`, 31 checks, all proven
+able to fail by 18 injected faults.
+
+## Things that cost this session time. Read these.
+
+- **The old note in this file said the geocoding tests stub `app.geocode.geocode` and to keep it
+  that way. That is still true of `test_workspace_t3t5.py`, and it means that suite never
+  exercised a provider at all.** Every provider branch was uncovered. That is why
+  `test_geocode_providers.py` exists separately. Do not merge them.
+- **Reverting a fault injection is as easy to get wrong as writing one.** A string-replace patcher
+  that hits the first occurrence swapped two error sentences on revert, silently, and six later
+  results were measured against a corrupted module before a restore-and-recheck caught it. Check
+  the suite returns to full green after **every** fault, not just at the end.
+- **Most server suites need a migrated database and `SESSION_SECRET`.** Run against a stale
+  `server/dev.db` they abort with `KeyError` and print **no `RESULT:` line at all**, which skims
+  like a clean run. Build a throwaway sqlite with `alembic upgrade head` and copy it per suite.
+- **`preview_start` resolves `.claude/launch.json` from `DEng\Demo`, not from the repository**, so
+  the repo's own config is not what runs. `Demo/opus-gubernatio` is a different repository. Serving
+  the repo needs a temporary config entry there; remember to revert it.
+- **The Census fallback is patchier than it looks.** It missed a plain numbered street address in
+  Philadelphia, not just facility names. Do not read "Census is the fallback" as "United States
+  addresses are covered".
+
+## Backfill: not run, and it is two different questions
+
+Locally: 2 projects, both already have coordinates, **0 need a backfill to gain any**. Production
+was not queried; the SQL to count it yourself is in the report.
+
+Separately, both local projects were placed by the retired provider and one is wrong: "Philadelphia
+International Airport" resolved to a Hampton Inn on Bartram Avenue. Re-placing everything the old
+provider placed is a **different and larger** backfill than filling gaps, and it overwrites data.
+Both are yours to approve. Neither script was written.
+
+## Still open, from an earlier session
+
+Branch **`t15-local-unpushed`** (`9dc137d`) holds five never-pushed commits. The only substantive
+code in them is the `unported_modules()` correction at `server/app/simulation/registry.py:49`;
+`origin` still has the version that over-reports the five Group D modules as unported. Preserved,
+nothing lost, needs a decision. Acting on it means editing `server/app/simulation/`.
+
 # 2026-08-02 — THE FACADE FAILS CLOSED: UNAUTHENTICATED WRITES ARE DENIED
 
 Full detail in `REPORT_2026-08-02_unauthenticated-writes.md`. **1216 checks across 22 suites,

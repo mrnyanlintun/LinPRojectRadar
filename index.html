@@ -846,8 +846,8 @@
               <p>Nothing else on the platform calls a model. The analytical layer is deterministic arithmetic, the governance recommendation comes from explicit rules, and the guided assistant is scripted: it answers from a written knowledge library by keyword match and makes no model call at all. Where a capability is not implemented in this build, for example conversational AI, automated document audit, or speech, the server refuses it by name rather than failing quietly.</p>
             </div>
             <div class="about-arch-layer" style="--layer-color: var(--muted)">
-              <div class="about-arch-label">Geocoding: Nominatim</div>
-              <p>Project addresses are geocoded server-side through Nominatim, rate limited to one request a second. The address the geocoder matched is shown back on every surface that displays a location, because a pin on the wrong building looks exactly like a pin on the right one. A project that cannot be placed is saved without coordinates and stays in the project list.</p>
+              <div class="about-arch-label">Geocoding: Google, with a US Census fallback</div>
+              <p>Project addresses are geocoded server-side through the Google Geocoding API, falling back to the United States Census geocoder when Google returns no result or cannot be reached. The address the geocoder matched is shown back on every surface that displays a location, because a pin on the wrong building looks exactly like a pin on the right one. A project that cannot be placed is saved without coordinates and stays in the project list, and a project whose address changed to one that could not be matched keeps its previous position, labelled as belonging to the previous address rather than shown as current.</p>
             </div>
             <div class="about-arch-layer" style="--layer-color: var(--muted)">
               <div class="about-arch-label">Access: username and password, or Google sign-in</div>

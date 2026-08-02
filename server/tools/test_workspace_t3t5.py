@@ -275,7 +275,11 @@ check(all(not v.get("insufficient_data") for v in snap2.get("results", {}).value
 # The Apps Script backend geocoded server-side and this service did not, so every project created
 # here had no coordinates and could never be placed on a map. These checks cover the restored
 # behaviour, and they never touch the network: app.geocode.geocode is replaced by a stub, so the
-# suite stays offline and Nominatim's rate limit is never spent on a test run.
+# suite stays offline and no provider quota is spent on a test run.
+#
+# BECAUSE THE STUB REPLACES geocode() WHOLESALE, NOTHING HERE EXERCISES A PROVIDER. The Google and
+# Census branches, and the difference between a rejected key, an exhausted quota and an address
+# that does not exist, are covered by tools/test_geocode_providers.py. Keep the two separate.
 
 print("\nT8 — geocoding runs on create, and never blocks it")
 
@@ -338,9 +342,9 @@ check(len(_geo_calls) == before, "and the geocoder is not called at all when the
 # ---------------------------------------------------------------- A FAILED GEOCODE MUST NOT
 # ERASE COORDINATES IT CANNOT REPLACE.
 #
-# apply_to_doc used to clear lat/lng/formattedAddress on EVERY failure. Since Nominatim has never
-# been reachable from this deployment, that meant every address edit destroyed the project's
-# location and replaced it with nothing. These checks pin the retention, the flag that marks the
+# apply_to_doc used to clear lat/lng/formattedAddress on EVERY failure. Since the geocoder of the
+# day was never reachable from this deployment, that meant every address edit destroyed the
+# project's location and replaced it with nothing. These checks pin the retention, the flag that marks the
 # retained position as belonging to an earlier address, and the two cases where nothing is
 # retained because there is nothing to retain.
 print("\nT8b — a failed geocode retains the previous position and flags it")

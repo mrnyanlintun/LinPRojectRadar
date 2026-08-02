@@ -101,7 +101,8 @@ Verify against the code rather than taking this list on trust.
 - **The decision sequence**: evidence, then a preliminary judgment committed and locked before the
   recommendation is disclosed, then the recommendation, then a recorded disposition with rationale.
 - **One PM decides per project; observers read.** Membership is explicit and auditable.
-- **Geocoding is server-side** via Nominatim, and the matched address is shown back to the user.
+- **Geocoding is server-side** via the Google Geocoding API with a United States Census fallback,
+  and the matched address is shown back to the user.
 - **Two audiences from one codebase**: research participants and operational users, separated by
   an `account_type` field that governs disclaimers, features, and whether data can enter a
   research export.

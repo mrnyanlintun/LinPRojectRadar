@@ -23,7 +23,7 @@ A static frontend and a Python server, deployed together.
   category, or module status of its own.
 - **Server**: FastAPI in `server/`, exposing a single `/exec` facade. It authenticates callers,
   computes and stores the analytical layer, brokers the one AI call, geocodes addresses through
-  Nominatim, and enforces the decision sequence. Persistence is a relational database through
+  the Google Geocoding API with a United States Census fallback, and enforces the decision sequence. Persistence is a relational database through
   SQLAlchemy with Alembic migrations (Postgres in production, throwaway SQLite for development
   and tests).
 - **One AI call**: server-side document extraction, reading the reported figures from uploaded
