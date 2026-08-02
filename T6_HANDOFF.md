@@ -3,6 +3,64 @@
 > user-facing surface quotes verbatim. It lives in the repository so it cannot fail to reach a
 > session, which it did three times while it lived outside. Read it before this handoff, not after.
 
+# T25 — D1 IMPLEMENTED. THE OBTAINABLE KEYS WIRED, THE REST ABSTAINING.
+
+Full detail in `REPORT_2026-08-02_d1-implementation.md`. **1157 checks across 22 suites**;
+`tests_render.html` **33/33**, `tests.html` **51/51**. No stored data altered, production not inspected, `assets/`
+untouched. Lin's decision: option 3 where the data exists, option 1 everywhere else.
+
+**T22'S COLOUR ANSWER WAS WRONG AND IS CORRECTED HERE. PROJECT COLOUR DOES MOVE.** Measured
+against the test suite's own fixtures rather than a hand-built variant: **healthy Red to Green**,
+**on-budget Amber to Green**, distressed Red to Red. **A healthy project was being reported as
+RED**, because with no `spiHistory` A1.2 synthesised twelve observations from the current SPI and
+drew a control chart over them; a project running ahead of plan drifts from the control target, so
+the chart breached, A1.2 went Red, category A1 went Red, and the project went Red. Direction
+matters: healthy improves, distressed's B2 gets **worse** (Amber to Red), distressed stays Red.
+Nothing softens a bad project.
+
+**END TO END, THE BIGGER RESULT IS C1.4.** Across three real periods: **C1.4 Red to GREEN in every
+period** — it was reporting "0 events recorded" about a platform that has recorded events in
+exactly that shape since `_append_event` was written. **Four modules that never computed now
+compute** (Kalman, ARIMA, Regression to Mean, and CUSUM on real data, where at period 3 it
+disagrees with its own fabrication: red becomes amber). **Category C1 now improves as the record
+builds**, Amber to Yellow to Green, where it was frozen by an immovable Red.
+
+**Abstaining: 48 of 95 before, 60 if everything abstained, implemented 58/55/54 at periods 1/2/3.**
+The count FALLS as history accumulates, because wiring gives evidence back. Twelve fabricated
+verdicts per stored result before; two or three of the twelve compute from real evidence after.
+
+**WIRED** in `documents.py` (not in `assemble_signal_inputs`, which must stay pure): `events` via
+`_events_as_of`, `spiHistory`/`cpiHistory` via `_period_history`. **ABSTAINING**: the eight legacy
+browser-blob keys. Every fabrication path DELETED — `derive_series`, `hash_seed`, R0, the five
+AMBER stubs, Rough Sets' `or 1`. `insufficient()` reused; no new abstention form.
+
+**NO LEAKAGE, and P1 IS NOT ENLARGED.** `_period_history` filters `period < period`, so recomputing
+period 1 with 2 and 3 stored reads neither. The event log is truncated at the period cutoff for the
+same reason C1.2 takes its "now" there. Both asserted, both fault-injected.
+
+**`milestoneHistory` STILL CANNOT BE SUPPLIED; A2.7 still abstains, correctly.** `milestones_json`
+is requested from the extraction model but is not in `ALL_FIELDS`, so it never reaches
+`signalInputs`. Merge-layer work, not this task.
+
+**TWO GAPS FOUND, REPORTED NOT FIXED. (a) No `signals_extracted` event is written on upload** by
+any current code path, so C1.4 is truthful about a log thinner than it should be; fixing it changes
+the user-facing **docCount**, which `facade.py` derives from that event count — Lin's call.
+**(b)** `_js_date_ms` refuses datetime strings by design while `_append_event` writes them, so
+`_events_as_of` narrows `at` to its date part at the boundary; without that C1.7 would abstain on
+every real project while LOOKING wired.
+
+**VALIDATION.md**: all twelve exact-match rows kept, each annotated `D1: DIVERGES`, plus a banner
+stating that a matched row establishes only that the server computes what the JavaScript computed,
+not that the module is correct.
+
+**NEW SUITE** `server/tools/test_d1_module_inputs.py`, 100 checks, **nine faults injected**
+including the two that leave the code looking correct (date narrowing removed; history reading all
+periods). **Three more vacuous checks were caught by that injection** — `all()` over an empty list
+— which is the fourth session running. **The pre-existing 1013 checks passed with every change in
+place before a single new test was written**: the suite could not detect twelve removed
+fabrications, one of which was turning a healthy project Red.
+---
+
 # T24 — Notice and copyright revision. DONE. One question back to Lin.
 
 Full detail, with the live text quoted from the rendered browser page, in

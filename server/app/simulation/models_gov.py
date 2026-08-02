@@ -66,6 +66,16 @@ def run_dst(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
     evm = ex.get("evm")
     cpi = evm.get("cpi") if evm is not None else None
     spi = evm.get("spi") if evm is not None else None
+
+    # D1. With none of the four signals present, the three vacuous {0.25 × 4} masses below
+    # combined to nothing while the doc arm's `absent -> score 0 -> Green` branch supplied a
+    # real Green mass, so the fusion returned Green on every project the server computed. This
+    # is Dempster-Shafer: the honest representation of no evidence is no combination, not a
+    # combination of ignorance with one asserted belief.
+    if not (cpi and spi) and ex.get("mc") is None and ex.get("cusum") is None \
+            and ex.get("doc") is None:
+        return insufficient("DST_Evidence_Combination")
+
     if cpi and spi:
         evm_min = min(cpi, spi)
         if evm_min >= 0.95:

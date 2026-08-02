@@ -269,6 +269,90 @@ def _derive_cutoff(documents: list[dict], reuse: ComputedResult | None) -> date:
     return latest or datetime.now(timezone.utc).date()
 
 
+def _period_history(session: Session, project: Project, period: int,
+                    si: dict) -> dict[str, list[float]]:
+    """
+    The project's cpi and spi series across its EARLIER reporting periods, ending with this one.
+
+    D1. Four modules read these series — CUSUM, Kalman, ARIMA and Regression to Mean — and until
+    now nothing supplied them. Three abstained on every project; CUSUM synthesised twelve
+    observations from the current SPI and drew a control chart over them.
+
+    STRICTLY EARLIER PERIODS ONLY, and that is the whole safety argument. The pipeline audit
+    found that the portfolio vector block below reaches every project's most recent live result
+    regardless of period, so a later period's figures reach an earlier period's computation
+    (defect P1, queued separately). This query cannot do that: `period < period` is evaluated
+    against the period being computed, so recomputing period 2 in period 6 reads period 1 and
+    nothing else, and the series a stored result was computed from can always be reconstructed.
+    That is also why the series is built here and not from the project document, which carries no
+    per-period figures.
+
+    Live rows only: a superseded result has been replaced by a recompute of that same period, and
+    its figures are no longer the project's account of that period.
+    """
+    rows = session.scalars(
+        select(ComputedResult)
+        .where(
+            ComputedResult.project_id == project.id,
+            ComputedResult.period < period,
+            ComputedResult.superseded_by.is_(None),
+        )
+        .order_by(ComputedResult.period)
+    ).all()
+
+    out: dict[str, list[float]] = {}
+    for key, field in (("cpiHistory", "cpi"), ("spiHistory", "spi")):
+        series: list[float] = []
+        for r in rows:
+            v = (r.signal_inputs or {}).get(field)
+            if isinstance(v, (int, float)) and not isinstance(v, bool):
+                series.append(float(v))
+        current = si.get(field)
+        if isinstance(current, (int, float)) and not isinstance(current, bool):
+            series.append(float(current))
+        # A one-element series is what `_history` already synthesises from the scalar; passing it
+        # would only restate si[field] under a second name. Supply a series or supply nothing.
+        if len(series) >= 2:
+            out[key] = series
+    return out
+
+
+def _events_as_of(project: Project, cutoff: date) -> list[dict]:
+    """
+    The project's event log, truncated at the period's data cutoff.
+
+    D1. `_append_event` in writes.py has always stored `{"event": ..., "at": ...}` on the project
+    document, which is exactly the shape C1.4 and C1.7 document reading. Nothing passed it in, so
+    Audit Trail Completeness reported "0 events recorded" about a platform that records events.
+
+    TRUNCATED AT THE CUTOFF, for the same reason C1.2 takes its "now" from the cutoff rather than
+    the clock: without it, recomputing an early period would see every event logged since, and a
+    later period's activity would decide an earlier period's audit-trail verdict. An event whose
+    `at` cannot be read as a date is kept rather than dropped, because discarding an event on a
+    formatting fault would understate the trail.
+
+    `at` IS NARROWED TO ITS DATE PART, which is the contract models_dq documents and not a
+    convenience. `_append_event` stamps a full ISO datetime; `_js_date_ms` refuses datetime
+    strings on purpose, because a 'T' form without a zone parses as LOCAL time in JavaScript and
+    guessing which zone was meant is the hazard VALIDATION.md flags. Passing the raw stamp would
+    have made C1.7 abstain on every real project while appearing wired, so the narrowing happens
+    here, at the boundary, rather than by loosening a parser that is strict deliberately.
+    """
+    events = (project.doc or {}).get("events") or []
+    limit = str(cutoff)
+    out = []
+    for e in events:
+        if not isinstance(e, dict):
+            continue
+        at = e.get("at")
+        if isinstance(at, str) and len(at) >= 10:
+            if at[:10] > limit:
+                continue
+            e = {**e, "at": at[:10]}
+        out.append(e)
+    return out
+
+
 def _compute_and_store(session: Session, project: Project, period: int,
                        reuse_cutoff_from: ComputedResult | None = None,
                        result_id: str | None = None) -> dict:
@@ -289,6 +373,15 @@ def _compute_and_store(session: Session, project: Project, period: int,
     documents = _period_documents(session, project, period)
     si = assemble_signal_inputs(documents)
     cutoff = _derive_cutoff(documents, reuse_cutoff_from)
+
+    # D1. Two inputs the analytical layer reads that the pure merge cannot produce, because
+    # neither is a property of this period's documents: the project's event log and its figures
+    # across earlier periods. Both are added here rather than inside `assemble_signal_inputs`,
+    # which must stay pure, deterministic and order independent — it knows nothing of projects,
+    # periods or the session. Both are stored on the row as part of `signal_inputs`, so the
+    # result records what the modules actually saw and not a subset of it.
+    si["events"] = _events_as_of(project, cutoff)
+    si.update(_period_history(session, project, period, si))
 
     run = compute_project(si, project.legacy_id, f"P{period}", cutoff)
 

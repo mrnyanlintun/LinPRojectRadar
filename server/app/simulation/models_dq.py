@@ -11,9 +11,16 @@ Date constructor so a no-argument `new Date()` returned the cutoff, making the J
 fixed target; that patch and this substitution are recorded in VALIDATION.md.
 
 C1.4 and C1.7 receive `(si, project)` in the browser and read `project.events`. Server
-contract: the event log rides on si["events"], a list of {event, at} dicts with date-only
-`at` strings. Both emit non-abstaining stubs on sparse input (Red-band completeness and the
-Yellow "upload more documents" stub) — the instrument's behaviour, reproduced.
+contract: the event log rides on si["events"], a list of {event, at} dicts.
+
+D1: THE EVENT LOG IS NOW SUPPLIED AND THE STUBS ARE GONE. Until D1 nothing assembled
+si["events"], so C1.4 reported "0 events recorded" and a Red band on every project, and C1.7
+emitted the Yellow "upload more documents" stub on every project, both about a platform that
+had been recording events in exactly this shape all along. `documents.py` now passes the
+project's event log in. An ABSENT log abstains, because a caller that supplied no log has said
+nothing about the project; an EMPTY log is evidence and is reported as such. C1.7 additionally
+abstains below two extraction events, since one point establishes no interval. The JavaScript
+comparison no longer applies to either module; see VALIDATION.md.
 """
 
 from __future__ import annotations
@@ -128,7 +135,9 @@ def run_source_reliability(si: dict, rand: Callable[[], float], period_cutoff) -
 
 
 def run_audit_trail(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    events = si.get("events") or []
+    events = si.get("events")
+    if not isinstance(events, list):
+        return insufficient("Audit_Trail_Completeness")
     required = ["project_created", "signals_extracted"]
 
     def has_event(name):
@@ -260,22 +269,14 @@ def run_cross_doc_consistency(si: dict, rand: Callable[[], float],
 
 def run_reporting_frequency(si: dict, rand: Callable[[], float],
                             period_cutoff) -> dict[str, Any]:
-    events = si.get("events") or []
+    events = si.get("events")
+    if not isinstance(events, list):
+        return insufficient("Reporting_Frequency_Index")
     extracts = [e for e in events
                 if e.get("event") in ("signals_extracted", "simulation_run")]
     if len(extracts) < 2:
-        n = len(extracts)
-        return {
-            "method_class": "Reporting_Frequency_Index",
-            "status_color": "Yellow",
-            "uploads": n,
-            "expected_per_month": 4,
-            "evidence_metric": (
-                f"{n} document upload(s) recorded, "
-                + ("no documents uploaded yet" if n == 0
-                   else "upload more documents for frequency analysis")
-            ),
-        }
+        return insufficient("Reporting_Frequency_Index",
+                            "Awaiting history (2 document uploads needed)")
     raw_dates = [_js_date_ms(e.get("at")) for e in extracts]
     if any(d is None for d in raw_dates):
         return insufficient("Reporting_Frequency_Index")

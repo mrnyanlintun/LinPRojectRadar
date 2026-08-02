@@ -12,10 +12,23 @@ only distributionally similar. Node is not installed on this machine.
 
 Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical fields exact.
 
+> ## D1: TWELVE MODULES NOW DIVERGE FROM THE JAVASCRIPT, DELIBERATELY
+>
+> **For A1.2, B2.1, B2.2, B2.3, B2.4, B2.5, B2.6, B2.7, B2.8, B2.9, C1.4 and C1.7 the rows below
+> record a comparison that no longer describes what this server does.** The rows are kept, not
+> corrected in place: what was matched is part of the record, and deleting it would hide that the
+> divergence was chosen rather than drifted into. Each row carries a `D1:` note saying what
+> changed, and the section "D1 divergence: the fabricated no-evidence verdicts" below says why.
+>
+> **A matched row does not establish that a module is correct.** It establishes that this server
+> computes what the JavaScript computed. These twelve matched exactly on their no-signal cases,
+> and that is precisely the problem: the behaviour they matched was a browser edge case which,
+> server-side, was the only path any of them ever took.
+
 | new id | name | source | validated | max rel. divergence | notes |
 |---|---|---|---|---|---|
 | A1.1 | Monte Carlo EAC | sim.js | **yes** | 0.0e+00 | exact match; batch 1 |
-| A1.2 | CUSUM Anomaly Monitor | sim.js | **yes** | 0.0e+00 | exact match; batch 1 |
+| A1.2 | CUSUM Anomaly Monitor | sim.js | **yes** | 0.0e+00 | exact match; batch 1 — **D1: DIVERGES.** Was: synthesised a 12-point series from the current SPI whenever `spiHistory` was absent, which server-side was every project, and drew a control chart over it. Is: abstains below 2 real periods, and reads the `spiHistory` documents.py now assembles from earlier periods. `derive_series` and `hash_seed` are deleted. |
 | A2.1 | PERT Network Criticality | simulations.js | **yes** | 0.0e+00 | exact match |
 | A2.2 | Line of Balance | simulations.js | **yes** | 0.0e+00 | exact match |
 | A2.3 | CCPM Buffer Health | simulations.js | **yes** | 0.0e+00 | exact match |
@@ -71,15 +84,15 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 | B1.2 | Weighted Voting | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; consumes the ASSEMBLED PROJECT (see input-contract note below); Object.keys reduce in insertion order, later key wins ties |
 | B1.3 | Majority Rules | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; project input; voteBucket quirks validated (light-amber→Green, Red-Review→Red, Complete→Green) |
 | B1.4 | Worst-N-of-M | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; project input; null statuses from present signals count toward M |
-| B2.1 | Dempster-Shafer | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; runDST is defined but not wired into runAll in the JS — validated by calling it directly, per the browser harness; consumes assembled signal keys (evm/mc/cusum/doc/decision) from si; the present-doc-with-undefined-score → Red-branch quirk and the JS empty-object-truthiness of mc/cusum/doc are both reproduced and covered by the edge case |
-| B2.2 | Rough Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; assembled-signal input (evm/mc/cusum/doc) |
-| B2.3 | Neutrosophic Logic | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; no-signal case emits the AMBER stub the JS emits, not an abstention |
-| B2.4 | Interval Fuzzy Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; AMBER stub on no signal |
-| B2.5 | Z-numbers | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; AMBER stub on no signal |
-| B2.6 | PLTS | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; AMBER stub on no signal |
-| B2.7 | Plithogenic Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; AMBER stub on no signal |
-| B2.8 | Belief Rule Base | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; always computes (fallback rule R0 when nothing matches) |
-| B2.9 | Quantum Probability | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; always computes (default amplitudes when signals missing) |
+| B2.1 | Dempster-Shafer | simulations.js | **yes** | 0.0e+00 | exact match; batch 6; runDST is defined but not wired into runAll in the JS — validated by calling it directly, per the browser harness; consumes assembled signal keys (evm/mc/cusum/doc/decision) from si; the present-doc-with-undefined-score → Red-branch quirk and the JS empty-object-truthiness of mc/cusum/doc are both reproduced and covered by the edge case — **D1: DIVERGES.** Was: with no signal present, combined three vacuous {0.25×4} masses with the doc arm's absent-doc-reads-as-score-0 Green and returned Green on every project. Is: abstains when evm, mc, cusum and doc are all absent. |
+| B2.2 | Rough Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; assembled-signal input (evm/mc/cusum/doc) — **D1: DIVERGES.** Was: `total = len(classes) or 1` divided an empty evidence set by a fictitious one and returned Indeterminate Amber. Is: abstains when no signal classifies. |
+| B2.3 | Neutrosophic Logic | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; no-signal case emits the AMBER stub the JS emits, not an abstention — **D1: DIVERGES.** Was: the AMBER "Insufficient signal data" stub, carrying a status colour. Is: abstains. |
+| B2.4 | Interval Fuzzy Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; AMBER stub on no signal — **D1: DIVERGES.** Was: the AMBER "Insufficient signal data" stub. Is: abstains. |
+| B2.5 | Z-numbers | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; AMBER stub on no signal — **D1: DIVERGES.** Was: the AMBER "Insufficient signal data" stub. Is: abstains. |
+| B2.6 | PLTS | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; AMBER stub on no signal — **D1: DIVERGES.** Was: the AMBER "Insufficient signal data" stub. Is: abstains. |
+| B2.7 | Plithogenic Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; AMBER stub on no signal — **D1: DIVERGES.** Was: the AMBER "Insufficient signal data" stub. Is: abstains. |
+| B2.8 | Belief Rule Base | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; always computes (fallback rule R0 when nothing matches) — **D1: DIVERGES.** Was: fallback rule R0 fired when no EVM state existed, supplying a near-uniform belief mass and a colour drawn from it. Is: abstains when no rule activates; R0 is deleted. |
+| B2.9 | Quantum Probability | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; always computes (default amplitudes when signals missing) — **D1: DIVERGES.** Was: defaulted to evm_min 1.0, no breach and doc score 0 (three pieces of good news) and returned Green. Is: abstains when evm, cusum and doc are all absent. |
 | B2.10 | Pythagorean Fuzzy Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 8 |
 | B2.11 | Picture Fuzzy Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 8 |
 | B2.12 | Hesitant Fuzzy Sets | simulations.js | **yes** | 0.0e+00 | exact match; batch 8 |
@@ -106,10 +119,10 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 | C1.1 | Missing Data Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 9; always computes (a completeness meter, not a signal) |
 | C1.2 | Data Timeliness Score | simulations.js | **yes** | 0.0e+00 | exact match; batch 9; the known wall-clock offender — the port takes period_cutoff as its reference date instead of `new Date()`; validated against the JS with the browser Date constructor frozen to the cutoff (see the clock note below) |
 | C1.3 | Source Reliability Weighting | simulations.js | **yes** | 0.0e+00 | exact match; batch 9; array-form sources use the LAST entry's docType; unknown types weight 0.50 |
-| C1.4 | Audit Trail Completeness | simulations.js | **yes** | 0.0e+00 | exact match; batch 9; events ride on si["events"]; simulation_run counts as extraction evidence |
+| C1.4 | Audit Trail Completeness | simulations.js | **yes** | 0.0e+00 | exact match; batch 9; events ride on si["events"]; simulation_run counts as extraction evidence — **D1: DIVERGES, and is now WIRED.** Was: `si["events"]` was never supplied, so it reported "0 events recorded" and a Red band on every project. Is: documents.py supplies the project's event log truncated at the period cutoff; an ABSENT log abstains, an EMPTY log is evidence and is reported. |
 | C1.5 | Information Completeness Ratio | simulations.js | **yes** | 0.0e+00 | exact match; batch 9 |
 | C1.6 | Cross-document Consistency Score | simulations.js | **yes** | 0.0e+00 | exact match; batch 9; three derivation checks at thresholds 0.005/0.005/5 |
-| C1.7 | Reporting Frequency Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 9; below 2 extraction events emits the Yellow stub the JS emits, not an abstention |
+| C1.7 | Reporting Frequency Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 9; below 2 extraction events emits the Yellow stub the JS emits, not an abstention — **D1: DIVERGES, and is now WIRED.** Was: the Yellow "upload more documents" stub below 2 extraction events, on every project. Is: computes the real interval from the supplied log and abstains below 2 events. `at` is narrowed to its date part at the boundary, because `_js_date_ms` refuses datetime strings by design. |
 | D1.1 | Isolation Forest | Apps Script portfolioanalyze | **yes** | 0.0e+00 | exact match vs the LIVE deployment; batch 11; computed only via compute_portfolio — the single-project path still raises PortfolioModuleError |
 | D1.2 | Portfolio Outlier Detection | Apps Script portfolioanalyze | **yes** | 0.0e+00 | exact match vs live; batch 11 |
 | D1.3 | Signal Trajectory Classifier | Apps Script portfolioanalyze | **yes** | 0.0e+00 | exact match vs live; batch 11; carries its own insufficient_data flag below 2 history periods while still emitting a status, as the Apps Script does |
@@ -166,10 +179,50 @@ Three input shapes share the registry's one signature `fn(si, rand, period_cutof
   (per-module results with `.status_color`). An empty project abstains.
 - **B2.1** (and B2.2–B2.9 when they land) consume the assembled signal keys directly from si:
   `si["evm"]` ({cpi, spi}), `si["mc"]` ({p80DeltaPct}), `si["cusum"]` ({breached}),
-  `si["doc"]` ({score}), `si["decision"]` ({state}). Missing keys take the same
-  missing-signal branches the JavaScript takes; a present-but-empty object is a PRESENT
+  `si["doc"]` ({score}), `si["decision"]` ({state}). A present-but-empty object is a PRESENT
   signal, exactly as a truthy `{}` is in JavaScript.
+  **D1 amends this contract: when ALL of those keys are absent the module now ABSTAINS**, where
+  it used to take the JavaScript's missing-signal branches. Nothing on the server assembles
+  those keys and nothing can: they are the browser's `existingSignals`, and the browser no
+  longer computes. The sentence this replaces described a contract no caller could satisfy.
 - **B2.10–B2.20, B3.x, B4.x** consume flat signalInputs, as Group A does.
+
+## D1 divergence: the fabricated no-evidence verdicts
+
+**What was wrong.** Twelve keys were read by this layer and written by nothing: `evm`, `mc`,
+`cusum`, `doc`, `decision`, `signals`, `simulationSignals` and `fairnessSensitive` (the browser's
+assembled blob), plus `events`, `spiHistory`, `cpiHistory` and `milestoneHistory`. In the browser
+they arrived and the missing-key branch was a rare edge case. On the server the blob never
+arrives, so for twelve modules the missing-key branch was the ONLY path that ever executed. Every
+project ever computed carried a verdict from an empty evidence set, and the branch was faithful to
+the JavaScript in each case, so the exact-match rows above were true and told nobody anything.
+
+**Measured, the fabrications were not neutral.** On the test suite's own HEALTHY fixture the
+synthesised CUSUM series reported a breach, which took category A1 to Red and the whole project to
+Red: a project running ahead of plan reported as distressed. The evidence-combination stubs pulled
+category B2 to Amber regardless of the evidence, making a healthy project's combination look worse
+and a distressed project's look better. C1.4 reported a permanent Red about a platform that has
+recorded its events, in exactly the shape C1.4 reads, since `_append_event` was written.
+
+**What was done.** Where the platform holds the evidence, the key is now supplied and the module
+computes: `events`, `spiHistory` and `cpiHistory` are assembled in `documents.py` (see
+`_events_as_of` and `_period_history`), which is outside this package because both are properties
+of a project across periods and `assemble_signal_inputs` must stay pure. Where nothing can ever
+supply the key, the module abstains through `insufficient()`, the same contract Kalman, ARIMA and
+Regression to Mean have always used. No fabrication path is retained behind a flag or for tests.
+
+**`milestoneHistory` is still unsupplied and A2.7 still abstains.** `milestones_json` is requested
+from the extraction model for two document types but is not in `ALL_FIELDS`, so it is never merged
+into `signalInputs` and no stored result carries it. A2.7 abstained correctly before D1 and needed
+no change; supplying it is a merge-layer task, not this one.
+
+**Nothing here reads a later period.** `_period_history` filters on `period < period`, so
+recomputing an early period cannot see a later one, and `_events_as_of` truncates the log at the
+period cutoff for the same reason C1.2 takes its "now" from the cutoff.
+
+Verified by `server/tools/test_d1_module_inputs.py`: every one of the twelve computes on a
+complete input and abstains on the absence of its own key, with nine independent faults injected
+to prove those checks can fail.
 
 ## Batch 3 divergence note: NaN/Infinity fallthrough refused
 
