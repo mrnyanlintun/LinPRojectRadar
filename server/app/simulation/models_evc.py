@@ -6,9 +6,15 @@ from si — si["evm"] ({cpi, spi}), si["mc"] ({p80DeltaPct}), si["cusum"] ({brea
 si["doc"] ({score}) — the browser's `existingSignals`. Presence is `is not None`, matching JS
 object truthiness where an empty {} is a PRESENT signal. Scores use `or 0`, matching `|| 0`.
 
-These modules never abstain with the standard stub: when no signal contributes they emit the
-AMBER "Insufficient signal data" result the JavaScript emits (BRB and Quantum always compute,
-via a fallback rule / default amplitudes). That is the instrument's behaviour, reproduced.
+D1: THESE MODULES NOW ABSTAIN WHEN NO SIGNAL CONTRIBUTES, AND THE JAVASCRIPT COMPARISON NO
+LONGER APPLIES TO THEM. They used to emit the AMBER "Insufficient signal data" result the
+JavaScript emits, with BRB falling back to rule R0 and Quantum to default amplitudes. That was
+a faithful port of a browser edge case; server-side it was the ONLY path, because `evm`, `mc`,
+`cusum` and `doc` are the browser's `existingSignals` and nothing on the server assembles them.
+Every project therefore received an evidence-combination colour derived from an empty evidence
+set. Measured, that colour was wrong in both directions: it pulled a healthy project's
+combination down and a distressed project's up. The fallbacks are removed rather than gated.
+See VALIDATION.md and REPORT_2026-08-02_d1-implementation.md.
 """
 
 from __future__ import annotations
@@ -16,6 +22,7 @@ from __future__ import annotations
 import math
 from typing import Any, Callable
 
+from .models import insufficient
 from .rng import js_round, round2
 
 
@@ -48,10 +55,16 @@ def run_rough_sets(si: dict, rand: Callable[[], float], period_cutoff) -> dict[s
         score = doc.get("score") or 0
         classes.append("Green" if score < 0.30 else "Amber" if score < 0.70 else "Red")
 
+    if not classes:
+        # D1. The `or 1` that used to stand in for the denominator here made every ratio 0/1,
+        # which put every state outside the lower approximation and produced "Indeterminate"
+        # Amber from nothing. An empty evidence set has no classification.
+        return insufficient("Rough_Sets_Classification")
+
     counts = {"Green": 0, "Amber": 0, "Red": 0}
     for c in classes:
         counts[c] += 1
-    total = len(classes) or 1
+    total = len(classes)
 
     lower = [s for s in states if counts[s] / total > 0.75]
     upper = [s for s in states if counts[s] > 0]
@@ -131,12 +144,7 @@ def run_neutrosophic(si: dict, rand: Callable[[], float], period_cutoff) -> dict
                                "source": "DocRisk", "state": "Red"})
 
     if not components:
-        return {
-            "method_class": "Neutrosophic_Logic", "status_color": "Amber",
-            "T": 0, "I": 1, "F": 0, "indeterminacy_level": "High",
-            "signal_components": [],
-            "evidence_metric": "Insufficient signal data",
-        }
+        return insufficient("Neutrosophic_Logic")
 
     t = 0.0
     for c in components:
@@ -219,12 +227,7 @@ def run_interval_fuzzy(si: dict, rand: Callable[[], float], period_cutoff) -> di
                           "red": _mem_interval(_mem_red, lo, hi)})
 
     if not intervals:
-        return {
-            "method_class": "Interval_Fuzzy_Sets", "status_color": "Amber",
-            "green_interval": [0, 0], "amber_interval": [0, 0], "red_interval": [0, 0],
-            "uncertainty_width": 0, "uncertainty_level": "Low",
-            "evidence_metric": "Insufficient signal data",
-        }
+        return insufficient("Interval_Fuzzy_Sets")
 
     def agg(key, idx):
         out = 0
@@ -296,10 +299,7 @@ def run_z_numbers(si: dict, rand: Callable[[], float], period_cutoff) -> dict[st
         signals.append({"source": "MonteCarlo", "restriction": restriction, "reliability": 0.88})
 
     if not signals:
-        return {"method_class": "Z_Numbers", "status_color": "Amber",
-                "weighted_red": 0, "weighted_amber": 0, "weighted_green": 0,
-                "avg_reliability": 0, "signal_count": 0,
-                "evidence_metric": "Insufficient signal data"}
+        return insufficient("Z_Numbers")
 
     total_red = sum(s["reliability"] for s in signals if s["restriction"] == "Red")
     total_amber = sum(s["reliability"] for s in signals if s["restriction"] == "Amber")
@@ -374,9 +374,7 @@ def run_plts(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
             plts.append({"source": "MC", "Green": 0.03, "Amber": 0.17, "Red": 0.80})
 
     if not plts:
-        return {"method_class": "PLTS", "status_color": "Amber",
-                "p_green": 33, "p_amber": 34, "p_red": 33, "sources": [],
-                "evidence_metric": "Insufficient signal data"}
+        return insufficient("PLTS")
 
     n = len(plts)
     agg_g = sum(p["Green"] for p in plts) / n
@@ -433,10 +431,7 @@ def run_plithogenic(si: dict, rand: Callable[[], float], period_cutoff) -> dict[
                            "contradiction": contradiction})
 
     if not attributes:
-        return {"method_class": "Plithogenic_Sets", "status_color": "Amber",
-                "red_score": 0, "amber_score": 0, "green_score": 0,
-                "avg_contradiction": 0, "contradiction_level": "Low",
-                "attributes": [], "evidence_metric": "Insufficient signal data"}
+        return insufficient("Plithogenic_Sets")
 
     red_s = amber_s = green_s = 0.0
     for a in attributes:
@@ -516,8 +511,10 @@ def run_brb(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
     ]
     matched = [r for r in rules if r["condition"]]
     if not matched:
-        matched = [{"id": "R0", "desc": "fallback",
-                    "belief": {"Green": 0.33, "Amber": 0.34, "Red": 0.33}, "weight": 0.50}]
+        # D1. Every rule above is conditioned on an EVM state, so no EVM means no rule fires.
+        # The R0 fallback then supplied a near-uniform belief mass and a colour drawn from it.
+        # A rule base with no activated rule has concluded nothing.
+        return insufficient("Belief_Rule_Base")
 
     total_w = sum(r["weight"] for r in matched)
     agg_g = sum(r["belief"]["Green"] * r["weight"] for r in matched) / total_w
@@ -551,8 +548,14 @@ def run_quantum_probability(si: dict, rand: Callable[[], float],
                             period_cutoff) -> dict[str, Any]:
     cpi, spi = _evm(si)
     cusum = si.get("cusum")
-    breached = bool(cusum.get("breached")) if cusum is not None else False
     doc = si.get("doc")
+    if not (cpi and spi) and cusum is None and doc is None:
+        # D1. The defaults below are not neutral: an absent EVM defaulted evm_min to 1.0, an
+        # absent CUSUM to "no breach" and an absent doc risk to 0. All three read as good news,
+        # so with no evidence at all the amplitudes resolved Green. Removed.
+        return insufficient("Quantum_Probability")
+
+    breached = bool(cusum.get("breached")) if cusum is not None else False
     doc_score = (doc.get("score") or 0) if doc is not None else 0
 
     evm_min = min(cpi, spi) if (cpi and spi) else 1.0
