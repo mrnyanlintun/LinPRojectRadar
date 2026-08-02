@@ -26,6 +26,7 @@ from __future__ import annotations
 from typing import Any, Callable
 
 import sqlalchemy as sa
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
 from .facade import err
@@ -47,11 +48,30 @@ __all__ = [
 
 
 def stored_theme(session: Session, participant_id: str) -> str | None:
-    """The raw column value, or None. Read by hand for the same reason features are."""
-    raw = session.execute(
-        sa.text("SELECT theme FROM participants WHERE participant_id = :pid"),
-        {"pid": participant_id},
-    ).scalar()
+    """
+    The raw column value, or None. Read by hand for the same reason features are.
+
+    NEVER RAISES, EVEN IF THE COLUMN DOES NOT EXIST YET. 2026-08-02: code that expects
+    `participants.theme` deployed before the migration that adds it was applied (migrations are
+    applied by hand, deliberately, after the deploy), and every sign-in raised ProgrammingError
+    for the whole gap. The ORM mapping that caused that is gone (see research_models.py), but this
+    is the second line of defence for the same class of failure: a database mid-migration, or a
+    rollback that drops the column back out, must degrade this ONE preference to "not chosen"
+    rather than take anything down. `resolve_theme` already treats None as "use the default", so
+    this failure mode was always survivable here; it just was not caught before it could matter.
+
+    Rolls back on failure. A raised DBAPIError leaves the session's transaction unusable for
+    anything after it until it is rolled back, and this must not be the reason a caller's next
+    query fails too.
+    """
+    try:
+        raw = session.execute(
+            sa.text("SELECT theme FROM participants WHERE participant_id = :pid"),
+            {"pid": participant_id},
+        ).scalar()
+    except DBAPIError:
+        session.rollback()
+        return None
     value = (raw or "").strip()
     return value or None
 
@@ -134,7 +154,15 @@ def a_themeset(session: Session, payload: dict, secret: str, ttl: int) -> dict[s
         return err(f"unknown theme: {requested or '(empty)'}; "
                    f"recognized themes are {', '.join(THEMES)}")
 
-    _write_theme(session, caller.participant_id, requested)
+    # Writing has no fallback the way reading does — there is nowhere else to put the choice — so
+    # this cannot degrade silently. It CAN avoid being an unhandled 500: if the column is not
+    # there yet (schema behind the code, the same gap that caused the 2026-08-02 outage), refuse
+    # with a plain reason instead of letting a DBAPIError surface as "Server error: ...".
+    try:
+        _write_theme(session, caller.participant_id, requested)
+    except DBAPIError:
+        session.rollback()
+        return err("the theme preference cannot be saved right now; try again shortly.")
     audit(session, "theme_set", participant_id=caller.participant_id, theme=requested)
     session.commit()
     return {"ok": True, "theme": requested, "themes": list(THEMES), "fixed": False}

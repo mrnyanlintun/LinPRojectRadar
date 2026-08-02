@@ -84,10 +84,21 @@ class Participant(Base):
     # T2. Display label for an operational account. Never set for a research participant, whose
     # only identifier anywhere in the system stays the pseudonymous code.
     display_name: Mapped[str] = mapped_column(Text, nullable=True)
-    # Migration 0017. NULL means "has not chosen" and resolves to the default theme, which is
-    # what keeps an existing account's appearance unchanged until they choose. Ignored entirely
-    # for a research account: app/theme.py returns the fixed theme regardless of this value.
-    theme: Mapped[str] = mapped_column(Text, nullable=True)
+    # Migration 0017 added participants.theme. IT IS DELIBERATELY NOT MAPPED HERE.
+    #
+    # 2026-08-02 OUTAGE. It was mapped, and every `select(Participant)` therefore selected the
+    # new column, including the one in a_researchlogin. Production applies migrations by hand
+    # after the code deploys, so for the whole gap between "0279d7b lands" and "someone runs
+    # alembic upgrade head", production's participants table had no theme column and EVERY
+    # sign-in raised ProgrammingError: column participants.theme does not exist. Reproduced
+    # locally against a database held at 0016 and confirmed as the cause before this was written.
+    #
+    # Nothing reads .theme as an ORM attribute anywhere in this codebase — app/theme.py always
+    # reads and writes it through raw SQL (`stored_theme`, `_write_theme`), specifically so that
+    # code can degrade when the column is absent instead of the ORM failing the query before any
+    # of that handling runs. Re-adding this as a Mapped column reintroduces the outage; if a
+    # future column needs ORM access, add it only once schema and code deploy together, or gate
+    # the read behind the same try/except stored_theme() uses.
     eligibility_status: Mapped[str] = mapped_column(Text, nullable=True)
     scenario_set: Mapped[str] = mapped_column(Text, nullable=True)
     condition_sequence: Mapped[str] = mapped_column(Text, nullable=True)
