@@ -75,6 +75,7 @@
   <div id="ledger"></div>
   <div id="decision-card"></div>
   <div id="detail-root"></div>
+  <div id="atlas-host"></div>
 </div>
 
 <script>
@@ -85,6 +86,11 @@
 <script src="assets/js/data.js"></script>
 <script src="assets/js/taxonomy.js"></script>
 <script src="assets/js/decision.js"></script>
+<!-- store.js and atlas.js are loaded for group 8. Neither self-boots: store.js only defines
+     window.LinStore (every network path is gated on LIN_API_URL being configured, which it is
+     not here), and atlas.js only defines window.LinAtlas. -->
+<script src="assets/js/store.js"></script>
+<script src="assets/js/atlas.js"></script>
 <script src="assets/js/app.js"></script>
 <!-- knowledge.js is loaded ONLY so that assertion group 7 can prove it parsed. It defines two
      globals and does no work until renderKnowledgePage() is called, which returns immediately
@@ -277,6 +283,66 @@
       true, Array.isArray(k.terms) && k.terms.length > 0);
     assert("knowledge.js: the Methods tab renderer is callable",
       "function", typeof (window.LinKnowledge && window.LinKnowledge.renderKnowledgePage));
+  })();
+
+  // 8. A PROJECT WITH COORDINATES PRODUCES A MARKER — and still does after a portfolio refresh.
+  //
+  //    The defect this group exists for: projects stopped appearing on the Map and the Globe.
+  //    The cause was not in either view. facade.slim_row() is a thirteen-field projection that
+  //    cannot express location at all, and hydrate() read a field's ABSENCE from that projection
+  //    as its DELETION — so every background portfolio refresh (create, rename, archive,
+  //    recompute-all) stripped lat/lng out of the in-memory mirror that the geographic views
+  //    read, and both views correctly drew nothing for projects that no longer had a position.
+  //    "0 project(s) placed", every project, until the page was reloaded.
+  //
+  //    So the check is deliberately in two halves. The first half asserts the render site: a
+  //    project with coordinates draws a marker. That half alone would have stayed GREEN through
+  //    the entire defect, because the render site was never wrong. The second half asserts the
+  //    data survives the round trip that actually broke it. Do not drop the second half.
+  (function () {
+    function located(id, lat, lng) {
+      return { id: id, name: id, sector: "construction", status: "Green",
+               address: "somewhere", formattedAddress: "Somewhere, USA", lat: lat, lng: lng };
+    }
+    // What the server's slim projection returns for the same project: no location fields.
+    function slimOf(p) {
+      return { id: p.id, name: p.name, sector: p.sector, status: p.status,
+               updatedAt: "2026-08-02T00:00:00.000Z", cpi: null, spi: null, docRiskScore: null,
+               actualPctComplete: null, simModuleCount: 0, docCount: 0, slim: true };
+    }
+    function markersFor(projects) {
+      const host = document.getElementById("atlas-host");
+      host.innerHTML = "";
+      // render() appends every marker synchronously and only THEN awaits the coastline fetch,
+      // so the marker count is readable the moment it returns. No await, no timing dependency.
+      window.LinAtlas.render(host, projects, {});
+      return host.querySelectorAll(".atlas-marker").length;
+    }
+
+    const a = located("PRJ-GEO-A", 36.5298, -87.3595);
+    const b = located("PRJ-GEO-B", 39.87397, -75.24382);
+    const nowhere = { id: "PRJ-GEO-NONE", name: "No address", sector: "design", status: "Green" };
+
+    // -- half one: the render site places what it is given.
+    assert("atlas: a project with coordinates produces a marker", 1, markersFor([a]));
+    assert("atlas: every located project produces a marker", 2, markersFor([a, b]));
+    assert("atlas: a project with no coordinates produces no marker, and does not stop the rest",
+      2, markersFor([a, b, nowhere]));
+
+    // -- half two: the coordinates survive a slim portfolio refresh.
+    window.LIN_PROJECTS.length = 0;
+    window.LIN_PROJECTS.push(a, b, nowhere);
+    window.LinStore.hydratePortfolio([slimOf(a), slimOf(b), slimOf(nowhere)]);
+    const after = window.LIN_PROJECTS.slice();
+    const stillLocated = after.filter(function (p) { return p.lat != null && p.lng != null; });
+    assert("refresh: a slim row does not strip coordinates off a located project",
+      2, stillLocated.length);
+    assert("refresh: the slim row's own fields still win (it IS the newer server state)",
+      true, after.every(function (p) { return p.slim === true; }));
+    assert("refresh: the matched address survives too (the map note reads it)",
+      "Somewhere, USA", (after[0] || {}).formattedAddress);
+    assert("refresh: a located project STILL produces a marker after a portfolio refresh",
+      2, markersFor(after));
   })();
 
   // ---- render results ----
