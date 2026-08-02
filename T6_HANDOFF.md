@@ -9,6 +9,81 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-02 — THE EVENT LOG STOPS BEING DELETED; UPLOAD EVENTS ESTABLISHED, NOT SHIPPED
+
+Full detail in `REPORT_2026-08-02_append-only-fix.md`. **1190 checks across 22 suites,
+`tests.html` 51/51, `tests_render.html` 43/43.** Compositing proven (63 rAF/s). No stored data
+altered, production not inspected.
+
+**PART 3 IS A DECISION WAITING ON LIN, AND NOTHING WAS SHIPPED FOR IT.** `docCount` is read by
+**no user-facing surface anywhere** (grepped the whole repo outside the baseline capture), so
+writing upload events changes it 0 → N in an API response nobody displays. **But C1.4 DOES move
+and is user-visible:** `project_created` only (every server project today) = **Amber 50%**;
++`signals_extracted` = **Yellow 100%**; + a compute event = **Green 100%** (it needs
+`total_events >= 3`). Category C1 moves with it; **project colour does not** (Group C does not
+vote). Two things to know before deciding: `_events_as_of` truncates at the period cutoff, so a
+June report uploaded in August produces an August event that **does not count for that period** —
+measured, C1.4 stayed at 50%; backdating it would be recording an event as having happened when it
+did not, which I would not do unasked. And `signals_extracted` also populates `detail.js`'s
+Uploaded Documents table, currently empty for server uploads.
+
+**THE BRIEF'S PREMISE NEEDED CORRECTING, AND IT CHANGES THE DEFECT.** `w_resetsignals` does **not**
+touch `audit_events`. There are two stores: `audit_events` (the research trail — **verified
+genuinely append-only**, no UPDATE or DELETE anywhere in `server/app/`, untouched across a reset)
+and `doc["events"]` (the legacy per-project JSON list, written by `_append_event`). The latter is
+what was truncated. Narrower than feared — the research record was never at risk — and wider in
+another direction: **the legacy facade writes nothing to `audit_events` at all**, so a reset leaves
+no research-audit record that it happened, even now. Reported, not fixed.
+
+**THE DELETION WAS NOT LOAD-BEARING, checked before deciding.** Every surface that reads the log
+filters it itself, and `docCount` counts `signals_extracted` specifically. What the deletion DID
+change, since D1 wired `events` into signalInputs, is **C1.4: dropping `project_created` takes it
+from Green 100%/3 events to Red 0%/1 event** on a project whose trail was intact. The reset was
+reporting a worse audit trail than the project had. It now leaves the log alone and records itself
+with `_append_event` — the shape this module already uses for every other mutation — carrying what
+it cleared **by shape, not by value** (field count, field names, blocks, module count, reason);
+writing the values into an event `get` returns would defeat the action.
+
+**PART 2 FOUND A LARGER VIOLATION IN `w_save`, AND IT IS FIXED.** It replaced the stored doc
+wholesale, so `events` was whatever the client sent. Measured: **a save with no events key wiped
+the log; a save with a fabricated one-entry list replaced it; both accepted with no concurrency
+token**, because `_check_not_stale` passes when the client presents none — and the legacy frontend
+presents none. This is the path the frontend actually uses, and a slim-loaded project never carried
+`events`, so an ordinary address edit destroyed the log. Rule now: **the log may be extended, never
+shortened or substituted.** The client is a legitimate appender (`signals.js` pushes
+`simulation_run` then saves), so the server cannot own the list; a check asserts the append still
+works.
+
+**EVERY OTHER FACADE ACTION SURVEYED BY EXERCISING IT, not by grepping `.pop`.** create / archive /
+restore / setprojectnumber / savehistory / saveauditresult all append (savehistory verified to
+accumulate: two saves for one period leave two rows). **`w_saveportfoliohealth` still deletes** all
+prior portfolio-health snapshots — the only `session.delete` in the app, atomic, deliberate per its
+comment. Reported, not changed. **`w_overwritesignal` unchanged as instructed**: still accepts an
+arbitrary field name and value, PM-gated, `docRiskScore` range-checked only.
+
+**WHO CAN CALL THE RESET: anyone.** `guard_project_write` returns allow when no session token is
+present. A completely unauthenticated POST of `{"action":"resetsignals","id":...}` is accepted —
+measured. Documented as the deliberate B8 posture; not changed here.
+
+**ALREADY-LOST DATA: none locally (3 project rows, 0 with a `signals_reset`), production not
+inspected.** Detectability differs: a reset-truncated log is identifiable (`signals_reset` present,
+`project_created` absent — a query Lin can run on production), **the `w_save` wipe leaves no trace
+at all and is neither detectable nor recoverable.**
+
+**THE RESEARCH EXPORT IS NOT EXPOSED.** It reads `AuditEvent` only, and only `evidence_viewed` for
+the two timing variables; it never reads `doc["events"]`. `EXPORT_COLUMNS` (39) names no event,
+result or audit column — the stages 7-8 finding that it carries no `result_id` is unchanged. A
+decision traces through `Decision.result_id` → `ComputedResult.source_documents`, none of it
+through the deleted log.
+
+**SIXTH CONSECUTIVE SESSION WITH A VACUOUS CHECK, CAUGHT BY INJECTION.** The `w_save` checks read
+`resp["project"]["events"]` directly, so with the fix removed the suite died on `KeyError` before
+asserting and printed **no RESULT line** — the first injection pass looked clean. They now go
+through a helper returning `None` for a missing key, so the fault makes them FAIL. Four faults,
+distinct signatures: 67/70, 68/70, 66/70, 68/70.
+
+---
+
 # 2026-08-02 — GEOCODE RETENTION, AND THE DECISION CARD STOPS CONTRADICTING ITSELF
 
 Full detail in `REPORT_2026-08-02_geocode-and-decision-card.md`. **1177 checks across 22 suites,

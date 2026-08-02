@@ -149,12 +149,89 @@ check(get({"action": "get", "id": P1})["project"]["signalInputs"]["cpi"] == 0.85
 check("No extracted signals" in post({"action": "overwritesignal", "id": P2,
                                       "field": "cpi", "value": 1}).get("error", ""),
       "overwrite with no extracted signals refused")
+# THE EVENT LOG IS APPEND-ONLY THROUGH A RESET.
+#
+# w_resetsignals used to keep only `signals_extracted` and discard every other entry, which made
+# it the one write on the platform that removed the record of something having happened. These
+# checks are written against COUNTS AND NAMES taken immediately before the call, not against
+# constants, so they cannot pass by the fixture happening to be empty.
+before_doc = get({"action": "get", "id": P1})["project"]
+before_events = list(before_doc.get("events") or [])
+before_names = [e.get("event") for e in before_events]
+# The precondition that makes everything below non-vacuous: the log must contain entries that are
+# NOT signals_extracted, since those are the ones the old code deleted. Asserted, not assumed.
+check(len([n for n in before_names if n != "signals_extracted"]) >= 2,
+      "precondition: the log carries at least two non-signals_extracted entries to lose",
+      str(before_names))
+
 r = post({"action": "resetsignals", "id": P1})
 check(r.get("ok") is True and r.get("reset") is True, "resetsignals ok", str(r)[:120])
 saved = get({"action": "get", "id": P1})["project"]
 check(saved["signals"] == {} and saved["signalInputs"] == {}, "signals cleared")
+
+after_events = list(saved.get("events") or [])
+after_names = [e.get("event") for e in after_events]
+check(len(after_events) > len(before_events),
+      "a reset GROWS the event log; it never shortens it",
+      f"{len(before_events)} -> {len(after_events)}")
+check(after_names[:len(before_names)] == before_names,
+      "every entry that was there before is still there, in order",
+      f"{before_names} -> {after_names}")
+check(after_names[-1] == "signals_reset",
+      "and the reset itself is the entry that was added", str(after_names[-1]))
 check(any(e.get("event") == "signals_extracted" for e in saved["events"]),
       "signals_extracted events preserved through reset (docCount source)")
+
+# The reset RECORDS WHAT IT DID. Checked against the values read before the call, so the check
+# fails if the handler stops recording them or records the wrong ones.
+reset_entry = after_events[-1]
+before_inputs = before_doc.get("signalInputs") or {}
+check(reset_entry.get("cleared_signal_input_fields") == len(before_inputs),
+      "the reset event records how many signalInputs fields it cleared",
+      f"recorded {reset_entry.get('cleared_signal_input_fields')}, actually {len(before_inputs)}")
+check(reset_entry.get("cleared_signal_input_names") == sorted(before_inputs.keys()),
+      "and which ones they were",
+      f"{reset_entry.get('cleared_signal_input_names')} vs {sorted(before_inputs.keys())}")
+check(len(before_inputs) > 0,
+      "precondition: there were signalInputs to clear, so the two checks above mean something",
+      str(sorted(before_inputs.keys())))
+
+# A SAVE MAY EXTEND THE EVENT LOG AND MAY NOT SHORTEN OR REWRITE IT.
+#
+# w_save replaces the stored document with the client's copy, so `events` was whatever the client
+# sent. A save with no events key wiped the log; a save with a fabricated list replaced it. Both
+# were accepted without a concurrency token.
+log_before = [e.get("event") for e in get({"action": "get", "id": P1})["project"]["events"]]
+check(len(log_before) >= 3, "precondition: there is a log to lose", str(log_before))
+
+def event_names(resp):
+    """Names from a save response, tolerating a missing/!list events key so a handler that drops
+    it FAILS the check below instead of raising past it. Injection caught exactly that."""
+    evs = ((resp or {}).get("project") or {}).get("events")
+    return [e.get("event") for e in evs if isinstance(e, dict)] if isinstance(evs, list) else None
+
+
+no_events = post({"action": "save", "project": {"id": P1, "name": "A1b One"}})
+check(no_events.get("ok") is True, "a save carrying no events key is still accepted")
+check(event_names(no_events) == log_before,
+      "and it does NOT wipe the stored event log", str(event_names(no_events)))
+
+doc = get({"action": "get", "id": P1})["project"]
+doc["events"] = [{"event": "fabricated", "at": "2020-01-01"}]
+rewritten = post({"action": "save", "project": doc})
+check(event_names(rewritten) == log_before,
+      "a save carrying a fabricated shorter log leaves the stored log standing",
+      str(event_names(rewritten)))
+check("fabricated" not in (event_names(rewritten) or ["fabricated"]),
+      "and the fabricated entry is not stored", str(event_names(rewritten)))
+
+# The legacy client legitimately APPENDS (signals.js pushes simulation_run then saves), so an
+# extension must still be accepted — otherwise the fix above would be a silent regression.
+doc = get({"action": "get", "id": P1})["project"]
+doc["events"] = list(doc["events"]) + [{"event": "simulation_run", "at": "2026-08-02T00:00:00Z"}]
+extended = post({"action": "save", "project": doc})
+check(event_names(extended) == log_before + ["simulation_run"],
+      "a genuine client APPEND is still accepted and stored", str(event_names(extended)))
 
 print()
 print("=" * 78)

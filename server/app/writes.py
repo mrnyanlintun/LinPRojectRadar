@@ -176,6 +176,28 @@ def w_save(session: Session, payload: dict) -> dict[str, Any]:
     stored_created = (project.doc or {}).get("createdAt")
     fresh = _touch(incoming, created=stored_created)
 
+    # THE EVENT LOG MAY BE EXTENDED, NEVER SHORTENED OR SUBSTITUTED.
+    #
+    # This handler replaces the stored document wholesale with the client's copy, so `events` was
+    # whatever the client happened to send. Measured: a save carrying no `events` key at all wiped
+    # the log, and a save carrying a fabricated one-entry list replaced it — both accepted, and
+    # neither needs a concurrency token, since `_check_not_stale` returns without complaint when
+    # the client presents no token. That is a larger hole than the one w_resetsignals had, on the
+    # write path the legacy frontend actually uses: a project whose in-memory copy came from the
+    # slim projection never carried `events` at all, and saving it destroyed the log.
+    #
+    # The client is a legitimate APPENDER — assets/js/signals.js pushes a `simulation_run` entry
+    # and then calls saveProject — so the server cannot simply own the list. It can require that
+    # whatever arrives starts with what is already stored, which permits an append and refuses a
+    # truncation or a rewrite of history. Anything that does not extend the stored log leaves the
+    # stored log standing.
+    stored_events = (project.doc or {}).get("events") or []
+    incoming_events = fresh.get("events")
+    extends = (isinstance(incoming_events, list)
+               and len(incoming_events) >= len(stored_events)
+               and incoming_events[:len(stored_events)] == stored_events)
+    fresh["events"] = incoming_events if extends else stored_events
+
     # Geocode only when the address CHANGED, which is what v10.29 did and what the comment in
     # assets/js/ingest.js still describes. Re-geocoding an unchanged address on every save would
     # spend the rate limit answering a question already answered, and the cache would make it
@@ -307,17 +329,38 @@ def w_resetsignals(session: Session, payload: dict) -> dict[str, Any]:
         return err(f"Project not found: {pid}")
 
     fresh = dict(project.doc or {})
+    prior_inputs = dict(fresh.get("signalInputs") or {})
+    prior_signal_keys = sorted((fresh.get("signals") or {}).keys())
+    prior_sim_modules = len((fresh.get("simulationSignals") or {}).get("signal_array") or [])
     fresh["signals"] = {}
     fresh["signalInputs"] = {}
     fresh["simulationSignals"] = {}
-    # signals_extracted events are preserved deliberately, matching the v10.25 fix: they are what
-    # the Uploaded Documents table renders, and they are the source of the slim docCount. Dropping
-    # them would silently zero docCount for every project that had ever ingested a document.
-    fresh["events"] = [
-        e for e in (fresh.get("events") or [])
-        if isinstance(e, dict) and e.get("event") == "signals_extracted"
-    ]
-    fresh = _touch(_append_event(fresh, "signals_reset"))
+
+    # THE EVENT LOG IS NOT TOUCHED. This used to keep only `signals_extracted` and discard every
+    # other entry — project_created, project_archived, project_restored, project_number_changed,
+    # signal_overwritten and any earlier signals_reset — which made this the one write on the
+    # platform that destroyed a record of something having happened rather than adding one.
+    #
+    # Nothing required the deletion. The two surfaces that read this log filter it themselves
+    # (detail.js's Uploaded Documents table and signals.js's audit panel both select the event
+    # types they render), and the slim docCount counts `signals_extracted` specifically, so
+    # keeping the rest changes neither. What the deletion did change, since D1 wired `events`
+    # into signalInputs, is C1.4 Audit Trail Completeness: dropping `project_created` takes it
+    # from 100% to 0% and Green to Red on a project whose trail is intact — the reset was
+    # reporting a worse audit trail than the project actually had.
+    #
+    # The reset is now recorded the way every other mutation on this module is recorded, with
+    # `_append_event`. It carries what was cleared BY SHAPE — how many signalInputs fields, which
+    # signal blocks, how many simulation modules — and not by value: the point of the action is to
+    # remove those values, so writing them into an event that `get` returns would defeat it.
+    fresh = _touch(_append_event(
+        fresh, "signals_reset",
+        cleared_signal_input_fields=len(prior_inputs),
+        cleared_signal_input_names=sorted(prior_inputs.keys()),
+        cleared_signal_blocks=prior_signal_keys,
+        cleared_simulation_modules=prior_sim_modules,
+        reason=str(payload.get("reason") or ""),
+    ))
 
     project.doc = fresh
     project.record_version = project.record_version + 1
