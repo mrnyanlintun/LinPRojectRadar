@@ -3,6 +3,63 @@
 > user-facing surface quotes verbatim. It lives in the repository so it cannot fail to reach a
 > session, which it did three times while it lived outside. Read it before this handoff, not after.
 
+# T20 — PIPELINE AUDIT. READ-ONLY. STAGES 1 TO 4 AND PERIOD DONE; 7 AND 8 NOT STARTED.
+
+Full detail in `REPORT_2026-08-02_pipeline-audit.md`. **No code was modified.** Nothing here is
+fixed; this is a findings list.
+
+**THE PREREQUISITE WAS MISSING.** There is no evidence policy audit report in this repository. I
+searched the tree and the history. Whatever it establishes did not reach this session.
+
+**THE TWO TO ACT ON FIRST, both proven by execution:**
+
+**D1. Eleven module inputs can never be produced, and nine of them feed a project colour.** Set
+difference between what `server/app/simulation/` reads and what `extraction_merge.SIGNAL_INPUT_KEYS`
+can emit: `cusum decision doc events evm fairnessSensitive mc milestoneHistory signals
+simulationSignals spiHistory`. These are the legacy browser blob and the two history series. **11
+of 95 project-level modules read one** (A1.2, A2.7, B2.2, B2.3, B2.5, B2.6, B2.7, B2.8, B2.9,
+C1.4, C1.7); nine are in Groups A and B and therefore vote in status. **None abstain.** Measured
+with the keys absent, which is every server-computed project: Rough Sets returns **Amber from zero
+evidence** ("Green 0, Amber 0, Red 0 of 1 signals"), Audit Trail Completeness returns **Red
+permanently** ("0 events recorded"), and CUSUM returns **red, breached, over a 12-period series it
+fabricated from the seed**. No test references any of the eleven keys. `VALIDATION.md` records all
+of them as exact matches against the JavaScript, which is true and is the trap: the JavaScript was
+handed the blob, so it validates the port while the input contract is broken under both.
+
+**P1. Recomputing an earlier period rewrites it with later information. PROVEN.** The property the
+research record was said to depend on being impossible. `_compute_and_store` builds the portfolio
+vectors from every other project's **most recent** live result (`max(period)`), with no alignment
+to the period being computed. Demonstrated: project A's **period 1** recomputed with A's own
+documents unchanged went from `insufficient_data` to a Yellow anomaly with `anomaly_score 1.0`,
+purely because project B had advanced to period 2. The old row is superseded and kept, so nothing
+is destroyed, but the live period-1 result now carries period-2 information. **The only test
+touching `portfolio_snapshot` (`test_workspace_t3t5` Guarantee 9) never varies period and would
+pass unchanged with the defect present.** Blast radius is limited for RESEARCH projects because
+`_resolve_period` forces the current period there (see P7), so this is reachable on operational
+projects.
+
+**Also proven:** malformed numeric text becomes `0.0`, so `earned_value="TBD"` yields **cpi=0.0**
+(D2, no test); a malformed or absent document date makes `period_cutoff` the **wall clock** (D3); a
+declared `docType` is **silently discarded** for any already-seen bytes, so the first uploader's
+classification is global and permanent (D4, measured across two projects); an **undeclared**
+revision still merges by content hash and double-counts additive fields, because 0013 only helps
+when the claim is made and there is still no frontend control (D5).
+
+**Correctly excluded, verified:** Groups C and D do not vote in project status
+(`compute.contributes_to_project_status`).
+
+**NOT COVERED, and a future session should not assume otherwise:** stage 7 (reporting and display,
+including whether anything can show a result under the wrong period) and stage 8 (audit trail and
+logging) were **not started**. Stage 5 covered only the C/D exclusion; stage 6 only via P1. Named
+UNKNOWNs are listed in Part 5 of the report, including what supplies `compute_portfolio`'s
+`history` on the server path.
+
+**A vacuity sweep of the full suite was NOT run** and is worth its own session: five vacuous
+checks have been found by accident so far, and this audit found a sixth pattern (a test blind to
+the defect in the code it covers) without looking for it.
+
+---
+
 # T19 — DOCUMENT VERSIONING. MIGRATION 0013 IS WRITTEN AND **NOT** APPLIED TO PRODUCTION.
 
 Full detail in `REPORT_2026-08-02_document-versioning.md`. **1013 checks across 21 suites**;
