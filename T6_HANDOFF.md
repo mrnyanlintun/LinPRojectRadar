@@ -9,6 +9,54 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-02 — THE SITE ON A PHONE
+
+Full detail in `REPORT_2026-08-02_mobile-layout.md`. **Server 30/30 suites, `tests_render.html`
+62/62, `tests.html` 51/51.** Two faults injected (dock/launcher overlap, upload/decision gate),
+both detected, both reverted and re-confirmed against a freshly re-read stylesheet.
+
+## What changed, in one line each
+
+- `.list-item` on mobile: `display: grid` (4-34px overflow) to `display: flex; flex-wrap: wrap`
+  with a forced line break after id/name. Desktop grid untouched.
+- `.li-manage.btn, .li-open.btn` gets the 44px tap target; a single-class `.li-manage` rule LOST
+  to `.btn.small`'s two-class specificity and had no effect (see traps below).
+- Files tab table stacks into cards on mobile (`display: block` cascade + `data-label` via
+  `content: attr()`); `files.js` `paintList()` now emits `data-label` on four `<td>` cells — the
+  one JS change needed for a layout decision this pass.
+- Globe never opens a WebGL context below 700px: `window.matchMedia("(max-width: 700px)")`
+  gates `LinGlobe.mount()` in `buildGeoStage()`, before the call, not just the canvas's CSS.
+  This was a **real, previously unguarded gap** — the brief's premise that Globe already
+  degraded to a static image on mobile did not hold; Map and the flat atlas already did, Globe
+  did not.
+- Icon dock vs. assistant launcher: 156px^2 real overlap at 390x844, fixed by raising the
+  launcher's mobile `bottom` from 16px to 88px.
+- Icon dock vs. last list row: 101.5625px^2 real overlap (nothing reserved space below the
+  scrollable list for the fixed dock), fixed with `#project-list { padding-bottom: 88px }` on
+  mobile only.
+- Upload, administration, and the decision sequence are explicitly out of scope on a phone now:
+  CSS-only, children `display: none`, panel itself stays so its own `::before`/`::after` can
+  show "This needs a desktop browser."
+- The light theme's user-facing label: "Plain" to "Fairbanks" (`THEME_META` in `app.js` only).
+  The internal key stays `"plain"` — `THEMES` in `server/app/theme.py`, the stored preference
+  value, `body[data-theme="plain"]` in `radar.css`, and `test_theme_plain.py`'s filename are all
+  unchanged on purpose. Renaming those is a schema/vocabulary change with its own migration, not
+  a display-string change, and was explicitly out of scope for this pass.
+
+## A trap worth repeating from the theme session, because it bit fault injection here too
+
+**A fault-injection needle must actually reproduce the defect's shape.** The first attempt at
+reverting the dock/launcher fix used a simplified 1-button dock fixture for speed and measured
+0px^2 overlap even WITH the fault present — a false clean, because the simplified dock was
+narrower than the real 3-button dock and never reached the launcher regardless of its `bottom`
+offset. Rebuilding the fixture with the real `dock-nav-btn` count (3, matching `DOCK_NAV` in
+`app.js`) reproduced the actual 135px^2-class overlap. If a revert check comes back clean, check
+whether the fixture is faithful before trusting the number.
+
+**The browser HTTP cache trap from the theme session is still live and still costs time.**
+`fetch(url, {cache: 'no-store'})` before every measurement, every time the stylesheet changes,
+not just once at the start of a session.
+
 # 2026-08-02 — A SECOND THEME: PLAIN. WHITE, HIGH CONTRAST, AND FIXED FOR RESEARCH ACCOUNTS
 
 Full detail in `REPORT_2026-08-02_light-theme.md`. **Server 1634/1634 across 30 suites,

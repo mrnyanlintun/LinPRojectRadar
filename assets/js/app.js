@@ -1180,6 +1180,18 @@
      Each step is only reached because the one before it could not run. */
   async function buildGeoStage(globeWrap, mapWrap, atlasWrap) {
     if (!window.LinGlobe) { showAtlasInstead(globeWrap, atlasWrap); return; }
+    // JS, NOT CSS, BECAUSE THIS DECIDES WHICH CODE RUNS, NOT HOW IT LOOKS. A media query can
+    // hide the globe's canvas; it cannot stop LinGlobe.mount() below from opening a WebGL
+    // context and starting globe.gl's animation loop before that hidden canvas is ever
+    // painted. On a phone that is the one thing a static geographic view must not do: it is a
+    // GPU context and a render loop spent on a panel the mobile scope treats as a picture.
+    //
+    // Same breakpoint the dock already uses for "this is a phone" (matchMedia, not innerWidth,
+    // so it tracks the same live viewport CSS reasons about). Globe already had a degrade
+    // path for "cannot draw" — this adds one more reason to take it, before any WebGL work
+    // starts, rather than mounting and then discovering the viewport was never right for it.
+    const isPhoneViewport = window.matchMedia && window.matchMedia("(max-width: 700px)").matches;
+    if (isPhoneViewport) { showAtlasInstead(globeWrap, atlasWrap); return; }
     if (globeWrap) globeWrap.hidden = false;
     if (mapWrap) mapWrap.hidden = true;
 
@@ -2046,10 +2058,13 @@
   const DEFAULT_THEME = "newyork";
   const OFFERED_THEMES = ["plain", "light", "newyork", "maria"];
   const THEME_META = [
-    // Plain is first because it is the one meant for working in. The other three
+    // Fairbanks is first because it is the one meant for working in. The other three
     // each have a mood; this one deliberately has none, and its title says so
-    // rather than describing a place.
-    { key: "plain",   label: "Plain", title: "Plain: white, high contrast, no decoration" },
+    // rather than describing a place. The internal key stays "plain" (see
+    // server/app/theme.py THEMES and body[data-theme="plain"] in radar.css): that string is
+    // what is written to the stored preference and would need a migration to change, so only
+    // the label shown to a user changes here.
+    { key: "plain",   label: "Fairbanks", title: "Fairbanks: white, high contrast, no decoration" },
     { key: "light",   label: "Miami", title: "Miami: always sunny" },
     { key: "newyork", label: "NYC",   title: "NYC: aged bronze and gilt" },
     { key: "maria",   label: "Maria", title: "Maria: baby pink and white" }

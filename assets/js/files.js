@@ -143,13 +143,17 @@ var LinFiles = (function () {
       if (f.superseded) {
         flags.push('<span class="fx-flag">Superseded</span>');
       }
+      // data-label on each cell is read by a mobile-only CSS rule (radar.css, the 640px
+      // block) that stacks this table into cards rather than leaving it to overflow or to a
+      // sideways scroll. The desktop table ignores the attribute entirely; it costs nothing
+      // there. The File cell carries no label because it is the row's own heading, not a field.
       return "<tr>"
         + '<td><button type="button" class="fx-filename" data-doc="' + esc(f.document_id)
           + '">' + esc(f.filename) + "</button>" + flags.join("") + "</td>"
-        + "<td>" + esc(f.filing_label || "") + "</td>"
-        + '<td class="fx-version">v' + esc(f.version) + "</td>"
-        + "<td>" + esc(f.period == null ? "" : "P" + f.period) + "</td>"
-        + '<td class="fx-folder">' + esc(f.folder_path || "") + "</td>"
+        + '<td data-label="State">' + esc(f.filing_label || "") + "</td>"
+        + '<td class="fx-version" data-label="Version">v' + esc(f.version) + "</td>"
+        + '<td data-label="Period">' + esc(f.period == null ? "" : "P" + f.period) + "</td>"
+        + '<td class="fx-folder" data-label="Folder">' + esc(f.folder_path || "") + "</td>"
         + '<td><button type="button" class="ws-btn ws-btn-secondary fx-move" data-move="'
           + esc(f.document_id) + '">Move</button></td>'
         + "</tr>";
