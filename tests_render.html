@@ -288,6 +288,45 @@
       true, !!(st && st.classList.contains("state-red")));
   })();
 
+  // 4b. THE ROW CARRIES ONE NAVIGATION CONTROL, NOT TWO.
+  //
+  //     The row used to render "Signals" and "Open →" side by side. Both click handlers were the
+  //     same expression, openDetail(p.id), and openDetail takes only an id — no section, tab or
+  //     scroll target — so the two controls were indistinguishable to a user. They were merged
+  //     into "Open →", which names the action; "Signals" named an internal concept
+  //     (NAMING_AUTHORITY.md).
+  //
+  //     Asserted on the count and on the label, not on the class alone: deleting the button while
+  //     leaving a second control labelled "Signals" elsewhere in the cluster is exactly the
+  //     half-done shape this is meant to catch, and a class-only check would pass through it.
+  (function () {
+    fresh("Red");
+    const host = document.getElementById("project-list");
+    host.innerHTML = "";
+    let threw = "";
+    try { window.LinApp.buildFallbackList(); } catch (e) { threw = String(e && e.message); }
+    assert("row actions: buildFallbackList does not throw", "", threw);
+
+    const actions = host.querySelector(".li-actions");
+    assert("row actions: the action cluster is present", true, !!actions);
+
+    assert("row actions: no Signals control remains", 0,
+      host.querySelectorAll(".li-signals").length);
+    assert("row actions: exactly one Open control", 1,
+      host.querySelectorAll(".li-open").length);
+
+    const open = host.querySelector(".li-open");
+    assert("row actions: the Open control is labelled for the action it performs",
+      "Open →", open ? open.textContent.trim() : "(none)");
+
+    // No button anywhere in the cluster still says "Signals", whatever class it carries.
+    const labels = actions
+      ? Array.prototype.map.call(actions.querySelectorAll("button"), (b) => b.textContent.trim())
+      : [];
+    assert("row actions: the cluster is Manage then Open, in that order",
+      "Manage|Open →", labels.join("|"));
+  })();
+
   // 5. The portfolio legend counts the project as analysed, not awaiting analysis.
   (function () {
     fresh("Green");

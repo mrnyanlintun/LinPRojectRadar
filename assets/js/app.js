@@ -1314,17 +1314,18 @@
           simChip +
           `<span class="li-state state-${esc(statusKey(p))}"${stateStyle}>${esc(state)}</span>` +
           `<span class="li-actions">` +
-            `<button class="btn small li-signals" data-signals="${esc(p.id)}" title="Open the signal ledger on the Detail page">Signals</button>` +
             `<button class="btn small li-manage" data-manage="${esc(p.id)}" title="Edit info, upload, archive, reset (inline)">Manage</button>` +
             `<button class="btn small li-open" data-open="${esc(p.id)}" title="Open project detail">Open →</button>` +
           `</span>`;
         btn.addEventListener("click", () => { selectProject(p.id); maybeFlyToSelection(p.id); });
-        // all three row buttons stop propagation so they never trigger row-select
-        btn.querySelectorAll(".li-signals, .li-manage, .li-open").forEach((b) =>
+        // both row buttons stop propagation so they never trigger row-select
+        btn.querySelectorAll(".li-manage, .li-open").forEach((b) =>
           b.addEventListener("click", (e) => e.stopPropagation()));
-        // Signals + Open → both land on Detail (the deep-analysis home; signals in view)
+        // The row used to carry a "Signals" button beside this one. Both handlers were the same
+        // call, openDetail(p.id), and openDetail takes only an id: no section, tab or scroll
+        // target, so the two controls were indistinguishable to a user. Merged into this one.
+        // "Open" names the action; "Signals" named an internal concept (NAMING_AUTHORITY.md).
         btn.querySelector(".li-open").addEventListener("click", () => openDetail(p.id));
-        btn.querySelector(".li-signals").addEventListener("click", () => openDetail(p.id));
         // Manage → the inline admin accordion directly under this row
         btn.querySelector(".li-manage").addEventListener("click", () => {
           if (window.LinIngest && LinIngest.openInlineManage) LinIngest.openInlineManage(p.id);

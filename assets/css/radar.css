@@ -568,14 +568,14 @@ body.t-light .theme-switch button.active { color: #fff; }
   background: transparent; color: var(--muted); cursor: pointer;
 }
 .li-open:hover { border-color: var(--phosphor); color: var(--phosphor); }
-/* per-row action cluster: Signals · Manage · Open → */
+/* per-row action cluster: Manage · Open → */
 .li-actions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
-.li-signals, .li-manage {
+.li-manage {
   font-family: var(--font-mono); font-size: 10px; white-space: nowrap;
   padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line);
   background: transparent; color: var(--muted); cursor: pointer;
 }
-.li-signals:hover, .li-manage:hover { border-color: var(--phosphor); color: var(--phosphor); }
+.li-manage:hover { border-color: var(--phosphor); color: var(--phosphor); }
 .list-item.mng-open { border-color: var(--phosphor); background: var(--surface-soft); }
 .list-item.mng-open .li-manage { border-color: var(--phosphor); color: var(--phosphor); }
 /* inline admin accordion (opens beneath the row inside its <li>) */
