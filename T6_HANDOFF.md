@@ -9,6 +9,58 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-02 — THE STORAGE REDESIGN IS BUILT: OBSERVATIONS, SELECTION, FOUR DEFECTS CLOSED
+
+Full detail in `REPORT_2026-08-02_storage-redesign.md`. **Server 1394/1394 across 25 suites
+(up from 1361/24), `tests_render.html` 49/49, `tests.html` 51/51, green on merged `main`.**
+Nine faults injected, all detected with distinct signatures, all reverted byte-identical,
+baseline re-run after every single fault. `server/app/simulation/` untouched.
+
+**Part F of the reconciliation report is implemented.** Migration **0014** adds `observations`
+(append-only, one row per project/period/document/field/entity, `as_of` from the document's own
+date or NULL — never the clock, `revision_of` promoted from `supersedes_document_id`).
+`signalInputs` is now the OUTPUT of `select_signal_inputs(observations, cutoff)` — same keys,
+same order, same quirks, so the 100 computations receive exactly what they always did.
+`field_registry.py` owns per-FIELD kinds (SNAPSHOT/EVENT/DELTA/PERMANENT), writer precedence
+tiers, and need declarations. Run 0014 on production BEFORE the first upload, with 0013.
+
+## The four defects
+
+- **Baseline preservation CLOSED**: `baselineContractSum` is the contract's own sum, PERMANENT;
+  a CO wins `bac` by declared tier as an executed amendment; the `baselineEnd` direct dict
+  write is gone; `projectuploadstatus` returns a `baseline` block (original + amendments).
+- **docDate CLOSED**: derived as the latest `as_of`, same rule as the cutoff — one answer.
+  Always ISO now; `historical_data`'s bare "2019" no longer leaks into it.
+- **P1 CLOSED**: portfolio vectors selected by `period_cutoff <= cutoff`, never `max(period)`.
+  Byte-identical recompute of period 1 after another project reaches period 2, fault-proven.
+- **Registers only CLOSED**: individual `rfi` routes to UNMAPPED (stored, `contributes:false`,
+  never asked for totals). The `add()` accumulators are gone; **`"rfi" < "rfi_log"` is gone BY
+  CONSTRUCTION and verified**: a check asserts `rfiCount` has exactly one writer.
+
+## Facts the next session needs
+
+- **Selection rules**: SNAPSHOT = lowest tier, then latest `as_of`; dated beats undated; wholly
+  undated ties fall back to the historical (rank, doc_type, sha256) LAST-write order — including
+  legacy first-non-null fields, a small documented divergence. PERMANENT = earliest, nothing
+  later replaces it. EVENT = latest per entity, then aggregate; stated total beats counting;
+  counted ledgers write NO `sources` entry (models_dq weighting parity).
+- **`rfiNumber` / `rfiResponseTimeDays` are permanently None** (only the individual form wrote
+  them); recorded in `field_registry.UNEMITTABLE_FIELDS`. A4.2's rfiNumber fallback abstains.
+- **On adminrecompute the reused cutoff now BOUNDS selection**: later-dated documents added to
+  the period after the fact no longer change the recomputed figures. Intended.
+- **`test_document_versioning` section 1 flipped meaning**: it used to reproduce the old
+  defects, it now asserts them dead, and its fixture pair orders the ORIGINAL's hash HIGHER
+  (equal-date tiebreak) so supersession is still provably what flips the outcome.
+- **D2 IS STILL OPEN AND NOW MORE VISIBLE**: coerced 0.0s persist as authoritative-looking
+  observation rows. The reconciliation report said fix D2 before the store; it was not in this
+  task's scope and changes validated instrument behaviour. It should be the next fix. D3
+  (wall-clock cutoff fallback) also unchanged; undated observations pass the cutoff filter.
+- **Layer 3's registry enforcement was NOT built** — it lives inside `simulation/`, which is
+  out of scope. Declarations exist in `field_registry.NEEDS` (`milestoneHistory` declared
+  unservable). Opening `simulation/` for enforcement is Lin's decision.
+- One of my own checks was vacuous (compared an expression to itself) and was rewritten before
+  it could lie — the P1 byte-identical comparison is the check that fault F1 turns red.
+
 # 2026-08-02 — FIVE CHECKS THAT CANNOT FAIL: TWO FIXED, TWO CONFIRMED, ONE ALREADY DONE
 
 Full detail in `REPORT_2026-08-02_vacuity-fixes.md`. Test files only, no application code touched.

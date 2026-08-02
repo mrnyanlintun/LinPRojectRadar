@@ -89,13 +89,31 @@ def monthly(sha: str, ev: int) -> dict:
                            "report_date": "2026-06-30"}}
 
 
+# STORAGE REDESIGN (0014). This section used to REPRODUCE the pre-0013 defects — the sha256
+# deciding which revision wins, and an additive field double-counting a revision. Both are
+# now asserted DEAD: recency on the value's own date decides between dated revisions
+# (regardless of hash), and register totals replace rather than sum.
+
 LOW, HIGH = "0" * 64, "f" * 64
-# monthly_report ev is a FIRST-wins field, so the lower hash wins regardless of which is newer.
-si_lo = assemble_signal_inputs([monthly(LOW, 4_000_000), monthly(HIGH, 5_000_000)])
-si_hi = assemble_signal_inputs([monthly(HIGH, 4_000_000), monthly(LOW, 5_000_000)])
-check(si_lo["ev"] == 4_000_000 and si_hi["ev"] == 5_000_000,
-      "without supersession, the sha256 decides which version wins, not recency",
-      f"{si_lo['ev']} / {si_hi['ev']}")
+
+
+def monthly_dated(sha: str, ev: int, report_date: str) -> dict:
+    d = monthly(sha, ev)
+    d["extraction"]["report_date"] = report_date
+    return d
+
+
+# The LOWER hash carries the LATER date: under the old fold the hash decided; now the date does.
+si_recency = assemble_signal_inputs([monthly_dated(LOW, 5_000_000, "2026-06-30"),
+                                     monthly_dated(HIGH, 4_000_000, "2026-05-31")])
+check(si_recency["ev"] == 5_000_000,
+      "between dated revisions, recency wins — the sha256 no longer decides",
+      f"ev={si_recency['ev']}")
+
+
+def rfi_log(sha: str, total: int) -> dict:
+    return {"sha256": sha, "doc_type": "rfi_log", "filename": "r.pdf",
+            "extraction": {"rfi_total": total, "log_date": "2026-06-30"}}
 
 
 def rfi(sha: str, count: int) -> dict:
@@ -103,10 +121,17 @@ def rfi(sha: str, count: int) -> dict:
             "extraction": {"rfi_count": count, "document_date": "2026-06-30"}}
 
 
-si_add = assemble_signal_inputs([rfi("1" * 64, 10), rfi("2" * 64, 12)])
-check(si_add["rfiCount"] == 22,
-      "without supersession, an additive field DOUBLE COUNTS a revision (10 then 12 -> 22)",
-      str(si_add["rfiCount"]))
+# A register revised within one period yields the revised figure, NEVER the sum (10 then 12
+# is 12, not 22) — and the individual rfi form contributes nothing at all: it routes to
+# unmapped, so the accumulating branch and the "rfi" < "rfi_log" ordering dependency are gone.
+si_reg = assemble_signal_inputs([rfi_log("1" * 64, 10), rfi_log("2" * 64, 12)])
+check(si_reg["rfiCount"] == 12,
+      "a register revised within one period yields the revised figure, not the sum",
+      str(si_reg["rfiCount"]))
+si_ind = assemble_signal_inputs([rfi("1" * 64, 10), rfi("2" * 64, 12)])
+check(si_ind["rfiCount"] is None,
+      "individual rfi forms route to unmapped and contribute nothing",
+      str(si_ind["rfiCount"]))
 
 # ---------------------------------------------------------------- fixtures
 
@@ -120,11 +145,15 @@ ORIGINAL_EV, REVISED_EV = 4_000_000, 5_000_000
 
 
 def find_ordered_pair() -> tuple[bytes, bytes]:
-    """Bytes whose hashes put the ORIGINAL first, so an unsuperseded original wins."""
+    """Bytes whose hashes make the ORIGINAL win the deterministic same-date tiebreak (higher
+    hash, the fold's historical last-write order), so an unsuperseded original wins and the
+    later supersedes claim is provably what flips the outcome. Both versions carry the SAME
+    report_date — an undeclared revision with a LATER date now wins on recency alone, which
+    section 1 asserts; this fixture is the equal-date case where only a declaration can."""
     for i in range(2000):
         a = f"%PDF-1.4 MONTHLY REPORT ORIGINAL {i}\n".encode()
         b = f"%PDF-1.4 MONTHLY REPORT REVISION {i}\n".encode()
-        if hashlib.sha256(a).hexdigest() < hashlib.sha256(b).hexdigest():
+        if hashlib.sha256(a).hexdigest() > hashlib.sha256(b).hexdigest():
             return a, b
     raise AssertionError("no ordered pair found")
 
@@ -167,9 +196,9 @@ post({"action": "adminmemberadd", "session_token": admin, "id": PROJ,
       "participant_id": pm_id, "project_role": "PM"})
 
 print("\n2. The fixture is built so the ORIGINAL wins without supersession")
-check(ORIGINAL_SHA < REVISED_SHA,
-      "the original's hash sorts lower, so it wins the tiebreak unaided",
-      f"{ORIGINAL_SHA[:8]} < {REVISED_SHA[:8]}")
+check(ORIGINAL_SHA > REVISED_SHA,
+      "the original wins the equal-date tiebreak unaided (higher hash, last-write order)",
+      f"{ORIGINAL_SHA[:8]} > {REVISED_SHA[:8]}")
 # The precondition, proved against the merge rather than assumed from the hash ordering.
 si_unsuperseded = assemble_signal_inputs([
     {"sha256": ORIGINAL_SHA, "doc_type": "monthly_report", "filename": "o.pdf",
