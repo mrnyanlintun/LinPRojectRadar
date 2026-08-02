@@ -9,6 +9,78 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-02 — THE PROJECT LIST CARRIES ONE CONTROL TO THE DETAIL PAGE, NOT TWO
+
+Full detail in `REPORT_2026-08-02_signals-open-merge.md`. **Server 1338/1338 across 23 suites,
+`tests_render.html` 49/49 (up from 43/43), `tests.html` 51/51, all green after merging
+`origin/main` at `757ee4b`.** No stored data altered, production not inspected, nothing under
+`server/app/simulation/` touched.
+
+**THEY REALLY WERE THE SAME CONTROL, and the premise was checked before anything was changed.**
+Both handlers were the identical expression `openDetail(p.id)`, and **`openDetail` takes only an
+id** — `showPage("detail")` with no section, tab, hash or scroll target, so the "opens the signal
+ledger" reading was not something the code path could express. `li-signals` / `data-signals`
+appeared in exactly three places repo-wide (the markup, the `stopPropagation` selector, the
+handler): **no delegated listener, and `data-signals` was written and never read.** The CSS rule
+bodies were byte-identical. The only real difference was the Signals tooltip, which **promised
+behaviour that did not exist**.
+
+**KEPT `Open →`.** "Open" names the action; "Signals" names an internal concept, and
+`NAMING_AUTHORITY.md` section 5 already records that signal-computation framing on the client is
+stale. The arrow is not an em dash and was left alone.
+
+**THE LABEL SWEEP FOUND NOTHING TO UPDATE, and that is the finding, not a skipped step.** Every
+`.js/.html/.css/.md` file was searched. The hits are the analytical vocabulary in `knowledge.js`,
+the retired standalone **Signals page** prose (`signals.js:397`, `BACKEND_CHANGES_NEEDED.md:371`),
+a `deepdive.js` metric box, and **`index.html:629`, the workspace tab strip's own `Signals` tab —
+a different control on a different surface, deliberately NOT renamed here.** The assistant's
+scripted guidance never named the button: `knowledge.js:88` says "use the project list", which was
+correct before and stays correct.
+
+**NOTHING COVERED THE ROW'S ACTION CLUSTER.** Group 4 called `buildFallbackList()` but asserted
+only the status word's colour and class; both buttons could have been deleted or duplicated and it
+stayed green. New group 4b asserts the counts AND the label sequence (`Manage|Open →`), because a
+count-only check passes if someone re-adds a differently-classed control still labelled "Signals".
+**Three faults, three DISTINCT signatures, restored to full green after each:** Signals button
+restored 47/49 (checks 30, 33); merged control relabelled "Signals" 47/49 (checks 32, 33); Open
+button duplicated 47/49 (checks 31, 33).
+
+**A ZERO THAT WAS NOT A REGRESSION — read this before diagnosing an empty list.** The research
+account first rendered **0 rows**, the exact shape of an over-refusing filter. It was not one:
+`routeFromView` in `auth.js` sends a research participant **without consent** to the consent
+screen, so `LinApp.init()` never runs and the portfolio is never loaded. After `consentgrant`, one
+row. Both account types then read identically (0 Signals controls, 1 Open, `Manage|Open →`,
+navigating to the right project with a populated detail root) — `buildFallbackList` has no
+`account_type` branch.
+
+**TWO ENVIRONMENT FACTS THAT COST TIME.**
+
+- **This container has no `.venv`, no server dependencies and no Chromium**, unlike the ones
+  earlier sessions describe. Build a throwaway venv in the scratchpad from
+  `server/requirements.txt`.
+- **`PYTHONIOENCODING=utf-8` IS REQUIRED to run the suites here.** `test_simulation.py` prints a
+  `μ`, stdout defaults to cp1252, and the suite dies with `UnicodeEncodeError` printing **no
+  `RESULT:` line at all** — the failure mode that skims like a clean run. With it set, 29/29.
+- **`preview_start` was NOT pointed at `Demo`.** Its `{url}` form needs no `launch.json`, so the
+  real FastAPI app was run on 127.0.0.1:8011 against a scratchpad sqlite and opened directly.
+  **Nothing under `Demo` was modified.** The two browser suites, which the app does not serve, ran
+  off a plain `http.server` on the repo root.
+
+**ONE FAILURE SEEN ONCE, NOT REPRODUCED, AND IT IS NOT MINE.** The first full run had
+`test_admin_ops_t7t8.py` at 56/59, all three reds in **Guarantee 7** (the tampered-export checksum
+checks). It has returned 59/59, then 60/60 after the merge, in **twelve consecutive runs** across
+both encodings against fresh databases. `server/app/research_export.py` is **uncommitted-modified
+by a parallel session**; the likely explanation is reading that file mid-edit with the tampered
+column momentarily outside the export's column set. **Flagged for whoever owns that change.**
+
+**I TOUCHED ONE FILE ANOTHER SESSION OWNS: `assets/js/app.js`**, which held their uncommitted
+`Methods & Framework` → `Methods and Framework` pill change at line 2285 plus a paired `index.html`
+edit. **It was not swept into my commit**: only my own hunk was staged with `git apply --cached`.
+The merge required their changes stashed; they were backed up first and `git stash pop` restored
+them cleanly. **Verified after the merge: their change is present and still uncommitted.**
+
+---
+
 # 2026-08-02 — ADMINISTRATION CONSOLIDATED, A PM AT CREATION, AND THE UNMEMBERED GAP CLOSED
 
 Full detail in `REPORT_2026-08-02_admin-and-membership.md`. **1268 server checks across 23
