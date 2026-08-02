@@ -1796,10 +1796,11 @@
   /* ---------- theme switch ---------- */
   function applyTheme(theme) {
     document.body.dataset.theme = theme;
-    // Miami and Maria are both LIGHT themes; the shared light-theme component
-    // rules key off this class so both get dark headings, status-marker
+    // Miami, Maria and Plain are all LIGHT themes; the shared light-theme component
+    // rules key off this class so all three get dark headings, status-marker
     // outlines, yellow-pill dark ink, light spider axes, etc.
-    document.body.classList.toggle("t-light", theme === "light" || theme === "maria");
+    document.body.classList.toggle(
+      "t-light", theme === "light" || theme === "maria" || theme === "plain");
     // NOTE: there is deliberately no [data-set-theme] sweep here. Nothing in the DOM has ever
     // carried that attribute — the theme switcher is the fly-out pills built in openThemeFlyout(),
     // which set their own active state on open and on click. The dead selector that used to sit
@@ -1821,6 +1822,38 @@
     // has to be recomputed.
     try { if (window.LinAtlas && LinAtlas.retheme) LinAtlas.retheme(); } catch (e) {}
     onMapThemeChange();   // swap the OpenFreeMap dark/positron style if the map is live
+  }
+
+  /* ---------- the server is the authority on which theme renders ----------
+     THIS IS NOT THE ENFORCEMENT. `themeset` is refused for a research account in
+     features.py's gate_action, before dispatch, and audited. This function is what makes the
+     refusal coherent to look at: it takes the server's answer, applies it, and records whether
+     the account may change it so the fly-out can leave the pills out rather than offering four
+     controls that would be refused.
+
+     themeFixed defaults to TRUE, so a call that fails or has not returned yet leaves the
+     switcher out. The failure direction matters: showing the control to a participant whose
+     status would then be refused is worse than an operational user briefly not seeing it. */
+  let themeFixed = true;
+  async function syncThemeFromServer() {
+    try {
+      if (!window.LinStore || !LinStore.postWithTimeout) return;
+      const token = (window.LinAuth && LinAuth.getToken && LinAuth.getToken()) || null;
+      if (!token) return;                       // signed out: localStorage stands
+      const r = await LinStore.postWithTimeout({ action: "themeget", session_token: token });
+      if (!r || r.ok !== true || !r.theme) return;
+      themeFixed = r.fixed === true;
+      if (r.theme !== document.body.dataset.theme) applyTheme(r.theme);
+      // A research account must not leave a chosen theme behind in this browser: the next load
+      // paints from localStorage before the round trip, and a stale value would flash the wrong
+      // stimulus at them every time.
+      if (themeFixed) {
+        try {
+          localStorage.setItem("lin-theme", r.theme);
+          localStorage.setItem("lin-radar-theme", r.theme);
+        } catch (e) {}
+      }
+    } catch (e) { /* non-fatal: the server still refuses what it refuses */ }
   }
 
   /* ---------- clock (timezone-aware via tz.js) ---------- */
@@ -2011,11 +2044,15 @@
      Gotham ("dark") is archived: renders if forced, but not offered here and
      not the default. Default is NYC — the remaining dark theme. */
   const DEFAULT_THEME = "newyork";
-  const OFFERED_THEMES = ["light", "newyork", "maria"];
+  const OFFERED_THEMES = ["plain", "light", "newyork", "maria"];
   const THEME_META = [
+    // Plain is first because it is the one meant for working in. The other three
+    // each have a mood; this one deliberately has none, and its title says so
+    // rather than describing a place.
+    { key: "plain",   label: "Plain", title: "Plain: white, high contrast, no decoration" },
     { key: "light",   label: "Miami", title: "Miami: always sunny" },
-    { key: "newyork", label: "NYC",   title: "NYC: aged bronze & gilt" },
-    { key: "maria",   label: "Maria", title: "Maria: baby pink & white" }
+    { key: "newyork", label: "NYC",   title: "NYC: aged bronze and gilt" },
+    { key: "maria",   label: "Maria", title: "Maria: baby pink and white" }
   ];
 
   /* ============================================================
@@ -2230,15 +2267,27 @@
   // Theme fly-out (§3): Miami · NYC · Maria pills + a gap-separated Sign out.
   function openThemeFlyout(anchor) {
     const cur = document.body.dataset.theme;
-    const pills = THEME_META.map((t) => ({
+    // A research account gets no theme pills at all: its theme is fixed on the server and every
+    // pill would post an action that is refused. Sign out remains, so the row is never empty.
+    const pills = (themeFixed ? [] : THEME_META.map((t) => ({
       label: t.label, title: t.title, active: t.key === cur,
       onClick: (btn) => {
         applyTheme(t.key);
+        // Persist per account. applyTheme has already written localStorage, which is what
+        // paints on the next load before the round trip; this is what makes the choice follow
+        // the account to another machine. A failure here is not surfaced: the theme still
+        // applied, and the next load falls back to this browser's copy.
+        try {
+          const token = (window.LinAuth && LinAuth.getToken && LinAuth.getToken()) || null;
+          if (token && window.LinStore && LinStore.postWithTimeout) {
+            LinStore.postWithTimeout({ action: "themeset", session_token: token, theme: t.key });
+          }
+        } catch (e) {}
         // keep the row open so the new active state reads; refresh actives
         anchor.ownerDocument.querySelectorAll(".dock-flyout .flyout-pill:not(.sep)")
           .forEach((x) => x.classList.toggle("active", x === btn));
       }
-    }));
+    })));
     pills.push({ label: "Sign out", sep: true, onClick: () => {
       Flyout.close();
       if (window.LinAuth && LinAuth.logout) LinAuth.logout();
@@ -2844,6 +2893,12 @@
     if (stored === "dark") stored = DEFAULT_THEME;         // Gotham archived → NYC
     const saved = OFFERED_THEMES.includes(stored) ? stored : DEFAULT_THEME;
     applyTheme(saved);
+    // ...then ask the server, which is the authority. localStorage paints first so the page
+    // does not flash a default before the round trip returns; the server's answer replaces it.
+    // For a research account that answer is the FIXED theme regardless of what this browser has
+    // stored, which is the whole point: a participant who had once chosen a theme, or who is
+    // using a machine where somebody else did, still sees the study's stimulus.
+    syncThemeFromServer();
 
     wireNav();
     initIconDock();

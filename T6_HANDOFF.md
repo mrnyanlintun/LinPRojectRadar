@@ -9,6 +9,85 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-02 — A SECOND THEME: PLAIN. WHITE, HIGH CONTRAST, AND FIXED FOR RESEARCH ACCOUNTS
+
+Full detail in `REPORT_2026-08-02_light-theme.md`. **Server 1634/1634 across 30 suites,
+`tests_render.html` 62/62, `tests.html` 51/51.** Nine faults injected, all detected, all reverted
+byte for byte.
+
+## TWO TRAPS THAT WILL COST THE NEXT SESSION TIME IF IT DOES NOT KNOW THEM
+
+**A CSS transition freezes the computed value in this container.** `body` has
+`transition: background .35s, color .35s`. With the document timeline frozen at 0, both
+`CSSTransition` objects sit at `currentTime: 0` and never advance, so `getComputedStyle(body)`
+returns the PREVIOUS theme's colours indefinitely. My first surface read said `rgb(10,14,18)` on a
+white theme and looked like a plain failure; with `transition: none` the same element snaps to
+`rgb(245,246,248)`. **Suppress transitions before reading any computed style here**, or you will
+report a false failure. A probe element with `background: var(--page-bg)` is the quick cross-check:
+it has no transition and resolves correctly.
+
+**A REVERT needle must be as unique as the injection needle.** The globe fault reverted on
+`#0e3049`, which already existed in the Miami and Maria blocks: three matches, harness aborted,
+fault left applied. Use a marker value that exists nowhere else. Also, again: a needle written
+with `\n` matches nothing in these CRLF files.
+
+## What was added
+
+- **`body[data-theme="plain"]`**, a fourth theme. Variable set only, no component rewritten.
+  White surfaces, neutral greys, one blue accent `#0b6bcb`. `applyTheme()` adds `t-light` for it,
+  which is why several existing `body.t-light` overrides corrected themselves for free.
+- **Contrast is MEASURED, not asserted.** `tools/test_theme_plain.py` reads the hex values out of
+  `radar.css` and computes the ratios, so a comment cannot make it pass. Worst text is `--phosphor`
+  at 5.28 on white and 4.88 on the page; everything else is 5.7 or better.
+- **`participants.theme`** (migration 0017), nullable. NULL means "has not chosen" and resolves to
+  `newyork`, which is what keeps every existing account's appearance unchanged.
+
+## THE RESEARCH GATE IS IN THREE PLACES AND THAT IS DELIBERATE
+
+`themeset` in `RESEARCH_FORBIDDEN_ACTIONS` (pre-dispatch, audited); `a_themeset` refuses again;
+and `resolve_theme` IGNORES the stored column entirely for a research account. `themeget` is
+deliberately NOT gated. The fixed theme is `newyork`, the existing default, not the new one: the
+study's stimulus must not move because a theme was added for operational users.
+
+**A check that could not fail, found by injection.** Removing `themeset` from the gate left the
+suite GREEN, because the handler caught it. Defence in depth working, and a check blind to half
+its own claim. Two checks were added: the gate asserted structurally, and `a_themeset` called
+DIRECTLY to reach the inner layer with the gate bypassed.
+
+**The gate's refusal is now per action.** It used to write `project_creation_denied` and a sentence
+about projects for anything in the set, which would have been a false audit record for a theme.
+
+## Other things in this change
+
+- **The caption above Radar, Map and Globe is gone, with no replacement.** It described radar
+  geometry (meaningless on the other two) and promised a governance decision with authority,
+  documentation and a contractor fairness gate. The decision card was dead code on retired category
+  ids and the fairness gate was removed because it read a field nothing writes.
+- **The globe sea on this theme is `#a9c6da`**, using the ABSTRACT treatment. The photographic
+  treatment multiplies `material.color` into the texture, so the other light themes' `#0e3049`
+  darkens the Blue Marble further, which is the hole in the page. Land 3.56, graticule 3.58, worst
+  marker 3.46. **Nothing outside this theme's block was touched, so the dark themes are unchanged
+  by construction.** Miami still has the near-black sea; changing it is Lin's call.
+- **The logo sweep needs NO light variant, and that is measured.** 576 samples under the sweep's
+  own radius: zero transparent, mean `rgb(81,84,99)`, luminance 0.09. It lies entirely on the
+  wheel's own dark face, which is a raster and does not vary by theme.
+- **All four dock icons animate now.** All four always had a rule declared and running; two moved
+  almost nothing. `dock-book-breathe` was `rotateY(-13deg)` with NO PERSPECTIVE, which is not a
+  hinge but `scaleX(cos 13°)`: the whole animation was **0.308 px**, measured (matrix
+  `a=0.9744`). With `perspective(70px)` and 26 degrees it travels 1.891 px. The menu emblem's 3.3px
+  blip moved 0.36 of alpha and now uses `dock-amb-pulse` (0.38 to 1.0 plus a slight scale).
+  Transform and opacity only, so theme independent, and both were already inside the existing
+  reduced-motion block.
+
+## Open
+
+- About 40 hardcoded shadows and scrims remain (`rgba(0,0,0,.35)` and friends). Legible on this
+  theme, heavier than it wants. Inventory is in the report so the next pass need not re-derive it.
+- `.theme-switch` is dead code; the switcher has been the dock fly-out for some time.
+- Project detail, administration, the Files tab, the assistant and the knowledge pages were NOT
+  verified by computed style: their panels are built by JS and need auth and data. They read the
+  same tokens, but that is not the same as having checked.
+
 # 2026-08-02 — THE FILES TAB: THE ARORA DIRECTORY, AUTOMATIC FILING, AND THE TWO FILED STATES
 
 Full detail in `REPORT_2026-08-02_files-tab.md` — **read its first section**, which is how the

@@ -84,6 +84,10 @@ class Participant(Base):
     # T2. Display label for an operational account. Never set for a research participant, whose
     # only identifier anywhere in the system stays the pseudonymous code.
     display_name: Mapped[str] = mapped_column(Text, nullable=True)
+    # Migration 0017. NULL means "has not chosen" and resolves to the default theme, which is
+    # what keeps an existing account's appearance unchanged until they choose. Ignored entirely
+    # for a research account: app/theme.py returns the fixed theme regardless of this value.
+    theme: Mapped[str] = mapped_column(Text, nullable=True)
     eligibility_status: Mapped[str] = mapped_column(Text, nullable=True)
     scenario_set: Mapped[str] = mapped_column(Text, nullable=True)
     condition_sequence: Mapped[str] = mapped_column(Text, nullable=True)

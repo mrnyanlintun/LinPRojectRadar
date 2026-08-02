@@ -122,10 +122,38 @@ GATED_ACTIONS: dict[str, str] = {
 # next handler. `create` is listed alongside `projectcreate` because it is the legacy facade path
 # to the same outcome; sessionless callers are unaffected, exactly as with the flags above, so the
 # A1b contract fixtures are untouched.
+#
+# `themeset` is here for a different reason from the two below it, and the reason is worth
+# stating. Project creation is refused because a participant would end up holding a project the
+# decision sequence cannot act on. A theme change is refused because it would change the
+# STIMULUS: on the plain theme a status is a dark mark on white, on the dark themes a bright
+# mark on near-black, and how prominent a Red reads is exactly the kind of thing that could move
+# a decision. A participant who changed theme would be running a different experiment, and
+# nothing in the export would say which one. Hiding the control is a suggestion; this is the
+# enforcement. `themeget` is NOT gated: a research account may ask what it renders, and it is
+# told the fixed theme.
 RESEARCH_FORBIDDEN_ACTIONS: frozenset[str] = frozenset({
     "projectcreate",
     "create",
+    "themeset",
 })
+
+# Per action: the audit event to write, and the sentence the participant reads. Keyed by the
+# lowered action, with None as the fallback for a forbidden action nobody has written a reason
+# for yet, so adding to the set above without adding here degrades to a true-but-vague message
+# rather than to a false one about projects.
+_RESEARCH_REFUSALS: dict[str | None, tuple[str, str]] = {
+    "projectcreate": ("project_creation_denied",
+                      "not available: projects are created by the researcher for this study. "
+                      "Your assigned projects appear in your portfolio."),
+    "create": ("project_creation_denied",
+               "not available: projects are created by the researcher for this study. "
+               "Your assigned projects appear in your portfolio."),
+    "themeset": ("theme_change_denied",
+                 "not available: the interface theme is fixed for this account so that every "
+                 "participant sees the same thing."),
+    None: ("research_action_denied", "not available for this account."),
+}
 
 
 # ---------------------------------------------------------------- storage
@@ -248,11 +276,15 @@ def gate_action(session: Session, action: str, payload: dict, settings) -> dict 
 
     if lowered in RESEARCH_FORBIDDEN_ACTIONS \
             and caller.participant.account_type == "research":
-        audit(session, "project_creation_denied", participant_id=caller.participant_id,
+        # The audit event and the sentence are per action, not one generic pair. An audit row
+        # reading `project_creation_denied` for a refused theme change would be a false record
+        # of what the participant tried to do, and a message about projects would not tell them
+        # anything true about what just happened.
+        event, reason = _RESEARCH_REFUSALS.get(lowered, _RESEARCH_REFUSALS[None])
+        audit(session, event, participant_id=caller.participant_id,
               action=lowered, account_type=caller.participant.account_type)
         session.commit()
-        return err("not available: projects are created by the researcher for this study. "
-                   "Your assigned projects appear in your portfolio.")
+        return err(reason)
 
     if key is None:
         return None

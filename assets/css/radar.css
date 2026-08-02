@@ -3101,14 +3101,42 @@ body.dock-idle-paused .dock-menu .menu-emblem-svg circle { animation-play-state:
 .dock-nav-btn[data-nav="handbook"]:not(:hover):not(:focus-visible):not(.active):not([aria-expanded="true"]) .book-closed {
   animation: dock-book-breathe 5s ease-in-out 1.4s infinite;
 }
-@keyframes dock-book-breathe { 0%,100% { transform: rotateY(0deg); } 50% { transform: rotateY(-13deg); } }
+/* THIS KEYFRAME USED TO MOVE THE COVER BY THREE TENTHS OF A PIXEL.
+   It was `rotateY(-13deg)` with no perspective. A rotateY with no perspective is not a hinge:
+   it degenerates to scaleX(cos t), and cos(13deg) is 0.9744, so on the 12px-wide cover inside a
+   26px icon the entire animation was a 0.308px horizontal squash. Measured, not guessed: the
+   computed matrix came back a=0.9744 b=0 c=0 d=1 and the bounding box went 12.000px to 11.692px.
+   The rule was declared, running and infinite the whole time, which is why it read as "does not
+   animate" rather than as a bug.
+
+   The fix keeps the author's gesture and makes it real: `perspective()` in front of the rotate
+   turns it into an actual swing about the spine, the same motion the hover page-turn makes, and
+   the angle opens enough to be seen at 26px. At -26deg with perspective the cover edge travels
+   about 2px, which is roughly eight percent of the icon: visible in peripheral vision, still a
+   dock rather than a focal point. Do not remove the perspective and keep the angle; without it
+   the angle is the only thing doing any work and it is doing almost none. */
+@keyframes dock-book-breathe {
+  0%,100% { transform: perspective(70px) rotateY(0deg); }
+  50%     { transform: perspective(70px) rotateY(-26deg); }
+}
 
 /* 4. Menu emblem (delay 2.1s): the middle-bar blip dot pulses slowly, matching
    the radar's visual language (chosen over a gear rotation — the glyph has no
    gear, but it does carry a radar blip on its middle bar). */
+/* The dot this animates is r=1.8 in a 24px viewBox drawn at 22px, so it renders about 3.3px
+   across. `dock-amb-blip` alone is an opacity swing of 0.42 to 0.78, and 0.36 of alpha on a
+   three-pixel dot is a flicker you do not notice next to a radar wedge turning through 360
+   degrees one row above it. It is the SAME gesture as the radar blips, which is right, so this
+   keeps that gesture and gives it enough amplitude to survive at this size: the alpha opens
+   wider and the dot breathes very slightly, which is what a return on a scope does. Still one
+   visual language, not a second one. */
 .dock-menu:not(:hover):not(:focus-visible) .menu-emblem-svg circle {
   transform-box: fill-box; transform-origin: center;
-  animation: dock-amb-blip 2.8s ease-in-out 2.1s infinite;
+  animation: dock-amb-pulse 2.8s ease-in-out 2.1s infinite;
+}
+@keyframes dock-amb-pulse {
+  0%,100% { opacity: .38; transform: scale(.88); }
+  50%     { opacity: 1;   transform: scale(1.18); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3584,6 +3612,161 @@ body[data-theme="maria"] #lin-access-denied {
 /* Maria-specific chrome: rose topbar hairline. (Active-fill controls take
    white on the deep-rose --phosphor — 5.67:1 — via the shared light rule.) */
 body[data-theme="maria"] .topbar { border-bottom-color: rgba(168,66,117,0.28); }
+
+/* ============================================================
+   PLAIN — the working theme for practising directors
+   ------------------------------------------------------------
+   White surfaces, neutral greys, one blue accent, no decoration. The other
+   three themes each have a mood; this one deliberately has none. It is meant
+   to look like professional software on an ordinary office machine, read by
+   someone senior on a screen of unknown quality, so every choice below is
+   made for legibility rather than for character.
+
+   EVERY RATIO HERE WAS MEASURED, NOT ASSUMED. Text is checked against both
+   --surface (#ffffff) and --page-bg (#f5f6f8); graphical fills are checked
+   against whatever they actually sit on. The numbers are in the report and
+   are re-measured by tools/test_theme_plain.py, which reads them out of this
+   file rather than trusting a comment.
+
+   WHY THE STATUS COLOURS ARE DARK RATHER THAN BRIGHT. The shared palette's
+   fills (#2ee66b, #ffe066) are tuned for a dark field and fall to about 1.3:1
+   on white, which is invisible. On this theme the status LABEL carries the
+   meaning and the colour supports it, so the colours are darkened until they
+   pass AA as text and the label is never omitted. Yellow and Amber remain
+   close to each other by nature; that is exactly why the label is mandatory
+   here and why nothing on this theme shows status as a bare coloured dot. */
+body[data-theme="plain"] {
+  --page-bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-soft: #eef0f4;
+  --line: #d8dce3;
+  --line-strong: #b6bcc7;
+
+  --text: #1a1d23;      /* 16.88 on white, 15.61 on page */
+  --heading: #0f1216;   /* 18.78 / 17.36 */
+  --muted: #545b66;     /*  6.85 /  6.34 */
+  --faint: #5f6672;     /*  5.93 /  5.49 — darker than the shared #5c6678 so it
+                            still clears AA on --surface-soft, where the shared
+                            value lands at 4.25 */
+  --ink-dim: #545b66;
+
+  /* One accent, used for links, eyebrows, focus and active fills. */
+  --phosphor: #0b6bcb;  /* 5.28 on white, 4.88 on page */
+  --accent: #0b6bcb;
+  --flow-accent: #0b6bcb;
+  --eyebrow: #545b66;
+  --gold-text: #545b66;                 /* no gold on this theme */
+  --brand-bronze: #1a1d23;              /* wordmark reads as plain dark text */
+  --brand-verdigris: #0b6bcb;
+
+  /* Status AS TEXT. All five measured on #ffffff and on #f5f6f8; the lower of
+     the two is quoted. Every one clears AA (4.5) with room to spare. */
+  --status-green-text:    #12703a;   /* 6.17 white / 5.70 page */
+  --status-yellow-text:   #6f5200;   /* 7.28 / 6.74 */
+  --status-amber-text:    #9a4700;   /* 6.41 / 5.93 */
+  --status-red-text:      #b81420;   /* 6.65 / 6.15 */
+  --status-complete-text: #1060a8;   /* 6.44 / 5.96 */
+
+  /* Status AS A GRAPHIC (blips, pins, bars). On a white field the bright
+     shared fills disappear, so the graphic takes the same dark value as the
+     label. A blip is then a dark saturated dot on white rather than a pale
+     smudge, and it needs no outline to survive. */
+  --status-green:    #12703a;
+  --status-yellow:   #6f5200;
+  --status-amber:    #9a4700;
+  --status-red:      #b81420;
+  --status-complete: #1060a8;
+  --status-nodata:   #9aa2ae;
+  --status-outline:  transparent;    /* the fills are dark; an outline would muddy them */
+  --status-outline-w: 0;
+  /* Ink used ON a status fill (a filled pill). White on all five: the lowest
+     is green at 6.17 and red at 6.65. */
+  --status-ink-complete: #ffffff;
+  --status-ink-green:    #ffffff;
+  --status-ink-yellow:   #ffffff;
+  --status-ink-amber:    #ffffff;
+  --status-ink-red:      #ffffff;
+
+  /* Globe. THE SEA IS PALE ON PURPOSE. The other light themes tint the
+     photographic Earth with a near-black navy, and on a white page that
+     sphere reads as a hole punched in the layout. This theme uses the
+     abstract treatment instead, so the sea is a flat colour this file
+     controls rather than a texture multiplied down into darkness, and the
+     three contrasts that matter were each measured against it:
+       land #3f6478 on sea            3.56  (coastlines stay legible)
+       graticule #41637a on sea       3.58
+       worst status marker on sea     3.46  (green, the palest of the five)
+     All three clear the 3:1 floor for a graphical object. Lightening the sea
+     further raises the marker contrast but weakens the sphere's edge against
+     the page, which is why it stops here. */
+  --globe-treatment: abstract;
+  --globe-sphere: #a9c6da;
+  --globe-land: #3f6478;
+  --globe-land-opacity: 0.95;
+  --globe-graticule: #41637a;
+  --globe-graticule-opacity: 0.30;
+  --globe-atmosphere: #7fb2d4;          /* defines the limb against a white page */
+  --globe-marker-halo: #ffffff;
+
+  /* Map, matching the globe so switching view is not a change of subject. */
+  --atlas-ocean: #a9c6da;
+  --atlas-land: #eef2f5;
+  --atlas-land-stroke: #7d98ab;
+  --atlas-graticule: rgba(31, 61, 84, 0.16);
+  --atlas-marker-halo: #ffffff;
+
+  --sector-design: #0b6bcb;
+  --sector-construction: #545b66;
+  --sector-hybrid: #6f5200;
+  --scope-label: #545b66;
+
+  /* Radar zones: faint neutral bands, not coloured glows. */
+  --zone-green: rgba(18,112,58,.10);
+  --zone-amber: rgba(154,71,0,.10);
+  --zone-red: rgba(184,20,32,.10);
+  --zone-crit: rgba(184,20,32,.16);
+  --zone-yellow: rgba(111,82,0,.10);
+  --zone-blue: rgba(16,96,168,.10);
+  --ring-line: rgba(26,29,35,.22);
+
+  --grid-opacity: 0;                     /* no blueprint grid */
+  --glass-blur: none;                    /* plain surfaces, no glass */
+  --shadow: 0 1px 2px rgba(16,24,40,.06), 0 8px 24px rgba(16,24,40,.08);
+}
+/* A flat page. No gradient, no glow: the other themes layer a field behind the
+   content and this one deliberately does not, so a director's screen renders
+   one solid colour rather than a band that shifts as they scroll. */
+body[data-theme="plain"],
+body[data-theme="plain"] #lin-login,
+body[data-theme="plain"] #lin-access-denied,
+body[data-theme="plain"] #lin-consent {
+  background: var(--page-bg);
+}
+body[data-theme="plain"]::before { background: none; }
+body[data-theme="plain"] .topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+/* The nav logo's teal drop-shadow is a dark-theme glow and reads as a smudge
+   on white. It is the only place the logo carried a hardcoded colour. */
+body[data-theme="plain"] .nav-logo-img { filter: none; }
+
+/* --- hardcoded colours this theme has to correct ---------------------------
+   The survey found 77 colour literals outside token definitions. Most are
+   decorative and already scoped inside a theme block, and several already
+   carry a `body.t-light` override which this theme inherits because
+   applyTheme() adds that class for it. These two do not, and both are white
+   or near-white on an assumed dark field, so on a white page they vanish.
+   Corrected here rather than in the shared rule, so no existing theme's
+   appearance changes: nobody should find their interface altered because a
+   theme was added for somebody else. The full list is in the report. */
+body[data-theme="plain"] .blip.selected .blip-label {
+  fill: var(--heading);            /* was #eef1f7, invisible on a white stage */
+}
+body[data-theme="plain"] .scatter-legend-pill.active {
+  background: var(--surface-soft); /* was rgba(255,255,255,.04), no wash at all on white */
+  border-color: var(--line-strong);
+}
 
 /* ============================================================
    MOBILE — 640px and below (iPhone SE, 14, 14 Pro Max)
