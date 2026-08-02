@@ -56,7 +56,7 @@ DOC_TYPES: tuple[str, ...] = (
     "time_phased_schedule",
     "contract_value",
     "schedule_of_values",
-    "submittal",
+    "submittal_register",
     "correspondence_notice",
     "risk_register",
     "commissioning_report",
@@ -167,7 +167,7 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "document_risk_score", "document_date", "rfi_count", "rfi_period_days", "rfi_number",
         "submitted_date", "response_date", "response_time_days",
     ],
-    "submittal": [
+    "submittal_register": [
         "document_risk_score", "document_date", "submittals_total", "submittals_rejected",
     ],
     "oac_minutes": [
@@ -249,7 +249,7 @@ def extraction_fields_for(doc_type: str) -> list[str]:
     Returns a fresh list each call — callers historically mutated the result (appending a
     project-specific key before prompting), and a shared list would corrupt the table.
     """
-    return list(_EXTRACTION_FIELDS.get(doc_type, _DEFAULT_FIELDS))
+    return list(_EXTRACTION_FIELDS.get(canonical_doc_type(doc_type), _DEFAULT_FIELDS))
 
 
 def guess_type_from_filename(filename: str) -> str | None:
@@ -317,14 +317,44 @@ def guess_type_from_filename(filename: str) -> str | None:
     return None
 
 
+# --------------------------------------------------------------------------- legacy aliases
+#
+# THE SUBMITTAL SPLIT. "submittal" named two documents that behave differently.
+#
+# An individual submittal is one item moving through review: it has a state (submitted, under
+# review, approved, revise-and-resubmit, rejected), it is an EVENT, and a corrected resubmission
+# is a NEW event about the same item. A submittal register is the log of all of them: it is a
+# SNAPSHOT, and a later revision of the register REPLACES the earlier one.
+#
+# The extraction mapping only ever asked for `submittals_total` and `submittals_rejected`, which
+# are register fields. The individual form has no fields, no state, and no item identity anywhere
+# in this pipeline, so it was never actually supported: a document that is one submittal produced
+# either nulls or, worse, the model's guess at a total. The register is what the platform keeps.
+#
+# The canonical name is now `submittal_register`, so the type says which of the two it is.
+# `submittal` REMAINS ACCEPTED and normalises to the register, because `Document.doc_type` rows
+# already carry the old string and dropping it would make every stored submittal silently stop
+# contributing at the next recompute. Silent loss is the failure mode this codebase refuses.
+LEGACY_TYPE_ALIASES: dict[str, str] = {
+    "submittal": "submittal_register",
+}
+
+
+def canonical_doc_type(doc_type: str) -> str:
+    """The current name for a possibly-legacy type string. Identity for everything else."""
+    return LEGACY_TYPE_ALIASES.get(doc_type, doc_type)
+
+
 def is_mapped(doc_type: str) -> bool:
     """True iff `doc_type` is one the extraction pipeline recognises.
 
     Deliberately checks DOC_TYPES rather than the _EXTRACTION_FIELDS keys: the two happen to
     coincide today, but DOC_TYPES is what the classifier prompt offers, and a type the classifier
     cannot emit is not "mapped" no matter what the field table says.
+
+    Legacy aliases resolve first, so a stored `submittal` row is still mapped.
     """
-    return doc_type in DOC_TYPES
+    return canonical_doc_type(doc_type) in DOC_TYPES
 
 
 if __name__ == "__main__":

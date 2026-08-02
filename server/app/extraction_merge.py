@@ -89,7 +89,7 @@ from typing import Any
 
 # Sibling module (written in parallel) owns the doc-type registry. UNMAPPED is the label
 # used for doc types the legacy chain has no branch for; is_mapped(doc_type) -> bool.
-from .extraction_fields import UNMAPPED, is_mapped
+from .extraction_fields import UNMAPPED, canonical_doc_type, is_mapped
 
 __all__ = [
     "assemble_signal_inputs",
@@ -119,7 +119,7 @@ __all__ = [
 DOC_RISK_DOC_TYPES: frozenset[str] = frozenset(
     {
         "rfi",
-        "submittal",
+        "submittal_register",
         "oac_minutes",
         "correspondence_notice",
         "risk_register",
@@ -135,7 +135,7 @@ DOC_RISK_DOC_TYPES: frozenset[str] = frozenset(
 _RISK_BRANCH_TYPES: frozenset[str] = frozenset(
     {
         "rfi",
-        "submittal",
+        "submittal_register",
         "oac_minutes",
         "correspondence_notice",
         "risk_register",
@@ -539,7 +539,7 @@ def _merge_one(acc: _Acc, doc_type: str, ex: dict) -> None:
                 if n(ex.get(src)) is not None:
                     acc.set_field(dst, n(ex.get(src)))
 
-        if doc_type == "submittal":  # .gs 931
+        if doc_type == "submittal_register":  # .gs 931
             if n(ex.get("submittals_total")) is not None:
                 acc.set_field("submittalsTotal", n(ex.get("submittals_total")))
             if n(ex.get("submittals_rejected")) is not None:
@@ -783,7 +783,9 @@ def assemble_signal_inputs(documents: list[dict]) -> dict:
     """
     acc = _Acc()
     for d in _ordered_docs(documents):
-        doc_type = str(d.get("doc_type") or "")
+        # Canonicalised, so a row stored as the retired "submittal" still reaches the
+        # submittal_register branch instead of silently contributing nothing.
+        doc_type = canonical_doc_type(str(d.get("doc_type") or ""))
         if not doc_type or doc_type == UNMAPPED or not is_mapped(doc_type):
             continue  # contributes nothing; reported by assembly_report()
         ex = d.get("extraction") or {}
@@ -842,7 +844,7 @@ def assembly_report(documents: list[dict]) -> dict:
 
     for d in _ordered_docs(documents):
         sha = str(d.get("sha256") or "")
-        doc_type = str(d.get("doc_type") or "")
+        doc_type = canonical_doc_type(str(d.get("doc_type") or ""))
         filename = str(d.get("filename") or "")
         if not doc_type or doc_type == UNMAPPED or not is_mapped(doc_type):
             unmapped.append({"sha256": sha, "doc_type": doc_type or UNMAPPED,

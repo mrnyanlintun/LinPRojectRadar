@@ -9,6 +9,83 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-02 — DOCUMENT TABLE RECONCILIATION (RUN 1), AND THE FAIRNESS GATE REMOVED
+
+Full detail in `REPORT_2026-08-02_document-reconciliation.md`. **Server 1361/1361 across 24 suites,
+`tests_render.html` 49/49, `tests.html` 51/51, green on merged `main`.** 15 faults injected for the
+Part 4 checks, all detected, all reverted and rechecked byte-for-byte.
+
+**THE STORAGE REDESIGN IS NOT IMPLEMENTED.** This session reconciled, reported, and made the four
+small changes. The design is Part F of the report and Lin reads it before anything is built.
+
+## The three rules Lin suspected were absent. All three CONFIRMED absent.
+
+- **Change order state gating.** Worse than suspected: `extraction_fields.py` never asks for a
+  state at all, so there is nothing to gate on. A draft and an executed CO are the same document.
+- **Contract Value baseline preservation.** `change_order` is rank 2 and `contract_value` rank 0,
+  so the CO folds last and overwrites `bac`. `baselineEnd` is worse: a direct dict write that
+  bypasses `set_field`. The original baseline is destroyed and has nowhere to live.
+- **Field report atomic vs period-to-date.** No cumulative-versus-atomic flag exists on any field
+  of any type. `weatherDaysLost` is the ambiguous one and the pipeline cannot tell which it is.
+
+## Facts worth carrying, verified against the code not the audits
+
+- **BOTH PREREQUISITE AUDITS ARE STALE.** The evidence-policy audit is not on `main` at all: it is
+  on `t15-local-unpushed`, dated 2026-08-01, and its headline CUSUM finding is fixed. The pipeline
+  audit says no evidence-policy report existed, which was true when written. Verify against code.
+- **`_period_history` now supplies real cpi/spi series** from earlier periods' live
+  `ComputedResult` rows, `period < period`, minimum two points. Period-safe by construction. The
+  brief's premise that there is no series concept is no longer quite true — for those two fields.
+- **Only three non-replacing operations exist in the whole merge**: `add()` on `rfiCount` and
+  `changeOrderCount`, and `keep_max()` on `rfiNumber`. Everything else is last-wins or
+  first-non-null. The double-count surface is small and precisely located.
+- **`"rfi" < "rfi_log"` is load-bearing.** It is the only thing stopping the individual-RFI sum
+  from surviving alongside the log's absolute total. Rename either type and the double-count
+  returns. Nothing records this.
+- **`docDate` is one field written by 16 document types**, last-wins by sort order, so the as-of
+  date is whichever type sorts last, not the latest date. `_derive_cutoff` uses a different and
+  better rule (max parseable date). Two notions of "as of" that disagree.
+- **The table and the code agree on all 28 document types exactly.** No additions, no omissions.
+- **`_DOC_TYPE_RANK` is a code-only precedence concept** the table has no equivalent for:
+  baseline 0 (contract_value, schedule_of_values, time_phased_schedule), revision 2 (change_order,
+  schedule_update), everything else 1.
+
+## What changed in code
+
+- **The `fairnessSensitive` gate is gone** from `models_decision.py`. Proven unable to fire: not in
+  `SIGNAL_INPUT_KEYS`, written by no merge branch. **The `fairnessGateRequired` key STAYS, always
+  False**, because `app.js:1625/1669/1682` reads it to render a checkbox and gate submit, and this
+  task could not touch the frontend. The browser's own `decision.js:228` gate is untouched.
+- **`submittal` is now `submittal_register`**, with `LEGACY_TYPE_ALIASES` mapping the old string.
+  The alias is not optional: stored `Document.doc_type` rows carry `submittal`, and dropping it
+  would make every one silently stop contributing at the next recompute.
+  **Individual submittals now classify as a register and will be asked for totals they lack**, so
+  they will yield nulls or a guess. Routing them to `UNMAPPED` instead is Lin's decision.
+
+## Things that cost this session time
+
+- **A source-scan helper that was reading 24% of the file.** Hand-rolled comment/docstring
+  stripping desynchronised and silently dropped 735 of `extraction_merge.py`'s 964 lines,
+  including every merge branch. A fault injected into a branch left the suite green. **Use
+  `tokenize` plus `ast`, never line-by-line triple-quote toggling.** Keep string literals: a merge
+  branch names its field as a literal, which is what the scan is for.
+- **A suite that died instead of failing.** A raising module killed the file at module scope and it
+  printed no `RESULT:` line, reading exactly like a clean run. Wrap calls to the code under test.
+- **CRLF.** A multi-line fault needle written with `\n` matches nothing in these files and reports
+  "found 0". Use single-line anchors or explicit `\r\n`.
+- **A revert needle that was not unique** left a fault applied in `extraction_fields.py`; the
+  baseline re-check caught it. Deletion faults must replace with a unique marker, never `""`.
+
+## Open, and Lin's to decide
+
+- Individual submittals: register-with-nulls, or `UNMAPPED`.
+- **D2 (malformed numerics becoming a confident `0.0`) should be fixed BEFORE an observation store
+  is built**, not with it: otherwise a coerced zero becomes a durable, authoritative-looking row.
+- P1 (portfolio vectors by `max(period)`) is closed by the design's cutoff-aligned selector, and
+  the report states the rule. It needs a check that recomputes an earlier period after a later one.
+- The evidence-policy audit should be landed on `main` or discarded.
+- `UI_ONLY_DOC_TYPES` is still dead code.
+
 # 2026-08-02 — FOUR NOTICE ITEMS, AND unported_modules CORRECTED
 
 Full detail in `REPORT_2026-08-02_notices-and-unported.md`. **Server 1338/1338 across 23 suites,

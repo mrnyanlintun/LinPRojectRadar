@@ -3,7 +3,8 @@ B1.1 Conservative Dominance and B3.1 ABM Governance Layer, ported from assets/js
 (classifyConflict / deriveHealthState / deriveDecision — PCEIF Layer-2 governance rules).
 
 INPUT CONTRACT: the ASSEMBLED PROJECT, as for B1.2–B1.4 — si["signals"] holding {evm, mc,
-cusum, doc} each with .status, {cusum} additionally with .breached, and si["fairnessSensitive"].
+cusum, doc} each with .status, {cusum} additionally with .breached. The fairness gate that once read
+si["fairnessSensitive"] is removed: nothing writes that key, so it could never fire.
 The two modules are projections of one derivation: Conservative Dominance records
 {state, conflict} (the instrument's m09_conservative), ABM Governance records
 {state, authority, action, fairness_gate} (m19_abm).
@@ -78,7 +79,6 @@ def _derive_decision(project: dict) -> dict:
     health = _derive_health_state(project)
     conflict = _classify_conflict(project)
     escalate = health in ("Red", "Red-review")
-    fairness_gate = escalate and project.get("fairnessSensitive") is True
 
     if health == "Complete":
         action = "Project complete: proceed to close-out and any liability-period monitoring"
@@ -90,11 +90,8 @@ def _derive_decision(project: dict) -> dict:
         authority = "Project manager / Controls lead"
         documentation = "Monthly signal log entry"
     elif escalate:
-        action = ("Request contractor explanation and recovery-plan review; fairness gate "
-                  "required before any formal action" if fairness_gate
-                  else "Recovery-plan review and management escalation")
-        authority = ("Program director / PMO with contract-administration awareness"
-                     if fairness_gate else "Program director / PMO lead")
+        action = "Recovery-plan review and management escalation"
+        authority = "Program director / PMO lead"
         documentation = ("Full signal package, assigned owner, rationale, response timeframe, "
                          "audit record")
     else:
@@ -115,7 +112,23 @@ def _derive_decision(project: dict) -> dict:
         "action": action,
         "authority": authority,
         "documentation": documentation,
-        "fairnessGateRequired": fairness_gate,
+        # THE FAIRNESS GATE IS REMOVED, NOT WIRED. It was `escalate and
+        # si["fairnessSensitive"] is True`, and `fairnessSensitive` is not in
+        # SIGNAL_INPUT_KEYS: no branch of extraction_merge writes it and documents.py never
+        # supplies it, so on the server the condition has always been False and could not be
+        # anything else. It selected a different action sentence and a different escalation
+        # authority, so a reader of this module would reasonably believe two escalation paths
+        # exist here. One does.
+        #
+        # The KEY stays, always False, because assets/js/app.js reads `d.fairnessGateRequired`
+        # to decide whether to render an acknowledgement checkbox and whether to allow submit.
+        # Dropping the key would change the response shape for a frontend this task may not
+        # touch. Removing the dead condition is the change; removing the contract is not.
+        #
+        # The browser's own decision.js:228 still computes a live gate from
+        # project.fairnessSensitive, which ingest.js does write. That is the legacy client
+        # path and a separate decision; nothing here affects it.
+        "fairnessGateRequired": False,
     }
 
 
