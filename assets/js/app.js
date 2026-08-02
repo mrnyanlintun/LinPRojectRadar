@@ -2345,7 +2345,7 @@
     el.innerHTML =
       '<button type="button" class="dock-emblem" title="Back to top" aria-label="Scroll back to top">' +
         '<img src="logo.png" alt="" />' +
-        '<span class="dock-emblem-sweep" aria-hidden="true"></span>' +
+        '<span class="logo-sweep" aria-hidden="true"></span>' +
       '</button>' +
       '<nav class="dock-nav" aria-label="Primary navigation">' +
         DOCK_NAV.map((d) =>

@@ -93,6 +93,69 @@ fields (`signal_inputs`, `category_statuses`, `project_status`, `portfolio_snaps
 per project is not stored anywhere at all** — no questionnaire item, no column — confirmed by
 reading both `intake.json` and `debrief.json` in full. Adding any of these is a column-list
 edit once told which ones the analysis plan needs.
+# 2026-08-02 — THE LOGO'S RADAR SWEEP TURNS (DECLARED, NOT OBSERVED)
+
+Full detail in `REPORT_2026-08-02_logo-sweep.md`. **Server 1517/1517 across 28 suites,
+`tests_render.html` 49/49, `tests.html` 51/51.** CSS only, no library, `logo.png` untouched.
+
+## COMPOSITING IS STILL UNAVAILABLE. The animation is declared, not seen.
+
+Measured before claiming anything, and the numbers are worth keeping because the next session will
+want them: **0 requestAnimationFrame frames in 1515 ms**, `document.visibilityState` is `"hidden"`,
+and `document.timeline.currentTime` reads **0 across four samples over 2.1 seconds**. The animation
+exists and reports `playState: "running"`, but the timeline never advances so no frame is drawn.
+A screenshot returns "the Browser pane is not displayed, so the page is not compositing frames."
+**A frame counter is the right check here**: it reads zero when nothing is painted, and unlike a
+pixel test it cannot be satisfied by a page flattened to black.
+
+## Where the logo appears: SIX places, not two
+
+`index.html` lines 40 (favicon), 280 (sign-in), 360 (access-denied), 383 (consent), 422 (top bar),
+and `assets/js/app.js:2347` (dock emblem). Five now carry the sweep.
+
+- **The favicon cannot be animated** and was left alone. It is browser tab chrome; the only way
+  would be swapping `href` on a timer, which is an animation library by another name.
+- **There is no separate loading screen.** The four `auth.js` screens are all hidden until auth
+  resolves, so the first thing an unauthenticated visitor sees is the sign-in panel. The map's
+  loader uses `LinWorkingRobot`, not the logo.
+- **The dock already had its own sweep** (`.dock-emblem-sweep`, a `--phosphor` quadrant turning over
+  the whole button including the gold rim). Replaced by the shared `.logo-sweep`.
+
+## A ROTATING QUADRANT DOES NOT WORK. Do not try it again.
+
+The artwork already carries a bright quarter of the radar face, twelve o'clock to three o'clock.
+Rotating a second quadrant above it puts two equally large bright blocks in different places at
+every angle but the start: two sweeps on one instrument. Built it, rendered it at 96 px, confirmed
+it, discarded it. Masking or patching the drawn quadrant was rejected because the face under it
+carries range arcs and coloured returns the rest of the face does not have, so covering it means
+repainting the artwork.
+
+**What reconciles is a narrow leading edge with a short tail**, which does not compete with the
+drawn quadrant because it is not the same kind of shape: the line reads as the sweep, the quadrant
+reads as the sector it lit.
+
+## Numbers that matter if you touch this
+
+- `logo.png` is 1531 by 1413; **the wheel centre is 765,705, which is the image centre to within a
+  pixel**, so the sweep centres with `inset: 0; margin: auto`. The radar face radius is 400 image
+  pixels = **56.6% of image height**. That is the one magic number, and it is why the sweep stops
+  before the gold rim.
+- The three panel logos are 56 by 56 with **no `object-fit`**, so the image is squashed and the face
+  is a slight ellipse; they get 54.4% instead. The dock is `object-fit: cover` into a square, so
+  56.6% is right there.
+- **The bright core is ten degrees wide and must stay wide.** The first version used half a degree,
+  which at the dock's eleven pixel radius is a tenth of a pixel: it anti-aliased away entirely and
+  the logo looked static. Check any change at 40 px, not at 96.
+- Reduced motion stops it at the three o'clock radius, which is where the artwork's own bright edge
+  is drawn, so the frozen state is the logo as illustrated.
+
+## An injection that silently failed to apply, again
+
+The no-layout-shift check would not go red under `position: static !important`. That looked like a
+weak check; it was a weak **fault**. The overlay is a `<span>`, so as a static *inline* box width
+and height do not apply and it collapsed to zero, shifting nothing. The fault needs
+`display: block` too; the panel then grows by exactly the 40 px injected. **Assert the fault
+changed something before believing the check survived it.**
 
 # 2026-08-02 — RUN 2: PORTFOLIO HEALTH APPENDS, OVERWRITESIGNAL VALIDATES ITS FIELD NAME, USER ARCHIVE AND DELETE BUILT
 

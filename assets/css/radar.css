@@ -361,6 +361,69 @@ body::before {
   border-radius: 8px;
   filter: drop-shadow(0 0 18px rgba(63, 202, 166, 0.28));
 }
+/* ---------- the logo's radar sweep -------------------------------------------
+   The artwork (logo.png) already carries a translucent blue quadrant drawn from
+   twelve o'clock round to three o'clock, with its bright edge on the three
+   o'clock radius. This adds the motion: a narrow sweep, bright on its leading
+   edge and fading behind, turning clockwise so that it leaves the artwork's own
+   bright edge and comes back round to it.
+
+   WHY A NARROW SWEEP RATHER THAN A ROTATING QUADRANT. A full quadrant overlay
+   was built and looked wrong: away from the start angle the eye sees the drawn
+   quadrant AND a second block of the same size somewhere else, which reads as
+   two sweeps on one instrument rather than one instrument sweeping. A narrow
+   leading edge does not compete with the drawn quadrant; it reads as the sweep
+   line and the quadrant reads as the sector it has lit. That is how a real
+   plan position indicator looks, and it is the only version of this that
+   reconciles with artwork we are not allowed to redraw. See the report.
+
+   GEOMETRY. logo.png is 1531 by 1413 and the wheel's centre sits at 765,705,
+   which is the image centre to within a pixel, so the sweep centres on the box.
+   The dark radar face inside the gold ring has a radius of 400 image pixels,
+   which is 56.6% of the image height: that is where the percentage below comes
+   from, and it is why the sweep stops short of the rim instead of turning over
+   the gold.
+
+   COLOUR IS FIXED, NOT THEMED. It matches a raster that does not change with
+   the theme, so it does not use --phosphor. Matching the artwork is the point.
+
+   The sweep never takes a click: it is inert and aria-hidden, the image
+   underneath is the fallback, and if the browser cannot paint a conic gradient
+   the span simply renders nothing and the logo is unchanged. */
+.logo-mark { position: relative; display: inline-block; line-height: 0; }
+.logo-sweep {
+  position: absolute; inset: 0; margin: auto;
+  height: 56.6%; aspect-ratio: 1; border-radius: 50%;
+  pointer-events: none;
+  /* `from 40deg` puts the leading edge (the last stop, at 50deg into the gradient)
+     on the three o'clock radius, which is where the artwork's own bright edge is
+     drawn. The tail runs back counter-clockwise from there, so the sweep turns
+     clockwise off that edge and comes round to it again.
+
+     THE BRIGHT CORE IS TEN DEGREES WIDE, AND THAT WIDTH IS THE WHOLE POINT. The
+     first version used half a degree, which is honest arithmetic and invisible
+     in practice: at the dock's eleven pixel radius half a degree is a tenth of
+     a pixel, so it anti-aliased away to nothing and the logo simply looked
+     static. Ten degrees is about two pixels at the smallest size and two and a
+     half at the largest, which is a sweep you can actually see. Do not narrow
+     it back without checking it at forty pixels, not at ninety-six. */
+  background: conic-gradient(from 40deg,
+    rgba(96, 190, 250, 0)     0deg,
+    rgba(96, 190, 250, .16)  24deg,
+    rgba(110, 205, 252, .40) 40deg,
+    rgba(160, 240, 255, .90) 46deg,
+    rgba(210, 252, 255, 1)   50deg,
+    rgba(96, 190, 250, 0)    51deg,
+    rgba(96, 190, 250, 0)   360deg);
+  animation: logo-sweep 8s linear infinite;
+}
+/* The login, access-denied and consent panels draw the logo into a 56 by 56 box
+   with no object-fit, so the image is squashed by its 1531:1413 aspect and the
+   round face becomes a slight ellipse. A circle of the mean diameter sits on it
+   to within about a pixel, which is closer than a translucent glow can show. */
+.login-logo .logo-sweep { height: 54.4%; }
+@keyframes logo-sweep { to { transform: rotate(360deg); } }
+
 .brand-lockup { display: flex; flex-direction: column; gap: 2px; }
 /* ---------- Lady-Liberty wordmark (solid bronze + oxidized bronze) ----------
    Weathered-copper statuary treatment, IDENTICAL across all themes for brand
@@ -2868,16 +2931,15 @@ body[data-theme="newyork"] .kn-article .collapse-title { font-family: Georgia, "
 }
 .icon-dock.scrolled .dock-emblem { opacity: 1; visibility: visible; transform: none; }
 .dock-emblem img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.dock-emblem-sweep {
-  position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
-  background: conic-gradient(from 0deg,
-    color-mix(in srgb, var(--phosphor) 25%, transparent) 0deg 90deg,
-    transparent 90deg 360deg);
-  animation: dock-sweep 8s linear infinite;
-}
+/* The dock emblem used to carry its own sweep: a quarter-circle of --phosphor
+   turning over the WHOLE button, gold rim included, which neither matched the
+   artwork's blue nor stopped at the radar face. It now shares .logo-sweep with
+   every other place the logo appears, so there is one sweep on this site and
+   not two designs of one. object-fit: cover crops this 1531 by 1413 image to a
+   centred square, so the face is 56.6% of the box on both axes and the shared
+   rule needs no override here. */
 .dock-emblem:hover { border-color: var(--phosphor); }
 .dock-emblem:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 3px; }
-@keyframes dock-sweep { to { transform: rotate(360deg); } }
 
 .dock-nav { display: flex; flex-direction: column; gap: 6px; }
 .dock-nav-btn {
@@ -3105,7 +3167,12 @@ body.t-light .flyout-pill.primary { color: #fff; }
 .dock-flyout.flyout-up .flyout-pill.sep { margin-left: 0; margin-top: 14px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .dock-emblem-sweep { animation: none; }
+  /* The sweep stops where it starts, and its start angle is the three o'clock
+     radius, which is exactly where the artwork's own bright edge is drawn. So
+     for a reader who has asked for less motion the logo is still the logo: the
+     sweep sits on the edge the illustrator already put there rather than
+     freezing at some arbitrary angle. */
+  .logo-sweep { animation: none; }
   .icon-dock, .dock-emblem, .dock-label { transition: none; }
   /* fade only — no slide, no stagger */
   .flyout-pill,

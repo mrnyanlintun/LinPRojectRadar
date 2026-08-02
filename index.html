@@ -277,7 +277,7 @@
   <!-- Login Screen — two paths (T2). See assets/js/auth.js. -->
   <div id="lin-login" style="display:none;">
     <div class="login-panel">
-      <div class="login-logo"><img src="logo.png" alt="Opus Gubernatio" width="56" height="56"></div>
+      <div class="login-logo"><span class="logo-mark"><img src="logo.png" alt="Opus Gubernatio" width="56" height="56"><span class="logo-sweep" aria-hidden="true"></span></span></div>
       <p class="login-eyebrow">PROJECT DECISION SUPPORT PLATFORM</p>
       <h1 class="login-title">Opus Gubernatio</h1>
       <p class="login-sub">Sign in with the credentials provided to you, or with your
@@ -357,7 +357,7 @@
        deactivated account. -->
   <div id="lin-access-denied" style="display:none;">
     <div class="login-panel">
-      <div class="login-logo"><img src="logo.png" alt="Opus Gubernatio" width="56" height="56"></div>
+      <div class="login-logo"><span class="logo-mark"><img src="logo.png" alt="Opus Gubernatio" width="56" height="56"><span class="logo-sweep" aria-hidden="true"></span></span></div>
       <h2 class="login-title" style="color:var(--alarm-red)">Sign-in Not Accepted</h2>
       <p class="login-sub" id="access-denied-message">This platform is restricted to authorized users only.</p>
       <button onclick="LinAuth.logout()" class="btn-secondary">Back to sign-in</button>
@@ -380,7 +380,7 @@
        document, and the two are not interchangeable. -->
   <div id="lin-consent" style="display:none;">
     <div class="login-panel consent-panel">
-      <div class="login-logo"><img src="logo.png" alt="Opus Gubernatio" width="56" height="56"></div>
+      <div class="login-logo"><span class="logo-mark"><img src="logo.png" alt="Opus Gubernatio" width="56" height="56"><span class="logo-sweep" aria-hidden="true"></span></span></div>
       <p class="consent-draft-banner">DRAFT. NOT YET REVIEWED. Placeholder pending researcher
         and IRB review. This is not approved consent language.</p>
       <h1 class="login-title">Research Consent</h1>
@@ -419,7 +419,7 @@
 
     <header class="topbar">
       <a class="nav-logo" href="#" onclick="event.preventDefault(); if (window.LinApp) LinApp.showPage('portfolio');">
-        <img src="logo.png" alt="Opus Gubernatio" class="nav-logo-img">
+        <span class="logo-mark"><img src="logo.png" alt="Opus Gubernatio" class="nav-logo-img"><span class="logo-sweep" aria-hidden="true"></span></span>
         <span class="brand-lockup">
           <span class="nav-logo-text"><span class="brand-init">O</span>pus <span class="brand-init">G</span>ubernatio</span>
           <span class="brand-tagline">PROJECT DECISION SUPPORT</span>
