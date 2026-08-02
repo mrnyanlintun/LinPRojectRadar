@@ -1873,7 +1873,21 @@
       if (page === "admin" && window.LinAdmin) LinAdmin.render();
       // T6. The folded surfaces render on arrival like every other page here.
       if (page === "admin" && window.LinAdminOps) LinAdminOps.boot();
-    } catch (e) { /* page is already visible; a render hiccup must not block nav */ }
+    } catch (e) {
+      // The page is already visible, so navigation has succeeded and must stay succeeded — but
+      // a swallowed render error is how a fatal ReferenceError left the detail page blank for
+      // two days with a clean console. Report through the two shapes the codebase already has:
+      // console.error, the per-item render shape (buildRadar, buildFallbackList), and
+      // LinStore.banner, the user-visible non-fatal shape ("Couldn't reach the project store").
+      console.error("Page render failed for", page, "—", e && e.message, e);
+      try {
+        if (window.LinStore && LinStore.banner) {
+          LinStore.banner("The " + page + " page failed to render: " +
+            ((e && e.message) || "unknown error") + ". The rest of the application still works.",
+            "warn");
+        }
+      } catch (e2) { /* the banner must never turn a render failure into a nav failure */ }
+    }
     window.scrollTo({ top: 0 });
   }
 

@@ -857,8 +857,11 @@
     // already reads the stored row and already returns "Awaiting analysis" honestly when there
     // is none, so it needs no gate at all; asking it directly is both simpler and correct.
     const state = (typeof deriveHealthStateLabel === "function") ? deriveHealthStateLabel(p) : deriveHealthState(p);
-    const stateKey = (window.LinResults && LinResults.hasResult(p))
-      ? String(state).toLowerCase().replace("-review", "") : "empty";
+    // `populated` used to be hasSignals(p), the legacy blob. Its meaning now is "this project
+    // has a stored computed result" — the same gate stateKey and the provenance line need,
+    // because buildProvenanceTrace reads the stored row through getProjectFusion.
+    const populated = !!(window.LinResults && LinResults.hasResult(p));
+    const stateKey = populated ? String(state).toLowerCase().replace("-review", "") : "empty";
 
     // ---- collapsible-section badges ----
     const cs = (window.collapsibleSection) || function (id, t, c) { return c; };

@@ -3,11 +3,65 @@
 > user-facing surface quotes verbatim. It lives in the repository so it cannot fail to reach a
 > session, which it did three times while it lived outside. Read it before this handoff, not after.
 
-> **HANDOFF NUMBERING: APPEND, DO NOT ASSUME THE NEXT NUMBER IS FREE.** Five sessions collided on
-> section numbers on 2026-08-02 alone: T21 was taken twice, T23 was renumbered from T21 after the
-> fact, T24 was taken twice, and this section was renumbered from T24 to T26 at merge time. Before writing a section, `grep -n "^# T" T6_HANDOFF.md` and take one above the
-> highest you see. If a merge conflict shows two sections with the same number, renumber yours
-> rather than the one already on `main`, and keep both.
+> **SECTION NUMBERING IS RETIRED, from 2026-08-02.** Five sessions collided on T-numbers in one
+> day (T21 taken twice, T23 renumbered from T21, T24 taken twice, T26 renumbered from T24 at
+> merge time). New sections are headed **`# <yyyy-mm-dd> — <task name>`** and appended at the TOP,
+> newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
+> The historic T-numbered sections below keep their names as history.
+
+# 2026-08-02 — THE BLANK DETAIL PAGE FIXED; MAP AND GLOBE HAVE NOTHING TO PLACE
+
+Full detail in `REPORT_2026-08-02_detail-page-and-markers.md`. **1159 checks across 22 suites,
+`tests.html` 51/51, `tests_render.html` 37/37.** Playwright + pre-installed Chromium; compositing
+proven first. No `preview_start` tooling exists in this container.
+
+**MAP AND GLOBE, the lead: the render path is HEALTHY and the #198 fix is intact — verified in a
+browser by giving two throwaway projects fixture coordinates, placing both, forcing the exact slim
+refresh that used to strip locations, and watching both markers survive (store rows slim:true and
+still carrying lat).** The remaining explanation is that **the projects have no coordinates**:
+`projectcreate` with a real address in this container yields `lat: null` and geocodeError "The
+location service could not be reached…", Nominatim being unreachable through the proxy, so no
+session has ever produced a live geocode. **Stopped there as instructed — nothing was backfilled;
+production not inspected.** The one-look test for Lin: open a project on Render and read either
+"Matched to: …" or the geocode error; if the latter, re-saving the address retries it. Also worth
+knowing: `w_save` on a CHANGED address re-geocodes, and an unreachable geocoder then **erases**
+existing coordinates rather than keeping them.
+
+**THE BLANK PAGE IS FIXED.** `populated` was `hasSignals(p)` gating the provenance line; its
+correct value now is the stored-row gate its two siblings got in T12b:
+`const populated = !!(window.LinResults && LinResults.hasResult(p))`. Detail renders for BOTH
+account types (operational: full page, Red badge, provenance line, 11 sections; research: full
+page, honest "Awaiting analysis"). Screenshots looked at, not just taken.
+
+**THE CATCH AT `showPage` NOW REPORTS.** Navigation still wins, and a caught render error goes to
+`console.error` (the existing per-item render shape) AND `LinStore.banner(..., "warn")` (the
+existing user-visible non-fatal shape, role="status"). Proven live with an injected fault: banner
+text shown verbatim, Handbook still navigable.
+
+**`tests_render.html` NOW ACTUALLY CALLS `LinDetail.render`** (group 3b, into the real
+#detail-root; the harness had the element and never loaded detail.js). Proven able to fail by
+restoring the dangling reference: 33/37, exactly the four new assertions red. Group 3's misleading
+"The detail page State badge renders" heading is corrected to what it checks, a pure label helper.
+
+**D1.3 ABSTAINS BY ABSENCE.** `portfolio.py` no longer emits the Trajectory Classifier with a
+colour beside `insufficient_data: true`; with no usable history it is absent from the snapshot's
+results, matching the project-level contract. With real history it computes unchanged (verified
+directly: Red, "CPI trend: -3.3% per period"). **The task named portfolio.py, so the standing
+simulation/ prohibition was overridden for that one file only.** On screen the portfolio panel now
+shows four rows and no green-dot-from-nothing. `test_workspace_t3t5` Guarantee 9 upgraded from a
+bare `== 5` count to named-key assertions plus "no sub-result carries a colour and an
+insufficiency flag together" — all three proven to fail (49/52) with the fault restored. Note the
+server path still passes `history=None`, so D1.3 currently abstains on every snapshot; it starts
+reporting if the portfolio path ever gets the `_period_history` treatment.
+
+**REPORTED NOT FIXED: fixing the blank page brings D7.2 back.** The Governance Decision card
+renders again and is still the browser-derived four-branch `if` — seen live: badge Red beside an
+action plan reading "All categories Green → Routine monitoring" on the same card. The stages 7–8
+finding stands; it was moot only while the page was blank. Also: the provenance line prints module
+ids ("A1.1 Monte Carlo EAC Forecast") in user-facing text, against NAMING_AUTHORITY, pre-existing
+and visible again now the page renders.
+
+---
 
 # T26 — THE PROJECT DETAIL PAGE IS BLANK, AND THAT IS WHY NOBODY SEES THE BROWSER-DERIVED RECOMMENDATION. BROWSER-VERIFIED. READ-ONLY.
 

@@ -251,8 +251,17 @@ snap2 = result2b["result"]["portfolio_snapshot"]
 check(snap2 is not None and snap2.get("insufficient_data") is not True,
       "with 2+ live results and real signal data, a real portfolio snapshot is stored",
       str(snap2)[:150] if snap2 else None)
-check(isinstance(snap2, dict) and "results" in snap2 and len(snap2["results"]) == 5,
-      "the real snapshot carries all 5 D1 sub-results")
+# The server path supplies no history (documents.py passes None), so D1.3 Trajectory
+# Classifier abstains BY ABSENCE — the same contract as project-level modules, where an
+# abstention never appears with a colour. Four results, and cat8_3 specifically absent:
+# asserting only a count would pass again if a different module vanished for a wrong reason.
+check(isinstance(snap2, dict) and "results" in snap2 and len(snap2["results"]) == 4,
+      "the real snapshot carries the 4 computable D1 sub-results",
+      str(sorted(snap2.get("results", {}).keys())))
+check("cat8_3_trajectory_classifier" not in snap2.get("results", {}),
+      "D1.3 abstains by absence with no history — never a colour beside insufficient_data")
+check(all(not v.get("insufficient_data") for v in snap2.get("results", {}).values()),
+      "no stored D1 sub-result carries a colour and an insufficiency flag together")
 
 
 # ---------------------------------------------------------------- T8: geocoding on create

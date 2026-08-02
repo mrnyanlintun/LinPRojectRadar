@@ -92,6 +92,12 @@
 <script src="assets/js/store.js"></script>
 <script src="assets/js/atlas.js"></script>
 <script src="assets/js/app.js"></script>
+<!-- detail.js is loaded so group 3b can call LinDetail.render for real. Nothing in this
+     harness called it before 2026-08-02, which is how a fatal ReferenceError inside its
+     template literal left the detail page blank for two days while all 33 checks stayed
+     green. It defines window.LinDetail and wires one document-level listener; it renders
+     nothing until render(id) is called, so it cannot disturb the fixtures. -->
+<script src="assets/js/detail.js"></script>
 <!-- knowledge.js is loaded ONLY so that assertion group 7 can prove it parsed. It defines two
      globals and does no work until renderKnowledgePage() is called, which returns immediately
      when #knowledge-root is absent, so it cannot disturb the fixtures above. See group 7 for
@@ -187,17 +193,44 @@
       false, !!host.querySelector(".awaiting-state"));
   })();
 
-  // 3. The detail page State badge renders.
-  //    stateLabel() is what the detail head and the list row both put in that slot; it used to
-  //    gate on hasSignals() and emit the retired "Awaiting ingest".
+  // 3. The State LABEL helper returns the stored status.
+  //    This heading used to claim "The detail page State badge renders", which it never checked:
+  //    stateLabel() is a pure function, and calling it proves nothing about the page. The page
+  //    itself is rendered — for real — by group 3b below. This group keeps only what it actually
+  //    establishes: the label text the badge slot receives.
   (function () {
     const p = fresh("Yellow");
     const label = window.LinApp.stateLabel
       ? window.LinApp.stateLabel(p)
       : (window.deriveHealthState ? window.deriveHealthState(p) : "(unavailable)");
-    assert("detail State badge: shows the stored status", "Yellow", label);
-    assert("detail State badge: does not say the retired 'Awaiting ingest'",
+    assert("state label helper: returns the stored status", "Yellow", label);
+    assert("state label helper: does not say the retired 'Awaiting ingest'",
       false, /awaiting ingest/i.test(String(label)));
+  })();
+
+  // 3b. The detail page ACTUALLY renders: LinDetail.render(id) into the real #detail-root.
+  //     This is the check that was missing when 062731b left `populated` dangling inside the
+  //     innerHTML template literal: render() threw a ReferenceError before assigning anything,
+  //     showPage()'s catch swallowed it, and the page was blank for two days while this harness
+  //     stayed 33/33 — because nothing here called render(). Proven able to fail by restoring
+  //     the dangling reference: the three assertions below go red.
+  (function () {
+    const p = fresh("Yellow");
+    const root = document.getElementById("detail-root");
+    root.innerHTML = "";
+    let threw = "";
+    try { window.LinDetail.render(p.id); } catch (e) { threw = String(e); }
+    assert("LinDetail.render: does not throw on a stored-only project", "", threw);
+    assert("LinDetail.render: the panel has content, not a blank page",
+      true, !!(root.innerHTML && root.innerHTML.length > 500));
+    const badge = root.querySelector(".li-state");
+    assert("LinDetail.render: the rendered State badge shows the stored status",
+      "Yellow", badge ? badge.textContent.trim() : "(no badge rendered)");
+    assert("LinDetail.render: the Governance Decision section is present",
+      true, !!root.querySelector(".detail-decision"));
+    // Leave no globe or listener state behind for later groups.
+    try { if (window.LinDetail.teardown) LinDetail.teardown(); } catch (e) {}
+    root.innerHTML = "";
   })();
 
   // 4. The list row is coloured.

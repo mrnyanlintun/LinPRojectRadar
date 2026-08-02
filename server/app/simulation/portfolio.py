@@ -117,10 +117,15 @@ def compute_portfolio(portfolio: list[dict], current_id, history: list[dict] | N
         "evidence_metric": f"Portfolio percentile: {int(js_round(composite_rank * 100))}%",
     }
 
+    # D1.3 abstains by ABSENCE when there is no usable history, matching the project-level
+    # contract: an abstaining module is absent from module_results entirely, never present with
+    # a colour. The Apps Script emitted status_color "Green" beside insufficient_data: true here,
+    # and every display renders the colour without reading the flag — a green dot over "No
+    # history available". Diverges from the validated JavaScript deliberately, in the same way
+    # and for the same reason as the D1 divergences recorded in VALIDATION.md.
     history = history or []
-    trajectory_status = "Green"
-    trajectory_desc = "No history available"
     trend = 0.0
+    trajectory_classifier = None
     if len(history) >= 2:
         recent = history[-3:]
         cpi_values = [h.get("signal_inputs", {}).get("cpi") for h in recent
@@ -132,12 +137,12 @@ def compute_portfolio(portfolio: list[dict], current_id, history: list[dict] | N
                                  else "Amber" if trend >= -0.03 else "Red")
             trajectory_desc = (f"CPI trend: {'+' if trend >= 0 else ''}"
                                f"{_num_str(js_round(trend * 1000) / 10)}% per period")
-    trajectory_classifier = {
-        "method_class": "Trajectory_Classifier", "status_color": trajectory_status,
-        "trend": _round3(trend), "periods_analyzed": len(history),
-        "insufficient_data": len(history) < 2,
-        "evidence_metric": trajectory_desc,
-    }
+            trajectory_classifier = {
+                "method_class": "Trajectory_Classifier", "status_color": trajectory_status,
+                "trend": _round3(trend), "periods_analyzed": len(history),
+                "insufficient_data": False,
+                "evidence_metric": trajectory_desc,
+            }
 
     similar = [v for v in vectors if v["id"] != current_id
                and math.sqrt(sum((v["v"][i] - current_vec[i]) ** 2 for i in range(3))) < 0.15]
@@ -164,17 +169,20 @@ def compute_portfolio(portfolio: list[dict], current_id, history: list[dict] | N
         "evidence_metric": f"Composite anomaly score: {int(js_round(composite_anomaly * 100))}%",
     }
 
+    results = {
+        "cat8_1_isolation_forest": isolation_forest,
+        "cat8_2_portfolio_outlier": portfolio_outlier,
+    }
+    if trajectory_classifier is not None:
+        results["cat8_3_trajectory_classifier"] = trajectory_classifier
+    results["cat8_4_cross_project_pattern"] = cross_project
+    results["cat8_5_anomaly_score"] = anomaly_result
+
     return {
         "ok": True,
         "id": current_id,
         "portfolio_size": n,
-        "results": {
-            "cat8_1_isolation_forest": isolation_forest,
-            "cat8_2_portfolio_outlier": portfolio_outlier,
-            "cat8_3_trajectory_classifier": trajectory_classifier,
-            "cat8_4_cross_project_pattern": cross_project,
-            "cat8_5_anomaly_score": anomaly_result,
-        },
+        "results": results,
         # The Apps Script stamps new Date().toISOString() here; no module reads the clock.
         "period_cutoff": str(period_cutoff),
     }
