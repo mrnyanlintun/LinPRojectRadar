@@ -9,6 +9,70 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-02 — ADMINISTRATION CONSOLIDATED, A PM AT CREATION, AND THE UNMEMBERED GAP CLOSED
+
+Full detail in `REPORT_2026-08-02_admin-and-membership.md`. **1268 server checks across 23
+suites, 29 browser checks, `tests.html` 51/51, `tests_render.html` 43/43.** Ten faults injected,
+**all ten produce the expected red**; three checks were rewritten because the injection showed
+they proved nothing. Compositing proven
+before anything was read off the page. **No overlap with the parallel geocoding session:
+`geocode.py` and `documents.py` are untouched.** No stored data altered or deleted, production
+not inspected.
+
+**PRODUCTION STARTS FRESH. That is now a standing fact and it settles two open items.**
+
+- **Migration 0013 is applied BEFORE the first upload, not as a repair.** It was carried as
+  "written and verified, production not yet migrated, the supersede path will fail there until it
+  is". On an empty database there is nothing to repair: it is part of bringing the schema up, and
+  it stops being a risk to sequence against live data. Still Lin's to run, and it must be run
+  before the first document is uploaded.
+- **The coordinate backfill question is closed.** There are no stored projects to backfill. Every
+  project from now on is geocoded at creation by the path the parallel session rebuilt.
+
+**A PROJECT CAN NO LONGER EXIST WITHOUT A PM.** `projectcreate` takes `pm_participant_id` and
+writes the membership row in the same transaction as the project, so a refusal leaves neither.
+The legacy `create` on the facade writes the creator's PM row the same way. Naming someone else
+as PM is admin-only and audited.
+
+This fixed a silent defect: the old "Assign as PM (optional)" made **two** calls, and the second
+was refused every time with "this project already has an active PM" because creation had already
+made the caller PM. The project was created and the intended owner never got it.
+
+**THE UNMEMBERED GAP IS CLOSED.** `guard_project_write`, `guard_project_read` and
+`readable_project_ids` no longer wave through a project with no membership rows. That was the
+last route from one authenticated user to another user's project. **Eight projects in the local
+development database become inaccessible; all eight are fixture debris** (`PRJ-LEGACY-NOMEM` and
+seven `ST-*` / `STATE-*` transition-target stubs), listed with a recommendation in the report.
+**Nothing was deleted.** Production has no projects, so nothing there is affected.
+
+**`refuse_unless_pm_for_assignment` WAS NOT CLOSED THE SAME WAY, AND THIS NEEDS LIN.** Closing it
+literally would stop the study running: a scenario names one evidence project, several
+participants share a scenario, and migration 0006 allows exactly one active PM per project, so
+requiring PM there means **one evidence project can serve exactly one participant**. Leaving the
+old test in place was not an option either, because creation now always writes a PM row, so
+"does this project have members" is true everywhere from today. The guard now reads **the
+caller's own row**: an Observer is still refused, a caller with no row proceeds on the strength
+of an assignment that `_resolve_target` has already bound to them. **If participants sharing an
+evidence project must each be its PM, that needs either per-participant evidence projects or a
+change to 0006's unique index — a study-design decision, not made here.**
+
+**ADMINISTRATION IS TWO TABS.** People and access (accounts, project membership, scenario
+assignment) and Monitoring and export. Nothing withdrawn; all 28 controls checked by id in a
+browser. The two relationships on the first tab, operational access and study participation, sit
+under separate headings with a rule between them, and the check resolves which heading each
+control actually sits under rather than reading wording.
+
+**Two defects found on the way.** The **Create export button did nothing at all**: its handler
+wrote into an `ao-export-error` element that was never in the markup, on its first line, so it
+threw before doing anything and the statement that would have shown the error was the statement
+that threw. And the tab switcher held a **hardcoded list of panel names** in `app.js` separate
+from the markup, which would have silently revealed nothing after any rename; it now derives them
+from the tab bar.
+
+**The admin is PM of nothing, and that is correct.** Every local project with an owner already
+has the right one; the eight without are debris that should be deleted, not adopted. Production
+is empty. Creation assigns the PM from here on.
+
 # 2026-08-02 — GEOCODING: NOMINATIM IS GONE, GOOGLE IS PRIMARY, CENSUS IS THE FALLBACK
 
 Full detail in `REPORT_2026-08-02_geocoding-provider.md`. **Server 1259 checks across 23 suites,

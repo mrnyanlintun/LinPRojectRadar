@@ -64,10 +64,13 @@
 
   // Called when an admin tab is revealed, so each tab fetches on first use rather than all
   // of them firing the moment Admin is opened.
+  // Consolidated on 2026-08-02: five tabs became two. "access" carries what were Users and
+  // access, Projects and assignment, and Project membership; "reporting" carries what were
+  // Monitoring and Export. Both fetch on reveal, so opening Administration still does not fire
+  // every request at once.
   function showTab(name) {
-    if (name === "monitoring") loadMonitoring();
-    if (name === "export") loadExports();
-    if (name === "projects") loadScenarios();
+    if (name === "reporting") { loadMonitoring(); loadExports(); }
+    if (name === "access") loadScenarios();
   }
 
   /* ============================================================
@@ -108,30 +111,37 @@
       errEl.style.display = "block";
       return;
     }
+    // A PM is required, and refused here before the request rather than after it. Creating the
+    // project first and discovering there is nobody to own it second is the state this whole
+    // change exists to remove.
+    var owner = $("ao-proj-owner").value;
+    if (!owner) {
+      errEl.textContent = "Choose who will be PM. A project cannot exist without one.";
+      errEl.style.display = "block";
+      return;
+    }
+    // ONE CALL, ONE TRANSACTION. This used to create the project and then add the PM in a
+    // SECOND request, which did not work: creation already made the CALLER the PM, and the
+    // follow-up was refused with "this project already has an active PM" because only one is
+    // permitted. The project was created and the intended owner never got it. The server now
+    // takes pm_participant_id and writes the membership row alongside the project row, so a
+    // refusal leaves no project behind.
     var resp = await call("projectcreate", {
       name: name,
       sector: $("ao-proj-sector").value.trim(),
-      address: $("ao-proj-address") ? $("ao-proj-address").value.trim() : ""
+      address: $("ao-proj-address") ? $("ao-proj-address").value.trim() : "",
+      pm_participant_id: owner
     });
     if (!resp || resp.ok !== true) {
       errEl.textContent = (resp && resp.error) || "Could not create the project.";
       errEl.style.display = "block";
       return;
     }
-    var pid = resp.project_id || resp.id;
-    var owner = $("ao-proj-owner").value;
-    var note = "Created " + name + ".";
+    var note = "Created " + name + ", with "
+      + ($("ao-proj-owner").selectedOptions[0] || {}).text + " as PM.";
     // Same reason as the workspace: show what the geocoder matched, not what was typed.
     if (resp.geocodeError) note += " No map position: " + resp.geocodeError;
     else if (resp.formattedAddress) note += " Matched to: " + resp.formattedAddress;
-    if (owner) {
-      // Reported separately: a project that was created but could not be assigned is a state the
-      // admin has to know about, not one to hide behind a single success message.
-      var m = await call("adminmemberadd", { id: pid, participant_id: owner, project_role: "PM" });
-      note += (m && m.ok === true)
-        ? " Assigned as PM."
-        : " NOT assigned: " + ((m && m.error) || "membership failed");
-    }
     okEl.textContent = note;
     okEl.style.display = "block";
     $("ao-proj-name").value = "";
@@ -192,16 +202,15 @@
       return '<option value="' + esc(p.participant_id) + '">' +
         esc(p.pseudonymous_code) + " (" + esc(p.account_type) + ")</option>";
     }).join("");
-    // T6 Part C: only the membership picker remains. The assignment pickers belonged to the
-    // scenario-and-condition model, whose interface is withdrawn — see the note at the foot of
-    // this file about why B3's backend is deliberately left intact.
     ["ao-mem-participant", "ao-proj-owner", "ao-assign-participant",
      "ao-assignmentlist-participant"].forEach(function (id) {
       var sel = $(id);
       if (!sel) return;
-      // The PM picker on project creation is optional, so it alone gets an empty first option.
-      sel.innerHTML = (id === "ao-proj-owner" ? '<option value="">(nobody yet)</option>' : "")
-        + options;
+      // The PM picker used to open on "(nobody yet)", which is exactly the project this change
+      // makes impossible. It now opens on a prompt that selects nothing, so an admin who does
+      // not choose is stopped rather than silently creating an unowned project.
+      sel.innerHTML = (id === "ao-proj-owner"
+        ? '<option value="" disabled selected>Choose a PM</option>' : "") + options;
     });
   }
 

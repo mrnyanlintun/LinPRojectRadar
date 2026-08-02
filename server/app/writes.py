@@ -146,7 +146,29 @@ def w_create(session: Session, payload: dict) -> dict[str, Any]:
         "createdAt": now,
         "updatedAt": now,
     }
-    session.add(Project(legacy_id=pid, doc=doc, archived=False, record_version=1))
+    project = Project(legacy_id=pid, doc=doc, archived=False, record_version=1)
+    session.add(project)
+
+    # A PROJECT MUST NEVER EXIST WITHOUT A PM, and this action could produce one.
+    #
+    # `a_projectcreate` has always written the membership row in the same transaction as the
+    # project. This one never did, so every project made through the legacy action came into the
+    # world unmembered. That used to be invisible, because an unmembered project was readable and
+    # writable by anyone; now that the guards authorise against membership unconditionally, such a
+    # project would be reachable by NOBODY, including whoever just created it. Measured before
+    # this change: created successfully, then refused on read, on write, and absent from its
+    # creator's own list.
+    #
+    # The caller id comes from guard_project_write, which resolved it a moment ago and is the only
+    # way this handler runs at all. Same transaction as the project row: one commit, both rows or
+    # neither.
+    caller_id = str(payload.get("_caller_participant_id") or "").strip()
+    if caller_id:
+        from .research_membership import ROLE_PM
+        from .research_models import ProjectMember
+        session.flush()                      # project.id is needed for the foreign key
+        session.add(ProjectMember(project_id=project.id, user_key=caller_id,
+                                   project_role=ROLE_PM, added_by=caller_id))
     session.commit()
 
     session.expire_all()

@@ -78,9 +78,11 @@ with Session() as _s:
                        account_type="operational",
                        access_token_hash=hash_access_token(_WRITER)))
     _s.commit()
-SESSION = client.post("/exec", content=json.dumps(
+_login = client.post("/exec", content=json.dumps(
     {"action": "researchlogin", "username": "A1B-WRITER", "password": _WRITER}),
-    headers={"Content-Type": "text/plain"}).json()["session_token"]
+    headers={"Content-Type": "text/plain"}).json()
+SESSION = _login["session_token"]
+WRITER_ID = _login["participant_id"]
 
 print("=" * 78)
 print("CREATE")
@@ -405,8 +407,18 @@ doc = get({"action": "get", "id": P1})["project"]
 member = post({"action": "adminparticipantcreate", "session_token": admin})
 member_tok = post({"action": "researchlogin",
                    "access_token": member["access_token"]})["session_token"]
-post({"action": "adminmemberadd", "session_token": admin, "id": P1,
-      "participant_id": member["participant_id"], "project_role": "PM"})
+# This suite's session created P1 and therefore holds PM on it — creation writes the membership
+# row in the same transaction as of 2026-08-02. Hand PM over so the checks below exercise a
+# non-PM, which is what they are about.
+_creator_row = next(m for m in post({"action": "adminmemberlist", "session_token": admin,
+                                     "id": P1})["members"] if m["user_key"] == WRITER_ID)
+_handover = post({"action": "adminmemberrevoke", "session_token": admin,
+                  "member_id": _creator_row["member_id"]})
+check(_handover.get("ok") is True, "the creator's PM row can be revoked to hand the project on",
+      str(_handover)[:120])
+_add = post({"action": "adminmemberadd", "session_token": admin, "id": P1,
+             "participant_id": member["participant_id"], "project_role": "PM"})
+check(_add.get("ok") is True, "and a new PM is then accepted", str(_add)[:120])
 doc["name"] = "non-PM write on a membered project"
 r = post({"action": "save", "project": doc})
 check(r.get("ok") is False and "only the project's PM" in (r.get("error") or ""),
@@ -429,8 +441,50 @@ check(r.get("ok") is True and (r.get("project") or {}).get("id") == P1,
 listed = [p["id"] for p in (get({"action": "list"}).get("projects") or [])]
 check(P1 not in listed, "the membered project is filtered out of a non-member's list",
       str(listed)[:120])
-check(GUARDED in listed, "and the caller's own unmembered projects are still listed",
+check(GUARDED in listed, "and the caller's own projects are still listed",
       str(listed)[:120])
+
+print()
+print("=" * 78)
+print("A PROJECT WITH NO MEMBERSHIP ROWS AT ALL IS REACHABLE BY NOBODY")
+print("=" * 78)
+# THE ARM CLOSED ON 2026-08-02, and it needs its own fixture because nothing can produce this
+# state any more: both creation paths write the owner's PM row in the same transaction. So the
+# row is inserted directly, which is exactly how the eight orphans in the development database
+# came to exist — seeded straight into `projects` as transition targets, never created through
+# any action.
+#
+# Every other "unmembered" check in this suite is really a NON-MEMBER check against a project
+# that does have members. That is a different guard arm, it passed before this change, and a
+# fault reopening the unmembered arm leaves it green. This block is the one that goes red.
+ORPHAN = "PRJ-A1B-ORPHAN"
+with main.SessionFactory() as s:
+    if s.scalar(select(Project).where(Project.legacy_id == ORPHAN)) is None:
+        s.add(Project(legacy_id=ORPHAN, doc={"id": ORPHAN, "name": "Orphan, no members ever"}))
+        s.commit()
+with main.SessionFactory() as s:
+    from app.research_models import ProjectMember
+    orphan = s.scalar(select(Project).where(Project.legacy_id == ORPHAN))
+    rows = s.scalars(select(ProjectMember).where(ProjectMember.project_id == orphan.id)).all()
+check(len(rows) == 0, "the fixture really has no membership rows, revoked ones included",
+      f"{len(rows)} rows")
+
+r = get({"action": "get", "id": ORPHAN})
+check(r.get("ok") is False and "not a member" in (r.get("error") or ""),
+      "an authenticated caller is refused a READ of a project with no members", str(r)[:130])
+check("project" not in r, "and that refusal carries no project payload", str(sorted(r)))
+
+r = post({"action": "archive", "id": ORPHAN})
+check(r.get("ok") is False and "only the project's PM" in (r.get("error") or ""),
+      "and refused a WRITE to it", str(r)[:130])
+with main.SessionFactory() as s:
+    still = s.scalar(select(Project).where(Project.legacy_id == ORPHAN))
+check(still is not None and not still.archived, "and that write did not land",
+      str(bool(still and still.archived)))
+
+listed = [p["id"] for p in (get({"action": "list"}).get("projects") or [])]
+check(ORPHAN not in listed, "and it does not appear in the portfolio list either",
+      str(listed)[:130])
 
 print()
 print("=" * 78)
