@@ -1,24 +1,42 @@
 """
-De-identified export and archive chain (B6).
+De-identified export and archive chain (B6), extended to two kinds and a workbook format.
 
-This turns collected data into an analysable dataset. Two properties matter more than anything
-else here.
+This turns collected data into an analysable dataset. Three properties matter more than
+anything else here.
 
-De-identification is an allowlist, never a denylist. EXPORT_COLUMNS names every field that may
-leave the system; a row is assembled by naming each field explicitly, so a column added to a model
-later cannot appear in an export by default. A denylist would invert the failure: the day someone
-adds an ip_hash column, every export silently starts carrying it, and the leak is discovered after
-the data has been shared.
+De-identification is an allowlist, never a denylist. Every *_COLUMNS tuple below names every
+field that may leave the system for its sheet; a row is assembled by naming each field
+explicitly, so a column added to a model later cannot appear in an export by default. A
+denylist would invert the failure: the day someone adds an ip_hash column, every export
+silently starts carrying it, and the leak is discovered after the data has been shared.
 
-The payload is regenerated on fetch rather than stored. research_exports records the checksum, not
-the bytes, so fetching re-derives the payload from the current data and compares. That is a
+The payload is regenerated on fetch rather than stored. research_exports records the checksum,
+not the bytes, so fetching re-derives the payload from the current data and compares. That is a
 stronger property than reading back a blob: it detects the underlying rows changing after the
-export was taken, which is exactly the drift that would silently invalidate an analysis. It also
-means B6 needs no migration.
+export was taken, which is exactly the drift that would silently invalidate an analysis.
 
-Free text is included and flagged. rationale is a dependent variable, so it has to be exported,
-but participants can type anything into it, including their own name or a colleague's. The export
-carries an explicit review flag rather than quietly shipping text nobody has read.
+Two kinds, selected by the caller, with different scopes:
+
+  PARTICIPANT_INPUTS. Per participant, filtered to research accounts server-side
+  unconditionally, with a date window over DECISION completion (final_submitted_at) — a
+  decision counts as belonging to the window it was completed in. This is `build_rows`,
+  unchanged in name and behaviour from before this work, extended with judgement-facing
+  columns (Part 5).
+
+  PROJECT_HEALTH. Per project, with a date window over the COMPUTATION timestamp
+  (ComputedResult.computed_at), not a decision timestamp — there is no decision in this
+  scope, and a reporting period is an integer, not a range a date window can bound. This
+  scope is NOT filtered to research accounts: ComputedResult belongs to a project, and a
+  project has no account_type of its own — an operational project's analytical results are
+  exactly as reachable here as a research one's. The banner and the notice both follow from
+  this: see NOTICE_OPERATIONAL below and the `research_account_filtered` response field.
+
+Free text is included and flagged. rationale is a dependent variable, so it has to be
+exported, but participants can type anything into it, including their own name or a
+colleague's. The export carries an explicit review flag rather than quietly shipping text
+nobody has read. The workbook's analysis_long sheet carries NONE of it, by construction: it is
+built from a fixed column list that contains no free-text field, so nothing needs to be
+scrubbed from it after the fact.
 """
 
 from __future__ import annotations
@@ -27,7 +45,10 @@ import csv
 import hashlib
 import io
 import json
-from datetime import datetime, timezone
+import pathlib
+import re
+import zipfile
+from datetime import date, datetime, timezone
 from typing import Any, Callable
 
 from sqlalchemy import func, select
@@ -36,16 +57,25 @@ from sqlalchemy.orm import Session
 from .facade import err
 from .research_identity import audit, resolve_caller
 from .research_models import (
-    Assignment, AuditEvent, Configuration, Decision, DecisionSupportPackage, Participant,
-    ResearchExport, Scenario, Transition,
+    Assignment, AuditEvent, Configuration, ComputedResult, Decision, DecisionSupportPackage,
+    Participant, ParticipantProfile, ResearchExport, Scenario, Transition,
 )
+from .models import Project
 
-# Every field that may leave the system, in export order. Adding a field here is the only way to
-# export one. Nothing is derived from a model's column list.
+EXPORT_KINDS: tuple[str, ...] = ("participant_inputs", "project_health")
+EXPORT_FORMATS: tuple[str, ...] = ("json", "csv", "xlsx")
+
+# --------------------------------------------------------------------------- Decisions sheet
+#
+# Every field that may leave the system for the Decisions sheet / the legacy json+csv export,
+# in export order. Adding a field here is the only way to export one. Nothing is derived from
+# a model's column list.
 EXPORT_COLUMNS: tuple[str, ...] = (
     # identity: the pseudonymous code and nothing else
     "pseudonymous_code",
     "order_group",
+    # the instance itself, for joining across sheets (Decisions / Stimulus / analysis_long)
+    "instance_id",
     # design
     "scenario_id",
     "scenario_version",
@@ -91,6 +121,12 @@ EXPORT_COLUMNS: tuple[str, ...] = (
     "confidence_shift",
     "deliberation_seconds",
     "pre_assessment_seconds",
+    # Part 5: fields for JUDGING a case, not fields the model consumes. The data is cleaned by
+    # hand; this is what a human reviewer needs to tell a real response from a broken one.
+    "time_on_instance_seconds",
+    "pre_committed_before_disclosure",
+    "completion_state",
+    "session_break",
 )
 
 # Checked by the tests against the serialised payload. These names must never appear.
@@ -107,9 +143,122 @@ FORBIDDEN_FIELDS: tuple[str, ...] = (
 # a list of labels the interface itself generated, so neither can contain free composition.
 FREE_TEXT_COLUMNS: tuple[str, ...] = ("pre_assessment", "rationale", "residual_risk")
 
+# --------------------------------------------------------------------------- Stimulus sheet
+#
+# One row per instance: the researcher-authored frozen package AS DISCLOSED. Exactly the fields
+# `decision-ui.js` renders to a participant on reveal (`renderPackage`) plus the identity and
+# timing columns needed to join back to Decisions. Nothing here is produced by the analytical
+# layer — see Module results for that — and nothing here is participant-authored, so none of it
+# needs the free-text review flag.
+STIMULUS_COLUMNS: tuple[str, ...] = (
+    "pseudonymous_code",
+    "instance_id",
+    "scenario_id",
+    "period",
+    "package_id",
+    "package_version",
+    "package_hash",
+    "model_version",
+    "use_case",
+    "output_type",
+    "data_cutoff",
+    # the brief: the evidentiary narrative around the recommendation
+    "detected_condition",
+    "alternatives",
+    "uncertainty",
+    "limitations",
+    "applicability_boundary",
+    "expiration_trigger",
+    "provenance",
+    # the recommendation, as disclosed
+    "recommended_action",
+    "frozen_at",
+    "reveal_at",
+)
 
-def _iso(value: datetime | None) -> str | None:
-    return value.isoformat() if value else None
+# --------------------------------------------------------------------------- Module results sheet
+#
+# One row per project, period and computation. Referred to by NAME and GROUP, per
+# NAMING_AUTHORITY.md rule 6 ("never a module id or number in user-facing text") — this sheet
+# reaches a committee, which is exactly that surface. `computation` and `group` are the only
+# identifying columns; the internal new_id ("A1.1") never appears.
+MODULE_RESULT_COLUMNS: tuple[str, ...] = (
+    "project",
+    "period",
+    "computed_at",
+    "computation",
+    "group",
+    "status_color",
+    "evidence_metric",
+    "result_json",
+)
+
+GROUP_NAMES: dict[str, str] = {
+    "A": "Project Health",
+    "B": "Recommendation and Governance",
+    "C": "Data and Evidence Health",
+    "D": "Portfolio Level",
+}
+
+# The module name table. Read independently of server/app/simulation/ (which this task must not
+# modify): this is the same source file registry.py reads (p0-baseline/module_renumbering_map.csv
+# is data, not code under that directory), loaded here on its own so the export has no import
+# dependency on the simulation package at all.
+_MODULE_NAME_CSV = (pathlib.Path(__file__).resolve().parents[2]
+                    / "p0-baseline" / "module_renumbering_map.csv")
+
+_module_names_cache: dict[str, str] | None = None
+
+
+def _module_names() -> dict[str, str]:
+    global _module_names_cache
+    if _module_names_cache is None:
+        names: dict[str, str] = {}
+        if _MODULE_NAME_CSV.exists():
+            with _MODULE_NAME_CSV.open(encoding="utf-8-sig") as fh:
+                for row in csv.DictReader(fh):
+                    new_id = (row.get("new_id") or "").strip()
+                    name = (row.get("module_name") or "").strip()
+                    if new_id and new_id.upper() != "RETIRED":
+                        names[new_id] = name
+        _module_names_cache = names
+    return _module_names_cache
+
+
+# --------------------------------------------------------------------------- analysis_long sheet
+#
+# Part 4. Long format, one row per participant per instance per post_ai level (0 = preliminary,
+# 1 = final). A participant with twelve instances produces twenty-four rows, ALWAYS — including
+# an instance whose final decision does not exist yet, which still contributes its post_ai=0 row
+# and a post_ai=1 row of nulls. Omitting the second row would be a silent filter on incomplete
+# instances, which Part 5 forbids explicitly.
+#
+# NO FREE TEXT. Every column here is short, closed-vocabulary, or numeric — there is no
+# free-composition field in this list, so nothing needs scrubbing after the fact.
+#
+# expert_reference_score is ALWAYS EMPTY. The expert reference standard does not exist yet
+# (see REPORT for the establishment of this). The column is reserved now so that adding it
+# later does not change every earlier export's shape.
+LONG_COLUMNS: tuple[str, ...] = (
+    "participant_id",
+    "instance_id",
+    "post_ai",
+    "action",
+    "confidence",
+    "scenario",
+    "project",
+    "period",
+    "years_experience",
+    "ai_familiarity",
+    "timestamp",
+    "expert_reference_score",
+)
+
+
+def _iso(value: datetime | date | None) -> str | None:
+    if value is None:
+        return None
+    return value.isoformat()
 
 
 def _seconds_between(later: datetime | None, earlier: datetime | None) -> float | None:
@@ -165,14 +314,48 @@ def _assignment_start(session: Session, participant_id: str, scenario_id: str,
     return None
 
 
-def build_rows(session: Session, start: datetime | None, end: datetime | None) -> list[dict[str, Any]]:
+def _session_break(session: Session, participant_id: str,
+                   window_start: datetime | None, window_end: datetime | None) -> bool | None:
     """
-    One row per decision: participant x scenario x period. Long format, ready for a mixed-effects
-    model with crossed random effects on participant and scenario.
+    Whether the participant authenticated again DURING this instance — a signal they left and
+    came back, for a human reviewer to weigh, not a performance measure.
 
-    The range filters on final_submitted_at, so a decision counts as belonging to the window in
-    which it was completed. Filtering on pre_submitted_at would split a decision across windows
-    when a participant paused between periods.
+    A HEURISTIC, stated as one: a fresh `research_login` or `sso_login` audit event strictly
+    between the instance's start and its end. None (not False) when the instance has no end yet
+    (the window cannot be judged), so a reviewer can tell "no break detected" from "not yet
+    judgeable" — collapsing them to False would misreport an in-progress instance as clean.
+    """
+    if window_start is None or window_end is None:
+        return None
+    rows = session.scalars(
+        select(func.count()).select_from(AuditEvent).where(
+            AuditEvent.participant_id == participant_id,
+            AuditEvent.event_type.in_(("research_login", "sso_login")),
+            AuditEvent.server_ts > window_start,
+            AuditEvent.server_ts < window_end,
+        )
+    ).first()
+    return bool(rows and rows > 0)
+
+
+class _Instance:
+    """One eligible (participant, scenario, period) instance, joined once and reused across
+    every sheet that needs it, so the Decisions, Stimulus and analysis_long sheets can never
+    disagree about which instances exist."""
+
+    __slots__ = ("decision", "assignment", "participant", "scenario", "config", "package",
+                "transition", "profile", "started")
+
+
+def _eligible_instances(session: Session, start: datetime | None,
+                        end: datetime | None) -> list[_Instance]:
+    """
+    Every instance for a RESEARCH account, in the date window over decision completion.
+
+    B8 account separation, UNCONDITIONAL: only research accounts enter this scope. This is not
+    a parameter, cannot be overridden by any payload field, and applies to every export ever
+    taken, including refetches of exports created before this filter existed. An operational
+    account's rows never leave the system through this path.
     """
     query = select(Decision).order_by(Decision.decision_id)
     if start is not None:
@@ -180,27 +363,50 @@ def build_rows(session: Session, start: datetime | None, end: datetime | None) -
     if end is not None:
         query = query.where(Decision.final_submitted_at <= end)
 
-    rows: list[dict[str, Any]] = []
+    out: list[_Instance] = []
     for decision in session.scalars(query).all():
         assignment = session.get(Assignment, decision.assignment_id)
         if assignment is None:
             continue
         participant = session.get(Participant, assignment.participant_id)
-        # B8 account separation, UNCONDITIONAL: only research accounts enter an export. This is
-        # not a parameter, cannot be overridden by any payload field, and applies to every
-        # export ever taken, including refetches of exports created before B8. An operational
-        # account's rows never leave the system through this path.
         if participant is None or participant.account_type != "research":
             continue
-        scenario = session.get(Scenario, assignment.scenario_id)
-        config = session.get(Configuration, assignment.config_id) if assignment.config_id else None
-        package = (session.get(DecisionSupportPackage, decision.package_id)
-                   if decision.package_id else None)
-        transition = session.scalar(
+        inst = _Instance()
+        inst.decision = decision
+        inst.assignment = assignment
+        inst.participant = participant
+        inst.scenario = session.get(Scenario, assignment.scenario_id)
+        inst.config = (session.get(Configuration, assignment.config_id)
+                      if assignment.config_id else None)
+        inst.package = (session.get(DecisionSupportPackage, decision.package_id)
+                        if decision.package_id else None)
+        inst.transition = session.scalar(
             select(Transition).where(Transition.decision_id == decision.decision_id))
+        inst.profile = session.scalar(
+            select(ParticipantProfile)
+            .where(ParticipantProfile.participant_id == participant.participant_id)
+            .order_by(ParticipantProfile.captured_at.desc())
+        )
+        inst.started = _assignment_start(session, assignment.participant_id,
+                                         assignment.scenario_id, decision.period or "P1")
+        out.append(inst)
+    return out
 
-        started = _assignment_start(session, assignment.participant_id,
-                                    assignment.scenario_id, decision.period or "P1")
+
+def build_rows(session: Session, start: datetime | None, end: datetime | None) -> list[dict[str, Any]]:
+    """
+    One row per decision: participant x scenario x period. The Decisions sheet, and the
+    entirety of the legacy json/csv participant-inputs export.
+
+    The range filters on final_submitted_at, so a decision counts as belonging to the window in
+    which it was completed. Filtering on pre_submitted_at would split a decision across windows
+    when a participant paused between periods.
+    """
+    rows: list[dict[str, Any]] = []
+    for inst in _eligible_instances(session, start, end):
+        decision, assignment, participant = inst.decision, inst.assignment, inst.participant
+        scenario, config, package = inst.scenario, inst.config, inst.package
+        transition = inst.transition
 
         shift = None
         if decision.final_action is not None and decision.pre_action is not None:
@@ -210,11 +416,23 @@ def build_rows(session: Session, start: datetime | None, end: datetime | None) -
         if decision.final_confidence is not None and decision.pre_confidence is not None:
             confidence_shift = decision.final_confidence - decision.pre_confidence
 
+        pre_committed_before_disclosure = None
+        if decision.pre_locked_at is not None and decision.reveal_at is not None:
+            pre_committed_before_disclosure = decision.pre_locked_at <= decision.reveal_at
+
+        from .research_decision import derive_stage
+        completion_state = derive_stage(decision)
+
+        window_end = decision.final_submitted_at or decision.reveal_at or decision.pre_submitted_at
+        session_break = _session_break(session, assignment.participant_id, inst.started,
+                                       decision.final_submitted_at)
+
         # Assembled by naming every field. No model introspection, no dict(row), no **kwargs:
         # each of those would let a new column travel outwards without anyone deciding it should.
         row = {
             "pseudonymous_code": participant.pseudonymous_code if participant else None,
             "order_group": participant.order_group if participant else None,
+            "instance_id": decision.decision_id,
             "scenario_id": assignment.scenario_id,
             "scenario_version": scenario.scenario_version if scenario else None,
             "sequence_number": assignment.sequence_number,
@@ -253,7 +471,11 @@ def build_rows(session: Session, start: datetime | None, end: datetime | None) -
             "confidence_shift": confidence_shift,
             "deliberation_seconds": _seconds_between(decision.final_submitted_at,
                                                      decision.reveal_at),
-            "pre_assessment_seconds": _seconds_between(decision.pre_submitted_at, started),
+            "pre_assessment_seconds": _seconds_between(decision.pre_submitted_at, inst.started),
+            "time_on_instance_seconds": _seconds_between(window_end, inst.started),
+            "pre_committed_before_disclosure": pre_committed_before_disclosure,
+            "completion_state": completion_state,
+            "session_break": session_break,
         }
 
         # Defensive, and cheap: a row must contain exactly the allowlist. If these ever disagree
@@ -269,26 +491,165 @@ def build_rows(session: Session, start: datetime | None, end: datetime | None) -
     return rows
 
 
+def build_stimulus_rows(session: Session, start: datetime | None,
+                        end: datetime | None) -> list[dict[str, Any]]:
+    """
+    One row per instance: the frozen package as it was actually disclosed. Same instance set
+    build_rows uses (same date window, same research-account filter), so the two sheets can
+    never describe a different population of instances. A row exists even when no package has
+    been revealed yet — every field but the identity columns is then None, which is the honest
+    "nothing shown yet" state, not an omitted row.
+    """
+    rows: list[dict[str, Any]] = []
+    for inst in _eligible_instances(session, start, end):
+        decision, assignment, participant, package = (
+            inst.decision, inst.assignment, inst.participant, inst.package)
+        row = {
+            "pseudonymous_code": participant.pseudonymous_code if participant else None,
+            "instance_id": decision.decision_id,
+            "scenario_id": assignment.scenario_id,
+            "period": decision.period,
+            "package_id": decision.package_id,
+            "package_version": package.version if package else None,
+            "package_hash": decision.package_hash,
+            "model_version": package.model_version if package else None,
+            "use_case": package.use_case if package else None,
+            "output_type": package.output_type if package else None,
+            "data_cutoff": _iso(package.data_cutoff) if package else None,
+            "detected_condition": package.detected_condition if package else None,
+            "alternatives": package.alternatives if package else None,
+            "uncertainty": package.uncertainty if package else None,
+            "limitations": package.limitations if package else None,
+            "applicability_boundary": package.applicability_boundary if package else None,
+            "expiration_trigger": package.expiration_trigger if package else None,
+            "provenance": package.provenance if package else None,
+            "recommended_action": package.recommended_action if package else None,
+            "frozen_at": _iso(package.frozen_at) if package else None,
+            "reveal_at": _iso(decision.reveal_at),
+        }
+        rows.append({k: row[k] for k in STIMULUS_COLUMNS})
+    return rows
+
+
+def build_analysis_long_rows(session: Session, start: datetime | None,
+                             end: datetime | None) -> list[dict[str, Any]]:
+    """
+    Part 4. Long format for statistical software: exactly two rows per instance, post_ai 0 and
+    1, always — the second row is present even when the final decision does not exist yet.
+    """
+    rows: list[dict[str, Any]] = []
+    for inst in _eligible_instances(session, start, end):
+        decision, assignment, participant = inst.decision, inst.assignment, inst.participant
+        scenario, profile = inst.scenario, inst.profile
+        project = scenario.evidence_package_id if scenario else None
+        years_experience = profile.years_experience if profile else None
+        ai_familiarity_raw = profile.ai_familiarity if profile else None
+        try:
+            ai_familiarity: float | None = float(ai_familiarity_raw) if ai_familiarity_raw not in (
+                None, "") else None
+        except (TypeError, ValueError):
+            ai_familiarity = None
+
+        base = {
+            "participant_id": participant.pseudonymous_code if participant else None,
+            "instance_id": decision.decision_id,
+            "scenario": assignment.scenario_id,
+            "project": project,
+            "period": decision.period,
+            "years_experience": years_experience,
+            "ai_familiarity": ai_familiarity,
+            "expert_reference_score": None,  # reserved; see module docstring
+        }
+        rows.append({**base, "post_ai": 0, "action": decision.pre_action,
+                    "confidence": decision.pre_confidence,
+                    "timestamp": _iso(decision.pre_submitted_at)})
+        rows.append({**base, "post_ai": 1, "action": decision.final_action,
+                    "confidence": decision.final_confidence,
+                    "timestamp": _iso(decision.final_submitted_at)})
+    return [{k: r[k] for k in LONG_COLUMNS} for r in rows]
+
+
+def build_module_results_rows(session: Session, project_legacy_ids: set[str] | None,
+                              start: datetime | None,
+                              end: datetime | None) -> list[dict[str, Any]]:
+    """
+    One row per project, period and computation, referred to by name and group.
+
+    `project_legacy_ids=None` means every project (project_health scope). A restricted set
+    (participant_inputs scope) is the projects the eligible instances' scenarios point at,
+    via `scenario.evidence_package_id` — the analytical record BEHIND what those participants
+    were shown, kept alongside their decisions.
+
+    The window is over `computed_at`, a real timestamp — never a decision timestamp, because
+    there is no decision in this scope, and a reporting period is an integer a date range
+    cannot bound (see the module docstring and the report's Part 1 discussion).
+
+    LIVE RESULTS ONLY (`superseded_by IS NULL`): a superseded result is not the project's
+    current account of that period, and duplicating both would double the projects a
+    reporting period appears under with no way to tell which is current.
+    """
+    query = select(ComputedResult).where(ComputedResult.superseded_by.is_(None))
+    if start is not None:
+        query = query.where(ComputedResult.computed_at >= start)
+    if end is not None:
+        query = query.where(ComputedResult.computed_at <= end)
+    query = query.order_by(ComputedResult.project_id, ComputedResult.period)
+
+    names = _module_names()
+    rows: list[dict[str, Any]] = []
+    for result in session.scalars(query).all():
+        project = session.get(Project, result.project_id)
+        legacy = project.legacy_id if project else None
+        if project_legacy_ids is not None and legacy not in project_legacy_ids:
+            continue
+        for module in (result.module_results or []):
+            if not isinstance(module, dict):
+                continue
+            module_id = str(module.get("module_id") or "")
+            group_letter = str(module.get("group") or "")
+            extra = {k: v for k, v in module.items()
+                    if k not in ("module_id", "group", "status_color", "evidence_metric")}
+            rows.append({
+                "project": legacy,
+                "period": result.period,
+                "computed_at": _iso(result.computed_at),
+                "computation": names.get(module_id, module_id),
+                "group": GROUP_NAMES.get(group_letter, group_letter),
+                "status_color": module.get("status_color"),
+                "evidence_metric": module.get("evidence_metric"),
+                "result_json": json.dumps(extra, sort_keys=True, default=str),
+            })
+    return rows
+
+
+def _project_ids_for_instances(session: Session, start: datetime | None,
+                               end: datetime | None) -> set[str]:
+    ids: set[str] = set()
+    for inst in _eligible_instances(session, start, end):
+        if inst.scenario and inst.scenario.evidence_package_id:
+            ids.add(inst.scenario.evidence_package_id)
+    return ids
+
+
 # --------------------------------------------------------------------------- the notice
 #
 # AN EXPORT IS THE ARTIFACT MOST LIKELY TO BE READ WITHOUT ANY SURROUNDING CONTEXT. It leaves the
 # platform as a file and reaches people who never saw the sign-in notice or the site footer.
 #
-# WHY THIS DOES NOT SWITCH ON account_type, WHEN EVERY OTHER SURFACE DOES.
+# TWO KINDS, TWO NOTICE VARIANTS — established, not assumed. participant_inputs is filtered to
+# research accounts unconditionally (build_rows / _eligible_instances), so the research variant's
+# claims are true of everything in it: synthetic project data, a research participant's session.
+# project_health is NOT filtered by account type at all — ComputedResult belongs to a project,
+# and a project carries no account_type of its own, so an operational project's real, non-
+# synthetic analytical results are exactly as reachable there as a research project's. Using the
+# research variant's "All project data is synthetic" for project_health would be a claim this
+# scope cannot back. The operational variant makes no such claim, so it is the one used there —
+# selecting between the two ALREADY-approved variants by content scope, the same way every other
+# surface in this codebase switches on account type; nothing here composes a third.
 #
-# It cannot have two cases. build_rows() filters to `participant.account_type != "research"` and
-# skips everything else, unconditionally and on every export including refetches of exports taken
-# before that filter existed. An operational account's data cannot be in this file. Writing a
-# switch here would mean writing an operational branch that is unreachable by construction, which
-# is a worse defect than no switch: it would assert that an operational export exists.
-#
-# The research variant is therefore the only correct text, and it is the same variant the site
-# shows before sign-in. `test_export.py` asserts the account-type filter is still there, so if
-# that ever changes this decision fails loudly instead of quietly shipping the wrong notice.
-#
-# Quoted verbatim from DISCLAIMERS_DRAFT.md sections 1 and 3. Do not edit here, do not shorten for
-# a narrower format, and do not compose a variant: a surface carries the approved text whole or
-# does not carry it. test_disclaimers.py fails if these diverge from the source by a character.
+# Quoted verbatim from DISCLAIMERS_DRAFT.md. Do not edit here, do not shorten for a narrower
+# format, and do not compose a variant: a surface carries the approved text whole or does not
+# carry it. test_disclaimers.py fails if these diverge from the source by a character.
 NOTICE_RESEARCH: tuple[str, ...] = (
     "Notice: academic research instrument. Opus Gubernatio is a proof of concept developed "
     "solely for doctoral research and demonstration. It is not a commercial service and is "
@@ -305,6 +666,20 @@ NOTICE_RESEARCH: tuple[str, ...] = (
     "to the fullest extent permitted by law.",
 )
 
+NOTICE_OPERATIONAL: tuple[str, ...] = (
+    "Notice. Opus Gubernatio is provided as is, without warranty of any kind, express or "
+    "implied.",
+
+    "Analytical outputs are advisory. They are not a validated compliance determination, a "
+    "contractual direction, or a diagnosis of a live project.",
+
+    "Uploaded content is sent to third-party artificial intelligence services for extraction and "
+    "is stored in the platform. You are responsible for confirming that you are authorized to "
+    "upload each document, and for your organization's data handling, confidentiality, and "
+    "records obligations. The operator disclaims all liability arising from or relating to "
+    "uploaded content to the fullest extent permitted by law.",
+)
+
 ATTRIBUTION = (
     "Developed as part of doctoral research at the School of Engineering and Applied Science, "
     "The George Washington University. The university is not a party to this notice and does not "
@@ -318,26 +693,47 @@ COPYRIGHT = (
 )
 
 
-def serialise(rows: list[dict[str, Any]], fmt: str,
-              *, include_notice: bool = True) -> tuple[bytes, str | None]:
-    """
-    Render the payload. The checksum covers exactly these bytes.
+def _notice_for(kind: str) -> tuple[str, ...]:
+    return NOTICE_RESEARCH if kind == "participant_inputs" else NOTICE_OPERATIONAL
 
-    `include_notice=False` reproduces the pre-notice bytes and exists only so a_adminexportfetch
-    can recognise an export taken before the notice was added. See the comment there.
+
+def research_account_filtered(kind: str) -> bool:
+    """Whether this export's scope is unconditionally filtered to research accounts. Read by
+    the frontend to decide whether the "filtered to research accounts" banner is true."""
+    return kind == "participant_inputs"
+
+
+def date_window_field(kind: str) -> str:
+    """Which timestamp the date window bounds, for this kind. Surfaced so the UI can say so
+    rather than leaving the user to guess what "From"/"To" mean for project health."""
+    return "final_submitted_at" if kind == "participant_inputs" else "computed_at"
+
+
+def serialise(rows: list[dict[str, Any]], fmt: str, columns: tuple[str, ...] = EXPORT_COLUMNS,
+              *, include_notice: bool = True, kind: str = "participant_inputs") -> tuple[bytes, str | None]:
+    """
+    Render a single-table payload (json or csv). The checksum covers exactly these bytes.
+
+    `include_notice=False` reproduces the pre-notice bytes and exists only so
+    a_adminexportfetch can recognise an export taken before the notice was added. See the
+    comment there. `columns` lets project_health's flat single-table json/csv export reuse this
+    function over MODULE_RESULT_COLUMNS instead of EXPORT_COLUMNS.
     """
     if fmt == "json":
-        body = {
-            "columns": list(EXPORT_COLUMNS),
-            "free_text_columns": list(FREE_TEXT_COLUMNS),
-            "review_required": bool(FREE_TEXT_COLUMNS),
-            "review_note": ("Free-text columns are participant-authored and may contain "
-                            "identifying content. Review before sharing outside the study team."),
+        body: dict[str, Any] = {
+            "kind": kind,
+            "columns": list(columns),
             "row_count": len(rows),
             "rows": rows,
         }
+        if columns == EXPORT_COLUMNS:
+            body["free_text_columns"] = list(FREE_TEXT_COLUMNS)
+            body["review_required"] = bool(FREE_TEXT_COLUMNS)
+            body["review_note"] = ("Free-text columns are participant-authored and may contain "
+                                   "identifying content. Review before sharing outside the "
+                                   "study team.")
         if include_notice:
-            body["notice"] = list(NOTICE_RESEARCH)
+            body["notice"] = list(_notice_for(kind))
             body["attribution"] = ATTRIBUTION
             body["copyright"] = COPYRIGHT
         return json.dumps(body, sort_keys=True, separators=(",", ":"),
@@ -347,24 +743,137 @@ def serialise(rows: list[dict[str, Any]], fmt: str,
         # THE CSV CARRIES NO NOTICE, AND THAT IS REPORTED RATHER THAN WORKED AROUND.
         #
         # RFC 4180 has no comment syntax. Anything placed above the header row is read as the
-        # header: csv.DictReader would return the first notice paragraph as a field name, and
-        # test_export.py's `list(reader[0].keys()) == EXPORT_COLUMNS` is exactly that contract.
-        # The alternatives are all worse than the gap. Repeating six hundred characters of prose
-        # in an extra column on every row is not a notice. Shortening it to fit a cell is
-        # composing a new liability variant, which a session may not do.
-        #
-        # So the format genuinely cannot carry the approved text, and the report says so. Choosing
-        # between a leading comment block that breaks every existing reader, a sidecar file, and
-        # making JSON the only offered format is the researcher's decision, not this code's.
+        # header. Repeating six hundred characters of prose in an extra column on every row is
+        # not a notice, and shortening it to fit a cell is composing a new liability variant,
+        # which a session may not do. So the format genuinely cannot carry the approved text.
         buffer = io.StringIO(newline="")
-        writer = csv.DictWriter(buffer, fieldnames=list(EXPORT_COLUMNS),
+        writer = csv.DictWriter(buffer, fieldnames=list(columns),
                                 lineterminator="\n", extrasaction="raise")
         writer.writeheader()
         for row in rows:
-            writer.writerow({k: ("" if row[k] is None else row[k]) for k in EXPORT_COLUMNS})
+            writer.writerow({k: ("" if row[k] is None else row[k]) for k in columns})
         return buffer.getvalue().encode("utf-8"), None
 
     return b"", f"unsupported format: {fmt}"
+
+
+# --------------------------------------------------------------------------- the workbook
+
+_FIXED_XLSX_DATE = datetime(2026, 1, 1, tzinfo=timezone.utc)
+
+
+def _normalize_xlsx_bytes(raw: bytes) -> bytes:
+    """
+    Make openpyxl's output byte-deterministic, so the same data always produces the same
+    checksum — ESTABLISHED, not assumed: measured directly (see the report) that openpyxl
+    stamps `docProps/core.xml`'s created/modified timestamps at the wall clock, and that the
+    zip container stamps each entry's own timestamp at the wall clock too. Two workbooks built
+    a second apart from identical data therefore differ byte-for-byte before this function runs.
+
+    Fixed here rather than by setting `workbook.properties.created/modified` alone: that neutralises
+    only the docProps timestamps, not the per-entry zip timestamps, which still vary. This
+    rewrites the archive with every entry's timestamp pinned to one fixed value and the
+    docProps timestamps textually pinned to the same value, and re-orders entries by name so
+    write order cannot introduce a difference either.
+    """
+    src = zipfile.ZipFile(io.BytesIO(raw))
+    out_buf = io.BytesIO()
+    with zipfile.ZipFile(out_buf, "w", zipfile.ZIP_DEFLATED) as out:
+        for name in sorted(src.namelist()):
+            data = src.read(name)
+            if name == "docProps/core.xml":
+                data = re.sub(
+                    rb"<dcterms:created[^>]*>[^<]*</dcterms:created>",
+                    b'<dcterms:created xsi:type="dcterms:W3CDTF">2026-01-01T00:00:00Z'
+                    b"</dcterms:created>", data)
+                data = re.sub(
+                    rb"<dcterms:modified[^>]*>[^<]*</dcterms:modified>",
+                    b'<dcterms:modified xsi:type="dcterms:W3CDTF">2026-01-01T00:00:00Z'
+                    b"</dcterms:modified>", data)
+            info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED
+            out.writestr(info, data)
+    return out_buf.getvalue()
+
+
+def _sheet_rows(columns: tuple[str, ...], rows: list[dict[str, Any]]) -> list[list[Any]]:
+    out = [list(columns)]
+    for row in rows:
+        line = []
+        for c in columns:
+            v = row.get(c)
+            if isinstance(v, (dict, list)):
+                v = json.dumps(v, sort_keys=True, default=str)
+            line.append(v)
+        out.append(line)
+    return out
+
+
+def build_workbook(kind: str, session: Session, start: datetime | None, end: datetime | None,
+                   *, include_notice: bool = True) -> bytes:
+    """
+    One workbook, not separate files, so every level stays physically together under one
+    checksum. Sheets are named explicitly (never relying on position — most tools default to
+    the first sheet).
+
+    participant_inputs: Notice, Decisions, Stimulus, Module results (scoped to the projects the
+    eligible instances' scenarios point at), analysis_long.
+
+    project_health: Notice, Module results (every project, scoped only by the date window over
+    computed_at). No Decisions/Stimulus/analysis_long: there is no participant dimension in this
+    scope, and inventing one would misrepresent what this kind reports.
+    """
+    import openpyxl
+
+    wb = openpyxl.Workbook()
+    wb.properties.creator = "Opus Gubernatio"
+    wb.properties.created = _FIXED_XLSX_DATE
+    wb.properties.modified = _FIXED_XLSX_DATE
+    wb.remove(wb.active)
+
+    if include_notice:
+        ws = wb.create_sheet("Notice")
+        ws.append(["OPUS GUBERNATIO", "NOTICE"])
+        ws.append([])
+        for para in _notice_for(kind):
+            ws.append([para])
+            ws.append([])
+        ws.append([ATTRIBUTION])
+        ws.append([])
+        ws.append([COPYRIGHT])
+        ws.column_dimensions["A"].width = 118
+
+    if kind == "participant_inputs":
+        decisions = build_rows(session, start, end)
+        stimulus = build_stimulus_rows(session, start, end)
+        long_rows = build_analysis_long_rows(session, start, end)
+        project_ids = _project_ids_for_instances(session, start, end)
+        modules = build_module_results_rows(session, project_ids, start, end)
+
+        ws = wb.create_sheet("Decisions")
+        for line in _sheet_rows(EXPORT_COLUMNS, decisions):
+            ws.append(line)
+
+        ws = wb.create_sheet("Stimulus")
+        for line in _sheet_rows(STIMULUS_COLUMNS, stimulus):
+            ws.append(line)
+
+        ws = wb.create_sheet("Module results")
+        for line in _sheet_rows(MODULE_RESULT_COLUMNS, modules):
+            ws.append(line)
+
+        ws = wb.create_sheet("analysis_long")
+        for line in _sheet_rows(LONG_COLUMNS, long_rows):
+            ws.append(line)
+    else:
+        modules = build_module_results_rows(session, None, start, end)
+        ws = wb.create_sheet("Module results")
+        for line in _sheet_rows(MODULE_RESULT_COLUMNS, modules):
+            ws.append(line)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    return _normalize_xlsx_bytes(buf.getvalue())
 
 
 def checksum(payload: bytes) -> str:
@@ -385,34 +894,63 @@ def _require_admin(session: Session, payload: dict, secret: str, action: str):
     return caller, None
 
 
+def _row_count_for(session: Session, kind: str, fmt: str, start: datetime | None,
+                   end: datetime | None) -> int:
+    """The count reported to the caller: the primary sheet/table's row count for this kind."""
+    if kind == "participant_inputs":
+        return len(build_rows(session, start, end))
+    return len(build_module_results_rows(session, None, start, end))
+
+
+def _build_payload(session: Session, kind: str, fmt: str, start: datetime | None,
+                   end: datetime | None, *, include_notice: bool = True) -> tuple[bytes, str | None]:
+    if fmt == "xlsx":
+        try:
+            return build_workbook(kind, session, start, end, include_notice=include_notice), None
+        except RuntimeError as exc:
+            return b"", str(exc)
+    # json/csv: a single flat table. participant_inputs uses the Decisions shape (unchanged
+    # from before this work); project_health uses the Module results shape, since it has no
+    # decision-shaped data at all.
+    if kind == "participant_inputs":
+        rows = build_rows(session, start, end)
+        return serialise(rows, fmt, EXPORT_COLUMNS, include_notice=include_notice, kind=kind)
+    rows = build_module_results_rows(session, None, start, end)
+    return serialise(rows, fmt, MODULE_RESULT_COLUMNS, include_notice=include_notice, kind=kind)
+
+
 def a_adminexportcreate(session: Session, payload: dict, secret: str, ttl: int) -> dict[str, Any]:
     caller, problem = _require_admin(session, payload, secret, "adminexportcreate")
     if problem:
         return problem
 
+    kind = str(payload.get("kind") or "participant_inputs").strip().lower()
+    if kind not in EXPORT_KINDS:
+        return err(f"kind must be one of {', '.join(EXPORT_KINDS)}")
+
     fmt = str(payload.get("format") or "json").strip().lower()
-    if fmt not in ("json", "csv"):
-        return err("format must be json or csv")
+    if fmt not in EXPORT_FORMATS:
+        return err(f"format must be one of {', '.join(EXPORT_FORMATS)}")
 
     start, end, problem_text = _parse_range(payload)
     if problem_text:
         return err(problem_text)
 
     try:
-        rows = build_rows(session, start, end)
+        body, problem_text = _build_payload(session, kind, fmt, start, end)
     except RuntimeError as exc:
         return err(str(exc))
-
-    body, problem_text = serialise(rows, fmt)
     if problem_text:
         return err(problem_text)
 
+    row_count = _row_count_for(session, kind, fmt, start, end)
     digest = checksum(body)
     date_range = f"{start.isoformat() if start else 'open'}/{end.isoformat() if end else 'open'}"
 
     row = ResearchExport(
         format=fmt,
-        row_count=len(rows),
+        kind=kind,
+        row_count=row_count,
         checksum=digest,
         destination=str(payload.get("destination") or "inline"),
         date_range=date_range,
@@ -425,22 +963,27 @@ def a_adminexportcreate(session: Session, payload: dict, secret: str, ttl: int) 
     row._admin_authorised = True
     session.add(row)
     audit(session, "export_created", participant_id=caller.participant_id,
-          export_format=fmt, row_count=len(rows), checksum=digest, date_range=date_range)
+          export_format=fmt, export_kind=kind, row_count=row_count, checksum=digest,
+          date_range=date_range)
     session.commit()
 
     session.refresh(row)
     return {
         "ok": True,
         "export_id": row.export_id,
+        "kind": kind,
         "format": fmt,
-        "row_count": len(rows),
+        "row_count": row_count,
         "checksum": digest,
         "date_range": date_range,
-        "destination": row.destination,
+        "date_window_field": date_window_field(kind),
+        "research_account_filtered": research_account_filtered(kind),
+        "destination": str(payload.get("destination") or "inline"),
         "completed_at": _iso(row.completed_at),
-        "review_required": bool(FREE_TEXT_COLUMNS),
-        "free_text_columns": list(FREE_TEXT_COLUMNS),
-        "columns": list(EXPORT_COLUMNS),
+        "review_required": bool(FREE_TEXT_COLUMNS) if kind == "participant_inputs" else False,
+        "free_text_columns": list(FREE_TEXT_COLUMNS) if kind == "participant_inputs" else [],
+        "columns": list(EXPORT_COLUMNS) if kind == "participant_inputs"
+                  else list(MODULE_RESULT_COLUMNS),
     }
 
 
@@ -450,9 +993,9 @@ def a_adminexportlist(session: Session, payload: dict, secret: str, ttl: int) ->
         return problem
     rows = session.scalars(select(ResearchExport).order_by(ResearchExport.export_id)).all()
     return {"ok": True, "exports": [
-        {"export_id": r.export_id, "format": r.format, "row_count": r.row_count,
-         "checksum": r.checksum, "destination": r.destination, "date_range": r.date_range,
-         "completed_at": _iso(r.completed_at)}
+        {"export_id": r.export_id, "kind": r.kind or "participant_inputs", "format": r.format,
+         "row_count": r.row_count, "checksum": r.checksum, "destination": r.destination,
+         "date_range": r.date_range, "completed_at": _iso(r.completed_at)}
         for r in rows
     ]}
 
@@ -476,6 +1019,8 @@ def a_adminexportfetch(session: Session, payload: dict, secret: str, ttl: int) -
     if record is None:
         return err(f"export not found: {export_id}")
 
+    kind = record.kind if record.kind in EXPORT_KINDS else "participant_inputs"
+
     start, end = None, None
     if record.date_range and "/" in record.date_range:
         left, _, right = record.date_range.partition("/")
@@ -485,22 +1030,20 @@ def a_adminexportfetch(session: Session, payload: dict, secret: str, ttl: int) -
             end = datetime.fromisoformat(right)
 
     try:
-        rows = build_rows(session, start, end)
+        body, problem_text = _build_payload(session, kind, record.format or "json", start, end)
     except RuntimeError as exc:
         return err(str(exc))
-
-    body, problem_text = serialise(rows, record.format or "json")
     if problem_text:
         return err(problem_text)
 
     digest = checksum(body)
     # AN EXPORT TAKEN BEFORE THE NOTICE EXISTED IS NOT A TAMPERED EXPORT.
     #
-    # The stored checksum covers the bytes serialise() produced at the time. Adding the notice
-    # changed those bytes, so every record created earlier would now fail this comparison and be
-    # withheld with a message saying the underlying data had changed. That message would be
-    # false: the data is what it always was, and the accusation is the opposite of the integrity
-    # guarantee this check exists to provide.
+    # The stored checksum covers the bytes the payload builder produced at the time. Adding the
+    # notice (or, for xlsx, changing the sheet set) changed those bytes, so every record created
+    # earlier would now fail this comparison and be withheld with a message saying the underlying
+    # data had changed. That message would be false: the data is what it always was, and the
+    # accusation is the opposite of the integrity guarantee this check exists to provide.
     #
     # So a mismatch is checked a second time against the pre-notice serialisation. If THAT
     # matches, the rows are provably unchanged and the record simply predates the notice. The
@@ -509,7 +1052,8 @@ def a_adminexportfetch(session: Session, payload: dict, secret: str, ttl: int) -
     # A record that matches neither is a real mismatch and is still refused and audited.
     legacy = False
     if digest != record.checksum:
-        legacy_body, _ = serialise(rows, record.format or "json", include_notice=False)
+        legacy_body, _ = _build_payload(session, kind, record.format or "json", start, end,
+                                        include_notice=False)
         if checksum(legacy_body) == record.checksum:
             legacy = True
         else:
@@ -522,16 +1066,19 @@ def a_adminexportfetch(session: Session, payload: dict, secret: str, ttl: int) -
                 f"this export was taken; the payload is withheld."
             )
 
+    row_count = _row_count_for(session, kind, record.format or "json", start, end)
     audit(session, "export_fetched", participant_id=caller.participant_id,
-          export_id=export_id, checksum=digest, row_count=len(rows),
+          export_id=export_id, checksum=digest, row_count=row_count,
           predates_notice=legacy)
     session.commit()
 
-    return {
+    notice_in_payload = (record.format or "json") != "csv"
+    result: dict[str, Any] = {
         "ok": True,
         "export_id": export_id,
+        "kind": kind,
         "format": record.format,
-        "row_count": len(rows),
+        "row_count": row_count,
         "checksum": digest,
         "checksum_verified": True,
         # True when the record was taken before the notice was added: the rows verified against
@@ -540,14 +1087,22 @@ def a_adminexportfetch(session: Session, payload: dict, secret: str, ttl: int) -
         "stored_checksum": record.checksum,
         # The CSV format carries no notice; see serialise(). Stated on every fetch so it is
         # visible at the point the file is taken rather than discovered later.
-        "notice_in_payload": (record.format or "json") == "json",
-        "review_required": bool(FREE_TEXT_COLUMNS),
-        "free_text_columns": list(FREE_TEXT_COLUMNS),
+        "notice_in_payload": notice_in_payload,
+        "date_window_field": date_window_field(kind),
+        "research_account_filtered": research_account_filtered(kind),
+        "review_required": bool(FREE_TEXT_COLUMNS) if kind == "participant_inputs" else False,
+        "free_text_columns": list(FREE_TEXT_COLUMNS) if kind == "participant_inputs" else [],
         "review_note": ("Free-text columns are participant-authored and may contain identifying "
                         "content. Review before sharing outside the study team."),
-        "columns": list(EXPORT_COLUMNS),
-        "payload": body.decode("utf-8"),
+        "columns": list(EXPORT_COLUMNS) if kind == "participant_inputs"
+                  else list(MODULE_RESULT_COLUMNS),
     }
+    if record.format == "xlsx":
+        import base64
+        result["payload_base64"] = base64.b64encode(body).decode("ascii")
+    else:
+        result["payload"] = body.decode("utf-8")
+    return result
 
 
 EXPORT_ACTIONS: dict[str, Callable[[Session, dict, str, int], dict]] = {

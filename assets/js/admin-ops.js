@@ -356,8 +356,36 @@
      Part 4 — export
      ============================================================ */
 
+  // The two kinds have different scopes (research_export.py's module docstring), and neither
+  // the "filtered to research accounts" claim nor the meaning of the date window is true of
+  // both — so both the banner and the window caption switch on the selection rather than
+  // stating something once that is false half the time.
+  var KIND_NOTE = {
+    participant_inputs: "Filtered to research accounts server-side, always. Operational " +
+      "users are never included, whatever is requested here.",
+    project_health: "NOT filtered to research accounts: a project's analytical results carry " +
+      "no account type of their own, so an operational project's results are exactly as " +
+      "reachable here as a research project's."
+  };
+  var WINDOW_LABEL = {
+    participant_inputs: { from: "From (start of window, over decision completion)",
+                          to: "To (end of window, over decision completion)" },
+    project_health: { from: "From (start of window, over when each result was computed)",
+                      to: "To (end of window, over when each result was computed)" }
+  };
+
+  function updateKindNote() {
+    var kind = $("ao-export-kind").value;
+    $("ao-export-kind-note").textContent = KIND_NOTE[kind] || "";
+    var labels = WINDOW_LABEL[kind] || WINDOW_LABEL.participant_inputs;
+    $("ao-export-from-label").textContent = labels.from;
+    $("ao-export-to-label").textContent = labels.to;
+  }
+
   function wireExport() {
     $("ao-export-create").addEventListener("click", createExport);
+    $("ao-export-kind").addEventListener("change", updateKindNote);
+    updateKindNote();
     loadExports();
   }
 
@@ -367,10 +395,26 @@
     return isNaN(d.getTime()) ? undefined : d.toISOString();
   }
 
+  function downloadBytes(base64, filename, mimeType) {
+    var binary = atob(base64);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    var blob = new Blob([bytes], { type: mimeType });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  }
+
   async function createExport() {
     var errEl = $("ao-export-error");
     errEl.style.display = "none";
     var resp = await call("adminexportcreate", {
+      kind: $("ao-export-kind").value,
       date_from: localToIso($("ao-export-from").value),
       date_to: localToIso($("ao-export-to").value),
       format: $("ao-export-format").value
@@ -393,7 +437,9 @@
       // operator matching a file against this table still needs it.
       var shortId = String(e.export_id || "");
       if (shortId.length > 10) shortId = shortId.slice(0, 8) + "…";
-      return "<tr><td>" + esc(fmtDate(e.completed_at)) + "</td><td>" + esc(e.format) +
+      return "<tr><td>" + esc(fmtDate(e.completed_at)) + "</td><td>" +
+        esc(e.kind === "project_health" ? "Project health" : "Participant inputs") +
+        "</td><td>" + esc(e.format) +
         "</td><td>" + esc(e.row_count) + "</td><td><code>" +
         esc((e.checksum || "").slice(0, 12)) + "…</code></td><td>" + esc(e.destination) +
         '</td><td><span class="ws-id" title="' + esc(e.export_id) + '">' + esc(shortId) +
@@ -401,7 +447,7 @@
         esc(e.export_id) + '">Fetch &amp; verify</button></td></tr>';
     }).join("");
     $("ao-export-table").innerHTML = rows ?
-      '<table class="ws-table"><thead><tr><th>Taken</th><th>Format</th><th>Rows</th>' +
+      '<table class="ws-table"><thead><tr><th>Taken</th><th>What</th><th>Format</th><th>Rows</th>' +
       "<th>Checksum</th><th>Destination</th><th>Reference</th><th></th></tr></thead><tbody>" +
       rows + "</tbody></table>" : '<p class="ws-note">No exports yet.</p>';
     $("ao-export-table").querySelectorAll("[data-fetch]").forEach(function (btn) {
@@ -419,8 +465,23 @@
           "Fetch failed.") + "</strong><br>" + esc((resp && resp.error) || "") + "</div>";
       return;
     }
-    target.innerHTML =
-      '<div class="ws-warning">' + esc(resp.review_note || "") + "</div>" +
+    var reviewHtml = resp.review_required
+      ? '<div class="ws-warning">' + esc(resp.review_note || "") + "</div>" : "";
+    var scopeHtml = '<p class="ws-note">' +
+      esc(resp.research_account_filtered
+        ? "Filtered to research accounts."
+        : "NOT filtered to research accounts — a project's results carry no account type.") +
+      "</p>";
+    if (resp.format === "xlsx" && resp.payload_base64) {
+      target.innerHTML = reviewHtml + scopeHtml +
+        "<p><strong>Checksum verified.</strong> " + esc(resp.row_count) + " row(s), workbook.</p>";
+      var fname = "export_" + (resp.kind || "participant_inputs") + "_" +
+        String(exportId).slice(0, 8) + ".xlsx";
+      downloadBytes(resp.payload_base64, fname,
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      return;
+    }
+    target.innerHTML = reviewHtml + scopeHtml +
       "<p><strong>Checksum verified.</strong> " + esc(resp.row_count) + " row(s), format " +
       esc(resp.format) + ".</p>" +
       '<textarea class="ws-input" style="width:100%; min-height:160px; font-family:var(--font-mono);" readonly>' +
