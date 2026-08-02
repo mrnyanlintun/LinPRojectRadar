@@ -3,6 +3,92 @@
 > user-facing surface quotes verbatim. It lives in the repository so it cannot fail to reach a
 > session, which it did three times while it lived outside. Read it before this handoff, not after.
 
+# T19 — DOCUMENT VERSIONING. MIGRATION 0013 IS WRITTEN AND **NOT** APPLIED TO PRODUCTION.
+
+Full detail in `REPORT_2026-08-02_document-versioning.md`. **1013 checks across 21 suites**;
+`tests_render.html` 26/26.
+
+**THE ACTUAL DEFECT WAS WORSE THAN THE BRIEF DESCRIBED, and it is worth knowing what it was.** A
+revision did not collide and was not frozen out by the cache: **both versions were stored and both
+reached computation**, because `_period_documents` filtered on (project, period) and deduped on
+sha256 only. Which version's figures survived was decided by `_ordered_docs`'s tiebreak, **the
+SHA256** — a content hash. Measured: first-wins fields took the lower hash, last-wins fields the
+higher (opposite directions, so one revision could produce a signalInputs **mixing both
+versions**), additive fields counted BOTH (an RFI log revised 10 to 12 assembled to **22**), and a
+downward correction to a keep_max field was discarded. It was deterministic, which is worse than
+random: it reproduced, so it looked stable.
+
+**Built:** `document_uploads.supersedes_document_id` (new -> old, so superseding is an INSERT and
+never an UPDATE of a row a decision may reference, and so a revision can itself be revised);
+supersession excluded from computation but **kept readable** under a new `superseded` key on
+`projectuploadstatus`, with bytes and extraction retained; and
+`computed_results.source_documents`, so a result names the document versions that produced it.
+
+**It is on `document_uploads`, NOT on `documents`, and that is load-bearing.** `documents` is
+content-addressed and shared across projects; the same file can be current in one project and
+superseded in another. Marking the shared row would leak a revision into every project holding
+those bytes.
+
+**AWAITING LIN'S DECISION: results computed against a now-superseded document.** Options are laid
+out in section 3 of the report. I chose **leave them** for this session (it changes nothing about
+already-collected data, and `source_documents` makes "was this computed from a superseded version"
+answerable), and **recommend a stale flag as the follow-up**. **Automatic recompute is the one to
+avoid**: it rewrites what a participant was shown, which is what the append-only discipline exists
+to prevent. Nothing was recomputed, backfilled, or marked.
+
+**REMAINING GAP, reported not fixed: an undeclared duplicate is unchanged.** A revision uploaded
+**without** the `supersedes` field still merges arbitrarily, exactly as before. No inference was
+added, deliberately: two documents of the same type in one period are not necessarily versions of
+each other (two RFI logs from different weeks are both current). The suggested follow-up is to
+**detect and report the ambiguity** on upload rather than infer it, which needs Lin's wording.
+**There is also no frontend control yet** — the field is reachable only by an API caller.
+
+---
+
+# DEFERRED WITH AN OWNER — NOT DEFECTS, NOT YOURS TO ACT ON
+
+**Four items are deliberately deferred and three of them are Lin's.** A session that finds one of
+these and treats it as an open defect is acting on work that has already been assigned. Read the
+owner line before doing anything.
+
+## 0. Applying migration 0013 to production. OWNER: LIN.
+
+Written and verified against a throwaway SQLite in T19 above; **production has not been migrated
+and was not inspected or queried**. Migrations are applied manually by Lin. Until it is applied,
+the document-versioning columns do not exist in production and the supersede path will fail there.
+
+## 1. The production range query. OWNER: LIN. Do not do this yourself.
+
+No stored `docRiskScore` outside 0 to 1 exists in anything reachable locally (the dev store and
+all per-suite throwaway databases: zero). **Production was deliberately not inspected**, and no
+session may query or migrate production data.
+
+This matters because the T18 guard refuses at the merge boundary: a project holding an
+out-of-range row **will stop computing** once the guard is deployed, rather than computing without
+that document. **Lin will query production before the first real document run.** That is the whole
+of the follow-up; there is nothing for a session to do here except leave it alone.
+
+## 2. The general shape of `w_overwritesignal`. DEFERRED, and NOT resolved by the range guard.
+
+The T18 range guard closes this action for **`docRiskScore` only**. Everything else about it is
+unchanged: it still accepts **an arbitrary `signalInputs` field name and an arbitrary value**,
+PM-gated but otherwise unvalidated. A caller can still write nonsense into `cpi`, `bac`,
+`actualPctComplete`, or a field name that does not exist at all.
+
+**Do not read the range guard as having fixed this.** Validating the rest is a separate piece of
+work on its own terms: every field needs its own contract decided first, and inventing range rules
+for `cpi` or `bac` on a session's own judgement is exactly the kind of quiet assumption this
+codebase keeps having to undo. It needs Lin's decisions per field before any of it is written.
+
+## 3. Step 6, real extraction against an actual project document. OWNER: LIN. STILL BLOCKED.
+
+Unchanged and not clearable from a local session. It needs a real project document and a live
+`ANTHROPIC_API_KEY` in the same place; the container has neither, and `render.yaml` marks the key
+`sync: false` so it exists only in the Render dashboard. **The unblocking run is a manual upload
+of one real document through the deployed platform, and it is Lin's to do.** Detail in T17 below.
+
+---
+
 # T18 — THE DOCUMENT RISK SCORE RANGE IS GUARDED. PR #197 IS MERGED.
 
 Full detail in `REPORT_2026-08-02_risk-score-guard.md`. **985 checks across 20 suites**;

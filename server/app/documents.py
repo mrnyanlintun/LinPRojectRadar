@@ -169,14 +169,48 @@ def _decode(entry: dict) -> tuple[bytes | None, dict | None]:
     return raw, None
 
 
+def _superseded_document_ids(session: Session, project: Project, period: int) -> set[str]:
+    """
+    The documents that some other upload in this project and period has replaced.
+
+    A reverse lookup, because the pointer runs new -> old (see migration 0013): superseding is
+    an insert carrying `supersedes_document_id`, never an update of the row being replaced.
+    Scoped to (project, period) deliberately — the same document may be current evidence in
+    another project, and `documents` is shared content, not per-project state.
+    """
+    rows = session.scalars(
+        select(DocumentUpload.supersedes_document_id).where(
+            DocumentUpload.project_id == project.id,
+            DocumentUpload.period == period,
+            DocumentUpload.supersedes_document_id.is_not(None),
+        )
+    ).all()
+    return {r for r in rows if r}
+
+
 def _period_documents(session: Session, project: Project, period: int) -> list[dict]:
     """
-    The period's document SET, in the shape `assemble_signal_inputs` expects.
+    The period's LIVE document SET, in the shape `assemble_signal_inputs` expects.
 
     One entry per distinct document. The unique index on (project, period, document) already
     makes a re-upload a no-op, so this is a set by construction — which is what makes assembly
     idempotent and therefore a recompute reproducible.
+
+    SUPERSEDED DOCUMENTS ARE EXCLUDED FROM COMPUTATION AND ARE NOT DELETED. Before 0013 both
+    versions of a revised document reached assembly, and which one's figures survived was
+    decided by `_ordered_docs`'s sha256 tiebreak: a content hash. First-wins fields took the
+    lower hash, last-wins fields the higher, additive fields counted BOTH (an RFI log revised
+    from 10 to 12 assembled to 22), and a downward correction to a keep_max field was discarded
+    entirely. A single revision could therefore produce a signalInputs mixing both versions.
+
+    Excluding them here rather than inside the merge is deliberate: `assemble_signal_inputs` is
+    pure and knows nothing of projects or periods, and supersession is a per-project fact. The
+    merge continues to receive a set it can treat as authoritative.
+
+    The superseded rows stay readable through `a_projectuploadstatus`, which is what keeps a
+    decision that referenced them reproducible.
     """
+    superseded = _superseded_document_ids(session, project, period)
     rows = session.execute(
         select(Document)
         .join(DocumentUpload, DocumentUpload.document_id == Document.document_id)
@@ -185,11 +219,16 @@ def _period_documents(session: Session, project: Project, period: int) -> list[d
     seen: set[str] = set()
     out: list[dict] = []
     for d in rows:
+        if d.document_id in superseded:
+            continue
         if d.sha256 in seen:
             continue
         seen.add(d.sha256)
         out.append({"sha256": d.sha256, "doc_type": d.doc_type or UNMAPPED,
-                    "filename": d.filename, "extraction": d.extraction or {}})
+                    "filename": d.filename, "extraction": d.extraction or {},
+                    # Carried so the caller can record provenance on the computed result.
+                    # `assemble_signal_inputs` ignores keys it does not know.
+                    "document_id": d.document_id})
     return out
 
 
@@ -291,6 +330,16 @@ def _compute_and_store(session: Session, project: Project, period: int,
         project_id=project.id,
         period=period,
         signal_inputs=si,
+        # 0013. WHICH DOCUMENT VERSIONS PRODUCED THIS RESULT. Taken from the live set actually
+        # assembled, so a result computed before a revision keeps naming the version it used
+        # even after that version is superseded. `signal_inputs.sources` records a docType per
+        # field and never a document, so without this a result became uninterpretable the
+        # moment the period's document set moved on.
+        source_documents=[
+            {"document_id": d.get("document_id"), "sha256": d.get("sha256"),
+             "doc_type": d.get("doc_type"), "filename": d.get("filename")}
+            for d in documents
+        ],
         module_results=run.get("modules"),
         category_statuses=run.get("category_statuses"),
         project_status=run.get("project_status"),
@@ -397,6 +446,9 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
         "period_cutoff": str(row.period_cutoff) if row.period_cutoff else None,
         "computed_at": row.computed_at.isoformat() if row.computed_at else None,
         "superseded_by": row.superseded_by,
+        # 0013. Which document versions produced this result. NULL on rows computed before
+        # that migration, which is honest rather than backfilled: see the migration's note.
+        "source_documents": row.source_documents,
     }
     if include_recommendation and package is not None:
         view["recommendation"] = {
@@ -455,7 +507,38 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
             "filename": str(entry.get("filename") or entry.get("name") or "unnamed"),
             "mime_type": str(entry.get("mimeType") or entry.get("mime_type") or ""),
             "doc_type": str(entry.get("docType") or entry.get("doc_type") or "").strip().lower(),
+            # 0013. An EXPLICIT claim that this upload replaces an earlier document in this
+            # project and period. Never inferred from upload order: two documents of the same
+            # type in one period are not necessarily versions of each other (two RFI logs from
+            # different weeks are both current), so inferring would silently discard evidence.
+            "supersedes": str(entry.get("supersedes")
+                              or entry.get("supersedes_document_id") or "").strip() or None,
         })
+
+    # 0013. Validate every supersedes claim BEFORE extracting anything: a bad reference should
+    # cost nothing and must refuse by name rather than surfacing later as an integrity error.
+    # The condition is stronger than a foreign key could express — the referenced document must
+    # exist AND already be part of THIS project and period, because "supersedes" is a statement
+    # about this period's evidence, not a pointer into the shared document store.
+    claims = [d["supersedes"] for d in decoded if d["supersedes"]]
+    if claims:
+        held = set(session.scalars(
+            select(DocumentUpload.document_id).where(
+                DocumentUpload.project_id == project.id,
+                DocumentUpload.period == period,
+                DocumentUpload.document_id.in_(claims),
+            )
+        ).all())
+        for claim in claims:
+            if claim not in held:
+                return err(
+                    f"cannot supersede {claim}: this project has no such document in period "
+                    f"{period}. A document can only supersede one already uploaded to the same "
+                    f"project and period."
+                )
+        for d in decoded:
+            if d["supersedes"] and d["supersedes"] == d["sha256"]:
+                return err("a document cannot supersede itself")
 
     # Which hashes do we already hold? This is the cache, and it is a single query.
     hashes = {d["sha256"] for d in decoded}
@@ -531,10 +614,16 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
         else:
             extracted_count += 1
         if doc.document_id not in already:
+            # 0013. A document cannot supersede itself, including via the content cache: if the
+            # same bytes are re-uploaded claiming to replace their own row, the claim is
+            # dropped rather than stored, because honouring it would exclude the document from
+            # its own period and leave the period with nothing.
+            supersedes = d["supersedes"] if d["supersedes"] != doc.document_id else None
             session.add(DocumentUpload(project_id=project.id, period=period,
                                        document_id=doc.document_id,
                                        uploaded_by=caller.participant_id,
-                                       was_cached=was_cached))
+                                       was_cached=was_cached,
+                                       supersedes_document_id=supersedes))
             already.add(doc.document_id)
         mapped = is_mapped(doc.doc_type or "")
         files.append({
@@ -600,12 +689,14 @@ def a_projectuploadstatus(session: Session, payload: dict, secret: str,
     # shape B7b's determinism guarantees were written against.
     upload_rows = session.execute(
         select(Document.sha256, Document.document_id, DocumentUpload.uploaded_at,
-              DocumentUpload.was_cached)
+              DocumentUpload.was_cached, Document.filename, Document.doc_type,
+              DocumentUpload.supersedes_document_id)
         .join(DocumentUpload, DocumentUpload.document_id == Document.document_id)
         .where(DocumentUpload.project_id == project.id, DocumentUpload.period == period)
     ).all()
-    by_sha = {sha: (doc_id, uploaded_at, was_cached)
-             for sha, doc_id, uploaded_at, was_cached in upload_rows}
+    by_sha = {r[0]: (r[1], r[2], r[3]) for r in upload_rows}
+    # Which live upload replaced which document, so the reader can follow the chain.
+    replaced_by = {r[6]: r[1] for r in upload_rows if r[6]}
 
     present = []
     for d in documents:
@@ -618,6 +709,23 @@ def a_projectuploadstatus(session: Session, payload: dict, secret: str,
             "uploaded_at": uploaded_at.isoformat() if uploaded_at else None,
             "was_cached": was_cached,
         })
+
+    # 0013. SUPERSEDED DOCUMENTS ARE STILL READABLE. `_period_documents` excludes them so they
+    # cannot reach computation, which would make them silently vanish from this surface too.
+    # They are listed separately instead: a decision recorded against an earlier version must
+    # still resolve to the evidence it was actually shown, which is a property the About tab
+    # states as reproducibility. `contributes` is false because they no longer feed assembly,
+    # and `superseded_by_document_id` names the version that replaced each one.
+    superseded_ids = _superseded_document_ids(session, project, period)
+    superseded = [
+        {"document_id": r[1], "filename": r[4], "doc_type": r[5] or UNMAPPED,
+         "contributes": False,
+         "uploaded_at": r[2].isoformat() if r[2] else None,
+         "was_cached": r[3],
+         "superseded_by_document_id": replaced_by.get(r[1])}
+        for r in upload_rows if r[1] in superseded_ids
+    ]
+
     have = {d["doc_type"] for d in documents}
 
     audit(session, "project_read", participant_id=caller.participant_id,
@@ -629,6 +737,9 @@ def a_projectuploadstatus(session: Session, payload: dict, secret: str,
         "project_id": project.legacy_id,
         "period": period,
         "documents": present,
+        # Replaced versions, kept readable and kept out of computation. Empty on every period
+        # where nothing has been superseded, which is the ordinary case.
+        "superseded": superseded,
         "unmapped": report["unmapped"],
         # Advisory, not a gate: compute never refuses on a missing document type. It reports
         # what is absent so the PM can decide whether the period is complete.

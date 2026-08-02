@@ -537,6 +537,17 @@ class DocumentUpload(Base):
     )
     was_cached: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false",
                                              default=False)
+    # 0013. The document THIS upload replaces, within this project and period. NULL means it
+    # replaced nothing, which is the ordinary case and the state of every pre-0013 row.
+    #
+    # It lives here and not on `documents` because `documents` is content-addressed and shared:
+    # the same bytes can be current evidence in one project and superseded in another, so
+    # supersession is a statement about a (project, period, document), not about the bytes.
+    #
+    # The pointer runs NEW -> OLD so that superseding is an INSERT and never an UPDATE of a row
+    # a stored decision may reference, and so that a revision can itself be revised as a chain.
+    # See migration 0013 for the full argument.
+    supersedes_document_id: Mapped[str] = mapped_column(ULID, nullable=True)
 
 
 class ComputedResult(Base):
@@ -577,3 +588,10 @@ class ComputedResult(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     superseded_by: Mapped[str] = mapped_column(ULID, nullable=True)
+    # 0013. Which document VERSIONS produced this result: a list of
+    # {document_id, sha256, doc_type, filename}, in the order assembly consumed them.
+    #
+    # `signal_inputs.sources` records a docType per field and never a document, so before this
+    # column a result could not answer "which version of the pay application produced this
+    # status" once the period's document set had moved on. NULL on rows computed before 0013.
+    source_documents: Mapped[dict] = mapped_column(JSONType, nullable=True)
