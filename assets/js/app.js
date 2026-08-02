@@ -616,7 +616,13 @@
   };
   const GL_WORLD = { center: [20, 20], zoom: 1.6 };
   let mapBuilt = false;      // lazily built on first switch
-  let mapHydrated = false;   // slim records swapped for full ones (coords live in full project.json)
+  /* Which project ids have already had their full JSON fetched for a geographic view. A SET,
+     NOT A BOOLEAN: the boolean this replaces latched on the first geographic open, so a view
+     opened before the portfolio had loaded — or before a project was created — latched with
+     nothing fetched and never tried again for the rest of the session. Keyed by id, the work
+     is still done at most once per project per session, and a project that arrives later is
+     not locked out of ever being placed. */
+  const geoHydratedIds = new Set();
   let glMap = null;          // MapLibre instance (null until built / after failure)
   let glMarkers = {};        // id → { marker, el, p }
   let glPopup = null;        // the single open popup, if any
@@ -1034,11 +1040,12 @@
      there is one copy: a second one would eventually be the one that forgot. One GET per
      project, once per session, only when a geographic view is actually opened. */
   async function hydrateProjectsForGeo() {
-    if (mapHydrated) return;
     if (!(window.LinStore && LinStore.getProject && LinStore.configured && LinStore.configured())) return;
-    mapHydrated = true;
-    const slims = LIN_PROJECTS.filter((p) => p && p.slim);
+    // Only rows that are still a projection AND have not been fetched already this session.
+    // Marked before the await so two overlapping opens do not both fetch the same project.
+    const slims = LIN_PROJECTS.filter((p) => p && p.slim && !geoHydratedIds.has(p.id));
     if (!slims.length) return;
+    slims.forEach((p) => geoHydratedIds.add(p.id));
     try {
       const fulls = await Promise.all(slims.map((p) => LinStore.getProject(p.id).catch(() => null)));
       fulls.forEach((f) => {
@@ -1047,7 +1054,10 @@
           if (i >= 0) LIN_PROJECTS[i] = f;
         }
       });
-    } catch (e) { /* pins simply won't render for records we couldn't hydrate */ }
+    } catch (e) {
+      // Let a failed fetch be retried on the next open rather than being remembered as done.
+      slims.forEach((p) => geoHydratedIds.delete(p.id));
+    }
   }
 
   async function buildMap() {
