@@ -341,6 +341,10 @@ def extract_many(extractor, jobs: list[dict],
         return []
     workers = max(1, min(concurrency, len(jobs)))
 
+    # Imported inside the function, as documents.py does with the simulation package: it keeps
+    # the module-level direction client -> fields only, and this is the one call site.
+    from .extraction_merge import validate_doc_risk_score
+
     def run(job: dict) -> dict:
         started = time.monotonic()
         try:
@@ -348,6 +352,15 @@ def extract_many(extractor, jobs: list[dict],
                 job["content"], job.get("mime_type") or "", job.get("filename") or "",
                 job.get("doc_type"),
             )
+            # THE POINT THE VALUE ENTERS. Refusing here, before the caller writes a Document
+            # row, is what makes "no out-of-range value reaches storage" true rather than
+            # merely checked later: documents.py only persists results whose ok is True, so a
+            # refusal leaves nothing behind to clean up. Raising rather than returning a
+            # failure shape is deliberate — the except below already converts any exception
+            # into the per-file {ok: False, error} the PM sees in the "Extraction failed"
+            # dialog, so the reason reaches the uploader through machinery that exists.
+            validate_doc_risk_score((extraction or {}).get("document_risk_score"),
+                                    filename=job.get("filename") or None)
             return {"sha256": job["sha256"], "ok": True, "doc_type": doc_type,
                     "extraction": extraction, "error": None,
                     "elapsed_s": round(time.monotonic() - started, 3)}

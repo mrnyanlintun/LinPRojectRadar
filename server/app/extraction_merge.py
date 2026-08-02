@@ -95,7 +95,11 @@ __all__ = [
     "assemble_signal_inputs",
     "assembly_report",
     "DOC_RISK_DOC_TYPES",
+    "DOC_RISK_SCORE_MAX",
+    "DOC_RISK_SCORE_MIN",
+    "DocRiskScoreRangeError",
     "SIGNAL_INPUT_KEYS",
+    "validate_doc_risk_score",
 ]
 
 
@@ -110,6 +114,8 @@ __all__ = [
 # 0-100 percentage will pin every project to the worst band; that is an extraction-side
 # contract, not something this module rescales (rescaling here would silently diverge
 # from the instrument being reproduced).
+#
+# THAT CONTRACT IS NOW ENFORCED BY REFUSAL. See validate_doc_risk_score below.
 DOC_RISK_DOC_TYPES: frozenset[str] = frozenset(
     {
         "rfi",
@@ -209,6 +215,65 @@ def _num_or_null(v: Any) -> float | int | None:
     if n != n:  # NaN guard
         return None
     return n
+
+
+# --------------------------------------------------------------------------- doc risk range
+
+DOC_RISK_SCORE_MIN = 0.0
+DOC_RISK_SCORE_MAX = 1.0
+
+
+class DocRiskScoreRangeError(ValueError):
+    """``document_risk_score`` outside its 0..1 contract."""
+
+
+def validate_doc_risk_score(raw: Any, *, filename: str | None = None) -> None:
+    """
+    Refuse a ``document_risk_score`` outside 0..1 inclusive. Returns None, or raises.
+
+    REFUSE, NOT CLAMP, AND NOT STORE-AND-FLAG. This is a decision, recorded here because the
+    alternatives are each worse in a way that is easy to argue for and hard to detect later:
+
+      * Clamping turns -3 into a confident 0.0, which reads as the BEST band. Nothing
+        downstream could trace that Green back to a bad input, and the project would look
+        healthier than the evidence supports. A silent repair in the reassuring direction is
+        the worst of the three.
+      * Store-and-flag keeps the wrong number in the research record and relies on somebody
+        reading the flag. The value would still reach fusion.
+      * Refusing says what happened, at the moment it happened, to the person who can act.
+
+    Out of range is a contract violation by the extraction model, not a data condition of the
+    project, so the platform states it rather than repairing it. "Loud refusal over quiet
+    approximation" is the standing rule and this is the case it was written for.
+
+    NOT a range violation, and deliberately allowed through:
+      * ``None`` / absent. The field is optional; most doc types never carry it.
+      * A value that does not parse as a number at all (``"1.2.3"``). ``_num_or_null`` returns
+        None for those and the merge stores nothing, which is already the honest outcome.
+      * ``"N/A"`` and other unparseable strings, which ``_num_or_null`` coerces to 0.0 by a
+        documented legacy quirk. That lands in range and is left alone: changing it would
+        alter behaviour the instrument has always had, which is a separate decision.
+
+    0 and 1 are both VALID. 0 is a genuine "no concern" reading and must survive to storage
+    (there is a standing assertion at the bottom of this module that a genuine 0 is stored),
+    and the prompt asks the model for a number "between 0 and 1 inclusive".
+    """
+    if raw is None or raw == "":
+        return
+    value = _num_or_null(raw)
+    if value is None:
+        return
+    if DOC_RISK_SCORE_MIN <= value <= DOC_RISK_SCORE_MAX:
+        return
+    where = f" in {filename}" if filename else ""
+    raise DocRiskScoreRangeError(
+        f"document_risk_score{where} is {value}, which is outside the required range "
+        f"{DOC_RISK_SCORE_MIN} to {DOC_RISK_SCORE_MAX} inclusive. It is a risk rating on a "
+        f"0 to 1 scale, not a percentage and not a count. Nothing was stored for this "
+        f"document and no figures from it were used. Re-run the extraction, or supply the "
+        f"document again, and if it keeps happening the extraction model is returning the "
+        f"wrong scale for this document type."
+    )
 
 
 def _round3(n: float) -> float:
@@ -436,6 +501,11 @@ def _merge_one(acc: _Acc, doc_type: str, ex: dict) -> None:
         acc.set_date("docDate", ex.get("report_date"))
 
     elif doc_type in _RISK_BRANCH_TYPES:  # .gs 910 — shared risk-document branch
+        # Last line before the value reaches storage and fusion. The extraction boundary
+        # refuses first (extract_many), so a document uploaded today cannot arrive here out of
+        # range; this catches a row that reached the database by some other route, including
+        # one stored before the guard existed.
+        validate_doc_risk_score(ex.get("document_risk_score"))
         risk = n(ex.get("document_risk_score"))
         if risk is not None:
             acc.set_field("docRiskScore", risk)
@@ -690,6 +760,7 @@ def _merge_one(acc: _Acc, doc_type: str, ex: dict) -> None:
                 acc.set_field(dst, n(ex.get(src)))
 
     elif doc_type == "commissioning_report":  # .gs 1061 — docRiskScore only, no docDate.
+        validate_doc_risk_score(ex.get("document_risk_score"))  # same guard as the risk branch
         crisk = n(ex.get("document_risk_score"))
         if crisk is not None:
             acc.set_field("docRiskScore", crisk)

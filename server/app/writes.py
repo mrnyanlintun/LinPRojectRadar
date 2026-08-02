@@ -340,6 +340,20 @@ def w_overwritesignal(session: Session, payload: dict) -> dict[str, Any]:
 
     old_value = inputs.get(field)
     new_value = payload.get("value")
+
+    # THE THIRD ENTRY POINT, and the one an audit of extraction_merge alone would miss.
+    # This action writes an arbitrary caller-supplied value into an arbitrary signalInputs
+    # field with no validation of either, so it bypasses the extraction boundary completely.
+    # A PM could set docRiskScore to 85 or -3 here and reach fusion by a route that never
+    # touches a document. Guarded with the same rule, converted to the refusal shape this
+    # module returns rather than raised, because /exec callers read `error`.
+    if field == "docRiskScore":
+        from .extraction_merge import DocRiskScoreRangeError, validate_doc_risk_score
+        try:
+            validate_doc_risk_score(new_value)
+        except DocRiskScoreRangeError as exc:
+            return err(str(exc))
+
     inputs[field] = new_value
 
     fresh = dict(project.doc or {})

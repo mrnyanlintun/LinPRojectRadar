@@ -3,10 +3,58 @@
 > user-facing surface quotes verbatim. It lives in the repository so it cannot fail to reach a
 > session, which it did three times while it lived outside. Read it before this handoff, not after.
 
+# T18 — THE DOCUMENT RISK SCORE RANGE IS GUARDED. PR #197 IS MERGED.
+
+Full detail in `REPORT_2026-08-02_risk-score-guard.md`. **985 checks across 20 suites**;
+`tests_render.html` 26/26. Merged to `main` and pushed.
+
+**STEP 6 IS STILL BLOCKED AND IS LIN'S TO CLEAR.** Real extraction needs a real project document
+and a live `ANTHROPIC_API_KEY` in the same place, and neither is reachable from a local session.
+The unblocking run is **one real document through the deployed platform on Render**, where the key
+already is. Nothing in this session moved that; the T17 section below still stands in full.
+
+**THE FINDING IS FIXED, AND THERE WERE THREE ENTRY POINTS, NOT TWO.** The one the earlier finding
+missed is the dangerous one: **`w_overwritesignal` in `writes.py`** is a live PM-gated `/exec`
+action that writes a caller-supplied value into an arbitrary `signalInputs` field with **no
+validation at all**, so `docRiskScore` could be set to 85 or -3 and reach fusion **without a
+document being involved**. A guard confined to `extraction_merge.py` would have left that wide
+open. All four sites now refuse:
+
+1. `extract_many()` — the extraction boundary, where the value enters from the model
+2. `_merge_one()` shared risk branch
+3. `_merge_one()` `commissioning_report` branch (a separate path; guarding the shared branch
+   alone leaves it open)
+4. `w_overwritesignal()` — the document-free route
+
+**REFUSE, NOT CLAMP, and the reasoning is in the validator's docstring so it is not
+re-litigated.** Clamping turns -3 into a confident 0.0 that reads as the BEST band and traces back
+to nothing. 0 and 1 remain VALID and must survive; `"N/A"` still coerces to 0.0 by the documented
+legacy quirk and is deliberately untouched.
+
+**The refusal reaches the uploader through an existing surface.** `extract_many` already turns any
+exception into the per-file `{ok: False, error}` that `signals.js` renders verbatim in its
+"Extraction failed" dialog, and `documents.py` only stores rows whose `ok` is true, so a refusal
+leaves nothing behind. **The message text is composed operational wording, flagged in the report
+for review**; it is not liability language and it is one string to change.
+
+**No already-stored out-of-range values exist** in anything reachable from a local session (the
+dev store and all twenty per-suite databases: zero). **Production Postgres was not inspected and
+must not be.** Worth knowing before the first real run: a project that DOES hold such a row will
+**fail to compute** once this deploys, because the merge boundary raises rather than dropping the
+value. That is refusal applied consistently, and it is a hard stop, not a degraded result.
+
+**`server/tools/test_doc_risk_range.py`, 66 checks**, proven able to fail five independent ways
+(each guard removed in turn, plus the range widened to accept a percentage). **One vacuous test
+was caught while writing it**: the `overwritesignal` checks initially passed because the action
+refuses an empty `signalInputs` *before* reaching the guard, so they were green while proving
+nothing. The suite now seeds first and reads back independently.
+
+---
+
 # T17 — STEP 6 (REAL EXTRACTION) DID NOT RUN. THE DEPENDENCY IS UNMET.
 
-Full detail in `REPORT_2026-08-02_real-extraction.md`. Branch `claude/step-6-real-extraction`,
-unmerged.
+Full detail in `REPORT_2026-08-02_real-extraction.md`. Merged to `main` as PR #197 (T18 above);
+the "unmerged" note that stood here is stale.
 
 **Treat the extraction verification as NOT STARTED, not as partial progress.** Parts 1 to 4 were
 not attempted. Three independent blockers, any one of them sufficient:
@@ -32,12 +80,13 @@ run: **one clean extraction would not justify "extracts the figures" either.** T
 about reliability across real document structures. One run justifies only "has been run against a
 real project document". See section 3 of the report.
 
-**FINDING TO CARRY FORWARD: `document_risk_score` has no range guard, and the silent failure is in
-the safe-looking direction.** Measured through the merge path: `85` stores as `85` (pins every
-project Red), `"85%"` stores as `85.0`, and **`-3` stores as `-3` and reads as GREEN**. There is no
-validation anywhere on the server; the only guard is a sentence in the extraction prompt, and no
-test asserts the field stays in range. Not fixed, deliberately: it needs a decision about what to
-do on violation (refuse the document, clamp, or store and flag) before a check can be written.
+**FINDING (NOW FIXED IN T18 ABOVE, kept as the record of what it was): `document_risk_score` had
+no range guard, and the silent failure was in the safe-looking direction.** Measured through the
+merge path: `85` stored as `85` (pinning every project Red), `"85%"` stored as `85.0`, and **`-3`
+stored as `-3` and read as GREEN**. There was no validation anywhere on the server; the only guard
+was a sentence in the extraction prompt, and no test asserted the range. Lin decided refuse rather
+than clamp, and T18 implements it at all four entry points. **This paragraph is history, not an
+open item.**
 
 **Disclaimer wording gap: CLOSED.** The four upload panels in `signals.js` and `auditor.js` carried
 wording matching neither the approved notice nor each other. All four now render the approved text
