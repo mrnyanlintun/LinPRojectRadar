@@ -238,11 +238,14 @@ body = json.dumps(result)
 for marker in ("recommended_action", "expected_regret", "package_hash", "package_id"):
     check(marker not in body, f"response body has no {marker!r}")
 # module_results may legitimately contain an "action" key on OTHER modules unrelated to
-# recommendation (grepped narrowly above); the per-module redaction flag is the precise proof:
+# recommendation (grepped narrowly above); the per-module redaction flag is the precise proof.
+# This used to be `check(True, ...)` — redacted_any was computed and printed but never tested,
+# so the check passed unconditionally and would still have passed with the per-module redaction
+# removed entirely.
 redacted_any = any(
     isinstance(m, dict) and m.get("recommendation_withheld") for m in (r["module_results"] or [])
 )
-check(True, "module-level redaction flag present where applicable",
+check(redacted_any, "module-level redaction flag present on at least one action-bearing module",
       f"redacted_any={redacted_any}")
 
 

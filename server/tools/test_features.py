@@ -78,7 +78,9 @@ with Session() as s:
     if s.scalar(select(Project).where(Project.legacy_id == PROJECT)) is None:
         s.add(Project(legacy_id=PROJECT, doc={"id": PROJECT, "name": "T1 project"}))
     s.commit()
-admin = post({"action": "researchlogin", "access_token": ADMIN})["session_token"]
+admin_login = post({"action": "researchlogin", "access_token": ADMIN})
+admin = admin_login["session_token"]
+admin_id = admin_login["participant_id"]
 
 print("=" * 78)
 print("GUARANTEE 1: health endpoints survive the static mount; the SPA is served")
@@ -155,9 +157,22 @@ check(r.get("ok") is True and r["effective"]["chat"] is True,
       "admin enabled chat for the research account", str(r)[:200])
 check(all(r["effective"][k] is False for k in FEATURE_KEYS if k != "chat"),
       "the other three keys stay at the restrictive default", str(r.get("effective")))
-check(audit_rows("features_set", changed_by=None) == [] or
-      any(m.get("applied") == {"chat": True} for m in audit_rows("features_set")),
-      "the change is audited with previous and new values")
+# This used to be `audit_rows("features_set", changed_by=None) == [] or any(...)`.
+# features.py:317 always writes changed_by=caller.participant_id, a real ULID, never None, so
+# the left side of the `or` is `[] == []` on every possible run and the right side — the only
+# part that reads real content — never executes. It would pass even if features_set were never
+# audited at all.
+#
+# Filtered by changed_by, not participant_id: `audit()` stores participant_id on AuditEvent's
+# own COLUMN, so it is never inside event_metadata and audit_rows (which only reads
+# event_metadata) can never match it — that trap was caught running this fix, not by inspection.
+# changed_by IS passed through **metadata and is real content: every field the audit call writes
+# is checked against the values this exact request should have produced.
+rows = audit_rows("features_set", changed_by=admin_id)
+check(any(m.get("applied") == {"chat": True} and m.get("previous") == {}
+          and m.get("now_stored") == {"chat": True} for m in rows),
+      "the change is audited with who changed it, the previous state and the new state",
+      str(rows))
 
 r = post({"action": "adminfeaturesset", "session_token": admin,
           "participant_id": res_p["participant_id"], "features": {"telepathy": True}})

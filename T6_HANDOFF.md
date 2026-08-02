@@ -9,6 +9,30 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-02 — FIVE CHECKS THAT CANNOT FAIL: TWO FIXED, TWO CONFIRMED, ONE ALREADY DONE
+
+Full detail in `REPORT_2026-08-02_vacuity-fixes.md`. Test files only, no application code touched.
+**Server 1361/1361 before and after** (no checks added or removed).
+
+- **`test_workspace_t3t5.py:229`** was `check(True, ...)` — `redacted_any` was computed and printed
+  but never tested. Now `check(redacted_any, ...)`. Ground truth was `True` on the real fixture
+  before the fix landed, so this was not silently hiding a live defect.
+- **`test_features.py:158`** was `audit_rows("features_set", changed_by=None) == [] or any(...)`.
+  `changed_by` is never `None` in a real audit row, so the left disjunct is always `[] == []` and
+  the right side, the only part reading real content, never runs. Now filters by the real
+  `changed_by=admin_id` and asserts `applied`/`previous`/`now_stored` match. **A second defect was
+  found fixing the first**: filtering by `participant_id` cannot work at all, because `audit()`
+  stores it as a dedicated `AuditEvent` column, never inside `event_metadata`, and `audit_rows()`
+  only reads metadata. Worth knowing for any future audit-content check in this suite.
+- **Three `all()`-over-possibly-empty checks in `test_d1_module_inputs.py`** — already fixed, in
+  the same D1 session that found them, before commit `c05d028`. All three carry a `>= 3` or `> 0`
+  guard today. No edit made.
+
+Both fixes proven able to fail by injecting a fault into the TEST FILE's own local computation
+(app code was off limits for this task) — renaming the key `redacted_any` reads, and pointing the
+audit filter at a wrong id. Both went red, both reverted byte-identical, checked after each fault
+individually, not once at the end.
+
 # 2026-08-02 — DOCUMENT TABLE RECONCILIATION (RUN 1), AND THE FAIRNESS GATE REMOVED
 
 Full detail in `REPORT_2026-08-02_document-reconciliation.md`. **Server 1361/1361 across 24 suites,
