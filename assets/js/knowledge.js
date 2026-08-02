@@ -576,7 +576,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
     },
     {
       id: "why-108-modules",
-      title: "Why 101 distinct computations across four groups",
+      title: "Why 100 distinct computations across four groups",
       eyebrow: "Analytical depth",
       build: () => `
         <p class="kn-lead">Public capital projects are complex adaptive systems. A single EVM index (CPI or SPI) captures cost and schedule performance but misses the systemic, probabilistic, and qualitative dimensions that determine whether a project will succeed. The platform addresses this through four principles.</p>
@@ -2130,7 +2130,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       formula: "missingRatio = 1 − (present fields / 11).",
       bands: [["green","Green","missing ratio ≤ 10%"], ["yellow","Yellow","10-25%"], ["amber","Amber","25-45%"], ["red","Red","&gt; 45%"]],
       sources: "Every core document type the other 9 categories depend on; this module never abstains, it always computes against whatever is present.",
-      interp: "A Red here means the entire downstream analytical stack, all 101 distinct computations, is resting on a badly incomplete input set; every other module's status should be read with correspondingly lower confidence until this improves.",
+      interp: "A Red here means the entire downstream analytical stack is resting on a badly incomplete input set; every other module's status should be read with correspondingly lower confidence until this improves.",
       ground: "Field-completeness auditing against a fixed core-schema checklist is standard data-quality practice, applied here to make an otherwise invisible input-quality problem an explicit, first-class governance signal." },
     { n: "C1.2", name: "Data Timeliness Score", mc: "Data_Timeliness_Score",
       purpose: "Measures how stale the most recently uploaded document is, since signals computed from month-old data may no longer reflect current project conditions.",
@@ -2855,7 +2855,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
         <li><strong>Read Decision Optimization (Optimization)</strong> for the recommended decision pathway.</li>
         <li><strong>Record decision</strong> with rationale, authority, and confidence level.</li>
       </ol>
-      <p>The PM reads the categories top-down to GENERATE the picture (with Data and Evidence Health verifying that what was generated stands on solid inputs), then bottom-up (start at Regulatory and Authority Thresholds / Decision Optimization) to ACT on it. The decision is whatever Regulatory and Authority Thresholds records, the rest of the 101-computation stack is the evidence supporting that decision.</p>
+      <p>The PM reads the categories top-down to GENERATE the picture (with Data and Evidence Health verifying that what was generated stands on solid inputs), then bottom-up (start at Regulatory and Authority Thresholds / Decision Optimization) to ACT on it. The decision is whatever the governance layer records; the rest of the analytical layer is the evidence supporting that decision.</p>
     `
   };
 

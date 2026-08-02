@@ -3,6 +3,53 @@
 > user-facing surface quotes verbatim. It lives in the repository so it cannot fail to reach a
 > session, which it did three times while it lived outside. Read it before this handoff, not after.
 
+# T15 — THE METHODS TAB IS SWEPT. PR #196 IS READY TO REVIEW.
+
+Full detail in `REPORT_2026-08-02_methods-tab.md`, including ten judgement calls awaiting Lin's
+review. 873 checks across 18 suites pass; `tests_render.html` 22/22.
+
+**The Methods tab now renders and measures clean.** All 51 topics render, 645,818 characters of
+rendered text with every collapsible expanded: **zero PCEIF, zero PDAF, zero em dashes, zero
+module ids, zero "Cat N", zero "PH.N"**, standing description verbatim in both forms, zero page
+errors. The About and Methods tabs agree: groups by name, no ampersand forms, the document risk
+footnote on both, no "103" anywhere.
+
+**The real scope was bigger than the estimate, and in a different place.** PCEIF was 40 + 49
+occurrences, close to the reported 37 + 49 (the earlier figure counted lines). But **"Cat N" was
+405 occurrences**, ten times the name problem, and **module ids reached the user through three
+render paths, not through prose**: `modDoc()` printed `m.n` before every method name, the nav
+prefixed every module topic from `CAT_LABEL_BY_ID`, and the defensibility categories printed
+"Category N". Fixing three functions removed 101 rendered ids.
+
+**Part 2, the truncation check: the two entries in `knowledge.js` were the only ones.** All ten JS
+files the renumbering commit touched parse. Its diff removed 103 `{ n:` opening lines and added
+101, and that two-entry difference is exactly the two truncations. `ds_defensibility_data.js` was
+edited by a different, safe mechanism (it rewrites `id_display` values in place, deletes no lines).
+A parse check cannot rule out a cut that left valid syntax; the registry cross-check (101 entries,
+ids distinct, matching `GROUP_ASSIGNMENT.md`) covers that and agrees.
+
+**Removed rather than caveated, all checked against the server first:** the eight-code override
+taxonomy (exists nowhere in the repo, replaced with the real `DISPOSITIONS` and `REASON_CODES`),
+the learning-governance section, the `redReview` advisory (**the server never writes
+`red_review`**, so the flag is permanently false), the claim that Portfolio Health votes in project
+status (`contributes_to_project_status()` excludes **groups C and D**), the document-risk threshold
+row (an extraction-supplied input, not a server computation), the platform-wide "48 business hours"
+deadline and its FAR/OMB justification, the six-row authority matrix's "Critical" tier, and
+"mandatory rationale" (the form requires it; the server field is optional and unvalidated).
+
+**Still open, unchanged:** export paths carry no notice, the live operational notice is unreviewed
+but can display (both are liability decisions, see `DISCLAIMERS_DRAFT.md`), and the em dash sweep on
+`auditor.js` and the legacy researcher surfaces.
+
+**Two things the next session should know.** First, **nothing tests `knowledge.js` in a browser**,
+which is how a fatal syntax error survived for weeks; a one-line `window.LIN_KNOWLEDGE` assertion
+in `tests_render.html` is the cheapest insurance and was left undone deliberately. Second,
+**`taxonomy.js` carries a stale comment** claiming the project rollup fuses "all 11 registry
+category statuses" and that "Portfolio Health still votes here" — the same false claim removed from
+the Methods tab, left in place because that file was outside this brief.
+
+---
+
 # T14 — STEP 5, THE JUDGMENT PROSE, IS DONE FOR ITS FOUR SURFACES
 
 Full detail in `REPORT_2026-08-01_judgment-prose.md`, including the judgment calls awaiting
@@ -20,12 +67,8 @@ so `LIN_KNOWLEDGE` never loaded: the Methods tab rendered nothing and the assist
 library in every build since. Fixed by removing the orphan bodies. Nothing tests that file in a
 browser; a `window.LIN_KNOWLEDGE` assertion in `tests_render.html` is a cheap next item.
 
-**The big remaining content item is unchanged: the Methods and Framework tab.** `knowledge.js`
-LIBRARY still carries 37 PCEIF occurrences (including a topic titled "PCEIF Framework
-Overview") and `ds_defensibility_data.js` 49 more, plus the Cat N titles. Because the parse fix
-makes that tab render again, deploying makes that stale content VISIBLE for the first time since
-the renumbering, one click from an About tab that now says there is deliberately no named
-framework. Weigh that before pushing to `main`.
+**The big remaining content item was the Methods and Framework tab. DONE in T15 above** — the
+deploy consideration recorded here no longer applies: that tab is swept and measures clean.
 
 Also still open: export paths carry no notice (a liability decision, see the draft file), the
 em dash sweep on `auditor.js` and the legacy researcher surfaces, and the live operational

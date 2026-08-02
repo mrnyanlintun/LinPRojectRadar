@@ -1,5 +1,5 @@
 // Statistical Defensibility handbook content.
-// Generated from a module defensibility registry (101 distinct computation
+// Generated from a module defensibility registry (100 registered computation
 // records, authoritative) with front-matter sections (Executive Findings,
 // two-axis Defensibility Model, Standards Crosswalk, Priority Refactor
 // Register) drawn from an earlier handbook draft. Em dashes stripped to hyphens.
