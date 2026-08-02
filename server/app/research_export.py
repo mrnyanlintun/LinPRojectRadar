@@ -269,8 +269,63 @@ def build_rows(session: Session, start: datetime | None, end: datetime | None) -
     return rows
 
 
-def serialise(rows: list[dict[str, Any]], fmt: str) -> tuple[bytes, str | None]:
-    """Render the payload. The checksum covers exactly these bytes."""
+# --------------------------------------------------------------------------- the notice
+#
+# AN EXPORT IS THE ARTIFACT MOST LIKELY TO BE READ WITHOUT ANY SURROUNDING CONTEXT. It leaves the
+# platform as a file and reaches people who never saw the sign-in notice or the site footer.
+#
+# WHY THIS DOES NOT SWITCH ON account_type, WHEN EVERY OTHER SURFACE DOES.
+#
+# It cannot have two cases. build_rows() filters to `participant.account_type != "research"` and
+# skips everything else, unconditionally and on every export including refetches of exports taken
+# before that filter existed. An operational account's data cannot be in this file. Writing a
+# switch here would mean writing an operational branch that is unreachable by construction, which
+# is a worse defect than no switch: it would assert that an operational export exists.
+#
+# The research variant is therefore the only correct text, and it is the same variant the site
+# shows before sign-in. `test_export.py` asserts the account-type filter is still there, so if
+# that ever changes this decision fails loudly instead of quietly shipping the wrong notice.
+#
+# Quoted verbatim from DISCLAIMERS_DRAFT.md sections 1 and 3. Do not edit here, do not shorten for
+# a narrower format, and do not compose a variant: a surface carries the approved text whole or
+# does not carry it. test_disclaimers.py fails if these diverge from the source by a character.
+NOTICE_RESEARCH: tuple[str, ...] = (
+    "Notice: academic research instrument. Opus Gubernatio is a proof of concept developed "
+    "solely for doctoral research and demonstration. It is not a commercial service and is "
+    "provided as is, without warranty of any kind, express or implied.",
+
+    "All project data is synthetic. No real project, agency, employer, contractor, or vendor is "
+    "referenced. Do not upload confidential, proprietary, personally identifiable, or otherwise "
+    "sensitive information, or any document relating to an actual project.",
+
+    "Uploaded content is sent to third-party artificial intelligence services for extraction and "
+    "is stored in research infrastructure. Analytical outputs are advisory. They are not a "
+    "validated compliance determination, a contractual direction, or a diagnosis of a live "
+    "project. The operator disclaims all liability arising from or relating to uploaded content "
+    "to the fullest extent permitted by law.",
+)
+
+ATTRIBUTION = (
+    "Developed as part of doctoral research at the School of Engineering and Applied Science, "
+    "The George Washington University. The university is not a party to this notice and does not "
+    "endorse or warrant the platform."
+)
+
+COPYRIGHT = (
+    "© 2026 Nyan Lin Tun. All rights reserved. Opus Gubernatio and the associated software "
+    "and documentation are the intellectual property of the author. Unauthorized reproduction, "
+    "distribution, or use is prohibited."
+)
+
+
+def serialise(rows: list[dict[str, Any]], fmt: str,
+              *, include_notice: bool = True) -> tuple[bytes, str | None]:
+    """
+    Render the payload. The checksum covers exactly these bytes.
+
+    `include_notice=False` reproduces the pre-notice bytes and exists only so a_adminexportfetch
+    can recognise an export taken before the notice was added. See the comment there.
+    """
     if fmt == "json":
         body = {
             "columns": list(EXPORT_COLUMNS),
@@ -281,10 +336,26 @@ def serialise(rows: list[dict[str, Any]], fmt: str) -> tuple[bytes, str | None]:
             "row_count": len(rows),
             "rows": rows,
         }
+        if include_notice:
+            body["notice"] = list(NOTICE_RESEARCH)
+            body["attribution"] = ATTRIBUTION
+            body["copyright"] = COPYRIGHT
         return json.dumps(body, sort_keys=True, separators=(",", ":"),
                           default=str).encode("utf-8"), None
 
     if fmt == "csv":
+        # THE CSV CARRIES NO NOTICE, AND THAT IS REPORTED RATHER THAN WORKED AROUND.
+        #
+        # RFC 4180 has no comment syntax. Anything placed above the header row is read as the
+        # header: csv.DictReader would return the first notice paragraph as a field name, and
+        # test_export.py's `list(reader[0].keys()) == EXPORT_COLUMNS` is exactly that contract.
+        # The alternatives are all worse than the gap. Repeating six hundred characters of prose
+        # in an extra column on every row is not a notice. Shortening it to fit a cell is
+        # composing a new liability variant, which a session may not do.
+        #
+        # So the format genuinely cannot carry the approved text, and the report says so. Choosing
+        # between a leading comment block that breaks every existing reader, a sidecar file, and
+        # making JSON the only offered format is the researcher's decision, not this code's.
         buffer = io.StringIO(newline="")
         writer = csv.DictWriter(buffer, fieldnames=list(EXPORT_COLUMNS),
                                 lineterminator="\n", extrasaction="raise")
@@ -423,18 +494,37 @@ def a_adminexportfetch(session: Session, payload: dict, secret: str, ttl: int) -
         return err(problem_text)
 
     digest = checksum(body)
+    # AN EXPORT TAKEN BEFORE THE NOTICE EXISTED IS NOT A TAMPERED EXPORT.
+    #
+    # The stored checksum covers the bytes serialise() produced at the time. Adding the notice
+    # changed those bytes, so every record created earlier would now fail this comparison and be
+    # withheld with a message saying the underlying data had changed. That message would be
+    # false: the data is what it always was, and the accusation is the opposite of the integrity
+    # guarantee this check exists to provide.
+    #
+    # So a mismatch is checked a second time against the pre-notice serialisation. If THAT
+    # matches, the rows are provably unchanged and the record simply predates the notice. The
+    # payload served is the current one, notice included, because a file leaving the platform
+    # should carry it; both digests are returned so the caller can see exactly what happened.
+    # A record that matches neither is a real mismatch and is still refused and audited.
+    legacy = False
     if digest != record.checksum:
-        audit(session, "export_checksum_mismatch", participant_id=caller.participant_id,
-              export_id=export_id, stored_checksum=record.checksum, recomputed=digest)
-        session.commit()
-        return err(
-            f"checksum verification failed for export {export_id}: stored {record.checksum}, "
-            f"recomputed {digest}. The underlying data has changed since this export was taken; "
-            f"the payload is withheld."
-        )
+        legacy_body, _ = serialise(rows, record.format or "json", include_notice=False)
+        if checksum(legacy_body) == record.checksum:
+            legacy = True
+        else:
+            audit(session, "export_checksum_mismatch", participant_id=caller.participant_id,
+                  export_id=export_id, stored_checksum=record.checksum, recomputed=digest)
+            session.commit()
+            return err(
+                f"checksum verification failed for export {export_id}: stored "
+                f"{record.checksum}, recomputed {digest}. The underlying data has changed since "
+                f"this export was taken; the payload is withheld."
+            )
 
     audit(session, "export_fetched", participant_id=caller.participant_id,
-          export_id=export_id, checksum=digest, row_count=len(rows))
+          export_id=export_id, checksum=digest, row_count=len(rows),
+          predates_notice=legacy)
     session.commit()
 
     return {
@@ -444,6 +534,13 @@ def a_adminexportfetch(session: Session, payload: dict, secret: str, ttl: int) -
         "row_count": len(rows),
         "checksum": digest,
         "checksum_verified": True,
+        # True when the record was taken before the notice was added: the rows verified against
+        # the stored checksum, and the payload below carries the notice the original did not.
+        "predates_notice": legacy,
+        "stored_checksum": record.checksum,
+        # The CSV format carries no notice; see serialise(). Stated on every fetch so it is
+        # visible at the point the file is taken rather than discovered later.
+        "notice_in_payload": (record.format or "json") == "json",
         "review_required": bool(FREE_TEXT_COLUMNS),
         "free_text_columns": list(FREE_TEXT_COLUMNS),
         "review_note": ("Free-text columns are participant-authored and may contain identifying "

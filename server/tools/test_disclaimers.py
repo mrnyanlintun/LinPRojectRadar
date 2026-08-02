@@ -302,6 +302,141 @@ for path in SURFACES:
         check(phrase not in rendered, f"{path.name} does not carry retired wording",
               phrase[:60])
 
+print("\n12. The access-denied panel carries no liability notice of its own")
+# It used to carry "Access restricted to authorized use. This platform is an academic
+# proof-of-concept; no warranty is provided." That was a third variant, derived from neither
+# approved section, switching on nothing, and shown BEFORE authentication, so an operational user
+# who failed sign-in was told the platform is an academic proof of concept. It was removed rather
+# than replaced: a person who has not signed in has uploaded nothing and needs no upload
+# disclaimer. These checks are what stop it, or a substitute, coming back.
+live_doc = LIVE.read_text(encoding="utf-8")
+denied = re.search(r'<div id="lin-access-denied".*?\n  </div>', live_doc, re.S)
+check(denied is not None, "the access-denied panel is still in index.html")
+if denied:
+    panel = denied.group(0)
+    check("proof-of-concept" not in panel and "proof of concept" not in panel,
+          "the retired one-line notice is gone from the panel")
+    check('class="login-disclaimer"' not in panel,
+          "and no .login-disclaimer paragraph replaced it")
+    for para in variants["research"] + variants["operational"]:
+        check(norm(para) not in strip_tags(panel),
+              "no approved advisory variant was substituted into the panel either",
+              para[:50])
+    # The attribution DOES belong here and is approved for this surface. Asserting it stays is
+    # what keeps the removal above from being over-applied to the whole panel.
+    check(ATTRIBUTION in strip_tags(panel),
+          "the approved attribution sentence is still on the panel")
+
+print("\n13. The meta description quotes the standing description, and claims no domain")
+meta = re.search(r'<meta name="description" content="([^"]*)"', live_doc)
+check(meta is not None, "index.html has a meta description")
+if meta:
+    desc = norm(html.unescape(meta.group(1)))
+    authority = (ROOT / "NAMING_AUTHORITY.md").read_text(encoding="utf-8")
+    # The short form, parsed from the authority rather than copied here, for the same reason
+    # source_variants() parses: a copy in this file is a copy that can drift.
+    short = re.search(r"\*\*Short form, one sentence:\*\*\s*\n\s*\n((?:> .*\n)+)", authority)
+    check(short is not None, "the authority still carries a short-form standing description")
+    if short:
+        want = norm(" ".join(l.lstrip("> ").rstrip() for l in short.group(1).splitlines()))
+        check(desc == want, "the meta description is the short form verbatim", desc[:70])
+    for claim in ("AEC", "capital program", "capital project", "public sector", "public-sector"):
+        check(claim.lower() not in desc.lower(),
+              f"the meta description does not assert a domain ({claim})", desc[:70])
+
+print("\n14. The XLSX export carries the approved notice, and does not restate it")
+EXPORT_JS = ROOT / "assets" / "js" / "export.js"
+check(EXPORT_JS.is_file(), "export.js present")
+if EXPORT_JS.is_file():
+    ejs = EXPORT_JS.read_text(encoding="utf-8")
+    check('book_append_sheet(wb, wsNotice, "Notice")' in ejs,
+          "the workbook gets a Notice sheet")
+    # SHEET ORDER IS DECIDED BY THE ORDER OF THE APPEND CALLS, so that is what is compared. An
+    # earlier version of this check compared where the variable names first appear in the source,
+    # which is a proxy for the thing that matters and not the thing itself: fault injection moved
+    # the sheet without moving the declaration and the check stayed green.
+    appends = re.findall(r'book_append_sheet\(wb,\s*\w+,\s*"([^"]+)"', ejs)
+    check(appends[:1] == ["Notice"],
+          "and it is appended first, so it is the sheet that opens", str(appends))
+    check("LinDisclaimers" in ejs and "currentNotice" in ejs,
+          "it takes the text from the shared approved constant")
+    # The point of the shared constant: no fourth copy of approved legal text.
+    for para in variants["research"] + variants["operational"] + [ATTRIBUTION, COPYRIGHT]:
+        head = norm(para)[:60]
+        check(head not in norm(ejs),
+              "export.js does not restate the approved text itself", head[:50])
+
+print("\n15. disclaimers.js and research_export.py carry section 3 verbatim")
+shared_js = SHARED.read_text(encoding="utf-8")
+for label, para in (("attribution", ATTRIBUTION), ("copyright", COPYRIGHT)):
+    # Both files wrap these across source lines, so compare against the concatenated literal.
+    joined = norm(re.sub(r'"\s*\+?\s*\n\s*"', "", shared_js))
+    check(norm(para) in joined, f"disclaimers.js carries the approved {label} verbatim",
+          para[:50])
+
+EXPORT_PY = ROOT / "server" / "app" / "research_export.py"
+check(EXPORT_PY.is_file(), "research_export.py present")
+if EXPORT_PY.is_file():
+    epy = EXPORT_PY.read_text(encoding="utf-8")
+    joined_py = norm(re.sub(r'"\s*\n\s*"', "", epy))
+    for para in variants["research"]:
+        check(norm(para) in joined_py,
+              "the research export carries the approved research variant verbatim", para[:50])
+    for label, para in (("attribution", ATTRIBUTION), ("copyright", COPYRIGHT)):
+        check(norm(para) in joined_py,
+              f"the research export carries the approved {label} verbatim", para[:50])
+    # The operational variant must NOT be there. build_rows filters to research accounts only, so
+    # an operational branch would assert an export that cannot exist. If that filter is ever
+    # relaxed, this check is the reminder that the notice decision has to be revisited.
+    # Skip any operational paragraph that is CONTAINED IN a research one rather than only those
+    # equal to one. The two variants share the "Analytical outputs are advisory..." sentence, so
+    # an equality test lets a shared sentence be reported as an operational leak.
+    for para in variants["operational"]:
+        if any(norm(para) in norm(p) for p in variants["research"]):
+            continue
+        check(norm(para) not in joined_py,
+              "and does not carry the operational variant, which cannot apply to it", para[:50])
+
+print("\n16. Nothing claims the platform is, or has, a governance framework")
+# NAMING_AUTHORITY.md: "There is deliberately no framework name... If you find yourself needing a
+# framework name to describe what the platform does, describe what it does instead." The praxis
+# outline contradicted its own lead: the lead said the contribution is empirical evidence "not a
+# new governance framework", and three chapter descriptions below it said the framework is
+# grounded, built as an artifact, and evaluated by practitioners.
+#
+# CITING SOMEONE ELSE'S FRAMEWORK IS FINE and must stay possible: the file legitimately references
+# "Sargent's simulation V&V framework" and "the course's error framework". Those are possessive,
+# so forbidding the bare definite article catches the platform's own claim without touching them.
+DS = ROOT / "assets" / "js" / "ds_defensibility_data.js"
+check(DS.is_file(), "ds_defensibility_data.js present")
+if DS.is_file():
+    ds = norm(DS.read_text(encoding="utf-8"))
+    for phrase in ("the framework", "this framework", "our framework", "a new framework",
+                   "framework refinement", "the associated framework"):
+        check(phrase.lower() not in ds.lower(),
+              f"no string claims a framework of its own ({phrase})", phrase)
+    check("not a new governance framework" in ds,
+          "and the lead still says the contribution is not a new governance framework")
+    # The retired names, in the file the authority names as written around that framing.
+    for retired in ("PCEIF", "PDAF"):
+        check(retired not in ds, f"{retired} does not appear", retired)
+
+print("\n17. The Methods and Framework tab label is spelled one way")
+# NAMING_AUTHORITY.md: "User-facing text uses 'and', not the ampersand the code constants use."
+# The tab button in index.html said "and" while the fly-out pill in app.js said "&": the same
+# label, two spellings, one of them against the authority.
+#
+# THE WORD "FRAMEWORK" IN THIS LABEL IS NOT DECIDED HERE. Whether the tab should be renamed is a
+# judgement the authority does not settle, and the report puts it to Lin rather than this file
+# asserting an answer. What is checked is only the spelling rule, which the authority does settle.
+LABEL_FILES = (LIVE, ROOT / "assets" / "js" / "app.js", ROOT / "assets" / "js" / "knowledge.js")
+for path in LABEL_FILES:
+    check(path.is_file(), f"{path.name} present")
+    if path.is_file():
+        body = path.read_text(encoding="utf-8")
+        check("Methods & Framework" not in body,
+              f"{path.name} does not use the ampersand spelling")
+
 print()
 print(f"RESULT: {PASSED}/{PASSED + FAILED} checks passed")
 sys.exit(1 if FAILED else 0)

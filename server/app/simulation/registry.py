@@ -17,6 +17,7 @@ import pathlib
 from typing import Any, Callable
 
 from .models import SIMULATION_VERSION, STOCHASTIC, VALIDATED  # noqa: F401
+from .portfolio import PORTFOLIO_VALIDATED
 from .rng import make_rng, seed_from
 
 CSV_PATH = pathlib.Path(__file__).resolve().parents[3] / "p0-baseline" / "module_renumbering_map.csv"
@@ -47,8 +48,17 @@ def available_modules() -> list[str]:
 
 
 def unported_modules() -> list[str]:
-    """Everything declared but not yet ported and validated."""
-    return sorted(set(registry_index()) - set(VALIDATED))
+    """
+    Everything declared in the registry but implemented nowhere.
+
+    The Group D subtraction is the point. This used to be `registry_index() - VALIDATED`, and
+    VALIDATED holds only the single-project modules, so all five Group D modules were reported as
+    unported even though portfolio.py implements them. It answered 6 where exactly 1 is genuine,
+    and two checks in the suite had to compute the unported set themselves to work around it.
+
+    No import cycle: portfolio.py imports only from rng.
+    """
+    return sorted(set(registry_index()) - set(VALIDATED) - set(PORTFOLIO_VALIDATED))
 
 
 def group_of(new_id: str) -> str:

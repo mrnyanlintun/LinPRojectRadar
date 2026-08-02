@@ -9,6 +9,77 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-02 — FOUR NOTICE ITEMS, AND unported_modules CORRECTED
+
+Full detail in `REPORT_2026-08-02_notices-and-unported.md`. **Server 1338/1338 across 23 suites,
+`tests_render.html` 49/49, `tests.html` 51/51, green on merged `main`.** 21 faults injected, all
+detected, all reverted and rechecked byte-for-byte.
+
+## ONE THING IS NOT DONE AND IS LIN'S DECISION: the CSV export still carries no notice
+
+The XLSX export and the JSON research export now carry the approved text. **The CSV cannot.**
+RFC 4180 has no comment syntax, so anything above the header row IS the header row, and
+`test_export.py` asserts `list(reader[0].keys()) == EXPORT_COLUMNS`. The alternatives all fail:
+a `#` block silently breaks every existing reader, repeating 600 characters per row is not a
+notice, and shortening it is composing a new liability variant, which a session may not do.
+
+Three options are in the report. **Do not resolve this by writing shorter wording.** Every fetch
+now returns `notice_in_payload` so the gap is visible at the point the file is taken.
+
+## What changed
+
+- **Access-denied panel**: its one-line notice is removed, not replaced. It was a third variant,
+  switching on nothing, shown BEFORE authentication, telling a failed operational sign-in the
+  platform is for academic research. The approved attribution sentence stays.
+- **Exports**: XLSX gets a Notice sheet, FIRST so it is the sheet that opens. JSON gets `notice`,
+  `attribution`, `copyright`. Text comes from the shared approved constant, never restated.
+- **Meta description**: now the short-form standing description from `NAMING_AUTHORITY.md`,
+  verbatim. It no longer asserts "public AEC capital programs".
+- **Framework strings**: three chapter descriptions in `ds_defensibility_data.js` said the
+  framework is grounded, built and evaluated, contradicting their own lead. Now "the research"
+  and "the platform". The nine remaining uses of the word are external citations (Sargent's V&V)
+  and are correct.
+- **`unported_modules()`**: subtracts `PORTFOLIO_VALIDATED`. Answers `['A4.1']`, not six.
+
+## Things worth knowing before the next session
+
+- **`research_export.py` deliberately does NOT switch on account_type.** `build_rows()` filters to
+  research accounts unconditionally, so an operational branch would be unreachable by construction
+  and would assert an export that cannot exist. A check pins the exact guard statement; if that
+  filter is ever relaxed, the notice is wrong and the suite says so.
+- **Adding the notice changed the checksummed bytes.** Exports taken earlier would have been
+  withheld as "the underlying data has changed", which would be a false accusation. Fetch now
+  re-checks against the pre-notice serialisation and reports `predates_notice`. A genuinely wrong
+  checksum is still refused; both directions are fault-proven.
+- **`t15-local-unpushed` can be deleted.** It is 28 commits BEHIND origin, not ahead. Merging it
+  would have deleted ~11,500 lines. Verified commit by commit: its PCEIF sweep and its CUSUM fix
+  are both superseded by better versions already on origin, and `unported_modules()` was the only
+  substantive thing missing. It is now landed, so nothing on that branch is needed.
+- **Three of my own checks passed for the wrong reason and injection found all three.**
+  `unported_modules()[0]` and `old_f["payload"]` both raised instead of failing, printing NO
+  `RESULT:` line, which reads exactly like a clean run. And a check searching for
+  `participant.account_type != "research"` matched the COMMENT I had just written quoting that
+  expression, so deleting the real guard left it green. Match statements, not phrases.
+- **Fault injection needs a restore check after EVERY fault, not at the end.** A deletion fault
+  reverted with an empty needle, the harness aborted mid-revert, and `index.html` lost a paragraph.
+  The next run's BASELINE came back 144/146 instead of 146/146, which is the only reason it was
+  caught. Also: a multi-line needle written with `\n` matches nothing in a CRLF file.
+- **The DB-backed suites are not idempotent.** Run twice against one database, the second run dies
+  with no `RESULT:` line. Rebuild from `alembic upgrade head` before every run.
+- **Two sessions shared this working directory today.** My byte comparison caught `app.js` moving
+  underneath a running campaign, with another session's live `title="FAULT"` injection in it.
+  Check `git status` for files you did not touch before staging anything.
+
+## Still open, and referred to Lin
+
+- The CSV export notice, above.
+- Whether the word **Framework** belongs in the "Methods and Framework" tab label. Not obvious from
+  the authority: the tab's `governanceAxis` content genuinely maps to external frameworks (NIST AI
+  RMF, XAI principles). The ampersand-vs-"and" inconsistency WAS obvious and is fixed.
+  "Methods and Standards" is the suggestion if it is to change; it touches four files.
+- `ds_defensibility_data.js` still frames the RESEARCH as concerning "public AEC capital programs".
+  That is a claim about the doctoral work, not the platform's scope, so it was left.
+
 # 2026-08-02 — THE PROJECT LIST CARRIES ONE CONTROL TO THE DETAIL PAGE, NOT TWO
 
 Full detail in `REPORT_2026-08-02_signals-open-merge.md`. **Server 1338/1338 across 23 suites,

@@ -20,6 +20,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import pathlib
 import sys
 import time
 
@@ -332,6 +333,90 @@ listing = post({"action": "adminexportlist", "session_token": admin})
 check(listing.get("ok") is True and len(listing["exports"]) >= 5, "export list returns prior runs")
 check(all(len(e["checksum"]) == 64 for e in listing["exports"]),
       "every listed export carries its checksum")
+
+print()
+print("=" * 78)
+print("GUARANTEE 8: the export carries the approved notice, and says when it cannot")
+print("=" * 78)
+# An export leaves the platform and is read by people who never saw a footer. It used to carry no
+# notice, no attribution and no copyright at all.
+import app.research_export as rx  # noqa: E402
+
+
+def payload_of(resp: dict) -> str:
+    """
+    The payload, or empty, never a KeyError.
+
+    A refused fetch has no `payload` key. Indexing it directly is how this file dies with a
+    KeyError instead of failing a check, and a crashed suite prints no RESULT line and reads
+    exactly like a clean run. Fault injection produced precisely that.
+    """
+    return resp.get("payload") or ""
+
+
+j_e = post({"action": "adminexportcreate", "session_token": admin, "format": "json"})
+j_f = post({"action": "adminexportfetch", "session_token": admin, "export_id": j_e["export_id"]})
+j_body = json.loads(payload_of(j_f) or "{}")
+check(j_body.get("notice") == list(rx.NOTICE_RESEARCH),
+      "json payload carries the approved research notice verbatim",
+      str(j_body.get("notice"))[:60])
+check(j_body.get("attribution") == rx.ATTRIBUTION, "json payload carries the attribution")
+check(j_body.get("copyright") == rx.COPYRIGHT, "json payload carries the copyright")
+check(j_f.get("notice_in_payload") is True, "and the fetch says the notice is in the file")
+
+# The CSV gap is asserted, not glossed. If someone later makes the CSV carry the notice, this
+# check fails and is updated deliberately rather than the gap being rediscovered.
+c_f = post({"action": "adminexportfetch", "session_token": admin, "export_id": csv_e["export_id"]})
+check(rx.NOTICE_RESEARCH[0][:40] not in payload_of(c_f),
+      "csv still carries no notice, which is the reported gap")
+check(c_f.get("notice_in_payload") is False,
+      "and the fetch says so rather than leaving it to be discovered")
+check(list(csv.DictReader(io.StringIO(payload_of(c_f))))[0].keys().__iter__().__next__()
+      == EXPORT_COLUMNS[0],
+      "because nothing was prepended above the csv header row")
+
+# THE NO-SWITCH DECISION RESTS ENTIRELY ON THIS FILTER. research_export.py carries only the
+# research variant because an operational account's rows cannot reach an export. If that ever
+# stops being true, the notice is wrong and this check is the alarm.
+#
+# MATCH THE STATEMENT, NOT THE PHRASE. Searching for `participant.account_type != "research"`
+# alone passed for the wrong reason: research_export.py's own comment explaining the filter quotes
+# that expression, so deleting the actual guard left the check green. Fault injection caught it.
+src = pathlib.Path(rx.__file__).read_text(encoding="utf-8")
+guard = 'if participant is None or participant.account_type != "research":'
+check(guard in src,
+      "build_rows still excludes every non-research account unconditionally", guard)
+# And the guard must be reached on every row, not sitting in a branch that is skipped.
+check(src.count(guard) == 1, "the guard appears exactly once", str(src.count(guard)))
+
+# An export taken before the notice existed must still verify. Its stored checksum covers the
+# pre-notice bytes; recomputing with the notice would otherwise report the data as changed, which
+# would be a false accusation of tampering.
+with Session() as s:
+    legacy_body, _ = rx.serialise(rx.build_rows(s, None, None), "json", include_notice=False)
+# Raw SQL: the ORM before_flush consent guard refuses a direct write to research_exports, and the
+# point here is to age an existing row, not to exercise that guard.
+def _set_checksum(export_id: str, value: str) -> None:
+    with Session() as s:
+        s.execute(text("UPDATE research_exports SET checksum = :c WHERE export_id = :e"),
+                  {"c": value, "e": export_id})
+        s.commit()
+
+
+_set_checksum(j_e["export_id"], rx.checksum(legacy_body))
+old_f = post({"action": "adminexportfetch", "session_token": admin, "export_id": j_e["export_id"]})
+check(old_f.get("ok") is True, "an export taken before the notice still fetches",
+      str(old_f)[:90])
+check(old_f.get("predates_notice") is True, "and is reported as predating the notice")
+check(json.loads(payload_of(old_f) or "{}").get("notice") == list(rx.NOTICE_RESEARCH),
+      "and the file served now carries the notice")
+
+_set_checksum(j_e["export_id"], "0" * 64)
+tampered = post({"action": "adminexportfetch", "session_token": admin,
+                 "export_id": j_e["export_id"]})
+check(tampered.get("ok") is False,
+      "a genuinely wrong checksum is still refused, not waved through as legacy",
+      str(tampered)[:90])
 
 print()
 print("=" * 78)

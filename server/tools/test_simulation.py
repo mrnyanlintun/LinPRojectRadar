@@ -49,40 +49,49 @@ check(set(available_modules()) == set(VALIDATED),
       f"available == validated ({len(VALIDATED)} modules)", str(available_modules()))
 # THE CHECK THAT USED TO BE HERE COULD NOT FAIL.
 #
-# It asserted `len(unported_modules()) == 101 - len(VALIDATED)`. unported_modules() is
+# It asserted `len(unported_modules()) == 101 - len(VALIDATED)`. unported_modules() was
 # `sorted(set(registry_index()) - set(VALIDATED))`, and registry_index() is exactly the 101 live
 # CSV rows, so the left side IS 101 - len(VALIDATED) by construction. It was true whatever the
 # code did, and it did not notice that Document Risk Score is declared and never implemented.
 #
-# It is replaced by a check against the genuinely unported set, computed here rather than taken
-# from unported_modules(), because that function counts the five Group D modules as unported
-# although portfolio.py implements them: it reports six where exactly one is. The over-report is
-# asserted below rather than silently worked around, so that if the function is ever corrected
-# this check fails loudly and is updated deliberately.
-#
-# Correcting unported_modules() itself means editing server/app/simulation/, which the work that
-# wrote this check was not permitted to touch.
-GENUINELY_UNPORTED = sorted(set(registry_index()) - set(VALIDATED) - set(PORTFOLIO_VALIDATED))
-check(GENUINELY_UNPORTED == ["A4.1"],
+# Its replacement then had to compute the unported set here, by hand, because unported_modules()
+# counted the five Group D modules as unported although portfolio.py implements them: it answered
+# six where exactly one is. That workaround is gone. unported_modules() now subtracts
+# PORTFOLIO_VALIDATED and is asked directly, which is the only way this check can notice the
+# function regressing.
+check(unported_modules() == ["A4.1"],
       "exactly one declared computation is unported, and it is A4.1",
-      str(GENUINELY_UNPORTED))
+      str(unported_modules()))
 check(len(VALIDATED) + len(PORTFOLIO_VALIDATED) == 100,
       "the server registers 100 computations",
       str(len(VALIDATED) + len(PORTFOLIO_VALIDATED)))
-check(sorted(set(unported_modules()) - set(GENUINELY_UNPORTED)) == sorted(PORTFOLIO_VALIDATED),
-      "unported_modules() over-reports by exactly the Group D set (known defect, not yet fixed)",
-      str(sorted(set(unported_modules()) - set(GENUINELY_UNPORTED))))
-# Taken from the genuinely unported set, not unported_modules()[0]. That index happened to be
-# A4.1 only because A sorts before D; had Document Risk Score been ported, [0] would have become
-# a Group D id and run_module would have raised PortfolioModuleError, which the except clause
-# below does not catch.
-still_unported = GENUINELY_UNPORTED[0]
-try:
-    run_module(still_unported, HEALTHY, make_rng(1), CUTOFF)
-    check(False, "an unported module raises rather than approximating", "no raise")
-except MissingModuleError as exc:
-    check("refuses to compute" in str(exc), f"unported {still_unported} raises MissingModuleError",
-          str(exc)[:70])
+# The registry and the two implementation sets must partition the CSV with nothing left over and
+# nothing counted twice. This is what catches a Group D id being dropped from PORTFOLIO_VALIDATED,
+# which the equality above would report only as a longer unported list.
+check(set(registry_index()) == set(VALIDATED) | set(PORTFOLIO_VALIDATED) | set(unported_modules()),
+      "registered plus unported accounts for every declared computation, exactly once",
+      str(sorted(set(registry_index()) ^ (set(VALIDATED) | set(PORTFOLIO_VALIDATED)
+                                          | set(unported_modules())))))
+# Taken from unported_modules() directly now that it is correct. It cannot yield a Group D id:
+# those are subtracted, so run_module cannot raise PortfolioModuleError here, which the except
+# clause below does not catch.
+#
+# THE GUARD IS NOT DECORATION. Indexing [0] unguarded is how a suite dies with an IndexError
+# instead of failing, and a crashed suite prints no RESULT line and reads exactly like a clean
+# run. Fault injection produced precisely that: over-subtracting in unported_modules() emptied the
+# list and killed this file silently. An empty list is now a red check, not a traceback.
+_unported = unported_modules()
+if not _unported:
+    check(False, "there is an unported module to test the refusal with",
+          "unported_modules() is empty; nothing declared-but-unimplemented remains")
+else:
+    still_unported = _unported[0]
+    try:
+        run_module(still_unported, HEALTHY, make_rng(1), CUTOFF)
+        check(False, "an unported module raises rather than approximating", "no raise")
+    except MissingModuleError as exc:
+        check("refuses to compute" in str(exc),
+              f"unported {still_unported} raises MissingModuleError", str(exc)[:70])
 
 print()
 print("=" * 78)

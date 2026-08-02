@@ -66,9 +66,35 @@
            '<div class="upload-disclaimer notice-operational">' + paras(OPERATIONAL) + "</div>";
   }
 
+  // Quoted verbatim from DISCLAIMERS_DRAFT.md, section 3, "constant in both states". These sit
+  // in index.html as static HTML on the footer, which is enough for anything a reader sees on
+  // the site. They are held here as well because the XLSX export is a file that leaves the
+  // platform and is read by people who never saw a footer, and it needs the same characters.
+  // Same rule as above: edit the source first, never here.
+  var ATTRIBUTION = "Developed as part of doctoral research at the School of Engineering and " +
+    "Applied Science, The George Washington University. The university is not a party to this " +
+    "notice and does not endorse or warrant the platform.";
+
+  var COPYRIGHT = "© 2026 Nyan Lin Tun. All rights reserved. Opus Gubernatio and the " +
+    "associated software and documentation are the intellectual property of the author. " +
+    "Unauthorized reproduction, distribution, or use is prohibited.";
+
+  // Which advisory variant applies right now. The CSS switch cannot help a file being written to
+  // disk, so the same signal the CSS keys on is read directly. .notice-research is the default
+  // and the fail-safe direction: an export taken before the server has resolved the caller
+  // carries the restrictive text, never the permissive one.
+  function currentNotice() {
+    var operational = document.body &&
+      document.body.classList.contains("og-account-operational");
+    return operational ? OPERATIONAL.slice() : RESEARCH.slice();
+  }
+
   window.LinDisclaimers = {
     research: RESEARCH.slice(),
     operational: OPERATIONAL.slice(),
+    attribution: ATTRIBUTION,
+    copyright: COPYRIGHT,
+    currentNotice: currentNotice,
     uploadNoticeHtml: uploadNoticeHtml
   };
 })();

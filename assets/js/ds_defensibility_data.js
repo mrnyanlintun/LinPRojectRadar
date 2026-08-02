@@ -3667,11 +3667,11 @@ const DS_DEFENSIBILITY = {
    ],
    [
     "Literature, Theory, Standards, and Technology",
-    "Grounds the framework in earned value management and its limits, predictive project controls, public-sector AI governance, and theoretical lenses including bounded rationality, sociotechnical systems, procedural justice, and human judgment under multi-signal uncertainty: automation bias, algorithm aversion, anchoring, alert fatigue, and trust calibration."
+    "Grounds the research in earned value management and its limits, predictive project controls, public-sector AI governance, and theoretical lenses including bounded rationality, sociotechnical systems, procedural justice, and human judgment under multi-signal uncertainty: automation bias, algorithm aversion, anchoring, alert fatigue, and trust calibration."
    ],
    [
     "Research Methodology",
-    "Design Science Research: the framework and instrument are built as artifacts and evaluated through structured practitioner validation rather than statistical hypothesis testing on outcomes."
+    "Design Science Research: the platform is built as an artifact and evaluated through structured practitioner validation rather than statistical hypothesis testing on outcomes."
    ],
    [
     "The Governance Architecture",
@@ -3687,7 +3687,7 @@ const DS_DEFENSIBILITY = {
    ],
    [
     "Practitioner Validation and Refinement",
-    "Twelve or more professionals across owner, contractor, and consultancy roles evaluate the framework qualitatively; their feedback drives framework refinement and defines the boundary of claims."
+    "Twelve or more professionals across owner, contractor, and consultancy roles evaluate the platform qualitatively; their feedback drives its refinement and defines the boundary of claims."
    ]
   ],
   "judgmentLayer": "Every capability in this handbook outputs evidence, not instructions. A module must expose its source, abstain when required inputs are absent, and enter a signal package that a project manager may accept, override, defer, or escalate. The judgment and its rationale become part of the audit record. Analytical transparency plus governed professional discretion is the design thesis of the entire praxis."

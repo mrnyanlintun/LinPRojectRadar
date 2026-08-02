@@ -2285,7 +2285,9 @@
     const go = (tab) => { Flyout.close(); pendingHandbookTab = tab; showPage("handbook"); };
     const pills = [
       { label: "About the Platform", title: "Handbook: About", onClick: () => go("about") },
-      { label: "Methods & Framework", title: "Handbook: Methods", onClick: () => go("methods") }
+      // "and", not "&": NAMING_AUTHORITY.md, user-facing text uses the word. This pill and the
+      // tab button in index.html are the same label and were spelled two different ways.
+      { label: "Methods and Framework", title: "Handbook: Methods", onClick: () => go("methods") }
     ];
     Flyout.open("handbook", anchor, pills, suppressDockRefocus);
   }

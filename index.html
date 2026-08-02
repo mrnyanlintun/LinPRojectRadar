@@ -26,7 +26,11 @@
   " />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Opus Gubernatio: Project Decision Support</title>
-  <meta name="description" content="Opus Gubernatio: project decision support for public AEC capital programs. Doctor of Engineering praxis research, The George Washington University." />
+  <!-- The standing description from NAMING_AUTHORITY.md, short form, quoted verbatim. It says
+       "a project", not "a capital project": domain scope is an open advisor decision, and this
+       tag previously asserted "public AEC capital programs". Do not paraphrase it into a variant
+       to fit a length target; a surface either carries it whole or does not carry it. -->
+  <meta name="description" content="Opus Gubernatio analyses the documents a project produces each reporting period and presents a recommendation that a project manager records a decision against, keeping the evidence, the recommendation, and the judgment as one reproducible record." />
   <!-- Fonts are VENDORED and same-origin. They used to come from fonts.googleapis.com, which is
        the same corporate-network argument that got MapLibre, globe.gl, PDF.js and SheetJS
        vendored: a blocked network fell back to system fonts and the platform stopped looking
@@ -357,7 +361,13 @@
       <h2 class="login-title" style="color:var(--alarm-red)">Sign-in Not Accepted</h2>
       <p class="login-sub" id="access-denied-message">This platform is restricted to authorized users only.</p>
       <button onclick="LinAuth.logout()" class="btn-secondary">Back to sign-in</button>
-      <p class="login-disclaimer">Access restricted to authorized use. This platform is an academic proof-of-concept; no warranty is provided.</p>
+      <!-- NO LIABILITY NOTICE HERE, DELIBERATELY. This panel used to carry a one-line notice of
+           its own: a third variant, derived from neither approved section, switching on no
+           account type, and shown BEFORE authentication, so an operational user who failed
+           sign-in was told the platform was built solely for academic research. A person who has
+           not signed in has uploaded nothing and needs no upload disclaimer. It was removed
+           rather than replaced. Do not reinstate it, and do not substitute an approved variant
+           here; see DISCLAIMERS_DRAFT.md. test_disclaimers.py section 12 enforces this. -->
       <p class="login-footnote">Developed as part of doctoral research at the School of Engineering and Applied Science, The George Washington University. The university is not a party to this notice and does not endorse or warrant the platform.</p>
     </div>
   </div>
@@ -881,7 +891,7 @@
       </div><!-- /about-grid -->
       </div>
 
-      <!-- Tab 2 — Methods & Framework (the entire Knowledge Library) -->
+      <!-- Tab 2 — Methods and Framework (the entire Knowledge Library) -->
       <div class="hb-panel" id="hb-panel-methods" role="tabpanel" aria-labelledby="hb-tab-methods" hidden>
         <p class="hb-methods-note kn-sub">The curated reference behind the guided assistant: the chatbot answers only from this content, so the two stay consistent.</p>
         <div id="knowledge-root"></div>

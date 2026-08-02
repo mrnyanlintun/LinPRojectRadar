@@ -2,14 +2,18 @@
    lin-project-radar — export.js
    ------------------------------------------------------------
    On-demand XLSX project report. Reads from the LATEST stored
-   category snapshot on project.history. Generates a 2- or
-   3-sheet workbook via SheetJS (already loaded in index.html):
+   category snapshot on project.history. Generates a 3- or
+   4-sheet workbook via SheetJS (already loaded in index.html):
 
-     1. Executive Summary — project identity, governance decision,
+     1. Notice — the approved advisory text for the signed-in
+        account type, plus attribution and copyright. First,
+        because the file leaves the platform and is read by
+        people who never saw the site.
+     2. Executive Summary — project identity, governance decision,
         signal inputs, evidence agreement, executive brief text.
-     2. Category Results — each of the 9 categories with its
+     3. Category Results — each of the 9 categories with its
         worst-status-wins rollup + every module underneath.
-     3. Signal History — present only when project.history has
+     4. Signal History — present only when project.history has
         more than one period; one row per period with the
         per-category status across time.
 
@@ -38,7 +42,29 @@
 
     const wb = XLSX.utils.book_new();
 
-    // ----- Sheet 1: Executive Summary -----
+    // ----- Sheet 1: Notice -----
+    //
+    // AN EXPORT IS THE ARTIFACT MOST LIKELY TO BE READ WITHOUT ANY SURROUNDING CONTEXT. It leaves
+    // the platform as a file and circulates to people who never saw the sign-in notice or the
+    // footer, and until now it carried no notice, no attribution and no copyright at all. It is
+    // the FIRST sheet, not an appendix, because a sheet nobody scrolls to is not a notice.
+    //
+    // The text is not written here. It comes from LinDisclaimers, which holds the approved
+    // wording quoted verbatim from DISCLAIMERS_DRAFT.md, and server/tools/test_disclaimers.py
+    // fails if the two diverge by a character. No shortened form is composed for the narrower
+    // space of a spreadsheet cell: a surface carries the approved text whole or does not carry
+    // it. It switches on account type exactly as every other surface does.
+    const D = window.LinDisclaimers;
+    if (D && typeof D.currentNotice === "function") {
+      const noticeRows = [["OPUS GUBERNATIO — NOTICE"], [""]];
+      D.currentNotice().forEach((p) => { noticeRows.push([p], [""]); });
+      noticeRows.push([D.attribution], [""], [D.copyright]);
+      const wsNotice = XLSX.utils.aoa_to_sheet(noticeRows);
+      wsNotice["!cols"] = [{ wch: 118 }];
+      XLSX.utils.book_append_sheet(wb, wsNotice, "Notice");
+    }
+
+    // ----- Sheet 2: Executive Summary -----
     const gov = snapshot.governance || {};
     const si = snapshot.signal_inputs || {};
     const ea = (snapshot.summary && snapshot.summary.evidence_agreement) || {};
@@ -101,7 +127,7 @@
     wsSummary["!cols"] = [{ wch: 35 }, { wch: 60 }];
     XLSX.utils.book_append_sheet(wb, wsSummary, "Executive Summary");
 
-    // ----- Sheet 2: Category Results -----
+    // ----- Sheet 3: Category Results -----
     const catRows = [[
       "Category", "Category Name", "Overall Status",
       "Module", "Module Name", "Status", "Evidence Metric"
@@ -135,7 +161,7 @@
     ];
     XLSX.utils.book_append_sheet(wb, wsCat, "Category Results");
 
-    // ----- Sheet 3: Signal History (only if >1 period) -----
+    // ----- Sheet 4: Signal History (only if >1 period) -----
     if (project.history && project.history.length > 1) {
       // Column header text is the display label (renumbered); the stored
       // per-period summary keys (c.cat9 etc.) are the STABLE internal category
