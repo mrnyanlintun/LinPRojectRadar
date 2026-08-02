@@ -101,6 +101,31 @@ FIELD_KINDS: dict[str, str] = {
 UNEMITTABLE_FIELDS: frozenset[str] = frozenset({"rfiNumber", "rfiResponseTimeDays", "docDate"})
 
 
+# --------------------------------------------------------------------------- numeric contract
+#
+# D2. Which signalInputs fields are NUMERIC, and which of those may legitimately be negative.
+# The rule is per FIELD, like everything else in this registry: a value that is present but
+# not readable as a number is a contract violation by the extraction model and is REFUSED at
+# every entry point (see extraction_merge.validate_numeric_fields), never coerced to 0.0.
+#
+# Four date-string fields are the only non-numeric emittable fields; cpi and spi are derived
+# but reachable through the legacy overwritesignal action, so they carry the contract too.
+DATESTR_SI_FIELDS: frozenset[str] = frozenset(
+    {"baselineStart", "baselineEnd", "workPeriodFrom", "workPeriodTo"})
+
+NUMERIC_SI_FIELDS: frozenset[str] = (
+    frozenset(FIELD_KINDS) - DATESTR_SI_FIELDS) | frozenset({"cpi", "spi"})
+
+# Fields where a NEGATIVE value is a real project condition, not a contract violation:
+#   totalFloat / consumedFloat / floatRemaining — negative float is a genuine schedule state;
+#   analogousOverrunPct — a reference project that UNDERRAN is a negative overrun.
+# Everything else numeric is a count, a sum, an hour figure, a rate or a score, and a
+# negative one is out of contract. docRiskScore additionally has its own 0..1 guard
+# (validate_doc_risk_score), which stays the authority for its range.
+SIGNED_SI_FIELDS: frozenset[str] = frozenset(
+    {"totalFloat", "consumedFloat", "floatRemaining", "analogousOverrunPct"})
+
+
 # --------------------------------------------------------------------------- writer tiers
 #
 # field -> {doc_type: tier}. Lower tier wins outright; within a tier, latest as_of.

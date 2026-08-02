@@ -9,6 +9,35 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-02 — D2 CLOSED: MALFORMED NUMERICS REFUSE AT ALL FOUR ENTRY POINTS
+
+Full detail in `REPORT_2026-08-02_malformed-numerics.md`. **Server 1440/1440 across 26 suites,
+`tests_render.html` 49/49, `tests.html` 51/51.** Eight faults injected, all confirmed applied,
+all detected, all reverted byte-identical, baseline re-run after every fault. Three faults
+crashed the suite mid-run and STILL read as red, because the suite wraps its whole run.
+
+- **Four entry points, enumerated not assumed, all guarded**: (1) `extract_many` — refuses the
+  whole document BEFORE any row, per document not per batch; (2) `emit_observations` — the
+  stored-row backstop, validates before emitting so refusal is all-or-nothing; (3)
+  `overwritesignal`; (4) **`save`** — the wholesale doc replacement carrying a client
+  signalInputs blob, the live action nobody had listed (the risk guard never covered it
+  either). `save` validates CHANGED fields only, so a legacy-stored bad value cannot brick
+  every later edit.
+- **Three cases**: absent passes (abstention unchanged); malformed ("TBD", "N/A", booleans,
+  "1.2.3") refuses; out of contract (negative count/sum) refuses. Range contract in
+  `field_registry`: everything numeric non-negative EXCEPT totalFloat/consumedFloat/
+  floatRemaining/analogousOverrunPct (signed set — negative float is a real state). NO percent
+  upper bounds: the 0..1-vs-0..100 scale question is unresolved and was not guessed at.
+- **The parser accepts real-world decoration**: "$1,200,000", "1,200", "45%", and "(500)"
+  reads as NEGATIVE 500 — the legacy stripper made it +500 and made "TBD" a 0.0. Emission now
+  coerces through the SAME parser, so the guard and selection can never disagree about a value.
+  `_num_or_null`'s malformed-to-zero quirk is dead at every guarded boundary.
+- **The uploader sees the existing extraction-failure dialog**, per-file error verbatim, field
+  and file and value named, "Nothing was stored", remedy stated. New strings are operational
+  error wording only and are flagged in the report.
+- `docRiskScore` keeps `validate_doc_risk_score` as its range authority; "N/A" for it is now
+  refused as malformed BEFORE the range guard ever sees the coerced 0.0.
+
 # 2026-08-02 — THE STORAGE REDESIGN IS BUILT: OBSERVATIONS, SELECTION, FOUR DEFECTS CLOSED
 
 Full detail in `REPORT_2026-08-02_storage-redesign.md`. **Server 1394/1394 across 25 suites

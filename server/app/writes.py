@@ -220,6 +220,29 @@ def w_save(session: Session, payload: dict) -> dict[str, Any]:
                and incoming_events[:len(stored_events)] == stored_events)
     fresh["events"] = incoming_events if extends else stored_events
 
+    # D2, THE FOURTH ENTRY POINT — the live action nobody had listed. This handler replaces
+    # the stored document wholesale, and the client's copy carries a `signalInputs` blob, so
+    # a malformed or out-of-range numeric could enter the stored record through an ordinary
+    # save without touching a document or the overwritesignal action. Only fields whose value
+    # CHANGED are validated: refusing a save because an already-stored value fails the
+    # contract would brick every edit of a project carrying it, and the stored value is not
+    # this save's doing. The refusal names the field and changes nothing.
+    from .extraction_merge import (
+        DocRiskScoreRangeError, MalformedNumericError, NumericRangeError,
+        validate_signal_value,
+    )
+    stored_inputs = (project.doc or {}).get("signalInputs") or {}
+    incoming_inputs = fresh.get("signalInputs")
+    if isinstance(incoming_inputs, dict):
+        for _field, _value in incoming_inputs.items():
+            if _value == stored_inputs.get(_field):
+                continue
+            try:
+                validate_signal_value(str(_field), _value)
+            except (DocRiskScoreRangeError, MalformedNumericError,
+                    NumericRangeError) as exc:
+                return err(f"Save refused: {exc}")
+
     # Geocode only when the address CHANGED, which is what v10.29 did and what the comment in
     # assets/js/ingest.js still describes. Re-geocoding an unchanged address on every save would
     # spend the rate limit answering a question already answered, and the cache would make it
@@ -413,15 +436,19 @@ def w_overwritesignal(session: Session, payload: dict) -> dict[str, Any]:
     # THE THIRD ENTRY POINT, and the one an audit of extraction_merge alone would miss.
     # This action writes an arbitrary caller-supplied value into an arbitrary signalInputs
     # field with no validation of either, so it bypasses the extraction boundary completely.
-    # A PM could set docRiskScore to 85 or -3 here and reach fusion by a route that never
-    # touches a document. Guarded with the same rule, converted to the refusal shape this
-    # module returns rather than raised, because /exec callers read `error`.
-    if field == "docRiskScore":
-        from .extraction_merge import DocRiskScoreRangeError, validate_doc_risk_score
-        try:
-            validate_doc_risk_score(new_value)
-        except DocRiskScoreRangeError as exc:
-            return err(str(exc))
+    # A PM could set docRiskScore to 85 or -3 here — or, before D2, set earned value to "TBD"
+    # — and reach a stored record by a route that never touches a document. Guarded with the
+    # same rules as the extraction boundary (malformed refuses, out-of-range refuses,
+    # docRiskScore keeps its 0..1 authority), converted to the refusal shape this module
+    # returns rather than raised, because /exec callers read `error`.
+    from .extraction_merge import (
+        DocRiskScoreRangeError, MalformedNumericError, NumericRangeError,
+        validate_signal_value,
+    )
+    try:
+        validate_signal_value(str(field), new_value)
+    except (DocRiskScoreRangeError, MalformedNumericError, NumericRangeError) as exc:
+        return err(str(exc))
 
     inputs[field] = new_value
 

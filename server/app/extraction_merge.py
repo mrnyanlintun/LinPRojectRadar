@@ -40,8 +40,9 @@ The merge is now TWO stages, both pure:
 
 WHAT DID NOT CHANGE. The output dict: same keys, same ``_KEY_ORDER`` insertion order (the
 simulation layer iterates insertion order — DO NOT SORT), same ``sources`` shape, same
-``cpi``/``spi`` derivation, same JS truthiness quirks (``_num_or_null``), same doc-risk
-refusal. ``assemble_signal_inputs(documents)`` keeps its signature and its three properties:
+``cpi``/``spi`` derivation, same doc-risk refusal. (One legacy quirk is deliberately DEAD:
+``_num_or_null``'s malformed-text-becomes-0.0 — D2's numeric contract refuses such a value
+at every entry point before any coercion could run; see the numeric-contract section.) ``assemble_signal_inputs(documents)`` keeps its signature and its three properties:
 
     assemble_signal_inputs(docs) == assemble_signal_inputs(docs)            (determinism)
     assemble_signal_inputs(shuffle(docs)) == assemble_signal_inputs(docs)   (order independence)
@@ -82,8 +83,12 @@ __all__ = [
     "DOC_RISK_SCORE_MAX",
     "DOC_RISK_SCORE_MIN",
     "DocRiskScoreRangeError",
+    "MalformedNumericError",
+    "NumericRangeError",
     "SIGNAL_INPUT_KEYS",
     "validate_doc_risk_score",
+    "validate_numeric_fields",
+    "validate_signal_value",
 ]
 
 
@@ -211,8 +216,9 @@ def validate_doc_risk_score(raw: Any, *, filename: str | None = None) -> None:
       * A value that does not parse as a number at all (``"1.2.3"``). ``_num_or_null`` returns
         None for those and the merge stores nothing, which is already the honest outcome.
       * ``"N/A"`` and other unparseable strings, which ``_num_or_null`` coerces to 0.0 by a
-        documented legacy quirk. That lands in range and is left alone: changing it would
-        alter behaviour the instrument has always had, which is a separate decision.
+        documented legacy quirk. In range, so THIS guard leaves them alone — but they no
+        longer reach it at any guarded boundary: D2's ``validate_numeric_fields`` refuses a
+        present-but-unreadable value first, so the coerced 0.0 is dead at every entry point.
 
     0 and 1 are both VALID. 0 is a genuine "no concern" reading and must survive to storage
     (there is a standing assertion at the bottom of this module that a genuine 0 is stored),
@@ -234,6 +240,185 @@ def validate_doc_risk_score(raw: Any, *, filename: str | None = None) -> None:
         f"document again, and if it keeps happening the extraction model is returning the "
         f"wrong scale for this document type."
     )
+
+
+# --------------------------------------------------------------------------- numeric contract
+#
+# D2. A model returning "TBD" for earned value used to yield 0.0 — the worst possible cost
+# performance, asserted confidently — because `_num_or_null` reproduces the legacy JS quirk
+# Number("") === 0. Under the observation store a wrong value is no longer transient: it
+# persists as a row and is selected on every later computation, so a single malformed
+# extraction poisons a project until someone notices. The fix is the risk-score pattern:
+# REFUSE at every point a numeric value can enter, so nothing out of contract reaches storage
+# or computation by any path.
+#
+# Three cases, treated differently:
+#   ABSENT     — None or "". The field was not in the document. The observation is simply not
+#                emitted and the computation abstains. Unchanged.
+#   MALFORMED  — present but not readable as a number ("TBD", "N/A", "unknown", "1.2.3", a
+#                boolean). Refused: if the document genuinely lacks the value the extraction
+#                should return null, not prose.
+#   OUT OF CONTRACT — readable, but outside the field's permitted range (a negative count or
+#                sum; a docRiskScore outside 0..1, which keeps its own guard). Refused.
+#
+# THE PARSING RULE, deliberately more careful than both alternatives. A strict float() parse
+# would refuse legitimate real-world figures: currency ("$1,200,000"), thousands separators
+# ("1,200"), percentages written with the symbol ("45%"), and accountants' negatives
+# ("(500)"). The legacy `numOrNull_` stripped every non-numeric character first, which is why
+# "TBD" became 0 and why "(500)" silently became POSITIVE 500. This parser accepts exactly the
+# recognised decorations — currency symbol, comma separators, spaces, one trailing %, and
+# parentheses meaning negative (honoured, not stripped) — and refuses anything else.
+
+_CURRENCY_CHARS = "$€£"
+
+
+class MalformedNumericError(ValueError):
+    """A numeric extraction field is present but cannot be read as a number."""
+
+
+class NumericRangeError(ValueError):
+    """A numeric extraction field parses, but sits outside the field's permitted range."""
+
+
+def _parse_numeric(v: Any) -> tuple[str, float | int | None]:
+    """('absent' | 'ok' | 'malformed', value). The single numeric-reading rule."""
+    if v is None or v == "":
+        return "absent", None
+    if isinstance(v, bool):
+        return "malformed", None
+    if isinstance(v, (int, float)):
+        if isinstance(v, float) and (v != v or v in (float("inf"), float("-inf"))):
+            return "malformed", None
+        return "ok", v
+    s = str(v).strip()
+    if not s:
+        return "absent", None
+    negative = False
+    if s.startswith("(") and s.endswith(")") and len(s) > 2:
+        negative = True
+        s = s[1:-1].strip()
+    for ch in _CURRENCY_CHARS:
+        s = s.replace(ch, "")
+    s = s.replace(",", "").replace(" ", "")
+    if s.endswith("%"):
+        s = s[:-1]
+    if not s:
+        return "malformed", None
+    try:
+        n = float(s)
+    except ValueError:
+        return "malformed", None
+    if n != n:
+        return "malformed", None
+    return "ok", -n if negative else n
+
+
+def _coerce_numeric(v: Any) -> float | int | None:
+    """Emission-side coercion: the parsed value, or None for absent. Malformed is None too,
+    but is unreachable at emission because `validate_numeric_fields` refuses first."""
+    status, n = _parse_numeric(v)
+    return n if status == "ok" else None
+
+
+# Numeric extraction keys per doc type that do NOT flow through _NUMERIC_EMISSIONS below —
+# the derivation inputs and the special change-order branch. (src_key, si_field or None);
+# None means the key feeds a derivation only and takes the default non-negative rule.
+_EXTRA_NUMERIC_KEYS: dict[str, tuple[tuple[str, str | None], ...]] = {
+    "change_order": (("revised_contract_sum", "bac"),
+                     ("change_order_count", "changeOrderCount"),
+                     ("baseline_contract_sum", "baselineContractSum")),
+    "safety_report": (("incident_rate", "oshaIncidentRate"),
+                      ("osha_recordable_incidents", None),
+                      ("total_manhours", "totalManhours")),
+    "subcontractor_report": (("compliance_score", "subcontractorComplianceScore"),
+                             ("on_time_deliveries", None),
+                             ("scheduled_deliveries", None)),
+}
+
+
+def _numeric_keys_for(doc_type: str) -> tuple[tuple[str, str | None], ...]:
+    pairs: list[tuple[str, str | None]] = list(_NUMERIC_EMISSIONS.get(doc_type, ()))
+    pairs.extend(_EXTRA_NUMERIC_KEYS.get(doc_type, ()))
+    if doc_type in DOC_RISK_DOC_TYPES:
+        pairs.append(("document_risk_score", "docRiskScore"))
+    return tuple(pairs)
+
+
+def _range_check(si_field: str | None, n: float | int, src: str,
+                 filename: str | None) -> None:
+    """Refuse a readable value outside the field's permitted range. docRiskScore keeps its
+    own 0..1 authority (validate_doc_risk_score, run separately at the same boundaries)."""
+    from .field_registry import SIGNED_SI_FIELDS
+    if si_field == "docRiskScore":
+        return
+    if (si_field is None or si_field not in SIGNED_SI_FIELDS) and n < 0:
+        where = f" in {filename}" if filename else ""
+        raise NumericRangeError(
+            f"{src}{where} is {_fmt_num(n)}, and this field cannot be negative. Nothing was "
+            f"stored for this document and no figures from it were used. Check the document, "
+            f"or re-run the extraction."
+        )
+
+
+def _fmt_num(n: float | int) -> str:
+    return str(int(n)) if isinstance(n, float) and n.is_integer() else str(n)
+
+
+def validate_numeric_fields(doc_type: str, extraction: Any, *,
+                            filename: str | None = None) -> None:
+    """
+    Refuse a document whose extraction carries a malformed or out-of-range numeric value.
+    Returns None, or raises MalformedNumericError / NumericRangeError.
+
+    Called at EVERY entry point, before anything from the document is stored or emitted, so
+    the refusal is whole-document by construction: no observation row, no Document row, no
+    partial write. Absent values (None, "") pass — a missing observation means abstention,
+    which is the standing default and is not changed here.
+    """
+    doc_type = canonical_doc_type(str(doc_type or ""))
+    ex = extraction if isinstance(extraction, dict) else {}
+    for src, si_field in _numeric_keys_for(doc_type):
+        raw = ex.get(src)
+        status, n = _parse_numeric(raw)
+        if status == "absent":
+            continue
+        if status == "malformed":
+            where = f" in {filename}" if filename else ""
+            raise MalformedNumericError(
+                f"{src}{where} is {raw!r}, which cannot be read as a number. Nothing was "
+                f"stored for this document and no figures from it were used. If the document "
+                f"does not state this value, the extraction should leave it blank rather "
+                f"than write {raw!r}; re-run the extraction, or correct the document."
+            )
+        _range_check(si_field, n, src, filename)
+
+
+def validate_signal_value(field: str, value: Any) -> None:
+    """
+    The same contract for a value entering a signalInputs FIELD directly (the legacy facade:
+    overwritesignal, and changed fields on save). None passes — clearing a field is not a
+    malformed one. docRiskScore delegates its range to validate_doc_risk_score.
+    """
+    from .field_registry import NUMERIC_SI_FIELDS
+    if field not in NUMERIC_SI_FIELDS or value is None:
+        return
+    status, n = _parse_numeric(value)
+    if status == "absent":
+        return
+    if status == "malformed":
+        raise MalformedNumericError(
+            f"{field} cannot be set to {value!r}: it is not readable as a number. "
+            f"Nothing was changed."
+        )
+    if field == "docRiskScore":
+        validate_doc_risk_score(value)
+        return
+    from .field_registry import SIGNED_SI_FIELDS
+    if field not in SIGNED_SI_FIELDS and n < 0:
+        raise NumericRangeError(
+            f"{field} cannot be set to {_fmt_num(n)}: this field cannot be negative. "
+            f"Nothing was changed."
+        )
 
 
 def _round3(n: float) -> float:
@@ -479,6 +664,13 @@ def emit_observations(doc: dict) -> list[dict]:
     if not isinstance(ex, dict):
         return []
 
+    # D2. The whole document is validated BEFORE anything is emitted, so a refusal is
+    # all-or-nothing: a document with one malformed numeric field contributes no observation
+    # at all, never a partial set. This is the backstop for rows stored before the extraction
+    # boundary guard existed or written by any other route; a document uploaded today is
+    # refused earlier, in extract_many, before a row exists.
+    validate_numeric_fields(doc_type, ex, filename=str(doc.get("filename") or "") or None)
+
     sha = str(doc.get("sha256") or "")
     base = {
         "doc_type": doc_type,
@@ -508,12 +700,12 @@ def emit_observations(doc: dict) -> list[dict]:
     # Doc risk: refuse out-of-range before anything from this document is emitted.
     if doc_type in DOC_RISK_DOC_TYPES:
         validate_doc_risk_score(ex.get("document_risk_score"))
-        risk = _num_or_null(ex.get("document_risk_score"))
+        risk = _coerce_numeric(ex.get("document_risk_score"))
         if risk is not None:
             emit("docRiskScore", risk)
 
     for src, field in _NUMERIC_EMISSIONS.get(doc_type, ()):
-        v = _num_or_null(ex.get(src))
+        v = _coerce_numeric(ex.get(src))
         if v is not None:
             emit(field, v)
     for src, field in _DATESTR_EMISSIONS.get(doc_type, ()):
@@ -524,11 +716,11 @@ def emit_observations(doc: dict) -> list[dict]:
     if doc_type == "change_order":
         # The executed amendment. Effective values win by declared tier; the ORIGINAL
         # baseline persists as contract_value's PERMANENT observations.
-        if _num_or_null(ex.get("revised_contract_sum")) is not None:
-            emit("bac", _num_or_null(ex.get("revised_contract_sum")))
-            emit("revisedContractSum", _num_or_null(ex.get("revised_contract_sum")))
-        if _num_or_null(ex.get("baseline_contract_sum")) is not None:
-            emit("baselineContractSum", _num_or_null(ex.get("baseline_contract_sum")))
+        if _coerce_numeric(ex.get("revised_contract_sum")) is not None:
+            emit("bac", _coerce_numeric(ex.get("revised_contract_sum")))
+            emit("revisedContractSum", _coerce_numeric(ex.get("revised_contract_sum")))
+        if _coerce_numeric(ex.get("baseline_contract_sum")) is not None:
+            emit("baselineContractSum", _coerce_numeric(ex.get("baseline_contract_sum")))
         new_end = ex.get("revised_completion_date")
         if not _is_blank_date(new_end):
             # Through the same emission path as every other field. The direct dictionary
@@ -537,7 +729,7 @@ def emit_observations(doc: dict) -> list[dict]:
         # The event ledger row: one executed change order. Entity identity is the document
         # (no CO number is extracted); a revision carries revision_of and supersedes THIS
         # record, never the population. Arrives executed — approval happens off-platform.
-        explicit = _num_or_null(ex.get("change_order_count"))
+        explicit = _coerce_numeric(ex.get("change_order_count"))
         if explicit is not None:
             # A stated ledger total. SNAPSHOT-kind observation on an EVENT field: selection
             # lets a stated total beat counting, reproducing the legacy setField semantics.
@@ -547,31 +739,31 @@ def emit_observations(doc: dict) -> list[dict]:
                  entity_key=str(doc.get("document_id") or sha), entity_state="executed")
 
     elif doc_type == "safety_report":
-        incident_rate = _num_or_null(ex.get("incident_rate"))
+        incident_rate = _coerce_numeric(ex.get("incident_rate"))
         if (
             incident_rate is None
-            and _num_or_null(ex.get("osha_recordable_incidents")) is not None
-            and _num_or_null(ex.get("total_manhours")) is not None
+            and _coerce_numeric(ex.get("osha_recordable_incidents")) is not None
+            and _coerce_numeric(ex.get("total_manhours")) is not None
         ):
-            mh = _num_or_null(ex.get("total_manhours"))
+            mh = _coerce_numeric(ex.get("total_manhours"))
             if mh:
                 incident_rate = _round3(
-                    (_num_or_null(ex.get("osha_recordable_incidents")) / mh) * 200000)
+                    (_coerce_numeric(ex.get("osha_recordable_incidents")) / mh) * 200000)
         if incident_rate is not None:
             emit("oshaIncidentRate", incident_rate)
-        if _num_or_null(ex.get("total_manhours")) is not None:
-            emit("totalManhours", _num_or_null(ex.get("total_manhours")))
+        if _coerce_numeric(ex.get("total_manhours")) is not None:
+            emit("totalManhours", _coerce_numeric(ex.get("total_manhours")))
 
     elif doc_type == "subcontractor_report":
-        comp = _num_or_null(ex.get("compliance_score"))
+        comp = _coerce_numeric(ex.get("compliance_score"))
         if (
             comp is None
-            and _num_or_null(ex.get("on_time_deliveries")) is not None
-            and _num_or_null(ex.get("scheduled_deliveries")) is not None
-            and _num_or_null(ex.get("scheduled_deliveries")) != 0
+            and _coerce_numeric(ex.get("on_time_deliveries")) is not None
+            and _coerce_numeric(ex.get("scheduled_deliveries")) is not None
+            and _coerce_numeric(ex.get("scheduled_deliveries")) != 0
         ):
-            comp = _round3(_num_or_null(ex.get("on_time_deliveries"))
-                           / _num_or_null(ex.get("scheduled_deliveries")))
+            comp = _round3(_coerce_numeric(ex.get("on_time_deliveries"))
+                           / _coerce_numeric(ex.get("scheduled_deliveries")))
         if comp is not None:
             emit("subcontractorComplianceScore", comp)
 
