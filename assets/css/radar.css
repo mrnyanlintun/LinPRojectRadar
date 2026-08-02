@@ -4297,3 +4297,66 @@ body.og-account-operational .notice-operational { display: block; }
 .detail-globe canvas { display: block; }
 .detail-globe .atlas-svg { width: 100%; height: auto; }
 .detail-globe-note { text-align: center; margin: 6px 0 0; }
+
+/* ============================================================
+   The Files tab (assets/js/files.js).
+
+   Three columns: the Arora folder tree, the file list, the
+   preview. The tree can be very deep, so it scrolls
+   independently of the list rather than making the page long.
+   ============================================================ */
+.fx-layout { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(0, 2fr)
+             minmax(240px, 1.4fr); gap: 12px; align-items: start; }
+@media (max-width: 1100px) { .fx-layout { grid-template-columns: 1fr; } }
+
+.fx-tree-card, .fx-list-card, .fx-preview-card { min-width: 0; }
+.fx-tree { max-height: 520px; overflow: auto; margin-top: 8px; }
+.fx-tree-root, .fx-children { list-style: none; margin: 0; padding-left: 12px; }
+.fx-tree-root { padding-left: 0; }
+.fx-node { margin: 1px 0; font-size: 13px; }
+.fx-node-label { background: none; border: 0; padding: 2px 4px; cursor: pointer;
+                 font: inherit; color: var(--faint); text-align: left; border-radius: 4px; }
+.fx-node-occupied > .fx-node-label { color: var(--heading); font-weight: 600; }
+.fx-node-selected > .fx-node-label { background: var(--surface-soft); color: var(--accent); }
+.fx-node-label:hover { background: var(--surface-soft); }
+.fx-pattern { color: var(--faint); opacity: .65; font-style: italic; padding: 2px 4px;
+              display: inline-block; cursor: default; }
+.fx-occupied-toggle { font-size: 12px; color: var(--faint); display: flex; align-items: center;
+                      gap: 5px; }
+
+.fx-table { table-layout: auto; }
+.fx-filename { background: none; border: 0; padding: 0; cursor: pointer; font: inherit;
+               color: var(--accent); text-align: left; text-decoration: underline; }
+.fx-folder { font-size: 11px; color: var(--faint); word-break: break-word; }
+.fx-version { white-space: nowrap; }
+.fx-flag { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 9px;
+           font-size: 10px; border: 1px solid var(--line-strong); color: var(--faint); }
+.fx-flag-review { border-color: var(--status-amber, #b8860b);
+                  color: var(--status-amber, #b8860b); }
+.fx-review-badge { padding: 2px 9px; border-radius: 10px; font-size: 11px;
+                   border: 1px solid var(--status-amber, #b8860b);
+                   color: var(--status-amber, #b8860b); }
+
+.fx-preview { margin-top: 8px; }
+.fx-preview-frame { width: 100%; height: 460px; border: 1px solid var(--line);
+                    border-radius: 6px; background: #fff; }
+.fx-preview-message { font-size: 13px; color: var(--faint); padding: 18px; border: 1px dashed
+                      var(--line-strong); border-radius: 6px; text-align: center; }
+
+.fx-drop { margin-top: 10px; border: 2px dashed var(--line-strong); border-radius: 8px;
+           padding: 18px; text-align: center; transition: background .15s, border-color .15s; }
+.fx-drop-over { border-color: var(--accent); background: var(--surface-soft); }
+.fx-drop-label { margin: 0; font-size: 13px; color: var(--faint); }
+.fx-drop-status { margin-top: 10px; text-align: left; }
+
+.fx-droprow { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 4px 0;
+              border-top: 1px solid var(--line); }
+.fx-droprow-name { font-weight: 600; color: var(--heading); }
+.fx-droprow-state { color: var(--faint); }
+.fx-droprow-done .fx-droprow-spin { animation: none; border-top-color: var(--line-strong); }
+.fx-droprow-error .fx-droprow-state { color: var(--status-red, #a33); }
+.fx-droprow-spin { width: 11px; height: 11px; border: 2px solid var(--line);
+                   border-top-color: var(--accent); border-radius: 50%; display: inline-block;
+                   animation: fx-spin .8s linear infinite; }
+@keyframes fx-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .fx-droprow-spin { animation: none; } }

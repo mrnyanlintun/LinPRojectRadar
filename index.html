@@ -625,6 +625,7 @@
 
       <div class="ws-tabbar" id="ws-project-tabs">
         <button data-wstab="upload" class="active">Period documents</button>
+        <button data-wstab="files">Files</button>
         <button data-wstab="documents">Document library</button>
         <button data-wstab="detail">Signals</button>
         <button data-wstab="decision">Period decision</button>
@@ -654,6 +655,56 @@
           <button id="ws-compute-btn" class="ws-btn ws-btn-secondary" style="margin-top:10px;">Run analysis for this period</button>
           <p id="ws-compute-note" class="ws-note"></p>
           <div id="ws-upload-period-docs" style="margin-top:6px;"></div>
+        </div>
+      </div>
+
+      <!-- The Files tab. Folder tree on the left, file list in the middle, preview on the
+           right, and a drop zone across the top. The folder structure is the Arora project
+           directory template (server/app/jdrive_tree.py); the platform files each document
+           automatically and the PM never chooses a destination, so the destination is SHOWN
+           and a move control is offered instead. -->
+      <div id="wstab-files" class="ws-panel">
+        <div class="ws-card">
+          <div class="ws-cardhead">
+            <h3 style="margin:0;">Files</h3>
+            <label class="ws-field-label" for="ws-files-project">Project</label>
+            <select id="ws-files-project" class="ws-input ws-input-inline"></select>
+          </div>
+          <p class="ws-note">Documents are filed into the Arora project directory automatically
+            from the detected type. Where each one went is shown below, and anything the
+            platform was unsure about is marked for review so it can be moved.</p>
+          <div id="ws-files-drop" class="fx-drop">
+            <p class="fx-drop-label">Drop documents here to file them</p>
+            <div id="ws-files-drop-status" class="fx-drop-status"></div>
+          </div>
+          <p id="ws-files-error" class="ws-error" style="display:none;"></p>
+        </div>
+        <div class="fx-layout">
+          <div class="ws-card fx-tree-card">
+            <div class="ws-cardhead">
+              <h4 style="margin:0;">Folders</h4>
+              <label class="fx-occupied-toggle">
+                <input type="checkbox" id="ws-files-occupied-only" checked>
+                Only folders in use
+              </label>
+            </div>
+            <div id="ws-files-tree" class="fx-tree"></div>
+          </div>
+          <div class="ws-card fx-list-card">
+            <div class="ws-cardhead">
+              <h4 id="ws-files-list-title" style="margin:0;">All files</h4>
+              <span id="ws-files-review-badge" class="fx-review-badge" style="display:none;"></span>
+            </div>
+            <div id="ws-files-list"></div>
+          </div>
+          <div class="ws-card fx-preview-card">
+            <div class="ws-cardhead">
+              <h4 id="ws-files-preview-title" style="margin:0;">Preview</h4>
+              <a id="ws-files-download" class="ws-btn ws-btn-secondary" style="display:none;"
+                 download>Download</a>
+            </div>
+            <div id="ws-files-preview" class="fx-preview"></div>
+          </div>
         </div>
       </div>
 
@@ -1206,6 +1257,7 @@
        above. They share config.js/auth.js/store.js with everything else here, which they always
        did — that is why the fold needed no renaming: each of these files is a single IIFE that
        exports nothing to window, so none of them can collide with app.js or with each other. -->
+  <script src="assets/js/files.js"></script>
   <script src="assets/js/workspace.js"></script>
   <script src="assets/js/admin-ops.js"></script>
   <script src="assets/js/questionnaires.js"></script>

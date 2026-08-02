@@ -223,37 +223,73 @@ class AnthropicExtractor:
         meant a document whose type had just been thrown away still carried the model's
         certainty about that discarded answer. The filename heuristic is consulted only as a
         fallback, and if it too declines, the document is UNMAPPED rather than relabelled.
+
+        THE CONFIDENCE IS NOW KEPT, AND THE RULE ABOVE IS UNCHANGED. The prompt has always
+        asked for `{"docType", "confidence"}` and this method has always parsed it and then
+        dropped it, so no caller had ever seen it. `classify_with_confidence` returns both, and
+        returns confidence ONLY when the model's own claim is the thing that decided the type.
+        A filename fallback or an UNMAPPED outcome carries None, which is exactly the
+        "rejected classification" case this docstring already refuses to inherit from. This
+        method keeps its single-value signature because every existing caller wants a type.
         """
+        return self.classify_with_confidence(raw, mime_type, filename)[0]
+
+    def classify_with_confidence(self, raw: bytes, mime_type: str,
+                                 filename: str) -> tuple[str, float | None]:
+        """(doc_type, confidence). Confidence is None unless the model's own claim was used."""
         block = self._content_block(raw, mime_type)
         try:
             answer = parse_json_response(self._post(build_classify_prompt(), block, 256))
         except ExtractionError:
             guessed = guess_type_from_filename(filename)
-            return guessed if guessed else UNMAPPED
+            return (guessed if guessed else UNMAPPED), None
         claimed = str(answer.get("docType") or "").strip().lower()
         if is_mapped(claimed):
-            return claimed
+            raw_confidence = answer.get("confidence")
+            try:
+                confidence = float(raw_confidence) if raw_confidence is not None else None
+            except (TypeError, ValueError):
+                # Unreadable is not confident. Same posture as the numeric contract: a value
+                # that cannot be read is never silently treated as a good one.
+                confidence = None
+            if confidence is not None and not 0.0 <= confidence <= 1.0:
+                confidence = None
+            return claimed, confidence
         guessed = guess_type_from_filename(filename)
-        return guessed if guessed else UNMAPPED
+        return (guessed if guessed else UNMAPPED), None
 
     def extract(self, raw: bytes, mime_type: str, filename: str,
                 doc_type: str | None = None) -> tuple[str, dict]:
         """Return (doc_type, extracted_fields). Raises ExtractionError on failure."""
+        resolved, fields, _confidence = self.extract_with_confidence(
+            raw, mime_type, filename, doc_type)
+        return resolved, fields
+
+    def extract_with_confidence(self, raw: bytes, mime_type: str, filename: str,
+                                doc_type: str | None = None
+                                ) -> tuple[str, dict, float | None]:
+        """
+        Return (doc_type, extracted_fields, classification_confidence).
+
+        Confidence is None when this call did not classify — a caller-supplied type is taken as
+        given, and the platform has no opinion about how sure someone else was.
+        """
         resolved = (doc_type or "").strip().lower()
+        confidence: float | None = None
         if not is_mapped(resolved):
-            resolved = self.classify(raw, mime_type, filename)
+            resolved, confidence = self.classify_with_confidence(raw, mime_type, filename)
         if resolved == UNMAPPED:
             # No field list applies, so there is nothing to ask for. Storing the document with
             # an empty extraction is honest; asking the generic two-field default would produce
             # a docRiskScore for a document type nothing knows how to interpret.
-            return UNMAPPED, {}
+            return UNMAPPED, {}, confidence
         fields = extraction_fields_for(resolved)
         block = self._content_block(raw, mime_type)
         extracted = parse_json_response(self._post(build_prompt(resolved, fields), block,
                                                    MAX_TOKENS))
         # Keep only what was asked for. A model that volunteers extra keys must not be able to
         # widen the stored extraction beyond the type's declared field list.
-        return resolved, {k: v for k, v in extracted.items() if k in set(fields)}
+        return resolved, {k: v for k, v in extracted.items() if k in set(fields)}, confidence
 
 
 # --------------------------------------------------------------------------- stub
@@ -284,6 +320,19 @@ class StubExtractor:
 
     def extract(self, raw: bytes, mime_type: str, filename: str,
                 doc_type: str | None = None) -> tuple[str, dict]:
+        rec_type, fields, _confidence = self.extract_with_confidence(
+            raw, mime_type, filename, doc_type)
+        return rec_type, fields
+
+    def extract_with_confidence(self, raw: bytes, mime_type: str, filename: str,
+                                doc_type: str | None = None
+                                ) -> tuple[str, dict, float | None]:
+        """
+        A recording may carry a confidence as a third element. One that does not returns None,
+        which is the honest answer: a recording made before confidences were kept never had
+        one, and inventing a high value would make every stub-backed check assert filing
+        behaviour the real classifier had never demonstrated.
+        """
         import hashlib
         sha = hashlib.sha256(raw).hexdigest()
         if self._delay_s:
@@ -294,8 +343,10 @@ class StubExtractor:
                 f"stub extractor has no recording for sha256 {sha[:12]}…; refusing to invent "
                 "an extraction. Record it, or run against the real model."
             )
-        rec_type, fields = self._recorded[sha]
-        return rec_type, dict(fields)
+        recording = self._recorded[sha]
+        rec_type, fields = recording[0], recording[1]
+        confidence = recording[2] if len(recording) > 2 else None
+        return rec_type, dict(fields), confidence
 
 
 def build_extractor(*, require_real: bool = False,
@@ -328,7 +379,8 @@ def extract_many(extractor, jobs: list[dict],
     Extract `jobs` concurrently, preserving input order in the returned list.
 
     Each job: {"sha256", "content", "mime_type", "filename", "doc_type"}.
-    Each result: {"sha256", "ok", "doc_type", "extraction", "error", "elapsed_s"}.
+    Each result: {"sha256", "ok", "doc_type", "extraction", "error", "confidence",
+    "elapsed_s"}.
 
     A failure is captured per job rather than raised, so one unreadable document in a batch of
     twenty-seven does not discard the twenty-six that extracted cleanly. The caller decides
@@ -348,10 +400,20 @@ def extract_many(extractor, jobs: list[dict],
     def run(job: dict) -> dict:
         started = time.monotonic()
         try:
-            doc_type, extraction = extractor.extract(
-                job["content"], job.get("mime_type") or "", job.get("filename") or "",
-                job.get("doc_type"),
-            )
+            # Prefer the confidence-bearing call. An extractor predating it (a caller's own
+            # stub in a test, for instance) still works and simply reports no confidence,
+            # which `needs_review` treats as reviewable rather than as fine.
+            if hasattr(extractor, "extract_with_confidence"):
+                doc_type, extraction, confidence = extractor.extract_with_confidence(
+                    job["content"], job.get("mime_type") or "", job.get("filename") or "",
+                    job.get("doc_type"),
+                )
+            else:
+                doc_type, extraction = extractor.extract(
+                    job["content"], job.get("mime_type") or "", job.get("filename") or "",
+                    job.get("doc_type"),
+                )
+                confidence = None
             # THE POINT THE VALUE ENTERS. Refusing here, before the caller writes a Document
             # row, is what makes "no out-of-range value reaches storage" true rather than
             # merely checked later: documents.py only persists results whose ok is True, so a
@@ -371,11 +433,12 @@ def extract_many(extractor, jobs: list[dict],
                                     filename=job.get("filename") or None)
             return {"sha256": job["sha256"], "ok": True, "doc_type": doc_type,
                     "extraction": extraction, "error": None,
+                    "confidence": confidence,
                     "elapsed_s": round(time.monotonic() - started, 3)}
         except Exception as exc:  # noqa: BLE001 — one document must not sink the batch
             log.warning("extraction failed for %s: %s", job.get("filename"), exc)
             return {"sha256": job["sha256"], "ok": False, "doc_type": None,
-                    "extraction": None, "error": str(exc),
+                    "extraction": None, "error": str(exc), "confidence": None,
                     "elapsed_s": round(time.monotonic() - started, 3)}
 
     with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="extract") as pool:
