@@ -9,6 +9,91 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-02 — THE EXPORT PRODUCES TWO THINGS: PARTICIPANT INPUTS AND PROJECT HEALTH, AS AN XLSX WORKBOOK
+
+Full detail in `REPORT_2026-08-02_export.md` — **read that report's Part 2 first**, it is the
+field inventory Lin asked to strike against the analysis plan. **Server 1517/1517 across 28
+suites, `tests_render.html` 49/49, `tests.html` 51/51.** Seven faults injected, all detected,
+all reverted byte-identical, baseline re-run after every fault. Both admin controls driven end
+to end in a real browser and confirmed by DOM read; the produced workbook was opened with
+openpyxl and read back, not only asserted against the code that wrote it.
+
+## The two kinds, and why the banner and notice both had to become conditional
+
+`participant_inputs` is the original export, unchanged in name/behaviour/defaults
+(`build_rows`, `EXPORT_COLUMNS`, `serialise` all keep their signatures — `test_export.py`'s 77
+checks pass completely unmodified). `project_health` is new: per project, reads
+`computed_results` directly, windows on `computed_at` (a decision timestamp does not exist in
+this scope; a reporting period is an integer a date range cannot bound), and is **NOT**
+filtered to research accounts — a project carries no `account_type` of its own. Both facts are
+now stated in every response (`research_account_filtered`, `date_window_field`) and both the
+banner and the "From"/"To" labels switch live in the UI when the kind changes.
+
+**The Notice text follows the same reasoning**: `participant_inputs` carries the research
+variant (true — everything in it is synthetic research-account data);
+`project_health` carries the **operational** variant (the one that makes no "all synthetic"
+claim), because that scope can genuinely include real operational project data. Both quoted
+whole from `DISCLAIMERS_DRAFT.md`, nothing composed. This flipped one pre-existing check in
+`test_disclaimers.py` that had asserted `research_export.py` must NEVER carry the operational
+variant — the premise (only one scope existed) no longer holds, and the check's reasoning was
+rewritten in place, not just its assertion.
+
+## The workbook
+
+`participant_inputs`: **Notice, Decisions, Stimulus, Module results, analysis_long.**
+`project_health`: **Notice, Module results** only — no participant sheets, since there is no
+participant dimension in that scope. Sheets always named explicitly.
+
+- **Decisions** (44 cols, was 39): the original allowlist plus `instance_id` (the join key —
+  `decision_id`) and four judgement-only fields (Part 5): `time_on_instance_seconds`,
+  `pre_committed_before_disclosure`, `completion_state`, `session_break` (a STATED HEURISTIC —
+  a login event strictly between instance start and end; `None`, not `False`, before the
+  instance has an end, so "no break" and "not yet judgeable" don't collapse into each other).
+- **Stimulus**: one row per instance, the frozen `DecisionSupportPackage` as disclosed —
+  `detected_condition`, `alternatives`, `uncertainty`, `limitations`, `applicability_boundary`,
+  `expiration_trigger`, `provenance`, `recommended_action`, exactly what `decision-ui.js`
+  renders on reveal. Nothing here is analytically produced.
+- **Module results**: one row per project/period/computation, named by `computation` (module
+  name) and `group` (group name) — **never a module id or number**, per
+  `NAMING_AUTHORITY.md`. Scoped to the touched projects for `participant_inputs`, to everything
+  in the date window for `project_health`.
+- **analysis_long**: Part 4, exactly TWO rows per instance always (`post_ai` 0/1), including an
+  instance whose final decision does not exist yet — verified directly with an abandoned
+  mid-instance fixture; omitting that second row would have been exactly the silent filtering
+  Part 5 forbids. `expert_reference_score` is a reserved, always-empty column — the rubric score
+  does not exist anywhere in the schema yet (confirmed, not assumed: `expert_references` has no
+  numeric score column at all).
+
+## Established, not assumed — read before touching this again
+
+- **openpyxl is NOT byte-deterministic by default.** Two builds of identical data a second
+  apart differ: `docProps/core.xml`'s created/modified timestamps AND every zip entry's own
+  timestamp both stamp the wall clock. Setting `workbook.properties.created/modified` alone
+  fixes only the first. `_normalize_xlsx_bytes` rewrites the whole archive with fixed per-entry
+  timestamps and textually-pinned docProps, entries reordered by name. Proven fixed by building
+  twice a second apart and diffing bytes — do that again if this code is ever touched.
+- **A participant who consented but decided nothing produces ZERO rows, not a placeholder.** An
+  instance is anchored on a `Decision` row, which is created only at the preliminary-judgment
+  INSERT. This is not a bug to fix; a participant who never opened the evidence has nothing yet
+  to report.
+- **The checksum-legacy path now covers xlsx too**: `include_notice=False` drops the Notice
+  sheet from the workbook the same way it drops the notice keys from JSON, reproducing the
+  pre-notice sheet set for the second-chance comparison in `a_adminexportfetch`.
+- **No migration-as-backfill**: `research_exports.kind` is NOT NULL with a server default of
+  `participant_inputs` — correct for every row that existed before the column, because that was
+  the only kind that could have produced it.
+
+## Still open, referred to Lin (Part 2's "available" list)
+
+Person-level fields collected at intake (`experience_level`, `industry`, `certifications`,
+`organizational_role`, `risk_attitude`, raw `intake_responses`/`debrief_responses`) are stored
+but not exported anywhere yet. `Assignment.status` and most of `ComputedResult`'s own top-level
+fields (`signal_inputs`, `category_statuses`, `project_status`, `portfolio_snapshot`,
+`source_documents`) are stored and unexported. **Scenario-domain familiarity per participant
+per project is not stored anywhere at all** — no questionnaire item, no column — confirmed by
+reading both `intake.json` and `debrief.json` in full. Adding any of these is a column-list
+edit once told which ones the analysis plan needs.
+
 # 2026-08-02 — RUN 2: PORTFOLIO HEALTH APPENDS, OVERWRITESIGNAL VALIDATES ITS FIELD NAME, USER ARCHIVE AND DELETE BUILT
 
 Full detail in `REPORT_2026-08-02_facade-and-user-lifecycle.md`. **Server 1469/1469 across 27

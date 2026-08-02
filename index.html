@@ -1032,14 +1032,22 @@
 
         <div class="ws-card">
           <h3 style="margin-top:0;">Export</h3>
-          <p class="ws-warning">The export is filtered to research accounts server-side, always.
-            Operational users are never included, whatever is requested here.</p>
-          <label class="ws-field-label" for="ao-export-from">From (start of window)</label>
+          <label class="ws-field-label" for="ao-export-kind">What to export</label>
+          <select id="ao-export-kind" class="ws-input">
+            <option value="participant_inputs">Participant inputs (decisions, per participant)</option>
+            <option value="project_health">Project health (analytical results, per project)</option>
+          </select>
+          <!-- The banner and the date-window caption both switch on the selection above
+               (wireExport's updateKindNote), rather than stating something true of one kind
+               and false of the other. See REPORT_2026-08-02_export.md Part 1. -->
+          <p id="ao-export-kind-note" class="ws-warning"></p>
+          <label class="ws-field-label" for="ao-export-from" id="ao-export-from-label">From (start of window)</label>
           <input id="ao-export-from" class="ws-input" type="datetime-local">
-          <label class="ws-field-label" for="ao-export-to">To (end of window)</label>
+          <label class="ws-field-label" for="ao-export-to" id="ao-export-to-label">To (end of window)</label>
           <input id="ao-export-to" class="ws-input" type="datetime-local">
           <label class="ws-field-label" for="ao-export-format">File format</label>
           <select id="ao-export-format" class="ws-input">
+            <option value="xlsx">XLSX (workbook)</option>
             <option value="json">JSON</option>
             <option value="csv">CSV</option>
           </select>

@@ -472,6 +472,12 @@ class ResearchExport(Base):
     date_range: Mapped[str] = mapped_column(Text, nullable=True)
     initiated_by: Mapped[str] = mapped_column(Text, nullable=True)
     completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    # 0015. What was exported: "participant_inputs" or "project_health" — the two kinds have
+    # different scopes (one filtered to research accounts, one not) and different sheet sets,
+    # so a fetch needs to know which builder produced the stored checksum. NOT NULL with a
+    # server default of the only kind that existed before this column: a record from before
+    # the selector existed was a participant-inputs export, by construction.
+    kind: Mapped[str] = mapped_column(Text, nullable=False, server_default="participant_inputs")
 
 
 # --------------------------------------------------------------------- B7b: documents & results

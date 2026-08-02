@@ -385,17 +385,21 @@ if EXPORT_PY.is_file():
     for label, para in (("attribution", ATTRIBUTION), ("copyright", COPYRIGHT)):
         check(norm(para) in joined_py,
               f"the research export carries the approved {label} verbatim", para[:50])
-    # The operational variant must NOT be there. build_rows filters to research accounts only, so
-    # an operational branch would assert an export that cannot exist. If that filter is ever
-    # relaxed, this check is the reminder that the notice decision has to be revisited.
-    # Skip any operational paragraph that is CONTAINED IN a research one rather than only those
-    # equal to one. The two variants share the "Analytical outputs are advisory..." sentence, so
-    # an equality test lets a shared sentence be reported as an operational leak.
+    # THE EXPORT NOW PRODUCES TWO KINDS WITH DIFFERENT SCOPES (the export report,
+    # 2026-08-02): participant_inputs stays filtered to research accounts unconditionally, so
+    # the research variant's claims (synthetic data, a research participant's session) are true
+    # of it, exactly as before. project_health is NOT filtered by account type — a project
+    # carries no account_type of its own, and an operational project's real, non-synthetic
+    # results are exactly as reachable there as a research one's — so the research variant's
+    # "All project data is synthetic" would be a claim that scope cannot back. The operational
+    # variant makes no such claim and is therefore used there, selecting between the two
+    # ALREADY-APPROVED variants by scope, the same way every other surface in this codebase
+    # switches on account type. Both must be present verbatim, and nowhere composed.
     for para in variants["operational"]:
-        if any(norm(para) in norm(p) for p in variants["research"]):
-            continue
-        check(norm(para) not in joined_py,
-              "and does not carry the operational variant, which cannot apply to it", para[:50])
+        check(norm(para) in joined_py,
+              "the research export also carries the approved operational variant verbatim, "
+              "used for the project_health scope the research variant cannot describe",
+              para[:50])
 
 print("\n16. Nothing claims the platform is, or has, a governance framework")
 # NAMING_AUTHORITY.md: "There is deliberately no framework name... If you find yourself needing a
