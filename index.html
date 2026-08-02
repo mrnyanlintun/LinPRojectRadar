@@ -342,7 +342,7 @@
            only" line is gone: it sat beside a sign-in form and told the reader what the form
            already told them. -->
       <p class="login-footnote">
-        The George Washington University · Doctor of Engineering praxis research
+        Developed as part of doctoral research at the School of Engineering and Applied Science, The George Washington University. The university is not a party to this notice and does not endorse or warrant the platform.
       </p>
       <p class="login-copyright">© 2026 Nyan Lin Tun. All rights reserved.</p>
     </div>
@@ -358,7 +358,7 @@
       <p class="login-sub" id="access-denied-message">This platform is restricted to authorized users only.</p>
       <button onclick="LinAuth.logout()" class="btn-secondary">Back to sign-in</button>
       <p class="login-disclaimer">Access restricted to authorized use. This platform is an academic proof-of-concept; no warranty is provided.</p>
-      <p class="login-footnote">GWU Doctor of Engineering Praxis, Nyan Lin Tun</p>
+      <p class="login-footnote">Developed as part of doctoral research at the School of Engineering and Applied Science, The George Washington University. The university is not a party to this notice and does not endorse or warrant the platform.</p>
     </div>
   </div>
 
@@ -1065,8 +1065,15 @@
          user uploading real project documents by design that all project data is synthetic and
          that they must not submit actual project documents. Both were wrong for them.
 
-         WHAT IS CONSTANT IN BOTH STATES, and must stay: the GWU attribution, the copyright and
-         trademark notice, and that outputs are advisory.
+         WHAT IS CONSTANT IN BOTH STATES, and must stay: the GWU attribution sentence, the
+         copyright paragraph, and that outputs are advisory. Both are DISCLAIMERS_DRAFT.md
+         section 3, quoted verbatim, and test_disclaimers.py fails if they diverge. The
+         attribution is a SENTENCE, not a title block: it was a bare degree-and-school title
+         block sitting directly under a liability disclaimer, which read as though the university
+         were issuing the notice. It now says the university is not a party to it. The copyright
+         no longer claims an associated FRAMEWORK (there is deliberately none, see
+         NAMING_AUTHORITY.md) and no longer carries a trademark symbol. Do not reintroduce
+         either; test_disclaimers.py section 11 fails on the exact retired strings.
 
          The "Governance ruleset L2-v0.5-demo" line that used to close this footer has been
          REMOVED. Nothing implements a versioned governance ruleset under that name: the string
@@ -1079,7 +1086,7 @@
          edit the source, then this, and keep the two identical. server/tools/test_disclaimers.py
          fails if they diverge by a character. -->
     <footer class="site-footer">
-      <p class="footer-copyright">© 2026 Nyan Lin Tun. All rights reserved. Opus Gubernatio™ and the associated framework, software, and documentation are the intellectual property of the author. Unauthorized reproduction, distribution, or use is prohibited.</p>
+      <p class="footer-copyright">© 2026 Nyan Lin Tun. All rights reserved. Opus Gubernatio and the associated software and documentation are the intellectual property of the author. Unauthorized reproduction, distribution, or use is prohibited.</p>
       <div class="footer-legal notice-research">
         <p><strong>Notice: academic research instrument.</strong> Opus Gubernatio is a proof of concept developed solely for doctoral research and demonstration. It is not a commercial service and is provided as is, without warranty of any kind, express or implied.</p>
         <p>All project data is synthetic. No real project, agency, employer, contractor, or vendor is referenced. Do not upload confidential, proprietary, personally identifiable, or otherwise sensitive information, or any document relating to an actual project.</p>
@@ -1090,7 +1097,7 @@
         <p>Analytical outputs are advisory. They are not a validated compliance determination, a contractual direction, or a diagnosis of a live project.</p>
         <p>Uploaded content is sent to third-party artificial intelligence services for extraction and is stored in the platform. You are responsible for confirming that you are authorized to upload each document, and for your organization's data handling, confidentiality, and records obligations. The operator disclaims all liability arising from or relating to uploaded content to the fullest extent permitted by law.</p>
       </div>
-      <p class="footer-praxis">Doctor of Engineering<br>The School of Engineering and Applied Science of The George Washington University</p>
+      <p class="footer-praxis">Developed as part of doctoral research at the School of Engineering and Applied Science, The George Washington University. The university is not a party to this notice and does not endorse or warrant the platform.</p>
     </footer>
 
   </div>
