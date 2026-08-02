@@ -1,6 +1,6 @@
 # D1 implemented: the obtainable keys wired, the rest abstaining
 
-**1113 checks across 22 suites pass. `tests_render.html` 33/33.** No stored data was altered,
+**1157 checks across 22 suites pass. `tests_render.html` 33/33, `tests.html` 51/51.** No stored data was altered,
 production was not inspected or queried, and nothing under `assets/` was touched.
 
 ---
@@ -215,10 +215,11 @@ to pass for the wrong reason, and it was the fault injection rather than review 
 
 | Check | Result |
 |---|---|
-| Server suite | **1113 checks across 22 suites, 0 failures** |
+| Server suite | **1157 checks across 22 suites, 0 failures** |
 | `tests_render.html` | **33/33** |
+| `tests.html` | **51/51** |
 | New suite proven able to fail | 9 independent faults, distinct signatures |
-| Existing suites unchanged | 1013 → 1113 is exactly the 100 new checks |
+| Existing suites unchanged | 1057 → 1157 on merged main is exactly the 100 new checks |
 
 **The existing 1013 checks passed with the changes in place before a single new test was written.**
 That is worth stating as a finding rather than as reassurance: the suite could not detect the

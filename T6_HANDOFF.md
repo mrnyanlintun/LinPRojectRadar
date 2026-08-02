@@ -5,8 +5,8 @@
 
 # T25 — D1 IMPLEMENTED. THE OBTAINABLE KEYS WIRED, THE REST ABSTAINING.
 
-Full detail in `REPORT_2026-08-02_d1-implementation.md`. **1113 checks across 22 suites**;
-`tests_render.html` **33/33**. No stored data altered, production not inspected, `assets/`
+Full detail in `REPORT_2026-08-02_d1-implementation.md`. **1157 checks across 22 suites**;
+`tests_render.html` **33/33**, `tests.html` **51/51**. No stored data altered, production not inspected, `assets/`
 untouched. Lin's decision: option 3 where the data exists, option 1 everywhere else.
 
 **T22'S COLOUR ANSWER WAS WRONG AND IS CORRECTED HERE. PROJECT COLOUR DOES MOVE.** Measured
