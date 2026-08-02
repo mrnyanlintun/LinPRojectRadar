@@ -48,6 +48,7 @@ import base64
 import binascii
 import hashlib
 import logging
+import re
 import time
 from datetime import date, datetime, timezone
 from typing import Any, Callable
@@ -57,7 +58,13 @@ from sqlalchemy.orm import Session
 
 from .extraction_client import build_extractor, extract_many
 from .extraction_fields import UNMAPPED, is_mapped
-from .extraction_merge import assembly_report, emit_observations, select_signal_inputs
+from .extraction_merge import (
+    assembly_report, document_as_of, emit_observations, select_signal_inputs,
+)
+from .jdrive_tree import (
+    CLASS_ANALYSED, CLASS_FILED, CLASS_REFERENCE, FILING_CLASS_LABELS, needs_review,
+    reference_kind, resolve_destination,
+)
 from .facade import err, now_iso
 from .models import Project
 from .research_identity import audit, resolve_caller
@@ -235,6 +242,54 @@ def _period_documents(session: Session, project: Project, period: int) -> list[d
                     # observation this document emits (`revision_of`).
                     "supersedes": supersedes})
     return out
+
+
+_IDENTIFIER_RE = re.compile(
+    r"(?:claim|change[ _-]?order|co|site[ _-]?obs(?:ervation)?|obs)[ _\-#]*(\d+)", re.IGNORECASE)
+
+
+def _identifier_from_filename(filename: str) -> str | None:
+    """
+    A claim or site-observation number read off the filename, or None.
+
+    THE EXTRACTION VOCABULARY HAS NEITHER NUMBER. The Arora template wants
+    `8_CLAIMS/CLAIM #/...` and `7_FIELD-SITE VISITS/YYYY-MM-DD SITE OBS #`, and nothing in
+    `extraction_fields.py` asks a document for its claim number or its observation number, so
+    there is no extracted field to read. The filename is the only evidence available, and when
+    it carries none the folder is created without the identifier rather than with an invented
+    one. A PM supplies it by moving the document, which is why moving exists.
+    """
+    match = _IDENTIFIER_RE.search(str(filename or ""))
+    return match.group(1) if match else None
+
+
+def _decide_filing(doc_type: str, extraction: Any, filename: str,
+                   confidence: float | None) -> dict:
+    """
+    Where this document is filed, what it counts as, and whether the placement needs review.
+
+    Pure: no clock and no database. The date comes from the document, never from now.
+    """
+    reference = reference_kind(filename)
+    if reference is not None:
+        filing_class = CLASS_REFERENCE
+    elif is_mapped(doc_type or ""):
+        filing_class = CLASS_ANALYSED
+    else:
+        # Stored and never analysed, and that is the EXPECTED outcome for most of the tree:
+        # discipline calculations, Revit files, LEED credits, survey photos. It is not a
+        # failed extraction and must never read as one.
+        filing_class = CLASS_FILED
+
+    as_of = document_as_of(doc_type, extraction)
+    review = needs_review(doc_type or "", confidence, filing_class, filename)
+    folder = resolve_destination(
+        doc_type or "", filing_class=filing_class, as_of=as_of,
+        identifier=_identifier_from_filename(filename), reference=reference,
+        filename=filename, confidence=confidence,
+    )
+    return {"folder_path": folder, "filing_class": filing_class,
+            "needs_filing_review": review, "reference_kind": reference}
 
 
 def _persist_observations(session: Session, project: Project, period: int) -> int:
@@ -766,6 +821,9 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
             doc_type=r["doc_type"],
             extraction=r["extraction"],
             extraction_model=model_id,
+            # 0016. The classifier's own confidence, which the platform used to discard. None
+            # when the model's claim was not what decided the type; see extraction_client.
+            classification_confidence=r.get("confidence"),
             first_uploaded_by=caller.participant_id,
         ))
     session.flush()
@@ -801,6 +859,10 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
             cached_count += 1
         else:
             extracted_count += 1
+        # 0016. WHERE THIS GOES, decided from the detected type. The PM never chooses a
+        # destination; they see the one that was chosen and may move it afterwards.
+        filing = _decide_filing(doc.doc_type or "", doc.extraction,
+                                d["filename"], doc.classification_confidence)
         if doc.document_id not in already:
             # 0013. A document cannot supersede itself, including via the content cache: if the
             # same bytes are re-uploaded claiming to replace their own row, the claim is
@@ -811,9 +873,24 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
                                        document_id=doc.document_id,
                                        uploaded_by=caller.participant_id,
                                        was_cached=was_cached,
-                                       supersedes_document_id=supersedes))
+                                       supersedes_document_id=supersedes,
+                                       folder_path=filing["folder_path"],
+                                       filing_class=filing["filing_class"],
+                                       needs_filing_review=filing["needs_filing_review"]))
             already.add(doc.document_id)
         mapped = is_mapped(doc.doc_type or "")
+        # A FILED DOCUMENT IS NOT A FAILED EXTRACTION, and the note now says which it is.
+        # Before this, everything that was not a mapped analytical type carried "contributes
+        # nothing to the analysis", so a Revit model, a LEED credit and a specification all
+        # read as something that had gone wrong. Most of the Arora tree is documents that are
+        # stored and never analysed; that is the expected outcome, not a fault.
+        if filing["filing_class"] == CLASS_REFERENCE:
+            note = ("filed as reference material for technical review; deliberately kept out "
+                    "of the analytical path")
+        elif mapped:
+            note = None
+        else:
+            note = "filed and stored; this document type is not one the analysis reads"
         files.append({
             "filename": d["filename"],
             "status": "matched" if was_cached else "extracted",
@@ -822,9 +899,14 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
             # Reported explicitly so the PM can see which documents did not contribute rather
             # than assuming a successful upload meant a contributing one.
             "contributes": mapped,
-            "note": None if mapped else
-                    "document type not mapped to any signal input; stored, but contributes "
-                    "nothing to the analysis",
+            # 0016. Where it went, returned on the upload response so the drop animation can
+            # name the destination without waiting for anything else.
+            "folder_path": filing["folder_path"],
+            "filing_class": filing["filing_class"],
+            "filing_label": FILING_CLASS_LABELS.get(filing["filing_class"], ""),
+            "needs_filing_review": filing["needs_filing_review"],
+            "classification_confidence": doc.classification_confidence,
+            "note": note,
         })
 
     # 0014. Project this period's stored extractions into the observation store at the moment

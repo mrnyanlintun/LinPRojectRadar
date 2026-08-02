@@ -23,8 +23,8 @@ import time
 from datetime import date, datetime
 
 from sqlalchemy import (
-    Boolean, CheckConstraint, Date, DateTime, ForeignKey, Integer, LargeBinary, String, Text,
-    UniqueConstraint, Uuid, func,
+    Boolean, CheckConstraint, Date, DateTime, Float, ForeignKey, Integer, LargeBinary, String,
+    Text, UniqueConstraint, Uuid, func,
 )
 from sqlalchemy.dialects.postgresql import BYTEA, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -510,6 +510,19 @@ class Document(Base):
     # Model identifier AND version — "claude-opus" alone would not let a later reader tell which
     # weights produced a stored figure.
     extraction_model: Mapped[str] = mapped_column(Text, nullable=True)
+    # 0016. The classifier's own confidence in `doc_type`, 0..1, or NULL.
+    #
+    # The classify prompt has always asked the model for `{"docType", "confidence"}`; until
+    # this column existed the confidence was parsed and then dropped, so nothing on the
+    # platform had ever seen it. It is a property of classifying THESE BYTES, so it belongs on
+    # the content-addressed row beside the doc_type it qualifies.
+    #
+    # NULL is meaningful and is not "unknown so assume fine": it means the model's own claim
+    # was NOT the thing that decided the type — the filename heuristic did, or the type is
+    # UNMAPPED. `jdrive_tree.needs_review` treats NULL as reviewable for that reason, which
+    # preserves `classify`'s existing rule that a rejected classification's confidence is never
+    # inherited.
+    classification_confidence: Mapped[float] = mapped_column(Float, nullable=True)
     extracted_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=True, server_default=func.now()
     )
@@ -554,6 +567,30 @@ class DocumentUpload(Base):
     # a stored decision may reference, and so that a revision can itself be revised as a chain.
     # See migration 0013 for the full argument.
     supersedes_document_id: Mapped[str] = mapped_column(ULID, nullable=True)
+
+    # 0016. WHERE THIS UPLOAD WAS FILED in the Arora project directory, as a `/`-joined path of
+    # real folder names with every placeholder already instantiated
+    # ("5_CONST ADMIN/8_CLAIMS/CLAIM 7/2026-06-15").
+    #
+    # It lives here and not on `documents` for exactly the reason `supersedes_document_id`
+    # does: `documents` is content-addressed and shared, so the same bytes can be a payment
+    # application filed under construction administration in one project and a reference
+    # specification in another. Filing is a statement about a (project, period, document), not
+    # about the bytes.
+    #
+    # NO `folders` TABLE EXISTS, and none is needed. The template is code (`jdrive_tree.py`)
+    # and a project's real tree is the template plus the distinct values of THIS column. That
+    # is what makes "the PM prunes the template" unnecessary: an empty folder never exists.
+    folder_path: Mapped[str] = mapped_column(Text, nullable=True, index=True)
+    # 0016. What this document IS: 'analysed', 'reference' or 'filed'. Stored rather than
+    # recomputed from doc_type, so a document keeps the class it was filed under even if the
+    # rules later change; recomputing would silently rewrite history.
+    filing_class: Mapped[str] = mapped_column(Text, nullable=True)
+    # 0016. The placement needs a human to confirm it: an unknown type, or a classification the
+    # model was not confident enough about to file silently into a discipline folder. Mutable:
+    # moving the document resolves the review.
+    needs_filing_review: Mapped[bool] = mapped_column(Boolean, nullable=False,
+                                                      server_default="false", default=False)
 
 
 class ComputedResult(Base):

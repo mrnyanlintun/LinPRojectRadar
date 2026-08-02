@@ -86,6 +86,16 @@ GATED_ACTIONS: dict[str, str] = {
     "runaudit": "auditor",
     "saveauditresult": "auditor",
     "listauditresults": "auditor",
+    # The technical reviewer's reference corpus: specifications, codes of practice and client
+    # or user requirements. Gated under the SAME flag as the rest of the reviewer rather than
+    # under a third scheme of its own, per the standing rule that an optional feature is a
+    # feature flag and an audience distinction is account_type.
+    #
+    # ONLY READING IS GATED. Filing is not: with this flag off, a specification is still filed
+    # into the Arora tree, still classed `reference`, and still kept out of the analytical
+    # path. Turning the reviewer off must not change how a document is stored, or turning it
+    # back on would find a corpus with holes in it.
+    "projectcorpus": "auditor",
 }
 
 

@@ -76,6 +76,15 @@
   <div id="decision-card"></div>
   <div id="detail-root"></div>
   <div id="atlas-host"></div>
+  <!-- Group 9, the Files tab. Same ids as index.html, because files.js looks them up by id. -->
+  <select id="ws-files-project"></select>
+  <div id="ws-files-tree"></div>
+  <h4 id="ws-files-list-title"></h4>
+  <span id="ws-files-review-badge" style="display:none;"></span>
+  <div id="ws-files-list"></div>
+  <h4 id="ws-files-preview-title"></h4>
+  <a id="ws-files-download" style="display:none;"></a>
+  <div id="ws-files-preview"></div>
 </div>
 
 <script>
@@ -103,6 +112,9 @@
      when #knowledge-root is absent, so it cannot disturb the fixtures above. See group 7 for
      why a page that never renders the Methods tab nonetheless has to load this file. -->
 <script src="assets/js/knowledge.js"></script>
+<!-- files.js is loaded so group 9 can paint the Files tab for real. It self-boots nothing: it
+     only defines LinFiles, and every render path it exposes takes its data as an argument. -->
+<script src="assets/js/files.js"></script>
 <script>
 (function () {
   "use strict";
@@ -444,6 +456,98 @@
       "Somewhere, USA", (after[0] || {}).formattedAddress);
     assert("refresh: a located project STILL produces a marker after a portfolio refresh",
       2, markersFor(after));
+  })();
+
+  // 9. THE FILES TAB PAINTS THE ARORA TREE AND THE FILE LIST.
+  //
+  //    files.js is loaded below and exposes _paint so this harness can render the tab from a
+  //    fixture with no server. What it guards is the render site: a tree whose nodes are the
+  //    Arora template, a naming PATTERN shown as a pattern rather than as a clickable folder,
+  //    the filing state and version in the list, and the review mark. The filing DECISIONS
+  //    themselves are the server's and are covered by server/tools/test_files_tab.py; this
+  //    page cannot and does not re-assert them.
+  (function () {
+    if (!window.LinFiles || !LinFiles._paint) {
+      assert("files.js: the Files tab module loaded", true, false);
+      return;
+    }
+    // A THROW IN HERE MUST BE A RED CHECK, NOT A DEAD PAGE. An earlier revision of this group
+    // died on a TypeError, which stopped the results table from rendering at all and read as a
+    // clean run rather than as a failure. Everything below is inside the try for that reason.
+    try {
+    // Minimum of the shape a_projectfiles returns.
+    const tree = [
+      { name: "5_CONST ADMIN", path: "5_CONST ADMIN", placeholder: null, occupied: true,
+        children: [
+          { name: "5_CONT-PAYMENTS", path: "5_CONST ADMIN/5_CONT-PAYMENTS",
+            placeholder: null, occupied: true, children: [] },
+          { name: "7_FIELD-SITE VISITS", path: "5_CONST ADMIN/7_FIELD-SITE VISITS",
+            placeholder: null, occupied: false, children: [
+              { name: "YYYY-MM-DD SITE OBS #",
+                path: "5_CONST ADMIN/7_FIELD-SITE VISITS/YYYY-MM-DD SITE OBS #",
+                placeholder: "site_obs", occupied: false, children: [] }
+            ] }
+        ] },
+      { name: "0_PROJ-MGMNT", path: "0_PROJ-MGMNT", placeholder: null, occupied: false,
+        children: [] }
+    ];
+    const files = [
+      { document_id: "D1", filename: "payapp 7.pdf", filing_class: "analysed",
+        filing_label: "Filed and analysed", version: 1, period: 1,
+        folder_path: "5_CONST ADMIN/5_CONT-PAYMENTS", needs_filing_review: false,
+        superseded: false, preview: "native" },
+      { document_id: "D2", filename: "unclear.pdf", filing_class: "analysed",
+        filing_label: "Filed and analysed", version: 1, period: 1,
+        folder_path: "6_RECEIVED/2026-06-20_INFO", needs_filing_review: true,
+        superseded: false, preview: "native" },
+      { document_id: "D3", filename: "Tower.rvt", filing_class: "filed",
+        filing_label: "Filed", version: 2, period: 1,
+        folder_path: "3_DESIGN/5_BIM-CAD/REVIT_HOST NAME_VERSION (Delete if CAD)",
+        needs_filing_review: false, superseded: true, preview: "unsupported" }
+    ];
+    LinFiles._paint(tree, files, {
+      reviewCount: 1, occupiedOnly: false,
+      unsupportedMessage: "Format not supported for preview. Download the file to open it."
+    });
+
+    const treeRoot = document.getElementById("ws-files-tree");
+    assert("files: the tree renders the Arora branches", 2,
+      treeRoot.querySelectorAll(".fx-tree-root > .fx-node").length);
+    assert("files: an occupied branch is marked as such", 1,
+      treeRoot.querySelectorAll(".fx-tree-root > .fx-node-occupied").length);
+    // A pattern is NOT a destination: it must render as text, never as a clickable folder.
+    assert("files: a naming pattern is shown as a pattern", 1,
+      treeRoot.querySelectorAll(".fx-pattern").length);
+    assert("files: and a pattern is not clickable", 0,
+      treeRoot.querySelectorAll('[data-folder$="SITE OBS #"]').length);
+    assert("files: a real folder IS clickable", 1,
+      treeRoot.querySelectorAll('[data-folder="5_CONST ADMIN/5_CONT-PAYMENTS"]').length);
+
+    const list = document.getElementById("ws-files-list");
+    assert("files: one row per file", 3, list.querySelectorAll("tbody tr").length);
+    assert("files: the filing state is a column, so filed is not read as failed", true,
+      list.textContent.indexOf("Filed and analysed") !== -1
+      && list.textContent.indexOf("Filed") !== -1);
+    assert("files: version is a column", true, list.textContent.indexOf("v2") !== -1);
+    assert("files: a placement needing review is marked", 1,
+      list.querySelectorAll(".fx-flag-review").length);
+    assert("files: a superseded version is shown, not hidden", true,
+      list.textContent.indexOf("Superseded") !== -1);
+    const badge = document.getElementById("ws-files-review-badge");
+    assert("files: the review count is surfaced", true,
+      badge.style.display !== "none" && badge.textContent.indexOf("1") !== -1);
+
+    // Preview: an unsupported format states the message and attempts NO renderer.
+    LinFiles._preview("D3");
+    const preview = document.getElementById("ws-files-preview");
+    assert("files: an unsupported format shows the message", true,
+      (preview.textContent || "").toLowerCase().indexOf("not supported") !== -1);
+    assert("files: and no renderer is attempted for it", 0,
+      preview.querySelectorAll(".fx-preview-frame").length);
+    } catch (e) {
+      assert("files: the Files tab group ran without throwing", true,
+        "threw: " + (e && e.message));
+    }
   })();
 
   // ---- render results ----

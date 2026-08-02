@@ -9,6 +9,104 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-02 — THE FILES TAB: THE ARORA DIRECTORY, AUTOMATIC FILING, AND THE TWO FILED STATES
+
+Full detail in `REPORT_2026-08-02_files-tab.md` — **read its first section**, which is how the
+tree is handled per project. **Server 1571/1571 across 28 suites, `tests_render.html` 62/62
+(was 49), `tests.html` 51/51.** Eleven faults injected, all detected, all reverted
+byte-identical, baseline re-run after each; the new render group separately fault-proven. The
+tab was driven in a real browser and confirmed by DOM read.
+
+## NO FOLDER IS EVER CREATED, AND THERE IS NO `folders` TABLE. This is the decision.
+
+The Arora template is CODE (`server/app/jdrive_tree.py`), transcribed verbatim from
+`JDrive_Project_Directory_Structure_NEW_v202604.pdf` by column position. A project's real tree
+is **the template plus the distinct `document_uploads.folder_path` values for that project**.
+
+That answers all three of the source document's pruning instructions without any pruning:
+disciplines outside Arora's scope are never created so never deleted; the CAD-versus-REVIT
+choice resolves itself because whichever folder receives a file is the one that appears (filed
+by file EXTENSION); and the room-by-room photo folders come into being when something is filed
+into them. `occupied` on every node drives "only folders in use" versus the full template.
+
+- **Folder names are VERBATIM including the template's own inconsistencies**: `C. PHOTOS` has a
+  period where every other lettered folder has an underscore, `YYYY_MM_DD XX% INFO` uses
+  underscores in the date, `1_ACTIVE CONSTR. SET` has an abbreviating period. Do not tidy them.
+- **THE BRIEF'S DESCRIPTION OF THE TOP LEVEL WAS WRONG** and this is why the brief said not to
+  reconstruct the tree from it. `1_RFP` is a SUB folder of `0_PROJ-MGMNT`. The real top level is
+  `0_PROJ-MGMNT`, `1_PROJ INFO`, `2_DELIVERABLES`, `3_DESIGN`, `4_QC`, `5_CONST ADMIN`,
+  `6_RECEIVED`, `NEWFORMA`.
+- **Placeholders are PATTERNS, not folders** (`YYYY-MM-DD`, `CLAIM #`, `CREDIT NAME`). Shown
+  greyed, not selectable, refused as a move destination, instantiated into real names at filing.
+- **The two identifier branches have DIFFERENT shapes and must never be merged**: claims are
+  `8_CLAIMS/CLAIM 014/2026-06-10` (identifier ABOVE date, two levels); field visits are
+  `7_FIELD-SITE VISITS/2026-06-12 SITE OBS 3` (identifier INSIDE the dated name, one level). A
+  check asserts their path depths differ.
+
+## THE CONFIDENCE WAS BEING THROWN AWAY. The brief's premise was half true.
+
+`classify()` has always asked the model for `{"docType", "confidence"}`, parsed it, and
+returned only the type. **No confidence had ever reached the platform.** It is now kept, and
+the existing rule is preserved exactly: confidence is returned ONLY when the model's own claim
+decided the type. A filename fallback or UNMAPPED carries `None`, which is the
+"rejected classification" case the old docstring already refused to inherit from. **`None` is
+treated as REVIEWABLE, never as fine.**
+
+**Threshold 0.70, and it is NOT calibrated** — it is the legacy Apps Script's own default
+(`parsed.confidence != null ? parsed.confidence : 0.7`), the only number the instrument ever
+committed to. `CONFIDENCE_THRESHOLD` is the single place to change it.
+
+Low-confidence documents go to `6_RECEIVED/<date>_INFO` (a REAL template folder, not an
+invented `_UNFILED`) and are flagged `needs_filing_review`. **The flag is what makes it
+reviewable, not the folder**: it sits in its real folder with a "Check filing" mark and a count
+badge. Moving resolves the flag and is audited.
+
+## Four columns, NO new table (migration 0016)
+
+`document_uploads.folder_path` / `.filing_class` / `.needs_filing_review` (statements about a
+project's copy, same argument 0013 made for `supersedes_document_id`), and
+`documents.classification_confidence` (qualifies the classification, which is of the bytes).
+
+## The three filing classes, and why a filed document is not a failed extraction
+
+`analysed` / `reference` / `filed`. Before this, ANYTHING not a mapped type carried
+"contributes nothing to the analysis", so a Revit model, a LEED credit and a specification all
+read as a fault. Most of the Arora tree is documents stored and never analysed; that is the
+expected outcome.
+
+**The `_corpus` separation is preserved WITHOUT a `_corpus` folder.** Specifications go to
+`4_QC/<dated>/D_SPECIFICATIONS` and codes/standards/requirements to
+`3_DESIGN/2_CODE & STANDARDS/B_CODE - CLIENT STANDARDS` — the template's own folders, named for
+exactly these documents. The separation is carried by the CLASS, and holds two ways: a reference
+document is not a mapped type so the merge skips it (a check assembles one alone and asserts the
+result equals the empty signal inputs), and it is classed `reference` so it does not read as
+failed. **Reference detection is deliberately SEPARATE from the analytical classifier** and is
+filename-based: adding a "specification" type to `DOC_TYPES` would put specs inside the
+vocabulary the classifier chooses from, which is the one thing this must prevent.
+
+**`projectcorpus` is gated by the EXISTING `auditor` flag** in `features.GATED_ACTIONS`, no
+third scheme, refused before dispatch, for anonymous callers too. **FILING IS NOT GATED**: with
+the reviewer off a specification is still filed, still classed reference, still out of the
+analytical path. Asserted directly.
+
+## Things worth knowing before touching this again
+
+- **The template and the analytical vocabulary overlap only PARTLY.** Eleven types have a folder
+  named for them in the source; **fifteen do not** (RFI log, submittal register, safety report,
+  NCR log and so on) and file to `6_RECEIVED`, whose own description is the template's answer
+  for a document arriving without a designated home. One table, one comment per entry.
+- **The template wants a claim number and a site-observation number that `extraction_fields.py`
+  never asks for.** Read off the filename when present, omitted when not; never invented.
+- **`document_as_of` is now public in `extraction_merge`** so filing and observation emission
+  cannot disagree about a document's date. A folder is named for the DOCUMENT's date, never the
+  upload clock; a document with no readable date gets `UNDATED`, not `1970-01-01` and not today.
+- **My render group THREW and that read as a clean run** — the results table never rendered, so
+  the runner saw zero checks rather than a failure. It is now wrapped so a throw is a red check.
+  The real cause was `files.js` calling `LinAuth.getToken` without checking the method exists;
+  fixed there too, since a preview that cannot build a URL must not take the page down.
+- **One injection anchor did not match and the harness refused to report a result**, rather than
+  showing a false clean. Keep that property.
+
 # 2026-08-02 — THE EXPORT PRODUCES TWO THINGS: PARTICIPANT INPUTS AND PROJECT HEALTH, AS AN XLSX WORKBOOK
 
 Full detail in `REPORT_2026-08-02_export.md` — **read that report's Part 2 first**, it is the

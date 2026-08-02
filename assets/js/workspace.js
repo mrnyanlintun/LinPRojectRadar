@@ -205,10 +205,16 @@
     document.querySelectorAll("#ws-project-tabs button").forEach(function (b) {
       b.classList.toggle("active", b.dataset.wstab === name);
     });
-    document.querySelectorAll("#wstab-upload, #wstab-documents, #wstab-detail, #wstab-decision")
+    document.querySelectorAll("#wstab-upload, #wstab-files, #wstab-documents, #wstab-detail, "
+                              + "#wstab-decision")
       .forEach(function (p) {
         p.classList.toggle("active", p.id === "wstab-" + name);
       });
+    // The Files tab fetches the tree on reveal rather than on every project-page visit, the
+    // same posture the decision sequence below takes.
+    if (name === "files" && window.LinFiles && LinFiles.mount) {
+      try { LinFiles.mount(); } catch (e) { /* a render fault must not trap the tab */ }
+    }
     // The decision sequence renders lazily: it is the last step of the period and asking the
     // server for its state on every project-page visit would audit an evidence view that the
     // participant did not make.
@@ -220,7 +226,8 @@
   // Opening a project from the portfolio list routes here and selects it in every picker, so
   // the three tabs agree about which project is being looked at.
   function openProject(pid) {
-    ["ws-upload-project", "ws-docs-project", "ws-detail-project"].forEach(function (id) {
+    ["ws-upload-project", "ws-files-project", "ws-docs-project",
+     "ws-detail-project"].forEach(function (id) {
       var sel = $(id);
       if (sel) sel.value = pid;
     });
@@ -337,8 +344,10 @@
 
   function populateProjectPickers() {
     [["ws-upload-project", onUploadProjectChange],
+     ["ws-files-project", onFilesProjectChange],
      ["ws-docs-project", onDocsProjectChange],
      ["ws-detail-project", onDetailProjectChange]].forEach(function (pair) {
+      if (!$(pair[0])) return;
       var sel = $(pair[0]);
       var current = sel.value;
       sel.innerHTML = STATE.projects.map(function (p) {
@@ -367,6 +376,14 @@
       if ($("ws-upload-project").value) onUploadProjectChange();
       if ($("ws-docs-project").value) onDocsProjectChange();
       if ($("ws-detail-project").value) onDetailProjectChange();
+    }
+  }
+
+  // The Files tab owns its own rendering (assets/js/files.js); the workspace only tells it the
+  // project changed, so the two do not both hold a copy of the tree.
+  function onFilesProjectChange() {
+    if (window.LinFiles && LinFiles.mount) {
+      try { LinFiles.mount(); } catch (e) { /* a render fault must not trap the tab */ }
     }
   }
 

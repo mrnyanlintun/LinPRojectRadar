@@ -648,6 +648,26 @@ _DATESTR_EMISSIONS: dict[str, tuple[tuple[str, str], ...]] = {
 }
 
 
+def document_as_of(doc_type: str, extraction: Any) -> date | None:
+    """
+    The date this document speaks about, by the same rule `emit_observations` uses for an
+    observation's `as_of`: the document type's own date field, falling back to
+    `document_date`, and None when neither parses.
+
+    Public because filing needs it too — a document is filed into a dated folder of the Arora
+    tree, and that folder must be named for the date the DOCUMENT carries, never the upload
+    clock. Exposed here rather than reimplemented in the filing step so the two can never
+    disagree about what a document's date is.
+    """
+    doc_type = canonical_doc_type(str(doc_type or ""))
+    ex = extraction if isinstance(extraction, dict) else {}
+    key = _AS_OF_KEYS.get(doc_type)
+    as_of = _parse_as_of(ex.get(key)) if key else None
+    if as_of is None and "document_date" in ex:
+        as_of = _parse_as_of(ex.get("document_date"))
+    return as_of
+
+
 def emit_observations(doc: dict) -> list[dict]:
     """One stored document -> observation records. Pure; raises DocRiskScoreRangeError only.
 
