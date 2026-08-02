@@ -13,7 +13,7 @@
   const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
   const SUGGESTIONS = [
-    "What are the demo boundaries?",
+    "What are the platform's boundaries?",
     "Status of this project?",
     "Portfolio overview",
     "How does the fairness gate work?",
@@ -144,7 +144,7 @@
       if ((window.LIN_ARCHIVED || []).some((x) => x.id === id)) {
         return { title: id, body: `${id} is currently archived. It is off the portfolio scope but can be restored.` };
       }
-      return { title: id, body: `I don't have a project with code ${id} in the current synthetic portfolio.` };
+      return { title: id, body: `I don't have a project with code ${id} in the current portfolio.` };
     }
     // "this/selected/current/open project"
     if (/\b(this|selected|current|open)\s+project\b/.test(q) || /^project status/.test(q)) {
@@ -286,13 +286,13 @@
          </div>
          <div id="la-msgs" class="la-msgs" aria-live="polite">
            <div class="la-msg la-bot">
-             <p>Ask me about the selected project's cost and schedule performance, signal analysis, and governance decision. I can explain the Monte Carlo forecast, CUSUM detection, and how a signal becomes a recommended action. I am scripted, not a model: I answer from a written knowledge library, not from live reasoning. Type a question or use the mic.</p>
+             <p>Ask me about the selected project's status, its signals, or the governance recommendation. I can explain the Monte Carlo forecast, CUSUM detection, and how a signal becomes a recommended action. I am scripted by design, not a live AI: I match your question against a written knowledge library and a few live project lookups, and where the library has no answer I say so rather than inventing one. Type a question or use the mic.</p>
            </div>
          </div>
          <div class="la-suggest">${SUGGESTIONS.map((s) => `<button class="la-chip">${esc(s)}</button>`).join("")}</div>
          <form id="la-form" class="la-form">
            <button id="la-mic" class="la-icon-btn la-mic" type="button" title="Ask by voice" aria-label="Ask by voice" hidden>🎙️</button>
-           <input id="la-input" type="text" placeholder="Ask about the demo…" aria-label="Question for the assistant" maxlength="200" autocomplete="off" />
+           <input id="la-input" type="text" placeholder="Ask a question…" aria-label="Question for the assistant" maxlength="200" autocomplete="off" />
            <button type="submit" class="btn primary la-send">Ask</button>
          </form>
        </div>`;
@@ -710,19 +710,19 @@
         recog.lang = "en-US"; recog.interimResults = false; recog.maxAlternatives = 1;
         recog.onstart = () => { listening = true; mic.classList.add("listening"); mic.title = "Listening… (tap to stop)"; input.placeholder = "Listening…"; };
         recog.onerror = () => { /* non-fatal: mic permission denied, no speech, etc. */ };
-        recog.onend = () => { listening = false; mic.classList.remove("listening"); mic.title = "Ask by voice"; input.placeholder = "Ask about the demo…"; };
+        recog.onend = () => { listening = false; mic.classList.remove("listening"); mic.title = "Ask by voice"; input.placeholder = "Ask a question…"; };
         recog.onresult = (ev) => {
           const said = ev.results[0][0].transcript;
           input.value = said;
-          ask(said);            // same Groq chat path as typed questions
+          ask(said);            // same scripted answer path as typed questions
           input.value = "";
         };
         try { recog.start(); } catch (e) { /* already started */ }
       });
     }
 
-    // public hook so other pages (e.g. Knowledge "Ask the AI") can open the
-    // assistant pre-filled and send through the same live chat + fallback path.
+    // public hook so other pages can open the assistant pre-filled and send
+    // through the same scripted answer path.
     window.LinAssistant = {
       ask(question) { toggle(true); ask(question); }
     };

@@ -1,20 +1,20 @@
-// PCEIF Statistical Defensibility handbook content.
-// Generated from PCEIF_Module_Defensibility_Registry_v3.json (101 distinct computation
+// Statistical Defensibility handbook content.
+// Generated from a module defensibility registry (100 registered computation
 // records, authoritative) with front-matter sections (Executive Findings,
 // two-axis Defensibility Model, Standards Crosswalk, Priority Refactor
-// Register) drawn from the v2 handbook docx. Em dashes stripped to hyphens.
+// Register) drawn from an earlier handbook draft. Em dashes stripped to hyphens.
 // Capabilities are referenced by name; module ids and code-source strings
 // from the registry are intentionally NOT emitted into this object.
 const DS_DEFENSIBILITY = {
- "title": "Statistical Defensibility - A Data Science Perspective on PCEIF",
- "intro": "This handbook explains how every analytical capability in Opus Gubernatio is designed, what uncertainty model it rests on, and how it is validated. It is organized by data science method, not by module number: readers meet the probabilistic reasoning first and the framework second. PCEIF (Probabilistic Capital-project Executive Intelligence Framework) fuses three signal types - EVM forecasting, statistical anomaly detection, and NLP document-signal extraction - into governed status verdicts through evidence fusion, with a human judgment layer recording every concurrence or override. The research artifact is evaluated under a Design Science Research methodology with qualitative validation from practicing professionals.",
- "oneSentence": "PCEIF does not dress business rules as statistics; it separates estimation, calibrated measurement, and evidence combination under epistemic uncertainty, and validates each by the standard appropriate to its tier.",
+ "title": "Statistical Defensibility - A Data Science Perspective",
+ "intro": "This handbook explains how every analytical capability on the platform is designed, what uncertainty model it rests on, and how it is validated. It is organized by data science method, not by module number: readers meet the probabilistic reasoning first. Three signal types, EVM forecasting, statistical anomaly detection, and document-signal extraction, are fused into governed status recommendations through evidence combination, with a human judgment layer recording every concurrence or override. The research artifact is evaluated through practitioner validation with public-program controls professionals.",
+ "oneSentence": "This does not dress business rules as statistics; it separates estimation, calibrated measurement, and evidence combination under epistemic uncertainty, and validates each by the standard appropriate to its tier.",
  "executiveFindings": [
-  "The 103-row module registry is now present and code-aligned. Module names, method classes, required inputs, computation source, and current implementation status are no longer unspecified.",
+  "The module registry (100 registered computations, plus one value the extraction model supplies rather than the analytical server) is present and code-aligned. Module names, method classes, required inputs, computation source, and current implementation status are no longer unspecified.",
   "The handbook uses two independent assurance axes: an uncertainty-method tier (statistical/stochastic; calibrated indicator; epistemic fusion) and an implementation-assurance class (A, B, or C). A respected method name does not validate an implementation that only approximates or renames it.",
-  "Each module now includes the four missing defense fields: deterministic/probabilistic step split, explainability method, failure modes, and human-oversight classification.",
+  "Each module includes four defense fields: deterministic/probabilistic step split, explainability method, failure modes, and human-oversight classification.",
   "Standards alignment is added as a governance wrapper using NIST AI RMF, NIST TEVV, ISO/IEC 42001, ISO/IEC 23894, ISO/IEC 25059, W3C PROV-O, model cards, and datasheets. This crosswalk is not a certification claim.",
-  "SHAP and LIME are not recommended by default. Most PCEIF modules are transparent formulas, rules, simulations, or symbolic uncertainty methods. For the very small portfolio suite, feature-standardization, distance/percentile traces, and leave-one-feature-out sensitivity are more fit for purpose.",
+  "SHAP and LIME are not recommended by default. Most modules are transparent formulas, rules, simulations, or symbolic uncertainty methods. For the very small portfolio suite, feature-standardization, distance/percentile traces, and leave-one-feature-out sensitivity are more fit for purpose.",
   "The code review identifies several label-to-algorithm mismatches that should be renamed or reimplemented before a formal defense. The highest-priority items include ARIMA, Earned Schedule, ICE, SRA P80, CRA P80, Critical Path Index, Queueing, ABM Supply Chain, DES, ABM Governance, regulatory compliance labels, Linear Programming, Pareto Frontier, and Isolation Forest."
  ],
  "defensibilityModel": {
@@ -362,14 +362,14 @@ const DS_DEFENSIBILITY = {
      "asCodedTier": "Tier 2 - Deterministic or calibrated indicator",
      "assuranceClass": "B",
      "assuranceDescription": "Method-shaped, explainable demonstration requiring calibration or stronger validation",
-     "engineeringProblem": "The project-level ingestion of NLP-extracted raw signals feeding docRiskScore; the EVM-category instance of the Cat 4 pipeline.",
+     "engineeringProblem": "The project-level ingestion of NLP-extracted raw signals feeding docRiskScore; the earned-value category's instance of the document-derived signal pipeline.",
      "detProbSplit": "Deterministic input checks and arithmetic/rule computation followed by a deterministic band or decision rule. Uncertainty resides in measurement error, data completeness, threshold calibration, and source reliability rather than random sampling.",
      "uncertaintyMethod": "LLM extraction converts unstructured documents into structured fields; docRiskScore aggregates raw fact signals (dispute language, unresolved RFIs, NCR counts) into [0,1]. Extraction uncertainty is acknowledged: documents carry raw facts only (no pre-judged verdicts), and the Opus audit pass is an independent second-reader check.",
      "explainability": "Provenance trace: source document, extracted raw facts, excerpt/page reference, extraction confidence or audit result, scoring terms, and threshold path.",
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Extraction error; ambiguous or missing documents; duplicate counts; stale records; threshold drift; mistaking a risk flag for fault or contractual responsibility.",
-     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and Cat 9 consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
+     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and the Data and Evidence Health consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
      "implementationFidelity": "The module is an AI-assisted measurement pipeline rather than a statistical estimator. Defensibility depends on extraction accuracy, provenance, dual-review results, and calibration of the risk-score bands.",
      "accreditationBasis": "Accredited procedurally: documented extraction prompts, audit protocol, and inter-model agreement rates on the synthetic corpus (a measurable reliability statistic professors can interrogate).",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -532,7 +532,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; the Data and Evidence Health modules that score input quality, and DST fusion that lets weak evidence abstain, are the compensating controls for that assumption.",
      "implementationFidelity": "The TCPI formula is directly implemented and banded. The formula is defensible; the status bands require cited policy or calibration evidence.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -569,7 +569,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; the Data and Evidence Health modules that score input quality, and DST fusion that lets weak evidence abstain, are the compensating controls for that assumption.",
      "implementationFidelity": "VAC is calculated from BAC minus BAC/CPI. The arithmetic is transparent; the forecast quality inherits all assumptions of the selected EAC formula.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -605,7 +605,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; the Data and Evidence Health modules that score input quality, and DST fusion that lets weak evidence abstain, are the compensating controls for that assumption.",
      "implementationFidelity": "The code compares actual expenditure with a progress-proportional expected spend. It is a transparent custom control ratio, not a standardized statistical test.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -674,7 +674,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; the Data and Evidence Health modules that score input quality, and DST fusion that lets weak evidence abstain, are the compensating controls for that assumption.",
      "implementationFidelity": "Both compared EACs are derived from the same project inputs; the second estimate is not organizationally independent. Rename this as an EAC divergence ratio unless an independently produced estimate is ingested.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -795,7 +795,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "Aren't fever zones arbitrary?",
-       "answer": "They are published CCPM conventions (Goldratt); PCEIF cites them as adopted practice standards, and the zone edges are covered by the band harness."
+       "answer": "They are published CCPM conventions (Goldratt), cited here as adopted practice standards, and the zone edges are covered by the band harness."
       }
      ],
      "requiredInputs": [
@@ -892,7 +892,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "Known failure mode?",
-       "answer": "Yes - if synthetic docs state planned%>actual%, SPI recomputes below 1 and cascades. Documented as an input-integrity constraint, itself an example of why Cat 9 exists."
+       "answer": "Yes - if synthetic docs state planned%>actual%, SPI recomputes below 1 and cascades. Documented as an input-integrity constraint, itself an example of why the Data and Evidence Health group exists."
       }
      ],
      "requiredInputs": [
@@ -1045,7 +1045,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; the Data and Evidence Health modules that score input quality, and DST fusion that lets weak evidence abstain, are the compensating controls for that assumption.",
      "implementationFidelity": "The code averages a progress ratio and SPI. It does not identify or analyze a CPM critical path. Rename before defense.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1092,7 +1092,7 @@ const DS_DEFENSIBILITY = {
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
      "assumptionsLimitations": "Membership functions / mass assignments are elicited design choices; the defense is comparative (do rankings remain stable across reasonable parameterizations - a sensitivity argument), not inferential.",
      "implementationFidelity": "The outside-view idea is sound, but the multiplier set is hard-coded. The reference class, selection criteria, data source, and update date must be documented.",
-     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources. Accreditation in PCEIF = published axioms + documented parameterization + sensitivity/stability checks, plus practitioner face-validation interviews.",
+     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources: published axioms, documented parameterization, and sensitivity/stability checks, plus practitioner face-validation interviews.",
      "validationRequired": "Verify equations and code; test deterministic seeds; perform convergence or residual diagnostics; use seeded known-pattern cases; conduct sensitivity analysis; compare with a trusted reference implementation; document calibration and holdout performance where data permit.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP and MEASURE, with MANAGE for response; NIST TEVV for validity, reliability, uncertainty, benchmark, robustness, and monitoring evidence; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 25059 quality characteristics.",
      "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Reference Class Forecasting method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
@@ -1104,7 +1104,7 @@ const DS_DEFENSIBILITY = {
       },
       {
        "question": "How is a non-probabilistic formalism 'validated'?",
-       "answer": "By the accreditation triad used throughout Cat 7: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
+       "answer": "By the accreditation triad used throughout the evidence-combination methods: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
       }
      ],
      "requiredInputs": [
@@ -1158,7 +1158,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; the Data and Evidence Health modules that score input quality, and DST fusion that lets weak evidence abstain, are the compensating controls for that assumption.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1195,7 +1195,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; the Data and Evidence Health modules that score input quality, and DST fusion that lets weak evidence abstain, are the compensating controls for that assumption.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1205,7 +1205,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "Measurement error?",
-       "answer": "Timesheet-derived; Cat 9 timeliness/consistency scores down-weight stale inputs in fusion."
+       "answer": "Timesheet-derived; the Data and Evidence Health timeliness/consistency scores down-weight stale inputs in fusion."
       },
       {
        "question": "Professors will ask: 'Where is the statistical test?'",
@@ -1232,7 +1232,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; the Data and Evidence Health modules that score input quality, and DST fusion that lets weak evidence abstain, are the compensating controls for that assumption.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1268,7 +1268,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; the Data and Evidence Health modules that score input quality, and DST fusion that lets weak evidence abstain, are the compensating controls for that assumption.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1338,7 +1338,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; the Data and Evidence Health modules that score input quality, and DST fusion that lets weak evidence abstain, are the compensating controls for that assumption.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1374,7 +1374,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; the Data and Evidence Health modules that score input quality, and DST fusion that lets weak evidence abstain, are the compensating controls for that assumption.",
      "implementationFidelity": "The code compares two EAC formulas and does not fit a parametric regression or unit-cost model. The current name is not defensible as a parametric cost model.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1412,7 +1412,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Incorrect source data; threshold not calibrated; denominator instability; correlated indicators; band-edge sensitivity; status interpreted without context.",
-     "assumptionsLimitations": "Assumes the underlying document figures are accurate; PCEIF explicitly compensates via Data Integrity (Cat 9) modules that score input quality, and via DST fusion that lets weak evidence abstain.",
+     "assumptionsLimitations": "Assumes the underlying document figures are accurate; the Data and Evidence Health modules that score input quality, and DST fusion that lets weak evidence abstain, are the compensating controls for that assumption.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validated by the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1456,7 +1456,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Extraction error; ambiguous or missing documents; duplicate counts; stale records; threshold drift; mistaking a risk flag for fault or contractual responsibility.",
-     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and Cat 9 consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
+     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and the Data and Evidence Health consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Accredited procedurally: documented extraction prompts, audit protocol, and inter-model agreement rates on the synthetic corpus (a measurable reliability statistic professors can interrogate).",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1487,7 +1487,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Extraction error; ambiguous or missing documents; duplicate counts; stale records; threshold drift; mistaking a risk flag for fault or contractual responsibility.",
-     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and Cat 9 consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
+     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and the Data and Evidence Health consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Accredited procedurally: documented extraction prompts, audit protocol, and inter-model agreement rates on the synthetic corpus (a measurable reliability statistic professors can interrogate).",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1519,7 +1519,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Extraction error; ambiguous or missing documents; duplicate counts; stale records; threshold drift; mistaking a risk flag for fault or contractual responsibility.",
-     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and Cat 9 consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
+     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and the Data and Evidence Health consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Accredited procedurally: documented extraction prompts, audit protocol, and inter-model agreement rates on the synthetic corpus (a measurable reliability statistic professors can interrogate).",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1551,7 +1551,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Extraction error; ambiguous or missing documents; duplicate counts; stale records; threshold drift; mistaking a risk flag for fault or contractual responsibility.",
-     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and Cat 9 consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
+     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and the Data and Evidence Health consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Accredited procedurally: documented extraction prompts, audit protocol, and inter-model agreement rates on the synthetic corpus (a measurable reliability statistic professors can interrogate).",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1584,7 +1584,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Extraction error; ambiguous or missing documents; duplicate counts; stale records; threshold drift; mistaking a risk flag for fault or contractual responsibility.",
-     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and Cat 9 consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
+     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and the Data and Evidence Health consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Accredited procedurally: documented extraction prompts, audit protocol, and inter-model agreement rates on the synthetic corpus (a measurable reliability statistic professors can interrogate).",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1615,7 +1615,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Extraction error; ambiguous or missing documents; duplicate counts; stale records; threshold drift; mistaking a risk flag for fault or contractual responsibility.",
-     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and Cat 9 consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
+     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and the Data and Evidence Health consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Accredited procedurally: documented extraction prompts, audit protocol, and inter-model agreement rates on the synthetic corpus (a measurable reliability statistic professors can interrogate).",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1648,7 +1648,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Extraction error; ambiguous or missing documents; duplicate counts; stale records; threshold drift; mistaking a risk flag for fault or contractual responsibility.",
-     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and Cat 9 consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
+     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and the Data and Evidence Health consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Accredited procedurally: documented extraction prompts, audit protocol, and inter-model agreement rates on the synthetic corpus (a measurable reliability statistic professors can interrogate).",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1681,7 +1681,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Extraction error; ambiguous or missing documents; duplicate counts; stale records; threshold drift; mistaking a risk flag for fault or contractual responsibility.",
-     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and Cat 9 consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
+     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and the Data and Evidence Health consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Accredited procedurally: documented extraction prompts, audit protocol, and inter-model agreement rates on the synthetic corpus (a measurable reliability statistic professors can interrogate).",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1712,7 +1712,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Extraction error; ambiguous or missing documents; duplicate counts; stale records; threshold drift; mistaking a risk flag for fault or contractual responsibility.",
-     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and Cat 9 consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
+     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and the Data and Evidence Health consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Accredited procedurally: documented extraction prompts, audit protocol, and inter-model agreement rates on the synthetic corpus (a measurable reliability statistic professors can interrogate).",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1745,7 +1745,7 @@ const DS_DEFENSIBILITY = {
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
      "failureModes": "Extraction error; ambiguous or missing documents; duplicate counts; stale records; threshold drift; mistaking a risk flag for fault or contractual responsibility.",
-     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and Cat 9 consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
+     "assumptionsLimitations": "LLM extraction can err; mitigations are the raw-facts-only authoring rule, dual-model audit, and the Data and Evidence Health consistency checks. Bands (0.30/0.70) are calibrated decision thresholds.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
      "accreditationBasis": "Accredited procedurally: documented extraction prompts, audit protocol, and inter-model agreement rates on the synthetic corpus (a measurable reliability statistic professors can interrogate).",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
@@ -1755,7 +1755,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "Detection reliability?",
-       "answer": "Bounded by extraction recall; reported jointly with Cat 9 completeness so a low score with poor document coverage is discounted in fusion."
+       "answer": "Bounded by extraction recall; reported jointly with the Data and Evidence Health completeness score so a low score with poor document coverage is discounted in fusion."
       }
      ],
      "requiredInputs": [
@@ -1768,7 +1768,7 @@ const DS_DEFENSIBILITY = {
   {
    "key": "category-5-systems-dynamics-simulation",
    "num": "Category 5",
-   "name": "Systems Dynamics & Simulation",
+   "name": "Systems Dynamics and Simulation",
    "count": 8,
    "modules": [
     {
@@ -2241,7 +2241,7 @@ const DS_DEFENSIBILITY = {
      "failureModes": "Arbitrary memberships or masses; correlated evidence; instability near thresholds; method disagreement hidden by a single rollup; result mistaken for probability.",
      "assumptionsLimitations": "Membership functions / mass assignments are elicited design choices; the defense is comparative (do rankings remain stable across reasonable parameterizations - a sensitivity argument), not inferential.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
-     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources. Accreditation in PCEIF = published axioms + documented parameterization + sensitivity/stability checks, plus practitioner face-validation interviews.",
+     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources: published axioms, documented parameterization, and sensitivity/stability checks, plus practitioner face-validation interviews.",
      "validationRequired": "Verify axioms and combination equations; test identities, boundary cases, conflict cases, and abstention; vary masses/memberships/weights; report rank/status stability; compare methods; obtain practitioner face validation.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 23894 risk analysis under incomplete or conflicting information. Model-card-style documentation records intended use and limitations.",
      "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Rough Sets method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
@@ -2249,7 +2249,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "How is a non-probabilistic formalism 'validated'?",
-       "answer": "By the accreditation triad used throughout Cat 7: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
+       "answer": "By the accreditation triad used throughout the evidence-combination methods: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
       }
      ],
      "requiredInputs": [
@@ -2274,7 +2274,7 @@ const DS_DEFENSIBILITY = {
      "failureModes": "Arbitrary memberships or masses; correlated evidence; instability near thresholds; method disagreement hidden by a single rollup; result mistaken for probability.",
      "assumptionsLimitations": "Membership functions / mass assignments are elicited design choices; the defense is comparative (do rankings remain stable across reasonable parameterizations - a sensitivity argument), not inferential.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
-     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources. Accreditation in PCEIF = published axioms + documented parameterization + sensitivity/stability checks, plus practitioner face-validation interviews.",
+     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources: published axioms, documented parameterization, and sensitivity/stability checks, plus practitioner face-validation interviews.",
      "validationRequired": "Verify axioms and combination equations; test identities, boundary cases, conflict cases, and abstention; vary masses/memberships/weights; report rank/status stability; compare methods; obtain practitioner face validation.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 23894 risk analysis under incomplete or conflicting information. Model-card-style documentation records intended use and limitations.",
      "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Neutrosophic Logic method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
@@ -2282,7 +2282,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "How is a non-probabilistic formalism 'validated'?",
-       "answer": "By the accreditation triad used throughout Cat 7: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
+       "answer": "By the accreditation triad used throughout the evidence-combination methods: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
       }
      ],
      "requiredInputs": [
@@ -2307,7 +2307,7 @@ const DS_DEFENSIBILITY = {
      "failureModes": "Arbitrary memberships or masses; correlated evidence; instability near thresholds; method disagreement hidden by a single rollup; result mistaken for probability.",
      "assumptionsLimitations": "Membership functions / mass assignments are elicited design choices; the defense is comparative (do rankings remain stable across reasonable parameterizations - a sensitivity argument), not inferential.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
-     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources. Accreditation in PCEIF = published axioms + documented parameterization + sensitivity/stability checks, plus practitioner face-validation interviews.",
+     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources: published axioms, documented parameterization, and sensitivity/stability checks, plus practitioner face-validation interviews.",
      "validationRequired": "Verify axioms and combination equations; test identities, boundary cases, conflict cases, and abstention; vary masses/memberships/weights; report rank/status stability; compare methods; obtain practitioner face validation.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 23894 risk analysis under incomplete or conflicting information. Model-card-style documentation records intended use and limitations.",
      "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Interval Fuzzy Sets method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
@@ -2315,7 +2315,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "How is a non-probabilistic formalism 'validated'?",
-       "answer": "By the accreditation triad used throughout Cat 7: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
+       "answer": "By the accreditation triad used throughout the evidence-combination methods: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
       }
      ],
      "requiredInputs": [
@@ -2330,7 +2330,7 @@ const DS_DEFENSIBILITY = {
      "asCodedTier": "Tier 3 - Epistemic uncertainty / evidence fusion",
      "assuranceClass": "B",
      "assuranceDescription": "Method-shaped, explainable demonstration requiring calibration or stronger validation",
-     "engineeringProblem": "Pairs (restriction, reliability): a status claim plus confidence in the source - the formal home of Cat 9 reliability weights.",
+     "engineeringProblem": "Pairs (restriction, reliability): a status claim plus confidence in the source - the formal home of the Data and Evidence Health reliability weights.",
      "detProbSplit": "Deterministic algebra over epistemic representations (belief masses, memberships, linguistic terms, rankings, or votes). No repeated-sampling probability is implied unless explicitly stated.",
      "uncertaintyMethod": "Represents epistemic uncertainty (vague, conflicting, or partially trusted evidence) that classical probability handles poorly: membership degrees, belief/plausibility intervals, or hesitancy terms instead of a single probability mass. Output is a graded status assessment carrying its own confidence.",
      "explainability": "Evidence trace: input statuses, memberships or masses, reliability discounts, conflict/indeterminacy, combination steps, final score, and parameter-sensitivity table. SHAP/LIME is not appropriate for these symbolic formalisms.",
@@ -2339,7 +2339,7 @@ const DS_DEFENSIBILITY = {
      "failureModes": "Arbitrary memberships or masses; correlated evidence; instability near thresholds; method disagreement hidden by a single rollup; result mistaken for probability.",
      "assumptionsLimitations": "Membership functions / mass assignments are elicited design choices; the defense is comparative (do rankings remain stable across reasonable parameterizations - a sensitivity argument), not inferential.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
-     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources. Accreditation in PCEIF = published axioms + documented parameterization + sensitivity/stability checks, plus practitioner face-validation interviews.",
+     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources: published axioms, documented parameterization, and sensitivity/stability checks, plus practitioner face-validation interviews.",
      "validationRequired": "Verify axioms and combination equations; test identities, boundary cases, conflict cases, and abstention; vary masses/memberships/weights; report rank/status stability; compare methods; obtain practitioner face validation.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 23894 risk analysis under incomplete or conflicting information. Model-card-style documentation records intended use and limitations.",
      "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Z-numbers method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
@@ -2347,7 +2347,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "How is a non-probabilistic formalism 'validated'?",
-       "answer": "By the accreditation triad used throughout Cat 7: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
+       "answer": "By the accreditation triad used throughout the evidence-combination methods: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
       }
      ],
      "requiredInputs": [
@@ -2372,7 +2372,7 @@ const DS_DEFENSIBILITY = {
      "failureModes": "Arbitrary memberships or masses; correlated evidence; instability near thresholds; method disagreement hidden by a single rollup; result mistaken for probability.",
      "assumptionsLimitations": "Membership functions / mass assignments are elicited design choices; the defense is comparative (do rankings remain stable across reasonable parameterizations - a sensitivity argument), not inferential.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
-     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources. Accreditation in PCEIF = published axioms + documented parameterization + sensitivity/stability checks, plus practitioner face-validation interviews.",
+     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources: published axioms, documented parameterization, and sensitivity/stability checks, plus practitioner face-validation interviews.",
      "validationRequired": "Verify axioms and combination equations; test identities, boundary cases, conflict cases, and abstention; vary masses/memberships/weights; report rank/status stability; compare methods; obtain practitioner face validation.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 23894 risk analysis under incomplete or conflicting information. Model-card-style documentation records intended use and limitations.",
      "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the PLTS method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
@@ -2380,7 +2380,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "How is a non-probabilistic formalism 'validated'?",
-       "answer": "By the accreditation triad used throughout Cat 7: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
+       "answer": "By the accreditation triad used throughout the evidence-combination methods: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
       }
      ],
      "requiredInputs": [
@@ -2405,7 +2405,7 @@ const DS_DEFENSIBILITY = {
      "failureModes": "Arbitrary memberships or masses; correlated evidence; instability near thresholds; method disagreement hidden by a single rollup; result mistaken for probability.",
      "assumptionsLimitations": "Membership functions / mass assignments are elicited design choices; the defense is comparative (do rankings remain stable across reasonable parameterizations - a sensitivity argument), not inferential.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
-     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources. Accreditation in PCEIF = published axioms + documented parameterization + sensitivity/stability checks, plus practitioner face-validation interviews.",
+     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources: published axioms, documented parameterization, and sensitivity/stability checks, plus practitioner face-validation interviews.",
      "validationRequired": "Verify axioms and combination equations; test identities, boundary cases, conflict cases, and abstention; vary masses/memberships/weights; report rank/status stability; compare methods; obtain practitioner face validation.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 23894 risk analysis under incomplete or conflicting information. Model-card-style documentation records intended use and limitations.",
      "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Plithogenic Sets method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
@@ -2413,7 +2413,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "How is a non-probabilistic formalism 'validated'?",
-       "answer": "By the accreditation triad used throughout Cat 7: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
+       "answer": "By the accreditation triad used throughout the evidence-combination methods: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
       }
      ],
      "requiredInputs": [
@@ -2438,7 +2438,7 @@ const DS_DEFENSIBILITY = {
      "failureModes": "Arbitrary memberships or masses; correlated evidence; instability near thresholds; method disagreement hidden by a single rollup; result mistaken for probability.",
      "assumptionsLimitations": "Membership functions / mass assignments are elicited design choices; the defense is comparative (do rankings remain stable across reasonable parameterizations - a sensitivity argument), not inferential.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
-     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources. Accreditation in PCEIF = published axioms + documented parameterization + sensitivity/stability checks, plus practitioner face-validation interviews.",
+     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources: published axioms, documented parameterization, and sensitivity/stability checks, plus practitioner face-validation interviews.",
      "validationRequired": "Verify axioms and combination equations; test identities, boundary cases, conflict cases, and abstention; vary masses/memberships/weights; report rank/status stability; compare methods; obtain practitioner face validation.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 23894 risk analysis under incomplete or conflicting information. Model-card-style documentation records intended use and limitations.",
      "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Belief Rule Base method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
@@ -2446,7 +2446,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "How is a non-probabilistic formalism 'validated'?",
-       "answer": "By the accreditation triad used throughout Cat 7: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
+       "answer": "By the accreditation triad used throughout the evidence-combination methods: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
       }
      ],
      "requiredInputs": [
@@ -2471,7 +2471,7 @@ const DS_DEFENSIBILITY = {
      "failureModes": "Conceptual overreach; parameter arbitrariness; no empirical order-effect data.",
      "assumptionsLimitations": "Membership functions / mass assignments are elicited design choices; the defense is comparative (do rankings remain stable across reasonable parameterizations - a sensitivity argument), not inferential.",
      "implementationFidelity": "The code is a heuristic amplitude-interference demonstration. Unless the praxis specifically studies order effects and validates the parameterization against judgment data, remove or relegate it to future work.",
-     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources. Accreditation in PCEIF = published axioms + documented parameterization + sensitivity/stability checks, plus practitioner face-validation interviews.",
+     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources: published axioms, documented parameterization, and sensitivity/stability checks, plus practitioner face-validation interviews.",
      "validationRequired": "Verify axioms and combination equations; test identities, boundary cases, conflict cases, and abstention; vary masses/memberships/weights; report rank/status stability; compare methods; obtain practitioner face validation.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 23894 risk analysis under incomplete or conflicting information. Model-card-style documentation records intended use and limitations.",
      "permittedProhibitedClaims": "Allowed: \"The current module is an exploratory proxy inspired by Quantum Probability.\" Prohibited: \"The code implements the canonical Quantum Probability method\" until the label/code mismatch is resolved.",
@@ -2479,7 +2479,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "How is a non-probabilistic formalism 'validated'?",
-       "answer": "By the accreditation triad used throughout Cat 7: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
+       "answer": "By the accreditation triad used throughout the evidence-combination methods: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
       }
      ],
      "requiredInputs": [
@@ -2504,7 +2504,7 @@ const DS_DEFENSIBILITY = {
      "failureModes": "Arbitrary memberships or masses; correlated evidence; instability near thresholds; method disagreement hidden by a single rollup; result mistaken for probability.",
      "assumptionsLimitations": "Membership functions / mass assignments are elicited design choices; the defense is comparative (do rankings remain stable across reasonable parameterizations - a sensitivity argument), not inferential.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
-     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources. Accreditation in PCEIF = published axioms + documented parameterization + sensitivity/stability checks, plus practitioner face-validation interviews.",
+     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources: published axioms, documented parameterization, and sensitivity/stability checks, plus practitioner face-validation interviews.",
      "validationRequired": "Verify axioms and combination equations; test identities, boundary cases, conflict cases, and abstention; vary masses/memberships/weights; report rank/status stability; compare methods; obtain practitioner face validation.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 23894 risk analysis under incomplete or conflicting information. Model-card-style documentation records intended use and limitations.",
      "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Pythagorean Fuzzy Sets method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
@@ -2512,7 +2512,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "How is a non-probabilistic formalism 'validated'?",
-       "answer": "By the accreditation triad used throughout Cat 7: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
+       "answer": "By the accreditation triad used throughout the evidence-combination methods: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
       }
      ],
      "requiredInputs": [
@@ -2537,7 +2537,7 @@ const DS_DEFENSIBILITY = {
      "failureModes": "Arbitrary memberships or masses; correlated evidence; instability near thresholds; method disagreement hidden by a single rollup; result mistaken for probability.",
      "assumptionsLimitations": "Membership functions / mass assignments are elicited design choices; the defense is comparative (do rankings remain stable across reasonable parameterizations - a sensitivity argument), not inferential.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
-     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources. Accreditation in PCEIF = published axioms + documented parameterization + sensitivity/stability checks, plus practitioner face-validation interviews.",
+     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources: published axioms, documented parameterization, and sensitivity/stability checks, plus practitioner face-validation interviews.",
      "validationRequired": "Verify axioms and combination equations; test identities, boundary cases, conflict cases, and abstention; vary masses/memberships/weights; report rank/status stability; compare methods; obtain practitioner face validation.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 23894 risk analysis under incomplete or conflicting information. Model-card-style documentation records intended use and limitations.",
      "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Picture Fuzzy Sets method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
@@ -2545,7 +2545,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "How is a non-probabilistic formalism 'validated'?",
-       "answer": "By the accreditation triad used throughout Cat 7: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
+       "answer": "By the accreditation triad used throughout the evidence-combination methods: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
       }
      ],
      "requiredInputs": [
@@ -2570,7 +2570,7 @@ const DS_DEFENSIBILITY = {
      "failureModes": "Arbitrary memberships or masses; correlated evidence; instability near thresholds; method disagreement hidden by a single rollup; result mistaken for probability.",
      "assumptionsLimitations": "Membership functions / mass assignments are elicited design choices; the defense is comparative (do rankings remain stable across reasonable parameterizations - a sensitivity argument), not inferential.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
-     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources. Accreditation in PCEIF = published axioms + documented parameterization + sensitivity/stability checks, plus practitioner face-validation interviews.",
+     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources: published axioms, documented parameterization, and sensitivity/stability checks, plus practitioner face-validation interviews.",
      "validationRequired": "Verify axioms and combination equations; test identities, boundary cases, conflict cases, and abstention; vary masses/memberships/weights; report rank/status stability; compare methods; obtain practitioner face validation.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 23894 risk analysis under incomplete or conflicting information. Model-card-style documentation records intended use and limitations.",
      "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Hesitant Fuzzy Sets method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
@@ -2578,7 +2578,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "How is a non-probabilistic formalism 'validated'?",
-       "answer": "By the accreditation triad used throughout Cat 7: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
+       "answer": "By the accreditation triad used throughout the evidence-combination methods: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
       }
      ],
      "requiredInputs": [
@@ -2602,7 +2602,7 @@ const DS_DEFENSIBILITY = {
      "failureModes": "Arbitrary memberships or masses; correlated evidence; instability near thresholds; method disagreement hidden by a single rollup; result mistaken for probability.",
      "assumptionsLimitations": "Membership functions / mass assignments are elicited design choices; the defense is comparative (do rankings remain stable across reasonable parameterizations - a sensitivity argument), not inferential.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
-     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources. Accreditation in PCEIF = published axioms + documented parameterization + sensitivity/stability checks, plus practitioner face-validation interviews.",
+     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources: published axioms, documented parameterization, and sensitivity/stability checks, plus practitioner face-validation interviews.",
      "validationRequired": "Verify axioms and combination equations; test identities, boundary cases, conflict cases, and abstention; vary masses/memberships/weights; report rank/status stability; compare methods; obtain practitioner face validation.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 23894 risk analysis under incomplete or conflicting information. Model-card-style documentation records intended use and limitations.",
      "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Type-2 Fuzzy Sets method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
@@ -2610,7 +2610,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "How is a non-probabilistic formalism 'validated'?",
-       "answer": "By the accreditation triad used throughout Cat 7: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
+       "answer": "By the accreditation triad used throughout the evidence-combination methods: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
       }
      ],
      "requiredInputs": [
@@ -2634,7 +2634,7 @@ const DS_DEFENSIBILITY = {
      "failureModes": "Arbitrary memberships or masses; correlated evidence; instability near thresholds; method disagreement hidden by a single rollup; result mistaken for probability.",
      "assumptionsLimitations": "Membership functions / mass assignments are elicited design choices; the defense is comparative (do rankings remain stable across reasonable parameterizations - a sensitivity argument), not inferential.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
-     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources. Accreditation in PCEIF = published axioms + documented parameterization + sensitivity/stability checks, plus practitioner face-validation interviews.",
+     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources: published axioms, documented parameterization, and sensitivity/stability checks, plus practitioner face-validation interviews.",
      "validationRequired": "Verify axioms and combination equations; test identities, boundary cases, conflict cases, and abstention; vary masses/memberships/weights; report rank/status stability; compare methods; obtain practitioner face validation.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 23894 risk analysis under incomplete or conflicting information. Model-card-style documentation records intended use and limitations.",
      "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Maximum Entropy method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
@@ -2642,7 +2642,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "How is a non-probabilistic formalism 'validated'?",
-       "answer": "By the accreditation triad used throughout Cat 7: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
+       "answer": "By the accreditation triad used throughout the evidence-combination methods: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
       }
      ],
      "requiredInputs": [
@@ -2667,7 +2667,7 @@ const DS_DEFENSIBILITY = {
      "failureModes": "Arbitrary memberships or masses; correlated evidence; instability near thresholds; method disagreement hidden by a single rollup; result mistaken for probability.",
      "assumptionsLimitations": "Membership functions / mass assignments are elicited design choices; the defense is comparative (do rankings remain stable across reasonable parameterizations - a sensitivity argument), not inferential.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
-     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources. Accreditation in PCEIF = published axioms + documented parameterization + sensitivity/stability checks, plus practitioner face-validation interviews.",
+     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources: published axioms, documented parameterization, and sensitivity/stability checks, plus practitioner face-validation interviews.",
      "validationRequired": "Verify axioms and combination equations; test identities, boundary cases, conflict cases, and abstention; vary masses/memberships/weights; report rank/status stability; compare methods; obtain practitioner face validation.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 23894 risk analysis under incomplete or conflicting information. Model-card-style documentation records intended use and limitations.",
      "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Possibility Theory method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
@@ -2675,7 +2675,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "How is a non-probabilistic formalism 'validated'?",
-       "answer": "By the accreditation triad used throughout Cat 7: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
+       "answer": "By the accreditation triad used throughout the evidence-combination methods: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
       }
      ],
      "requiredInputs": [
@@ -2700,7 +2700,7 @@ const DS_DEFENSIBILITY = {
      "failureModes": "Arbitrary memberships or masses; correlated evidence; instability near thresholds; method disagreement hidden by a single rollup; result mistaken for probability.",
      "assumptionsLimitations": "Membership functions / mass assignments are elicited design choices; the defense is comparative (do rankings remain stable across reasonable parameterizations - a sensitivity argument), not inferential.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
-     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources. Accreditation in PCEIF = published axioms + documented parameterization + sensitivity/stability checks, plus practitioner face-validation interviews.",
+     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources: published axioms, documented parameterization, and sensitivity/stability checks, plus practitioner face-validation interviews.",
      "validationRequired": "Verify axioms and combination equations; test identities, boundary cases, conflict cases, and abstention; vary masses/memberships/weights; report rank/status stability; compare methods; obtain practitioner face validation.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 23894 risk analysis under incomplete or conflicting information. Model-card-style documentation records intended use and limitations.",
      "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Spherical Fuzzy Sets method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
@@ -2708,7 +2708,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "How is a non-probabilistic formalism 'validated'?",
-       "answer": "By the accreditation triad used throughout Cat 7: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
+       "answer": "By the accreditation triad used throughout the evidence-combination methods: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
       }
      ],
      "requiredInputs": [
@@ -2733,7 +2733,7 @@ const DS_DEFENSIBILITY = {
      "failureModes": "Arbitrary memberships or masses; correlated evidence; instability near thresholds; method disagreement hidden by a single rollup; result mistaken for probability.",
      "assumptionsLimitations": "Membership functions / mass assignments are elicited design choices; the defense is comparative (do rankings remain stable across reasonable parameterizations - a sensitivity argument), not inferential.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
-     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources. Accreditation in PCEIF = published axioms + documented parameterization + sensitivity/stability checks, plus practitioner face-validation interviews.",
+     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources: published axioms, documented parameterization, and sensitivity/stability checks, plus practitioner face-validation interviews.",
      "validationRequired": "Verify axioms and combination equations; test identities, boundary cases, conflict cases, and abstention; vary masses/memberships/weights; report rank/status stability; compare methods; obtain practitioner face validation.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 23894 risk analysis under incomplete or conflicting information. Model-card-style documentation records intended use and limitations.",
      "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Fermatean Fuzzy Sets method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
@@ -2741,7 +2741,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "How is a non-probabilistic formalism 'validated'?",
-       "answer": "By the accreditation triad used throughout Cat 7: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
+       "answer": "By the accreditation triad used throughout the evidence-combination methods: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
       }
      ],
      "requiredInputs": [
@@ -2765,7 +2765,7 @@ const DS_DEFENSIBILITY = {
      "failureModes": "Arbitrary memberships or masses; correlated evidence; instability near thresholds; method disagreement hidden by a single rollup; result mistaken for probability.",
      "assumptionsLimitations": "Membership functions / mass assignments are elicited design choices; the defense is comparative (do rankings remain stable across reasonable parameterizations - a sensitivity argument), not inferential.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
-     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources. Accreditation in PCEIF = published axioms + documented parameterization + sensitivity/stability checks, plus practitioner face-validation interviews.",
+     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources: published axioms, documented parameterization, and sensitivity/stability checks, plus practitioner face-validation interviews.",
      "validationRequired": "Verify axioms and combination equations; test identities, boundary cases, conflict cases, and abstention; vary masses/memberships/weights; report rank/status stability; compare methods; obtain practitioner face validation.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 23894 risk analysis under incomplete or conflicting information. Model-card-style documentation records intended use and limitations.",
      "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the MARCOS Ranking method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
@@ -2773,7 +2773,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "How is a non-probabilistic formalism 'validated'?",
-       "answer": "By the accreditation triad used throughout Cat 7: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
+       "answer": "By the accreditation triad used throughout the evidence-combination methods: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
       }
      ],
      "requiredInputs": [
@@ -2798,7 +2798,7 @@ const DS_DEFENSIBILITY = {
      "failureModes": "Arbitrary memberships or masses; correlated evidence; instability near thresholds; method disagreement hidden by a single rollup; result mistaken for probability.",
      "assumptionsLimitations": "Membership functions / mass assignments are elicited design choices; the defense is comparative (do rankings remain stable across reasonable parameterizations - a sensitivity argument), not inferential.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
-     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources. Accreditation in PCEIF = published axioms + documented parameterization + sensitivity/stability checks, plus practitioner face-validation interviews.",
+     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources: published axioms, documented parameterization, and sensitivity/stability checks, plus practitioner face-validation interviews.",
      "validationRequired": "Verify axioms and combination equations; test identities, boundary cases, conflict cases, and abstention; vary masses/memberships/weights; report rank/status stability; compare methods; obtain practitioner face validation.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 23894 risk analysis under incomplete or conflicting information. Model-card-style documentation records intended use and limitations.",
      "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the CRITIC-TOPSIS method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
@@ -2806,7 +2806,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "How is a non-probabilistic formalism 'validated'?",
-       "answer": "By the accreditation triad used throughout Cat 7: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
+       "answer": "By the accreditation triad used throughout the evidence-combination methods: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
       }
      ],
      "requiredInputs": [
@@ -2831,7 +2831,7 @@ const DS_DEFENSIBILITY = {
      "failureModes": "Arbitrary memberships or masses; correlated evidence; instability near thresholds; method disagreement hidden by a single rollup; result mistaken for probability.",
      "assumptionsLimitations": "Membership functions / mass assignments are elicited design choices; the defense is comparative (do rankings remain stable across reasonable parameterizations - a sensitivity argument), not inferential.",
      "implementationFidelity": "Code-aligned formula/rule review required; defend only at the documented assurance class.",
-     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources. Accreditation in PCEIF = published axioms + documented parameterization + sensitivity/stability checks, plus practitioner face-validation interviews.",
+     "accreditationBasis": "Each formalism is peer-reviewed decision-science literature with citable primary sources: published axioms, documented parameterization, and sensitivity/stability checks, plus practitioner face-validation interviews.",
      "validationRequired": "Verify axioms and combination equations; test identities, boundary cases, conflict cases, and abstention; vary masses/memberships/weights; report rank/status stability; compare methods; obtain practitioner face validation.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 23894 risk analysis under incomplete or conflicting information. Model-card-style documentation records intended use and limitations.",
      "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Hypersoft Sets method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
@@ -2839,7 +2839,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "How is a non-probabilistic formalism 'validated'?",
-       "answer": "By the accreditation triad used throughout Cat 7: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
+       "answer": "By the accreditation triad used throughout the evidence-combination methods: (1) primary peer-reviewed citation for the axioms, (2) documented parameterization with provenance, (3) sensitivity/stability analysis showing fused verdicts are robust to reasonable parameter variation, plus practitioner face validation. This is the accepted standard for decision-science formalisms, where frequentist error rates are category errors."
       }
      ],
      "requiredInputs": [
@@ -2893,7 +2893,7 @@ const DS_DEFENSIBILITY = {
      "assuranceDescription": "Refactor or rename before making a formal method claim",
      "engineeringProblem": "Checks contract actions against FAR dollar/approval thresholds.",
      "detProbSplit": "Deterministic input checks and arithmetic/rule computation followed by a deterministic band or decision rule. Uncertainty resides in measurement error, data completeness, threshold calibration, and source reliability rather than random sampling.",
-     "uncertaintyMethod": "Binary or banded checks against externally defined regulatory thresholds. No estimation involved; the uncertainty question is data completeness, delegated to Cat 9 scores.",
+     "uncertaintyMethod": "Binary or banded checks against externally defined regulatory thresholds. No estimation involved; the uncertainty question is data completeness, delegated to the Data and Evidence Health scores.",
      "explainability": "Rule and authority trace: cited rule version, applicability conditions, threshold evaluation, authority, required record, and human judgment outcome.",
      "oversightLevel": "FLAG_RECOMMEND",
      "oversightDescription": "Flag / recommend - routes a possible governance or compliance issue to the responsible human reviewer.",
@@ -2922,7 +2922,7 @@ const DS_DEFENSIBILITY = {
      "assuranceDescription": "Refactor or rename before making a formal method claim",
      "engineeringProblem": "Capital programming exhibit completeness per OMB Circular A-11.",
      "detProbSplit": "Deterministic input checks and arithmetic/rule computation followed by a deterministic band or decision rule. Uncertainty resides in measurement error, data completeness, threshold calibration, and source reliability rather than random sampling.",
-     "uncertaintyMethod": "Binary or banded checks against externally defined regulatory thresholds. No estimation involved; the uncertainty question is data completeness, delegated to Cat 9 scores.",
+     "uncertaintyMethod": "Binary or banded checks against externally defined regulatory thresholds. No estimation involved; the uncertainty question is data completeness, delegated to the Data and Evidence Health scores.",
      "explainability": "Rule and authority trace: cited rule version, applicability conditions, threshold evaluation, authority, required record, and human judgment outcome.",
      "oversightLevel": "FLAG_RECOMMEND",
      "oversightDescription": "Flag / recommend - routes a possible governance or compliance issue to the responsible human reviewer.",
@@ -2950,7 +2950,7 @@ const DS_DEFENSIBILITY = {
      "assuranceDescription": "Refactor or rename before making a formal method claim",
      "engineeringProblem": "Flags when contract size/type mandates formal EVMS reporting.",
      "detProbSplit": "Deterministic input checks and arithmetic/rule computation followed by a deterministic band or decision rule. Uncertainty resides in measurement error, data completeness, threshold calibration, and source reliability rather than random sampling.",
-     "uncertaintyMethod": "Binary or banded checks against externally defined regulatory thresholds. No estimation involved; the uncertainty question is data completeness, delegated to Cat 9 scores.",
+     "uncertaintyMethod": "Binary or banded checks against externally defined regulatory thresholds. No estimation involved; the uncertainty question is data completeness, delegated to the Data and Evidence Health scores.",
      "explainability": "Rule and authority trace: cited rule version, applicability conditions, threshold evaluation, authority, required record, and human judgment outcome.",
      "oversightLevel": "FLAG_RECOMMEND",
      "oversightDescription": "Flag / recommend - routes a possible governance or compliance issue to the responsible human reviewer.",
@@ -2978,7 +2978,7 @@ const DS_DEFENSIBILITY = {
      "assuranceDescription": "Method-shaped, explainable demonstration requiring calibration or stronger validation",
      "engineeringProblem": "Mod rate vs sector norms; banded.",
      "detProbSplit": "Deterministic input checks and arithmetic/rule computation followed by a deterministic band or decision rule. Uncertainty resides in measurement error, data completeness, threshold calibration, and source reliability rather than random sampling.",
-     "uncertaintyMethod": "Binary or banded checks against externally defined regulatory thresholds. No estimation involved; the uncertainty question is data completeness, delegated to Cat 9 scores.",
+     "uncertaintyMethod": "Binary or banded checks against externally defined regulatory thresholds. No estimation involved; the uncertainty question is data completeness, delegated to the Data and Evidence Health scores.",
      "explainability": "Rule and authority trace: cited rule version, applicability conditions, threshold evaluation, authority, required record, and human judgment outcome.",
      "oversightLevel": "FLAG_RECOMMEND",
      "oversightDescription": "Flag / recommend - routes a possible governance or compliance issue to the responsible human reviewer.",
@@ -3006,7 +3006,7 @@ const DS_DEFENSIBILITY = {
      "assuranceDescription": "Method-shaped, explainable demonstration requiring calibration or stronger validation",
      "engineeringProblem": "Quality pass rate vs contractual quality plan.",
      "detProbSplit": "Deterministic input checks and arithmetic/rule computation followed by a deterministic band or decision rule. Uncertainty resides in measurement error, data completeness, threshold calibration, and source reliability rather than random sampling.",
-     "uncertaintyMethod": "Binary or banded checks against externally defined regulatory thresholds. No estimation involved; the uncertainty question is data completeness, delegated to Cat 9 scores.",
+     "uncertaintyMethod": "Binary or banded checks against externally defined regulatory thresholds. No estimation involved; the uncertainty question is data completeness, delegated to the Data and Evidence Health scores.",
      "explainability": "Rule and authority trace: cited rule version, applicability conditions, threshold evaluation, authority, required record, and human judgment outcome.",
      "oversightLevel": "FLAG_RECOMMEND",
      "oversightDescription": "Flag / recommend - routes a possible governance or compliance issue to the responsible human reviewer.",
@@ -3032,7 +3032,7 @@ const DS_DEFENSIBILITY = {
      "assuranceDescription": "Method-shaped, explainable demonstration requiring calibration or stronger validation",
      "engineeringProblem": "Recordable-incident rate vs sector baseline (exposure-normalized).",
      "detProbSplit": "Deterministic input checks and arithmetic/rule computation followed by a deterministic band or decision rule. Uncertainty resides in measurement error, data completeness, threshold calibration, and source reliability rather than random sampling.",
-     "uncertaintyMethod": "Binary or banded checks against externally defined regulatory thresholds. No estimation involved; the uncertainty question is data completeness, delegated to Cat 9 scores.",
+     "uncertaintyMethod": "Binary or banded checks against externally defined regulatory thresholds. No estimation involved; the uncertainty question is data completeness, delegated to the Data and Evidence Health scores.",
      "explainability": "Rule and authority trace: cited rule version, applicability conditions, threshold evaluation, authority, required record, and human judgment outcome.",
      "oversightLevel": "FLAG_RECOMMEND",
      "oversightDescription": "Flag / recommend - routes a possible governance or compliance issue to the responsible human reviewer.",
@@ -3063,7 +3063,7 @@ const DS_DEFENSIBILITY = {
      "assuranceDescription": "Method-shaped, explainable demonstration requiring calibration or stronger validation",
      "engineeringProblem": "Environmental findings per inspection; banded.",
      "detProbSplit": "Deterministic input checks and arithmetic/rule computation followed by a deterministic band or decision rule. Uncertainty resides in measurement error, data completeness, threshold calibration, and source reliability rather than random sampling.",
-     "uncertaintyMethod": "Binary or banded checks against externally defined regulatory thresholds. No estimation involved; the uncertainty question is data completeness, delegated to Cat 9 scores.",
+     "uncertaintyMethod": "Binary or banded checks against externally defined regulatory thresholds. No estimation involved; the uncertainty question is data completeness, delegated to the Data and Evidence Health scores.",
      "explainability": "Rule and authority trace: cited rule version, applicability conditions, threshold evaluation, authority, required record, and human judgment outcome.",
      "oversightLevel": "FLAG_RECOMMEND",
      "oversightDescription": "Flag / recommend - routes a possible governance or compliance issue to the responsible human reviewer.",
@@ -3089,7 +3089,7 @@ const DS_DEFENSIBILITY = {
      "assuranceDescription": "Method-shaped, explainable demonstration requiring calibration or stronger validation",
      "engineeringProblem": "CPARS-style composite of ratings; ordinal thresholds 4/3.5/3.",
      "detProbSplit": "Deterministic input checks and arithmetic/rule computation followed by a deterministic band or decision rule. Uncertainty resides in measurement error, data completeness, threshold calibration, and source reliability rather than random sampling.",
-     "uncertaintyMethod": "Binary or banded checks against externally defined regulatory thresholds. No estimation involved; the uncertainty question is data completeness, delegated to Cat 9 scores.",
+     "uncertaintyMethod": "Binary or banded checks against externally defined regulatory thresholds. No estimation involved; the uncertainty question is data completeness, delegated to the Data and Evidence Health scores.",
      "explainability": "Rule and authority trace: cited rule version, applicability conditions, threshold evaluation, authority, required record, and human judgment outcome.",
      "oversightLevel": "FLAG_RECOMMEND",
      "oversightDescription": "Flag / recommend - routes a possible governance or compliance issue to the responsible human reviewer.",
@@ -3125,7 +3125,7 @@ const DS_DEFENSIBILITY = {
      "assuranceDescription": "Formula/rule-faithful implementation that is directly testable, subject to input and threshold validity",
      "engineeringProblem": "Fraction of the 27-doc manifest present, weighted by module-feeding importance.",
      "detProbSplit": "Deterministic input checks and arithmetic/rule computation followed by a deterministic band or decision rule. Uncertainty resides in measurement error, data completeness, threshold calibration, and source reliability rather than random sampling.",
-     "uncertaintyMethod": "Scores the trustworthiness of the evidence base itself (missingness, timeliness, consistency). This is PCEIF's explicit handling of the course's caveat that inference is only as good as the data: these scores feed source-reliability weights into fusion.",
+     "uncertaintyMethod": "Scores the trustworthiness of the evidence base itself (missingness, timeliness, consistency): a direct handling of the caveat that inference is only as good as the data. These scores feed source-reliability weights into fusion.",
      "explainability": "Score decomposition: expected fields/events, observed fields/events, missing or stale items, source weights, reconciliation differences, and resulting data-quality score.",
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
@@ -3140,7 +3140,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "Missingness mechanism?",
-       "answer": "PCEIF treats missingness as informative (MNAR-leaning): absent risk documents on a distressed project are themselves a signal, which is why completeness feeds fusion rather than being silently imputed."
+       "answer": "Missingness is treated as informative (MNAR-leaning): absent risk documents on a distressed project are themselves a signal, which is why completeness feeds fusion rather than being silently imputed."
       }
      ],
      "requiredInputs": [
@@ -3156,7 +3156,7 @@ const DS_DEFENSIBILITY = {
      "assuranceDescription": "Formula/rule-faithful implementation that is directly testable, subject to input and threshold validity",
      "engineeringProblem": "Age of latest period data vs reporting cadence.",
      "detProbSplit": "Deterministic input checks and arithmetic/rule computation followed by a deterministic band or decision rule. Uncertainty resides in measurement error, data completeness, threshold calibration, and source reliability rather than random sampling.",
-     "uncertaintyMethod": "Scores the trustworthiness of the evidence base itself (missingness, timeliness, consistency). This is PCEIF's explicit handling of the course's caveat that inference is only as good as the data: these scores feed source-reliability weights into fusion.",
+     "uncertaintyMethod": "Scores the trustworthiness of the evidence base itself (missingness, timeliness, consistency): a direct handling of the caveat that inference is only as good as the data. These scores feed source-reliability weights into fusion.",
      "explainability": "Score decomposition: expected fields/events, observed fields/events, missing or stale items, source weights, reconciliation differences, and resulting data-quality score.",
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
@@ -3182,7 +3182,7 @@ const DS_DEFENSIBILITY = {
      "assuranceDescription": "Formula/rule-faithful implementation that is directly testable, subject to input and threshold validity",
      "engineeringProblem": "Per-source reliability weights feeding fusion mass (the Z-number reliability component operationalized).",
      "detProbSplit": "Deterministic input checks and arithmetic/rule computation followed by a deterministic band or decision rule. Uncertainty resides in measurement error, data completeness, threshold calibration, and source reliability rather than random sampling.",
-     "uncertaintyMethod": "Scores the trustworthiness of the evidence base itself (missingness, timeliness, consistency). This is PCEIF's explicit handling of the course's caveat that inference is only as good as the data: these scores feed source-reliability weights into fusion.",
+     "uncertaintyMethod": "Scores the trustworthiness of the evidence base itself (missingness, timeliness, consistency): a direct handling of the caveat that inference is only as good as the data. These scores feed source-reliability weights into fusion.",
      "explainability": "Score decomposition: expected fields/events, observed fields/events, missing or stale items, source weights, reconciliation differences, and resulting data-quality score.",
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
@@ -3208,7 +3208,7 @@ const DS_DEFENSIBILITY = {
      "assuranceDescription": "Formula/rule-faithful implementation that is directly testable, subject to input and threshold validity",
      "engineeringProblem": "Upload/extraction event coverage vs expected pipeline events.",
      "detProbSplit": "Deterministic input checks and arithmetic/rule computation followed by a deterministic band or decision rule. Uncertainty resides in measurement error, data completeness, threshold calibration, and source reliability rather than random sampling.",
-     "uncertaintyMethod": "Scores the trustworthiness of the evidence base itself (missingness, timeliness, consistency). This is PCEIF's explicit handling of the course's caveat that inference is only as good as the data: these scores feed source-reliability weights into fusion.",
+     "uncertaintyMethod": "Scores the trustworthiness of the evidence base itself (missingness, timeliness, consistency): a direct handling of the caveat that inference is only as good as the data. These scores feed source-reliability weights into fusion.",
      "explainability": "Score decomposition: expected fields/events, observed fields/events, missing or stale items, source weights, reconciliation differences, and resulting data-quality score.",
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
@@ -3234,7 +3234,7 @@ const DS_DEFENSIBILITY = {
      "assuranceDescription": "Formula/rule-faithful implementation that is directly testable, subject to input and threshold validity",
      "engineeringProblem": "Field-level extraction completeness across required inputs.",
      "detProbSplit": "Deterministic input checks and arithmetic/rule computation followed by a deterministic band or decision rule. Uncertainty resides in measurement error, data completeness, threshold calibration, and source reliability rather than random sampling.",
-     "uncertaintyMethod": "Scores the trustworthiness of the evidence base itself (missingness, timeliness, consistency). This is PCEIF's explicit handling of the course's caveat that inference is only as good as the data: these scores feed source-reliability weights into fusion.",
+     "uncertaintyMethod": "Scores the trustworthiness of the evidence base itself (missingness, timeliness, consistency): a direct handling of the caveat that inference is only as good as the data. These scores feed source-reliability weights into fusion.",
      "explainability": "Score decomposition: expected fields/events, observed fields/events, missing or stale items, source weights, reconciliation differences, and resulting data-quality score.",
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
@@ -3260,7 +3260,7 @@ const DS_DEFENSIBILITY = {
      "assuranceDescription": "Formula/rule-faithful implementation that is directly testable, subject to input and threshold validity",
      "engineeringProblem": "Reconciliation checks (e.g., pay-app EV vs monthly-report EV) with tolerance bands.",
      "detProbSplit": "Deterministic input checks and arithmetic/rule computation followed by a deterministic band or decision rule. Uncertainty resides in measurement error, data completeness, threshold calibration, and source reliability rather than random sampling.",
-     "uncertaintyMethod": "Scores the trustworthiness of the evidence base itself (missingness, timeliness, consistency). This is PCEIF's explicit handling of the course's caveat that inference is only as good as the data: these scores feed source-reliability weights into fusion.",
+     "uncertaintyMethod": "Scores the trustworthiness of the evidence base itself (missingness, timeliness, consistency): a direct handling of the caveat that inference is only as good as the data. These scores feed source-reliability weights into fusion.",
      "explainability": "Score decomposition: expected fields/events, observed fields/events, missing or stale items, source weights, reconciliation differences, and resulting data-quality score.",
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
@@ -3287,7 +3287,7 @@ const DS_DEFENSIBILITY = {
      "assuranceDescription": "Formula/rule-faithful implementation that is directly testable, subject to input and threshold validity",
      "engineeringProblem": "Observed vs contractual reporting frequency.",
      "detProbSplit": "Deterministic input checks and arithmetic/rule computation followed by a deterministic band or decision rule. Uncertainty resides in measurement error, data completeness, threshold calibration, and source reliability rather than random sampling.",
-     "uncertaintyMethod": "Scores the trustworthiness of the evidence base itself (missingness, timeliness, consistency). This is PCEIF's explicit handling of the course's caveat that inference is only as good as the data: these scores feed source-reliability weights into fusion.",
+     "uncertaintyMethod": "Scores the trustworthiness of the evidence base itself (missingness, timeliness, consistency): a direct handling of the caveat that inference is only as good as the data. These scores feed source-reliability weights into fusion.",
      "explainability": "Score decomposition: expected fields/events, observed fields/events, missing or stale items, source weights, reconciliation differences, and resulting data-quality score.",
      "oversightLevel": "FLAG",
      "oversightDescription": "Flag - surfaces evidence for PM review; final interpretation and action remain human decisions.",
@@ -3659,7 +3659,7 @@ const DS_DEFENSIBILITY = {
  ],
  "praxisOutline": {
   "heading": "The Praxis Behind the Platform",
-  "lead": "Opus Gubernatio is the proof-of-concept instrument for a Doctor of Engineering praxis on AI-driven probabilistic governance for public capital project controls. The research problem is the signal-to-action gap: modern platforms generate predictive signals faster than public-sector governance can responsibly act on them. PCEIF closes that gap by pairing every analytical signal with governed human judgment.",
+  "lead": "Opus Gubernatio is the proof-of-concept instrument for a Doctor of Engineering praxis on AI-driven probabilistic governance for public capital project controls. The research problem is the signal-to-action gap: modern platforms generate predictive signals faster than public-sector governance can responsibly act on them. The platform's contribution is empirical evidence about how professionals respond to AI decision support when every analytical signal is paired with governed human judgment, not a new governance framework.",
   "chapters": [
    [
     "Introduction",
@@ -3674,12 +3674,12 @@ const DS_DEFENSIBILITY = {
     "Design Science Research: the framework and instrument are built as artifacts and evaluated through structured practitioner validation rather than statistical hypothesis testing on outcomes."
    ],
    [
-    "The PCEIF Governance Framework",
+    "The Governance Architecture",
     "The governance architecture itself: signal packages routed to human review, conflict kept visible, and the Human Judgment Record with mandatory rationale capture, no silent overrides, an override taxonomy, and a judgment ledger whose patterns become learning inputs."
    ],
    [
     "Analytical Module Taxonomy",
-    "The full capability taxonomy behind this handbook: ten project categories plus the Portfolio Health suite, each documented with its governance role, its human judgment risks, its module register, and validation questions."
+    "The full capability taxonomy behind this handbook: Project Health, Recommendation and Governance, Data and Evidence Health, and Portfolio Level, each documented with its governance role, its human judgment risks, its module register, and validation questions."
    ],
    [
     "The Proof-of-Concept Instrument",
