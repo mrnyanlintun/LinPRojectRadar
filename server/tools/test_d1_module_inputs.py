@@ -298,13 +298,16 @@ def monthly_bytes(period: int) -> bytes:
 PERIODS = {
     1: {"earned_value": 4_000_000, "actual_cost": 4_200_000, "planned_value": 4_100_000,
         "budget_at_completion": 10_000_000, "actual_percent_complete": 40.0,
-        "planned_percent_complete": 41.0, "report_date": "2026-05-31"},
+        "planned_percent_complete": 41.0, "report_date": "2026-05-31",
+        "document_date": "2026-05-31"},
     2: {"earned_value": 5_000_000, "actual_cost": 4_900_000, "planned_value": 5_100_000,
         "budget_at_completion": 10_000_000, "actual_percent_complete": 50.0,
-        "planned_percent_complete": 51.0, "report_date": "2026-06-30"},
+        "planned_percent_complete": 51.0, "report_date": "2026-06-30",
+        "document_date": "2026-06-30"},
     3: {"earned_value": 6_000_000, "actual_cost": 5_600_000, "planned_value": 6_050_000,
         "budget_at_completion": 10_000_000, "actual_percent_complete": 60.0,
-        "planned_percent_complete": 61.0, "report_date": "2026-07-31"},
+        "planned_percent_complete": 61.0, "report_date": "2026-07-31",
+        "document_date": "2026-07-31"},
 }
 RECORDED = {hashlib.sha256(monthly_bytes(p)).hexdigest(): ("monthly_report", fields)
             for p, fields in PERIODS.items()}
@@ -356,7 +359,7 @@ check("events" in si1, "the event log reaches signalInputs and is recorded on th
 # The project document stores full ISO datetimes; `_js_date_ms` refuses those by design. Without
 # the narrowing in `_events_as_of`, C1.7 would abstain on every real project while LOOKING wired,
 # which is the exact failure this suite exists to catch.
-check(len(si3.get("events") or []) == 3 and all(len(str(e.get("at"))) == 10 for e in si3["events"]),
+check(len(si3.get("events") or []) >= 3 and all(len(str(e.get("at"))) == 10 for e in si3["events"]),
       "event timestamps are narrowed to date-only at the boundary, as models_dq requires",
       str([e.get("at") for e in (si3.get("events") or [])]))
 mods_c17 = {m["module_id"] for m in stored[3]["module_results"]}
@@ -392,10 +395,16 @@ check("A1.2" not in mods1 and "A1.4" not in mods1 and "A1.5" not in mods1,
 # first. Without that, removing the wiring entirely would leave these three green.
 ev1 = si1.get("events") or []
 ev3 = si3.get("events") or []
-check(len(ev1) == 3 and all(e.get("at", "")[:10] <= "2026-05-31" for e in ev1),
+# Compared against each period's OWN stored cutoff rather than a literal date. The upload now
+# writes a `signals_extracted` event stamped at upload time, so the seeded four are no longer the
+# whole log — a hardcoded count would have to be edited every time the fixture uploads anything,
+# and the property being asserted was never the count. The non-emptiness floor stays, because
+# `all()` over an empty list is True and that is what these checks exist to rule out.
+cut1 = str(stored[1]["period_cutoff"])[:10]
+check(len(ev1) >= 3 and all(e.get("at", "")[:10] <= cut1 for e in ev1),
       "period 1's event log is truncated at its cutoff: later activity does not reach it",
-      str([e.get("at") for e in ev1]))
-check(len(ev3) == 3 and not any(e.get("at", "").startswith("2026-12") for e in ev3),
+      f"cutoff {cut1}: " + str([e.get("at") for e in ev1]))
+check(len(ev3) >= 3 and not any(e.get("at", "").startswith("2026-12") for e in ev3),
       "and the December event reaches no period, all three cutoffs preceding it",
       str([e.get("at") for e in ev3]))
 check(len(ev3) >= len(ev1) > 0,

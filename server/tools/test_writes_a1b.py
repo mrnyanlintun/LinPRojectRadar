@@ -38,8 +38,20 @@ def check(ok: bool, label: str, detail: str = "") -> None:
     print(f"  {'PASS' if ok else 'FAIL'}  {label}" + (f"   {detail}" if detail and not ok else ""))
 
 
+# The facade FAILS CLOSED on writes as of 2026-08-02, so this harness has to sign in. It used to
+# post every write with no session at all, which is exactly what an anonymous attacker was doing.
+# `post` attaches the operational session below unless a payload sets its own (or sets it to None,
+# which is how the unauthenticated checks near the end are written).
+SESSION: str | None = None
+
+
 def post(payload: dict) -> dict:
-    r = client.post("/exec", content=json.dumps(payload), headers={"Content-Type": "text/plain"})
+    body = dict(payload)
+    if "session_token" in body and body["session_token"] is None:
+        body.pop("session_token")
+    elif "session_token" not in body and SESSION:
+        body["session_token"] = SESSION
+    r = client.post("/exec", content=json.dumps(body), headers={"Content-Type": "text/plain"})
     assert r.status_code == 200, f"contract violation: HTTP {r.status_code}"
     return r.json()
 
@@ -51,6 +63,18 @@ def get(params: dict) -> dict:
 
 
 P1, P2, P3 = "PRJ-A1B-01", "PRJ-A1B-02", "PRJ-A1B-03"
+
+# Sign in before the first write. Operational, so the account-type gate on `create` lets it
+# through; not a member of any project here, so the B8 PM rule is exercised separately below.
+_WRITER = "a1b-writer-token"
+with Session() as _s:
+    _s.add(Participant(pseudonymous_code="A1B-WRITER", role="Participant",
+                       account_type="operational",
+                       access_token_hash=hash_access_token(_WRITER)))
+    _s.commit()
+SESSION = client.post("/exec", content=json.dumps(
+    {"action": "researchlogin", "username": "A1B-WRITER", "password": _WRITER}),
+    headers={"Content-Type": "text/plain"}).json()["session_token"]
 
 print("=" * 78)
 print("CREATE")
@@ -297,8 +321,11 @@ for secret_var in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY"):
 
 print()
 print("=" * 78)
-print("B8: sessionless facade writes are unchanged, even on a membered project")
+print("THE FACADE FAILS CLOSED: no session, no write")
 print("=" * 78)
+# guard_project_write used to return None — allow — when the caller presented no session token,
+# so an unauthenticated POST could write to any project. Every write action is checked here with
+# session_token explicitly set to None, which `post` turns into a genuinely tokenless request.
 ADMIN = "a1b-regress-admin"
 with Session() as s:
     row = s.scalar(select(Participant).where(Participant.role == "ResearchAdmin"))
@@ -309,17 +336,73 @@ with Session() as s:
         row.access_token_hash = hash_access_token(ADMIN)
     s.commit()
 admin = post({"action": "researchlogin", "access_token": ADMIN})["session_token"]
+
+# A project the anonymous caller will be aimed at, and a name to prove it was not changed.
+GUARDED = "PRJ-A1B-GUARDED"
+RENAME_TARGET = "PRJ-A1B-RENAMEME"
+post({"action": "create", "id": GUARDED, "name": "Untouched"})
+post({"action": "create", "id": RENAME_TARGET, "name": "Rename target"})
+post({"action": "save", "project": {**get({"action": "get", "id": GUARDED})["project"],
+                                    "signalInputs": {"cpi": 1.0}}})
+before = get({"action": "get", "id": GUARDED})["project"]
+check(before.get("name") == "Untouched" and (before.get("signalInputs") or {}).get("cpi") == 1.0,
+      "precondition: the target project exists, is named, and carries a signal to overwrite",
+      str(before.get("name")))
+
+ANON_WRITES = [
+    ("create", {"id": "PRJ-A1B-ANON-NEW", "name": "anon"}),
+    ("save", {"project": dict(before, name="RENAMED BY ANON")}),
+    ("archive", {"id": GUARDED}),
+    ("restore", {"id": GUARDED}),
+    # Aimed at its OWN target: if the guard is removed this rename SUCCEEDS, and pointing it at
+    # GUARDED would move that project out from under every probe after it, turning their honest
+    # refusals into "Project not found" and hiding what the injection is meant to show.
+    ("setprojectnumber", {"id": RENAME_TARGET, "newId": "PRJ-A1B-ANON-RENAMED"}),
+    ("resetsignals", {"id": GUARDED}),
+    ("overwritesignal", {"id": GUARDED, "field": "cpi", "value": 0.01}),
+    ("savehistory", {"id": GUARDED, "period": "2026-07", "snapshot": {"anon": True}}),
+    ("saveauditresult", {"id": GUARDED, "auditData": {"name": "anon.json"}}),
+    ("saveportfoliohealth", {"results": {"anon": 1}, "projectCount": 99}),
+]
+for _action, _body in ANON_WRITES:
+    r = post(dict(_body, action=_action, session_token=None))
+    check(r.get("ok") is False and "not authorized" in (r.get("error") or ""),
+          f"unauthenticated {_action} is refused", str(r)[:110])
+
+# The refusals must have changed nothing. Read back independently rather than trusting ok:false.
+# `or {}` so a project the fault renamed or destroyed makes these checks FAIL rather than raise —
+# a suite that dies prints no RESULT line and reads as clean, which is how the last vacuous check
+# survived a whole injection pass.
+after = get({"action": "get", "id": GUARDED}).get("project") or {}
+check(after.get("name") == "Untouched", "the anonymous writes changed nothing: name intact",
+      str(after.get("name")))
+check((after.get("signalInputs") or {}).get("cpi") == 1.0,
+      "signal intact", str(after.get("signalInputs")))
+check(after.get("archived") in (None, False), "not archived", str(after.get("archived")))
+check((get({"action": "get", "id": RENAME_TARGET}).get("project") or {}).get("id")
+      == RENAME_TARGET, "and the rename target still answers to its own id",
+      str(get({"action": "get", "id": RENAME_TARGET}).get("error"))[:60])
+check(get({"action": "get", "id": "PRJ-A1B-ANON-NEW"}).get("ok") is not True,
+      "and the anonymous create left no project behind")
+
+# A token that does not resolve is refused too, on a project with NO membership rows — the case
+# that used to skip resolve_caller entirely because the membership check came first.
+r = post({"action": "save", "session_token": "not-a-token",
+          "project": get({"action": "get", "id": GUARDED}).get("project") or {"id": GUARDED}})
+check(r.get("ok") is False, "a malformed session token is refused on an unmembered project",
+      str(r)[:160])
+
+# B8 authorisation still applies on top: a valid session that is not the project's PM is refused.
 member = post({"action": "adminparticipantcreate", "session_token": admin})
 post({"action": "adminmemberadd", "session_token": admin, "id": P1,
       "participant_id": member["participant_id"], "project_role": "PM"})
 doc = get({"action": "get", "id": P1})["project"]
-doc["name"] = "sessionless write on membered project"
+doc["name"] = "non-PM write on a membered project"
 r = post({"action": "save", "project": doc})
-check(r.get("ok") is True, "sessionless save still works on a membered project", str(r)[:160])
-doc = get({"action": "get", "id": P1})["project"]
-r = post({"action": "save", "session_token": "not-a-token", "id": P1, "project": doc})
-check(r.get("ok") is False, "a malformed session token on a membered project's write is refused,"
-      " not silently treated as sessionless", str(r)[:160])
+check(r.get("ok") is False and "only the project's PM" in (r.get("error") or ""),
+      "an authenticated non-PM is still refused on a membered project", str(r)[:160])
+check((get({"action": "get", "id": P1}).get("project") or {}).get("name")
+      != "non-PM write on a membered project", "and that write did not land either")
 
 print()
 print("=" * 78)

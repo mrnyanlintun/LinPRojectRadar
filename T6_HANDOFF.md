@@ -9,6 +9,94 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-02 — THE FACADE FAILS CLOSED: UNAUTHENTICATED WRITES ARE DENIED
+
+Full detail in `REPORT_2026-08-02_unauthenticated-writes.md`. **1216 checks across 22 suites,
+`tests.html` 51/51, `tests_render.html` 43/43.** Compositing proven (63 rAF/s). No stored data
+altered, production not inspected.
+
+**WHAT WAS REACHABLE WITH NO SESSION TOKEN AT ALL, measured against a signed-in PM's project WITH
+membership rows: every legacy facade write.** `save` (replaced the whole document), `resetsignals`,
+`archive`, `restore`, **`setprojectnumber` (renamed the project id so the old one stopped
+resolving)**, `overwritesignal` (set `cpi` to 0.01, and invented a field name), `savehistory`,
+`saveauditresult`, `create`, `saveportfoliohealth`. **All GETs too** — `list`, `get`, `gethistory`,
+`listauditresults`, `getportfoliohealth` return any project's full document to anyone.
+
+**WHAT WAS NEVER EXPOSED, and this boundary held:** every research / document / workspace / admin
+action refuses without a token — `projectupload`, `projectcompute`, `projectresults`,
+`adminrecompute`, `researchprejudgment`, `adminexportcreate` and the rest, eleven probed, all
+refused. **The research record, decision sequence, exports and computed results were not reachable.**
+
+**WHY IT WAS OPEN, and the reason has expired.** `486487c` (B8) layered authorisation onto a facade
+that had never had authentication and deliberately kept sessionless calls working "so nothing
+changes for pre-B8 flows" — because `store.js` posted no token. But the browser already held the
+session (`LinAuth.getToken()`; workspace.js and decision-ui.js always sent it). **That is a client
+not presenting a credential it had, not a dependency on anonymous writes.** `store.js` now attaches
+it in one `withSession` helper used by both POST paths.
+
+**THE FIX, at the guard.** No token → refuse. `settings is None` → refuse. The guard now covers
+`PROJECT_WRITE_ACTIONS ∪ POST_ACTIONS`, because the two lists had drifted: **`create` and
+`saveportfoliohealth` were in POST_ACTIONS and in no guard at all.** `PUBLIC_WRITE_ACTIONS` is a
+named, deliberately EMPTY allowlist: anything needing to be public says so at its own site.
+
+**TWO MORE FAIL-OPENS FOUND INSIDE THE SAME GUARD.** `resolve_caller` ran AFTER the membership
+check, so on an unmembered project a **forged or expired token** was as good as a valid one —
+authentication now runs first. And **the PM rule had never applied to `save`**: every other action
+puts its id at `payload["id"]`, `save` puts it at `payload["project"]["id"]`, so the guard resolved
+no project and allowed it. Measured: an authenticated non-PM renamed someone else's project. **The
+old test asserted that as correct**, which is why nothing caught it.
+
+**STILL OPEN, REPORTED NOT FIXED: reads.** Every GET is unauthenticated and returns project
+documents including `signalInputs` and the event log. Not fixed because authenticating them means
+a token in a query string, changes the captured GET contract, and affects the static mirror. It is
+the largest remaining item and it is Lin's. Also still open, all authorisation rather than
+authentication: a project with **no membership rows** is writable by any authenticated caller (the
+pre-B8 legacy shape — closing it locks out every imported project until membership is backfilled);
+`gate_action` leaves sessionless callers alone, which is harmless for flags and NOT harmless for
+`getportfoliohealth` reads; `refuse_unless_pm_for_assignment` has the same unmembered arm.
+`enforce_consent` was checked and **fails closed correctly**.
+
+**REPORTED NOT FIXED, as instructed:** `w_saveportfoliohealth` still deletes prior snapshots (still
+the only `session.delete`), `w_overwritesignal` still accepts an arbitrary field name and value
+(measured: `totally_made_up = "anything"` stored; only `docRiskScore` is range-checked, and that
+guard fired even for the anonymous caller). **Both are now unreachable unauthenticated.**
+
+**THE DECIDED ITEM IS IN: `signals_extracted` on upload, not backdated.** One event per
+CONTRIBUTING document, server clock. **C1.4 goes Amber 50% → Yellow 100%.** Qualification worth
+knowing: it counts only when the period cutoff is on/after the upload date. On a genuinely
+back-dated document (June report, August upload, cutoff 2026-06-30) `_events_as_of` truncates it
+and **C1.4 stays Red 0%** — the improvement lands on wall-clock-cutoff projects (the D3 fallback),
+not on ones with real document dates. Backdating would falsify the trail to improve the module that
+measures it; the understatement stands.
+
+**TWO TESTS STRENGTHENED as a side effect.** `test_d1_module_inputs` asserted truncation against a
+hardcoded date while its fixture had no parseable `document_date`, so the cutoff was silently the
+wall clock and the assertion passed by coincidence; it now supplies real dates and compares against
+each period's own stored cutoff. `test_documents_b7b` Guarantee 1 compared the whole
+`signal_inputs` blob across two projects sharing a cached document — since D1 that includes
+project-scoped `events`/history, which legitimately differ; it now excludes those three keys AND
+asserts the difference is confined to them, which is stronger than what it replaced.
+
+**SEVENTH CONSECUTIVE SESSION WITH A VACUOUS CHECK — TWO THIS TIME, BOTH FOUND BY INJECTION.**
+(1) The anonymous-write checks CRASHED instead of failing: a successful anonymous
+`setprojectnumber` moved the target project, the read-back did `["project"]` on a missing key, and
+the suite died printing **no RESULT line** — exactly the failure mode last session recorded. The
+rename now has its own throwaway target and every read-back uses `.get(...) or {}`. (2) The "per
+contributing document, not per request" check could not tell the two apart, because every upload in
+that fixture carried one document; it now uploads two in a single request. Also caught an
+injection-HARNESS bug: one fault silently failed to apply and reported a false clean.
+
+**Eight faults injected, distinct signatures:** 73/87, 85/87, 86/87, 84/87 on the guard; 70/73,
+73/74, 72/73, 70/73 on the upload event.
+
+**PRODUCTION:** the deployed code is what was measured and the exposure needs no credential, but
+**whether it was exercised is unknown and was not investigated.** The facade writes nothing to
+`audit_events`, so an anonymous write leaves no audit trace — though the project's own log does
+record `signals_reset` / `project_archived` / `project_number_changed` / `signal_overwritten` with
+a timestamp. A query Lin can run is named in the report.
+
+---
+
 # 2026-08-02 — THE EVENT LOG STOPS BEING DELETED; UPLOAD EVENTS ESTABLISHED, NOT SHIPPED
 
 Full detail in `REPORT_2026-08-02_append-only-fix.md`. **1190 checks across 22 suites,

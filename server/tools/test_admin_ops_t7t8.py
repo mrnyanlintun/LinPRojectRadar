@@ -127,7 +127,17 @@ check(after_export >= before_export + len(export_actions),
 # ---------------------------------------------------------------- Guarantee 2
 
 print("\nGuarantee 2 — second active PM refused with a legible message")
-proj_resp = post({"action": "create", "id": "PRJ-T7T8-A", "name": "T7T8 Membership Test"})
+
+# The facade fails closed on writes as of 2026-08-02, and `create` is additionally refused for a
+# research account, so the fixture projects below are created by an OPERATIONAL participant.
+_WRITER_TOKEN = "t7t8-writer"
+_writer = post({"action": "adminparticipantcreate", "session_token": admin,
+                "pseudonymous_code": "T7T8-WRITER", "role": "Participant",
+                "account_type": "operational"})
+writer = post({"action": "researchlogin",
+               "access_token": _writer["access_token"]})["session_token"]
+proj_resp = post({"action": "create", "id": "PRJ-T7T8-A", "name": "T7T8 Membership Test",
+                  "session_token": writer})
 check(proj_resp.get("ok") is True, "test project created", str(proj_resp)[:100])
 
 pm1_id, pm1 = make_participant("T7T8-PM1")

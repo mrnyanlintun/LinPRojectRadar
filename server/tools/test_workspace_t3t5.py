@@ -351,7 +351,7 @@ check(located.get("lat") == 36.5298, "precondition: the project starts with stor
       str(located.get("lat")))
 
 located["address"] = "offline street, somewhere else"
-edited = post({"action": "save", "project": located})["project"]
+edited = post({"action": "save", "project": located, "session_token": pm})["project"]
 check(edited.get("lat") == 36.5298 and edited.get("lng") == -87.3595,
       "an unreachable geocoder LEAVES the previous coordinates in place",
       str(edited.get("lat")) + "," + str(edited.get("lng")))
@@ -374,7 +374,7 @@ check(reread.get("lat") == 36.5298 and reread.get("geocodeStale") is True,
 # An address that is definitively NOT FOUND is a different failure from an unreachable service,
 # but the stored data is just as real, so it is retained on the same terms.
 reread["address"] = "unfindable place indeed"
-notfound = post({"action": "save", "project": reread})["project"]
+notfound = post({"action": "save", "project": reread, "session_token": pm})["project"]
 check(notfound.get("lat") == 36.5298 and notfound.get("geocodeStale") is True,
       "an unfindable address also retains the previous position rather than erasing it",
       str(notfound.get("lat")))
@@ -388,7 +388,7 @@ check(notfound.get("geocodeStale") is True,
       "precondition for the clear-address check: the project IS flagged stale right now",
       str(notfound.get("geocodeStale")))
 notfound["address"] = ""
-cleared = post({"action": "save", "project": notfound})["project"]
+cleared = post({"action": "save", "project": notfound, "session_token": pm})["project"]
 check(cleared.get("lat") is None and cleared.get("lng") is None,
       "clearing the address DOES drop the coordinates", str(cleared.get("lat")))
 check("geocodeStale" not in cleared or cleared.get("geocodeStale") in (None, False),
@@ -397,13 +397,13 @@ check("geocodeStale" not in cleared or cleared.get("geocodeStale") in (None, Fal
 # A LATER SUCCESS CLEARS THE FLAG. Without this a project would carry "previous address" forever
 # once it had failed once. Re-locate, fail, then succeed, so the flag is genuinely set first.
 cleared["address"] = "1200 Terminal Road, Clarksville, TN"
-relit = post({"action": "save", "project": cleared})["project"]
+relit = post({"action": "save", "project": cleared, "session_token": pm})["project"]
 relit["address"] = "offline street, once more"
-relit = post({"action": "save", "project": relit})["project"]
+relit = post({"action": "save", "project": relit, "session_token": pm})["project"]
 check(relit.get("geocodeStale") is True,
       "precondition for the later-success check: the flag is set", str(relit.get("geocodeStale")))
 relit["address"] = "1200 Terminal Road, Clarksville, TN, revisited"
-fixed = post({"action": "save", "project": relit})["project"]
+fixed = post({"action": "save", "project": relit, "session_token": pm})["project"]
 check(fixed.get("lat") == 36.5298 and fixed.get("geocodeError") is None,
       "a later successful geocode stores the new match")
 check("geocodeStale" not in fixed or fixed.get("geocodeStale") in (None, False),
@@ -412,7 +412,7 @@ check("geocodeStale" not in fixed or fixed.get("geocodeStale") in (None, False),
 # NOTHING IS RETAINED WHEN THERE IS NOTHING TO RETAIN. g3 never had coordinates.
 never = get({"action": "get", "id": g3["project_id"]})["project"]
 never["address"] = "offline street, again"
-still_none = post({"action": "save", "project": never})["project"]
+still_none = post({"action": "save", "project": never, "session_token": pm})["project"]
 check(still_none.get("lat") is None and still_none.get("lng") is None,
       "a project that never had coordinates still ends with none")
 check("geocodeStale" not in still_none or still_none.get("geocodeStale") in (None, False),
@@ -424,12 +424,12 @@ check("geocodeStale" not in still_none or still_none.get("geocodeStale") in (Non
 # position by leaving it out of the payload.
 relocated = get({"action": "get", "id": g4["project_id"]})["project"]
 relocated["address"] = "1200 Terminal Road, Clarksville, TN"
-relocated = post({"action": "save", "project": relocated})["project"]
+relocated = post({"action": "save", "project": relocated, "session_token": pm})["project"]
 check(relocated.get("lat") == 36.5298, "precondition: a second project is now located",
       str(relocated.get("lat")))
 stripped = {k: v for k, v in relocated.items() if k not in ("lat", "lng", "formattedAddress")}
 stripped["address"] = "offline street, third time"
-survived = post({"action": "save", "project": stripped})["project"]
+survived = post({"action": "save", "project": stripped, "session_token": pm})["project"]
 check(survived.get("lat") == 36.5298 and survived.get("geocodeStale") is True,
       "a client payload WITHOUT lat/lng cannot delete the stored position through a failed "
       "geocode", str(survived.get("lat")) + " stale=" + str(survived.get("geocodeStale")))

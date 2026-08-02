@@ -307,11 +307,21 @@ check(len(denied) == 2, "both refusals are audited against that participant",
 r = post({"action": "projectcreate", "session_token": pc_ops_tok, "name": "Operational Project"})
 check(r.get("ok") is True, "operational account may still create a project", str(r)[:160])
 
-# And the gate leaves sessionless callers alone, exactly as the feature flags do — the A1b
-# contract fixtures post `create` with no session and must stay green.
+# A SESSIONLESS create is now REFUSED, and this check used to assert the opposite.
+#
+# It read "a sessionless create is unaffected by the account-type gate", which was true and was
+# the defect: guard_project_write returned allow whenever no session token was present, so any
+# unauthenticated caller could create — and rename, archive, reset — any project on the deployed
+# site. The account-type gate genuinely does leave sessionless callers alone (it has no caller to
+# type-check), so the refusal below comes from the write guard, one layer up. Both are correct:
+# no session, no write.
 r = post({"action": "create", "id": "PRJ-SESSIONLESS-T6", "name": "Sessionless"})
-check(r.get("ok") is True, "a sessionless create is unaffected by the account-type gate",
-      str(r)[:120])
+check(r.get("ok") is False and "not authorized" in (r.get("error") or ""),
+      "a sessionless create is refused by the write guard", str(r)[:120])
+with Session() as s:
+    leaked = s.scalar(select(Project).where(Project.legacy_id == "PRJ-SESSIONLESS-T6"))
+check(leaked is None, "and no project row was created by the anonymous attempt",
+      str(leaked))
 
 print()
 print("=" * 78)

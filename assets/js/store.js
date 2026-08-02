@@ -210,11 +210,32 @@
     if (!j || j.ok === false) throw new Error((j && j.error) || "backend error");
     return j;
   }
+  /* Attach the session this browser already holds to every /exec POST.
+
+     The facade used to accept writes with no token at all, and store.js sent none, so every
+     save / archive / restore / rename / reset / overwrite from this application arrived
+     unauthenticated — and so did the same request from anyone else who knew the URL. The server
+     now fails closed, so the token has to travel. It is not a new credential: LinAuth already
+     holds it, workspace.js and decision-ui.js already send it on their own calls, and this
+     function was simply the one path that did not.
+
+     A caller that sets session_token explicitly wins, so the research surfaces that build their
+     own payloads are unaffected. When nobody is signed in the field is left absent rather than
+     sent as null, so the server sees exactly what it saw before from a genuinely anonymous
+     caller — and now refuses it. */
+  function withSession(body) {
+    const payload = Object.assign({}, body || {});
+    if (payload.session_token) return payload;
+    const t = (window.LinAuth && LinAuth.getToken) ? LinAuth.getToken() : null;
+    if (t) payload.session_token = t;
+    return payload;
+  }
+
   async function apiPost(body) {
     const r = await fetch(url(), {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=UTF-8" }, // simple request → no preflight
-      body: JSON.stringify(body)
+      body: JSON.stringify(withSession(body))
     });
     if (!r.ok) throw new Error("HTTP " + r.status);
     const j = await r.json();
@@ -258,7 +279,7 @@
     return fetch(url(), {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=UTF-8" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(withSession(payload)),
       signal: controller.signal
     })
       .then(function (r) { return r.text(); })

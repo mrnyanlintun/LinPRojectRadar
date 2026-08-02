@@ -736,6 +736,31 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
           project_id=project.legacy_id, period=period, files=len(decoded),
           cached=cached_count, extracted=extracted_count, failed=failed_count,
           extraction_model=model_id)
+
+    # THE PROJECT'S OWN EVENT LOG, which is a different store from audit_events and the one C1.4
+    # Audit Trail Completeness reads. No current path wrote `signals_extracted`, so C1.4 reported
+    # 50% and Amber on every server-created project: it requires project_created AND
+    # signals_extracted, and only the first existed. One entry per document that was stored and
+    # actually contributes, which is what the name has always meant here and what detail.js's
+    # Uploaded Documents table and the slim docCount both count.
+    #
+    # STAMPED WHEN THE UPLOAD HAPPENED, never at the document's own date. `_append_event` uses the
+    # server clock and that is deliberate: `_events_as_of` truncates the log at the period cutoff,
+    # so a June report uploaded in August produces an August event that does NOT count toward that
+    # period's C1.4. Backdating it to the document date would make it count, and would record an
+    # event as having happened when it did not — falsifying the trail to improve the score of the
+    # module that measures the trail. The understatement is the honest outcome.
+    from .writes import _append_event   # local: writes.py imports facade, which imports this
+    logged = [f for f in files if f["status"] != "failed" and f.get("contributes")]
+    if logged:
+        fresh = dict(project.doc or {})
+        for f in logged:
+            fresh = _append_event(fresh, "signals_extracted",
+                                  docType=f["doc_type"], fileName=f["filename"],
+                                  period=period, wasCached=f["was_cached"])
+        project.doc = fresh
+        project.record_version = (project.record_version or 0) + 1
+
     session.commit()
 
     unmapped = [f["filename"] for f in files if f["doc_type"] == UNMAPPED]

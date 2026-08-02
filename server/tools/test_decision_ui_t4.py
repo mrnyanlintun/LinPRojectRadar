@@ -131,11 +131,23 @@ pkg = post({"action": "adminpackagecreate", "session_token": admin, "version": "
             "freeze": True})
 check(pkg.get("ok") is True, "frozen package created with planted markers", str(pkg)[:110])
 
-post({"action": "create", "id": "PRJ-T4-EVIDENCE", "name": "T4 Evidence Project"})
-post({"action": "create", "id": "PRJ-T4-MEMBERED", "name": "T4 Membered Project"})
+
+# The facade fails closed on writes as of 2026-08-02, and `create` is additionally refused for a
+# research account, so the fixture projects below are created by an OPERATIONAL participant.
+_WRITER_TOKEN = "t4-writer"
+_writer = post({"action": "adminparticipantcreate", "session_token": admin,
+                "pseudonymous_code": "T4-WRITER", "role": "Participant",
+                "account_type": "operational"})
+writer = post({"action": "researchlogin",
+               "access_token": _writer["access_token"]})["session_token"]
+post({"action": "create", "id": "PRJ-T4-EVIDENCE", "name": "T4 Evidence Project",
+      "session_token": writer})
+post({"action": "create", "id": "PRJ-T4-MEMBERED", "name": "T4 Membered Project",
+      "session_token": writer})
 # A separate project for the analytical-layer leak test: it needs real documents and a computed
 # result, which needs a PM, which would block every other participant on the shared scenario.
-post({"action": "create", "id": "PRJ-T4-ANALYTICS", "name": "T4 Analytics Project"})
+post({"action": "create", "id": "PRJ-T4-ANALYTICS", "name": "T4 Analytics Project",
+      "session_token": writer})
 
 
 def enrol(code: str, do_intake: bool = True, scen: str = None,

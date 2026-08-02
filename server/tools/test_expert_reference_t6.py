@@ -106,7 +106,17 @@ admin = post({"action": "researchlogin", "access_token": ADMIN})["session_token"
 
 print("\nSETUP: expert scenario, frozen package with planted markers, expert account")
 
-post({"action": "create", "id": "PRJ-T6-EVIDENCE", "name": "T6 Evidence Project"})
+
+# The facade fails closed on writes as of 2026-08-02, and `create` is additionally refused for a
+# research account, so the fixture projects below are created by an OPERATIONAL participant.
+_WRITER_TOKEN = "t6-writer"
+_writer = post({"action": "adminparticipantcreate", "session_token": admin,
+                "pseudonymous_code": "T6-WRITER", "role": "Participant",
+                "account_type": "operational"})
+writer = post({"action": "researchlogin",
+               "access_token": _writer["access_token"]})["session_token"]
+post({"action": "create", "id": "PRJ-T6-EVIDENCE", "name": "T6 Evidence Project",
+      "session_token": writer})
 
 scenario = post({"action": "adminscenariocreate", "session_token": admin,
                  "scenario_version": "t6-v1", "project_type": "construction",

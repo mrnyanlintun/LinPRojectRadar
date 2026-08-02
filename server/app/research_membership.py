@@ -201,25 +201,72 @@ PROJECT_WRITE_ACTIONS = frozenset({
 })
 
 
+# Facade write actions that may be reached WITHOUT a session token. Deliberately empty.
+#
+# The guard below fails CLOSED: an action reaches a project write only with a valid session. Any
+# action that genuinely needs to be public must name itself here, at its own site, with a reason —
+# rather than inheriting permission from a guard that waves through whatever it does not
+# recognise. A new write action added to POST_ACTIONS is therefore authenticated by default.
+PUBLIC_WRITE_ACTIONS: frozenset[str] = frozenset()
+
+
 def guard_project_write(session: Session, payload: dict, settings) -> dict | None:
     """
-    PM-only guard for facade project writes and upload actions, applied in dispatch_post.
+    Authentication and PM-only authorisation for facade project writes, applied in dispatch_post.
 
-    Fires only when the caller presents a session token AND the target project has membership
-    rows. Sessionless facade calls (the legacy frontend and the A1b contract tests) are
-    unchanged — B8 adds no authentication requirement to the facade, it adds authorisation for
-    authenticated callers on membered projects. An observer attempting an upload or write is
-    refused with ok:false and audited (Guarantee 2).
+    THIS USED TO FAIL OPEN, AND THAT WAS LIVE. It returned None — allow — whenever the caller
+    presented no session token, because B8 layered authorisation onto a facade that had never
+    been authenticated and its commit message set out to keep "projects with no membership rows
+    behave exactly as before, so nothing changes for pre-B8 flows". The consequence, measured
+    through /exec: a completely unauthenticated POST could rename, archive, restore, renumber,
+    reset the signals of, overwrite a signal on, or write history and audit rows against ANY
+    project, including one owned by a PM with membership rows. The legacy frontend was the reason
+    it was left open — assets/js/store.js posted no token — and that reason has expired: store.js
+    now attaches the session it already holds.
+
+    The order of the checks below is the fix. Authentication first, for every caller: no token,
+    or a token that does not resolve, is a refusal. Only then the B8 authorisation question of
+    whether this caller is the project's PM.
+
+    A project with NO membership rows is still writable by any authenticated caller. That is the
+    pre-B8 legacy shape and it is an authorisation gap, not an authentication one; closing it
+    would lock every imported Apps Script project out of the interface at once and needs its own
+    decision. It is reported rather than changed here.
     """
-    if settings is None or not payload.get("session_token"):
+    if settings is None:
+        # No session secret configured means no token can be verified, so nothing can be
+        # authenticated. Refusing is the only safe reading: the previous code allowed the write.
+        return err("not authorized: this build cannot verify a session")
+
+    action = str(payload.get("action") or "").lower()
+    if action in PUBLIC_WRITE_ACTIONS:
         return None
-    legacy_id = str(payload.get("id") or "").strip()
-    project = _project_by_legacy(session, legacy_id)
-    if project is None or not has_members(session, project):
-        return None
+
+    if not payload.get("session_token"):
+        return err("not authorized: sign in to make this change")
+
+    # AUTHENTICATION, BEFORE ANYTHING ABOUT THE PROJECT. This resolve used to sit BELOW the
+    # membership check, so a token that did not resolve was never examined on a project with no
+    # membership rows — the write went through on a forged or expired session. Resolving first
+    # makes the token's validity a precondition of every facade write, whatever the project is.
     caller, problem = resolve_caller(session, payload, settings.session_secret)
     if problem:
         return problem
+
+    # `save` carries its project id NESTED, as payload["project"]["id"] — every other action puts
+    # it at the top level. Reading only payload["id"] meant `save` resolved no project, fell into
+    # the "no membership rows" arm, and was allowed: the B8 PM-only rule has never applied to the
+    # single most powerful write on the facade, the one that replaces the whole document. The old
+    # test asserted that outcome as correct ("sessionless save still works on a membered
+    # project"), so nothing caught it.
+    legacy_id = str(payload.get("id")
+                    or (payload.get("project") or {}).get("id")
+                    or "").strip()
+    project = _project_by_legacy(session, legacy_id)
+    if project is None or not has_members(session, project):
+        # Authenticated, and the project has no membership rows to authorise against. This is the
+        # pre-B8 legacy shape; see the docstring. Allowed, and reported as the remaining gap.
+        return None
     member = active_membership(session, project, caller.participant_id)
     if member is None or member.project_role != ROLE_PM:
         audit(session, "pm_only_action_denied", participant_id=caller.participant_id,

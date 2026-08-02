@@ -61,8 +61,16 @@ def check(ok: bool, label: str, detail: str = "") -> None:
         print(f"  ****  {label}" + (f"  [{detail}]" if detail else ""))
 
 
+# The facade fails closed on writes as of 2026-08-02, so this suite signs in. Set at first use
+# below, because the participant row has to exist before a login can succeed.
+SESSION: str | None = None
+
+
 def post(payload: dict) -> dict:
-    r = client.post("/exec", content=json.dumps(payload), headers={"Content-Type": "text/plain"})
+    body = dict(payload)
+    if "session_token" not in body and SESSION:
+        body["session_token"] = SESSION
+    r = client.post("/exec", content=json.dumps(body), headers={"Content-Type": "text/plain"})
     assert r.status_code == 200, f"contract violation: HTTP {r.status_code}"
     return r.json()
 
@@ -197,6 +205,16 @@ check(assemble_signal_inputs(commissioning_doc(0.5)).get("docRiskScore") == 0.5,
 
 print("\n6. Entry point three: overwritesignal, the path that never touches a document")
 PID = "PRJ-DOCRISK01"
+_WRITER = "docrisk-writer-token"
+with main.SessionFactory() as _s:
+    from app.research_models import Participant as _P
+    from app.research_identity import hash_access_token as _h
+    _s.add(_P(pseudonymous_code="DOCRISK-WRITER", role="Participant",
+              account_type="operational", access_token_hash=_h(_WRITER)))
+    _s.commit()
+SESSION = client.post("/exec", content=json.dumps(
+    {"action": "researchlogin", "username": "DOCRISK-WRITER", "password": _WRITER}),
+    headers={"Content-Type": "text/plain"}).json()["session_token"]
 post({"action": "create", "id": PID, "name": "Doc risk range", "sector": "Aviation"})
 
 # SEED signalInputs FIRST. w_overwritesignal returns "No extracted signals to overwrite" on an

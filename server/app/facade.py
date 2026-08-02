@@ -346,9 +346,13 @@ def dispatch_post(session: Session, payload: dict, settings=None) -> dict[str, A
     # Rule 2: lowercase before matching, so the frontend's camelCase identifyOnly still resolves.
     action = str(payload.get("action") or "").lower()
 
-    # B8: facade writes and upload actions on a membered project are PM-only for authenticated
-    # callers. Sessionless calls are unchanged; the guard adds authorisation, not authentication.
-    if action in PROJECT_WRITE_ACTIONS:
+    # EVERY facade write is authenticated, and the guard is applied over the whole POST surface
+    # rather than over a hand-maintained subset. PROJECT_WRITE_ACTIONS listed eleven actions and
+    # POST_ACTIONS implements ten, but the two sets are not the same: `create` and
+    # `saveportfoliohealth` were in POST_ACTIONS and NOT in PROJECT_WRITE_ACTIONS, so they reached
+    # no guard at all. Taking the union means a write added to either set inherits authentication
+    # instead of waiting for someone to remember the other list.
+    if action in PROJECT_WRITE_ACTIONS or action in POST_ACTIONS:
         refused = guard_project_write(session, payload, settings)
         if refused is not None:
             return refused

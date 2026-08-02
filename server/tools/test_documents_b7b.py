@@ -191,9 +191,28 @@ post({"action": "projectcompute", "session_token": pm_a, "id": PROJ_A, "period":
 post({"action": "projectcompute", "session_token": pm_b, "id": PROJ_B, "period": 1})
 res_a = post({"action": "projectresults", "session_token": pm_a, "id": PROJ_A, "period": 1})
 res_b = post({"action": "projectresults", "session_token": pm_b, "id": PROJ_B, "period": 1})
-si_a = json.dumps(res_a["result"]["signal_inputs"], sort_keys=True)
-si_b = json.dumps(res_b["result"]["signal_inputs"], sort_keys=True)
-check(si_a == si_b, "byte-identical signalInputs across the two projects")
+# The cache guarantee is about EXTRACTION: the same bytes must yield the same extracted values
+# wherever they are uploaded. Three keys in signal_inputs are not extracted from the document at
+# all — `events` is the project's own log and `spiHistory`/`cpiHistory` come from that project's
+# earlier periods (both wired by D1) — so they belong to the project, not to the file, and two
+# projects legitimately differ on them: PROJ_B's upload was a cache hit and PROJ_A's was not, and
+# the extraction event records which. Comparing them here would assert that two different projects
+# have the same history, which is not what the cache promises.
+#
+# The comparison stays strict on everything else, AND the difference is required to be confined to
+# those three keys, so an extraction field that starts diverging still fails this check.
+PROJECT_SCOPED = {"events", "spiHistory", "cpiHistory"}
+raw_a, raw_b = res_a["result"]["signal_inputs"], res_b["result"]["signal_inputs"]
+si_a = json.dumps({k: v for k, v in raw_a.items() if k not in PROJECT_SCOPED}, sort_keys=True)
+si_b = json.dumps({k: v for k, v in raw_b.items() if k not in PROJECT_SCOPED}, sort_keys=True)
+check(si_a == si_b, "byte-identical EXTRACTED signalInputs across the two projects")
+differing = {k for k in set(raw_a) | set(raw_b)
+             if json.dumps(raw_a.get(k), sort_keys=True) != json.dumps(raw_b.get(k), sort_keys=True)}
+check(differing <= PROJECT_SCOPED,
+      "and nothing outside the project-scoped keys differs at all", str(sorted(differing)))
+check("events" in raw_a and "events" in raw_b,
+      "precondition: the project-scoped keys are actually present, so the exclusion above is "
+      "excluding something", str(sorted(set(raw_a) & PROJECT_SCOPED)))
 
 
 # ---------------------------------------------------------------- Guarantee 2
@@ -225,6 +244,77 @@ check(f["doc_type"] != "monthly_report", "NEVER silently relabelled monthly_repo
 check(f["contributes"] is False, "reported as contributing nothing")
 check("bim-execution-plan.pdf" in up_u["unmapped_filenames"],
       "reported back to the PM in unmapped_filenames")
+
+
+# ------------------------------------------------- the upload writes signals_extracted
+#
+# No path wrote this event, so C1.4 Audit Trail Completeness reported 50% and Amber on every
+# server-created project: it requires project_created AND signals_extracted and only the first
+# existed. Counted per contributing document, stamped when the upload happened.
+
+print("\nthe upload records signals_extracted on the project's own event log")
+
+
+def _events(pid):
+    with Session() as s:
+        row = s.scalar(select(Project).where(Project.legacy_id == pid))
+        return [e for e in ((row.doc or {}).get("events") or []) if isinstance(e, dict)]
+
+
+def _names(pid):
+    return [e.get("event") for e in _events(pid)]
+
+
+# PROJECT_A received exactly one contributing document (Guarantee 1's pay application), and
+# PROJECT_B the same bytes. Counted rather than merely "present", so a handler that writes one
+# event per upload REQUEST instead of per document fails here.
+# PROJ_A received the pay application (Guarantee 1), a novel monthly report (Guarantee 2), and
+# an unmapped BIM plan. Two of the three contribute, so exactly two events — counted rather than
+# merely "present", so a handler writing one event per upload REQUEST rather than per contributing
+# document fails here.
+se_a = [e for e in _events(PROJ_A) if e.get("event") == "signals_extracted"]
+check(len(se_a) == 2, "one signals_extracted event per CONTRIBUTING document, not per request",
+      f"{len(se_a)} on {PROJ_A}: {_names(PROJ_A)}")
+check(all(e.get("docType") for e in se_a),
+      "each carrying the document type it was classified as",
+      str([e.get("docType") for e in se_a]))
+check(sorted(e.get("fileName") or "" for e in se_a) == ["monthly-06.pdf", "pay-app-06.pdf"],
+      "and the file name of the document it was written for",
+      str(sorted(e.get("fileName") or "" for e in se_a)))
+
+# NOT BACKDATED. The event must carry the server's own date, not the document's. The pay
+# application's extraction reports 2024-09-15; an event stamped that day would be a record of
+# something that did not happen then, written to improve the score of the module that reads it.
+# ONE REQUEST, TWO CONTRIBUTING DOCUMENTS. Without this the per-document claim above cannot be
+# distinguished from per-request: every other upload in this fixture carries a single document,
+# so a handler logging only the first would pass. Injection caught exactly that.
+BATCH_1 = b"%PDF-1.4 B7B EVENT BATCH ONE\n"
+BATCH_2 = b"%PDF-1.4 B7B EVENT BATCH TWO\n"
+for _b in (BATCH_1, BATCH_2):
+    stub._recorded[hashlib.sha256(_b).hexdigest()] = ("monthly_report", {
+        "earned_value": 1000, "actual_cost": 1000, "planned_value": 1000,
+        "budget_at_completion": 2000, "document_date": "2024-09-15"})
+before_b = len([e for e in _events(PROJ_B) if e.get("event") == "signals_extracted"])
+post({"action": "projectupload", "session_token": pm_b, "id": PROJ_B, "period": 2,
+      "documents": [{"filename": "batch-1.pdf", "mimeType": "application/pdf",
+                     "dataBase64": b64(BATCH_1)},
+                    {"filename": "batch-2.pdf", "mimeType": "application/pdf",
+                     "dataBase64": b64(BATCH_2)}]})
+after_b = len([e for e in _events(PROJ_B) if e.get("event") == "signals_extracted"])
+check(after_b - before_b == 2,
+      "a single upload request carrying TWO contributing documents logs TWO events",
+      f"{before_b} -> {after_b}")
+
+check(se_a and all(str(e.get("at", ""))[:4] != "2024" for e in se_a),
+      "stamped when the upload happened, NOT at the document's date",
+      str([e.get("at") for e in se_a]))
+
+# The unmapped BIM plan went to PROJ_A too and contributes nothing, so it must not have produced
+# an event. The count of 2 above already excludes it; this names the file so the reason is
+# explicit rather than arithmetic.
+check(not any((e.get("fileName") or "") == "bim-execution-plan.pdf" for e in se_a),
+      "an unmapped document that contributes nothing logs no extraction event",
+      str([e.get("fileName") for e in se_a]))
 
 
 # ---------------------------------------------------------------- Guarantee 3
