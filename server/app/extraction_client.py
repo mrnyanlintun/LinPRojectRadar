@@ -343,7 +343,7 @@ def extract_many(extractor, jobs: list[dict],
 
     # Imported inside the function, as documents.py does with the simulation package: it keeps
     # the module-level direction client -> fields only, and this is the one call site.
-    from .extraction_merge import validate_doc_risk_score
+    from .extraction_merge import validate_doc_risk_score, validate_numeric_fields
 
     def run(job: dict) -> dict:
         started = time.monotonic()
@@ -360,6 +360,14 @@ def extract_many(extractor, jobs: list[dict],
             # into the per-file {ok: False, error} the PM sees in the "Extraction failed"
             # dialog, so the reason reaches the uploader through machinery that exists.
             validate_doc_risk_score((extraction or {}).get("document_risk_score"),
+                                    filename=job.get("filename") or None)
+            # D2, same boundary, same reasoning. A numeric field that is present but not
+            # readable as a number ("TBD" for earned value), or readable but out of contract
+            # (a negative count), refuses the WHOLE document here — before the caller writes
+            # a Document row — so nothing is half-stored and no observation row can carry a
+            # coerced zero. The per-file {ok: False, error} shape delivers the field name and
+            # the reason to the uploader through the existing extraction-failure dialog.
+            validate_numeric_fields(doc_type, extraction,
                                     filename=job.get("filename") or None)
             return {"sha256": job["sha256"], "ok": True, "doc_type": doc_type,
                     "extraction": extraction, "error": None,

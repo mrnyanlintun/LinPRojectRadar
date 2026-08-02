@@ -50,12 +50,15 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Callable
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from .facade import err, now_iso
 from .research_consent import ConsentRequired, has_active_consent
-from .research_models import AuditEvent, Consent, Participant, new_ulid
+from .research_models import (
+    Assignment, AuditEvent, Consent, Decision, Participant, ParticipantProfile, ProjectMember,
+    Transition, new_ulid,
+)
 
 log = logging.getLogger("opus-gubernatio-server")
 
@@ -737,6 +740,104 @@ def a_setactive(session: Session, payload: dict, secret: str, ttl: int) -> dict[
     return {"ok": True, "participant_id": target_id, "is_active": raw}
 
 
+def a_admindeleteparticipant(session: Session, payload: dict, secret: str, ttl: int) -> dict[str, Any]:
+    """
+    Permanent deletion, for accounts created for testing or no longer valid. Removes
+    everything a row is keyed to; this is the opposite of `a_setactive`, which is retention
+    (the account cannot sign in, nothing is removed) — see that function's docstring.
+
+    NO CONDITIONS, by instruction. `a_setactive` refuses to deactivate the last active
+    ResearchAdmin because deactivation is meant to be safe to reverse into a working system;
+    delete carries no such guard, deliberately, because it is not this action's place to
+    decide the operator cannot do what they asked for.
+
+    EXPLICIT CASCADE, not left to the database. Four tables carry `ON DELETE CASCADE` toward
+    `participants` (`participant_profiles`, `consents`, `assignments`, `project_members`), and
+    `decisions`/`transitions` cascade transitively through `assignments`. Postgres enforces
+    that regardless of how the DELETE is issued. SQLite — used for local verification — does
+    NOT enforce foreign keys or their cascade actions unless `PRAGMA foreign_keys=ON` is set on
+    the connection, which this application does not do, so relying on it here would make the
+    fix appear to work in Postgres while silently leaving orphaned rows in every SQLite-backed
+    verification. Each table is cleared explicitly, leaves before roots, and the response
+    reports exactly what was removed so the caller — and the check that verifies this — is not
+    trusting an assumption about database behaviour.
+
+    THIS INCLUDES THE PARTICIPANT'S DECISION RECORDS. A research participant's `assignments`
+    row cascades to `decisions` and `transitions` — the measurement record itself. That is a
+    real consequence of "removes everything," not an oversight, and it is why this action
+    exists as a separate, deliberate control from archiving rather than a stronger flavour of
+    it: archiving a participant who should not have their trial's data destroyed leaves it
+    intact; deleting one does not.
+
+    Text-column references (`audit_events.participant_id`, `project_members.added_by` /
+    `revoked_by` on OTHER rows, `document_uploads.uploaded_by`, `documents.first_uploaded_by`,
+    `research_exports.initiated_by`) are not foreign keys and are left exactly as they are:
+    each is a historical record of what happened, by design (`AuditEvent`'s docstring: "must
+    survive the deletion of whatever it describes"), not a live relationship that can dangle.
+    The audit row this action itself writes is one of them — it is written for `target_id`
+    AFTER the participant row is gone, and it resolves anyway, because it was never a foreign
+    key in the first place.
+    """
+    caller, problem = _require_admin(session, payload, secret, "admindeleteparticipant")
+    if problem:
+        return problem
+
+    target_id = str(payload.get("participant_id") or "").strip()
+    if not target_id:
+        return err("participant_id is required")
+    target = session.get(Participant, target_id)
+    if target is None:
+        return err(f"participant not found: {target_id}")
+
+    # Snapshotted before deletion: nothing here is re-readable from `target` afterward.
+    code, role, account_type = target.pseudonymous_code, target.role, target.account_type
+
+    assignment_ids = list(session.scalars(
+        select(Assignment.assignment_id).where(Assignment.participant_id == target_id)
+    ).all())
+    decision_ids = list(session.scalars(
+        select(Decision.decision_id).where(Decision.assignment_id.in_(assignment_ids))
+    ).all()) if assignment_ids else []
+
+    counts = {
+        "transitions": session.execute(
+            delete(Transition).where(Transition.decision_id.in_(decision_ids))
+        ).rowcount if decision_ids else 0,
+        "decisions": session.execute(
+            delete(Decision).where(Decision.decision_id.in_(decision_ids))
+        ).rowcount if decision_ids else 0,
+        "assignments": session.execute(
+            delete(Assignment).where(Assignment.assignment_id.in_(assignment_ids))
+        ).rowcount if assignment_ids else 0,
+        "consents": session.execute(
+            delete(Consent).where(Consent.participant_id == target_id)
+        ).rowcount,
+        "participant_profiles": session.execute(
+            delete(ParticipantProfile).where(ParticipantProfile.participant_id == target_id)
+        ).rowcount,
+        "project_memberships": session.execute(
+            delete(ProjectMember).where(ProjectMember.user_key == target_id)
+        ).rowcount,
+    }
+
+    # Written for target_id, which by the next statement will no longer resolve to a row —
+    # deliberately: `participant_id` on AuditEvent is not a foreign key precisely so this
+    # record survives the deletion it describes.
+    audit(session, "participant_deleted", participant_id=target_id,
+          deleted_by=caller.participant_id, pseudonymous_code=code, role=role,
+          account_type=account_type, removed=counts)
+
+    session.execute(delete(Participant).where(Participant.participant_id == target_id))
+    session.commit()
+
+    session.expire_all()
+    if session.get(Participant, target_id) is not None:
+        return err(f"Delete could not be verified for {target_id}: participant row still "
+                   f"readable after commit")
+    return {"ok": True, "participant_id": target_id, "pseudonymous_code": code,
+            "deleted": True, "removed": counts}
+
+
 def a_adminlinkgoogle(session: Session, payload: dict, secret: str, ttl: int) -> dict[str, Any]:
     """
     Set or clear the Google account an operational participant signs in with. Also how the
@@ -783,5 +884,6 @@ IDENTITY_ACTIONS: dict[str, Callable[[Session, dict, str, int], dict]] = {
     "researchparticipantget": a_researchparticipantget,
     "setpassword": a_setpassword,
     "setactive": a_setactive,
+    "admindeleteparticipant": a_admindeleteparticipant,
     "adminlinkgoogle": a_adminlinkgoogle,
 }

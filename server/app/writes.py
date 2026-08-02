@@ -220,6 +220,29 @@ def w_save(session: Session, payload: dict) -> dict[str, Any]:
                and incoming_events[:len(stored_events)] == stored_events)
     fresh["events"] = incoming_events if extends else stored_events
 
+    # D2, THE FOURTH ENTRY POINT — the live action nobody had listed. This handler replaces
+    # the stored document wholesale, and the client's copy carries a `signalInputs` blob, so
+    # a malformed or out-of-range numeric could enter the stored record through an ordinary
+    # save without touching a document or the overwritesignal action. Only fields whose value
+    # CHANGED are validated: refusing a save because an already-stored value fails the
+    # contract would brick every edit of a project carrying it, and the stored value is not
+    # this save's doing. The refusal names the field and changes nothing.
+    from .extraction_merge import (
+        DocRiskScoreRangeError, MalformedNumericError, NumericRangeError,
+        validate_signal_value,
+    )
+    stored_inputs = (project.doc or {}).get("signalInputs") or {}
+    incoming_inputs = fresh.get("signalInputs")
+    if isinstance(incoming_inputs, dict):
+        for _field, _value in incoming_inputs.items():
+            if _value == stored_inputs.get(_field):
+                continue
+            try:
+                validate_signal_value(str(_field), _value)
+            except (DocRiskScoreRangeError, MalformedNumericError,
+                    NumericRangeError) as exc:
+                return err(f"Save refused: {exc}")
+
     # Geocode only when the address CHANGED, which is what v10.29 did and what the comment in
     # assets/js/ingest.js still describes. Re-geocoding an unchanged address on every save would
     # spend the rate limit answering a question already answered, and the cache would make it
@@ -399,6 +422,19 @@ def w_overwritesignal(session: Session, payload: dict) -> dict[str, Any]:
     pid, field = payload.get("id"), payload.get("field")
     if not pid or not field:
         return err("id and field are required")
+
+    # THE FIELD NAME ITSELF, validated against the one declared vocabulary. Before this, any
+    # string was accepted: a caller could write a key no computation reads and nothing would
+    # ever clean up, surviving every recompute because nothing downstream looks at it. The
+    # known set is `field_registry.ALL_SI_FIELDS` — every field the merge can emit, plus the
+    # three the computation layer still reads even though nothing emits them any more
+    # (rfiNumber, rfiResponseTimeDays, docDate), plus cpi/spi. Read from the registry rather
+    # than duplicated here, so the two can never drift.
+    from .field_registry import ALL_SI_FIELDS
+    if field not in ALL_SI_FIELDS:
+        return err(f"Unknown signal field: {field!r}. This platform has no field by that "
+                   f"name; nothing was changed.")
+
     project = _project(session, pid)
     if project is None:
         return err(f"Project not found: {pid}")
@@ -413,15 +449,19 @@ def w_overwritesignal(session: Session, payload: dict) -> dict[str, Any]:
     # THE THIRD ENTRY POINT, and the one an audit of extraction_merge alone would miss.
     # This action writes an arbitrary caller-supplied value into an arbitrary signalInputs
     # field with no validation of either, so it bypasses the extraction boundary completely.
-    # A PM could set docRiskScore to 85 or -3 here and reach fusion by a route that never
-    # touches a document. Guarded with the same rule, converted to the refusal shape this
-    # module returns rather than raised, because /exec callers read `error`.
-    if field == "docRiskScore":
-        from .extraction_merge import DocRiskScoreRangeError, validate_doc_risk_score
-        try:
-            validate_doc_risk_score(new_value)
-        except DocRiskScoreRangeError as exc:
-            return err(str(exc))
+    # A PM could set docRiskScore to 85 or -3 here — or, before D2, set earned value to "TBD"
+    # — and reach a stored record by a route that never touches a document. Guarded with the
+    # same rules as the extraction boundary (malformed refuses, out-of-range refuses,
+    # docRiskScore keeps its 0..1 authority), converted to the refusal shape this module
+    # returns rather than raised, because /exec callers read `error`.
+    from .extraction_merge import (
+        DocRiskScoreRangeError, MalformedNumericError, NumericRangeError,
+        validate_signal_value,
+    )
+    try:
+        validate_signal_value(str(field), new_value)
+    except (DocRiskScoreRangeError, MalformedNumericError, NumericRangeError) as exc:
+        return err(str(exc))
 
     inputs[field] = new_value
 
@@ -501,6 +541,16 @@ def w_saveportfoliohealth(session: Session, payload: dict) -> dict[str, Any]:
 
     a_getportfoliohealth spreads the stored snapshot at the top level beside ok, so the snapshot
     must carry results / projectCount / computedAt as top level keys. savedAt is server assigned.
+
+    APPENDS. This was the one `session.delete` in the application: every save deleted every prior
+    portfolio-health snapshot before inserting the new one, reproducing the live model's single
+    `portfolio_health.json` file at the Drive root. Nothing reads more than the latest row —
+    `a_getportfoliohealth` already orders by `saved_at DESC` and takes `.first()`, which is a
+    SELECTION, not a consequence of there being only one row to select from — so nothing depends
+    on the store holding exactly one snapshot. The read behaviour here is UNCHANGED: a caller who
+    wants the latest still gets exactly the latest. What changes is that the snapshots before it
+    are retained rather than destroyed, the way every other record in this module is (`savehistory`
+    already accumulates two rows for two saves of the same period; this now matches it).
     """
     if payload.get("results") is None:
         return err("health payload required")
@@ -508,21 +558,19 @@ def w_saveportfoliohealth(session: Session, payload: dict) -> dict[str, Any]:
     snapshot = {k: v for k, v in payload.items() if k != "action"}
     snapshot["savedAt"] = _server_now()
 
-    # One current snapshot. Replacing rather than accumulating matches the live model, which keeps
-    # a single portfolio_health.json at the Drive root.
-    for old in session.scalars(
-        select(ProjectSnapshot).where(ProjectSnapshot.period == PORTFOLIO_HEALTH_PERIOD)
-    ).all():
-        session.delete(old)
-
     session.add(ProjectSnapshot(project_id=None, period=PORTFOLIO_HEALTH_PERIOD, snapshot=snapshot))
     session.commit()
 
     session.expire_all()
-    stored = session.scalars(
-        select(ProjectSnapshot).where(ProjectSnapshot.period == PORTFOLIO_HEALTH_PERIOD)
-    ).all()
-    if len(stored) != 1 or stored[0].snapshot.get("savedAt") != snapshot["savedAt"]:
+    # Verified by the snapshot's own savedAt, not the DB column — see a_getportfoliohealth for
+    # why the column alone cannot be trusted to order two saves in the same second.
+    matches = [
+        r for r in session.scalars(
+            select(ProjectSnapshot).where(ProjectSnapshot.period == PORTFOLIO_HEALTH_PERIOD)
+        ).all()
+        if isinstance(r.snapshot, dict) and r.snapshot.get("savedAt") == snapshot["savedAt"]
+    ]
+    if not matches:
         return err("Portfolio health could not be verified: snapshot not readable after commit")
     return {"ok": True, "savedAt": snapshot["savedAt"]}
 

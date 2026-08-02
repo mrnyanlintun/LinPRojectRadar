@@ -9,6 +9,152 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-02 — RUN 2: PORTFOLIO HEALTH APPENDS, OVERWRITESIGNAL VALIDATES ITS FIELD NAME, USER ARCHIVE AND DELETE BUILT
+
+Full detail in `REPORT_2026-08-02_facade-and-user-lifecycle.md`. **Server 1469/1469 across 27
+suites, `tests_render.html` 49/49, `tests.html` 51/51.** Sixteen faults injected across two
+campaigns, all detected, all reverted byte-identical, baseline re-run after every fault. Both
+admin controls also driven end to end in a real browser, confirmed by DOM read.
+
+## What delete reaches, the lead of the report
+
+Six tables are current relational state and are cleared EXPLICITLY in code, not left to the
+database: `participant_profiles`, `consents`, `assignments`, `decisions`, `transitions`,
+`project_members`. **SQLite — used for every local check in this run — does not enforce `ON
+DELETE CASCADE` without `PRAGMA foreign_keys=ON`, which this app does not set.** Relying on the
+declared FK cascade alone would have looked correct in Postgres and silently orphaned rows in
+every local verification. Four text columns (`audit_events.participant_id`,
+`document_uploads.uploaded_by`, `documents.first_uploaded_by`, `research_exports.initiated_by`,
+plus `added_by`/`revoked_by` on OTHER people's membership rows) are NOT foreign keys and are
+left exactly as they are, by the same design `AuditEvent`'s own docstring states: they must
+survive the deletion of whatever they describe.
+
+**Deleting a research participant destroys their decision records — `assignments` cascades to
+`decisions` and `transitions`.** Reported, not softened: that is why archive exists as an
+independent, non-destructive control rather than delete having a "keep the research data" mode.
+
+## Part 1: the one `session.delete` in the app is gone
+
+`w_saveportfoliohealth` appends now. **Nothing depended on there being exactly one row** —
+`a_getportfoliohealth` already SELECTS the latest rather than reading a singleton, verified
+before changing anything. **Fixing this surfaced a real ordering bug**: the DB's `saved_at`
+column is second-resolution on SQLite, so two saves in the same second tied, and `ORDER BY ...
+DESC` over a tie is not guaranteed stable — invisible while deletion removed the old row first,
+immediately visible once both rows persist. Both read and write-side verification now order by
+the snapshot's own `savedAt` string (millisecond resolution) instead of the column.
+
+## Part 2: overwritesignal's field name is now checked
+
+Restricted to `field_registry.ALL_SI_FIELDS` — verified by set equality to match
+`extraction_merge.SIGNAL_INPUT_KEYS` plus `cpi`/`spi` exactly, so the vocabulary cannot drift
+from what the merge can actually produce. An unknown name is refused, named, before the project
+is even looked up.
+
+## Part 3: archive already existed; delete is new
+
+**Archive needed no backend change.** `setactive(is_active=false)` already matches the
+definition exactly (cannot sign in, everything retained) — `resolve_caller` refuses an inactive
+account everywhere, and archiving never touches membership, consent, or anything else. Only the
+UI changed: relabelled "Archive"/"Restore" (was "Deactivate"/"Activate") to match the vocabulary
+the platform already uses for the same concept on projects. **Confirmed, not assumed: an
+archived user still appears in `adminmemberlist`** — that handler never filters on `is_active`.
+
+**Delete is `admindeleteparticipant`**, admin-only, no other condition (explicit instruction —
+`setactive`'s last-admin guard is deliberately NOT mirrored here). Reports exactly what it
+removed; writes `participant_deleted` to `audit_events` for the now-gone id.
+
+## Things worth knowing before the next session
+
+- **`add_repo`-style DB cascade assumptions are unsafe in this codebase's SQLite test path.**
+  Any future feature relying on `ON DELETE CASCADE` needs the same explicit-deletion treatment
+  this task gave user deletion, or `PRAGMA foreign_keys=ON` needs to be added to `db.py` first
+  (not done here — out of scope, and would need its own verification pass across every existing
+  cascade).
+- **The delete confirmation UI requires typing the exact username** before the submit button
+  enables — friction deliberately placed on an irreversible action.
+- Whether `getportfoliohealth` should be membership-scoped is still open, unrelated to this run.
+
+# 2026-08-02 — D2 CLOSED: MALFORMED NUMERICS REFUSE AT ALL FOUR ENTRY POINTS
+
+Full detail in `REPORT_2026-08-02_malformed-numerics.md`. **Server 1440/1440 across 26 suites,
+`tests_render.html` 49/49, `tests.html` 51/51.** Eight faults injected, all confirmed applied,
+all detected, all reverted byte-identical, baseline re-run after every fault. Three faults
+crashed the suite mid-run and STILL read as red, because the suite wraps its whole run.
+
+- **Four entry points, enumerated not assumed, all guarded**: (1) `extract_many` — refuses the
+  whole document BEFORE any row, per document not per batch; (2) `emit_observations` — the
+  stored-row backstop, validates before emitting so refusal is all-or-nothing; (3)
+  `overwritesignal`; (4) **`save`** — the wholesale doc replacement carrying a client
+  signalInputs blob, the live action nobody had listed (the risk guard never covered it
+  either). `save` validates CHANGED fields only, so a legacy-stored bad value cannot brick
+  every later edit.
+- **Three cases**: absent passes (abstention unchanged); malformed ("TBD", "N/A", booleans,
+  "1.2.3") refuses; out of contract (negative count/sum) refuses. Range contract in
+  `field_registry`: everything numeric non-negative EXCEPT totalFloat/consumedFloat/
+  floatRemaining/analogousOverrunPct (signed set — negative float is a real state). NO percent
+  upper bounds: the 0..1-vs-0..100 scale question is unresolved and was not guessed at.
+- **The parser accepts real-world decoration**: "$1,200,000", "1,200", "45%", and "(500)"
+  reads as NEGATIVE 500 — the legacy stripper made it +500 and made "TBD" a 0.0. Emission now
+  coerces through the SAME parser, so the guard and selection can never disagree about a value.
+  `_num_or_null`'s malformed-to-zero quirk is dead at every guarded boundary.
+- **The uploader sees the existing extraction-failure dialog**, per-file error verbatim, field
+  and file and value named, "Nothing was stored", remedy stated. New strings are operational
+  error wording only and are flagged in the report.
+- `docRiskScore` keeps `validate_doc_risk_score` as its range authority; "N/A" for it is now
+  refused as malformed BEFORE the range guard ever sees the coerced 0.0.
+
+# 2026-08-02 — THE STORAGE REDESIGN IS BUILT: OBSERVATIONS, SELECTION, FOUR DEFECTS CLOSED
+
+Full detail in `REPORT_2026-08-02_storage-redesign.md`. **Server 1394/1394 across 25 suites
+(up from 1361/24), `tests_render.html` 49/49, `tests.html` 51/51, green on merged `main`.**
+Nine faults injected, all detected with distinct signatures, all reverted byte-identical,
+baseline re-run after every single fault. `server/app/simulation/` untouched.
+
+**Part F of the reconciliation report is implemented.** Migration **0014** adds `observations`
+(append-only, one row per project/period/document/field/entity, `as_of` from the document's own
+date or NULL — never the clock, `revision_of` promoted from `supersedes_document_id`).
+`signalInputs` is now the OUTPUT of `select_signal_inputs(observations, cutoff)` — same keys,
+same order, same quirks, so the 100 computations receive exactly what they always did.
+`field_registry.py` owns per-FIELD kinds (SNAPSHOT/EVENT/DELTA/PERMANENT), writer precedence
+tiers, and need declarations. Run 0014 on production BEFORE the first upload, with 0013.
+
+## The four defects
+
+- **Baseline preservation CLOSED**: `baselineContractSum` is the contract's own sum, PERMANENT;
+  a CO wins `bac` by declared tier as an executed amendment; the `baselineEnd` direct dict
+  write is gone; `projectuploadstatus` returns a `baseline` block (original + amendments).
+- **docDate CLOSED**: derived as the latest `as_of`, same rule as the cutoff — one answer.
+  Always ISO now; `historical_data`'s bare "2019" no longer leaks into it.
+- **P1 CLOSED**: portfolio vectors selected by `period_cutoff <= cutoff`, never `max(period)`.
+  Byte-identical recompute of period 1 after another project reaches period 2, fault-proven.
+- **Registers only CLOSED**: individual `rfi` routes to UNMAPPED (stored, `contributes:false`,
+  never asked for totals). The `add()` accumulators are gone; **`"rfi" < "rfi_log"` is gone BY
+  CONSTRUCTION and verified**: a check asserts `rfiCount` has exactly one writer.
+
+## Facts the next session needs
+
+- **Selection rules**: SNAPSHOT = lowest tier, then latest `as_of`; dated beats undated; wholly
+  undated ties fall back to the historical (rank, doc_type, sha256) LAST-write order — including
+  legacy first-non-null fields, a small documented divergence. PERMANENT = earliest, nothing
+  later replaces it. EVENT = latest per entity, then aggregate; stated total beats counting;
+  counted ledgers write NO `sources` entry (models_dq weighting parity).
+- **`rfiNumber` / `rfiResponseTimeDays` are permanently None** (only the individual form wrote
+  them); recorded in `field_registry.UNEMITTABLE_FIELDS`. A4.2's rfiNumber fallback abstains.
+- **On adminrecompute the reused cutoff now BOUNDS selection**: later-dated documents added to
+  the period after the fact no longer change the recomputed figures. Intended.
+- **`test_document_versioning` section 1 flipped meaning**: it used to reproduce the old
+  defects, it now asserts them dead, and its fixture pair orders the ORIGINAL's hash HIGHER
+  (equal-date tiebreak) so supersession is still provably what flips the outcome.
+- **D2 IS STILL OPEN AND NOW MORE VISIBLE**: coerced 0.0s persist as authoritative-looking
+  observation rows. The reconciliation report said fix D2 before the store; it was not in this
+  task's scope and changes validated instrument behaviour. It should be the next fix. D3
+  (wall-clock cutoff fallback) also unchanged; undated observations pass the cutoff filter.
+- **Layer 3's registry enforcement was NOT built** — it lives inside `simulation/`, which is
+  out of scope. Declarations exist in `field_registry.NEEDS` (`milestoneHistory` declared
+  unservable). Opening `simulation/` for enforcement is Lin's decision.
+- One of my own checks was vacuous (compared an expression to itself) and was rewritten before
+  it could lie — the P1 byte-identical comparison is the check that fault F1 turns red.
+
 # 2026-08-02 — FIVE CHECKS THAT CANNOT FAIL: TWO FIXED, TWO CONFIRMED, ONE ALREADY DONE
 
 Full detail in `REPORT_2026-08-02_vacuity-fixes.md`. Test files only, no application code touched.

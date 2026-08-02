@@ -57,7 +57,7 @@ from sqlalchemy.orm import Session
 
 from .extraction_client import build_extractor, extract_many
 from .extraction_fields import UNMAPPED, is_mapped
-from .extraction_merge import assemble_signal_inputs, assembly_report
+from .extraction_merge import assembly_report, emit_observations, select_signal_inputs
 from .facade import err, now_iso
 from .models import Project
 from .research_identity import audit, resolve_caller
@@ -67,7 +67,9 @@ from .research_membership import (
     recommendation_visible,
     require_member,
 )
-from .research_models import ComputedResult, Decision, Document, DocumentUpload, new_ulid
+from .research_models import (
+    ComputedResult, Decision, Document, DocumentUpload, Observation, new_ulid,
+)
 
 log = logging.getLogger("opus-gubernatio-server")
 
@@ -212,13 +214,13 @@ def _period_documents(session: Session, project: Project, period: int) -> list[d
     """
     superseded = _superseded_document_ids(session, project, period)
     rows = session.execute(
-        select(Document)
+        select(Document, DocumentUpload.supersedes_document_id)
         .join(DocumentUpload, DocumentUpload.document_id == Document.document_id)
         .where(DocumentUpload.project_id == project.id, DocumentUpload.period == period)
-    ).scalars().all()
+    ).all()
     seen: set[str] = set()
     out: list[dict] = []
-    for d in rows:
+    for d, supersedes in rows:
         if d.document_id in superseded:
             continue
         if d.sha256 in seen:
@@ -228,8 +230,64 @@ def _period_documents(session: Session, project: Project, period: int) -> list[d
                     "filename": d.filename, "extraction": d.extraction or {},
                     # Carried so the caller can record provenance on the computed result.
                     # `assemble_signal_inputs` ignores keys it does not know.
-                    "document_id": d.document_id})
+                    "document_id": d.document_id,
+                    # 0014. The declared document-level revision edge, promoted onto every
+                    # observation this document emits (`revision_of`).
+                    "supersedes": supersedes})
     return out
+
+
+def _persist_observations(session: Session, project: Project, period: int) -> int:
+    """
+    0014. Project the period's stored extractions into the append-only observation store.
+
+    EVERY upload in the period is projected, superseded ones included — the earlier revision's
+    rows are retained and never deleted; selection is what excludes them, not storage. Rows are
+    keyed by (project, period, document, field, entity), so re-deriving is an insert of what is
+    missing and never an update: the same document always projects to the same rows, because
+    the extraction it projects from is content-addressed and immutable.
+
+    A document whose extraction is refused (doc risk out of range) projects nothing — the same
+    refusal the selection path raises, kept symmetrical so the store can never hold figures
+    the merge refused.
+
+    Returns the number of rows inserted.
+    """
+    rows = session.execute(
+        select(Document, DocumentUpload.supersedes_document_id)
+        .join(DocumentUpload, DocumentUpload.document_id == Document.document_id)
+        .where(DocumentUpload.project_id == project.id, DocumentUpload.period == period)
+    ).all()
+    existing = {
+        (r[0], r[1], r[2]) for r in session.execute(
+            select(Observation.document_id, Observation.field, Observation.entity_key)
+            .where(Observation.project_id == project.id, Observation.period == period)
+        ).all()
+    }
+    inserted = 0
+    for d, supersedes in rows:
+        try:
+            emitted = emit_observations({
+                "sha256": d.sha256, "doc_type": d.doc_type or UNMAPPED,
+                "filename": d.filename, "extraction": d.extraction or {},
+                "document_id": d.document_id, "supersedes": supersedes,
+            })
+        except Exception:
+            continue
+        for o in emitted:
+            key = (d.document_id, o["field"], o["entity_key"] or "")
+            if key in existing:
+                continue
+            existing.add(key)
+            session.add(Observation(
+                project_id=project.id, period=period,
+                field=o["field"], value=o["value"], kind=o["kind"],
+                entity_key=o["entity_key"] or "", entity_state=o["entity_state"],
+                as_of=o["as_of"], document_id=d.document_id,
+                revision_of=o["revision_of"], source_doc_type=o["doc_type"],
+            ))
+            inserted += 1
+    return inserted
 
 
 def _live_result(session: Session, project: Project, period: int) -> ComputedResult | None:
@@ -252,8 +310,17 @@ def _derive_cutoff(documents: list[dict], reuse: ComputedResult | None) -> date:
     clock instead and C1.2 drifts by however many days elapsed between the two runs, and the
     guarantee quietly becomes false.
 
-    On a first compute it is the latest document date in the period — the as-of date the
-    evidence itself establishes — falling back to the server date when no document carries one.
+    On a first compute it is the latest date the period's evidence speaks about — the maximum
+    of every observation's `as_of` and every document's `document_date` — falling back to the
+    server date when nothing carries a parseable date (still D3, unchanged here).
+
+    0014. THE OBSERVATIONS' OWN DATES ARE PART OF THE MAXIMUM, and that is load-bearing:
+    selection is `as_of <= cutoff`, so a cutoff derived from `document_date` alone would
+    silently exclude a pay application whose `application_date` runs later than the period's
+    last `document_date`. Deriving both from the same dates makes "the cutoff" and "the
+    evidence's latest date" one number on a first compute — which is also what `docDate` now
+    derives from, so the A5 disagreement (two answers to "as of when") is closed rather than
+    relocated.
     """
     if reuse is not None and reuse.period_cutoff is not None:
         return reuse.period_cutoff
@@ -266,6 +333,14 @@ def _derive_cutoff(documents: list[dict], reuse: ComputedResult | None) -> date:
             parsed = None
         if parsed and (latest is None or parsed > latest):
             latest = parsed
+        try:
+            for o in emit_observations(d):
+                if o["as_of"] and (latest is None or o["as_of"] > latest):
+                    latest = o["as_of"]
+        except Exception:
+            # A refused document (e.g. doc risk out of range) contributes no date here; the
+            # refusal itself surfaces where the observations are actually consumed.
+            pass
     return latest or datetime.now(timezone.utc).date()
 
 
@@ -371,8 +446,17 @@ def _compute_and_store(session: Session, project: Project, period: int,
     from .simulation import compute_project, compute_portfolio
 
     documents = _period_documents(session, project, period)
-    si = assemble_signal_inputs(documents)
     cutoff = _derive_cutoff(documents, reuse_cutoff_from)
+    # 0014. signalInputs is the OUTPUT of selection over observations at the cutoff, no longer
+    # a stored accumulator. Selection covers the LIVE document set (superseded documents are
+    # excluded from computation exactly as before); the store itself keeps every revision's
+    # rows. On a recompute the reused cutoff bounds every selection, so evidence dated after
+    # it — added later to the period — cannot silently change what the period reports.
+    _persist_observations(session, project, period)
+    observations: list[dict] = []
+    for d in documents:
+        observations.extend(emit_observations(d))
+    si = select_signal_inputs(observations, cutoff)
 
     # D1. Two inputs the analytical layer reads that the pure merge cannot produce, because
     # neither is a property of this period's documents: the project's event log and its figures
@@ -385,15 +469,26 @@ def _compute_and_store(session: Session, project: Project, period: int,
 
     run = compute_project(si, project.legacy_id, f"P{period}", cutoff)
 
-    # Portfolio snapshot: every other project's most recent live result.
+    # Portfolio snapshot — CUTOFF-ALIGNED (P1). A portfolio vector for another project is
+    # selected by `period_cutoff <= cutoff`, taking that project's latest live result at or
+    # before THIS computation's cutoff. NEVER max(period): that let a stored period-1 result
+    # change when another project advanced to period 2, and made two projects computed for
+    # the same period at different wall-clock moments see different portfolios. With the
+    # cutoff bound, recomputing an earlier period after other projects have moved on
+    # reproduces the portfolio that period actually saw.
     others = session.scalars(
-        select(ComputedResult).where(ComputedResult.superseded_by.is_(None))
+        select(ComputedResult).where(
+            ComputedResult.superseded_by.is_(None),
+            ComputedResult.period_cutoff <= cutoff,
+        )
     ).all()
     vectors: list[dict] = []
     by_project: dict[Any, ComputedResult] = {}
     for r in others:
         prev = by_project.get(r.project_id)
-        if prev is None or (r.period or 0) > (prev.period or 0):
+        if prev is None or (
+            (r.period_cutoff, r.period or 0) > (prev.period_cutoff, prev.period or 0)
+        ):
             by_project[r.project_id] = r
     for pid, r in by_project.items():
         legacy = session.get(Project, pid)
@@ -732,6 +827,12 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
                     "nothing to the analysis",
         })
 
+    # 0014. Project this period's stored extractions into the observation store at the moment
+    # the evidence arrives, so the store is current before any compute and the upload-status
+    # surface can read the baseline and amendments from it.
+    session.flush()
+    _persist_observations(session, project, period)
+
     audit(session, "documents_uploaded", participant_id=caller.participant_id,
           project_id=project.legacy_id, period=period, files=len(decoded),
           cached=cached_count, extracted=extracted_count, failed=failed_count,
@@ -846,6 +947,44 @@ def a_projectuploadstatus(session: Session, payload: dict, secret: str,
 
     have = {d["doc_type"] for d in documents}
 
+    # 0014. THE BASELINE AND ITS AMENDMENTS, BOTH READABLE. The original contract baseline
+    # persists as PERMANENT observations (a change order can no longer destroy it), and every
+    # executed change order is an amendment layered on it. Read from the observation store,
+    # across all periods up to this one, because the baseline is a fact about the project,
+    # not about one period's uploads.
+    baseline_rows = session.scalars(
+        select(Observation).where(
+            Observation.project_id == project.id,
+            Observation.period <= period,
+            Observation.source_doc_type.in_(("contract_value", "change_order")),
+        )
+    ).all()
+    revised_away = {r.revision_of for r in baseline_rows if r.revision_of}
+    original: dict[str, Any] = {}
+    for want, field in (("contractSum", "baselineContractSum"),
+                        ("start", "baselineStart"), ("end", "baselineEnd")):
+        cands = [r for r in baseline_rows
+                 if r.field == field and r.source_doc_type == "contract_value"
+                 and r.document_id not in revised_away]
+        if cands:
+            first = min(cands, key=lambda r: (r.as_of or date.max, r.document_id))
+            original[want] = first.value
+    amendments_by_doc: dict[str, dict] = {}
+    for r in baseline_rows:
+        if r.source_doc_type != "change_order" or r.document_id in revised_away:
+            continue
+        a = amendments_by_doc.setdefault(r.document_id, {
+            "document_id": r.document_id, "period": r.period,
+            "as_of": r.as_of.isoformat() if r.as_of else None,
+            "state": "executed",
+        })
+        if r.field == "bac" or r.field == "revisedContractSum":
+            a["revisedContractSum"] = r.value
+        elif r.field == "baselineEnd":
+            a["revisedEnd"] = r.value
+    amendments = sorted(amendments_by_doc.values(),
+                        key=lambda a: (a["period"], a["as_of"] or "", a["document_id"]))
+
     audit(session, "project_read", participant_id=caller.participant_id,
           action="projectuploadstatus", project_id=project.legacy_id,
           project_role=member.project_role)
@@ -858,6 +997,10 @@ def a_projectuploadstatus(session: Session, payload: dict, secret: str,
         # Replaced versions, kept readable and kept out of computation. Empty on every period
         # where nothing has been superseded, which is the ordinary case.
         "superseded": superseded,
+        # 0014. The original contract baseline and the executed amendments layered on it.
+        # `original` survives every change order; `amendments` lists each executed change
+        # order's revised figures. Empty objects/lists when no contract or no COs exist.
+        "baseline": {"original": original, "amendments": amendments},
         "unmapped": report["unmapped"],
         # Advisory, not a gate: compute never refuses on a missing document type. It reports
         # what is absent so the PM can decide whether the period is complete.

@@ -595,3 +595,48 @@ class ComputedResult(Base):
     # column a result could not answer "which version of the pay application produced this
     # status" once the period's document set had moved on. NULL on rows computed before 0013.
     source_documents: Mapped[dict] = mapped_column(JSONType, nullable=True)
+
+
+class Observation(Base):
+    """
+    0014. One observation per (project, period, document, field, entity). Append-only.
+
+    The storage layer under `signalInputs`: rows are DERIVED from stored extractions by
+    `extraction_merge.emit_observations` and persisted at upload and compute time, so a stored
+    row can always be re-derived and compared. `signalInputs` is no longer storage — it is the
+    OUTPUT of selecting over these rows at a cutoff (see `select_signal_inputs`).
+
+    `kind` is declared per FIELD in `field_registry`, not per document type: a pay application
+    is a series source for CPI and an event source for a change record from the same
+    extraction. `as_of` is the date the value speaks about, taken from the document's own date
+    fields and NULL when none parses — never the clock. `revision_of` is
+    `supersedes_document_id` promoted onto every observation the superseding document produces.
+    """
+
+    __tablename__ = "observations"
+
+    observation_id: Mapped[str] = mapped_column(ULID, primary_key=True, default=new_ulid)
+    project_id: Mapped[str] = mapped_column(
+        Uuid(), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    period: Mapped[int] = mapped_column(Integer, nullable=False)
+    field: Mapped[str] = mapped_column(Text, nullable=False)
+    value: Mapped[dict] = mapped_column(JSONType, nullable=True)
+    kind: Mapped[str] = mapped_column(Text, nullable=False)
+    # '' for snapshots so the unique index can include it; see migration 0014.
+    entity_key: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
+    entity_state: Mapped[str] = mapped_column(Text, nullable=True)
+    as_of: Mapped[date] = mapped_column(Date, nullable=True)
+    document_id: Mapped[str] = mapped_column(
+        ULID, ForeignKey("documents.document_id"), nullable=False
+    )
+    revision_of: Mapped[str] = mapped_column(ULID, nullable=True)
+    source_doc_type: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    __table_args__ = (
+        CheckConstraint("kind IN ('SNAPSHOT','EVENT','DELTA','PERMANENT')",
+                        name="ck_observations_kind"),
+    )

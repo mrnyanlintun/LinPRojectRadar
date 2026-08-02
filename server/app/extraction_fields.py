@@ -33,10 +33,15 @@ UNMAPPED: str = "unmapped"
 
 # `validTypes`, verbatim and in legacy order (Code_v10.36 lines 691-695 and 758-762 — the literal
 # is duplicated in identifyOnly_ and extractAuto_; both copies are identical, checked).
+# REGISTERS AND LOGS ONLY (storage redesign, 2026-08-02). The individual `rfi` form is gone
+# from this list: individual submittals, RFIs and RFAs do not arrive on this platform — the PM
+# sees the register — and a single RFI classified as a log would be asked for totals it cannot
+# supply. It routes to UNMAPPED instead, the same decision already made for the individual
+# submittal form. Its accumulating merge branch (the `add()` on rfiCount) died with it, and so
+# did the undocumented dependency on `"rfi" < "rfi_log"` sorting.
 DOC_TYPES: tuple[str, ...] = (
     "pay_application",
     "monthly_report",
-    "rfi",
     "oac_minutes",
     "schedule_update",
     "change_order",
@@ -101,7 +106,7 @@ ALL_FIELDS: tuple[str, ...] = (
 CLASSIFY_HINTS: str = (
     "Match on content: pay application has contract sum and amount paid; "
     "monthly report has EV/AC/PV; "
-    "RFI has request for information; OAC minutes has meeting attendees; "
+    "an RFI log lists requests for information with totals; OAC minutes has meeting attendees; "
     "change order has revised contract sum; "
     "NCR log has non-conformance; cost report has indirect/material cost; "
     "safety report has OSHA incidents."
@@ -162,10 +167,6 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
     "monthly_report": [
         "earned_value", "actual_cost", "planned_value", "actual_percent_complete",
         "planned_percent_complete", "budget_at_completion", "report_date", "milestones_json",
-    ],
-    "rfi": [
-        "document_risk_score", "document_date", "rfi_count", "rfi_period_days", "rfi_number",
-        "submitted_date", "response_date", "response_time_days",
     ],
     "submittal_register": [
         "document_risk_score", "document_date", "submittals_total", "submittals_rejected",
@@ -280,8 +281,10 @@ def guess_type_from_filename(filename: str) -> str | None:
         return "rfa_log"
     if "rfi" in f and "log" in f:
         return "rfi_log"
-    if "rfi" in f:
-        return "rfi"
+    # A bare "rfi" filename used to resolve to the individual `rfi` form. That form no longer
+    # arrives (registers and logs only), and guessing "rfi_log" for a single RFI would ask it
+    # for totals it cannot supply — the exact fabrication this heuristic's None arm exists to
+    # avoid. An individual RFI is UNMAPPED and contributes nothing.
     if "oac" in f or "minutes" in f:
         return "oac_minutes"
     if "schedule" in f and "look" in f:
@@ -367,10 +370,12 @@ if __name__ == "__main__":
     # The divergence itself, asserted so nobody "restores" the monthly_report fallback.
     assert guess_type_from_filename("totally-unknown-thing.pdf") is None
 
-    # The three ordering traps, resolving the legacy way.
+    # The ordering traps, resolving the legacy way — and the individual RFI routing to
+    # unmapped rather than being asked for a register's totals.
     assert guess_type_from_filename("project-rfa-log.pdf") == "rfa_log"
     assert guess_type_from_filename("project-rfi-log.pdf") == "rfi_log"
-    assert guess_type_from_filename("rfi-0042.pdf") == "rfi"
+    assert guess_type_from_filename("rfi-0042.pdf") is None
+    assert "rfi" not in DOC_TYPES and not is_mapped("rfi")
     assert guess_type_from_filename("weekly-lookahead-schedule.pdf") == "lookahead_schedule"
     assert guess_type_from_filename("schedule-update-may.pdf") == "schedule_update"
 
