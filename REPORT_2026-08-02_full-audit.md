@@ -1,0 +1,111 @@
+# Full platform audit
+
+Read-only audit before study preparation. No code, test, or data changed; findings only.
+Method per finding is marked **executed** (ran code or API against a live server),
+**probed** (driven in a real browser), or **source-read**, and should be trusted in that order.
+
+Environment: a fresh throwaway SQLite database migrated to head `0017_participant_theme`,
+served by `server/tools/dev_serve.py` (stub extractor, no Anthropic key), driven in the
+container's browser. Production was not touched. The database was created for this audit and
+holds only audit fixtures.
+
+## Section 1: end to end as a user
+
+The whole loop was driven once, in order, as a real user where the interface allowed it and by
+the same server actions the interface calls where it did not: admin sign-in, project creation
+(both the portfolio form and the admin form), document upload, stub extraction, automatic
+filing, period analysis, signals render, participant sign-in, consent, intake questionnaire,
+scenario assignment, the four-stage decision sequence to a recorded final decision, both export
+kinds built and fetched, and both workbooks opened with openpyxl and read back. **The machinery
+completes.** What follows is what it took to get there, which is the finding.
+
+### 1.1 The study cannot be prepared through the interface. (HIGH, executed + probed)
+
+Four server-side prerequisites stand between a fresh deployment and one participant recording
+one decision, and none of them can be created from the UI:
+
+1. **A scenario.** `adminscenariocreate` exists and works, but its UI was deliberately
+   withdrawn (`admin-ops.js:307`, "The UI is withdrawn. B3's BACKEND IS DELIBERATELY
+   UNTOUCHED"). The assignment UI that DEPENDS on scenarios was kept.
+2. **A frozen condition sequence.** `adminassign` refuses with "no frozen condition sequence
+   for order_group 'G1' and scenario_set 'S1'". `adminsequencecreate` has no UI. The
+   `condition_sequences` table is empty on a fresh database (verified by query); nothing seeds
+   it.
+3. **A frozen configuration.** The sequence's config codes must exist as frozen
+   `Configuration` rows ("no configuration exists for code C1"). `adminconfigurationcreate`
+   has no UI.
+4. **A frozen decision support package, attached per assignment.** Even with evidence attached,
+   `researchreveal` refuses: "no decision support package is attached to this assignment".
+   `adminpackagecreate` and `adminpackageattach` have no UI.
+
+Each was verified by hitting the refusal in the browser first, then satisfying it with a direct
+authenticated call to the documented action, then proceeding. The decision sequence completed
+only after all four were hand-assembled. The handoff's stated rationale for withdrawing the
+scenario UI ("there are no conditions left to counterbalance, so assigning a participant to a
+pre-authored scenario set no longer describes anything the platform does") is contradicted by
+the assignment path, which still enforces scenario, sequence, configuration, and package. Either
+the enforcement is stale or the withdrawal was premature; they cannot both be right.
+
+### 1.2 A participant can be walked into a dead end that consumes their judgment. (HIGH, probed)
+
+A scenario created without an evidence package id and without a decision support package is
+accepted by `adminscenariocreate` and by `adminassign`. The assigned participant then:
+
+- sees "No evidence project is attached to this period" on the Evidence panel, with the
+  preliminary-judgment controls fully live;
+- can commit a preliminary judgment against that empty panel (probed: it locked);
+- is then refused at reveal ("no decision support package is attached to this assignment") with
+  no path forward and no path back, because the preliminary judgment is by design irreversible.
+
+The stuck instance then appears in the `participant_inputs` export as a Decisions row (executed:
+the export built during this audit contains it). Nothing warns the admin at assignment time that
+the scenario carries no evidence and no package, and nothing warns the participant before the
+one irreversible step of the whole sequence.
+
+### 1.3 Admin dropdowns are populated once and go stale. (MEDIUM, probed)
+
+Creating a user does not refresh the "PM for this project", membership, or assignment
+participant pickers; the new account is absent until a full page reload. Probed directly: a
+project was created with the wrong PM because the intended participant was not in the list
+moments after being created in the same view. Same class of defect, worse trigger: the scenario
+dropdown is populated only by `LinAdminOps.showTab("access")`, which fires on tab CLICK — and
+"People and access" is the default, already-active tab, so on first open of Administration the
+scenario list is always empty even when scenarios exist (probed: clicking away to "Monitoring
+and export" and back filled it). An admin who never leaves the first tab can never assign.
+
+### 1.4 What worked, verified
+
+- Sign-in (username/password) for both account types; wrong-credential and deactivated paths
+  not distinguished to the prober (source-read at `a_researchlogin`, consistent behaviour
+  observed).
+- Portfolio project creation, upload of the `healthy` dev fixture, stub extraction ("newly
+  extracted · monthly_report"), period analysis, and a Green project status rendering from the
+  stored result.
+- Automatic filing into `6_RECEIVED/2026-06-30_INFO` with the "Check filing" review flag
+  (expected here: the local stub provides no model classification, so confidence is None, which
+  is the documented reviewable state).
+- Consent gate (participant sees consent before anything else; operational accounts are
+  structurally refused a consent row), intake questionnaire required before judgment (executed:
+  `researchprejudgment` refused until `intakesave`).
+- The four-stage sequence: evidence → locked preliminary judgment → reveal (idempotent,
+  `reveal_at` recorded once) → final decision with disposition vocabulary enforced (executed:
+  a missing `disposition` was refused with the full vocabulary in the message).
+- Exports: `participant_inputs` (2 decision rows — including the stuck 1.2 instance, which is
+  correct Part 5 behaviour) with sheets Notice, Decisions (44 columns), Stimulus, Module
+  results, analysis_long (2 rows per instance); `project_health` with Notice and Module results
+  only. Both checksums verified server-side on fetch; both workbooks opened and read back with
+  openpyxl.
+
+### 1.5 Smaller observations recorded for later sections
+
+- The consent screen is entirely bracketed placeholders, correctly labelled "DRAFT. NOT YET
+  REVIEWED." (known deliberate deferral; section 7).
+- The Signals tab renders group headings "Recommendation & Governance", "Data & Evidence
+  Health", "Cost & EVM Performance", "System Dynamics & Complexity" — ampersands in user-facing
+  text (section 6).
+- The admin Create-user modal and the intake questionnaire's certifications item use em dashes
+  in user-facing text (section 6).
+- The portfolio headline "From multi-model signals to a governed decision" makes a
+  "multi-model" claim to check against what the platform does (one extraction model; section 6).
+- The status legend read "Awaiting analysis 0" while an uncomputed, unplaced project existed
+  (whether the legend counts only placed markers is checked in section 4).
