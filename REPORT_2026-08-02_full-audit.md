@@ -159,3 +159,44 @@ reference fixtures are extractable text; the failing path was never exercised (s
   this audit did not exercise.
 - **Abstention × display surfaces** is examined with the stored-versus-shown contract in
   section 4.
+
+## Section 3: authorisation, probed
+
+**Nothing was found open.** This is the one section of the audit that came back clean, and the
+detector was proved able to report otherwise before that was believed.
+
+Method (executed, all against the live server): the 81 registered POST actions were enumerated
+from the dispatch tables themselves (`POST_ACTIONS`, `DOCUMENT_ACTIONS`, `FILE_ACTIONS`,
+`WORKSPACE_ACTIONS`, `QUESTIONNAIRE_ACTIONS`, `ASSIGNMENT_ACTIONS`, `DECISION_ACTIONS`,
+`EXPERT_ACTIONS`, `EXPORT_ACTIONS`, `MEMBERSHIP_ACTIONS`, `TRANSITION_ACTIONS`,
+`IDENTITY_ACTIONS`, `FEATURE_ACTIONS`, `THEME_ACTIONS`) rather than from a hand-written list,
+so an action added since the last review is included automatically. Each was called under four
+postures: no credential, a research participant, an operational non-admin, and a valid admin.
+
+| Probe | Result |
+|---|---|
+| All 8 non-public GET actions without a credential | Refused: "missing or malformed session token". No project data returned |
+| All 81 POST actions without a credential | Every one refused. Zero succeeded, and no refusal was off-shape |
+| All `admin*` actions as a research participant | Zero succeeded |
+| All `admin*` actions as an operational non-admin | Zero succeeded |
+| Non-member on another project (`projectfiles`, `projectuploadstatus`, `projectupload`, `projectcompute`) | "not authorized: not a member of this project" |
+| Non-member write (`archive`, `save`) | "not authorized: only the project's PM may perform this action" |
+| Tampered session token | "invalid session token" |
+
+**`w_overwritesignal` field validation** (executed): an unknown field name is refused by name
+("Unknown signal field: 'nonsense_field'. This platform has no field by that name"), including
+`__proto__`. A known field on a project with no extracted signals is refused with the distinct
+"No extracted signals to overwrite", so the two failure modes do not collapse into one message.
+
+**The research and operational gates** (executed): `themeset` refused for a research account
+with the fixed-stimulus reason; `adminexportcreate` refused for a participant with
+"ResearchAdmin role required"; `projectcorpus` refused without the auditor flag; `projectcreate`
+refused for a research account; `consentgrant` refused structurally for an operational account.
+
+**Proof the probe can fail** (executed): the identical detector run with a valid admin token
+reports 11 `admin*` actions succeeding. A detector that returns "NONE" under every posture
+including the authorised one would be measuring nothing; this one distinguishes them.
+
+Two probes returned "Unknown POST action" rather than a refusal — `expertreferenceget` and
+`expertreferencesave`. These names are inferred, not registered; the expert surface's real
+action names were not probed and are recorded as **unaudited** rather than as passing.
