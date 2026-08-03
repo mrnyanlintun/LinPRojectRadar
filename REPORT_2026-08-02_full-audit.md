@@ -109,3 +109,53 @@ and export" and back filled it). An admin who never leaves the first tab can nev
   "multi-model" claim to check against what the platform does (one extraction model; section 6).
 - The status legend read "Awaiting analysis 0" while an uncomputed, unplaced project existed
   (whether the legend counts only placed markers is checked in section 4).
+
+## Section 2: cross-feature seams
+
+### 2.1 Reference documents are routed through the analytical extractor, and a failed extraction discards them. (HIGH, probed + source-read)
+
+`jdrive_tree.reference_kind()`'s own docstring: "nothing reads the CONTENT of a reference
+document to decide it is one, because the only content reader on the platform is the analytical
+extractor and routing a specification through it is precisely what must not happen." The upload
+pipeline does exactly that. In `a_projectupload` (documents.py), every hash not already held is
+queued for extraction unconditionally; `_decide_filing` — the only place `reference_kind` is
+consulted — runs after extraction returns. Probed: uploading `SPECIFICATION_09_2900_Gypsum.txt`
+returned `status: "failed"` from the stub extractor's refusal, and the file list afterwards
+confirms the document was never stored or filed at all.
+
+Two consequences. Against the real model, every specification, code, standard, Revit model,
+photo and other never-analysed document has its content sent to the extraction model first,
+spending an AI call and contradicting the stated design. And whenever extraction fails on such
+a file — the likely outcome for binary formats — the document is silently dropped rather than
+filed, which defeats the Files tab's central claim that "most of the Arora tree is documents
+stored and never analysed; that is the expected outcome." The existing suite passes because its
+reference fixtures are extractable text; the failing path was never exercised (see section 5).
+
+### 2.2 Seams that held, verified
+
+- **Theme × mobile** (probed): at 390px with transitions suppressed, the upload/decision
+  desktop-only gates hold under all four themes — notice text generated, real controls
+  `display: none`, zero horizontal overflow, notice colour resolving per theme's `--muted`.
+- **Files tab × document versioning** (executed): supersession is explicit-only; uploading a
+  revised monthly report with `supersedes` produced v2, marked v1 superseded, and both render
+  in the Files list with correct state. A same-type upload without the claim would create a
+  sibling, not a version, exactly as documented.
+- **Membership × archive × the decision sequence** (executed): archiving the project a
+  scenario's `evidence_package_id` names does NOT break a mid-sequence participant — evidence
+  still resolves (before/after verified with a fresh participant). `w_archive` gives the admin
+  no warning that a scenario references the project, which is worth knowing but not a defect
+  while evidence survives it.
+- **Delete × export** (executed): `admindeleteparticipant` cleared exactly the six documented
+  tables, reported counts per table, and the already-created export was untouched. The
+  documented tension stands: consent withdrawal preserves the record, account deletion destroys
+  it, and the code says this is deliberate.
+- **Observations × export** (executed): the stored `computed_results.module_results` (36
+  entries for the audit project) matches the export's Module results sheet row for row. The
+  `observations` table (12 rows here) is stored and unexported — a recorded open item, not a
+  drift.
+- **Geocode retention × markers** (source-read only): retained coordinates come from the stored
+  doc, never the client copy; clearing the address clears the coordinates; geocoder failure
+  stores `geocodeError` without failing the save. Not probed live — geocoding needs network
+  this audit did not exercise.
+- **Abstention × display surfaces** is examined with the stored-versus-shown contract in
+  section 4.
