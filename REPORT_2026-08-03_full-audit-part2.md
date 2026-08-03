@@ -363,3 +363,135 @@ The assistant's replies, the decision sequence while in flight (its controls are
 an assignment), the consent screen (all bracketed placeholders, correctly labelled DRAFT), the
 expert surface, the knowledge library's body content, error and refusal strings other than the
 theme one probed above, and the export workbook's own cell text.
+
+---
+
+# Section 7: deferred items, open or not
+
+## The six named in the brief
+
+### 7.1 The label-only Fairbanks rename — STILL OPEN, and it is visible
+
+Covered in 6.4 with probed evidence. The divergence is not merely internal: `themeset` refuses
+the name the interface shows and offers four key names it never shows. Seven locations tabulated
+in 6.4.
+
+### 7.2 The CSV export notice — STILL OPEN
+
+`research_export.py:1075`: `notice_in_payload = (record.format or "json") != "csv"`. JSON and
+XLSX carry the approved notice (XLSX as its own Notice sheet); **CSV carries none**, and the
+response says so honestly rather than pretending otherwise. The open question is what a CSV
+should do, since it has no natural place for a notice block. Recorded at handoff line 810 as
+Lin's, and unchanged.
+
+Related and also still open (handoff line 2102): the sign-in page's attribution and copyright
+lines are shorter forms that do not match section 3 of `DISCLAIMERS_DRAFT.md`. Neither was part
+of the approval, so neither was changed.
+
+### 7.3 The percent scale contract, 0..1 versus 0..100 — STILL OPEN
+
+Handoff line 585: *"NO percent upper bounds: the 0..1-vs-0..100 scale question is unresolved and
+was not guessed at."* Still true. `field_registry`'s range contract makes numeric fields
+non-negative with a named signed set, and deliberately sets **no upper bound** on percentages, so
+a value of `52.5` and a value of `0.525` are both accepted for `actualPctComplete` and nothing
+distinguishes them. Observed in this session's own fixture: the stub emits
+`actual_percent_complete: 52.5`, i.e. the 0..100 reading, but that is a fixture convention, not
+an enforced contract.
+
+### 7.4 JS-built surfaces never verified under the light theme — NOW LARGELY CLOSED, with one new finding
+
+The theme session recorded: *"Project detail, administration, the Files tab, the assistant and
+the knowledge pages were NOT verified by computed style."* **Verified this session** (executed,
+transitions suppressed, `data-theme="plain"`, contrast computed against each element's resolved
+background):
+
+| Surface | Elements sampled | Worst contrast | Verdict |
+|---|---|---|---|
+| Signals (project detail) | 94 | **5.78** | passes AA |
+| Files tab | 25 | **5.28** | passes AA |
+| Assistant panel | 12 | **5.28** | passes AA |
+| Administration | 93 | **3.71** | **below AA 4.5** |
+
+The administration failure is specific and reproducible: `.admin-pill.admin-pill-on` (the
+"Active" account-status pill), `color: rgb(18,112,58)` on `rgba(46,230,107,0.15)`, 11px, ratio
+**3.71**. It is a status pill on the account table, so it carries meaning, and 11px text below AA
+is the combination the theme's own contrast guarantee exists to prevent. It sits outside the ten
+tokens that guarantee measures (see 5.1), which is how it survived.
+
+The knowledge pages were not reached and remain unverified.
+
+### 7.5 The favicon — CLOSED BY DECISION, not open
+
+Handoff line 458: *"The favicon cannot be animated and was left alone. It is browser tab chrome;
+the only way would be swapping `href` on a timer, which is an animation library by another
+name."* That is a decision with a stated reason, not an outstanding task. Nothing to carry.
+
+### 7.6 The deploy-before-migration window — STILL OPEN, unchanged and untouched
+
+A push deploys immediately; migrations are applied by hand afterwards. This took sign-in down on
+2026-08-02 when code expecting `participants.theme` deployed before the column existed.
+
+What exists today: `/readyz` reports schema-at-head and answers 503 when the schema is behind
+(verified this session — it reported `"schema at head 0017_participant_theme"`). What does not
+exist: any gate. There is **no `.github/workflows/` directory**, so nothing blocks a deploy on
+migrations, and nothing alerts on the 503. The signal exists and is still unwatched, which is
+exactly what the outage report called the second finding. The 2026-08-03 session's own fixes were
+deliberately migration-free for this reason.
+
+## 7.7 The stuck instance — the brief misidentifies it
+
+The brief names **AUD-P-002**. Queried directly in the audit database:
+
+```
+AUD-P-001  scenario AUDIT-S1  evidence NULL              locked=1  revealed=0   <- STUCK
+AUD-P-002  scenario AUDIT-S2  evidence PRJ-91ZWNKZVSY    locked=1  revealed=1   <- completed
+```
+
+**The stuck instance is AUD-P-001**, whose scenario had no evidence. AUD-P-002 completed the
+sequence normally. Both live only in a throwaway audit database in the scratchpad, not in the
+repository and not in production. Nothing was altered. Whether production holds an equivalent is
+**unknown and unknowable from here**: production was not inspected. Since 2026-08-03 the
+condition that creates one is refused at both scenario creation and assignment, so no new one can
+be made this way.
+
+## 7.8 Other deferred items found, with status
+
+| Item | Recorded | Status today |
+|---|---|---|
+| Migration 0013 applied to production | Lin's | **Unknown from here.** Production not inspected. Head is now 0017; whether production is at head is not establishable locally |
+| Production `docRiskScore` range query before the first real run | Lin's | **Still open.** Nothing locally out of range; production deliberately not queried |
+| General shape of `w_overwritesignal` | Deferred | **Partly resolved.** The field NAME is now validated against `field_registry.ALL_SI_FIELDS` (probed in section 3 of part 1: `Unknown signal field: 'nonsense_field'`). The **value** is still unvalidated beyond the `docRiskScore` range and the malformed-numeric guard. Per-field contracts still need Lin |
+| Step 6, real extraction against a real document | Lin's, blocked | **Still blocked.** Needs a real document and a live `ANTHROPIC_API_KEY` together; `render.yaml` marks the key `sync: false` so it exists only in the Render dashboard |
+| Person-level intake fields not exported | Lin's | **Still open.** `experience_level`, `industry`, `certifications`, `organizational_role`, `risk_attitude`, raw intake/debrief responses stored, unexported |
+| Individual submittals: register-with-nulls or UNMAPPED | Lin's | **Resolved as UNMAPPED.** Verified in part 1 section 5 of the fixes report: `rfi`/`rfa`/`submittal` absent from `DOC_TYPES`, the logs/registers present |
+| D2 malformed numerics before the observation store | Deferred | **Resolved.** The parser guard landed and `test_malformed_numerics` passes 46/46 |
+| ~40 hardcoded shadows and scrims | Open | **Largely resolved.** Now **8** black scrim/shadow literals in `radar.css` (`rgba(0,0,0,…)` ×6, `#000` ×2), not ~40 |
+| `.theme-switch` dead code | Open | **Still open.** 8 occurrences remain in `radar.css`; zero in `index.html` and `app.js`, so it is still dead |
+| "Framework" in the "Methods and Framework" tab label | Lin's | **Still open.** Present at `index.html:839` |
+| Branch `t15-local-unpushed`, `unported_modules()` correction | Open | **Resolved on main.** `server/app/simulation/registry.py:50` carries the Group D subtraction and its rationale |
+| Green project status with a Red contributing category (A3, conflict 0.94) | Raised 2026-08-03 | **Still open and undiagnosed.** Not investigated this session |
+| Finding 5, the withdrawn scenario UI | Owner deciding | **Still open by design.** Explicitly out of scope for this and the previous session |
+
+---
+
+# What could not be established, and what remains unaudited
+
+- **Whether production is at schema head, holds a stuck instance, or holds an out-of-range
+  `docRiskScore`.** Production was never inspected or queried, by instruction. Every statement
+  about production in this report is explicitly an unknown.
+- **Whether the Postgres trigger bodies work.** Every local run is SQLite. `0003` and `0009` each
+  carry a separate `PG_*` body that no local check exercises, and section 5.3 shows a fault in one
+  of them is invisible locally. These are the bodies that will run in production.
+- **Whether `assistant.js` still carries the 7 em dashes the handoff records.** My counting method
+  does not read template literals, and it returned zero for that file.
+- **End-to-end click of "Export audit JSON".** The button was confirmed to render and
+  `buildAuditRecord()` was confirmed to return `pceif_version` first, both against the live page;
+  the download itself was not triggered.
+- **Fourteen suites were not fault-injected at all** (listed in 5.8), and within the seventeen
+  that were, only one or two guarantees each.
+- **Unaudited surfaces**: the knowledge library body, the expert surface, the assistant's replies,
+  the decision sequence in flight, the consent screen beyond confirming it is placeholder text,
+  and the export workbook's cell text.
+
+The working tree is clean at the end of this audit and the full server suite is **1649/1649
+across 30 suites**, `tests.html` 51/51, matching the state at the start.
