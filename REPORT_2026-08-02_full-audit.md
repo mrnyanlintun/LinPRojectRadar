@@ -200,3 +200,80 @@ including the authorised one would be measuring nothing; this one distinguishes 
 Two probes returned "Unknown POST action" rather than a refusal — `expertreferenceget` and
 `expertreferencesave`. These names are inferred, not registered; the expert surface's real
 action names were not probed and are recorded as **unaudited** rather than as passing.
+
+## Section 4: the contract between stored and shown
+
+### 4.1 The same stored result renders as "Green" on one surface and "Awaiting analysis" on three others. (HIGH, probed + source-read)
+
+One project, `PRJ-91ZWNKZVSY`, computed once and holding exactly one `computed_results` row:
+
+| Where | What it shows |
+|---|---|
+| Stored row (`computed_results`) | `project_status = "Green"`, 36 module results, `simulation_version sim-2026.07-v1`, `seed 1420609243`, `period_cutoff 2026-06-30` |
+| Signals tab (project detail) | "Project status **Green**", all 36 modules rendered with their stored evidence strings |
+| Project list row | "**Awaiting analysis**" |
+| Status legend | "Green 0 ... **Awaiting analysis 2**" |
+| Portfolio health | "No computed result yet." |
+
+Both readings come from the same signed-in admin, in the same page load, moments apart.
+
+Mechanism, established by source-read: `a_listslim` (facade.py:200) returns
+`slim_row(p.doc)` and `a_get` returns `project.doc` — the legacy JSON document — and neither
+touches `computed_results`. Computation writes the analytical record to `computed_results` and
+does not write a status back into the project document, so `doc.status` stays `""` and
+`doc.signals` stays empty forever. Probed directly: `listslim` returns
+`status: "", cpi: null, spi: null, actualPctComplete: null, simModuleCount: 0` for this project
+while `docCount: 2` — the same response knows about the documents and not about the result they
+produced.
+
+This is precisely the failure `tests_render.html` was built to catch. That harness asserts "list
+row: status word is the stored status" and passes 62/62, which means the harness's fixture
+supplies the stored result to the render path by a route the live application does not take.
+The check is real and the render function is correct; what is not exercised is how the list
+obtains a stored result in production. **Reachable today**, on the primary portfolio surface,
+for every computed project.
+
+I could not establish within this session whether the list has always behaved this way or
+whether it was broken by the superseding upload performed earlier in section 2 (which added a
+v2 document after the compute). Distinguishing those requires a clean project computed and read
+without any intervening upload, and is the first thing the next session should do.
+
+### 4.2 A project status of Green is reported while a contributing category is Red. (MEDIUM, executed, not yet explained)
+
+The same stored row carries `project_status = "Green"` with category `A3` at
+`status: "Red"`, `conflict: 0.94`, `contributes_to_project_status: true`. Four other
+contributing categories are Green. Whether this is the documented promotion rule behaving
+correctly on one Red among five, or a fusion defect, was not established — it needs the status
+fusion rule read against `tests.html`'s promotion assertions, which this session did not reach.
+Recorded so it is not lost, not asserted as a defect.
+
+### 4.3 Verified as faithful
+
+- **Export versus stored** (executed): the 36 `module_results` entries in the stored row match
+  the export workbook's Module results sheet one for one, named by computation and group, with
+  no module id in any user-facing cell.
+- **Signals tab versus stored** (probed): every module's evidence string on the detail page is
+  the stored `evidence_metric` verbatim. Nothing is recomputed in the browser; the panel's own
+  line, "Nothing on this page is recalculated in your browser", holds on this surface.
+- **Abstention** (probed): `classifyConflict` on a stored-only project renders "Signal breakdown
+  not available" rather than a fabricated value, and Group C is labelled "informational, does
+  not contribute to project status" on the detail page, matching `GROUP_ASSIGNMENT.md`.
+
+## What remains unaudited
+
+Sections 5, 6 and 7 were not reached. Nothing in them was sampled, so no claim is made about
+them in either direction:
+
+- **Section 5, the suite itself.** No check from the storage, D2, export, Files tab, theme or
+  mobile sessions was fault-injected this run. Section 4.1 is indirect evidence that at least
+  one harness passes against a fixture the live path does not reproduce, which is the exact
+  class of defect section 5 exists to find; it should be read as a reason to run section 5, not
+  as its result.
+- **Section 6, user-facing strings.** Not swept. Five candidates were noticed in passing and are
+  recorded in 1.5: ampersands in the Signals group headings, em dashes in the admin Create-user
+  modal and the intake questionnaire, and the "multi-model" claim in the portfolio headline.
+- **Section 7, loose ends.** Not compiled.
+
+Also unaudited: the expert surface (correct action names never established), geocoding against a
+live provider, anything requiring the real extraction model, and the Handbook, Technical Auditor
+and assistant surfaces, which were never opened.

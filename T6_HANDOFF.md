@@ -9,6 +9,56 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-02 — FULL PLATFORM AUDIT, SECTIONS 1 TO 4 (STOPPED AT A CLEAN BOUNDARY)
+
+Read-only audit, nothing changed. Full detail in `REPORT_2026-08-02_full-audit.md`.
+**Sections 1, 2, 3 and 4 complete and committed. Sections 5, 6 and 7 NOT STARTED.**
+
+## The four findings that matter, in order
+
+1. **The list row says "Awaiting analysis" for a project whose stored result says Green.**
+   Detail page reads it correctly; list row, legend and portfolio health do not. `a_listslim`
+   and `a_get` return `project.doc` and never read `computed_results`, and compute never writes
+   a status back into the doc. `tests_render.html` asserts this exact thing and passes 62/62,
+   so its fixture supplies the stored result by a route the live app does not take. **Start
+   here.**
+2. **The study cannot be prepared through the interface.** Scenario, frozen condition sequence,
+   frozen configuration and an attached decision support package are all enforced by
+   `adminassign` / `researchreveal` and none has a UI. The scenario UI was withdrawn as
+   describing "nothing the platform does"; the enforcement disagrees. Four hand-made API calls
+   were needed to reach one recorded decision.
+3. **An evidence-less scenario walks a participant into an irreversible dead end.** Preliminary
+   judgment locks against an empty evidence panel, then reveal refuses forever. The stuck
+   instance still exports.
+4. **Reference documents go through the analytical extractor and vanish when it fails.**
+   `_decide_filing` (the only caller of `reference_kind`) runs AFTER extraction. A spec that
+   fails extraction is never filed at all. Directly contradicts `reference_kind`'s docstring.
+
+## Where to pick up
+
+Section 5 first, and 4.1 is the reason: at least one harness passes against a fixture the live
+path does not reproduce. Then 6 (five naming candidates already recorded in the report's 1.5),
+then 7.
+
+**One thing section 4 could not settle**: whether the list has always shown "Awaiting analysis"
+for a computed project, or whether the superseding upload done during section 2 broke it.
+Compute a clean project, read the list without any intervening upload. Do that before anything
+else in section 4.
+
+**Also open, recorded not diagnosed**: a stored result with `project_status: Green` while
+contributing category `A3` is `Red` with conflict 0.94. Read the fusion rule against
+`tests.html`'s promotion assertions.
+
+## Two things worth knowing before repeating this
+
+- **`window.confirm` returns false in this container.** The preliminary-judgment commit silently
+  did nothing and looked like a defect for several cycles. Override it before driving any
+  confirm-guarded control.
+- **Admin dropdowns populate on tab CLICK, and "People and access" is already the active tab.**
+  So the scenario picker is always empty on first open of Administration. Click to the other tab
+  and back. The participant pickers separately go stale after creating a user, needing a full
+  reload.
+
 # 2026-08-02 — THE SITE ON A PHONE
 
 Full detail in `REPORT_2026-08-02_mobile-layout.md`. **Server 30/30 suites, `tests_render.html`
