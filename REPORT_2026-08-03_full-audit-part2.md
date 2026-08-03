@@ -195,3 +195,171 @@ claim I did not re-verify.
 
 Within a sampled suite only one or two guarantees were faulted, never all of them. A suite marked
 DETECTED above has one proven check, not fifty.
+
+---
+
+# Section 6: user-facing strings against NAMING_AUTHORITY.md
+
+Method: the application was driven signed-in with a real computed project, and the **visible text
+of each surface** was extracted from the DOM by tree-walking text nodes and discarding anything
+whose parent is not rendered. That is stronger than grepping source, because it only sees what a
+user sees. Source greps were used afterwards to locate what the probe found and to reach strings
+the probe could not render.
+
+## 6.1 A retired framework name reaches a user-obtainable file (probed)
+
+`buildAuditRecord()` in `assets/js/decision.js:422` returns, as its **first key**:
+
+```json
+{ "pceif_version": "L2-v0.5-demo", "data_boundary": "...", ... }
+```
+
+`decision.js` **is** loaded on the participant-facing page, and the button that downloads this
+is rendered. Verified by calling the real render path against the real project fetched from
+`?action=get`:
+
+```
+renderDecisionCard(project, host) -> exportButtonRendered: true, label: "Export audit JSON"
+```
+
+The card renders "Governance decision / Recommended action / Green / Authority ...", and
+`app.js:1704` wires that button to serialise the record above to
+`audit_<project>_<period>.json`. So a retired name, and a version string for a retired framework,
+leave the platform inside a file the user keeps.
+
+This is the only place a retired name was found in anything a user can see or obtain. Everything
+else matching `PCEIF`/`PDAF` is a code comment or an internal identifier (`PCEIF_STATUS_HEX`,
+`PCEIF_VERSION`), which `NAMING_AUTHORITY.md` §2 explicitly permits: *"Internal file prefix
+`PCEIF_*` on development-era artifacts. Nobody sees these. Leave them."*
+
+## 6.2 Ampersands in the taxonomy names, on the Signals tab (probed)
+
+`GROUP_ASSIGNMENT.md`: *"Write 'and', not an ampersand. The code constants spell two of these
+names with '&'. User facing text says 'Recommendation and Governance' and 'Data and Evidence
+Health'. Do not rename the code constants to match."*
+
+The code constants are being rendered directly. Probed on the Signals tab of a computed project:
+
+```
+Cost & EVM Performance · System Dynamics & Complexity · Recommendation & Governance
+Regulatory & Authority Thresholds · Data & Evidence Health
+```
+
+Source: `assets/js/taxonomy.js:30` (`window.LIN_CATEGORIES`), which **is** loaded on the
+participant route. `assets/js/categories.js` carries the same strings but is not loaded, so
+taxonomy.js is the live one. Two of these are the exact two names the authority calls out by
+name; three more follow the same pattern.
+
+## 6.3 Em dashes
+
+**Rendered, on the portfolio (probed):**
+
+```
+Portfolio too small for anomaly detection — need at least 3 projects with signal data
+```
+
+Its source is `server/app/simulation/portfolio.py:58`, **inside `server/app/simulation/`**, which
+this and other sessions are forbidden to modify. Worth flagging: this one cannot be corrected
+under the standing permissions without an explicit exception.
+
+**In source (source-read):** 111 em dashes inside quoted string literals across 17 files,
+comments excluded:
+
+```
+signals.js 21 · detail.js 17 · auditor.js 12 · admin.js 11 · admin-ops.js 8 · deepdive.js 6
+workspace.js 6 · app.js 5 · decision-ui.js 5 · export.js 4 · charts3d.js 3 · forcenet.js 3
+projectnet2d.js 3 · atlas.js 2 · neural_flow.js 2 · ingest.js 1 · store.js 1 · index.html 1
+```
+
+Samples that are unambiguously user-facing (all render in the admin Create-user dialog, seen in
+the section 1 walkthrough):
+
+```
+admin.js:178  '<option value="Participant">Participant — research subject</option>'
+admin.js:179  '<option value="ResearchAdmin">Admin — manages users, membership, export</option>'
+admin.js:60   'again — write it down or copy it now.</p>'
+admin.js:71   "Copy failed — select the field and copy manually"
+```
+
+**This count is a lower bound and is not comparable to the handoff's figure of 84.** My method
+counts single- and double-quoted literals only, so it misses template literals entirely, and it
+does not attempt to separate user-facing strings from internal ones. The handoff's 84 counted
+"prose em dashes" on a named set of files. Notably `assistant.js`, which the handoff lists at 7,
+returns zero under my method — that is likelier to be template literals than a fix, and I did not
+establish which.
+
+## 6.4 The Fairbanks label and the `plain` key diverge in front of the user (probed)
+
+The rename was deliberately label-only. It shows:
+
+```
+themeset {theme: "fairbanks"}
+  -> "unknown theme: fairbanks; recognized themes are plain, light, newyork, maria"
+themeget
+  -> themes: ["plain", "light", "newyork", "maria"]
+```
+
+A user who types the only name the interface has ever shown them is told it is not recognised,
+and offered four names **none of which appears anywhere in the interface** (the switcher shows
+Fairbanks, Miami, NYC, Maria). Source: `server/app/theme.py:38` `THEMES` and `:155` the refusal
+message, which interpolates the key tuple directly.
+
+Where the divergence exists, by location:
+
+| Location | Value | User-visible |
+|---|---|---|
+| `assets/js/app.js:2067` `THEME_META` | `key:"plain"`, `label:"Fairbanks"` | label only |
+| `server/app/theme.py:38` `THEMES` | `"plain"` | **yes**, via `themeget`/`themeset` |
+| `server/app/theme.py:155` refusal text | `', '.join(THEMES)` | **yes** |
+| `assets/css/radar.css` | `body[data-theme="plain"]`, 10 selectors | no |
+| `participants.theme` stored value | `"plain"` | no |
+| `server/tools/test_theme_plain.py` | filename | no |
+| `REPORT_2026-08-02_light-theme.md`, `server/app/theme.py` docstring | "the plain theme" | no |
+
+## 6.5 Same class, worth recording: internal keys shown as text
+
+Not a NAMING_AUTHORITY rule, but the same defect shape as 6.4. The upload panel reports document
+types by their internal snake_case keys (probed):
+
+```
+1 document(s) present for period 1. Still expected: contract_value, pay_application, schedule_update
+```
+
+and the Document library lists `monthly_report` as the document's type.
+
+## 6.6 What is clean, verified
+
+- **No retired name in any rendered text**, on portfolio, project detail/Signals, Files, Period
+  documents, Document library, Period decision, Handbook, Technical Auditor, Administration.
+- **No module id or number in any rendered text** on those surfaces. Searched for `Cat N`,
+  `A4.2`-style ids, and `PH.N`; zero hits.
+- **The standing description is quoted verbatim**, not paraphrased, in three places in
+  `index.html`: the short form in prose, the long form's opening, and the `<meta name=
+  "description">` tag, which matches the short form character for character.
+- **The "browser computes nothing" claim holds.** `sim.js`, `simulations.js`, `categories.js` and
+  `deepdive.js` are **not** among the 31 scripts `index.html` loads.
+- **Handbook "framework" mentions are correct**: they state there is deliberately no named
+  framework, which is what the authority prescribes.
+- **Files tab, Period documents, Document library, Period decision and the mobile desktop-only
+  notices are clean** of retired names, module ids and em dashes. The three mobile notices read
+  "This needs a desktop browser. Open Opus Gubernatio on a laptop or desktop to use it." and the
+  administration variant.
+
+## 6.7 Flagged, not asserted as violations
+
+- **"From multi-model signals to a governed decision"** (`index.html:472`, the portfolio H1). One
+  AI model exists. But in project controls "multi-model" most naturally denotes multiple
+  forecasting models, and the analytical layer genuinely runs many (Monte Carlo, Bayesian,
+  parametric, reference-class, PERT). Defensible on that reading; recorded because it is the kind
+  of phrase the authority asks be checked, and it is the most prominent line on the platform.
+- **Arora template folder names contain "&"** (`3_DESIGN/2_CODE & STANDARDS`). These are verbatim
+  transcriptions of an external source document, deliberately preserved including its own
+  inconsistencies. The ampersand rule in `GROUP_ASSIGNMENT.md` is about the taxonomy group names,
+  not transcribed folder names. Not treated as a violation.
+
+## 6.8 Not swept
+
+The assistant's replies, the decision sequence while in flight (its controls are hidden without
+an assignment), the consent screen (all bracketed placeholders, correctly labelled DRAFT), the
+expert surface, the knowledge library's body content, error and refusal strings other than the
+theme one probed above, and the export workbook's own cell text.
