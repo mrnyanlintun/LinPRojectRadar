@@ -196,8 +196,11 @@ check(len(after_list["members"]) == len(before_list["members"]),
 # ---------------------------------------------------------------- Guarantee 4
 
 print("\nGuarantee 4 — config_id/condition never in a participant-reachable response")
+# PRJ-T7T8-A is created above and is the evidence this scenario points at: a scenario with no
+# evidence project is refused from 2026-08-03, because one used to let a participant spend the
+# irreversible preliminary judgment against an empty evidence panel.
 scenario = post({"action": "adminscenariocreate", "session_token": admin,
-                 "scenario_version": "t7t8-v1"})
+                 "scenario_version": "t7t8-v1", "evidence_package_id": "PRJ-T7T8-A"})
 check(scenario.get("ok") is True, "scenario created")
 cfg = post({"action": "adminconfigurationcreate", "session_token": admin,
            "code": "C0", "version": "v1", "label": "T7T8C0", "freeze": True})
@@ -244,7 +247,8 @@ res_id, res_token = make_participant("T7T8-RESEARCH", account_type="research")
 post({"action": "consentgrant", "session_token": res_token, "consent_version": "t7t8-v1"})
 
 scenario2 = post({"action": "adminscenariocreate", "session_token": admin,
-                  "scenario_version": "t7t8-export-v1"})
+                  "scenario_version": "t7t8-export-v1",
+                  "evidence_package_id": "PRJ-T7T8-A"})
 post({"action": "adminconfigurationcreate", "session_token": admin,
      "code": "C0", "version": "v1", "label": "T7T8EXPC0", "freeze": True})
 post({"action": "adminsequencecreate", "session_token": admin, "order_group": "T7T8EXPORTG",
@@ -361,7 +365,8 @@ with Session() as s:
 
 # make the fresh participant eligible for debrief: one assignment, decision complete
 scenario3 = post({"action": "adminscenariocreate", "session_token": admin,
-                  "scenario_version": "t7t8-debrief-v1"})
+                  "scenario_version": "t7t8-debrief-v1",
+                  "evidence_package_id": "PRJ-T7T8-A"})
 post({"action": "adminconfigurationcreate", "session_token": admin,
      "code": "C0", "version": "v1", "label": "T7T8DBC0", "freeze": True})
 post({"action": "adminsequencecreate", "session_token": admin, "order_group": "T7T8DEBRIEFG",

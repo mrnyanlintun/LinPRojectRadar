@@ -29,8 +29,9 @@ from sqlalchemy import func, select  # noqa: E402
 
 import app.main as main  # noqa: E402
 from app.research_consent import ConsentRequired  # noqa: E402
+from app.models import Project
 from app.research_identity import hash_access_token  # noqa: E402
-from app.research_models import Assignment, AuditEvent, Participant  # noqa: E402
+from app.research_models import Assignment, AuditEvent, Participant, Scenario  # noqa: E402
 
 client = TestClient(main.app, raise_server_exceptions=False)
 Session = main.SessionFactory
@@ -64,6 +65,14 @@ with Session() as s:
                           access_token_hash=hash_access_token(ADMIN_TOKEN)))
     else:
         row.access_token_hash = hash_access_token(ADMIN_TOKEN)
+    # Evidence projects. `adminscenariocreate` refuses a scenario whose evidence_package_id
+    # does not name an existing project (2026-08-03): an evidence-less scenario used to let a
+    # participant spend the irreversible preliminary judgment on an empty panel. Created here
+    # as plain rows because this suite is about assignment, not about project creation.
+    for _legacy in ['PRJ-B3-EV-0', 'PRJ-B3-EV-1', 'PRJ-B3-EV-2']:
+        if s.scalar(select(Project).where(Project.legacy_id == _legacy)) is None:
+            s.add(Project(legacy_id=_legacy, doc={"id": _legacy, "name": _legacy,
+                                                 "signals": {}}))
     s.commit()
 
 admin = post({"action": "researchlogin", "access_token": ADMIN_TOKEN})["session_token"]
@@ -75,7 +84,8 @@ print("=" * 78)
 scenarios = []
 for i in range(3):
     r = post({"action": "adminscenariocreate", "session_token": admin,
-              "scenario_version": f"v1-s{i}", "project_type": "construction", "period_count": 2})
+              "scenario_version": f"v1-s{i}", "project_type": "construction", "period_count": 2,
+              "evidence_package_id": f"PRJ-B3-EV-{i}"})
     scenarios.append(r["scenario_id"])
 check(len(scenarios) == 3, "three scenarios created")
 
@@ -274,6 +284,65 @@ post({"action": "consentwithdraw", "session_token": p2})
 r = post({"action": "adminassign", "session_token": admin, "participant_id": p2_id,
           "order_group": "G1", "scenario_set": "SET-A", "scenario_ids": scenarios})
 check(r.get("ok") is False, "withdrawal re-closes the gate for assignment", str(r)[:140])
+
+# ---------------------------------------------------------------- evidence is mandatory
+#
+# THE TRAP THIS CLOSES. An evidence-less scenario was accepted at creation and assignable here,
+# and the participant it reached could commit the PRELIMINARY JUDGMENT — the one irreversible
+# act in the sequence — against a panel reading "No evidence project is attached to this
+# period". Reveal then refused permanently, so the instance was dead and the judgment spent.
+# Found by the 2026-08-02 audit, walked end to end before being written up.
+print()
+print("=" * 78)
+print("EVIDENCE IS MANDATORY: no scenario without a resolvable evidence project")
+print("=" * 78)
+
+no_ev = post({"action": "adminscenariocreate", "session_token": admin,
+              "scenario_version": "blind-noev", "project_type": "construction"})
+check(no_ev.get("ok") is False and "evidence_package_id" in str(no_ev.get("error")),
+      "a scenario with no evidence is refused at creation", str(no_ev.get("error"))[:90])
+
+bad_ev = post({"action": "adminscenariocreate", "session_token": admin,
+               "scenario_version": "blind-badev",
+               "evidence_package_id": "PRJ-DOES-NOT-EXIST"})
+check(bad_ev.get("ok") is False and "not found" in str(bad_ev.get("error")),
+      "and so is one naming a project that does not exist", str(bad_ev.get("error"))[:90])
+
+# The assignment guard is checked SEPARATELY and against a row written directly, because the
+# creation guard above cannot reach scenarios that already existed when it was added, and those
+# are exactly the ones still able to do the damage.
+with Session() as s:
+    if s.scalar(select(Scenario).where(Scenario.scenario_id == "LEGACY-NO-EVIDENCE")) is None:
+        s.add(Scenario(scenario_id="LEGACY-NO-EVIDENCE", scenario_version="legacy-noev",
+                       project_type="construction", period_count=1, evidence_package_id=None))
+    s.commit()
+
+p9 = post({"action": "adminparticipantcreate", "session_token": admin,
+           "pseudonymous_code": "PM-EV9", "role": "Participant"})
+p9_token = post({"action": "researchlogin",
+                 "access_token": p9["access_token"]})["session_token"]
+post({"action": "consentgrant", "session_token": p9_token, "consent_version": "v1"})
+legacy = post({"action": "adminassign", "session_token": admin,
+               "participant_id": p9["participant_id"], "order_group": "G1",
+               "scenario_set": "SET-A", "scenario_ids": ["LEGACY-NO-EVIDENCE"]})
+check(legacy.get("ok") is False,
+      "a scenario that predates the creation guard is refused at ASSIGNMENT",
+      str(legacy.get("error"))[:90])
+check("LEGACY-NO-EVIDENCE" in str(legacy.get("error"))
+      or "legacy-noev" in str(legacy.get("error")),
+      "and the refusal names which scenario, since an allocation carries several",
+      str(legacy.get("error"))[:90])
+check("preliminary judgment" in str(legacy.get("error")),
+      "and says why it matters rather than only that it is refused",
+      str(legacy.get("error"))[:110])
+
+# NOT VACUOUS: the same call with real evidence must still succeed, or these checks would pass
+# on a server that simply refused every assignment.
+ok_ev = post({"action": "adminassign", "session_token": admin,
+              "participant_id": p9["participant_id"], "order_group": "G1",
+              "scenario_set": "SET-A", "scenario_ids": [scenarios[0]]})
+check(ok_ev.get("ok") is True,
+      "while a scenario WITH evidence still assigns normally", str(ok_ev)[:90])
 
 print()
 print("=" * 78)

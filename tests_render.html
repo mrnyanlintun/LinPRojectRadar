@@ -150,12 +150,30 @@
     };
   }
 
+  /* THE ROW IS DELIVERED ON THE PROJECT, NOT PRIMED INTO THE CACHE. This is the whole
+     correction of 2026-08-03, and the reason this page passed 62/62 while the live project
+     list was broken.
+
+     It used to call `LinResults.prime(p.id, storedRow(status))`. Nothing in the application
+     does that for a list: `prime` is called from exactly two workspace panels
+     (workspace.js onDetailProjectChange and renderPortfolio), both of which fetch
+     `projectresults` for ONE project they already have open. The project list, the status
+     legend and the portfolio radar are rendered from `list` / `listslim`, and for those the
+     cache is empty. So this page was handing the render path its data by a route production
+     never takes, and asserting the render worked — which it always did. The half that was
+     broken, how the row REACHES the list, was never touched.
+
+     `storedResult` on the project object is how `a_list` delivers it (facade.py
+     with_stored_status) and is the first thing taxonomy.js's `rowFor()` looks at, so this is
+     the production route, exercised. The cache is explicitly cleared and left empty to prove
+     nothing below depends on it. */
   function fresh(status) {
     const p = storedOnlyProject();
+    p.status = status || "Amber";          // as `slim_row` sets it
+    p.storedResult = storedRow(status);    // as `with_stored_status` attaches it
     window.LIN_PROJECTS.length = 0;
     window.LIN_PROJECTS.push(p);
-    window.LinResults.clear();
-    window.LinResults.prime(p.id, storedRow(status));
+    window.LinResults.clear();             // and NOT primed: production cannot prime a list
     return p;
   }
   function scratch() {
@@ -550,7 +568,99 @@
     }
   })();
 
+  /* ============================================================================
+     THE PRODUCTION READ PATH, over the wire. Everything above this line renders from a
+     fixture built in this file; this group is the only part that asks the SERVER whether it
+     delivers a status at all.
+
+     It exists because the fixture above, however faithfully shaped, is still written by hand
+     here. If `facade.py` stops attaching the stored result, every check above stays green and
+     the live list breaks again. This group is what goes red for that, and it was proven to do
+     so by reverting the facade fix on 2026-08-03.
+
+     NO TOKEN, NO SILENT SKIP. When there is no session to borrow the group reports one FAILING
+     row saying so, rather than passing or vanishing. A check that quietly does not run is the
+     exact failure this whole page is being corrected for. Run it by signing in to the
+     application and then navigating THIS TAB to /tests_render.html: sessionStorage is per tab
+     and per origin, so the app's own token is readable here and nothing has to be configured.
+     ============================================================================ */
+  async function productionReadPath() {
+    let token = null;
+    try { token = sessionStorage.getItem("og-session-token"); } catch (e) { token = null; }
+    if (!token) {
+      assert("production read path: exercised against the server",
+        "a session token in this tab",
+        "none: sign in to the application, then navigate this tab to /tests_render.html");
+      return;
+    }
+    const q = "session_token=" + encodeURIComponent(token);
+    let slim, full;
+    try {
+      slim = await fetch("/exec?action=listslim&" + q).then(function (r) { return r.json(); });
+      full = await fetch("/exec?action=list&" + q).then(function (r) { return r.json(); });
+    } catch (e) {
+      assert("production read path: endpoints reachable", "reachable", "threw: " + (e && e.message));
+      return;
+    }
+    assert("production read path: listslim answers", true, slim && slim.ok === true);
+    assert("production read path: list answers", true, full && full.ok === true);
+    const slimRows = (slim && slim.projects) || [];
+    const fullRows = (full && full.projects) || [];
+
+    /* WHICH PROJECT IS COMPUTED IS ESTABLISHED FROM A DIFFERENT ENDPOINT ON PURPOSE.
+       `projectresults` reads `computed_results` directly and was never part of the defect, so
+       it is the independent witness. Asking `list` whether a project is computed and then
+       asking `list` what its status is would be one endpoint agreeing with itself: with the
+       server delivering nothing, that phrases the failure as "no computed project exists",
+       which reads like a setup problem and invites someone to dismiss it. Cross-checking names
+       the real defect instead — the row exists, and the list did not carry it. */
+    let witness = null, witnessStatus = null;
+    for (let i = 0; i < fullRows.length && !witness; i++) {
+      const pid = fullRows[i].id;
+      let res = null;
+      try {
+        res = await fetch("/exec", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "projectresults", session_token: token, id: pid })
+        }).then(function (r) { return r.json(); });
+      } catch (e) { res = null; }
+      if (res && res.ok === true && res.result && res.result.project_status) {
+        witness = fullRows[i];
+        witnessStatus = res.result.project_status;
+      }
+    }
+    if (!witness) {
+      assert("production read path: a computed project is present to test",
+        "at least one project with a stored result",
+        "none: compute a project in this account first, then re-run");
+      return;
+    }
+    const one = witness;
+    const slimOne = slimRows.filter(function (p) { return p.id === one.id; })[0] || {};
+
+    assert("production read path: list carries the stored status on the document",
+      witnessStatus, ((one.storedResult || {}).project_status) || "MISSING: list dropped it");
+    assert("production read path: listslim status IS the stored status",
+      witnessStatus, slimOne.status || "MISSING: listslim dropped it");
+    assert("production read path: the delivered document renders that status",
+      witnessStatus, (window.getProjectFusion(one) || {}).status);
+    // The cache is empty here, so a pass means the row was read off the delivered object.
+    assert("production read path: read without priming the results cache",
+      true, !!(window.LinResults && !window.LinResults.hasResult({ id: "PRJ-NOTHING-PRIMED" })));
+
+    // An uncomputed project must still read as uncomputed, or the fix has simply painted
+    // every project green.
+    const uncomputed = fullRows.filter(function (p) { return !p.storedResult; });
+    if (uncomputed.length) {
+      const u = uncomputed[0];
+      const slimU = slimRows.filter(function (p) { return p.id === u.id; })[0] || {};
+      assert("production read path: an uncomputed project carries no stored status",
+        true, !slimU.status);
+    }
+  }
+
   // ---- render results ----
+  function renderResults() {
   const tbody = document.querySelector("#results tbody");
   let passed = 0;
   rows.forEach(function (r, i) {
@@ -567,6 +677,18 @@
   sum.className = "summary " + (passed === rows.length ? "ok" : "bad");
   // Read by the runner rather than scraped from the table.
   window.LIN_RENDER_TESTS = { passed: passed, total: rows.length, rows: rows };
+  }
+
+  /* The over-the-wire group is async, so results are rendered after it settles. A THROW in it
+     must not leave the page with no result line at all — that is the "crashed rather than
+     failed, and printed nothing" mode this project has hit twice — so it is caught and
+     recorded as a failing row before rendering either way. */
+  productionReadPath()
+    .catch(function (e) {
+      assert("production read path: group ran to completion", "no throw",
+        "threw: " + (e && e.message));
+    })
+    .then(renderResults);
 })();
 </script>
 </body>

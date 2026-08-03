@@ -9,6 +9,73 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-03 — AUDIT FIXES 1 TO 4
+
+Full detail in `REPORT_2026-08-03_audit-fixes-1-4.md`. **Server 30/30 suites, 1649/1649 checks;
+`tests_render.html` 69/69 (was 62); `tests.html` 51/51.** Every fix fault-injected, restored, and
+the baseline re-measured after each. No migration. Finding 5 (the withdrawn scenario UI) not
+touched.
+
+## Finding 0 first, because it decided what finding 1 was
+
+**The status contradiction was always on, not a supersede artifact.** Clean project, one upload,
+one compute, nothing else: stored row Green, Signals Green, list row and legend "Awaiting
+analysis". Every computed project on the portfolio surface was affected.
+
+## What changed
+
+- **`facade.py`**: `a_list` / `a_listslim` / `a_get` now resolve the live `computed_results` row
+  and let it supply the status. Chosen over writing back into `project.doc` because a second
+  copy drifts on the next recompute. One `IN` query per page, `superseded_by IS NULL`, status
+  only (never `module_results` — it carries the action fields `_result_view` redacts).
+  **`with_stored_status` returns a copy**: `project.doc` is a live ORM JSON column and assigning
+  into it would be flushed to the database.
+- **`tests_render.html`**: `fresh()` no longer calls `LinResults.prime` — nothing in production
+  primes a list, which is exactly why it passed 62/62 while the list was broken. New
+  over-the-wire group calls `listslim`/`list`/`projectresults` for real, borrowing the app's
+  session token from `sessionStorage` (same origin, same tab). No token means a FAILING row, not
+  a skip.
+- **`research_assignment.py`**: `adminscenariocreate` requires an `evidence_package_id` that
+  names an existing project; `adminassign` re-checks per scenario, audited, naming which one.
+  Both, because the creation guard cannot reach scenarios that already exist.
+- **`documents.py`**: `reference_kind` is consulted at decode time and a reference document is
+  never queued for extraction. Stored with type/extraction/model/confidence all NULL. New third
+  upload status `"filed"`; `workspace.js` renders it "filed, not analysed".
+
+## THREE THINGS THAT WOULD HAVE READ AS CLEAN AND WERE NOT
+
+**A downstream check passed with its own fault applied.** The finding-4 check asserted status
+`filed` + class `reference` + no stored extraction. With the extraction skip removed it stayed
+GREEN, because the reference-storage branch still created the row and the symptoms were
+identical. Rewritten to assert the RULE — `StubExtractor.calls` must not contain the
+specification's hash — plus a positive control that an analysable document IS in that list. Then
+it failed correctly. **Assert the thing the design forbids, not a consequence of it.**
+
+**The files-tab fixture recorded an extraction for the specification** under a comment reading
+"documents the analytical extractor is never asked about". Comment stated the intent; fixture
+guaranteed the opposite could not be detected. Same shape as the render harness's primed cache.
+Recording removed — `StubExtractor` refuses unknown hashes, so a regression now has nothing to
+answer with. Do not add it back to make a red go away.
+
+**A backup that was never written made a restore silently do nothing.**
+`cp x /tmp/b || cp x $SCRATCH/b` took the first branch, so the fallback never ran; the restore
+later read the scratchpad path, found nothing, and left the fault applied. Caught only because
+the baseline was re-measured. **Re-measure after every restore. The restore command succeeding
+is not evidence.**
+
+Also: `rm -f` on a SQLite file silently fails while locked on Windows, so a suite re-ran against
+a populated database and failed on leftover state that looked like a code defect. Use a new
+filename. And the CRLF needle trap bit again — the count assert caught it before a partial write.
+
+## Open, carried forward
+
+- **A stuck instance exists in the local audit database** (`AUD-P-001`, judgment locked, never
+  revealable). Not altered, reported only. Whether production has one is UNKNOWN: production was
+  not inspected.
+- **Green project status alongside a Red contributing category** (`A3`, conflict 0.94) is still
+  undiagnosed. Read the fusion rule against `tests.html`'s promotion assertions.
+- Audit sections **5, 6 and 7 remain unstarted**.
+
 # 2026-08-02 — FULL PLATFORM AUDIT, SECTIONS 1 TO 4 (STOPPED AT A CLEAN BOUNDARY)
 
 Read-only audit, nothing changed. Full detail in `REPORT_2026-08-02_full-audit.md`.

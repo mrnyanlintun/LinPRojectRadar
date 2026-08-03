@@ -83,9 +83,85 @@ def err(message: str) -> dict[str, Any]:
 # ---------------------------------------------------------------- projections
 
 
-def slim_row(doc: dict) -> dict[str, Any]:
+def live_statuses(session: Session, projects: list) -> dict[str, dict[str, Any]]:
+    """
+    The live stored computed status for each of these projects, keyed by internal project id.
+
+    WHY THIS EXISTS. `project.doc` is the legacy document and carries a `status` that nothing
+    writes any more: computation stores its answer in `computed_results` and never writes back.
+    Before this, `a_list`, `a_listslim` and `a_get` returned the doc alone, so the project list,
+    the status legend and the portfolio all read an empty status and rendered "Awaiting
+    analysis" for a project whose stored row said Green, while the Signals tab — which fetches
+    `projectresults` — showed the truth. Same project, same session, two answers. Verified on a
+    clean single-compute project on 2026-08-03, so it was never an artifact of superseding.
+
+    ONE QUERY for the whole page, not one per project. The read paths below are collection
+    endpoints and an N+1 here would be paid on every portfolio load.
+
+    ONLY THE LIVE ROW. `superseded_by IS NULL` is the same predicate `_live_result` uses in
+    documents.py, so a recompute moves every surface at once and a superseded row can never be
+    what a list renders.
+
+    STATUS ONLY, DELIBERATELY. `module_results` is NOT included and must not be: it carries the
+    action-bearing fields `_result_view` redacts unless `recommendation_visible` allows them,
+    and a project list is not a place that predicate has been evaluated. `category_statuses`
+    carries a status, a conflict number and a group per category, none of which is an action,
+    and the radar reads it through the same accessor.
+    """
+    if not projects:
+        return {}
+    from .research_models import ComputedResult
+
+    rows = session.scalars(
+        select(ComputedResult).where(
+            ComputedResult.project_id.in_([p.id for p in projects]),
+            ComputedResult.superseded_by.is_(None),
+        ).order_by(ComputedResult.period)
+    ).all()
+    # Ordered by period so that, for a project with several live periods, the LATEST period is
+    # the one left in the map. That matches what a list is understood to be showing: where the
+    # project stands now, not where it stood first.
+    return {
+        r.project_id: {
+            "result_id": r.result_id,
+            "period": r.period,
+            "project_status": r.project_status,
+            "category_statuses": r.category_statuses,
+        }
+        for r in rows
+    }
+
+
+def with_stored_status(doc: dict, stored: dict | None) -> dict[str, Any]:
+    """
+    The project document as a reader should see it: the stored computed status wins.
+
+    RETURNS A COPY AND NEVER MUTATES `doc`. `project.doc` is a live ORM attribute on a JSON
+    column, so assigning into it here would be picked up by the next flush and written back to
+    the database — quietly creating the second source of truth this fix exists to remove. The
+    copy is shallow on purpose: nothing below the top level is touched.
+
+    `storedResult` is the field name taxonomy.js's `rowFor()` already looks for, so a caller
+    that reads a status through `getProjectFusion` needs no change to find it.
+    """
+    if not stored:
+        return doc
+    merged = dict(doc)
+    if stored.get("project_status"):
+        merged["status"] = stored["project_status"]
+    merged["storedResult"] = stored
+    return merged
+
+
+def slim_row(doc: dict, stored: dict | None = None) -> dict[str, Any]:
     """
     The listslim projection.
+
+    `stored` is the live computed result for this project, or None when it has never been
+    computed. When present its `project_status` is the row's status, because that is the only
+    thing that has computed one since results moved to `computed_results`; when absent the
+    legacy document's own status is used unchanged, which is what keeps a genuinely uncomputed
+    project reading "Awaiting analysis".
 
     Every field below was derived by comparing the captured list and listslim fixtures, and this
     function reproduces all 15 live slim rows exactly.
@@ -105,7 +181,7 @@ def slim_row(doc: dict) -> dict[str, Any]:
         "id": doc.get("id"),
         "name": doc.get("name"),
         "sector": doc.get("sector"),
-        "status": doc.get("status"),
+        "status": (stored or {}).get("project_status") or doc.get("status"),
         "updatedAt": doc.get("updatedAt"),
         "cpi": evm.get("cpi"),
         "spi": evm.get("spi"),
@@ -194,12 +270,16 @@ def _visible(session: Session, params: dict, rows: list) -> list:
 
 def a_list(session: Session, params: dict) -> dict[str, Any]:
     rows = _visible(session, params, _ordered(session, archived=False))
-    return {"ok": True, "projects": [p.doc for p in rows]}
+    statuses = live_statuses(session, rows)
+    return {"ok": True,
+            "projects": [with_stored_status(p.doc, statuses.get(p.id)) for p in rows]}
 
 
 def a_listslim(session: Session, params: dict) -> dict[str, Any]:
     rows = _visible(session, params, _ordered(session, archived=False))
-    return {"ok": True, "projects": [slim_row(p.doc) for p in rows]}
+    statuses = live_statuses(session, rows)
+    return {"ok": True,
+            "projects": [slim_row(p.doc, statuses.get(p.id)) for p in rows]}
 
 
 def a_listarchived(session: Session, params: dict) -> dict[str, Any]:
@@ -214,7 +294,8 @@ def a_get(session: Session, params: dict) -> dict[str, Any]:
         # Live wording, reproduced exactly. An archived project is Not found here: the capture
         # shows ?action=get&id=01 returning "Not found: 01" while 01 appears in listarchived.
         return err(f"Not found: {pid}")
-    return {"ok": True, "project": project.doc}
+    statuses = live_statuses(session, [project])
+    return {"ok": True, "project": with_stored_status(project.doc, statuses.get(project.id))}
 
 
 def _files(session: Session, params: dict, doc_type: str):

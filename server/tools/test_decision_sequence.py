@@ -31,6 +31,7 @@ from sqlalchemy import func, select, text  # noqa: E402
 from sqlalchemy.exc import DatabaseError  # noqa: E402
 
 import app.main as main  # noqa: E402
+from app.models import Project
 from app.research_identity import hash_access_token  # noqa: E402
 from app.research_models import (  # noqa: E402
     Assignment, AuditEvent, Decision, DecisionSupportPackage, Participant,
@@ -62,6 +63,14 @@ with Session() as s:
                           access_token_hash=hash_access_token(ADMIN_TOKEN)))
     else:
         row.access_token_hash = hash_access_token(ADMIN_TOKEN)
+    # Evidence projects. `adminscenariocreate` refuses a scenario whose evidence_package_id
+    # does not name an existing project (2026-08-03): an evidence-less scenario used to let a
+    # participant spend the irreversible preliminary judgment on an empty panel. Created here
+    # as plain rows because this suite is about assignment, not about project creation.
+    for _legacy in ['PRJ-B4-EV-0', 'PRJ-B4-EV-1']:
+        if s.scalar(select(Project).where(Project.legacy_id == _legacy)) is None:
+            s.add(Project(legacy_id=_legacy, doc={"id": _legacy, "name": _legacy,
+                                                 "signals": {}}))
     s.commit()
 admin = post({"action": "researchlogin", "access_token": ADMIN_TOKEN})["session_token"]
 
@@ -71,7 +80,8 @@ print("=" * 78)
 
 sc = [post({"action": "adminscenariocreate", "session_token": admin,
             "scenario_version": f"b4-s{i}", "project_type": "construction",
-            "period_count": 2})["scenario_id"] for i in range(2)]
+            "period_count": 2,
+            "evidence_package_id": f"PRJ-B4-EV-{i}"})["scenario_id"] for i in range(2)]
 post({"action": "adminconfigurationcreate", "session_token": admin,
       "code": "C1", "version": "v1", "freeze": True})
 post({"action": "adminsequencecreate", "session_token": admin, "order_group": "GB4",

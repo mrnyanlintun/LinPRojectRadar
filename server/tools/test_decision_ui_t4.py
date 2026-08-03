@@ -92,6 +92,24 @@ print("T4 — the decision sequence")
 print("=" * 78)
 print("\nSETUP: scenario, frozen package with planted markers, action families, participants")
 
+# MOVED ABOVE THE SCENARIOS on 2026-08-03. `adminscenariocreate` now refuses a scenario
+# whose evidence_package_id does not name an existing project, so the projects a scenario
+# points at have to exist before it is created. The ordering is the dependency made
+# explicit; nothing about what these projects are has changed.
+_writer = post({"action": "adminparticipantcreate", "session_token": admin,
+                "pseudonymous_code": "T4-WRITER", "role": "Participant",
+                "account_type": "operational"})
+writer = post({"action": "researchlogin",
+               "access_token": _writer["access_token"]})["session_token"]
+post({"action": "create", "id": "PRJ-T4-EVIDENCE", "name": "T4 Evidence Project",
+      "session_token": writer})
+post({"action": "create", "id": "PRJ-T4-MEMBERED", "name": "T4 Membered Project",
+      "session_token": writer})
+# A separate project for the analytical-layer leak test: it needs real documents and a computed
+# result, which needs a PM, which would block every other participant on the shared scenario.
+post({"action": "create", "id": "PRJ-T4-ANALYTICS", "name": "T4 Analytics Project",
+      "session_token": writer})
+
 scenario = post({"action": "adminscenariocreate", "session_token": admin,
                  "scenario_version": "t4-v1", "project_type": "construction",
                  "period_count": 2, "evidence_package_id": "PRJ-T4-EVIDENCE"})["scenario_id"]
@@ -135,19 +153,6 @@ check(pkg.get("ok") is True, "frozen package created with planted markers", str(
 # The facade fails closed on writes as of 2026-08-02, and `create` is additionally refused for a
 # research account, so the fixture projects below are created by an OPERATIONAL participant.
 _WRITER_TOKEN = "t4-writer"
-_writer = post({"action": "adminparticipantcreate", "session_token": admin,
-                "pseudonymous_code": "T4-WRITER", "role": "Participant",
-                "account_type": "operational"})
-writer = post({"action": "researchlogin",
-               "access_token": _writer["access_token"]})["session_token"]
-post({"action": "create", "id": "PRJ-T4-EVIDENCE", "name": "T4 Evidence Project",
-      "session_token": writer})
-post({"action": "create", "id": "PRJ-T4-MEMBERED", "name": "T4 Membered Project",
-      "session_token": writer})
-# A separate project for the analytical-layer leak test: it needs real documents and a computed
-# result, which needs a PM, which would block every other participant on the shared scenario.
-post({"action": "create", "id": "PRJ-T4-ANALYTICS", "name": "T4 Analytics Project",
-      "session_token": writer})
 
 
 def hand_pm_to(legacy_id: str, participant_id: str) -> dict:

@@ -756,6 +756,10 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
             # different weeks are both current), so inferring would silently discard evidence.
             "supersedes": str(entry.get("supersedes")
                               or entry.get("supersedes_document_id") or "").strip() or None,
+            # 2026-08-03. Decided HERE, from the filename alone, before anything is extracted.
+            # See the job-selection note below for why the order matters.
+            "reference": reference_kind(str(entry.get("filename")
+                                            or entry.get("name") or "unnamed")),
         })
 
     # 0013. Validate every supersedes claim BEFORE extracting anything: a bad reference should
@@ -792,9 +796,25 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
     }
 
     # Extract only what is genuinely new, and only ONCE per distinct hash within this batch.
+    #
+    # A REFERENCE DOCUMENT IS NEVER QUEUED. `reference_kind`'s own docstring in jdrive_tree.py
+    # says it decides from the filename because "the only content reader on the platform is the
+    # analytical extractor and routing a specification through it is precisely what must not
+    # happen" — and until 2026-08-03 that is exactly what happened, because filing was decided by
+    # `_decide_filing` further down, AFTER extraction had already run. Two consequences, both
+    # found by the 2026-08-02 audit: every specification, code and standard was sent to the
+    # extraction model, spending a call on a document nothing analyses; and when extraction
+    # failed on one — the ordinary outcome for a document the model has no business reading — the
+    # upload was reported "failed" and the document was never filed at all, which defeats the
+    # whole point of a tree whose bulk is documents that are stored and never analysed.
+    #
+    # The decision is filename-based and pure, so it is safe to make before any content is read;
+    # that is the same property that let `_decide_filing` make it later.
     jobs: list[dict] = []
     queued: set[str] = set()
     for d in decoded:
+        if d["reference"] is not None:
+            continue
         if d["sha256"] in existing or d["sha256"] in queued:
             continue
         queued.add(d["sha256"])
@@ -826,6 +846,32 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
             classification_confidence=r.get("confidence"),
             first_uploaded_by=caller.participant_id,
         ))
+
+    # The reference documents, stored WITHOUT an extraction because none was run for them.
+    #
+    # `doc_type`, `extraction`, `extraction_model` and `classification_confidence` are all NULL
+    # and that is the honest record: nothing read this file. It matters downstream — `is_mapped`
+    # is false for a NULL type, so the merge skips it and it cannot reach the analytical inputs,
+    # which is the same separation the reference class was built to carry. `_decide_filing`
+    # below reads the filename again and files it as reference, so a document arriving here is
+    # filed exactly as it would have been, minus the model call that used to precede it.
+    seen_ref: set[str] = set()
+    for d in decoded:
+        if d["reference"] is None or d["sha256"] in existing or d["sha256"] in seen_ref:
+            continue
+        seen_ref.add(d["sha256"])
+        session.add(Document(
+            sha256=d["sha256"],
+            filename=d["filename"],
+            mime_type=d["mime_type"] or None,
+            size_bytes=len(d["raw"]),
+            content=d["raw"],
+            doc_type=None,
+            extraction=None,
+            extraction_model=None,
+            classification_confidence=None,
+            first_uploaded_by=caller.participant_id,
+        ))
     session.flush()
 
     stored = {
@@ -844,7 +890,7 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
     }
 
     files: list[dict] = []
-    cached_count = extracted_count = failed_count = 0
+    cached_count = extracted_count = failed_count = filed_count = 0
     for d in decoded:
         doc = stored.get(d["sha256"])
         if doc is None:
@@ -855,7 +901,10 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
                           "contributes": False, "error": r.get("error")})
             continue
         was_cached = d["sha256"] in existing
-        if was_cached:
+        if d["reference"] is not None:
+            # Counted separately: it was neither extracted nor served from an extraction cache.
+            filed_count += 1
+        elif was_cached:
             cached_count += 1
         else:
             extracted_count += 1
@@ -893,7 +942,12 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
             note = "filed and stored; this document type is not one the analysis reads"
         files.append({
             "filename": d["filename"],
-            "status": "matched" if was_cached else "extracted",
+            # "filed" is a THIRD outcome and not a flavour of the other two: this document was
+            # stored and placed without any extraction being attempted. Reporting it as
+            # "extracted" would claim a model call that never happened, and "matched" would
+            # claim a cache hit on an extraction that does not exist.
+            "status": ("filed" if d["reference"] is not None
+                       else ("matched" if was_cached else "extracted")),
             "doc_type": doc.doc_type,
             "was_cached": was_cached,
             # Reported explicitly so the PM can see which documents did not contribute rather
@@ -957,6 +1011,9 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
             "recognized": cached_count,
             "extracted": extracted_count,
             "failed": failed_count,
+            # Stored and placed without an extraction being attempted. Reported so a PM can see
+            # that a reference document arriving is a normal outcome, not a silent nothing.
+            "filed": filed_count,
             "unmapped": len(unmapped),
         },
         "unmapped_filenames": unmapped,

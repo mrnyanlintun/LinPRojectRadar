@@ -21,6 +21,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .facade import err
+from .models import Project
 from .research_identity import ROLE_PARTICIPANT, audit, resolve_caller
 from .research_models import (
     Assignment, ConditionSequence, Configuration, Participant, Scenario,
@@ -81,6 +82,25 @@ def current_sequence_number(session: Session, participant_id: str) -> int | None
 
 
 def a_adminscenariocreate(session: Session, payload: dict, secret: str, ttl: int) -> dict[str, Any]:
+    """
+    Define a scenario. EVIDENCE IS REQUIRED, and named as a project that exists.
+
+    WHY THIS REFUSES. A scenario with no `evidence_package_id` used to be accepted here and
+    assignable below, and the participant it was assigned to reached the decision sequence,
+    saw "No evidence project is attached to this period" on the evidence panel, and could still
+    commit the PRELIMINARY JUDGMENT against it. That step is irreversible by design. Reveal then
+    refused permanently, so the participant was left with the one unrepeatable act of the study
+    already spent on an empty panel, and the dead instance still appeared in the export. Found by
+    the 2026-08-02 audit, walked end to end.
+
+    Refusing at creation is the earliest point at which the mistake is still cheap: nothing has
+    been assigned and no participant has seen anything. `a_adminassign` refuses again for the
+    scenarios that already exist, on the same terms, because this guard cannot reach them.
+
+    THE PROJECT MUST EXIST, not merely be a non-empty string. `a_researchevidenceget` resolves
+    evidence by `Project.legacy_id == scenario.evidence_package_id` and renders an empty panel
+    when that lookup misses, so a typo'd id fails exactly as an absent one does.
+    """
     caller, problem = _require_admin(session, payload, secret, "adminscenariocreate")
     if problem:
         return problem
@@ -89,11 +109,21 @@ def a_adminscenariocreate(session: Session, payload: dict, secret: str, ttl: int
     if not version:
         return err("scenario_version is required")
 
+    evidence_id = str(payload.get("evidence_package_id") or "").strip()
+    if not evidence_id:
+        return err("evidence_package_id is required: a scenario with no evidence would let a "
+                   "participant commit an irreversible preliminary judgment against an empty "
+                   "evidence panel")
+    if session.scalars(
+        select(Project).where(Project.legacy_id == evidence_id)
+    ).first() is None:
+        return err(f"evidence project not found: {evidence_id}")
+
     row = Scenario(
         scenario_version=version,
         project_type=payload.get("project_type"),
         period_count=payload.get("period_count"),
-        evidence_package_id=payload.get("evidence_package_id"),
+        evidence_package_id=evidence_id,
         reference_standard_version=payload.get("reference_standard_version"),
         status=payload.get("status") or "draft",
     )
@@ -324,6 +354,33 @@ def a_adminassign(session: Session, payload: dict, secret: str, ttl: int) -> dic
     missing = [s for s in ordered_scenarios if session.get(Scenario, s) is None]
     if missing:
         return err(f"unknown scenario_ids: {', '.join(missing)}")
+
+    # EVERY SCENARIO MUST CARRY RESOLVABLE EVIDENCE, checked again here and not only at creation.
+    # `a_adminscenariocreate` now refuses to make one without it, but scenarios created before
+    # that guard existed are still in the database and still assignable, and the project a
+    # scenario names can be renumbered or removed after the scenario was made. This is the guard
+    # that stands between an evidence-less scenario and a participant, so it is checked against
+    # the projects table at the moment of assignment rather than trusted from creation time.
+    #
+    # Named per scenario. An allocation is several scenarios at once and "one of them has no
+    # evidence" is not something an admin can act on without being told which.
+    evidenceless: list[str] = []
+    for scenario_id in ordered_scenarios:
+        scenario = session.get(Scenario, scenario_id)
+        ref = (scenario.evidence_package_id or "").strip()
+        if not ref or session.scalars(
+            select(Project).where(Project.legacy_id == ref)
+        ).first() is None:
+            evidenceless.append(f"{scenario.scenario_version or scenario_id}"
+                                f"{'' if ref else ' (no evidence project named)'}"
+                                f"{f' (names missing project {ref})' if ref else ''}")
+    if evidenceless:
+        audit(session, "assignment_denied_no_evidence", participant_id=target_id,
+              denied_by=caller.participant_id, scenarios=list(evidenceless))
+        session.commit()
+        return err("cannot assign: no evidence is attached to " + "; ".join(evidenceless)
+                   + ". A participant would reach the preliminary judgment, which cannot be "
+                     "undone, with nothing to judge.")
 
     if session.scalars(select(Assignment).where(Assignment.participant_id == target_id)).first():
         return err(f"participant {target.pseudonymous_code} already has assignments")

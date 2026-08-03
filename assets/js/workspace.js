@@ -584,6 +584,11 @@
       if (f.status === "failed") {
         tag = '<span class="ws-note" style="color:var(--status-red);">failed</span>';
         note = f.error || "extraction failed";
+      } else if (f.status === "filed") {
+        // A reference document: stored and placed, with no extraction attempted. It must not
+        // read as "newly extracted", which would claim a model call that never happened.
+        tag = '<span class="ws-note">filed, not analysed</span>';
+        note = f.note || "filed as reference material";
       } else {
         tag = f.was_cached ?
           '<span class="ws-note">recognized (cached, no model call)</span>' :

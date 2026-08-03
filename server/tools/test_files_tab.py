@@ -97,12 +97,29 @@ def main() -> None:
         "rfilog-v2.pdf": ("rfi_log", {"rfi_total": 12, "log_date": "2026-06-08"}, 0.9),
     }
     RECORDED = {sha(blob(k)): v for k, v in FILES.items()}
-    # Documents the analytical extractor is never asked about: a specification (reference
-    # corpus) and a Revit model (filed only). Both classify UNMAPPED with no confidence, which
-    # is exactly what the real classifier would return for them.
-    for name in ("Division 23 Specification.pdf", "Tower.rvt", "notes.xlsx"):
+    # Documents the analytical classifier IS asked about and cannot map: a Revit model and a
+    # spreadsheet. They are filed-class, not reference, so they still go through extraction and
+    # legitimately need a recording; both classify UNMAPPED with no confidence, which is what
+    # the real classifier would return for them.
+    for name in ("Tower.rvt", "notes.xlsx"):
         RECORDED[sha(blob(name))] = ("unmapped", {})
-    set_extractor_override(StubExtractor(RECORDED))
+    # THE SPECIFICATION IS DELIBERATELY NOT RECORDED, and that is the check.
+    #
+    # It used to be, under a comment reading "documents the analytical extractor is never asked
+    # about" — the comment stated the intent and the fixture quietly guaranteed the opposite
+    # could not be detected. Filing was decided AFTER extraction, so every reference document
+    # did go to the extractor, and the recording made that invisible. Same shape as the render
+    # harness's primed cache: a fixture that supplies what production cannot.
+    #
+    # `StubExtractor` REFUSES a hash it has not been given rather than inventing an extraction.
+    # So if anything ever routes a specification to the analytical path again, there is no
+    # recording to answer with, the upload comes back "failed", and the reference checks below
+    # go red. Do not add a recording for it to make a failure go away: the failure IS the
+    # finding.
+    # Held by name: `extractor.calls` is the record of every hash the analytical extractor was
+    # asked to read, and section 4 asserts against it directly.
+    extractor = StubExtractor(RECORDED)
+    set_extractor_override(extractor)
 
     ADMIN = "files-tab-admin"
     PROJ = "PRJ-FILES-01"
@@ -221,8 +238,49 @@ def main() -> None:
                                   "filename": spec.filename, "extraction": spec.extraction}])
     blank = assemble_signal_inputs([])
     check(si == blank, "assembling it alone produces exactly the empty signal inputs", "")
-    check(spec.doc_type == "unmapped",
-          "because it is not a type the analytical classifier can emit", str(spec.doc_type))
+    # 2026-08-03. This used to assert doc_type == "unmapped", which was the value the classifier
+    # returned after READING the specification. It no longer runs at all for a reference
+    # document, so the honest record is that nothing was read: no type, no extraction, no model.
+    # That is a stronger statement than "the classifier could not map it" and it is the one the
+    # design has always claimed — `reference_kind`'s docstring says routing a specification
+    # through the analytical extractor "is precisely what must not happen", and until this date
+    # it happened on every upload.
+    check(spec.doc_type is None,
+          "no type was assigned, because the classifier never saw it", str(spec.doc_type))
+    check(spec.extraction is None,
+          "and no extraction was recorded for it", str(spec.extraction))
+    check(spec.extraction_model is None,
+          "and no extraction model was charged for it", str(spec.extraction_model))
+    check(entry["status"] == "filed",
+          "the upload reports it as filed, not as extracted or as failed",
+          str(entry["status"]))
+
+    # THE RULE ITSELF, ASSERTED AGAINST THE EXTRACTOR AND NOT AGAINST A SYMPTOM.
+    #
+    # `StubExtractor.calls` records the sha256 of every document it was asked to read. The rule
+    # in `reference_kind`'s docstring is that a specification must never reach the analytical
+    # extractor at all, so the check is simply that its hash is absent from that list.
+    #
+    # Written this way after a weaker version failed to catch its own fault: asserting only the
+    # downstream outcome (status "filed", class reference, no stored extraction) stayed GREEN
+    # with the skip removed, because the document was still stored by the reference branch
+    # further down and the symptoms therefore looked identical. The extractor call is the thing
+    # the design forbids, so the extractor call is what gets asserted.
+    check(sha(blob("Division 23 Specification.pdf")) not in extractor.calls,
+          "the analytical extractor was NEVER asked to read the specification",
+          f"{len(extractor.calls)} call(s) made this run")
+    check(sha(blob("payapp.pdf")) in extractor.calls,
+          "while an analysable document WAS read, so the check above is not vacuous", "")
+
+    # The gate must stay narrow. A register or an individual form is NOT reference material and
+    # must keep going to the analytical classifier, or the storage-redesign register-only rule
+    # is silently undone by this fix.
+    import app.jdrive_tree as _jt
+    for name in ("Submittal 014 shop drawings.pdf", "RFI 233 response.pdf",
+                 "submittal register 2026-06.xlsx", "Monthly Report June.pdf"):
+        check(_jt.reference_kind(name) is None,
+              f"not diverted from the analytical path: {name}",
+              str(_jt.reference_kind(name)))
 
     print("\n   ...and a plainly filed document does not read as a failed extraction")
     up = upload("Tower.rvt")
