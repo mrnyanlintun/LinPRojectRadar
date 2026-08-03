@@ -9,6 +9,52 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-03 — CHART-DATA AND ABSTENTION SUITES: BOTH FINDINGS CHECKED, NEITHER STANDS
+
+Full detail in `REPORT_2026-08-03_chart-abstention-tests.md`. **Nothing was changed.** Server
+1649/1649, `tests_render.html` 68/68, `tests.html` 51/51, tree clean.
+
+A session was briefed to rebuild two suites said to be vacuous. Both premises were checked
+against the code and both are false. **Do not rebuild these suites on the strength of that brief.**
+
+- **There is no chart-data suite and no JavaScript reimplementation of `_result_view`.** Zero
+  matches for `_result_view` in any `.js`/`.html`. Nothing anywhere asserts `spi`, `cpi` or the
+  ensemble scatter. The complete inventory is 30 Python suites plus the two HTML harnesses.
+- **The D1 abstention checks already assert the abstention itself**, and carry the exact
+  anti-vacuity control the brief asked for (section 1: "with every key present, all twelve
+  COMPUTE ... without this, section 2's abstentions would prove nothing").
+
+## The fault proofs, because the counts are not the evidence
+
+- **Fabrication reintroduced**: `insufficient()` patched IN MEMORY to return a confident Green
+  instead of declining. Nothing under `server/app/simulation/` touched on disk. Confirmed to take
+  effect first (B2.4 on empty inputs returned `green / insufficient=False`). Result
+  **100/100 → 60/100**, all twelve abstention assertions red.
+- **Grafting faulted**: `graftUnmodelledFields` stopped carrying unmodelled fields forward.
+  `tests_render.html` **68/68 → 65/68**, exactly the three coordinate-survival checks.
+
+## THE TRAP THAT ALMOST PRODUCED A FALSE FINDING
+
+**A fault can apply, be live in the loaded source, and still not reproduce the defect's shape.**
+My first attempt made `hydrate` return early — a no-op on `LIN_PROJECTS` rather than a stripping
+operation. The coordinate checks stayed green and a different check went red. Stopping there
+would have reported those checks vacuous, wrongly. Aim the fault at the behaviour the check
+claims, then confirm the behaviour actually changed, not merely the file.
+
+Related: I probed "did the fault take effect" by string-matching `hydratePortfolio`'s source,
+which read `false` for a fault living in an inner function. **A source-string probe is not proof
+a fault is active**; the behavioural result is.
+
+## Open, carried forward
+
+- **A narrow real gap, not the one briefed**: the slim-row fields other than `status` (`cpi`,
+  `spi`, `docRiskScore`, `simModuleCount`, `docCount`) are asserted nowhere against the live
+  server. `slimOf()` in `tests_render.html` is hand-written and would not notice if `slim_row`
+  changed. `status` is covered by the over-the-wire group.
+- `test_d1_module_inputs.py` marks failures with `****`, not `FAIL`, unlike every other suite. It
+  still prints a correct RESULT line and exits non-zero, so it is not the part 2 §5.5 crash class,
+  but a cross-suite `grep FAIL` misses it.
+
 # 2026-08-03 — AUDIT FIXES 1 TO 4
 
 Full detail in `REPORT_2026-08-03_audit-fixes-1-4.md`. **Server 30/30 suites, 1649/1649 checks;
