@@ -589,7 +589,33 @@ POST_ACTIONS: dict[str, Callable[[Session, dict], dict]] = {
 }
 
 # AI and file-ingestion paths, deferred until the write paths are proven.
+#
+# `extractsignals` LEFT THIS SET on 2026-08-04. It is dispatched by DOCUMENT_ACTIONS, which the
+# facade consults before this set, so the entry would now be unreachable as well as wrong.
+#
+# WHAT IS STILL HERE IS NOT ALL THE SAME KIND OF THING. Checked one by one against the code
+# rather than assumed, because `chat` and `extractsignals` were both found stranded — an endpoint
+# that exists, has its key, and is simply never dispatched:
+#
+#   analyze, portfolioanalyze, audit, chat, tts
+#       No handler exists anywhere in server/app. These are Apps Script actions that were never
+#       ported, so the refusal is accurate: there is nothing to dispatch to. `chat` and
+#       `portfolioanalyze` and `audit` additionally have FEATURE FLAGS in features.py
+#       (`chat`, `health_dialog`, `auditor`), which is what makes them look implemented from the
+#       frontend; a flag gates a feature, it does not supply one.
+#   identifyonly
+#       No handler, but UNLIKE the others the capability it names DOES exist and is reachable:
+#       `AnthropicExtractor.classify_with_confidence` is called on every upload, and the type and
+#       confidence come back on the projectupload/extractsignals response. Wiring the standalone
+#       action would add a second model call per document for an answer the upload already
+#       returns. Left deferred deliberately, not overlooked.
+#   ingestcorpus
+#       No handler. The corpus surface that DOES exist is `projectcorpus` in files.py, which is
+#       dispatched and gated on the existing `auditor` flag. This name is the retired one.
+#
+# So `extractsignals` was the only genuinely stranded action of the eight. See
+# REPORT_2026-08-04_real-extraction.md for the evidence behind each line above.
 DEFERRED_AI_ACTIONS = {
-    "chat", "analyze", "extractsignals", "identifyonly", "audit", "portfolioanalyze",
+    "chat", "analyze", "identifyonly", "audit", "portfolioanalyze",
     "ingestcorpus", "tts",
 }

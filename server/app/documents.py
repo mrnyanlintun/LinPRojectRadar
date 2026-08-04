@@ -1051,6 +1051,124 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
     }
 
 
+def a_extractsignals(session: Session, payload: dict, secret: str, ttl: int) -> dict[str, Any]:
+    """
+    The legacy ONE-DOCUMENT ingest action, adapted onto `a_projectupload`.
+
+    WHY AN ADAPTER AND NOT A SECOND EXTRACTION PATH
+
+    `extractsignals` sat in `DEFERRED_AI_ACTIONS` and returned "Action not implemented in this
+    build", so every upload through the project detail page's "Upload a Document" panel
+    (`signals.js`, rendered by `ingest.renderScopedIngest`) failed, with its key set. The
+    platform meanwhile had a complete, guarded, dispatched upload path in `a_projectupload`,
+    used by the workspace period upload and the Files tab.
+
+    Implementing extraction again here would have produced two paths that must agree forever
+    about authorisation, the content-hash cache, the malformed-numeric guard, the document risk
+    range guard, supersession, filing, observation emission and the project event log. This
+    codebase has already paid for that kind of drift more than once. So this reshapes the legacy
+    single-document request into the `documents: [...]` request `a_projectupload` accepts, calls
+    it, and reshapes the answer back. Every guarantee is inherited rather than restated, and a
+    future change to the upload rules cannot apply to one surface and miss the other.
+
+    WHAT THE LEGACY CALLER NEEDS BACK
+
+    `signals.js` reads `docType` and `applied` (see its `processOne`), and passes the whole
+    response through `mergeComputed`, which looks for `signalInputs`/`computed`. Everything after
+    the `applied` count is wrapped in a non-fatal try/catch there, so the contract that actually
+    matters is `ok`, `docType` and `applied`; `signalInputs` is supplied as well so the panel can
+    show CPI and SPI rather than a bare field count.
+    """
+    entry: dict[str, Any] = {
+        "filename": payload.get("fileName") or payload.get("filename") or "unnamed",
+        "mimeType": payload.get("mimeType") or payload.get("mime_type") or "",
+        "docType": payload.get("docType") or payload.get("doc_type") or "",
+        "supersedes": payload.get("supersedes") or payload.get("supersedes_document_id") or "",
+    }
+
+    # The legacy client sends EITHER `dataBase64` or `text`: `store.js` parses a PDF to plain text
+    # with PDF.js and posts that instead of the bytes. `_decode` speaks only base64, so a text
+    # submission is encoded here rather than by teaching the shared decoder a second wire format
+    # that only this one legacy caller uses.
+    #
+    # NOTHING IS REFUSED IN THIS FUNCTION BEFORE `a_projectupload` RUNS. An earlier draft returned
+    # "needs either dataBase64 or text" up front, which answered an UNAUTHENTICATED caller with a
+    # payload critique — the facade's own suite caught it. A body carrying neither simply arrives
+    # without `dataBase64`, so `_decode` refuses it with the shared wording, after
+    # `resolve_caller` and the PM check have run.
+    b64 = payload.get("dataBase64") or payload.get("data_base64")
+    text = payload.get("text")
+    if b64:
+        entry["dataBase64"] = b64
+    elif text:
+        entry["dataBase64"] = base64.b64encode(str(text).encode("utf-8")).decode("ascii")
+        # A text submission has no meaningful browser mime type, and leaving whatever the client
+        # claimed would let a PDF-typed text body reach the PDF document block as raw prose.
+        entry["mimeType"] = "text/plain"
+
+    upload = dict(payload)
+    upload["documents"] = [entry]
+    resp = a_projectupload(session, upload, secret, ttl)
+    if not resp.get("ok"):
+        return resp
+
+    files = resp.get("files") or []
+    if not files:
+        return err("extractsignals stored nothing for this document")
+    first = files[0]
+    if first.get("status") == "failed":
+        # The per-file reason — the guard that refused and the field it named — is what the
+        # uploader's "Extraction failed" dialog shows. Returning ok:True with a failed file
+        # would report a refusal as a success with zero fields.
+        return err(str(first.get("error") or "extraction failed"))
+
+    # `applied` is the field count the panel prints. Read from the STORED extraction rather than
+    # recomputed from the response, so it reports what was actually persisted, and counts only
+    # non-null values: a field the model correctly declined to answer was not applied.
+    sha = hashlib.sha256(base64.b64decode(entry.get("dataBase64") or "",
+                                          validate=True)).hexdigest()
+    doc = session.scalars(select(Document).where(Document.sha256 == sha)).first()
+    extraction = (doc.extraction if doc is not None else None) or {}
+    applied = sorted(k for k, v in extraction.items() if v is not None and v != "")
+
+    # The period's selected signal inputs, by the SAME selection the compute path runs
+    # (`_compute_and_store`): observations over the live document set, bounded by the derived
+    # cutoff. Nothing is computed and nothing is stored here — the legacy action never ran the
+    # analytical layer either, and `projectcompute` remains the only thing that does.
+    signal_inputs: dict[str, Any] = {}
+    try:
+        project = session.scalars(
+            select(Project).where(Project.legacy_id == resp["project_id"])
+        ).first()
+        period_docs = _period_documents(session, project, resp["period"])
+        observations: list[dict] = []
+        for d in period_docs:
+            observations.extend(emit_observations(d))
+        signal_inputs = select_signal_inputs(observations, _derive_cutoff(period_docs, None))
+    except Exception as exc:  # noqa: BLE001 — display only; the document is already stored
+        log.warning("extractsignals could not assemble signalInputs for display: %s", exc)
+
+    return {
+        "ok": True,
+        "project_id": resp.get("project_id"),
+        "period": resp.get("period"),
+        "docType": first.get("doc_type"),
+        "applied": applied,
+        "signalInputs": signal_inputs,
+        "contributes": first.get("contributes"),
+        "folder_path": first.get("folder_path"),
+        "filing_class": first.get("filing_class"),
+        "filing_label": first.get("filing_label"),
+        "needs_filing_review": first.get("needs_filing_review"),
+        "classification_confidence": first.get("classification_confidence"),
+        "note": first.get("note"),
+        "was_cached": first.get("was_cached"),
+        "extraction_model": resp.get("extraction_model"),
+        "extraction_seconds": resp.get("extraction_seconds"),
+        "server_time": resp.get("server_time"),
+    }
+
+
 def a_projectuploadstatus(session: Session, payload: dict, secret: str,
                           ttl: int) -> dict[str, Any]:
     """Any active member. Which documents are present, and whether the period has been computed."""
@@ -1361,6 +1479,9 @@ def a_adminrecompute(session: Session, payload: dict, secret: str, ttl: int) -> 
 
 DOCUMENT_ACTIONS: dict[str, Callable[[Session, dict, str, int], dict]] = {
     "projectupload": a_projectupload,
+    # The legacy one-document ingest, adapted onto projectupload. See a_extractsignals for why
+    # it is an adapter and not a second extraction path.
+    "extractsignals": a_extractsignals,
     "projectuploadstatus": a_projectuploadstatus,
     "projectcompute": a_projectcompute,
     "projectresults": a_projectresults,
