@@ -40,22 +40,35 @@ already touches the "what was traded against what" surface this would extend.
 
 ## Run 2 — Resources thread — 80% — Opus
 
-OPEN
+DONE (2026-08-04). Key trade shortage opening at period 7 by the new spacing rule, with its own
+three verbs (`pay_premium` / `resequence` / `accept_delay`) following run 1's shape. Crew
+adequacy is a MULTIPLIER ON EARNING, not a cost paid when acted on: it multiplies into the same
+`ev_factor` chain as the deferral penalty and the restart loss, so a low value slows every
+period whatever the trainee spent it doing. Accelerating with scarce trades costs 1.8x the
+premium and adds 0.25 extra hazard. `RESOURCE_FIGURES`, designed, led with in
+`REPORT_2026-08-04_training-resources-thread.md` for correction.
 
-Key trade shortage. Options: pay premium, resequence, accept delay. Variable: crew adequacy, which
-degrades productivity while low.
+**THE SPACING RULE IS SOLVED AND RUN 4 DEPENDS ON READING IT.** Openings are derived
+(`thread_opening_periods()`), skip periods reserved by discrete events, and REPRODUCE the
+periods run 4 and run 1 were verified against rather than renumbering them. **It supports
+exactly three secondary threads at the current run length; a fourth is refused with a stated
+reason.** Run 4's "spine plus three for a hard run" is exactly at that ceiling with nothing
+spare -- see the report before assuming a fourth will fit.
 
-Larger than run 1 because crew adequacy feeds the schedule engine rather than sitting beside it, and
-because this is the first run where two secondary threads can be live at once. Competition for float
-starts here.
+Came in around the 80% target. The wiring shrank because the pattern existed; verification did
+not, and the browser drive remains the most expensive step and the one that finds the most (it
+caught a defect 61 passing server checks missed). **A reusable fixture that bootstraps an
+operational training account and session token would pay for itself across runs 3 and 4;** not
+built here because shared test infrastructure built inside a thread task gets shaped by one
+caller.
 
-**From run 1: give this thread its OWN verbs (pay premium / resequence / accept delay), not the
-dispute's.** Reusing the dispute's escalate/absorb/defer (the way the differing site condition
-does) makes one act decide two matters at once and teaches nothing about competition; a thread
-needs its own verb set for choosing one thread's action to visibly NOT be choosing the other's.
+As originally scoped: key trade shortage; pay premium, resequence, accept delay; crew adequacy
+degrading productivity while low. Built as scoped, with its own verbs, and the pattern held.
 
 **Correct the effect table after playing this before starting run 3.** Run 3 builds on top of it,
-and an uncorrected productivity penalty propagates.
+and an uncorrected productivity penalty propagates -- more so than for any earlier table, because
+this one is a multiplier on earning rather than a one-off charge, so an error in it compounds
+across every period of every run rather than landing once.
 
 ## Run 3 — Communications, stakeholder and scope threads — 80% — Opus
 
@@ -77,6 +90,12 @@ three sessions touching the same two variables.
 Scope's consequence lands at closeout rather than the next period, which is a longer feedback path
 than anything built so far. Report how that is surfaced so a trainee connects it back.
 
+**From run 2: the spacing rule caps live secondary threads at three.** These are three new
+thread TYPES, which is fine (composition picks which are live), but three of them cannot all be
+live alongside the site condition and quality without changing `PERIODS_TOTAL`,
+`THREAD_OPENING_FIRST_PERIOD` or the play-out reserve. The rule refuses loudly rather than
+overlapping, so this surfaces as an error, not a silent collision.
+
 ## Run 4 — Composition, difficulty and cross-area debrief — 80% — Opus
 
 OPEN
@@ -92,6 +111,13 @@ The debrief extends to say which areas the run exercised and what was traded aga
 who protected schedule by neglecting quality should see that stated.
 
 Composition is mostly wiring once the threads exist, which is why it carries the debrief work too.
+
+**From runs 1 and 2, both outstanding and both now overdue:**
+- `build_recommendation` still reasons only about the claim. Two threads' worth of open matters
+  are invisible to it mid run. It should not slip past this run.
+- The spacing rule's three-thread ceiling is exactly where "plus three for a hard run" lands.
+  Decide deliberately whether to raise it rather than discovering it by a refusal.
+- A reusable operational-training-account fixture for the browser drive.
 
 ---
 

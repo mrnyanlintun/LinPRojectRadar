@@ -119,6 +119,62 @@ EVENT_FIGURES: dict[str, Any] = {
 IMPACT_COST_RATE = 0.015
 IMPACT_DAYS = 12
 
+# ------------------------------------------------------- WHEN SECONDARY THREADS OPEN (run 2 of
+#                                                                             the PMP upgrade)
+#
+# Run 1 picked period 6 for the quality inspection BY HAND, after discovering it collided with
+# the scheduled near miss at period 4. That does not scale: with three secondary threads and
+# run 4 composing them, hand-picking is how two threads silently land on the same period and one
+# of them is never seen. So openings are DERIVED, not written down.
+#
+# THE RULE. Secondary threads open in declaration order, starting at
+# THREAD_OPENING_FIRST_PERIOD, stepping by THREAD_OPENING_MIN_GAP, skipping any period already
+# reserved by a discrete event the trainee does not control. Periods 1 to 4 are deliberately
+# excluded from the pool: periods 1 to 3 leave the dispute the only live thread, so a trainee
+# meets the spine's shape before a second thread arrives, and period 4 is the standing scheduled
+# near miss (EVENT_FIGURES["near_miss_period"]) -- a thread opening there would have its very
+# first decision forced through a stop work order response by construction, before the trainee
+# ever saw its own verbs. That is exactly the collision run 1 hit.
+#
+# The rule REPRODUCES the two periods already in use (the site condition at 5, the quality
+# inspection at 6) rather than renumbering them, which is the property that makes it a rule and
+# not a rewrite: run 4's regimes work and run 1's quality work both keep the geometry they were
+# verified against. Resources therefore lands at 7, and a fourth thread would land at 8.
+#
+# It REFUSES rather than silently crowding the end of the run: a thread allocated later than
+# THREAD_OPENING_LAST_PERIOD would open with too few periods left to play out, so the derivation
+# raises instead of returning a period nobody can act on twice.
+THREAD_OPENING_FIRST_PERIOD = 5
+THREAD_OPENING_MIN_GAP = 1
+# Three periods of play after opening: enough for a thread whose state compounds (quality's
+# backlog forces after 3 deferrals) to actually reach its own cliff inside the run.
+THREAD_OPENING_LAST_PERIOD = PERIODS_TOTAL - 3
+SECONDARY_THREAD_ORDER = ("dsc", "quality", "resources")
+
+
+def thread_opening_periods(order: tuple[str, ...] = SECONDARY_THREAD_ORDER) -> dict[str, int]:
+    """
+    Which period each secondary thread opens in. Pure and derived, so two threads cannot be
+    given the same period and none can be given a period a discrete event already owns.
+    """
+    reserved = {EVENT_FIGURES["near_miss_period"]}
+    out: dict[str, int] = {}
+    period = THREAD_OPENING_FIRST_PERIOD
+    for name in order:
+        while period in reserved or period in out.values():
+            period = period + 1
+        if period > THREAD_OPENING_LAST_PERIOD:
+            raise ValueError(
+                f"secondary thread {name!r} would open in period {period}, later than "
+                f"{THREAD_OPENING_LAST_PERIOD}, leaving too few periods of the run to play it "
+                "out; the run is not long enough for this many threads")
+        out[name] = period
+        period = period + THREAD_OPENING_MIN_GAP
+    return out
+
+
+THREAD_OPENING_PERIODS = thread_opening_periods()
+
 # ------------------------------------------------------------------- the quality thread (run 1
 #                                                                          of the PMP upgrade)
 #
@@ -132,12 +188,9 @@ IMPACT_DAYS = 12
 # what makes the two threads compete for one trainee's one decision per period.
 #
 # DESIGNED FIGURES, not sourced. Reported for correction, same as EVENT_FIGURES above.
-# Period 6, not earlier: periods 1-2 leave the dispute the only live thread (so a trainee learns
-# its shape alone first, as run 2 intended), and period 4 is the standing scheduled near miss
-# (EVENT_FIGURES["near_miss_period"]) -- opening quality there would force every run's first
-# quality decision through a stop work order response by construction. Six is clear of both and
-# still leaves four periods before the run ends for the backlog to compound or force.
-QUALITY_INSPECTION_PERIOD = 6
+# The opening period is DERIVED by the spacing rule above (run 2), which reproduces the 6 this
+# thread was built and verified against rather than renumbering it.
+QUALITY_INSPECTION_PERIOD = THREAD_OPENING_PERIODS["quality"]
 QUALITY_FIGURES: dict[str, Any] = {
     # The defect's rework cost, as a fraction of contract value, set when the inspection fails.
     "defect_value_rate": 0.004,
@@ -160,6 +213,56 @@ QUALITY_FIGURES: dict[str, Any] = {
 }
 QUALITY_DECISIONS = ("accept_nonconforming", "rework_now", "rework_later")
 
+# ----------------------------------------------------------------- the resources thread (run 2
+#                                                                          of the PMP upgrade)
+#
+# A key trade shortage: qualified crews are unavailable when the work needs them. Follows the
+# quality thread's shape exactly (own verbs, own figures table, opens by the spacing rule above,
+# closes on a terminal status) with ONE structural difference that is the point of this run:
+#
+# CREW ADEQUACY FEEDS THE SCHEDULE ENGINE RATHER THAN SITTING BESIDE IT. Quality's backlog is a
+# figure that costs money and float when it is acted on. Crew adequacy is a MULTIPLIER ON
+# EARNING: it multiplies into the same ev_factor chain as the deferral penalty and the restart
+# productivity loss, so while it is low EVERY period earns less -- not only periods where the
+# trainee acts on the shortage. A run that ignores the shortage to fix the defect earns less on
+# the rework period too, and on the acceleration period, and on the period it escalates the
+# claim. That coupling is what makes this a resources thread and not a second cost lever.
+#
+# ACCELERATING WITH SCARCE TRADES IS WORSE THAN ACCELERATING WITH AVAILABLE ONES, on both axes:
+# the premium is multiplied, and the incident hazard rises further. Compressing a schedule you
+# do not have the crews for is how people get hurt, and the engine says so deterministically.
+#
+# The float and contingency it spends are THE SAME float_consumed_days and contingency_remaining
+# the dispute and the quality thread spend. There is no resource pool.
+#
+# DESIGNED FIGURES, not sourced. Reported for correction, same as EVENT_FIGURES and
+# QUALITY_FIGURES above.
+RESOURCE_SHORTAGE_PERIOD = THREAD_OPENING_PERIODS["resources"]
+RESOURCE_FIGURES: dict[str, Any] = {
+    # Full crews earn a full period. The shortage drops adequacy to this on discovery, so the
+    # very first shortage period already earns 25 percent less than a full one.
+    "adequacy_full": 1.0,
+    "shortage_adequacy": 0.75,
+    # Adequacy never falls below this: even a badly handled shortage leaves a crew on site.
+    "adequacy_floor": 0.40,
+    # Pay premium: buys the trades back at once. Holds the schedule (adequacy returns to full
+    # the same period) and spends real money, drawn from the SHARED contingency first.
+    "pay_premium_cost_rate": 0.012,
+    # Resequence: no money, but it spends float and only partly recovers the crews, because
+    # reordering the work moves the shortage rather than filling it.
+    "resequence_float_days": 4,
+    "resequence_adequacy_recovery": 0.15,
+    # Accept the delay: float outright, and the shortage deepens while it persists, so a second
+    # acceptance costs more earning than the first.
+    "accept_delay_float_days": 3,
+    "accept_delay_adequacy_decay": 0.10,
+    # At or below this, the crews count as scarce and acceleration is penalised.
+    "low_adequacy_at_or_below": 0.85,
+    "accelerate_low_adequacy_cost_multiplier": 1.8,
+    "accelerate_low_adequacy_hazard_extra": 0.25,
+}
+RESOURCE_DECISIONS = ("pay_premium", "resequence", "accept_delay")
+
 # ---------------------------------------------------------------- regimes across the run (run 4)
 #
 # Run 4 makes the choice of form matter beyond the claim-notice check. Three mechanics, all
@@ -176,7 +279,7 @@ QUALITY_DECISIONS = ("accept_nonconforming", "rework_now", "rework_later")
 # duty is notice promptly and BEFORE the conditions are disturbed (52.236-2(a)), modelled as:
 # notice at the first decision preserves; a period of continued work disturbs the condition and
 # the entitlement is gone. Same discovery, three different failures, decided by the form alone.
-DSC_PERIOD = 5
+DSC_PERIOD = THREAD_OPENING_PERIODS["dsc"]   # 5, derived by the spacing rule (run 2)
 DSC_DISCOVERY_DAY = 3            # of the period; 17 days before that period's decision day
 DSC_COST_RATE = 0.008            # estimated impact of the condition: 0.8 percent of value
 DSC_DAYS = 6                     # stated schedule content, informational
@@ -484,6 +587,13 @@ def initial_state(contract_form: str, contract_value: float, conditions: str,
         # QUALITY_INSPECTION_PERIOD. None until then, for the same reason `dsc` is: its
         # existence before discovery is a forecast the state view must not carry.
         "quality": None,
+        # Run 2 of the PMP upgrade: the key trade shortage, discovered in
+        # RESOURCE_SHORTAGE_PERIOD. None until then, like the two threads above.
+        "resources": None,
+        # Crew adequacy, by contrast, is NOT None before the shortage: it is a live property of
+        # the project from period one, at full, and the shortage degrades it. It multiplies into
+        # every period's earning, so it has to exist before anything can degrade it.
+        "crew_adequacy": RESOURCE_FIGURES["adequacy_full"],
         # Run 4, FAR only: True when the claim's value crossed the certification threshold
         # during the last deferred period, so an immediate escalation submits the form
         # prepared before it grew.
@@ -588,6 +698,31 @@ def quality_position(state: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
+def resource_position(state: dict[str, Any]) -> dict[str, Any] | None:
+    """
+    The trade shortage's own surface: its status and what the crews are earning. Derived, never
+    stored twice, like the notice, site condition and quality clocks. None before discovery.
+
+    `productivity_pct` is the figure a trainee actually needs, because crew adequacy is not a
+    cost they pay once but a rate everything else runs at.
+    """
+    resources = state.get("resources")
+    if not resources:
+        return None
+    adequacy = state.get("crew_adequacy", RESOURCE_FIGURES["adequacy_full"])
+    return {
+        "status": resources["status"],
+        # HOW it closed, not only that it did. The screen states the closure in words, and
+        # without this it cannot tell paying a premium from resequencing -- it would have to
+        # guess, and a guess here tells the trainee they did something they did not do.
+        "resolution": resources.get("resolution"),
+        "crew_adequacy": adequacy,
+        "productivity_pct": round(adequacy * 100),
+        "periods_short": resources["periods_short"],
+        "scarce": adequacy <= RESOURCE_FIGURES["low_adequacy_at_or_below"],
+    }
+
+
 def allowed_decisions(state: dict[str, Any]) -> tuple[str, ...]:
     """
     What may be decided this period. During a stop work order the ONLY decision is the
@@ -598,10 +733,14 @@ def allowed_decisions(state: dict[str, Any]) -> tuple[str, ...]:
     """
     if state.get("incident", {}).get("status") == "stopped":
         return RESPONSES
+    menu = DECISIONS
     quality = state.get("quality")
     if quality and quality["status"] == "open":
-        return DECISIONS + QUALITY_DECISIONS
-    return DECISIONS
+        menu = menu + QUALITY_DECISIONS
+    resources = state.get("resources")
+    if resources and resources["status"] == "open":
+        menu = menu + RESOURCE_DECISIONS
+    return menu
 
 
 def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
@@ -612,7 +751,7 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
     deterministic, so the same decisions always meet the same events.
     """
     allowed = allowed_decisions(state)
-    if decision not in DECISIONS + RESPONSES + QUALITY_DECISIONS:
+    if decision not in DECISIONS + RESPONSES + QUALITY_DECISIONS + RESOURCE_DECISIONS:
         raise ValueError(f"unknown decision: {decision}")
     if decision not in allowed:
         if state.get("incident", {}).get("status") == "stopped":
@@ -621,6 +760,9 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
         if decision in QUALITY_DECISIONS:
             raise ValueError("no failed inspection is open this period; there is nothing to "
                              "decide about quality")
+        if decision in RESOURCE_DECISIONS:
+            raise ValueError("no trade shortage is open this period; there is nothing to "
+                             "decide about resources")
         raise ValueError("no stop work order is in effect; there is nothing to respond to")
     if state["period"] > PERIODS_TOTAL:
         raise ValueError("the run is complete; no further period exists")
@@ -630,6 +772,7 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
          "incidents": list(state.get("incidents") or []),
          "dsc": ({**state["dsc"]} if state.get("dsc") else None),
          "quality": ({**state["quality"]} if state.get("quality") else None),
+         "resources": ({**state["resources"]} if state.get("resources") else None),
          "decisions": list(state["decisions"])}
     profile = CONDITION_PROFILES[s["conditions"]]
     bac = s["bac"]
@@ -637,6 +780,7 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
     dispute_open = s["dispute"]["status"] == "open"
     dsc_open = bool(s["dsc"]) and s["dsc"]["status"] == "open"
     quality_open = bool(s["quality"]) and s["quality"]["status"] == "open"
+    resources_open = bool(s["resources"]) and s["resources"]["status"] == "open"
     period_earn = s["baseline_contract_sum"] / PERIODS_TOTAL
     # The FAR certification flag describes the LAST period only; it is re-derived below when a
     # deferral grows the claim across the threshold, and cleared otherwise.
@@ -661,6 +805,18 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
         notes.append("Restart productivity loss applied to this period's earning.")
         if s["incident"]["restart_periods_left"] <= 0:
             s["incident"] = {"status": "none"}
+    # ---- run 2's coupling, and the whole point of the resources thread. Crew adequacy is not a
+    # cost paid when the shortage is acted on; it is the RATE THE WHOLE PROJECT RUNS AT, so it
+    # multiplies here, into the same chain as the deferral penalty and the restart loss, and
+    # therefore applies to EVERY period it is low -- including periods spent reworking a defect,
+    # escalating a claim or accelerating. At full adequacy this multiplies by 1.0 and no run
+    # that never meets the shortage is affected at all.
+    crew_adequacy = s.get("crew_adequacy", RESOURCE_FIGURES["adequacy_full"])
+    ev_factor *= crew_adequacy
+    if crew_adequacy < RESOURCE_FIGURES["adequacy_full"]:
+        notes.append(f"Crews are short: this period earned at {round(crew_adequacy * 100)} "
+                     "percent of full productivity, and that applies to all the work, not "
+                     "only the trade that is short.")
     s["pv"] = round(s["pv"] + period_earn, 2)
     s["ev"] = round(s["ev"] + period_earn * ev_factor, 2)
     s["ac"] = round(s["ac"] + period_earn, 2)
@@ -844,12 +1000,27 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
         recovered = min(EVENT_FIGURES["acceleration_float_recovered_days"],
                         s["float_consumed_days"])
         s["float_consumed_days"] = s["float_consumed_days"] - recovered
+        # Run 2's interaction: accelerating with scarce trades is worse on BOTH axes. The
+        # premium is multiplied (you are bidding for crews who are already unavailable) and the
+        # hazard rises further (compressing work you do not have the people for is how people
+        # get hurt). Deterministic, so the debrief can attribute it.
+        scarce = crew_adequacy <= RESOURCE_FIGURES["low_adequacy_at_or_below"]
         premium = round(bac * EVENT_FIGURES["acceleration_cost_rate"]
-                        * profile["acceleration_cost_multiplier"], 2)
+                        * profile["acceleration_cost_multiplier"]
+                        * (RESOURCE_FIGURES["accelerate_low_adequacy_cost_multiplier"]
+                           if scarce else 1.0), 2)
         s["ac"] = round(s["ac"] + premium, 2)
-        s["hazard"] = round(s["hazard"] + EVENT_FIGURES["acceleration_hazard_per_use"], 2)
+        hazard_added = (EVENT_FIGURES["acceleration_hazard_per_use"]
+                        + (RESOURCE_FIGURES["accelerate_low_adequacy_hazard_extra"]
+                           if scarce else 0.0))
+        s["hazard"] = round(s["hazard"] + hazard_added, 2)
         notes.append(f"Acceleration recovered {recovered} float days at a premium, and a "
                      "compressed site carries a higher chance of an incident.")
+        if scarce:
+            notes.append("The trades were already short when the work was accelerated: the "
+                         "premium was higher than it would have been with crews available, "
+                         "and compressing work that is already short handed raises the chance "
+                         "of an incident further still.")
         # A dispute left open while accelerating still ages: nobody tended the notice. The
         # site condition ages the same way, and a period of compressed work disturbs it.
         if dispute_open:
@@ -916,6 +1087,59 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
             "Rework deferred: cheaper this period, but the defect backlog grows while it "
             f"waits, now {_fmt_money(s['quality']['defect_value'])}, and it competes for the "
             "same float and contingency as everything else still open.")
+    elif decision == "pay_premium" and resources_open:
+        # Money now, schedule held. The premium is drawn from the SHARED contingency first and
+        # the remainder falls to actual cost, exactly as absorbing a change does -- one pool,
+        # and a period spent buying crews back is contingency the dispute cannot absorb with.
+        cost = round(bac * RESOURCE_FIGURES["pay_premium_cost_rate"], 2)
+        drawn = min(cost, s["contingency_remaining"])
+        s["contingency_remaining"] = round(s["contingency_remaining"] - drawn, 2)
+        s["ac"] = round(s["ac"] + cost, 2)
+        s["crew_adequacy"] = RESOURCE_FIGURES["adequacy_full"]
+        s["resources"]["status"] = "resolved"
+        s["resources"]["resolution"] = "premium"
+        notes.append(
+            f"Premium paid to secure the trades: {_fmt_money(cost)}, of which "
+            f"{_fmt_money(drawn)} came from contingency. The crews are back to full and the "
+            "schedule holds from the next period on.")
+    elif decision == "resequence" and resources_open:
+        # No money directly, but float, and only a partial recovery: reordering the work moves
+        # the shortage rather than filling it, so the crews come back slowly and the collision
+        # with whatever was resequenced around is a float cost.
+        s["float_consumed_days"] = (s["float_consumed_days"]
+                                    + RESOURCE_FIGURES["resequence_float_days"])
+        s["crew_adequacy"] = min(
+            RESOURCE_FIGURES["adequacy_full"],
+            round(s["crew_adequacy"] + RESOURCE_FIGURES["resequence_adequacy_recovery"], 4))
+        s["resources"]["periods_short"] = s["resources"]["periods_short"] + 1
+        if s["crew_adequacy"] >= RESOURCE_FIGURES["adequacy_full"]:
+            s["resources"]["status"] = "resolved"
+            s["resources"]["resolution"] = "resequenced"
+            notes.append(
+                f"The work was resequenced again, at {RESOURCE_FIGURES['resequence_float_days']}"
+                " float days, and the crews are finally back to full. Resequencing costs no "
+                "money directly; it spends float and collides with the work it reorders "
+                "around.")
+        else:
+            notes.append(
+                f"The work was resequenced around the shortage: "
+                f"{RESOURCE_FIGURES['resequence_float_days']} float days spent and no money "
+                f"directly, but the crews are still at {round(s['crew_adequacy'] * 100)} "
+                "percent. Reordering moves a shortage rather than filling it.")
+    elif decision == "accept_delay" and resources_open:
+        # Float outright, and the shortage DEEPENS while it persists, so the second acceptance
+        # costs more earning than the first: the compounding the brief asks for.
+        s["float_consumed_days"] = (s["float_consumed_days"]
+                                    + RESOURCE_FIGURES["accept_delay_float_days"])
+        s["crew_adequacy"] = max(
+            RESOURCE_FIGURES["adequacy_floor"],
+            round(s["crew_adequacy"] - RESOURCE_FIGURES["accept_delay_adequacy_decay"], 4))
+        s["resources"]["periods_short"] = s["resources"]["periods_short"] + 1
+        notes.append(
+            f"The delay was accepted: {RESOURCE_FIGURES['accept_delay_float_days']} float days "
+            f"spent and the crews fell to {round(s['crew_adequacy'] * 100)} percent. A shortage "
+            "left in place deepens, so every period after this one earns less than this one "
+            "did.")
     # A decision recorded after the dispute has closed changes nothing but the record: the
     # period still progresses above, and the decision is still logged below. Stated rather
     # than refused, because "there is nothing left to decide" is itself something the next
@@ -964,6 +1188,23 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
         notes.append("An inspection failed: defective work was found in place, not a stop "
                      "work order. Accept it as is, rework it now, or defer the rework to a "
                      "later period.")
+
+    # ---- the key trade shortage opens as period RESOURCE_SHORTAGE_PERIOD begins (run 2 of the
+    # PMP upgrade), in the same block and by the same spacing rule as the two threads above.
+    # Unlike them, its state variable was already live: crew_adequacy simply stops being full.
+    if s["period"] == RESOURCE_SHORTAGE_PERIOD and s.get("resources") is None:
+        s["resources"] = {
+            "status": "open",
+            "periods_short": 0,
+            "resolution": None,
+        }
+        s["crew_adequacy"] = RESOURCE_FIGURES["shortage_adequacy"]
+        notes.append(
+            "A key trade is short: the qualified crews this work needs are not available when "
+            "it needs them, and productivity has fallen to "
+            f"{round(RESOURCE_FIGURES['shortage_adequacy'] * 100)} percent across the whole "
+            "project, not only that trade's own work. Pay a premium to secure them, resequence "
+            "the work around the shortage, or accept the delay.")
 
     # ---- a defect backlog deferred QUALITY_FIGURES["force_after_periods"] times forces the
     # rework automatically, at whatever period that happens to land on -- not one the trainee
