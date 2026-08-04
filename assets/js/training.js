@@ -153,6 +153,29 @@ var LinTraining = (function () {
     return '<div class="tr-notice ' + cls + '" id="tr-dsc-notice">' + body + "</div>";
   }
 
+  function qualityNoticeHtml(n) {
+    if (!n) return "";
+    var cls = n.status === "open" ? "tr-notice-tight" : "";
+    var body;
+    if (n.status === "open") {
+      body = "Failed inspection: rework valued at " + money(n.defect_value) +
+        (n.periods_deferred
+          ? ", deferred " + n.periods_deferred + " time" + (n.periods_deferred === 1 ? "" : "s") +
+            "; " + n.periods_until_forced + " more deferral" +
+            (n.periods_until_forced === 1 ? "" : "s") + " forces the rework"
+          : "; accept it, rework it now, or defer the rework");
+    } else if (n.status === "accepted") {
+      body = "Nonconforming work accepted: " + money(n.closeout_exposure) +
+        " stands as exposure at closeout.";
+    } else if (n.status === "forced_resolved") {
+      body = "The deferred defect backlog forced rework, at a period not chosen: " +
+        money(n.defect_value) + " spent.";
+    } else {
+      body = "Rework complete: " + money(n.defect_value) + " spent.";
+    }
+    return '<div class="tr-notice ' + cls + '" id="tr-quality-notice">' + body + "</div>";
+  }
+
   function briefHtml(b) {
     if (!b) return "";
     var c = b.conditions || {};
@@ -190,6 +213,8 @@ var LinTraining = (function () {
       fig("Liquidated damages exposure", money(s.liquidated_damages_exposure), "tr-ld") +
       fig("Dispute", esc(s.dispute.status) + ", entitlement " + esc(s.dispute.entitlement),
           "tr-dispute") +
+      (s.quality ? fig("Quality", esc(s.quality.status) + ", backlog " +
+          money(s.quality.defect_value), "tr-quality") : "") +
       "</div>";
   }
 
@@ -293,7 +318,10 @@ var LinTraining = (function () {
     defer: ["Defer", "protects both, runs the notice clock down, and drifts cost and float while the dispute stays open"],
     accelerate: ["Accelerate", "buys float back at a premium, and a compressed site carries a higher chance of an incident"],
     respond_strong: ["Respond with the full correction package", "costlier now, lifts the stop work order sooner, shorter restart shadow"],
-    respond_minimal: ["Respond minimally", "cheaper now, stays stopped longer, longer restart shadow"]
+    respond_minimal: ["Respond minimally", "cheaper now, stays stopped longer, longer restart shadow"],
+    accept_nonconforming: ["Accept nonconforming", "no cost, no time, spends credibility now and stays as exposure at closeout"],
+    rework_now: ["Rework now", "costs money and float immediately, clears it"],
+    rework_later: ["Rework later", "cheaper now, the backlog grows, and it competes for the same float and contingency"]
   };
 
   function debriefHtml(d) {
@@ -304,6 +332,13 @@ var LinTraining = (function () {
         esc(m.entitlement) +
         (m.recovered_amount ? ", " + money(m.recovered_amount) + " recovered" : "") + "</li>";
     }).join("");
+    if (d.quality) {
+      closedRows += "<li id=\"tr-debrief-quality\">the failed inspection: " +
+        esc(d.quality.status) +
+        (d.quality.closeout_exposure
+          ? ", " + money(d.quality.closeout_exposure) + " exposure at closeout"
+          : "") + "</li>";
+    }
     var incRows = (d.incidents || []).map(function (i) {
       return "<li>Period " + i.period + ", " +
         (i.response ? esc(String(i.response).replace("respond_", "")) + " response, " : "") +
@@ -389,6 +424,7 @@ var LinTraining = (function () {
       briefHtml(view.brief) +
       noticeHtml(view.notice) +
       dscNoticeHtml(view.dsc_notice) +
+      qualityNoticeHtml(view.quality_notice) +
       incidentHtml(s.incident) +
       recommendationHtml(view.recommendation) +
       changesHtml(s.period_changes) +

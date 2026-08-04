@@ -119,6 +119,47 @@ EVENT_FIGURES: dict[str, Any] = {
 IMPACT_COST_RATE = 0.015
 IMPACT_DAYS = 12
 
+# ------------------------------------------------------------------- the quality thread (run 1
+#                                                                          of the PMP upgrade)
+#
+# A SECONDARY thread: it opens at a fixed period and resolves or lapses, unlike the dispute,
+# which runs the whole length of the run. It decides through its OWN three verbs
+# (QUALITY_DECISIONS below), not the dispute's escalate/absorb/defer/accelerate — a failed
+# inspection is not a claim and does not reuse claim machinery. What it shares with the dispute
+# is the float and contingency pools themselves: rework_now and a forced rework spend the SAME
+# float_consumed_days and ac the dispute's escalate/defer spend, and accept_nonconforming spends
+# the SAME owner_credibility escalate does. There is no separate quality pool; that sharing is
+# what makes the two threads compete for one trainee's one decision per period.
+#
+# DESIGNED FIGURES, not sourced. Reported for correction, same as EVENT_FIGURES above.
+# Period 6, not earlier: periods 1-2 leave the dispute the only live thread (so a trainee learns
+# its shape alone first, as run 2 intended), and period 4 is the standing scheduled near miss
+# (EVENT_FIGURES["near_miss_period"]) -- opening quality there would force every run's first
+# quality decision through a stop work order response by construction. Six is clear of both and
+# still leaves four periods before the run ends for the backlog to compound or force.
+QUALITY_INSPECTION_PERIOD = 6
+QUALITY_FIGURES: dict[str, Any] = {
+    # The defect's rework cost, as a fraction of contract value, set when the inspection fails.
+    "defect_value_rate": 0.004,
+    # Rework now: float spent to clear it immediately, on top of its cost.
+    "rework_now_float_days": 3,
+    # Rework later: the backlog compounds while deferred, a period at a time, and drifts a
+    # little float even before it is forced -- waiting has a price before the cliff, same
+    # shape as the dispute's deferral drift.
+    "rework_later_growth_rate": 0.20,
+    "rework_later_float_drift_days": 1,
+    # Deferred this many times, the backlog forces rework automatically -- at the period it
+    # happens to fall on, not one the trainee chose -- and costs more than choosing it would
+    # have: the forced float penalty exceeds rework_now_float_days.
+    "force_after_periods": 3,
+    "forced_rework_float_penalty_days": 5,
+    # Accepting nonconforming work costs no money and no time now. It spends credibility, and
+    # what remains becomes permanent closeout exposure -- it does not keep growing once
+    # accepted, but it never clears either.
+    "accept_credibility_cost": 1,
+}
+QUALITY_DECISIONS = ("accept_nonconforming", "rework_now", "rework_later")
+
 # ---------------------------------------------------------------- regimes across the run (run 4)
 #
 # Run 4 makes the choice of form matter beyond the claim-notice check. Three mechanics, all
@@ -439,6 +480,10 @@ def initial_state(contract_form: str, contract_value: float, conditions: str,
         # then — its existence before discovery is exactly the kind of forecast the state view
         # must not carry, and None serialises to nothing a trainee can read ahead.
         "dsc": None,
+        # Training upgrade run 1: the failed inspection, discovered in period
+        # QUALITY_INSPECTION_PERIOD. None until then, for the same reason `dsc` is: its
+        # existence before discovery is a forecast the state view must not carry.
+        "quality": None,
         # Run 4, FAR only: True when the claim's value crossed the certification threshold
         # during the last deferred period, so an immediate escalation submits the form
         # prepared before it grew.
@@ -524,14 +569,38 @@ def dsc_position(state: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
+def quality_position(state: dict[str, Any]) -> dict[str, Any] | None:
+    """
+    The failed inspection's own surface, on its own clock, so the screen can show the backlog
+    the way it shows the notice and site-condition clocks: derived, never stored twice. None
+    before discovery.
+    """
+    quality = state.get("quality")
+    if not quality:
+        return None
+    return {
+        "status": quality["status"],
+        "defect_value": quality["defect_value"],
+        "periods_deferred": quality["periods_deferred"],
+        "periods_until_forced": max(
+            0, QUALITY_FIGURES["force_after_periods"] - quality["periods_deferred"]),
+        "closeout_exposure": quality.get("closeout_exposure", 0.0),
+    }
+
+
 def allowed_decisions(state: dict[str, Any]) -> tuple[str, ...]:
     """
     What may be decided this period. During a stop work order the ONLY decision is the
     response: all work has stopped, and the correction package is the thing in front of the
-    PM. Every other period offers the standard set.
+    PM. Otherwise the standard set applies, UNION the quality thread's own three verbs while a
+    failed inspection is open -- one decision per period from across both live threads is the
+    whole mechanism of competing for the same float and contingency.
     """
     if state.get("incident", {}).get("status") == "stopped":
         return RESPONSES
+    quality = state.get("quality")
+    if quality and quality["status"] == "open":
+        return DECISIONS + QUALITY_DECISIONS
     return DECISIONS
 
 
@@ -543,12 +612,15 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
     deterministic, so the same decisions always meet the same events.
     """
     allowed = allowed_decisions(state)
-    if decision not in DECISIONS + RESPONSES:
+    if decision not in DECISIONS + RESPONSES + QUALITY_DECISIONS:
         raise ValueError(f"unknown decision: {decision}")
     if decision not in allowed:
         if state.get("incident", {}).get("status") == "stopped":
             raise ValueError("a stop work order is in effect; the decision this period is the "
                              "response: respond_strong or respond_minimal")
+        if decision in QUALITY_DECISIONS:
+            raise ValueError("no failed inspection is open this period; there is nothing to "
+                             "decide about quality")
         raise ValueError("no stop work order is in effect; there is nothing to respond to")
     if state["period"] > PERIODS_TOTAL:
         raise ValueError("the run is complete; no further period exists")
@@ -557,12 +629,14 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
          "incident": {**state.get("incident", {"status": "none"})},
          "incidents": list(state.get("incidents") or []),
          "dsc": ({**state["dsc"]} if state.get("dsc") else None),
+         "quality": ({**state["quality"]} if state.get("quality") else None),
          "decisions": list(state["decisions"])}
     profile = CONDITION_PROFILES[s["conditions"]]
     bac = s["bac"]
     form_name = s["contract_form"]
     dispute_open = s["dispute"]["status"] == "open"
     dsc_open = bool(s["dsc"]) and s["dsc"]["status"] == "open"
+    quality_open = bool(s["quality"]) and s["quality"]["status"] == "open"
     period_earn = s["baseline_contract_sum"] / PERIODS_TOTAL
     # The FAR certification flag describes the LAST period only; it is re-derived below when a
     # deferral grows the claim across the threshold, and cleared otherwise.
@@ -811,6 +885,37 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
         if dsc_open:
             s["dsc"]["days_since_event"] = s["dsc"]["days_since_event"] + PERIOD_DAYS
             s["dsc"]["first_opportunity"] = False
+    elif decision == "accept_nonconforming" and quality_open:
+        # No cost, no time, now. The defect stays in place, the owner knows, and accepting it
+        # spends credibility now and becomes permanent closeout exposure -- it stops growing
+        # once accepted, but it never clears.
+        s["quality"]["status"] = "accepted"
+        s["quality"]["closeout_exposure"] = s["quality"]["defect_value"]
+        s["owner_credibility"] = max(
+            CRED_MIN, s["owner_credibility"] - QUALITY_FIGURES["accept_credibility_cost"])
+        notes.append(
+            f"Nonconforming work accepted as is: no cost and no float spent now, but "
+            f"{_fmt_money(s['quality']['defect_value'])} stays as exposure at closeout, and "
+            "the owner's credibility in the work took the hit.")
+    elif decision == "rework_now" and quality_open:
+        s["ac"] = round(s["ac"] + s["quality"]["defect_value"], 2)
+        s["float_consumed_days"] = (s["float_consumed_days"]
+                                    + QUALITY_FIGURES["rework_now_float_days"])
+        s["quality"]["status"] = "resolved"
+        notes.append(
+            f"Reworked now: {_fmt_money(s['quality']['defect_value'])} and "
+            f"{QUALITY_FIGURES['rework_now_float_days']} float days spent immediately; the "
+            "defect is cleared.")
+    elif decision == "rework_later" and quality_open:
+        s["quality"]["periods_deferred"] = s["quality"]["periods_deferred"] + 1
+        s["float_consumed_days"] = (s["float_consumed_days"]
+                                    + QUALITY_FIGURES["rework_later_float_drift_days"])
+        s["quality"]["defect_value"] = round(
+            s["quality"]["defect_value"] * (1 + QUALITY_FIGURES["rework_later_growth_rate"]), 2)
+        notes.append(
+            "Rework deferred: cheaper this period, but the defect backlog grows while it "
+            f"waits, now {_fmt_money(s['quality']['defect_value'])}, and it competes for the "
+            "same float and contingency as everything else still open.")
     # A decision recorded after the dispute has closed changes nothing but the record: the
     # period still progresses above, and the decision is still logged below. Stated rather
     # than refused, because "there is nothing left to decide" is itself something the next
@@ -844,6 +949,37 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
         notes.append("A differing site condition was uncovered on day 3 of this period: "
                      "rock where the borings showed soil. Its notice runs on its own clock, "
                      "under its own clause, per the contract form in the brief.")
+
+    # ---- the failed inspection opens as period QUALITY_INSPECTION_PERIOD begins (training
+    # upgrade run 1). A SECONDARY thread: it opens here and resolves or lapses within the run,
+    # unlike the dispute, which is the spine running the whole length. Undisclosed until now,
+    # like the site condition above and the near miss below.
+    if s["period"] == QUALITY_INSPECTION_PERIOD and s.get("quality") is None:
+        s["quality"] = {
+            "status": "open",
+            "defect_value": round(bac * QUALITY_FIGURES["defect_value_rate"], 2),
+            "periods_deferred": 0,
+            "closeout_exposure": 0.0,
+        }
+        notes.append("An inspection failed: defective work was found in place, not a stop "
+                     "work order. Accept it as is, rework it now, or defer the rework to a "
+                     "later period.")
+
+    # ---- a defect backlog deferred QUALITY_FIGURES["force_after_periods"] times forces the
+    # rework automatically, at whatever period that happens to land on -- not one the trainee
+    # chose -- and at a worse cost than rework_now would have: quality deferred is not quality
+    # avoided, and the bill arrives when float is already committed elsewhere.
+    if s.get("quality") and s["quality"]["status"] == "open" \
+            and s["quality"]["periods_deferred"] >= QUALITY_FIGURES["force_after_periods"]:
+        s["ac"] = round(s["ac"] + s["quality"]["defect_value"], 2)
+        s["float_consumed_days"] = (s["float_consumed_days"]
+                                    + QUALITY_FIGURES["forced_rework_float_penalty_days"])
+        s["quality"]["status"] = "forced_resolved"
+        notes.append(
+            f"The deferred defect backlog forced rework this period: "
+            f"{_fmt_money(s['quality']['defect_value'])} and "
+            f"{QUALITY_FIGURES['forced_rework_float_penalty_days']} float days, at a period "
+            "you did not choose and a worse cost than reworking it earlier would have been.")
 
     # ---- the discrete event trigger, for the period now beginning. Deterministic: the base
     # near miss is scheduled by the run's geometry (never disclosed in advance), and the
