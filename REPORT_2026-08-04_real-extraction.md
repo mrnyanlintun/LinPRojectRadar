@@ -1,7 +1,9 @@
 # 2026-08-04 — Real extraction: the wiring, the docx path, and what did not run
 
-**Server 36 suites, 1940/1940 (was 35 suites, 1898/1898). `tests_render.html` 86/86.
-`tests.html` 51/51.** Eight faults injected, all detected, all reverted byte-identical, baseline
+**On merged `main`: server 38 suites, 2042/2042. `tests_render.html` 86/86. `tests.html`
+51/51.** On this branch alone before the merge it was 36 suites, 1940/1940, from a pre-change
+baseline of 35 suites, 1898/1898; `origin/main` moved mid-session and brought two further
+training suites with it. Eight faults injected, all detected, all reverted byte-identical, baseline
 re-measured after every single fault. Nothing under `server/app/simulation/` touched. No
 migration.
 

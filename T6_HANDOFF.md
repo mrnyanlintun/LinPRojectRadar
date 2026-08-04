@@ -477,8 +477,9 @@ combination to be settled rather than assumed.
 
 # 2026-08-04 — extractsignals WIRED, DOCX READ LOCALLY. THE MODEL WAS STILL NEVER CALLED.
 
-Full detail in `REPORT_2026-08-04_real-extraction.md`. **Server 36 suites, 1940/1940 (was
-35/1898); `tests_render.html` 86/86; `tests.html` 51/51.** Eight faults injected, all detected,
+Full detail in `REPORT_2026-08-04_real-extraction.md`. **Green on merged `main`: server 38
+suites, 2042/2042; `tests_render.html` 86/86; `tests.html` 51/51.** (On the branch alone,
+36/1940, from a 35/1898 baseline; `origin/main` moved mid-session and added two training suites.) Eight faults injected, all detected,
 all reverted byte-identical, baseline re-measured after each. No migration. `simulation/`
 untouched.
 
