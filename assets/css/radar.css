@@ -4330,6 +4330,12 @@ body.og-no-health-dialog [data-action="portfolio-health"],
 body.og-no-health-dialog .health-pill,
 body.og-no-auditor [data-page-link="auditor"],
 body.og-no-auditor [data-page="auditor"] { display: none !important; }
+/* [data-nav="training"] is the dock button itself, hidden directly — unlike the auditor rule
+   above (which hides only the page content, not [data-nav="auditor"], a pre-existing gap out
+   of scope here), this run's brief specifically asks for the nav item to appear only when the
+   flag is on. */
+body.og-no-training [data-nav="training"],
+body.og-no-training [data-page="training"] { display: none !important; }
 
 /* ---------- Account-type notices (T1a) ----------
    The research notice is the DEFAULT, so it is what shows before sign-in and whenever the

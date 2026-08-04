@@ -35,6 +35,7 @@ from .db import ReadinessResult, build_engine, build_session_factory, check_read
 from .facade import configure as configure_facade, dispatch_get, dispatch_post, err
 from .features import FEATURE_ACTIONS, gate_action
 from .theme import THEME_ACTIONS
+from .training import TRAINING_ACTIONS
 from .research_consent import ConsentRequired, install as install_consent_gate
 from .logging_config import configure_logging
 from .settings import SettingsError, load_settings, session_secret_is_ephemeral
@@ -280,7 +281,8 @@ async def exec_post(request: Request) -> JSONResponse:
                 return _exec_response(refused)
             # The feature-flag admin actions are dispatched here rather than from facade.py,
             # which this phase must not modify: another session may be editing it concurrently.
-            handler = FEATURE_ACTIONS.get(action) or THEME_ACTIONS.get(action)
+            handler = (FEATURE_ACTIONS.get(action) or THEME_ACTIONS.get(action)
+                      or TRAINING_ACTIONS.get(action))
             if handler is not None:
                 return _exec_response(handler(session, payload, settings.session_secret,
                                               settings.session_ttl_seconds))

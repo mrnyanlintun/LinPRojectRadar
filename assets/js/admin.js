@@ -19,10 +19,10 @@
 var LinAdmin = (function () {
   "use strict";
 
-  var FEATURE_KEYS = ["chat", "knowledge_library", "health_dialog", "auditor"];
+  var FEATURE_KEYS = ["chat", "knowledge_library", "health_dialog", "auditor", "training"];
   var FEATURE_LABELS = {
     chat: "Assistant", knowledge_library: "Knowledge Library",
-    health_dialog: "Health dialog", auditor: "Auditor"
+    health_dialog: "Health dialog", auditor: "Auditor", training: "Training mode"
   };
 
   var rootEl = null;

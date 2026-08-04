@@ -580,6 +580,15 @@ def build_module_results_rows(session: Session, project_legacy_ids: set[str] | N
     via `scenario.evidence_package_id` — the analytical record BEHIND what those participants
     were shown, kept alongside their decisions.
 
+    A TRAINING PROJECT'S RESULTS NEVER LEAVE HERE, UNCONDITIONALLY, THE SAME WAY
+    `_eligible_instances` filters to research accounts. project_health has no account_type to
+    filter on (see the module docstring), so a training project's ComputedResult rows are
+    otherwise exactly as reachable as a real operational project's — this is the one place that
+    closes it. `project_legacy_ids` restricts participant_inputs to specific evidence projects,
+    which can never be training (an evidence project is named by a Scenario and training mode
+    does not use scenarios), so the skip below is a no-op there and load-bearing only for
+    project_health.
+
     The window is over `computed_at`, a real timestamp — never a decision timestamp, because
     there is no decision in this scope, and a reporting period is an integer a date range
     cannot bound (see the module docstring and the report's Part 1 discussion).
@@ -599,6 +608,8 @@ def build_module_results_rows(session: Session, project_legacy_ids: set[str] | N
     rows: list[dict[str, Any]] = []
     for result in session.scalars(query).all():
         project = session.get(Project, result.project_id)
+        if project is not None and project.is_training:
+            continue
         legacy = project.legacy_id if project else None
         if project_legacy_ids is not None and legacy not in project_legacy_ids:
             continue
