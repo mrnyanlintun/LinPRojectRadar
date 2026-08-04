@@ -130,6 +130,14 @@ var LinAuth = (function () {
 
   function routeFromView(view) {
     currentView = view;
+    // 2026-08-05. Resolved for EVERY route, before the consent branch, not only once the app
+    // shows: LinApp.init() below (the only other caller of the theme sync) never runs while a
+    // research participant is on the consent screen, so without this call that screen rendered
+    // whatever the operational default was rather than the research pin. Invisible while the
+    // two happened to be the same value; a real violation of "identical stimulus" once they
+    // diverged. Idempotent — init() re-runs the same sync once consent is granted.
+    try { if (window.LinApp && typeof window.LinApp.syncTheme === "function") LinApp.syncTheme(); }
+    catch (e) {}
     if (needsConsent(view)) { showConsentScreen(); return; }
     showApp(view);
     // features.js resolved once at page load, before any token existed. Now that a session is

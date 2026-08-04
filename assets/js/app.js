@@ -2680,6 +2680,17 @@
 
   /* ---------- public API (used by ingest.js) ---------- */
   window.LinApp = {
+    // 2026-08-05. Exposed so auth.js can resolve the account's real theme (and, for a research
+    // account, apply the New York pin) BEFORE the consent gate, not only after `init()` runs.
+    // See the call site in auth.js's routeFromView for why: LinApp.init() — and with it
+    // syncThemeFromServer, previously the only caller of applyTheme with the server's answer —
+    // is skipped entirely while a research participant is on the consent screen, so that screen
+    // used to render whatever the OPERATIONAL default happened to be. That was invisible while
+    // DEFAULT_THEME and RESEARCH_THEME were both "newyork"; decoupling them on 2026-08-04 made it
+    // a real, silent violation of "every participant sees identical stimulus" for the one screen
+    // every research participant sees first. Idempotent and safe to call twice (once here, once
+    // again inside init() once consent is granted): it only re-fetches and re-applies.
+    syncTheme: syncThemeFromServer,
     refresh() {
       buildRadar(); buildFallbackList(); renderStatusLegend();
       if (mapBuilt) buildMap();   // keep the map view in sync once initialized

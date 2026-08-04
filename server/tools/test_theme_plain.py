@@ -42,7 +42,7 @@ import app.main as main  # noqa: E402
 from app.research_identity import hash_access_token  # noqa: E402
 from app.research_models import AuditEvent, Participant  # noqa: E402
 from app.features import RESEARCH_FORBIDDEN_ACTIONS  # noqa: E402
-from app.theme import DEFAULT_THEME, RESEARCH_THEME, THEMES  # noqa: E402
+from app.theme import DEFAULT_THEME, RESEARCH_THEME, THEME_LABELS, THEMES  # noqa: E402
 
 client = TestClient(main.app, raise_server_exceptions=False)
 Session = main.SessionFactory
@@ -135,19 +135,46 @@ for name, (a, b) in measured.items():
 # measured above, which is how the pre-2026-08-04 3.71:1 failure slipped through).
 
 # Tokens the ten-token check above does NOT measure, reported here so a session does not have to
-# rediscover the gap by hand. --eyebrow, --gold-text and --scope-label are real user-facing text
-# colors on this theme; report their ratios even though only the ones judged worth an automated
-# floor get a `check()` above.
-UNMEASURED = ["eyebrow", "gold-text", "scope-label", "brand-bronze", "brand-verdigris",
-              "sector-design", "sector-construction", "sector-hybrid", "ink-dim"]
-print("\n  UNMEASURED tokens (reported, not gated by this suite unless noted above):")
-for name in UNMEASURED:
+# rediscover the gap by hand. 2026-08-05: re-derived by checking every declaration in the plain
+# block against `color: var(--x)` usage in radar.css, not by re-quoting the prior list, and it
+# found one the prior pass missed (--accent) and four the prior pass listed as live text that are
+# actually declared and never consumed by anything (--sector-design, --sector-construction,
+# --sector-hybrid, --scope-label) -- along with the five --status-ink-* tokens, same situation,
+# already excluded from TEXT_TOKENS_LIVE for the same reason and reported in DEAD instead.
+#
+# LIVE: at least one `color: var(--name)` rule exists in radar.css, so this genuinely paints text
+# somewhere on the page today, under this theme.
+TEXT_TOKENS_LIVE = ["eyebrow", "gold-text", "brand-bronze", "brand-verdigris", "ink-dim", "accent"]
+# DEAD: declared in this theme's block (and in the root block) but zero `color:` (or any other)
+# consumer anywhere in radar.css or the frontend JS. Not a contrast risk today -- nothing reads
+# them -- but flagged so a future rule that starts consuming one does not silently skip the check.
+TEXT_TOKENS_DEAD = ["sector-design", "sector-construction", "sector-hybrid", "scope-label",
+                    "status-ink-complete", "status-ink-green", "status-ink-yellow",
+                    "status-ink-amber", "status-ink-red"]
+
+# Read directly here rather than relying on the module-level `css_text` defined further down for
+# a different section, so this block does not depend on later code running first.
+_full_css = io.open(CSS, encoding="utf-8").read()
+
+print("\n  UNMEASURED, LIVE text tokens (render real text; ratios shown, not gated):")
+for name in TEXT_TOKENS_LIVE:
+    consumers = len(re.findall(rf"color:\s*var\(--{re.escape(name)}\)", _full_css))
+    check(consumers > 0, f"--{name} actually colours text somewhere in radar.css",
+          f"{consumers} usage(s)")
     value = token(block, name)
     if value and re.fullmatch(r"#[0-9a-fA-F]{6}", value):
         print(f"    --{name:20s} {value}   surface {ratio(value, SURFACE):.2f} / "
-              f"page {ratio(value, PAGE):.2f}")
+              f"page {ratio(value, PAGE):.2f}   ({consumers} usage(s))")
     else:
         print(f"    --{name:20s} {value}   (not a plain hex, or not declared)")
+
+print("\n  DECLARED BUT UNUSED (no color: consumer found; not a live contrast risk today):")
+for name in TEXT_TOKENS_DEAD:
+    consumers = len(re.findall(rf"color:\s*var\(--{re.escape(name)}\)", _full_css))
+    check(consumers == 0, f"--{name} is confirmed unused (reclassify if this ever goes non-zero)",
+          f"{consumers} usage(s)")
+    value = token(block, name)
+    print(f"    --{name:20s} {value}   ({consumers} usage(s))")
 
 # Graphical objects (blips, pins, the globe's markers) need 3:1, not 4.5:1.
 GRAPHIC = 3.0
@@ -346,6 +373,20 @@ check(bad.get("ok") is False, "an unknown theme is refused", str(bad)[:110])
 check(post({"action": "themeget", "session_token": ops_tok}).get("theme") == "maria",
       "and the previous choice survives the refusal")
 
+# THIS IS THE PATH THAT ACTUALLY LEAKED THE INTERNAL KEY, and it is a DIFFERENT refusal from the
+# research one Guarantee 6 checks below. The research refusal ("not available: the interface
+# theme is fixed...") can never say "plain" because it never lists a theme at all; this one used
+# to build its message from `', '.join(THEMES)`, which is "plain, light, newyork, maria" — the
+# exact leak the brief reported. Checked here, next to the call that produces it, rather than
+# only in the general "no surface says plain" sweep below, so a regression is attributed to the
+# right refusal path rather than merely to "somewhere".
+bad_text = json.dumps(bad)
+check("plain" not in bad_text.lower(),
+      "an operational account's UNKNOWN-THEME refusal never contains the literal 'plain'",
+      bad_text[:200])
+check("Fairbanks" in bad_text,
+      "and it names the theme by its user-facing label instead", bad_text[:200])
+
 check(set(THEMES) == {"plain", "light", "newyork", "maria"},
       "the server's vocabulary is the four themes the interface offers", str(THEMES))
 check("dark" not in THEMES,
@@ -407,6 +448,63 @@ if app_js_meta:
     check(plain_entry is not None and plain_entry.group(1) == "Fairbanks",
           "the plain key's user-facing label in THEME_META is 'Fairbanks'",
           plain_entry.group(1) if plain_entry else None)
+
+# THEME_LABELS (server/app/theme.py, used to build the unknown-theme refusal above) and
+# THEME_META (app.js, used to build the fly-out) are two independent literals with no shared
+# source. Nothing stops them drifting apart -- a label changed in one and not the other would
+# make the refusal message and the interface disagree about what to call a theme. Extracted from
+# app.js text rather than imported, since this is a Python suite reading a JS file.
+js_labels = dict(re.findall(r'key:\s*"(\w+)",\s*label:\s*"([^"]+)"',
+                            app_js_meta.group(1) if app_js_meta else ""))
+check(bool(js_labels), "THEME_META labels were readable out of app.js", str(js_labels))
+check(js_labels == THEME_LABELS,
+      "theme.py's THEME_LABELS and app.js's THEME_META agree on every key's label, exactly",
+      f"py={THEME_LABELS} js={js_labels}")
+
+print()
+print("=" * 78)
+print("GUARANTEE 7: the research pin resolves BEFORE the consent screen, not only after")
+print("=" * 78)
+
+# A GENUINE DEFECT FOUND WHILE VERIFYING THIS TASK, not a hypothetical: LinApp.init() -- the
+# only caller of the theme sync before 2026-08-05 -- is skipped entirely by auth.js's
+# routeFromView while a research participant is on the consent screen (needsConsent(view) is
+# true, showConsentScreen() runs, and the function returns before reaching init()). So the
+# consent screen, which every research participant sees FIRST, rendered whatever the
+# OPERATIONAL default happened to be, not the research pin. That was invisible for as long as
+# DEFAULT_THEME and RESEARCH_THEME were both "newyork"; decoupling them on 2026-08-04 turned it
+# into a real, silent violation of "every participant sees identical stimulus" -- confirmed live
+# in a browser: a research account with a directly-written non-default stored theme rendered
+# Fairbanks on the consent screen before the fix, and New York after it.
+#
+# There is no offline DOM harness for this: tests_render.html stubs LinAuth.init() to return
+# false specifically so app.js never boots the real application, and does not load auth.js at
+# all (see its own header comment) -- the bug lives entirely in auth.js's bootstrap sequence,
+# which that harness exists to avoid running. A live re-check needs a real browser driving
+# index.html through an actual sign-in with transitions suppressed, which is how this was found
+# and confirmed fixed (see the report). What CAN run here, offline, is the structural guarantee
+# that made the fix true: the call exists, and it is positioned before the branch it must run
+# ahead of. A regression that deletes the call, or moves it after the consent check, is caught;
+# a regression that changes what happens ONLY behind a passing consent check is not, and is not
+# claimed to be.
+auth_js = io.open(ROOT / "assets" / "js" / "auth.js", encoding="utf-8").read()
+
+check("syncTheme: syncThemeFromServer" in app_js,
+      "app.js exposes the theme sync as LinApp.syncTheme, for auth.js to call directly")
+
+route_fn = re.search(r'function routeFromView\(view\)\s*\{(.*?)\n  \}', auth_js, re.S)
+check(route_fn is not None, "auth.js's routeFromView is present and readable")
+if route_fn:
+    body = route_fn.group(1)
+    sync_pos = body.find("LinApp.syncTheme()")
+    consent_pos = body.find("needsConsent(view)")
+    check(sync_pos != -1, "routeFromView calls LinApp.syncTheme()")
+    check(consent_pos != -1, "and still checks needsConsent(view)")
+    if sync_pos != -1 and consent_pos != -1:
+        check(sync_pos < consent_pos,
+              "the theme sync runs BEFORE the consent check, not after -- this is the exact "
+              "line that fixes the defect; reversing the order reintroduces it",
+              f"sync at {sync_pos}, consent check at {consent_pos}")
 
 print()
 print("=" * 78)

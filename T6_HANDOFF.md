@@ -9,6 +9,77 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-05 — THE CONSENT SCREEN NEVER GOT THE RESEARCH PIN. FOUND, FIXED, VERIFIED.
+
+Full detail in `REPORT_2026-08-05_fairbanks-default.md` — that file did not exist before this
+session; the 2026-08-04 entry below says its own report was blocked from being committed. **Server
+39 suites, 2196/2196; `tests_render.html` 86/86; `tests.html` 51/51.** Eight faults injected, all
+detected, all reverted byte-identical, baseline re-measured after each. No migration.
+`simulation/` untouched.
+
+## READ THIS BEFORE TRUSTING "the research pin is enforced" ON ANY FUTURE THEME CHANGE
+
+**A real defect, not hypothetical: the consent screen — which every research participant sees
+FIRST — rendered the OPERATIONAL default, never the research pin.** `LinApp.init()` was the only
+caller of the theme sync, and `auth.js`'s `routeFromView` returns before ever reaching it while
+`needsConsent(view)` is true. Invisible for as long as `DEFAULT_THEME` and `RESEARCH_THEME`
+happened to be the same value (`newyork`, before 2026-08-04); a real, silent violation of
+"identical stimulus" the moment they diverged. Found by testing a research account with a
+non-default value forced directly into its `theme` column and watching the consent screen render
+Fairbanks while a manual replay of the exact server call it should have made already returned
+`newyork`.
+
+**Fixed**: `app.js` exports `LinApp.syncTheme` (the theme-sync function, previously private);
+`auth.js`'s `routeFromView` calls it BEFORE the consent branch, not only after. Idempotent —
+`init()` still calls the same sync once consent is granted. Verified live, before/after, same
+account, same stored value: consent screen `data-theme` went from `"plain"` to `"newyork"`.
+
+**No offline DOM harness could have caught this.** `tests_render.html` stubs `LinAuth.init()` to
+return false specifically so the real app never boots, and does not load `auth.js` at all — the
+defect lived entirely in the bootstrap sequence that harness exists to avoid running. What DOES
+run offline now (`test_theme_plain.py` GUARANTEE 7) is a structural check that the call exists and
+sits before `needsConsent(view)` in the source. It cannot see behind a passing consent check;
+report this gap plainly rather than claim more coverage than exists.
+
+## The leak Guarantee 6 was built to catch, and did not
+
+`a_themeset`'s unknown-theme refusal built its message from `', '.join(THEMES)` — raw internal
+keys, `"plain, light, newyork, maria"`. The prior session's "no surface says plain" check
+(Guarantee 6) only exercised the RESEARCH account's fixed-theme refusal, which structurally can
+never mention a theme name — a different message from the one that actually leaked. The leaking
+path is an OPERATIONAL account's unknown-theme request, never touched by that check. Fixed with a
+server-side `THEME_LABELS` map (mirrors `app.js`'s `THEME_META`); refusal now reads
+`"...recognized themes are Fairbanks, Miami, NYC, Maria"`. Two checks added AT the leaking call
+site this time, not only in the general sweep, plus a cross-check that `THEME_LABELS` and
+`THEME_META` — two independent literals, no shared source — cannot drift apart silently.
+
+## The unmeasured-token list, corrected not re-quoted
+
+Checked every candidate against actual `color: var(--x)` usage in `radar.css`, not assumed from
+the name. **Missed one**: `--accent` colours real text in 12+ places and was not on the prior
+list. **Four of the prior nine are not live text tokens at all**: `--sector-design`,
+`--sector-construction`, `--sector-hybrid`, `--scope-label` are declared and have **zero**
+consumers anywhere — same situation as `--status-ink-*`, also newly flagged. `test_theme_plain.py`
+now asserts BOTH halves (live tokens really have a consumer; dead tokens really have none), so a
+future edit that starts or stops using one is caught by the classification breaking, not missed.
+
+## A trap caught in the act while building the fault campaign
+
+A first fault-injection attempt for the ordering check RENAMED `needsConsent` to
+`FAULT_needsConsent` rather than reordering anything — the check stayed green not because it was
+weak but because Python's `str.find` matched `"needsConsent(view)"` as a SUBSTRING inside the
+renamed identifier. The fault never took effect; watching it stay green and asking why, instead of
+trusting the result, is what caught it. Replaced with a genuine two-line reorder reproducing the
+original defect's exact shape.
+
+## Open, carried forward
+
+- Dead tokens (section above) are CSS that renders nothing today. Not fixed; flagged for whoever
+  next writes a rule that starts consuming one.
+- Whether the "live unmeasured" tokens (`--eyebrow`, `--gold-text`, `--brand-bronze`,
+  `--brand-verdigris`, `--ink-dim`, `--accent`) deserve an automated AA floor, not just a report,
+  is Lin's call.
+
 # 2026-08-04 — FAIRBANKS BECOMES THE DEFAULT THEME, AND THE RESEARCH PIN IS DECOUPLED
 
 `DEFAULT_THEME` in `server/app/theme.py` and `assets/js/app.js` moved `"newyork"` → `"plain"`

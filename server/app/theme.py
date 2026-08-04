@@ -38,6 +38,17 @@ from .research_identity import audit, resolve_caller
 # value a caller may store.
 THEMES: tuple[str, ...] = ("plain", "light", "newyork", "maria")
 
+# THE USER-FACING NAME FOR EACH KEY, mirroring THEME_META's `label` field in assets/js/app.js.
+# `plain` is the one place a key and its label genuinely diverge — Fairbanks is deliberately
+# named for what it is (a theme with no mood, no decoration) rather than for a place, and that
+# label is quoted verbatim everywhere a human reads it. Duplicated here rather than shared with
+# app.js because this module has no template or JS runtime to pull from and is not allowed one:
+# `writes.py`'s DEFERRED_AI_ACTIONS note and this module both keep the backend free of a frontend
+# build step. `test_theme_plain.py` cross-checks the two literals stay in sync.
+THEME_LABELS: dict[str, str] = {
+    "plain": "Fairbanks", "light": "Miami", "newyork": "NYC", "maria": "Maria",
+}
+
 # What an operational account sees when it has not chosen.
 DEFAULT_THEME: str = "plain"
 
@@ -156,8 +167,14 @@ def a_themeset(session: Session, payload: dict, secret: str, ttl: int) -> dict[s
 
     requested = str(payload.get("theme") or "").strip()
     if requested not in THEMES:
-        return err(f"unknown theme: {requested or '(empty)'}; "
-                   f"recognized themes are {', '.join(THEMES)}")
+        # NAMES THE THEMES A USER READS, NEVER THE STORED KEYS. This refused message is the one
+        # place `plain` used to leak: `', '.join(THEMES)` rendered "plain, light, newyork, maria"
+        # back to whoever sent a bad value, in the same sentence the interface calls the theme
+        # Fairbanks everywhere else. `THEME_LABELS` is looked up per key rather than assuming the
+        # dict and THEMES stay in the same order, so a future reordering of one cannot silently
+        # mismatch a key to the wrong label here.
+        labels = ", ".join(THEME_LABELS.get(t, t) for t in THEMES)
+        return err(f"unknown theme: {requested or '(empty)'}; recognized themes are {labels}")
 
     # Writing has no fallback the way reading does — there is nowhere else to put the choice — so
     # this cannot degrade silently. It CAN avoid being an unhandled 500: if the column is not
