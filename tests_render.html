@@ -115,6 +115,10 @@
 <!-- files.js is loaded so group 9 can paint the Files tab for real. It self-boots nothing: it
      only defines LinFiles, and every render path it exposes takes its data as an argument. -->
 <script src="assets/js/files.js"></script>
+<!-- workspace.js is loaded so group 10 can build the REAL signal ledger, the same builder the
+     project detail panel and training mode both render through. It defines LinWorkspace and
+     boots nothing: buildProjectDetailHtml takes its data as an argument. -->
+<script src="assets/js/workspace.js"></script>
 <script>
 (function () {
   "use strict";
@@ -657,6 +661,143 @@
       assert("production read path: an uncomputed project carries no stored status",
         true, !slimU.status);
     }
+  }
+
+  /* ============================================================
+     GROUP 10 (run 5) — the signal ledger the trainee reads.
+
+     Renders the REAL builder with a fixture whose shape is a stored computed_results row, and
+     reads the produced text back. Three things are asserted at the DOM level, because all
+     three are properties of what a person sees and none of them can be proven from the server
+     payload alone: no module id or category id appears anywhere; a category discloses the
+     computations that fed it and marks the most severe; and an abstention renders as a named
+     absence with no colour and no status dot.
+     ============================================================ */
+  function signalLedgerGroup() {
+    const host = document.createElement("div");
+    // A fixture with a deliberate divergence: Cost Risk fuses to Green while one of its
+    // computations reports Red. That is the platform's real behaviour (Dempster-Shafer with
+    // Red weighted 1.5x, measurably NOT worst-status-wins), and the ledger has to say so.
+    const fixture = {
+      project_status: "Yellow",
+      category_statuses: {
+        A1: { status: "Yellow", group: "A", module_count: 2,
+              contributes_to_project_status: true },
+        A3: { status: "Green", group: "A", module_count: 2,
+              contributes_to_project_status: true },
+        C1: { status: "Green", group: "C", module_count: 1,
+              contributes_to_project_status: false }
+      },
+      module_results: [
+        { module_id: "A1.1", group: "A", category: "A1", status_color: "Yellow",
+          evidence_metric: "P80 EAC 12,240,000 vs BAC 12,000,000 (+2.0%)" },
+        { module_id: "A1.7", group: "A", category: "A1", status_color: "Green",
+          evidence_metric: "TCPI 1.01" },
+        { module_id: "A3.1", group: "A", category: "A3", status_color: "Red",
+          evidence_metric: "Reference class p80 overrun 18%" },
+        { module_id: "A3.2", group: "A", category: "A3", status_color: "Green",
+          evidence_metric: "Contingency burn 12% at 20% complete" },
+        { module_id: "C1.2", group: "C", category: "C1", status_color: "Green",
+          evidence_metric: "Latest document 4 days old" }
+      ],
+      computed_at: "2026-01-24T00:00:00Z", simulation_version: "v1", seed: "1",
+      period_cutoff: "2026-01-24"
+    };
+    const abstained = { A1: ["A1.3", "A1.5"], C1: ["C1.4"] };
+
+    let ok = true, why = "";
+    try {
+      host.innerHTML = LinWorkspace.buildProjectDetailHtml(fixture,
+        { expandable: true, abstained: abstained });
+      LinWorkspace.wireCategoryRows(host);
+    } catch (e) { ok = false; why = e && e.message; }
+    assert("group 10: the shared ledger builder ran", true, ok || why);
+    if (!ok) return;
+
+    // 1. NO IDS ANYWHERE.
+    //
+    // Scanned per LEAF ELEMENT, not over host.textContent. textContent concatenates adjacent
+    // labels into "Project HealthA3show the computations", which destroys the word boundaries
+    // a \b-anchored regex needs — so a regex over the whole blob silently matches nothing and
+    // the check can never fail. That is exactly what the first version of this check did, and
+    // fault D1 (rendering the raw category key) walked straight past it. A leaf element's text
+    // is one visual label, which is what a reader actually sees.
+    const text = host.textContent || "";
+    const leaves = [];
+    host.querySelectorAll("*").forEach(function (el) {
+      if (!el.querySelector("*")) leaves.push((el.textContent || "").trim());
+    });
+    // A category id is [A-D] + exactly ONE digit (A1..A6, C1); a module id adds .N. A SECOND
+    // digit disqualifies, so "AIA A201-2017" (the contract form, which must survive) is not a
+    // false positive. The browser drive found that case against the looser first pattern.
+    const ID_IN_LABEL = /(^|[^A-Za-z0-9])[A-D]\d(\.\d+)?(?![\dA-Za-z])/;
+    const idLabels = leaves.filter(function (t) { return ID_IN_LABEL.test(t); });
+    assert("group 10: no leaf label in the rendered ledger carries a module or category id",
+      "", idLabels.join(" | ").slice(0, 120));
+    assert("group 10: the leaf scan actually saw the ledger's labels", true,
+      leaves.length > 10);
+    // And the names that must be there instead, proving the absence is not an empty render.
+    assert("group 10: categories are named by purpose", true,
+      text.indexOf("Cost & EVM Performance") >= 0 && text.indexOf("Cost Risk") >= 0);
+    assert("group 10: computations are named by purpose", true,
+      text.indexOf("Monte Carlo EAC") >= 0
+      && text.indexOf("Reference Class Forecasting") >= 0);
+    assert("group 10: groups are named by purpose", true,
+      text.indexOf("Project Health") >= 0 && text.indexOf("Data & Evidence Health") >= 0);
+
+    // 2. A CATEGORY DISCLOSES ITS CONTRIBUTORS, and marks the most severe.
+    const a3 = host.querySelector('[data-cat-detail="A3"]');
+    assert("group 10: a category carries a detail block to open", true, !!a3);
+    const a3text = a3 ? a3.textContent : "";
+    assert("group 10: the detail lists every computation that fed the category", true,
+      a3text.indexOf("Reference Class Forecasting") >= 0
+      && a3text.indexOf("Contingency Burn Rate") >= 0);
+    assert("group 10: the detail carries each computation's own output", true,
+      a3text.indexOf("Reference class p80 overrun 18%") >= 0);
+    assert("group 10: and names the most severe contributor as such", true,
+      !!a3.querySelector(".ws-worst")
+      && a3text.indexOf("(most severe contributor)") >= 0);
+    assert("group 10: the ledger's own text carries no em dash", -1, a3text.indexOf("\u2014"));
+    // The divergence line: the category reads Green while a contributor reports Red, and the
+    // ledger says so rather than letting the trainee read the category as a maximum.
+    const divergence = host.querySelector(".ws-cat-divergence");
+    assert("group 10: the ledger states when the category differs from its worst contributor",
+      true, !!divergence
+      && divergence.textContent.indexOf("not by taking the worst") >= 0
+      && divergence.textContent.indexOf("Reference Class Forecasting") >= 0);
+
+    // 3. AN ABSTENTION IS AN ABSENCE, not a value and not a colour.
+    const abstainRows = host.querySelectorAll(".ws-abstained");
+    assert("group 10: abstaining computations are rendered", 3, abstainRows.length);
+    let abstainText = "", dots = 0;
+    abstainRows.forEach(function (r) {
+      abstainText += r.textContent;
+      dots += r.querySelectorAll(".ws-dot").length;
+    });
+    assert("group 10: an abstention carries NO status dot", 0, dots);
+    assert("group 10: an abstention says it abstained", true,
+      abstainText.indexOf("abstained") >= 0);
+    assert("group 10: and is named, so the reader knows WHICH computation abstained", true,
+      abstainText.indexOf("Bayesian EAC") >= 0
+      && abstainText.indexOf("Audit Trail Completeness") >= 0);
+
+    // 4. Group C's exclusion is shown, not inferred.
+    assert("group 10: the non-contributing group is labelled as informational", true,
+      text.indexOf("does not contribute to project status") >= 0);
+
+    // 5. The disclosure actually opens.
+    const row = host.querySelector('[data-cat="A3"]');
+    if (row) row.click();
+    assert("group 10: opening a category reveals its computations", false,
+      a3.hasAttribute("hidden"));
+  }
+
+  try {
+    signalLedgerGroup();
+  } catch (e) {
+    // Same rule as group 9: a throw becomes a red check, never a missing result line.
+    assert("group 10: the signal ledger group ran to completion", "no throw",
+      "threw: " + (e && e.message));
   }
 
   // ---- render results ----

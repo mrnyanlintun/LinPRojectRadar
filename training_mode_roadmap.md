@@ -137,3 +137,11 @@ Append one line per run: date, items attempted, items completed, what moved to B
   verification against the licensed documents, Lin's), items 16 to 18 (deferred deliberately),
   and production migrations 0018 and 0019 before the first training run. See
   `REPORT_2026-08-04_training-regimes.md`.
+- 2026-08-04: run 5, presentation and depth on top of the complete build: module ids removed
+  from the training surface, the signals table replaced by the platform's OWN ledger (shared
+  `buildProjectDetailHtml`) with per-category drill-down and honest abstentions, and the
+  one-word recommendation expanded to what/why/who/to whom/by what means/next step/by when,
+  generated from the state. MEASURED CORRECTION: the category rollup is evidence combination,
+  not worst-status-wins (differs from the worst contributor in 47 of 80 categories), so the
+  ledger names the most severe contributor and states the divergence. See
+  `REPORT_2026-08-04_training-detail.md`, which leads with the recommendation in full.

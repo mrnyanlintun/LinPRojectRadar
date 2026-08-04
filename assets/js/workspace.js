@@ -250,7 +250,11 @@
     onDetailProjectChange();
   }
 
-  window.LinWorkspace = { boot: boot, openProject: openProject, switchPanel: switchPanel };
+  window.LinWorkspace = { boot: boot, openProject: openProject, switchPanel: switchPanel,
+    // Shared with training mode (run 5): the same names, the same rows, the same ledger.
+    buildProjectDetailHtml: buildProjectDetailHtml, wireCategoryRows: wireCategoryRows,
+    moduleName: moduleName,
+    categoryName: categoryName, groupName: groupName, statusDotColor: statusDotColor };
 
   /* ============================================================
      Part 1 — project list and creation
@@ -678,6 +682,58 @@
   }
 
   function renderProjectDetail(r) {
+    $("ws-detail-body").innerHTML = buildProjectDetailHtml(r);
+  }
+
+  // The one ledger-and-rollup builder, shared with training mode (run 5): the trainee reads
+  // the SAME instrument a real project renders, not a training-only imitation. Returns html;
+  // the caller owns where it lands.
+  // Severity order, for naming the most severe contributor to a category. This is NOT how the
+  // category status is decided: that is an evidence combination (Dempster-Shafer, Red weighted
+  // 1.5x), and it is measurably NOT the worst contributor — on training data the two differ in
+  // 47 of 80 categories, including a category with a Red contributor fusing to Green. So the
+  // detail below names the most severe contributor as the most severe contributor, and says
+  // plainly when the category status differs from it, rather than implying a maximum.
+  var SEVERITY = { green: 0, yellow: 1, amber: 2, red: 3 };
+  function severityOf(status) { return SEVERITY[String(status || "").toLowerCase()]; }
+
+  function categoryDetailHtml(catId, entries, abstainedIds) {
+    var withStatus = entries.filter(function (m) { return severityOf(m.status_color) != null; });
+    var worst = null;
+    withStatus.forEach(function (m) {
+      if (!worst || severityOf(m.status_color) > severityOf(worst.status_color)) worst = m;
+    });
+    var rows = withStatus.slice().sort(function (a, b) {
+      return severityOf(b.status_color) - severityOf(a.status_color);
+    }).map(function (m) {
+      var mark = (worst && m === worst)
+        ? '<span class="ws-note ws-worst"> (most severe contributor)</span>' : "";
+      return '<div class="ws-module"><span class="ws-dot" style="background:' +
+        statusDotColor(m.status_color) + ';"></span><span class="ws-mname">' +
+        esc(moduleName(m.module_id)) + "</span>" + mark +
+        '<span class="ws-note">' + esc(m.evidence_metric || "") + "</span></div>";
+    }).join("");
+    // An abstention is a NAMED ABSENCE: no value, no colour, no dot.
+    var abstained = (abstainedIds || []).map(function (id) {
+      return '<div class="ws-module ws-abstained"><span class="ws-mname">' +
+        esc(moduleName(id)) + '</span><span class="ws-note">abstained: no usable input this ' +
+        "period</span></div>";
+    }).join("");
+    return '<div class="ws-cat-detail" data-cat-detail="' + esc(catId) + '" hidden>' +
+      (rows || '<p class="ws-note">No computation in this category produced a status.</p>') +
+      abstained + "</div>";
+  }
+
+  // opts.abstained: {categoryId: [moduleId, ...]} — which computations abstained this period.
+  // opts.expandable: render each category as a disclosure carrying its contributors.
+  function buildProjectDetailHtml(r, opts) {
+    opts = opts || {};
+    var abstainedMap = opts.abstained || {};
+    var modsByCat = {};
+    (Array.isArray(r.module_results) ? r.module_results : []).forEach(function (m) {
+      var c = m.category || String(m.module_id || "").split(".")[0];
+      (modsByCat[c] = modsByCat[c] || []).push(m);
+    });
     var html = "";
     html += '<div class="ws-row"><div><strong>Project status</strong></div>' +
       '<div><span class="ws-dot" style="background:' + statusDotColor(r.project_status) +
@@ -698,16 +754,43 @@
       entries.forEach(function (e) {
         var note = (e.c.contributes_to_project_status === false) ?
           '<span class="ws-note"> (informational, does not contribute to project status)</span>' : "";
-        html += '<div class="ws-module"><span class="ws-dot" style="background:' +
-          statusDotColor(e.c.status) + ';"></span>' +
-          '<span class="ws-mname">' + esc(categoryName(e.catId)) + "</span>" + note + "</div>";
+        if (!opts.expandable) {
+          html += '<div class="ws-module"><span class="ws-dot" style="background:' +
+            statusDotColor(e.c.status) + ';"></span>' +
+            '<span class="ws-mname">' + esc(categoryName(e.catId)) + "</span>" + note + "</div>";
+          return;
+        }
+        var contributors = modsByCat[e.catId] || [];
+        var worst = null;
+        contributors.forEach(function (m) {
+          if (severityOf(m.status_color) == null) return;
+          if (!worst || severityOf(m.status_color) > severityOf(worst.status_color)) worst = m;
+        });
+        // The teaching line: when the fused status differs from the most severe contributor,
+        // say so. That difference is the instrument's actual behaviour and a trainee who
+        // reads the category as a maximum is reading it wrong.
+        var divergence = "";
+        if (worst && String(worst.status_color).toLowerCase() !==
+            String(e.c.status || "").toLowerCase()) {
+          divergence = '<div class="ws-note ws-cat-divergence">Combined from ' +
+            contributors.length + " computations by evidence combination, not by taking the " +
+            "worst: " + esc(moduleName(worst.module_id)) + " reports " +
+            esc(worst.status_color) + ".</div>";
+        }
+        html += '<div class="ws-module ws-cat-row" data-cat="' + esc(e.catId) + '" ' +
+          'role="button" tabindex="0" aria-expanded="false">' +
+          '<span class="ws-dot" style="background:' + statusDotColor(e.c.status) + ';"></span>' +
+          '<span class="ws-mname">' + esc(categoryName(e.catId)) + "</span>" + note +
+          '<span class="ws-note ws-cat-toggle">show the computations</span></div>' +
+          divergence +
+          categoryDetailHtml(e.catId, contributors, abstainedMap[e.catId]);
       });
       html += "</div>";
     });
 
     // Module results, grouped by group letter (from each module's own "group" field, not the
     // module id) — names only.
-    var modules = r.module_results;
+    var modules = opts.expandable ? null : r.module_results;
     if (Array.isArray(modules) && modules.length) {
       var byModGroup = {};
       modules.forEach(function (m) {
@@ -745,7 +828,27 @@
       " · period cutoff " + esc(r.period_cutoff || "—") +
       (r.superseded_by ? " · superseded by a later recompute" : "") + "</div>";
 
-    $("ws-detail-body").innerHTML = html;
+    return html;
+  }
+
+  // Disclosure wiring for the expandable category rows, shared with training mode.
+  function wireCategoryRows(root) {
+    if (!root) return;
+    root.querySelectorAll("[data-cat]").forEach(function (row) {
+      function toggle() {
+        var detail = root.querySelector('[data-cat-detail="' + row.dataset.cat + '"]');
+        if (!detail) return;
+        var open = detail.hasAttribute("hidden");
+        detail.toggleAttribute("hidden", !open);
+        row.setAttribute("aria-expanded", String(open));
+        var t = row.querySelector(".ws-cat-toggle");
+        if (t) t.textContent = open ? "hide the computations" : "show the computations";
+      }
+      row.addEventListener("click", toggle);
+      row.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+      });
+    });
   }
 
   /* ============================================================

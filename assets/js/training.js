@@ -198,31 +198,48 @@ var LinTraining = (function () {
       '</span><span class="tr-fig-value" id="' + id + '">' + value + "</span></div>";
   }
 
+  // THE SIGNALS DISPLAY IS THE PLATFORM'S OWN LEDGER, not a training-only imitation:
+  // LinWorkspace.buildProjectDetailHtml is the same builder the real project detail panel
+  // uses, with the same category and computation NAME tables and the same row markup. The
+  // trainee is learning the instrument they will actually use. Training passes
+  // expandable:true so each category discloses the computations that fed it, plus the
+  // abstentions the server reported for it.
   function signalsHtml(result) {
     if (!result) return '<p class="kn-sub">No signals computed for this period.</p>';
-    var cats = result.category_statuses || {};
-    var rows = Object.keys(cats).sort().map(function (name) {
-      var c = cats[name];
-      return "<tr><td>" + esc(name) + "</td><td>" + esc(c.group || "") + "</td>" +
-        '<td><span class="tr-status tr-status-' + String(c.status || "none").toLowerCase() +
-        '">' + esc(c.status || "no status") + "</span></td></tr>";
-    }).join("");
-    var recs = (result.module_results || []).filter(function (m) {
-      return m && (m.recommended_action || m.action);
-    }).map(function (m) {
-      return "<li>" + esc(m.recommended_action || m.action) +
-        (m.authority ? " (" + esc(m.authority) + ")" : "") + "</li>";
-    }).join("");
+    if (!window.LinWorkspace || !LinWorkspace.buildProjectDetailHtml) {
+      return '<p class="kn-sub">The signal ledger is unavailable on this page.</p>';
+    }
     return '<div class="tr-signals" id="tr-signals">' +
       "<h3>Signals, period " + view.period + "</h3>" +
-      '<p>Project status: <span class="tr-status tr-status-' +
-      String(result.project_status || "none").toLowerCase() + '" id="tr-project-status">' +
-      esc(result.project_status || "no status") + "</span></p>" +
-      '<div class="about-table-wrap"><table class="about-table"><thead>' +
-      "<tr><th>Category</th><th>Group</th><th>Status</th></tr></thead><tbody>" +
-      rows + "</tbody></table></div>" +
-      (recs ? "<h3>Recommended actions</h3><ul id=\"tr-recommendations\">" + recs + "</ul>"
-            : "") +
+      LinWorkspace.buildProjectDetailHtml(result, {
+        expandable: true,
+        abstained: view.abstained_by_category || {}
+      }) +
+      "</div>";
+  }
+
+  // The recommendation, in full. Every figure, day count and clause reference here comes from
+  // the server (engine-derived); this file formats and never computes. It is deliberately not
+  // labelled as fallible on screen: a recommendation that announces its own unreliability is
+  // no longer something the trainee has to weigh.
+  function recommendationHtml(rec) {
+    if (!rec) return "";
+    function line(label, value, id) {
+      if (!value) return "";
+      return '<div class="tr-rec-line"><span class="tr-rec-label">' + label +
+        '</span><span class="tr-rec-value"' + (id ? ' id="' + id + '"' : "") + ">" +
+        esc(value) + "</span></div>";
+    }
+    return '<div class="tr-rec" id="tr-recommendation">' +
+      '<h3>Recommendation</h3>' +
+      '<p class="tr-rec-headline" id="tr-rec-headline">' + esc(rec.headline) + "</p>" +
+      line("What", rec.what, "tr-rec-what") +
+      line("Why", rec.why, "tr-rec-why") +
+      line("Who acts", rec.who, "tr-rec-who") +
+      line("To whom", rec.to_whom, "tr-rec-towhom") +
+      line("By what means", rec.means, "tr-rec-means") +
+      line("Next step", rec.next_step, "tr-rec-next") +
+      line("By when", rec.deadline_date, "tr-rec-deadline") +
       "</div>";
   }
 
@@ -373,6 +390,7 @@ var LinTraining = (function () {
       noticeHtml(view.notice) +
       dscNoticeHtml(view.dsc_notice) +
       incidentHtml(s.incident) +
+      recommendationHtml(view.recommendation) +
       changesHtml(s.period_changes) +
       narrativeHtml() +
       figuresHtml(s, view.notice) +
@@ -385,6 +403,10 @@ var LinTraining = (function () {
       briefOpen = !briefOpen;
       paint();
     });
+    // The disclosure wiring is the workspace's own, for the same reason the markup is.
+    if (window.LinWorkspace && LinWorkspace.wireCategoryRows) {
+      LinWorkspace.wireCategoryRows(root);
+    }
     var restart = document.getElementById("tr-restart-btn");
     if (restart) restart.addEventListener("click", function () {
       debrief = null;
