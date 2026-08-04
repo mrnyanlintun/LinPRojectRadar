@@ -698,3 +698,49 @@ class Observation(Base):
         CheckConstraint("kind IN ('SNAPSHOT','EVENT','DELTA','PERMANENT')",
                         name="ck_observations_kind"),
     )
+
+
+class TrainingRun(Base):
+    """
+    Training mode run 2: one row per training run, the deterministic state store.
+
+    BESIDE the observations store, never inside it (roadmap item 6): a training run has no
+    documents, no extractions and no observations. `state` is the CURRENT state the engine
+    advances; `history` appends one entry per decision so a run can be replayed and a
+    determinism check can compare replays byte for byte. Both are written only by
+    `training_engine.advance`, a pure function — this table stores what the engine produced
+    and never computes anything itself.
+
+    `project_id` points at a project with `is_training = true`, created together with the run
+    in one transaction. The FK cascade mirrors the platform's others, with the same caveat
+    run 2's report repeats from the user-lifecycle work: SQLite does not enforce it without a
+    PRAGMA the app never sets, so nothing may rely on the cascade for correctness.
+    """
+
+    __tablename__ = "training_runs"
+
+    run_id: Mapped[str] = mapped_column(ULID, primary_key=True, default=new_ulid)
+    project_id: Mapped[str] = mapped_column(
+        Uuid(), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+    participant_id: Mapped[str] = mapped_column(
+        ULID, ForeignKey("participants.participant_id"), nullable=False, index=True
+    )
+    contract_form: Mapped[str] = mapped_column(Text, nullable=False)
+    contract_value: Mapped[float] = mapped_column(Float, nullable=False)
+    conditions: Mapped[str] = mapped_column(Text, nullable=False)
+    period: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    status: Mapped[str] = mapped_column(Text, nullable=False, default="active",
+                                        server_default="active")
+    state: Mapped[dict] = mapped_column(JSONType, nullable=False)
+    history: Mapped[dict] = mapped_column(JSONType, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+    __table_args__ = (
+        CheckConstraint("status IN ('active','complete')", name="ck_training_runs_status"),
+    )
