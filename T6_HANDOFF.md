@@ -9,6 +9,88 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-04 — TRAINING MODE RUN 1: THE FLAG, THE GATE, AND DATA ISOLATION
+
+Full detail in `REPORT_2026-08-04_training-gating.md` — **read the isolation section first**, per
+its own lead. `training_mode_roadmap.md` did not exist anywhere before this run (checked working
+tree, `origin/main`, full history, disk); Lin supplied it directly rather than it being
+reconstructed from the task brief. It is now committed, with items 4 and 5 marked DONE.
+
+**Server 1692/1692 across 31 suites** (new `test_training_gating.py` adds 43), `tests_render.html`
+62/63 (the one red is pre-existing and unrelated, confirmed by stashing every change in this run
+and reproducing the identical result), `tests.html` 51/51. Four faults injected against the
+running modules, all confirmed applied, all distinct signatures, all reverted byte-identical,
+baseline re-run clean after each. **NOTHING GENERATES A TRAINING PROJECT OR ADVANCES A PERIOD IN
+THIS RUN.** No production migration applied — 0018 is written and verified on throwaway SQLite
+only.
+
+## `projects.is_training` IS THE ONLY COLUMN, AND IT IS THE SINGLE SOURCE OF TRUTH
+
+Migration 0018: one `NOT NULL DEFAULT false` boolean on `projects`, indexed like `archived`
+already is. Every dependent table — `computed_results`, and whatever training state a later run
+builds — joins back to it rather than carrying its own copy, for the same reason the storage
+redesign gave field kinds one home each: a duplicated marker is a marker that drifts.
+
+**The one export path that needed a real filter: `project_health`
+(`research_export.build_module_results_rows`).** It has NO `account_type` filter at all — its own
+docstring says a project carries none — so before this run a training project's `ComputedResult`
+rows (which roadmap item 7 will produce with the SAME shape as a real project's, since training
+reuses the existing computations) were exactly as exportable as a real operational project's. One
+`continue` keyed on `project.is_training`, in the single function all three formats (json/csv/xlsx)
+funnel through, closes it everywhere at once. `participant_inputs` needed **no code change**: it
+was already closed by construction (`_eligible_instances` filters to research accounts
+unconditionally, and training is operational-only, refused server-side to research whatever the
+flag says).
+
+**The research chain (assignments/consents/decisions/transitions) cannot structurally hold a
+training row**, because none of it is reachable except through a scenario naming a training
+project as evidence — and that door is now shut too, at BOTH `adminscenariocreate` (creation) and
+`adminassign` (its own pre-existing re-check, for a project renumbered after the scenario was
+made). Full table-by-table accounting — touched, and considered-but-left-alone with the reason —
+is in the report; do not assume a table is safe without reading that list.
+
+## THE GATE REUSES THE `auditor` PATTERN EXACTLY, PLUS TWO THINGS THAT PATTERN DOESN'T HAVE
+
+`training` is a fifth `FEATURE_KEYS` entry, same `adminfeaturesset` admin toggle, same
+`effective_features` default resolution. `trainingstatus` is the only action with a real handler
+this run; four more (`trainingstart`/`state`/`decision`/`advance`) are pre-listed in
+`GATED_ACTIONS`, unimplemented, the same way `chat` and `audit` were before they existed.
+
+**Research is refused UNCONDITIONALLY, not by the flag defaulting off.** Proven, not assumed: the
+suite has an admin explicitly write `training: true` onto a research participant's stored
+`features` (nothing stops that write — `adminfeaturesset` checks the CALLER's role, never the
+TARGET's account_type) and confirms the refusal still holds, because it lives in
+`RESEARCH_FORBIDDEN_ACTIONS`, independent of what the flag resolves to.
+
+**The unauthenticated-caller gap is closed for training specifically.** `gate_action` itself still
+leaves a sessionless caller alone (unchanged, documented scope note) — the exact shape of gap a
+previous session found letting an anonymous `getportfoliohealth` bypass a flag a signed-in user
+with it off was held to. `a_trainingstatus` does not lean on `gate_action` for authentication: it
+calls `resolve_caller` itself first. Probed with no token and with a garbage token.
+
+## THE OPERATIONAL-AND-RESEARCH COMBINATION IS POSSIBLE, AND account_type WINS
+
+`a_adminassign` never checks a target's `account_type`, so an admin can assign an operational
+account to a scenario and it can proceed through consent and decisions. Nothing catches that at
+write time. What DOES hold: `research_export._eligible_instances` filters on
+`account_type == "research"` and nothing else, so however such rows came to exist, they never
+leave through `participant_inputs`. Unchanged by this run; stated because the brief asked for the
+combination to be settled rather than assumed.
+
+## Things worth knowing before the next training-mode run
+
+- **The `auditor` nav button has a pre-existing hiding gap**: `radar.css` hides
+  `[data-page="auditor"]` (the page content) but never `[data-nav="auditor"]` (the dock button
+  itself), so the Auditor icon is visible to every operational account regardless of the flag —
+  the page behind it still refuses correctly. Found while building `training`'s own CSS rule
+  correctly (`[data-nav="training"]` IS hidden). Not fixed; out of this run's scope.
+- **Items 1–3 of the roadmap (the elicited figures, the state variables, which decisions a
+  trainee should get wrong) are still Lin's open decisions** and block everything from item 6
+  onward. This run's items 4–5 do not depend on them.
+- **`RESEARCH_FORBIDDEN_ACTIONS` and `GATED_ACTIONS` were extended together** for all five
+  training actions, not just `trainingstatus`, so a later run adding a real `trainingstart`
+  handler inherits both the gate and the refusal without touching either list.
+
 # 2026-08-03 — CHART-DATA AND ABSTENTION SUITES: BOTH FINDINGS CHECKED, NEITHER STANDS
 
 Full detail in `REPORT_2026-08-03_chart-abstention-tests.md`. **Nothing was changed.** Server

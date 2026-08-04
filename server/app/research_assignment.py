@@ -114,10 +114,18 @@ def a_adminscenariocreate(session: Session, payload: dict, secret: str, ttl: int
         return err("evidence_package_id is required: a scenario with no evidence would let a "
                    "participant commit an irreversible preliminary judgment against an empty "
                    "evidence panel")
-    if session.scalars(
+    evidence_project = session.scalars(
         select(Project).where(Project.legacy_id == evidence_id)
-    ).first() is None:
+    ).first()
+    if evidence_project is None:
         return err(f"evidence project not found: {evidence_id}")
+    # Training data isolation: a training project must never enter the research chain by any
+    # door, including as evidence a research participant is shown. Refused here rather than
+    # only at export time, because by export time a participant would already have committed a
+    # preliminary judgment against it.
+    if evidence_project.is_training:
+        return err(f"evidence project {evidence_id} is a training project and cannot be used "
+                   f"as research evidence")
 
     row = Scenario(
         scenario_version=version,
@@ -368,12 +376,17 @@ def a_adminassign(session: Session, payload: dict, secret: str, ttl: int) -> dic
     for scenario_id in ordered_scenarios:
         scenario = session.get(Scenario, scenario_id)
         ref = (scenario.evidence_package_id or "").strip()
-        if not ref or session.scalars(
+        evidence_project = session.scalars(
             select(Project).where(Project.legacy_id == ref)
-        ).first() is None:
+        ).first() if ref else None
+        # Re-checked here too, not just at scenario creation: a scenario naming a training
+        # project as evidence must not reach a participant, for the same reason a missing
+        # project must not.
+        if not ref or evidence_project is None or evidence_project.is_training:
             evidenceless.append(f"{scenario.scenario_version or scenario_id}"
                                 f"{'' if ref else ' (no evidence project named)'}"
-                                f"{f' (names missing project {ref})' if ref else ''}")
+                                f"{f' (names training project {ref})' if evidence_project and evidence_project.is_training else ''}"
+                                f"{f' (names missing project {ref})' if ref and evidence_project is None else ''}")
     if evidenceless:
         audit(session, "assignment_denied_no_evidence", participant_id=target_id,
               denied_by=caller.participant_id, scenarios=list(evidenceless))

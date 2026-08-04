@@ -53,13 +53,15 @@ from .research_models import Participant
 # The recognised keys, all boolean. A key outside this set is rejected on write rather than
 # stored: an unrecognised flag that nothing reads is indistinguishable from a typo in the key
 # an admin meant to set.
-FEATURE_KEYS: tuple[str, ...] = ("chat", "knowledge_library", "health_dialog", "auditor")
+FEATURE_KEYS: tuple[str, ...] = ("chat", "knowledge_library", "health_dialog", "auditor",
+                                 "training")
 
 FEATURE_LABELS = {
     "chat": "the assistant",
     "knowledge_library": "the Knowledge Library",
     "health_dialog": "the portfolio Health view",
     "auditor": "the technical auditor",
+    "training": "training mode",
 }
 
 # Which /exec action belongs to which feature. Lowercased action names, matching the facade's
@@ -96,6 +98,14 @@ GATED_ACTIONS: dict[str, str] = {
     # path. Turning the reviewer off must not change how a document is stored, or turning it
     # back on would find a corpus with holes in it.
     "projectcorpus": "auditor",
+    # Training mode (run 1). `trainingstatus` is the only action this run implements; the rest
+    # are listed deliberately, the same way `chat` and `audit` are above, so the gate already
+    # covers them the day their handlers land and nobody has to remember to add the line.
+    "trainingstatus": "training",
+    "trainingstart": "training",
+    "trainingstate": "training",
+    "trainingdecision": "training",
+    "trainingadvance": "training",
 }
 
 
@@ -132,10 +142,22 @@ GATED_ACTIONS: dict[str, str] = {
 # nothing in the export would say which one. Hiding the control is a suggestion; this is the
 # enforcement. `themeget` is NOT gated: a research account may ask what it renders, and it is
 # told the fixed theme.
+#
+# TRAINING MODE IS FORBIDDEN TO RESEARCH ACCOUNTS UNCONDITIONALLY, not by the flag defaulting off.
+# `default_for_account` already resolves an unset `training` key to disabled for a research
+# account, so this refusal is redundant on the common path — deliberately, because an admin CAN
+# set `training: true` on a research participant's stored row (nothing stops that write) and the
+# moment they do, the default-off protection is gone. Listed here the same way `themeset` and
+# `projectcreate` are, so the refusal holds regardless of what is stored.
 RESEARCH_FORBIDDEN_ACTIONS: frozenset[str] = frozenset({
     "projectcreate",
     "create",
     "themeset",
+    "trainingstatus",
+    "trainingstart",
+    "trainingstate",
+    "trainingdecision",
+    "trainingadvance",
 })
 
 # Per action: the audit event to write, and the sentence the participant reads. Keyed by the
@@ -152,6 +174,21 @@ _RESEARCH_REFUSALS: dict[str | None, tuple[str, str]] = {
     "themeset": ("theme_change_denied",
                  "not available: the interface theme is fixed for this account so that every "
                  "participant sees the same thing."),
+    "trainingstatus": ("training_denied_research",
+                        "not available for this account: training mode is an operational "
+                        "feature."),
+    "trainingstart": ("training_denied_research",
+                       "not available for this account: training mode is an operational "
+                       "feature."),
+    "trainingstate": ("training_denied_research",
+                       "not available for this account: training mode is an operational "
+                       "feature."),
+    "trainingdecision": ("training_denied_research",
+                          "not available for this account: training mode is an operational "
+                          "feature."),
+    "trainingadvance": ("training_denied_research",
+                         "not available for this account: training mode is an operational "
+                         "feature."),
     None: ("research_action_denied", "not available for this account."),
 }
 

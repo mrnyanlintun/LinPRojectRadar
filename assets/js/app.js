@@ -2012,6 +2012,17 @@
                '<line x1="6.4" y1="8" x2="21.2" y2="8" stroke="currentColor" stroke-width="1.2"/>' +
              '</g>' +
            '</g>' },
+    // Hidden by default: features.js toggles body.og-no-training when the resolved `training`
+    // flag is false (unset, disabled, or a research account, which always resolves false — see
+    // server/app/features.py default_for_account). radar.css hides [data-nav="training"] on
+    // that class, the same hook health_dialog and auditor already use.
+    { nav: "training", label: "TRAIN",
+      svg: '<path d="M13 4 L21 8.5 L13 13 L5 8.5 Z" fill="currentColor" fill-opacity="0.14" ' +
+             'stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>' +
+           '<path d="M8.4 10.6 V15.4 C8.4 17 10.4 18.3 13 18.3 C15.6 18.3 17.6 17 17.6 15.4 V10.6" ' +
+             'fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>' +
+           '<line x1="21" y1="8.5" x2="21" y2="15.4" stroke="currentColor" stroke-width="1.3" ' +
+             'stroke-linecap="round"/>' },
     { nav: "handbook", label: "HANDBOOK",
       svg: '<g class="book">' +
              '<g class="book-closed">' +

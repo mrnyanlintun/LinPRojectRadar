@@ -20,7 +20,7 @@
 (function () {
   "use strict";
 
-  var KEYS = ["chat", "knowledge_library", "health_dialog", "auditor"];
+  var KEYS = ["chat", "knowledge_library", "health_dialog", "auditor", "training"];
   var TOKEN_KEY = "og-session-token";
 
   function sessionToken() {

@@ -54,6 +54,16 @@ class Project(Base):
 
     archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false", index=True)
 
+    # Training mode (run 1 of that build). Set at creation, never after: a project born real
+    # must never become training and a project born training must never become real, because
+    # either direction would make a decision that once had one status carry the other. NOT NULL
+    # with a False default so every project that exists before training mode is built resolves
+    # to "not training" rather than to an ambiguous NULL a filter could get wrong. This is the
+    # single source of truth training isolation is built on — decisions, module results and any
+    # future training state read this column by joining back to the project, rather than each
+    # carrying their own training marker that could drift from it.
+    is_training: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false", index=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()

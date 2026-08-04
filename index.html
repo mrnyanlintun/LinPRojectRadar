@@ -819,6 +819,22 @@
       <div id="auditor-root"></div>
     </section>
 
+    <!-- TRAINING MODE. Nav entry hidden by default (og-no-training, set by features.js) until
+         a resolved `training` flag says otherwise; server-side, `trainingstatus`/`gate_action`
+         refuse the underlying action independently of whether this markup is ever shown, and
+         a research account is refused whatever the flag says. This run builds the gate only —
+         no training project exists yet, so the page states that rather than rendering a stub
+         someone could mistake for a real feature. -->
+    <section class="page" data-page="training" hidden>
+      <section class="intro">
+        <p class="eyebrow">Training</p>
+        <h1>Training mode</h1>
+        <p>A practice project to decide against, separate from any real project and never part
+        of the research record. This build does not yet generate one.</p>
+      </section>
+      <div id="training-root"></div>
+    </section>
+
     <!-- HANDBOOK — the merged Knowledge + About page. Two tabs in the same pill
          control language as the Radar|Map toggle (.hb-tabs / .hb-tab mirror
          .stage-toggle / .stage-btn, distinct class so app.js's Radar/Map
