@@ -57,11 +57,21 @@ Status key: OPEN / RUNNING / DONE / BLOCKED
    effect table, computes the next period through the normal path, and the next period renders.
    Ten decisions complete a run; the two clocks (period, notice days) provably do not blur —
    one deferral spends A201's and ConsensusDocs' windows even though one period passed.
-10. OPEN — **Discrete events.** Near miss occurs discretely, stop work order follows, duration
-    depends on the response, cost depends on remaining float.
-11. OPEN — **Narration.** The model writes prose around numbers the state model produced. **The
-    generator must not be the judge**: one call narrates, the arithmetic stays deterministic, or it
-    will retroactively justify whatever the trainee chose.
+10. DONE (2026-08-04, run 3) — **Discrete events.** The near miss is discrete, exogenous and
+    undisclosed (period four, in code, never in a response); every one converts to a stop work
+    order; duration follows the response (full correction package 6/5 days lost, minimal 18/14,
+    with 1 or 2 restart-shadow periods); cost depends on remaining float, proven head to head
+    (same incident and response: 24,000 exposure float-rich, 80,000 float-poor). Acceleration
+    raises the hazard deterministically and its incidents carry cause "acceleration" for the
+    debrief. Figures in EVENT_FIGURES, designed, led with in
+    REPORT_2026-08-04_training-events.md. The run 3 corrections to the effect table (deferral
+    drift made visible, the escalation cost curve, credibility asymmetry, facility-based LD
+    rate) landed in the same run.
+11. DONE (2026-08-04, run 3) — **Narration.** One call narrates a state the engine already
+    computed (training_narration.py); nothing reads the sentence back, so the generator cannot
+    judge, structurally. A layer, not a dependency: no key, a failure, or a raising narrator
+    all leave the run on the figures alone, byte-identical state either way. Em dashes are
+    stripped mechanically.
 12. OPEN — **Debrief.** At the end of a run, what was spent, what closed, what the alternatives
     would have cost. Without this a trainee learns nothing they can carry.
 
@@ -104,3 +114,8 @@ Append one line per run: date, items attempted, items completed, what moved to B
   Items 1–3 remain OPEN: the designed figures now standing in for them are in
   `training_engine.py` and are led with in `REPORT_2026-08-04_training-loop.md` for correction.
   `training_us_contract_regimes.md` was missing from the repository and is now committed.
+- 2026-08-04: run 3, items 10 and 11 attempted and completed (events and narration), plus the
+  four effect-table corrections. Nothing moved to BLOCKED. Items 1–3 remain OPEN; the event
+  figures join the designed layer, in `EVENT_FIGURES`, led with in
+  `REPORT_2026-08-04_training-events.md`. Item 12 (the debrief) is the remaining build item and
+  its raw material (incident causes, decisions, per-period changes) is now all captured.

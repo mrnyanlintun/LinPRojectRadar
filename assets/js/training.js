@@ -87,6 +87,12 @@ var LinTraining = (function () {
       '<option value="exacting">Exacting: tight labour, long lead exposure, formal owner</option>' +
       '<option value="steady">Steady: available labour, stocked procurement, collaborative owner</option>' +
       "</select>" +
+      '<label class="login-field-label">Facility</label>' +
+      '<select id="tr-facility" class="ig-input">' +
+      '<option value="critical">Critical occupancy (hospital grade)</option>' +
+      '<option value="standard" selected>Standard commercial occupancy</option>' +
+      '<option value="utilitarian">Utilitarian occupancy (warehouse grade)</option>' +
+      "</select>" +
       '<label class="login-field-label">Contract value (dollars)</label>' +
       '<input id="tr-value" class="ig-input" type="number" value="12000000" min="1000000" max="500000000">' +
       '<p class="login-error" id="tr-start-error" style="display:none"></p>' +
@@ -98,6 +104,7 @@ var LinTraining = (function () {
       var r = await call("trainingstart", {
         contract_form: document.getElementById("tr-form").value,
         conditions: document.getElementById("tr-conditions").value,
+        facility: document.getElementById("tr-facility").value,
         contract_value: Number(document.getElementById("tr-value").value)
       });
       if (r && r.ok === true) { view = r; briefOpen = true; paint(); }
@@ -135,8 +142,10 @@ var LinTraining = (function () {
     return '<div class="tr-brief" id="tr-brief"' + (briefOpen ? "" : " hidden") + ">" +
       "<h3>The brief</h3>" +
       "<p><strong>" + esc(b.contract_form_label) + ".</strong> " + esc(b.contract_note) + "</p>" +
+      "<p><strong>Facility.</strong> " + esc(b.facility_label) + "</p>" +
       "<p><strong>Liquidated damages:</strong> " + money(b.liquidated_damages_per_day) +
       " per day. " + esc(b.liquidated_damages_rule) + "</p>" +
+      (b.safety_note ? "<p><strong>Safety.</strong> " + esc(b.safety_note) + "</p>" : "") +
       "<p><strong>Conditions.</strong> Labour " + esc(c.labour) + ". Procurement " +
       esc(c.procurement) + ". Owner " + esc(c.owner) + ". Acceleration costs " +
       c.acceleration_cost_multiplier + " times base; restart productivity loss " +
@@ -196,23 +205,78 @@ var LinTraining = (function () {
       "</div>";
   }
 
+  function incidentHtml(inc) {
+    if (!inc || inc.status === "none" || !inc.status) return "";
+    if (inc.status === "stopped") {
+      return '<div class="tr-notice tr-notice-expired" id="tr-incident">' +
+        "Stop work order in effect since period " + inc.period_occurred +
+        (inc.cause === "acceleration"
+          ? ", following a near miss on the accelerated works." : ", following a near miss.") +
+        " All work has stopped except safety work. Lifting requires a Certificate of " +
+        "Correction plus whatever the cause demands. The response decides the duration." +
+        "</div>";
+    }
+    if (inc.status === "restarting") {
+      return '<div class="tr-notice tr-notice-tight" id="tr-incident">' +
+        "The stop work order is lifted after " + inc.days_lost + " days. The site is " +
+        "restarting; productivity has not yet recovered.</div>";
+    }
+    return "";
+  }
+
+  function changesHtml(pc) {
+    if (!pc) return "";
+    var items = [];
+    if (pc.float_days_spent) items.push(pc.float_days_spent + " float days spent");
+    if (pc.cost_added) items.push(money(pc.cost_added) + " added to actual cost");
+    if (pc.contingency_spent) items.push(money(pc.contingency_spent) + " of contingency drawn");
+    if (pc.credibility_change) {
+      items.push("owner credibility " + (pc.credibility_change > 0 ? "up" : "down") + " " +
+        Math.abs(pc.credibility_change));
+    }
+    var notes = (pc.notes || []).map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("");
+    return '<div class="tr-changes" id="tr-changes">' +
+      "<h3>What the last period cost</h3>" +
+      "<p>" + esc(pc.decision) + (items.length ? ": " + items.join(", ") + "."
+                                              : ": no figures moved.") + "</p>" +
+      (notes ? "<ul>" + notes + "</ul>" : "") +
+      "</div>";
+  }
+
+  function narrativeHtml() {
+    if (!view.narrative) return "";
+    return '<div class="tr-narrative" id="tr-narrative"><h3>Site narrative</h3><p>' +
+      esc(view.narrative) + "</p></div>";
+  }
+
+  var DECISION_META = {
+    escalate: ["Escalate", "protects entitlement, spends float, and costs more the longer the position has been open"],
+    absorb: ["Absorb", "protects the relationship, spends contingency"],
+    defer: ["Defer", "protects both, runs the notice clock down, and drifts cost and float while the dispute stays open"],
+    accelerate: ["Accelerate", "buys float back at a premium, and a compressed site carries a higher chance of an incident"],
+    respond_strong: ["Respond with the full correction package", "costlier now, lifts the stop work order sooner, shorter restart shadow"],
+    respond_minimal: ["Respond minimally", "cheaper now, stays stopped longer, longer restart shadow"]
+  };
+
   function decisionsHtml(s) {
     if (view.status !== "active") {
       return '<p class="kn-sub" id="tr-complete">The run is complete. ' +
         "Start a new one to try a different response.</p>" +
         '<button type="button" class="btn primary" id="tr-restart-btn">Start a new run</button>';
     }
+    var allowed = view.allowed_decisions || ["escalate", "absorb", "defer"];
     var open = s.dispute.status === "open";
+    var buttons = allowed.map(function (d) {
+      var meta = DECISION_META[d] || [d, ""];
+      return '<button type="button" class="btn" data-decision="' + d + '">' + esc(meta[0]) +
+        '<span class="tr-hint">' + esc(meta[1]) + "</span></button>";
+    }).join("");
     return '<div class="tr-decide" id="tr-decide">' +
       "<h3>Decide, period " + view.period + "</h3>" +
-      (open ? "" : '<p class="kn-sub">The dispute is settled; the remaining periods run out ' +
-                   "the schedule. Deferring is the neutral close of a period.</p>") +
-      '<button type="button" class="btn" data-decision="escalate">Escalate' +
-      '<span class="tr-hint">protects entitlement, spends float</span></button>' +
-      '<button type="button" class="btn" data-decision="absorb">Absorb' +
-      '<span class="tr-hint">protects the relationship, spends contingency</span></button>' +
-      '<button type="button" class="btn" data-decision="defer">Defer' +
-      '<span class="tr-hint">protects both, and runs the notice clock down</span></button>' +
+      (open || allowed.indexOf("respond_strong") !== -1 ? "" :
+        '<p class="kn-sub">The dispute is settled; the remaining periods run out ' +
+        "the schedule. Deferring is the neutral close of a period.</p>") +
+      buttons +
       '<p class="login-error" id="tr-decide-error" style="display:none"></p>' +
       "</div>";
   }
@@ -236,6 +300,9 @@ var LinTraining = (function () {
       "</div>" +
       briefHtml(view.brief) +
       noticeHtml(view.notice) +
+      incidentHtml(s.incident) +
+      changesHtml(s.period_changes) +
+      narrativeHtml() +
       figuresHtml(s, view.notice) +
       signalsHtml(view.result) +
       decisionsHtml(s) +
