@@ -4684,3 +4684,10 @@ body.og-account-operational .notice-operational { display: block; }
 .tr-changes h3, .tr-narrative h3 { margin: 2px 0 6px; font-size: 13px; }
 .tr-changes ul { margin: 4px 0 2px 18px; font-size: 13px; color: var(--muted); }
 .tr-narrative p { font-size: 13px; line-height: 1.5; }
+
+/* ---------- Training mode run 4: the debrief ---------- */
+.tr-debrief { border: 1px solid var(--line, #444); border-radius: 8px; padding: 12px 16px;
+  margin: 10px 0; }
+.tr-debrief h3 { margin: 8px 0 4px; font-size: 13px; }
+.tr-debrief ul { margin: 4px 0 6px 18px; font-size: 13px; }
+.tr-debrief p { font-size: 13px; line-height: 1.5; }

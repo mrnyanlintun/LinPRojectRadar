@@ -9,6 +9,76 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-04 — TRAINING MODE RUN 4: REGIMES ACROSS THE RUN, DEBRIEF, DISCLAIMER. THE BUILD IS COMPLETE
+
+Full detail in `REPORT_2026-08-04_training-regimes.md` — **it leads with which of the four
+contract traps are reachable: ALL FOUR**, each with its own citation and failure, each
+fault-proven. **Server 1833/1833 across 34 suites** (new `test_training_regimes.py` adds 45),
+`tests_render.html` 62/63 (STILL the same single pre-existing gap, by name and text),
+`tests.html` 51/51. Six faults (R1–R6), all detected distinctly, all reverted byte-identical,
+baseline after each. One full browser run PER CONTRACT FORM, deadlines differing per the table,
+each ending in the rendered debrief. **Production still lacks 0018 AND 0019 — both must be
+applied before the first training run.** Training mode is feature complete.
+
+## The four traps, and the geometry that makes trap 1 exist
+
+A DIFFERING SITE CONDITION is discovered on day 3 of period five: **17 days old at that
+period's decision — inside A201's 21 day claim window, outside its 14 day DSC window (Section
+3.7.4)**. That is the only decision point in a run where the 21-day belief and the truth
+diverge, and it is why the discovery day is 3, not 10. The DSC is a SECOND matter with its own
+derived clock (`dsc_position`), never conflated with the claim's. Under A201 it is
+unpreservable at this geometry, deliberately. ConsensusDocs: preserved iff escalated at the
+first opportunity (stop-and-prompt, 3.16.2). FAR: preserved iff undisturbed — one period of
+continued work loses it (52.236-2(a)).
+
+- **Trap 2**: ConsensusDocs escalation goes `noticed`/`conditional`; the NEXT period's defer is
+  going quiet (Section 8.4) and kills it; any active decision lands the documentation and books
+  the CO one period later than A201. Period-grain abstraction, stated as designed.
+- **Trap 3**: the run 2 lookback, now over a claim that GROWS 0.25% of value per deferred
+  period under FAR (this reconciled ONE run-2 check: 90,000 → 105,000).
+- **Trap 4**: crossing 100,000 during the LAST deferred period makes an immediate escalation
+  uncertified → lost (52.233-1). The trap is the crossing: wait a period and certification is
+  carried; start over the threshold and it always was. Needs a sub-$6.67M contract value.
+
+**ONE ACT SERVES EVERY OPEN MATTER** (escalate notices both claim and DSC, absorb absorbs
+both, defer defers both); the act's costs are paid once, each matter's entitlement decided by
+its own clause. The escalation float curve prices on the OLDEST open matter.
+
+## The debrief and its counterfactual
+
+`trainingdebrief`, COMPLETE runs only. Spent / closed / why-per-incident (acceleration
+attribution read from the recorded cause; scheduled incidents honestly unattributed) / the
+counterfactual as a REPLAY: same engine, first decision swapped to escalate, later decisions
+verbatim. Three honest outcomes: computed; "you escalated first, the counterfactual is the run
+you played"; or "the replay diverges structurally" with the reason — NEVER estimated across a
+divergence (fault R6 made it estimate; the check went red). The debrief needed no new capture:
+runs 2–3 stored everything.
+
+## The disclaimer
+
+`build_disclaimer` in the brief AND debrief: governing form, jurisdiction, "periods are
+routinely amended in negotiation... check which rules actually govern", and sourced-vs-designed
+marking of every figure. NO liability/consent language composed — asserted mechanically.
+
+## Worth knowing after the build
+
+- **Item 14 is OUTSTANDING AND LIN'S**: A201/ConsensusDocs periods rest on law-firm summaries,
+  not the licensed documents. Reported, not attempted, per instruction.
+- **Open on the roadmap**: items 1–3 (designed figures await correction), 14, 16–18 (deferred),
+  and the two production migrations.
+- **The container's proxy now BLACKHOLES `accounts.google.com/gsi/client`** — a
+  parser-blocking script in index.html — so DOMContentLoaded hangs forever in Playwright.
+  The browser drives `page.route(...).abort()` it; password sign-in does not use it. Any
+  future DOM drive here needs the same, and earlier sessions' "it worked" predates the proxy
+  change.
+- **Two suite defects found by this run's own verification, again**: a fixture assuming the
+  hazard SWO fires at period five (it fires at six, after the restart shadow), and an R6
+  KeyError crash-not-fail (now `.get` with the fault reading as a red check). Also one
+  premise corrected: the accelerated run's counterfactual IS computable — the SWO schedule
+  is invariant to swapping the first decision.
+- **A201's service rule and the IDM 60-day waiver are brief content, not mechanics.** The
+  remaining A201 texture if training ever gets a run 5.
+
 # 2026-08-04 — TRAINING MODE RUN 3: EFFECT TABLE CORRECTIONS, DISCRETE EVENTS, NARRATION
 
 Full detail in `REPORT_2026-08-04_training-events.md` — **it leads with the revised effect

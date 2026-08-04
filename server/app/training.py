@@ -43,7 +43,7 @@ from .research_models import ComputedResult, TrainingRun, new_ulid
 from .training_engine import (
     CONDITION_PROFILES, CONTRACT_FORMS, DECISIONS, DEFAULT_CONTRACT_VALUE, DEFAULT_FACILITY,
     LD_RATES_BY_FACILITY, MAX_CONTRACT_VALUE, MIN_CONTRACT_VALUE, PERIODS_TOTAL, RESPONSES,
-    advance, allowed_decisions, build_brief, initial_state, notice_position,
+    advance, allowed_decisions, build_brief, dsc_position, initial_state, notice_position,
     signal_inputs_from_state,
 )
 
@@ -150,6 +150,8 @@ def _state_view(session: Session, run: TrainingRun, project: Project) -> dict[st
                              run.state.get("facility") or DEFAULT_FACILITY),
         "state": visible_state,
         "notice": notice_position(run.state),
+        # Run 4: the site condition's own clock, on its own clause. None before discovery.
+        "dsc_notice": dsc_position(run.state),
         "allowed_decisions": list(allowed_decisions(run.state)),
         "decisions": list(run.state.get("decisions") or []),
         # Module-level recommendations (the analytical layer's own recommended actions) are
@@ -331,9 +333,38 @@ def a_trainingdecision(session: Session, payload: dict, secret: str, ttl: int) -
     return view
 
 
+def a_trainingdebrief(session: Session, payload: dict, secret: str, ttl: int) -> dict[str, Any]:
+    """
+    The debrief, for a COMPLETE run: what was spent, what closed, why the incidents happened,
+    and the replayed counterfactual (or the stated reason one cannot be computed). Refused
+    while the run is active — mid-run it would be a running commentary, and the consequences
+    it exists to connect have not landed yet.
+    """
+    caller, problem = _require_operational(session, payload, secret)
+    if problem:
+        return problem
+    run, problem = _own_run(session, caller, payload)
+    if problem:
+        return problem
+    if run.status != "complete":
+        return err("the debrief is available when the run is complete; "
+                   f"the run is at period {run.state.get('period')} of {PERIODS_TOTAL}")
+    from .training_debrief import build_debrief
+    debrief = build_debrief(
+        {"contract_form": run.contract_form, "contract_value": run.contract_value,
+         "conditions": run.conditions,
+         "facility": run.state.get("facility") or DEFAULT_FACILITY},
+        run.state)
+    audit(session, "training_debrief_read", participant_id=caller.participant_id,
+          run_id=run.run_id)
+    session.commit()
+    return {"ok": True, "run_id": run.run_id, "debrief": debrief}
+
+
 TRAINING_ACTIONS: dict[str, Callable[[Session, dict, str, int], dict]] = {
     "trainingstatus": a_trainingstatus,
     "trainingstart": a_trainingstart,
     "trainingstate": a_trainingstate,
     "trainingdecision": a_trainingdecision,
+    "trainingdebrief": a_trainingdebrief,
 }

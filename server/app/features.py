@@ -106,6 +106,7 @@ GATED_ACTIONS: dict[str, str] = {
     "trainingstate": "training",
     "trainingdecision": "training",
     "trainingadvance": "training",
+    "trainingdebrief": "training",
 }
 
 
@@ -158,6 +159,7 @@ RESEARCH_FORBIDDEN_ACTIONS: frozenset[str] = frozenset({
     "trainingstate",
     "trainingdecision",
     "trainingadvance",
+    "trainingdebrief",
 })
 
 # Per action: the audit event to write, and the sentence the participant reads. Keyed by the
@@ -187,6 +189,9 @@ _RESEARCH_REFUSALS: dict[str | None, tuple[str, str]] = {
                           "not available for this account: training mode is an operational "
                           "feature."),
     "trainingadvance": ("training_denied_research",
+                         "not available for this account: training mode is an operational "
+                         "feature."),
+    "trainingdebrief": ("training_denied_research",
                          "not available for this account: training mode is an operational "
                          "feature."),
     None: ("research_action_denied", "not available for this account."),

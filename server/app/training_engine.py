@@ -119,6 +119,45 @@ EVENT_FIGURES: dict[str, Any] = {
 IMPACT_COST_RATE = 0.015
 IMPACT_DAYS = 12
 
+# ---------------------------------------------------------------- regimes across the run (run 4)
+#
+# Run 4 makes the choice of form matter beyond the claim-notice check. Three mechanics, all
+# deterministic, all form-specific:
+#
+# THE DIFFERING SITE CONDITION (trap 1). A second discrete matter, discovered on day 3 of
+# period five — 17 days old at that period's decision. The geometry is the trap: 17 days is
+# INSIDE A201's 21 day claim window and OUTSIDE its 14 day differing-site-conditions window
+# (Section 3.7.4, shortened from 21 in the 2007 edition), so a trainee applying the claim
+# period from memory is told, at the first opportunity, that the site-conditions period
+# governed and had already run. Under ConsensusDocs there is no fixed day count — the duty is
+# to stop affected work and give prompt written notice (Section 3.16.2), modelled as: notice at
+# the FIRST decision after discovery preserves, anything later is not prompt. Under FAR the
+# duty is notice promptly and BEFORE the conditions are disturbed (52.236-2(a)), modelled as:
+# notice at the first decision preserves; a period of continued work disturbs the condition and
+# the entitlement is gone. Same discovery, three different failures, decided by the form alone.
+DSC_PERIOD = 5
+DSC_DISCOVERY_DAY = 3            # of the period; 17 days before that period's decision day
+DSC_COST_RATE = 0.008            # estimated impact of the condition: 0.8 percent of value
+DSC_DAYS = 6                     # stated schedule content, informational
+A201_DSC_NOTICE_DAYS = 14        # Section 3.7.4
+
+# THE CONSENSUSDOCS SECOND STEP (trap 2). Notice within 14 days, then documentation within 21
+# days after the notice (Section 8.4). A 30 day period has no decision point inside the 21 day
+# documentation window, so the step is modelled at period grain: an escalation gives notice and
+# holds the recovery CONDITIONAL; the following period's decision is the documentation window,
+# and DEFERRING it is going quiet — the claim dies with the two-step citation. Any active
+# decision keeps the file moving and the documentation lands. Designed abstraction, stated.
+#
+# THE FAR GROWTH AND CERTIFICATION (traps 3 and 4). Under FAR a deferred claim GROWS — work
+# continues under the change and its cost accumulates at this rate per deferred period. The 20
+# day lookback (52.243-4(d), trap 3, built in run 2) shrinks what notice can reach; and a claim
+# whose value crossed 100,000 dollars during the LAST deferred period is submitted on the form
+# prepared before it grew — uncertified, and an uncertified claim over the threshold is not a
+# claim at all (FAR 52.233-1, 41 USC 7103). A claim already over the threshold at the previous
+# decision point was known to need certification and carries it.
+FAR_CLAIM_GROWTH_RATE = 0.0025   # per deferred period, FAR only
+FAR_CERTIFICATION_THRESHOLD = 100_000.0
+
 CONTINGENCY_RATE = 0.05   # original contingency: 5 percent of contract value
 
 DEFAULT_CONTRACT_VALUE = 12_000_000.0
@@ -258,16 +297,19 @@ def derive_ld_per_day(contract_value: float, facility: str = DEFAULT_FACILITY) -
     return round(contract_value * rate / LD_ROUND) * LD_ROUND
 
 
-def escalation_float_cost(state: dict[str, Any]) -> int:
+def escalation_float_cost(state: dict[str, Any], days_open: int | None = None) -> int:
     """
     Correction 2's curve: base + 2 days per FULL PERIOD the position has been left open,
     capped. Early on a well-documented position is cheap; late on a contested one is dear.
-    Periods open is derived from the notice clock itself ((days_since_event - 10) / 30), so
-    the cost and the clock cannot disagree about how long the position has sat.
+    Periods open is derived from the clock itself, so the cost and the clock cannot disagree
+    about how long the position has sat. `days_open` lets the caller price the act on
+    whichever open matter is oldest (run 4: the site condition, when the claim has closed);
+    the default is the claim's own clock.
     """
     profile = CONDITION_PROFILES[state["conditions"]]
-    periods_open = max(0, (state["dispute"]["days_since_event"] - (DECISION_DAY - EVENT_DAY))
-                       // PERIOD_DAYS)
+    if days_open is None:
+        days_open = state["dispute"]["days_since_event"]
+    periods_open = max(0, (days_open - (DECISION_DAY - EVENT_DAY)) // PERIOD_DAYS)
     return min(ESCALATE_FLOAT_CAP_DAYS,
                profile["escalate_float_days_base"]
                + ESCALATE_FLOAT_PER_PERIOD_OPEN * periods_open)
@@ -338,6 +380,7 @@ def build_brief(contract_form: str, contract_value: float, conditions: str,
             "safety work, and lifting requires a Certificate of Correction plus whatever the "
             "cause demands. The response decides the duration. Accelerating the work raises "
             "the chance of an incident."),
+        "disclaimer": build_disclaimer(contract_form),
         "designed_figures_note": (
             "Site and market figures, the liquidated damages coefficient and the decision "
             "effects are designed training figures with no external authority. Contract notice "
@@ -392,6 +435,14 @@ def initial_state(contract_form: str, contract_value: float, conditions: str,
         "hazard": 0.0,
         "incident": {"status": "none"},
         "incidents": [],
+        # Run 4: the differing site condition, discovered in period DSC_PERIOD. None until
+        # then — its existence before discovery is exactly the kind of forecast the state view
+        # must not carry, and None serialises to nothing a trainee can read ahead.
+        "dsc": None,
+        # Run 4, FAR only: True when the claim's value crossed the certification threshold
+        # during the last deferred period, so an immediate escalation submits the form
+        # prepared before it grew.
+        "claim_crossed_threshold_last_period": False,
         # Correction 1: what the LAST advance changed, so the cost of waiting is visible in the
         # period's figures and can be reasoned about rather than discovered in a diff.
         "period_changes": None,
@@ -429,6 +480,50 @@ def notice_position(state: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def dsc_position(state: dict[str, Any]) -> dict[str, Any] | None:
+    """
+    The differing site condition's clock, per form. None before discovery. Derived, never
+    stored, like the claim's — the two clocks are SEPARATE surfaces because conflating them is
+    exactly the mistake trap 1 exists to teach.
+    """
+    dsc = state.get("dsc")
+    if not dsc:
+        return None
+    form_name = state["contract_form"]
+    days = dsc["days_since_event"]
+    if form_name == "A201-2017":
+        remaining = A201_DSC_NOTICE_DAYS - days
+        return {
+            "kind": "dsc_notice_bar",
+            "window_days": A201_DSC_NOTICE_DAYS,
+            "days_since_event": days,
+            "days_remaining": remaining,
+            "expired": remaining < 0,
+            "citation": "Section 3.7.4",
+            "note": ("A differing site condition has its own period, shorter than the claim "
+                     "window: 14 days from first observance, not 21."),
+        }
+    if form_name == "ConsensusDocs 200":
+        return {
+            "kind": "dsc_prompt",
+            "days_since_event": days,
+            "first_opportunity": dsc.get("first_opportunity", False),
+            "expired": not dsc.get("first_opportunity", False),
+            "citation": "Section 3.16.2",
+            "note": ("No fixed day count: stop the affected work and give prompt written "
+                     "notice. Prompt means now."),
+        }
+    return {
+        "kind": "dsc_undisturbed",
+        "days_since_event": days,
+        "first_opportunity": dsc.get("first_opportunity", False),
+        "expired": not dsc.get("first_opportunity", False),
+        "citation": "FAR 52.236-2(a)",
+        "note": ("Notice promptly, and before the conditions are disturbed. A period of "
+                 "continued work disturbs them."),
+    }
+
+
 def allowed_decisions(state: dict[str, Any]) -> tuple[str, ...]:
     """
     What may be decided this period. During a stop work order the ONLY decision is the
@@ -461,11 +556,18 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
     s = {**state, "dispute": {**state["dispute"]},
          "incident": {**state.get("incident", {"status": "none"})},
          "incidents": list(state.get("incidents") or []),
+         "dsc": ({**state["dsc"]} if state.get("dsc") else None),
          "decisions": list(state["decisions"])}
     profile = CONDITION_PROFILES[s["conditions"]]
     bac = s["bac"]
+    form_name = s["contract_form"]
     dispute_open = s["dispute"]["status"] == "open"
+    dsc_open = bool(s["dsc"]) and s["dsc"]["status"] == "open"
     period_earn = s["baseline_contract_sum"] / PERIODS_TOTAL
+    # The FAR certification flag describes the LAST period only; it is re-derived below when a
+    # deferral grows the claim across the threshold, and cleared otherwise.
+    crossed_last_period = s.get("claim_crossed_threshold_last_period", False)
+    s["claim_crossed_threshold_last_period"] = False
 
     # Correction 1's visibility: everything below is diffed against these at the end, so what
     # the period cost is a stated figure, not archaeology.
@@ -477,7 +579,7 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
     # ---- the period's base progress. pv always earns a full increment; ev factors multiply:
     # a deferred-dispute period earns 90 percent, a restart period earns
     # (1 - restart_productivity_loss) — a stopped site does not come back at full production.
-    disturbed = dispute_open and decision == "defer"
+    disturbed = (dispute_open or dsc_open) and decision == "defer"
     ev_factor = DEFER_EV_FACTOR if disturbed else 1.0
     if s["incident"].get("status") == "restarting":
         ev_factor *= (1.0 - profile["restart_productivity_loss"])
@@ -489,60 +591,148 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
     s["ev"] = round(s["ev"] + period_earn * ev_factor, 2)
     s["ac"] = round(s["ac"] + period_earn, 2)
 
-    # ---- a preserved escalation booked last period resolves now, as a change order.
-    pending = s["dispute"].get("pending_recovery")
-    if pending is not None:
-        s["bac"] = round(s["bac"] + pending, 2)
-        s["revised_contract_sum"] = round(s["revised_contract_sum"] + pending, 2)
-        s["change_order_count"] = s["change_order_count"] + 1
-        s["dispute"]["recovered_amount"] = pending
-        s["dispute"]["pending_recovery"] = None
-        s["dispute"]["status"] = "resolved"
+    # ---- a preserved escalation booked last period resolves now, as a change order. The
+    # differing site condition books through the same mechanism.
+    for matter in (s["dispute"], s["dsc"] or {}):
+        pending = matter.get("pending_recovery")
+        if pending is not None:
+            s["bac"] = round(s["bac"] + pending, 2)
+            s["revised_contract_sum"] = round(s["revised_contract_sum"] + pending, 2)
+            s["change_order_count"] = s["change_order_count"] + 1
+            matter["recovered_amount"] = pending
+            matter["pending_recovery"] = None
+            matter["status"] = "resolved"
 
-    # ---- the decision itself.
-    if decision == "escalate" and dispute_open:
+    # ---- ConsensusDocs' second step (trap 2). A claim noticed LAST period holds its recovery
+    # conditional on the documentation following within 21 days of the notice (Section 8.4). A
+    # 30 day period has no decision point inside that window, so the step is decided at period
+    # grain: deferring the period after notice is going quiet, and the claim dies; any active
+    # decision keeps the file moving and the documentation lands.
+    if s["dispute"].get("status") == "noticed":
+        conditional = s["dispute"].get("conditional_recovery")
+        if decision == "defer":
+            s["dispute"]["status"] = "escalated"
+            s["dispute"]["entitlement"] = "lost"
+            s["dispute"]["conditional_recovery"] = None
+            notes.append("Notice was given and then the file went quiet: ConsensusDocs "
+                         "requires supporting documentation within 21 days after the notice "
+                         "(Section 8.4), and the claim is lost.")
+        else:
+            s["dispute"]["status"] = "escalated"
+            s["dispute"]["entitlement"] = "preserved"
+            s["dispute"]["pending_recovery"] = conditional
+            s["dispute"]["conditional_recovery"] = None
+            notes.append("The supporting documentation followed the notice within the second "
+                         "21 day step (Section 8.4); the claim is preserved.")
+
+    # ---- the decision itself. Run 4: an act serves EVERY open matter it can — one letter
+    # each, the same afternoon — so escalate notices both the claim and the site condition,
+    # absorb absorbs both, defer defers both. The act's own costs (float, preparation,
+    # credibility) are paid ONCE per act; each matter's entitlement is decided by its own
+    # clock and its own clause.
+    if decision == "escalate" and (dispute_open or dsc_open):
         # Credibility "at the moment of escalation" is the standing EARNED BY PRIOR CONDUCT,
         # read before this escalation's own minus one — the act of escalating strains the
         # relationship going forward, it does not retroactively cheapen the claim it carries.
         credibility_before = s["owner_credibility"]
-        float_cost = escalation_float_cost(s)
+        days_open = (s["dispute"]["days_since_event"] if dispute_open
+                     else s["dsc"]["days_since_event"])
+        float_cost = escalation_float_cost(s, days_open)
         s["float_consumed_days"] = s["float_consumed_days"] + float_cost
         s["ac"] = round(s["ac"] + bac * ESCALATE_PREP_COST_RATE, 2)
         s["owner_credibility"] = max(CRED_MIN, s["owner_credibility"] - 1)
         # Correction 3: an aggressive escalation also destroys accumulated goodwill.
         s["credibility_progress"] = 0
         notes.append(f"Escalation float cost {float_cost} days: the position had been open "
-                     f"{s['dispute']['days_since_event']} days, and a late escalation on a "
-                     "contested position costs more than an early one.")
-        position = notice_position(s)
-        if position["kind"] == "notice_bar":
-            if position["expired"]:
-                s["dispute"]["status"] = "escalated"
-                s["dispute"]["entitlement"] = "lost"
-            else:
-                s["dispute"]["status"] = "escalated"
-                s["dispute"]["entitlement"] = "preserved"
-                recoverable = s["dispute"]["estimated_cost"]
-                if credibility_before <= LOW_CREDIBILITY_AT_OR_BELOW:
-                    recoverable = round(
-                        recoverable * profile["low_credibility_recovery_factor"], 2)
-                s["dispute"]["pending_recovery"] = recoverable
-        else:
-            # FAR: never time barred; the recoverable amount shrinks by the lookback fraction.
-            s["dispute"]["status"] = "escalated"
-            s["dispute"]["entitlement"] = "preserved"
-            recoverable = round(
-                s["dispute"]["estimated_cost"] * position["recoverable_fraction"], 2)
+                     f"{days_open} days, and a late escalation on a contested position costs "
+                     "more than an early one.")
+
+        def _discount(amount: float) -> float:
             if credibility_before <= LOW_CREDIBILITY_AT_OR_BELOW:
-                recoverable = round(recoverable * profile["low_credibility_recovery_factor"], 2)
-            s["dispute"]["pending_recovery"] = recoverable
-    elif decision == "absorb" and dispute_open:
-        cost = s["dispute"]["estimated_cost"]
-        drawn = min(cost, s["contingency_remaining"])
-        s["contingency_remaining"] = round(s["contingency_remaining"] - drawn, 2)
-        s["ac"] = round(s["ac"] + cost, 2)
+                return round(amount * profile["low_credibility_recovery_factor"], 2)
+            return amount
+
+        if dispute_open:
+            position = notice_position(s)
+            if position["kind"] == "notice_bar":
+                if position["expired"]:
+                    s["dispute"]["status"] = "escalated"
+                    s["dispute"]["entitlement"] = "lost"
+                elif form_name == "ConsensusDocs 200":
+                    # Trap 2's setup: notice in the window is STEP ONE. The recovery is held
+                    # conditional on the documentation following (see the noticed block above,
+                    # which decides it next period).
+                    s["dispute"]["status"] = "noticed"
+                    s["dispute"]["entitlement"] = "conditional"
+                    s["dispute"]["conditional_recovery"] = _discount(
+                        s["dispute"]["estimated_cost"])
+                    notes.append("Notice given within 14 days (Section 8.4, step one). The "
+                                 "supporting documentation must follow within 21 days after "
+                                 "the notice; going quiet now loses the claim.")
+                else:
+                    s["dispute"]["status"] = "escalated"
+                    s["dispute"]["entitlement"] = "preserved"
+                    s["dispute"]["pending_recovery"] = _discount(
+                        s["dispute"]["estimated_cost"])
+            else:
+                # FAR: never time barred, but two mechanics of its own. Certification first
+                # (trap 4): a claim whose value crossed 100,000 dollars during the LAST
+                # deferred period is submitted on the form prepared before it grew, and an
+                # uncertified claim over the threshold is not a claim at all.
+                if crossed_last_period \
+                        and s["dispute"]["estimated_cost"] > FAR_CERTIFICATION_THRESHOLD:
+                    s["dispute"]["status"] = "escalated"
+                    s["dispute"]["entitlement"] = "lost"
+                    notes.append("The claim grew past 100,000 dollars while deferred and was "
+                                 "submitted uncertified: over the threshold, an uncertified "
+                                 "claim is not a claim at all and the Contracting Officer has "
+                                 "no duty to decide it (FAR 52.233-1, 41 USC 7103).")
+                else:
+                    # The lookback (trap 3, unchanged from run 2): recoverable shrinks.
+                    s["dispute"]["status"] = "escalated"
+                    s["dispute"]["entitlement"] = "preserved"
+                    s["dispute"]["pending_recovery"] = _discount(round(
+                        s["dispute"]["estimated_cost"] * position["recoverable_fraction"], 2))
+        if dsc_open:
+            dpos = dsc_position(s)
+            if dpos["expired"]:
+                s["dsc"]["status"] = "escalated"
+                s["dsc"]["entitlement"] = "lost"
+                if form_name == "A201-2017":
+                    # Trap 1, fired: the trainee who applied the 21 day claim period to a site
+                    # condition finds the 14 day period ran before the first review.
+                    notes.append("The differing site condition required notice within 14 days "
+                                 "of first observance (Section 3.7.4), and "
+                                 f"{s['dsc']['days_since_event']} days have passed. The 21 day "
+                                 "claim period (Section 15.1.3.1) does not apply to site "
+                                 "conditions.")
+                elif form_name == "ConsensusDocs 200":
+                    notes.append("The affected work was not stopped and the notice was not "
+                                 "prompt (Section 3.16.2); the site condition claim is lost.")
+                else:
+                    notes.append("The conditions were disturbed before notice was given "
+                                 "(FAR 52.236-2(a)); the Government can no longer verify "
+                                 "them, and the entitlement is gone.")
+            else:
+                s["dsc"]["status"] = "escalated"
+                s["dsc"]["entitlement"] = "preserved"
+                s["dsc"]["pending_recovery"] = _discount(s["dsc"]["estimated_cost"])
+                notes.append("The site condition was noticed at the first opportunity and "
+                             "the entitlement is preserved.")
+    elif decision == "absorb" and (dispute_open or dsc_open):
+        for matter, label in ((s["dispute"] if dispute_open else None, "change"),
+                              (s["dsc"] if dsc_open else None, "site condition")):
+            if matter is None:
+                continue
+            cost = matter["estimated_cost"]
+            drawn = min(cost, s["contingency_remaining"])
+            s["contingency_remaining"] = round(s["contingency_remaining"] - drawn, 2)
+            s["ac"] = round(s["ac"] + cost, 2)
+            matter["status"] = "absorbed"
+            matter["entitlement"] = "waived"
         # Correction 3, the earning side: a concession is one PROGRESS STEP, and it takes
-        # CRED_EARN_CONCESSIONS of them to earn a point. Harder to earn than to lose.
+        # CRED_EARN_CONCESSIONS of them to earn a point. One act, one step, however many
+        # matters it absorbed.
         s["credibility_progress"] = s["credibility_progress"] + 1
         if s["credibility_progress"] >= CRED_EARN_CONCESSIONS:
             s["owner_credibility"] = min(CRED_MAX, s["owner_credibility"] + 1)
@@ -551,18 +741,31 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
         else:
             notes.append("A concession builds goodwill, but one is not enough to earn a "
                          "credibility point.")
-        s["dispute"]["status"] = "absorbed"
-        s["dispute"]["entitlement"] = "waived"
-    elif decision == "defer" and dispute_open:
+    elif decision == "defer" and (dispute_open or dsc_open):
         s["float_consumed_days"] = s["float_consumed_days"] + profile["defer_drift_float_days"]
         s["ac"] = round(s["ac"] + bac * DEFER_DRIFT_COST_RATE, 2)
-        s["dispute"]["days_since_event"] = s["dispute"]["days_since_event"] + PERIOD_DAYS
         notes.append(f"Deferral drift: {profile['defer_drift_float_days']} float days and "
-                     f"{DEFER_DRIFT_COST_RATE * 100:.1f} percent of contract value while the "
-                     "dispute stays open. Waiting has a price before the cliff.")
-        position = notice_position(s)
-        if position.get("expired"):
-            s["dispute"]["entitlement"] = "lost"
+                     f"{DEFER_DRIFT_COST_RATE * 100:.1f} percent of contract value while a "
+                     "matter stays open. Waiting has a price before the cliff.")
+        if dispute_open:
+            s["dispute"]["days_since_event"] = s["dispute"]["days_since_event"] + PERIOD_DAYS
+            if form_name == "Federal FAR":
+                # Trap 4's setup: a deferred federal claim GROWS, and crossing the threshold
+                # while deferred is what makes next period's escalation uncertified.
+                previous = s["dispute"]["estimated_cost"]
+                s["dispute"]["estimated_cost"] = round(
+                    previous + bac * FAR_CLAIM_GROWTH_RATE, 2)
+                if previous <= FAR_CERTIFICATION_THRESHOLD \
+                        < s["dispute"]["estimated_cost"]:
+                    s["claim_crossed_threshold_last_period"] = True
+                    notes.append("The deferred claim has grown past 100,000 dollars. Claims "
+                                 "over the threshold must be certified (FAR 52.233-1).")
+            position = notice_position(s)
+            if position.get("expired"):
+                s["dispute"]["entitlement"] = "lost"
+        if dsc_open:
+            s["dsc"]["days_since_event"] = s["dsc"]["days_since_event"] + PERIOD_DAYS
+            s["dsc"]["first_opportunity"] = False
     elif decision == "accelerate":
         recovered = min(EVENT_FIGURES["acceleration_float_recovered_days"],
                         s["float_consumed_days"])
@@ -573,11 +776,15 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
         s["hazard"] = round(s["hazard"] + EVENT_FIGURES["acceleration_hazard_per_use"], 2)
         notes.append(f"Acceleration recovered {recovered} float days at a premium, and a "
                      "compressed site carries a higher chance of an incident.")
-        # A dispute left open while accelerating still ages: nobody tended the notice.
+        # A dispute left open while accelerating still ages: nobody tended the notice. The
+        # site condition ages the same way, and a period of compressed work disturbs it.
         if dispute_open:
             s["dispute"]["days_since_event"] = s["dispute"]["days_since_event"] + PERIOD_DAYS
             if notice_position(s).get("expired"):
                 s["dispute"]["entitlement"] = "lost"
+        if dsc_open:
+            s["dsc"]["days_since_event"] = s["dsc"]["days_since_event"] + PERIOD_DAYS
+            s["dsc"]["first_opportunity"] = False
     elif decision in RESPONSES:
         figures = EVENT_FIGURES["response"][decision]
         days_lost = figures["days_lost"][s["conditions"]]
@@ -596,11 +803,14 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
         notes.append(f"The stop work order cost {days_lost} days: the duration followed the "
                      "response, not the incident.")
         # The correction package consumed the attention the notice needed: an open dispute
-        # still ages through a stoppage.
+        # still ages through a stoppage, and so does an open site condition.
         if dispute_open:
             s["dispute"]["days_since_event"] = s["dispute"]["days_since_event"] + PERIOD_DAYS
             if notice_position(s).get("expired"):
                 s["dispute"]["entitlement"] = "lost"
+        if dsc_open:
+            s["dsc"]["days_since_event"] = s["dsc"]["days_since_event"] + PERIOD_DAYS
+            s["dsc"]["first_opportunity"] = False
     # A decision recorded after the dispute has closed changes nothing but the record: the
     # period still progresses above, and the decision is still logged below. Stated rather
     # than refused, because "there is nothing left to decide" is itself something the next
@@ -615,6 +825,25 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
 
     s["decisions"].append({"period": s["period"], "decision": decision})
     s["period"] = s["period"] + 1
+
+    # ---- the differing site condition is discovered as period DSC_PERIOD opens (run 4).
+    # Day 3 of the period, 17 days before its decision day: inside A201's 21 day claim window
+    # and outside its 14 day site-conditions window, which is trap 1's geometry. Undisclosed
+    # until now, like the near miss below.
+    if s["period"] == DSC_PERIOD and s.get("dsc") is None:
+        s["dsc"] = {
+            "status": "open",
+            "entitlement": "undecided",
+            "estimated_cost": round(bac * DSC_COST_RATE, 2),
+            "estimated_days": DSC_DAYS,
+            "days_since_event": DECISION_DAY - DSC_DISCOVERY_DAY,
+            "first_opportunity": True,
+            "recovered_amount": None,
+            "pending_recovery": None,
+        }
+        notes.append("A differing site condition was uncovered on day 3 of this period: "
+                     "rock where the borings showed soil. Its notice runs on its own clock, "
+                     "under its own clause, per the contract form in the brief.")
 
     # ---- the discrete event trigger, for the period now beginning. Deterministic: the base
     # near miss is scheduled by the run's geometry (never disclosed in advance), and the
@@ -697,3 +926,32 @@ def signal_inputs_from_state(state: dict[str, Any]) -> tuple[dict[str, Any], dat
 
     cutoff = date.fromisoformat(dates["decision"])
     return si, cutoff
+
+
+def build_disclaimer(contract_form: str) -> dict[str, Any]:
+    """
+    Run 4, Part 3: operational training material, NOT a legal notice. States which rules the
+    run uses and which figures are designed rather than sourced. The platform's approved
+    notice text stands unchanged and is not restated or paraphrased here; nothing in this
+    block is liability or consent language.
+    """
+    form = CONTRACT_FORMS[contract_form]
+    return {
+        "governing_form": form["label"],
+        "jurisdiction": "United States",
+        "amendment_note": (
+            f"This run applies the periods of {form['label']} as published. Contract periods "
+            "are routinely amended in negotiation, so a real project may not match its own "
+            "form. The first move on any real project is to check which rules actually "
+            "govern."),
+        "sourced_figures": (
+            "The notice periods, clause citations, certification threshold and cost lookback "
+            "follow the named contract form and public law, as recorded in "
+            "training_us_contract_regimes.md."),
+        "designed_figures": (
+            "Everything else is a designed training figure with no external authority: the "
+            "decision effects and their drift, the escalation cost curve, the credibility "
+            "mechanics, the liquidated damages band and its facility rates, the acceleration "
+            "cost and hazard figures, the stoppage durations and restart productivity "
+            "losses, and the event schedule."),
+    }

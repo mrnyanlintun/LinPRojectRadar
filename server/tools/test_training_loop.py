@@ -178,10 +178,12 @@ check(nfar["expired"] is False and nfar["recoverable_fraction"] == 0.5,
       "FAR after one deferral: nothing is time barred, but only 20 of 40 days of cost is "
       "recoverable", str(nfar))
 far2 = eng.advance(far1, "escalate")
+# Run 4: a deferred federal claim GROWS (180,000 plus 0.25 percent of value = 210,000), and
+# the lookback then halves what notice can reach. Both mechanics bite the same deferral.
 check(far2["dispute"]["entitlement"] == "preserved"
-      and far2["dispute"]["pending_recovery"] == 90_000.0,
-      "escalating under FAR after a deferral preserves entitlement at half the money "
-      "(180,000 estimated, 90,000 recoverable)", str(far2["dispute"]))
+      and far2["dispute"]["pending_recovery"] == 105_000.0,
+      "escalating under FAR after a deferral preserves entitlement at half the GROWN claim "
+      "(210,000 after growth, 105,000 recoverable)", str(far2["dispute"]))
 check(far1["dispute"]["entitlement"] == "undecided",
       "and the FAR deferral did NOT mark entitlement lost, unlike A201",
       far1["dispute"]["entitlement"])
