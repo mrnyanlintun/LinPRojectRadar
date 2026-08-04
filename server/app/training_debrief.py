@@ -57,6 +57,23 @@ def _matter_outcome(matter: dict[str, Any] | None, label: str) -> dict[str, Any]
     }
 
 
+def _quality_outcome(quality: dict[str, Any] | None) -> dict[str, Any] | None:
+    """
+    The failed inspection's outcome. A shape of its own, not `_matter_outcome`'s: the quality
+    thread has no `entitlement`, and `closeout_exposure` is the figure the brief asks the
+    debrief to surface -- what accepting nonconforming work left behind at the end.
+    """
+    if not quality:
+        return None
+    return {
+        "matter": "the failed inspection",
+        "status": quality.get("status"),
+        "defect_value": quality.get("defect_value"),
+        "periods_deferred": quality.get("periods_deferred"),
+        "closeout_exposure": quality.get("closeout_exposure") or 0.0,
+    }
+
+
 def _incident_findings(state: dict[str, Any]) -> list[dict[str, Any]]:
     """
     One finding per incident, with the WHY. The cause was recorded by the engine when the
@@ -124,6 +141,7 @@ def _counterfactual(run_meta: dict[str, Any], state: dict[str, Any]) -> dict[str
         "position": _spend_summary(replayed),
         "claim": _matter_outcome(replayed.get("dispute"), "the change"),
         "site_condition": _matter_outcome(replayed.get("dsc"), "the site condition"),
+        "quality": _quality_outcome(replayed.get("quality")),
     }
 
 
@@ -139,6 +157,7 @@ def build_debrief(run_meta: dict[str, Any], state: dict[str, Any]) -> dict[str, 
             _matter_outcome(state.get("dispute"), "the change"),
             _matter_outcome(state.get("dsc"), "the site condition"),
         ) if m is not None],
+        "quality": _quality_outcome(state.get("quality")),
         "incidents": _incident_findings(state),
         "decisions": list(state.get("decisions") or []),
         "counterfactual": _counterfactual(run_meta, state),

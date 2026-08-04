@@ -9,6 +9,64 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-04 — PMP UPGRADE RUN 1: THE QUALITY THREAD, AND THE THREAD PATTERN
+
+Full detail in `REPORT_2026-08-04_training-quality-thread.md` — **it leads with the pattern**,
+since three more runs (`training_pmp_upgrade_roadmap.md`) copy it. New track, separate from the
+now-complete `training_mode_roadmap.md`: threads, not runs of different length — one spine
+(dispute) plus secondary threads that open and close inside it, competing for the same float
+and contingency. This run is the first secondary thread built on top of the complete run-1-to-5
+build, and the first proof the shape generalises.
+
+## THE PATTERN: event, own verbs, effect table, registration
+
+A thread type is four things. Quality (failed inspection, `QUALITY_INSPECTION_PERIOD = 6`,
+clear of the standing period-4 near miss) opens via the SAME discrete-trigger block `dsc` and
+the near miss already use; decides through its OWN three verbs (`accept_nonconforming /
+rework_now / rework_later`, **not** the dispute's escalate/absorb/defer, which `dsc` reuses);
+carries a designed effect table (`QUALITY_FIGURES`, beside `EVENT_FIGURES`); and registers via
+`allowed_decisions` (unions the verb sets while open), `quality_position` (mirrors
+`dsc_position`), `training.py`'s `_state_view` (`quality_notice`, same shape as `dsc_notice`),
+and the debrief (`quality` outcome alongside `closed`). It closes one of three ways, all
+terminal statuses on the one dict: `resolved`, `accepted` (permanent, non-growing closeout
+exposure), or `forced_resolved` (the state closes it without a decision, in the same
+period-open trigger the opening lives in).
+
+**DIVERGED FROM `dsc` ON PURPOSE: quality does NOT reuse the dispute's verbs.** `dsc` does,
+because a site condition is still a notice matter under the same clock family. Quality is not a
+claim, and reusing the dispute's verbs would have let one act decide two matters at once — no
+real choice, so no real competition. **Carried forward to run 2**: give resources its own verbs
+too (pay premium / resequence / accept delay), not the dispute's.
+
+## COMPETITION IS PROVEN, NOT ASSERTED
+
+`escalate` and `rework_now` both move `float_consumed_days` — the SAME counter, no
+`quality_float` pool. A fault that gave `rework_now` its own float pool was caught precisely by
+a check asserting on the shared counter after each of two different threads' actions from the
+same starting state, not by checking either thread's own status. **Server 1937/1937 across 36
+suites** (new `test_training_quality.py` adds 39), `tests_render.html` **80/81 — the SAME
+single pre-existing gap** (production read path, session token), `tests.html` 51/51. **Six
+faults, all detected, all reverted byte-identical, baseline rechecked after every one.**
+Browser-driven: a $12,000,000 contract produced a $48,000 defect exactly, read back from the DOM
+at period 6 with the dispute, the site condition, AND quality all live at once.
+
+## SESSION USAGE RAN CLOSE TO A FULL SESSION, NOT HALF
+
+Wiring across five files fit the 50% target; verification (fault injection against a live
+suite, plus a browser drive that needed a hand-bootstrapped operational account and session
+token, since no existing fixture does this for training) did not. **Runs 2 to 4 should budget
+per-thread verification as a fixed cost, not assume it shrinks.**
+
+## LEFT OPEN
+
+`build_recommendation` does not yet reason about an open quality matter — out of scope for this
+run, a candidate for a follow-up or for run 4's composition/debrief work. Production still
+lacks migrations 0018 and 0019, unchanged again this run (no new migration needed; the quality
+dict lives inside `TrainingRun.state`'s existing JSON column, structurally excluded from both
+export kinds the same way run 1's isolation excludes the rest of that column).
+
+---
+
 # 2026-08-04 — TRAINING MODE RUN 5: THE LEDGER, THE FULL RECOMMENDATION, TWO NAMING FIXES
 
 Full detail in `REPORT_2026-08-04_training-detail.md` — **it leads with the recommendation

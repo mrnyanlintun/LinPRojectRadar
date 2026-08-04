@@ -42,9 +42,10 @@ from .research_identity import audit, resolve_caller
 from .research_models import ComputedResult, TrainingRun, new_ulid
 from .training_engine import (
     CONDITION_PROFILES, CONTRACT_FORMS, DECISIONS, DEFAULT_CONTRACT_VALUE, DEFAULT_FACILITY,
-    LD_RATES_BY_FACILITY, MAX_CONTRACT_VALUE, MIN_CONTRACT_VALUE, PERIODS_TOTAL, RESPONSES,
+    LD_RATES_BY_FACILITY, MAX_CONTRACT_VALUE, MIN_CONTRACT_VALUE, PERIODS_TOTAL,
+    QUALITY_DECISIONS, RESPONSES,
     advance, allowed_decisions, build_brief, build_recommendation, dsc_position, initial_state,
-    notice_position, signal_inputs_from_state,
+    notice_position, quality_position, signal_inputs_from_state,
 )
 
 
@@ -175,6 +176,8 @@ def _state_view(session: Session, run: TrainingRun, project: Project) -> dict[st
         "notice": notice_position(run.state),
         # Run 4: the site condition's own clock, on its own clause. None before discovery.
         "dsc_notice": dsc_position(run.state),
+        # Training upgrade run 1: the failed inspection's own surface. None before discovery.
+        "quality_notice": quality_position(run.state),
         "allowed_decisions": list(allowed_decisions(run.state)),
         "decisions": list(run.state.get("decisions") or []),
         # Run 5: the full recommendation, generated from the state (figures, days, clauses
@@ -331,8 +334,9 @@ def a_trainingdecision(session: Session, payload: dict, secret: str, ttl: int) -
         return err("the training project behind this run no longer exists")
 
     decision = str(payload.get("decision") or "").strip().lower()
-    if decision not in DECISIONS + RESPONSES:
-        return err(f"decision must be one of: {', '.join(DECISIONS + RESPONSES)}")
+    if decision not in DECISIONS + RESPONSES + QUALITY_DECISIONS:
+        return err("decision must be one of: "
+                   f"{', '.join(DECISIONS + RESPONSES + QUALITY_DECISIONS)}")
 
     before = run.state
     try:
