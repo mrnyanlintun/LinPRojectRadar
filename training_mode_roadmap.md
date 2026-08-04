@@ -72,18 +72,30 @@ Status key: OPEN / RUNNING / DONE / BLOCKED
     judge, structurally. A layer, not a dependency: no key, a failure, or a raising narrator
     all leave the run on the figures alone, byte-identical state either way. Em dashes are
     stripped mechanically.
-12. OPEN — **Debrief.** At the end of a run, what was spent, what closed, what the alternatives
-    would have cost. Without this a trainee learns nothing they can carry.
+12. DONE (2026-08-04, run 4) — **Debrief.** `trainingdebrief`, complete runs only: what was
+    spent, what closed with each matter's entitlement and reason, WHY each incident happened
+    (acceleration incidents attributed in words from the engine-recorded cause; scheduled ones
+    honestly not attributed), and the counterfactual as a REPLAY of the same pure engine with
+    the first decision swapped to escalate — honest or reported unavailable with the reason,
+    never estimated. Fault-proven both ways.
 
 ## Content
 
-13. OPEN — **Three contract regimes wired to the brief.** A201-2017, ConsensusDocs 200, Federal
-    FAR. Periods per `training_us_contract_regimes.md`. The brief names the form; the deadlines
-    follow from it.
-14. OPEN — **Verify A201 and ConsensusDocs periods** against the licensed documents. FAR and CDA
-    figures came from primary sources; those two came from law firm summaries.
-15. OPEN — **Disclaimer.** States the jurisdiction and form in use, and that periods are routinely
-    amended in negotiation so a real project may not match its own form.
+13. DONE (2026-08-04, run 4) — **Three contract regimes wired to the brief.** The form now
+    matters across the whole run: the differing site condition (period five, 17 days old at
+    first decision) fires trap 1 under A201 (14 not 21, Section 3.7.4) and gets form-specific
+    duties under the other two; ConsensusDocs escalation is a two-step clock whose quiet
+    period loses the claim (Section 8.4); FAR claims grow while deferred, the lookback halves
+    the grown amount, and a threshold crossing during the last deferred period makes an
+    immediate escalation uncertified (52.233-1). All four traps reachable, each fault-proven.
+    Per `REPORT_2026-08-04_training-regimes.md`, which leads with them.
+14. OPEN, LIN'S — **Verify A201 and ConsensusDocs periods** against the licensed documents. FAR
+    and CDA figures came from primary sources; those two came from law firm summaries. Reported
+    outstanding by run 4, not attempted there, per instruction.
+15. DONE (2026-08-04, run 4) — **Disclaimer.** In the brief (before period one) and the
+    debrief: the governing form and jurisdiction, the amendment note with "check which rules
+    actually govern", and the sourced-versus-designed marking of every figure. No liability or
+    consent language composed; the platform's approved notice text stands unchanged.
 
 ## Deferred, deliberately
 
@@ -119,3 +131,9 @@ Append one line per run: date, items attempted, items completed, what moved to B
   figures join the designed layer, in `EVENT_FIGURES`, led with in
   `REPORT_2026-08-04_training-events.md`. Item 12 (the debrief) is the remaining build item and
   its raw material (incident causes, decisions, per-period changes) is now all captured.
+- 2026-08-04: run 4, items 12, 13 and 15 attempted and completed (regimes across the run,
+  debrief, disclaimer). Nothing moved to BLOCKED. THE BUILD IS COMPLETE: items 4 to 13 and 15
+  are DONE. Open now: items 1 to 3 (the designed figures await correction), item 14 (period
+  verification against the licensed documents, Lin's), items 16 to 18 (deferred deliberately),
+  and production migrations 0018 and 0019 before the first training run. See
+  `REPORT_2026-08-04_training-regimes.md`.

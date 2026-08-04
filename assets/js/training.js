@@ -135,6 +135,24 @@ var LinTraining = (function () {
       " day cost lookback.</div>";
   }
 
+  function dscNoticeHtml(n) {
+    if (!n) return "";
+    var cls = n.expired ? "tr-notice-expired" : "tr-notice-tight";
+    var body;
+    if (n.kind === "dsc_notice_bar") {
+      body = n.expired
+        ? "Site condition: " + n.days_since_event + " days since first observance against a " +
+          n.window_days + " day period (" + esc(n.citation) + "). " + esc(n.note)
+        : "Site condition: " + n.days_remaining + " days remaining of " + n.window_days +
+          " (" + esc(n.citation) + "). " + esc(n.note);
+    } else {
+      body = "Site condition (" + esc(n.citation) + "): " +
+        (n.first_opportunity ? "notice is still timely if given now. "
+                             : "the moment has passed. ") + esc(n.note);
+    }
+    return '<div class="tr-notice ' + cls + '" id="tr-dsc-notice">' + body + "</div>";
+  }
+
   function briefHtml(b) {
     if (!b) return "";
     var c = b.conditions || {};
@@ -154,6 +172,9 @@ var LinTraining = (function () {
       money(e.estimated_cost) + ", estimated schedule content " + e.estimated_days +
       " days.</p>" +
       '<p class="kn-sub">' + esc(b.designed_figures_note) + "</p>" +
+      (b.disclaimer ? '<p class="kn-sub" id="tr-disclaimer">' +
+        esc(b.disclaimer.amendment_note) + " " + esc(b.disclaimer.sourced_figures) + " " +
+        esc(b.disclaimer.designed_figures) + "</p>" : "") +
       "</div>";
   }
 
@@ -258,10 +279,60 @@ var LinTraining = (function () {
     respond_minimal: ["Respond minimally", "cheaper now, stays stopped longer, longer restart shadow"]
   };
 
+  function debriefHtml(d) {
+    if (!d) return '<div id="tr-debrief"><p class="kn-sub">Loading the debrief.</p></div>';
+    var sp = d.spent || {};
+    var closedRows = (d.closed || []).map(function (m) {
+      return "<li>" + esc(m.matter) + ": " + esc(m.status) + ", entitlement " +
+        esc(m.entitlement) +
+        (m.recovered_amount ? ", " + money(m.recovered_amount) + " recovered" : "") + "</li>";
+    }).join("");
+    var incRows = (d.incidents || []).map(function (i) {
+      return "<li>Period " + i.period + ", " +
+        (i.response ? esc(String(i.response).replace("respond_", "")) + " response, " : "") +
+        (i.days_lost || 0) + " days lost. " + esc(i.why) + "</li>";
+    }).join("");
+    var cf = d.counterfactual || {};
+    var cfHtml;
+    if (cf.available) {
+      var cp = cf.position || {};
+      cfHtml = "<p>" + esc(cf.description) + "</p><ul>" +
+        "<li>Float spent: " + cp.float_spent_days + " of " + cp.float_total_days + " days</li>" +
+        "<li>Contingency spent: " + money(cp.contingency_spent) + "</li>" +
+        "<li>Recovered by change order: " + money(cp.recovered_by_change_order) + "</li>" +
+        "<li>Liquidated damages exposure: " + money(cp.liquidated_damages_exposure) + "</li>" +
+        (cf.claim ? "<li>The change: entitlement " + esc(cf.claim.entitlement) + "</li>" : "") +
+        "</ul>";
+    } else {
+      cfHtml = '<p class="kn-sub" id="tr-cf-unavailable">Counterfactual not computed: ' +
+        esc(cf.reason || "unavailable") + "</p>";
+    }
+    return '<div class="tr-debrief" id="tr-debrief">' +
+      "<h3>Debrief</h3>" +
+      '<p id="tr-debrief-spent">' + "Spent across " + d.periods_played + " periods: " +
+      sp.float_spent_days + " of " + sp.float_total_days + " float days, " +
+      money(sp.contingency_spent) + " of contingency, cost over earned " +
+      money(sp.cost_over_earned) + ", owner credibility " + sp.owner_credibility +
+      " of 5, liquidated damages exposure " + money(sp.liquidated_damages_exposure) + "." +
+      "</p>" +
+      (closedRows ? '<h3>What closed</h3><ul id="tr-debrief-closed">' + closedRows + "</ul>" : "") +
+      (incRows ? '<h3>The incidents, and why</h3><ul id="tr-debrief-incidents">' + incRows + "</ul>" : "") +
+      '<h3>The counterfactual</h3><div id="tr-debrief-cf">' + cfHtml + "</div>" +
+      '<p class="kn-sub">' + esc((d.disclaimer || {}).amendment_note || "") + "</p>" +
+      "</div>";
+  }
+
+  var debrief = null;
+
+  async function loadDebrief() {
+    var r = await call("trainingdebrief", { run_id: view.run_id });
+    if (r && r.ok === true) { debrief = r.debrief; paint(); }
+  }
+
   function decisionsHtml(s) {
     if (view.status !== "active") {
-      return '<p class="kn-sub" id="tr-complete">The run is complete. ' +
-        "Start a new one to try a different response.</p>" +
+      return '<p class="kn-sub" id="tr-complete">The run is complete.</p>' +
+        debriefHtml(debrief) +
         '<button type="button" class="btn primary" id="tr-restart-btn">Start a new run</button>';
     }
     var allowed = view.allowed_decisions || ["escalate", "absorb", "defer"];
@@ -300,6 +371,7 @@ var LinTraining = (function () {
       "</div>" +
       briefHtml(view.brief) +
       noticeHtml(view.notice) +
+      dscNoticeHtml(view.dsc_notice) +
       incidentHtml(s.incident) +
       changesHtml(s.period_changes) +
       narrativeHtml() +
@@ -314,7 +386,12 @@ var LinTraining = (function () {
       paint();
     });
     var restart = document.getElementById("tr-restart-btn");
-    if (restart) restart.addEventListener("click", paintStart);
+    if (restart) restart.addEventListener("click", function () {
+      debrief = null;
+      paintStart();
+    });
+    // The debrief is fetched once the run completes; a re-paint with it loaded renders it.
+    if (view.status !== "active" && debrief === null) loadDebrief();
     root.querySelectorAll("[data-decision]").forEach(function (btn) {
       btn.addEventListener("click", function () { decide(btn.dataset.decision); });
     });
