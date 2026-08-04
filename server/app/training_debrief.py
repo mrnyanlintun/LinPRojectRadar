@@ -74,6 +74,27 @@ def _quality_outcome(quality: dict[str, Any] | None) -> dict[str, Any] | None:
     }
 
 
+def _resource_outcome(state: dict[str, Any]) -> dict[str, Any] | None:
+    """
+    The trade shortage's outcome, and the figure that matters after the fact: what the crews
+    were still earning at the end. A shortage left open does not appear as a lump sum anywhere,
+    because its cost was taken out of every period's earning while it ran -- so the debrief has
+    to name it, or a trainee reads the lost EV as bad luck.
+    """
+    resources = state.get("resources")
+    if not resources:
+        return None
+    adequacy = state.get("crew_adequacy", 1.0)
+    return {
+        "matter": "the trade shortage",
+        "status": resources.get("status"),
+        "resolution": resources.get("resolution"),
+        "periods_short": resources.get("periods_short"),
+        "crew_adequacy": adequacy,
+        "productivity_pct": round(adequacy * 100),
+    }
+
+
 def _incident_findings(state: dict[str, Any]) -> list[dict[str, Any]]:
     """
     One finding per incident, with the WHY. The cause was recorded by the engine when the
@@ -142,6 +163,7 @@ def _counterfactual(run_meta: dict[str, Any], state: dict[str, Any]) -> dict[str
         "claim": _matter_outcome(replayed.get("dispute"), "the change"),
         "site_condition": _matter_outcome(replayed.get("dsc"), "the site condition"),
         "quality": _quality_outcome(replayed.get("quality")),
+        "resources": _resource_outcome(replayed),
     }
 
 
@@ -158,6 +180,7 @@ def build_debrief(run_meta: dict[str, Any], state: dict[str, Any]) -> dict[str, 
             _matter_outcome(state.get("dsc"), "the site condition"),
         ) if m is not None],
         "quality": _quality_outcome(state.get("quality")),
+        "resources": _resource_outcome(state),
         "incidents": _incident_findings(state),
         "decisions": list(state.get("decisions") or []),
         "counterfactual": _counterfactual(run_meta, state),

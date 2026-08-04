@@ -9,6 +9,72 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-04 — PMP UPGRADE RUN 2: THE RESOURCES THREAD, AND THE SPACING RULE
+
+Full detail in `REPORT_2026-08-04_training-resources-thread.md` — **it leads with the effect
+figures and the spacing rule**, which are what Lin corrects and what run 4 depends on. Second
+secondary thread, following run 1's pattern without redesign. **Server 2000/2000 across 37
+suites** (new `test_training_resources.py` adds 63), every file against a FRESH DATABASE.
+`tests_render.html` **80/81 — the SAME pre-existing gap**, confirmed by name and text.
+`tests.html` 51/51. Eight faults, all detected, all reverted byte-identical, baseline after
+each. No migration.
+
+## THREAD OPENING PERIODS ARE NOW DERIVED, NOT HAND-PICKED
+
+Run 1 moved the quality inspection to period 6 BY HAND after it collided with the scheduled near
+miss. `thread_opening_periods()` now derives openings: start at 5, step by 1, **skip any period
+a discrete event reserves** (period 4), and **raise** rather than allocate past
+`PERIODS_TOTAL - 3`. It returns `{dsc: 5, quality: 6, resources: 7}` — **reproducing the two
+periods already verified against rather than renumbering them**, which is what makes it a rule
+and not a rewrite. `DSC_PERIOD`, `QUALITY_INSPECTION_PERIOD` and `RESOURCE_SHORTAGE_PERIOD` all
+read from it.
+
+**RUN 4 MUST READ THIS: the rule supports EXACTLY THREE live secondary threads at the current
+run length.** A fourth is refused with a stated reason (a check proves the refusal fires). Run
+4's "spine plus three for a hard run" is exactly at the ceiling with nothing spare. Raising it
+means changing `PERIODS_TOTAL`, `THREAD_OPENING_FIRST_PERIOD` or the three-period play-out
+reserve — a deliberate decision, not something to discover by hitting the refusal.
+
+## CREW ADEQUACY IS A MULTIPLIER ON EARNING, NOT A CHARGE
+
+The structural difference from quality. One line — `ev_factor *= crew_adequacy` — puts it in the
+same chain as the deferral penalty and the restart loss, so **while crews are short EVERY period
+earns less, whatever the trainee spent it doing**: escalating, reworking, absorbing, or
+accelerating. Proven head to head on states differing only in adequacy (a constructed input to a
+pure function, stated as such, because no real decision sequence isolates it). At full adequacy
+it multiplies by 1.0, so a run that never meets the shortage is untouched. **Accelerating with
+scarce trades costs 1.8x the premium and adds 0.25 extra hazard.** Because the cost comes out of
+earning rather than a line item, the period notes and the debrief both name it, or a trainee
+reads lost EV as bad luck.
+
+## TWO DEFECTS OF MINE, BOTH FOUND BY THE CAMPAIGN NOT THE SUITE
+
+1. **The screen told a lie the state did not.** `resource_position` omitted `resolution`, so the
+   JS ternary always fell through and **a trainee who paid a premium was told they had
+   resequenced**. 61 server checks passed while this was true, because every one asserted on
+   state and none on the sentence. The BROWSER DRIVE caught it. Same lesson as run 5's
+   most-severe-contributor marker: asserting the mechanism does not assert the wording.
+2. **A check that crashed instead of failing.** Its first version indexed
+   `position["resolution"]`, so the fault raised `KeyError` and the suite died **printing no
+   `RESULT:` line at all** — the failure mode that skims like a clean run. `.get()` now.
+
+## BUDGET, AND ONE CORRECTION TO RUN 1'S PREDICTION
+
+Came in around 80%. Run 1 predicted verification is a fixed per-thread cost that will not
+shrink; **half held.** The WIRING did shrink because the pattern existed. VERIFICATION did not,
+and the browser drive is why — bootstrapping an operational account and session token by hand is
+still the most expensive step and still the one that finds the most. **Build a reusable fixture
+for it before run 3** rather than inside a thread task, where shared infrastructure gets shaped
+by one caller.
+
+## STILL OPEN
+
+`build_recommendation` reasons only about the claim — now two threads' worth of open matters are
+invisible to it mid run. Overdue; run 4 at the latest. Production still lacks migrations 0018
+and 0019.
+
+---
+
 # 2026-08-04 — PMP UPGRADE RUN 1: THE QUALITY THREAD, AND THE THREAD PATTERN
 
 Full detail in `REPORT_2026-08-04_training-quality-thread.md` — **it leads with the pattern**,

@@ -176,6 +176,26 @@ var LinTraining = (function () {
     return '<div class="tr-notice ' + cls + '" id="tr-quality-notice">' + body + "</div>";
   }
 
+  function resourceNoticeHtml(n) {
+    if (!n) return "";
+    var cls = n.status === "open" ? "tr-notice-tight" : "";
+    var body;
+    if (n.status === "open") {
+      body = "Key trade shortage: crews are at " + n.productivity_pct +
+        " percent of full productivity, and that rate applies to all the work, not only " +
+        "the trade that is short." +
+        (n.periods_short ? " Short for " + n.periods_short + " period" +
+          (n.periods_short === 1 ? "" : "s") + " so far." : "") +
+        " Pay a premium, resequence around it, or accept the delay.";
+    } else {
+      body = "The trade shortage is closed" +
+        (n.resolution === "premium" ? " by paying a premium to secure the crews."
+                                    : " by resequencing the work around it.") +
+        " Crews are back to " + n.productivity_pct + " percent.";
+    }
+    return '<div class="tr-notice ' + cls + '" id="tr-resource-notice">' + body + "</div>";
+  }
+
   function briefHtml(b) {
     if (!b) return "";
     var c = b.conditions || {};
@@ -215,6 +235,9 @@ var LinTraining = (function () {
           "tr-dispute") +
       (s.quality ? fig("Quality", esc(s.quality.status) + ", backlog " +
           money(s.quality.defect_value), "tr-quality") : "") +
+      (s.crew_adequacy != null
+        ? fig("Crew productivity", Math.round(s.crew_adequacy * 100) + " percent",
+              "tr-crew") : "") +
       "</div>";
   }
 
@@ -321,7 +344,10 @@ var LinTraining = (function () {
     respond_minimal: ["Respond minimally", "cheaper now, stays stopped longer, longer restart shadow"],
     accept_nonconforming: ["Accept nonconforming", "no cost, no time, spends credibility now and stays as exposure at closeout"],
     rework_now: ["Rework now", "costs money and float immediately, clears it"],
-    rework_later: ["Rework later", "cheaper now, the backlog grows, and it competes for the same float and contingency"]
+    rework_later: ["Rework later", "cheaper now, the backlog grows, and it competes for the same float and contingency"],
+    pay_premium: ["Pay the premium", "costs money now from the same contingency, holds the schedule, crews back to full"],
+    resequence: ["Resequence the work", "no money directly, spends float, and only partly fills the shortage"],
+    accept_delay: ["Accept the delay", "costs float outright, and the shortage deepens while it persists"]
   };
 
   function debriefHtml(d) {
@@ -332,6 +358,13 @@ var LinTraining = (function () {
         esc(m.entitlement) +
         (m.recovered_amount ? ", " + money(m.recovered_amount) + " recovered" : "") + "</li>";
     }).join("");
+    if (d.resources) {
+      closedRows += "<li id=\"tr-debrief-resources\">the trade shortage: " +
+        esc(d.resources.status) +
+        ", crews ended at " + d.resources.productivity_pct + " percent" +
+        (d.resources.periods_short ? ", short for " + d.resources.periods_short + " period" +
+          (d.resources.periods_short === 1 ? "" : "s") : "") + "</li>";
+    }
     if (d.quality) {
       closedRows += "<li id=\"tr-debrief-quality\">the failed inspection: " +
         esc(d.quality.status) +
@@ -425,6 +458,7 @@ var LinTraining = (function () {
       noticeHtml(view.notice) +
       dscNoticeHtml(view.dsc_notice) +
       qualityNoticeHtml(view.quality_notice) +
+      resourceNoticeHtml(view.resource_notice) +
       incidentHtml(s.incident) +
       recommendationHtml(view.recommendation) +
       changesHtml(s.period_changes) +
