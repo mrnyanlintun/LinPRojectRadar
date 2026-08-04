@@ -4677,3 +4677,10 @@ body.og-account-operational .notice-operational { display: block; }
 .tr-status-amber { color: var(--status-amber-text, #b45309); }
 .tr-status-red { color: var(--alarm-red, #dc2626); }
 .tr-start { max-width: 460px; display: flex; flex-direction: column; gap: 4px; }
+
+/* ---------- Training mode run 3: incidents, changes, narrative ---------- */
+.tr-changes, .tr-narrative { border: 1px solid var(--line, #444); border-radius: 8px;
+  padding: 10px 14px; margin: 8px 0; }
+.tr-changes h3, .tr-narrative h3 { margin: 2px 0 6px; font-size: 13px; }
+.tr-changes ul { margin: 4px 0 2px 18px; font-size: 13px; color: var(--muted); }
+.tr-narrative p { font-size: 13px; line-height: 1.5; }

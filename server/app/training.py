@@ -41,12 +41,35 @@ from .models import Project
 from .research_identity import audit, resolve_caller
 from .research_models import ComputedResult, TrainingRun, new_ulid
 from .training_engine import (
-    CONDITION_PROFILES, CONTRACT_FORMS, DECISIONS, DEFAULT_CONTRACT_VALUE,
-    MAX_CONTRACT_VALUE, MIN_CONTRACT_VALUE, PERIODS_TOTAL, advance, build_brief,
-    initial_state, notice_position, signal_inputs_from_state,
+    CONDITION_PROFILES, CONTRACT_FORMS, DECISIONS, DEFAULT_CONTRACT_VALUE, DEFAULT_FACILITY,
+    LD_RATES_BY_FACILITY, MAX_CONTRACT_VALUE, MIN_CONTRACT_VALUE, PERIODS_TOTAL, RESPONSES,
+    advance, allowed_decisions, build_brief, initial_state, notice_position,
+    signal_inputs_from_state,
 )
 
 __all__ = ["TRAINING_ACTIONS"]
+
+# Test seam for narration, mirroring documents.set_extractor_override: a module-level override,
+# deliberately not a payload key. None means normal resolution (training_narration.narrate,
+# which itself degrades to None without a key). The tests install a stub to prove the layer is
+# carried when present and that the engine is byte-identical with and without it.
+_NARRATOR_OVERRIDE = None
+
+
+def set_narrator_override(narrator) -> None:
+    global _NARRATOR_OVERRIDE
+    _NARRATOR_OVERRIDE = narrator
+
+
+def _narrate(view: dict) -> str | None:
+    """Never raises: narration is a layer, not a dependency."""
+    try:
+        if _NARRATOR_OVERRIDE is not None:
+            return _NARRATOR_OVERRIDE(view)
+        from .training_narration import narrate
+        return narrate(view)
+    except Exception:  # noqa: BLE001 - a narration fault must never stop the run
+        return None
 
 
 def _require_operational(session: Session, payload: dict, secret: str):
@@ -112,6 +135,10 @@ def _state_view(session: Session, run: TrainingRun, project: Project) -> dict[st
             ComputedResult.superseded_by.is_(None),
         )
     )
+    # The hazard accumulator is REDACTED from every response: at the threshold it forecasts
+    # the next incident deterministically, and a foreseen near miss teaches nothing. Same
+    # reasoning as the run 2 handoff note about never shipping the event schedule.
+    visible_state = {k: v for k, v in run.state.items() if k != "hazard"}
     return {
         "ok": True,
         "run_id": run.run_id,
@@ -119,9 +146,11 @@ def _state_view(session: Session, run: TrainingRun, project: Project) -> dict[st
         "status": run.status,
         "period": run.state["period"],
         "periods_total": PERIODS_TOTAL,
-        "brief": build_brief(run.contract_form, run.contract_value, run.conditions),
-        "state": run.state,
+        "brief": build_brief(run.contract_form, run.contract_value, run.conditions,
+                             run.state.get("facility") or DEFAULT_FACILITY),
+        "state": visible_state,
         "notice": notice_position(run.state),
+        "allowed_decisions": list(allowed_decisions(run.state)),
         "decisions": list(run.state.get("decisions") or []),
         # Module-level recommendations (the analytical layer's own recommended actions) are
         # the recommendation surface in training: there is no researcher-authored package, and
@@ -184,6 +213,9 @@ def a_trainingstart(session: Session, payload: dict, secret: str, ttl: int) -> d
     conditions = str(payload.get("conditions") or "exacting").strip()
     if conditions not in CONDITION_PROFILES:
         return err(f"conditions must be one of: {', '.join(CONDITION_PROFILES)}")
+    facility = str(payload.get("facility") or DEFAULT_FACILITY).strip()
+    if facility not in LD_RATES_BY_FACILITY:
+        return err(f"facility must be one of: {', '.join(LD_RATES_BY_FACILITY)}")
     raw_value = payload.get("contract_value", DEFAULT_CONTRACT_VALUE)
     try:
         contract_value = float(raw_value)
@@ -216,7 +248,7 @@ def a_trainingstart(session: Session, payload: dict, secret: str, ttl: int) -> d
         contract_value=contract_value,
         conditions=conditions,
         period=1,
-        state=initial_state(contract_form, contract_value, conditions),
+        state=initial_state(contract_form, contract_value, conditions, facility),
         history=[],
     )
     session.add(run)
@@ -225,10 +257,12 @@ def a_trainingstart(session: Session, payload: dict, secret: str, ttl: int) -> d
     _store_period(session, run, project)
     audit(session, "training_run_started", participant_id=caller.participant_id,
           run_id=run_id, project_id=project.legacy_id, contract_form=contract_form,
-          conditions=conditions, contract_value=contract_value)
+          conditions=conditions, contract_value=contract_value, facility=facility)
     session.commit()
     session.refresh(run)
-    return _state_view(session, run, project)
+    view = _state_view(session, run, project)
+    view["narrative"] = _narrate(view)
+    return view
 
 
 def a_trainingstate(session: Session, payload: dict, secret: str, ttl: int) -> dict[str, Any]:
@@ -266,11 +300,16 @@ def a_trainingdecision(session: Session, payload: dict, secret: str, ttl: int) -
         return err("the training project behind this run no longer exists")
 
     decision = str(payload.get("decision") or "").strip().lower()
-    if decision not in DECISIONS:
-        return err(f"decision must be one of: {', '.join(DECISIONS)}")
+    if decision not in DECISIONS + RESPONSES:
+        return err(f"decision must be one of: {', '.join(DECISIONS + RESPONSES)}")
 
     before = run.state
-    after = advance(before, decision)
+    try:
+        after = advance(before, decision)
+    except ValueError as exc:
+        # A response with no stop work order, or a standard decision during one: the engine
+        # names the reason and the trainee reads it verbatim.
+        return err(str(exc))
     entry = {"period": before["period"], "decision": decision, "state_after": after}
     run.state = after
     run.history = list(run.history or []) + [entry]
@@ -288,6 +327,7 @@ def a_trainingdecision(session: Session, payload: dict, secret: str, ttl: int) -
 
     view = _state_view(session, run, project)
     view["decided"] = {"period": entry["period"], "decision": decision}
+    view["narrative"] = _narrate(view)
     return view
 
 

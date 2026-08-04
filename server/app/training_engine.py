@@ -43,13 +43,75 @@ TOTAL_FLOAT_DAYS = 12     # designed: small enough that one escalation plus two 
 
 # ---------------------------------------------------------------- money rules (designed)
 
-# Liquidated damages per day: 0.05 percent of contract value (five basis points), rounded to
-# the nearest 500 dollars. Stated, not randomised: a 12 million dollar project carries 6,000
-# dollars per day, a 50 million one carries 25,000. The rule is the common owner-side sizing
-# convention of LDs proportioned to the value at risk per day of delay; the coefficient is a
-# designed figure for Lin to correct.
-LD_RATE = 0.0005
+# Liquidated damages per day: derived from contract value, rounded to the nearest 500 dollars,
+# with the RATE following the brief's facility condition (run 3 correction 4). A hospital and a
+# warehouse do not carry the same daily exposure, so the brief names the facility and the rate
+# follows from it, inside the common 0.02 to 0.05 percent band. The band ends are designed
+# figures; the derivation from contract value is unchanged.
 LD_ROUND = 500
+LD_RATES_BY_FACILITY: dict[str, float] = {
+    "critical": 0.0005,      # hospital, airfield operations: the top of the band
+    "standard": 0.00035,     # commercial, institutional: mid band
+    "utilitarian": 0.0002,   # warehouse, storage: the bottom of the band
+}
+FACILITY_LABELS: dict[str, str] = {
+    "critical": "critical occupancy, hospital grade: every day of delay is clinical capacity",
+    "standard": "standard commercial occupancy",
+    "utilitarian": "utilitarian occupancy, warehouse grade: delay costs storage, not operations",
+}
+DEFAULT_FACILITY = "standard"
+
+# Run 3 correction 2: escalation float cost is not flat. It scales with how long the position
+# has been left open, so early recognition is rewarded: cost in days = base + 2 per full period
+# the dispute has sat open, capped. The curve is linear in deferred periods, by design simple
+# enough to state in one sentence on the screen.
+ESCALATE_FLOAT_PER_PERIOD_OPEN = 2
+ESCALATE_FLOAT_CAP_DAYS = 12
+
+# Run 3 correction 3: credibility is asymmetric. One aggressive escalation spends a point at
+# once and destroys any accumulated goodwill; earning a point takes this many concessions.
+CRED_EARN_CONCESSIONS = 2
+
+# ---------------------------------------------------------------- discrete events (run 3)
+#
+# THE DESIGNED EVENT FIGURES, in one table, per the brief: probability and duration are
+# elicited, not regulatory — the DOB regime sets WHAT lifting requires (a Certificate of
+# Correction plus whatever the cause demands), not how long a response takes. Every figure
+# here is a designed training figure for Lin to correct.
+EVENT_FIGURES: dict[str, Any] = {
+    # The base near miss: exogenous, scheduled by the run's geometry, not a rate the trainee
+    # manages and never disclosed in advance. Nobody foresees it.
+    "near_miss_period": 4,
+    # Every near miss converts to a stop work order in this run (designed 1.0; the elicited
+    # probability layer can lower it later without touching the machinery).
+    "swo_conversion": 1.0,
+    # The incident itself costs little — the stop work order is the mechanism.
+    "incident_direct_cost_rate": 0.001,
+    # Acceleration raises the hazard deterministically: each accelerated period adds this much,
+    # and a hazard reaching 1.0 fires a second near miss the following period. Deterministic on
+    # purpose — same decisions, same incidents — so the debrief can say "the acceleration did
+    # this" rather than "bad luck".
+    "acceleration_hazard_per_use": 0.5,
+    "hazard_threshold": 1.0,
+    # Acceleration itself: buys float back at a premium priced by the profile's multiplier.
+    "acceleration_float_recovered_days": 4,
+    "acceleration_cost_rate": 0.01,
+    # Duration follows the RESPONSE, not the incident. A strong response assembles the full
+    # correction package at once; a minimal one does the least each round and stays stopped
+    # longer, with a longer productivity shadow after restart.
+    "response": {
+        "respond_strong": {
+            "days_lost": {"exacting": 6, "steady": 5},
+            "cost_rate": 0.008,
+            "restart_periods": 1,
+        },
+        "respond_minimal": {
+            "days_lost": {"exacting": 18, "steady": 14},
+            "cost_rate": 0.002,
+            "restart_periods": 2,
+        },
+    },
+}
 
 # The standing change event, scaled from contract value so a larger project argues about
 # larger money: estimated impact cost is 1.5 percent of contract value. Twelve days is the
@@ -117,7 +179,9 @@ CONDITION_PROFILES: dict[str, dict[str, Any]] = {
         "labour": "tight: qualified trades are scarce and diverted supervision is expensive",
         "procurement": "exposed: long lead items dominate the critical path",
         "owner": "formal: entitlement is honoured, quantum is contested",
-        "escalate_float_days": 8,       # (mechanical) claim preparation and affected work held
+        # (mechanical) the BASE of the escalation curve: what a prompt, well-documented
+        # escalation costs. Run 3 correction 2 made the cost scale with time left open.
+        "escalate_float_days_base": 4,
         "defer_drift_float_days": 3,    # (mechanical) coordination drift per deferred period
         "low_credibility_recovery_factor": 0.85,  # (mechanical) quantum contested when trust is low
         "acceleration_cost_multiplier": 1.5,
@@ -127,7 +191,7 @@ CONDITION_PROFILES: dict[str, dict[str, Any]] = {
         "labour": "available: trades can be added without premium",
         "procurement": "stocked: no long lead item is currently critical",
         "owner": "collaborative: disputes are resolved on the figures",
-        "escalate_float_days": 6,
+        "escalate_float_days_base": 3,
         "defer_drift_float_days": 2,
         "low_credibility_recovery_factor": 0.95,
         "acceleration_cost_multiplier": 1.25,
@@ -135,35 +199,48 @@ CONDITION_PROFILES: dict[str, dict[str, Any]] = {
     },
 }
 
-DECISIONS = ("escalate", "absorb", "defer")
+DECISIONS = ("escalate", "absorb", "defer", "accelerate")
+RESPONSES = ("respond_strong", "respond_minimal")
 
 # ---------------------------------------------------------------- the effect table
 #
-# THIS IS THE TABLE THE REPORT QUOTES. Decision against state change, fixed for the same
-# conditions. The three tensions:
+# THIS IS THE TABLE THE REPORT QUOTES, revised per run 3's four corrections. Decision against
+# state change, fixed for the same conditions. The three tensions:
 #
 #   escalate  protects entitlement, spends float
 #   absorb    protects the relationship, spends contingency
 #   defer     protects both, and runs the notice clock down
 #
-# | decision | float                    | contingency   | actual cost          | owner credibility | dispute and clock                          |
-# |----------|--------------------------|---------------|----------------------|-------------------|--------------------------------------------|
-# | escalate | minus escalate_float_days| unchanged     | plus 0.2% of value   | minus 1 (floor 1) | notice served; entitlement decided by the  |
-# |          | (8 exacting, 6 steady)   |               | (claim preparation)  |                   | form's window against days since the event |
-# | absorb   | unchanged                | minus impact  | plus impact cost     | plus 1 (cap 5)    | dispute closed, entitlement waived         |
-# |          |                          | cost (1.5% cv)| (work is done anyway)|                   |                                            |
-# | defer    | minus defer_drift days   | unchanged     | plus 0.3% of value   | unchanged         | clock runs 30 more days; drift repeats     |
-# |          | (3 exacting, 2 steady)   |               | (unmanaged change)   |                   | every deferred period                      |
+# | decision       | float                        | contingency   | actual cost              | owner credibility     | dispute, clock, hazard                    |
+# |----------------|------------------------------|---------------|--------------------------|-----------------------|-------------------------------------------|
+# | escalate       | minus base + 2 per full      | unchanged     | plus 0.2% of value       | minus 1 (floor 1) and | notice served; entitlement decided by the |
+# |                | period left open, cap 12     |               | (claim preparation)      | progress reset to 0   | form's window against days since event    |
+# |                | (base 4 exacting, 3 steady)  |               |                          |                       |                                           |
+# | absorb         | unchanged                    | minus impact  | plus impact cost         | plus ONE PROGRESS     | dispute closed, entitlement waived        |
+# |                |                              | cost (1.5% cv)| (work is done anyway)    | step; 2 steps = +1    |                                           |
+# | defer          | minus defer_drift days       | unchanged     | plus 0.3% of value       | unchanged             | clock runs 30 more days; drift repeats    |
+# |                | (3 exacting, 2 steady)       |               | (unmanaged change)       |                       | every deferred period                     |
+# | accelerate     | RECOVERS 4 days              | unchanged     | plus 1.0% of value times | unchanged             | hazard plus 0.5; at 1.0 a second near     |
+# |                |                              |               | the profile multiplier   |                       | miss fires the following period           |
+# | respond strong | minus days lost (6 exacting, | unchanged     | plus 0.8% of value (the  | unchanged             | stop work order lifts; restart shadow     |
+# | (during SWO)   | 5 steady)                    |               | full correction package) |                       | 1 period at reduced earning               |
+# | respond minimal| minus days lost (18 exacting,| unchanged     | plus 0.2% of value       | unchanged             | lifts late; restart shadow 2 periods      |
+# | (during SWO)   | 14 steady)                   |               |                          |                       |                                           |
 #
 # Earned value: a period earns one tenth of contract value when undisturbed; a period spent
-# with the dispute open (deferred) earns 90 percent of that. Lost earned value is not
-# recovered later. cpi and spi are DERIVED (ev over ac, ev over pv), never set directly.
+# with the dispute open (deferred) earns 90 percent; a restart period earns
+# (1 - restart_productivity_loss) of what it otherwise would. Factors multiply. Lost earning
+# is never recovered. cpi and spi are DERIVED (ev over ac, ev over pv), never set directly.
 #
-# Resolution of a preserved escalation: the NEXT period's state books a change order for the
-# recoverable amount (contract value and revised contract sum increase; contingency untouched).
-# Recoverable amount = impact cost, times the FAR lookback fraction where that applies, times
-# the low-credibility factor when owner credibility is 2 or less at the moment of escalation.
-# That is what owner credibility is mechanically worth in this run.
+# Resolution of a preserved escalation: unchanged from run 2 — the NEXT period books the change
+# order; recoverable = impact cost, times the FAR lookback fraction where that form applies,
+# times the low-credibility factor when credibility BEFORE the escalation was 2 or less. The
+# FAR path halving money where A201 and ConsensusDocs bar the claim is deliberately untouched.
+#
+# CREDIBILITY IS ASYMMETRIC (correction 3): one escalation spends a point at once AND resets
+# earn progress to zero; earning takes CRED_EARN_CONCESSIONS concessions per point. During a
+# stop work order the dispute clock still runs: the correction package consumes the attention
+# the notice would have needed, which is itself a lesson.
 
 ESCALATE_PREP_COST_RATE = 0.002    # claim preparation, plus affected work held
 DEFER_DRIFT_COST_RATE = 0.003      # unmanaged change cost drift per deferred period
@@ -176,8 +253,24 @@ def _round3(v: float) -> float:
     return round(v, 3)
 
 
-def derive_ld_per_day(contract_value: float) -> float:
-    return round(contract_value * LD_RATE / LD_ROUND) * LD_ROUND
+def derive_ld_per_day(contract_value: float, facility: str = DEFAULT_FACILITY) -> float:
+    rate = LD_RATES_BY_FACILITY[facility]
+    return round(contract_value * rate / LD_ROUND) * LD_ROUND
+
+
+def escalation_float_cost(state: dict[str, Any]) -> int:
+    """
+    Correction 2's curve: base + 2 days per FULL PERIOD the position has been left open,
+    capped. Early on a well-documented position is cheap; late on a contested one is dear.
+    Periods open is derived from the notice clock itself ((days_since_event - 10) / 30), so
+    the cost and the clock cannot disagree about how long the position has sat.
+    """
+    profile = CONDITION_PROFILES[state["conditions"]]
+    periods_open = max(0, (state["dispute"]["days_since_event"] - (DECISION_DAY - EVENT_DAY))
+                       // PERIOD_DAYS)
+    return min(ESCALATE_FLOAT_CAP_DAYS,
+               profile["escalate_float_days_base"]
+               + ESCALATE_FLOAT_PER_PERIOD_OPEN * periods_open)
 
 
 def period_dates(period: int) -> dict[str, str]:
@@ -190,7 +283,8 @@ def period_dates(period: int) -> dict[str, str]:
     }
 
 
-def build_brief(contract_form: str, contract_value: float, conditions: str) -> dict[str, Any]:
+def build_brief(contract_form: str, contract_value: float, conditions: str,
+                facility: str = DEFAULT_FACILITY) -> dict[str, Any]:
     """
     The three things every run opens with: the form and its periods, the liquidated damages
     derivation, the site and market conditions. Reachable at any point in the run, so this is
@@ -198,7 +292,7 @@ def build_brief(contract_form: str, contract_value: float, conditions: str) -> d
     """
     form = CONTRACT_FORMS[contract_form]
     profile = CONDITION_PROFILES[conditions]
-    ld = derive_ld_per_day(contract_value)
+    ld = derive_ld_per_day(contract_value, facility)
     return {
         "contract_form": contract_form,
         "contract_form_label": form["label"],
@@ -208,10 +302,15 @@ def build_brief(contract_form: str, contract_value: float, conditions: str) -> d
         "lookback_days": form["lookback_days"],
         "contract_note": form["brief_note"],
         "contract_value": contract_value,
+        "facility": facility,
+        "facility_label": FACILITY_LABELS[facility],
         "liquidated_damages_per_day": ld,
+        "liquidated_damages_rate": LD_RATES_BY_FACILITY[facility],
         "liquidated_damages_rule": (
-            "Liquidated damages are derived from contract value at 0.05 percent per day, "
-            "rounded to the nearest 500 dollars."),
+            "Liquidated damages are derived from contract value at a daily rate set by the "
+            "facility's criticality, within the common 0.02 to 0.05 percent band, rounded to "
+            f"the nearest 500 dollars. This facility carries "
+            f"{LD_RATES_BY_FACILITY[facility] * 100:.3f} percent per day."),
         "schedule": {
             "start": SCHEDULE_START.isoformat(),
             "periods": PERIODS_TOTAL,
@@ -234,6 +333,11 @@ def build_brief(contract_form: str, contract_value: float, conditions: str) -> d
             "estimated_days": IMPACT_DAYS,
             "event_day": EVENT_DAY,
         },
+        "safety_note": (
+            "Site safety runs under a stop work order regime: on issue, all work stops except "
+            "safety work, and lifting requires a Certificate of Correction plus whatever the "
+            "cause demands. The response decides the duration. Accelerating the work raises "
+            "the chance of an incident."),
         "designed_figures_note": (
             "Site and market figures, the liquidated damages coefficient and the decision "
             "effects are designed training figures with no external authority. Contract notice "
@@ -241,7 +345,8 @@ def build_brief(contract_form: str, contract_value: float, conditions: str) -> d
     }
 
 
-def initial_state(contract_form: str, contract_value: float, conditions: str) -> dict[str, Any]:
+def initial_state(contract_form: str, contract_value: float, conditions: str,
+                  facility: str = DEFAULT_FACILITY) -> dict[str, Any]:
     """
     Period one, before any decision: the event is 10 days old on decision day.
 
@@ -254,6 +359,7 @@ def initial_state(contract_form: str, contract_value: float, conditions: str) ->
         "period": 1,
         "contract_form": contract_form,
         "conditions": conditions,
+        "facility": facility,
         "bac": contract_value,
         "baseline_contract_sum": contract_value,
         "revised_contract_sum": contract_value,
@@ -265,6 +371,9 @@ def initial_state(contract_form: str, contract_value: float, conditions: str) ->
         "contingency_original": round(contract_value * CONTINGENCY_RATE, 2),
         "contingency_remaining": round(contract_value * CONTINGENCY_RATE, 2),
         "owner_credibility": CRED_START,
+        # Correction 3: earning is stepped. Progress counts concessions; CRED_EARN_CONCESSIONS
+        # of them convert to one point. An escalation resets it to zero.
+        "credibility_progress": 0,
         "change_order_count": 0,
         "dispute": {
             "status": "open",              # open | escalated | absorbed | resolved
@@ -275,8 +384,17 @@ def initial_state(contract_form: str, contract_value: float, conditions: str) ->
             "recovered_amount": None,
             "pending_recovery": None,
         },
-        "liquidated_damages_per_day": derive_ld_per_day(contract_value),
+        "liquidated_damages_per_day": derive_ld_per_day(contract_value, facility),
         "liquidated_damages_exposure": 0.0,
+        # Run 3: the discrete event machinery. `hazard` accumulates from acceleration and fires
+        # a near miss at the threshold; `incident` is the current event and `incidents` the
+        # record. The SCHEDULE (near_miss_period) lives in code, never in state or a response.
+        "hazard": 0.0,
+        "incident": {"status": "none"},
+        "incidents": [],
+        # Correction 1: what the LAST advance changed, so the cost of waiting is visible in the
+        # period's figures and can be reasoned about rather than discovered in a diff.
+        "period_changes": None,
         "decisions": [],
     }
 
@@ -311,28 +429,64 @@ def notice_position(state: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def allowed_decisions(state: dict[str, Any]) -> tuple[str, ...]:
+    """
+    What may be decided this period. During a stop work order the ONLY decision is the
+    response: all work has stopped, and the correction package is the thing in front of the
+    PM. Every other period offers the standard set.
+    """
+    if state.get("incident", {}).get("status") == "stopped":
+        return RESPONSES
+    return DECISIONS
+
+
 def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
     """
     Apply one decision to one period and produce the next period's state. Pure: no clock, no
     randomness, no session. The effect table above is the specification; this is its only
-    implementation.
+    implementation. Incidents included: the near miss schedule and the hazard threshold are
+    deterministic, so the same decisions always meet the same events.
     """
-    if decision not in DECISIONS:
+    allowed = allowed_decisions(state)
+    if decision not in DECISIONS + RESPONSES:
         raise ValueError(f"unknown decision: {decision}")
+    if decision not in allowed:
+        if state.get("incident", {}).get("status") == "stopped":
+            raise ValueError("a stop work order is in effect; the decision this period is the "
+                             "response: respond_strong or respond_minimal")
+        raise ValueError("no stop work order is in effect; there is nothing to respond to")
     if state["period"] > PERIODS_TOTAL:
         raise ValueError("the run is complete; no further period exists")
 
-    s = {**state, "dispute": {**state["dispute"]}, "decisions": list(state["decisions"])}
+    s = {**state, "dispute": {**state["dispute"]},
+         "incident": {**state.get("incident", {"status": "none"})},
+         "incidents": list(state.get("incidents") or []),
+         "decisions": list(state["decisions"])}
     profile = CONDITION_PROFILES[s["conditions"]]
     bac = s["bac"]
     dispute_open = s["dispute"]["status"] == "open"
     period_earn = s["baseline_contract_sum"] / PERIODS_TOTAL
 
-    # ---- the period's base progress. pv always earns a full increment; ev earns a reduced
-    # one when the period was spent with the dispute open and deferred.
+    # Correction 1's visibility: everything below is diffed against these at the end, so what
+    # the period cost is a stated figure, not archaeology.
+    before = {"float": s["float_consumed_days"], "ac": s["ac"],
+              "contingency": s["contingency_remaining"],
+              "credibility": s["owner_credibility"]}
+    notes: list[str] = []
+
+    # ---- the period's base progress. pv always earns a full increment; ev factors multiply:
+    # a deferred-dispute period earns 90 percent, a restart period earns
+    # (1 - restart_productivity_loss) — a stopped site does not come back at full production.
     disturbed = dispute_open and decision == "defer"
+    ev_factor = DEFER_EV_FACTOR if disturbed else 1.0
+    if s["incident"].get("status") == "restarting":
+        ev_factor *= (1.0 - profile["restart_productivity_loss"])
+        s["incident"]["restart_periods_left"] = s["incident"]["restart_periods_left"] - 1
+        notes.append("Restart productivity loss applied to this period's earning.")
+        if s["incident"]["restart_periods_left"] <= 0:
+            s["incident"] = {"status": "none"}
     s["pv"] = round(s["pv"] + period_earn, 2)
-    s["ev"] = round(s["ev"] + period_earn * (DEFER_EV_FACTOR if disturbed else 1.0), 2)
+    s["ev"] = round(s["ev"] + period_earn * ev_factor, 2)
     s["ac"] = round(s["ac"] + period_earn, 2)
 
     # ---- a preserved escalation booked last period resolves now, as a change order.
@@ -351,9 +505,15 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
         # read before this escalation's own minus one — the act of escalating strains the
         # relationship going forward, it does not retroactively cheapen the claim it carries.
         credibility_before = s["owner_credibility"]
-        s["float_consumed_days"] = s["float_consumed_days"] + profile["escalate_float_days"]
+        float_cost = escalation_float_cost(s)
+        s["float_consumed_days"] = s["float_consumed_days"] + float_cost
         s["ac"] = round(s["ac"] + bac * ESCALATE_PREP_COST_RATE, 2)
         s["owner_credibility"] = max(CRED_MIN, s["owner_credibility"] - 1)
+        # Correction 3: an aggressive escalation also destroys accumulated goodwill.
+        s["credibility_progress"] = 0
+        notes.append(f"Escalation float cost {float_cost} days: the position had been open "
+                     f"{s['dispute']['days_since_event']} days, and a late escalation on a "
+                     "contested position costs more than an early one.")
         position = notice_position(s)
         if position["kind"] == "notice_bar":
             if position["expired"]:
@@ -381,16 +541,66 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
         drawn = min(cost, s["contingency_remaining"])
         s["contingency_remaining"] = round(s["contingency_remaining"] - drawn, 2)
         s["ac"] = round(s["ac"] + cost, 2)
-        s["owner_credibility"] = min(CRED_MAX, s["owner_credibility"] + 1)
+        # Correction 3, the earning side: a concession is one PROGRESS STEP, and it takes
+        # CRED_EARN_CONCESSIONS of them to earn a point. Harder to earn than to lose.
+        s["credibility_progress"] = s["credibility_progress"] + 1
+        if s["credibility_progress"] >= CRED_EARN_CONCESSIONS:
+            s["owner_credibility"] = min(CRED_MAX, s["owner_credibility"] + 1)
+            s["credibility_progress"] = 0
+            notes.append("Sustained concessions have earned a point of owner credibility.")
+        else:
+            notes.append("A concession builds goodwill, but one is not enough to earn a "
+                         "credibility point.")
         s["dispute"]["status"] = "absorbed"
         s["dispute"]["entitlement"] = "waived"
     elif decision == "defer" and dispute_open:
         s["float_consumed_days"] = s["float_consumed_days"] + profile["defer_drift_float_days"]
         s["ac"] = round(s["ac"] + bac * DEFER_DRIFT_COST_RATE, 2)
         s["dispute"]["days_since_event"] = s["dispute"]["days_since_event"] + PERIOD_DAYS
+        notes.append(f"Deferral drift: {profile['defer_drift_float_days']} float days and "
+                     f"{DEFER_DRIFT_COST_RATE * 100:.1f} percent of contract value while the "
+                     "dispute stays open. Waiting has a price before the cliff.")
         position = notice_position(s)
         if position.get("expired"):
             s["dispute"]["entitlement"] = "lost"
+    elif decision == "accelerate":
+        recovered = min(EVENT_FIGURES["acceleration_float_recovered_days"],
+                        s["float_consumed_days"])
+        s["float_consumed_days"] = s["float_consumed_days"] - recovered
+        premium = round(bac * EVENT_FIGURES["acceleration_cost_rate"]
+                        * profile["acceleration_cost_multiplier"], 2)
+        s["ac"] = round(s["ac"] + premium, 2)
+        s["hazard"] = round(s["hazard"] + EVENT_FIGURES["acceleration_hazard_per_use"], 2)
+        notes.append(f"Acceleration recovered {recovered} float days at a premium, and a "
+                     "compressed site carries a higher chance of an incident.")
+        # A dispute left open while accelerating still ages: nobody tended the notice.
+        if dispute_open:
+            s["dispute"]["days_since_event"] = s["dispute"]["days_since_event"] + PERIOD_DAYS
+            if notice_position(s).get("expired"):
+                s["dispute"]["entitlement"] = "lost"
+    elif decision in RESPONSES:
+        figures = EVENT_FIGURES["response"][decision]
+        days_lost = figures["days_lost"][s["conditions"]]
+        s["float_consumed_days"] = s["float_consumed_days"] + days_lost
+        s["ac"] = round(s["ac"] + bac * figures["cost_rate"], 2)
+        s["incident"] = {
+            "status": "restarting",
+            "cause": s["incident"].get("cause"),
+            "period_occurred": s["incident"].get("period_occurred"),
+            "response": decision,
+            "days_lost": days_lost,
+            "restart_periods_left": figures["restart_periods"],
+        }
+        s["incidents"][-1] = {**s["incidents"][-1], "response": decision,
+                              "days_lost": days_lost}
+        notes.append(f"The stop work order cost {days_lost} days: the duration followed the "
+                     "response, not the incident.")
+        # The correction package consumed the attention the notice needed: an open dispute
+        # still ages through a stoppage.
+        if dispute_open:
+            s["dispute"]["days_since_event"] = s["dispute"]["days_since_event"] + PERIOD_DAYS
+            if notice_position(s).get("expired"):
+                s["dispute"]["entitlement"] = "lost"
     # A decision recorded after the dispute has closed changes nothing but the record: the
     # period still progresses above, and the decision is still logged below. Stated rather
     # than refused, because "there is nothing left to decide" is itself something the next
@@ -399,9 +609,47 @@ def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
     # ---- liquidated damages exposure follows float, mechanically.
     over = max(0, s["float_consumed_days"] - s["float_total_days"])
     s["liquidated_damages_exposure"] = round(over * s["liquidated_damages_per_day"], 2)
+    if over:
+        notes.append(f"Float is exhausted: {over} days beyond the contract date at "
+                     f"{s['liquidated_damages_per_day']:,.0f} dollars per day.")
 
     s["decisions"].append({"period": s["period"], "decision": decision})
     s["period"] = s["period"] + 1
+
+    # ---- the discrete event trigger, for the period now beginning. Deterministic: the base
+    # near miss is scheduled by the run's geometry (never disclosed in advance), and the
+    # hazard the trainee raised by accelerating fires a further one at the threshold. Every
+    # near miss converts to a stop work order at the designed rate of 1.0 this run. The
+    # incident itself costs little; the stop work order is the mechanism.
+    if s["incident"].get("status") in (None, "none"):
+        cause = None
+        if s["period"] == EVENT_FIGURES["near_miss_period"] \
+                and not any(i.get("cause") == "scheduled" for i in s["incidents"]):
+            cause = "scheduled"
+        elif s["hazard"] >= EVENT_FIGURES["hazard_threshold"]:
+            s["hazard"] = round(s["hazard"] - EVENT_FIGURES["hazard_threshold"], 2)
+            cause = "acceleration"
+        if cause is not None:
+            s["ac"] = round(s["ac"] + bac * EVENT_FIGURES["incident_direct_cost_rate"], 2)
+            s["incident"] = {"status": "stopped", "cause": cause,
+                             "period_occurred": s["period"]}
+            s["incidents"].append({"cause": cause, "period_occurred": s["period"]})
+            notes.append(
+                "A near miss on site has become a stop work order. All work has stopped "
+                "except safety work. Lifting requires a Certificate of Correction plus "
+                "whatever the cause demands; the response decides the duration."
+                + (" The compressed schedule from acceleration is the cause."
+                   if cause == "acceleration" else ""))
+
+    # ---- correction 1's visibility: what this advance actually changed, stated.
+    s["period_changes"] = {
+        "decision": decision,
+        "float_days_spent": s["float_consumed_days"] - before["float"],
+        "cost_added": round(s["ac"] - before["ac"] - period_earn, 2),
+        "contingency_spent": round(before["contingency"] - s["contingency_remaining"], 2),
+        "credibility_change": s["owner_credibility"] - before["credibility"],
+        "notes": notes,
+    }
     return s
 
 

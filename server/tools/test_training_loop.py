@@ -195,7 +195,9 @@ cv = 12_000_000.0
 s0 = eng.initial_state("A201-2017", cv, "exacting")
 
 esc_ = eng.advance(copy.deepcopy(s0), "escalate")
-check(esc_["float_consumed_days"] == 8, "escalate (exacting): float minus 8 days",
+# Run 3 correction 2: the flat 8 became a curve, base 4 plus 2 per full period left open.
+# An immediate escalation is the cheap end of it.
+check(esc_["float_consumed_days"] == 4, "escalate (exacting, immediately): float minus 4 days",
       str(esc_["float_consumed_days"]))
 check(esc_["owner_credibility"] == 2, "escalate: owner credibility minus 1",
       str(esc_["owner_credibility"]))
@@ -214,8 +216,11 @@ check(after["bac"] == cv + 180_000.0 and after["change_order_count"] == 1
 ab = eng.advance(copy.deepcopy(s0), "absorb")
 check(ab["contingency_remaining"] == round(s0["contingency_remaining"] - 180_000.0, 2),
       "absorb: contingency minus the impact cost", str(ab["contingency_remaining"]))
-check(ab["owner_credibility"] == 4, "absorb: owner credibility plus 1",
-      str(ab["owner_credibility"]))
+# Run 3 correction 3: credibility is asymmetric — one concession earns a progress step,
+# not a point. The step itself is asserted in test_training_events.py.
+check(ab["owner_credibility"] == 3 and ab["credibility_progress"] == 1,
+      "absorb: one concession earns one progress step toward a credibility point",
+      f"cred={ab['owner_credibility']} progress={ab['credibility_progress']}")
 check(ab["float_consumed_days"] == 0, "absorb: float untouched")
 check(ab["dispute"]["status"] == "absorbed" and ab["dispute"]["entitlement"] == "waived",
       "absorb: dispute closed, entitlement waived", str(ab["dispute"]))
@@ -228,28 +233,32 @@ check(df["ev"] < df["pv"], "defer: a disturbed period earns less than planned, s
       "performance falls", f"ev={df['ev']} pv={df['pv']}")
 
 st = eng.advance(eng.initial_state("A201-2017", cv, "steady"), "escalate")
-check(st["float_consumed_days"] == 6,
-      "the same decision under STEADY conditions costs 6 float days, not 8 — conditions "
+check(st["float_consumed_days"] == 3,
+      "the same decision under STEADY conditions costs 3 float days, not 4 — conditions "
       "modulate, decisions do not randomise", str(st["float_consumed_days"]))
 
 # Liquidated damages follow float mechanically. Drift applies only while the dispute is OPEN,
-# so the exhausting sequence is defer, defer, THEN escalate (3+3+8 = 14 against 12): the
-# procrastinate-then-panic run, which also arrives with the notice window already spent.
+# so the exhausting sequence is defer, defer, THEN escalate: 3 + 3 + (4 + 2 per period open,
+# here 8) = 14 against 12 — under run 3's curve the same procrastinate-then-panic run still
+# lands at 14 days, arriving with the notice window already spent.
 over = eng.advance(eng.advance(eng.advance(copy.deepcopy(s0), "defer"), "defer"), "escalate")
-check(over["float_consumed_days"] == 14 and over["liquidated_damages_exposure"] == 12_000.0,
-      "float exhausted puts liquidated damages in play: 2 days over at 6,000 per day",
+check(over["float_consumed_days"] == 14 and over["liquidated_damages_exposure"] == 8_000.0,
+      "float exhausted puts liquidated damages in play: 2 days over at the standard facility "
+      "rate of 4,000 per day",
       f"consumed={over['float_consumed_days']} ld={over['liquidated_damages_exposure']}")
 check(over["dispute"]["entitlement"] == "lost",
       "and that same sequence arrives with the window spent: liquidated damages exposure AND "
       "no recovery, the compounding the chain describes")
-still8 = eng.advance(copy.deepcopy(esc_), "defer")
-check(still8["float_consumed_days"] == 8,
+still4 = eng.advance(copy.deepcopy(esc_), "defer")
+check(still4["float_consumed_days"] == 4,
       "after escalation the dispute is no longer open, so deferral drift stops: drift is a "
       "property of the UNMANAGED change, not of time itself",
-      str(still8["float_consumed_days"]))
-check(eng.derive_ld_per_day(12_000_000.0) == 6_000.0
-      and eng.derive_ld_per_day(50_000_000.0) == 25_000.0,
-      "the liquidated damages rule: 0.05 percent of contract value per day, rounded to 500")
+      str(still4["float_consumed_days"]))
+# Run 3 correction 4: the rate follows the facility. The default facility is standard
+# (0.035 percent); critical carries the top of the band, which is what the old flat rate was.
+check(eng.derive_ld_per_day(12_000_000.0, "critical") == 6_000.0
+      and eng.derive_ld_per_day(50_000_000.0, "critical") == 25_000.0,
+      "the liquidated damages derivation from contract value, at the top of the band")
 
 print()
 print("=" * 78)
@@ -393,8 +402,14 @@ fast = post({"action": "trainingstart", "session_token": ops2,
 check(fast.get("ok") is True, "a second run for the same account starts cleanly")
 last = None
 for _ in range(eng.PERIODS_TOTAL):
+    # Run 3: period four brings a stop work order, during which the only decision is the
+    # response. Decide from the server's own allowed list, deferring wherever permitted.
+    current = post({"action": "trainingstate", "session_token": ops2,
+                    "run_id": fast["run_id"]})
+    allowed = current.get("allowed_decisions") or ["defer"]
+    choice = "defer" if "defer" in allowed else allowed[0]
     last = post({"action": "trainingdecision", "session_token": ops2,
-                 "run_id": fast["run_id"], "decision": "defer"})
+                 "run_id": fast["run_id"], "decision": choice})
 check(last.get("ok") is True and last.get("status") == "complete",
       "ten decisions complete the run", str(last.get("status")))
 refused = post({"action": "trainingdecision", "session_token": ops2,

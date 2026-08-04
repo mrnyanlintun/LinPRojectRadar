@@ -9,6 +9,71 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-04 — TRAINING MODE RUN 3: EFFECT TABLE CORRECTIONS, DISCRETE EVENTS, NARRATION
+
+Full detail in `REPORT_2026-08-04_training-events.md` — **it leads with the revised effect
+table and the event constants, the two things Lin corrects.** Stacked on run 2's branch (PRs
+#207/#208 unmerged at branch time). **Server 1788/1788 across 33 suites** (new
+`test_training_events.py` adds 42; run 2's suite reconciled to the corrected table, 54/54),
+`tests_render.html` 62/63 (STILL the same single pre-existing gap, confirmed by name and
+text), `tests.html` 51/51. Eight faults (E1–E8), all detected distinctly, all reverted
+byte-identical, baseline re-run after each. Browser drive included a full incident. **No new
+migration; production still lacks 0018 AND 0019.**
+
+## The four corrections, and one premise corrected back
+
+- **Deferral was already not free** (run 2 built 3 float days + 0.3% cost drift per deferred
+  period); what was missing was VISIBILITY. `state.period_changes` now states each advance's
+  float/cost/contingency/credibility deltas with plain-language notes, rendered as "What the
+  last period cost". The drift figures stand as run 2 set them, for correction not
+  re-invention.
+- **Escalation cost is a curve**: base (4 exacting / 3 steady) + 2 days per full period the
+  position sat open, cap 12, derived FROM the notice clock so cost and clock cannot disagree.
+- **Credibility is asymmetric**: minus 1 instantly on escalation (which also zeroes earn
+  progress); earning takes 2 concessions per point (`credibility_progress`).
+- **The LD rate follows the brief's facility**: critical 0.05% / standard 0.035% (new default)
+  / utilitarian 0.02%, third `trainingstart` condition. Derivation and rounding unchanged.
+- **UNCHANGED BY INSTRUCTION**: the FAR lookback halving money where A201/ConsensusDocs bar
+  the claim.
+
+## Discrete events: deterministic, undisclosed, response-priced
+
+`EVENT_FIGURES` is the single designed-constants table. Near miss at period four (in code,
+NEVER in a response — and the `hazard` accumulator is likewise REDACTED from every view, or it
+would forecast the second incident). Every near miss converts to an SWO (designed 1.0). The
+incident costs 0.1%; the DAYS are the mechanism: respond_strong 6/5 days lost + 1 restart
+period at reduced earning, respond_minimal 18/14 + 2. During an SWO the ONLY allowed decision
+is the response (`allowed_decisions`, enforced in `advance` with named refusals both ways).
+`accelerate` is a fourth standard decision: buys 4 float days at 1%×multiplier, hazard +0.5;
+hazard 1.0 fires a second near miss next period with `cause: "acceleration"` recorded in
+`incidents` — attributable for run 4's debrief, and impossible on a run that never accelerated.
+An open dispute AGES (+30 days) through an SWO response and through an accelerated period.
+Severity-depends-on-state is proven head to head: same incident, same minimal response, 24,000
+exposure float-rich vs 80,000 float-poor.
+
+## Narration: a layer, and never the judge — structurally
+
+`training_narration.py` narrates a computed state; NOTHING reads the sentence back (the engine
+never imports it), so the judge property is structural, not a prompt promise. No key / failure
+/ raising narrator all degrade to figures-only with byte-identical state (asserted; fault E7
+removes the guard and goes red). Test seam: `training.set_narrator_override`, mirroring
+`set_extractor_override`. Em dashes stripped mechanically from model output. Narration runs on
+decision/start responses only; `trainingstate` reads never cost a model call.
+
+## Worth knowing before run 4 (the debrief)
+
+- **All debrief raw material is captured already**: `incidents` with causes, `decisions`,
+  `period_changes`, full `history` on the run row. Run 4 is a read.
+- **A suite defect was caught during construction, again**: the reset-on-escalation check was
+  first written as absorb-then-escalate — a sequence the single standing dispute cannot
+  produce, so it passed against the no-op branch (a fixture building state by a route the
+  application does not take). Now a stated constructed input to the pure function; run 4's
+  events will make the sequence real.
+- **`swo_conversion` documents the rate but is not wired as a probability.** Lowering it below
+  1.0 needs a deterministic, state-derived tie-breaker to keep replay determinism.
+- Run 2's suite now decides from the server's `allowed_decisions` in its run-out loop; any
+  future test looping "defer" ten times will hit the period-4 SWO refusal.
+
 # 2026-08-04 — TRAINING MODE RUN 2: THE LOOP — BRIEF, STATE, PERIODS, DECIDE AND ADVANCE
 
 Full detail in `REPORT_2026-08-04_training-loop.md` — **it leads with the effect table and the
