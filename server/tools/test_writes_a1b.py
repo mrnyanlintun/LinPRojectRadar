@@ -314,11 +314,25 @@ print()
 print("=" * 78)
 print("DEFERRED AND UNKNOWN ACTIONS; PING ADVERTISEMENT")
 print("=" * 78)
-for action in ("chat", "analyze", "extractsignals", "identifyonly", "audit",
+# `extractsignals` IS NO LONGER IN THIS LIST, and that is the point of the change on 2026-08-04:
+# it is dispatched to the real extraction path, so asserting the deferred wording for it would be
+# asserting the defect. The seven below have no handler anywhere in server/app — verified against
+# every action registry, not assumed — so the refusal is still the accurate answer for them.
+for action in ("chat", "analyze", "identifyonly", "audit",
                "portfolioanalyze", "ingestcorpus", "tts"):
     r = post({"action": action, "id": P1})
     check(r.get("error") == f"Action not implemented in this build: {action}",
           f"deferred wording for {action}", str(r)[:120])
+
+# The positive control for the line above. Without this, deleting `extractsignals` from
+# DOCUMENT_ACTIONS would put it back in the deferred set and NOTHING here would notice, because
+# the loop no longer names it. This asserts it reaches a real handler: the answer must not be the
+# deferred sentence and must not be the unknown-action sentence either.
+_es = post({"action": "extractsignals", "id": P1})
+check(_es.get("error") != "Action not implemented in this build: extractsignals",
+      "extractsignals is DISPATCHED, not deferred", str(_es)[:160])
+check(_es.get("error") != "Unknown POST action: extractsignals",
+      "extractsignals is a known action", str(_es)[:160])
 check("Unknown POST action" in post({"action": "definitelynotreal"}).get("error", ""),
       "unknown action wording distinct from deferred")
 ping = get({"action": "ping"})

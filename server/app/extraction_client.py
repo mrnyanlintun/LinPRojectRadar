@@ -197,14 +197,33 @@ class AnthropicExtractor:
         return "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
 
     @staticmethod
-    def _content_block(raw: bytes, mime_type: str) -> dict:
+    def _content_block(raw: bytes, mime_type: str, filename: str = "") -> dict:
         """
-        PDFs go as a document block; anything else is decoded as text.
+        A .docx is read locally into text and tables; PDFs go as a document block; anything
+        else is decoded as text.
 
-        The legacy split the same way (`claudePdfExtract_` vs `claudeChat_`) and truncated text
-        at 12000 characters. That truncation is preserved: it bounds the prompt, and the fields
-        being extracted appear in a document's summary tables rather than its appendices.
+        THE DOCX BRANCH IS FIRST, AND IT IS DECIDED FROM THE BYTES. A .docx is a ZIP archive, so
+        before this branch existed it fell through to the raw-decode below and became 12000
+        characters of deflate-compressed binary — measured on a real file, 5071 U+FFFD
+        replacement characters, with the truncation consumed by ZIP headers before the body was
+        reached. It is tested before the PDF branch rather than after because `signals.js` sends
+        `file.type || "application/pdf"`, so a docx the browser did not type arrives CLAIMING to
+        be a PDF and a mime-first test would send the archive as a PDF document block.
+
+        See `docx_text` for why reading it locally is the better route for these documents and
+        not a workaround: the tables survive as structure rather than as guessed layout, and
+        there is no OCR step.
+
+        The legacy split PDF-versus-text the same way (`claudePdfExtract_` vs `claudeChat_`) and
+        truncated text at 12000 characters. That truncation is preserved for the raw-bytes
+        branch: it bounds a prompt built from an unknown blob. The docx branch carries its own,
+        larger bound, because that text has already been parsed and a pay application's summary
+        rows can sit past 12000 characters.
         """
+        from .docx_text import docx_content_block, is_docx
+
+        if is_docx(raw, mime_type, filename):
+            return docx_content_block(raw)
         if (mime_type or "").lower() == "application/pdf":
             return {
                 "type": "document",
@@ -237,7 +256,7 @@ class AnthropicExtractor:
     def classify_with_confidence(self, raw: bytes, mime_type: str,
                                  filename: str) -> tuple[str, float | None]:
         """(doc_type, confidence). Confidence is None unless the model's own claim was used."""
-        block = self._content_block(raw, mime_type)
+        block = self._content_block(raw, mime_type, filename)
         try:
             answer = parse_json_response(self._post(build_classify_prompt(), block, 256))
         except ExtractionError:
@@ -284,7 +303,7 @@ class AnthropicExtractor:
             # a docRiskScore for a document type nothing knows how to interpret.
             return UNMAPPED, {}, confidence
         fields = extraction_fields_for(resolved)
-        block = self._content_block(raw, mime_type)
+        block = self._content_block(raw, mime_type, filename)
         extracted = parse_json_response(self._post(build_prompt(resolved, fields), block,
                                                    MAX_TOKENS))
         # Keep only what was asked for. A model that volunteers extra keys must not be able to

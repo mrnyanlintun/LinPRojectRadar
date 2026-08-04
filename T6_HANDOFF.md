@@ -475,6 +475,87 @@ combination to be settled rather than assumed.
   training actions, not just `trainingstatus`, so a later run adding a real `trainingstart`
   handler inherits both the gate and the refusal without touching either list.
 
+# 2026-08-04 — extractsignals WIRED, DOCX READ LOCALLY. THE MODEL WAS STILL NEVER CALLED.
+
+Full detail in `REPORT_2026-08-04_real-extraction.md`. **Server 36 suites, 1940/1940 (was
+35/1898); `tests_render.html` 86/86; `tests.html` 51/51.** Eight faults injected, all detected,
+all reverted byte-identical, baseline re-measured after each. No migration. `simulation/`
+untouched.
+
+## READ THIS BEFORE PLANNING ANOTHER REAL-EXTRACTION SESSION
+
+**Extraction has STILL never run against a real document, and the deferred-list entry was only
+one of three reasons.** The other two are inputs a session cannot manufacture:
+
+- **There is no real project document on this machine.** 110 `.docx` files exist under `DEng`;
+  every one is coursework or literature. Zero pay applications, zero registers, zero
+  project-controls documents. The repository holds no `.docx`/`.pdf`/`.xlsx` at all.
+- **No `ANTHROPIC_API_KEY` here.** Measured: `build_extractor()` returns the stub,
+  `require_real=True` raises. It is set on Render, `sync: false`.
+
+`server/tools/real_extraction_probe.py` is built and ready: it calls the REAL model on given
+files, prints field by field what the model returned versus what the document says, runs both
+guards, **refuses to run without a key**, and **writes nothing**. `--make-fixtures` writes three
+synthetic documents with their truths printed. **Synthetic, and the tool says so** — the
+2026-08-02 objection to substituting them still stands.
+
+## What changed
+
+- **`extractsignals` is dispatched**, as an ADAPTER onto `a_projectupload` — not a second
+  extraction path. Authorisation, the content-hash cache, both guards, supersession, filing,
+  observation emission and the project event log are inherited, so the two upload surfaces
+  cannot drift.
+- **`server/app/docx_text.py`**: stdlib `zipfile` + `ElementTree`, **no new pinned dependency**
+  (`python-docx` is not in requirements and not in the venv). Tables render as pipe grids with
+  the header row marked; `w:gridSpan` is expanded so a merged total keeps its figures under the
+  right headings; `w:delText` is excluded so a tracked deletion cannot read as current.
+- **The format branch is chosen from the BYTES, before the mime test.** `signals.js` sends
+  `file.type || "application/pdf"`, so a docx the browser did not type arrives claiming to be a
+  PDF. PDF document-block path and the plain-text 12000-char branch are unchanged.
+
+## THE DEFERRED LIST: extractsignals WAS THE ONLY STRANDED ONE
+
+Checked against every action registry. The other seven have **no handler anywhere** in
+`server/app`, so their refusal is accurate. Two things to not re-derive:
+
+- **`identifyonly` is deferred DELIBERATELY.** Its capability exists and is reachable —
+  `classify_with_confidence` runs on every upload and the type/confidence come back on the
+  response. Wiring it adds a second model call for an answer you already have. The reason is
+  recorded next to it in `writes.py`.
+- **A FEATURE FLAG IS NOT AN IMPLEMENTATION.** `chat`, `portfolioanalyze` and `audit` all have
+  flags in `features.py`, which is almost certainly why `chat` was once reported stranded. It is
+  not. `ingestcorpus` is a retired name; the live surface is `projectcorpus` in `files.py`.
+
+## Traps that cost time here
+
+- **THE BASELINE WAS WRONG FOR AN HOUR: the wrong interpreter.** The first full run read 5/35
+  suites passing. The system Python has no `fastapi`. Use
+  `server/.venv/Scripts/python.exe` and `server/.venv/Scripts/alembic.exe`. There is still no
+  runner script in the repo and this is the second session to lose time to it.
+- **A STALE DEV SERVER ON PORT 8010 WAS SERVING DIFFERENT CODE** — it answered `Unknown POST
+  action: extractsignals`, neither the old deferred wording nor this change. Verification moved
+  to 8011 and was confirmed to be this branch before any harness number was recorded. **Probe
+  what is on a port before trusting a run against it.**
+- **A STUB RECORDING CAN CARRY FIELDS THE REAL EXTRACTOR WOULD DROP.** The real client filters to
+  `extraction_fields_for(doc_type)`; `StubExtractor` does not. A fixture recording `earned_value`
+  for a `pay_application` stored fine and the guard correctly ignored it, which read exactly like
+  a missing guard. **Key future recordings off `extraction_fields_for`.**
+- **`tests_render.html` is 86 checks and the gap is environmental, not 62/63.** Bare tab 80/81;
+  ResearchAdmin token 82/83 (an admin is not a member of any project); **PM token + a computed
+  project 86/86.** That movement is the evidence the over-the-wire group is not vacuous.
+
+## Open, carried forward
+
+- **Part 3 is undone** and needs a real document set plus a key. Nothing else blocks it.
+- **An image-only `.docx` is un-extractable.** One real file (`Coursera.docx`: six PNGs, no text)
+  reads empty and is REFUSED. Correct behaviour, real limitation — a scanned Word document cannot
+  be read where a PDF of the same content could. Adding image blocks reopens the OCR question the
+  docx route was chosen to avoid. Lin's call.
+- **The `docRiskScore` range guard has still never met a real document.** Only
+  `submittal_register` requests the field among the 27 types.
+- **Two upload surfaces now share one server path**, but the legacy `signals.js` panel has no
+  period selector and leans on `_resolve_period`'s default. Whether it should exist is Lin's call.
+
 # 2026-08-03 — CHART-DATA AND ABSTENTION SUITES: BOTH FINDINGS CHECKED, NEITHER STANDS
 
 Full detail in `REPORT_2026-08-03_chart-abstention-tests.md`. **Nothing was changed.** Server
