@@ -9,6 +9,106 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-05 — EXTRACTION STOPS SUBSTITUTING A NEARBY VALUE. THE MODEL WAS ACTUALLY CALLED.
+
+Full detail in `REPORT_2026-08-05_extraction-substitution.md`. **Server 39 suites, 2161/2161
+(was 38/2042); `tests_render.html` 86/86; `tests.html` 51/51.** Seven faults injected, all
+detected, all reverted byte-identical, baseline re-measured after each. No migration.
+`simulation/` untouched.
+
+## THIS RAN AGAINST TWO REAL PROJECT A DOCUMENTS, WITH A LIVE KEY. THE FIRST TIME EITHER HAS EVER HAPPENED.
+
+The 2026-08-04 handoff said the same two blockers (no key, no real documents) would stop the next
+real-extraction session. They did — this session started identically blocked — until Lin supplied
+a key and the path to the real files. **Neither is in this repository and neither should be
+assumed to be here next time.** The path used:
+`Desktop\Project Samples\2028-11-01_ProjectA_Design_Revised_Verified_Corpus\ProjectA_Design\Period_01`.
+
+## The defect, exactly as briefed, reproduced on the first real call
+
+`2026_04_09 100% INFO - Contract Value Summary P01.docx` (classified `contract_value`, 0.97):
+`original_contract_sum` correct at 5,874,620 and the two pending authorizations correctly
+excluded — but `project_start_date`/`project_end_date` came back as **`2026-03-01`/`2026-03-31`**,
+which is the document's REPORTING PERIOD (`Period \| 1 March 2026 through 31 March 2026`),
+mislabelled as a project baseline. **The document has no project baseline dates at all.** Both
+values were well-formed, in-range dates — neither `validate_doc_risk_score` nor
+`validate_numeric_fields` could have caught this, because both guard the VALUE and a substituted
+date is a perfectly good date. **The prompt is the only place this can be caught.**
+
+`2026_04_06 100% INFO - Design Activity Status U03.docx` (classified `schedule_update`, 0.95): a
+genuine miss, opposite direction — `activities_planned` (should be 9, the activity table's row
+count) and `milestones_json` (should carry that table) both came back null, while six genuinely
+absent fields correctly stayed null.
+
+## The fix, and why it is two changes, not one
+
+**Label-matching**, generalised across the whole field vocabulary (not just dates, per the
+brief): a field is returned ONLY when the document states it under a matching label; a
+same-typed value under no matching label is never a substitute. Checked, not assumed: no field in
+the 87-field vocabulary legitimately needs a MODEL-derived value — `NAMING_AUTHORITY.md`'s own
+"reads the reported figures" wording already committed to this, and CPI/SPI (the one genuinely
+derived pair) are computed server-side, never asked of the model.
+
+**`milestones_json`'s shape hint**, separate and opposite in direction — the miss was
+under-application of "read what's there", not over-application. Nothing told the model a
+document's own activity table qualifies as a milestones source or how to shape a whole table into
+one JSON field. Tightening only the anti-substitution rule risked making this WORSE (a stricter
+"never infer" could argue counting table rows is inferring); the fix explicitly says counting a
+table's own rows is reading a stated fact, not inferring one.
+
+**Acceptance test, run against production code via `real_extraction_regression.py`: 16/16.**
+Re-run against the reverted (pre-fix) prompt: 11/15, failing exactly the two conditions the
+defect predicts. The check is not vacuous.
+
+## THE MILESTONES_JSON MERGE GAP IS CONFIRMED STILL OPEN, AND WAS NOT CLOSED
+
+Exhaustively re-checked against the code (2026-08-02 reconciliation report's finding, still
+true): `milestones_json` is requested by `schedule_update` and `monthly_report`'s field lists,
+and now — after this fix — genuinely comes back from the model. It has **zero writers** into
+`signalInputs`; `extraction_merge.py`'s per-type emission tables have no branch for it.
+`field_registry.py` declares `milestoneHistory` (the SI-side name) `servable: False`. **Not a
+one-line change**: closing it needs real date parsing (below), a SERIES-shape merge across
+periods, and precedence rules that don't exist yet for this field, and eventually touches
+`simulation/`, out of scope here. Reported, not started, per the brief.
+
+## THE PIPELINE HAS NO REAL DATE PARSER, AND THE MILESTONE TABLE PROVES IT MATTERS
+
+The activity table's date column carries four real shapes: `12-Jan-26`, `29-May` (no year),
+`14 August 2026`, and `24-Mar-26 A` (a scheduling tool's actual-date marker). **None parse** with
+`date.fromisoformat` — the ONLY date parser anywhere in `server/app` (`extraction_merge.py:442`,
+`documents.py:386`), tested directly against all four. This is why the `milestones_json` hint
+tells the model NOT to reformat table-internal dates to ISO: normalising `"24-Mar-26 A"` would
+either drop the actual-date marker or fail, and there is no code today that would know what to do
+with either outcome. Whoever closes the merge gap above needs to solve this first.
+
+## Verify
+
+`server/tools/test_extraction_prompt.py` is DETERMINISTIC — no key, no documents, always
+runnable, 119/119 — and asserts the prompt's WORDS survive an edit. It cannot prove the fix
+works; only the real-model run can. `server/tools/real_extraction_regression.py` is the live
+re-check, deliberately NOT named `test_*` (a `test_*` suite that needs a key and two
+uncommitted files would either fail or need skip logic every future runner has to remember —
+silently downgrading "the suite passed" from fact to approximation). It refuses to run without a
+key, writes nothing, and is what produced the 16/16 above.
+
+## A repeat of the port-8010 trap from 2026-08-04
+
+A dev server left running on port 8012 from the prior session was still serving PRE-FIX code
+(the pre-2026-08-04 `extractsignals` wiring) when first checked. Stopped; a fresh instance on
+8013 was confirmed to be running current code before any harness number was trusted. **This is
+the second time in two sessions.** Check what a port is actually running, every time, not once
+per task.
+
+## Open, carried forward
+
+- `milestones_json` merge gap (above) — needs real date parsing first, then a SERIES-shape merge,
+  then `field_registry` and eventually `simulation/` changes.
+- Only two of 27 document types have ever been run against the real model
+  (`contract_value`, `schedule_update`). The fix generalises by design across the whole
+  vocabulary; the evidence does not, yet.
+- The key and the two real files are not persisted anywhere. The next real-extraction session
+  starts exactly as blocked as this one did, unless Lin supplies both again.
+
 # 2026-08-04 — PMP UPGRADE RUN 2: THE RESOURCES THREAD, AND THE SPACING RULE
 
 Full detail in `REPORT_2026-08-04_training-resources-thread.md` — **it leads with the effect

@@ -88,7 +88,7 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
     """
     Port of the legacy per-type extraction prompt (.gs `extractSignals_`, lines 846-849).
 
-    Two deliberate additions to the legacy text, both flagged here because they change model
+    Three deliberate additions to the legacy text, each flagged here because it changes model
     behaviour:
 
     1. `document_risk_score` is constrained to 0..1. The legacy prompt never constrained it,
@@ -97,13 +97,62 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
        unconstrained score is silently misread as a band by everything downstream.
     2. An explicit instruction to return null rather than guess. The legacy said "do not invent
        values"; this says what to do instead, which is the part a model actually acts on.
+    3. LABEL-MATCHING, added 2026-08-05 after the first real-document run. "Never guess, infer,
+       or carry a value over from a different field" was not enough on its own: run against a
+       real contract value summary, the model took the header's reporting period ("Period | 1
+       March 2026 through 31 March 2026", plainly labelled as the period, in the same block as
+       the issue date and the data date) and returned it as `project_start_date` /
+       `project_end_date`. The document has no project baseline dates at all. Both values were
+       well-formed, in-range dates, so neither guard (`validate_doc_risk_score`,
+       `validate_numeric_fields`) could have caught it — a malformed-numeric refusal only fires
+       on a value that cannot be read as the requested TYPE, and a substituted date is a
+       perfectly good date. The old instruction forbade carrying a value FROM a named field TO
+       another named field; it never told the model that a value under NO matching label at all
+       is equally not a source. This paragraph closes that gap, generalised across the whole
+       field vocabulary rather than written for dates alone: the failure is "a value of the
+       right type sitting nearby", and that shape is not specific to dates.
+
+       No field in the vocabulary (`extraction_fields.ALL_FIELDS`) legitimately needs a value the
+       model derives rather than one the document states. This was checked, not assumed: every
+       name in that list is a total, a date, a rating, a percentage or a count a construction
+       report states directly, and the platform's own standing description
+       (`NAMING_AUTHORITY.md` section 3) already commits to "reads the reported figures", not
+       "extracts" or "computes" them — `CPI`/`SPI` are the one place a value IS derived, and
+       those are computed server-side, never asked of the model ("Do not compute indices",
+       below, predates this change).
+
+       ONE NAMED EXCEPTION, added alongside the same run: `milestones_json` is not a scalar, and
+       the same run's second document showed the model returning null for a genuine activity
+       table because nothing told it a document's own schedule table IS a milestones_json
+       source or how to shape one field's value as a table. That is not the same failure as
+       substitution — it is UNDER-application of "read what is there", not over-application —
+       but the fix has to name the shape explicitly because a whole-table answer inside one
+       JSON field is not something the general instructions describe.
     """
+    milestones_hint = (
+        " milestones_json, if requested and the document contains a schedule, activity or "
+        "milestone table, is a JSON array with one object per row of that table, using the "
+        "table's own column headings as keys and its values as printed (do not reformat or "
+        "reinterpret a value inside this table — dates inside it are NOT required to be "
+        "YYYY-MM-DD, unlike every other date field below); return an empty array only if the "
+        "document has no such table."
+    ) if "milestones_json" in fields else ""
     return (
         "You are a precise construction project-controls data extractor. Read this ONE document "
         f"(type: {doc_type}) and return ONLY these fields as clean JSON: "
         f"{json.dumps(fields)}. "
-        "Use null for any field that is not present in the document. Never guess, infer, or "
-        "carry a value over from a different field. Do not compute indices. "
+        "A field is returned ONLY when the document itself states that field, under a label or "
+        "heading whose meaning matches the field's name. A different value sitting nearby, under "
+        "a different label, is never a substitute, even if it is a plausible value of the right "
+        "type and in a sensible range: a reporting period is not a project start or end date, an "
+        "issue date or a data date is not a baseline date, and a schedule-progress percentage is "
+        "not a cost-basis percentage. If you cannot point to the specific label in the document "
+        "that names this field, return null for it. Counting entries in the document's own table "
+        "is reading a stated fact, not inferring one, when the field name plainly refers to that "
+        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint +
+        " Use null for any field genuinely not present in the document. Never guess, invent, or "
+        "carry a value over from a different field or a different document. Do not compute "
+        "indices. "
         "Numbers as plain numbers (no currency symbols, no thousands separators). "
         "Percentages as numbers 0-100. Dates as YYYY-MM-DD. "
         "document_risk_score, if requested, is a number between 0 and 1 inclusive, where 0 is "
