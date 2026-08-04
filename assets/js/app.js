@@ -1915,6 +1915,7 @@
       if (page === "portfolio" && window.LinIngest) LinIngest.renderPortfolioAdmin();
       if (page === "handbook") renderHandbook();
       if (page === "auditor" && window.LinAuditor) LinAuditor.renderAuditorPage();
+      if (page === "training" && window.LinTraining) LinTraining.render();
       if (page === "detail" && window.LinDetail && selectedId) LinDetail.render(selectedId);
       if (page === "admin" && window.LinAdmin) LinAdmin.render();
       // T6. The folded surfaces render on arrival like every other page here.

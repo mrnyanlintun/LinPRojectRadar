@@ -1,0 +1,451 @@
+"""
+Training mode run 2: the deterministic core of the loop.
+
+Everything in this module is a PURE FUNCTION of its inputs. No clock, no randomness, no session:
+the same state and the same decision produce the same next state on any machine on any day. That
+is the teaching contract — directors disagree about the right call, they do not disagree that
+escalating spends float — and it is also what makes the loop verifiable: a check can replay a
+run and expect identical bytes.
+
+THE MECHANICS ARE FIXED EVEN WHERE THE JUDGEMENT IS OPEN. The effect table lives here as data
+(`EFFECTS` below plus the profile figures), in one place, so Lin can correct a figure without
+reading the advance logic. Figures marked "designed" have no external authority — they are the
+elicited layer `training_us_contract_regimes.md` says is ours to set, and they are stated in the
+brief so a trainee can reason about them rather than discovering hidden rules.
+
+THE TWO CLOCKS MUST NOT BLUR. The PERIOD advances one step per decision; the NOTICE CLOCK runs
+in days inside the run's calendar. The event lands on day 10 of period one and the trainee
+decides on day 20 of every period, so the first decision is taken 10 days after the event and
+each deferral adds 30 more. Under A201's 21 days or ConsensusDocs' 14, ONE deferral spends the
+window even though only one period passed. That asymmetry is the point, not an accident.
+
+CONTRACT PERIODS COME FROM `training_us_contract_regimes.md` AND ARE NOT OVERRIDABLE. The three
+forms' figures are transcribed from that file with their clause citations; that file's own
+caveat (A201 and ConsensusDocs periods are from law-firm summaries, unverified against the
+licensed documents — roadmap item 14) travels with them. No clause text is reproduced, only
+periods and citations, per the file's copyright note.
+"""
+
+from __future__ import annotations
+
+from datetime import date, timedelta
+from typing import Any
+
+# ---------------------------------------------------------------- run geometry (designed)
+
+PERIOD_DAYS = 30          # one reporting period
+PERIODS_TOTAL = 10        # contract duration: 300 days
+DECISION_DAY = 20         # the trainee decides on day 20 of each period
+EVENT_DAY = 10            # the standing change event lands on day 10 of period one
+SCHEDULE_START = date(2026, 1, 5)   # fixed, so every date in a run is deterministic
+TOTAL_FLOAT_DAYS = 12     # designed: small enough that one escalation plus two deferrals
+                          # exhausts it and puts liquidated damages in play
+
+# ---------------------------------------------------------------- money rules (designed)
+
+# Liquidated damages per day: 0.05 percent of contract value (five basis points), rounded to
+# the nearest 500 dollars. Stated, not randomised: a 12 million dollar project carries 6,000
+# dollars per day, a 50 million one carries 25,000. The rule is the common owner-side sizing
+# convention of LDs proportioned to the value at risk per day of delay; the coefficient is a
+# designed figure for Lin to correct.
+LD_RATE = 0.0005
+LD_ROUND = 500
+
+# The standing change event, scaled from contract value so a larger project argues about
+# larger money: estimated impact cost is 1.5 percent of contract value. Twelve days is the
+# stated schedule content of the change (informational this run; time relief is not modelled).
+IMPACT_COST_RATE = 0.015
+IMPACT_DAYS = 12
+
+CONTINGENCY_RATE = 0.05   # original contingency: 5 percent of contract value
+
+DEFAULT_CONTRACT_VALUE = 12_000_000.0
+MIN_CONTRACT_VALUE = 1_000_000.0
+MAX_CONTRACT_VALUE = 500_000_000.0
+
+# ---------------------------------------------------------------- contract forms
+#
+# Periods per training_us_contract_regimes.md. Clause numbers cited, text never reproduced.
+# `claim_notice_days` None means the form has no fixed notice bar; FAR instead has the 20-day
+# cost lookback of FAR 52.243-4(d): costs incurred more than 20 days before written notice are
+# simply unrecoverable. Nothing is time-barred; the money is gone.
+CONTRACT_FORMS: dict[str, dict[str, Any]] = {
+    "A201-2017": {
+        "label": "AIA A201-2017",
+        "claim_notice_days": 21,
+        "claim_notice_citation": "Section 15.1.3.1",
+        "second_step": None,
+        "lookback_days": None,
+        "brief_note": ("Claims for additional cost or time require notice within 21 days "
+                       "(Section 15.1.3.1). Article 15 claims must be served by certified or "
+                       "registered mail or by courier with proof of delivery."),
+    },
+    "ConsensusDocs 200": {
+        "label": "ConsensusDocs 200",
+        "claim_notice_days": 14,
+        "claim_notice_citation": "Section 8.4",
+        # The two-step clock: notice within 14 days, supporting documentation within 21 days
+        # after the notice. Run 2 models step one; the documentation step is stated in the
+        # brief and becomes mechanical when discrete events land (run 3).
+        "second_step": "documentation within 21 days after the notice (Section 8.4)",
+        "lookback_days": None,
+        "brief_note": ("Notice of a claim within 14 days, then supporting documentation within "
+                       "21 days after that notice (Section 8.4). Giving notice and then going "
+                       "quiet loses the claim."),
+    },
+    "Federal FAR": {
+        "label": "Federal (FAR)",
+        "claim_notice_days": None,
+        "claim_notice_citation": "FAR 52.243-4(d)",
+        "second_step": None,
+        "lookback_days": 20,
+        "brief_note": ("No fixed notice bar, but no adjustment for costs incurred more than 20 "
+                       "days before written notice (FAR 52.243-4(d)). Claims over 100,000 "
+                       "dollars must be certified (FAR 52.233-1, 41 USC 7103)."),
+    },
+}
+
+# ---------------------------------------------------------------- site and market conditions
+#
+# The non-contractual figures, chosen per run and stated in the brief. Two profiles. Every
+# number is designed (the elicited layer). Acceleration multiplier and restart loss are stated
+# in the brief because a PM prices a recovery plan against them, but they become mechanical
+# only when discrete stoppages land in run 3; this run's mechanics use the three figures
+# marked (mechanical).
+CONDITION_PROFILES: dict[str, dict[str, Any]] = {
+    "exacting": {
+        "labour": "tight: qualified trades are scarce and diverted supervision is expensive",
+        "procurement": "exposed: long lead items dominate the critical path",
+        "owner": "formal: entitlement is honoured, quantum is contested",
+        "escalate_float_days": 8,       # (mechanical) claim preparation and affected work held
+        "defer_drift_float_days": 3,    # (mechanical) coordination drift per deferred period
+        "low_credibility_recovery_factor": 0.85,  # (mechanical) quantum contested when trust is low
+        "acceleration_cost_multiplier": 1.5,
+        "restart_productivity_loss": 0.15,
+    },
+    "steady": {
+        "labour": "available: trades can be added without premium",
+        "procurement": "stocked: no long lead item is currently critical",
+        "owner": "collaborative: disputes are resolved on the figures",
+        "escalate_float_days": 6,
+        "defer_drift_float_days": 2,
+        "low_credibility_recovery_factor": 0.95,
+        "acceleration_cost_multiplier": 1.25,
+        "restart_productivity_loss": 0.10,
+    },
+}
+
+DECISIONS = ("escalate", "absorb", "defer")
+
+# ---------------------------------------------------------------- the effect table
+#
+# THIS IS THE TABLE THE REPORT QUOTES. Decision against state change, fixed for the same
+# conditions. The three tensions:
+#
+#   escalate  protects entitlement, spends float
+#   absorb    protects the relationship, spends contingency
+#   defer     protects both, and runs the notice clock down
+#
+# | decision | float                    | contingency   | actual cost          | owner credibility | dispute and clock                          |
+# |----------|--------------------------|---------------|----------------------|-------------------|--------------------------------------------|
+# | escalate | minus escalate_float_days| unchanged     | plus 0.2% of value   | minus 1 (floor 1) | notice served; entitlement decided by the  |
+# |          | (8 exacting, 6 steady)   |               | (claim preparation)  |                   | form's window against days since the event |
+# | absorb   | unchanged                | minus impact  | plus impact cost     | plus 1 (cap 5)    | dispute closed, entitlement waived         |
+# |          |                          | cost (1.5% cv)| (work is done anyway)|                   |                                            |
+# | defer    | minus defer_drift days   | unchanged     | plus 0.3% of value   | unchanged         | clock runs 30 more days; drift repeats     |
+# |          | (3 exacting, 2 steady)   |               | (unmanaged change)   |                   | every deferred period                      |
+#
+# Earned value: a period earns one tenth of contract value when undisturbed; a period spent
+# with the dispute open (deferred) earns 90 percent of that. Lost earned value is not
+# recovered later. cpi and spi are DERIVED (ev over ac, ev over pv), never set directly.
+#
+# Resolution of a preserved escalation: the NEXT period's state books a change order for the
+# recoverable amount (contract value and revised contract sum increase; contingency untouched).
+# Recoverable amount = impact cost, times the FAR lookback fraction where that applies, times
+# the low-credibility factor when owner credibility is 2 or less at the moment of escalation.
+# That is what owner credibility is mechanically worth in this run.
+
+ESCALATE_PREP_COST_RATE = 0.002    # claim preparation, plus affected work held
+DEFER_DRIFT_COST_RATE = 0.003      # unmanaged change cost drift per deferred period
+DEFER_EV_FACTOR = 0.90             # a disturbed period earns 90 percent
+CRED_START, CRED_MIN, CRED_MAX = 3, 1, 5
+LOW_CREDIBILITY_AT_OR_BELOW = 2
+
+
+def _round3(v: float) -> float:
+    return round(v, 3)
+
+
+def derive_ld_per_day(contract_value: float) -> float:
+    return round(contract_value * LD_RATE / LD_ROUND) * LD_ROUND
+
+
+def period_dates(period: int) -> dict[str, str]:
+    """The fixed calendar of one period: start, decision day, end. All ISO strings."""
+    start = SCHEDULE_START + timedelta(days=(period - 1) * PERIOD_DAYS)
+    return {
+        "from": start.isoformat(),
+        "decision": (start + timedelta(days=DECISION_DAY - 1)).isoformat(),
+        "to": (start + timedelta(days=PERIOD_DAYS - 1)).isoformat(),
+    }
+
+
+def build_brief(contract_form: str, contract_value: float, conditions: str) -> dict[str, Any]:
+    """
+    The three things every run opens with: the form and its periods, the liquidated damages
+    derivation, the site and market conditions. Reachable at any point in the run, so this is
+    a pure projection the state endpoint can return every time.
+    """
+    form = CONTRACT_FORMS[contract_form]
+    profile = CONDITION_PROFILES[conditions]
+    ld = derive_ld_per_day(contract_value)
+    return {
+        "contract_form": contract_form,
+        "contract_form_label": form["label"],
+        "claim_notice_days": form["claim_notice_days"],
+        "claim_notice_citation": form["claim_notice_citation"],
+        "second_step": form["second_step"],
+        "lookback_days": form["lookback_days"],
+        "contract_note": form["brief_note"],
+        "contract_value": contract_value,
+        "liquidated_damages_per_day": ld,
+        "liquidated_damages_rule": (
+            "Liquidated damages are derived from contract value at 0.05 percent per day, "
+            "rounded to the nearest 500 dollars."),
+        "schedule": {
+            "start": SCHEDULE_START.isoformat(),
+            "periods": PERIODS_TOTAL,
+            "period_days": PERIOD_DAYS,
+            "total_float_days": TOTAL_FLOAT_DAYS,
+        },
+        "conditions": {
+            "profile": conditions,
+            "labour": profile["labour"],
+            "procurement": profile["procurement"],
+            "owner": profile["owner"],
+            "acceleration_cost_multiplier": profile["acceleration_cost_multiplier"],
+            "restart_productivity_loss": profile["restart_productivity_loss"],
+        },
+        "standing_event": {
+            "description": ("An unforeseen utility conflict was identified on day 10 of period "
+                            "one. The estimated impact is stated below. The response is yours: "
+                            "escalate it as a claim, absorb it, or defer the decision."),
+            "estimated_cost": round(contract_value * IMPACT_COST_RATE, 2),
+            "estimated_days": IMPACT_DAYS,
+            "event_day": EVENT_DAY,
+        },
+        "designed_figures_note": (
+            "Site and market figures, the liquidated damages coefficient and the decision "
+            "effects are designed training figures with no external authority. Contract notice "
+            "periods follow the named form and are not adjustable in training."),
+    }
+
+
+def initial_state(contract_form: str, contract_value: float, conditions: str) -> dict[str, Any]:
+    """
+    Period one, before any decision: the event is 10 days old on decision day.
+
+    The money figures are AS OF THE DECISION DAY, day 20 of a 300 day schedule, so the run
+    opens with 20 days of clean progress (cpi and spi both 1.0) rather than an empty project
+    every module abstains on. Each advance then adds exactly one period's worth.
+    """
+    opening = round(contract_value * DECISION_DAY / (PERIODS_TOTAL * PERIOD_DAYS), 2)
+    return {
+        "period": 1,
+        "contract_form": contract_form,
+        "conditions": conditions,
+        "bac": contract_value,
+        "baseline_contract_sum": contract_value,
+        "revised_contract_sum": contract_value,
+        "ev": opening,
+        "ac": opening,
+        "pv": opening,
+        "float_total_days": TOTAL_FLOAT_DAYS,
+        "float_consumed_days": 0,
+        "contingency_original": round(contract_value * CONTINGENCY_RATE, 2),
+        "contingency_remaining": round(contract_value * CONTINGENCY_RATE, 2),
+        "owner_credibility": CRED_START,
+        "change_order_count": 0,
+        "dispute": {
+            "status": "open",              # open | escalated | absorbed | resolved
+            "entitlement": "undecided",    # undecided | preserved | waived | lost
+            "estimated_cost": round(contract_value * IMPACT_COST_RATE, 2),
+            "estimated_days": IMPACT_DAYS,
+            "days_since_event": DECISION_DAY - EVENT_DAY,
+            "recovered_amount": None,
+            "pending_recovery": None,
+        },
+        "liquidated_damages_per_day": derive_ld_per_day(contract_value),
+        "liquidated_damages_exposure": 0.0,
+        "decisions": [],
+    }
+
+
+def notice_position(state: dict[str, Any]) -> dict[str, Any]:
+    """
+    The notice clock as the trainee should read it, per the run's contract form. Derived,
+    never stored, so the clock and the state cannot disagree.
+    """
+    form = CONTRACT_FORMS[state["contract_form"]]
+    days = state["dispute"]["days_since_event"]
+    window = form["claim_notice_days"]
+    if window is not None:
+        remaining = window - days
+        return {
+            "kind": "notice_bar",
+            "window_days": window,
+            "days_since_event": days,
+            "days_remaining": remaining,
+            "expired": remaining < 0,
+            "citation": form["claim_notice_citation"],
+        }
+    lookback = form["lookback_days"]
+    fraction = 1.0 if days <= lookback else _round3(lookback / days)
+    return {
+        "kind": "cost_lookback",
+        "lookback_days": lookback,
+        "days_since_event": days,
+        "recoverable_fraction": fraction,
+        "expired": False,
+        "citation": form["claim_notice_citation"],
+    }
+
+
+def advance(state: dict[str, Any], decision: str) -> dict[str, Any]:
+    """
+    Apply one decision to one period and produce the next period's state. Pure: no clock, no
+    randomness, no session. The effect table above is the specification; this is its only
+    implementation.
+    """
+    if decision not in DECISIONS:
+        raise ValueError(f"unknown decision: {decision}")
+    if state["period"] > PERIODS_TOTAL:
+        raise ValueError("the run is complete; no further period exists")
+
+    s = {**state, "dispute": {**state["dispute"]}, "decisions": list(state["decisions"])}
+    profile = CONDITION_PROFILES[s["conditions"]]
+    bac = s["bac"]
+    dispute_open = s["dispute"]["status"] == "open"
+    period_earn = s["baseline_contract_sum"] / PERIODS_TOTAL
+
+    # ---- the period's base progress. pv always earns a full increment; ev earns a reduced
+    # one when the period was spent with the dispute open and deferred.
+    disturbed = dispute_open and decision == "defer"
+    s["pv"] = round(s["pv"] + period_earn, 2)
+    s["ev"] = round(s["ev"] + period_earn * (DEFER_EV_FACTOR if disturbed else 1.0), 2)
+    s["ac"] = round(s["ac"] + period_earn, 2)
+
+    # ---- a preserved escalation booked last period resolves now, as a change order.
+    pending = s["dispute"].get("pending_recovery")
+    if pending is not None:
+        s["bac"] = round(s["bac"] + pending, 2)
+        s["revised_contract_sum"] = round(s["revised_contract_sum"] + pending, 2)
+        s["change_order_count"] = s["change_order_count"] + 1
+        s["dispute"]["recovered_amount"] = pending
+        s["dispute"]["pending_recovery"] = None
+        s["dispute"]["status"] = "resolved"
+
+    # ---- the decision itself.
+    if decision == "escalate" and dispute_open:
+        # Credibility "at the moment of escalation" is the standing EARNED BY PRIOR CONDUCT,
+        # read before this escalation's own minus one — the act of escalating strains the
+        # relationship going forward, it does not retroactively cheapen the claim it carries.
+        credibility_before = s["owner_credibility"]
+        s["float_consumed_days"] = s["float_consumed_days"] + profile["escalate_float_days"]
+        s["ac"] = round(s["ac"] + bac * ESCALATE_PREP_COST_RATE, 2)
+        s["owner_credibility"] = max(CRED_MIN, s["owner_credibility"] - 1)
+        position = notice_position(s)
+        if position["kind"] == "notice_bar":
+            if position["expired"]:
+                s["dispute"]["status"] = "escalated"
+                s["dispute"]["entitlement"] = "lost"
+            else:
+                s["dispute"]["status"] = "escalated"
+                s["dispute"]["entitlement"] = "preserved"
+                recoverable = s["dispute"]["estimated_cost"]
+                if credibility_before <= LOW_CREDIBILITY_AT_OR_BELOW:
+                    recoverable = round(
+                        recoverable * profile["low_credibility_recovery_factor"], 2)
+                s["dispute"]["pending_recovery"] = recoverable
+        else:
+            # FAR: never time barred; the recoverable amount shrinks by the lookback fraction.
+            s["dispute"]["status"] = "escalated"
+            s["dispute"]["entitlement"] = "preserved"
+            recoverable = round(
+                s["dispute"]["estimated_cost"] * position["recoverable_fraction"], 2)
+            if credibility_before <= LOW_CREDIBILITY_AT_OR_BELOW:
+                recoverable = round(recoverable * profile["low_credibility_recovery_factor"], 2)
+            s["dispute"]["pending_recovery"] = recoverable
+    elif decision == "absorb" and dispute_open:
+        cost = s["dispute"]["estimated_cost"]
+        drawn = min(cost, s["contingency_remaining"])
+        s["contingency_remaining"] = round(s["contingency_remaining"] - drawn, 2)
+        s["ac"] = round(s["ac"] + cost, 2)
+        s["owner_credibility"] = min(CRED_MAX, s["owner_credibility"] + 1)
+        s["dispute"]["status"] = "absorbed"
+        s["dispute"]["entitlement"] = "waived"
+    elif decision == "defer" and dispute_open:
+        s["float_consumed_days"] = s["float_consumed_days"] + profile["defer_drift_float_days"]
+        s["ac"] = round(s["ac"] + bac * DEFER_DRIFT_COST_RATE, 2)
+        s["dispute"]["days_since_event"] = s["dispute"]["days_since_event"] + PERIOD_DAYS
+        position = notice_position(s)
+        if position.get("expired"):
+            s["dispute"]["entitlement"] = "lost"
+    # A decision recorded after the dispute has closed changes nothing but the record: the
+    # period still progresses above, and the decision is still logged below. Stated rather
+    # than refused, because "there is nothing left to decide" is itself something the next
+    # period's screen should show.
+
+    # ---- liquidated damages exposure follows float, mechanically.
+    over = max(0, s["float_consumed_days"] - s["float_total_days"])
+    s["liquidated_damages_exposure"] = round(over * s["liquidated_damages_per_day"], 2)
+
+    s["decisions"].append({"period": s["period"], "decision": decision})
+    s["period"] = s["period"] + 1
+    return s
+
+
+def signal_inputs_from_state(state: dict[str, Any]) -> tuple[dict[str, Any], date]:
+    """
+    Project the state into the platform's signalInputs vocabulary, and the period's cutoff.
+
+    EVERY key the merge would produce exists, in the merge's own order, with None for anything
+    the training state genuinely does not know — docRiskScore, quality figures, RFI ledgers —
+    so abstention applies exactly as it does on a real project. cpi and spi are derived here
+    with the same expression and rounding the merge uses (ev over ac, ev over pv, three
+    places), never stored on the state, so the two layers cannot disagree about a ratio.
+    """
+    from .extraction_merge import SIGNAL_INPUT_KEYS
+
+    period = state["period"]
+    dates = period_dates(period)
+    si: dict[str, Any] = {k: None for k in SIGNAL_INPUT_KEYS}
+
+    si["bac"] = state["bac"]
+    si["ev"] = state["ev"]
+    si["ac"] = state["ac"]
+    si["pv"] = state["pv"]
+    if state["bac"]:
+        si["actualPctComplete"] = _round3(state["ev"] / state["bac"] * 100)
+        si["plannedPctComplete"] = _round3(state["pv"] / state["bac"] * 100)
+    si["baselineStart"] = SCHEDULE_START.isoformat()
+    si["baselineEnd"] = (SCHEDULE_START
+                         + timedelta(days=PERIODS_TOTAL * PERIOD_DAYS - 1)).isoformat()
+    si["workPeriodFrom"] = dates["from"]
+    si["workPeriodTo"] = dates["to"]
+    si["docDate"] = dates["decision"]
+    si["totalFloat"] = state["float_total_days"]
+    si["consumedFloat"] = state["float_consumed_days"]
+    si["floatRemaining"] = state["float_total_days"] - state["float_consumed_days"]
+    si["originalContingency"] = state["contingency_original"]
+    si["remainingContingency"] = state["contingency_remaining"]
+    si["baselineContractSum"] = state["baseline_contract_sum"]
+    si["revisedContractSum"] = state["revised_contract_sum"]
+    si["changeOrderCount"] = state["change_order_count"] or None
+
+    si["sources"] = {}
+    si["cpi"] = _round3(state["ev"] / state["ac"]) if state["ac"] else None
+    si["spi"] = _round3(state["ev"] / state["pv"]) if state["pv"] else None
+
+    cutoff = date.fromisoformat(dates["decision"])
+    return si, cutoff

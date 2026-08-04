@@ -9,6 +9,71 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-04 — TRAINING MODE RUN 2: THE LOOP — BRIEF, STATE, PERIODS, DECIDE AND ADVANCE
+
+Full detail in `REPORT_2026-08-04_training-loop.md` — **it leads with the effect table and the
+liquidated damages rule, which are the two things Lin corrects.** Builds on run 1 (branch
+stacked on `claude/training-mode-gating`). **Server 1746/1746 across 32 suites** (new
+`test_training_loop.py` adds 54), `tests_render.html` 62/63 (the SAME single pre-existing gap
+as run 1, confirmed to be that one by name and text), `tests.html` 51/51. Seven faults, all
+detected with distinct signatures, all reverted byte-identical, baseline re-run after each. One
+full run driven in a real browser: brief, period 1, escalate, period 2, every figure exactly
+per the effect table. **Production still unmigrated: 0018 AND 0019 both pending there.**
+
+## THE CORE IS ONE PURE FUNCTION AND ONE SHARED TAIL
+
+`training_engine.py` is pure — no clock, no randomness, no session. `advance(state, decision)`
+is the ONLY implementation of the effect table (escalate spends float and a credibility point
+and preserves entitlement if the window holds; absorb spends contingency and earns credibility;
+defer spends nothing and runs the notice clock 30 days per period, with drift while the dispute
+stays open). Determinism is asserted byte-for-byte at the engine AND over HTTP with two
+accounts.
+
+**`documents.run_and_store` is the extracted computation-and-storage tail** shared by the
+document path and training period generation. `signal_inputs_from_state` fills all 76 merge
+keys (None → abstention holds; docRiskScore abstains, asserted). There is NO training-only
+computation path, and `server/app/simulation/` is untouched.
+
+## THE TWO CLOCKS, AND WHY THE GEOMETRY IS WHAT IT IS
+
+Event day 10 of period one, decision day 20 of every period: first decision 10 days after the
+event, each deferral +30 days. So ONE deferral spends A201's 21-day and ConsensusDocs' 14-day
+windows though only one period passed — deliberate, the teaching point. FAR has no bar: the
+20-day lookback shrinks the recoverable fraction instead (0.5 after one deferral), and a FAR
+deferral does NOT mark entitlement lost. `notice_position` is DERIVED from state per form,
+never stored. Contract periods come from `training_us_contract_regimes.md` (WAS MISSING from
+the repo — Lin supplied it; now committed; its own caveat about unverified A201/ConsensusDocs
+figures stands, roadmap item 14).
+
+## A CONTAMINATION POINT RUN 1 COULD NOT REACH, NOW CLOSED BOTH WAYS
+
+The portfolio snapshot in `run_and_store` selects EVERY live result at or before the cutoff.
+Once training results exist, a real project's stored snapshot would ingest training vectors and
+vice versa. Now a vector enters only when its project's `is_training` matches the computing
+project's. Fault-proven WITH a planted real vector — without one, the check passes whether or
+not the filter exists (a first version of the check did exactly that, reading a snapshot key
+that does not exist; rewritten against `insufficient_data`/`portfolio_size`).
+
+## Things worth knowing before run 3
+
+- **Two of my own verification defects were found by injection**: the suite crashed (no RESULT
+  line) under fault F5 instead of failing — now guarded reds; and the vacuous portfolio check
+  above. Both match the brief's listed failure modes exactly. Keep re-running faults after
+  fixing a suite.
+- **The engine had a real ordering bug the suite caught on first run**: escalation applied its
+  own credibility penalty to the claim it carried (every first escalation docked 15%).
+  `credibility_before` is read before the decrement; F6 re-injects the bug.
+- **Designed figures stand in for roadmap items 1–3** (still OPEN): LD = 0.05% of contract
+  value per day rounded to $500; impact 1.5%; contingency 5%; float 12 days; profiles
+  `exacting`/`steady`. All in `training_engine.py` constants, led with in the report.
+- **Acceleration multiplier and restart loss are in the brief but mechanically inert** until
+  run 3's stoppages. ConsensusDocs' second step (documentation within 21 days of notice) is
+  stated, not mechanical — run 3's natural territory.
+- **Run 3 must not ship the event schedule in `trainingstate`**: today the full state travels
+  (fine — nothing is hidden yet), but a discrete near-miss schedule a trainee can read defeats
+  the exercise.
+- `trainingadvance` stays gate-listed, unimplemented, reserved.
+
 # 2026-08-04 — TRAINING MODE RUN 1: THE FLAG, THE GATE, AND DATA ISOLATION
 
 Full detail in `REPORT_2026-08-04_training-gating.md` — **read the isolation section first**, per

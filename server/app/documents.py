@@ -498,8 +498,6 @@ def _compute_and_store(session: Session, project: Project, period: int,
     exists (see `new_ulid`), which makes supersede-then-insert possible without a deferred
     constraint.
     """
-    from .simulation import compute_project, compute_portfolio
-
     documents = _period_documents(session, project, period)
     cutoff = _derive_cutoff(documents, reuse_cutoff_from)
     # 0014. signalInputs is the OUTPUT of selection over observations at the cutoff, no longer
@@ -521,6 +519,30 @@ def _compute_and_store(session: Session, project: Project, period: int,
     # result records what the modules actually saw and not a subset of it.
     si["events"] = _events_as_of(project, cutoff)
     si.update(_period_history(session, project, period, si))
+
+    result = run_and_store(session, project, period, si, cutoff,
+                           source_documents=[
+                               {"document_id": d.get("document_id"), "sha256": d.get("sha256"),
+                                "doc_type": d.get("doc_type"), "filename": d.get("filename")}
+                               for d in documents
+                           ],
+                           result_id=result_id)
+    result["documents"] = documents
+    return result
+
+
+def run_and_store(session: Session, project: Project, period: int, si: dict,
+                  cutoff: date, *, source_documents: list[dict],
+                  result_id: str | None = None) -> dict:
+    """
+    The computation-and-storage tail shared by BOTH assembly paths: the document path above,
+    and training period generation (`training.py`), whose `signalInputs` are projected from a
+    deterministic state instead of selected from observations. Everything from `compute_project`
+    on is identical for both — that is the run 2 brief's requirement that a training project's
+    signals compute through the normal path, made structural: there is no second computation
+    path to drift.
+    """
+    from .simulation import compute_project, compute_portfolio
 
     run = compute_project(si, project.legacy_id, f"P{period}", cutoff)
 
@@ -547,6 +569,15 @@ def _compute_and_store(session: Session, project: Project, period: int,
             by_project[r.project_id] = r
     for pid, r in by_project.items():
         legacy = session.get(Project, pid)
+        # TRAINING ISOLATION, BOTH DIRECTIONS (run 2). A training project's vector must never
+        # enter a real project's portfolio snapshot — that snapshot is stored on the result and
+        # is exactly "anything the analysis reads". And a training run's own portfolio must not
+        # ingest real projects either: a trainee's screen is generated, not an operational
+        # surface. So a vector is included only when its project's is_training matches the
+        # project being computed. A missing project row contributes nothing rather than
+        # defaulting in.
+        if legacy is None or bool(legacy.is_training) != bool(project.is_training):
+            continue
         s = r.signal_inputs or {}
         vectors.append({"id": legacy.legacy_id if legacy else str(pid),
                         "cpi": s.get("cpi"), "spi": s.get("spi"),
@@ -577,12 +608,9 @@ def _compute_and_store(session: Session, project: Project, period: int,
         # assembled, so a result computed before a revision keeps naming the version it used
         # even after that version is superseded. `signal_inputs.sources` records a docType per
         # field and never a document, so without this a result became uninterpretable the
-        # moment the period's document set moved on.
-        source_documents=[
-            {"document_id": d.get("document_id"), "sha256": d.get("sha256"),
-             "doc_type": d.get("doc_type"), "filename": d.get("filename")}
-            for d in documents
-        ],
+        # moment the period's document set moved on. A training period stores an EMPTY list:
+        # no document produced it, and inventing provenance would be worse than stating none.
+        source_documents=source_documents,
         module_results=run.get("modules"),
         category_statuses=run.get("category_statuses"),
         project_status=run.get("project_status"),
@@ -595,7 +623,7 @@ def _compute_and_store(session: Session, project: Project, period: int,
     )
     session.add(row)
     session.flush()
-    return {"row": row, "run": run, "documents": documents}
+    return {"row": row, "run": run}
 
 
 # Keys inside a MODULE result that name or rank a course of action, or name who should take it.

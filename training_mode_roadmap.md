@@ -39,15 +39,24 @@ Status key: OPEN / RUNNING / DONE / BLOCKED
    whose results are absent from all three export formats, and PROVEN able to fail by unmarking
    it and watching the same row reappear. Full table-by-table accounting of what was touched and
    what was considered and left alone is in the report.
-6. OPEN — **The state store.** Small, deterministic, advances by the rules in decision 1. Sits
-   beside the observations store rather than inside it.
-7. OPEN — **Period generation.** State sets `signalInputs` directly. No documents, no extraction,
-   no filing. The existing computations run unchanged so signals stay honest and abstention still
-   works.
-8. OPEN — **The screen.** Same signals and status the platform already shows, plus the figures a PM
-   needs to read, plus the recommendation. Brief states jurisdiction and contract form.
-9. OPEN — **Decision capture and advance.** Trainee decides, state advances by the rules, next
-   period renders. This is the loop.
+6. DONE (2026-08-04, run 2) — **The state store.** `training_runs` (migration 0019, throwaway
+   SQLite only — production unapplied, as is 0018): current state plus full decision history as
+   JSON, beside the observations store. Advanced only by `training_engine.advance`, pure and
+   deterministic; the figures stand in for decision 1's elicited numbers and are flagged for
+   correction in `REPORT_2026-08-04_training-loop.md`, which leads with the effect table.
+7. DONE (2026-08-04, run 2) — **Period generation.** `signal_inputs_from_state` projects the
+   state into all 76 merge keys (None where the state knows nothing, so abstention holds —
+   docRiskScore abstains, verified), then the SAME `documents.run_and_store` tail the document
+   path uses computes and stores. No training-only computation path exists; the portfolio
+   boundary between training and real projects is closed in both directions and fault-proven.
+8. DONE (2026-08-04, run 2) — **The screen.** `assets/js/training.js`: the brief (form, notice
+   periods, LD rule, conditions — reachable at any point), the notice clock, the PM figures,
+   the platform's own signals by group name with module recommendations, three decision buttons
+   carrying the three tensions, the decision log. Driven end to end in a real browser.
+9. DONE (2026-08-04, run 2) — **Decision capture and advance.** `trainingdecision` applies the
+   effect table, computes the next period through the normal path, and the next period renders.
+   Ten decisions complete a run; the two clocks (period, notice days) provably do not blur —
+   one deferral spends A201's and ConsensusDocs' windows even though one period passed.
 10. OPEN — **Discrete events.** Near miss occurs discretely, stop work order follows, duration
     depends on the response, cost depends on remaining float.
 11. OPEN — **Narration.** The model writes prose around numbers the state model produced. **The
@@ -91,3 +100,7 @@ Append one line per run: date, items attempted, items completed, what moved to B
 - 2026-08-04: run 1, items 4 and 5 attempted and completed (gating + isolation). Nothing moved to
   BLOCKED. Items 1–3 remain OPEN and block items 6 onward. See
   `REPORT_2026-08-04_training-gating.md`.
+- 2026-08-04: run 2, items 6 to 9 attempted and completed (the loop). Nothing moved to BLOCKED.
+  Items 1–3 remain OPEN: the designed figures now standing in for them are in
+  `training_engine.py` and are led with in `REPORT_2026-08-04_training-loop.md` for correction.
+  `training_us_contract_regimes.md` was missing from the repository and is now committed.
