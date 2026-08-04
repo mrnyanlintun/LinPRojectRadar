@@ -955,3 +955,186 @@ def build_disclaimer(contract_form: str) -> dict[str, Any]:
             "cost and hazard figures, the stoppage durations and restart productivity "
             "losses, and the event schedule."),
     }
+
+
+# ---------------------------------------------------------------- the recommendation (run 5)
+#
+# GENERATED FROM THE STATE, NOT NARRATED FREELY. Every figure, day count, clause reference and
+# deadline below is read or derived from the state by the same arithmetic the engine uses;
+# the prose is written around them. A recommendation that invents a figure or a deadline is
+# the failure this build has avoided so far.
+#
+# DELIBERATELY FALLIBLE, BY POLICY. The recommendation follows one fixed, stated policy —
+# entitlement first, maximal correction — which is confident and defensible and NOT always the
+# best call: it recommends escalating any matter whose window still lives even where absorbing
+# is cheaper and kinder to the relationship (a small impact under a collaborative owner), and
+# during a stoppage it recommends the full correction package even when float is rich enough
+# that the minimal response is arguably economic. The bias is the classic contracts-first
+# habit. It is disclosed in the run report and carried in the `policy` field for tests, and
+# deliberately NOT announced on the screen: an oracle that labels itself fallible is no longer
+# a recommendation the trainee has to weigh.
+
+RECOMMENDATION_POLICY = "entitlement first, maximal correction"
+
+
+def _fmt_money(v: float) -> str:
+    return f"{v:,.0f} dollars"
+
+
+def _deadline_for(state: dict[str, Any], position: dict[str, Any]) -> str:
+    """The concrete date the next step must land by, from the period calendar."""
+    decision_date = date.fromisoformat(period_dates(state["period"])["decision"])
+    if position.get("kind") in ("notice_bar", "dsc_notice_bar"):
+        remaining = max(0, position.get("days_remaining", 0))
+        return (decision_date + timedelta(days=remaining)).isoformat()
+    # FAR: no bar — every day of delay moves cost outside the lookback, so the deadline is now.
+    return decision_date.isoformat()
+
+
+def build_recommendation(state: dict[str, Any]) -> dict[str, Any] | None:
+    """
+    The decision support for this period, or None when nothing is open to decide. Pure.
+    """
+    form = CONTRACT_FORMS[state["contract_form"]]
+    form_name = state["contract_form"]
+    cpi = _round3(state["ev"] / state["ac"]) if state["ac"] else None
+    spi = _round3(state["ev"] / state["pv"]) if state["pv"] else None
+    float_left = state["float_total_days"] - state["float_consumed_days"]
+
+    if form_name == "A201-2017":
+        means = ("certified or registered mail, or a courier with proof of delivery, as "
+                 "Article 15 requires for a claim. Email is not service.")
+        addressee = "the architect and the owner's representative"
+    elif form_name == "ConsensusDocs 200":
+        means = ("written notice under Section 8.4, with the supporting documentation to "
+                 "follow within 21 days of the notice")
+        addressee = "the owner's representative"
+    else:
+        means = "written notice to the Contracting Officer"
+        addressee = "the Contracting Officer"
+
+    basis: dict[str, Any] = {
+        "cpi": cpi, "spi": spi,
+        "float_remaining_days": float_left,
+        "contingency_remaining": state["contingency_remaining"],
+        "owner_credibility": state["owner_credibility"],
+    }
+
+    # A stoppage outranks everything: nothing else can proceed while the site is stopped.
+    if state.get("incident", {}).get("status") == "stopped":
+        figures = EVENT_FIGURES["response"]["respond_strong"]
+        days = figures["days_lost"][state["conditions"]]
+        cost = round(state["bac"] * figures["cost_rate"], 2)
+        basis.update({"days_lost_strong": days, "response_cost": cost})
+        return {
+            "policy": RECOMMENDATION_POLICY,
+            "headline": "Assemble the full Certificate of Correction package now",
+            "what": ("Assemble and submit the complete correction package in one filing: the "
+                     "Certificate of Correction plus everything the cause demands, at a cost "
+                     f"near {_fmt_money(cost)}."),
+            "why": (f"The site is stopped and only safety work continues. A full package "
+                    f"lifts the order after about {days} days lost; a minimal response "
+                    f"leaves the site stopped three times as long, against "
+                    f"{float_left} days of float remaining."),
+            "who": ("The site superintendent assembles the package; the project manager "
+                    "signs and submits it. This is within project authority and does not "
+                    "need an executive decision."),
+            "to_whom": "the issuing authority, with a copy to the owner's representative",
+            "means": "the filing route the stop work order names, in writing",
+            "next_step": ("File the package before the next reporting period; every day "
+                          "stopped is a day of production lost."),
+            "deadline_date": period_dates(state["period"])["decision"],
+            "basis": basis,
+        }
+
+    # An open matter with a live position: escalate it (the policy's bias, right or not).
+    for key, label, position_fn in (("dispute", "the unforeseen utility conflict",
+                                     notice_position),
+                                    ("dsc", "the differing site condition", dsc_position)):
+        matter = state.get(key)
+        if not matter or matter.get("status") != "open":
+            continue
+        position = position_fn(state)
+        if position is None:
+            continue
+        cost = matter["estimated_cost"]
+        basis.update({f"{key}_estimated_cost": cost,
+                      f"{key}_position": {k: v for k, v in position.items()
+                                          if k != "note"}})
+        if position.get("kind") in ("notice_bar", "dsc_notice_bar"):
+            if position["expired"]:
+                window_text = (f"the {position['window_days']} day period of "
+                               f"{position['citation']} ran out "
+                               f"{position['days_since_event'] - position['window_days']} "
+                               "days ago, so notice can no longer preserve the entitlement")
+                what = (f"Absorb {label}: draw the estimated {_fmt_money(cost)} from "
+                        "contingency and close it.")
+                headline = f"Close out {label} from contingency"
+                why = (f"Cost performance stands at {cpi} and schedule performance at {spi}, "
+                       f"with {float_left} days of float remaining. {window_text.capitalize()}. "
+                       "Carrying the matter open only accrues drift.")
+                next_step = ("Record the absorption this period and notify the owner's "
+                             "representative that no claim will follow.")
+            else:
+                window_text = (f"{position['days_remaining']} days remain of the "
+                               f"{position['window_days']} day period in "
+                               f"{position['citation']}")
+                what = (f"Serve written notice of claim for {label}, with the current cost "
+                        f"record attached, for an estimated {_fmt_money(cost)}.")
+                headline = f"Serve notice of claim for {label}"
+                why = (f"Cost performance stands at {cpi} and schedule performance at {spi}, "
+                       f"with {float_left} days of float remaining; {window_text}. Notice "
+                       "now preserves the entitlement whatever the final quantum proves.")
+                next_step = (f"Serve the notice by {_deadline_for(state, position)}; the "
+                             "period closes the window after that.")
+        else:
+            fraction = position["recoverable_fraction"]
+            basis[f"{key}_recoverable_fraction"] = fraction
+            what = (f"Give written notice of the change for {label} and open the cost "
+                    f"record, currently estimated at {_fmt_money(cost)}.")
+            headline = f"Notice the change for {label} today"
+            why = (f"Cost performance stands at {cpi} and schedule performance at {spi}, "
+                   f"with {float_left} days of float remaining. There is no notice bar, but "
+                   f"costs more than {position['lookback_days']} days old are unrecoverable: "
+                   f"as of today {int(round(fraction * 100))} percent of the accrued cost is "
+                   "still reachable, and every deferred day shrinks it.")
+            next_step = ("Serve the notice today and certify the claim if its value exceeds "
+                         "100,000 dollars (FAR 52.233-1).")
+        return {
+            "policy": RECOMMENDATION_POLICY,
+            "headline": headline,
+            "what": what,
+            "why": why,
+            "who": ("The project manager prepares and signs the notice; the project "
+                    "executive is informed, not asked. Waiting for an executive decision "
+                    "spends days the window does not have."),
+            "to_whom": addressee,
+            "means": means,
+            "next_step": next_step,
+            "deadline_date": _deadline_for(state, position),
+            "basis": basis,
+        }
+
+    # ConsensusDocs, noticed last period: the second step is the whole recommendation.
+    if state.get("dispute", {}).get("status") == "noticed":
+        cost = state["dispute"]["estimated_cost"]
+        basis.update({"dispute_estimated_cost": cost, "documentation_step_days": 21})
+        return {
+            "policy": RECOMMENDATION_POLICY,
+            "headline": "File the supporting documentation behind the notice",
+            "what": (f"Assemble and file the documentation supporting the noticed claim of "
+                     f"{_fmt_money(cost)}: the cost record, the correspondence, and the "
+                     "schedule impact."),
+            "why": ("Notice alone is step one. Section 8.4 requires the supporting "
+                    "documentation within 21 days after the notice, and a period of silence "
+                    "loses the claim that the notice preserved."),
+            "who": "The project manager, with the cost engineer assembling the record.",
+            "to_whom": addressee,
+            "means": "written submission under Section 8.4",
+            "next_step": "File within the documentation window; do not let this period pass "
+                         "quietly.",
+            "deadline_date": period_dates(state["period"])["decision"],
+            "basis": basis,
+        }
+
+    return None

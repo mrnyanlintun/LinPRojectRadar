@@ -4691,3 +4691,22 @@ body.og-account-operational .notice-operational { display: block; }
 .tr-debrief h3 { margin: 8px 0 4px; font-size: 13px; }
 .tr-debrief ul { margin: 4px 0 6px 18px; font-size: 13px; }
 .tr-debrief p { font-size: 13px; line-height: 1.5; }
+
+/* ---------- Run 5: category drill-down, abstentions, the full recommendation ---------- */
+.ws-cat-row { cursor: pointer; }
+.ws-cat-row:focus-visible { outline: 2px solid var(--accent, #888); outline-offset: 2px; }
+.ws-cat-toggle { margin-left: auto; font-size: 11px; opacity: .8; }
+.ws-cat-divergence { margin: 0 0 4px 20px; font-style: italic; }
+.ws-cat-detail { margin: 2px 0 8px 20px; padding-left: 10px;
+  border-left: 2px solid var(--line, #444); }
+/* An abstention carries NO dot and NO colour: it is a named absence. */
+.ws-abstained .ws-mname { opacity: .75; }
+.ws-abstained { padding-left: 18px; }
+.tr-rec { border: 1px solid var(--line, #444); border-radius: 8px; padding: 12px 16px;
+  margin: 10px 0; }
+.tr-rec h3 { margin: 2px 0 6px; font-size: 13px; }
+.tr-rec-headline { font-size: 15px; font-weight: 600; margin: 0 0 8px; }
+.tr-rec-line { display: flex; gap: 10px; margin: 5px 0; font-size: 13px; line-height: 1.5; }
+.tr-rec-label { flex: 0 0 104px; color: var(--muted); text-transform: uppercase;
+  letter-spacing: .05em; font-size: 11px; padding-top: 2px; }
+.tr-rec-value { flex: 1; }

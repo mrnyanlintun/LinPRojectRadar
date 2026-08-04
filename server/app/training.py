@@ -43,9 +43,32 @@ from .research_models import ComputedResult, TrainingRun, new_ulid
 from .training_engine import (
     CONDITION_PROFILES, CONTRACT_FORMS, DECISIONS, DEFAULT_CONTRACT_VALUE, DEFAULT_FACILITY,
     LD_RATES_BY_FACILITY, MAX_CONTRACT_VALUE, MIN_CONTRACT_VALUE, PERIODS_TOTAL, RESPONSES,
-    advance, allowed_decisions, build_brief, dsc_position, initial_state, notice_position,
-    signal_inputs_from_state,
+    advance, allowed_decisions, build_brief, build_recommendation, dsc_position, initial_state,
+    notice_position, signal_inputs_from_state,
 )
+
+
+def _abstained_by_category(module_results: list | None) -> dict[str, list[str]]:
+    """
+    Run 5: which computations ABSTAINED this period, per category, so the screen can render an
+    abstention as an abstention — a named absence, never a value and never a colour.
+
+    Derived from the simulation registry (read only; nothing under simulation/ is modified):
+    a registered module that produced no result and is not unported abstained. Groups A to C
+    only — group D is portfolio scope and the registry refuses it on a single-project path,
+    so listing its members as 'abstaining' would misdescribe a structural exclusion as a
+    per-period abstention.
+    """
+    from .simulation import unported_modules
+    from .simulation.registry import registry_index
+    present = {m.get("module_id") for m in (module_results or []) if isinstance(m, dict)}
+    unported = set(unported_modules())
+    out: dict[str, list[str]] = {}
+    for module_id, meta in registry_index().items():
+        if meta.get("group") == "D" or module_id in present or module_id in unported:
+            continue
+        out.setdefault(meta.get("category") or module_id.split(".")[0], []).append(module_id)
+    return {k: sorted(v) for k, v in sorted(out.items())}
 
 __all__ = ["TRAINING_ACTIONS"]
 
@@ -154,11 +177,17 @@ def _state_view(session: Session, run: TrainingRun, project: Project) -> dict[st
         "dsc_notice": dsc_position(run.state),
         "allowed_decisions": list(allowed_decisions(run.state)),
         "decisions": list(run.state.get("decisions") or []),
+        # Run 5: the full recommendation, generated from the state (figures, days, clauses
+        # all engine-derived; prose written around them), and the abstention map that lets
+        # the signals display show a named absence instead of leaving it to inference.
+        "recommendation": build_recommendation(run.state) if run.status == "active" else None,
         # Module-level recommendations (the analytical layer's own recommended actions) are
         # the recommendation surface in training: there is no researcher-authored package, and
         # a trainee is exactly who they exist for. No reveal gate applies — that gate protects
         # a research pre-judgment, which a training run does not have.
         "result": _result_view(row, include_recommendation=True) if row else None,
+        "abstained_by_category": _abstained_by_category(
+            row.module_results if row else None),
     }
 
 

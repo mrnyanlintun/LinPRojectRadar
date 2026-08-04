@@ -9,6 +9,66 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-04 — TRAINING MODE RUN 5: THE LEDGER, THE FULL RECOMMENDATION, TWO NAMING FIXES
+
+Full detail in `REPORT_2026-08-04_training-detail.md` — **it leads with the recommendation
+quoted in full as it renders**, which is what Lin judges. **Server 1898/1898 across 35 suites**
+(new `test_training_detail.py` adds 65), `tests_render.html` **80/81** (group 10 adds 17; the
+one red is STILL the same pre-existing production-read-path gap, by name and text),
+`tests.html` 51/51. Eight faults, all detected, all reverted byte-identical, baseline after
+each. Browser drive read the recommendation and an expanded category back. No migration.
+
+## THE CATEGORY ROLLUP IS NOT WORST-STATUS-WINS. Measured, and it changes the display.
+
+`dst_fuse` is Dempster-Shafer with Red at 1.5x; the status is the highest-belief band. **Across
+a ten period run the category status differs from its worst contributor in 47 of 80 cases** —
+Cost Risk fuses to GREEN with a RED contributor. So the brief's "which one drove it under
+worst-status-wins" describes a mechanism the platform does not have. The ledger therefore names
+the **most severe contributor** (true, and what a PM scans for) and, where the category differs
+from it, says so in place: "Combined from 8 computations by evidence combination, not by taking
+the worst: PERT Network Criticality reports Amber." Do not "simplify" that line back into an
+implied maximum; checks in both halves hold it.
+
+## The render path is SHARED, and the drill-down lives in the shared half
+
+`workspace.js` now exports `buildProjectDetailHtml(result, opts)` + `wireCategoryRows`;
+training calls them. Same name tables, same markup, same dots. `opts.expandable` renders
+categories as disclosures carrying their contributors; `opts.abstained` renders abstentions.
+**Default rendering is byte-unchanged**, so the real project panel is untouched (its 70 checks
+pass) — the drill-down is one flag away there and enabling it is Lin's call.
+
+**An abstention is a NAMED ABSENCE: no value, no colour, NO DOT.** Derived server-side from the
+registry (`_abstained_by_category`), excluding unported (`A4.1`) and group D, whose exclusion
+is structural rather than a per-period abstention.
+
+## The recommendation is generated, never narrated
+
+`build_recommendation(state)` in the engine, pure. What / why / who / to whom / by what means /
+next step / by when, plus a `basis` block of the raw figures the tests match against the state.
+Service is form-specific: A201 says **email is not service** (Article 15), ConsensusDocs
+carries the 21-day second step, FAR goes to the Contracting Officer and raises certification.
+**Policy is `entitlement first, maximal correction`, carried on the payload** — deliberately
+fallible: it recommends notice on a 5,000 dollar impact under a collaborative owner where
+absorbing is the better call. **Nothing on screen hedges**; an oracle that admits its own
+unreliability is no longer something the trainee must weigh.
+
+## Three verification defects found by the campaign, all mine, all fixed
+
+1. **A check that could not fail**: the id scan ran `\b`-anchored regex over `textContent`,
+   which concatenates labels ("Project HealthA3show...") and destroys word boundaries, so it
+   matched nothing regardless of content and fault D1 sailed past. Now scans **leaf elements**,
+   where one element is one label.
+2. **A check that matched its own comment**: the static "most severe contributor" assertion was
+   satisfied by a comment quoting the phrase; deleting the real marker left it green. Now
+   matches emitted markup (`ws-worst`). Same failure as the notices work.
+3. **A false positive in the detector**: `[A-D]\d+` matches `A201` — the AIA form name. A
+   category id is a letter plus EXACTLY ONE digit; a second digit now disqualifies. Verified
+   against `AIA A201-2017`, `ConsensusDocs 200`, `Section 15.1.3.1`, `FAR 52.243-4(d)`.
+
+Also: my own first "most severe contributor" marker used an EM DASH (forbidden). Fixed to a
+parenthetical, with a check over quoted literals only — a first version of THAT check went red
+on an em dash in a comment, which renders to nobody.
+
 # 2026-08-04 — TRAINING MODE RUN 4: REGIMES ACROSS THE RUN, DEBRIEF, DISCLAIMER. THE BUILD IS COMPLETE
 
 Full detail in `REPORT_2026-08-04_training-regimes.md` — **it leads with which of the four
