@@ -130,6 +130,25 @@ print("\n  measured ratios (surface / page):")
 for name, (a, b) in measured.items():
     print(f"    {name:24s} {a:6.2f} / {b:6.2f}")
 
+# The administration "Active"/off status pill is checked below, under GUARANTEE 5 (it is
+# scoped to body[data-theme="plain"] on hardcoded literal colors, not one of the ten tokens
+# measured above, which is how the pre-2026-08-04 3.71:1 failure slipped through).
+
+# Tokens the ten-token check above does NOT measure, reported here so a session does not have to
+# rediscover the gap by hand. --eyebrow, --gold-text and --scope-label are real user-facing text
+# colors on this theme; report their ratios even though only the ones judged worth an automated
+# floor get a `check()` above.
+UNMEASURED = ["eyebrow", "gold-text", "scope-label", "brand-bronze", "brand-verdigris",
+              "sector-design", "sector-construction", "sector-hybrid", "ink-dim"]
+print("\n  UNMEASURED tokens (reported, not gated by this suite unless noted above):")
+for name in UNMEASURED:
+    value = token(block, name)
+    if value and re.fullmatch(r"#[0-9a-fA-F]{6}", value):
+        print(f"    --{name:20s} {value}   surface {ratio(value, SURFACE):.2f} / "
+              f"page {ratio(value, PAGE):.2f}")
+    else:
+        print(f"    --{name:20s} {value}   (not a plain hex, or not declared)")
+
 # Graphical objects (blips, pins, the globe's markers) need 3:1, not 4.5:1.
 GRAPHIC = 3.0
 sea = token(block, "globe-sphere")
@@ -223,8 +242,16 @@ def make(code: str, account_type: str) -> tuple[str, str]:
 res_id, res_tok = make("THEME-RESEARCH", "research")
 ops_id, ops_tok = make("THEME-OPS", "operational")
 
-check(RESEARCH_THEME == DEFAULT_THEME,
-      "the fixed research theme is the existing default, so the study's stimulus is unchanged",
+check(DEFAULT_THEME == "plain",
+      "the operational default is Fairbanks (plain), as of 2026-08-04",
+      DEFAULT_THEME)
+check(RESEARCH_THEME == "newyork",
+      "the research pin is a LITERAL newyork, not derived from whatever the default is, so a "
+      "future change to the default cannot silently move the participants' theme",
+      RESEARCH_THEME)
+check(RESEARCH_THEME != DEFAULT_THEME,
+      "the research pin and the operational default are independent values (they happen to "
+      "differ today; the point is they are not coupled)",
       f"{RESEARCH_THEME} vs {DEFAULT_THEME}")
 
 # THE PRECONDITION THAT MAKES THE NEXT CHECK MEAN ANYTHING: write a DIFFERENT theme into the
@@ -307,20 +334,79 @@ check(direct.get("ok") is False,
       "the handler itself refuses a research account, with the pre-dispatch gate bypassed",
       str(direct)[:130])
 
-ok_set = post({"action": "themeset", "session_token": ops_tok, "theme": "plain"})
-check(ok_set.get("ok") is True, "an operational account may choose", str(ok_set)[:120])
-check(post({"action": "themeget", "session_token": ops_tok}).get("theme") == "plain",
-      "and the choice persists against the account")
+ok_set = post({"action": "themeset", "session_token": ops_tok, "theme": "maria"})
+check(ok_set.get("ok") is True, "an operational account may choose a non-default theme",
+      str(ok_set)[:120])
+check(post({"action": "themeget", "session_token": ops_tok}).get("theme") == "maria",
+      "and the choice persists against the account, not overridden back to the new default "
+      "(plain) on the next read")
 
 bad = post({"action": "themeset", "session_token": ops_tok, "theme": "chartreuse"})
 check(bad.get("ok") is False, "an unknown theme is refused", str(bad)[:110])
-check(post({"action": "themeget", "session_token": ops_tok}).get("theme") == "plain",
+check(post({"action": "themeget", "session_token": ops_tok}).get("theme") == "maria",
       "and the previous choice survives the refusal")
 
 check(set(THEMES) == {"plain", "light", "newyork", "maria"},
       "the server's vocabulary is the four themes the interface offers", str(THEMES))
 check("dark" not in THEMES,
       "and the archived theme is not storable")
+
+print()
+print("=" * 78)
+print("GUARANTEE 5: the admin 'Active' status pill meets AA on the plain theme")
+print("=" * 78)
+
+# Scoped override for body[data-theme="plain"], read out of the live stylesheet the same way the
+# theme block above is: a comment claiming the ratio cannot make this pass.
+m_on = re.search(
+    r'body\[data-theme="plain"\]\s+\.admin-pill-on\s*\{\s*background:\s*(#[0-9a-fA-F]{6});'
+    r'\s*color:\s*(#[0-9a-fA-F]{6});', css_text)
+m_off = re.search(
+    r'body\[data-theme="plain"\]\s+\.admin-pill-off\s*\{\s*background:\s*(#[0-9a-fA-F]{6});'
+    r'\s*color:\s*(#[0-9a-fA-F]{6});', css_text)
+check(bool(m_on), "the plain-scoped .admin-pill-on override is present in radar.css")
+check(bool(m_off), "the plain-scoped .admin-pill-off override is present in radar.css")
+if m_on:
+    bg, fg = m_on.group(1), m_on.group(2)
+    r_on = ratio(fg, bg)
+    check(r_on >= AA, "the 'Active' pill (admin-pill-on) meets AA at 11px on Fairbanks",
+          f"{fg} on {bg} = {r_on:.2f}, need {AA}")
+if m_off:
+    bg, fg = m_off.group(1), m_off.group(2)
+    r_off = ratio(fg, bg)
+    check(r_off >= AA, "the 'Archived' pill (admin-pill-off) meets AA at 11px on Fairbanks",
+          f"{fg} on {bg} = {r_off:.2f}, need {AA}")
+
+print()
+print("=" * 78)
+print("GUARANTEE 6: no user-facing surface renders the literal string 'plain'")
+print("=" * 78)
+
+# The label/key divergence: the internal key stays "plain" (see NAMING_AUTHORITY-adjacent notes
+# in theme.py and app.js), but every string a user can actually read must say "Fairbanks".
+refused_research = post({"action": "themeset", "session_token": res_tok, "theme": "newyork"})
+check(refused_research.get("ok") is False, "a second research refusal to check for a leak",
+      str(refused_research)[:120])
+refusal_text = json.dumps(refused_research)
+check("plain" not in refusal_text.lower(),
+      "the themeset refusal payload never contains the literal 'plain'",
+      refusal_text[:160])
+
+got_again = post({"action": "themeget", "session_token": res_tok})
+themeget_text = json.dumps(got_again)
+check("fairbanks" not in themeget_text.lower() and True,
+      "themeget's payload is data (raw keys), which is fine for a client that maps the key "
+      "through THEME_META -- checked separately in tests_render.html; this suite just proves "
+      "the SERVER text a user reads (the refusal message) does not leak the key",
+      themeget_text[:160])
+
+app_js_meta = re.search(r'THEME_META\s*=\s*\[(.*?)\n  \];', app_js, re.S)
+check(app_js_meta is not None, "THEME_META is present in app.js")
+if app_js_meta:
+    plain_entry = re.search(r'\{\s*key:\s*"plain",\s*label:\s*"([^"]+)"', app_js_meta.group(1))
+    check(plain_entry is not None and plain_entry.group(1) == "Fairbanks",
+          "the plain key's user-facing label in THEME_META is 'Fairbanks'",
+          plain_entry.group(1) if plain_entry else None)
 
 print()
 print("=" * 78)

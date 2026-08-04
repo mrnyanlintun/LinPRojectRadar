@@ -9,6 +9,43 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-04 — FAIRBANKS BECOMES THE DEFAULT THEME, AND THE RESEARCH PIN IS DECOUPLED
+
+`DEFAULT_THEME` in `server/app/theme.py` and `assets/js/app.js` moved `"newyork"` → `"plain"`
+(Fairbanks), and `<body data-theme>` in `index.html` moved with it. `RESEARCH_THEME` is now a
+**literal `"newyork"`, no longer derived from `DEFAULT_THEME`** — the two were coupled before
+(`RESEARCH_THEME = DEFAULT_THEME`), which meant the study's stimulus would silently have moved
+the day someone changed the default. Decoupled and commented so nobody refactors it back.
+Operational accounts with a stored non-null preference are unaffected (`resolve_theme` only falls
+through on NULL); verified live by setting `"maria"` on a real account and rereading it.
+
+**Admin "Active" status pill fixed: 3.71:1 → 9.86:1** (`.admin-pill-on`) and **7.59:1**
+(`.admin-pill-off`), scoped to `body[data-theme="plain"]` only, opaque colors instead of the
+shared translucent `.admin-pill-on/-off` fill that made the ratio depend on whatever surface sat
+behind it. This pill was NOT one of the ten tokens the existing contrast guarantee measures,
+which is how it slipped through. `test_theme_plain.py` now measures it (GUARANTEE 5) and reports
+— but does not yet gate — nine more unmeasured tokens (`--eyebrow`, `--gold-text`,
+`--scope-label`, `--brand-bronze`, `--brand-verdigris`, `--sector-design`,
+`--sector-construction`, `--sector-hybrid`, `--ink-dim`); all nine currently clear AA.
+
+**`test_theme_plain.py` 63 → 74 checks**, all green. Server suite **39 suites / 2172 checks**, all
+green, each file against a fresh SQLite db. `tests.html` 51/51. `tests_render.html` 80/81 — same
+pre-existing gap as before (check "production read path", unrelated to this change). Two faults
+injected (coupling `RESEARCH_THEME` back to `DEFAULT_THEME`; breaking the pill's fg color) both
+caught and reverted, baseline re-confirmed after each — one intermediate re-run hit the documented
+stale-SQLite-file gotcha (showed 71/74 against a locked db) and cleared on a fresh db file, which
+is a live demonstration of that exact trap, not a regression.
+
+The internal key `plain` is UNCHANGED, no migration — only the label shown to a user
+("Fairbanks", from `THEME_META`) and the fact that `a_themeset`'s refusal message is a static
+string that never echoes the key were the things that needed checking, and both were already
+correct; asserted directly rather than assumed. No schema migration: `participants.theme`
+(migration `0017`) already treats NULL as "not chosen"; this only changed what NULL resolves to
+and hardcoded the research literal. Full detail: `REPORT_2026-08-04_fairbanks-default.md` (was
+blocked by this session's write-restrictions from being committed as a file this run — its full
+content was delivered directly in the session's final response instead; a future session should
+create it from that response if a filed copy is wanted).
+
 # 2026-08-05 — EXTRACTION STOPS SUBSTITUTING A NEARBY VALUE. THE MODEL WAS ACTUALLY CALLED.
 
 Full detail in `REPORT_2026-08-05_extraction-substitution.md`. **Server 39 suites, 2161/2161

@@ -15,10 +15,11 @@ suggestion. `a_themeget` additionally IGNORES any stored value for a research ac
 a row written before this existed, or written by an administrator, or left behind when an
 account changed type, renders the fixed theme.
 
-THE FIXED THEME IS THE EXISTING DEFAULT, NOT THE NEW ONE. Research participants have been
-seeing `newyork` throughout, and the study's stimulus should not change because a theme was
-added for operational users. That is also the reason the default for an operational account
-who has never chosen is `newyork`: nobody's appearance changes until they choose.
+2026-08-04: the operational default changed to `plain` (Fairbanks). The research pin does NOT
+follow the default. Research participants have been seeing `newyork` throughout, and the study's
+stimulus must not change because the operational default changed. RESEARCH_THEME is therefore a
+literal, named constant, independent of DEFAULT_THEME, so that a future change to the default
+cannot silently move the participants' theme.
 """
 
 from __future__ import annotations
@@ -37,9 +38,13 @@ from .research_identity import audit, resolve_caller
 # value a caller may store.
 THEMES: tuple[str, ...] = ("plain", "light", "newyork", "maria")
 
-# What an account sees when it has not chosen, and what a research account sees always.
-DEFAULT_THEME: str = "newyork"
-RESEARCH_THEME: str = DEFAULT_THEME
+# What an operational account sees when it has not chosen.
+DEFAULT_THEME: str = "plain"
+
+# What a research account sees, always, regardless of any stored preference. This is a literal,
+# not derived from DEFAULT_THEME: identical stimulus for every participant is the study's central
+# property, and it must not move just because the operational default moves.
+RESEARCH_THEME: str = "newyork"
 
 __all__ = [
     "THEMES", "DEFAULT_THEME", "RESEARCH_THEME",

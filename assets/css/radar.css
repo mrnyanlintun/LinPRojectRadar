@@ -4369,6 +4369,15 @@ body.og-account-operational .notice-operational { display: block; }
 .admin-pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 999px; }
 .admin-pill-on { background: rgba(46, 230, 107, .15); color: var(--clear-green); }
 .admin-pill-off { background: rgba(255, 59, 48, .12); color: var(--alarm-red); }
+/* Fairbanks (plain) only: the translucent fills above blend down to a pale mint/pink on this
+   theme's white/near-white surfaces, and the inherited --clear-green / --alarm-red text on top of
+   that blend measured 3.71:1 (11px text, below the 4.5:1 AA floor) — see
+   REPORT_2026-08-04_fairbanks-default.md. This pill sits outside the ten tokens the theme's
+   contrast guarantee measures (5.1 in the 2026-08-03 audit), which is how it slipped through.
+   Fixed with opaque, theme-scoped colors instead of the shared translucent-over-unknown-surface
+   pattern, so the pair is 9.86:1 / 7.59:1 regardless of what sits behind it. */
+body[data-theme="plain"] .admin-pill-on  { background: #d7f0e0; color: #0a4020; }
+body[data-theme="plain"] .admin-pill-off { background: #fbdcdb; color: #8a0e16; }
 .admin-secret-reveal { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
 .admin-secret-input { font-family: var(--font-mono); font-size: 13px; }
 .admin-secret-warning { font-size: 11px; color: var(--radar-amber); margin: 0; }

@@ -2067,7 +2067,7 @@
   /* ---------- themes offered in the switcher ----------
      Gotham ("dark") is archived: renders if forced, but not offered here and
      not the default. Default is NYC — the remaining dark theme. */
-  const DEFAULT_THEME = "newyork";
+  const DEFAULT_THEME = "plain";
   const OFFERED_THEMES = ["plain", "light", "newyork", "maria"];
   const THEME_META = [
     // Fairbanks is first because it is the one meant for working in. The other three
@@ -2904,10 +2904,10 @@
   /* ---------- init ---------- */
   async function init() {
     // Theme buttons are built inside the theme fly-out (wired there); nothing to
-    // bind here at load. Offered themes: Miami (light) · NYC (newyork) · Maria.
-    // Gotham ("dark") is ARCHIVED — still renders if forced via applyTheme, but
-    // no longer offered or used as a default. DEFAULT changed dark → newyork
-    // (the remaining dark theme). A persisted "dark" falls through to the
+    // bind here at load. Offered themes: Fairbanks (plain) · Miami (light) · NYC
+    // (newyork) · Maria. Gotham ("dark") is ARCHIVED — still renders if forced via
+    // applyTheme, but no longer offered or used as a default. 2026-08-04: DEFAULT
+    // changed newyork → plain (Fairbanks). A persisted "dark" falls through to the
     // default; "clean"→light and the removed "cyberpunk"→default as before.
     let stored = DEFAULT_THEME;
     try {
