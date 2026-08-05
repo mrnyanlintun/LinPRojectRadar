@@ -9,6 +9,68 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-05 — THE SIGNAL SPHERE CHART'S GATE WAS CLOSED BY A FIELD THE SERVER NEVER WRITES
+
+Full detail in `REPORT_2026-08-05_charts-from-stored.md` — **read it before trusting "charts
+render from stored results" on this page**, because it leads with what this session could NOT
+establish, not just what it fixed. `tests_render.html` **89/90** (was 85/86 before this session's
+new Group 11 added 5 checks, all passing — the one red is the SAME pre-existing "production read
+path" gap by name and text, needs a live session token in the tab, not a regression). `tests.html`
+**51/51, unchanged**. **Server suite was NOT run this session** — no Python virtualenv exists in
+this worktree and nothing under `server/app/` was touched, but that is a real verification gap,
+stated rather than hidden. No fault-injection-and-revert campaign was run against this change,
+also stated rather than claimed.
+
+## The one thing actually fixed: `signalWebHtml`'s gate in `assets/js/detail.js`
+
+Gated on `hasSignals(project)` (the legacy client-side `p.signals` blob) and tallied its footnote
+from `project.simulationSignals.signal_array` — a field the server never writes. The canvas draw
+code underneath it (`wireSignalSphere`) was ALREADY correct, reading every module's status via
+`getModuleStatus(m.method_class, project)` (the stored row). So the whole Signal Sphere panel was
+one closed gate away from working on every server-computed project. Fixed by switching the gate to
+`LinResults.hasResult(project)` and rebuilding the tally to walk `LIN_CATEGORIES` +
+`getModuleStatus`, the exact pattern `ensembleHtml`/`ensembleTally` already used a few lines below
+it — reused, not invented. Verified: a stored-only fixture (no `simulationSignals`, no legacy
+blob, `module_results` with one Red and one Green) renders the panel with a footnote reading those
+exact counts; a project with no stored result at all renders no panel — not an empty one, not a
+zeroed one.
+
+## What this session could NOT locate, and did not guess at
+
+**The "ensemble scatter chart receiving spi/cpi as raw ratios against a percent-delta-from-100
+axis" defect a task brief described was not found.** The chart actually named "Ensemble Scatter"
+in this codebase (`ensembleHtml`/`wireEnsembleScatter`) plots module status severity, not spi/cpi,
+and was already fixed in an earlier session (carries a `T12b` comment saying so). The only place
+spi/cpi are plotted as literal ratios against a matching ratio-scaled axis
+(`render_82` in `assets/js/charts3d.js`) uses entirely hardcoded illustrative `P01..P09` data, not
+a real stored project, so there is no live axis-mismatch reachable through it that this session
+could find. **Do not assume this defect is fixed or that it does not exist — it was not found,
+which is different from either.** A future session needs the specific screen named before
+attempting this half of the brief.
+
+**`deepdive.js` (the per-computation "how this number was derived" explainer, 2,445 lines, ~101
+panels) was read in full and left untouched.** Its per-panel content is already labelled as
+illustrative worked examples (e.g. "3D spiral: each loop = feedback cycle. Amplification 1.35x
+after 4 loops.") rather than claims about the loaded project, and its entry gate already degrades
+honestly ("Awaiting analysis... nothing is computed or fabricated until they exist"). Nine of its
+panels (Modules 10–18, evidence-combination methods) fall back to LIVE CLIENT COMPUTATION via
+`window.LinSimulations` when `project.simulationSignals` is absent — which is always, on a
+server-computed project. This is a PRE-EXISTING, commented, deliberate design decision from before
+this session ("the same fallback the portfolio Signals page uses, so both views always agree"),
+not something this session evaluated for correctness against "the browser renders stored results
+only, computes nothing." Flagged for a dedicated look, not assumed safe.
+
+## The cross-period trend gap (`compute_portfolio`'s `history=None`) is UNCHANGED and confirmed still open
+
+`documents.py`'s `_compute_and_store` remains the only caller of `compute_portfolio`, still passing
+the literal `None`. `server/app/simulation/portfolio.py` already abstains BY ABSENCE (not a
+permanent Green dot) when history is insufficient — that half of D7.1 was closed in a session
+between the audit report and this one, confirmed by reading the code directly rather than assumed
+from the old report. Closing the trend chart itself needs a second caller assembling the project's
+own prior `ComputedResult` rows in period order and threading them through — a
+`server/app/documents.py` + `server/app/simulation/portfolio.py` change, explicitly out of this
+session's scope, not attempted.
+
 # 2026-08-05 — THE CONSENT SCREEN NEVER GOT THE RESEARCH PIN. FOUND, FIXED, VERIFIED.
 
 Full detail in `REPORT_2026-08-05_fairbanks-default.md` — that file did not exist before this

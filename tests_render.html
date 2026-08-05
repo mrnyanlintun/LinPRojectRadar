@@ -800,6 +800,85 @@
       "threw: " + (e && e.message));
   }
 
+  /* ============================================================
+     GROUP 11 — the Signal Sphere chart (signalWebHtml in detail.js) renders
+     from the STORED result, not from `project.simulationSignals`, which the
+     server never writes (T6 charts-from-stored). Before the fix,
+     signalWebHtml gated on `hasSignals(project)` (the legacy client-side
+     p.signals blob) and tallied module counts from
+     `project.simulationSignals.signal_array` — both permanently absent on a
+     server-computed project, so the panel was always "" however much stored
+     module data existed. This must fail if that gate is reintroduced.
+     ============================================================ */
+  function signalSphereGroup() {
+    // A stored-only project, same fixture family as groups 0-4, but this time
+    // carrying real module_results so getModuleStatus has something to read.
+    const p = storedOnlyProject();
+    p.status = "Amber";
+    p.storedResult = {
+      project_status: "Amber",
+      red_review: false,
+      category_statuses: {},
+      module_results: [
+        { module_id: "A1.1", group: "A", category: "A1", status_color: "Green",
+          method_class: "Monte_Carlo", evidence_metric: "TCPI 1.01" },
+        { module_id: "A3.1", group: "A", category: "A3", status_color: "Red",
+          method_class: "Reference_Class_Forecasting", evidence_metric: "P80 overrun 18%" }
+      ]
+    };
+    window.LIN_PROJECTS.length = 0;
+    window.LIN_PROJECTS.push(p);
+    window.LinResults.clear();
+
+    assert("group 11: fixture carries NO simulationSignals (the retired client field)",
+      true, p.simulationSignals === undefined);
+    assert("group 11: fixture carries NO legacy signals blob either",
+      true, !(window.hasSignals ? window.hasSignals(p) : !!(p.signals && p.signals.evm)));
+    assert("group 11: fixture HAS a stored result",
+      true, !!(window.LinResults && window.LinResults.hasResult(p)));
+
+    const root = document.getElementById("detail-root");
+    root.innerHTML = "";
+    let threw = "";
+    try { window.LinDetail.render(p.id); } catch (e) { threw = String(e); }
+    assert("group 11: LinDetail.render does not throw", "", threw);
+    const panel = root.querySelector(".signal-web-panel");
+    assert("group 11: the Signal Sphere panel is rendered (not an empty gate)",
+      true, !!panel);
+    assert("group 11: the sphere canvas is present to draw into",
+      true, !!(panel && panel.querySelector(".sphere3d-canvas")));
+    // Two real modules were stored with statuses; the panel's own footnote tally must reflect
+    // them exactly (1 Green, 1 Red), read from the stored row, not fabricated or zeroed.
+    const footnote = panel ? (panel.querySelector(".sw-footnote") || {}).textContent || "" : "";
+    assert("group 11: the module tally comes from the stored row (1 Red counted)",
+      true, /\b1 Red\b/.test(footnote));
+    assert("group 11: the module tally comes from the stored row (1 Green counted)",
+      true, /\b1 Green\b/.test(footnote));
+    try { if (window.LinDetail.teardown) LinDetail.teardown(); } catch (e) {}
+    root.innerHTML = "";
+
+    // An UNCOMPUTED project (no stored result at all) must still draw nothing — abstention,
+    // not a chart seeded from zeros. This is the D1.3-shaped failure the brief calls out:
+    // a chart must never render as if a real value existed when none was stored.
+    const none = { id: "PRJ-NOCOMPUTE01", name: "Never computed", sector: "construction" };
+    window.LIN_PROJECTS.length = 0;
+    window.LIN_PROJECTS.push(none);
+    window.LinResults.clear();
+    root.innerHTML = "";
+    try { window.LinDetail.render(none.id); } catch (e) {}
+    assert("group 11: an uncomputed project renders no Signal Sphere panel at all",
+      false, !!root.querySelector(".signal-web-panel"));
+    try { if (window.LinDetail.teardown) LinDetail.teardown(); } catch (e) {}
+    root.innerHTML = "";
+  }
+
+  try {
+    signalSphereGroup();
+  } catch (e) {
+    assert("group 11: the signal sphere group ran to completion", "no throw",
+      "threw: " + (e && e.message));
+  }
+
   // ---- render results ----
   function renderResults() {
   const tbody = document.querySelector("#results tbody");
