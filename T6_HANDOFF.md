@@ -9,6 +9,37 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-05 — SIGNAL LEDGER, PROJECT SIGNAL NETWORK, EXTRACTED SIGNALS, MAP ZOOM FIXED
+
+Branch: `claude/signal-display-s5s90m`. Server suite: **2196/2196**. No server files changed.
+
+**Root cause (all three surface defects share one ancestry):**
+`detail.js`'s `render(id)` never called `projectresults` and never primed `LinResults`. The project
+object it used carried `p.storedResult` from `a_get`, which deliberately excludes `module_results`
+(to keep the response small and action-free). `rowFor(project)` prefers `project.storedResult` over
+`ROWS[project.id]`, so even if workspace.js had previously primed `ROWS[id]`, the detail page read
+the truncated object. `getCategoryStatus` works on the truncated row (has `category_statuses`);
+`getModuleStatus` does not (needs `module_results`). Hence: category colours present, 101 module rows
+all "No data"; Signal Network races to init before hydration completes and then never re-draws.
+
+**Fixes applied (three files, no new dependencies):**
+
+- `assets/js/detail.js` — Added `primeAndRefresh(id, p)` async function called non-blockingly at the
+  end of `render(id)`. It POSTs `{action:"projectresults"}`, primes `LinResults.prime(id, row)`, grafts
+  `module_results` and `signal_inputs` onto `p.storedResult`, then clears `lazyDone` for the five
+  data-dependent sections and re-runs any that are already open. The page renders immediately; sections
+  re-draw once the full row arrives.
+
+- `assets/js/signals.js` — `panelInnerHtml`: added `storedSi` fallback so the Extracted Signal Inputs
+  panel reads `LinResults.rowFor(project).signal_inputs` when `project.signalInputs` (legacy doc field)
+  is absent. Server-computed projects store inputs in `ComputedResult.signal_inputs`, not in `project.doc`.
+
+- `assets/js/app.js` — Added `glMap.addControl(new maplibregl.NavigationControl(), "top-right")` inside
+  the `glMap.on("load")` callback. `NavigationControl` is already bundled in the vendored MapLibre GL.
+
+**Globe zoom:** scroll-wheel zoom already works (OrbitControls default). Visible +/− buttons would
+require writing DOM into the renderer container and wiring to Three.js `dollyIn`/`dollyOut`. Deferred.
+
 # 2026-08-05 — THE SIGNAL SPHERE CHART'S GATE WAS CLOSED BY A FIELD THE SERVER NEVER WRITES
 
 Full detail in `REPORT_2026-08-05_charts-from-stored.md`. **Revised after a follow-up session

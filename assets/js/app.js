@@ -818,6 +818,11 @@
     glMap.on("load", () => {
       if (glLoadTimer) { clearTimeout(glLoadTimer); glLoadTimer = null; }
       hideBootStatus();
+      // T13. Add zoom controls. NavigationControl is vendored with MapLibre GL so no
+      // new dependency is introduced. Position top-right to avoid the attribution badge.
+      if (typeof maplibregl.NavigationControl === "function") {
+        glMap.addControl(new maplibregl.NavigationControl(), "top-right");
+      }
       addGlMarkers();
     });
     // swallow MapLibre's transient tile/sprite errors so they neither storm the
