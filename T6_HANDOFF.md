@@ -9,6 +9,51 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-05 — THREE DEAD CHART SURFACES REMOVED, THE PORTFOLIO LIST CONSOLIDATED
+
+Branch `claude/charts-and-portfolio-s5s90m`. Full detail in
+`REPORT_2026-08-05_charts-and-portfolio.md`. **Server 39 suites, 2196/2196
+(confirmation run — no server files changed); `tests_render.html` 93/94 (same
+pre-existing "production read path" red); `tests.html` 51/51.** No migration.
+`simulation/` untouched.
+
+**Three dead surfaces removed, not revived — each had no stored data and duplicated a working
+surface or needed the not-loaded research tooling:**
+- `LinForceNet` (`forcenet.js`, deleted): no container anywhere, `init()` never called, reads the
+  dead `simulationSignals` blob, uses forbidden `"Cat N"` labels, and duplicates Project Signal
+  Network + Signal Flow. Also removed its `<script>` tag and the `signals.js` call site.
+- Portfolio Health modal: the "Health" fly-out pill and the "See Portfolio Health" ledger button
+  both called `openHealthModal()`, a no-op without `deepdive.js` (research tooling, not loaded, and
+  it recomputes rather than reading stored data). Controls removed; `openHealthModal` deleted. The
+  stored-data Portfolio Health card (`renderPortfolio`, `workspace.js`) stays — capability intact.
+- `d-stack` "Signal Stack" section (`detail.js`): a heading over a static "not shown here" note;
+  its data recomputes and does not exist in the stored row. Section + lazy-init removed.
+
+**Portfolio page consolidated (reorganise, not redesign):**
+- ONE project list now. `#project-list` (`buildFallbackList`, universal + accessible + marker-
+  linked) kept; the operational-only "Your projects" card removed. Membership columns (PM,
+  period, computed, address) merged onto the single list via `window.LIN_PM_META` (published by
+  `workspace.js`, keyed by project code — `workspaceprojects.project_id === legacy_id === p.id`).
+  `.list-item` CSS went grid -> flex-wrap to hold the variable column set. Orphaned `locationLine`
+  removed.
+- Portfolio Health "portfolio too small" now said ONCE for the portfolio, not per project
+  (`renderPortfolio` partitions computed vs not-computed).
+- Heading "Projects (list view)" -> "Projects"; documented as a permanent section beneath the
+  Radar/Map/Globe views, not a fourth switched view.
+- **2b (placement count twice): not reproduced in current source.** Each geographic view prints
+  the count once; the status legend's per-status counts are different information. Left as-is,
+  reported — likely already resolved by an earlier session.
+
+**Dead code (Part 3):** `simSummary()` + `simLedgerRow()` in `app.js` removed — grep-confirmed
+unreferenced (exact identifier), `simSummary` called only by the also-removed `simLedgerRow`.
+
+**Verified in headless Chromium (app context):** consolidated row carries all required columns +
+Manage + Open; membership-present vs membership-absent paths (operational vs research/observer)
+both render correctly; one row per project; the three dead surfaces are gone. Fault injection on
+the PM column (role -> "Observer") confirmed the check discriminates. Full server-backed
+dual-account drive was NOT stood up (token bootstrap cost); the two account paths were exercised
+via the metadata-present/absent split, which is what differs between them on this list.
+
 # 2026-08-05 — SIGNAL LEDGER, PROJECT SIGNAL NETWORK, EXTRACTED SIGNALS, MAP ZOOM FIXED
 
 Branch: `claude/signal-display-s5s90m`. Server suite: **2196/2196**. No server files changed.

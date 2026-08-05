@@ -784,7 +784,6 @@
           signal_array: allResults
         };
         project.simulationSignals = simPayload;
-        if (window.LinForceNet) LinForceNet.updateFromProject(project);
         // Append simulation run event to the project audit trail.
         project.events = project.events || [];
         const statusOrder = ["red", "amber", "green"];

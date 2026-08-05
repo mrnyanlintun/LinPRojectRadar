@@ -564,8 +564,13 @@
         <p class="map-caption">Locations are illustrative: synthetic demonstration data.</p>
       </div>
 
+      <!-- The single project list for the portfolio. It is a permanent section
+           beneath the Radar / Map / Globe views, not a fourth view switched
+           alongside them: the stage toggle above changes only the map, and this
+           list is always present as the keyboard-accessible control path the
+           three views' aria-labels point at. -->
       <div class="fallback">
-        <h3 id="list-heading">Projects (list view)</h3>
+        <h3 id="list-heading">Projects</h3>
         <div class="recompute-all-row">
           <button id="recompute-all-btn" class="recompute-all-btn" title="Repair tool: re-runs local computation for every project and refreshes Portfolio Health (no AI calls, no re-extraction, no document re-upload)">Rebuild signals (repair)</button>
           <span id="recompute-all-status" class="recompute-all-status"></span>
@@ -573,10 +578,9 @@
         <ul id="project-list" aria-labelledby="list-heading"></ul>
       </div>
 
-      <!-- Portfolio Health (ex-Cat 8 ML & AI Pattern Detection) is portfolio-scale
-           — its module cards live in the "Portfolio Health" dialog (Health pill
-           on the dock fly-out), not as a page section here. See ingest.js
-           openHealthModal. -->
+      <!-- Portfolio Health is portfolio-scale. It is read from each project's own
+           stored result in the "Portfolio health" card below (renderPortfolio in
+           workspace.js), not drawn as a section on the stage here. -->
     </section>
 
     <!-- Admin is launched from the stage toolbar: New Project + Upload open
@@ -608,10 +612,11 @@
         <button id="ws-create-btn" class="ws-btn">Create project</button>
         <p id="ws-create-error" class="ws-error" style="display:none;"></p>
       </div>
-      <div class="ws-card">
-        <h3 style="margin-top:0;">Your projects</h3>
-        <div id="ws-project-list"></div>
-      </div>
+      <!-- The former "Your projects" card is removed. It listed the same projects
+           as the stage list above ("Projects"), differing only in the membership
+           columns (PM role, current period, computed state) it carried. Those
+           columns are now merged onto the single stage list (buildFallbackList in
+           app.js), so there is one project list, not two. -->
       <div class="ws-card">
         <h3 style="margin-top:0;">Portfolio health</h3>
         <p class="ws-note">Portfolio Health for each project you are PM of, read from that
@@ -1263,7 +1268,6 @@
   <script src="assets/js/tz.js"></script>
   <script src="assets/js/ds_defensibility_data.js"></script>
   <script src="assets/js/knowledge.js"></script>
-  <script src="assets/js/forcenet.js"></script>
   <script src="assets/js/workingrobot.js"></script>
   <script src="assets/js/ingest.js"></script>
   <!-- Must load before signals.js and auditor.js: both call LinDisclaimers.uploadNoticeHtml()

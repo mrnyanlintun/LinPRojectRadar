@@ -1323,13 +1323,29 @@
         const stateStyle = col ? ` style="color:${col}"` : "";
         const simChip = "";
         const secKey = String(p.sector || "hybrid").toLowerCase() === "combined" ? "hybrid" : String(p.sector || "hybrid").toLowerCase();
+        // Membership columns — PM role, current period, computed state — merged in
+        // from the former "Your projects" card. Keyed by project code, which is the
+        // same identifier this list already uses (workspaceprojects returns it as
+        // project_id === legacy_id === p.id). Absent for accounts that have not
+        // loaded a membership list, so every span is conditional.
+        const meta = (window.LIN_PM_META && window.LIN_PM_META[p.id]) || null;
+        const addr = p.formattedAddress || p.address || "";
+        const roleTxt = (meta && meta.role) ? esc(meta.role) : "";
+        const periodTxt = (meta && meta.period != null) ? ("Period " + esc(meta.period)) : "";
+        const computedSpan = meta
+          ? `<span class="li-computed"><span class="li-computed-dot" style="background:var(${meta.computed ? "--status-green" : "--status-nodata"})" aria-hidden="true"></span>${meta.computed ? "Computed" : "Not yet computed"}</span>`
+          : "";
         btn.innerHTML =
           `<span class="li-code">${esc(p.id)}</span>` +
           `<span class="li-name">${esc(p.name)}</span>` +
+          (addr ? `<span class="li-address" title="${esc(addr)}">${esc(addr)}</span>` : "") +
           `<span class="sector-pill" data-sector="${esc(secKey)}">${esc(sectorLabel(p).toUpperCase())}</span>` +
           (isSectorDirty(p.id) ? `<span class="li-flag" title="Sector changed: recompute signals to update module applicability">recompute</span>` : "") +
           simChip +
           `<span class="li-state state-${esc(statusKey(p))}"${stateStyle}>${esc(state)}</span>` +
+          (roleTxt ? `<span class="li-pm">${roleTxt}</span>` : "") +
+          (periodTxt ? `<span class="li-period">${periodTxt}</span>` : "") +
+          computedSpan +
           `<span class="li-actions">` +
             `<button class="btn small li-manage" data-manage="${esc(p.id)}" title="Edit info, upload, archive, reset (inline)">Manage</button>` +
             `<button class="btn small li-open" data-open="${esc(p.id)}" title="Open project detail">Open →</button>` +
@@ -1438,21 +1454,6 @@
     return 103;
   }
 
-  function simSummary(p) {
-    const arr = p && p.simulationSignals && Array.isArray(p.simulationSignals.signal_array)
-      ? p.simulationSignals.signal_array : null;
-    if (!arr || !arr.length) return null;
-    let red = 0, amber = 0, green = 0;
-    arr.forEach((s) => {
-      const c = String(s.status_color || "").toLowerCase();
-      if (c === "red") red++; else if (c === "amber") amber++; else green++;
-    });
-    const worst = red ? "red" : amber ? "amber" : "green";
-    // Use the active-module total so every project shows /N out of the same denominator
-    // (not arr.length, which varied by which partial run last persisted).
-    return { red, amber, green, total: activeModuleTotal(), worst, flagged: red + amber };
-  }
-
   function awaitingHtml(p, what) {
     return `<div class="ledger-head"><div>
         <p class="eyebrow">${esc(what)}</p>
@@ -1558,7 +1559,6 @@
         <div class="cat-row-head">
           <span class="cat-row-num" style="color:${esc(healthCat.color)}">${esc(healthCat.num)}</span>
           <span class="cat-row-name">${esc(healthCat.name)}</span>
-          <button type="button" class="btn small cat-row-health-btn" data-open-health>See Portfolio Health</button>
         </div>
         <p class="cat-row-desc">${esc(healthCat.description)} Portfolio-scale: compares this project against the rest of the portfolio, not a numbered project category.</p>
       </div>`;
@@ -1567,31 +1567,12 @@
   }
 
   function wireCategoryLedger(root) {
-    // details/summary handles the 1-10 rows' toggling natively; only the
-    // separated Portfolio Health row's button needs wiring.
+    // details/summary handles the 1-10 rows' toggling natively; the separated
+    // Portfolio Health row is read-only prose, so there is nothing to wire.
     if (!root) return;
-    const btn = root.querySelector("[data-open-health]");
-    if (btn) btn.addEventListener("click", () => {
-      if (window.LinIngest && LinIngest.openHealthModal) LinIngest.openHealthModal();
-    });
   }
 
   /* 6th ledger row — only when the simulation models have run for this project. */
-  function simLedgerRow(p) {
-    const sum = simSummary(p);
-    if (!sum) return "";
-    return `
-        <div class="signal-row">
-          <div class="sig-top">
-            <span class="sig-name">Simulation signals</span>
-            ${statusPill(sum.worst)}
-          </div>
-          <div class="sig-metric">${sum.red} Red · ${sum.amber} Amber · ${sum.green} Green</div>
-          <div class="sig-meta"><span class="sig-method">PERT · LOB · CCPM · RCF · DSM · DST · Rough Sets · Neutrosophic · Interval Fuzzy · Z-numbers · PLTS · Plithogenic · BRB · Quantum</span></div>
-          <div class="sig-detail">Worst status across the fourteen simulation modules.</div>
-        </div>`;
-  }
-
   /* ---------- decision card ----------
      Renders into any container (portfolio side panel or Project Detail),
      so all controls are class-scoped to the container — no duplicate ids. */
@@ -2353,8 +2334,7 @@
       // Upload is now per-project (inline Manage accordion + detail page), not a
       // global pill — Release 2 item 1. Removed here.
       { label: "Archived", badgeId: "tool-archived-badge", badge: archivedCount, onClick: () => { Flyout.close(); if (A) A.openArchivedModal(); } },
-      { label: "Activity", onClick: () => { Flyout.close(); if (A) A.openActivityModal(); } },
-      { label: "Health", title: "Portfolio Health: ML & AI Pattern Detection", onClick: () => { Flyout.close(); if (A) A.openHealthModal(); } }
+      { label: "Activity", onClick: () => { Flyout.close(); if (A) A.openActivityModal(); } }
     ];
     Flyout.open("portfolio", anchor, pills, suppressDockRefocus);
   }
@@ -2564,9 +2544,12 @@
      Activity — all dialogs), the Handbook icon owns its tab row, and the menu
      button owns the theme fly-out — all wired in initIconDock. */
 
-  /* The on-page "Portfolio Intelligence" section (Release 2 item 12) is retired:
-     Portfolio Health's cards now live in the Health dialog (Release 2b), opened
-     from the dock fly-out's Health pill — see openHealthModal in ingest.js. */
+  /* The on-page "Portfolio Intelligence" section (Release 2 item 12) is retired.
+     Portfolio Health now reads from each project's own stored result in the
+     "Portfolio health" card on the portfolio page (renderPortfolio in
+     workspace.js). The former live-recompute dialog was removed: it depended on
+     deepdive.js, which the application does not load, so its control was a
+     silent no-op. */
 
   /* Thin indeterminate top progress bar for the first cold load (no cache). */
   function showTopProgress() {

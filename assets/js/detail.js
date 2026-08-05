@@ -917,7 +917,7 @@
        </div>
         ${/* Release 2 · Phase 2 item 9 — section order: Project Signal Network →
              Signal Flow → Executive Brief → Governance Decision → Signal Web →
-             Signal Inputs → Ensemble Analysis → Signal Stack. Documents &
+             Signal Inputs → Ensemble Analysis → Period Comparison. Documents &
              Extracted Signals (not in the named order) is kept adjacent to Signal
              Inputs. sessionStorage keys (the section ids) are unchanged, so saved
              open/closed states survive. */""}
@@ -940,8 +940,7 @@
              false, `${uploadCount} doc${uploadCount === 1 ? "" : "s"} · ${inputFieldCount} field${inputFieldCount === 1 ? "" : "s"}`)}
         ${cs("d-ensemble", "Ensemble Analysis", ensembleHtml(p), false, `${ensActive} active · ${ensEst} est.`)}
         ${cs("d-periods", "Period Comparison", periodComparisonHtml(p), false,
-             storedHistory(p).length >= 2 ? `${storedHistory(p).length} periods` : "")}
-       ${cs("d-stack", "Signal Stack: " + totalCats + " Categories", `<div class="detail-modules"></div>`, false, "")}`;
+             storedHistory(p).length >= 2 ? `${storedHistory(p).length} periods` : "")}`;
 
     // Every section starts collapsed (sessionStorage may restore an open one);
     // the badges above still summarise what's inside. Heavy visuals render on
@@ -1006,18 +1005,7 @@
       // signals panel below it renders on expand.
       "d-docsignals": () => { if (window.LinSignals) LinSignals.renderSignalsPanel(root.querySelector(".detail-signals"), p); },
       "d-ledger": () => { LinApp.renderLedger(p, root.querySelector(".detail-ledger")); },
-      "d-decision": () => { LinApp.renderDecisionCard(p, root.querySelector(".detail-decision")); },
-      // HUD-depth per-project deep dive (chart + why-grid + reasoning + rule)
-      // T6 Part 3. The deep dive re-runs the models live and needs sim.js/simulations.js, which
-      // this application deliberately does not load. It moved to research/deepdive.html.
-      "d-stack": () => {
-        const host = root.querySelector(".detail-modules");
-        if (!host) return;
-        if (window.LinDeepDive) { LinDeepDive.render(p, host); return; }
-        host.innerHTML = '<p class="ws-note">The module deep dive re-runs each model live to '
-          + 'show its working. It is part of the research tooling and is not shown here. '
-          + 'The module results above are the stored analysis this project was scored on.</p>';
-      }
+      "d-decision": () => { LinApp.renderDecisionCard(p, root.querySelector(".detail-decision")); }
     };
     Object.keys(lazyDone).forEach((k) => { delete lazyDone[k]; });
 

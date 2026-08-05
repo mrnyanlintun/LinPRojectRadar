@@ -113,15 +113,6 @@
   // The matched address, shown wherever a project's location is. Deliberately the geocoder's
   // display_name rather than the typed address: they differ, and the difference is the whole
   // point of showing it.
-  function locationLine(p) {
-    // Three states, from the one shared definition in config.js. The stale state exists because
-    // a failed geocode now RETAINS the previous coordinates rather than erasing them, and a
-    // retained pin shown as "Matched to:" would be the old address presented as the current one.
-    var note = window.linLocationNote ? linLocationNote(p) : null;
-    if (!note) return "";
-    if (note.kind === "none" && !p.geocodeError) return "";
-    return '<div class="ws-note' + (note.warn ? " ws-geo-warn" : "") + '">' + esc(note.text) + '</div>';
-  }
 
   function statusDotColor(status) {
     var s = String(status || "").toLowerCase();
@@ -305,43 +296,29 @@
 
   async function refreshProjects() {
     var resp = await call("workspaceprojects");
-    var listEl = $("ws-project-list");
     if (!resp || resp.ok !== true) {
-      listEl.innerHTML = '<p class="ws-error">' + esc((resp && resp.error) ||
-        "Could not load projects.") + "</p>";
+      // The single consolidated project list lives on the portfolio stage
+      // (buildFallbackList in app.js). Nothing to render here on failure; the
+      // stage list still shows whatever the portfolio snapshot loaded.
+      window.LIN_PM_META = window.LIN_PM_META || {};
       return;
     }
     STATE.projects = resp.projects || [];
-    if (STATE.projects.length === 0) {
-      listEl.innerHTML = '<p class="ws-empty">No projects yet. Create one above.</p>';
-    } else {
-      listEl.innerHTML = STATE.projects.map(function (p) {
-        var badgeClass = p.project_role === "PM" ? "ws-badge-pm" : "ws-badge-observer";
-        // T6 Part E. The identifier was the subtitle of every row and the title of any row
-        // whose name was empty, which made an internal key the name of the thing. The name is
-        // the name; where there is none, say so in words. The id survives only as truncated
-        // metadata, because an operator reconciling against a log still needs to find it.
-        var shortId = String(p.project_id || "");
-        if (shortId.length > 10) shortId = shortId.slice(0, 8) + "…";
-        return '<div class="ws-row">' +
-          '<div><strong>' + esc(p.name || "Untitled project") + '</strong>' +
-          '<div class="ws-note">' + (p.sector ? esc(p.sector) + " · " : "") +
-          '<span class="ws-id" title="' + esc(p.project_id) + '">' + esc(shortId) + '</span>' +
-          '</div>' + locationLine(p) + '</div>' +
-          '<div style="display:flex; align-items:center; gap:10px;">' +
-          '<button class="ws-btn ws-btn-secondary" data-open-project="' + esc(p.project_id) +
-            '">Open</button>' +
-          '<span class="ws-badge ' + badgeClass + '">' + esc(p.project_role) + '</span>' +
-          '<span class="ws-note">Period ' + esc(p.period) + '</span>' +
-          '<span class="ws-note">' + (p.computed ?
-            '<span class="ws-dot" style="background:var(--status-green);"></span>Computed' :
-            '<span class="ws-dot" style="background:var(--status-nodata);"></span>Not yet computed') +
-          '</span></div></div>';
-      }).join("");
-      listEl.querySelectorAll("[data-open-project]").forEach(function (b) {
-        b.addEventListener("click", function () { openProject(b.dataset.openProject); });
-      });
-    }
+    // The former "Your projects" card duplicated the stage project list. It is
+    // gone; the membership-only columns it carried (PM role, current period,
+    // computed state) are now merged onto the single stage list. This map keys
+    // those columns by project code (project_id === legacy_id === the stage
+    // list's own id) so buildFallbackList can read them.
+    var meta = {};
+    STATE.projects.forEach(function (p) {
+      meta[String(p.project_id)] = {
+        role: p.project_role,
+        period: p.period,
+        computed: !!p.computed
+      };
+    });
+    window.LIN_PM_META = meta;
+    if (window.LinApp && LinApp.buildFallbackList) LinApp.buildFallbackList();
     populateProjectPickers();
     renderPortfolio();
   }
@@ -871,19 +848,36 @@
       if (resp && resp.ok === true && window.LinResults) LinResults.prime(p.project_id, resp.result);
       return { project: p, resp: resp };
     }));
-    listEl.innerHTML = rows.map(function (row) {
+    // Portfolio Health is a property of the whole portfolio, not of each project:
+    // when the portfolio is too small (or the snapshot is otherwise unavailable),
+    // every project returns the SAME insufficient-data reason. Say it once for the
+    // portfolio rather than repeating it per project. Only projects that actually
+    // carry a computed snapshot get their own card.
+    var computed = [];
+    var portfolioNote = null;
+    rows.forEach(function (row) {
       var p = row.project, resp = row.resp;
       if (!resp || resp.ok !== true) {
-        return '<div class="ws-card"><strong>' + esc(p.name || "Untitled project") + "</strong>" +
-          '<p class="ws-note">No computed result yet.</p></div>';
+        if (!portfolioNote) portfolioNote = "Portfolio Health has not been computed yet.";
+        return;
       }
       var snap = resp.result.portfolio_snapshot;
       if (!snap || snap.insufficient_data) {
-        var msg = snap && snap.message ? snap.message :
-          "Portfolio Health has not been computed for this project.";
-        return '<div class="ws-card"><strong>' + esc(p.name || "Untitled project") + "</strong>" +
-          '<p class="ws-note">' + esc(msg) + "</p></div>";
+        if (!portfolioNote) {
+          portfolioNote = (snap && snap.message) ? snap.message :
+            "Portfolio Health has not been computed for this portfolio.";
+        }
+        return;
       }
+      computed.push({ project: p, snap: snap });
+    });
+
+    var html = "";
+    if (portfolioNote) {
+      html += '<p class="ws-note">' + esc(portfolioNote) + "</p>";
+    }
+    html += computed.map(function (row) {
+      var p = row.project, snap = row.snap;
       var results = snap.results || {};
       var rowsHtml = Object.keys(results).map(function (key) {
         var m = results[key];
@@ -896,6 +890,8 @@
         '<div class="ws-note">portfolio size ' + esc(snap.portfolio_size) + "</div>" +
         rowsHtml + "</div>";
     }).join("");
+
+    listEl.innerHTML = html || '<p class="ws-empty">You are not the PM of any project yet.</p>';
   }
 
   // The stored portfolio_snapshot keys results by an internal cat8_N_* name, not a module id
