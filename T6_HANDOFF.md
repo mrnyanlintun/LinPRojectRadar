@@ -11,65 +11,73 @@
 
 # 2026-08-05 — THE SIGNAL SPHERE CHART'S GATE WAS CLOSED BY A FIELD THE SERVER NEVER WRITES
 
-Full detail in `REPORT_2026-08-05_charts-from-stored.md` — **read it before trusting "charts
-render from stored results" on this page**, because it leads with what this session could NOT
-establish, not just what it fixed. `tests_render.html` **89/90** (was 85/86 before this session's
-new Group 11 added 5 checks, all passing — the one red is the SAME pre-existing "production read
-path" gap by name and text, needs a live session token in the tab, not a regression). `tests.html`
-**51/51, unchanged**. **Server suite was NOT run this session** — no Python virtualenv exists in
-this worktree and nothing under `server/app/` was touched, but that is a real verification gap,
-stated rather than hidden. No fault-injection-and-revert campaign was run against this change,
-also stated rather than claimed.
+Full detail in `REPORT_2026-08-05_charts-from-stored.md`. **Revised after a follow-up session
+closed the four gaps the first pass left open** (broader chart-surface search, the spi/cpi axis
+search, abstention tests, and the server suite). Leading with the split the brief asked for:
 
-## The one thing actually fixed: `signalWebHtml`'s gate in `assets/js/detail.js`
+- **Fed by stored data, fixed and re-verified:** the Signal Sphere (`signalWebHtml`/
+  `wireSignalSphere`, `assets/js/detail.js`). Gate switched from `hasSignals(project)` (legacy
+  client blob) to `LinResults.hasResult(project)`; footnote tally rebuilt from `getModuleStatus()`
+  instead of `project.simulationSignals.signal_array`, reusing the exact pattern
+  `ensembleHtml`/`ensembleTally` already used a few lines below.
+- **Confirmed already correct, no fix needed:** Ensemble Analysis, Project Signal Network
+  (`projectnet2d.js`), Signal Flow (`neural_flow.js`) — all three already read the stored row as
+  their primary or only path. Verified by reading each file's status-resolution code directly,
+  not assumed.
+- **Confirmed dead code, not a live chart gap:** `simLedgerRow()`/`simSummary()` in `app.js` — has
+  the identical `simulationSignals`-gate defect shape but is never called from anywhere in the
+  codebase (grepped every `.js` file for the call). `forcenet.js`'s `LinForceNet` is loaded but
+  never initialized and has no container anywhere — also inert, also not a live gap.
+- **Architecturally blocked, correctly abstaining:** cross-period trend charts / trajectory
+  classifier (D1.3) — needs `documents.py` to stop passing `None` as `history` into
+  `compute_portfolio`. Unchanged, still open, still out of scope (server-side change).
+- **The spi/cpi-raw-ratio-vs-percent-delta-axis bug: not found**, after a second, documented,
+  broader search this session (see the report's Part 3) that additionally read the server's D1.2
+  (`Portfolio_Outlier`) computation directly and confirmed it returns **percentiles**, not raw
+  ratios. No live chart plots spi/cpi on a percent-delta-from-100 axis in this codebase today.
 
-Gated on `hasSignals(project)` (the legacy client-side `p.signals` blob) and tallied its footnote
-from `project.simulationSignals.signal_array` — a field the server never writes. The canvas draw
-code underneath it (`wireSignalSphere`) was ALREADY correct, reading every module's status via
-`getModuleStatus(m.method_class, project)` (the stored row). So the whole Signal Sphere panel was
-one closed gate away from working on every server-computed project. Fixed by switching the gate to
-`LinResults.hasResult(project)` and rebuilding the tally to walk `LIN_CATEGORIES` +
-`getModuleStatus`, the exact pattern `ensembleHtml`/`ensembleTally` already used a few lines below
-it — reused, not invented. Verified: a stored-only fixture (no `simulationSignals`, no legacy
-blob, `module_results` with one Red and one Green) renders the panel with a footnote reading those
-exact counts; a project with no stored result at all renders no panel — not an empty one, not a
-zeroed one.
+`tests_render.html` **93/94** (was 89/90; this session added 4 new abstention assertions to Group
+11, all passing — the one red is the same pre-existing, environment-gated "production read path"
+check, unrelated). `tests.html` **51/51, unchanged**. **Server suite: run this session** — a
+Python venv was created at `server/.venv` (gitignored), `requirements.txt` + `httpx` installed,
+and `server/run_all_suites.sh` (new) runs every `tools/test_*.py` against its own freshly migrated
+SQLite db, matching the repo's fresh-db-per-suite convention. **39 suites, 2196/2196, all green**
+— matches the counts in the prior handoff entry below exactly.
 
-## What this session could NOT locate, and did not guess at
+## Fault injection (new this session)
 
-**The "ensemble scatter chart receiving spi/cpi as raw ratios against a percent-delta-from-100
-axis" defect a task brief described was not found.** The chart actually named "Ensemble Scatter"
-in this codebase (`ensembleHtml`/`wireEnsembleScatter`) plots module status severity, not spi/cpi,
-and was already fixed in an earlier session (carries a `T12b` comment saying so). The only place
-spi/cpi are plotted as literal ratios against a matching ratio-scaled axis
-(`render_82` in `assets/js/charts3d.js`) uses entirely hardcoded illustrative `P01..P09` data, not
-a real stored project, so there is no live axis-mismatch reachable through it that this session
-could find. **Do not assume this defect is fixed or that it does not exist — it was not found,
-which is different from either.** A future session needs the specific screen named before
-attempting this half of the brief.
+Two faults injected against the current code, each confirmed to turn the exact expected checks
+red, then reverted and reconfirmed green:
 
-**`deepdive.js` (the per-computation "how this number was derived" explainer, 2,445 lines, ~101
-panels) was read in full and left untouched.** Its per-panel content is already labelled as
-illustrative worked examples (e.g. "3D spiral: each loop = feedback cycle. Amplification 1.35x
-after 4 loops.") rather than claims about the loaded project, and its entry gate already degrades
-honestly ("Awaiting analysis... nothing is computed or fabricated until they exist"). Nine of its
-panels (Modules 10–18, evidence-combination methods) fall back to LIVE CLIENT COMPUTATION via
-`window.LinSimulations` when `project.simulationSignals` is absent — which is always, on a
-server-computed project. This is a PRE-EXISTING, commented, deliberate design decision from before
-this session ("the same fallback the portfolio Signals page uses, so both views always agree"),
-not something this session evaluated for correctness against "the browser renders stored results
-only, computes nothing." Flagged for a dedicated look, not assumed safe.
+1. Abstention arithmetic reverted (`normalizeStatus(status)` → `(normalizeStatus(status) ||
+   "Green")` in `signalWebHtml`) — an abstaining module counted as a fake Green. Result: 90/94,
+   the 3 new abstention checks red exactly as expected. Reverted, back to 93/94.
+2. The Signal Sphere gate reverted to `hasSignals(project)` (the pre-fix condition). Result:
+   87/94, every Group 11 check depending on the panel's existence red. Reverted, back to 93/94.
 
-## The cross-period trend gap (`compute_portfolio`'s `history=None`) is UNCHANGED and confirmed still open
+## What this session (the follow-up) searched, so a third session doesn't repeat it
 
-`documents.py`'s `_compute_and_store` remains the only caller of `compute_portfolio`, still passing
-the literal `None`. `server/app/simulation/portfolio.py` already abstains BY ABSENCE (not a
-permanent Green dot) when history is insufficient — that half of D7.1 was closed in a session
-between the audit report and this one, confirmed by reading the code directly rather than assumed
-from the old report. Closing the trend chart itself needs a second caller assembling the project's
-own prior `ComputedResult` rows in period order and threading them through — a
-`server/app/documents.py` + `server/app/simulation/portfolio.py` change, explicitly out of this
-session's scope, not attempted.
+Grepped every file in `assets/js/` for `simulationSignals`; read every render path found
+(`app.js`, `categories.js`, `charts3d.js`, `deepdive.js`, `detail.js`, `forcenet.js`,
+`neural_flow.js`, `signals.js`, `simulations.js`, `store.js`); cross-checked which files
+`index.html` actually loads (`taxonomy.js`, NOT `categories.js`/`simulations.js`/`sim.js`/
+`deepdive.js` — confirmed by reading `index.html`'s `<script>` list, not assumed); traced every
+function found back to whether it has a live call site. Conclusion: Signal Sphere was the only
+live chart surface with the render-gate defect; no second one needs the same fix.
+
+## What is STILL open (unchanged from the first pass, and correctly so)
+
+`documents.py`'s `_compute_and_store` remains the only caller of `compute_portfolio`, still
+passing the literal `None` for `history`. `server/app/simulation/portfolio.py` already abstains
+BY ABSENCE (not a permanent Green dot) when history is insufficient. Closing the trend chart
+itself needs a second caller assembling the project's own prior `ComputedResult` rows in period
+order and threading them through — a `server/app/documents.py` + `server/app/simulation/
+portfolio.py` change, explicitly out of scope for a front-end-charts task, not attempted.
+
+`deepdive.js`'s ~101 explainer panels remain untouched, confirmed a second time to be illustrative
+worked examples, and additionally confirmed this session to be **unreachable from the live app at
+all** — `index.html` loads `taxonomy.js` in its place; `deepdive.js`/`charts3d.js`/`sim.js`/
+`simulations.js` are only loaded by `research/deepdive.html`, a separate research-tooling page.
 
 # 2026-08-05 — THE CONSENT SCREEN NEVER GOT THE RESEARCH PIN. FOUND, FIXED, VERIFIED.
 
