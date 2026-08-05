@@ -607,25 +607,8 @@
     });
   }
 
-  /* ---------- HEALTH — centered dialog (ML & AI Pattern Detection) ----------
-     Same dialog component as Archived/Activity. Portfolio Health (ex-"Cat 8")
-     is portfolio-scale, not a numbered project category, so this is the ONE
-     place its five PH.1-PH.5 module cards live (moved from the former
-     "Portfolio Intelligence" page section — not duplicated). Real per-project
-     results, real flagged-project lists, click-through to that project's detail. */
-  function openHealthModal() {
-    if (!window.LinUI || !window.LinDeepDive) return;
-    LinUI.openModal({
-      title: "Portfolio Health: ML & AI Pattern Detection",
-      mount: (body, close) => {
-        body.innerHTML = `<div class="app-modal-scroll" id="health-body"></div>`;
-        LinDeepDive.renderCat8Health(body.querySelector("#health-body"), close);
-      }
-    });
-  }
-
   // Phase 2 seam kept for API compatibility; store.js already hydrates.
   function mergeUserProjects() {}
 
-  window.LinIngest = { mergeUserProjects, renderPortfolioAdmin, openInlineManage, openCreateModal, openUploadModal, openArchivedModal, openActivityModal, openHealthModal, renderScopedIngest, populateSignals, INGEST_RULES };
+  window.LinIngest = { mergeUserProjects, renderPortfolioAdmin, openInlineManage, openCreateModal, openUploadModal, openArchivedModal, openActivityModal, renderScopedIngest, populateSignals, INGEST_RULES };
 })();

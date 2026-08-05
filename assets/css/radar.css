@@ -614,16 +614,23 @@ body.t-light .theme-switch button.active { color: #fff; }
 .recompute-all-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .recompute-all-status { font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; color: var(--muted); }
 #project-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+/* Flex-wrap rather than a fixed grid: the one consolidated list carries a
+   variable set of columns (code, name, address, sector, status, PM, period,
+   computed, actions), and several are conditional per row, so a fixed column
+   count cannot hold them. li-name grows; li-actions is pushed to the right. */
 .list-item {
-  width: 100%; text-align: left; display: grid;
-  grid-template-columns: auto 1fr auto auto auto; gap: 10px; align-items: center;
+  width: 100%; text-align: left; display: flex; flex-wrap: wrap;
+  align-items: center; column-gap: 10px; row-gap: 4px;
   background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm);
   padding: 8px 10px; cursor: pointer; color: var(--text); font-family: var(--font-body);
 }
 .list-item:hover { border-color: var(--line); background: var(--surface-soft); }
 .list-item.active { border-color: var(--phosphor); background: var(--surface-soft); }
-.li-code { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
-.li-name { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.li-code { font-family: var(--font-mono); font-size: 12px; color: var(--muted); flex: 0 0 auto; }
+.li-name { flex: 1 1 180px; min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.li-address { flex: 0 1 auto; max-width: 220px; font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.li-pm, .li-period, .li-computed { font-family: var(--font-mono); font-size: 10px; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.li-computed-dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
 .li-state { font-family: var(--font-mono); font-size: 11px; }
 .li-open {
   font-family: var(--font-mono); font-size: 10px; white-space: nowrap;
@@ -632,7 +639,7 @@ body.t-light .theme-switch button.active { color: #fff; }
 }
 .li-open:hover { border-color: var(--phosphor); color: var(--phosphor); }
 /* per-row action cluster: Manage · Open → */
-.li-actions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
+.li-actions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; margin-left: auto; }
 .li-manage {
   font-family: var(--font-mono); font-size: 10px; white-space: nowrap;
   padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line);
@@ -3836,10 +3843,14 @@ body { overflow-x: hidden; max-width: 100vw; }
   }
   /* the forced line break: zero-size, so it adds no visible gap of its own */
   .li-name::after { content: ""; order: 3; flex: 1 0 100%; height: 0; }
+  .li-address { order: 3; flex: 1 0 100%; max-width: none; }
   .sector-pill { order: 4; margin-left: 0; }
   .li-flag { order: 5; }
   .li-state { order: 6; margin-left: auto; }
-  .li-actions { order: 7; }
+  .li-pm { order: 7; }
+  .li-period { order: 8; }
+  .li-computed { order: 9; }
+  .li-actions { order: 10; flex: 1 0 100%; justify-content: flex-end; margin-left: 0; }
   /* The icon dock is fixed to the bottom of the viewport (~72px tall band). Nothing reserved
      space below the list for it, so scrolling to the last row put that row under the dock:
      measured 101.5625px^2 of real overlap at 390x844. #project-list is the only scrollable
