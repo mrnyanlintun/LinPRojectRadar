@@ -9,6 +9,76 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-05 — THE SIGNAL SPHERE CHART'S GATE WAS CLOSED BY A FIELD THE SERVER NEVER WRITES
+
+Full detail in `REPORT_2026-08-05_charts-from-stored.md`. **Revised after a follow-up session
+closed the four gaps the first pass left open** (broader chart-surface search, the spi/cpi axis
+search, abstention tests, and the server suite). Leading with the split the brief asked for:
+
+- **Fed by stored data, fixed and re-verified:** the Signal Sphere (`signalWebHtml`/
+  `wireSignalSphere`, `assets/js/detail.js`). Gate switched from `hasSignals(project)` (legacy
+  client blob) to `LinResults.hasResult(project)`; footnote tally rebuilt from `getModuleStatus()`
+  instead of `project.simulationSignals.signal_array`, reusing the exact pattern
+  `ensembleHtml`/`ensembleTally` already used a few lines below.
+- **Confirmed already correct, no fix needed:** Ensemble Analysis, Project Signal Network
+  (`projectnet2d.js`), Signal Flow (`neural_flow.js`) — all three already read the stored row as
+  their primary or only path. Verified by reading each file's status-resolution code directly,
+  not assumed.
+- **Confirmed dead code, not a live chart gap:** `simLedgerRow()`/`simSummary()` in `app.js` — has
+  the identical `simulationSignals`-gate defect shape but is never called from anywhere in the
+  codebase (grepped every `.js` file for the call). `forcenet.js`'s `LinForceNet` is loaded but
+  never initialized and has no container anywhere — also inert, also not a live gap.
+- **Architecturally blocked, correctly abstaining:** cross-period trend charts / trajectory
+  classifier (D1.3) — needs `documents.py` to stop passing `None` as `history` into
+  `compute_portfolio`. Unchanged, still open, still out of scope (server-side change).
+- **The spi/cpi-raw-ratio-vs-percent-delta-axis bug: not found**, after a second, documented,
+  broader search this session (see the report's Part 3) that additionally read the server's D1.2
+  (`Portfolio_Outlier`) computation directly and confirmed it returns **percentiles**, not raw
+  ratios. No live chart plots spi/cpi on a percent-delta-from-100 axis in this codebase today.
+
+`tests_render.html` **93/94** (was 89/90; this session added 4 new abstention assertions to Group
+11, all passing — the one red is the same pre-existing, environment-gated "production read path"
+check, unrelated). `tests.html` **51/51, unchanged**. **Server suite: run this session** — a
+Python venv was created at `server/.venv` (gitignored), `requirements.txt` + `httpx` installed,
+and `server/run_all_suites.sh` (new) runs every `tools/test_*.py` against its own freshly migrated
+SQLite db, matching the repo's fresh-db-per-suite convention. **39 suites, 2196/2196, all green**
+— matches the counts in the prior handoff entry below exactly.
+
+## Fault injection (new this session)
+
+Two faults injected against the current code, each confirmed to turn the exact expected checks
+red, then reverted and reconfirmed green:
+
+1. Abstention arithmetic reverted (`normalizeStatus(status)` → `(normalizeStatus(status) ||
+   "Green")` in `signalWebHtml`) — an abstaining module counted as a fake Green. Result: 90/94,
+   the 3 new abstention checks red exactly as expected. Reverted, back to 93/94.
+2. The Signal Sphere gate reverted to `hasSignals(project)` (the pre-fix condition). Result:
+   87/94, every Group 11 check depending on the panel's existence red. Reverted, back to 93/94.
+
+## What this session (the follow-up) searched, so a third session doesn't repeat it
+
+Grepped every file in `assets/js/` for `simulationSignals`; read every render path found
+(`app.js`, `categories.js`, `charts3d.js`, `deepdive.js`, `detail.js`, `forcenet.js`,
+`neural_flow.js`, `signals.js`, `simulations.js`, `store.js`); cross-checked which files
+`index.html` actually loads (`taxonomy.js`, NOT `categories.js`/`simulations.js`/`sim.js`/
+`deepdive.js` — confirmed by reading `index.html`'s `<script>` list, not assumed); traced every
+function found back to whether it has a live call site. Conclusion: Signal Sphere was the only
+live chart surface with the render-gate defect; no second one needs the same fix.
+
+## What is STILL open (unchanged from the first pass, and correctly so)
+
+`documents.py`'s `_compute_and_store` remains the only caller of `compute_portfolio`, still
+passing the literal `None` for `history`. `server/app/simulation/portfolio.py` already abstains
+BY ABSENCE (not a permanent Green dot) when history is insufficient. Closing the trend chart
+itself needs a second caller assembling the project's own prior `ComputedResult` rows in period
+order and threading them through — a `server/app/documents.py` + `server/app/simulation/
+portfolio.py` change, explicitly out of scope for a front-end-charts task, not attempted.
+
+`deepdive.js`'s ~101 explainer panels remain untouched, confirmed a second time to be illustrative
+worked examples, and additionally confirmed this session to be **unreachable from the live app at
+all** — `index.html` loads `taxonomy.js` in its place; `deepdive.js`/`charts3d.js`/`sim.js`/
+`simulations.js` are only loaded by `research/deepdive.html`, a separate research-tooling page.
+
 # 2026-08-05 — THE CONSENT SCREEN NEVER GOT THE RESEARCH PIN. FOUND, FIXED, VERIFIED.
 
 Full detail in `REPORT_2026-08-05_fairbanks-default.md` — that file did not exist before this

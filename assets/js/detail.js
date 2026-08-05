@@ -311,16 +311,29 @@
     return `M ${p0.x.toFixed(1)} ${p0.y.toFixed(1)} A ${r.toFixed(1)} ${r.toFixed(1)} 0 ${large} 1 ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`;
   }
 
+  // T6 charts-from-stored: this panel used to gate on `hasSignals(project)` — the
+  // legacy client-side p.signals blob — and tally counts from `project.simulationSignals`,
+  // a client-only field the server never writes (see REPORT_2026-08-02_stages-7-8-audit.md
+  // D7.1/D7.2 and NAMING_AUTHORITY.md section 5: "Computation is server-side"). Neither
+  // field is ever populated by a server-computed project, so this panel's render gate was
+  // permanently closed even though the canvas draw code beneath it (wireSignalSphere,
+  // buildModuleAxes) already reads every module's status from the stored row via
+  // getModuleStatus(). Gate and tally now both read the stored result, matching the
+  // pattern ensembleHtml/wireEnsembleScatter already established below.
   function signalWebHtml(project) {
     if (!window.LIN_CATEGORIES) return "";
-    if (!window.hasSignals || !hasSignals(project)) return "";
+    if (!(window.LinResults && LinResults.hasResult(project))) return "";
     const cur = currentSnapshot(project);
-    const simArr = (project.simulationSignals && project.simulationSignals.signal_array) || [];
     const totalModules = LIN_CATEGORIES.reduce((n, c) => n + c.modules.length, 0);
-    const activeCount = simArr.filter((r) => r && r.status_color && normalizeStatus(r.status_color)).length;
     const counts = { Red: 0, Amber: 0, Yellow: 0, Green: 0, Complete: 0 };
-    simArr.forEach((r) => {
-      if (r && r.status_color) { const n = normalizeStatus(r.status_color); if (n && counts[n] != null) counts[n]++; }
+    let activeCount = 0;
+    LIN_CATEGORIES.forEach((cat) => {
+      cat.modules.forEach((m) => {
+        const active = !(cat.parked || m.active === false);
+        const status = active && window.getModuleStatus ? getModuleStatus(m.method_class, project) : null;
+        const norm = active ? normalizeStatus(status) : null;
+        if (norm && counts[norm] != null) { counts[norm]++; activeCount++; }
+      });
     });
     return `<section class="panel signal-web-panel sphere3d-panel">
       <div class="sw-head">
