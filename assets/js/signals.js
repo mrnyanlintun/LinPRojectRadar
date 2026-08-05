@@ -1731,7 +1731,14 @@
     const persisted = project && project.signalInputs;
     const persistedHasData = !!(persisted && Object.keys(persisted).some(
       (k) => k !== "sources" && persisted[k] != null && persisted[k] !== ""));
-    const si = entry.signalInputs || (persistedHasData ? persisted : null);
+    // T13. Server-computed projects store signal inputs in ComputedResult.signal_inputs, not in
+    // project.doc.signalInputs (which is a legacy extraction-only field). If neither the
+    // session cache nor the legacy field has data, read from the stored result row.
+    const storedRow = !entry.signalInputs && !persistedHasData && window.LinResults
+      ? LinResults.rowFor(project) : null;
+    const storedSi = storedRow && storedRow.signal_inputs && typeof storedRow.signal_inputs === "object"
+      && Object.keys(storedRow.signal_inputs).length > 0 ? storedRow.signal_inputs : null;
+    const si = entry.signalInputs || (persistedHasData ? persisted : null) || storedSi;
     const missing = entry.missing || [];
     const dates = entry.dates || null;
     if (!si && !signalEvents(project).length) {

@@ -1029,6 +1029,14 @@
       const body = document.getElementById("body-" + secId);
       if (body && body.style.display !== "none") runLazyInit(secId);
     });
+
+    // T13. Fetch the full stored result (module_results + signal_inputs) and graft it onto
+    // the project so every surface on this page reads from the same computed row.
+    // a_get (called by hydrateFullProject) returns only category_statuses, not module_results,
+    // so Signal Ledger and Project Signal Network always showed "No data" for individual modules
+    // even when the project had a fully computed result. This call is non-blocking: the page
+    // renders immediately with whatever is available, and sections re-draw once the row arrives.
+    primeAndRefresh(id, p);
   }
 
   /* ---------- lazy section initialisation (render-on-first-expand) ---------- */
@@ -1044,6 +1052,58 @@
     const secId = e && e.detail && e.detail.id;
     if (secId) runLazyInit(secId);
   });
+
+  /* ---------- fetch full stored result and refresh open sections ----------
+     Called at the end of render(). Fetches projectresults (which includes
+     module_results and signal_inputs — fields that a_get deliberately omits)
+     and grafts them onto project.storedResult so every rowFor() call on this
+     page returns a complete row. Re-runs any sections that were already open
+     when the fetch completes so they re-read the now-complete row.
+
+     Why graft rather than replace: rowFor(project) prefers project.storedResult
+     over ROWS[id]. Replacing storedResult wholesale or nulling it would race with
+     any background a_get refresh that re-sets it. Grafting the two missing fields
+     is idempotent and safe.
+  */
+  async function primeAndRefresh(id, p) {
+    if (!window.LinStore || typeof LinStore.postWithTimeout !== "function") return;
+    const tok = window.LinAuth ? LinAuth.getToken() : null;
+    let resp;
+    try {
+      resp = await LinStore.postWithTimeout(
+        { action: "projectresults", id: id, period: 1, session_token: tok }, 30000
+      );
+    } catch (e) {
+      console.warn("[detail] primeAndRefresh fetch failed for", id, e && e.message);
+      return;
+    }
+    if (!resp || resp.ok !== true || !resp.result) return;
+
+    // Share with taxonomy.js so getModuleStatus / getCategoryStatus work everywhere.
+    if (window.LinResults) LinResults.prime(id, resp.result);
+
+    // Graft missing fields onto storedResult so rowFor(p) returns the complete row.
+    // storedResult may not exist (project has no computed result yet) — guard each field.
+    if (p.storedResult) {
+      if (resp.result.module_results && !p.storedResult.module_results) {
+        p.storedResult.module_results = resp.result.module_results;
+      }
+      if (resp.result.signal_inputs && !p.storedResult.signal_inputs) {
+        p.storedResult.signal_inputs = resp.result.signal_inputs;
+      }
+    }
+
+    // Re-run any sections already open — they rendered before module_results arrived.
+    const REFRESH_SECTIONS = ["d-ledger", "d-projnet", "d-web", "d-ensemble", "d-docsignals"];
+    REFRESH_SECTIONS.forEach((secId) => {
+      if (!lazyInits || typeof lazyInits[secId] !== "function") return;
+      const body = document.getElementById("body-" + secId);
+      if (!body || body.style.display === "none") return;
+      // Clear the done flag so runLazyInit re-fires.
+      delete lazyDone[secId];
+      runLazyInit(secId);
+    });
+  }
 
   /* ============================================================
      Executive brief — Lin-generated 4-6 sentence summary of the
