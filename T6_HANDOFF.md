@@ -4367,3 +4367,71 @@ Full suite on the final code: server 39/39 (39 files, fresh SQLite DB each), `te
 Full report: `REPORT_2026-08-05_map-zoom-real.md` in the completing session's final response (this
 session's harness blocked writing a new report file at the repo root; T6_HANDOFF.md is the
 committed record of it).
+
+## Ledger empty states: all four parts complete (2026-08-06)
+
+Branch `claude/ledger-empty-states-s5s90m`. A prior session on this branch completed only Part 3
+(storing the abstention message server-side) and stopped early on session budget; this session
+finished Parts 1, 2, verification and the report on top of it, without redoing Part 3's work.
+Full report: `REPORT_2026-08-05_ledger-empty-states.md` (this session's harness blocked writing
+it at the repo root — its complete text was returned verbatim in the completing session's final
+response; the caller commits it).
+
+**Two states that are reasons a row is empty, not a sixth/seventh verdict:** "No data" (grey — a
+module ran and abstained because a figure or series it needed was not in the documents) and "Not
+relevant" (blue — a construction-phase module on a Design-sector project, or the reverse; the
+taxonomy carries none of the reverse today). Neither is one of the five verdicts (Complete,
+Green, Yellow, Amber, Red); neither contributes to a category or project status.
+
+**Part 3, finished (storage was already done; rendering was not).** Prior session's
+`registry.py` change (`abstained` as `{module_id, reason}`) was never persisted past the HTTP
+response — `_compute_and_store` discarded it before it reached `computed_results`, so the ledger
+could not read it back. This session added migration `0020_abstained_modules`
+(`computed_results.abstained`, nullable JSON, NULL on pre-migration rows — nothing backfilled),
+wired `run_and_store` to persist it and `_result_view` to serve it back verbatim (not gated by
+`recommendation_visible`; a module's own abstention reason is not an action field). `app.js`'s
+`categoryLedgerHtml` now renders it in a new `.cat-mod-reason` block under a "No data" pill, only
+when a module gave one.
+
+**Part 1.** `taxonomy.js`'s `getModuleStatus` already returned `'NA'` for sector exclusion; it now
+returns `'NODATA'` (not a bare `null`, which stays reserved for "this project has no stored row
+at all") when the row exists but this module has no entry in `module_results`. Non-voting is
+structural and predates this branch (`compute.py`'s rollup reads only `run["computed"]`), proven
+rather than trusted: `server/tools/test_ledger_empty_states.py` Guarantee 1 fault-injects a vote
+from an abstained-equivalent status into the fusion input and confirms the status moves, showing
+the real exclusion is load-bearing.
+
+**Part 2.** `radar.css` gained `--status-notrelevant-text` / `--status-nodata-mod-text`, declared
+for light (`:root`, default) and redeclared for dark (`body[data-theme="dark"]`), contrast-
+measured against `--surface`/`--page-bg` on both (4.5:1 AA floor, all four combinations clear it
+with margin — see the report for the numbers). `.pill-nodata` (dashed border) and
+`.pill-notrelevant` (dotted border) give both states a shape distinct from the five verdicts
+(borderless) and from each other. Wired into the Signal Ledger (`app.js`), the Signal Sphere
+legend (`detail.js`), and the Signal Flow legend/node colouring (`neural_flow.js`, via a new
+`NotRelevant` entry in `config.js`'s `LIN_STATUS_COLORS`). **Signal Network
+(`projectnet2d.js`) was deliberately left untouched**: it renders one node per category, not per
+module, and a category's fused status is always a real verdict or `null` — sector exclusion and
+abstention are module-level concepts that structurally cannot reach a category node, confirmed by
+reading `getCategoryStatus`'s contract rather than assumed.
+
+**Verification.** Server: 42 suites, 2290/2290 checks, fresh SQLite DB per file, including new
+`server/tools/test_ledger_empty_states.py` (21/21: non-voting proof + fault injection, storage
+round-trip through `_result_view`, contrast measured from the live stylesheet, shape distinctness
+read from the live stylesheet). `tests.html` 51/51. `tests_render.html` 169/170 (12 new Group 18
+checks against the real production `categoryLedgerHtml`/`renderLedger` in a real headless
+Chromium — `--use-gl=swiftshader --enable-webgl --ignore-gpu-blocklist`, app served from the repo
+root via `python -m http.server` alongside the FastAPI app with `CORS_ORIGINS` set; the one red
+is the pre-existing auth-gated "production read path" check, red on `main` too). Every new check
+fault-injected and confirmed to go red, then reverted and confirmed green again (a `.pill-nodata`
+border change, a `.pill-notrelevant` class swap, a fabricated vote in the fusion input).
+
+**Honestly not done:** no live-login, fully interactive end-to-end drive of the Project Detail
+page against seeded Design-vs-Construction projects in a browser. Verification instead drove the
+real production render functions against realistic fixtures built from the real taxonomy (the
+same method Group 16 in `REPORT_2026-08-05_ledger-calculations.md` already established) — real
+code, real browser, but not the same guarantee as a full interactive session. Flagged in the
+report, not hidden.
+
+**Not merged to `main` by the completing session** — see the completing session's final response
+for the merge decision at the time this entry was written; check `git log origin/main` for
+whether it has since landed.

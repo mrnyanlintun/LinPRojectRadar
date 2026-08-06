@@ -348,6 +348,7 @@
           <span><i class="sw-amber"></i>Amber</span>
           <span><i class="sw-red"></i>Red</span>
           <span><i class="sw-none"></i>No data</span>
+          <span><i class="sw-na"></i>Not relevant</span>
         </div>
       </div>
       <div class="chart3d-controls">

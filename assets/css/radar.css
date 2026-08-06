@@ -136,6 +136,20 @@
   --status-amber-text:    var(--status-amber);
   --status-red-text:      var(--status-red);
 
+  /* Two states that are reasons a row is empty, not a sixth or seventh verdict: "Not relevant"
+     (blue — a construction-phase module on a Design project, or the reverse) and "No data" (grey
+     — the module ran and needed a figure or series the documents did not carry). Neither is one
+     of the five verdicts and neither contributes to a category or project status. Deliberately a
+     DIFFERENT blue from --status-complete (a real verdict) so the two blues do not read as the
+     same state. Measured against --surface/--page-bg on both the light (default) and dark themes
+     by server/tools/test_ledger_empty_states.py, which fails if a value here drops below AA
+     (4.5:1) on either theme's surface or page background:
+       light: --status-notrelevant-text #5b3dd6 (6.17 surface / 6.34 page)
+              --status-nodata-mod-text  #55606f (5.79 surface / 5.94 page)
+       dark redeclares both below; see body[data-theme="dark"]. */
+  --status-notrelevant-text: #5b3dd6;
+  --status-nodata-mod-text:  #55606f;
+
   /* Marker outline: only Miami needs one (pale fills vanish on cream), so the
      dark themes carry a zero-width transparent stroke rather than a special case. */
   --status-outline: transparent;
@@ -265,6 +279,13 @@ body[data-theme="dark"] {
      central --status-* palette from :root. --eyebrow is a Gotham brand accent
      (not a status), so it keeps its own literal gold. */
   --eyebrow: #ffb01f;
+
+  /* "Not relevant" / "No data" text, redeclared for the dark surface. Measured against
+     --surface rgba(11,14,23,.82) (composited over --page-bg, effectively ~#0b0e17) and
+     --page-bg #06080f: --status-notrelevant-text #9d8cff (7.00 / 7.27),
+     --status-nodata-mod-text #a6afc2 (8.75 / 9.08). Both clear AA (4.5:1) with margin. */
+  --status-notrelevant-text: #9d8cff;
+  --status-nodata-mod-text:  #a6afc2;
 
   --sector-design: #ffffff;
   --sector-construction: #4aa3ff;
@@ -706,9 +727,28 @@ body.t-light .theme-switch button.active { color: #fff; }
 .pill-blue,
 .pill-complete { color: var(--blue-status); background: color-mix(in srgb, var(--blue-status) 16%, transparent); }
 .pill-parked, .pill-none { color: var(--faint); background: color-mix(in srgb, var(--muted) 10%, transparent); }
-/* N/A — sector abstention (construction-phase module on a Design project).
-   Distinct dim state: dashed outline separates it from plain "No data". */
+/* Legacy N/A pill, kept for any caller still asking for it by this class name. */
 .pill-na { color: var(--faint); background: transparent; border: 1px dashed color-mix(in srgb, var(--muted) 45%, transparent); }
+
+/* Two states that are reasons a row is empty, not a sixth or seventh verdict — see
+   getModuleStatus()/statusPill() in app.js and taxonomy.js. Square corners (not the five
+   verdicts' fully-rounded pill) and a distinct border style each, so the shape carries the
+   difference even where colour cannot: "No data" is a dashed square, "Not relevant" is a
+   dotted square. Colours are --status-nodata-mod-text (grey) and --status-notrelevant-text
+   (a blue distinct from --status-complete's verdict blue), both contrast-measured on light and
+   dark surfaces — see the :root and body[data-theme="dark"] declarations above. */
+.pill-nodata {
+  color: var(--status-nodata-mod-text);
+  background: color-mix(in srgb, var(--status-nodata-mod-text) 10%, transparent);
+  border: 1.5px dashed color-mix(in srgb, var(--status-nodata-mod-text) 55%, transparent);
+  border-radius: 4px;
+}
+.pill-notrelevant {
+  color: var(--status-notrelevant-text);
+  background: color-mix(in srgb, var(--status-notrelevant-text) 10%, transparent);
+  border: 1.5px dotted color-mix(in srgb, var(--status-notrelevant-text) 55%, transparent);
+  border-radius: 4px;
+}
 
 /* 9-category signal ledger (project detail) */
 .cat-row { border-top: 1px solid var(--line); padding: 12px 0; }
@@ -728,6 +768,11 @@ body.t-light .theme-switch button.active { color: #fff; }
    beneath its module row. A block element (not an inline span) so it always occupies real
    width/height and cannot be mistaken, in a check, for a zero-size target. */
 .cat-mod-finding { margin: 0 0 6px 66px; font-size: 12px; color: var(--muted, #9fb0cc); font-family: var(--font-mono); }
+/* A module's own abstention message (verbatim, never fabricated) — see getModuleAbstentionReason
+   in taxonomy.js and the reason block in categoryLedgerHtml. Styled like .cat-mod-finding but in
+   the "No data" grey, so it visually pairs with the pill above it rather than reading as a
+   computed finding. */
+.cat-mod-reason { margin: 0 0 6px 66px; font-size: 12px; color: var(--status-nodata-mod-text); font-family: var(--font-mono); font-style: italic; }
 /* ---------- per-module inline charts (Signal Ledger) ---------- */
 .mchart { margin: 2px 0 12px 66px; padding: 10px 12px; border: 1px solid var(--line, rgba(128,140,168,.25));
   border-radius: 8px; background: var(--panel-2, rgba(128,140,168,.06)); max-width: 420px; }
@@ -1859,7 +1904,10 @@ body.t-light .lwr-robot-svg {
 .sw-red { background: var(--alarm-red) !important; fill: var(--alarm-red); }
 .sw-yellow { background: var(--yellow) !important; fill: var(--yellow); }
 .sw-blue, .sw-complete { background: var(--blue-status) !important; fill: var(--blue-status); }
-.sw-none { background: var(--faint) !important; fill: var(--faint); }
+.sw-none { background: var(--status-nodata-mod-text) !important; fill: var(--status-nodata-mod-text); }
+/* "Not relevant" — square swatch (the five verdicts above are round dots), a distinct blue from
+   --blue-status (Complete, a real verdict), so this legend entry does not read as a sixth Complete. */
+.sw-na { background: var(--status-notrelevant-text) !important; fill: var(--status-notrelevant-text); border-radius: 2px; }
 .sw-prev-key { display: inline-block; width: 26px; border-top: 1px dashed rgba(233,162,59,0.65); transform: translateY(-3px); }
 .signal-web-svg { display: block; width: 100%; height: auto; max-height: 420px; margin-top: 10px; overflow: visible; }
 .sw-ring { fill: none; stroke-width: 1; }

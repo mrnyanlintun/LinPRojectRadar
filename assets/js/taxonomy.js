@@ -384,10 +384,19 @@ window.projectLevelCategories = function () {
 
   /* Per-module status, read from the stored row.
 
-     Returns 'NA' when the module's sector tag excludes this project, exactly as before — a
-     deliberate abstention, distinct from "no data yet". Returns null when there is no stored
-     row, or the row has no entry for this module, which is what an abstaining or
-     insufficient-data module looks like server-side. */
+     Two states are reasons a row is empty, not a sixth or seventh verdict, and neither
+     contributes to a category or project status (see contributesToProjectStatus and
+     compute.py's rollup, which never reads either):
+
+       'NA'     — the module's sector tag excludes this project (a construction-phase module
+                  on a Design project, or the reverse). Read from the taxonomy, not guessed.
+       'NODATA' — the row exists (this project HAS been computed for this period) but this
+                  module has no entry in it: it ran and abstained, because a figure or series
+                  the module needed was not in the documents.
+
+     Returns null only when there is no stored row at all — a project that has not been
+     computed for this period, which is a different situation from either of the above and is
+     handled entirely elsewhere (the "Awaiting analysis" ledger state). */
   window.getModuleStatus = function (methodClass, project) {
     if (!project) return null;
     if (window.isModuleSectorNA && window.isModuleSectorNA(methodClass, project)) return "NA";
@@ -399,6 +408,23 @@ window.projectLevelCategories = function () {
       if (row.module_results[i] && row.module_results[i].module_id === num) {
         return row.module_results[i].status_color || null;
       }
+    }
+    return "NODATA";
+  };
+
+  /* The module's own abstention message, read verbatim from the stored row's `abstained` list
+     (registry.py run_all(): {module_id, reason}, reason=None when the module gave none).
+     Returns null when there is no stored row, the row predates the column (abstained is NULL),
+     or this module gave no reason — never fabricated. This is the ONLY source for the reason
+     text: it is not derived from status, not reworded, not synthesised. */
+  window.getModuleAbstentionReason = function (methodClass, project) {
+    var row = rowFor(project);
+    if (!row || !Array.isArray(row.abstained)) return null;
+    var num = METHOD_TO_NUM[methodClass];
+    if (!num) return null;
+    for (var i = 0; i < row.abstained.length; i++) {
+      var a = row.abstained[i];
+      if (a && a.module_id === num) return a.reason || null;
     }
     return null;
   };

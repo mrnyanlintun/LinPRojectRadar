@@ -120,7 +120,10 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
     for new_id in ids:
         out = run_module(new_id, si, rand, period_cutoff)
         if out.get("insufficient_data") or out.get("status_color") is None:
-            abstained.append(new_id)
+            # Retain the module's own abstention message (evidence_metric), when it gave one, so
+            # the ledger can say why a module is silent instead of showing only its bare id. A
+            # module that produced no message is recorded with reason=None; nothing is invented.
+            abstained.append({"module_id": new_id, "reason": out.get("evidence_metric")})
             continue
         out = dict(out)
         out["module_id"] = new_id

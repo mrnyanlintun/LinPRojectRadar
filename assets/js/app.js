@@ -1488,11 +1488,21 @@
     const s = window.normalizeSector ? normalizeSector(p && p.sector) : String(p && p.sector || "hybrid");
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
+  // Two states are reasons a row is empty, not a sixth or seventh verdict: NODATA (grey — the
+  // module ran and abstained because a figure or series it needed was not in the documents) and
+  // NA (blue — this module is not relevant to this project's sector, e.g. a construction-phase
+  // module on a Design project). Neither contributes to a category or project status; see
+  // getModuleStatus in taxonomy.js and contributesToProjectStatus. Each carries its own shape
+  // (square-cornered, dashed border) distinct from the five verdicts' rounded pills, so the
+  // difference reads without relying on colour.
   function statusPill(status, naSector) {
-    if (!status) return `<span class="pill pill-none">No data</span>`;
+    if (!status || status === "NODATA") {
+      const full = "No data: this module needed a figure or series the documents did not carry.";
+      return `<span class="pill pill-nodata" title="${esc(full)}">No data</span>`;
+    }
     if (status === "NA") {
-      const full = `N/A: not applicable to ${naSector || "this sector's"} projects`;
-      return `<span class="pill pill-na" title="${esc(full)}">N/A</span>`;
+      const full = `Not relevant: this module does not apply to ${naSector || "this sector's"} projects`;
+      return `<span class="pill pill-notrelevant" title="${esc(full)}">Not relevant</span>`;
     }
     const key = String(status).toLowerCase().replace("-review", "");
     const label = { green: "Green", amber: "Amber", red: "Red", yellow: "Yellow", complete: "Complete" }[key] || status;
@@ -1602,6 +1612,7 @@
       const modRows = cat.modules.map((m) => {
         const st = window.getModuleStatus ? getModuleStatus(m.method_class, p) : null;
         const na = st === "NA";
+        const nodata = st === "NODATA" || !st;
         // Per-module chart, drawn only when the stored result holds a labelled
         // breakdown for this module. An abstaining module returns "" (no chart).
         const chart = (!na && window.LinModuleCharts)
@@ -1615,11 +1626,20 @@
         const r = (!na && window.getModuleResult) ? getModuleResult(m.method_class, p) : null;
         const finding = (r && r.evidence_metric)
           ? `<div class="cat-mod-finding">${esc(r.evidence_metric)}</div>` : "";
-        return `<div class="cat-mod-row${na ? " cat-mod-na" : ""}"${na ? ` title="N/A: not applicable to ${esc(secName)}-sector projects"` : ""}>
+        // The module's OWN abstention message, read verbatim from the stored row's `abstained`
+        // list (registry.py run_all()). Rendered ONLY for a module that gave one — a module
+        // that abstained without a message shows the "No data" pill and nothing more, never a
+        // generic invented line. Never shown for a computed module (finding above covers that)
+        // and never shown for NA (a sector exclusion, not an abstention).
+        const reason = (nodata && window.getModuleAbstentionReason)
+          ? getModuleAbstentionReason(m.method_class, p) : null;
+        const reasonHtml = reason
+          ? `<div class="cat-mod-reason">${esc(reason)}</div>` : "";
+        return `<div class="cat-mod-row${na ? " cat-mod-na" : ""}"${na ? ` title="Not relevant: this module does not apply to ${esc(secName)}-sector projects"` : ""}>
           <span class="cat-mod-num">${esc(m.num)}</span>
           <span class="cat-mod-name">${esc(m.name)}</span>
           ${statusPill(st, secName + "-sector")}
-        </div>${finding}${chart}`;
+        </div>${finding}${reasonHtml}${chart}`;
       }).join("");
       // Sector-abstention note — the category stays; only its construction-phase
       // modules abstain for this sector.

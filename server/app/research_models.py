@@ -653,6 +653,12 @@ class ComputedResult(Base):
     # column a result could not answer "which version of the pay application produced this
     # status" once the period's document set had moved on. NULL on rows computed before 0013.
     source_documents: Mapped[dict] = mapped_column(JSONType, nullable=True)
+    # 0020. Which modules abstained on this row and why, verbatim from `run_all()`'s own
+    # `abstained` list: [{module_id, reason}], reason=None when the module gave none. NULL on
+    # rows computed before 0020 — the message was never stored for them, so there is nothing to
+    # backfill. Never fabricated on read: a NULL here means "no reason on record", not "nothing
+    # abstained" (module_results already answers whether something abstained).
+    abstained: Mapped[dict] = mapped_column(JSONType, nullable=True)
 
 
 class Observation(Base):

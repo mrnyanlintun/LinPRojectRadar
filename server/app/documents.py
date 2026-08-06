@@ -679,6 +679,9 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
         # no document produced it, and inventing provenance would be worse than stating none.
         source_documents=source_documents,
         module_results=run.get("modules"),
+        # 0020. Persist the abstention reasons `run_all()` already produces, so the ledger can
+        # read them back after the fact instead of only for the instant of the compute response.
+        abstained=run.get("abstained"),
         category_statuses=run.get("category_statuses"),
         project_status=run.get("project_status"),
         portfolio_snapshot=snapshot,
@@ -776,6 +779,10 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
         "signal_inputs": row.signal_inputs,
         "module_results": (row.module_results if include_recommendation
                            else _redact_module_actions(row.module_results)),
+        # 0020. Which modules abstained on this row and why, verbatim (module_id + reason, never
+        # an action field, so nothing here is gated by `recommendation_visible`). NULL on rows
+        # computed before the column existed.
+        "abstained": row.abstained,
         "category_statuses": row.category_statuses,
         "project_status": row.project_status,
         "portfolio_snapshot": row.portfolio_snapshot,
