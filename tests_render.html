@@ -1427,6 +1427,51 @@
       true, !!spec2 && !spec2.available && /did not compute/i.test(spec2.reason));
   })();
 
+  /* GROUP 17 — a project with documents uploaded but never computed reads distinctly from a
+     project genuinely awaiting analysis (no documents at all). WRAA-24-017-C's shape: 25
+     `signals_extracted` events on the project, no stored result. Compute is a separate action
+     (documents.py, "COMPUTE IS EVENT-DRIVEN") never invoked automatically on upload; the empty
+     state must not claim work is in progress when nothing is running. */
+  (function () {
+    const uploadedNoCompute = storedOnlyProject();
+    uploadedNoCompute.events = [
+      { type: "signals_extracted", docType: "monthly_report", fileName: "monthly-report-01.pdf" },
+      { type: "signals_extracted", docType: "monthly_report", fileName: "monthly-report-02.pdf" }
+    ];
+    // no .storedResult -> genuinely uncomputed
+    window.LIN_PROJECTS.length = 0; window.LIN_PROJECTS.push(uploadedNoCompute);
+    window.LinResults.clear();
+    const hostUploaded = scratch();
+    window.LinApp.renderLedger(uploadedNoCompute, hostUploaded);
+    const uploadedText = hostUploaded.querySelector(".awaiting-state")
+      ? hostUploaded.querySelector(".awaiting-state").textContent : "";
+    assert("group 17: documents uploaded, not computed -> distinct heading",
+      true, /Documents uploaded, computation not yet run/i.test(uploadedText));
+    assert("group 17: documents uploaded, not computed -> does NOT read the generic phrase",
+      false, /^Awaiting analysis\./.test(uploadedText.trim()));
+
+    const neverUploaded = storedOnlyProject();
+    // no .events, no .storedResult -> genuinely awaiting, nothing has happened yet
+    window.LIN_PROJECTS.length = 0; window.LIN_PROJECTS.push(neverUploaded);
+    window.LinResults.clear();
+    const hostNever = scratch();
+    window.LinApp.renderLedger(neverUploaded, hostNever);
+    const neverText = hostNever.querySelector(".awaiting-state")
+      ? hostNever.querySelector(".awaiting-state").textContent : "";
+    assert("group 17: genuinely no documents -> the original awaiting-analysis heading",
+      true, /^Awaiting analysis\./.test(neverText.trim()));
+    assert("group 17: genuinely no documents -> does NOT claim documents were uploaded",
+      false, /Documents uploaded, computation not yet run/i.test(neverText));
+
+    // Same distinction on the Governance Decision card, the other surface the brief named.
+    const hostDecision = scratch();
+    window.LinApp.renderDecisionCard(uploadedNoCompute, hostDecision);
+    const decisionText = hostDecision.querySelector(".awaiting-state")
+      ? hostDecision.querySelector(".awaiting-state").textContent : "";
+    assert("group 17: Governance Decision card shows the same uploaded-not-computed text",
+      true, /Documents uploaded, computation not yet run/i.test(decisionText));
+  })();
+
   // ---- render results ----
   function renderResults() {
   const tbody = document.querySelector("#results tbody");
