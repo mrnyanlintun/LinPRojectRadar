@@ -4070,3 +4070,33 @@ went red, reverted, confirmed 12/12 again.
 Full suite on the final code: server 39/39 (2200/2200 checks), `tests.html` 51/51,
 `tests_render.html` 117/118 (same pre-existing auth-gated FAIL as above, untouched by this
 change). Merged to `main`.
+
+## The globe verification above was against a fake, and that mattered (2026-08-06)
+
+Branch `claude/map-zoom-real-s5s90m`. The owner reported that on the live site, selecting a project
+moved neither the map nor the globe, despite the entry above reporting 12/12 green. Re-verified
+with a **real** headless Chromium (`/opt/pw-browsers/chromium`, launched with `--use-gl=swiftshader
+--enable-webgl --ignore-gpu-blocklist`) driving the real dev server end to end: real login, real
+project-list row clicks, real DOM/instance readback. That flag is the detail the entry above
+missed — this container's Chromium *does* composite WebGL and run globe.gl's real animation loop;
+nobody had tried it.
+
+**Result: the atlas's wiring was already correct on the real click path** — no defect found in
+`app.js` or `atlas.js`. The globe's wiring was also reached and did move the camera, but the camera
+**landed in the wrong place**: OrbitControls' default `enableDamping` (never touched by
+`globe.js`) read the `pointOfView()` tween as user input and kept applying inertia for several
+seconds after the tween finished, drifting the camera to a point roughly 4.7° off the selected
+project instead of holding it there. Fixed with one line — `controls.enableDamping = false` at
+mount, alongside the existing `autoRotate` lines — confirmed by reading the real `pointOfView()`
+off the real globe.gl instance for ten seconds after selecting a project, before and after the fix.
+Fault-injected both the atlas and globe fixes (a `return` in `LinAtlas.focus()`; commenting out the
+damping line) and confirmed each turns the corresponding real-browser check red, then reverted.
+
+`#215`'s `NavigationControl` remains dead code, confirmed again: `#216` orphaned `glMap` and no
+live path constructs it. Left untouched — reviving MapLibre is an owner decision.
+
+Full suite on the final code: server 39/39 (39 files, fresh SQLite DB each), `tests.html` 51/51,
+`tests_render.html` 117/118 (same pre-existing auth-gated FAIL, untouched). Merged to `main`.
+Full report: `REPORT_2026-08-05_map-zoom-real.md` in the completing session's final response (this
+session's harness blocked writing a new report file at the repo root; T6_HANDOFF.md is the
+committed record of it).

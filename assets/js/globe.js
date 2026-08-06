@@ -572,6 +572,14 @@
             if (opts.interactive === false) controls.enableZoom = false;
             controls.autoRotate = !reduceMotion();
             controls.autoRotateSpeed = 1.0;
+            // OrbitControls' default inertia (enableDamping) measurably fights focus()/resetView():
+            // pointOfView() moves the camera directly during its own tween, damping reads that as
+            // user input and keeps drifting the camera for several seconds after the tween finishes,
+            // landing several degrees off the selected project. Verified in a real WebGL browser —
+            // selecting a project reached the target then visibly kept sliding west. Programmatic
+            // moves do not need inertia; disabling it removes the drift and costs nothing a director
+            // would notice on manual drag, which now just stops the instant the pointer is released.
+            controls.enableDamping = false;
           }
         } catch (e) {}
         bindVisibility();
