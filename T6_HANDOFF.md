@@ -9,6 +9,61 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-05 — THE CROSS-PERIOD SERIES, ASSEMBLED FROM THE RESULTS ALREADY STORED
+
+Branch `claude/period-series-s5s90m`. The report could not be written as a repo-root file
+(harness blocks subagent report files); its full content is in the session output and should be
+committed as `REPORT_2026-08-05_period-series.md`. Server **41 suites, 2269/2269** (fresh DB per
+file; new `test_period_series.py` adds 40), `tests.html` **51/51**, `tests_render.html`
+**142/143** (the 1 is the pre-existing auth-gated production-read check, red on `origin/main`
+too). **Production has NOT been migrated; no migration was written or needed — no column, no
+table.**
+
+**THE FINDING.** Nothing was missing from storage. Every period already stored its own cpi and
+spi; nobody had joined them. There are exactly two consumable join shapes: `spiHistory`/
+`cpiHistory` on `signalInputs` (a flat list, already assembled by `_period_history`), and
+`compute_portfolio`'s third argument (`[{period, signal_inputs:{cpi,spi}}]`), which **every call
+site passed as a literal `None`**, holding both `len(history) >= 2` guards permanently false.
+
+**Now computes that did not:** the Signal Trajectory Classifier (absent from every stored
+`portfolio_snapshot` ever written) and the Anomaly Score's trend term, from the second period; and
+CUSUM / Kalman / ARIMA / Regression to Mean **on training projects**, which had never received a
+series because the D1 assembly sat in `_compute_and_store` and training calls `run_and_store`
+directly. The assembly now lives in `run_and_store`, the one function both paths pass through.
+
+**Does NOT close, established not assumed.** (1) `module-charts` Group 2 conflates two deficits:
+Monte Carlo EAC, PERT, Schedule Risk P80 and Cost Risk P80 discard a distribution *within* a
+period — joining periods gives them nothing, and they still need more stored per result. Earned
+Schedule is in that list and needs no series at all. (2) **Milestone Trend still abstains, not
+forced:** `milestones_json` is stored, but the prompt requires the table's own headings as keys
+(`Activity`, `Baseline finish`) while A2.7 reads `name`/`forecast`, and dates inside it are
+explicitly exempt from `YYYY-MM-DD` while `_js_date_ms` accepts nothing else. Closing it means
+inventing a heading map and a multi-format parser. `field_registry` already declares
+`milestoneHistory` UNSERVABLE and that is still right. (3) The operational recommendation stays
+coarse: it is coarse for want of a price per course of action, which no series supplies.
+
+**NOTHING UNDER `server/app/simulation/` CHANGED.** The granted exception was not needed:
+`compute_portfolio` has always accepted and guarded `history`. The defect was wholly on the
+calling side.
+
+**THE INVARIANT.** New `_earlier_live_results(session, project, period)` is the single read every
+cross-period series comes from — `period < period` against the period being computed, live rows
+only. `_period_history` and the new `_period_snapshots` both go through it. `_period_snapshots`
+ends its series with the period being computed, matching `_period_history`, so a trajectory
+becomes available at exactly the period `cpiHistory` does.
+
+**ACCEPTANCE CONDITION PROVEN, NOT ASSERTED.** Recomputing period 1 after periods 2, 3 and 4
+exist is byte-identical to the original period-1 result — `json.dumps(sort_keys=True)` over
+`signal_inputs`, `module_results`, `category_statuses`, `project_status`, `portfolio_snapshot`,
+`simulation_version`, `seed`, `period_cutoff`, `source_documents`, compared as bytes. `result_id`
+and `computed_at` are excluded by name: a recompute is a new append-only row and must have a new
+id. Four faults injected; `period < period` → `period != period` (the P1 shape) turns that exact
+check red at 28/40, baseline 40/40 restored after every one.
+
+**Files.** `server/app/documents.py`, `server/tools/test_period_series.py` (new), this handoff.
+No front-end change: `workspace.js` already renders whatever keys the stored `portfolio_snapshot`
+holds, so the trajectory row appears without one.
+
 # 2026-08-05 — THE RECOMMENDATION BECOMES A SET OF COURSES OF ACTION WITH THE CONSEQUENCE OF EACH
 
 Branch `claude/recommendation-options-s5s90m`. The report could not be written as a repo-root

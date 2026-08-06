@@ -399,6 +399,67 @@ def _derive_cutoff(documents: list[dict], reuse: ComputedResult | None) -> date:
     return latest or datetime.now(timezone.utc).date()
 
 
+def _earlier_live_results(session: Session, project: Project,
+                          period: int) -> list[ComputedResult]:
+    """
+    This project's live stored results for STRICTLY EARLIER reporting periods, in period order.
+
+    THE ONE READ every cross-period series on this platform is assembled from, and the one place
+    the period-alignment invariant is enforced. `period < period` is evaluated against the period
+    being computed, so recomputing period 1 while periods 2, 3 and 4 exist reads none of them and
+    reproduces what period 1 was computed from. This is deliberately NOT the shape of the P1
+    defect, where a portfolio vector was chosen by `max(period)` with no alignment to the period
+    being computed and a stored period-1 result changed when another project reached period 2.
+
+    Live rows only: a superseded result has been replaced by a recompute of that same period, and
+    its figures are no longer the project's account of that period.
+    """
+    return list(session.scalars(
+        select(ComputedResult)
+        .where(
+            ComputedResult.project_id == project.id,
+            ComputedResult.period < period,
+            ComputedResult.superseded_by.is_(None),
+        )
+        .order_by(ComputedResult.period)
+    ).all())
+
+
+def _period_snapshots(session: Session, project: Project, period: int,
+                      si: dict) -> list[dict]:
+    """
+    The project's own per-period snapshots, oldest first, ending with the period being computed.
+
+    `compute_portfolio`'s third argument. Until now every caller passed a literal `None`, so both
+    of its `len(history) >= 2` guards were permanently false and the Signal Trajectory Classifier
+    abstained on every project ever computed, while the composite anomaly score was always the
+    three-term average with no trend term. Nothing was missing from storage: each period already
+    stored its own cpi, and nobody had joined them.
+
+    The element shape is the one `portfolio.py` reads and the one the Apps Script wrote,
+    `{"period": n, "signal_inputs": {"cpi": ..., "spi": ...}}` — a stored figure read back, never
+    a derived one.
+
+    THE CURRENT PERIOD IS THE LAST ELEMENT, for the same reason `_period_history` ends its series
+    with the current value: the trend being asked for is the one ending now, and a series that
+    stopped at the previous period would report last period's trajectory as this period's. It
+    also keeps the two assemblies on one rule — a trajectory becomes available at exactly the
+    period cpiHistory does, the second, and never before.
+
+    Assembled from `_earlier_live_results`, so no snapshot is ever taken from a period later than
+    the one being computed.
+    """
+    rows = _earlier_live_results(session, project, period)
+    out: list[dict] = []
+    for r in rows:
+        s = r.signal_inputs or {}
+        out.append({"period": r.period,
+                    "signal_inputs": {"cpi": s.get("cpi"), "spi": s.get("spi")}})
+    out.append({"period": period,
+                "signal_inputs": {"cpi": si.get("cpi"), "spi": si.get("spi")}})
+    return out
+
+
 def _period_history(session: Session, project: Project, period: int,
                     si: dict) -> dict[str, list[float]]:
     """
@@ -420,15 +481,7 @@ def _period_history(session: Session, project: Project, period: int,
     Live rows only: a superseded result has been replaced by a recompute of that same period, and
     its figures are no longer the project's account of that period.
     """
-    rows = session.scalars(
-        select(ComputedResult)
-        .where(
-            ComputedResult.project_id == project.id,
-            ComputedResult.period < period,
-            ComputedResult.superseded_by.is_(None),
-        )
-        .order_by(ComputedResult.period)
-    ).all()
+    rows = _earlier_live_results(session, project, period)
 
     out: dict[str, list[float]] = {}
     for key, field in (("cpiHistory", "cpi"), ("spiHistory", "spi")):
@@ -511,14 +564,14 @@ def _compute_and_store(session: Session, project: Project, period: int,
         observations.extend(emit_observations(d))
     si = select_signal_inputs(observations, cutoff)
 
-    # D1. Two inputs the analytical layer reads that the pure merge cannot produce, because
-    # neither is a property of this period's documents: the project's event log and its figures
-    # across earlier periods. Both are added here rather than inside `assemble_signal_inputs`,
-    # which must stay pure, deterministic and order independent — it knows nothing of projects,
-    # periods or the session. Both are stored on the row as part of `signal_inputs`, so the
-    # result records what the modules actually saw and not a subset of it.
+    # D1. One input the analytical layer reads that the pure merge cannot produce, because it is
+    # not a property of this period's documents: the project's event log. It is added here rather
+    # than inside `assemble_signal_inputs`, which must stay pure, deterministic and order
+    # independent — it knows nothing of projects, periods or the session. It is stored on the row
+    # as part of `signal_inputs`, so the result records what the modules actually saw and not a
+    # subset of it. The cross-period series are assembled in `run_and_store`, which is the one
+    # place both assembly paths pass through.
     si["events"] = _events_as_of(project, cutoff)
-    si.update(_period_history(session, project, period, si))
 
     result = run_and_store(session, project, period, si, cutoff,
                            source_documents=[
@@ -543,6 +596,17 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
     path to drift.
     """
     from .simulation import compute_project, compute_portfolio
+
+    # THE CROSS-PERIOD SERIES, assembled here because this is the single point BOTH assembly
+    # paths pass through: the document path above and training period generation. Every period
+    # already stored its own cpi and spi; these two calls are the join nobody had made. Both read
+    # `_earlier_live_results` and nothing else, so no series can be assembled from a period later
+    # than the one being computed, and a recompute of an earlier period reproduces it exactly.
+    #
+    # Placed BEFORE `compute_project` and written onto `si`, which is the dict stored on the row,
+    # so the stored result records the series the modules were actually given.
+    si.update(_period_history(session, project, period, si))
+    history = _period_snapshots(session, project, period, si)
 
     run = compute_project(si, project.legacy_id, f"P{period}", cutoff)
 
@@ -597,7 +661,10 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
     # guard and its own wording) — which T5's portfolio view is required to render verbatim,
     # not reconstruct. `PORTFOLIO_MIN_PROJECTS` stays as documentation of that guard's value,
     # not as a second gate here.
-    snapshot = compute_portfolio(vectors, project.legacy_id, None, cutoff)
+    # `history` is this project's own per-period snapshots (see `_period_snapshots`). It was a
+    # literal None at every call site, which held D1.3 permanently absent. `compute_portfolio`
+    # already accepts and guards it; nothing inside `simulation/` changed to receive it.
+    snapshot = compute_portfolio(vectors, project.legacy_id, history, cutoff)
 
     row = ComputedResult(
         result_id=result_id or new_ulid(),
