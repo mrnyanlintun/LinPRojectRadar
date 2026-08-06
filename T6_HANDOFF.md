@@ -4027,3 +4027,46 @@ report/summary .md files):
   caught it live against a seeded computed project, reverted, confirmed clean. Server suite
   39/39 green (2200/2200 checks), `tests.html` 51/51, `tests_render.html` 106/107 (the one FAIL is
   the pre-existing auth-gated "production read path" check, red on `main` too).
+
+## Selecting a project now flies the camera — map (atlas) and globe (2026-08-05)
+
+Branch `claude/map-flyto-s5s90m`. Full report content is in the completing session's final
+response, not a committed report file (blocked by this session's harness policy against writing
+new report/summary `.md` files — the same policy this file's own note above records).
+
+**The brief's premise was stale.** It described re-wiring MapLibre GL (`glMap`, PR #215's zoom
+control) as the map camera. But `main` moved again in between: #216 (`ebc5493`) repointed the
+"Map" stage button at the flat SVG atlas (`atlas.js`) and left an explicit comment on the
+MapLibre path — "ORPHANED AS OF T11... do not 'fix' it back into service by wiring a caller."
+MapLibre is untouched by this change; nothing revives it. The live map surface this change moves
+is the atlas.
+
+- `assets/js/atlas.js` — `LinAtlas.focus(host, project)` / `LinAtlas.resetView(host)`: animates
+  the atlas's SVG `viewBox` (rAF tween, ease-in-out, 700ms / instant under
+  `prefers-reduced-motion`) between the full `0 0 1000 500` world frame and a tenth-of-the-frame
+  window centred on the project. No coordinates → no-op, verified. New dependency: none.
+- `assets/js/globe.js` — `handle.focus(lat, lng)` / `handle.resetView()`, both thin wrappers over
+  globe.gl's already-vendored `pointOfView()` (Three.js + OrbitControls underneath).
+  `resetView()` returns to the exact `pointOfView()` captured right after mount, before any
+  focus. New dependency: none — globe.gl already exposed this primitive; it just was not being
+  called from the live portfolio globe before.
+- `assets/js/app.js` — `maybeFlyToSelection()` now flies whichever view is active
+  (`atlasViewActive()` / `globeViewActive()`, new); `selectProject(falsy-or-unresolvable id)` is
+  now deselect and returns both to the portfolio-wide view; the project-list row click toggles
+  select/deselect on re-click (the concrete UI path for deselect — nothing called
+  `selectProject(null)` before this). `setPortfolioView`, `wireViewToggle`, `getGlMap`,
+  `getPortfolioGlobe` exposed on `window.LinApp`, test-only.
+
+Verified with a Playwright harness (not committed) driving the real DOM — real stage buttons,
+real project-list rows — against the real `atlas.js` and a faked `LinGlobe.mount()` (the real
+globe.gl needs a compositing browser this container's headless Chromium does not have, same
+limitation the existing globe verification notes above already document). 12/12 checks passing:
+camera moves to a project with coordinates at a readable zoom, does not move and does not throw
+for a project with none, and returns to the portfolio-wide view on deselect — for both the atlas
+and the globe. Every check proven capable of failing: `LinAtlas.focus()`'s guard and
+`focusGlobeProject()` in `app.js` were each stubbed to a no-op in turn, the corresponding checks
+went red, reverted, confirmed 12/12 again.
+
+Full suite on the final code: server 39/39 (2200/2200 checks), `tests.html` 51/51,
+`tests_render.html` 117/118 (same pre-existing auth-gated FAIL as above, untouched by this
+change). Merged to `main`.
