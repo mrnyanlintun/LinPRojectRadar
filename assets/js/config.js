@@ -74,7 +74,10 @@ window.LIN_AUTHORIZED_EMAIL = "mrnyanlintun@gmail.com";
     Yellow:   "#ffe066",
     Amber:    "#ff8c1a",
     Red:      "#ff3b30",
-    None:     "#26344f"
+    None:     "#26344f",
+    // Not a verdict: a module not relevant to this project's sector. Deliberately its OWN
+    // blue, distinct from Complete (a real verdict) — see radar.css's --status-notrelevant-text.
+    NotRelevant: "#5b3dd6"
   };
   var CSS_VAR = {
     Complete: "--status-complete",
@@ -82,7 +85,8 @@ window.LIN_AUTHORIZED_EMAIL = "mrnyanlintun@gmail.com";
     Yellow:   "--status-yellow",
     Amber:    "--status-amber",
     Red:      "--status-red",
-    None:     "--status-nodata"
+    None:     "--status-nodata",
+    NotRelevant: "--status-notrelevant-text"
   };
 
   var map = {};

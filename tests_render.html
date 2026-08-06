@@ -1472,6 +1472,98 @@
       true, /Documents uploaded, computation not yet run/i.test(decisionText));
   })();
 
+  /* GROUP 18 — the two empty states: "Not relevant" (blue, a sector exclusion) and "No data"
+     (grey, a module abstained). Neither is a sixth or seventh verdict; neither votes.
+
+     - a construction-phase module (NCR Rate) on a Design project renders "Not relevant", not
+       "Green"/"Amber"/etc, and its shape (a dotted-bordered pill, not the five verdicts'
+       plain rounded pill) differs from a computed pill's;
+     - a module missing a figure (present in the stored row's `abstained` list, absent from
+       `module_results`) renders "No data", dashed-bordered, distinct from "Not relevant";
+     - the category's own status (independently supplied in the fixture, exactly as production
+       delivers it from the server) is untouched by either -- neither status is folded into it;
+     - a module that abstained WITH a message renders that message verbatim beside the "No
+       data" pill; a module that abstained WITHOUT one renders the pill and nothing more --
+       never an invented sentence. */
+  (function () {
+    const NCR = window.LIN_CATEGORIES
+      .flatMap(function (c) { return c.modules; })
+      .find(function (m) { return m.method_class === "NCR_Rate"; });
+    assert("group 18: the real taxonomy carries NCR Rate as a construction/hybrid-only module",
+      true, !!NCR && Array.isArray(NCR.sectors) && NCR.sectors.indexOf("design") < 0);
+
+    const designProject = storedOnlyProject();
+    designProject.sector = "design";
+    designProject.storedResult = {
+      project_status: "Green", red_review: false,
+      category_statuses: {
+        A4: { status: "Green", group: "A", module_count: 3,
+              contributes_to_project_status: true }
+      },
+      module_results: [
+        { module_id: "A1.1", group: "A", category: "A1", status_color: "Green",
+          method_class: "Monte_Carlo", evidence_metric: "P80 EAC within budget" }
+      ],
+      // A4.4 (NCR Rate) intentionally absent from module_results -- it is sector-excluded, not
+      // computed and not abstained. A4.5 (Weather Day Impact) also excluded, same reason.
+      abstained: [
+        { module_id: "A1.2", reason: "Insufficient duration observations for CUSUM: fewer than "
+          + "the minimum window of periods reporting a schedule variance." },
+        { module_id: "A2.3", reason: null }
+      ]
+    };
+    window.LIN_PROJECTS.length = 0; window.LIN_PROJECTS.push(designProject);
+    window.LinResults.clear();
+    const host = scratch();
+    let threw = "";
+    try { window.LinApp.renderLedger(designProject, host); } catch (e) { threw = String(e && e.message); }
+    assert("group 18: ledger with a sector exclusion and abstentions rendered without throwing",
+      "", threw);
+
+    const ncrRow = Array.prototype.find.call(host.querySelectorAll(".cat-mod-row"),
+      function (row) { return /NCR Rate/.test(row.textContent); });
+    assert("group 18: NCR Rate's row exists in the Design-sector ledger", true, !!ncrRow);
+    const ncrPill = ncrRow ? ncrRow.querySelector(".pill") : null;
+    assert("group 18: NCR Rate on a Design project reads 'Not relevant', not a verdict word",
+      true, !!ncrPill && ncrPill.textContent.trim() === "Not relevant");
+    assert("group 18: NCR Rate's pill carries the not-relevant CSS class (a real block, not a "
+      + "colour-only cue)", true, !!ncrPill && ncrPill.classList.contains("pill-notrelevant"));
+    const ncrBorderStyle = ncrPill ? getComputedStyle(ncrPill).borderStyle : "";
+    assert("group 18: the 'Not relevant' pill's computed border-style is dotted (a real "
+      + "shape difference, read from the live stylesheet, not asserted)", true,
+      /dotted/.test(ncrBorderStyle));
+
+    // A1.2 (CUSUM) abstained WITH a message -> "No data" pill + the message verbatim.
+    const a12Row = Array.prototype.find.call(host.querySelectorAll(".cat-mod-row"),
+      function (row) { return row.querySelector(".cat-mod-num").textContent === "A1.2"; });
+    const a12Pill = a12Row ? a12Row.querySelector(".pill") : null;
+    assert("group 18: a module missing a figure (A1.2) reads 'No data'", true,
+      !!a12Pill && a12Pill.textContent.trim() === "No data");
+    assert("group 18: 'No data' pill carries the nodata CSS class", true,
+      !!a12Pill && a12Pill.classList.contains("pill-nodata"));
+    const a12PillBorder = a12Pill ? getComputedStyle(a12Pill).borderStyle : "";
+    assert("group 18: 'No data' pill's computed border-style is dashed, distinct from "
+      + "'Not relevant's dotted", true, /dashed/.test(a12PillBorder));
+    const a12Reason = a12Row ? a12Row.nextElementSibling : null;
+    assert("group 18: A1.2's own abstention message renders VERBATIM beside its row", true,
+      !!a12Reason && a12Reason.classList.contains("cat-mod-reason")
+        && a12Reason.textContent === designProject.storedResult.abstained[0].reason);
+
+    // A2.3 abstained WITHOUT a message -> "No data" pill and NOTHING invented beside it.
+    const a23Row = Array.prototype.find.call(host.querySelectorAll(".cat-mod-row"),
+      function (row) { return row.querySelector(".cat-mod-num").textContent === "A2.3"; });
+    const a23Next = a23Row ? a23Row.nextElementSibling : null;
+    assert("group 18: A2.3 abstained with no message -> no reason line is fabricated", true,
+      !a23Next || !a23Next.classList || !a23Next.classList.contains("cat-mod-reason"));
+
+    // The category status is exactly what the fixture supplied (server-computed, in
+    // production) -- unmoved by either NCR's sector exclusion or A1.2/A2.3's abstention.
+    const a4Row = host.querySelector('[data-cat="a4"]');
+    assert("group 18: the category status is untouched by its NA/no-data modules -- it reads "
+      + "exactly what the stored row supplied (Green), not diluted by either", true,
+      !a4Row || a4Row.querySelector(".pill").textContent.trim() === "Green");
+  })();
+
   // ---- render results ----
   function renderResults() {
   const tbody = document.querySelector("#results tbody");

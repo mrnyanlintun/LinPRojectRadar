@@ -4368,40 +4368,70 @@ Full report: `REPORT_2026-08-05_map-zoom-real.md` in the completing session's fi
 session's harness blocked writing a new report file at the repo root; T6_HANDOFF.md is the
 committed record of it).
 
-## Ledger empty states: Part 3 only, pushed unmerged (2026-08-06)
+## Ledger empty states: all four parts complete (2026-08-06)
 
-Branch `claude/ledger-empty-states-s5s90m`, pushed to origin, **NOT merged**. This session
-completed only Part 3 of the four-part ask (grey/blue non-voting states, legends everywhere with
-measured contrast, storing the abstention message, full browser verification). Parts 1 and 2 were
-not attempted — they need real UI work across the ledger, the portfolio legend, Signal Sphere,
-Signal Network, and Signal Flow, plus measured-contrast checks on both themes, which this session's
-time budget did not cover. Do not treat this entry as "done"; treat it as "Part 3 landed, the rest
-is still open."
+Branch `claude/ledger-empty-states-s5s90m`. A prior session on this branch completed only Part 3
+(storing the abstention message server-side) and stopped early on session budget; this session
+finished Parts 1, 2, verification and the report on top of it, without redoing Part 3's work.
+Full report: `REPORT_2026-08-05_ledger-empty-states.md` (this session's harness blocked writing
+it at the repo root — its complete text was returned verbatim in the completing session's final
+response; the caller commits it).
 
-**What changed**, `server/app/simulation/registry.py`, `run_all()`: previously `abstained` was a
-flat list of module ids, discarding the module's own `evidence_metric` message (the abstention
-contract's message field, set by the `insufficient()` helper in `models.py`). It is now a list of
-`{"module_id": ..., "reason": ...}`, where `reason` is `out.get("evidence_metric")` — `None` when a
-module abstained without giving one, never fabricated. No computation changed: this only retains an
-output every module already produces and previously threw away. `compute.py`'s category/project
-rollup was already unaffected by this shape (it reads only `run["computed"]`, never `abstained`),
-so the non-voting property for abstained modules already held before and after this change — Part 1
-still needs the same treatment applied to modules that *complete but are not relevant/have no data*,
-which is a different code path (module output, not abstention) and is still open.
+**Two states that are reasons a row is empty, not a sixth/seventh verdict:** "No data" (grey — a
+module ran and abstained because a figure or series it needed was not in the documents) and "Not
+relevant" (blue — a construction-phase module on a Design-sector project, or the reverse; the
+taxonomy carries none of the reverse today). Neither is one of the five verdicts (Complete,
+Green, Yellow, Amber, Red); neither contributes to a category or project status.
 
-One test updated for the new shape: `server/tools/test_d1_module_inputs.py`, the
-`"A1.2" in healthy_run["abstained"]` membership check now reads
-`"A1.2" in {a["module_id"] for a in healthy_run["abstained"]}`.
+**Part 3, finished (storage was already done; rendering was not).** Prior session's
+`registry.py` change (`abstained` as `{module_id, reason}`) was never persisted past the HTTP
+response — `_compute_and_store` discarded it before it reached `computed_results`, so the ledger
+could not read it back. This session added migration `0020_abstained_modules`
+(`computed_results.abstained`, nullable JSON, NULL on pre-migration rows — nothing backfilled),
+wired `run_and_store` to persist it and `_result_view` to serve it back verbatim (not gated by
+`recommendation_visible`; a module's own abstention reason is not an action field). `app.js`'s
+`categoryLedgerHtml` now renders it in a new `.cat-mod-reason` block under a "No data" pill, only
+when a module gave one.
 
-Verified green after the change, fresh SQLite DB per file: `tools/test_simulation.py` (29/29),
-`tools/test_d1_module_inputs.py` (100/100), `tools/test_period_series.py` (40/40),
-`tools/test_training_detail.py` (65/65), `tools/test_training_quality.py` (39/39) — the five files
-that reference `abstained` anywhere. Did not run the full server suite, `tests.html`, or
-`tests_render.html` in this session, and did not touch the browser at all — that is Parts 1/2's
-job and is still to do.
+**Part 1.** `taxonomy.js`'s `getModuleStatus` already returned `'NA'` for sector exclusion; it now
+returns `'NODATA'` (not a bare `null`, which stays reserved for "this project has no stored row
+at all") when the row exists but this module has no entry in `module_results`. Non-voting is
+structural and predates this branch (`compute.py`'s rollup reads only `run["computed"]`), proven
+rather than trusted: `server/tools/test_ledger_empty_states.py` Guarantee 1 fault-injects a vote
+from an abstained-equivalent status into the fusion input and confirms the status moves, showing
+the real exclusion is load-bearing.
 
-**Next session**: read this entry plus `REPORT_2026-08-05_ledger-calculations.md` before starting.
-Part 3's `reason` field is ready to render; the frontend work (grey/blue states, shapes, legends,
-contrast measurement, rendering the reason verbatim) has not been started. Do not merge this branch
-until Parts 1 and 2 are done and verified in a real headless browser, then run the full suites
-(server + `tests.html` + `tests_render.html`) on the merged result before pushing to main.
+**Part 2.** `radar.css` gained `--status-notrelevant-text` / `--status-nodata-mod-text`, declared
+for light (`:root`, default) and redeclared for dark (`body[data-theme="dark"]`), contrast-
+measured against `--surface`/`--page-bg` on both (4.5:1 AA floor, all four combinations clear it
+with margin — see the report for the numbers). `.pill-nodata` (dashed border) and
+`.pill-notrelevant` (dotted border) give both states a shape distinct from the five verdicts
+(borderless) and from each other. Wired into the Signal Ledger (`app.js`), the Signal Sphere
+legend (`detail.js`), and the Signal Flow legend/node colouring (`neural_flow.js`, via a new
+`NotRelevant` entry in `config.js`'s `LIN_STATUS_COLORS`). **Signal Network
+(`projectnet2d.js`) was deliberately left untouched**: it renders one node per category, not per
+module, and a category's fused status is always a real verdict or `null` — sector exclusion and
+abstention are module-level concepts that structurally cannot reach a category node, confirmed by
+reading `getCategoryStatus`'s contract rather than assumed.
+
+**Verification.** Server: 42 suites, 2290/2290 checks, fresh SQLite DB per file, including new
+`server/tools/test_ledger_empty_states.py` (21/21: non-voting proof + fault injection, storage
+round-trip through `_result_view`, contrast measured from the live stylesheet, shape distinctness
+read from the live stylesheet). `tests.html` 51/51. `tests_render.html` 169/170 (12 new Group 18
+checks against the real production `categoryLedgerHtml`/`renderLedger` in a real headless
+Chromium — `--use-gl=swiftshader --enable-webgl --ignore-gpu-blocklist`, app served from the repo
+root via `python -m http.server` alongside the FastAPI app with `CORS_ORIGINS` set; the one red
+is the pre-existing auth-gated "production read path" check, red on `main` too). Every new check
+fault-injected and confirmed to go red, then reverted and confirmed green again (a `.pill-nodata`
+border change, a `.pill-notrelevant` class swap, a fabricated vote in the fusion input).
+
+**Honestly not done:** no live-login, fully interactive end-to-end drive of the Project Detail
+page against seeded Design-vs-Construction projects in a browser. Verification instead drove the
+real production render functions against realistic fixtures built from the real taxonomy (the
+same method Group 16 in `REPORT_2026-08-05_ledger-calculations.md` already established) — real
+code, real browser, but not the same guarantee as a full interactive session. Flagged in the
+report, not hidden.
+
+**Not merged to `main` by the completing session** — see the completing session's final response
+for the merge decision at the time this entry was written; check `git log origin/main` for
+whether it has since landed.

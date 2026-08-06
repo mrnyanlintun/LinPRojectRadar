@@ -185,10 +185,15 @@
   var COL = {
     Green:SC.Green, Yellow:SC.Yellow, Amber:SC.Amber,
     Red:SC.Red,     None:SC.None,     Complete:SC.Complete,
+    // Not a verdict, not a severity: a module not relevant to this project's sector
+    // (construction-phase on Design, or the reverse). Its own blue, distinct from Complete.
+    NotRelevant:SC.NotRelevant,
     DocOn:'#a0bcd8', DocOff:'#1e2a3c',
   };
-  // Complete ranks alongside Green (blue is a display colour, not a severity)
-  var STATUS_RANK = { Red:0, Amber:1, Yellow:2, Green:3, Complete:3, None:4 };
+  // Complete ranks alongside Green (blue is a display colour, not a severity). NotRelevant sits
+  // beside None (neither votes -- see contributesToProjectStatus / compute.py's rollup, which
+  // never sees either), listed separately only so worstStatus never folds one into the other.
+  var STATUS_RANK = { Red:0, Amber:1, Yellow:2, Green:3, Complete:3, None:4, NotRelevant:4 };
 
   function statusFromSig(r) {
     if (!r) return 'None';
@@ -344,7 +349,7 @@
       // Prefer the app's shared resolver (handles computed/derived modules too)
       var st = null;
       try { if (window.getModuleStatus) st = window.getModuleStatus(m.mc, project); } catch (e) {}
-      if (st === 'NA') return { status: 'None', na: true, color: COL.None, metric: null };
+      if (st === 'NA') return { status: 'NotRelevant', na: true, color: COL.NotRelevant, metric: null };
       if (st) {
         var s = statusFromSig({ status_color: st });
         return { status: s, color: colFor(s), metric: metric };
@@ -749,12 +754,22 @@
       var sh = glow ? '0 0 5px '+color : 'none';
       return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+color+';box-shadow:'+sh+';vertical-align:middle;margin-right:3px"></span>';
     }
+    // Square marker (not the five verdicts' round dot) for "Not relevant" -- a sector
+    // exclusion, not a severity, so its shape as well as its colour says so.
+    function legSquare(color) {
+      return '<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:'+color+';vertical-align:middle;margin-right:3px"></span>';
+    }
     [['Green',COL.Green,true],['Yellow',COL.Yellow,true],['Amber',COL.Amber,true],
      ['Red',COL.Red,true],['No data',COL.None,false]].forEach(function(t) {
       var s = document.createElement('span');
       s.innerHTML = legDot(t[1],t[2]) + t[0];
       leg.appendChild(s);
     });
+    (function() {
+      var s = document.createElement('span');
+      s.innerHTML = legSquare(COL.NotRelevant) + 'Not relevant';
+      leg.appendChild(s);
+    })();
     var sep = document.createElement('span');
     sep.style.cssText = 'border-left:1px solid #1a2440;height:10px;';
     leg.appendChild(sep);
