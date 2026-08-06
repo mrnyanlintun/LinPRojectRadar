@@ -1087,7 +1087,60 @@
     return !!(page && !page.hidden && wrap && !wrap.hidden);
   }
   // list-row selections fly only when the map view is actually showing
-  function maybeFlyToSelection(id) { if (mapViewActive()) flyToProject(id); }
+  // T11 orphaned the MapLibre stage (see the "ORPHANED AS OF T11" note above
+  // scheduleMapWarmup): the "Map" button now shows the flat SVG atlas, not glMap. So the live
+  // geographic surfaces a selection can fly to are the atlas — the Map view, and also what the
+  // globe degrades to when it cannot draw — and the globe itself.
+  function maybeFlyToSelection(id) {
+    if (!id) return;   // selectProject already returned the viewer to the wide view
+    if (atlasViewActive()) focusAtlasProject(id);
+    else if (globeViewActive()) focusGlobeProject(id);
+  }
+
+  function atlasViewActive() {
+    const page = document.querySelector('.page[data-page="portfolio"]');
+    const wrap = document.querySelector(".atlas-wrap");
+    return !!(page && !page.hidden && wrap && !wrap.hidden);
+  }
+
+  function globeViewActive() {
+    const page = document.querySelector('.page[data-page="portfolio"]');
+    const wrap = document.querySelector(".globe-wrap");
+    return !!(page && !page.hidden && wrap && !wrap.hidden);
+  }
+
+  /* Atlas equivalent of flyToProject: zooms the SVG viewBox in on the project. A project with no
+     usable coordinates leaves the viewBox exactly where it was — atlas.js's focus() already
+     guards this, checked again here so a project not even in LIN_PROJECTS cannot reach it. */
+  function focusAtlasProject(id) {
+    if (!window.LinAtlas || typeof LinAtlas.focus !== "function") return;
+    const host = document.getElementById("atlas-canvas");
+    const p = LIN_PROJECTS.find((x) => x.id === id);
+    if (!host || !p) return;
+    try { LinAtlas.focus(host, p); } catch (e) {}
+  }
+
+  function resetAtlasView() {
+    if (!window.LinAtlas || typeof LinAtlas.resetView !== "function") return;
+    const host = document.getElementById("atlas-canvas");
+    if (!host) return;
+    try { LinAtlas.resetView(host); } catch (e) {}
+  }
+
+  /* Globe equivalent of flyToProject. A project with no usable coordinates leaves the camera
+     exactly where it was — same contract as the map's flyToProject, which also does nothing
+     when there is no marker to fly to. */
+  function focusGlobeProject(id) {
+    if (!portfolioGlobe || typeof portfolioGlobe.focus !== "function") return;
+    const p = LIN_PROJECTS.find((x) => x.id === id);
+    const lat = p && Number(p.lat), lng = p && Number(p.lng);
+    if (!p || !isFinite(lat) || !isFinite(lng)) return;
+    portfolioGlobe.focus(lat, lng);
+  }
+
+  function resetGlobeView() {
+    if (portfolioGlobe && typeof portfolioGlobe.resetView === "function") portfolioGlobe.resetView();
+  }
 
   // Ctrl/Cmd+0 + Escape → world view — the handler only acts (and only calls
   // preventDefault) while the map view is active AND a project is focused or
@@ -1350,7 +1403,13 @@
             `<button class="btn small li-manage" data-manage="${esc(p.id)}" title="Edit info, upload, archive, reset (inline)">Manage</button>` +
             `<button class="btn small li-open" data-open="${esc(p.id)}" title="Open project detail">Open →</button>` +
           `</span>`;
-        btn.addEventListener("click", () => { selectProject(p.id); maybeFlyToSelection(p.id); });
+        // Clicking an already-selected row deselects it (returns the map/globe to the
+        // portfolio-wide view) rather than re-flying to the same place.
+        btn.addEventListener("click", () => {
+          const next = selectedId === p.id ? null : p.id;
+          selectProject(next);
+          maybeFlyToSelection(next);
+        });
         // both row buttons stop propagation so they never trigger row-select
         btn.querySelectorAll(".li-manage, .li-open").forEach((b) =>
           b.addEventListener("click", (e) => e.stopPropagation()));
@@ -1751,9 +1810,19 @@
     // Portfolio is radar + list only — selection just updates highlights now.
     // The signal ledger + PCEIF decision are rendered on the Project Detail page
     // (detail.js calls LinApp.renderLedger / renderDecisionCard into its panels).
-    selectedId = id;
-    const p = LIN_PROJECTS.find((x) => x.id === id);
-    if (!p) return;
+    selectedId = id || null;
+    const p = id ? LIN_PROJECTS.find((x) => x.id === id) : null;
+    if (!p) {
+      // Deselecting (id falsy) or selecting an id that no longer resolves to a project
+      // (e.g. it was archived out from under the selection) both land here. Either way,
+      // the map/globe must not be left stranded pointed at whatever was selected last —
+      // return to the portfolio-wide view rather than leaving the camera where it was.
+      highlightBlip();
+      highlightListItem();
+      if (atlasViewActive()) resetAtlasView();
+      if (globeViewActive()) resetGlobeView();
+      return;
+    }
     highlightBlip();
     highlightListItem();
   }
@@ -2707,6 +2776,13 @@
     openDetail,
     showPage,
     getSelectedId() { return selectedId; },
+    // Exposed for tests_render.html / a Playwright harness so the Map/Globe flyTo behaviour
+    // can be driven and read back without a real network. Not used by production UI code,
+    // which reaches these through wireViewToggle()'s own listeners.
+    setPortfolioView,
+    wireViewToggle,
+    getGlMap() { return glMap; },
+    getPortfolioGlobe() { return portfolioGlobe; },
     // Re-key the cached selection after a project-number change (setprojectnumber)
     // so the detail page / highlights keep pointing at the renamed project.
     renameSelection(oldId, newId) { if (selectedId === oldId) selectedId = newId; },

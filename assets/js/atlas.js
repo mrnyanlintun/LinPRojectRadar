@@ -283,6 +283,78 @@
     });
   }
 
+  /* ---------- camera (viewBox pan/zoom) ----------
+     The atlas has no camera in the MapLibre/globe.gl sense — it is one static SVG node tree, the
+     whole world, drawn once. "Moving" it means animating the viewBox: shrinking it around a
+     project's projected (x, y) reads as flying in, and returning it to "0 0 W H" reads as flying
+     back out to the portfolio-wide view. No new dependency: requestAnimationFrame and the SVG
+     viewBox attribute are both already in use elsewhere in this file. */
+
+  function currentViewBox(svg) {
+    var parts = (svg.getAttribute("viewBox") || ("0 0 " + W + " " + H)).trim().split(/\s+/).map(Number);
+    return { x: parts[0] || 0, y: parts[1] || 0, w: parts[2] || W, h: parts[3] || H };
+  }
+
+  function setViewBoxAttr(svg, vb) {
+    svg.setAttribute("viewBox",
+      vb.x.toFixed(2) + " " + vb.y.toFixed(2) + " " + vb.w.toFixed(2) + " " + vb.h.toFixed(2));
+  }
+
+  function reduceMotion() {
+    try { return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); }
+    catch (e) { return false; }
+  }
+
+  // Each svg gets at most one in-flight tween; a second call (selecting a new project mid-flight)
+  // must replace it rather than fight it, or the viewBox jitters between two competing rAF loops.
+  var tweenToken = 0;
+
+  function tweenViewBox(svg, target, ms) {
+    if (!svg) return;
+    var myToken = ++tweenToken;
+    var start = currentViewBox(svg);
+    if (!ms || ms <= 0) { setViewBoxAttr(svg, target); return; }
+    var t0 = null;
+    function step(ts) {
+      if (myToken !== tweenToken) return;   // superseded by a newer focus()/resetView() call
+      if (t0 === null) t0 = ts;
+      var p = Math.min(1, (ts - t0) / ms);
+      var e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;   // ease-in-out
+      setViewBoxAttr(svg, {
+        x: start.x + (target.x - start.x) * e,
+        y: start.y + (target.y - start.y) * e,
+        w: start.w + (target.w - start.w) * e,
+        h: start.h + (target.h - start.h) * e
+      });
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* Zoom to a project so it reads as a place, not a continent. A tenth of the world frame in
+     each dimension — one tenth of 360° of longitude is 36°, close to the width of the
+     continental United States, which is the smallest span that still reliably contains a city's
+     immediate surroundings without the marker sitting on a seam. A project with no usable
+     coordinates leaves the viewBox exactly where it was — same contract as the map's
+     flyToProject, which also does nothing when there is no marker to fly to. */
+  function focus(host, p) {
+    if (!host) return;
+    var svg = host.querySelector(".atlas-svg");
+    if (!svg || !placeable(p)) return;
+    var cx = projX(p.lng), cy = projY(p.lat);
+    var zw = W / 10, zh = H / 10;
+    tweenViewBox(svg, { x: cx - zw / 2, y: cy - zh / 2, w: zw, h: zh }, reduceMotion() ? 0 : 700);
+  }
+
+  /* Deselecting, or selecting a project the camera never moved for, returns to the
+     portfolio-wide view rather than leaving the viewBox stranded on the last focus. */
+  function resetView(host) {
+    if (!host) return;
+    var svg = host.querySelector(".atlas-svg");
+    if (!svg) return;
+    tweenViewBox(svg, { x: 0, y: 0, w: W, h: H }, reduceMotion() ? 0 : 700);
+  }
+
   /* ---------- theme ----------
      Almost nothing to do: every fill is a var(), so the cascade has already repainted by the time
      this runs. The exception is the letter ink, which is computed from the resolved status colour
@@ -311,6 +383,14 @@
     render: render,
     retheme: retheme,
     teardown: teardown,
+    focus: focus,
+    resetView: resetView,
+    // Exposed so a check can read the live camera state back, the same reason liveCount() and
+    // stats() are exposed: the claim should be verifiable off the thing itself.
+    viewBox: function (host) {
+      var svg = host && host.querySelector(".atlas-svg");
+      return svg ? currentViewBox(svg) : null;
+    },
     // Exposed for the same reason LinGlobe.liveCount is: the claim is that this renders without a
     // frame, and that should be readable off the thing itself rather than taken on trust.
     stats: function (root) {

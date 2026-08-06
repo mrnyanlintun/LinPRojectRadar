@@ -395,11 +395,36 @@
 
   /* ---------- an instance ---------- */
 
-  function makeHandle(globe, host) {
+  function makeHandle(globe, host, defaultPOV) {
     var handle = {
       globe: globe,
       host: host,
       destroyed: false,
+
+      // Selecting a project from the portfolio list flies the live camera to it, the same
+      // move flyToProject makes on the map. altitude 1.4 matches opts.focus (the single-project
+      // detail globe) so both routes to "look at this project" land at the same readable zoom.
+      focus: function (lat, lng) {
+        if (handle.destroyed || !isFinite(lat) || !isFinite(lng)) return;
+        try {
+          var controls = globe.controls();
+          if (controls) controls.autoRotate = false;   // stop spinning under the selection
+          globe.pointOfView({ lat: lat, lng: lng, altitude: 1.4 }, reduceMotion() ? 0 : 1000);
+        } catch (e) {}
+      },
+
+      // Deselecting (or selecting a project the camera never moved for) returns to the
+      // portfolio-wide view captured at mount, rather than leaving the camera stranded on
+      // whatever was last selected.
+      resetView: function () {
+        if (handle.destroyed) return;
+        try {
+          var pov = defaultPOV || { lat: 0, lng: 0, altitude: 2.5 };
+          globe.pointOfView(pov, reduceMotion() ? 0 : 1000);
+          var controls = globe.controls();
+          if (controls) controls.autoRotate = !reduceMotion();
+        } catch (e) {}
+      },
 
       destroy: function () {
         if (handle.destroyed) return;
@@ -511,7 +536,13 @@
 
         applyTilt(globe);
 
-        var handle = makeHandle(globe, container);
+        // Captured before any opts.focus is applied, so resetView() always returns to the
+        // portfolio-wide framing this globe started at rather than to whatever the caller's
+        // initial focus happened to be.
+        var defaultPOV = null;
+        try { defaultPOV = globe.pointOfView(); } catch (e) {}
+
+        var handle = makeHandle(globe, container, defaultPOV);
         live.push(handle);
         handle.resize();
 
