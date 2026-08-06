@@ -9,6 +9,95 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-06 — WRAA-24-017-C never computed: compute is a separate action, and nothing told the user
+
+Branch `claude/project-not-computed-s5s90m`. Full report content is reproduced below because this
+session's harness blocked writing a new report file at the repo root (the same policy earlier
+sessions' notes already record); a future session should file it as
+`REPORT_2026-08-05_project-not-computed.md` from this text if a committed copy is wanted.
+
+**CAUSE, established with a real reproduction, not a guess:** compute (`projectcompute`) is a
+fully separate, manually-triggered server action. Reading the complete `a_projectupload` function
+in `server/app/documents.py` end to end shows it never calls `_compute_and_store` or
+`run_and_store` — upload only extracts, files, and logs `signals_extracted` events. Across the
+entire client (`grep -rn projectcompute assets/js`), the action is invoked from exactly ONE
+control in the whole application: the "Run analysis for this period" button
+(`ws-compute-btn`, `index.html:675`) on the Workspace page's period-upload panel. The project
+detail page's own document-upload panel (`signals.js`, which calls `extractsignals`, an adapter
+over the same `a_projectupload`) has no equivalent control and never calls compute. A PM who
+uploads through the detail page — or the Files tab (`files.js`), which also calls
+`projectupload` directly — gets 25/25 successful extractions and stays "awaiting analysis"
+forever, because nothing in that path ever calls compute and no on-page control lets them.
+
+Made worse by the copy itself: the "Awaiting analysis" empty state
+(`assets/js/app.js`, `awaitingHtml`) said *"Upload this project's documents. The server reads
+them, extracts the signal values, runs the analysis, and stores the result..."* — describing
+automatic behavior the platform does not have. `server/app/documents.py`'s own module docstring
+carries the same stale claim ("COMPUTE IS EVENT-DRIVEN... It runs on upload completion"), which
+does not match its own code.
+
+**Ruled out, with evidence:**
+- **`window.confirm` gating** — disproven. The only compute button's click handler
+  (`workspace.js:392-414`) has no `window.confirm` call anywhere in it or its call chain; the
+  file's two `confirm()` calls are for an unrelated "leave with uploads in progress" prompt and a
+  decision-recording prompt (`decision-ui.js:459`), neither on the compute path.
+- **A guard or sector-specific refusal** — disproven. Reproduced the shape live (fresh SQLite,
+  real `/exec` surface, `StubExtractor`, no fixture for `WRAA-24-017-C` existed so one was built
+  from the real `a_projectupload`/`a_projectcompute` path used by `server/tools/test_documents_b7b.py`):
+  a `sector: "construction"` project, 25 monthly-report documents uploaded and extracted
+  (25/25 `contributes: true`), `projectcompute` never called. `projectuploadstatus` reports
+  `computed: false`; `projectresults` refuses with `"no computed result for period 1; run
+  projectcompute first"`. Calling `projectcompute` explicitly on the SAME project with the SAME
+  documents **succeeds immediately** (`project_status: "Amber"`, real `result_id`) — proving the
+  gap is a missing manual step, not a silent guard, not a data problem, and not specific to
+  construction as a sector.
+- **A failed compute the user never sees** — not what happened here (compute was never invoked at
+  all), but the existing failure channel was checked: `ws-compute-btn`'s handler already renders
+  `resp.error` into `#ws-compute-note` on any non-`ok` response, and `_compute_and_store` raises
+  rather than swallowing exceptions, so a real compute failure already reaches the user through
+  the channel that exists. No change needed there.
+
+**Fix — the state is now honest, not relabelled to look better.** `awaitingHtml(p, what)` in
+`assets/js/app.js` (feeds both the Signal Ledger and the Governance Decision card, the two
+surfaces the brief named) now checks the project's own `signals_extracted` events
+(`hasUploadedDocuments`) and renders one of two DISTINCT states:
+- documents uploaded, no compute yet: *"Documents uploaded, computation not yet run... Run the
+  analysis for this period from the workspace upload panel. Extraction alone does not produce a
+  result..."*
+- genuinely nothing uploaded: the original *"Awaiting analysis... Upload this project's
+  documents, then run the analysis for this period..."*, no longer implying the second step is
+  automatic.
+
+Nothing about "computed" was redefined and no badge was changed to read better; a project with no
+stored result still reads as not computed everywhere it already did (portfolio "Not yet computed",
+`projectresults` refusal, `getProjectFusion` returning nothing). Only the empty-state copy split
+into two truthful cases instead of one that implied active work.
+
+**Verify.** New `tests_render.html` group 17 (4 checks): a project with `signals_extracted`
+events and no stored result renders the uploaded-not-computed text and NOT the generic phrase, on
+both the ledger and the decision card; a project with neither renders the original phrase and NOT
+the uploaded-not-computed one. Fault-injected (`hasUploadedDocuments` forced to `false`): FAIL
+count went 1 -> 4, confirming the fault took effect and the new checks can fail; reverted, back to
+1/158 (the pre-existing auth-gated red). Full suite on the final code: server **41 suites,
+2269/2269** (fresh SQLite DB per file; no `server/` file touched, nothing under
+`server/app/simulation/` touched), `tests.html` **51/51**, `tests_render.html` **157/158** (new
+group 17 all green; the 1 red is the pre-existing auth-gated "production read path" check, red on
+`origin/main` too). The working path was re-verified end to end, not assumed: the reproduction's
+explicit `projectcompute` call on the same 25-document construction project succeeded and produced
+a real status, and the server suite (which exercises the design-project and training-run compute
+paths this brief asked to protect) stayed 2269/2269 unchanged.
+
+Files changed: `assets/js/app.js`, `tests_render.html`, `T6_HANDOFF.md`.
+
+**Left for the owner:** the detail page's own upload panel and the Files tab still have no compute
+control at all — this task made the resulting state honest rather than adding one, since deciding
+where a compute trigger belongs on those surfaces is a product decision, not a copy fix. The
+module docstring in `server/app/documents.py` ("COMPUTE IS EVENT-DRIVEN... runs on upload
+completion") is also stale against its own code and was left uncorrected here since it is an
+internal comment, not user-facing text, and out of this task's naming/copy scope.
+
+---
+
 # 2026-08-05 — THE CALCULATION BEHIND THE STATUS, AND A STALE COURSES-OF-ACTION MESSAGE
 
 Full detail in `REPORT_2026-08-05_ledger-calculations.md` — this session's write-restrictions

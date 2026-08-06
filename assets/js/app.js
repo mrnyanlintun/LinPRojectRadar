@@ -1513,14 +1513,30 @@
     return 103;
   }
 
+  // Documents can be uploaded and extracted without the analysis ever having been run: upload
+  // and compute are two separate actions (documents.py, "COMPUTE IS EVENT-DRIVEN"), and the
+  // only control that runs the second one lives on the workspace period-upload panel, not on
+  // this page. A project with extracted documents and no stored result is not "awaiting
+  // analysis" in the sense of work in progress; nothing is running. Told apart here rather than
+  // asserted, so this stays honest as the two documents behind the story evolve.
+  function hasUploadedDocuments(p) {
+    const evs = (p && Array.isArray(p.events)) ? p.events : [];
+    return evs.some((e) => e && (e.type || e.event || e.kind) === "signals_extracted");
+  }
+
   function awaitingHtml(p, what) {
+    const uploaded = hasUploadedDocuments(p);
+    const body = uploaded
+      ? `<p><strong>Documents uploaded, computation not yet run.</strong> This project's documents have been extracted but the analysis has not been run for this period.</p>
+        <p class="kn-sub">Run the analysis for this period from the workspace upload panel. Extraction alone does not produce a result; nothing is shown here until the analysis has actually run, and nothing is fabricated in the meantime.</p>`
+      : `<p><strong>Awaiting analysis.</strong> This project has no computed result yet.</p>
+        <p class="kn-sub">Upload this project's documents, then run the analysis for this period from the workspace upload panel. Nothing is shown here until that has happened, and nothing is fabricated in the meantime.</p>`;
     return `<div class="ledger-head"><div>
         <p class="eyebrow">${esc(what)}</p>
         <h2>${esc(p.id)}</h2><p class="ledger-sub">${esc(p.name)}</p>
       </div></div>
       <div class="awaiting-state">
-        <p><strong>Awaiting analysis.</strong> This project has no computed result yet.</p>
-        <p class="kn-sub">Upload this project's documents. The server reads them, extracts the signal values, runs the analysis, and stores the result with the version, seed, and period cutoff it used. Nothing is shown here until that has happened, and nothing is fabricated in the meantime.</p>
+        ${body}
       </div>`;
   }
 
