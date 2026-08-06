@@ -38,12 +38,49 @@ const DATA_BOUNDARY =
    ------------------------------------------------------------ */
 function signalStatuses(project) {
   const s = (project && project.signals) || {};
-  return {
+  const out = {
     evm:   s.evm   ? s.evm.status   : null,
     mc:    s.mc    ? s.mc.status    : null,
     cusum: s.cusum ? s.cusum.status : null,
     doc:   s.doc   ? s.doc.status   : null
   };
+  // Server-computed projects carry no legacy p.signals blob, so the four per-signal-class
+  // statuses above are all null and classifyConflict falls to "Signal breakdown not available".
+  // The same breakdown is recoverable from the STORED row: earned-value bands from
+  // signal_inputs (CPI/SPI, document risk) and the Monte Carlo / CUSUM module statuses from
+  // module_results, read through the shared resolver. This reads the stored answer; it does not
+  // recompute one. Only fill the classes still missing, so a real p.signals blob always wins.
+  const stored = storedSignalStatuses(project);
+  if (stored) {
+    ["evm", "mc", "cusum", "doc"].forEach((k) => { if (out[k] == null && stored[k] != null) out[k] = stored[k]; });
+  }
+  return out;
+}
+
+/* The four signal-class statuses derived from the stored computed row, or null when the project
+   has no stored result. Returned as lowercase band words ("red"/"amber"/"yellow"/"green") to
+   match the comparisons classifyConflict / countStatus make. A class with no stored basis stays
+   null — an abstaining signal class, never a fabricated "green". */
+function storedSignalStatuses(project) {
+  const row = (typeof window !== "undefined" && window.LinResults && window.LinResults.rowFor)
+    ? window.LinResults.rowFor(project) : null;
+  if (!row) return null;
+  const si = row.signal_inputs || {};
+  const lower = (band) => band ? String(band).toLowerCase() : null;
+  const modBand = (methodClass) => {
+    const st = (typeof window !== "undefined" && window.getModuleStatus)
+      ? window.getModuleStatus(methodClass, project) : null;
+    const norm = normalizeStatusLabel(st);
+    return norm ? norm.toLowerCase() : null;
+  };
+  const evm = (si.cpi != null || si.spi != null)
+    ? lower(deriveStatusFromMetrics(si.cpi, si.spi, null)) : null;
+  const doc = (si.docRiskScore != null)
+    ? lower(deriveStatusFromMetrics(null, null, si.docRiskScore)) : null;
+  const mc = modBand("Monte_Carlo");
+  const cusum = modBand("CUSUM");
+  if (evm == null && doc == null && mc == null && cusum == null) return null;
+  return { evm, mc, cusum, doc };
 }
 
 function countStatus(statuses, level) {

@@ -224,6 +224,10 @@ var LinAdmin = (function () {
           wireCopyButtons(resultEl);
           body.querySelector("#admin-create-submit").hidden = true;
           render(); // refresh the list behind the modal; the modal itself stays open on the secret
+          // Refresh the admin-ops PM and member pickers too, so the just-created participant is
+          // selectable immediately (previously they only updated on a full page reload).
+          try { if (window.LinAdminOps && LinAdminOps.reloadParticipants) LinAdminOps.reloadParticipants(); }
+          catch (e) { /* non-fatal */ }
         });
       }
     });
