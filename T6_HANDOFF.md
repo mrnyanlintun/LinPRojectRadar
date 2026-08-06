@@ -9,6 +9,96 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-05 — The schedule read, stored per period, and compared: Milestone Trend Analysis computes
+
+Branch `claude/schedule-milestones-s5s90m`. The harness again blocked writing a new report file at
+the repo root; the full report text was returned to the caller for filing as
+`REPORT_2026-08-05_schedule-milestones.md`. Summary below.
+
+**Two gaps closed, both on the app side of the model boundary.** The extraction returned the
+activity table's own column headings (`Activity`, `Baseline start`, `Current finish / actual`)
+while the module reads `name` and `forecast`; and no date in that column parsed with
+`date.fromisoformat`, which was the only date parser anywhere in `server/app`.
+
+**Part 1, `server/app/schedule_dates.py` (new).** Parses `24-Mar-26 A`, `24-Mar-26`, `12-Jan-26`,
+`24-Mar-2026`, `24 Mar 26`, `24/Mar/26`, `14 August 2026`, `1 March 2026`, `Mar 24, 2026`,
+`August 14 2026`, `30-Sept-26`, ISO. Two-digit years expand on a stated window (00-69 -> 2000s,
+70-99 -> 1900s), which is expansion of a year the document states, not inference of one it does
+not. **REFUSES**, with a reason, on: no year (`29-May`, `02-Apr`, `May 29`), all-numeric
+(`03/04/26` — day/month order is a convention), unrecognised trailing marker (`24-Mar-26 X`),
+impossible calendar date, unknown month name, `TBD`/`N/A`, and prose. An EMPTY cell returns None,
+which is not a refusal.
+
+**THE YEAR IS NEVER INFERRED, and that is structural.** `parse_schedule_date` takes exactly one
+argument; there is no context parameter for a period or a data date, and a check asserts the
+signature so a future session cannot add one silently. `29-May` in a March 2026 report can mean
+May 2025 or May 2026 and nothing in the row decides it. Taking it from a nearby label is the same
+class as the substitution defect the extraction prompt was already fixed for.
+
+**THE ACTUAL MARKER IS PRESERVED.** The trailing `A` is Primavera P6 / Microsoft Project notation
+for an actual date. An actual date and a forecast date are different facts; only the second can
+slip. `ScheduleDate.kind`, `schedule_activities.current_finish_kind` (under a CHECK constraint)
+and `forecast_kind` on the served snapshot all carry it.
+
+**Part 2, migration 0021 `schedule_activities`.** One row per (project, period, document,
+activity), unique on that tuple. Identity, description, baseline start/finish, current finish,
+the kind of each date, percent complete, `unparsed` (one entry per refused cell, with reason) and
+`usable_for_trend`. The same activity across four periods is FOUR ROWS, one per period, the
+observations store's rule. A refused row is stored as a MISSING ROW, never a slip of zero.
+Percent complete is None where unreadable, never 0.
+
+**Part 3, `milestoneHistory` is now `servable: True`** in `field_registry`, assembled by
+`documents._milestone_history` from periods `<= period being computed` (the
+`_earlier_live_results` rule) and written onto `si` only at two or more snapshots. **Milestone
+Trend Analysis computes at the second period, for the first time on this platform** (three
+activities matched, worst `D200` +14d, mean 7.0d, all asserted). It abstains at one period on its
+own guard. **A milestone absent from a later period is NOT movement** — asserted through the
+pipeline and directly against the module.
+
+**No stop condition triggered.** Nothing under `server/app/simulation/` was modified; no module's
+arithmetic changed; the shape the module reads was right and nothing was reshaped to fit a key
+name. The module's `forecast` is the activity's current expected finish, which is exactly what the
+source column states; the extra facts travel beside those keys and the module ignores them.
+
+**P1 proven, not asserted.** Recomputing period 1 after period 2 exists is byte-identical:
+`period`, `signal_inputs`, `module_results`, `category_statuses`, `project_status`,
+`portfolio_snapshot`, `simulation_version`, `seed`, `period_cutoff`, `source_documents`, via
+`json.dumps(sort_keys=True)`, with `result_id`/`computed_at` excluded by name because a recompute
+must have a new id. The period-alignment fault turns it red at byte 44.
+
+**Verify.** 43 suites **2365/2365** (new `test_schedule_milestones.py` = 75), `tests.html`
+**51/51**, `tests_render.html` **169/170** (the 1 is the pre-existing auth-gated production-read
+check). Five faults, each confirmed applied by SHA, each detected (65, 69, 71, 73, 73 of 75), each
+reverted byte-identical, baseline green after every one.
+
+**MIGRATIONS UNAPPLIED IN PRODUCTION: 0021 (this session) AND 0020 `abstained_modules` (last
+session).** Both are Lin's to run. Throwaway SQLite only; production never inspected.
+
+**REAL-DOCUMENT LIMIT, stated plainly: no validation here was against a real document.** There are
+zero PDF/XLSX/DOCX files in this clone. The fixture RECONSTRUCTS the real design activity table's
+headings and its exact date strings from `REPORT_2026-08-05_extraction-substitution.md` sections
+1.2 and 4, which recorded them against a real document. Everything beyond those named strings is
+constructed. When the real sets are available, run the parser over every date cell in every
+schedule table and read the REFUSAL list, not the parse count.
+
+**Open, reported and not built (Part 4).** Per-activity slip, baseline-versus-current (both
+baseline dates are stored and nothing reads them), actual-versus-forecast composition, and
+schedule readability as an evidence-quality figure are all available from the store today.
+Acceleration (the second difference of a milestone's forecasts) needs three periods and is
+available then. **Whether the critical path has moved is NOT derivable**: the stored table carries
+no logic links, no predecessors and no float per activity. One decision left open: a completed
+activity cannot slip yet enters the mean as a zero; excluding it would change the module's
+arithmetic, so it was flagged and not touched.
+
+**Stale and deliberately not edited:** `server/app/simulation/VALIDATION.md` line 214 still says
+`milestoneHistory` is unsupplied and A2.7 abstains. Editing it means opening `simulation/` for a
+documentation change. Same choice `REPORT_2026-08-05_period-series.md` made about the same file.
+
+Files: `server/app/schedule_dates.py` (new), `server/app/schedule_activities.py` (new),
+`server/alembic/versions/0021_schedule_activities.py` (new), `server/app/research_models.py`,
+`server/app/documents.py`, `server/app/field_registry.py`,
+`server/tools/test_schedule_milestones.py` (new), `T6_HANDOFF.md`. No front-end file changed.
+
 # 2026-08-06 — WRAA-24-017-C never computed: compute is a separate action, and nothing told the user
 
 Branch `claude/project-not-computed-s5s90m`. Full report content is reproduced below because this

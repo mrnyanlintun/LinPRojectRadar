@@ -75,8 +75,10 @@ from .research_membership import (
     require_member,
 )
 from .research_models import (
-    ComputedResult, Decision, Document, DocumentUpload, Observation, new_ulid,
+    ComputedResult, Decision, Document, DocumentUpload, Observation, ScheduleActivity,
+    new_ulid,
 )
+from .schedule_activities import read_activity_table
 
 log = logging.getLogger("opus-gubernatio-server")
 
@@ -345,6 +347,158 @@ def _persist_observations(session: Session, project: Project, period: int) -> in
     return inserted
 
 
+def _persist_schedule_activities(session: Session, project: Project, period: int) -> int:
+    """
+    0021. Project this period's stored activity tables into the schedule store.
+
+    The same shape as `_persist_observations`, for the same reasons: every upload in the period
+    is projected (superseded ones included, because storage retains and selection excludes),
+    rows are keyed by (project, period, document, activity) so re-deriving inserts only what is
+    missing, and nothing is ever updated in place. A document's activity table is
+    content-addressed and immutable, so the same document always projects to the same rows.
+
+    A ROW THAT WOULD NOT PARSE IS STILL STORED, with its refusals and `usable_for_trend` false.
+    Dropping it would leave the store unable to say why a schedule of nine activities yielded
+    six comparable ones, and "loud refusal over quiet approximation" means the refusal has to be
+    readable, not merely absent.
+
+    Returns the number of rows inserted.
+    """
+    rows = session.execute(
+        select(Document, DocumentUpload.supersedes_document_id)
+        .join(DocumentUpload, DocumentUpload.document_id == Document.document_id)
+        .where(DocumentUpload.project_id == project.id, DocumentUpload.period == period)
+    ).all()
+    existing = {
+        (r[0], r[1]) for r in session.execute(
+            select(ScheduleActivity.document_id, ScheduleActivity.activity_key)
+            .where(ScheduleActivity.project_id == project.id,
+                   ScheduleActivity.period == period)
+        ).all()
+    }
+    inserted = 0
+    for d, _supersedes in rows:
+        ex = d.extraction or {}
+        if not isinstance(ex, dict):
+            continue
+        activities = read_activity_table(ex.get("milestones_json"))
+        if not activities:
+            continue
+        doc_type = d.doc_type or UNMAPPED
+        as_of = document_as_of(doc_type, ex)
+        for a in activities:
+            key = (d.document_id, a["activity_key"])
+            if key in existing:
+                continue
+            existing.add(key)
+            session.add(ScheduleActivity(
+                project_id=project.id, period=period, document_id=d.document_id,
+                activity_key=a["activity_key"], description=a["description"],
+                baseline_start=a["baseline_start"],
+                baseline_start_kind=a["baseline_start_kind"],
+                baseline_finish=a["baseline_finish"],
+                baseline_finish_kind=a["baseline_finish_kind"],
+                current_finish=a["current_finish"],
+                current_finish_kind=a["current_finish_kind"],
+                percent_complete=a["percent_complete"],
+                unparsed=a["unparsed"], usable_for_trend=bool(a["usable_for_trend"]),
+                as_of=as_of, source_doc_type=doc_type,
+            ))
+            inserted += 1
+    return inserted
+
+
+def _schedule_snapshot(session: Session, project: Project, period: int) -> dict | None:
+    """
+    ONE period's schedule, as one snapshot, or None where that period read no schedule.
+
+    WHICH DOCUMENT'S TABLE, when a period carries more than one. Superseded documents are
+    excluded exactly as they are from computation. Among the rest, the document with the latest
+    `as_of` wins, a dated document always beats an undated one, and ties fall back to the
+    document id — the same precedence rule `select_signal_inputs` applies to a SNAPSHOT field,
+    stated once more here because a schedule is a snapshot: two schedule updates in one period
+    are two accounts of the same activities, not two populations to merge. Merging them would
+    let one document's `D100` and another's `D200` describe a schedule that never existed.
+    """
+    superseded = _superseded_document_ids(session, project, period)
+    rows = [
+        r for r in session.scalars(
+            select(ScheduleActivity).where(
+                ScheduleActivity.project_id == project.id,
+                ScheduleActivity.period == period,
+            )
+        ).all()
+        if r.document_id not in superseded
+    ]
+    if not rows:
+        return None
+    by_doc: dict[str, list[ScheduleActivity]] = {}
+    for r in rows:
+        by_doc.setdefault(r.document_id, []).append(r)
+    doc_id = max(by_doc, key=lambda d: (by_doc[d][0].as_of is not None,
+                                        str(by_doc[d][0].as_of or ""), d))
+    chosen = sorted(by_doc[doc_id], key=lambda r: r.activity_key)
+    at = str(chosen[0].as_of or "")
+    return {
+        "period": period,
+        "at": at,
+        "milestones": [
+            {
+                # `name` and `forecast` are the keys Milestone Trend Analysis reads. The rest
+                # are additional facts the module ignores and a reader does not: the module's
+                # arithmetic is unchanged and nothing was reshaped to fit a key name.
+                "name": r.activity_key,
+                "forecast": r.current_finish,
+                "forecast_kind": r.current_finish_kind,
+                "description": r.description,
+                "baseline_start": r.baseline_start,
+                "baseline_finish": r.baseline_finish,
+                "percent_complete": r.percent_complete,
+            }
+            for r in chosen if r.usable_for_trend
+        ],
+        "unusable": [
+            {"name": r.activity_key, "unparsed": r.unparsed or []}
+            for r in chosen if not r.usable_for_trend
+        ],
+    }
+
+
+def _milestone_history(session: Session, project: Project,
+                       period: int) -> list[dict]:
+    """
+    `milestoneHistory`: one snapshot per reporting period, oldest first, ending with this one.
+
+    STRICTLY EARLIER PERIODS PLUS THIS ONE, which is the `_earlier_live_results` rule applied to
+    the schedule store: a period's snapshot is assembled from rows whose own period is <= the
+    period being computed, so recomputing period 1 while periods 2, 3 and 4 exist reads none of
+    them and reproduces what period 1 was computed from. The schedule store makes that
+    structural rather than careful — a period's rows are written once, for that period, and no
+    later period's upload ever rewrites them.
+
+    A period that read no schedule contributes NO snapshot rather than an empty one. An empty
+    snapshot would make every activity look absent, and absence read as movement is precisely
+    the error this task forbids.
+
+    Fewer than two snapshots is not a trend, and the key is then omitted entirely so the module
+    abstains on its own `len(mh) < 2` guard rather than on a fabricated series.
+    """
+    periods = sorted({
+        int(p) for p in session.scalars(
+            select(ScheduleActivity.period).where(
+                ScheduleActivity.project_id == project.id,
+                ScheduleActivity.period <= period,
+            )
+        ).all()
+    })
+    out: list[dict] = []
+    for p in periods:
+        snap = _schedule_snapshot(session, project, p)
+        if snap is not None:
+            out.append(snap)
+    return out
+
+
 def _live_result(session: Session, project: Project, period: int) -> ComputedResult | None:
     return session.scalars(
         select(ComputedResult).where(
@@ -559,6 +713,7 @@ def _compute_and_store(session: Session, project: Project, period: int,
     # rows. On a recompute the reused cutoff bounds every selection, so evidence dated after
     # it — added later to the period — cannot silently change what the period reports.
     _persist_observations(session, project, period)
+    _persist_schedule_activities(session, project, period)
     observations: list[dict] = []
     for d in documents:
         observations.extend(emit_observations(d))
@@ -607,6 +762,25 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
     # so the stored result records the series the modules were actually given.
     si.update(_period_history(session, project, period, si))
     history = _period_snapshots(session, project, period, si)
+
+    # `milestoneHistory`, served for the first time. Milestone Trend Analysis has never
+    # computed: its input was declared UNSERVABLE and was, correctly, because the extraction
+    # returned the source table's own headings and its dates parsed with nothing. Both gaps are
+    # closed on THIS side of the boundary (`schedule_activities.py`, `schedule_dates.py`), and
+    # the schedule is now stored per period, so the series is a read rather than a fabrication.
+    #
+    # SERVED IN THE SHAPE THE MODULE READS, without changing what it computes: snapshots
+    # carrying `name` and `forecast`, oldest first. Nothing was reshaped to fit a key name —
+    # the module's `forecast` is the activity's current expected finish, which is exactly what
+    # the source table's current-finish column states, and the extra facts each row carries
+    # (baseline dates, percent complete, whether the date is actual or forecast) travel beside
+    # those keys where a reader can use them and the module simply ignores them.
+    #
+    # FEWER THAN TWO SNAPSHOTS AND THE KEY IS ABSENT. One period is not a trend, and the module
+    # must abstain on its own guard rather than on a series padded to reach a minimum.
+    milestone_history = _milestone_history(session, project, period)
+    if len(milestone_history) >= 2:
+        si["milestoneHistory"] = milestone_history
 
     run = compute_project(si, project.legacy_id, f"P{period}", cutoff)
 
@@ -1070,6 +1244,9 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
     # surface can read the baseline and amendments from it.
     session.flush()
     _persist_observations(session, project, period)
+    # 0021. The same moment, for the same reason: the schedule is structured data the store
+    # holds from the instant the evidence arrives, not something derived at compute time.
+    _persist_schedule_activities(session, project, period)
 
     audit(session, "documents_uploaded", participant_id=caller.participant_id,
           project_id=project.legacy_id, period=period, files=len(decoded),
