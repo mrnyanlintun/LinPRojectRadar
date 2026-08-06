@@ -1590,11 +1590,20 @@
         // breakdown for this module. An abstaining module returns "" (no chart).
         const chart = (!na && window.LinModuleCharts)
           ? LinModuleCharts.chartHtmlFor(m.method_class, p) : "";
+        // The working behind the status: the stored finding text, read verbatim from the
+        // primed row through getModuleResult (never recomputed, never reworded). A module
+        // with no stored entry (abstained, or never computed) returns null here and renders
+        // no finding line — the status pill above already reads "No data" for it, and this
+        // layer does not invent a sentence to sit beside that. Rendered exactly character for
+        // character: no trimming, no re-casing, no punctuation added.
+        const r = (!na && window.getModuleResult) ? getModuleResult(m.method_class, p) : null;
+        const finding = (r && r.evidence_metric)
+          ? `<div class="cat-mod-finding">${esc(r.evidence_metric)}</div>` : "";
         return `<div class="cat-mod-row${na ? " cat-mod-na" : ""}"${na ? ` title="N/A: not applicable to ${esc(secName)}-sector projects"` : ""}>
           <span class="cat-mod-num">${esc(m.num)}</span>
           <span class="cat-mod-name">${esc(m.name)}</span>
           ${statusPill(st, secName + "-sector")}
-        </div>${chart}`;
+        </div>${finding}${chart}`;
       }).join("");
       // Sector-abstention note — the category stays; only its construction-phase
       // modules abstain for this sector.
