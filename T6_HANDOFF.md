@@ -4367,3 +4367,41 @@ Full suite on the final code: server 39/39 (39 files, fresh SQLite DB each), `te
 Full report: `REPORT_2026-08-05_map-zoom-real.md` in the completing session's final response (this
 session's harness blocked writing a new report file at the repo root; T6_HANDOFF.md is the
 committed record of it).
+
+## Ledger empty states: Part 3 only, pushed unmerged (2026-08-06)
+
+Branch `claude/ledger-empty-states-s5s90m`, pushed to origin, **NOT merged**. This session
+completed only Part 3 of the four-part ask (grey/blue non-voting states, legends everywhere with
+measured contrast, storing the abstention message, full browser verification). Parts 1 and 2 were
+not attempted — they need real UI work across the ledger, the portfolio legend, Signal Sphere,
+Signal Network, and Signal Flow, plus measured-contrast checks on both themes, which this session's
+time budget did not cover. Do not treat this entry as "done"; treat it as "Part 3 landed, the rest
+is still open."
+
+**What changed**, `server/app/simulation/registry.py`, `run_all()`: previously `abstained` was a
+flat list of module ids, discarding the module's own `evidence_metric` message (the abstention
+contract's message field, set by the `insufficient()` helper in `models.py`). It is now a list of
+`{"module_id": ..., "reason": ...}`, where `reason` is `out.get("evidence_metric")` — `None` when a
+module abstained without giving one, never fabricated. No computation changed: this only retains an
+output every module already produces and previously threw away. `compute.py`'s category/project
+rollup was already unaffected by this shape (it reads only `run["computed"]`, never `abstained`),
+so the non-voting property for abstained modules already held before and after this change — Part 1
+still needs the same treatment applied to modules that *complete but are not relevant/have no data*,
+which is a different code path (module output, not abstention) and is still open.
+
+One test updated for the new shape: `server/tools/test_d1_module_inputs.py`, the
+`"A1.2" in healthy_run["abstained"]` membership check now reads
+`"A1.2" in {a["module_id"] for a in healthy_run["abstained"]}`.
+
+Verified green after the change, fresh SQLite DB per file: `tools/test_simulation.py` (29/29),
+`tools/test_d1_module_inputs.py` (100/100), `tools/test_period_series.py` (40/40),
+`tools/test_training_detail.py` (65/65), `tools/test_training_quality.py` (39/39) — the five files
+that reference `abstained` anywhere. Did not run the full server suite, `tests.html`, or
+`tests_render.html` in this session, and did not touch the browser at all — that is Parts 1/2's
+job and is still to do.
+
+**Next session**: read this entry plus `REPORT_2026-08-05_ledger-calculations.md` before starting.
+Part 3's `reason` field is ready to render; the frontend work (grey/blue states, shapes, legends,
+contrast measurement, rendering the reason verbatim) has not been started. Do not merge this branch
+until Parts 1 and 2 are done and verified in a real headless browser, then run the full suites
+(server + `tests.html` + `tests_render.html`) on the merged result before pushing to main.
