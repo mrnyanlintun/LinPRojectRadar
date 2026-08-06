@@ -22,17 +22,22 @@
   // portfolio-scale and not part of this diagram) — used only if
   // LIN_CATEGORIES is absent (script-order failure); canonical source is
   // categories.js ───────────────────────────────────────────────────────────
+  // group/groupName follow NAMING_AUTHORITY's current taxonomy (Groups A-D),
+  // mapped onto this fallback's legacy category order on a best-effort basis;
+  // this path only runs when LIN_CATEGORIES failed to load (script-order
+  // failure) — the canonical source (taxonomy.js) always carries the
+  // authoritative group assignment.
   var FB_CATS = [
-    { id:1,  name:'Quantitative EVM',       short:'EVM',       count:12 },
-    { id:2,  name:'Schedule Simulation',    short:'Schedule',  count:11 },
-    { id:3,  name:'Cost Simulation',        short:'Cost',      count:10 },
-    { id:4,  name:'Document & Risk',        short:'Doc&Risk',  count:10 },
-    { id:5,  name:'System Dynamics',        short:'Sys.Dyn.',  count:8  },
-    { id:6,  name:'Signal Synthesis',       short:'Synthesis', count:4  },
-    { id:7,  name:'Evidence Combination',   short:'Evidence',  count:20 },
-    { id:8,  name:'Governance & Compliance',short:'Gov.',      count:9  },
-    { id:9,  name:'Data Integrity',         short:'Integrity', count:6  },
-    { id:10, name:'Decision Optimization',  short:'Decision',  count:8  },
+    { id:1,  name:'Quantitative EVM',       group:'A', groupName:'Project Health',                  count:12 },
+    { id:2,  name:'Schedule Simulation',    group:'A', groupName:'Project Health',                  count:11 },
+    { id:3,  name:'Cost Simulation',        group:'A', groupName:'Project Health',                  count:10 },
+    { id:4,  name:'Document & Risk',        group:'A', groupName:'Project Health',                  count:10 },
+    { id:5,  name:'System Dynamics',        group:'A', groupName:'Project Health',                  count:8  },
+    { id:6,  name:'Signal Synthesis',       group:'B', groupName:'Recommendation and Governance',   count:4  },
+    { id:7,  name:'Evidence Combination',   group:'B', groupName:'Recommendation and Governance',   count:20 },
+    { id:8,  name:'Governance & Compliance',group:'B', groupName:'Recommendation and Governance',   count:9  },
+    { id:9,  name:'Data Integrity',         group:'C', groupName:'Data and Evidence Health',        count:6  },
+    { id:10, name:'Decision Optimization',  group:'B', groupName:'Recommendation and Governance',   count:8  },
   ];
 
   // ─── Fallback module definitions: [catIdx, displayName, method_class] ───────
@@ -101,10 +106,7 @@
   // Portfolio Health (ex-Cat 8 ML/AI) is portfolio-scale — not part of this
   // project-level diagram; see the Health dialog (ingest.js/deepdive.js).
 
-  var SHORTS = ['EVM','Schedule','Cost','Doc&Risk','Sys.Dyn.','Synthesis',
-                'Evidence','Gov.','Integrity','Decision'];
-
-  // Canonical categories + modules from categories.js (real method_class names,
+  // Canonical categories + modules from taxonomy.js (real method_class names,
   // so byClass/getModuleStatus lookups actually hit). Portfolio Health is
   // portfolio-scale and excluded from this project-level diagram. Falls back
   // to the hardcoded arrays above only if LIN_CATEGORIES failed to load.
@@ -114,7 +116,7 @@
       var PLC = window.projectLevelCategories ? window.projectLevelCategories()
         : LC.filter(function(c) { return !(c && c.level === 'portfolio'); });
       var cats = PLC.map(function(c, ci) {
-        return { id: ci + 1, name: c.name, short: SHORTS[ci] || c.name,
+        return { id: ci + 1, name: c.name, group: c.group, groupName: c.groupName,
                  count: (c.modules || []).length };
       });
       var mods = [];
@@ -572,7 +574,7 @@
         fill:'var(--faint, #1e2c44)', 'font-size':'9', 'font-family':'monospace',
         'text-anchor':'end', 'font-weight':'700', class:'lnf-halo'
       }, nodeG);
-      t.textContent = 'C'+cat.id;
+      t.textContent = cat.group || '';
     });
 
     // Module dots + right-side labels (11.5px, truncated 26 chars — full
@@ -648,26 +650,26 @@
       var circle = seShape(catShape, x, y, 9, cAttrs, g);
       circle.style.transformOrigin = x + 'px ' + y + 'px';
       if (cs==='Red') circle.classList.add('lnf-red-pulse');
-      // number + name label, nudged up so the role caption sits directly beneath
+      // group letter + name label, nudged up so the role caption sits directly beneath
       var t = se('text', { x:x+14, y:y-4, fill:'var(--muted, #6a8aaa)', 'font-size':'13', 'font-family':'monospace', 'dominant-baseline':'middle', class:'lnf-halo' }, g);
-      t.textContent = 'C'+cat.id+' '+cat.short;
+      t.textContent = (cat.group ? cat.group+' · ' : '') + cat.name;
       var role = CAT_ROLE[cat.id];
       if (role) {
         var rt = se('text', { x:x+14, y:y+9, fill:'var(--faint, #6f7d90)', 'font-size':'9', 'font-style':'italic', 'font-family':'monospace', 'dominant-baseline':'middle', class:'lnf-halo lnf-cat-role' }, g);
         rt.textContent = role;
         var rtitle = se('title', {}, rt);
-        rtitle.textContent = 'C' + cat.id + ' ' + cat.name + ' — ' + role;
+        rtitle.textContent = cat.name + ' — ' + role;
       }
 
       g.addEventListener('mouseenter', (function(cat, ci, cs, color, circle) {
         return function(evt) {
           circle.style.transform = 'scale(1.22)';
-          var icIn  = interCatEls.filter(function(l){return l.dstI===ci;}).map(function(l){return 'C'+(l.srcI+1);});
-          var icOut = interCatEls.filter(function(l){return l.srcI===ci;}).map(function(l){return 'C'+(l.dstI+1);});
+          var icIn  = interCatEls.filter(function(l){return l.dstI===ci;}).map(function(l){return CATS[l.srcI].name;});
+          var icOut = interCatEls.filter(function(l){return l.srcI===ci;}).map(function(l){return CATS[l.dstI].name;});
           var sub = cat.count+' modules';
           if (icIn.length)  sub += ' · from: '+[...new Set(icIn)].join(', ');
           if (icOut.length) sub += ' · to: '+[...new Set(icOut)].join(', ');
-          showTT(evt,'<div class="n">C'+(ci+1)+': '+escH(cat.name)+'</div><div class="sub" style="color:'+color+'">'+cs+'</div><div class="sub">'+sub+'</div>');
+          showTT(evt,'<div class="n">'+escH(cat.name)+'</div><div class="sub" style="color:'+color+'">'+cs+'</div><div class="sub">'+sub+'</div>');
         };
       })(cat, ci, cs, color, circle));
       g.addEventListener('mousemove', moveTT);
@@ -725,7 +727,7 @@
 
       g.addEventListener('mouseenter', (function(name, di, uploaded, color) {
         return function(evt) {
-          var cats = DOC_TO_CATS[di].map(function(ci){return 'C'+(ci+1);}).join(', ');
+          var cats = DOC_TO_CATS[di].map(function(ci){return (CATS[ci] && CATS[ci].name) || '';}).join(', ');
           showTT(evt,'<div class="n">'+escH(name)+'</div><div class="sub" style="color:'+color+'">'+(uploaded?'Uploaded':'Not uploaded')+'</div><div class="sub">Feeds: '+cats+'</div>');
           // trace this document's feeds regardless of upload state
           classAFocus(function(e, d){ return d===di; });

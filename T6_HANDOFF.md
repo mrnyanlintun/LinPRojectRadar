@@ -3947,3 +3947,34 @@ re-measure. Never a blanket rule.
   and the audit export. Not in scope for T8, but the same argument applies.
 - The geocoding tests stub `app.geocode.geocode`, so the suite stays offline and never spends
   Nominatim's rate limit. Keep it that way.
+
+## Chart group labels (2026-08-05) — retired category scheme, done
+
+Charts still labelled by the retired `C1 EVM`..`C11 Data Integrity` scheme (a collision with the
+CURRENT `C` = Data and Evidence Health group). Fixed on `claude/chart-group-labels-s5s90m`,
+merged to `main`. Findings (full detail was given directly in the completing session's final
+response, not a committed report file, per this session's harness policy against writing new
+report/summary .md files):
+
+- Retired scheme found and fixed in `assets/js/neural_flow.js` (Signal Flow — the `SHORTS`
+  hardcoded name array plus every `'C'+cat.id` label/tooltip/legend string), `assets/js/detail.js`
+  (Signal Web sphere label, Ensemble Analysis axis/legend/tooltip, and the Provenance trace line —
+  all used `cat.num`/`m.num`, the *current*-scheme id, itself forbidden by NAMING_AUTHORITY), and
+  `assets/js/export.js` (Signal History XLSX header row, literally `"Cat 1 EVM"` etc).
+- `charts3d.js`'s `Cat 6` label is real but dead code — `LinCharts3D` renderers are only ever
+  called from `deepdive.js`, which `index.html` does not load on the participant path. Left
+  alone.
+- Counts were already correct: `taxonomy.js` has 12 categories / 101 modules total (100 "distinct
+  computations" once Document Risk Score is excluded, matching `knowledge.js`'s existing text);
+  Signal Flow's "96 MODULES · 11 CATEGORIES" is `projectLevelCategories()` (excludes the one
+  portfolio category, `d1`) computed dynamically from array length, not hardcoded — only the
+  *labels* were wrong, not the numbers.
+- b1/b2 ("Signal Synthesis" / "Evidence Combination") share the identical role caption "what the
+  evidence collectively means" in `neural_flow.js`'s `CAT_ROLE`. Not a NAMING_AUTHORITY
+  contradiction (both genuinely describe evidence interpretation) but loses the
+  primary-synthesis-vs-cross-check distinction the code documents elsewhere. Flagged for owner,
+  not mechanically fixed.
+- Verified: fault-injected the Signal Flow label back to `'C'+cat.id`, confirmed the DOM scanner
+  caught it live against a seeded computed project, reverted, confirmed clean. Server suite
+  39/39 green (2200/2200 checks), `tests.html` 51/51, `tests_render.html` 106/107 (the one FAIL is
+  the pre-existing auth-gated "production read path" check, red on `main` too).
