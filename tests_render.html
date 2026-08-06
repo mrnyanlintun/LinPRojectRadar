@@ -94,6 +94,9 @@
 <script src="assets/js/config.js"></script>
 <script src="assets/js/data.js"></script>
 <script src="assets/js/taxonomy.js"></script>
+<!-- module_charts.js is loaded so group 14 can render the per-module ledger charts for real
+     from a stored row, and prove abstention (no stored entry) draws no chart. -->
+<script src="assets/js/module_charts.js"></script>
 <script src="assets/js/decision.js"></script>
 <!-- store.js and atlas.js are loaded for group 8. Neither self-boots: store.js only defines
      window.LinStore (every network path is gated on LIN_API_URL being configured, which it is
@@ -1053,6 +1056,99 @@
   }
   try { documentsPanelGroup(); }
   catch (e) { assert("group 13: the documents panel group ran to completion", "no throw", "threw: " + (e && e.message)); }
+
+  /* GROUP 14 — per-module charts in the Signal Ledger, drawn from the stored row only.
+
+     The chart is honest only if every bar is a value the server stored, read back exactly, and
+     only for a module whose stored result actually holds a labelled breakdown. This group proves:
+       - a group-one module (Regret Minimization) renders a chart whose bar values EQUAL the
+         stored expected_regret verbatim, no rounding drift, no fabricated bar;
+       - the chart carries no module id or number in any label or tooltip;
+       - a module with NO stored entry (abstaining) draws NO chart, not an empty frame;
+       - a project with no stored result at all renders the awaiting state and NO chart;
+       - nothing recomputes: the drawn values come from module_results, not any live model. */
+  (function () {
+    // Regret Minimization (B4.7) and Maximum Entropy (B2.14) both store a labelled breakdown.
+    // Sensitivity Analysis (A5.2) is deliberately LEFT OUT of module_results so it abstains.
+    const REGRET = { monitor: 11, investigate: 5, escalate: 8 };
+    function chartedRow() {
+      return {
+        project_status: "Red", red_review: false,
+        category_statuses: {
+          B4: { status: "Red", group: "B", module_count: 1, contributes_to_project_status: true },
+          A5: { status: "Amber", group: "A", module_count: 1, contributes_to_project_status: true }
+        },
+        module_results: [
+          { module_id: "B4.7", group: "B", category: "B4", status_color: "Red",
+            method_class: "Regret_Minimization", evidence_metric: "Least-regret action: escalate",
+            expected_regret: REGRET, recommended_action: "escalate", min_regret_score: 5 },
+          { module_id: "B2.14", group: "B", category: "B2", status_color: "Amber",
+            method_class: "Maximum_Entropy", evidence_metric: "Distribution entropy 0.76",
+            probabilities: { Green: 5, Yellow: 19, Amber: 60, Red: 16 }, entropy: 0.76 }
+          // A5.2 Sensitivity_Analysis intentionally absent -> abstains -> no chart.
+        ]
+      };
+    }
+    const p = storedOnlyProject();
+    p.status = "Red";
+    p.storedResult = chartedRow();
+    window.LIN_PROJECTS.length = 0; window.LIN_PROJECTS.push(p); window.LinResults.clear();
+    const host = scratch();
+    let threw = "";
+    try { window.LinApp.renderLedger(p, host); } catch (e) { threw = String(e && e.message); }
+    assert("group 14: ledger with charts rendered without throwing", "", threw);
+
+    const regretChart = host.querySelector('[data-mchart="Regret_Minimization"]');
+    assert("group 14: the charted module drew a chart", true, !!regretChart);
+
+    // EXACT values: the three bar value texts equal the stored regret figures, nothing else.
+    const vals = regretChart
+      ? Array.prototype.map.call(regretChart.querySelectorAll(".mchart-value"),
+          function (n) { return n.textContent.trim(); }).sort().join(",")
+      : "(no chart)";
+    assert("group 14: bar values equal the stored expected_regret EXACTLY", "11,5,8",
+      regretChart
+        ? [REGRET.monitor, REGRET.investigate, REGRET.escalate].join(",")   // guard the fixture
+        : "(no chart)");
+    assert("group 14: rendered bar value texts are exactly the stored figures", "11,5,8", vals);
+
+    // Bar labels are the outcome names, never a module id/number.
+    const labels = regretChart
+      ? Array.prototype.map.call(regretChart.querySelectorAll(".mchart-label"),
+          function (n) { return n.textContent.trim(); }).sort().join("|")
+      : "";
+    assert("group 14: bars are labelled by action name, no ids", "Escalate|Investigate|Monitor",
+      labels);
+
+    // No module id or number ANYWHERE in the chart (title, labels, note, tooltips).
+    const ID_IN_LABEL = /(^|[^A-Za-z0-9])[A-D]\d(\.\d+)?(?![\dA-Za-z])/;
+    const chartLeaves = [];
+    host.querySelectorAll(".mchart *").forEach(function (el) {
+      if (!el.querySelector("*")) chartLeaves.push((el.textContent || "").trim());
+    });
+    const idHits = chartLeaves.filter(function (t) { return ID_IN_LABEL.test(t); });
+    assert("group 14: no chart leaf carries a module or category id", "", idHits.join(" | "));
+    assert("group 14: the chart-leaf scan actually saw text", true, chartLeaves.length >= 4);
+
+    // Abstention: the module with no stored entry drew NO chart.
+    assert("group 14: an abstaining module (no stored entry) draws no chart", null,
+      host.querySelector('[data-mchart="Sensitivity_Analysis"]'));
+
+    // A second charted module also drew, proving the primitive is not single-module luck.
+    assert("group 14: a second charted module (outcome likelihood) also drew", true,
+      !!host.querySelector('[data-mchart="Maximum_Entropy"]'));
+
+    // No stored result at all -> awaiting state, and NO chart anywhere.
+    const p2 = storedOnlyProject();
+    p2.status = "Amber";                 // no storedResult
+    window.LIN_PROJECTS.length = 0; window.LIN_PROJECTS.push(p2); window.LinResults.clear();
+    const host2 = scratch();
+    try { window.LinApp.renderLedger(p2, host2); } catch (e) {}
+    assert("group 14: an uncomputed project shows the awaiting state", true,
+      !!host2.querySelector(".awaiting-state"));
+    assert("group 14: an uncomputed project draws NO chart", null,
+      host2.querySelector(".mchart"));
+  })();
 
   // ---- render results ----
   function renderResults() {

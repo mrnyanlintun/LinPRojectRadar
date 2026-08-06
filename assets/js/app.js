@@ -1527,11 +1527,15 @@
       const modRows = cat.modules.map((m) => {
         const st = window.getModuleStatus ? getModuleStatus(m.method_class, p) : null;
         const na = st === "NA";
+        // Per-module chart, drawn only when the stored result holds a labelled
+        // breakdown for this module. An abstaining module returns "" (no chart).
+        const chart = (!na && window.LinModuleCharts)
+          ? LinModuleCharts.chartHtmlFor(m.method_class, p) : "";
         return `<div class="cat-mod-row${na ? " cat-mod-na" : ""}"${na ? ` title="N/A: not applicable to ${esc(secName)}-sector projects"` : ""}>
           <span class="cat-mod-num">${esc(m.num)}</span>
           <span class="cat-mod-name">${esc(m.name)}</span>
           ${statusPill(st, secName + "-sector")}
-        </div>`;
+        </div>${chart}`;
       }).join("");
       // Sector-abstention note — the category stays; only its construction-phase
       // modules abstain for this sector.

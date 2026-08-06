@@ -403,6 +403,26 @@ window.projectLevelCategories = function () {
     return null;
   };
 
+  /* Full stored result dict for one module, read from the stored row.
+
+     Returns the exact object the server stored for this module (status_color plus whatever
+     structured fields that module computed), or null when there is no stored row or the row
+     carries no entry for this module (an abstaining or insufficient-data module). This is the
+     only honest source for a per-module chart: it reads what was stored and derives nothing. */
+  window.getModuleResult = function (methodClass, project) {
+    if (!project) return null;
+    var row = rowFor(project);
+    if (!row || !Array.isArray(row.module_results)) return null;
+    var num = METHOD_TO_NUM[methodClass];
+    if (!num) return null;
+    for (var i = 0; i < row.module_results.length; i++) {
+      if (row.module_results[i] && row.module_results[i].module_id === num) {
+        return row.module_results[i];
+      }
+    }
+    return null;
+  };
+
   /* Per-category status, read from the stored row.
 
      The server already fused the modules in this category and stored the answer, so there is

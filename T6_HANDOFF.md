@@ -9,6 +9,55 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-05 — PER-MODULE CHARTS REBUILT INLINE IN THE SIGNAL LEDGER FROM THE STORED ROW
+
+Branch `claude/module-charts-s5s90m`. The report could not be written as a repo-root file (harness
+blocks subagent report files); its full content is in the session output and should be committed as
+`REPORT_2026-08-05_module-charts.md`. Server suite **2200/2200** (no server file changed),
+`tests.html` **51/51**, `tests_render.html` **117/118** (the 1 is the pre-existing auth-gated
+production-read check, red on `origin/main` too).
+
+**Each module stores its full result dict** (`ComputedResult.module_results`, JSON): status,
+`evidence_metric`, and the structured fields it computed. `_result_view` returns the whole dict;
+`primeAndRefresh` grafts it onto `p.storedResult`; the Signal Ledger reads that primed row. So a
+module is chartable when what it stored is an **honest** chart, not when a number exists.
+
+**The three-way split (lead deliverable):**
+- **Group 1 (chartable today).** Modules that stored a labelled multi-element breakdown.
+  **Seven built** with one primitive (labelled horizontal bars, inline per module in the ledger):
+  Sensitivity Analysis (`drivers`), Tornado Risk Ranking (`risks`), Multi-Objective Optimization
+  (`objectives`), What-If Scenario Matrix (`scenarios`), Decision Sensitivity Matrix
+  (`sensitivity_matrix`), Regret Minimization (`expected_regret`), Maximum Entropy (`probabilities`).
+  Three more are chartable-today but each needs its own primitive, so deferred (bounded scope, not
+  a data gap): Reference Class Forecasting (`multipliers` -> distribution strip), DSM Rework
+  (`matrix` -> heatmap), Possibility Theory (`possibility`+`necessity` -> grouped bars).
+- **Group 2 (needs more stored).** Modules that simulate a distribution/trend then store only a
+  summary: Monte Carlo, PERT, Schedule/Cost Risk (store p50/p80, not the distribution); CUSUM
+  (max only, not the per-period series); Kalman/ARIMA/Regression-to-Mean/Earned Schedule (endpoint
+  only, not the per-period series). Charting them means the SERVER must store the series
+  (`server/app/...`), out of scope. Also the D1.3 trajectory classifier (history=None, unchanged).
+- **Group 3 (not chartable).** Single scalar, verdict, or several readouts of different units with
+  no shared axis (most of the taxonomy). They keep status + one-liner, no fake one-bar chart.
+
+**Build.** `taxonomy.js` gains `getModuleResult(methodClass, project)` (sibling of
+`getModuleStatus`, returns the whole stored dict or null). New `module_charts.js` (no dependency,
+inline SVG) maps a stored dict to `{label,value}` bars for the seven charted classes only, with >=2
+elements, dropping non-finite values (never a zeroed fake), refusing a one-bar chart. `app.js`
+`categoryLedgerHtml` appends `LinModuleCharts.chartHtmlFor` under each module row. Awaiting state is
+unchanged (renderLedger already shows the awaiting panel with no chart when `hasResult` is false).
+Nothing recomputes: deepdive/sim/simulations not loaded; charts read `module_results` only. No ids
+or numbers in any label; no em dashes.
+
+**Verify.** New `tests_render.html` group 14 renders the production builder `LinApp.renderLedger`
+(what `detail.js` calls into `d-ledger`): asserts bar values equal the stored `expected_regret`
+EXACTLY (`11,5,8`), labels are action names with no ids, an abstaining module (no stored entry)
+draws no chart, an uncomputed project shows awaiting + no chart. Two faults proven red then reverted
+green: fabricated values, and a fabricated chart for an abstaining module. Faults target block
+elements + anchored matches.
+
+Files: `assets/js/taxonomy.js`, `assets/js/module_charts.js` (new), `assets/js/app.js`,
+`assets/css/radar.css`, `index.html`, `tests_render.html`. No `server/` change.
+
 # 2026-08-05 — SIX DEAD DETAIL SURFACES WIRED TO THE PRIMED ROW; EXTRACTION DISPLAY; ADMIN DROPDOWNS
 
 Branch: `claude/dead-surfaces-s5s90m`. Full detail in `REPORT_2026-08-05_dead-surfaces.md`.

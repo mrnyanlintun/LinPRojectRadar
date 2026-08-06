@@ -724,6 +724,19 @@ body.t-light .theme-switch button.active { color: #fff; }
 .cat-row-na-note { color: var(--faint); font-size: 11px; font-style: italic; margin: 0 0 8px 0; padding-left: 66px; }
 .cat-mod-num { font-family: var(--font-mono); font-size: 10px; color: var(--faint); min-width: 46px; }
 .cat-mod-name { flex: 1; color: var(--muted); }
+/* ---------- per-module inline charts (Signal Ledger) ---------- */
+.mchart { margin: 2px 0 12px 66px; padding: 10px 12px; border: 1px solid var(--line, rgba(128,140,168,.25));
+  border-radius: 8px; background: var(--panel-2, rgba(128,140,168,.06)); max-width: 420px; }
+.mchart-title { margin: 0 0 8px 0; font-size: 12px; font-weight: 700; letter-spacing: .02em; color: var(--text, #dbe3f2); }
+.mchart-note { margin: 6px 0 0 0; font-size: 11px; color: var(--faint); }
+.mchart-svg { display: block; overflow: visible; }
+.mchart-label { font-size: 11px; fill: var(--muted, #9fb0cc); }
+.mchart-value { font-size: 11px; font-family: var(--font-mono); fill: var(--text, #dbe3f2); dominant-baseline: middle; }
+.mchart-track { fill: rgba(128,140,168,.14); }
+.mchart-bar { fill: var(--accent, #5b8def); }
+.mchart-bar-neg { fill: var(--good, #43b581); }
+.mchart-zero { stroke: rgba(128,140,168,.5); stroke-width: 1; }
+
 .cat-row-parked { padding-bottom: 12px; }
 .cat-row-parked .cat-row-head { cursor: default; }
 .cat-row-parked-note { color: var(--faint); font-size: 11px; font-style: italic; padding-left: 66px; margin: 4px 0 0; }
