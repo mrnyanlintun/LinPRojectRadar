@@ -9,6 +9,60 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-05 — THE CALCULATION BEHIND THE STATUS, AND A STALE COURSES-OF-ACTION MESSAGE
+
+Full detail in `REPORT_2026-08-05_ledger-calculations.md` — this session's write-restrictions
+blocked committing it as a file; its complete content was delivered in the session's final
+response instead, a future session should create it from that response if a filed copy is
+wanted. **Server 41 suites, 2269/2269 (no server file touched); `tests_render.html` 152/153**
+(new group 16 adds 9 checks, all passing; the 1 red is the pre-existing auth-gated "production
+read path" check, red on `origin/main` too); `tests.html` 51/51. Two faults injected, both
+detected, both reverted, baseline re-measured both times. `server/app/simulation/` untouched.
+
+## LEAD: every COMPUTED module's stored result carries its finding text; an ABSTAINED module's
+## message is discarded server-side before it is ever stored, and that is not this task's to fix
+
+Verified against a real `compute_project()` output AND a real project driven through the actual
+`/exec projectupload`/`projectcompute`/`projectresults` path: **29 modules computed, all 29
+carried `evidence_metric`; 66 abstained, none reached `module_results` at all.**
+`registry.py`'s `run_all()` filters `status_color is None` OUT of the `results` list before it is
+ever stored (`ComputedResult.module_results = run["modules"]`, `research_models.py:611` has no
+`abstained` column) — an abstaining module's message text is discarded at that point, not merely
+unread. So the Signal Ledger's per-module finding, added this session
+(`assets/js/app.js` `categoryLedgerHtml`, reading `getModuleResult(...).evidence_metric` from the
+primed row through the existing `taxonomy.js` accessor into a new `.cat-mod-finding` block), can
+only ever render what a computed module actually stored, verbatim, and correctly renders nothing
+for an abstained or never-run module — the pre-existing "No data" status pill is the only
+abstention signal that can exist at this layer without a `server/app/simulation/registry.py`
+change (out of scope: touching `simulation/` is prohibited, and this is analytical-layer code one
+function above that boundary).
+
+## THE COURSES-OF-ACTION MESSAGE FIX, AND THE GAP LEFT OPEN
+
+**Read this before assuming any operational project's Governance Decision card shows real
+courses of action.** Live-reproduced, not guessed: an ordinary operational project (created via
+`workspace.py` `a_projectcreate`, no research `Scenario` attached) has Regret Minimization
+compute a real status (e.g. Red) while its `expected_regret`/`recommended_action` are PERMANENTLY
+stripped by `_redact_module_actions` (`documents.py:737`), because `recommendation_visible`
+(`research_membership.py:140`) requires a `Scenario` row naming the project — a research-only
+concept an ordinary operational project never gets. **None of the task brief's three hypothesised
+causes (a/b/c) was exactly right**: the JS reads the correct field (not (a)); the module always
+produces a full 3-key score set whenever it computes at all (not (b)); the closest is a narrow
+form of (c) — the reason sentence ("did not compute for this project") is factually wrong for
+this specific, reachable state, where the module plainly computed and its action fields are
+withheld pending a reveal gate. **Fixed, contained**: `recommendation_options.js` `build()` now
+reads a `recommendation_withheld` flag `_redact_module_actions` already leaves on the object and
+states the true reason ("...computed for this project, but its finding is withheld until this
+period's preliminary judgment is recorded and locked...") instead of "did not compute". **NOT
+fixed, an owner decision**: whether an ordinary operational project should ever be gated behind
+`recommendation_visible` at all — nothing in `documents.py`/`research_decision.py`/
+`research_membership.py` branches on `account_type` at this gate (checked: zero matches), so
+today every ordinary operational project's courses of action stay withheld forever unless a
+Scenario is attached to it by hand, as apparently prior sessions' "operational" examples were.
+The message is now honest about why; the underlying visibility gap is reported, not touched.
+
+---
+
 # 2026-08-05 — THE CROSS-PERIOD SERIES, ASSEMBLED FROM THE RESULTS ALREADY STORED
 
 Branch `claude/period-series-s5s90m`. The report could not be written as a repo-root file

@@ -121,12 +121,24 @@
     var scores = regret && regret.expected_regret;
 
     if (!scores || typeof scores !== "object" || Object.keys(scores).length < 2) {
+      // The module can be present with a real status (it computed) and still carry no score
+      // set here, because the server withholds its action-bearing fields
+      // (recommended_action / expected_regret) until this project's preliminary judgment is
+      // locked (server/app/documents.py `_redact_module_actions`, gated by
+      // `recommendation_visible`). That is a different fact from "the analysis did not
+      // compute", and saying "did not compute" when the module plainly carries a status is
+      // the platform contradicting its own ledger. Say which is true.
+      var withheld = regret && regret.recommendation_withheld;
       return {
         available: false,
-        reason: "The analysis that scores the courses of action against each other, the one "
-          + "that asks which course carries the smallest worst case, did not compute for this "
-          + "project. Without it the platform holds no set of courses of action to lay out, "
-          + "and it will not invent one.",
+        reason: withheld
+          ? "The analysis that scores the courses of action against each other computed for "
+            + "this project, but its finding is withheld until this period's preliminary "
+            + "judgment is recorded and locked. Once it is, the courses of action appear here."
+          : "The analysis that scores the courses of action against each other, the one "
+            + "that asks which course carries the smallest worst case, did not compute for this "
+            + "project. Without it the platform holds no set of courses of action to lay out, "
+            + "and it will not invent one.",
         options: [],
         recommendation: null,
         unknowns: []

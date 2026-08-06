@@ -1322,6 +1322,111 @@
       !!cardBlockHtml && researchDiv.innerHTML.indexOf(cardBlockHtml) >= 0);
   })();
 
+  /* GROUP 16 — the calculation behind the status, on every module row in the Signal Ledger.
+
+     A status pill without its working tells a reader to accept a verdict. This group proves the
+     ledger renders the stored finding text beside its module, VERBATIM, and never invents one:
+       - a module with a stored evidence_metric renders it EXACTLY (full string equality, not a
+         substring match);
+       - an abstaining module (no entry in module_results) renders NO finding line, not a
+         fabricated or generic one -- its status pill already says "No data";
+       - a project with no stored result at all renders no findings anywhere;
+       - the finding sits in a real block element (.cat-mod-finding), never an inline span, so a
+         width/height-based fault check has something to act on. */
+  (function () {
+    const FINDING_A = "P80 EAC 7303853 vs BAC 5874620 (+24.3%); 5000 iterations";
+    const FINDING_B = "Minimax regret recommends: escalate (expected regret score 5/30); this " +
+      "decision minimizes worst-case outcome under uncertain future states";
+    function findingsRow() {
+      return {
+        project_status: "Red", red_review: false,
+        category_statuses: {
+          A1: { status: "Red", group: "A", module_count: 1, contributes_to_project_status: true },
+          B4: { status: "Red", group: "B", module_count: 1, contributes_to_project_status: true }
+        },
+        module_results: [
+          { module_id: "A1.1", group: "A", category: "A1", status_color: "Red",
+            method_class: "Monte_Carlo", evidence_metric: FINDING_A, p50_eac: 7210875,
+            p80_eac: 7303853 },
+          { module_id: "B4.7", group: "B", category: "B4", status_color: "Red",
+            method_class: "Regret_Minimization", evidence_metric: FINDING_B,
+            expected_regret: { monitor: 11, investigate: 5, escalate: 8 },
+            recommended_action: "escalate", min_regret_score: 5 }
+          // A5.2 Sensitivity_Analysis intentionally absent -> abstains -> no finding line.
+        ]
+      };
+    }
+    const p = storedOnlyProject();
+    p.status = "Red";
+    p.storedResult = findingsRow();
+    window.LIN_PROJECTS.length = 0; window.LIN_PROJECTS.push(p); window.LinResults.clear();
+    const host = scratch();
+    let threw = "";
+    try { window.LinApp.renderLedger(p, host); } catch (e) { threw = String(e && e.message); }
+    assert("group 16: ledger with findings rendered without throwing", "", threw);
+
+    const findingEls = Array.prototype.slice.call(host.querySelectorAll(".cat-mod-finding"));
+    const texts = findingEls.map(function (n) { return n.textContent; });
+
+    // Full-string equality against the stored value -- not a substring match.
+    assert("group 16: Monte Carlo EAC's finding renders EXACTLY the stored evidence_metric",
+      true, texts.indexOf(FINDING_A) >= 0);
+    assert("group 16: Regret Minimization's finding renders EXACTLY the stored evidence_metric",
+      true, texts.indexOf(FINDING_B) >= 0);
+    assert("group 16: exactly the two stored findings render, no more, no fewer", 2,
+      findingEls.length);
+
+    // Block element, not inline: a fault against width/height has something real to catch.
+    const finEl = findingEls[0];
+    const display = finEl ? getComputedStyle(finEl).display : "";
+    assert("group 16: the finding is a block element, not an inline span", true,
+      display === "block" || display === "flex" || display === "list-item");
+
+    // Abstention: the module with no stored entry renders no finding line at all (its status
+    // pill already reads "No data" -- this layer does not add a sentence beside that).
+    const sensRow = Array.prototype.find.call(host.querySelectorAll(".cat-mod-row"),
+      function (row) { return /Sensitivity Analysis/.test(row.textContent); });
+    const sensFinding = sensRow ? sensRow.nextElementSibling : null;
+    assert("group 16: an abstaining module's row has no finding sibling", true,
+      !sensFinding || !sensFinding.classList || !sensFinding.classList.contains("cat-mod-finding"));
+
+    // No stored result at all -> awaiting state, and NO finding anywhere.
+    const p2 = storedOnlyProject();
+    p2.status = "Amber";                 // no storedResult
+    window.LIN_PROJECTS.length = 0; window.LIN_PROJECTS.push(p2); window.LinResults.clear();
+    const host2 = scratch();
+    try { window.LinApp.renderLedger(p2, host2); } catch (e) {}
+    assert("group 16: an uncomputed project shows the awaiting state", true,
+      !!host2.querySelector(".awaiting-state"));
+    assert("group 16: an uncomputed project renders NO findings anywhere", 0,
+      host2.querySelectorAll(".cat-mod-finding").length);
+
+    // The Courses of action reason distinguishes "withheld pending the preliminary judgment
+    // lock" from "did not compute" -- see recommendation_options.js. A module present with a
+    // real status but its action fields redacted must not be reported as never having computed.
+    const withheldRow = {
+      project_status: "Red", red_review: false, category_statuses: {},
+      module_results: [
+        { module_id: "B4.7", group: "B", category: "B4", status_color: "Red",
+          method_class: "Regret_Minimization", min_regret_score: 5,
+          evidence_metric: "This module's finding is withheld until the preliminary judgment " +
+            "for this period is locked.",
+          recommendation_withheld: true }
+      ]
+    };
+    const spec = window.LinRecOptions ? window.LinRecOptions.build(withheldRow) : null;
+    assert("group 16: a module withheld pending the judgment lock is reported as withheld, " +
+      "not as never having computed", true,
+      !!spec && !spec.available && /withheld/i.test(spec.reason)
+        && !/did not compute/i.test(spec.reason));
+    const neverComputedRow = {
+      project_status: "Red", red_review: false, category_statuses: {}, module_results: []
+    };
+    const spec2 = window.LinRecOptions ? window.LinRecOptions.build(neverComputedRow) : null;
+    assert("group 16: a module that genuinely never computed still reads 'did not compute'",
+      true, !!spec2 && !spec2.available && /did not compute/i.test(spec2.reason));
+  })();
+
   // ---- render results ----
   function renderResults() {
   const tbody = document.querySelector("#results tbody");
