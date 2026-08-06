@@ -163,13 +163,14 @@
 
     // ----- Sheet 4: Signal History (only if >1 period) -----
     if (project.history && project.history.length > 1) {
-      // Column header text is the display label (renumbered); the stored
-      // per-period summary keys (c.cat9 etc.) are the STABLE internal category
-      // ids and are read as-is — only the header string changed.
+      // Column header text is the display label; the stored per-period summary
+      // keys (c.cat9 etc.) are the STABLE internal category ids and are read
+      // as-is — only the header string changed. No category id or number in
+      // the header text (see NAMING_AUTHORITY.md).
       const histRows = [[
-        "Period", "Cat 1 EVM", "Cat 2 Schedule", "Cat 3 Cost",
-        "Cat 4 Doc/Risk", "Cat 5 Dynamics", "Cat 6 Synthesis",
-        "Cat 7 Evidence", "Cat 8 Governance", "Overall"
+        "Period", "Cost & EVM Performance", "Schedule Performance", "Cost Risk",
+        "Document-Derived Condition Signals", "System Dynamics & Complexity", "Signal Synthesis",
+        "Evidence Combination", "Regulatory & Authority Thresholds", "Overall"
       ]];
       project.history.forEach((h) => {
         const c = (h.summary && h.summary.by_category) || {};

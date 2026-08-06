@@ -828,8 +828,8 @@
     const docDate = t.source && t.source.at ? (window.LinTZ ? LinTZ.format(t.source.at) : String(t.source.at).slice(0, 10)) : null;
     const tieNote = t.catTieCount > 1 ? " and " + (t.catTieCount - 1) + " other" + (t.catTieCount - 1 === 1 ? "" : "s") : "";
     const parts = [
-      esc(t.projStatus) + ", driven by " + esc(t.worstCat.num) + " " + esc(t.worstCat.name) + tieNote,
-      esc(t.worstMod.num) + " " + esc(t.worstMod.name) + (metricNum ? " (" + esc(metricNum) + ")" : "")
+      esc(t.projStatus) + ", driven by " + esc(t.worstCat.name) + tieNote,
+      esc(t.worstMod.name) + (metricNum ? " (" + esc(metricNum) + ")" : "")
     ];
     if (docLabel) {
       parts.push(esc(docLabel) + (docDate ? " " + esc(docDate) : "") + (t.source.derived ? " [est.]" : ""));
@@ -846,8 +846,8 @@
   function provenancePanelHtml(t) {
     const rows = [];
     rows.push(`<div class="det-prov-hop"><b>Project</b>: ${esc(t.projStatus)}</div>`);
-    rows.push(`<div class="det-prov-hop"><b>${esc(t.worstCat.num)} ${esc(t.worstCat.name)}</b>: ${esc(t.worstCatStatus)}${t.catTieCount > 1 ? ` (tied with ${t.catTieCount - 1} other category${t.catTieCount - 1 === 1 ? "" : "ies"} at this severity — first shown)` : ""}</div>`);
-    rows.push(`<div class="det-prov-hop"><b>${esc(t.worstMod.num)} ${esc(t.worstMod.name)}</b>: ${esc(t.worstModStatus)}${t.modTieCount > 1 ? ` (tied with ${t.modTieCount - 1} other module${t.modTieCount - 1 === 1 ? "" : "s"} at this severity — first shown)` : ""}${t.evidenceMetric ? `<div class="kn-sub">${esc(t.evidenceMetric)}</div>` : ""}</div>`);
+    rows.push(`<div class="det-prov-hop"><b>${esc(t.worstCat.name)}</b>: ${esc(t.worstCatStatus)}${t.catTieCount > 1 ? ` (tied with ${t.catTieCount - 1} other category${t.catTieCount - 1 === 1 ? "" : "ies"} at this severity — first shown)` : ""}</div>`);
+    rows.push(`<div class="det-prov-hop"><b>${esc(t.worstMod.name)}</b>: ${esc(t.worstModStatus)}${t.modTieCount > 1 ? ` (tied with ${t.modTieCount - 1} other module${t.modTieCount - 1 === 1 ? "" : "s"} at this severity — first shown)` : ""}${t.evidenceMetric ? `<div class="kn-sub">${esc(t.evidenceMetric)}</div>` : ""}</div>`);
     if (t.source) {
       const docLabel = (window.LinSignals && LinSignals.DOC_TYPE_LABEL && LinSignals.DOC_TYPE_LABEL[t.source.docType]) || t.source.docType;
       const docDate = t.source.at ? (window.LinTZ ? LinTZ.format(t.source.at) : String(t.source.at).slice(0, 10)) : "date unknown";
@@ -859,7 +859,7 @@
       const shown = t.otherFlags.slice(0, 6);
       const extra = t.otherFlags.length - shown.length;
       rows.push(`<div class="det-prov-also"><b>Also elevated:</b> ` +
-        shown.map((f) => esc(f.module.num) + " " + esc(f.module.name) + " (" + esc(f.status) + ")").join(", ") +
+        shown.map((f) => esc(f.module.name) + " (" + esc(f.status) + ")").join(", ") +
         (extra > 0 ? ", and " + extra + " more" : "") + `</div>`);
     }
     return rows.join("");
@@ -2035,7 +2035,7 @@
       pts.forEach((pt) => { if (pt.ml.cat.id === cat.id) { sx += pt.sx; sy += pt.sy; sz += pt.sz; n++; } });
       if (!n) return null;
       const len = Math.sqrt((sx/n)*(sx/n) + (sy/n)*(sy/n) + (sz/n)*(sz/n)) || 1;
-      return { label: cat.num + " " + cat.name.split(" ").slice(0, 2).join(" "), color: cat.color,
+      return { label: cat.name.split(" ").slice(0, 3).join(" "), color: cat.color,
                bx: sx/n/len*1.22, by: sy/n/len*1.22, bz: sz/n/len*1.22 };
     }).filter(Boolean);
 
@@ -2125,7 +2125,7 @@
         if(hit>=0){
           const ml=pts[hit].ml, col=DOT[ml.status]||DOT.none;
           tt.style.display="block"; tt.style.left=(e.clientX-rect.left+14)+"px"; tt.style.top=(e.clientY-rect.top-10)+"px";
-          tt.innerHTML=`<div style="font-family:var(--font-mono,monospace);font-size:10px;color:#e9a23b;margin-bottom:3px">${esc(ml.module.num)} ${esc(ml.module.name)}</div><div style="font-size:12px;font-weight:600;color:${esc(col)}">${esc(ml.status||(ml.na?sectorNA:"No data"))}</div>${ml.evidence?`<div style="font-size:11px;color:#9fb0cc;margin-top:2px">${esc(ml.evidence)}</div>`:""}`;
+          tt.innerHTML=`<div style="font-family:var(--font-mono,monospace);font-size:10px;color:#e9a23b;margin-bottom:3px">${esc(ml.module.name)}</div><div style="font-size:12px;font-weight:600;color:${esc(col)}">${esc(ml.status||(ml.na?sectorNA:"No data"))}</div>${ml.evidence?`<div style="font-size:11px;color:#9fb0cc;margin-top:2px">${esc(ml.evidence)}</div>`:""}`;
         } else { tt.style.display="none"; }
       }
     });
@@ -2230,14 +2230,14 @@
         ctx.strokeStyle="rgba(38,52,79,0.5)";ctx.lineWidth=0.5;ctx.stroke();
       }
 
-      // Fix 6: X axis labels — 10px, "Cat N", category color, centered
+      // X axis labels — 10px, category name (group letter), category color, centered
       LIN_CATEGORIES.forEach((cat,i)=>{
         const p=rxf(ryf({x:(i-CAT_MID)*55,y:GRID_Y+14,z:0},rotY),rotX), pp=proj(p);
         ctx.font="10px SFMono-Regular,ui-monospace,monospace";
         ctx.fillStyle=cat.color||"#64748b";
         ctx.globalAlpha=filteredCats.size===0||filteredCats.has(cat.id)?0.9:0.25;
         ctx.textAlign="center";
-        ctx.fillText("Cat "+(i+1),pp.x,pp.y);
+        ctx.fillText((cat.group||"")+"·"+cat.name.split(" ")[0],pp.x,pp.y);
         ctx.textAlign="left";ctx.globalAlpha=1;
       });
 
@@ -2307,7 +2307,7 @@
         if(hit>=0){
           const d=scatterData[hit], col=DOT[d.bucket]||DOT.none;
           tt.style.display="block";tt.style.left=(e.clientX-rect.left+14)+"px";tt.style.top=(e.clientY-rect.top-10)+"px";
-          tt.innerHTML=`<div style="font-family:var(--font-mono,monospace);font-size:10px;color:#e9a23b;margin-bottom:3px">${esc(d.num)} ${esc(d.name)}</div><div style="font-size:12px;font-weight:600;color:${esc(col)}">${esc(d.bucket==="none"?"No data":d.bucket)}</div>${d.evidence?`<div style="font-size:11px;color:#9fb0cc;margin-top:2px">${esc(d.evidence)}</div>`:""}`;
+          tt.innerHTML=`<div style="font-family:var(--font-mono,monospace);font-size:10px;color:#e9a23b;margin-bottom:3px">${esc(d.name)}</div><div style="font-size:12px;font-weight:600;color:${esc(col)}">${esc(d.bucket==="none"?"No data":d.bucket)}</div>${d.evidence?`<div style="font-size:11px;color:#9fb0cc;margin-top:2px">${esc(d.evidence)}</div>`:""}`;
         } else {tt.style.display="none";}
       }
     });
@@ -2332,7 +2332,7 @@
         pill.className="scatter-legend-pill";
         pill.dataset.cat=cat.id;
         pill.style.borderColor=(cat.color||"#4ea0ff")+"55";
-        pill.innerHTML=`<span class="slp-dot" style="background:${esc(cat.color||'#4ea0ff')}"></span><span class="slp-label">Cat ${ci+1}</span>`;
+        pill.innerHTML=`<span class="slp-dot" style="background:${esc(cat.color||'#4ea0ff')}"></span><span class="slp-label">${esc(cat.name)}</span>`;
         pill.title=cat.name||"";
         pill.addEventListener("click",()=>{
           if(filteredCats.has(cat.id)){filteredCats.delete(cat.id);pill.classList.remove("active");}
