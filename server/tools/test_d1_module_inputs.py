@@ -269,7 +269,7 @@ healthy_run = compute_project(dict(HEALTHY), "sc-d1", "P1", CUTOFF)
 check(healthy_run["project_status"] == "Green",
       "the suite's HEALTHY fixture is now GREEN; the fabricated CUSUM used to make it RED",
       str(healthy_run["project_status"]))
-check("A1.2" in healthy_run["abstained"],
+check("A1.2" in {a["module_id"] for a in healthy_run["abstained"]},
       "and it is Green because CUSUM abstains rather than reporting a synthesised breach")
 statuses = {m["module_id"]: m.get("status_color") for m in healthy_run["modules"]}
 for module_id, _key, _kind in TWELVE:
