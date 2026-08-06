@@ -1405,6 +1405,9 @@ def build_recommendation(state: dict[str, Any]) -> dict[str, Any] | None:
         basis.update({"days_lost_strong": days, "response_cost": cost})
         return {
             "policy": RECOMMENDATION_POLICY,
+            # Which of `allowed_decisions` this recommendation is, so the option set can mark
+            # it without re-deriving the policy and disagreeing with the prose.
+            "decision": "respond_strong",
             "headline": "Assemble the full Certificate of Correction package now",
             "what": ("Assemble and submit the complete correction package in one filing: the "
                      "Certificate of Correction plus everything the cause demands, at a cost "
@@ -1452,6 +1455,7 @@ def build_recommendation(state: dict[str, Any]) -> dict[str, Any] | None:
                        "Carrying the matter open only accrues drift.")
                 next_step = ("Record the absorption this period and notify the owner's "
                              "representative that no claim will follow.")
+                rec_decision = "absorb"
             else:
                 window_text = (f"{position['days_remaining']} days remain of the "
                                f"{position['window_days']} day period in "
@@ -1464,6 +1468,29 @@ def build_recommendation(state: dict[str, Any]) -> dict[str, Any] | None:
                        "now preserves the entitlement whatever the final quantum proves.")
                 next_step = (f"Serve the notice by {_deadline_for(state, position)}; the "
                              "period closes the window after that.")
+                rec_decision = "escalate"
+        elif position.get("kind") in ("dsc_prompt", "dsc_undisturbed"):
+            # A site condition under a form with NO fixed day count: ConsensusDocs requires
+            # prompt written notice with the affected work stopped (Section 3.16.2), FAR
+            # requires notice promptly and before the conditions are disturbed
+            # (52.236-2(a)). Neither carries a lookback fraction, and this branch used to
+            # fall into the cost-lookback arm and raise KeyError on the missing key, so the
+            # recommendation crashed for exactly the two forms whose site-condition rule the
+            # run exists to teach. Found by exercising every form against every decision.
+            prompt = not position["expired"]
+            what = (f"Give written notice of {label} now, with the affected work stopped and "
+                    f"the condition left undisturbed, for an estimated {_fmt_money(cost)}.")
+            headline = f"Notice {label} today"
+            why = (f"Cost performance stands at {cpi} and schedule performance at {spi}, "
+                   f"with {float_left} days of float remaining. {position['citation']} sets "
+                   "no day count: the duty is prompt written notice, and prompt means now. "
+                   + ("This is the first opportunity, so notice today preserves the "
+                      "entitlement." if prompt else
+                      "The first opportunity has passed, so the entitlement is arguable and "
+                      "notice today is the most that can still be done."))
+            next_step = ("Serve the notice today and record the condition before it is "
+                         "disturbed further.")
+            rec_decision = "escalate"
         else:
             fraction = position["recoverable_fraction"]
             basis[f"{key}_recoverable_fraction"] = fraction
@@ -1477,8 +1504,10 @@ def build_recommendation(state: dict[str, Any]) -> dict[str, Any] | None:
                    "still reachable, and every deferred day shrinks it.")
             next_step = ("Serve the notice today and certify the claim if its value exceeds "
                          "100,000 dollars (FAR 52.233-1).")
+            rec_decision = "escalate"
         return {
             "policy": RECOMMENDATION_POLICY,
+            "decision": rec_decision,
             "headline": headline,
             "what": what,
             "why": why,
@@ -1498,6 +1527,10 @@ def build_recommendation(state: dict[str, Any]) -> dict[str, Any] | None:
         basis.update({"dispute_estimated_cost": cost, "documentation_step_days": 21})
         return {
             "policy": RECOMMENDATION_POLICY,
+            # The documentation step is not one of this period's verbs: any active decision
+            # keeps the file moving and deferring loses it. So there is no single decision to
+            # mark as recommended, and inventing one would misstate the mechanic.
+            "decision": None,
             "headline": "File the supporting documentation behind the notice",
             "what": (f"Assemble and file the documentation supporting the noticed claim of "
                      f"{_fmt_money(cost)}: the cost record, the correspondence, and the "
@@ -1515,3 +1548,365 @@ def build_recommendation(state: dict[str, Any]) -> dict[str, Any] | None:
         }
 
     return None
+
+# ---------------------------------------------------------------- courses of action (run 6)
+#
+# THE OPTIONS OPEN THIS PERIOD, AND WHAT FOLLOWS FROM EACH, BEFORE ANY RECOMMENDATION.
+#
+# `build_recommendation` above answers one question: what should be done. It does not show its
+# working against the alternatives, so a trainee is handed a verb rather than a choice. This
+# function lays out every decision `allowed_decisions` permits this period, and for each one
+# states what it costs, what it forecloses and what it protects.
+#
+# EVERY CONSEQUENCE HERE IS A STATED RULE OF THE EFFECT TABLE, computed with the same helpers
+# `advance` uses, or a contract period transcribed from `training_us_contract_regimes.md` with
+# its citation. Where the run holds no figure for a consequence, the sentence says so with the
+# NOT_ESTABLISHED prefix rather than asserting one. One consequence is deliberately WITHHELD
+# rather than unknown, and says so: the incident hazard is redacted from every response,
+# because a foreseen near miss teaches nothing.
+#
+# Pure, like everything else in this module: same state, same options, same order.
+
+NOT_ESTABLISHED = "Not established: "
+
+_OPTION_TITLES: dict[str, str] = {
+    "escalate": "Escalate it as a claim",
+    "absorb": "Absorb it",
+    "defer": "Defer the decision",
+    "accelerate": "Accelerate the works",
+    "respond_strong": "Assemble the full correction package",
+    "respond_minimal": "Do the minimum the order demands",
+    "rework_now": "Rework the defect now",
+    "rework_later": "Carry the defect and rework later",
+    "accept_nonconforming": "Accept the nonconforming work",
+    "pay_premium": "Pay the premium and buy the trades back",
+    "resequence": "Resequence around the shortage",
+    "accept_delay": "Accept the delay",
+}
+
+
+def _float_sentence(state: dict[str, Any], days: int) -> str:
+    """What spending `days` of float does, against what is left and what lies past zero."""
+    left = state["float_total_days"] - state["float_consumed_days"]
+    after = left - days
+    ld = state.get("liquidated_damages_per_day")
+    tail = ""
+    if after < 0 and ld:
+        tail = (f" That is past the float the project has, and every day beyond it carries "
+                f"liquidated damages of {_fmt_money(ld)} a day.")
+    elif after < 0:
+        tail = " That is past the float the project has."
+    return f"{days} days of float, against {left} days remaining, leaving {after}.{tail}"
+
+
+def _open_matter(state: dict[str, Any]):
+    """The oldest open matter, its state, its clock and the words for it."""
+    for key, label, fn in (("dispute", "the unforeseen utility conflict", notice_position),
+                           ("dsc", "the differing site condition", dsc_position)):
+        matter = state.get(key)
+        if matter and matter.get("status") == "open":
+            return key, matter, fn(state), label
+    return None, None, None, ""
+
+
+def _clock_words(position) -> str:
+    """The notice position in one sentence, with its clause citation. Never a guess."""
+    if not position:
+        return NOT_ESTABLISHED + "no notice clock is running on an open matter this period."
+    kind = position.get("kind")
+    if kind in ("notice_bar", "dsc_notice_bar"):
+        if position["expired"]:
+            over = position["days_since_event"] - position["window_days"]
+            return (f"the {position['window_days']} day period of {position['citation']} ran "
+                    f"out {over} days ago, so notice can no longer preserve the entitlement")
+        return (f"{position['days_remaining']} days remain of the {position['window_days']} "
+                f"day period in {position['citation']}")
+    if kind == "cost_lookback":
+        pct = int(round(position["recoverable_fraction"] * 100))
+        return (f"there is no notice bar, but costs more than {position['lookback_days']} days "
+                f"old are unrecoverable ({position['citation']}), and {pct} per cent of the "
+                f"accrued cost is still reachable today")
+    return (f"the duty is prompt written notice with no fixed day count "
+            f"({position['citation']}), and the position is "
+            f"{'no longer prompt' if position['expired'] else 'still prompt today'}")
+
+
+def _option(decision: str, what: str, costs, forecloses: str, protects: str):
+    return {
+        "decision": decision,
+        "title": _OPTION_TITLES.get(decision, decision),
+        "what": what,
+        "costs": costs,
+        "forecloses": forecloses,
+        "protects": protects,
+    }
+
+
+def build_options(state: dict[str, Any]) -> dict[str, Any]:
+    """
+    Every decision open this period, with its consequences, then the recommendation. Pure.
+    """
+    profile = CONDITION_PROFILES[state["conditions"]]
+    bac = state["bac"]
+    allowed = allowed_decisions(state)
+    _key, matter, position, _label = _open_matter(state)
+    clock = _clock_words(position)
+    options: list[dict[str, Any]] = []
+
+    for decision in allowed:
+        if decision == "escalate":
+            days = escalation_float_cost(state)
+            prep = round(bac * ESCALATE_PREP_COST_RATE, 2)
+            cred_after = max(CRED_MIN, state["owner_credibility"] - 1)
+            costs = [
+                _float_sentence(state, days),
+                f"{_fmt_money(prep)} in claim preparation, and the affected work held.",
+                (f"One point of owner credibility, from {state['owner_credibility']} to "
+                 f"{cred_after}, and any progress towards earning a point back resets to "
+                 f"zero. Earning a point takes {CRED_EARN_CONCESSIONS} concessions."),
+            ]
+            forecloses = ("It closes off absorbing the matter quietly: the position becomes "
+                          "formal and the owner answers it formally.")
+            protects = ((f"It protects the entitlement to "
+                         f"{_fmt_money(matter['estimated_cost'])} if the window holds: "
+                         f"{clock}.") if matter else
+                        NOT_ESTABLISHED + "no open matter carries an entitlement for a notice "
+                        "to protect this period.")
+            options.append(_option(decision,
+                                   "Serve written notice of claim and open the position "
+                                   "formally.", costs, forecloses, protects))
+
+        elif decision == "absorb":
+            if matter:
+                cost = matter["estimated_cost"]
+                cont_after = round(state["contingency_remaining"] - cost, 2)
+                costs = [
+                    (f"{_fmt_money(cost)} from contingency, leaving "
+                     f"{_fmt_money(cont_after)}"
+                     + (", which is past the contingency the project holds."
+                        if cont_after < 0 else ".")),
+                    "The work is done anyway, so the cost lands whether or not it is claimed.",
+                ]
+                forecloses = ("It closes the matter and waives the entitlement permanently. It "
+                              "cannot be reopened later on the same facts.")
+            else:
+                costs = [NOT_ESTABLISHED + "no open matter carries a cost to absorb this "
+                         "period."]
+                forecloses = NOT_ESTABLISHED + "there is no open entitlement to waive."
+            protects = ("It protects float entirely, which escalating spends, and it earns one "
+                        f"step towards owner credibility. {CRED_EARN_CONCESSIONS} steps earn a "
+                        "point.")
+            options.append(_option(decision,
+                                   "Draw the cost from contingency and close the matter.",
+                                   costs, forecloses, protects))
+
+        elif decision == "defer":
+            drift = profile["defer_drift_float_days"]
+            drift_cost = round(bac * DEFER_DRIFT_COST_RATE, 2)
+            costs = [
+                _float_sentence(state, drift) + " Coordination drift, and it repeats every "
+                "period the matter stays open.",
+                f"{_fmt_money(drift_cost)} of unmanaged change cost, again every period.",
+                (f"The period earns {int(DEFER_EV_FACTOR * 100)} per cent of what an "
+                 "undisturbed period earns, and lost earning is never recovered."),
+            ]
+            if (position and position.get("kind") in ("notice_bar", "dsc_notice_bar")
+                    and not position["expired"]):
+                after = position["days_remaining"] - PERIOD_DAYS
+                tail = ("the window will have closed" if after < 0
+                        else f"{after} days remain")
+                forecloses = (f"The clock runs {PERIOD_DAYS} more days before the next "
+                              f"decision. Today {clock}, so by the next decision point "
+                              f"{tail}.")
+            elif position and position.get("kind") == "cost_lookback":
+                forecloses = ("Nothing is time barred, but the money is: every deferred day "
+                              f"moves more of the accrued cost outside the lookback. Today "
+                              f"{clock}.")
+            elif position:
+                forecloses = ("Prompt means now: a period of waiting is what makes a notice "
+                              f"late. Today {clock}.")
+            else:
+                forecloses = NOT_ESTABLISHED + ("no notice clock is running on an open matter, "
+                                                "so this period closes nothing off.")
+            protects = ("It protects contingency and owner credibility, both unchanged, and it "
+                        "keeps every other course open for one more period.")
+            options.append(_option(decision, "Take no formal step on the matter this period.",
+                                   costs, forecloses, protects))
+
+        elif decision == "accelerate":
+            mult = profile["acceleration_cost_multiplier"]
+            cost = round(bac * EVENT_FIGURES["acceleration_cost_rate"] * mult, 2)
+            recovered = EVENT_FIGURES["acceleration_float_recovered_days"]
+            left = state["float_total_days"] - state["float_consumed_days"]
+            costs = [
+                (f"{_fmt_money(cost)}: {EVENT_FIGURES['acceleration_cost_rate'] * 100:.1f} per "
+                 f"cent of contract value at this profile's premium of {mult} times."),
+                ("The safety exposure of compressed work is deliberately not stated in advance "
+                 "in this run, so it cannot be planned around."),
+            ]
+            forecloses = ("It closes off nothing formally, and it spends money that "
+                          "contingency does not cover once contingency is gone.")
+            protects = (f"It buys back {recovered} days of float, from {left} days remaining "
+                        f"to {left + recovered}, which is the only course here that adds "
+                        "float.")
+            options.append(_option(decision, "Buy schedule back by compressing the works.",
+                                   costs, forecloses, protects))
+
+        elif decision in ("respond_strong", "respond_minimal"):
+            fig = EVENT_FIGURES["response"][decision]
+            days = fig["days_lost"][state["conditions"]]
+            cost = round(bac * fig["cost_rate"], 2)
+            other = "respond_minimal" if decision == "respond_strong" else "respond_strong"
+            other_fig = EVENT_FIGURES["response"][other]
+            other_days = other_fig["days_lost"][state["conditions"]]
+            costs = [
+                _float_sentence(state, days) + " That is the site stopped.",
+                f"{_fmt_money(cost)} for the package itself.",
+                (f"{fig['restart_periods']} period"
+                 f"{'s' if fig['restart_periods'] != 1 else ''} of reduced earning after "
+                 f"restart, at {int(profile['restart_productivity_loss'] * 100)} per cent "
+                 "lost productivity."),
+            ]
+            if decision == "respond_strong":
+                forecloses = ("It spends the money now, in one filing, rather than holding it "
+                              "back.")
+                protects = (f"It lifts the order in {days} days against {other_days} for the "
+                            "minimal response, and every day stopped is production lost that "
+                            "never comes back.")
+            else:
+                forecloses = (f"It leaves the site stopped {other_days - days} days longer "
+                              f"than the full package would, at {days} days against "
+                              f"{other_days}.")
+                protects = (f"It protects cash now: {_fmt_money(cost)} against "
+                            f"{_fmt_money(round(bac * other_fig['cost_rate'], 2))} for the "
+                            "full package.")
+            options.append(_option(decision,
+                                   "Assemble and file the correction package the order "
+                                   "requires. The cause decides the paperwork.",
+                                   costs, forecloses, protects))
+
+        elif decision == "rework_now":
+            quality = state["quality"]
+            days = QUALITY_FIGURES["rework_now_float_days"]
+            costs = [
+                _float_sentence(state, days),
+                f"{_fmt_money(quality['defect_value'])} to put the work right.",
+            ]
+            forecloses = ("It closes off spending this period's decision on anything else: one "
+                          "decision, one period.")
+            protects = (f"It clears the defect before the backlog grows another "
+                        f"{int(QUALITY_FIGURES['rework_later_growth_rate'] * 100)} per cent, "
+                        f"and before the forced rework at "
+                        f"{QUALITY_FIGURES['force_after_periods']} deferrals carries its "
+                        f"{QUALITY_FIGURES['forced_rework_float_penalty_days']} day float "
+                        "penalty.")
+            options.append(_option(decision, "Put the failed work right this period.",
+                                   costs, forecloses, protects))
+
+        elif decision == "rework_later":
+            quality = state["quality"]
+            grown = round(quality["defect_value"]
+                          * (1 + QUALITY_FIGURES["rework_later_growth_rate"]), 2)
+            until = max(0, QUALITY_FIGURES["force_after_periods"]
+                        - quality["periods_deferred"])
+            costs = [
+                _float_sentence(state, QUALITY_FIGURES["rework_later_float_drift_days"])
+                + " Drift, every period it waits.",
+                (f"The backlog grows from {_fmt_money(quality['defect_value'])} to "
+                 f"{_fmt_money(grown)} by the next period, and again after that."),
+            ]
+            forecloses = (f"After {until} more deferral"
+                          f"{'s' if until != 1 else ''} the rework is forced at a period the "
+                          f"project did not choose, with a "
+                          f"{QUALITY_FIGURES['forced_rework_float_penalty_days']} day float "
+                          f"penalty against the "
+                          f"{QUALITY_FIGURES['rework_now_float_days']} days of choosing it.")
+            protects = ("It protects this period's money and leaves the decision available for "
+                        "whatever else is open.")
+            options.append(_option(decision, "Carry the defect and put it right later.",
+                                   costs, forecloses, protects))
+
+        elif decision == "accept_nonconforming":
+            quality = state["quality"]
+            cred_after = max(CRED_MIN, state["owner_credibility"]
+                             - QUALITY_FIGURES["accept_credibility_cost"])
+            costs = [
+                (f"{QUALITY_FIGURES['accept_credibility_cost']} point of owner credibility, "
+                 f"from {state['owner_credibility']} to {cred_after}."),
+                (f"{_fmt_money(quality['defect_value'])} becomes permanent closeout exposure. "
+                 "It stops growing and it never clears."),
+            ]
+            forecloses = "It closes off ever reworking this defect: accepted work is accepted."
+            protects = "It protects float and money now. Neither is spent this period."
+            options.append(_option(decision,
+                                   "Accept the work as built and carry the exposure.",
+                                   costs, forecloses, protects))
+
+        elif decision == "pay_premium":
+            cost = round(bac * RESOURCE_FIGURES["pay_premium_cost_rate"], 2)
+            costs = [
+                (f"{_fmt_money(cost)}, drawn from contingency first, against "
+                 f"{_fmt_money(state['contingency_remaining'])} remaining."),
+            ]
+            forecloses = ("It closes off spending the same contingency on absorbing a claim or "
+                          "clearing a defect later.")
+            protects = (f"It returns the crews to full strength this period, so earning goes "
+                        f"back to {int(RESOURCE_FIGURES['adequacy_full'] * 100)} per cent from "
+                        f"{int(round(state.get('crew_adequacy', 1.0) * 100))} per cent, and it "
+                        "spends no float.")
+            options.append(_option(decision, "Buy the trades back at a premium.",
+                                   costs, forecloses, protects))
+
+        elif decision == "resequence":
+            days = RESOURCE_FIGURES["resequence_float_days"]
+            adequacy = state.get("crew_adequacy", RESOURCE_FIGURES["adequacy_full"])
+            after = min(RESOURCE_FIGURES["adequacy_full"],
+                        adequacy + RESOURCE_FIGURES["resequence_adequacy_recovery"])
+            costs = [
+                _float_sentence(state, days),
+                ("Reordering the work moves the shortage rather than filling it, so the "
+                 f"recovery is partial: crews go from {int(round(adequacy * 100))} to "
+                 f"{int(round(after * 100))} per cent."),
+            ]
+            forecloses = ("It closes off nothing formally, and the float it spends is the same "
+                          "float a claim or a stoppage would need.")
+            protects = "It protects money entirely. No cost is drawn this period."
+            options.append(_option(decision, "Reorder the work around the trades available.",
+                                   costs, forecloses, protects))
+
+        elif decision == "accept_delay":
+            days = RESOURCE_FIGURES["accept_delay_float_days"]
+            adequacy = state.get("crew_adequacy", RESOURCE_FIGURES["adequacy_full"])
+            after = max(RESOURCE_FIGURES["adequacy_floor"],
+                        adequacy - RESOURCE_FIGURES["accept_delay_adequacy_decay"])
+            costs = [
+                _float_sentence(state, days),
+                (f"The shortage deepens while it persists: crews go from "
+                 f"{int(round(adequacy * 100))} to {int(round(after * 100))} per cent, so a "
+                 "second acceptance costs more earning than the first."),
+            ]
+            forecloses = ("It closes off nothing formally, and it makes every later period "
+                          "earn less until the shortage is dealt with.")
+            protects = "It protects contingency and credibility. Neither is spent."
+            options.append(_option(decision, "Let the programme absorb the shortage.",
+                                   costs, forecloses, protects))
+
+        else:
+            options.append(_option(
+                decision,
+                NOT_ESTABLISHED + "this run holds no stated effect for this course of action.",
+                [NOT_ESTABLISHED + "no cost is stated for it."],
+                NOT_ESTABLISHED + "what it closes off is not stated.",
+                NOT_ESTABLISHED + "what it protects is not stated."))
+
+    rec = build_recommendation(state)
+    recommended = rec.get("decision") if rec else None
+    reason = (rec["why"] if rec else
+              NOT_ESTABLISHED + "nothing is open to decide this period, so there is no "
+              "recommendation to make.")
+    return {
+        "policy": RECOMMENDATION_POLICY,
+        "options": options,
+        "recommended_decision": recommended,
+        "reason": reason,
+    }

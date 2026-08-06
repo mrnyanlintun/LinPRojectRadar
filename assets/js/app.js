@@ -1683,6 +1683,26 @@
     const d = deriveDecision(p);
     const stateClass = d.healthState.toLowerCase().replace("-review", "");
 
+    // The courses of action, generated at display time from the stored row. See
+    // recommendation_options.js: every consequence is a stored figure or a stated absence.
+    const optionsHtml = (window.LinRecOptions && LinRecOptions.htmlForProject)
+      ? LinRecOptions.htmlForProject(p) : "";
+
+    // AUTHORITY IS READ FROM THE STORED RESULT, NOT FROM A LITERAL. The governance module in
+    // the Recommendation and Governance group stores the authority it assigned; that is the
+    // only authority the platform holds. deriveDecision's own authority string is a literal
+    // with nothing behind it, so it is used only as a last resort and labelled when absent.
+    const spec = (window.LinRecOptions && LinRecOptions.buildForProject)
+      ? LinRecOptions.buildForProject(p) : null;
+    const authorityText = (spec && spec.authority)
+      ? spec.authority
+      : "Not established: the platform holds no assigned authority for this project.";
+    // DOCUMENTATION REQUIRED IS NOT STORED ANYWHERE. Neither the analytical layer nor the
+    // stored result records a documentation requirement; the previous value here was a
+    // literal in the browser rules with no source behind it. Marked, not dressed up.
+    const documentationText =
+      "Not established: the platform holds no documentation requirement for this state.";
+
     const fairnessBlock = d.fairnessGateRequired
       ? `<label class="fairness-gate">
            <input type="checkbox" class="fairness-check" />
@@ -1701,10 +1721,10 @@
        </div>
        <div class="dc-grid">
          <div class="dc-field"><span class="dc-label">Conflict</span><span class="dc-value">${esc(d.conflictType)}</span></div>
-         <div class="dc-field"><span class="dc-label">Authority</span><span class="dc-value">${esc(d.authority)}</span></div>
-         <div class="dc-field dc-wide"><span class="dc-label">Recommended action</span><span class="dc-value">${esc(d.action)}</span></div>
-         <div class="dc-field dc-wide"><span class="dc-label">Documentation required</span><span class="dc-value">${esc(d.documentation)}</span></div>
+         <div class="dc-field"><span class="dc-label">Authority</span><span class="dc-value" id="dc-authority">${esc(authorityText)}</span></div>
+         <div class="dc-field dc-wide"><span class="dc-label">Documentation required</span><span class="dc-value" id="dc-documentation">${esc(documentationText)}</span></div>
        </div>
+       ${optionsHtml}
        <p class="dc-caveat">Recommended actions require named human approval before they are recorded; fairness gates require contractor response opportunity before any formal action.</p>
        ${actionPlanHtml(p)}
        ${fairnessBlock}

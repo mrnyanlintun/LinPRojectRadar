@@ -44,7 +44,8 @@ from .training_engine import (
     CONDITION_PROFILES, CONTRACT_FORMS, DECISIONS, DEFAULT_CONTRACT_VALUE, DEFAULT_FACILITY,
     LD_RATES_BY_FACILITY, MAX_CONTRACT_VALUE, MIN_CONTRACT_VALUE, PERIODS_TOTAL,
     QUALITY_DECISIONS, RESOURCE_DECISIONS, RESPONSES,
-    advance, allowed_decisions, build_brief, build_recommendation, dsc_position, initial_state,
+    advance, allowed_decisions, build_brief, build_options, build_recommendation, dsc_position,
+    initial_state,
     notice_position, quality_position, resource_position, signal_inputs_from_state,
 )
 
@@ -186,6 +187,12 @@ def _state_view(session: Session, run: TrainingRun, project: Project) -> dict[st
         # all engine-derived; prose written around them), and the abstention map that lets
         # the signals display show a named absence instead of leaving it to inference.
         "recommendation": build_recommendation(run.state) if run.status == "active" else None,
+        # Run 6: the courses of action open THIS period with what follows from each, ahead of
+        # the recommendation, so the trainee chooses rather than being handed a verb. Every
+        # consequence is a stated rule of the effect table or a contract period with its
+        # citation; anything the run does not hold says so. Generated at display time from the
+        # current state, like the recommendation beside it, and never frozen.
+        "options": build_options(run.state) if run.status == "active" else None,
         # Module-level recommendations (the analytical layer's own recommended actions) are
         # the recommendation surface in training: there is no researcher-authored package, and
         # a trainee is exactly who they exist for. No reveal gate applies — that gate protects

@@ -266,6 +266,35 @@ var LinTraining = (function () {
       "</div>";
   }
 
+  // The courses of action open this period, each with what it costs, what it forecloses and
+  // what it protects, laid out BEFORE the recommendation so the trainee weighs the choice
+  // rather than receiving a verb. Every figure, day count and clause here is engine-derived
+  // from the effect table; this file formats and never computes. A consequence the run does
+  // not hold arrives already prefixed "Not established" and is rendered as it stands.
+  function optionsHtml(opts) {
+    if (!opts || !opts.options || !opts.options.length) return "";
+    var body = opts.options.map(function (o) {
+      var costs = (o.costs || []).map(function (c) {
+        return "<li>" + esc(c) + "</li>";
+      }).join("");
+      var flag = (opts.recommended_decision && o.decision === opts.recommended_decision)
+        ? '<span class="ro-flag" data-recommended="1">Recommended</span>' : "";
+      return '<div class="ro-option" data-option="' + esc(o.decision) + '">' +
+        '<h4 class="ro-option-title">' + esc(o.title) + flag + "</h4>" +
+        '<p class="ro-what">' + esc(o.what) + "</p>" +
+        '<p class="ro-costs">What it costs.</p><ul class="ro-cost-list">' + costs + "</ul>" +
+        '<p class="ro-forecloses">What it forecloses. ' + esc(o.forecloses) + "</p>" +
+        '<p class="ro-protects">What it protects. ' + esc(o.protects) + "</p>" +
+        "</div>";
+    }).join("");
+    return '<div class="ro-block" id="tr-options"><h3 class="ro-title">Courses of action</h3>' +
+      '<p class="ro-lede">These are the decisions open to you this period, with what each one ' +
+      "costs, what it closes off, and what it protects. The figures are the run's own rules. " +
+      "Where the run holds nothing to say, it says so instead of asserting a consequence. The " +
+      "recommendation follows, so the choice stays yours.</p>" +
+      body + "</div>";
+  }
+
   // The recommendation, in full. Every figure, day count and clause reference here comes from
   // the server (engine-derived); this file formats and never computes. It is deliberately not
   // labelled as fallible on screen: a recommendation that announces its own unreliability is
@@ -460,6 +489,7 @@ var LinTraining = (function () {
       qualityNoticeHtml(view.quality_notice) +
       resourceNoticeHtml(view.resource_notice) +
       incidentHtml(s.incident) +
+      optionsHtml(view.options) +
       recommendationHtml(view.recommendation) +
       changesHtml(s.period_changes) +
       narrativeHtml() +

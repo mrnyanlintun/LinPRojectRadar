@@ -97,6 +97,7 @@
 <!-- module_charts.js is loaded so group 14 can render the per-module ledger charts for real
      from a stored row, and prove abstention (no stored entry) draws no chart. -->
 <script src="assets/js/module_charts.js"></script>
+<script src="assets/js/recommendation_options.js"></script>
 <script src="assets/js/decision.js"></script>
 <!-- store.js and atlas.js are loaded for group 8. Neither self-boots: store.js only defines
      window.LinStore (every network path is gated on LIN_API_URL being configured, which it is
@@ -1148,6 +1149,177 @@
       !!host2.querySelector(".awaiting-state"));
     assert("group 14: an uncomputed project draws NO chart", null,
       host2.querySelector(".mchart"));
+  })();
+
+
+  /* GROUP 15 — the courses of action on the Governance Decision card, and the same generator
+     on the research decision support, built from the stored row only.
+
+     The property under test is TRACEABILITY, not prose. This group proves:
+       - every figure quoted in an option is a value the stored row holds, exactly, and no
+         other number appears anywhere in the block;
+       - a consequence that cannot be established from the stored row renders as a stated
+         "Not established", never as an assertion;
+       - when the analysis that scores the courses of action did not compute, the block says
+         so and draws NO options rather than inventing a set;
+       - the same evidence produces the same options, twice over and across both surfaces;
+       - the card's Authority reads the authority the stored row holds, and Documentation
+         required is marked not established because nothing stores one;
+       - no module id or number appears anywhere in the block. */
+  (function () {
+    const REGRET = { monitor: 11, investigate: 5, escalate: 8 };
+    function fullRow() {
+      return {
+        project_status: "Red", red_review: false,
+        category_statuses: {
+          B4: { status: "Red", group: "B", module_count: 1, contributes_to_project_status: true }
+        },
+        signal_inputs: { cpi: 0.84, spi: 0.88, bac: 12000000 },
+        module_results: [
+          { module_id: "B4.7", group: "B", category: "B4", status_color: "Red",
+            method_class: "Regret_Minimization", evidence_metric: "Least-regret action: escalate",
+            expected_regret: REGRET, recommended_action: "escalate", min_regret_score: 5 },
+          { module_id: "B3.1", group: "B", category: "B3", status_color: "Red-review",
+            method_class: "ABM_Governance", state: "Red-review",
+            authority: "Program director / PMO lead",
+            action: "Recovery-plan review and management escalation" },
+          { module_id: "A3.6", group: "A", category: "A3", status_color: "Red",
+            method_class: "Cost_Risk_Analysis", p80_eac: 15748571, p80_delta_pct: 31.2 }
+        ]
+      };
+    }
+
+    const p = storedOnlyProject();
+    p.status = "Red";
+    p.storedResult = fullRow();
+    window.LIN_PROJECTS.length = 0; window.LIN_PROJECTS.push(p); window.LinResults.clear();
+    const host = scratch();
+    let threw = "";
+    try { window.LinApp.renderDecisionCard(p, host); } catch (e) { threw = String(e && e.message); }
+    assert("group 15: the decision card rendered without throwing", "", threw);
+
+    const block = host.querySelector("#ro-block");
+    assert("group 15: the courses of action block rendered on the card", true, !!block);
+
+    const opts = block ? block.querySelectorAll(".ro-option") : [];
+    assert("group 15: one option per scored course of action", 3, opts.length);
+    const keys = Array.prototype.map.call(opts, function (n) { return n.dataset.option; })
+      .join(",");
+    assert("group 15: the options are the courses the stored result scored, in stored order",
+      "monitor,investigate,escalate", keys);
+
+    /* EXACTNESS. Every numeric token in the whole block must be a figure the stored row
+       holds (or the fixed denominator of the score). A fabricated or drifted figure fails
+       here, which is what makes this check able to fail. */
+    const ALLOWED = ["11", "5", "8", "30", "15,748,571", "31.2", "0.84", "0.88"];
+    const blockText = block ? (block.textContent || "") : "";
+    const tokens = (blockText.match(/\d[\d,.]*/g) || [])
+      .map(function (t) { return t.replace(/[.,]+$/, ""); });
+    const stray = tokens.filter(function (t) { return ALLOWED.indexOf(t) < 0; });
+    assert("group 15: every figure quoted is a stored value, no other number appears", "",
+      stray.join(" | "));
+    assert("group 15: the figure scan actually saw figures", true, tokens.length >= 8);
+    assert("group 15: the stored completion estimate is quoted exactly", true,
+      blockText.indexOf("15,748,571 dollars, 31.2 per cent above budget") >= 0);
+    assert("group 15: the stored score for escalating is quoted exactly", true,
+      blockText.indexOf("worst case of this course at 8 out of 30") >= 0);
+
+    /* The recommendation is the stored one, and where it is not the lowest-scoring course the
+       difference is stated as not established rather than explained by a guessed rule. */
+    const rec = block ? block.querySelector("#ro-recommendation") : null;
+    assert("group 15: the recommendation follows the options", true, !!rec);
+    assert("group 15: the recommendation is the stored recommended course", true,
+      !!rec && rec.textContent.indexOf("Recommended: Escalate to management review") >= 0);
+    assert("group 15: a recommendation that is not the lowest score says the reason is not "
+      + "established", true,
+      !!rec && rec.textContent.indexOf("It does not record the rule that set the "
+        + "recommendation against the score") >= 0);
+
+    /* The card's own fields. */
+    const auth = host.querySelector("#dc-authority");
+    assert("group 15: Authority reads the authority the stored row holds",
+      "Program director / PMO lead", auth ? auth.textContent.trim() : "(absent)");
+    const doc = host.querySelector("#dc-documentation");
+    assert("group 15: Documentation required is marked not established, not asserted", true,
+      !!doc && doc.textContent.indexOf("Not established: the platform holds no documentation "
+        + "requirement for this state.") === 0);
+
+    /* No module id or number anywhere in the block. */
+    const ID_IN_TEXT = /(^|[^A-Za-z0-9])[A-D]\d(\.\d+)?(?![\dA-Za-z])/;
+    const leaves = [];
+    if (block) block.querySelectorAll("*").forEach(function (el) {
+      if (!el.querySelector("*")) leaves.push((el.textContent || "").trim());
+    });
+    assert("group 15: no leaf of the block carries a module or category id", "",
+      leaves.filter(function (t) { return ID_IN_TEXT.test(t); }).join(" | "));
+    assert("group 15: the leaf scan actually saw text", true, leaves.length >= 6);
+
+    /* ABSTENTION 1 — the exposure figure is absent. The option prose must SAY so rather than
+       assert a completion figure it does not have. */
+    const noExposure = fullRow();
+    noExposure.module_results = noExposure.module_results.filter(function (m) {
+      return m.method_class !== "Cost_Risk_Analysis";
+    });
+    const specNoExp = window.LinRecOptions.build(noExposure);
+    const htmlNoExp = window.LinRecOptions.html(specNoExp);
+    const divNoExp = scratch(); divNoExp.innerHTML = htmlNoExp;
+    const textNoExp = divNoExp.textContent || "";
+    assert("group 15: options still render when the completion forecast did not compute", 3,
+      divNoExp.querySelectorAll(".ro-option").length);
+    assert("group 15: an unestablished consequence renders as UNKNOWN, not as an assertion",
+      true, textNoExp.indexOf("Not established: the completion forecast") >= 0
+        || textNoExp.indexOf("Not established: the forecast that period would close on") >= 0);
+    assert("group 15: no completion figure is asserted when none was computed", true,
+      textNoExp.indexOf("eightieth percentile estimate at completion") < 0);
+
+    /* ABSTENTION 2 — the analysis that scores the courses did not compute at all. No options,
+       a stated reason, and nothing invented. */
+    const noRegret = fullRow();
+    noRegret.module_results = noRegret.module_results.filter(function (m) {
+      return m.method_class !== "Regret_Minimization";
+    });
+    const specNone = window.LinRecOptions.build(noRegret);
+    assert("group 15: with no scored courses the generator reports none available", false,
+      specNone.available);
+    const divNone = scratch(); divNone.innerHTML = window.LinRecOptions.html(specNone);
+    assert("group 15: an unavailable option set draws no options", 0,
+      divNone.querySelectorAll(".ro-option").length);
+    assert("group 15: an unavailable option set states why", true,
+      !!divNone.querySelector("#ro-unavailable"));
+
+    /* ABSTENTION 3 — the pre-lock research read. The server redacts the action-bearing fields
+       before a preliminary judgment is locked, so the generator must find no courses of action
+       and say so, exactly as it does for a module that did not compute. */
+    const redacted = fullRow();
+    redacted.recommendation_withheld = true;
+    redacted.module_results = redacted.module_results.map(function (m) {
+      const c = Object.assign({}, m);
+      delete c.expected_regret; delete c.recommended_action;
+      delete c.authority; delete c.action;
+      if (c.method_class === "Regret_Minimization" || c.method_class === "ABM_Governance") {
+        c.recommendation_withheld = true;
+        c.evidence_metric = "This module's finding is withheld until the preliminary judgment "
+          + "for this period is locked.";
+      }
+      return c;
+    });
+    assert("group 15: a pre-lock redacted result yields no courses of action", false,
+      window.LinRecOptions.build(redacted).available);
+
+    /* DETERMINISM — the same evidence produces the same options, twice, and from two
+       independently constructed rows. */
+    const once = window.LinRecOptions.html(window.LinRecOptions.build(fullRow()));
+    const twice = window.LinRecOptions.html(window.LinRecOptions.build(fullRow()));
+    assert("group 15: the same evidence produces byte-identical options", true, once === twice);
+    assert("group 15: the determinism check compared real output", true, once.length > 800);
+
+    /* SURFACE PARITY — the research decision support and the operational card call the same
+       generator on the same stored result, so the words are the same on both. */
+    const cardBlockHtml = block ? block.outerHTML : "";
+    const researchDiv = scratch();
+    researchDiv.innerHTML = window.LinRecOptions.html(window.LinRecOptions.build(fullRow()));
+    assert("group 15: the research surface renders the same options as the card", true,
+      !!cardBlockHtml && researchDiv.innerHTML.indexOf(cardBlockHtml) >= 0);
   })();
 
   // ---- render results ----

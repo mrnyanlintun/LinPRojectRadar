@@ -9,6 +9,75 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-05 — THE RECOMMENDATION BECOMES A SET OF COURSES OF ACTION WITH THE CONSEQUENCE OF EACH
+
+Branch `claude/recommendation-options-s5s90m`. The report could not be written as a repo-root
+file (harness blocks subagent report files); its full content is in the session output and should
+be committed as `REPORT_2026-08-05_recommendation-options.md`. Server **40 suites, 2229/2229**
+(fresh DB per file; +29 from a new `test_training_options.py`), `tests.html` **51/51**,
+`tests_render.html` **142/143** (the 1 is the pre-existing auth-gated production-read check, red
+on `origin/main` too).
+
+**The defect.** The Governance Decision card said one verb, one authority, one documentation
+line. It now lays out the courses of action open, states for each what it costs, what it
+forecloses and what it protects, and only then names the recommended one with its reason against
+the evidence. All three surfaces, generated at display time, nothing frozen.
+
+**WHAT EACH SURFACE HOLDS (the lead finding).**
+- **Training is the strongest.** It holds a stated effect table (`EFFECTS` plus `EVENT_FIGURES`,
+  `QUALITY_FIGURES`, `RESOURCE_FIGURES`, `CONDITION_PROFILES`) and the contract periods with
+  clause citations, so it can PRICE a decision: days of float, dollars, credibility points, and
+  which contract window closes. `build_options(state)` computes every figure with the same
+  helpers `advance` uses, so the option text and the outcome cannot disagree. The incident
+  hazard is WITHHELD, not unknown, and says so.
+- **Operational holds a set of scored courses of action and little else.** Regret Minimization
+  stores `expected_regret` as named actions with a score each plus `recommended_action`; the
+  governance module stores `authority`; Cost Risk Analysis / Monte Carlo store the exposure
+  figure. That is the whole basis. Operational can RANK a decision, not price one.
+- **Research holds exactly what operational holds, plus a frozen researcher-authored package
+  that holds no figures at all.** After the reveal `projectresults` is un-redacted, so the same
+  generator runs at display time under the frozen package. Before the lock the `_ACTION_KEYS`
+  redaction leaves no scored courses, and the generator reports none available, so the reveal
+  gate is preserved for free.
+
+**TWO UNFOUNDED ASSERTIONS REMOVED FROM THE CARD, NOT REWORDED.**
+- **Documentation required had no source anywhere** — a literal in `decision.js` mirrored by a
+  literal in `models_decision.py`. It now reads `Not established: the platform holds no
+  documentation requirement for this state.`
+- **Authority now reads the stored governance module**, not the browser literal; not established
+  when that module abstained. No deadline is asserted anywhere, because nothing stores one.
+
+**A PRE-EXISTING CRASH FIXED.** `build_recommendation` raised `KeyError: 'recoverable_fraction'`
+whenever a differing site condition was the open matter under ConsensusDocs or FAR: those forms'
+site-condition positions carry no lookback fraction and the function fell into the cost-lookback
+arm. The recommendation crashed for exactly the two forms whose site-condition rule the run
+exists to teach. Fixed with a prompt-notice branch citing Section 3.16.2 / FAR 52.236-2(a); no
+clause text reproduced. Found by the new suite's exhaustive form-by-decision exercise.
+
+**Build.** New `assets/js/recommendation_options.js` (dependency-free plain global):
+`build(result)` reads `module_results` / `signal_inputs` off the primed row, `html(spec)` renders
+it, `buildForProject` goes through `LinResults.rowFor`. Nothing recomputes. `app.js`
+`renderDecisionCard` appends it and sources the two fields above; `decision-ui.js` gains
+`renderRevealedOptions()` into a new `#dc-options` host after the reveal; `training_engine.py`
+gains `build_options(state)` covering all twelve engine decisions plus a `decision` key on each
+`build_recommendation` return; `training.py` returns `options`; `training.js` renders it above
+the recommendation.
+
+**Verify.** `tests_render.html` group 15 (21 checks) against the production
+`LinApp.renderDecisionCard`: EVERY numeric token in the block must be a stored value (nothing
+else may appear), exact substring checks on the exposure and score sentences, abstention renders
+as "Not established" with no fabricated figure, a missing scoring analysis draws ZERO options,
+a pre-lock redacted result yields none, byte-identical output twice, and the research block
+contains the card's block verbatim. Five faults proven red then reverted: `money()+1`, a
+fabricated exposure, a fabricated score set (which also tripped the pre-existing "does not
+recommend routine monitoring on a Red project" check), a server float-days drift, and a server
+abstention turned into an assertion.
+
+Files: `assets/js/recommendation_options.js` (new), `app.js`, `decision-ui.js`, `training.js`,
+`assets/css/radar.css`, `index.html`, `tests_render.html`, `server/app/training_engine.py`,
+`server/app/training.py`, `server/tools/test_training_options.py` (new). Nothing under
+`server/app/simulation/` touched. No migration.
+
 # 2026-08-05 — PER-MODULE CHARTS REBUILT INLINE IN THE SIGNAL LEDGER FROM THE STORED ROW
 
 Branch `claude/module-charts-s5s90m`. The report could not be written as a repo-root file (harness

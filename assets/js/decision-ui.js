@@ -494,7 +494,38 @@
       return;
     }
     renderPackage(resp.package, resp.reveal_at);
+    await renderRevealedOptions();
     if (!silent) await refresh();
+  }
+
+  /* ------------------------------------------------------------
+     The courses of action, generated at DISPLAY TIME from the stored result.
+
+     The package above is the researcher-authored, frozen stimulus and is rendered exactly as
+     it was frozen. This block is a different thing and is labelled as one: the courses of
+     action the analytical layer scored, read back off the same stored result the evidence
+     screen showed, with the consequence of each. It is generated here, on every view, by the
+     same generator the operational Governance Decision card calls, so the same evidence
+     produces the same words on both surfaces.
+
+     It can only run AFTER the reveal. Before the preliminary judgment is locked the stored
+     result comes back with the action-bearing module fields redacted (documents.py
+     `_ACTION_KEYS`), which is what makes the pre-lock evidence screen safe; the generator then
+     finds no scored courses of action and says so rather than inventing a set.
+     ------------------------------------------------------------ */
+  async function renderRevealedOptions() {
+    var host = $("dc-options");
+    if (!host) return;
+    var pid = STATE.server && STATE.server.evidence_project_id;
+    if (!pid) { host.innerHTML = ""; return; }
+    if (!window.LinRecOptions) { host.innerHTML = ""; return; }
+    var res = await call("projectresults", { id: pid, period: 1 });
+    if (!res || res.ok !== true || !res.result) {
+      host.innerHTML = '<p class="dc-empty" id="dc-options-empty">No stored analysis is '
+        + "available for this period, so no courses of action can be laid out.</p>";
+      return;
+    }
+    host.innerHTML = window.LinRecOptions.html(window.LinRecOptions.build(res.result));
   }
 
   function field(title, value) {
