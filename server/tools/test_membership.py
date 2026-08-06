@@ -152,6 +152,20 @@ r = post({"action": "adminmemberadd", "session_token": admin, "id": PROJECT,
           "participant_id": obs["participant_id"], "project_role": "Observer"})
 check(r.get("ok") is True, "Observer membership added", str(r)[:160])
 
+# adminprojectlist — the admin can enumerate every project by id and name to fill the membership
+# picker, WITHOUT being a member of them (a_list is member-scoped; this is not).
+r = post({"action": "adminprojectlist", "session_token": admin})
+check(r.get("ok") is True, "adminprojectlist returns for an admin", str(r)[:160])
+ids = [p.get("project_id") for p in (r.get("projects") or [])]
+check(PROJECT in ids, "adminprojectlist includes the project the admin created", str(ids)[:160])
+proj_row = next((p for p in (r.get("projects") or []) if p.get("project_id") == PROJECT), {})
+check("name" in proj_row and set(proj_row.keys()) <= {"project_id", "name"},
+      "adminprojectlist returns id and name only (no evidence)", str(proj_row)[:160])
+# A non-admin (the operational account that is not a member of PROJECT) is refused.
+r = post({"action": "adminprojectlist", "session_token": ops_tok})
+check(r.get("ok") is False and "ResearchAdmin" in (r.get("error") or ""),
+      "adminprojectlist refuses a non-admin", str(r)[:160])
+
 print()
 print("=" * 78)
 print("GUARANTEE 1: a non-member cannot read the project, documents, or results")

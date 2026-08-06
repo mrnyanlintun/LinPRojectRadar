@@ -9,6 +9,49 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-05 — SIX DEAD DETAIL SURFACES WIRED TO THE PRIMED ROW; EXTRACTION DISPLAY; ADMIN DROPDOWNS
+
+Branch: `claude/dead-surfaces-s5s90m`. Full detail in `REPORT_2026-08-05_dead-surfaces.md`.
+Server suite **2200/2200** (+4), `tests.html` **51/51**, `tests_render.html` **106/107** (the 1 is the
+pre-existing auth-gated production-read check, red on `origin/main` too).
+
+**Root cause (extends #215).** `a_get` delivers `storedResult` with `category_statuses` only — no
+`module_results`, no `signal_inputs`. #215's `primeAndRefresh` grafts those from `projectresults`
+and re-ran the *canvas* lazy-inits, but the six surfaces below **bake their counts/tallies/badges
+as HTML at `render()` time**, before the graft, and were never rebuilt. Fix: make each surface's
+lazy-init rebuild its body from the current project, add `d-brief`/`d-decision` to the refresh set,
+and recompute the section badges from the primed row. Chose to **extend `primeAndRefresh`**, not
+reroute through Signal Flow.
+
+- **Project Signal Network (`projectnet2d.js`)** had a second, older bug: its node table keyed to
+  the **retired `cat1..cat11`** ids while the taxonomy keys `a1..c1`, so it drew **zero nodes on
+  every project**. Rebuilt its layout/edges/labels from `projectLevelCategories()` (group A->B->C
+  flow), numbers dropped per NAMING_AUTHORITY.
+- **Signal Sphere / Signal Web / Ensemble** ("0 active", empty): `d-web` / `d-ensemble` lazy-inits
+  now rebuild from `signalWebHtml`/`ensembleHtml`; the Ensemble badge no longer reads the retired
+  `simulationSignals`.
+- **Executive Brief** ("No computed key signals"): `briefKeySignals` now reads stored `signal_inputs`.
+- **Governance Decision** ("Signal breakdown not available"): `decision.js signalStatuses` fills
+  missing signal classes from stored `signal_inputs` (EVM/doc bands) and `module_results` (MC/CUSUM).
+- **Async-race bug fixed:** added `currentRenderId` guard so an in-flight `primeAndRefresh` for a
+  previously opened project cannot write into the project now on screen.
+
+**Part 2 — "partial" is a DISPLAY DEFECT.** The server's `signals_extracted` event never records an
+applied-fields array, so every server document read "partial" and the header read "0 fields" even
+though extraction succeeded (values are in stored `signal_inputs`). Fixed the count to read stored
+`signal_inputs`, and reconstructed per-document fields from the `signal_inputs.sources` ledger
+(per-docType attribution); "partial" now shows only on an explicit flag or a project with no stored
+inputs. Extraction layer unchanged (per-*file* attribution would need an event-layer change; out of
+scope, and the display no longer lies without it).
+
+**Part 3 — admin dropdowns.** New admin-only server action **`adminprojectlist`** backs a project
+`<select>` on the membership card (was a typed id). `loadScenarios()`/`loadProjects()` now run in
+`boot()` so the scenario and membership pickers populate on first open. `admin.js` calls
+`LinAdminOps.reloadParticipants()` after creating an account so the PM picker refreshes without a reload.
+
+Files: `assets/js/detail.js`, `decision.js`, `projectnet2d.js`, `admin-ops.js`, `admin.js`,
+`index.html`, `server/app/research_membership.py`, `server/tools/test_membership.py`, `tests_render.html`.
+
 # 2026-08-05 — THREE DEAD CHART SURFACES REMOVED, THE PORTFOLIO LIST CONSOLIDATED
 
 Branch `claude/charts-and-portfolio-s5s90m`. Full detail in

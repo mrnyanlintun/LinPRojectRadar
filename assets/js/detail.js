@@ -645,33 +645,63 @@
       return `${g("month")} ${g("day")}, ${g("year")} ${g("hour")}:${g("minute")} ${g("timeZoneName")}`;
     } catch (e) { return window.LinTZ ? LinTZ.format(d) : d.toISOString(); }
   }
-  function uploadedDocFields(e) {
-    // Backend extractSignals_ stores the array as `appliedFields` — read it first.
+  // Fields extracted for one document. The server's `signals_extracted` event records only
+  // docType/fileName/period (see documents.py: it never carried an applied-fields array), so a
+  // server-computed project has no per-event field list. Reconstruct it from the STORED
+  // signal_inputs.sources ledger, which maps each extracted field to the document TYPE it came
+  // from — the honest per-document attribution available. Prefer an explicit per-event array on
+  // the rare legacy record that still carries one.
+  function uploadedDocFields(e, srcByDocType) {
     const src = e.appliedFields != null ? e.appliedFields
               : e.applied != null ? e.applied
               : (e.fields != null ? e.fields : e.field);
-    if (Array.isArray(src)) return src.filter(Boolean);
-    if (src == null || src === "") return [];
-    return [src];
+    if (Array.isArray(src) && src.length) return src.filter(Boolean);
+    if (src != null && src !== "" && !Array.isArray(src)) return [src];
+    const key = String(e.docType || "").toLowerCase();
+    return (srcByDocType && srcByDocType[key]) ? srcByDocType[key].slice() : [];
   }
-  // Partial when the extraction recorded missing fields (or applied none).
-  function uploadedDocIsPartial(e, fields) {
+  // Partial ONLY when the extraction record itself says so — an explicit missing/partial flag.
+  // The absence of a per-event field array is a recording gap in the event log, NOT evidence
+  // that extraction returned a subset, so it must never on its own brand a document "partial"
+  // (that was the defect: every server document read "partial" because the event carried no
+  // fields). A document with fields attributed from the stored ledger reads as recorded.
+  function uploadedDocIsPartial(e, fields, hasStoredInputs) {
     const missing = e.missing != null ? e.missing : e.missingFields;
     if (Array.isArray(missing) && missing.length) return true;
     if (e.partial === true || e.readyToRun === false) return true;
-    return (fields || []).length === 0;
+    // No fields for this document AND nothing extracted for the project at all → genuinely
+    // awaiting/empty. If the project HAS stored inputs, absence here is only the event-log gap.
+    return (fields || []).length === 0 && !hasStoredInputs;
+  }
+  // {docTypeLower: [field, …]} from the stored signal_inputs.sources ledger. "sources" maps
+  // field → {docType, value}; invert it to a per-docType field list, preserving order.
+  function sourcesByDocType(project) {
+    const row = (window.LinResults && LinResults.rowFor(project)) || null;
+    const si = (row && row.signal_inputs) || (project && project.signalInputs) || null;
+    const sources = si && si.sources && typeof si.sources === "object" ? si.sources : null;
+    const out = {};
+    if (!sources) return out;
+    Object.keys(sources).forEach((field) => {
+      const s = sources[field];
+      const dt = s && s.docType ? String(s.docType).toLowerCase() : null;
+      if (!dt) return;
+      (out[dt] || (out[dt] = [])).push(field);
+    });
+    return out;
   }
   function uploadedDocsPanelHtml(project) {
     const evs = uploadedDocEvents(project).slice().reverse(); // newest first
+    const srcByDocType = sourcesByDocType(project);
+    const hasStoredInputs = storedInputFieldCount(project) > 0;
     const rows = evs.map((e) => {
-      const fields = uploadedDocFields(e);
-      const partial = uploadedDocIsPartial(e, fields);
+      const fields = uploadedDocFields(e, srcByDocType);
+      const partial = uploadedDocIsPartial(e, fields, hasStoredInputs);
       const fileName = e.fileName || e.file || e.name || "—";
       const at = e.at || e.timestamp || e.recordedAt || e.time || "";
       const fieldList = fields.length ? fields.join(", ") : "—";
       const pill = partial
         ? `<span class="pill pill-amber up-pill" title="Some expected fields were missing">partial</span>`
-        : `<span class="pill pill-green up-pill" title="All expected fields extracted">✓</span>`;
+        : `<span class="pill pill-green up-pill" title="Fields extracted and on file">✓</span>`;
       return `<tr class="up-row">
           <td class="up-type">${esc(fmtDocType(e.docType))}</td>
           <td class="up-file">${esc(fileName)}</td>
@@ -853,6 +883,9 @@
   function render(id) {
     const root = document.getElementById("detail-root");
     if (!root) return;
+    // Stamp the project this render is for, so an in-flight primeAndRefresh for a previously
+    // opened project cannot apply its result to this one (see currentRenderId).
+    currentRenderId = id;
     // render() replaces the whole subtree, so any globe from a previous project would lose its
     // container while keeping its WebGL context. Release it before the DOM goes.
     if (detailGlobe) { try { detailGlobe.destroy(); } catch (e) {} detailGlobe = null; }
@@ -953,8 +986,26 @@
       "d-neural": () => { if (typeof LinNeuralFlow !== "undefined") LinNeuralFlow.render(p, root.querySelector(".detail-neural-flow")); },
       // Brief renders (and possibly calls the chat endpoint) only when opened.
       "d-brief": () => { wireBrief(root, p); refreshBrief(root, p); },
-      "d-web": () => { wireSignalWeb(root, id); wireSignalSphere(root, p); },
-      "d-ensemble": () => { wireEnsembleScatter(root, p); },
+      // Signal Web / Signal Sphere. The panel HTML (its module tally and "N active"
+      // subtitle) is derived from getModuleStatus at build time; a_get delivers the
+      // project WITHOUT module_results, so at first render the tally reads zero. Rebuild
+      // the body from the current project each time this section runs, so once
+      // primeAndRefresh grafts module_results and re-runs this section the counts,
+      // subtitle and footnote all re-derive from the complete row (an abstaining module
+      // still contributes no coloured value — signalWebHtml reads the same stored row).
+      "d-web": () => {
+        const body = document.getElementById("body-d-web");
+        if (body) body.innerHTML = signalWebHtml(p);
+        wireSignalWeb(root, id); wireSignalSphere(root, p);
+      },
+      // Ensemble Analysis. Same story: ensembleHtml returns "" until a stored row with
+      // module_results is present, so the section is empty at first render and fills in
+      // when primeAndRefresh re-runs it against the grafted row.
+      "d-ensemble": () => {
+        const body = document.getElementById("body-d-ensemble");
+        if (body) body.innerHTML = ensembleHtml(p);
+        wireEnsembleScatter(root, p);
+      },
       // Period Comparison is fully static HTML (table + inline SVG sparklines)
       // already rendered above — no post-expand work, but kept in lazyInits
       // to follow the same render-on-first-expand idiom as every other section.
@@ -1003,7 +1054,18 @@
       },
       // Uploaded-docs table is already in the section HTML; the extracted-
       // signals panel below it renders on expand.
-      "d-docsignals": () => { if (window.LinSignals) LinSignals.renderSignalsPanel(root.querySelector(".detail-signals"), p); },
+      // Documents & Extracted Signals. The uploaded-docs table's "Fields extracted" column and
+      // its per-document status pill are reconstructed from the stored signal_inputs.sources
+      // ledger, which a_get does not deliver — rebuild the whole body here so that once
+      // primeAndRefresh grafts the row, re-running this section fills the field lists in and
+      // clears the false "partial" pills, and the extracted-inputs panel below reads the stored
+      // values rather than "No extracted values cached this session".
+      "d-docsignals": () => {
+        const body = document.getElementById("body-d-docsignals");
+        if (body) body.innerHTML = uploadedDocsPanelHtml(p) +
+          `<section class="panel detail-signals" aria-label="Extracted signals detail"></section>`;
+        if (window.LinSignals) LinSignals.renderSignalsPanel(root.querySelector(".detail-signals"), p);
+      },
       "d-ledger": () => { LinApp.renderLedger(p, root.querySelector(".detail-ledger")); },
       "d-decision": () => { LinApp.renderDecisionCard(p, root.querySelector(".detail-decision")); }
     };
@@ -1029,6 +1091,12 @@
 
   /* ---------- lazy section initialisation (render-on-first-expand) ---------- */
   let lazyInits = null;
+  // The id of the project the detail page is currently rendered for. primeAndRefresh is async, so
+  // if the user opens project X and then quickly opens project Y before X's fetch resolves, X's
+  // resolution must NOT graft X's row or write X's badges into Y's DOM (the section element ids
+  // are shared, so it otherwise would). Every render() stamps this; primeAndRefresh checks it
+  // after the await and abandons a resolution the page has moved on from.
+  let currentRenderId = null;
   const lazyDone = {};
   function runLazyInit(secId) {
     if (!lazyInits || typeof lazyInits[secId] !== "function" || lazyDone[secId]) return;
@@ -1066,6 +1134,13 @@
       return;
     }
     if (!resp || resp.ok !== true || !resp.result) return;
+    // The page may have moved to another project while this fetch was in flight. Priming the ROWS
+    // cache for this id is still correct and harmless, but grafting onto p, rewriting badges and
+    // re-running sections would write this project's data into whatever project is now on screen.
+    if (currentRenderId !== id) {
+      if (window.LinResults) LinResults.prime(id, resp.result);
+      return;
+    }
 
     // Share with taxonomy.js so getModuleStatus / getCategoryStatus work everywhere.
     if (window.LinResults) LinResults.prime(id, resp.result);
@@ -1079,10 +1154,30 @@
       if (resp.result.signal_inputs && !p.storedResult.signal_inputs) {
         p.storedResult.signal_inputs = resp.result.signal_inputs;
       }
+    } else {
+      // a_get delivered no storedResult (a race, or the list projection had not attached it
+      // yet) but the row exists. Attach it so every rowFor(p) on this page reads the complete
+      // row directly, not only through the ROWS cache prime above.
+      p.storedResult = resp.result;
     }
 
-    // Re-run any sections already open — they rendered before module_results arrived.
-    const REFRESH_SECTIONS = ["d-ledger", "d-projnet", "d-web", "d-ensemble", "d-docsignals"];
+    // The collapsed-section badges above each panel were computed at render() from the
+    // truncated row (and, for Ensemble, from the retired simulationSignals field the server
+    // never writes) so they read "0 active · 0 est." and "N docs · 0 fields". Recompute them
+    // from the now-complete row so the summary agrees with the panel it summarises.
+    refreshSectionBadges(p);
+
+    // A scripted Executive Brief generated before the row arrived would have cached its
+    // "No computed key signals are available yet" fallback. Drop that stale scripted brief so the
+    // re-run below regenerates it from the now-complete row. A live (chat) brief the user
+    // generated is left untouched.
+    if (p.executiveBrief && p.executiveBrief.source === "scripted") p.executiveBrief = null;
+
+    // Re-run any sections already open — they rendered before module_results arrived. d-brief and
+    // d-decision are included because their key-signal and signal-breakdown sections also read
+    // the stored row (they were reading the absent legacy blob before).
+    const REFRESH_SECTIONS = ["d-ledger", "d-projnet", "d-web", "d-ensemble", "d-docsignals",
+                              "d-brief", "d-decision"];
     REFRESH_SECTIONS.forEach((secId) => {
       if (!lazyInits || typeof lazyInits[secId] !== "function") return;
       const body = document.getElementById("body-" + secId);
@@ -1091,6 +1186,56 @@
       delete lazyDone[secId];
       runLazyInit(secId);
     });
+  }
+
+  /* Recompute the two collapsed-section badges that summarise stored-row data — the
+     Ensemble Analysis "N active · M est." and the Documents "K docs · F fields". Both are
+     read straight from the stored computed row (module_results and signal_inputs), so once
+     primeAndRefresh has grafted it they can agree with the panels they head. Modules with no
+     stored status are abstaining and are counted in neither the active nor the estimated
+     tally, matching the abstention rule the panels themselves follow. */
+  function refreshSectionBadges(project) {
+    const setBadge = (secId, html) => {
+      const sec = document.getElementById("section-" + secId);
+      const badge = sec && sec.querySelector(".collapse-badge");
+      if (badge) badge.innerHTML = html;
+    };
+    try {
+      const tally = ensembleTally(project);
+      const active = ["Complete", "Green", "Yellow", "Amber", "Red"]
+        .reduce((n, k) => n + (tally.counts[k] || 0), 0);
+      const est = ensembleEstimatedCount(project);
+      setBadge("d-ensemble", `${active} active · ${est} est.`);
+    } catch (e) { /* non-fatal: badge stays as first-render text */ }
+    try {
+      const uploadCount = (typeof uploadedDocEvents === "function") ? uploadedDocEvents(project).length : 0;
+      const fieldCount = storedInputFieldCount(project);
+      setBadge("d-docsignals",
+        `${uploadCount} doc${uploadCount === 1 ? "" : "s"} · ${fieldCount} field${fieldCount === 1 ? "" : "s"}`);
+    } catch (e) { /* non-fatal */ }
+  }
+
+  /* The number of extracted signal-input fields on file for this project, read from the
+     STORED row's signal_inputs (the value the analytical layer actually consumed), with the
+     legacy client-side signalInputs as a fallback for projects that still carry it. "sources"
+     is the field ← document provenance ledger, not a signal, so it is never counted. */
+  function storedInputFields(project) {
+    const row = (window.LinResults && LinResults.rowFor(project)) || null;
+    const stored = row && row.signal_inputs && typeof row.signal_inputs === "object" ? row.signal_inputs : null;
+    const legacy = project && project.signalInputs && typeof project.signalInputs === "object" ? project.signalInputs : null;
+    const src = stored || legacy || {};
+    return Object.keys(src).filter((k) => k !== "sources" && src[k] != null && src[k] !== "");
+  }
+  function storedInputFieldCount(project) {
+    return storedInputFields(project).length;
+  }
+  /* Count of computed modules whose stored evidence metric is an estimate rather than a direct
+     reading. Read from the stored module_results (the same rows the Ensemble panel plots), so
+     an abstaining module — which has no row — is never counted. */
+  function ensembleEstimatedCount(project) {
+    const row = (window.LinResults && LinResults.rowFor(project)) || null;
+    const mods = row && Array.isArray(row.module_results) ? row.module_results : [];
+    return mods.filter((m) => m && /\b(estimated|derived|assumed)\b/i.test(String(m.evidence_metric || ""))).length;
   }
 
   /* ============================================================
@@ -1196,7 +1341,14 @@
   // actual numbers, never generic text. Each is { label, value, status }.
   function briefKeySignals(project) {
     const s = (project && project.signals) || {};
-    const si = (project && project.signalInputs) || {};
+    // Server-computed projects carry no legacy p.signals / p.signalInputs blob: the figures the
+    // analytical layer read live in the STORED row's signal_inputs. Read from there first so the
+    // Key Drivers section shows the real CPI, SPI, BAC and document risk instead of the
+    // "No computed key signals" fallback. rowFor() returns the row primed by primeAndRefresh.
+    const storedRow = (window.LinResults && LinResults.rowFor(project)) || null;
+    const storedSi = storedRow && storedRow.signal_inputs && typeof storedRow.signal_inputs === "object"
+      ? storedRow.signal_inputs : {};
+    const si = Object.assign({}, storedSi, (project && project.signalInputs) || {});
     const evm = s.evm || {}, mc = s.mc || {};
     const out = [];
     const bac = Number(evm.bac != null ? evm.bac : si.bac);
@@ -1204,18 +1356,23 @@
       const pct = Math.round((Number(mc.p80) / bac - 1) * 100);
       out.push({ label: "P80 EAC vs BAC", value: (pct >= 0 ? "+" : "") + pct + "%", status: pct > 10 ? "Red" : pct > 5 ? "Amber" : "Green" });
     }
-    if (Number.isFinite(Number(evm.cpi))) out.push({ label: "CPI", value: Number(evm.cpi).toFixed(3), status: evm.cpi < 0.90 ? "Red" : evm.cpi < 0.95 ? "Amber" : "Green" });
-    if (Number.isFinite(Number(evm.spi))) out.push({ label: "SPI", value: Number(evm.spi).toFixed(3), status: evm.spi < 0.90 ? "Red" : evm.spi < 0.95 ? "Amber" : "Green" });
+    const cpi = Number(evm.cpi != null ? evm.cpi : si.cpi);
+    if (Number.isFinite(cpi)) out.push({ label: "CPI", value: cpi.toFixed(3), status: cpi < 0.90 ? "Red" : cpi < 0.95 ? "Amber" : "Green" });
+    const spi = Number(evm.spi != null ? evm.spi : si.spi);
+    if (Number.isFinite(spi)) out.push({ label: "SPI", value: spi.toFixed(3), status: spi < 0.90 ? "Red" : spi < 0.95 ? "Amber" : "Green" });
     if (s.cusum) out.push({ label: "Schedule drift (CUSUM)", value: s.cusum.breached ? "breach detected" : "in control", status: s.cusum.breached ? "Red" : "Green" });
-    const ctot = Number(si.contingencyTotal), cburn = Number(si.contingencyBurned);
+    const ctot = Number(si.contingencyTotal != null ? si.contingencyTotal : si.originalContingency);
+    const crem = Number(si.remainingContingency);
+    const cburn = Number.isFinite(Number(si.contingencyBurned)) ? Number(si.contingencyBurned)
+      : (Number.isFinite(ctot) && Number.isFinite(crem) ? ctot - crem : NaN);
     const comp = Number(si.actualPctComplete != null ? si.actualPctComplete : si.pctComplete);
     if (Number.isFinite(ctot) && ctot > 0 && Number.isFinite(cburn)) {
       const bp = Math.round(cburn / ctot * 100);
       out.push({ label: "Contingency burned", value: bp + "%" + (Number.isFinite(comp) ? " at " + Math.round(comp) + "% complete" : ""), status: bp > 75 ? "Red" : bp > 50 ? "Amber" : "Green" });
     }
-    if (s.doc && Number.isFinite(Number(s.doc.score))) {
-      const ds = Number(s.doc.score);
-      out.push({ label: "Document risk", value: ds.toFixed(2), status: ds >= 0.70 ? "Red" : ds >= 0.40 ? "Amber" : "Green" });
+    const docScore = Number(s.doc && s.doc.score != null ? s.doc.score : si.docRiskScore);
+    if (Number.isFinite(docScore)) {
+      out.push({ label: "Document risk", value: docScore.toFixed(2), status: docScore >= 0.70 ? "Red" : docScore >= 0.40 ? "Amber" : "Green" });
     }
     return out.slice(0, 6);
   }

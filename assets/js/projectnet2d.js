@@ -31,38 +31,64 @@
   };
   var NO_DATA_FILL = "#26344f";
 
-  // Compact display names so labels never overflow / overlap.
-  var SHORT_NAME = {
-    cat1:  "Quant EVM",     cat2:  "Schedule Sim", cat3:  "Cost Sim",
-    cat4:  "Doc & Risk",    cat5:  "Sys Dynamics", cat6:  "Synthesis",
-    cat7:  "Evidence",      cat8:  "Portfolio Health", cat9:  "Governance",
-    cat10: "Data Integrity", cat11: "Decision Opt"
-  };
-
-  // Fixed 2D layout (world coordinates; positions keyed by stable internal
-  // ids, unaffected by display renumbering). Left-to-right signal flow:
-  // generators (cat1-5) → synthesis (cat6) → evidence (cat7) / Portfolio
-  // Health (cat8) → governance (cat9); data integrity (cat10) and decision
-  // opt (cat11) sit as supporting inputs near their targets.
-  // Spacing is chosen so node labels never collide.
-  var LAYOUT = {
-    cat1:  { x: 110, y: 70  }, cat2: { x: 110, y: 160 }, cat3: { x: 110, y: 250 },
-    cat4:  { x: 110, y: 340 }, cat5: { x: 110, y: 430 },
-    cat6:  { x: 340, y: 150 }, cat10:{ x: 340, y: 330 },
-    cat7:  { x: 560, y: 150 }, cat8: { x: 560, y: 330 },
-    cat9:  { x: 790, y: 150 }, cat11:{ x: 790, y: 330 }
-  };
   var WORLD_W = 920, WORLD_H = 560, NODE_R = 27;
 
-  // Directed signal-flow edges (same logical flow as the old force network).
-  var EDGES = [
-    ["cat1", "cat6"], ["cat2", "cat6"], ["cat3", "cat6"], ["cat4", "cat6"], ["cat5", "cat6"],
-    ["cat6", "cat7"], ["cat6", "cat9"],
-    ["cat7", "cat9"],
-    ["cat8", "cat7"], ["cat8", "cat9"],
-    ["cat10", "cat6"], ["cat10", "cat7"],
-    ["cat11", "cat9"]
-  ];
+  // Compact display name for a category, derived from its canonical name so labels never overflow
+  // the node. No category numbers are shown (NAMING_AUTHORITY: groups and purposes only).
+  var SHORT_NAME_BY_NAME = {
+    "Cost & EVM Performance": "Cost & EVM",
+    "Schedule Performance": "Schedule",
+    "Cost Risk": "Cost Risk",
+    "Document-Derived Condition Signals": "Doc Signals",
+    "System Dynamics & Complexity": "Sys Dynamics",
+    "Delivery Quality Performance": "Delivery Quality",
+    "Signal Synthesis": "Synthesis",
+    "Evidence Combination": "Evidence",
+    "Regulatory & Authority Thresholds": "Governance",
+    "Decision Optimization": "Decision",
+    "Data Integrity": "Data Integrity"
+  };
+  function shortNameFor(cat) {
+    return SHORT_NAME_BY_NAME[cat.name] || String(cat.name || "").split(/\s+/).slice(0, 2).join(" ");
+  }
+
+  // Build the 2D flow graph from the LIVE project-level taxonomy rather than a fixed id table.
+  // The categories are keyed a1..c1 (Portfolio Health, group D, is portfolio-scale and excluded
+  // by projectLevelCategories()), so the previous hardcoded cat1..cat11 layout matched nothing and
+  // the whole network rendered empty with a permanent "awaiting extraction" note. Positions and
+  // edges are derived by GROUP so the diagram tracks the taxonomy: Group A (health signals)
+  // generate on the left, Group B synthesises and governs on the right, Group C (evidence quality)
+  // sits as a supporting input.
+  function buildGraph(cats) {
+    var groupA = cats.filter(function (c) { return c.group === "A"; });
+    var groupB = cats.filter(function (c) { return c.group === "B"; })
+      .slice().sort(function (a, b) { return String(a.num).localeCompare(String(b.num)); });
+    var groupC = cats.filter(function (c) { return c.group === "C"; });
+    var COL = { a: 110, synth: 360, evid: 580, gov: 800, support: 360 };
+    var pos = {};
+    var spread = function (arr, x, y0, y1) {
+      var n = arr.length;
+      arr.forEach(function (c, i) { pos[c.id] = { x: x, y: n <= 1 ? (y0 + y1) / 2 : y0 + (y1 - y0) * i / (n - 1) }; });
+    };
+    spread(groupA, COL.a, 60, 500);
+    var synth = groupB[0] || null;                 // Signal Synthesis — the first Group B stage
+    var rest = groupB.slice(1);
+    if (synth) pos[synth.id] = { x: COL.synth, y: 170 };
+    if (rest.length) {
+      pos[rest[0].id] = { x: COL.evid, y: 170 };   // Evidence Combination
+      spread(rest.slice(1), COL.gov, 110, 430);    // Governance / Decision
+    }
+    groupC.forEach(function (c, i) { pos[c.id] = { x: COL.support, y: 430 + i * 80 }; });
+
+    var edges = [];
+    if (synth) {
+      groupA.forEach(function (c) { edges.push([c.id, synth.id]); });
+      groupC.forEach(function (c) { edges.push([c.id, synth.id]); });
+      rest.forEach(function (c) { edges.push([synth.id, c.id]); });
+      if (rest.length > 1) rest.slice(1).forEach(function (g) { edges.push([rest[0].id, g.id]); });
+    }
+    return { pos: pos, edges: edges };
+  }
 
   var esc = function (s) {
     return String(s == null ? "" : s)
@@ -165,25 +191,28 @@
 
   function render(container, project) {
     if (!container) return;
-    var cats = window.LIN_CATEGORIES || [];
+    // Project-level categories only (Portfolio Health is portfolio-scale, drawn nowhere here).
+    var cats = window.projectLevelCategories ? window.projectLevelCategories()
+      : (window.LIN_CATEGORIES || []).filter(function (c) { return !(c && c.level === "portfolio"); });
     if (!cats.length) {
       container.innerHTML = '<p class="kn-sub">Category metadata unavailable.</p>';
       return;
     }
 
+    var graph = buildGraph(cats);
+
     // Compute each category's status once.
     var nodes = cats
-      .filter(function (c) { return LAYOUT[c.id]; })
+      .filter(function (c) { return graph.pos[c.id]; })
       .map(function (c) {
         var st = categoryStatus(c.id, project);
         return {
           id: c.id,
-          num: c.num,                                   // "Cat 1" … "Cat 10", "PH"
-          name: SHORT_NAME[c.id] || c.name,
-          pos: LAYOUT[c.id],
+          name: shortNameFor(c),
+          pos: graph.pos[c.id],
           status: st,
           fill: st ? (STATUS_FILL[st] || NO_DATA_FILL) : NO_DATA_FILL,
-          dots: buildDots(c, LAYOUT[c.id], project)     // per-module dots, coloured by module status
+          dots: buildDots(c, graph.pos[c.id], project)  // per-module dots, coloured by module status
         };
       });
     var nodeById = {};
@@ -311,7 +340,7 @@
       ctx.lineWidth = 1.4;
       ctx.strokeStyle = hexToRgba(inkColor, 0.45);
       ctx.fillStyle = hexToRgba(inkColor, 0.55);
-      EDGES.forEach(function (e) {
+      graph.edges.forEach(function (e) {
         var from = nodeById[e[0]], to = nodeById[e[1]];
         if (!from || !to) return;
         var ar = worldArrow(from, to);
@@ -366,13 +395,8 @@
         ctx.strokeStyle = hexToRgba(inkColor, 0.6);
         ctx.stroke();
 
-        // "Cat N" centred in the node; light text except on the pale Yellow fill.
-        ctx.fillStyle = (n.status === "Yellow") ? "#1c2330" : "#ffffff";
-        ctx.font = "700 12px 'IBM Plex Mono', ui-monospace, monospace";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(n.num, n.pos.x, n.pos.y);
-
+        // Node centre carries no category number (NAMING_AUTHORITY: no "Cat N"); the colour-blind
+        // status cue is the letter badge below and the fill colour. Category name sits below.
         // Category short-name below the node.
         ctx.fillStyle = inkColor;
         ctx.font = "600 11px 'Inter', system-ui, sans-serif";
@@ -410,7 +434,7 @@
       var c = { G: 0, Y: 0, A: 0, R: 0, none: 0 };
       (n.dots || []).forEach(function (d) { var b = statusBucket(d.status); if (b) c[b]++; else c.none++; });
       var fusedColor = n.status ? (STATUS_FILL[n.status] || inkColor) : inkColor;
-      var rows = '<div class="pn2d-co-row pn2d-co-cat">' + esc(n.num) + '</div>' +
+      var rows = '<div class="pn2d-co-row pn2d-co-cat">' + esc(n.name) + '</div>' +
         '<div class="pn2d-co-row">' + colorSpan(c.G + "  G", BUCKET_FILL.G) + '</div>' +
         '<div class="pn2d-co-row">' + colorSpan(c.Y + "  Y", BUCKET_FILL.Y) + '</div>' +
         '<div class="pn2d-co-row">' + colorSpan(c.A + "  A", BUCKET_FILL.A) + '</div>' +
@@ -421,9 +445,9 @@
       return '<div class="pn2d-co-stack">' + rows + '</div>';
     }
 
-    // "1.2 CUSUM — Green" (or "— No data").
+    // "CUSUM Anomaly Monitor — Green" (or "— No data"). No module number (NAMING_AUTHORITY).
     function modCalloutHtml(d) {
-      var label = (d.num ? d.num + " " : "") + (d.name || "Module");
+      var label = d.name || "Module";
       var b = statusBucket(d.status);
       var word = d.status ? (b ? BUCKET_WORD[b] : String(d.status)) : "No data";
       var color = b ? BUCKET_FILL[b] : inkColor;

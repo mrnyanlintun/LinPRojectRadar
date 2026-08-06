@@ -534,6 +534,29 @@ def a_adminmemberlist(session: Session, payload: dict, secret: str, ttl: int) ->
     ]}
 
 
+def a_adminprojectlist(session: Session, payload: dict, secret: str, ttl: int) -> dict[str, Any]:
+    """
+    Every non-archived project, id and name only, for a ResearchAdmin to choose from.
+
+    The membership tab asked the admin to TYPE a project id. There was no way to enumerate what
+    exists, so a typo was indistinguishable from a project that was never created. An admin acts
+    across the whole record, not a membership subset, so this is deliberately not scoped by
+    ProjectMember the way a_list is: it lists what an admin can manage, which is all of them.
+    Id and name only: the membership tab needs to name a project, not read its evidence.
+    """
+    caller, problem = _require_admin(session, payload, secret, "adminprojectlist")
+    if problem:
+        return problem
+    rows = session.scalars(
+        select(Project).where(Project.archived.is_(False))
+        .order_by(Project.legacy_id)
+    ).all()
+    return {"ok": True, "projects": [
+        {"project_id": p.legacy_id, "name": (p.doc or {}).get("name") or p.legacy_id}
+        for p in rows
+    ]}
+
+
 # ---------------------------------------------------------------- member actions
 
 
@@ -686,6 +709,7 @@ MEMBERSHIP_ACTIONS: dict[str, Callable[[Session, dict, str, int], dict]] = {
     "adminmemberadd": a_adminmemberadd,
     "adminmemberrevoke": a_adminmemberrevoke,
     "adminmemberlist": a_adminmemberlist,
+    "adminprojectlist": a_adminprojectlist,
     "researchmyprojects": a_researchmyprojects,
     "researchprojectmembers": a_researchprojectmembers,
     "researchprojectget": a_researchprojectget,

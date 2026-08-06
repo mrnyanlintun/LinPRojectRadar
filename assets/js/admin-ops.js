@@ -59,6 +59,12 @@
     wireExport();
 
     await loadParticipants();
+    // The "access" tab is the default-open one, so its scenario and project pickers must be
+    // filled here at boot. showTab only fires on a tab CLICK, and clicking the already-active
+    // tab did nothing, so these two used to render empty until the admin visited another tab and
+    // came back. Fill them once now; showTab still refreshes them on later reveals.
+    await loadScenarios();
+    await loadProjects();
     await loadMonitoring();
   }
 
@@ -70,7 +76,29 @@
   // every request at once.
   function showTab(name) {
     if (name === "reporting") { loadMonitoring(); loadExports(); }
-    if (name === "access") loadScenarios();
+    if (name === "access") { loadScenarios(); loadProjects(); }
+  }
+
+  // Fill the Project membership picker from every non-archived project, so the admin chooses one
+  // by name rather than typing an id they had no way to enumerate. Called at boot, on tab reveal,
+  // and again after a project is created so a just-made project is immediately selectable.
+  async function loadProjects() {
+    var sel = $("ao-mem-project");
+    if (!sel) return;
+    var prior = sel.value;
+    var resp = await call("adminprojectlist");
+    if (!resp || resp.ok !== true) return;
+    var projects = resp.projects || [];
+    if (!projects.length) {
+      sel.innerHTML = '<option value="" disabled selected>No projects yet</option>';
+      return;
+    }
+    sel.innerHTML = '<option value="" disabled' + (prior ? "" : " selected") + '>Choose a project</option>'
+      + projects.map(function (p) {
+        return '<option value="' + esc(p.project_id) + '">' +
+          esc(p.name || p.project_id) + " (" + esc(p.project_id) + ")</option>";
+      }).join("");
+    if (prior) sel.value = prior;   // keep the admin's current choice across a refresh
   }
 
   /* ============================================================
@@ -146,6 +174,8 @@
     okEl.style.display = "block";
     $("ao-proj-name").value = "";
     $("ao-proj-sector").value = "";
+    // The project just created must appear in the membership picker without a page reload.
+    loadProjects();
   }
 
   async function assignParticipant() {
@@ -227,7 +257,7 @@
     var pid = $("ao-mem-project").value.trim();
     var errEl = $("ao-mem-error");
     errEl.style.display = "none";
-    if (!pid) { errEl.textContent = "Enter a project id."; errEl.style.display = "block"; return; }
+    if (!pid) { errEl.textContent = "Choose a project."; errEl.style.display = "block"; return; }
     var resp = await call("adminmemberlist", { id: pid });
     if (!resp || resp.ok !== true) {
       errEl.textContent = (resp && resp.error) || "Could not load members.";
@@ -269,7 +299,7 @@
     var pid = $("ao-mem-project").value.trim();
     var errEl = $("ao-mem-error"), okEl = $("ao-mem-ok");
     errEl.style.display = "none"; okEl.style.display = "none";
-    if (!pid) { errEl.textContent = "Enter a project id first."; errEl.style.display = "block"; return; }
+    if (!pid) { errEl.textContent = "Choose a project first."; errEl.style.display = "block"; return; }
     var resp = await call("adminmemberadd", {
       id: pid, participant_id: $("ao-mem-participant").value,
       project_role: $("ao-mem-role").value
@@ -490,5 +520,11 @@
 
   // T6. Exposed so app.js can boot this when the Admin section is opened and switch tabs.
   // Nothing else in the application may call into these.
-  window.LinAdminOps = { boot: boot, showTab: showTab };
+  // reloadParticipants is called by admin.js after it creates an account, so the new participant
+  // appears in the PM and member pickers without a full page reload.
+  window.LinAdminOps = {
+    boot: boot, showTab: showTab,
+    reloadParticipants: function () { if (booted) return loadParticipants(); },
+    reloadProjects: function () { if (booted) return loadProjects(); }
+  };
 })();

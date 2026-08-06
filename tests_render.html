@@ -107,6 +107,11 @@
      green. It defines window.LinDetail and wires one document-level listener; it renders
      nothing until render(id) is called, so it cannot disturb the fixtures. -->
 <script src="assets/js/detail.js"></script>
+<!-- projectnet2d.js is loaded so group 12 can render the Project Signal Network for real and
+     prove its nodes are keyed to the LIVE taxonomy (a1..c1), not the retired cat1..cat11 ids that
+     silently filtered every category out and left the diagram permanently "awaiting extraction".
+     It defines window.LinProjectNet2D and boots nothing; render takes its data as an argument. -->
+<script src="assets/js/projectnet2d.js"></script>
 <!-- knowledge.js is loaded ONLY so that assertion group 7 can prove it parsed. It defines two
      globals and does no work until renderKnowledgePage() is called, which returns immediately
      when #knowledge-root is absent, so it cannot disturb the fixtures above. See group 7 for
@@ -912,6 +917,142 @@
     assert("group 11: the signal sphere group ran to completion", "no throw",
       "threw: " + (e && e.message));
   }
+
+  /* ============================================================
+     GROUP 12 — the Project Signal Network (projectnet2d.js) reads the LIVE taxonomy.
+
+     Its category nodes were keyed to the retired cat1..cat11 ids while taxonomy.js keys
+     categories a1..c1, so `cats.filter(c => LAYOUT[c.id])` matched NOTHING: the diagram drew
+     zero nodes, the footer read "0 Red · 0 … · 0 No-data", and the "Awaiting signal extraction"
+     note showed on every project including fully computed ones. This must fail if the stale
+     id-keying is reintroduced. Also proves the abstention rule: an uncomputed project shows the
+     awaiting note and every category as no-data, never a fabricated zero-status.
+     ============================================================ */
+  function projectNetworkGroup() {
+    // A computed project: two categories carry a fused status, the rest abstain (no entry).
+    const p = storedOnlyProject();
+    p.status = "Red";
+    p.storedResult = {
+      project_status: "Red", red_review: false,
+      category_statuses: {
+        A1: { status: "Red", group: "A", module_count: 2, contributes_to_project_status: true },
+        A3: { status: "Amber", group: "A", module_count: 2, contributes_to_project_status: true }
+      },
+      module_results: [
+        { module_id: "A1.1", group: "A", category: "A1", status_color: "Red", method_class: "Monte_Carlo" },
+        { module_id: "A3.1", group: "A", category: "A3", status_color: "Amber", method_class: "Reference_Class_Forecasting" }
+      ]
+    };
+    window.LIN_PROJECTS.length = 0; window.LIN_PROJECTS.push(p); window.LinResults.clear();
+
+    assert("group 12: LinProjectNet2D is loaded", true, !!(window.LinProjectNet2D));
+    const host = scratch();
+    let threw = "";
+    try { LinProjectNet2D.render(host, p); } catch (e) { threw = String(e); }
+    assert("group 12: render does not throw", "", threw);
+
+    const foot = (host.querySelector(".projnet2d-foot") || {}).textContent || "";
+    // The two computed categories must be counted by colour (1 Red, 1 Amber), proving the nodes
+    // resolved against the taxonomy ids. If the stale cat1..cat11 keys came back the filter would
+    // empty the node set and every count (No-data included) would be zero.
+    const redN = (foot.match(/(\d+)\s+Red/) ? Number(RegExp.$1) : -1);
+    const amberN = (foot.match(/(\d+)\s+Amber/) ? Number(RegExp.$1) : -1);
+    assert("group 12: the network counts the Red category (nodes keyed to the live taxonomy)", 1, redN);
+    assert("group 12: the network counts the Amber category", 1, amberN);
+    assert("group 12: a computed project shows NO awaiting note", false,
+      !!host.querySelector(".projnet2d-awaiting"));
+    // The remaining project-level categories abstain — they must appear as no-data, not as zeros
+    // in a coloured bucket. Count of project-level categories minus the 2 computed = No-data.
+    const plCount = (window.projectLevelCategories ? window.projectLevelCategories().length
+      : window.LIN_CATEGORIES.filter(c => c.level !== "portfolio").length);
+    const nodataN = (foot.match(/(\d+)\s+No-data/) ? Number(RegExp.$1) : -1);
+    assert("group 12: every uncomputed category abstains as no-data (none faked into a status)",
+      plCount - 2, nodataN);
+
+    // An UNCOMPUTED project: awaiting note present, and NO category is coloured — all no-data.
+    const none = { id: "PRJ-PN-NOCOMPUTE", name: "Never computed", sector: "construction" };
+    window.LIN_PROJECTS.length = 0; window.LIN_PROJECTS.push(none); window.LinResults.clear();
+    const host2 = scratch();
+    try { LinProjectNet2D.render(host2, none); } catch (e) {}
+    assert("group 12: an uncomputed project shows the awaiting note", true,
+      !!host2.querySelector(".projnet2d-awaiting"));
+    const foot2 = (host2.querySelector(".projnet2d-foot") || {}).textContent || "";
+    assert("group 12: an uncomputed project counts zero Red (abstention, not a fabricated status)",
+      0, (foot2.match(/(\d+)\s+Red/) ? Number(RegExp.$1) : -1));
+    assert("group 12: an uncomputed project shows every category as no-data", plCount,
+      (foot2.match(/(\d+)\s+No-data/) ? Number(RegExp.$1) : -1));
+  }
+  try { projectNetworkGroup(); }
+  catch (e) { assert("group 12: the project network group ran to completion", "no throw", "threw: " + (e && e.message)); }
+
+  /* ============================================================
+     GROUP 13 — the Documents panel reports fields from the stored ledger, not "0 fields /
+     partial".
+
+     The server's signals_extracted event records only docType/fileName (never an applied-fields
+     array), so the per-document "Fields extracted" column read "—" and every document was branded
+     "partial", while the stored signal_inputs.sources ledger held the real per-docType field
+     attribution. detail.js now reconstructs the fields from that ledger. This must fail if the
+     panel goes back to reading the (empty) event field list.
+     ============================================================ */
+  function documentsPanelGroup() {
+    const p = storedOnlyProject();
+    p.status = "Amber";
+    p.events = [
+      { event: "project_created", at: "2026-01-01T00:00:00Z" },
+      { event: "signals_extracted", at: "2026-01-10T00:00:00Z", docType: "monthly_report",
+        fileName: "monthly_report_jan.txt", period: 1, wasCached: false }
+      // NOTE: no appliedFields / fields array — exactly what the server writes.
+    ];
+    p.storedResult = {
+      project_status: "Amber", red_review: false, category_statuses: {}, module_results: [],
+      signal_inputs: {
+        cpi: 0.95, spi: 0.98, bac: 1000000, ev: 400000,
+        sources: {
+          bac: { docType: "monthly_report", value: 1000000 },
+          ev: { docType: "monthly_report", value: 400000 },
+          cpi: { docType: "monthly_report", value: 0.95 }
+        }
+      }
+    };
+    window.LIN_PROJECTS.length = 0; window.LIN_PROJECTS.push(p); window.LinResults.clear();
+
+    const root = document.getElementById("detail-root");
+    root.innerHTML = "";
+    let threw = "";
+    try { window.LinDetail.render(p.id); } catch (e) { threw = String(e); }
+    assert("group 13: LinDetail.render does not throw with a stored signal_inputs.sources ledger",
+      "", threw);
+    const body = document.getElementById("body-d-docsignals");
+    const fieldCell = body ? (body.querySelector(".up-fields") || {}).textContent || "" : "";
+    // The monthly_report document must show the fields attributed to it from the ledger, not "—".
+    assert("group 13: the document's Fields extracted column lists real fields, not a dash",
+      true, /bac/.test(fieldCell) && fieldCell.trim() !== "—");
+    const pill = body ? (body.querySelector(".up-pill") || {}).textContent || "" : "";
+    assert("group 13: a document with extracted fields is NOT branded 'partial'", false,
+      /partial/i.test(pill));
+    try { if (window.LinDetail.teardown) LinDetail.teardown(); } catch (e) {}
+    root.innerHTML = "";
+
+    // A project with NO stored inputs at all: the document is genuinely awaiting, so "partial" is
+    // honest here — the fix must not paint every document green regardless of evidence.
+    const p2 = storedOnlyProject();
+    p2.id = "PRJ-DOC-EMPTY"; p2.status = "Amber";
+    p2.events = [{ event: "signals_extracted", at: "2026-01-10T00:00:00Z", docType: "rfi",
+                   fileName: "rfi.txt", period: 1 }];
+    p2.storedResult = { project_status: "Amber", category_statuses: {}, module_results: [] };
+    window.LIN_PROJECTS.length = 0; window.LIN_PROJECTS.push(p2); window.LinResults.clear();
+    root.innerHTML = "";
+    try { window.LinDetail.render(p2.id); } catch (e) {}
+    const body2 = document.getElementById("body-d-docsignals");
+    const pill2 = body2 ? (body2.querySelector(".up-pill") || {}).textContent || "" : "";
+    assert("group 13: a document on a project with no stored inputs still reads 'partial' (honest)",
+      true, /partial/i.test(pill2));
+    try { if (window.LinDetail.teardown) LinDetail.teardown(); } catch (e) {}
+    root.innerHTML = "";
+  }
+  try { documentsPanelGroup(); }
+  catch (e) { assert("group 13: the documents panel group ran to completion", "no throw", "threw: " + (e && e.message)); }
 
   // ---- render results ----
   function renderResults() {
