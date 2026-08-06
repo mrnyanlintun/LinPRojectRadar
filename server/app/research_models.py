@@ -706,6 +706,66 @@ class Observation(Base):
     )
 
 
+class ScheduleActivity(Base):
+    """
+    0021. One row per (project, period, document, activity). The schedule, kept as data.
+
+    A CHART CANNOT BE COMPARED ACROSS PERIODS. That is the whole reason this table exists. The
+    document's activity table was already stored, as raw `milestones_json` on the document row,
+    keyed by whatever headings the source printed and holding dates no parser in this codebase
+    could read. Nothing could ask it whether an activity had moved.
+
+    One observation per reporting period, the same rule the observations store follows: the
+    same activity seen in four periods is FOUR ROWS, one per period, not four rows competing to
+    be current. Which row is "now" is decided by the period being asked about, never by an
+    update in place, and an earlier period's account of an activity is never rewritten by a
+    later one.
+
+    Dates are stored as the ISO strings `schedule_dates.parse_schedule_date` produced, with a
+    `_kind` beside each: 'actual' where the source marked the date actual (the trailing `A` of
+    a Primavera P6 export) and 'forecast' otherwise. AN ACTUAL DATE AND A FORECAST DATE ARE
+    DIFFERENT FACTS and the distinction is stored, not stripped.
+
+    `unparsed` holds one entry per cell that REFUSED, with the reason. A row whose current
+    finish refused has `usable_for_trend` false: it is a missing row, and a missing row is not
+    a slip of zero.
+    """
+
+    __tablename__ = "schedule_activities"
+
+    schedule_activity_id: Mapped[str] = mapped_column(ULID, primary_key=True, default=new_ulid)
+    project_id: Mapped[str] = mapped_column(
+        Uuid(), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    period: Mapped[int] = mapped_column(Integer, nullable=False)
+    document_id: Mapped[str] = mapped_column(
+        ULID, ForeignKey("documents.document_id"), nullable=False
+    )
+    activity_key: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+    baseline_start: Mapped[str] = mapped_column(Text, nullable=True)
+    baseline_start_kind: Mapped[str] = mapped_column(Text, nullable=True)
+    baseline_finish: Mapped[str] = mapped_column(Text, nullable=True)
+    baseline_finish_kind: Mapped[str] = mapped_column(Text, nullable=True)
+    current_finish: Mapped[str] = mapped_column(Text, nullable=True)
+    current_finish_kind: Mapped[str] = mapped_column(Text, nullable=True)
+    percent_complete: Mapped[float] = mapped_column(Float, nullable=True)
+    unparsed: Mapped[dict] = mapped_column(JSONType, nullable=True)
+    usable_for_trend: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    as_of: Mapped[date] = mapped_column(Date, nullable=True)
+    source_doc_type: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "current_finish_kind IS NULL OR current_finish_kind IN ('actual','forecast')",
+            name="ck_schedule_activities_finish_kind",
+        ),
+    )
+
+
 class TrainingRun(Base):
     """
     Training mode run 2: one row per training run, the deterministic state store.

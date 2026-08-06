@@ -197,9 +197,15 @@ NEEDS: dict[str, dict] = {
     # earlier periods, minimum two points. Do not regress.
     "cpiHistory": {"shape": SERIES, "min_points": 2, "servable": True},
     "spiHistory": {"shape": SERIES, "min_points": 2, "servable": True},
-    # Requested from the extraction model but not in ALL_FIELDS; never reaches signalInputs.
-    # A2.7 abstains, correctly. Declared unservable so nothing synthesises it.
-    "milestoneHistory": {"shape": SERIES, "servable": False},
+    # SERVABLE SINCE 0021. One snapshot per reporting period, assembled by
+    # `documents._milestone_history` from the `schedule_activities` store — strictly earlier
+    # periods plus the one being computed, minimum two snapshots. It was declared unservable
+    # for two real reasons, both now closed on the app side: the extraction returned the source
+    # table's own column headings (mapped in `schedule_activities.py`) and its dates parsed with
+    # nothing (`schedule_dates.py`, which REFUSES rather than guessing a year). A period that
+    # read no schedule contributes no snapshot, and fewer than two snapshots means the key is
+    # absent and Milestone Trend Analysis abstains on its own guard.
+    "milestoneHistory": {"shape": SERIES, "min_points": 2, "servable": True},
     # Change orders arrive executed; the ledger is filtered to that state by declaration.
     "changeOrderCount": {"shape": EVENT_SET, "states": {"executed"}, "servable": True},
 }
