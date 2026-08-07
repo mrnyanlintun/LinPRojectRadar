@@ -251,6 +251,61 @@
   function wireMembers() {
     $("ao-mem-load").addEventListener("click", loadMembers);
     $("ao-mem-add").addEventListener("click", addMember);
+    if ($("ao-proj-delete")) $("ao-proj-delete").addEventListener("click", openDeleteProjectModal);
+  }
+
+  /* ---------- delete project (permanent) ----------
+     Admin-only server-side (admindeleteproject, _require_admin) regardless of what this button
+     does. Typed confirmation of the project id before the control enables — the same shape as
+     admin.js's account delete — and deliberately not gated on window.confirm, which returns
+     false in a headless or dialog-suppressing browser. */
+
+  function openDeleteProjectModal() {
+    var pid = $("ao-mem-project").value.trim();
+    var errEl = $("ao-mem-error");
+    errEl.style.display = "none";
+    if (!pid) { errEl.textContent = "Choose a project first."; errEl.style.display = "block"; return; }
+    if (!window.LinUI || !LinUI.openModal) return;
+    var label = ($("ao-mem-project").selectedOptions[0] || {}).text || pid;
+    LinUI.openModal({
+      title: "Delete " + label + " permanently",
+      mount: function (body, close) {
+        body.innerHTML =
+          '<p class="login-error" style="display:block">This removes the project for every ' +
+            'PM and Observer on it, not just one person\'s access. Its documents, computed ' +
+            'results, observations, membership and uploads are removed with it. It cannot be ' +
+            'undone. If the project should be kept but set aside, use Archive instead.</p>' +
+          '<label class="login-field-label">Type <strong>' + esc(pid) +
+            '</strong> to confirm</label>' +
+          '<input type="text" id="ao-proj-delete-confirm-input" class="ig-input">' +
+          '<p id="ao-proj-delete-error" class="login-error" role="alert" style="display:none;"></p>' +
+          '<button type="button" class="btn small" id="ao-proj-delete-submit" disabled>' +
+            'Delete permanently</button>';
+
+        var input = body.querySelector("#ao-proj-delete-confirm-input");
+        var submitBtn = body.querySelector("#ao-proj-delete-submit");
+        input.addEventListener("input", function () {
+          submitBtn.disabled = input.value.trim() !== pid;
+        });
+        submitBtn.addEventListener("click", async function () {
+          var innerErr = body.querySelector("#ao-proj-delete-error");
+          innerErr.style.display = "none";
+          submitBtn.disabled = true;
+          var resp = await call("admindeleteproject", { project_id: pid });
+          if (!resp || resp.ok !== true) {
+            innerErr.textContent = (resp && resp.error) || "Could not delete this project.";
+            innerErr.style.display = "block";
+            submitBtn.disabled = false;
+            return;
+          }
+          if (window.LinUI && LinUI.toast) LinUI.toast("Deleted", true);
+          close();
+          $("ao-mem-table").innerHTML = "";
+          loadProjects();
+          if (window.LinApp && LinApp.refresh) LinApp.refresh();
+        });
+      }
+    });
   }
 
   async function loadMembers() {

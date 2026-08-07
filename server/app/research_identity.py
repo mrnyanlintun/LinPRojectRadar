@@ -54,10 +54,12 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from .facade import err, now_iso
+from .models import File, Project, ProjectSnapshot
 from .research_consent import ConsentRequired, has_active_consent
 from .research_models import (
-    Assignment, AuditEvent, Consent, Decision, Participant, ParticipantProfile, ProjectMember,
-    Transition, new_ulid,
+    Assignment, AuditEvent, ComputedResult, Consent, Decision, DocumentUpload, Observation,
+    Participant, ParticipantProfile, ProjectMember, ScheduleActivity, Transition, TrainingRun,
+    new_ulid,
 )
 
 log = logging.getLogger("opus-gubernatio-server")
@@ -838,6 +840,104 @@ def a_admindeleteparticipant(session: Session, payload: dict, secret: str, ttl: 
             "deleted": True, "removed": counts}
 
 
+def a_admindeleteproject(session: Session, payload: dict, secret: str, ttl: int) -> dict[str, Any]:
+    """
+    Permanent project deletion. Admin-only. NO CONDITIONS — a project attached to a research
+    scenario deletes exactly like any other; that is an explicit product decision, not something
+    this handler enforces or questions.
+
+    Membership is a mapping ONTO one project, not a per-person grant, so deleting removes the
+    project for every PM and Observer on it at once. Archive/restore (`w_archive`/`w_restore` in
+    writes.py) are retention: the project cannot be acted on but every row survives. This is the
+    opposite: everything keyed to the project is removed, which is exactly why archive exists as
+    a separate, reversible control rather than a softer flavour of this one.
+
+    EXPLICIT CASCADE, not left to the database, for the same reason
+    `a_admindeleteparticipant` states it: seven tables carry `ON DELETE CASCADE` toward
+    `projects` (`project_snapshots`, `files`, `document_uploads`, `computed_results`,
+    `observations`, `schedule_activities`, `project_members`) plus `training_runs` (unique per
+    project). Postgres enforces that regardless of how the DELETE is issued; SQLite — used for
+    every local verification in this codebase — does NOT enforce foreign keys or their cascade
+    actions unless `PRAGMA foreign_keys=ON` is set on the connection, which this application does
+    not do. Each table is cleared explicitly here, leaves before the root, and the response
+    reports exactly what was removed.
+
+    `documents` is deliberately NOT touched. It is content-addressed and shared across projects
+    (the same uploaded bytes can be current evidence in one project and history in another), so
+    deleting a project's `document_uploads` rows removes this project's filing of a document, not
+    the document itself.
+
+    WHAT THIS DOES TO THE RESEARCH RECORD, not prevented, only reported: `scenarios
+    .evidence_package_id` is an opaque text reference into this project's legacy id, deliberately
+    not a foreign key (see `Scenario`'s definition) — a scenario built on this project's evidence
+    keeps naming it, and the name stops resolving. `decisions.result_id` similarly names a
+    `computed_results` row by id without an FK — a decision that recorded the computed result a
+    participant actually saw now names a row that is gone. Neither is deleted or repaired here;
+    both simply stop resolving, exactly as `audit_events.participant_id` already does for a
+    deleted participant.
+
+    `audit_events` itself is untouched for the reason its own docstring gives: it must survive
+    the deletion of whatever it describes. `project_id` never lived there as a column — it is
+    always written into the row's own `event_metadata` (see `audit()`), so it was never a
+    foreign key to begin with and nothing here can break it.
+    """
+    caller, problem = _require_admin(session, payload, secret, "admindeleteproject")
+    if problem:
+        return problem
+
+    legacy_id = str(payload.get("project_id") or payload.get("id") or "").strip()
+    if not legacy_id:
+        return err("project_id is required")
+    project = session.scalar(select(Project).where(Project.legacy_id == legacy_id))
+    if project is None:
+        return err(f"project not found: {legacy_id}")
+
+    project_uuid = project.id
+    name = (project.doc or {}).get("name") or legacy_id
+
+    counts = {
+        "training_runs": session.execute(
+            delete(TrainingRun).where(TrainingRun.project_id == project_uuid)
+        ).rowcount,
+        "project_members": session.execute(
+            delete(ProjectMember).where(ProjectMember.project_id == project_uuid)
+        ).rowcount,
+        "schedule_activities": session.execute(
+            delete(ScheduleActivity).where(ScheduleActivity.project_id == project_uuid)
+        ).rowcount,
+        "observations": session.execute(
+            delete(Observation).where(Observation.project_id == project_uuid)
+        ).rowcount,
+        "computed_results": session.execute(
+            delete(ComputedResult).where(ComputedResult.project_id == project_uuid)
+        ).rowcount,
+        "document_uploads": session.execute(
+            delete(DocumentUpload).where(DocumentUpload.project_id == project_uuid)
+        ).rowcount,
+        "files": session.execute(
+            delete(File).where(File.project_id == project_uuid)
+        ).rowcount,
+        "project_snapshots": session.execute(
+            delete(ProjectSnapshot).where(ProjectSnapshot.project_id == project_uuid)
+        ).rowcount,
+    }
+
+    # Written for legacy_id, which by the next statement will no longer resolve to a project row —
+    # deliberately: this row is metadata on an audit event, never a foreign key, exactly like
+    # `participant_deleted` above.
+    audit(session, "project_deleted", participant_id=caller.participant_id,
+          project_id=legacy_id, project_name=name, removed=counts)
+
+    session.execute(delete(Project).where(Project.id == project_uuid))
+    session.commit()
+
+    session.expire_all()
+    if session.scalar(select(Project).where(Project.legacy_id == legacy_id)) is not None:
+        return err(f"Delete could not be verified for {legacy_id}: project row still readable "
+                   f"after commit")
+    return {"ok": True, "project_id": legacy_id, "name": name, "deleted": True, "removed": counts}
+
+
 def a_adminlinkgoogle(session: Session, payload: dict, secret: str, ttl: int) -> dict[str, Any]:
     """
     Set or clear the Google account an operational participant signs in with. Also how the
@@ -885,5 +985,6 @@ IDENTITY_ACTIONS: dict[str, Callable[[Session, dict, str, int], dict]] = {
     "setpassword": a_setpassword,
     "setactive": a_setactive,
     "admindeleteparticipant": a_admindeleteparticipant,
+    "admindeleteproject": a_admindeleteproject,
     "adminlinkgoogle": a_adminlinkgoogle,
 }

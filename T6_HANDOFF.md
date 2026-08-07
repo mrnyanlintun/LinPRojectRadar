@@ -4525,3 +4525,54 @@ report, not hidden.
 **Not merged to `main` by the completing session** — see the completing session's final response
 for the merge decision at the time this entry was written; check `git log origin/main` for
 whether it has since landed.
+
+## Project delete: admin-only, permanent, and archive/restore corrected to match the rule (2026-08-07)
+
+Branch `claude/project-delete-s5s90m`. Full report content is in the completing session's final
+response, not a committed report file (blocked by this session's harness policy against writing
+new report/summary `.md` files at the repo root — the same policy noted twice above).
+
+**Eight project-keyed tables cleared explicitly on delete**, read from the schema rather than
+assumed: `project_snapshots`, `files`, `document_uploads`, `computed_results`, `observations`,
+`schedule_activities`, `project_members`, `training_runs`. SQLite does not enforce the declared
+`ON DELETE CASCADE` on any of them without a PRAGMA this app never sets — verified true here too,
+not just carried over from the user-lifecycle report — so `a_admindeleteproject` (`server/app
+/research_identity.py`) clears each one itself, same shape as `a_admindeleteparticipant`.
+`documents` is untouched: content-addressed and shared, so a project delete removes this
+project's filing of a document (`document_uploads`), never the document. `scenarios
+.evidence_package_id` and `decisions.result_id` are deliberately non-FK text references, left to
+stop resolving rather than cascaded or backfilled — the same posture `audit_events
+.participant_id` already has, and `audit_events` itself carries no `project_id` column at all
+(it was always in `event_metadata`), so nothing here could break it.
+
+**Archive/restore read against the stated rule before anything was touched**, and did not match
+it: `guard_project_write` required PM for `archive`/`restore` alongside every other project
+write, so an Observer's own archive/restore call was refused server-side, contradicting "PM and
+observer can archive and restore." Fixed with a new `ARCHIVE_RESTORE_ACTIONS` set inside the
+same guard, requiring active membership of either role for exactly those two actions; every
+other project write is untouched and still PM-only. `test_writes_a1b.py`'s one dependent
+assertion was updated to the corrected refusal wording, not deleted.
+
+**The control**: `admindeleteproject`, admin-only, no condition beyond the admin check (a
+project attached to a research scenario deletes like any other, per instruction). UI is a
+"Delete…" button under the existing Project membership card in Administration
+(`assets/js/admin-ops.js`), typed-confirmation-of-the-project-id gated, never `window.confirm`.
+
+Verified: new suite `server/tools/test_project_delete.py`, 19/19 — PM and Observer can both
+archive/restore, a non-member cannot; a PM's and an Observer's own `admindeleteproject` calls are
+both refused server-side; an admin's delete is confirmed gone from the PM's and Observer's own
+read paths, not just the database; none of the eight tables has a surviving row, queried
+directly; the shared document survives; the audit event survives and names the deleted project.
+Three faults injected (a table-clearing line removed, the admin check swapped for a bare
+`resolve_caller`, the archive/restore role set emptied), each confirmed applied, each turned the
+corresponding check red — the auth-bypass fault let a PM's own call actually delete the project,
+the strongest possible signal — each reverted byte-identical, baseline green after every one.
+The admin control driven end to end in a real headless Chromium against the real FastAPI app: a
+real login, a real project created, the real Delete modal's submit button starting disabled,
+staying disabled on a wrong id, enabling only on the exact id, and the project gone from the real
+membership picker afterward.
+
+Full suite: server 44 files, 2384/2384 checks, fresh SQLite per file. `tests.html` 51/51.
+`tests_render.html` 169/170 (same pre-existing auth-gated red as `main`). No migration — nothing
+here changed the schema; production's `0020`/`0021` remain the pending migrations from the prior
+two sessions, unchanged by this task. `server/app/simulation/` untouched.

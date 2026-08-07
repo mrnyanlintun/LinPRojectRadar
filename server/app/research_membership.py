@@ -238,6 +238,13 @@ PROJECT_WRITE_ACTIONS = frozenset({
     "savehistory", "saveauditresult", "ingestcorpus", "extractsignals", "audit",
 })
 
+# Archive and restore are retention, not a change to project content or membership, and PM and
+# Observer both do them (see writes.py's w_archive/w_restore and the PM/Observer split documented
+# at this module's top). Permanent deletion is a SEPARATE, admin-only action
+# (admindeleteproject in research_identity.py) reached through IDENTITY_ACTIONS, not through this
+# guard at all — it is never in PROJECT_WRITE_ACTIONS or POST_ACTIONS.
+ARCHIVE_RESTORE_ACTIONS = frozenset({"archive", "restore"})
+
 
 # Facade write actions that may be reached WITHOUT a session token. Deliberately empty.
 #
@@ -323,6 +330,16 @@ def guard_project_write(session: Session, payload: dict, settings) -> dict | Non
     # Falling through to the membership check below is the whole change: no members means no
     # active membership, which means refused.
     member = active_membership(session, project, caller.participant_id)
+    if action in ARCHIVE_RESTORE_ACTIONS:
+        # Archive and restore are retention, available to either project role — see this
+        # module's docstring and ARCHIVE_RESTORE_ACTIONS above. Only membership is required, not
+        # a specific role.
+        if member is None:
+            audit(session, "pm_only_action_denied", participant_id=caller.participant_id,
+                  action=action, project_id=legacy_id, project_role=None)
+            session.commit()
+            return err("not authorized: only a project member may perform this action")
+        return None
     if member is None or member.project_role != ROLE_PM:
         audit(session, "pm_only_action_denied", participant_id=caller.participant_id,
               action=str(payload.get("action") or "").lower(), project_id=legacy_id,
