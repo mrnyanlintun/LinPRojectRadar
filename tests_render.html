@@ -276,6 +276,103 @@
     root.innerHTML = "";
   })();
 
+  /* 3b-ii. THE FAILED UPLOAD IS READABLE AFTER THE DIALOG IS GONE, AND RETRIES PER DOCUMENT.
+
+     Until now a failed extraction reported its reason in a dialog and the information was then
+     gone: someone uploading twenty-seven documents could not afterwards see which three did not
+     make it. The server now records the attempt when it is made, and this is the surface that
+     draws it. Both of these would fail SILENTLY — a list that renders nothing looks exactly
+     like a period in which nothing failed. */
+  (function () {
+    const host = document.getElementById("harness-dom");
+    host.insertAdjacentHTML("beforeend",
+      '<div id="ws-upload-failed"></div><div id="ws-schedule-display"></div>');
+    const REASON = "the model ran out of output space before it finished answering: the "
+      + "model's answer was cut off while writing a field name, after 'activities_planned'";
+    LinWorkspace.renderFailedUploads([
+      { filename: "schedule-u01.docx", error: REASON },
+      { filename: "pay-app-07.pdf", error: "earned_value is not a number: 'TBD'" }
+    ]);
+    const failedEl = document.getElementById("ws-upload-failed");
+    assert("upload failures: both failed documents are drawn after the dialog is gone",
+      2, failedEl.querySelectorAll(".ws-upload-failed-row").length);
+    assert("upload failures: the reason shown is the words of the ACTUAL failure",
+      true, failedEl.querySelector(".ws-upload-failed-reason").textContent.indexOf(
+        "cut off while writing a field name") >= 0);
+    assert("upload failures: and it names the field the response stopped at",
+      true, failedEl.textContent.indexOf("activities_planned") >= 0);
+    assert("upload failures: retry is PER DOCUMENT, one control per row, not one per batch",
+      2, failedEl.querySelectorAll(".ws-retry-input").length);
+    assert("upload failures: nothing is drawn when nothing failed",
+      "", (LinWorkspace.renderFailedUploads([]),
+           document.getElementById("ws-upload-failed").innerHTML));
+
+    /* 3b-iii. THE SCHEDULE IS DRAWN TO A STATED RULE AND IS NEVER DRAWN ROW BY ROW.
+       A real construction schedule carries hundreds or thousands of activities. Drawing all of
+       them is the same unbounded failure as asking a model to retype them, so the server sends
+       a bounded selection, the totals and the rule, and this asserts all three reach the page. */
+    LinWorkspace.renderScheduleDisplay({
+      total: 500, not_shown: 486, unusable: 3,
+      rule: "Shown: every activity whose forecast finish moved later since the previous period.",
+      shown: [
+        { activity_key: "ACT-0004", description: "Site mobilization",
+          current_finish: "2026-03-09", current_finish_kind: "forecast", slip_days: 12,
+          shown_because: ["moved later since the previous period"] },
+        { activity_key: "ACT-0011", description: "Selective demolition",
+          current_finish: "2026-02-23", current_finish_kind: "actual", slip_days: null,
+          shown_because: ["later than its baseline finish"] }
+      ]
+    });
+    const schedEl = document.getElementById("ws-schedule-display");
+    assert("schedule display: only the selected rows are drawn, not all 500",
+      2, schedEl.querySelectorAll(".ws-schedule-row").length);
+    assert("schedule display: it says how many of the total are shown",
+      true, document.getElementById("ws-schedule-head").textContent.indexOf("2 of 500") >= 0);
+    assert("schedule display: and how many are stored and not drawn",
+      true, document.getElementById("ws-schedule-head").textContent.indexOf(
+        "486 stored and not drawn") >= 0);
+    assert("schedule display: the rule that decided is on the page, in words",
+      true, document.getElementById("ws-schedule-rule").textContent.indexOf(
+        "moved later since the previous period") >= 0);
+    assert("schedule display: an actual finish is marked as one, not shown as a forecast",
+      true, schedEl.textContent.indexOf("2026-02-23 (actual)") >= 0);
+    LinWorkspace.renderScheduleDisplay(null);
+    assert("schedule display: a period that read no schedule draws nothing",
+      "", document.getElementById("ws-schedule-display").innerHTML);
+    failedEl.remove();
+    document.getElementById("ws-schedule-display").remove();
+  })();
+
+  /* 3b-iv. PROJECT DETAIL CAN ASK FOR THE ANALYSIS.
+     A project could hold every document, extracted, and still read "Awaiting analysis", because
+     the only control that started a computation was the Workspace per-period button and this
+     page had none. */
+  (function () {
+    const p = fresh("Yellow");
+    const root = document.getElementById("detail-root");
+    root.innerHTML = "";
+    try { window.LinDetail.render(p.id); } catch (e) {}
+    const btn = root.querySelector("[data-compute-all]");
+    assert("project detail: the all-periods compute control is on the page",
+      true, !!btn);
+    assert("project detail: and it names the project it would compute",
+      p.id, btn ? btn.getAttribute("data-compute-all") : "(no button)");
+    assert("project detail: it is a real button, not a disabled placeholder",
+      false, !!(btn && btn.disabled));
+    // window.confirm returns false in this browser and in any browser suppressing dialogs. An
+    // action behind it is an action nobody can take, and the platform has lost one that way
+    // already, so nothing on this path may consult it.
+    const realConfirm = window.confirm;
+    let consulted = false;
+    window.confirm = function () { consulted = true; return false; };
+    if (btn) btn.click();
+    window.confirm = realConfirm;
+    assert("project detail: the control is NOT gated on window.confirm",
+      false, consulted);
+    try { if (window.LinDetail.teardown) LinDetail.teardown(); } catch (e) {}
+    root.innerHTML = "";
+  })();
+
   // 3c. The decision card must not contradict the badge beside it.
   //     Live on 2026-08-02: a Red badge above an action-plan table reading "All categories
   //     Green / Routine monitoring". The badge reads the STORED project_status; the plan read

@@ -348,7 +348,11 @@ var LinFiles = (function () {
     }
     (resp.files || []).forEach(function (f) {
       if (f.status === "failed") {
-        setRowState(f.filename, "Extraction failed. See the upload panel for the reason.", true);
+        // THE REASON IS HERE, so it is said here. This used to point at "the upload panel",
+        // which is on a different tab and which had already been overwritten by the next
+        // status refresh by the time anyone looked: the sentence sent people to a place the
+        // information was not. The words are the ones the refusing code wrote.
+        setRowState(f.filename, f.error || "Extraction failed and no reason was recorded.", true);
         return;
       }
       var where = f.folder_path || "";

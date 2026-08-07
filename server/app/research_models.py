@@ -766,6 +766,55 @@ class ScheduleActivity(Base):
     )
 
 
+class UploadAttempt(Base):
+    """
+    0022. What was uploaded, and what happened to it. Recorded at upload time.
+
+    THE CONSTRAINT THAT MAKES THIS NECESSARY. Extraction refuses a whole document rather than
+    storing part of it, so a failure leaves no `documents` row and no `document_uploads` row.
+    The document is not marked bad, it is ABSENT, and no query over what is stored can recover
+    which files did not make it. "What failed" therefore has to be written down when the attempt
+    is made; it cannot be derived afterwards.
+
+    APPEND ONLY. A retry writes a new row and the failed one stays, because a document that
+    failed twice and one that failed once are different facts about that document.
+
+    `error` carries the words of the actual failure verbatim, never a category. The thing that
+    refused the document wrote a sentence naming what it saw; replacing it with "extraction
+    failed" is exactly the loss this record exists to stop.
+    """
+
+    __tablename__ = "upload_attempts"
+
+    upload_attempt_id: Mapped[str] = mapped_column(ULID, primary_key=True, default=new_ulid)
+    project_id: Mapped[str] = mapped_column(
+        Uuid(), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    period: Mapped[int] = mapped_column(Integer, nullable=False)
+    batch_id: Mapped[str] = mapped_column(ULID, nullable=False)
+    filename: Mapped[str] = mapped_column(Text, nullable=False)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=True)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    doc_type: Mapped[str] = mapped_column(Text, nullable=True)
+    error: Mapped[str] = mapped_column(Text, nullable=True)
+    attempted_by: Mapped[str] = mapped_column(Text, nullable=True)
+    attempted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('extracted','matched','filed','failed')",
+            name="ck_upload_attempts_status",
+        ),
+        CheckConstraint(
+            "status <> 'failed' OR error IS NOT NULL",
+            name="ck_upload_attempts_failure_has_reason",
+        ),
+    )
+
+
 class TrainingRun(Base):
     """
     Training mode run 2: one row per training run, the deterministic state store.

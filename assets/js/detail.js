@@ -945,7 +945,18 @@
          </div>
          <div class="detail-head-actions">
            <button class="btn small primary detail-upload" data-upload="${esc(p.id)}">Upload documents</button>
+           ${/* Part 5. Computation is a separate, manual action, and until now the only control
+                that started it was the Workspace panel's per-period button. This page could
+                upload and extract every document a project had and still read "Awaiting
+                analysis", because nothing here could ask for the analysis. This asks for every
+                period the project holds documents for, oldest first.
+
+                NOT GATED ON window.confirm. A browser that suppresses dialogs returns false
+                from it, and the platform has already lost one action that way. The button
+                reports what it did instead of asking permission first. */""}
+           <button class="btn small detail-compute-all" data-compute-all="${esc(p.id)}">Generate signals for every period</button>
            <button class="btn small detail-reset" data-reset="${esc(p.id)}">Reset signals</button>
+           <span class="detail-compute-all-msg kn-sub" aria-live="polite"></span>
            <span class="detail-reset-msg kn-sub" aria-live="polite"></span>
          </div>
        </div>
@@ -1915,6 +1926,46 @@
     root.querySelectorAll("[data-upload]").forEach((b) =>
       b.addEventListener("click", () => {
         if (window.LinIngest && LinIngest.openUploadModal) LinIngest.openUploadModal(b.dataset.upload);
+      }));
+    wireComputeAll(root);
+  }
+
+  /* Generate signals for every period the project holds documents for.
+     ------------------------------------------------------------------
+     The periods are computed SERVER-SIDE, in order, oldest first, and each sees only itself
+     and earlier periods. Nothing about the computation happens in the browser: this control
+     asks, reads the answer and reports it.
+
+     The server refuses this for a research account whether or not this button is drawn, so
+     hiding it is a courtesy and not the enforcement. */
+  function wireComputeAll(root) {
+    root.querySelectorAll("[data-compute-all]").forEach((b) =>
+      b.addEventListener("click", async () => {
+        const msg = root.querySelector(".detail-compute-all-msg");
+        if (!window.LinStore || !LinStore.postWithTimeout) {
+          if (msg) msg.textContent = "The server is not reachable from this page.";
+          return;
+        }
+        b.disabled = true;
+        if (msg) msg.textContent = "Generating signals for every period…";
+        let resp;
+        try {
+          resp = await LinStore.postWithTimeout({ action: "projectcomputeall", id: b.dataset.computeAll });
+        } catch (e) {
+          resp = { ok: false, error: (e && e.message) || "the request did not complete" };
+        }
+        b.disabled = false;
+        if (!resp || resp.ok !== true) {
+          if (msg) msg.textContent = (resp && resp.error) || "Could not generate signals.";
+          return;
+        }
+        const order = (resp.periods || []).join(", ");
+        if (msg) {
+          msg.textContent = resp.computed + " period(s) computed" +
+            (resp.skipped ? ", " + resp.skipped + " already had a result and were left untouched" : "") +
+            (order ? " (periods computed in order: " + order + ")" : "") + ".";
+        }
+        if (window.LinApp && LinApp.refresh) LinApp.refresh();
       }));
   }
 
