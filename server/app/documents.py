@@ -76,9 +76,10 @@ from .research_membership import (
 )
 from .research_models import (
     ComputedResult, Decision, Document, DocumentUpload, Observation, ScheduleActivity,
-    new_ulid,
+    UploadAttempt, new_ulid,
 )
-from .schedule_activities import read_activity_table
+from .schedule_activities import read_activity_table, select_for_display
+from .schedule_table import activity_rows_from_document, activity_table_from_document
 
 log = logging.getLogger("opus-gubernatio-server")
 
@@ -381,7 +382,16 @@ def _persist_schedule_activities(session: Session, project: Project, period: int
         ex = d.extraction or {}
         if not isinstance(ex, dict):
             continue
-        activities = read_activity_table(ex.get("milestones_json"))
+        # THE READER TAKES THE ROWS. The document's own bytes are stored, so the activity table
+        # is re-read from the source rather than from anything a model retyped: a hundred rows
+        # and a thousand rows cost the same here, and no row can be silently mistyped on the way.
+        # `milestones_json` remains as the fallback for a document this reader cannot open (a
+        # PDF, whose tables are not available on this side of the model boundary) and for any
+        # extraction stored before the reader existed.
+        activities = activity_rows_from_document(
+            d.content or b"", d.mime_type or "", d.filename or "")
+        if not activities:
+            activities = read_activity_table(ex.get("milestones_json"))
         if not activities:
             continue
         doc_type = d.doc_type or UNMAPPED
@@ -462,6 +472,52 @@ def _schedule_snapshot(session: Session, project: Project, period: int) -> dict 
             for r in chosen if not r.usable_for_trend
         ],
     }
+
+
+def _schedule_display(session: Session, project: Project, period: int) -> dict | None:
+    """
+    The period's schedule, reduced to the rows worth drawing. Reads the per-activity store.
+
+    NOT EVERY ROW IS DRAWN, and the rule that decides is `schedule_activities.DISPLAY_RULE`,
+    stated in the response beside the selection so a reader can see what was left out and why
+    rather than assuming a short list means a short schedule. `total` and `not_shown` are
+    returned for the same reason.
+
+    The previous period's rows are read only to decide what MOVED, and only from periods
+    strictly earlier than this one, which is the same bound `_milestone_history` keeps.
+    """
+    superseded = _superseded_document_ids(session, project, period)
+
+    def rows_for(p: int) -> list[dict]:
+        return [
+            {"activity_key": r.activity_key, "description": r.description,
+             "baseline_finish": r.baseline_finish, "current_finish": r.current_finish,
+             "current_finish_kind": r.current_finish_kind,
+             "percent_complete": r.percent_complete,
+             "usable_for_trend": r.usable_for_trend}
+            for r in session.scalars(
+                select(ScheduleActivity).where(ScheduleActivity.project_id == project.id,
+                                               ScheduleActivity.period == p)
+            ).all()
+            if r.document_id not in superseded or p != period
+        ]
+
+    current = rows_for(period)
+    if not current:
+        return None
+    earlier = sorted({
+        int(p) for p in session.scalars(
+            select(ScheduleActivity.period).where(
+                ScheduleActivity.project_id == project.id,
+                ScheduleActivity.period < period,
+            )
+        ).all()
+    })
+    previous = rows_for(earlier[-1]) if earlier else []
+    out = select_for_display(current, previous)
+    out["period"] = period
+    out["compared_with_period"] = earlier[-1] if earlier else None
+    return out
 
 
 def _milestone_history(session: Session, project: Project,
@@ -1108,6 +1164,15 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
         if not r["ok"]:
             continue
         d = next(x for x in decoded if x["sha256"] == r["sha256"])
+        # A BOUNDED RECORD OF THE TABLE, not the table. It names where the table sat, what its
+        # columns were taken to mean and how many rows it had, in a few hundred bytes that do
+        # not grow with the row count. The rows themselves go to `schedule_activities`, one
+        # database row each, which is the only shape a schedule of unknown size can be stored
+        # in without a JSON field growing without limit and without being queryable.
+        extraction = dict(r["extraction"] or {})
+        table = activity_table_from_document(d["raw"], d["mime_type"] or "", d["filename"])
+        if table is not None:
+            extraction["schedule_table"] = table.descriptor("reader")
         session.add(Document(
             sha256=r["sha256"],
             filename=d["filename"],
@@ -1115,7 +1180,7 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
             size_bytes=len(d["raw"]),
             content=d["raw"],
             doc_type=r["doc_type"],
-            extraction=r["extraction"],
+            extraction=extraction,
             extraction_model=model_id,
             # 0016. The classifier's own confidence, which the platform used to discard. None
             # when the model's claim was not what decided the type; see extraction_client.
@@ -1238,6 +1303,23 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
             "classification_confidence": doc.classification_confidence,
             "note": note,
         })
+
+    # 0022. THE DURABLE RECORD OF THIS BATCH, written for every file whether it succeeded or
+    # not, and written HERE because it cannot be derived later: a document that failed
+    # extraction leaves no row anywhere else, so from storage's point of view it was never
+    # offered. The error is stored in the words the refusing code wrote, verbatim.
+    batch_id = new_ulid()
+    for f, d in zip(files, decoded):
+        session.add(UploadAttempt(
+            project_id=project.id, period=period, batch_id=batch_id,
+            filename=d["filename"], sha256=d["sha256"], size_bytes=len(d["raw"]),
+            status=f["status"], doc_type=f.get("doc_type"),
+            # The constraint refuses a failure with no reason, so a failure that somehow
+            # arrived without one says that, rather than being stored as a silent NULL.
+            error=((f.get("error") or "the extractor reported no reason for this failure")
+                   if f["status"] == "failed" else None),
+            attempted_by=caller.participant_id,
+        ))
 
     # 0014. Project this period's stored extractions into the observation store at the moment
     # the evidence arrives, so the store is current before any compute and the upload-status
@@ -1521,6 +1603,38 @@ def a_projectuploadstatus(session: Session, payload: dict, secret: str,
     amendments = sorted(amendments_by_doc.values(),
                         key=lambda a: (a["period"], a["as_of"] or "", a["document_id"]))
 
+    # 0022. WHAT WAS ATTEMPTED, INCLUDING WHAT FAILED. Read from `upload_attempts` and not
+    # derived from `documents`, because a failed extraction leaves no document row: the files
+    # that did not make it are exactly the ones no other query on this surface can see. Newest
+    # first, so the most recent account of a filename is the one read first.
+    attempt_rows = session.scalars(
+        select(UploadAttempt).where(UploadAttempt.project_id == project.id,
+                                    UploadAttempt.period == period)
+    ).all()
+    # ORDERED BY THE ROW ID, NOT ONLY BY THE TIMESTAMP. `attempted_at` comes from the database
+    # clock and two attempts a second apart can carry the same value, which would leave "which
+    # attempt was the latest" decided by whatever the sort fell back on. The id is a ULID and is
+    # monotonic by construction, so it settles the tie by the order the rows were actually
+    # written. A retry that succeeded must not be able to lose to the failure it replaced.
+    attempts = [
+        {"batch_id": a.batch_id, "filename": a.filename, "sha256": a.sha256,
+         "status": a.status, "doc_type": a.doc_type, "error": a.error,
+         "size_bytes": a.size_bytes,
+         "attempted_at": a.attempted_at.isoformat() if a.attempted_at else None}
+        for a in sorted(attempt_rows,
+                        key=lambda r: (r.attempted_at.isoformat() if r.attempted_at else "",
+                                       r.upload_attempt_id),
+                        reverse=True)
+    ]
+    # A filename is OUTSTANDING when its most recent attempt failed. An earlier failure that a
+    # later attempt fixed is not outstanding, and both attempts stay in the record: the history
+    # of a document is evidence about that document.
+    latest_by_name: dict[str, dict] = {}
+    for a in attempts:
+        latest_by_name.setdefault(a["filename"], a)
+    failed_outstanding = [a for a in latest_by_name.values() if a["status"] == "failed"]
+    failed_outstanding.sort(key=lambda a: a["filename"])
+
     audit(session, "project_read", participant_id=caller.participant_id,
           action="projectuploadstatus", project_id=project.legacy_id,
           project_role=member.project_role)
@@ -1530,6 +1644,14 @@ def a_projectuploadstatus(session: Session, payload: dict, secret: str,
         "project_id": project.legacy_id,
         "period": period,
         "documents": present,
+        # 0022. Every file this period has been offered, and what happened to it. This is the
+        # only place a failure is readable after the dialog that first reported it has gone.
+        "attempts": attempts,
+        "failed": failed_outstanding,
+        # The period's schedule, reduced to the rows worth drawing, with the rule that decided
+        # and the count of what was left in the store and not drawn. None where this period
+        # read no schedule at all.
+        "schedule": _schedule_display(session, project, period),
         # Replaced versions, kept readable and kept out of computation. Empty on every period
         # where nothing has been superseded, which is the ordinary case.
         "superseded": superseded,
@@ -1604,6 +1726,106 @@ def a_projectcompute(session: Session, payload: dict, secret: str, ttl: int) -> 
         "documents": len(outcome["documents"]),
         "abstained": outcome["run"].get("abstained"),
         "unported": outcome["run"].get("unported"),
+        "server_time": now_iso(),
+    }
+
+
+def a_projectcomputeall(session: Session, payload: dict, secret: str,
+                        ttl: int) -> dict[str, Any]:
+    """
+    PM only, operational accounts only. Generates signals for EVERY period the project holds
+    documents for, oldest first.
+
+    WHY THIS EXISTS. Computation is a separate, manual action, and until now it was reachable
+    from exactly one control: the Workspace panel's per-period button, which computes period 1
+    and nothing else. The project detail upload panel and the Files tab both extract
+    successfully and neither offers a compute, which is why a project could read "Awaiting
+    analysis" with every one of its documents uploaded and extracted. Nothing was broken; there
+    was simply no way to ask.
+
+    PERIODS COMPUTE IN ORDER, AND EACH SEES ONLY ITSELF AND EARLIER PERIODS. This is the
+    operation that breaks the byte-identical invariant if done carelessly, and it is held in two
+    ways rather than one. The loop runs ascending, so a period is never computed while a later
+    one is being written. And the bound is not the loop's to keep: `_earlier_live_results`,
+    `_period_history` and `_milestone_history` each select on `period <= the period being
+    computed`, so a period computed last would still see only itself and its predecessors. The
+    ordering is what makes the results sensible to read; the selection bound is what makes the
+    invariant true.
+
+    AN ALREADY-COMPUTED PERIOD IS LEFT ALONE. `projectcompute` refuses to overwrite a live
+    result and points at `adminrecompute` because replacing a result is an append-only, audited,
+    reason-bearing operation. Doing it in bulk here would be that operation without the reason
+    and without the audit, so a period that already has a result is skipped and reported as
+    skipped.
+
+    OPERATIONAL ACCOUNTS ONLY, REFUSED HERE AND NOT ONLY IN THE UI. The frozen research package
+    depends on WHEN computation happened relative to a participant's judgment; a control that
+    computes every period at once is not a thing a participant may do to their own study data.
+    `features.RESEARCH_FORBIDDEN_ACTIONS` also carries this action, so a research caller is
+    refused at dispatch; this check is what makes the refusal true when it is called directly.
+    """
+    caller, problem = resolve_caller(session, payload, secret)
+    if problem:
+        return problem
+    if caller.participant.account_type == "research":
+        audit(session, "compute_all_denied_research", participant_id=caller.participant_id,
+              action="projectcomputeall", account_type=caller.participant.account_type)
+        session.commit()
+        return err(
+            "not available for this account: generating signals for every period at once is an "
+            "operational feature. In the study, each period is computed on its own."
+        )
+    project, member, problem = require_member(session, caller, payload, "projectcomputeall")
+    if problem:
+        return problem
+    problem = _refuse_unless_pm(session, caller, member, project, "projectcomputeall")
+    if problem:
+        return problem
+
+    periods = sorted(session.scalars(
+        select(DocumentUpload.period).where(DocumentUpload.project_id == project.id).distinct()
+    ).all())
+    if not periods:
+        return err("this project holds no documents, so there is nothing to compute")
+
+    outcomes: list[dict] = []
+    for period in periods:
+        existing = _live_result(session, project, period)
+        if existing is not None:
+            outcomes.append({"period": period, "computed": False, "skipped": True,
+                             "result_id": existing.result_id,
+                             "project_status": existing.project_status,
+                             "note": "a computed result already exists for this period and was "
+                                     "left untouched"})
+            continue
+        outcome = _compute_and_store(session, project, period)
+        row = outcome["row"]
+        audit(session, "period_computed", participant_id=caller.participant_id,
+              project_id=project.legacy_id, period=period, result_id=row.result_id,
+              simulation_version=row.simulation_version, seed=row.seed,
+              period_cutoff=str(row.period_cutoff), documents=len(outcome["documents"]),
+              via="projectcomputeall")
+        outcomes.append({"period": period, "computed": True, "skipped": False,
+                         "result_id": row.result_id,
+                         "project_status": row.project_status,
+                         "period_cutoff": str(row.period_cutoff),
+                         "documents": len(outcome["documents"]),
+                         "abstained": outcome["run"].get("abstained")})
+
+    audit(session, "project_computed_all", participant_id=caller.participant_id,
+          project_id=project.legacy_id, periods=len(periods),
+          computed=sum(1 for o in outcomes if o["computed"]),
+          skipped=sum(1 for o in outcomes if o["skipped"]))
+    session.commit()
+    return {
+        "ok": True,
+        "project_id": project.legacy_id,
+        # Ascending, and stated in the response so a reader can see the order the periods were
+        # computed in rather than taking it on trust.
+        "periods": periods,
+        "results": outcomes,
+        "computed": sum(1 for o in outcomes if o["computed"]),
+        "skipped": sum(1 for o in outcomes if o["skipped"]),
         "server_time": now_iso(),
     }
 
@@ -1735,6 +1957,8 @@ DOCUMENT_ACTIONS: dict[str, Callable[[Session, dict, str, int], dict]] = {
     "extractsignals": a_extractsignals,
     "projectuploadstatus": a_projectuploadstatus,
     "projectcompute": a_projectcompute,
+    # Part 5. Every period the project holds documents for, computed in order, oldest first.
+    "projectcomputeall": a_projectcomputeall,
     "projectresults": a_projectresults,
     "adminrecompute": a_adminrecompute,
 }

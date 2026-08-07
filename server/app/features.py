@@ -151,6 +151,11 @@ GATED_ACTIONS: dict[str, str] = {
 # moment they do, the default-off protection is gone. Listed here the same way `themeset` and
 # `projectcreate` are, so the refusal holds regardless of what is stored.
 RESEARCH_FORBIDDEN_ACTIONS: frozenset[str] = frozenset({
+    # Generating signals for every period at once. The frozen research package depends on WHEN
+    # computation happened relative to a participant's judgment, so a participant may not
+    # compute their whole study project in one action. `documents.a_projectcomputeall` refuses
+    # it again on its own; this entry is the dispatch-level refusal and neither is the only one.
+    "projectcomputeall",
     "projectcreate",
     "create",
     "themeset",
@@ -167,6 +172,10 @@ RESEARCH_FORBIDDEN_ACTIONS: frozenset[str] = frozenset({
 # for yet, so adding to the set above without adding here degrades to a true-but-vague message
 # rather than to a false one about projects.
 _RESEARCH_REFUSALS: dict[str | None, tuple[str, str]] = {
+    "projectcomputeall": ("compute_all_denied_research",
+                          "not available for this account: generating signals for every period "
+                          "at once is an operational feature. In the study, each period is "
+                          "computed on its own."),
     "projectcreate": ("project_creation_denied",
                       "not available: projects are created by the researcher for this study. "
                       "Your assigned projects appear in your portfolio."),

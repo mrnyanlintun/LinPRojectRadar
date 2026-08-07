@@ -136,6 +136,23 @@ def _row_cells(tr: ET.Element) -> list[str]:
     return cells
 
 
+def _table_grid(tbl: ET.Element) -> list[list[str]]:
+    """
+    One table as a rectangular grid of cell strings, or [] when it holds nothing.
+
+    Direct children only, for the reason `_table_text` gives: a nested table's rows belong to
+    the nested table and hoisting them into the outer one gives the outer table the wrong
+    column count. Every row is padded to the widest row so a column index means the same thing
+    in every row, which is what lets a reader take a column by position.
+    """
+    rows = [_row_cells(tr) for tr in tbl.findall(f"{W}tr")]
+    rows = [r for r in rows if any(c.strip() for c in r)]
+    if not rows:
+        return []
+    width = max(len(r) for r in rows)
+    return [[c.strip() for c in r] + [""] * (width - len(r)) for r in rows]
+
+
 def _table_text(tbl: ET.Element) -> str:
     """
     Render one table as a pipe-delimited grid with its header row marked.
@@ -168,14 +185,7 @@ def _table_text(tbl: ET.Element) -> str:
     return "\n".join(out)
 
 
-def docx_to_text(raw: bytes) -> str:
-    """
-    The document as text, with tables rendered as grids, in document order.
-
-    Body order is preserved by walking the direct children of `w:body` rather than collecting all
-    paragraphs and then all tables: a figure's meaning often depends on the heading immediately
-    above its table, and a reordered document puts that heading somewhere else.
-    """
+def _body(raw: bytes) -> ET.Element:
     try:
         with zipfile.ZipFile(BytesIO(raw)) as zf:
             xml = zf.read(_MAIN_PART)
@@ -192,21 +202,60 @@ def docx_to_text(raw: bytes) -> str:
     body = root.find(f"{W}body")
     if body is None:
         raise DocxReadError("word/document.xml has no body")
+    return body
 
+
+def docx_tables(raw: bytes) -> list[list[list[str]]]:
+    """
+    Every table in the document, in body order, as rectangular grids of cell strings.
+
+    THIS IS THE ROW SOURCE. An activity table is already structured as rows and columns in the
+    file; a reader that takes those rows costs the same whether the table has twenty rows or
+    two thousand, whereas asking a model to retype them costs output tokens in proportion to the
+    row count and stops working entirely somewhere above a few dozen. The index of a table in
+    this list is its identity, and it is stable because it is body order.
+    """
+    return [g for g in (_table_grid(t) for t in _body(raw).findall(f"{W}tbl")) if g]
+
+
+def docx_to_text(raw: bytes, elide_tables: dict[int, str] | None = None) -> str:
+    """
+    The document as text, with tables rendered as grids, in document order.
+
+    Body order is preserved by walking the direct children of `w:body` rather than collecting all
+    paragraphs and then all tables: a figure's meaning often depends on the heading immediately
+    above its table, and a reordered document puts that heading somewhere else.
+
+    `elide_tables` maps a table's body-order index to a note that REPLACES its rows. It exists
+    for one purpose: the activity table this reader takes the rows from directly does not also
+    need to be sent to the model, and sending it is what made the prompt grow with the row
+    count. The table's header row is still rendered by the caller inside the note, so the model
+    can still see that the document HAS a schedule; what is removed is the unbounded part.
+    Never silent: a table that was elided says so where it stood.
+    """
+    elide = elide_tables or {}
     blocks: list[str] = []
-    for child in body:
+    table_index = -1
+    for child in _body(raw):
         if child.tag == f"{W}p":
             text = _para_text(child).strip()
             if text:
                 blocks.append(text)
         elif child.tag == f"{W}tbl":
+            grid = _table_grid(child)
+            if not grid:
+                continue
+            table_index += 1
+            if table_index in elide:
+                blocks.append(elide[table_index])
+                continue
             table = _table_text(child)
             if table:
                 blocks.append(table)
     return "\n\n".join(blocks)
 
 
-def docx_content_block(raw: bytes) -> dict:
+def docx_content_block(raw: bytes, elide_tables: dict[int, str] | None = None) -> dict:
     """
     The `text` content block for a .docx, bounded and labelled.
 
@@ -215,7 +264,7 @@ def docx_content_block(raw: bytes) -> dict:
     stop, and falling back to it would restore the defect precisely when the reader has just said
     the file is unreadable.
     """
-    text = docx_to_text(raw)
+    text = docx_to_text(raw, elide_tables)
     if not text.strip():
         raise DocxReadError("the .docx contains no readable text or tables")
     if len(text) > DOCX_TEXT_LIMIT:

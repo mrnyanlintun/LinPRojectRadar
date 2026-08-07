@@ -672,6 +672,13 @@
           </div>
           <div id="ws-upload-results"></div>
           <p id="ws-upload-error" class="ws-error" style="display:none;"></p>
+          <!-- The durable record of what did not make it. A failed extraction leaves no
+               document row, so this is read from the upload attempt store and not derived
+               from what is stored: it survives the dialog, the page reload and the session,
+               and each row retries on its own. -->
+          <div id="ws-upload-failed" style="margin-top:10px;"></div>
+          <!-- The period's schedule, reduced to the rows worth drawing. Never every row. -->
+          <div id="ws-schedule-display" style="margin-top:10px;"></div>
           <button id="ws-compute-btn" class="ws-btn ws-btn-secondary" style="margin-top:10px;">Run analysis for this period</button>
           <p id="ws-compute-note" class="ws-note"></p>
           <div id="ws-upload-period-docs" style="margin-top:6px;"></div>

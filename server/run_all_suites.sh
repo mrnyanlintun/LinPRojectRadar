@@ -7,6 +7,10 @@ set -uo pipefail
 cd "$(dirname "$0")"
 
 VENV_PY=".venv/bin/python"
+# Fall back to the interpreter on PATH when there is no project virtualenv. A checkout that
+# already has the pinned dependencies installed system-wide must still be able to run the
+# suites; without this the loop silently ran every file with a non-existent interpreter.
+[ -x "$VENV_PY" ] || VENV_PY="$(command -v python3)"
 TMPDIR="$(mktemp -d)"
 TEMPLATE_DB="$TMPDIR/template.db"
 
@@ -27,7 +31,8 @@ for f in tools/test_*.py; do
   SUITE_COUNT=$((SUITE_COUNT+1))
   DB="$TMPDIR/$(basename "$f").db"
   cp "$TEMPLATE_DB" "$DB"
-  OUT=$(cd tools && DATABASE_URL="sqlite:///$DB" SESSION_SECRET="$SESSION_SECRET" ../"$VENV_PY" "$(basename "$f")" 2>&1)
+  case "$VENV_PY" in /*) PY="$VENV_PY" ;; *) PY="../$VENV_PY" ;; esac
+  OUT=$(cd tools && DATABASE_URL="sqlite:///$DB" SESSION_SECRET="$SESSION_SECRET" PYTHONIOENCODING=utf-8 "$PY" "$(basename "$f")" 2>&1)
   RESULT_LINE=$(echo "$OUT" | grep -E "RESULT:|^[0-9]+/[0-9]+" | tail -1)
   if echo "$OUT" | grep -qE "RESULT:.*[0-9]+/[0-9]+"; then
     NUMS=$(echo "$OUT" | grep -oE "RESULT:.*" | tail -1 | grep -oE "[0-9]+/[0-9]+" | tail -1)

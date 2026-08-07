@@ -81,6 +81,98 @@ class ExtractionError(RuntimeError):
     """Raised when a document could not be extracted. Never swallowed into a null result."""
 
 
+class TruncatedResponseError(ExtractionError):
+    """
+    The model's answer was CUT OFF, not malformed. These are different failures and the
+    difference is actionable.
+
+    A real schedule document failed three times with `model response was not JSON: '{\\n
+    "planned_percent_complete": null, ... "activities_planned": 29,\\n "activities_constrain'`.
+    That response is valid JSON, truncated mid-key. "Not JSON" describes a model that answered
+    with prose or with something else entirely, and the honest response to that is to look at
+    what it said; the honest response to a cut-off answer is to ask for less, because retrying
+    truncates in exactly the same place every time. Three retries were spent on the wrong one.
+    """
+
+
+def describe_json_truncation(text: str) -> str | None:
+    """
+    `None` if `text` is a complete JSON value; otherwise a sentence NAMING WHERE IT STOPPED.
+
+    Scans once, tracking string state, escapes and bracket depth, and remembering the most
+    recent object key. Unterminated structure at the end means the text ran out before the value
+    did, which is truncation and not a syntax error.
+
+    Reporting the key matters more than reporting the offset. "It stopped while reading
+    activities_constrained" tells a reader which field ran the response out of budget; "invalid
+    JSON at character 412" tells them nothing they can act on.
+    """
+    depth = 0
+    in_string = False
+    escaped = False
+    current: list[str] = []
+    last_string: str | None = None
+    last_key: str | None = None
+    expecting_key = False
+    saw_value = False
+    for ch in text or "":
+        if in_string:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_string = False
+                last_string = "".join(current)
+                if expecting_key:
+                    last_key = last_string
+            else:
+                current.append(ch)
+            continue
+        if ch == '"':
+            in_string, current = True, []
+            continue
+        if ch in "{[":
+            depth += 1
+            expecting_key = ch == "{"
+            saw_value = True
+            continue
+        if ch in "}]":
+            depth -= 1
+            expecting_key = False
+            continue
+        if ch == ":":
+            expecting_key = False
+            continue
+        if ch == ",":
+            expecting_key = depth > 0
+            continue
+        if not ch.isspace():
+            saw_value = True
+    if not saw_value:
+        return None
+    if in_string:
+        partial = "".join(current)
+        if expecting_key:
+            return (
+                "the model's answer was cut off while writing a field name, after "
+                f"{last_key!r}; the name it had reached was {partial!r}"
+                if last_key else
+                f"the model's answer was cut off while writing a field name, {partial!r}"
+            )
+        target = last_key or last_string
+        return (
+            f"the model's answer was cut off while writing the value of {target!r}"
+            if target else "the model's answer was cut off inside a quoted value"
+        )
+    if depth > 0:
+        return (
+            f"the model's answer was cut off after the field {last_key!r}"
+            if last_key else "the model's answer was cut off before the object was closed"
+        )
+    return None
+
+
 # --------------------------------------------------------------------------- prompt
 
 
@@ -187,6 +279,15 @@ def parse_json_response(raw: str) -> dict:
     try:
         parsed = json.loads(text)
     except json.JSONDecodeError:
+        # TRUNCATION IS CHECKED FIRST, and it is checked before the salvage attempt below.
+        # A cut-off response is not malformed JSON and calling it that sent three retries at a
+        # failure that reproduces identically every time. See TruncatedResponseError.
+        cut = describe_json_truncation(text)
+        if cut is not None:
+            raise TruncatedResponseError(
+                "the model ran out of output space before it finished answering: " + cut +
+                ". Retrying will stop in the same place; the answer has to be made smaller."
+            ) from None
         # A model that wrapped the object in prose. Take the outermost braces rather than
         # failing the whole document.
         start, end = text.find("{"), text.rfind("}")
@@ -243,10 +344,23 @@ class AnthropicExtractor:
         except urllib.error.URLError as exc:
             raise ExtractionError(f"extraction API unreachable: {exc.reason}") from None
         blocks = payload.get("content") or []
-        return "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
+        text = "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
+        # THE API SAYS SO ITSELF. `stop_reason` is the authoritative statement that the answer
+        # was cut off by the output cap rather than finished; `describe_json_truncation` is the
+        # fallback for a caller that never sees this field. Raising here means the message names
+        # truncation even when the truncated prefix happens to close its own braces.
+        if str(payload.get("stop_reason") or "") == "max_tokens":
+            cut = describe_json_truncation(text)
+            raise TruncatedResponseError(
+                f"the model ran out of output space ({max_tokens} tokens) before it finished "
+                "answering" + (": " + cut if cut else "") +
+                ". Retrying will stop in the same place; the answer has to be made smaller."
+            )
+        return text
 
     @staticmethod
-    def _content_block(raw: bytes, mime_type: str, filename: str = "") -> dict:
+    def _content_block(raw: bytes, mime_type: str, filename: str = "",
+                       elide_tables: dict[int, str] | None = None) -> dict:
         """
         A .docx is read locally into text and tables; PDFs go as a document block; anything
         else is decoded as text.
@@ -272,7 +386,7 @@ class AnthropicExtractor:
         from .docx_text import docx_content_block, is_docx
 
         if is_docx(raw, mime_type, filename):
-            return docx_content_block(raw)
+            return docx_content_block(raw, elide_tables)
         if (mime_type or "").lower() == "application/pdf":
             return {
                 "type": "document",
@@ -352,7 +466,19 @@ class AnthropicExtractor:
             # a docRiskScore for a document type nothing knows how to interpret.
             return UNMAPPED, {}, confidence
         fields = extraction_fields_for(resolved)
-        block = self._content_block(raw, mime_type, filename)
+        # PART 2, THE SEPARATION. Where the reader can take the activity table itself, the
+        # table stops competing with the scalar fields for one response's output budget:
+        # `milestones_json` is not asked for, and the table's rows are not sent either. The
+        # scalar fields then have the whole budget, which is what they always needed and never
+        # had — the response that failed three times died at its seventh scalar key.
+        from .schedule_table import activity_table_from_document
+
+        table = activity_table_from_document(raw, mime_type, filename)
+        elide: dict[int, str] | None = None
+        if table is not None:
+            fields = [f for f in fields if f != "milestones_json"]
+            elide = {table.index: table.elision_note()}
+        block = self._content_block(raw, mime_type, filename, elide)
         extracted = parse_json_response(self._post(build_prompt(resolved, fields), block,
                                                    MAX_TOKENS))
         # Keep only what was asked for. A model that volunteers extra keys must not be able to

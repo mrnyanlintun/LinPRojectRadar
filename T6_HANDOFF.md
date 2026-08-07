@@ -4576,3 +4576,70 @@ Full suite: server 44 files, 2384/2384 checks, fresh SQLite per file. `tests.htm
 `tests_render.html` 169/170 (same pre-existing auth-gated red as `main`). No migration — nothing
 here changed the schema; production's `0020`/`0021` remain the pending migrations from the prior
 two sessions, unchanged by this task. `server/app/simulation/` untouched.
+
+## The schedule read at any size, truncation named, the upload record, and every period computed (2026-08-07)
+
+Branch `claude/unbounded-schedule-s5s90m`. Report at `REPORT_2026-08-05_unbounded-schedule.md`
+(and in the completing session's final response, in case the harness blocked the file).
+
+**The defect.** A real schedule document carrying 29 Level 3 activities in an 11-column table
+failed extraction three times with `model response was not JSON` on a response that was valid
+JSON cut off mid-key. `milestones_json` asked the model to serialise the whole table into one
+field of the same response that carries the scalar fields; it ran out of output tokens at the
+seventh scalar key. 29 is small and a real schedule carries hundreds or thousands, so no output
+cap is large enough.
+
+**The reader takes the rows now.** `server/app/schedule_table.py` (new) finds the activity table
+among a docx's tables by its headings, and `schedule_activities.map_headings` resolves the column
+meaning ONCE per table in code. `docx_text.docx_tables` returns every table as a grid;
+`docx_to_text(raw, elide_tables=...)` replaces the activity table's rows with its header row and
+a note saying how many rows the platform read. `extraction_client` drops `milestones_json` from
+the field list whenever the reader has the table. **Measured: one model call and the same prompt
+either way — 899 characters of document text for 29 rows and 900 for 500, the one character being
+a digit of the row count.** `milestones_json` remains as the fallback for a PDF, whose tables are
+not available on this side of the model boundary.
+
+**Two real-document findings the fixtures did not have.** The real extract carries an `Actual
+finish` AND a `Forecast finish` column with exactly one filled per row and an em-dash in the
+other, so `read_activity_table` now walks the whole mapped chain and takes the first candidate
+that yields a date; and a column headed `Actual finish` states the kind, so `kind_from_heading`
+marks those dates actual exactly as a trailing `A` marker would.
+
+**Storage unchanged in shape**: `schedule_activities` (0021), one row per activity per period.
+The rows are re-read from the stored document bytes at persist time, so nothing large is ever
+kept in a JSON field. `Document.extraction.schedule_table` holds a bounded descriptor (table
+index, headings, column map, row count) and never the rows.
+
+**Display**: `schedule_activities.select_for_display` returns at most 20 rows plus the totals and
+`DISPLAY_RULE` in words. Served on `projectuploadstatus` as `schedule`.
+
+**Truncation**: `TruncatedResponseError` and `describe_json_truncation` in `extraction_client`.
+The API's own `stop_reason == "max_tokens"` raises it; a truncated JSON prefix raises it too, and
+the message names the field the response stopped at. Prose still reports as not JSON.
+
+**Migration 0022, `upload_attempts`** (new). One row per file per upload, written at upload time,
+because a failed extraction leaves NO document row and cannot be derived afterwards. Served on
+`projectuploadstatus` as `attempts` and `failed`; retry is per document.
+
+**New action `projectcomputeall`** (`documents.py`), PM only and operational only, refused in the
+action itself AND via `features.RESEARCH_FORBIDDEN_ACTIONS`. Periods compute ascending; a period
+that already has a live result is skipped. Control on project detail (`detail.js`), not gated on
+`window.confirm`.
+
+**Migrations unapplied in production: 0020 (`abstained_modules`), 0021 (`schedule_activities`)
+and 0022 (`upload_attempts`, added here).**
+
+Verified: new suite `server/tools/test_unbounded_schedule.py` 87/87, and 89/89 with
+`REAL_SCHEDULE_DOCX` pointed at the owner's real document (which is NOT in the repository).
+Full server suite 45 files, 2471/2471, fresh SQLite per file. `tests.html` 51/51.
+`tests_render.html` 184/185 (15 new checks; the one red is the same pre-existing auth-gated one).
+Seven faults injected, each confirmed applied by SHA, each turning the relevant checks red, each
+reverted with the SHA matching the original. `server/app/simulation/` untouched.
+
+**The Workspace per-period compute button is now redundant in capability but not in meaning** —
+it computes one named period, which is what a research participant does and what
+`projectcomputeall` refuses to do for them. Not removed, per instruction.
+
+`server/run_all_suites.sh` now falls back to `python3` on PATH when there is no `.venv`, and
+passes `PYTHONIOENCODING=utf-8`. Without that it ran every suite with a non-existent interpreter
+and reported "no RESULT line" for all of them.

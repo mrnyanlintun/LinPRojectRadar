@@ -245,7 +245,12 @@
     // Shared with training mode (run 5): the same names, the same rows, the same ledger.
     buildProjectDetailHtml: buildProjectDetailHtml, wireCategoryRows: wireCategoryRows,
     moduleName: moduleName,
-    categoryName: categoryName, groupName: groupName, statusDotColor: statusDotColor };
+    categoryName: categoryName, groupName: groupName, statusDotColor: statusDotColor,
+    // Exported so the render harness can drive them directly. Both draw from a server response
+    // and both are surfaces that would fail silently: a failure list that renders nothing looks
+    // exactly like a period in which nothing failed, and a schedule that draws every row looks
+    // fine until the schedule has a thousand of them.
+    renderFailedUploads: renderFailedUploads, renderScheduleDisplay: renderScheduleDisplay };
 
   /* ============================================================
      Part 1 — project list and creation
@@ -458,6 +463,76 @@
       $("ws-upload-status").innerHTML = esc(bits.join(" "));
     }
     renderContributionList(resp.documents, "ws-upload-period-docs");
+    renderFailedUploads(resp.failed || []);
+    renderScheduleDisplay(resp.schedule);
+  }
+
+  // The files that did not make it, read from the server's upload attempt record.
+  //
+  // THIS CANNOT BE DERIVED FROM WHAT IS STORED. Extraction refuses a whole document rather
+  // than storing part of it, so a failed document has no row anywhere else and is simply
+  // absent. The attempt is recorded when it is made, which is why this list survives the
+  // dialog closing, the page reloading, and someone else opening the project tomorrow.
+  //
+  // RETRY IS PER DOCUMENT. Each row carries its own file input, so one document is retried on
+  // its own rather than the batch being uploaded again. Nothing here is gated on
+  // window.confirm: a browser that suppresses dialogs returns false from it, and an action
+  // behind that is an action nobody can take.
+  function renderFailedUploads(failed) {
+    var target = $("ws-upload-failed");
+    if (!target) return;
+    if (!failed.length) { target.innerHTML = ""; return; }
+    target.innerHTML =
+      '<p class="ws-error" id="ws-upload-failed-head"><strong>' + failed.length +
+      " document(s) did not make it. Each can be retried on its own.</strong></p>" +
+      failed.map(function (f, i) {
+        return '<div class="ws-file-row ws-upload-failed-row" data-failed-name="' +
+          esc(f.filename) + '">' +
+          "<span>" + esc(f.filename) + "</span>" +
+          '<span class="ws-note ws-upload-failed-reason">' + esc(f.error || "no reason recorded") +
+          "</span>" +
+          '<label class="ws-note" style="text-decoration:underline; cursor:pointer;">' +
+          "Retry this document" +
+          '<input type="file" class="ws-retry-input" data-retry-index="' + i +
+          '" style="display:none;"></label></div>';
+      }).join("");
+    Array.prototype.forEach.call(target.querySelectorAll(".ws-retry-input"), function (input) {
+      input.addEventListener("change", function () {
+        if (input.files && input.files.length) handleFiles([input.files[0]]);
+      });
+    });
+  }
+
+  // The period's schedule, drawn to the server's stated rule and never row by row.
+  //
+  // The row count is unbounded — a real construction schedule carries hundreds or thousands of
+  // activities — so the server decides which rows earn a line and says how many it left in the
+  // store. Drawing all of them would be the same unbounded failure as asking a model to retype
+  // them.
+  function renderScheduleDisplay(schedule) {
+    var target = $("ws-schedule-display");
+    if (!target) return;
+    if (!schedule || !schedule.shown || !schedule.shown.length) {
+      target.innerHTML = "";
+      return;
+    }
+    var rows = schedule.shown.map(function (a) {
+      var slip = a.slip_days ? a.slip_days + " day(s) later than last period" : "";
+      return '<div class="ws-file-row ws-schedule-row"><span>' + esc(a.activity_key) + "</span>" +
+        '<span class="ws-note">' + esc(a.description || "") + "</span>" +
+        '<span class="ws-note">' + esc(a.current_finish || "not read") +
+        (a.current_finish_kind === "actual" ? " (actual)" : "") + "</span>" +
+        '<span class="ws-note">' + esc(slip || (a.shown_because || []).join("; ")) + "</span>" +
+        "</div>";
+    }).join("");
+    target.innerHTML =
+      '<p class="ws-note" id="ws-schedule-head"><strong>Schedule: ' + schedule.shown.length +
+      " of " + schedule.total + " activities shown</strong>" +
+      (schedule.not_shown ? ", " + schedule.not_shown +
+        " stored and not drawn" : "") +
+      (schedule.unusable ? ", " + schedule.unusable +
+        " unusable because the source states no readable finish date" : "") + ".</p>" +
+      '<p class="ws-note" id="ws-schedule-rule">' + esc(schedule.rule || "") + "</p>" + rows;
   }
 
   function renderContributionList(documents, targetId) {
@@ -549,7 +624,10 @@
     }
 
     var s = resp.summary || {};
-    label.textContent = s.recognised + " of " + s.total + " recognized from cache, " +
+    // `recognized`, not `recognised`. The server has always spelled this key the American way
+    // and this line read the British one, so every upload reported "undefined of 27 recognized
+    // from cache" — a sentence that describes nothing that happened.
+    label.textContent = s.recognized + " of " + s.total + " recognized from cache, " +
       s.extracted + " extracted fresh" +
       (s.failed ? ", " + s.failed + " failed" : "") +
       (s.unmapped ? ", " + s.unmapped + " unmapped" : "") +
