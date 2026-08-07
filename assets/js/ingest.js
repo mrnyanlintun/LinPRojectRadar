@@ -564,6 +564,15 @@
     });
   }
 
+  // Delete is admin-only. The button only appears for an admin (a rendering convenience); the
+  // real refusal is server-side in a_admindeleteproject (_require_admin) — a non-admin calling
+  // the action directly is refused regardless of what this file renders. See
+  // REPORT_2026-08-05_archived-delete-control.md.
+  function isAdmin() {
+    const view = window.LinAuth && LinAuth.currentView ? LinAuth.currentView() : null;
+    return !!view && view.role === "ResearchAdmin";
+  }
+
   async function loadArchivedList(scope) {
     const box = scope.querySelector("#archived-list");
     if (!box) return;
@@ -574,11 +583,14 @@
       const d = p.archivedAt || p.archivedDate || p.updatedAt || p.modified || p.date || null;
       return d ? (window.LinTZ ? LinTZ.format(d) : String(d)) : "—";
     };
+    const admin = isAdmin();
     box.innerHTML = archived.length
       ? archived.map((p) =>
           `<div class="pr-row"><span class="pr-code">${esc(p.id)}</span>` +
           `<span class="pr-name">${esc(p.name)} <span class="kn-sub">· ${esc(SECTOR_LABEL[p.sector] || p.sector)} · archived ${esc(dateOf(p))}</span></span>` +
-          `<button class="btn small" data-restore="${esc(p.id)}">Restore</button></div>`).join("")
+          `<button class="btn small" data-restore="${esc(p.id)}">Restore</button>` +
+          (admin ? `<button class="btn small danger" data-delete="${esc(p.id)}" data-name="${esc(p.name)}">Delete</button>` : "<span></span>") +
+          `</div>`).join("")
       : `<p class="pr-empty">No archived projects.</p>`;
     box.querySelectorAll("[data-restore]").forEach((b) =>
       b.addEventListener("click", async () => {
@@ -596,6 +608,56 @@
           LinStore.banner("Couldn't restore: store unreachable. Retry.", "warn");
         }
       }));
+    box.querySelectorAll("[data-delete]").forEach((b) =>
+      b.addEventListener("click", () => openDeleteArchivedModal(b.dataset.delete, b.dataset.name, scope)));
+  }
+
+  // Typed confirmation, same shape as admin-ops.js's project-delete control — the operator types
+  // the project id and the control stays disabled until it matches. Deliberately not gated on
+  // window.confirm, which returns false in this container and in any dialog-suppressing browser.
+  function openDeleteArchivedModal(id, name, listScope) {
+    if (!window.LinUI || !LinUI.openModal) return;
+    LinUI.openModal({
+      title: `Delete ${name || id} permanently`,
+      mount: (body, close) => {
+        body.innerHTML =
+          `<p class="login-error" style="display:block">This removes the project for every PM ` +
+            `and Observer on it, not just one person's access. Its documents, computed results, ` +
+            `observations, membership and uploads are removed with it. It cannot be undone.</p>` +
+          `<label class="login-field-label">Type <strong>${esc(id)}</strong> to confirm</label>` +
+          `<input type="text" id="archived-delete-confirm-input" class="ig-input">` +
+          `<p id="archived-delete-error" class="login-error" role="alert" style="display:none;"></p>` +
+          `<button type="button" class="btn small danger" id="archived-delete-submit" disabled>` +
+            `Delete permanently</button>`;
+        const input = body.querySelector("#archived-delete-confirm-input");
+        const submitBtn = body.querySelector("#archived-delete-submit");
+        input.addEventListener("input", () => { submitBtn.disabled = input.value.trim() !== id; });
+        submitBtn.addEventListener("click", async () => {
+          const innerErr = body.querySelector("#archived-delete-error");
+          innerErr.style.display = "none";
+          submitBtn.disabled = true;
+          try {
+            const resp = await LinStore.deleteProject(id);
+            if (!resp || resp.ok !== true) {
+              innerErr.textContent = (resp && resp.error) || "Could not delete this project.";
+              innerErr.style.display = "block";
+              submitBtn.disabled = false;
+              return;
+            }
+            logEvent(`DELETED ${id}.`);
+            if (window.LinUI) LinUI.toast("Deleted", true);
+            close();
+            if (window.LinApp) LinApp.refresh();
+            renderPortfolioAdmin();
+            loadArchivedList(listScope);
+          } catch (e) {
+            innerErr.textContent = "Could not delete this project.";
+            innerErr.style.display = "block";
+            submitBtn.disabled = false;
+          }
+        });
+      }
+    });
   }
 
   /* ---------- ACTIVITY — centered dialog (Recent Activity log) ---------- */

@@ -164,6 +164,13 @@ def a_workspaceprojects(session: Session, payload: dict, secret: str,
         project = session.get(Project, m.project_id)
         if project is None:
             continue
+        # Once archived, a project is out of every working list — this is the workspace's own
+        # list of projects to act on. The ProjectMember row itself is untouched (membership
+        # history is audit evidence, kept deliberately); only its appearance here, as something
+        # offered for work, is withheld. Restore (w_restore clears Project.archived) brings it
+        # straight back on the next call, since nothing here is cached against the flag.
+        if project.archived:
+            continue
         period, _problem = _resolve_period(session, project, {})
         result = _live_result(session, project, period) if period is not None else None
         projects.append({

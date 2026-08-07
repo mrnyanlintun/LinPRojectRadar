@@ -453,6 +453,39 @@ check(survived.get("lat") == 36.5298 and survived.get("geocodeStale") is True,
 
 _geo.geocode = _real_geocode
 
+# ---------------------------------------------------------------- Archived exclusion (2026-08-07)
+
+print("\nArchived exclusion — a working list drops an archived project, restore brings it back")
+arch_create = post({"action": "projectcreate", "session_token": pm, "name": "T3T5 Archive Me"})
+check(arch_create.get("ok") is True, "archive-target project created", str(arch_create)[:100])
+arch_pid = arch_create["project_id"]
+
+before = post({"action": "workspaceprojects", "session_token": pm})
+check(any(p["project_id"] == arch_pid for p in before["projects"]),
+      "workspaceprojects lists it before archiving")
+
+archived = post({"action": "archive", "session_token": pm, "id": arch_pid})
+check(archived.get("ok") is True, "archive accepted", str(archived)[:100])
+
+after = post({"action": "workspaceprojects", "session_token": pm})
+check(not any(p["project_id"] == arch_pid for p in after["projects"]),
+      "workspaceprojects DROPS an archived project — it is out of the working list")
+
+# Membership itself is untouched by archiving — audit evidence, deliberately kept.
+with Session() as s:
+    row = s.scalar(select(ProjectMember).where(ProjectMember.user_key == pm_id))
+    still_member = s.scalar(
+        select(ProjectMember).where(ProjectMember.user_key == pm_id).order_by(
+            ProjectMember.added_at.desc()))
+check(still_member is not None, "the membership row on the archived project still exists")
+
+restored = post({"action": "restore", "session_token": pm, "id": arch_pid})
+check(restored.get("ok") is True, "restore accepted", str(restored)[:100])
+
+back = post({"action": "workspaceprojects", "session_token": pm})
+check(any(p["project_id"] == arch_pid for p in back["projects"]),
+      "workspaceprojects lists it again after restore — filtering is symmetric")
+
 # ---------------------------------------------------------------- tail
 
 print()

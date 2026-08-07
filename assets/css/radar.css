@@ -994,6 +994,8 @@ body.t-light .theme-switch button.active { color: #fff; }
 .pr-name { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pr-empty { color: var(--faint); font-size: 13px; margin: 8px 0 0; }
 .btn.small { font-size: 12px; padding: 6px 13px; }
+.btn.danger { border-color: var(--red, #c0392b); color: var(--red, #c0392b); }
+.btn.danger:hover { background: color-mix(in srgb, var(--red, #c0392b) 12%, transparent); }
 
 /* ---------- timezone select ---------- */
 .tz-select {

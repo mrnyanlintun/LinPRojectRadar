@@ -9,6 +9,44 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-07 — Delete control moves to the Archived Projects modal; archive-exclusion applied to the workspace list
+
+Branch `claude/archived-delete-control-s5s90m`. Full report content returned to the caller for
+filing as `REPORT_2026-08-05_archived-delete-control.md` (harness blocked writing it here, as it
+has for prior sessions). Summary below; the filed report has full detail.
+
+**Delete was built admin-only on the administration surface (`admin-ops.js`, under Project
+membership) and stays there — nothing removed.** It now ALSO appears on every row of the
+Archived Projects modal (`ingest.js`), Restore for everyone, Delete beside it for
+`ResearchAdmin` only. Both call the same unmodified `a_admindeleteproject`. The client-side
+admin check is a rendering convenience; the real refusal is server-side and was proven by calling
+`admindeleteproject` directly from a non-admin browser session (refused: `not authorized:
+ResearchAdmin role required`), not by checking a button's absence.
+
+**Archive-exclusion rule applied where it was missing.** Enumerated every project list/picker
+(`LIN_PROJECTS`/`cachedActive` readers in `assets/js/*.js`, every `select(Project)` and
+`list`/`projects`-named action in `server/app/*.py`). Portfolio list, atlas/globe, upload/extract
+pickers, and the admin membership picker were already `archived=False`-filtered. **The workspace
+project list (`a_workspaceprojects` in `server/app/workspace.py`) was not** — it walked
+`ProjectMember` rows directly with no archived check. Fixed with one guard
+(`if project.archived: continue`); the `ProjectMember` row itself is untouched, so membership
+history survives archiving exactly as it survives revocation. The Archived Projects modal itself
+is correctly unfiltered — that surface exists to show archived projects.
+
+**Verify.** Server suite 45 files **2478/2478** (+7 in `test_workspace_t3t5.py`'s new archived-
+exclusion block). `tests.html` **51/51**. `tests_render.html` **184/185** (pre-existing auth-gated
+red). Fault proven on the workspace fix (guard removed → red 76/77, reverted → green 77/77) and
+on the client-side admin gate (`isAdmin()` hardcoded true → PM saw Delete in real headless
+Chromium, but the direct server call was still refused; reverted, diff confirmed byte-identical).
+Real Chromium drive, admin and non-admin, against a local throwaway SQLite instance (never
+production): admin sees both controls with typed-confirmation gating (disabled until exact id
+typed) and deletes successfully; non-admin sees Restore only, is refused server-side on a direct
+call, and restore still works for the non-admin, DB-verified afterward.
+
+Files: `assets/js/ingest.js`, `assets/js/store.js`, `assets/css/radar.css`,
+`server/app/workspace.py`, `server/tools/test_workspace_t3t5.py`, this handoff entry. No
+`server/app/simulation/` file touched. No migration.
+
 # 2026-08-05 — The schedule read, stored per period, and compared: Milestone Trend Analysis computes
 
 Branch `claude/schedule-milestones-s5s90m`. The harness again blocked writing a new report file at

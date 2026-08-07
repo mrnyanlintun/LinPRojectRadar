@@ -560,6 +560,23 @@
     } finally { loading(false); }
   }
 
+  // Permanent delete. Admin-only server-side (a_admindeleteproject, _require_admin) — this
+  // wrapper does not decide who may call it, the same as archiveProject/restoreProject do not
+  // decide who may archive. It removes the project for every PM and Observer on it, not just
+  // the caller's own access, and takes its documents, results, observations and uploads with it.
+  async function deleteProject(id) {
+    if (!configured()) throw new Error("Project store not configured (LIN_API_URL).");
+    loading(true, "Deleting");
+    try {
+      const j = await apiPost({ action: "admindeleteproject", project_id: id });
+      const ai = LIN_ARCHIVED.findIndex((x) => x.id === id);
+      if (ai >= 0) LIN_ARCHIVED.splice(ai, 1);
+      writeCache(LIN_PROJECTS.concat(LIN_ARCHIVED));
+      banner("");
+      return j;
+    } finally { loading(false); }
+  }
+
   // Fetch the archived list from the backend into the LIN_ARCHIVED mirror.
   async function listArchived() {
     if (!configured()) return LIN_ARCHIVED.slice();
@@ -714,7 +731,7 @@
   window.LinStore = {
     load, listProjects, getProject, createProject, saveProject,
     setProjectNumber,
-    archiveProject, restoreProject, listArchived, chat, analyze,
+    archiveProject, restoreProject, deleteProject, listArchived, chat, analyze,
     listCorpus, listAuditResults, ingestCorpus, runAudit, saveAuditResult,
     extractSignals, identifyDocument, overwriteSignal, resetSignals,
     savePortfolioHealth, getPortfolioHealth,
