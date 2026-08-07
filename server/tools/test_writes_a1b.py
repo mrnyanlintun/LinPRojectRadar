@@ -506,7 +506,10 @@ check(r.get("ok") is False and "not a member" in (r.get("error") or ""),
 check("project" not in r, "and that refusal carries no project payload", str(sorted(r)))
 
 r = post({"action": "archive", "id": ORPHAN})
-check(r.get("ok") is False and "only the project's PM" in (r.get("error") or ""),
+# archive/restore are open to either project role (project-delete-s5s90m), so a caller with NO
+# membership row at all gets the membership-required wording, not the PM-only wording used by
+# every other project write.
+check(r.get("ok") is False and "only a project member" in (r.get("error") or ""),
       "and refused a WRITE to it", str(r)[:130])
 with main.SessionFactory() as s:
     still = s.scalar(select(Project).where(Project.legacy_id == ORPHAN))
