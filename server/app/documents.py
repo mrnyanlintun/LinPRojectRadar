@@ -565,6 +565,48 @@ def _live_result(session: Session, project: Project, period: int) -> ComputedRes
     ).first()
 
 
+def _document_fingerprint(documents: list[dict]) -> set[tuple[str, str]]:
+    """The identity of a period's document set: {(document_id, sha256)} from the live set."""
+    return {(d["document_id"], d["sha256"]) for d in documents}
+
+
+def _result_fingerprint(result: ComputedResult) -> set[tuple[str, str]] | None:
+    """The document set recorded on a stored result, or None when no record exists."""
+    src = result.source_documents
+    if not src:
+        return None
+    return {(d["document_id"], d["sha256"]) for d in src}
+
+
+def _period_is_stale(session: Session, project: Project, period: int,
+                     result: ComputedResult) -> tuple[bool, str]:
+    """
+    A period is stale when the documents it was computed from differ from the period's current
+    live document set. Compared by the set of (document_id, sha256) pairs, which is stronger
+    than a timestamp: it names the exact inputs the result was built from, and the exact inputs
+    the period holds now.
+
+    Returns (is_stale, reason). The reason is a human-readable sentence for the per-period
+    message.
+    """
+    current_docs = _period_documents(session, project, period)
+    current_fp = _document_fingerprint(current_docs)
+    stored_fp = _result_fingerprint(result)
+    if stored_fp is None:
+        return False, "no source_documents record on the stored result; left untouched"
+    if current_fp == stored_fp:
+        return False, ""
+    added = current_fp - stored_fp
+    removed = stored_fp - current_fp
+    parts: list[str] = []
+    if added:
+        parts.append(f"{len(added)} document(s) added")
+    if removed:
+        parts.append(f"{len(removed)} document(s) removed or replaced")
+    reason = "; ".join(parts) + " since the last computation"
+    return True, reason
+
+
 def _derive_cutoff(documents: list[dict], reuse: ComputedResult | None) -> date:
     """
     `period_cutoff` replaces the wall clock inside the analytical layer (only C1.2 Data
@@ -1682,9 +1724,11 @@ def a_projectcompute(session: Session, payload: dict, secret: str, ttl: int) -> 
     """
     PM only. Runs the analytical layer for a period and stores the result.
 
-    Refuses to overwrite: if a live result already exists, this returns it untouched and points
-    the caller at `adminrecompute`. Replacing a result is an append-only, audited, reason-bearing
-    operation and must not be reachable by calling compute twice.
+    If a live result already exists AND the period's documents have not changed since it was
+    stored, the existing result is returned untouched. If the documents have changed (a new
+    document was uploaded into the period, one was removed, or a revision replaced one), the
+    period is recomputed: the old result is superseded (append-only) and the new one reflects
+    the current evidence.
     """
     caller, problem = resolve_caller(session, payload, secret)
     if problem:
@@ -1701,10 +1745,41 @@ def a_projectcompute(session: Session, payload: dict, secret: str, ttl: int) -> 
 
     existing = _live_result(session, project, period)
     if existing is not None:
-        return {"ok": True, "project_id": project.legacy_id, "period": period,
-                "result_id": existing.result_id, "recomputed": False,
-                "note": "a computed result already exists for this period; use adminrecompute "
-                        "to replace it"}
+        stale, stale_reason = _period_is_stale(session, project, period, existing)
+        if not stale:
+            return {"ok": True, "project_id": project.legacy_id, "period": period,
+                    "result_id": existing.result_id, "recomputed": False,
+                    "note": "documents unchanged since last computation; result left untouched"}
+        new_id = new_ulid()
+        existing.superseded_by = new_id
+        session.flush()
+        outcome = _compute_and_store(session, project, period, result_id=new_id)
+        row = outcome["row"]
+        audit(session, "period_recomputed", participant_id=caller.participant_id,
+              project_id=project.legacy_id, period=period, result_id=row.result_id,
+              superseded_result_id=existing.result_id,
+              reason=stale_reason,
+              simulation_version=row.simulation_version, seed=row.seed,
+              period_cutoff=str(row.period_cutoff), documents=len(outcome["documents"]),
+              via="projectcompute")
+        session.commit()
+        return {
+            "ok": True,
+            "project_id": project.legacy_id,
+            "period": period,
+            "result_id": row.result_id,
+            "recomputed": True,
+            "superseded_result_id": existing.result_id,
+            "project_status": row.project_status,
+            "simulation_version": row.simulation_version,
+            "seed": row.seed,
+            "period_cutoff": str(row.period_cutoff),
+            "documents": len(outcome["documents"]),
+            "abstained": outcome["run"].get("abstained"),
+            "unported": outcome["run"].get("unported"),
+            "reason": stale_reason,
+            "server_time": now_iso(),
+        }
 
     outcome = _compute_and_store(session, project, period)
     row = outcome["row"]
@@ -1752,11 +1827,23 @@ def a_projectcomputeall(session: Session, payload: dict, secret: str,
     ordering is what makes the results sensible to read; the selection bound is what makes the
     invariant true.
 
-    AN ALREADY-COMPUTED PERIOD IS LEFT ALONE. `projectcompute` refuses to overwrite a live
-    result and points at `adminrecompute` because replacing a result is an append-only, audited,
-    reason-bearing operation. Doing it in bulk here would be that operation without the reason
-    and without the audit, so a period that already has a result is skipped and reported as
-    skipped.
+    AN ALREADY-COMPUTED PERIOD IS RECOMPUTED WHEN ITS DOCUMENTS HAVE CHANGED, AND SKIPPED WHEN
+    THEY HAVE NOT. Staleness is decided by comparing the stored result's `source_documents`
+    (the exact set of document ids and content hashes the result was computed from) against the
+    period's current live document set. A match means nothing has changed; any difference means
+    a new document was added, one was removed, or a revision replaced one, and the result must
+    be rebuilt to reflect the current evidence.
+
+    A CHANGED EARLIER PERIOD INVALIDATES EVERY LATER ONE. The series readers (`_period_history`,
+    `_period_snapshots`, `_milestone_history`) take earlier periods' stored results as input, so
+    if period 1 is recomputed, every later period's series has changed and must be recomputed
+    too. Forward invalidation is tracked by a flag that, once set, forces recomputation of
+    every subsequent period regardless of its own document set.
+
+    The recompute is append-only: the old result is superseded and kept readable, and the new
+    result gets a new id. When a period is recomputed because its own documents changed, the
+    cutoff is re-derived from the new document set. When a period is recomputed only because
+    an earlier period changed, the cutoff is preserved from the old result.
 
     OPERATIONAL ACCOUNTS ONLY, REFUSED HERE AND NOT ONLY IN THE UI. The frozen research package
     depends on WHEN computation happened relative to a participant's judgment; a control that
@@ -1789,14 +1876,44 @@ def a_projectcomputeall(session: Session, payload: dict, secret: str,
         return err("this project holds no documents, so there is nothing to compute")
 
     outcomes: list[dict] = []
+    earlier_recomputed = False
     for period in periods:
         existing = _live_result(session, project, period)
         if existing is not None:
-            outcomes.append({"period": period, "computed": False, "skipped": True,
-                             "result_id": existing.result_id,
-                             "project_status": existing.project_status,
-                             "note": "a computed result already exists for this period and was "
-                                     "left untouched"})
+            stale, stale_reason = _period_is_stale(session, project, period, existing)
+            if not stale and not earlier_recomputed:
+                outcomes.append({"period": period, "computed": False, "skipped": True,
+                                 "result_id": existing.result_id,
+                                 "project_status": existing.project_status,
+                                 "note": "documents unchanged since last computation; "
+                                         "result left untouched"})
+                continue
+            recompute_reason = stale_reason if stale else (
+                "an earlier period was recomputed, invalidating series inputs")
+            new_id = new_ulid()
+            existing.superseded_by = new_id
+            session.flush()
+            outcome = _compute_and_store(session, project, period,
+                                         reuse_cutoff_from=existing if not stale else None,
+                                         result_id=new_id)
+            row = outcome["row"]
+            audit(session, "period_recomputed", participant_id=caller.participant_id,
+                  project_id=project.legacy_id, period=period, result_id=row.result_id,
+                  superseded_result_id=existing.result_id,
+                  reason=recompute_reason,
+                  simulation_version=row.simulation_version, seed=row.seed,
+                  period_cutoff=str(row.period_cutoff), documents=len(outcome["documents"]),
+                  via="projectcomputeall")
+            outcomes.append({"period": period, "computed": True, "skipped": False,
+                             "recomputed": True,
+                             "result_id": row.result_id,
+                             "superseded_result_id": existing.result_id,
+                             "project_status": row.project_status,
+                             "period_cutoff": str(row.period_cutoff),
+                             "documents": len(outcome["documents"]),
+                             "abstained": outcome["run"].get("abstained"),
+                             "reason": recompute_reason})
+            earlier_recomputed = True
             continue
         outcome = _compute_and_store(session, project, period)
         row = outcome["row"]
@@ -1811,6 +1928,7 @@ def a_projectcomputeall(session: Session, payload: dict, secret: str,
                          "period_cutoff": str(row.period_cutoff),
                          "documents": len(outcome["documents"]),
                          "abstained": outcome["run"].get("abstained")})
+        earlier_recomputed = True
 
     audit(session, "project_computed_all", participant_id=caller.participant_id,
           project_id=project.legacy_id, periods=len(periods),
@@ -1820,8 +1938,6 @@ def a_projectcomputeall(session: Session, payload: dict, secret: str,
     return {
         "ok": True,
         "project_id": project.legacy_id,
-        # Ascending, and stated in the response so a reader can see the order the periods were
-        # computed in rather than taking it on trust.
         "periods": periods,
         "results": outcomes,
         "computed": sum(1 for o in outcomes if o["computed"]),

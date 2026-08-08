@@ -1961,9 +1961,24 @@
         }
         const order = (resp.periods || []).join(", ");
         if (msg) {
-          msg.textContent = resp.computed + " period(s) computed" +
-            (resp.skipped ? ", " + resp.skipped + " already had a result and were left untouched" : "") +
-            (order ? " (periods computed in order: " + order + ")" : "") + ".";
+          var parts = [];
+          var results = resp.results || [];
+          var fresh = results.filter(function(r) { return r.computed && !r.recomputed; });
+          var recomputed = results.filter(function(r) { return r.recomputed; });
+          var skipped = results.filter(function(r) { return r.skipped; });
+          if (fresh.length)
+            parts.push(fresh.length + " period(s) computed for the first time");
+          if (recomputed.length) {
+            var reasons = recomputed.map(function(r) {
+              return "period " + r.period + " (" + (r.reason || "documents changed") + ")";
+            });
+            parts.push(recomputed.length + " period(s) recomputed: " + reasons.join("; "));
+          }
+          if (skipped.length)
+            parts.push(skipped.length + " period(s) unchanged, left untouched");
+          if (!parts.length) parts.push("nothing to compute");
+          msg.textContent = parts.join(". ") +
+            (order ? " (periods in order: " + order + ")" : "") + ".";
         }
         if (window.LinApp && LinApp.refresh) LinApp.refresh();
       }));

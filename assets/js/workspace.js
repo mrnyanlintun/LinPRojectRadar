@@ -404,6 +404,10 @@
       if (!resp || resp.ok !== true) {
         note.textContent = (resp && resp.error) || "Compute failed.";
         note.className = "ws-error";
+      } else if (resp.recomputed) {
+        note.textContent = "Recomputed. " + (resp.reason || "Documents changed") +
+          ". Project status: " + (resp.project_status || "—");
+        note.className = "ws-note";
       } else if (resp.note) {
         note.textContent = resp.note;
         note.className = "ws-note";
