@@ -606,6 +606,15 @@ class DocumentUpload(Base):
     # moving the document resolves the review.
     needs_filing_review: Mapped[bool] = mapped_column(Boolean, nullable=False,
                                                       server_default="false", default=False)
+    # 0023. The reporting period's ending date, as the person stated it at upload. NULL where
+    # none was stated, including every row written before the selector existed: there is no
+    # honest value to backfill for an upload nobody was asked about.
+    #
+    # It is NOT the period cutoff. `computed_results.period_cutoff` stays derived from the
+    # period's own evidence dates (`documents._derive_cutoff`), because two checks depend on
+    # that derivation and because bounding selection by a stated date would silently drop the
+    # observations of a document this column exists to FLAG. See migration 0023.
+    period_end: Mapped[date] = mapped_column(Date, nullable=True)
 
 
 class ComputedResult(Base):

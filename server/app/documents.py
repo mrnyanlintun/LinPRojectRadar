@@ -53,7 +53,7 @@ import time
 from datetime import date, datetime, timezone
 from typing import Any, Callable
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .extraction_client import build_extractor, extract_many
@@ -180,6 +180,60 @@ def _decode(entry: dict) -> tuple[bytes | None, dict | None]:
     if len(raw) > MAX_FILE_BYTES:
         return None, err("File too large. The maximum is 20 MB")
     return raw, None
+
+
+def _parse_iso_date(raw: Any) -> date | None:
+    """An ISO date, or None. Never raises, never guesses at another format."""
+    if not raw:
+        return None
+    try:
+        return date.fromisoformat(str(raw).strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def _previous_period_end(session: Session, project: Project, period: int) -> date | None:
+    """
+    The latest stated ending date among this project's EARLIER periods, or None.
+
+    Read rather than inferred: it is a date somebody stated on an earlier upload. When no
+    earlier period carries one, the lower bound of the window is simply unknown and the
+    out-of-period check says nothing about it rather than inventing a boundary.
+    """
+    return session.scalar(
+        select(func.max(DocumentUpload.period_end)).where(
+            DocumentUpload.project_id == project.id,
+            DocumentUpload.period < period,
+            DocumentUpload.period_end.is_not(None),
+        )
+    )
+
+
+def _out_of_period(doc_date: date | None, period_end: date | None,
+                   previous_end: date | None) -> str | None:
+    """
+    Is this document's own date outside the reporting period it was filed to?
+
+    Returns the reason, in the words the person is shown, or None when it is inside the window
+    or when there is nothing to compare against.
+
+    THE DOCUMENT IS NEVER MOVED AND NEVER REFUSED. A date outside the stated period is usually
+    a filing mistake, and it is also sometimes correct: a document produced late can belong to
+    an earlier period, which is exactly why the person states the period and the platform does
+    not infer it. So this reports, and the upload proceeds.
+
+    Both bounds are dates somebody stated. Where a bound is unknown it is not enforced, because
+    a guessed boundary would produce a warning the person cannot act on.
+    """
+    if doc_date is None or period_end is None:
+        return None
+    if doc_date > period_end:
+        return (f"dated {doc_date.isoformat()}, which is after the "
+                f"{period_end.isoformat()} end of the reporting period it was filed to")
+    if previous_end is not None and doc_date <= previous_end:
+        return (f"dated {doc_date.isoformat()}, which is on or before the "
+                f"{previous_end.isoformat()} end of an earlier reporting period")
+    return None
 
 
 def _superseded_document_ids(session: Session, project: Project, period: int) -> set[str]:
@@ -1115,6 +1169,19 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
     if problem:
         return problem
 
+    # 0023. THE PERSON STATES THE REPORTING PERIOD; THE PLATFORM DOES NOT INFER IT.
+    #
+    # `period` above is the number they chose. `period_end` is that period's ending date, and
+    # it is stored so a document whose own date falls outside the period can be reported back
+    # to them. It bounds nothing in the analysis: see migration 0023 for why the period cutoff
+    # stays derived from the period's own evidence instead.
+    #
+    # An unparseable or absent date is stored as NULL rather than refused. The upload is the
+    # wrong place to argue about a date format, and a NULL simply means the out-of-period check
+    # has nothing to measure against and says nothing.
+    period_end = _parse_iso_date(payload.get("period_end") or payload.get("periodEnd"))
+    previous_end = _previous_period_end(session, project, period)
+
     entries = payload.get("documents")
     if not isinstance(entries, list) or not entries:
         return err("documents must be a non-empty list")
@@ -1316,7 +1383,8 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
                                        supersedes_document_id=supersedes,
                                        folder_path=filing["folder_path"],
                                        filing_class=filing["filing_class"],
-                                       needs_filing_review=filing["needs_filing_review"]))
+                                       needs_filing_review=filing["needs_filing_review"],
+                                       period_end=period_end))
             already.add(doc.document_id)
         mapped = is_mapped(doc.doc_type or "")
         # A FILED DOCUMENT IS NOT A FAILED EXTRACTION, and the note now says which it is.
@@ -1352,6 +1420,14 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
             "needs_filing_review": filing["needs_filing_review"],
             "classification_confidence": doc.classification_confidence,
             "note": note,
+            # 0023. The document's own date disagrees with the reporting period it was filed
+            # to. Reported, never acted on: the document is stored in the period the person
+            # stated, because a document produced late can legitimately belong to an earlier
+            # period and only they can tell that from a filing mistake. None when the dates
+            # agree, or when either date is absent.
+            "period_date_mismatch": _out_of_period(
+                _parse_iso_date((doc.extraction or {}).get("document_date")),
+                period_end, previous_end),
         })
 
     # 0022. THE DURABLE RECORD OF THIS BATCH, written for every file whether it succeeded or
@@ -1412,10 +1488,18 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
     session.commit()
 
     unmapped = [f["filename"] for f in files if f["doc_type"] == UNMAPPED]
+    # 0023. The documents whose own date disagrees with the period they were filed to. Every
+    # one of them IS stored, in the period that was stated; this is the list the person is
+    # shown so a filing mistake is visible instead of silent.
+    date_mismatches = [{"filename": f["filename"], "reason": f["period_date_mismatch"]}
+                       for f in files if f.get("period_date_mismatch")]
     return {
         "ok": True,
         "project_id": project.legacy_id,
         "period": period,
+        # Echoed so the caller can see the period and its ending date the server actually
+        # filed to, rather than assuming the one it sent was understood.
+        "period_end": period_end.isoformat() if period_end else None,
         "files": files,
         "summary": {
             "total": len(decoded),
@@ -1426,7 +1510,9 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
             # that a reference document arriving is a normal outcome, not a silent nothing.
             "filed": filed_count,
             "unmapped": len(unmapped),
+            "date_mismatches": len(date_mismatches),
         },
+        "date_mismatches": date_mismatches,
         "unmapped_filenames": unmapped,
         "extraction_seconds": elapsed,
         "extraction_model": model_id,

@@ -4514,6 +4514,17 @@ body[data-theme="plain"] .admin-pill-off { background: #fbdcdb; color: #8a0e16; 
             border: 1px solid var(--line); background: var(--page-bg); color: var(--text);
             font-size: 13px; font-family: var(--font-body); margin: 0 0 6px; }
 .ws-input-inline { width: auto; margin: 0; }
+
+/* The reporting-period statement on the two upload surfaces. Laid out as one row that wraps,
+   so the number and its ending date stay visibly part of the same statement. */
+.ws-period-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 2px;
+}
+.ws-period-picker input[type="number"] { width: 5.5em; }
 .ws-file-row { display: flex; align-items: center; gap: 10px; padding: 8px 0;
                border-bottom: 1px solid var(--line); font-size: 13px; flex-wrap: wrap; }
 .ws-file-row:last-child { border-bottom: none; }

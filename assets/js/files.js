@@ -334,7 +334,18 @@ var LinFiles = (function () {
     }
     if (!payload.length) return;
 
-    var resp = await call("projectupload", { id: pid, documents: payload });
+    // The stated reporting period, as on the Period documents panel. This call sent no period
+    // at all, so the server's default filed every document the Files tab has ever taken into
+    // period one.
+    var numEl = $("ws-files-period");
+    var endEl = $("ws-files-period-end");
+    var pnum = numEl ? parseInt(numEl.value, 10) : 1;
+    if (!isFinite(pnum) || pnum < 1) pnum = 1;
+    var resp = await call("projectupload", {
+      id: pid, period: pnum,
+      period_end: (endEl && endEl.value) ? endEl.value : null,
+      documents: payload
+    });
     if (!resp || resp.ok !== true) {
       // The upload panel's existing dialog is the error surface for extraction failures; a
       // request that did not land at all is reported here because there is no per-file result
@@ -358,7 +369,10 @@ var LinFiles = (function () {
       var where = f.folder_path || "";
       var label = f.filing_label || "Filed";
       var review = f.needs_filing_review ? " · marked for review" : "";
-      setRowState(f.filename, label + " into " + where + review, false);
+      // The document is stored either way; the mismatch rides along on its own row so a
+      // filing mistake is visible where the outcome is read.
+      var offPeriod = f.period_date_mismatch ? " · " + f.period_date_mismatch : "";
+      setRowState(f.filename, label + " into " + where + review + offPeriod, false);
     });
     mount();
   }

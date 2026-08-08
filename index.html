@@ -658,6 +658,24 @@
             <label class="ws-field-label" for="ws-upload-project">Project</label>
             <select id="ws-upload-project" class="ws-input ws-input-inline"></select>
           </div>
+          <!-- THE PERSON STATES THE REPORTING PERIOD. The platform does not infer it from the
+               documents' own dates: a document produced late can belong to an earlier period,
+               and a set's dates can disagree with one another. Both fields are sent with the
+               upload; the ending date is what an out-of-period document is measured against
+               and is not used to bound the analysis. -->
+          <div class="ws-period-picker">
+            <label class="ws-field-label" for="ws-upload-period">Reporting period</label>
+            <input id="ws-upload-period" class="ws-input ws-input-inline" type="number"
+                   min="1" step="1" value="1" inputmode="numeric"
+                   aria-describedby="ws-upload-period-help">
+            <label class="ws-field-label" for="ws-upload-period-end">Period ending</label>
+            <input id="ws-upload-period-end" class="ws-input ws-input-inline" type="date"
+                   aria-describedby="ws-upload-period-help">
+          </div>
+          <p id="ws-upload-period-help" class="ws-note">
+            These documents are filed to the period you state here. A document dated outside it
+            is still stored, and reported back to you.
+          </p>
           <div id="ws-upload-status" class="ws-note"></div>
           <div id="ws-upload-drop" class="ws-drop">
             Drag files here, or
@@ -670,6 +688,7 @@
             <div class="ws-note" id="ws-upload-progress-label"></div>
             <div class="ws-progress-bar"><div id="ws-upload-progress-fill" class="ws-progress-fill" style="width:0%;"></div></div>
           </div>
+          <div id="ws-upload-date-mismatch" style="display:none;"></div>
           <div id="ws-upload-results"></div>
           <p id="ws-upload-error" class="ws-error" style="display:none;"></p>
           <!-- The durable record of what did not make it. A failed extraction leaves no
@@ -700,10 +719,22 @@
           <p class="ws-note">Documents are filed into the Arora project directory automatically
             from the detected type. Where each one went is shown below, and anything the
             platform was unsure about is marked for review so it can be moved.</p>
+          <!-- The same statement of the reporting period the Period documents panel asks for,
+               and for the same reason: a document filed here is period evidence like any
+               other. This surface sent no period at all, so everything it filed landed in
+               period one. -->
+          <div class="ws-period-picker">
+            <label class="ws-field-label" for="ws-files-period">Reporting period</label>
+            <input id="ws-files-period" class="ws-input ws-input-inline" type="number"
+                   min="1" step="1" value="1" inputmode="numeric">
+            <label class="ws-field-label" for="ws-files-period-end">Period ending</label>
+            <input id="ws-files-period-end" class="ws-input ws-input-inline" type="date">
+          </div>
           <div id="ws-files-drop" class="fx-drop">
             <p class="fx-drop-label">Drop documents here to file them</p>
             <div id="ws-files-drop-status" class="fx-drop-status"></div>
           </div>
+          <div id="ws-files-date-mismatch" style="display:none;"></div>
           <p id="ws-files-error" class="ws-error" style="display:none;"></p>
         </div>
         <div class="fx-layout">
