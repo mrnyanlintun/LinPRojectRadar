@@ -9,6 +9,70 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-08 — The two period defects interacting: the compound case, proved
+
+Branch `claude/period-assignment-and-recompute-1nfjnx`, from `origin/main` at `1434b57`. Filed as
+`REPORT_2026-08-08_period-assignment-and-recompute.md`.
+
+**BOTH DEFECTS WERE ALREADY FIXED EARLIER IN THIS SESSION AND ARE ON `main`**: the recompute skip
+as `5fb0be7`, period partitioning and the selector as `1434b57`. This entry covers the one thing
+neither prior task exercised — **the two together** — plus verification and measurement re-run on
+current `main`. See those two entries below for the fixes themselves.
+
+**WHY THE COMPOUND CASE NEEDED ITS OWN SUITE.** Partitioning decides WHICH documents a period
+holds; staleness compares a stored result's `source_documents` against exactly that set; the
+cascade then rewrites every later period. A fault in the partition surfaces as a wrong staleness
+verdict, and a fault in the cascade surfaces as a period that should have been left alone being
+rewritten. `test_period_lifecycle.py` (new, **35 checks**) drives four stated periods, a further
+document uploaded into period TWO which already has a result, then the control:
+
+```
+period 1  skipped      documents unchanged since last computation
+period 2  recomputed   1 document(s) added since the last computation
+period 3  recomputed   an earlier period was recomputed, invalidating series inputs
+period 4  recomputed   an earlier period was recomputed, invalidating series inputs
+```
+
+**THE `result_id` CHECK EARNS ITS PLACE AND A FAULT PROVED IT.** Fault 1 makes the cascade rewrite
+period one too. Period one's BYTE COMPARISON STILL PASSES — recomputing unchanged evidence
+correctly reproduces the payload, which is the invariant working — but the `result_id` check goes
+red, catching a period rewritten when it should have been left alone. A payload comparison alone
+would have missed it. Anyone testing this invariant in future should assert both.
+
+**THE REJECTED SECOND CAUSE IS NOW PROVEN BY FAULT, not only by reading.** Removing the period
+filter from `_period_documents` (compute takes every document the project holds — the alternative
+hypothesis for the partitioning failure) turns the suite to **27/35**, byte-identical red at byte
+14793, every period reporting five source documents.
+
+**A FIXTURE CORRECTION WORTH REMEMBERING.** The suite first failed one check: period two's cost
+performance did not move after a revision. That was the platform behaving correctly — two
+same-type documents carrying the SAME date resolve by content hash under the equal-date tiebreak,
+so the original legitimately won. The fixture had assumed a recency it had not given the new
+document. Documents are now dated mid-period with the revision at the period end, which is what a
+real revision looks like and keeps the check about recompute rather than about a hash.
+
+**Verify.** Server suite 49 suites **2626/2626** (new suite = 35). `tests.html` **51/51**.
+`tests_render.html` **204/205** (pre-existing auth-gated red). **Real Chromium, the whole flow,
+14/14**: state period 2, upload, both land in period 2 and none in period 1, the out-of-period
+document named on screen, press compute (*"Computed. Project status: Amber"*), upload again into
+that computed period, run the control → *"period 2: 1 document(s) added since the last
+computation"*, new `result_id`, figures changed. Two faults (27/35, 27/35), each confirmed
+applied, each detected, each reverted with a SHA-256 comparison, baseline 35/35 after both.
+Interpreter confirmed real (`/readyz` schema at head 0023, `/healthz` Python 3.11.15).
+
+**84-DOCUMENT PROJECT, re-measured on current `main`:** `{1: 21, 2: 21, 3: 21, 4: 21}`, four
+periods, 36 → **40 modules**, cpiHistory `[0.909, 0.909, 0.893, 0.87]`. **Newly computing:** the
+control-chart anomaly monitor, the schedule-performance smoother, the cost-performance forecast
+reader, the regression-to-mean reader, and the portfolio trajectory classifier. Milestone Trend
+still abstains — it needs schedule activity tables, which that fixture has none of.
+
+**MIGRATIONS UNAPPLIED IN PRODUCTION: 0020, 0021, 0022, 0023.** All Lin's to run. No migration
+added this session. Throwaway SQLite only; production never inspected or queried.
+
+Files: `server/tools/test_period_lifecycle.py` (new),
+`REPORT_2026-08-08_period-assignment-and-recompute.md` (new), this entry. No product file
+changed this session; no `server/app/simulation/` file touched.
+
 # 2026-08-08 — 84 documents in one period: nothing ever assigned a period
 
 Branch `claude/period-assignment-1nfjnx`, from `origin/main` at `6818b67`. Filed as
