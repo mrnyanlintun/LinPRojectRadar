@@ -121,24 +121,43 @@
     var scores = regret && regret.expected_regret;
 
     if (!scores || typeof scores !== "object" || Object.keys(scores).length < 2) {
-      // The module can be present with a real status (it computed) and still carry no score
-      // set here, because the server withholds its action-bearing fields
-      // (recommended_action / expected_regret) until this project's preliminary judgment is
-      // locked (server/app/documents.py `_redact_module_actions`, gated by
-      // `recommendation_visible`). That is a different fact from "the analysis did not
-      // compute", and saying "did not compute" when the module plainly carries a status is
-      // the platform contradicting its own ledger. Say which is true.
+      // THREE DIFFERENT FACTS REACH HERE AND THEY MUST NOT SHARE A SENTENCE.
+      //
+      // 1. The row this surface was given carries no module results at all. That happens
+      //    while the page still holds the four-field status projection and the complete row
+      //    has not been read back yet. NOTHING is known about any module from such a row,
+      //    so claiming the scoring analysis did not compute is asserting a fact not in
+      //    evidence, and it was doing so on projects whose ledger showed that very module
+      //    with a status. Say the analysis has not been read back yet.
+      // 2. The module is present but its action-bearing fields were withheld by the reveal
+      //    gate. This is now reachable on the RESEARCH path only: an operational project is
+      //    no longer gated (server/app/documents.py, `project_under_research_protocol`), so
+      //    a project manager reading their own project can never see this sentence. It stays
+      //    because the research instrument depends on it.
+      // 3. The row carries module results and the scoring module is not among them: it
+      //    abstained. That, and only that, is "did not compute".
+      var hasModuleResults = Array.isArray(result && result.module_results);
       var withheld = regret && regret.recommendation_withheld;
+      var reason;
+      if (!hasModuleResults) {
+        reason = "The analysis for this period has not been read back yet, so the courses of "
+          + "action are not available on this screen. Nothing here says whether the analysis "
+          + "that scores them ran.";
+      } else if (withheld) {
+        reason = "The analysis that scores the courses of action against each other computed "
+          + "for this project, but its finding is withheld until this period's preliminary "
+          + "judgment is recorded and locked. Once it is, the courses of action appear here.";
+      } else {
+        reason = "The analysis that scores the courses of action against each other, the one "
+          + "that asks which course carries the smallest worst case, did not compute for this "
+          + "project. Without it the platform holds no set of courses of action to lay out, "
+          + "and it will not invent one.";
+      }
       return {
         available: false,
-        reason: withheld
-          ? "The analysis that scores the courses of action against each other computed for "
-            + "this project, but its finding is withheld until this period's preliminary "
-            + "judgment is recorded and locked. Once it is, the courses of action appear here."
-          : "The analysis that scores the courses of action against each other, the one "
-            + "that asks which course carries the smallest worst case, did not compute for this "
-            + "project. Without it the platform holds no set of courses of action to lay out, "
-            + "and it will not invent one.",
+        reason: reason,
+        pending: !hasModuleResults,
+        withheld: !!withheld,
         options: [],
         recommendation: null,
         unknowns: []

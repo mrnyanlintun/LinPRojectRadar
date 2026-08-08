@@ -148,6 +148,81 @@ def recommendation_visible(decision: Decision | None) -> bool:
     return decision is not None and bool(decision.pre_judgment_locked)
 
 
+def project_under_research_protocol(session: Session, project: Project) -> bool:
+    """
+    Is this project the evidence a research scenario is built on?
+
+    THIS IS THE DISCRIMINATOR FOR THE REVEAL GATE, AND IT IS A PROPERTY OF THE PROJECT.
+
+    The gate exists to protect a participant's preliminary judgment: the scored courses of
+    action must not be readable by anyone, the PM included, before that judgment is locked.
+    Which means the question it answers is "is this project part of the instrument", not "who
+    is asking" and not "how far through the sequence has anyone got".
+
+    WHY NOT THE `Decision` ROW. `project_decision_state` returns a decision only when the
+    project has an active PM, AND a scenario names it, AND that PM holds an assignment on that
+    scenario. Absence of a decision therefore collapses three different situations into one:
+    an ordinary operational project, a research project whose PM row was revoked, and a
+    research project before its participant is assigned. Reading "no decision" as "not
+    research" would hand the courses of action out on the last two, which is the leak this
+    predicate exists to prevent, and it is why the gate cannot be inferred from the decision.
+
+    WHY NOT THE CALLER'S `account_type`. The rule is explicitly that the package is withheld
+    from EVERY member, observers included, because an observer may be senior to the PM (see
+    this module's docstring). An operational-account observer on a research project would
+    bypass a caller-keyed gate, and the social protection the lock depends on would be gone.
+    account_type separates the two audiences elsewhere; it does not describe the project whose
+    judgment is being protected.
+
+    A scenario naming this project as its `evidence_package_id` is exactly the fact that puts
+    the project inside the instrument, so that is what is asked. It holds from the moment the
+    scenario is created, before any participant is assigned and after any membership changes.
+
+    This is ONE ARM of the gate. See `reveal_gate_applies` for the other and for why one arm
+    is not enough.
+    """
+    return session.scalar(
+        select(func.count()).select_from(Scenario).where(
+            Scenario.evidence_package_id == project.legacy_id
+        )
+    ) > 0
+
+
+def reveal_gate_applies(session: Session, project: Project, caller) -> bool:
+    """
+    Should the reveal gate be applied to this read? THE ONE PLACE THAT DECIDES.
+
+    The gate withholds the scored courses of action until a preliminary judgment is locked.
+    It must cover every read that happens inside the research instrument and no read that
+    happens outside it, and "inside the instrument" is true in two independent ways:
+
+      THE PROJECT ARM. The project is a scenario's evidence package. Then the gate applies to
+      EVERY member, observers included, because an observer may be senior to the PM and the
+      lock has to hold socially as well as technically. A caller-keyed test alone would hand
+      the courses to an operational-account observer on a study project.
+
+      THE CALLER ARM. The reader is a research participant. A participant is a study subject
+      wherever they are on the platform, so an action-bearing finding on any project they can
+      reach can prime the judgment they are about to record on their own scenario. A
+      project-keyed test alone would show "recommends: escalate" to a participant reading some
+      other project in the study environment, which is the prose leak the T4 work closed and
+      which `test_decision_ui_t4.py` still asserts against.
+
+    Either arm is sufficient, so the gate lifts for exactly one case: an operational account
+    reading a project no scenario is built on. That is the project manager on their own
+    project, which is the case that was broken.
+
+    NOT THE `Decision` ROW, which was the old route in and is what this replaces: it exists
+    only once a participant is assigned and their PM row is live, so its absence conflates an
+    operational project with a study project that is merely early or has had a membership
+    change. See `project_under_research_protocol`.
+    """
+    account_type = getattr(getattr(caller, "participant", None), "account_type", None)
+    if account_type == "research":
+        return True
+    return project_under_research_protocol(session, project)
+
+
 def project_decision_state(session: Session, project: Project):
     """
     Resolve (assignment, current decision, package) for a project's PM.

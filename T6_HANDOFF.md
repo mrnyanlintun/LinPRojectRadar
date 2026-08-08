@@ -9,6 +9,85 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-08 — The courses of action are readable on an operational project, and the message tells the truth
+
+Branch `claude/courses-of-action-1nfjnx`, from `origin/main` at `5fb0be7`. Filed as
+`REPORT_2026-08-08_courses-of-action.md`. Summary below.
+
+**WHAT THE TWO PATHS ARE TOLD APART BY: `research_membership.reveal_gate_applies`, a disjunction
+of two facts, neither of which is the `Decision` row.** The gate applies when the caller is a
+research participant (`account_type == "research"`) OR the project is a scenario's
+`evidence_package_id`. Either arm suffices, so the gate lifts for exactly one case: an
+operational account reading a project no scenario is built on. That is the PM on their own
+project, which is what was broken.
+
+**TWO ARMS BECAUSE ONE WAS PROVEN INSUFFICIENT BY A FAILING TEST, not by argument.** I began with
+the project arm alone. `test_decision_ui_t4.py` reads `PRJ-T4-ANALYTICS` — a plain project no
+scenario names — **as a research participant**, and it went to 70/73: the project arm alone
+released `Minimax regret recommends: escalate` to a study subject. A participant is a subject
+wherever they are, so an action-bearing finding on any project they can reach can prime the
+judgment they are about to record. The caller arm IS the T4 prose-leak protection.
+**Each rejected candidate is asserted as a leak that must not happen**: the `Decision` row would
+release the courses on a study project whose PM row was revoked (it conflates operational with
+early-or-changed research), and `account_type` alone would release them to an operational-account
+OBSERVER on a study project, who may be senior to the PM.
+
+**WHY THE MESSAGE WAS WRONG, established live rather than reasoned.** Neither of the brief's two
+possibilities exactly: it is "the fix is not reaching this surface", by a third state neither
+branch modelled. `facade._stored_status_map` attaches `storedResult` as a FOUR-FIELD status
+projection with no `module_results`, and `taxonomy.js` `rowFor()` preferred it over the complete
+row primed from `projectresults`. So the scoring module was not redacted on that row, it was
+ABSENT — and `recommendation_withheld` is a per-module flag that cannot be read off a module that
+is not there. Read off the live page pre-fix: `storedResult_keys` = the four fields,
+`regret_present: false`, `regret_withheld: null`. `primeAndRefresh` grafts the full row in later,
+so it is a race, but a race resolving to a false sentence is still a false sentence — and the
+card was contradicting the Signal Ledger two panels down on the same page.
+
+**Three facts now have three sentences**: (1) the row carries no module results at all, so the
+block says the analysis has not been read back yet and asserts nothing about whether it ran;
+(2) present but withheld by the gate; (3) module results present and the scoring module absent,
+which alone is "did not compute". `rowFor()` also now returns whichever copy carries module
+results, closing the race rather than only labelling it. **The withheld branch is NOT dead and
+was confirmed live on the research path** — unreachable on operational (asserted), quoted firing
+on research.
+
+**THREE SUITES ASSERTED THE DEFECT AND WERE REWRITTEN, not silently.** `test_documents_b7b.py`
+Guarantee 6 and `test_workspace_t3t5.py` Guarantee 8 both read an operational-account project no
+scenario names and asserted it was "withheld pending the pre-judgment lock" — a lock that can
+never occur there, so what they pinned was the defect. Rewritten to assert what is true (no
+study package spliced in, nothing reported as withheld, the PM CAN read the scored courses), with
+the reason recorded in both files. `test_decision_ui_t4.py` did NOT assert the defect; it caught
+my incomplete first fix and is now 73/73 unmodified.
+
+**`_result_view` no longer flags `recommendation_withheld` on every packageless read** — an
+operational project has no package to withhold, and flagging it told a PM something was being
+kept from them when nothing was.
+
+**Verify.** Server suite 47 suites **2546/2546** (new `test_courses_of_action.py` = 30).
+`tests.html` **51/51**. `tests_render.html` **204/205** (+20 in a new group; the one red is the
+pre-existing auth-gated production-read check). Real Chromium on both surfaces: the operational
+card renders the full scored set with figures matching the stored values exactly, and the
+research path is **15/15** — no course title, score or exposure figure before the lock, all of
+them after. Five faults (23/30, 70/73, 26/30, 200/205, 202/205), each confirmed applied, each
+detected, each reverted with a SHA-256 comparison, baseline green after every one. Interpreter
+confirmed real before believing any green (`/healthz` Python 3.11.15, `/readyz` schema at head
+0022).
+
+**NO MIGRATION — no column, no table.** Unapplied in production, unchanged and still Lin's to
+run: **0020, 0021, 0022.** Throwaway SQLite only; production never inspected or queried.
+
+**Open, flagged, not built.** Two copies of a row with different shapes still coexist on the
+detail page; `rowFor` no longer depends on the graft, but unifying the projection and the
+complete row is a larger change. Abstention messages are still discarded before storage
+(`registry.py` `run_all()`), so a module that truly did not compute still cannot say why —
+unchanged from the ledger-calculations open item and still a `simulation/` change.
+
+Files: `server/app/research_membership.py`, `server/app/documents.py`, `assets/js/taxonomy.js`,
+`assets/js/recommendation_options.js`, `tests_render.html`,
+`server/tools/test_courses_of_action.py` (new), `server/tools/test_documents_b7b.py`,
+`server/tools/test_workspace_t3t5.py`, `REPORT_2026-08-08_courses-of-action.md` (new), this
+entry. No `server/app/simulation/` file touched.
+
 # 2026-08-08 — A period with new documents is recomputed, not skipped, on both compute surfaces
 
 Branch `claude/period-recompute-new-docs-1nfjnx`, from `origin/main` at `3d77a6f`. Filed as

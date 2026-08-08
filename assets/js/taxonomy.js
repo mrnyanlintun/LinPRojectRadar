@@ -364,10 +364,33 @@ window.projectLevelCategories = function () {
     return project.project_id || project.id || null;
   }
 
+  /* The stored row for a project, preferring whichever copy is COMPLETE.
+
+     Two copies can exist and they are not the same shape. `project.storedResult` is attached
+     by the list/get projection and carries four status fields only: result_id, period,
+     project_status, category_statuses. ROWS[id] is primed from projectresults and carries the
+     whole row, module_results and signal_inputs included.
+
+     Preferring storedResult unconditionally meant that, for as long as the page held the
+     projection, every reader asking this function for module_results was told there were
+     none. A reader cannot tell that apart from a project whose modules did not compute, and
+     at least one surface said exactly that out loud: the Governance Decision card reported
+     that the analysis scoring the courses of action "did not compute" for a project whose
+     ledger was rendering that same module's status two panels down. The graft in
+     detail.js repairs the projection after projectresults returns, so the false state is a
+     race, but a race that resolves to a false statement on screen is still a false statement.
+
+     So: take the projection when it is all there is, and take the primed row when the
+     projection cannot answer what is being asked. Where both carry module results the
+     projection wins, because the graft has already put the complete data there and a caller
+     may have attached more to it. */
   function rowFor(project) {
-    if (project && project.storedResult) return project.storedResult;
     var k = keyOf(project);
-    return k ? (ROWS[k] || null) : null;
+    var primed = k ? (ROWS[k] || null) : null;
+    var stored = (project && project.storedResult) || null;
+    if (stored && primed && !stored.module_results && primed.module_results) return primed;
+    if (stored) return stored;
+    return primed;
   }
 
   window.LinResults = {
