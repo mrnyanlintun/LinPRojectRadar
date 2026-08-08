@@ -9,6 +9,85 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-08 — A period with new documents is recomputed, not skipped, on both compute surfaces
+
+Branch `claude/period-recompute-new-docs-1nfjnx`, from `origin/main` at `3d77a6f`. Filed as
+`REPORT_2026-08-08_stale-period-recompute.md` (written to the repo root this time; the harness did
+not block it). Summary below.
+
+**WHAT DECIDES STALENESS: the stored result's own record of its inputs, not a timestamp.** Every
+`computed_results` row already carries `source_documents` (0013) — `{document_id, sha256,
+doc_type, filename}` per document assembly actually consumed. A period is stale when
+`{(document_id, sha256)}` from that record differs from the same set over `_period_documents`, the
+function the computation itself reads. Inputs versus inputs, no inference between them.
+`uploaded_at` and `observations.as_of` were both available and both rejected as the decision:
+`uploaded_at` is a wall clock that moves on a re-upload the unique index makes a no-op, and `as_of`
+is NULL wherever nothing parses, so a new undated document would be invisible to it. Being
+content-addressed, the comparison catches addition, removal AND revision-by-supersession.
+**A row with NULL `source_documents` (pre-0013) is skipped with that stated as the reason** —
+there is no record to compare, so it declines to answer rather than guessing.
+
+**THE WORKSPACE PER-PERIOD BUTTON HAD THE SAME DEFECT AND IS FIXED WITH IT.** `a_projectcompute`
+tested only that a live result *existed* and returned "use adminrecompute to replace it" — the
+same false reassurance the all-periods control gave, differently worded. Both now run the same
+staleness test. Fault 4 (old skip restored on `a_projectcompute` alone) turns exactly the
+per-period checks red and leaves the all-periods checks green, so the two surfaces are
+independently covered. Its hard-coded `period: 1` was NOT changed; that is the separate
+period-selector question from `REPORT_2026-08-05_unbounded-schedule.md` Part 5.
+
+**FORWARD INVALIDATION.** `_period_history`, `_period_snapshots` and `_milestone_history` take
+earlier periods' stored results as input, so a recomputed period 1 changes what every later period
+was computed from. An `earlier_recomputed` flag, once set, forces every later period to recompute
+regardless of its own documents. The loop already ran ascending. **The cutoff follows the reason:**
+recomputed because its OWN documents changed → cutoff re-derived; recomputed only because an
+earlier period changed → cutoff reused from the superseded row, so C1.2 Data Timeliness does not
+drift for an unrelated reason.
+
+**THE INVARIANT HELD AND IS CHECKED BOTH WAYS.** A skipped period is byte-identical AND its
+`result_id` is unchanged (so it was not superseded-and-reinserted with identical content — it was
+genuinely left alone); and a recompute on unchanged inputs reproduces the row through
+`adminrecompute`. Same comparison the three prior sessions established, `result_id`/`computed_at`
+excluded by name. **Fault 3 (staleness reversed, so an UNCHANGED period recomputes) turns exactly
+those checks red** — that is the guard against the brief's named failure mode, a recompute that
+silently moves an untouched period. No untouched period's result differed at any point; the stop
+condition was never reached. `test_period_series.py` 40/40 and `test_unbounded_schedule.py` 87/87
+are green and unmodified.
+
+**The message names what changed instead of counting.** Old: "0 period(s) computed, 1 already had
+a result and were left untouched". New, read off the real page: *"1 period(s) recomputed: period 1
+(1 document(s) added since the last computation) (periods in order: 1)."* and, second press,
+*"1 period(s) unchanged, left untouched"*. Three distinct outcomes, each with its reason, composed
+server-side and reported by the browser rather than invented there.
+
+**Verify.** Server suite 46 suites **2517/2517** (new `test_stale_period_recompute.py` = 39).
+`tests.html` **51/51**. `tests_render.html` **184/185** — the one red is the pre-existing
+auth-gated production-read check, re-run on a clean `origin/main` in the same browser session and
+red there too. Four faults (22/36, 32/37, 24/38, 35/39), each confirmed applied by SHA-256, each
+detected, each reverted with a SHA-256 comparison, baseline 39/39 after every one.
+**Real Chromium drive, 12/12**: period 1 already Amber at cpi 0.909, a further document uploaded
+into that computed period, the real `[data-compute-all]` button clicked, and afterwards a new
+`result_id`, **cpi moved 0.909 → 0.694**, `D2.pdf` in `source_documents`, and a second press
+leaving it alone. **The model call was not stubbed in the server the browser talked to** — the
+second document's extraction was pre-placed in the content-addressed cache under a different
+project, so the upload was a genuine hash cache hit on the real path. Interpreter confirmed real
+before believing any green (`/healthz` Python 3.11.15, `/readyz` schema at head 0022).
+
+**NO MIGRATION ADDED — no column, no table.** Unapplied in production, unchanged from the prior
+sessions and still Lin's to run: **0020 `abstained_modules`, 0021 `schedule_activities`, 0022
+`upload_attempts`.** Throwaway SQLite only; production never inspected or queried.
+
+**Open, flagged, not built.** Upload still does not compute — pressing a control now does the
+right thing, but a PM who uploads and presses nothing still has a stale result and no surface says
+so; **"this period's documents have changed since it was computed" as a visible state is the
+natural next piece and needs no new storage**, only a read of the comparison added here. A
+twelve-period project whose period 1 changes recomputes all twelve serially in one request with no
+progress reported. The NULL `source_documents` branch is reasoned about, not exercised against
+real legacy rows.
+
+Files: `server/app/documents.py`, `assets/js/detail.js`, `assets/js/workspace.js`,
+`server/tools/test_stale_period_recompute.py` (new), `REPORT_2026-08-08_stale-period-recompute.md`
+(new), this handoff entry. No `server/app/simulation/` file touched.
+
 # 2026-08-07 — Delete control moves to the Archived Projects modal; archive-exclusion applied to the workspace list
 
 Branch `claude/archived-delete-control-s5s90m`. Full report content returned to the caller for
