@@ -398,7 +398,7 @@
       var pid = $("ws-upload-project").value;
       if (!pid) return;
       $("ws-compute-btn").disabled = true;
-      var resp = await call("projectcompute", { id: pid, period: 1 });
+      var resp = await call("projectcompute", { id: pid, period: selectedPeriod().period });
       $("ws-compute-btn").disabled = false;
       var note = $("ws-compute-note");
       if (!resp || resp.ok !== true) {
@@ -438,7 +438,7 @@
         "this page shows.</span>";
     }
 
-    var resp = await call("projectuploadstatus", { id: pid, period: 1 });
+    var resp = await call("projectuploadstatus", { id: pid, period: selectedPeriod().period });
     if (!resp || resp.ok !== true) {
       if (isPM) $("ws-upload-status").textContent = (resp && resp.error) || "";
       $("ws-upload-results").innerHTML = "";
@@ -616,7 +616,15 @@
       "take a while for documents never seen before…";
     fill.style.width = "45%";
 
-    var resp = await call("projectupload", { id: pid, period: 1, documents: documents });
+    // THE PERIOD IS THE ONE THE PERSON STATED, not a constant. This call sent `period: 1`
+    // unconditionally, and the Files tab sent no period at all, so every document a project
+    // ever uploaded landed in period one: a project holding several reporting periods computed
+    // as a single period and every cross-period reader saw one point where there should have
+    // been several.
+    var stated = selectedPeriod();
+    var resp = await call("projectupload", {
+      id: pid, period: stated.period, period_end: stated.periodEnd, documents: documents
+    });
 
     progress.style.display = "none";
     $("ws-upload-input").value = "";
@@ -638,7 +646,41 @@
       " (" + (resp.extraction_seconds != null ? resp.extraction_seconds.toFixed(1) : "?") + "s).";
 
     renderUploadFiles(resp.files || []);
+    renderDateMismatches(resp.date_mismatches || []);
     await onUploadProjectChange();
+  }
+
+  /* The reporting period the person stated, read from the two controls on the panel.
+
+     The number falls back to 1 only when the field has been emptied, which keeps a malformed
+     entry from posting NaN; it is not a silent default for "unstated", because the field
+     carries a value from the moment the panel renders and the person can see it. The ending
+     date is optional: without it the platform has nothing to measure a document's own date
+     against, and it says nothing rather than guessing at a period boundary. */
+  function selectedPeriod() {
+    var numEl = $("ws-upload-period");
+    var endEl = $("ws-upload-period-end");
+    var n = numEl ? parseInt(numEl.value, 10) : 1;
+    if (!isFinite(n) || n < 1) n = 1;
+    return { period: n, periodEnd: (endEl && endEl.value) ? endEl.value : null };
+  }
+
+  /* Documents whose own date disagrees with the period they were filed to. Every one of them
+     WAS stored, in the period that was stated; this is the notice, not a refusal. */
+  function renderDateMismatches(list) {
+    var host = $("ws-upload-date-mismatch");
+    if (!host) return;
+    if (!list.length) { host.innerHTML = ""; host.style.display = "none"; return; }
+    host.style.display = "";
+    host.innerHTML =
+      '<p class="ws-note" style="color:var(--status-amber);">'
+      + list.length + " document(s) are dated outside the reporting period you filed them to. "
+      + "They have been stored in that period. Check whether this is a filing mistake.</p>"
+      + '<ul class="ws-note" style="margin:4px 0 0 18px;">'
+      + list.map(function (m) {
+          return "<li>" + esc(m.filename) + ": " + esc(m.reason) + "</li>";
+        }).join("")
+      + "</ul>";
   }
 
   function renderUploadFiles(files) {
@@ -677,7 +719,7 @@
 
   async function onDocsProjectChange() {
     var pid = $("ws-docs-project").value;
-    var resp = await call("projectuploadstatus", { id: pid, period: 1 });
+    var resp = await call("projectuploadstatus", { id: pid, period: selectedPeriod().period });
     var listEl = $("ws-docs-list");
     if (!resp || resp.ok !== true) {
       listEl.innerHTML = '<p class="ws-error">' + esc((resp && resp.error) || "") + "</p>";
@@ -726,7 +768,7 @@
     var pid = $("ws-detail-project").value;
     var body = $("ws-detail-body");
     body.innerHTML = '<p class="ws-note">Loading…</p>';
-    var resp = await call("projectresults", { id: pid, period: 1 });
+    var resp = await call("projectresults", { id: pid, period: selectedPeriod().period });
     // Share the stored row with the rest of the application. taxonomy.js reads statuses from
     // here, so the radar, the project list and this panel all show the same number without any
     // of them recomputing it — and without a second request for a row already in hand.

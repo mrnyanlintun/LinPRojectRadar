@@ -9,6 +9,93 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-08 — 84 documents in one period: nothing ever assigned a period
+
+Branch `claude/period-assignment-1nfjnx`, from `origin/main` at `6818b67`. Filed as
+`REPORT_2026-08-08_period-assignment.md`. Summary below.
+
+**WHICH OF THE TWO: THE FIRST. The period is never assigned at upload; compute was never at
+fault.** `_period_documents` has filtered `DocumentUpload.period == period` strictly since 0013
+and the reconciliation report already recorded that documents never leak across periods. What
+never happened is the assignment: the Workspace panel sent `period: 1` hardcoded, the Files tab
+sent **no period key at all**, `signals.js`/`extractsignals` likewise, and `_resolve_period`
+defaults a missing period to **1**. Reproduced before building anything: four monthly reports
+dated March to June, uploaded through both real client shapes, `{1: 4}` in the store, one period
+discovered, every trend reader abstaining.
+
+**HOW A PERIOD WAS DETERMINED AT ALL.** `_resolve_period`: a research assignment's
+`current_period` (the only real sequence-driven assignment) → else `payload["period"]` → else
+**1**. Training is separate and does not go through upload (`run.state["period"]`). **Period and
+cutoff CAN disagree and did**: the number is a stated integer, the cutoff is
+`max(document_date, observation as_of)`, nothing related them, and there was no stored notion
+anywhere of a period's date range. The reproduction shows **period 1 with cutoff 2026-06-30** —
+and because selection is `as_of <= cutoff`, all four months passed the filter and June's figures
+won every snapshot field, so March/April/May were outvoted rather than being periods.
+
+**THE 84-DOCUMENT PROJECT, built twice from identical documents.** Before: `{1: 84}`, one period,
+36 modules, no series. After: **`{1: 21, 2: 21, 3: 21, 4: 21}`, four periods**, cpiHistory
+`[0.909, 0.909, 0.893, 0.87]`, **40 modules**, four distinct cutoffs.
+
+**MODULES THAT NEWLY COMPUTE:** the control-chart anomaly monitor, the schedule-performance
+smoother, the cost-performance forecast reader, the regression-to-mean reader, plus the signal
+trajectory classifier in the portfolio snapshot. Nothing lost. **Milestone Trend still abstains
+and the period defect was not the whole of what held it back** — it needs schedule activity
+tables, which this fixture has none of; `test_schedule_milestones.py` (75/75, untouched) proves
+it computes when periods are distinct AND schedules are present.
+
+**SELECTOR PLACEMENT, stated not silent.** Two controls (Reporting period, Period ending) on the
+**Workspace "Period documents" panel** (primary: the card is titled Period documents and already
+carries the per-period compute and status) and on the **Files tab** (it sent no period at all,
+and PMs demonstrably upload through it — `REPORT_2026-08-05_project-not-computed.md`). The
+**project detail single-document ingest is NOT changed and is reported**: legacy path, still
+reaches the server default. The panel's compute and status reads now follow the stated period too.
+
+**THE CUTOFF IS YIELDED THROUGH THE PARTITION, NOT SET FROM THE SELECTOR, and `_derive_cutoff` is
+untouched.** Once documents are partitioned correctly each period's cutoff is its own latest
+evidence date, which is what the derivation always meant. Setting it from the stated ending date
+was rejected for two already-asserted reasons: it would break the `docDate == period_cutoff`
+check on a first compute, and since selection is `as_of <= cutoff` it would silently exclude the
+observations of the very document the flag exists to report. **Migration 0023
+`document_uploads.period_end` exists ONLY as what the out-of-period check is measured against.**
+
+**A document dated outside its period is flagged, stored, and never moved.** Window bounded by
+two stated dates (this upload's ending date, and the latest ending date among earlier periods);
+an unknown bound is not enforced rather than guessed. A fault that "helpfully" moves such a
+document to the period its date fits takes the suite to 6/13.
+
+**Verify.** Server suite 48 suites **2591/2591** (new `test_period_assignment.py` = 45).
+`tests.html` **51/51**. `tests_render.html` **204/205** (the one red is the pre-existing
+auth-gated production-read check). Real Chromium upload drive **8/8**: stated period 2, both
+documents landed in period 2, none in period 1, the out-of-period document named on screen with
+both dates. Four faults (6/14, 39/45, 6/13, 4/8 browser), each confirmed applied, each detected,
+each reverted with a SHA-256 comparison, baselines 45/45 and 8/8 after every one. Interpreter
+confirmed real (`/readyz` schema at head 0023).
+
+**THE BYTE-IDENTICAL CHECK FAILED FIRST TIME AND THE DIAGNOSIS MATTERS.** The differing field was
+`portfolio_snapshot` (insufficient-data → `portfolio_size: 2`): my fixture created two OTHER
+projects with results at cutoffs at or before period one's BETWEEN capture and recompute, and the
+cutoff-aligned portfolio correctly admits them (the P1 rule). That is the design, not a leak, and
+a different question from the invariant. The check now runs while the four-period project is the
+only one with results, and the reason is recorded in the suite so a reorder cannot reintroduce
+the confound.
+
+**MIGRATIONS UNAPPLIED IN PRODUCTION: 0023 (this session), and still 0020, 0021, 0022.** All
+Lin's to run. Throwaway SQLite only; production never inspected or queried.
+
+**Open, flagged, not built.** The server still defaults a missing period to 1 — now reachable
+only by direct API call or the legacy ingest, but it is the mechanism this defect ran through.
+**NOTHING BACKFILLS THE EXISTING 84-DOCUMENT PROJECT**: its documents are all in period one and
+this change does not move them, because which document belongs to which period is exactly the
+judgement the platform must not make. Re-filing means re-uploading per period, or an admin
+operation that does not exist — **worth deciding before the next real project is loaded.** The
+selector is a typed number and does not know which periods a project already has.
+
+Files: `server/alembic/versions/0023_upload_period_end.py` (new), `server/app/research_models.py`,
+`server/app/documents.py`, `index.html`, `assets/js/workspace.js`, `assets/js/files.js`,
+`assets/css/radar.css`, `server/tools/test_period_assignment.py` (new),
+`REPORT_2026-08-08_period-assignment.md` (new), this entry. No `server/app/simulation/` file
+touched.
+
 # 2026-08-08 — The courses of action are readable on an operational project, and the message tells the truth
 
 Branch `claude/courses-of-action-1nfjnx`, from `origin/main` at `5fb0be7`. Filed as
