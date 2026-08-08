@@ -403,20 +403,43 @@ check(obs_r.get("ok") is True, "observer CAN still read results")
 
 # ---------------------------------------------------------------- Guarantee 6
 
-print("\nGuarantee 6 — no recommendation before the PM locks the preliminary judgment")
+print("\nGuarantee 6 — no researcher-authored package reaches an operational project")
+# REWRITTEN 2026-08-08. This block used to assert that an operational project's read was
+# withheld pending a preliminary judgment lock. There is no preliminary judgment on an
+# operational project and never will be: PROJ_A is created by an operational account and no
+# scenario names it, so the lock the assertion waited on could not occur, and what the block
+# actually pinned was the defect that a project manager could never see the scored courses of
+# action on their own project. The reveal gate now applies to the research instrument only
+# (`research_membership.reveal_gate_applies`), so the correct assertions here are:
+#
+#   - no researcher-authored PACKAGE is spliced in, because packages are study artifacts and
+#     this project has none. That half was always right and is unchanged below.
+#   - nothing is reported as withheld, because nothing is being withheld.
+#
+# The withholding itself is asserted where it is real: test_decision_ui_t4.py (a participant
+# pre-lock) and test_courses_of_action.py (both arms of the gate, and both leaks that the
+# rejected discriminators would have caused).
 body = json.dumps(post({"action": "projectresults", "session_token": pm_a,
                         "id": PROJ_A, "period": 1}))
 check(json.loads(body)["result"]["recommendation"] is None,
-      "recommendation is null while unlocked")
-check(json.loads(body)["result"]["recommendation_withheld"] is True,
-      "withheld is explicit, distinguishable from absent")
-for marker in ("ZQMARK", "recommended_action", "package_hash", "package_id",
+      "no recommendation package on a project that has none")
+check("recommendation_withheld" not in json.loads(body)["result"],
+      "and the read is NOT reported as withheld: nothing is being kept from this PM")
+for marker in ("ZQMARK", "package_hash", "package_id",
                "alternatives", "detected_condition"):
     present = marker in body
     if present:
         i = body.index(marker)
         print(f"    LEAK CONTEXT: ...{body[max(0, i - 220):i + 90]}...")
     check(not present, f"response does not contain {marker!r}")
+# The module's own scored courses ARE readable here, which is the behaviour Guarantee 6 used
+# to forbid. Asserted rather than merely no longer forbidden, so a regression is visible.
+_mods = {m.get("method_class"): m for m in
+         (json.loads(body)["result"].get("module_results") or []) if isinstance(m, dict)}
+_reg = _mods.get("Regret_Minimization")
+check(_reg is not None and isinstance(_reg.get("expected_regret"), dict),
+      "the operational PM CAN read the scored courses of action on their own project",
+      str(_reg)[:160])
 
 
 # ---------------------------------------------------------------- Guarantee 7

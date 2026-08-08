@@ -1661,6 +1661,123 @@
       !a4Row || a4Row.querySelector(".pill").textContent.trim() === "Green");
   })();
 
+  /* GROUP 19 — the Courses of action block never says a module did not compute unless it
+     actually did not.
+
+     Three different facts used to share one sentence, and the wrong one was printed on every
+     operational project: the block reported that the analysis scoring the courses of action
+     "did not compute" for projects whose Signal Ledger was rendering that same module's
+     status two panels down. The three are now distinct and this group holds them apart.
+
+       1. the row carries no module results at all — nothing is known about any module, so
+          the block must not claim anything about whether one ran;
+       2. the module is present and its action fields were withheld by the reveal gate —
+          reachable on the research path only, now that an operational project is not gated;
+       3. the row carries module results and the scoring module is not among them — it
+          abstained, and this alone is "did not compute".
+
+     Also asserted: the operational shape reaches the OPTIONS, not any of the three notices. */
+  (function () {
+    const REGRET = { monitor: 11, investigate: 5, escalate: 8 };
+    const DID_NOT = "did not compute";
+    const WITHHELD = "withheld until this period's preliminary judgment";
+    const PENDING = "has not been read back yet";
+
+    function computedRow() {
+      return {
+        project_status: "Red",
+        signal_inputs: { cpi: 0.84, spi: 0.88, bac: 12000000 },
+        module_results: [
+          { module_id: "B4.7", group: "B", category: "B4", status_color: "Red",
+            method_class: "Regret_Minimization", evidence_metric: "Least-regret action: escalate",
+            expected_regret: REGRET, recommended_action: "escalate", min_regret_score: 5 },
+          { module_id: "A3.6", group: "A", category: "A3", status_color: "Red",
+            method_class: "Cost_Risk_Analysis", p80_eac: 15748571, p80_delta_pct: 31.2 }
+        ]
+      };
+    }
+
+    /* 1. The four-field status projection: exactly what the list/get path attaches, and what
+       every reader saw before the complete row was read back. */
+    const projection = {
+      result_id: "01TEST", period: 1, project_status: "Red",
+      category_statuses: { B4: { status: "Red", group: "B", module_count: 1,
+                                 contributes_to_project_status: true } }
+    };
+    const pendingSpec = window.LinRecOptions.build(projection);
+    assert("group 19: a row with no module results yields no courses", false,
+      pendingSpec.available);
+    assert("group 19: and it is marked pending rather than guessed at", true,
+      pendingSpec.pending === true);
+    assert("group 19: a row with no module results does NOT claim the analysis did not compute",
+      -1, pendingSpec.reason.indexOf(DID_NOT));
+    assert("group 19: it says the analysis has not been read back yet", true,
+      pendingSpec.reason.indexOf(PENDING) >= 0);
+
+    /* 2. Withheld: the module is present, its action fields stripped, flag set. */
+    const withheldRow = computedRow();
+    withheldRow.module_results = withheldRow.module_results.map(function (m) {
+      const c = Object.assign({}, m);
+      if (c.method_class === "Regret_Minimization") {
+        delete c.expected_regret; delete c.recommended_action;
+        c.recommendation_withheld = true;
+        c.evidence_metric = "This module's finding is withheld until the preliminary judgment "
+          + "for this period is locked.";
+      }
+      return c;
+    });
+    const withheldSpec = window.LinRecOptions.build(withheldRow);
+    assert("group 19: a withheld module yields no courses", false, withheldSpec.available);
+    assert("group 19: and is marked withheld", true, withheldSpec.withheld === true);
+    assert("group 19: a withheld module is NOT reported as having failed to compute",
+      -1, withheldSpec.reason.indexOf(DID_NOT));
+    assert("group 19: it says the finding is withheld pending the lock", true,
+      withheldSpec.reason.indexOf(WITHHELD) >= 0);
+
+    /* 3. Genuinely abstained: module results present, the scoring module absent. */
+    const abstainedRow = computedRow();
+    abstainedRow.module_results = abstainedRow.module_results.filter(function (m) {
+      return m.method_class !== "Regret_Minimization";
+    });
+    const abstainedSpec = window.LinRecOptions.build(abstainedRow);
+    assert("group 19: an abstained scoring module yields no courses", false,
+      abstainedSpec.available);
+    assert("group 19: a module that truly did not compute STILL says so", true,
+      abstainedSpec.reason.indexOf(DID_NOT) >= 0);
+    assert("group 19: and it is neither pending nor withheld", true,
+      abstainedSpec.pending === false && abstainedSpec.withheld === false);
+    assert("group 19: it draws no options rather than inventing a set", 0,
+      abstainedSpec.options.length);
+    assert("group 19: and says nothing about courses it does not have", -1,
+      abstainedSpec.reason.indexOf("out of 30"));
+
+    /* The three notices are three different sentences. */
+    assert("group 19: the pending and did-not-compute notices are different sentences", true,
+      pendingSpec.reason !== abstainedSpec.reason);
+    assert("group 19: the withheld and did-not-compute notices are different sentences", true,
+      withheldSpec.reason !== abstainedSpec.reason);
+
+    /* 4. The operational shape now reaches the options, which is the whole point. */
+    const opsSpec = window.LinRecOptions.build(computedRow());
+    assert("group 19: an operational row reaches the courses of action", true,
+      opsSpec.available);
+    assert("group 19: with one course per scored key", 3, opsSpec.options.length);
+    assert("group 19: and no notice sentence is produced for it", true,
+      !opsSpec.reason);
+
+    /* 5. rowFor prefers the complete primed row over the four-field projection, which is what
+       stopped the card contradicting the ledger beside it. */
+    if (window.LinResults && window.LinResults.prime) {
+      const proj = { id: "PRJ-ROWFOR-1", storedResult: projection };
+      window.LinResults.prime("PRJ-ROWFOR-1", computedRow());
+      const resolved = window.LinResults.rowFor(proj);
+      assert("group 19: rowFor returns the row that carries module results", true,
+        !!(resolved && resolved.module_results));
+      assert("group 19: so the generator resolves the courses despite the projection", true,
+        window.LinRecOptions.build(resolved).available);
+    }
+  })();
+
   // ---- render results ----
   function renderResults() {
   const tbody = document.querySelector("#results tbody");

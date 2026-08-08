@@ -72,6 +72,7 @@ from .research_membership import (
     ROLE_PM,
     project_decision_state,
     recommendation_visible,
+    reveal_gate_applies,
     require_member,
 )
 from .research_models import (
@@ -1079,7 +1080,14 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
     else:
         # Explicit, so a reader of a response can tell "withheld" from "absent".
         view["recommendation"] = None
-        view["recommendation_withheld"] = True
+        # WITHHELD MEANS THE REVEAL GATE REFUSED IT, not merely that there is no package.
+        # A project outside the research protocol has no package to withhold: recommendation
+        # packages are researcher-authored study artifacts. Flagging those reads as withheld
+        # told an operational project manager that something was being kept from them when
+        # nothing was, which is the same false statement this task exists to remove from the
+        # card.
+        if not include_recommendation:
+            view["recommendation_withheld"] = True
     return view
 
 
@@ -1979,11 +1987,27 @@ def a_projectresults(session: Session, payload: dict, secret: str, ttl: int) -> 
         return err(f"no computed result for period {period}; run projectcompute first")
 
     _assignment, decision, package = project_decision_state(session, project)
-    visible = recommendation_visible(decision)
+    # THE REVEAL GATE APPLIES TO THE RESEARCH PROTOCOL ONLY.
+    #
+    # `recommendation_visible` is false until a participant's preliminary judgment is locked,
+    # and a `Decision` row exists only inside the instrument. Applied to an ordinary
+    # operational project the predicate is false forever, so the scored courses of action were
+    # redacted on every read and a project manager could never see them on their own project.
+    # There is no judgment to protect there and no participant to blind.
+    #
+    # `reveal_gate_applies` is the one place that decides, and it is NOT the presence of a
+    # decision row: that exists only inside the protocol and only once a participant is
+    # assigned, which is what made the predicate false forever out here. It covers both a
+    # study project (every member, observers included) and a study participant (wherever they
+    # are reading), so the gate lifts for exactly one case: an operational account on a
+    # project no scenario is built on. Inside the protocol nothing changes at all.
+    gated = reveal_gate_applies(session, project, caller)
+    visible = (recommendation_visible(decision) if gated else True)
 
     audit(session, "project_read", participant_id=caller.participant_id,
           action="projectresults", project_id=project.legacy_id,
           project_role=member.project_role, result_id=row.result_id,
+          reveal_gated=gated,
           recommendation_visible=visible)
     session.commit()
     return {

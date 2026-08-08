@@ -230,23 +230,36 @@ check(result["result"] == result2["result"],
 
 # ---------------------------------------------------------------- Guarantee 8
 
-print("\nGuarantee 8 — recommendation absent before the pre-judgment lock")
+print("\nGuarantee 8 — an operational project carries no study package, and is not redacted")
+# REWRITTEN 2026-08-08, for the reason recorded in test_documents_b7b.py's Guarantee 6. This
+# project is created by an operational account through projectcreate and no scenario names it
+# as an evidence package, so there is no participant to blind and no preliminary judgment to
+# wait for. Asserting a withholding here pinned the defect: the reveal predicate was reached
+# through a Decision row that an operational project never gets, so the scored courses of
+# action were redacted on every read forever.
+#
+# What remains true and is still asserted: no researcher-authored package is spliced into a
+# project that has none. The withholding is asserted where it is real, in
+# test_decision_ui_t4.py and test_courses_of_action.py.
 r = result["result"]
-check(r["recommendation"] is None, "recommendation is null")
-check(r.get("recommendation_withheld") is True, "withheld flag present")
+check(r["recommendation"] is None, "recommendation is null: this project has no study package")
+check("recommendation_withheld" not in r,
+      "and the read is not reported as withheld, because nothing is withheld from this PM")
 body = json.dumps(result)
-for marker in ("recommended_action", "expected_regret", "package_hash", "package_id"):
+for marker in ("package_hash", "package_id"):
     check(marker not in body, f"response body has no {marker!r}")
-# module_results may legitimately contain an "action" key on OTHER modules unrelated to
-# recommendation (grepped narrowly above); the per-module redaction flag is the precise proof.
-# This used to be `check(True, ...)` — redacted_any was computed and printed but never tested,
-# so the check passed unconditionally and would still have passed with the per-module redaction
-# removed entirely.
+# The inverse of the old assertion, and the point of the change: no module on an operational
+# read carries the redaction flag, and the scored courses are readable.
 redacted_any = any(
     isinstance(m, dict) and m.get("recommendation_withheld") for m in (r["module_results"] or [])
 )
-check(redacted_any, "module-level redaction flag present on at least one action-bearing module",
+check(not redacted_any,
+      "no module is marked withheld on an operational project",
       f"redacted_any={redacted_any}")
+_reg = next((m for m in (r["module_results"] or [])
+             if isinstance(m, dict) and m.get("method_class") == "Regret_Minimization"), None)
+check(_reg is not None and isinstance(_reg.get("expected_regret"), dict),
+      "and the PM can read the scored courses of action on their own project", str(_reg)[:160])
 
 
 # ---------------------------------------------------------------- Guarantee 9
