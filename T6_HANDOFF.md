@@ -5070,3 +5070,54 @@ it computes one named period, which is what a research participant does and what
 `server/run_all_suites.sh` now falls back to `python3` on PATH when there is no `.venv`, and
 passes `PYTHONIOENCODING=utf-8`. Without that it ran every suite with a non-existent interpreter
 and reported "no RESULT line" for all of them.
+
+## Four document rows that could never light up, and a fourth instance of the retired-key class (2026-08-09)
+
+Branch `claude/document-rows-fix`. Report at `REPORT_2026-08-09_document-rows.md`.
+
+**The class first found in `projectnet2d.js` and `decision.js`'s `CATEGORY_ACTIONS` — a surface
+keyed on a document-type or category string a taxonomy rename or retirement left behind — had a
+third live instance (`neural_flow.js` keying its submittal row on `'submittal'` instead of the
+renamed `submittal_register`) and a fourth (`app.js`'s `categoryLedgerHtml` comparing
+`cat.id === "cat9"`, a scheme `LIN_CATEGORIES` no longer has; corrected to `"b3"`, the current
+Governance category). The sweep also found the diagram's RFI row keyed on the individual `'rfi'`
+type, retired by construction in the 2026-08-02 storage redesign — removed rather than repointed,
+since a separate, already-correct `'rfi_log'` row existed the whole time. `signals.js`'s upload
+dropdown and `simulations.js`'s `runSourceReliability` carried the same two stale strings and
+were fixed the same way. `server/app/simulation/models_dq.py` has the identical stale dict —
+reported, not fixed, `server/app/simulation/` being off-limits. `neural_flow.js`'s `DOC_KEYS` is
+now exactly the current 27-type `DOC_TYPES` set, checked by equality, not just absence of the two
+known-bad strings.
+
+**Schedule of Values had no classifier hint distinguishing it from Pay Application at all** — the
+audit's finding was a genuine zero, not a wrong hint. `CLASSIFY_HINTS` in
+`extraction_fields.py` now names schedule_of_values as a line-item breakdown carrying no amount
+paid and no billing period, set directly against a sharpened pay_application clause naming both
+of the fields it lacks. The RFI-log clause was extended the same way for the corpus's
+design-engagement titling (`"Design Query and Owner Decision Log"`, `"RFI and Design Query
+Log"`), which the pre-fix hints did not recognise at all. Both are deterministic-pinned in the
+new `server/tools/test_document_rows.py`, self-tested against the reconstructed pre-fix text so
+the pin can fail; neither can be verified against a real model call in this environment (no
+`ANTHROPIC_API_KEY`, no sample document).
+
+**Past Performance Report, Historical Project Data, and Test and Commissioning Report now read as
+the existing blue `NotRelevant` state** (square marker, same colour module-level sector-NA rows
+already use) instead of a dark "no data" row, when not uploaded. Checked first whether this could
+be derived from platform data the way module sector-NA already is (`taxonomy.js`'s
+`LIN_MODULE_SECTORS`, per-module `sectors` list read by `getModuleStatus()`): document types
+carry no equivalent field anywhere in the data model, and `documents.py`'s `_EXPECTED_DOC_TYPES`
+names a different, unrelated four types. It cannot be derived, so `DOC_NOT_APPLICABLE` in
+`neural_flow.js` is a documented, hardcoded three-name list, not a computed one — the report says
+so rather than presenting it as principled.
+
+**Schedule of Values' field-precedence overlap with four other types (`bac`: change_order,
+contract_value, pay_application, monthly_report; `ev`: pay_application, monthly_report) was
+reported, not changed** — `field_registry.py` untouched, per instruction.
+
+Verified: full server suite **51 files, 2700/2700**, fresh SQLite per file, including the new
+36-check `test_document_rows.py`. `tests.html` 51/51. `tests_render.html` 208/209 (the one red
+being the same pre-existing auth-gated row, confirmed red on this branch's changes fully
+reverted). The Signal Flow diagram driven in real headless Chromium against the actual
+`assets/js` files (not a mock) before and after the fix — every row-lighting and NotRelevant
+check proven able to fail by reverting just `neural_flow.js` and re-running, then restored and
+re-confirmed green.

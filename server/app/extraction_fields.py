@@ -99,14 +99,36 @@ ALL_FIELDS: tuple[str, ...] = (
     "weather_days_discussed", "weather_days_lost", "work_period_from", "work_period_to",
 )
 
-# The content-sniffing hints from the identifyOnly_ classifier prompt (line 709-711), verbatim.
-# Only eight of the 28 types get a hint; the rest rely on the model's priors. Kept as one string
-# rather than a dict because it is a prompt fragment, and splitting it would invite someone to
-# reassemble it in a different order and change classifier behaviour by accident.
+# The content-sniffing hints from the identifyOnly_ classifier prompt (line 709-711), verbatim
+# apart from the two additions noted below. Ten of the 27 types now get a hint; the rest rely on
+# the model's priors. Kept as one string rather than a dict because it is a prompt fragment, and
+# splitting it would invite someone to reassemble it in a different order and change classifier
+# behaviour by accident.
+#
+# ADDITION 1 (2026-08-09): the RFI log clause now names the design-engagement titling this
+# corpus actually uses. One project names the document a "Design Query and Owner Decision Log";
+# the others name it "RFI Log" or "RFI and Design Query Log" — same request/response/decision
+# content, different title. Without the added wording the model has only the bare "RFI log"
+# framing to go on and nothing tying "design query" or "owner decision" vocabulary to rfi_log.
+#
+# ADDITION 2 (2026-08-09): a schedule_of_values clause naming its structure — a line-item
+# breakdown of the contract sum with a scheduled value and percent/amount complete per line, no
+# application number, no amount paid — set directly against pay_application's own hint, which was
+# previously the classifier's ONLY signal for either document and describes pay_application only.
+# A schedule of values is a breakdown of the contract sum; a pay application is a request for
+# payment against it, so the two clauses are written to name what is present in one and absent in
+# the other, not just to describe each document in isolation.
 CLASSIFY_HINTS: str = (
-    "Match on content: pay application has contract sum and amount paid; "
+    "Match on content: pay application has contract sum, amount paid to date and a billing "
+    "period, and is a numbered request for payment; "
+    "a schedule of values breaks the contract sum into line items, each with its own scheduled "
+    "value and percent or amount complete, and unlike a pay application carries no amount paid "
+    "and no billing period; "
     "monthly report has EV/AC/PV; "
-    "an RFI log lists requests for information with totals; OAC minutes has meeting attendees; "
+    "an RFI log lists requests for information with totals, whatever it is titled — a document "
+    "titled a design query log or an owner decision log records the same request, response and "
+    "decision content and is the same type; "
+    "OAC minutes has meeting attendees; "
     "change order has revised contract sum; "
     "NCR log has non-conformance; cost report has indirect/material cost; "
     "safety report has OSHA incidents."
