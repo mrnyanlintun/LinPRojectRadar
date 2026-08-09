@@ -2,10 +2,16 @@
 (function () {
   'use strict';
 
-  // ─── Document types (28 backend keys, ordered to match DOC_TO_CATS) ─────────
+  // ─── Document types (27 backend keys, ordered to match DOC_TO_CATS) ─────────
+  // The individual `rfi` type is retired (registers/logs only — see
+  // extraction_fields.py DOC_TYPES); its row is gone rather than repointed, since
+  // `rfi_log` below is already the structurally-correct row for that traffic.
+  // `submittal` is keyed on its current canonical name, `submittal_register`
+  // (extraction_fields.py LEGACY_TYPE_ALIASES) — the classified/event docType this
+  // diagram compares against is always the canonical name, never the retired alias.
   var DOC_KEYS = [
     'contract_value','schedule_of_values','pay_application','time_phased_schedule',
-    'schedule_update','monthly_report','change_order','rfi','submittal',
+    'schedule_update','monthly_report','change_order','submittal_register',
     'oac_minutes','field_report','inspection_report','ncr_log',
     'subcontractor_report','procurement_log','lookahead_schedule','resource_report',
     'cost_report','past_performance_report','safety_report','quality_audit_report',
@@ -17,6 +23,19 @@
     if (lbl) return lbl;
     return key.split('_').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
   }
+
+  // These three types are confirmed by the document set's creator to be deliberately
+  // absent from this corpus (not gaps). The platform has no per-document-type
+  // applicability signal to derive this from — unlike modules, which carry a
+  // `sectors` list on their taxonomy entry (see taxonomy.js LIN_MODULE_SECTORS) that
+  // getModuleStatus() reads to decide NA — so this is a hardcoded editorial list, not
+  // a computed one. See REPORT_2026-08-09_document-rows.md Part 4 for why no
+  // data-driven distinction was available.
+  var DOC_NOT_APPLICABLE = {
+    'past_performance_report': true,
+    'historical_data': true,
+    'commissioning_report': true,
+  };
 
   // ─── Fallback category definitions (10 project-level; Portfolio Health is
   // portfolio-scale and not part of this diagram) — used only if
@@ -149,8 +168,7 @@
     [1,4],      // Schedule Update         → Cat2, Cat5
     [0,1,2],    // Monthly Report          → Cat1, Cat2, Cat3
     [2,7],      // Change Order            → Cat3, Cat8
-    [3],        // RFI                     → Cat4
-    [3],        // Submittal               → Cat4
+    [3],        // Submittal Register      → Cat4
     [3,7],      // OAC Minutes             → Cat4, Cat8
     [3,1],      // Field Report            → Cat4, Cat2
     [3],        // Inspection Report       → Cat4
@@ -718,26 +736,33 @@
     DOC_KEYS.forEach(function(key, di) {
       var name = docLabel(key);
       var uploaded = isUploaded(key);
-      var color = uploaded ? COL.DocOn : COL.DocOff;
+      // A doc row confirmed to never be produced for this corpus reads as the
+      // platform's existing not-relevant state (blue, square) rather than as a
+      // dark "no data" row implying a document is missing. Only applies while the
+      // row is actually unlit — a document that WAS somehow uploaded still lights.
+      var notApplicable = !uploaded && !!DOC_NOT_APPLICABLE[key];
+      var color = uploaded ? COL.DocOn : (notApplicable ? COL.NotRelevant : COL.DocOff);
       var glow  = uploaded ? 'url(#lnf-glow-DocOn)' : null;
       var x=CX.doc, y=docY(di);
       var g = se('g', { class:'lnf-nd' }, nodeG);
-      var dAttrs = { cx:x, cy:y, r:'5', fill:color, opacity:uploaded?'0.88':'0.30', stroke:'none' };
+      var dAttrs = { fill:color, opacity:uploaded?'0.88':(notApplicable?'0.75':'0.30'), stroke:'none' };
       if (glow) dAttrs.filter = glow;
-      se('circle', dAttrs, g);
-      var t = se('text', { x:x-10, y:y, fill:uploaded?'var(--muted, #7a9ac0)':'var(--faint, #253045)',
+      seShape(notApplicable ? 'square' : 'circle', x, y, 5, dAttrs, g);
+      var t = se('text', { x:x-10, y:y,
+        fill:uploaded?'var(--muted, #7a9ac0)':(notApplicable?COL.NotRelevant:'var(--faint, #253045)'),
         'font-size':'13', 'font-family':'monospace', 'text-anchor':'end', 'dominant-baseline':'middle', class:'lnf-halo' }, g);
-      if (!uploaded) t.setAttribute('opacity','0.55');
+      if (!uploaded && !notApplicable) t.setAttribute('opacity','0.55');
       t.textContent = name;
 
-      g.addEventListener('mouseenter', (function(name, di, uploaded, color) {
+      g.addEventListener('mouseenter', (function(name, di, uploaded, notApplicable, color) {
         return function(evt) {
           var cats = DOC_TO_CATS[di].map(function(ci){return (CATS[ci] && CATS[ci].name) || '';}).join(', ');
-          showTT(evt,'<div class="n">'+escH(name)+'</div><div class="sub" style="color:'+color+'">'+(uploaded?'Uploaded':'Not uploaded')+'</div><div class="sub">Feeds: '+cats+'</div>');
+          var label = uploaded ? 'Uploaded' : (notApplicable ? 'Not applicable to this corpus' : 'Not uploaded');
+          showTT(evt,'<div class="n">'+escH(name)+'</div><div class="sub" style="color:'+color+'">'+label+'</div><div class="sub">Feeds: '+cats+'</div>');
           // trace this document's feeds regardless of upload state
           classAFocus(function(e, d){ return d===di; });
         };
-      })(name, di, uploaded, color));
+      })(name, di, uploaded, notApplicable, color));
       g.addEventListener('mousemove', moveTT);
       g.addEventListener('mouseleave', (function(di, uploaded) {
         return function() { hideTT(); classAReset(); };

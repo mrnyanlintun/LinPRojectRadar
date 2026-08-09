@@ -2397,7 +2397,11 @@
       'pay_application': 0.90, 'contract_value': 0.95,
       'schedule_of_values': 0.85, 'time_phased_schedule': 0.80,
       'monthly_report': 0.75, 'change_order': 0.90,
-      'rfi': 0.65, 'submittal': 0.65, 'field_report': 0.60,
+      // The individual-RFI and pre-split submittal type strings were retired/renamed
+      // (see extraction_fields.py DOC_TYPES / LEGACY_TYPE_ALIASES); a stored docType
+      // is always the current name, so these are keyed on the names that actually
+      // appear now.
+      'rfi_log': 0.65, 'submittal_register': 0.65, 'field_report': 0.60,
       'oac_minutes': 0.55, 'inspection_report': 0.70,
       'derived': 0.40
     };

@@ -45,10 +45,9 @@
       ["monthly_report",        "Monthly Progress Report"]
     ]},
     { label: "Risk & Correspondence Documents", types: [
-      ["rfi",                   "RFI / RFI Log"],
       ["rfi_log",               "RFI Log (register)"],
       ["rfa_log",               "RFA / Approval Log"],
-      ["submittal",             "Submittal / Submittal Register"],
+      ["submittal_register",    "Submittal Register"],
       ["oac_minutes",           "OAC Meeting Minutes"],
       ["correspondence_notice", "Correspondence / Notice"],
       ["risk_register",         "Risk Register"],

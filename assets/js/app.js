@@ -1604,7 +1604,7 @@
     const healthCat = LIN_CATEGORIES.find((c) => c && c.level === "portfolio");
     const rows = projectCats.map((cat) => {
       const status = window.getCategoryStatus ? getCategoryStatus(cat.id, p) : null;
-      const open = cat.id === "cat9" ? " open" : "";   // Governance (now Cat 8) open by default
+      const open = cat.id === "b3" ? " open" : "";   // Governance (Group B: Regulatory & Authority Thresholds) open by default
       const desc = esc(cat.description);
       const rowPill = statusPill(status);
 
