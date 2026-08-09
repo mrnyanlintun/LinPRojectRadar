@@ -1308,18 +1308,35 @@
     /* EXACTNESS. Every numeric token in the whole block must be a figure the stored row
        holds (or the fixed denominator of the score). A fabricated or drifted figure fails
        here, which is what makes this check able to fail. */
-    const ALLOWED = ["11", "5", "8", "30", "15,748,571", "31.2", "0.84", "0.88"];
+    const ALLOWED = ["15,748,571", "31.2", "0.84", "0.88"];
     const blockText = block ? (block.textContent || "") : "";
     const tokens = (blockText.match(/\d[\d,.]*/g) || [])
       .map(function (t) { return t.replace(/[.,]+$/, ""); });
     const stray = tokens.filter(function (t) { return ALLOWED.indexOf(t) < 0; });
     assert("group 15: every figure quoted is a stored value, no other number appears", "",
       stray.join(" | "));
-    assert("group 15: the figure scan actually saw figures", true, tokens.length >= 8);
+    assert("group 15: the figure scan actually saw figures", true, tokens.length >= 3);
     assert("group 15: the stored completion estimate is quoted exactly", true,
       blockText.indexOf("15,748,571 dollars, 31.2 per cent above budget") >= 0);
-    assert("group 15: the stored score for escalating is quoted exactly", true,
-      blockText.indexOf("worst case of this course at 8 out of 30") >= 0);
+
+    /* THE SCORES ARE NOT QUOTED, AND THIS CHECK REPLACES TWO THAT RECORDED THE DEFECT.
+       Until 2026-08-09 this group asserted `"worst case of this course at 8 out of 30"` and
+       `"It scores 8 out of 30"` were present, one of them named "and it still quotes the
+       stored score rather than hiding it". Both pinned the defect as expected behaviour: the
+       payoff matrix and the future probabilities behind those scores are literals that read no
+       project input, so 11, 5 and 8 are the same on every project and every period this
+       platform has ever stored. Quoting them beside a project's name told a reader their own
+       evidence produced them.
+
+       The property the old checks were reaching for is real -- a figure on the card must not
+       be hidden from the reader -- and it is kept, inverted: a figure that says nothing about
+       this project must not be PRINTED as though it did, and its absence must be explained
+       rather than silent. The scan above enforces the first (5, 8, 30 are off the allowlist,
+       so their reappearance anywhere in the block fails); these enforce the second. */
+    assert("group 15: no course quotes the fixed score as a cost of that course", -1,
+      blockText.indexOf("out of 30"));
+    assert("group 15: and the block says plainly that the courses are not ranked", true,
+      blockText.indexOf("not ranked") >= 0);
 
     /* The recommendation is the stored one, and the reason it differs from the ranking comes
        from the SERVED basis or is not stated at all.
@@ -1340,8 +1357,12 @@
       !!rec && rec.textContent.indexOf("Recommended: Escalate to management review") >= 0);
     assert("group 15: with no served basis the card does NOT invent a rule", true,
       !!rec && rec.textContent.indexOf("is not established here") >= 0);
-    assert("group 15: and it still quotes the stored score rather than hiding it", true,
-      !!rec && rec.textContent.indexOf("It scores 8 out of 30") >= 0);
+    /* Was "and it still quotes the stored score rather than hiding it", asserting
+       `"It scores 8 out of 30"`. See the note above: that sentence was the defect. With no
+       served ranking block the card must STILL explain the absence rather than drop both the
+       score and the reason, which an earlier draft of the fix did. */
+    assert("group 15: with no served ranking block it still explains why nothing is ranked",
+      true, !!rec && rec.textContent.indexOf("same for every project") >= 0);
 
     /* With the basis served, the card states the rule and the threshold, and stops calling
        the difference unestablished. Every figure in the sentence is one the platform holds. */
@@ -1366,6 +1387,84 @@
       basisRec ? basisRec.textContent.indexOf("is not established here") : -1);
     assert("group 15: the fixed scores are named as a property of the method", true,
       basisDiv.textContent.indexOf("the same for every project") >= 0);
+
+    /* WHAT THE PERIOD'S DOCUMENTS SAY, AND THE DOCUMENT BEHIND EACH STATEMENT.
+       The recommendation used to be built from the computed signals alone. It now also reports
+       what the period's uploaded documents establish, served by `document_evidence.py` at
+       display time. The contract this group holds it to is the card's existing one: every
+       statement is a value read back from a document, and every statement NAMES that document,
+       so a reader can check it. A finding the server sends without a filename is unattributable
+       and must be dropped rather than printed, which is the one case a reader could not check. */
+    const withDocs = fullRow();
+    withDocs.document_evidence = {
+      documents_read: [
+        { filename: "RFI Log April.pdf", doc_type: "rfi_log" },
+        { filename: "Notice of Delay.pdf", doc_type: "correspondence_notice" }
+      ],
+      findings: [
+        { sentence: "11 requests for information are still open", filename: "RFI Log April.pdf",
+          doc_type: "rfi_log", field: "rfi_open", value: 11,
+          bearing: "unresolved scope questions" },
+        // Deliberately unattributable: the card must not print this.
+        { sentence: "9 widgets are unaccounted for", filename: null, doc_type: "rfi_log",
+          field: "made_up", value: 9, bearing: "nothing" }
+      ],
+      not_established: [
+        { filename: "Notice of Delay.pdf", doc_type: "correspondence_notice",
+          sentence: "This period contains correspondence or a notice. Its content is not "
+            + "stored, so what it says is not established here." }
+      ],
+      ranking: { possible: false, reason: "The stored courses carry the same three scores on "
+        + "every project and every reporting period, because the table they come from does not "
+        + "read any project input. They rank nothing about this project, so no ranking is "
+        + "shown." }
+    };
+    const docsDiv = scratch();
+    docsDiv.innerHTML = window.LinRecOptions.html(window.LinRecOptions.build(withDocs));
+    const docsBlock = docsDiv.querySelector("#ro-documents");
+    const docsText = docsBlock ? docsBlock.textContent : "";
+    assert("group 15: the documents block renders when document evidence is served", true,
+      !!docsBlock);
+    assert("group 15: a document finding is quoted exactly as served", true,
+      docsText.indexOf("11 requests for information are still open") >= 0);
+    assert("group 15: and it names the document it was read from", true,
+      docsText.indexOf("Read from RFI Log April.pdf") >= 0);
+    assert("group 15: a finding with no document to name is DROPPED, not printed", -1,
+      docsText.indexOf("widgets are unaccounted for"));
+    assert("group 15: a document whose content is not stored is reported, not omitted", true,
+      docsText.indexOf("what it says is not established here") >= 0);
+    assert("group 15: and that document is named too", true,
+      docsText.indexOf("Notice of Delay.pdf") >= 0);
+    /* Same exactness rule as the block above: with document evidence served, the only numbers
+       that may appear in the documents block are the ones the server sent. */
+    const docTokens = (docsText.match(/\d[\d,.]*/g) || [])
+      .map(function (t) { return t.replace(/[.,]+$/, ""); });
+    const docAllowed = ["11"];
+    assert("group 15: every figure in the documents block is a served value", "",
+      docTokens.filter(function (t) { return docAllowed.indexOf(t) < 0; }).join(" | "));
+    assert("group 15: the documents-block figure scan actually saw a figure", true,
+      docTokens.length >= 1);
+    /* The block must not quietly become a second recommendation. It reports; it does not rank
+       and it does not advise. */
+    assert("group 15: the documents block ranks nothing", -1, docsText.indexOf("out of 30"));
+
+    /* Served evidence must not disturb the surface-parity or determinism guarantees below. */
+    assert("group 15: rendering with document evidence is byte-identical twice",
+      window.LinRecOptions.html(window.LinRecOptions.build(withDocs)),
+      window.LinRecOptions.html(window.LinRecOptions.build(withDocs)));
+
+    /* A period whose documents establish nothing readable must say so rather than render an
+       empty heading, and must not claim there were no documents. */
+    const emptyDocs = fullRow();
+    emptyDocs.document_evidence = {
+      documents_read: [{ filename: "Monthly Report.pdf", doc_type: "monthly_report" }],
+      findings: [], not_established: [],
+      ranking: { possible: false, reason: "no ranking" }
+    };
+    const emptyDiv = scratch();
+    emptyDiv.innerHTML = window.LinRecOptions.html(window.LinRecOptions.build(emptyDocs));
+    assert("group 15: a period with no readable findings renders no documents block", null,
+      emptyDiv.querySelector("#ro-documents"));
 
     /* The card's own fields. */
     const auth = host.querySelector("#dc-authority");

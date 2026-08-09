@@ -79,6 +79,7 @@ from .research_models import (
     ComputedResult, Decision, Document, DocumentUpload, Observation, ScheduleActivity,
     UploadAttempt, new_ulid,
 )
+from .document_evidence import document_evidence
 from .recommendation_basis import recommendation_basis
 from .schedule_activities import read_activity_table, select_for_display
 from .schedule_table import activity_rows_from_document, activity_table_from_document
@@ -2183,10 +2184,31 @@ def a_projectresults(session: Session, payload: dict, secret: str, ttl: int) -> 
           reveal_gated=gated,
           recommendation_visible=visible)
     session.commit()
+    view = _result_view(row, include_recommendation=visible, package=package)
+
+    # WHAT THE PERIOD'S DOCUMENTS ESTABLISH, read at display time and not frozen into the row.
+    # Read from the period's LIVE documents (superseded revisions already excluded), so a
+    # replaced document stops speaking the moment it is replaced, which a value copied onto the
+    # stored result at compute time would not do.
+    #
+    # NOT GATED BY THE REVEAL. This is evidence, in the same class as `signal_inputs`, which a
+    # participant is shown BEFORE their preliminary judgment because forming one is the point.
+    # It carries counts read out of documents and names the documents; it carries no
+    # recommendation, no course, no action and no ranking -- `document_evidence.ranking` is a
+    # refusal with its reason, never a preference.
+    #
+    # THAT CLAIM IS CHECKED, and not by the T4 prose scanner: that scanner runs over the
+    # decision-state endpoint and was measured NOT to reach this block (a planted "escalate to
+    # management review" in a findings sentence left it green). The check that does hold this
+    # to account is `test_period_picker_and_evidence.py` section 6, which scans every sentence
+    # this table can generate against the same leak vocabulary and is proven able to fail.
+    view["document_evidence"] = document_evidence(
+        _period_documents(session, project, row.period))
+
     return {
         "ok": True,
         "project_id": project.legacy_id,
-        "result": _result_view(row, include_recommendation=visible, package=package),
+        "result": view,
         "server_time": now_iso(),
     }
 
