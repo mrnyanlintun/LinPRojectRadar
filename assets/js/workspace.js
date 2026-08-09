@@ -183,10 +183,22 @@
       btn.addEventListener("click", function () { switchPanel(btn.dataset.wstab); });
     });
 
-    wireProjectsPanel();
-    wireUploadPanel();
-    wireDocumentsPanel();
-    wireDetailPanel();
+    // Each panel wires independently. One panel reaching for an element that another change
+    // removed must not silently unwire the whole page, which is exactly what happened when the
+    // create-project card was deleted: `wireProjectsPanel` threw and the three panels after it,
+    // plus the project-list load, never ran. The failure is reported rather than swallowed --
+    // a panel that did not wire is a defect, and a console error is how the next person finds
+    // it -- but it is contained to its own panel.
+    [["projects", wireProjectsPanel], ["upload", wireUploadPanel],
+     ["documents", wireDocumentsPanel], ["detail", wireDetailPanel]].forEach(function (pair) {
+      try {
+        pair[1]();
+      } catch (e) {
+        if (window.console && console.error) {
+          console.error("LinWorkspace: the " + pair[0] + " panel failed to wire", e);
+        }
+      }
+    });
 
     await refreshProjects();
     renderPortfolio();
@@ -257,6 +269,15 @@
      ============================================================ */
 
   function wireProjectsPanel() {
+    // THE CREATE-PROJECT CARD IS GONE FROM THIS PAGE and this wiring outlived it.
+    // It was removed as a duplicate of the flyout's "+ New Project"; the handler below kept
+    // reaching for `ws-create-btn`, so this function threw on every boot. `boot()` calls it
+    // FIRST, so the throw took `wireUploadPanel`, `wireDocumentsPanel`, `wireDetailPanel`,
+    // `refreshProjects` and `renderPortfolio` down with it: every project picker on this page
+    // rendered zero options and the reporting-period controls beside them were never wired.
+    // That is what "the period control does not work" was. Guarded rather than deleted, because
+    // the card is still mounted on the operational build of this page in some deployments.
+    if (!$("ws-create-btn")) return;
     $("ws-create-btn").addEventListener("click", async function () {
       var name = $("ws-new-name").value.trim();
       var sector = $("ws-new-sector").value.trim();

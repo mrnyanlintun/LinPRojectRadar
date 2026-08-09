@@ -1248,11 +1248,42 @@
      carries a visible value from the moment the dropzone renders. */
   function readStatedPeriod(container) {
     var scope = container || document;
-    var numEl = scope.querySelector ? scope.querySelector(".dz-period") : null;
     var endEl = scope.querySelector ? scope.querySelector(".dz-period-end") : null;
-    var n = numEl ? parseInt(numEl.value, 10) : 1;
-    if (!isFinite(n) || n < 1) n = 1;
-    return { period: n, periodEnd: (endEl && endEl.value) ? endEl.value : null };
+    return { periodEnd: (endEl && endEl.value) ? endEl.value : null };
+  }
+
+  /* The period the picked date names, previewed from the server.
+
+     The NUMBER IS NOT COMPUTED HERE. `documents.period_for_end_date` decides it and
+     `_resolve_period` applies the same function at the upload, so what this shows is what the
+     upload writes. A second copy of the rule in JavaScript would drift from the one that
+     actually files the document, and the person would be told one period and get another. */
+  function previewPeriod(container, projectId, isoDate) {
+    var readout = container.querySelector(".dz-period-derived");
+    if (!readout) return Promise.resolve(null);
+    if (!projectId || !isoDate) {
+      readout.textContent = "Pick the date this reporting period ends.";
+      readout.className = "dz-period-derived ws-note";
+      return Promise.resolve(null);
+    }
+    readout.textContent = "Checking which period that is…";
+    readout.className = "dz-period-derived ws-note";
+    return LinStore.postWithTimeout({
+      action: "projectperiodfordate", id: projectId, period_end: isoDate
+    }).then(function (r) {
+      if (!r || r.ok !== true) {
+        readout.textContent = (r && r.error) || "Could not resolve that date to a period.";
+        readout.className = "dz-period-derived ws-error";
+        return null;
+      }
+      readout.textContent = "Period " + r.period + (r.existing ? "" : " (new)") + " — " + r.basis;
+      readout.className = "dz-period-derived ws-note";
+      return r;
+    }).catch(function () {
+      readout.textContent = "Could not reach the server to resolve that date.";
+      readout.className = "dz-period-derived ws-error";
+      return null;
+    });
   }
 
   function dropzoneHtml(fixedId) {
@@ -1267,19 +1298,22 @@
         <p class="dtr-note">Upload any combination — documents are identified automatically.</p>
       </div>
       <div class="dz-project-row">${projectField}</div>
-      <!-- THE REPORTING PERIOD, STATED. This surface is the one a project manager actually
-           uploads through (the project detail page's Upload documents button opens it), and it
-           was the ONE upload surface left without a period selector, so everything filed here
-           defaulted to period one: a second period's documents landed in the first. The same
-           two controls as the Period documents panel and the Files tab. -->
+      <!-- THE REPORTING PERIOD IS PICKED ON A CALENDAR, AND THE NUMBER IS DERIVED FROM IT.
+           A person knows the date their reporting period ends; the period NUMBER is bookkeeping
+           they should not have to keep in their head, and a number typed into a spinner is the
+           easiest thing in this dialog to get silently wrong. So the calendar is the control:
+           the date is what is picked, and the projectperiodfordate action resolves it to the
+           period the upload will actually write to, shown back before anything is uploaded.
+           No number is sent. The server derives it from this date with the same function that
+           answered the preview, so the period shown is the period written. -->
       <div class="ws-period-picker dz-period-row">
-        <label class="ws-field-label" for="dz-period">Reporting period</label>
-        <input id="dz-period" class="ws-input ws-input-inline dz-period" type="number"
-               min="1" step="1" value="1" inputmode="numeric">
-        <label class="ws-field-label" for="dz-period-end">Period ending</label>
-        <input id="dz-period-end" class="ws-input ws-input-inline dz-period-end" type="date">
+        <label class="ws-field-label" for="dz-period-end">Reporting period ending</label>
+        <input id="dz-period-end" class="ws-input ws-input-inline dz-period-end" type="date"
+               required aria-describedby="dz-period-derived">
       </div>
-      <p class="ws-note dz-period-note">These documents are filed to the period you state here.
+      <p id="dz-period-derived" class="dz-period-derived ws-note" aria-live="polite">Pick the date
+        this reporting period ends.</p>
+      <p class="ws-note dz-period-note">These documents are filed to the period that date names.
         A document dated outside it is still stored, and reported back to you.</p>
       <div class="dropzone">
         <div class="dz-icon" aria-hidden="true">↑</div>
@@ -1303,6 +1337,21 @@
 
     browse.addEventListener("click", () => input.click());
     input.addEventListener("change", (e) => { handleFiles(e.target.files); input.value = ""; });
+
+    // The calendar drives the readout. Every date change re-asks the server which period that
+    // date names, so the person sees the answer before they drop anything, and sees it change
+    // if they pick a different date. Scoped to this dropzone's own container: the detail modal
+    // and the Signals tab each render one and must not read each other's controls.
+    const dateEl = container.querySelector(".dz-period-end");
+    const projSel = container.querySelector(".dz-project");
+    function currentProjectId() {
+      return projSel ? projSel.value : "";
+    }
+    function refreshPeriodPreview() {
+      previewPeriod(container, currentProjectId(), dateEl ? dateEl.value : "");
+    }
+    if (dateEl) dateEl.addEventListener("change", refreshPeriodPreview);
+    if (projSel && projSel.tagName === "SELECT") projSel.addEventListener("change", refreshPeriodPreview);
     ["dragenter", "dragover"].forEach((ev) =>
       dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add("dragover"); }));
     dz.addEventListener("dragleave", (e) => {
@@ -1419,9 +1468,11 @@
 
       let docType = "auto";
       try {
-        // The stated reporting period travels with the document. `extractsignals` forwards
-        // the whole payload to the upload path, which reads `period` and `period_end`, so
-        // sending them is all this surface needed to stop defaulting everything to period one.
+        // ONLY THE DATE TRAVELS. `_resolve_period` derives the period number from `period_end`
+        // using `period_for_end_date`, the same function that answered this dropzone's preview,
+        // so there is no number for the client to get wrong and nothing to disagree about. A
+        // number sent from here would override that derivation, which is precisely the drift
+        // the single-function rule exists to prevent.
         const statedPeriod = readStatedPeriod(container);
         const extractPayload = {
           action: "extractsignals",
@@ -1430,7 +1481,6 @@
           dataBase64: base64,
           mimeType: file.type || "application/pdf",
           fileName: file.name,
-          period: statedPeriod.period,
           period_end: statedPeriod.periodEnd
         };
         // Extract with auto-retry on Anthropic rate-limit (429) errors. Returns the
@@ -1517,6 +1567,19 @@
         const note = document.createElement("div");
         note.className = "dz-item dz-error";
         note.innerHTML = `<span class="dz-item-error">Select a project above before dropping documents.</span>`;
+        queue.appendChild(note);
+        return;
+      }
+      // NO DATE, NO UPLOAD. The period used to default to one when nothing was stated, which is
+      // how a second period's documents silently landed in the first. Refusing here is the
+      // loud version of that: the person is told what is missing and nothing is filed to a
+      // period they did not choose.
+      const statedEnd = readStatedPeriod(container).periodEnd;
+      if (!statedEnd) {
+        const note = document.createElement("div");
+        note.className = "dz-item dz-error";
+        note.innerHTML = `<span class="dz-item-error">Pick the date this reporting period ends ` +
+          `before dropping documents. The period is taken from that date.</span>`;
         queue.appendChild(note);
         return;
       }
