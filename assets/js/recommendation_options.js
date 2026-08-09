@@ -169,18 +169,18 @@
     var authority = (gov && gov.authority) ? String(gov.authority) : null;
 
     var keys = Object.keys(scores).filter(function (k) { return isNum(scores[k]); });
-    var values = keys.map(function (k) { return Number(scores[k]); });
-    var lowest = Math.min.apply(null, values);
-    var highest = Math.max.apply(null, values);
 
     var unknowns = [];
     var options = keys.map(function (k) {
-      var score = Number(scores[k]);
-      var rank = score === lowest ? "the lowest of the set"
-        : score === highest ? "the highest of the set" : "between the other two";
-
-      var costs = ["The analysis scores the worst case of this course at " + score
-        + " out of 30, " + rank + ", where a lower score means a smaller worst case."];
+      /* NO SCORE IS QUOTED PER OPTION EITHER.
+         This read "The analysis scores the worst case of this course at 11 out of 30, the
+         highest of the set". The score and its rank within the set are both properties of a
+         payoff matrix that reads no project input, so they were the same three numbers in the
+         same order on every project this platform has ever shown. Quoting them under the
+         heading "What it costs" said this course costs 11 on THIS project, which was never
+         true of any project. The heading now carries only costs the platform can actually
+         attribute to this period, and says so when it holds none. */
+      var costs = [];
       var forecloses, protects;
 
       if (k === "escalate") {
@@ -219,13 +219,16 @@
             + unknown("the completion forecast for that period did not compute for this project");
         protects = "It protects the working relationship and the project's own authority over "
           + "the matter, and it adds no cost of its own.";
+        costs.push(unknown("what carrying the position unchanged costs is not a figure the "
+          + "platform holds"));
       } else {
-        /* A course of action the analysis scored that this file has no stated consequence for.
+        /* A course of action the analysis named that this file has no stated consequence for.
            Say so; do not write one. */
-        forecloses = unknown("the platform holds a score for this course of action and no "
-          + "statement of what it closes off");
-        protects = unknown("the platform holds a score for this course of action and no "
-          + "statement of what it protects");
+        forecloses = unknown("the platform holds this course of action and no statement of "
+          + "what it closes off");
+        protects = unknown("the platform holds this course of action and no statement of "
+          + "what it protects");
+        costs.push(unknown("the platform holds no statement of what this course costs"));
         unknowns.push(k);
       }
 
@@ -233,7 +236,7 @@
         key: k,
         title: ACTION_TITLE[k] || k,
         what: ACTION_WHAT[k] || unknown("the platform holds no description of this course of "
-          + "action beyond its score"),
+          + "action"),
         costs: costs,
         forecloses: forecloses,
         protects: protects
@@ -251,34 +254,68 @@
        argue with and one they cannot. */
     var recKey = regret.recommended_action || null;
     var basis = (result && result.recommendation_basis) || null;
+    var docEv = (result && result.document_evidence) || null;
     var recommendation = null;
     if (recKey) {
-      var recScore = isNum(scores[recKey]) ? Number(scores[recKey]) : null;
-      var others = keys.filter(function (k) { return k !== recKey; }).map(function (k) {
-        return Number(scores[k]) + " for " + (ACTION_TITLE[k] || k).toLowerCase();
-      });
-      var reason;
-      if (recScore === null) {
-        reason = unknown("the stored result names a recommended course of action it holds no "
-          + "score for");
-      } else {
-        reason = "It scores " + recScore + " out of 30"
-          + (others.length ? ", against " + others.join(" and ") : "") + ". ";
-        reason += (basis && basis.sentence)
-          ? basis.sentence
-          : ("The stored result records the recommendation and the scores. The rule that set "
-             + "the recommendation against the score is not on this result, so the reason is "
-             + "not established here.");
-      }
+      /* NO SCORE IS QUOTED, BECAUSE NO SCORE IS ABOUT THIS PROJECT.
+         This used to read "It scores 8 out of 30, against 11 for ... and 5 for ...". Those
+         three numbers are literals in the analysis's payoff matrix and its future
+         probabilities; neither reads any project input, so every project and every period
+         scores the same three. Printing them beside a project's name told a reader their own
+         evidence produced them, and a reader who then argued with the ranking would have been
+         arguing with a constant. The ranking is refused, with its reason, and the rule that
+         actually chooses is stated in its place. */
+      /* THE REFUSAL DOES NOT DEPEND ON THE SERVER ATTACHING ANYTHING. The scores are constants
+         because the matrix behind them reads no project input; that is true of every read,
+         including one where `document_evidence` was never served. An earlier draft of this
+         gated the refusal on the served block, so a read without it printed neither the scores
+         nor the reason they were withheld, which tells the reader less than either. The served
+         reason is preferred because it is the authoritative wording; the fallback says the
+         same thing so a reader is never left with an unexplained absence. */
+      var reason = (docEv && docEv.ranking && docEv.ranking.possible === false
+                    && docEv.ranking.reason)
+        ? docEv.ranking.reason + " "
+        : ("The courses are not ranked here: the scores the analysis holds are the same for "
+           + "every project and every reporting period, so they say nothing about this one. ");
+      reason += (basis && basis.sentence)
+        ? basis.sentence
+        : ("The stored result records the recommendation. The rule that set it is not on this "
+           + "result, so the reason is not established here.");
       var evidence = [];
       if (isNum(si.cpi)) evidence.push("cost performance stands at " + si.cpi);
       if (isNum(si.spi)) evidence.push("schedule performance at " + si.spi);
       recommendation = {
         key: recKey,
-        scoresAreFixed: !!(basis && basis.scores_are_fixed),
+        // True whenever the analysis holds scored courses at all: it holds them, and they rank
+        // nothing. Not conditional on the served block, for the reason stated above.
+        rankingRefused: keys.length > 0,
         title: ACTION_TITLE[recKey] || recKey,
         reason: reason,
         evidence: evidence.length ? evidence.join(" and ") + "." : null
+      };
+    }
+
+    /* WHAT THE DOCUMENTS ESTABLISH, each statement carrying the document behind it.
+       Read at display time from the period's live documents by `document_evidence.py`; this
+       file formats and never derives. A finding with no filename is dropped rather than
+       printed unattributed: the whole point of this block is that a reader can go and check
+       it, and a sentence they cannot trace to a document is the kind this card refuses. */
+    var documents = null;
+    if (docEv) {
+      var findings = (docEv.findings || []).filter(function (f) {
+        return f && f.sentence && f.filename;
+      });
+      var unread = (docEv.not_established || []).filter(function (f) {
+        return f && f.sentence && f.filename;
+      });
+      documents = {
+        readCount: (docEv.documents_read || []).length,
+        findings: findings.map(function (f) {
+          return { sentence: f.sentence, filename: f.filename, bearing: f.bearing };
+        }),
+        notEstablished: unread.map(function (f) {
+          return { sentence: f.sentence, filename: f.filename };
+        })
       };
     }
 
@@ -287,6 +324,7 @@
       reason: null,
       options: options,
       recommendation: recommendation,
+      documents: documents,
       exposureKnown: exp.known,
       authority: authority,
       unknowns: unknowns
@@ -318,6 +356,35 @@
         + "</div>";
     }).join("");
 
+    // WHAT THE DOCUMENTS SAY, WITH THE DOCUMENT NAMED. Rendered above the recommendation
+    // because it is the evidence the recommendation is read against, and a reader who wants to
+    // check a statement needs the filename beside it rather than in a panel somewhere else.
+    var docs = "";
+    if (spec.documents) {
+      var d = spec.documents;
+      if (d.findings.length || d.notEstablished.length) {
+        docs = '<div class="ro-documents" id="ro-documents">'
+          + '<h4 class="ro-option-title">What this period\'s documents say</h4>'
+          + '<p class="ro-what">These are read from the documents uploaded for this period, not '
+          + "from the computed figures. Each statement names the document it came from.</p>"
+          + (d.findings.length
+              ? '<ul class="ro-doc-findings">' + d.findings.map(function (f) {
+                  return '<li class="ro-doc-finding">' + esc(f.sentence)
+                    + ' <span class="ro-doc-source">Read from ' + esc(f.filename) + ".</span>"
+                    + "</li>";
+                }).join("") + "</ul>"
+              : '<p class="ro-doc-none">No document in this period records an open item of a '
+                + "kind this platform reads back.</p>")
+          + (d.notEstablished.length
+              ? '<ul class="ro-doc-unread">' + d.notEstablished.map(function (f) {
+                  return '<li class="ro-doc-finding">' + esc(f.sentence)
+                    + ' <span class="ro-doc-source">' + esc(f.filename) + ".</span></li>";
+                }).join("") + "</ul>"
+              : "")
+          + "</div>";
+      }
+    }
+
     var rec = "";
     if (spec.recommendation) {
       rec = '<div class="ro-recommendation" id="ro-recommendation">'
@@ -334,17 +401,18 @@
       + "costs, what it closes off, and what it protects. Where the platform does not hold what "
       + "would be needed to state a consequence, it says so instead of asserting one. The "
       + "recommendation follows the options, so the choice stays yours.</p>"
-      // THE SCORES ARE A PROPERTY OF THE METHOD, NOT A FINDING ABOUT THIS PERIOD. The payoff
-      // matrix and the future probabilities behind them are fixed, so every project and every
-      // period scores 11, 5 and 8. Calling them "the courses the analysis scored for this
-      // period" told a reader their own evidence produced those numbers. It did not, and the
-      // recommendation is not taken from them either. Said once, here, rather than repeated.
-      + (spec.recommendation && spec.recommendation.scoresAreFixed
-          ? '<p class="ro-lede ro-lede-note">The scores below rank the courses by worst case '
-            + "and are the same for every project: they come from the method, not from this "
-            + "period's evidence. What decides the recommendation is stated with it.</p>"
+      // THE COURSES ARE NOT RANKED HERE, AND THE CARD SAYS SO. The scores the analysis stores
+      // come from a fixed payoff matrix over fixed probabilities, neither of which reads a
+      // project input, so they are identical on every project and every period. They used to
+      // be printed with a caveat; a number a reader cannot argue with is worse than no number,
+      // so they are no longer printed at all. What decides is stated with the recommendation.
+      + (spec.recommendation && spec.recommendation.rankingRefused
+          ? '<p class="ro-lede ro-lede-note">The courses below are not ranked. The scores the '
+            + "analysis holds are the same for every project and every reporting period, so "
+            + "they say nothing about this one. What decides the recommendation is stated with "
+            + "it, and what this period's documents say is set out below.</p>"
           : "")
-      + body + rec + "</div>";
+      + body + docs + rec + "</div>";
   }
 
   function htmlForProject(project) {

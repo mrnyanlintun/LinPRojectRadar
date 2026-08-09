@@ -79,6 +79,7 @@ from .research_models import (
     ComputedResult, Decision, Document, DocumentUpload, Observation, ScheduleActivity,
     UploadAttempt, new_ulid,
 )
+from .document_evidence import document_evidence
 from .recommendation_basis import recommendation_basis
 from .schedule_activities import read_activity_table, select_for_display
 from .schedule_table import activity_rows_from_document, activity_table_from_document
@@ -159,6 +160,14 @@ def _resolve_period(session: Session, project: Project, payload: dict) -> tuple[
             return derived, None
     supplied = _period_number(payload.get("period"))
     if supplied is None:
+        # THE CALENDAR PATH. No number was stated, so derive one from the ending date if one
+        # was picked. Same function the picker previewed with, so the period a person was shown
+        # before uploading is the period the upload actually writes to. An unparseable date is
+        # not silently treated as "no date": it falls through to 1 exactly as an absent date
+        # does, and `period_end` is stored as NULL, which is what the old behaviour was.
+        chosen = _parse_iso_date(payload.get("period_end") or payload.get("periodEnd"))
+        if chosen is not None:
+            return period_for_end_date(session, project, chosen)["period"], None
         return 1, None
     if supplied < 1:
         return None, err("period must be 1 or greater")
@@ -208,6 +217,75 @@ def _previous_period_end(session: Session, project: Project, period: int) -> dat
             DocumentUpload.period_end.is_not(None),
         )
     )
+
+
+def _stated_period_ends(session: Session, project: Project) -> list[tuple[int, date]]:
+    """
+    Every period this project holds a STATED ending date for, ascending by period.
+
+    One date per period: the latest stated for it, because the same period can be uploaded to
+    more than once and the ending date is restated each time. Periods uploaded without a date
+    are absent from this list entirely rather than carrying a guessed boundary.
+    """
+    rows = session.execute(
+        select(DocumentUpload.period, func.max(DocumentUpload.period_end))
+        .where(DocumentUpload.project_id == project.id,
+               DocumentUpload.period_end.is_not(None))
+        .group_by(DocumentUpload.period)
+        .order_by(DocumentUpload.period)
+    ).all()
+    return [(int(p), e) for p, e in rows if e is not None]
+
+
+def _highest_period(session: Session, project: Project) -> int:
+    """The largest period number this project holds any document for, or 0 when it holds none."""
+    return int(session.scalar(
+        select(func.max(DocumentUpload.period)).where(DocumentUpload.project_id == project.id)
+    ) or 0)
+
+
+def period_for_end_date(session: Session, project: Project, chosen: date) -> dict[str, Any]:
+    """
+    Which reporting period a chosen ending DATE names, and whether that period already exists.
+
+    THE CALENDAR IS THE CONTROL. A person picks the date the reporting period ends; the number
+    is derived here rather than typed, because the number is bookkeeping and the date is the
+    thing they actually know. One rule, stated once, used by both callers: the preview the
+    picker shows before an upload, and `_resolve_period` at the upload itself. Two
+    implementations of this would drift, and a preview that disagrees with what the upload does
+    is worse than no preview.
+
+    THE RULE. The period is the earliest one whose stated ending date falls on or after the
+    chosen date; if the chosen date is later than every stated ending date, it opens the next
+    period. An exact match on a stated ending date is the same rule's first case and is called
+    out separately only so the caller can say "this period already exists" rather than implying
+    a new one.
+
+    Returns `{period, period_end, existing, basis}` where `basis` names, in words, which arm
+    decided -- the picker prints it, so a derived number is never unexplained.
+    """
+    ends = _stated_period_ends(session, project)
+
+    for period, end in ends:
+        if end == chosen:
+            return {"period": period, "period_end": chosen, "existing": True,
+                    "basis": f"period {period} is the period stated as ending {end.isoformat()}"}
+
+    covering = [(p, e) for p, e in ends if e >= chosen]
+    if covering:
+        period, end = min(covering, key=lambda t: (t[1], t[0]))
+        return {"period": period, "period_end": end, "existing": True,
+                "basis": (f"period {period} ends {end.isoformat()}, the first period ending on "
+                          f"or after {chosen.isoformat()}")}
+
+    nxt = _highest_period(session, project) + 1
+    if ends:
+        latest = max(e for _p, e in ends)
+        basis = (f"period {nxt} is new: {chosen.isoformat()} is later than "
+                 f"{latest.isoformat()}, the last period's stated ending date")
+    else:
+        basis = (f"period {nxt} is new: this project has no period with a stated ending date yet")
+    return {"period": nxt, "period_end": chosen, "existing": False, "basis": basis}
 
 
 def _out_of_period(doc_date: date | None, period_end: date | None,
@@ -2106,10 +2184,31 @@ def a_projectresults(session: Session, payload: dict, secret: str, ttl: int) -> 
           reveal_gated=gated,
           recommendation_visible=visible)
     session.commit()
+    view = _result_view(row, include_recommendation=visible, package=package)
+
+    # WHAT THE PERIOD'S DOCUMENTS ESTABLISH, read at display time and not frozen into the row.
+    # Read from the period's LIVE documents (superseded revisions already excluded), so a
+    # replaced document stops speaking the moment it is replaced, which a value copied onto the
+    # stored result at compute time would not do.
+    #
+    # NOT GATED BY THE REVEAL. This is evidence, in the same class as `signal_inputs`, which a
+    # participant is shown BEFORE their preliminary judgment because forming one is the point.
+    # It carries counts read out of documents and names the documents; it carries no
+    # recommendation, no course, no action and no ranking -- `document_evidence.ranking` is a
+    # refusal with its reason, never a preference.
+    #
+    # THAT CLAIM IS CHECKED, and not by the T4 prose scanner: that scanner runs over the
+    # decision-state endpoint and was measured NOT to reach this block (a planted "escalate to
+    # management review" in a findings sentence left it green). The check that does hold this
+    # to account is `test_period_picker_and_evidence.py` section 6, which scans every sentence
+    # this table can generate against the same leak vocabulary and is proven able to fail.
+    view["document_evidence"] = document_evidence(
+        _period_documents(session, project, row.period))
+
     return {
         "ok": True,
         "project_id": project.legacy_id,
-        "result": _result_view(row, include_recommendation=visible, package=package),
+        "result": view,
         "server_time": now_iso(),
     }
 
@@ -2186,8 +2285,65 @@ def a_adminrecompute(session: Session, payload: dict, secret: str, ttl: int) -> 
     }
 
 
+def a_projectperiodfordate(session: Session, payload: dict, secret: str,
+                           ttl: int) -> dict[str, Any]:
+    """
+    Any active member. Which period a chosen ending DATE names on this project. READS ONLY.
+
+    This exists so the calendar picker can show the person which period their date lands in
+    BEFORE they upload, using the same `period_for_end_date` the upload itself calls rather
+    than a second copy of the rule in JavaScript. A preview that can disagree with the write it
+    previews is a defect waiting to happen, so there is one function and two callers.
+
+    Nothing is written and nothing is audited as an evidence view: this answers a question about
+    the project's own period boundaries, not about any document's contents.
+    """
+    caller, problem = resolve_caller(session, payload, secret)
+    if problem:
+        return problem
+    project, member, problem = require_member(session, caller, payload, "projectperiodfordate")
+    if problem:
+        return problem
+    chosen = _parse_iso_date(payload.get("period_end") or payload.get("periodEnd"))
+    if chosen is None:
+        return err("period_end must be a date in YYYY-MM-DD form")
+
+    resolved = period_for_end_date(session, project, chosen)
+
+    # A research project's period is the study's to advance, not the picker's. Say so rather
+    # than previewing a number the upload would then override: `_resolve_period` ignores the
+    # payload entirely where an assignment exists, and a preview that hid that would be a lie.
+    assignment, _decision, _package = project_decision_state(session, project)
+    if assignment is not None:
+        from .research_decision import current_period
+        derived = _period_number(current_period(session, assignment))
+        if derived is not None:
+            return {
+                "ok": True, "project_id": project.legacy_id,
+                "period": derived, "period_end": chosen.isoformat(), "existing": True,
+                "server_derived": True,
+                "basis": (f"period {derived} is set by this project's study sequence, not by "
+                          f"the date picked here"),
+                "server_time": now_iso(),
+            }
+
+    return {
+        "ok": True,
+        "project_id": project.legacy_id,
+        "period": resolved["period"],
+        "period_end": resolved["period_end"].isoformat(),
+        "existing": resolved["existing"],
+        "server_derived": False,
+        "basis": resolved["basis"],
+        "server_time": now_iso(),
+    }
+
+
 DOCUMENT_ACTIONS: dict[str, Callable[[Session, dict, str, int], dict]] = {
     "projectupload": a_projectupload,
+    # The calendar picker's read-only preview: a date in, the period it names out. Same rule the
+    # upload applies, so the number shown is the number written.
+    "projectperiodfordate": a_projectperiodfordate,
     # The legacy one-document ingest, adapted onto projectupload. See a_extractsignals for why
     # it is an adapter and not a second extraction path.
     "extractsignals": a_extractsignals,

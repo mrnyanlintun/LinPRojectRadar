@@ -5121,3 +5121,81 @@ reverted). The Signal Flow diagram driven in real headless Chromium against the 
 `assets/js` files (not a mock) before and after the fix — every row-lighting and NotRelevant
 check proven able to fail by reverting just `neural_flow.js` and re-running, then restored and
 re-confirmed green.
+
+## The calendar period picker, the recommendation reading documents, and the blocked tile host (2026-08-09)
+
+Branch `claude/period-recompute-new-docs-1nfjnx`, restarted from `main` because its earlier pull
+request was already merged. Report at `REPORT_2026-08-09_period-picker-and-rows.md`.
+
+**"THE PERIOD CONTROL DOES NOT WORK" WAS NOT THE PERIOD CONTROL.** Commit `fe72b1b` removed the
+duplicate create-project card from `index.html` and left `wireProjectsPanel()` reaching for
+`ws-create-btn`. `boot()` calls it first, so the TypeError took `wireUploadPanel`,
+`wireDocumentsPanel`, `wireDetailPanel`, `refreshProjects` and `renderPortfolio` with it.
+Measured on `main` before any change: every project picker on the Workspace page rendered **zero
+options** and the portfolio zero rows, so there was no project to select and nothing the period
+control could act on. Guarded, and `boot()` now wires each panel in its own try/catch that
+reports to the console, so one missing element cannot silently unwire the page again. **If a
+future session finds a whole page inert, check whether an earlier wiring function threw before
+the one that looks broken.**
+
+**The picker is a calendar now.** The person picks the reporting period's ending date; the number
+is derived by ONE function, `documents.period_for_end_date` (earliest period whose stated ending
+date falls on or after the chosen date, otherwise the date opens the next period), with exactly
+two callers: the new read-only `projectperiodfordate` action that previews the answer in the
+dialog, and `_resolve_period` at the upload. **The client sends only the date.** No date, no
+upload: the dropzone refuses rather than defaulting to period one. `_resolve_period`'s change is
+additive, so explicit-`period` callers and the research-derived override are untouched.
+`ComputedResult.period_cutoff` stays derived from evidence dates, deliberately.
+
+**THE CARD NO LONGER PRINTS THE CONSTANTS.** `expected_regret` is `{11, 5, 8}` on every project
+and every period because the payoff matrix reads no project input. Those numbers were printed
+twice per card. They are gone, and no replacement scoring was invented: the card states that the
+courses are not ranked and why. New `server/app/document_evidence.py` reads the period's live
+documents at display time and reports what their stored extractions support, each statement
+naming its document, served on `projectresults` beside `signal_inputs` and ungated because it is
+evidence. Fifteen findings across nine document types, every one keyed on a field
+`_EXTRACTION_FIELDS` actually declares.
+
+**What the platform still cannot say, and now says so.** `correspondence_notice` and
+`risk_register` store only a risk score and a date, because `extraction_client` keeps only each
+type's declared fields. So a served notice is reported as present with its content explicitly not
+established, rather than omitted. **Training is the one surface this does not reach**: its
+generator is `training_engine.build_options` over a simulated run whose `source_documents` is
+deliberately empty.
+
+**A CLAIM I MADE IN A COMMENT WAS FALSE AND MEASURING IT CAUGHT IT.** I wrote that
+`test_decision_ui_t4.py`'s prose scanner polices the pre-lock document evidence. It does not: a
+planted "escalate to management review" inside a findings sentence left that suite green at
+73/73, because it scans the decision-state endpoint and this block is served from
+`projectresults`. Section 6 of `test_period_picker_and_evidence.py` now scans every sentence the
+findings table can generate and is proven able to fail on exactly that fault. **Do not assume a
+scanner covers a new field because it covers the endpoint's neighbours.**
+
+**Two red tests recorded the defect, one caught a real bug in my fix.** Group 15 asserted
+`"worst case of this course at 8 out of 30"` and `"It scores 8 out of 30"` were present, the
+second named "and it still quotes the stored score rather than hiding it" — both pinned the
+defect. Replaced. The third, "the fixed scores are named as a property of the method", protected
+a real property and caught my first draft gating the "not ranked" explanation on the server
+having attached `document_evidence`, so a read without it dropped both the scores and the reason.
+The refusal is now unconditional. `5`, `8` and `30` came off the figure allowlist.
+
+**THE STREET MAP DOES NOT RENDER STREETS IN THIS CONTAINER, AND THE MAP NOW ADMITS IT.**
+`tiles.openfreemap.org` is refused at CONNECT with HTTP 403 by the egress proxy; the style JSON is
+the first request and fails with `ERR_TUNNEL_CONNECTION_FAILED`, so no tile is ever requested.
+The vendored library loads fine. `detail.js` promised the map degrades to the outline "if
+MapLibre is absent, or its tiles cannot be reached" and the tiles half ran through a no-op error
+handler, leaving a blank canvas under a note claiming the project was matched. An error before
+`load` now degrades to the atlas and says "The street map could not be reached, so this is the
+outline view."; errors after `load` are still swallowed. **Consequence for future browser drives
+here: the detail map shows the atlas outline, NOT a `.maplibregl-canvas`. A drive asserting that
+canvas will fail, and that is the fix working.**
+
+**Still outstanding:** `server/app/simulation/models_dq.py:96` carries the same retired
+`"rfi"`/`"submittal"` source-weight keys fixed everywhere else. It needs someone permitted to edit
+`server/app/simulation/`.
+
+Verified: server suite **52 files, 2826/2826**, fresh SQLite per file, the new
+`test_period_picker_and_evidence.py` adding 126. `tests.html` 51/51. `tests_render.html` 220/221,
+twelve net new checks, the one red the same pre-existing auth-gated row. Real browser drives of
+the picker (14/14 on a fresh database), the diagram, the card and the map. Four faults injected,
+each confirmed applied by hash, each detected, each reverted with the hash matching.

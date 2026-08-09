@@ -1067,6 +1067,41 @@
            absent, or its tiles cannot be reached, the map degrades to the outline rather than
            to nothing. */
         const lat = Number(p.lat), lng = Number(p.lng);
+
+        /* THE FALLBACK, EXTRACTED SO THE TILE-FAILURE PATH CAN ACTUALLY REACH IT.
+           The comment above has always promised that the map degrades to the outline "if
+           MapLibre is absent, OR ITS TILES CANNOT BE REACHED". Only the first half was true:
+           the tile half ran through `m.on("error", function () {})`, a no-op, after which the
+           block returned. Measured in this container, where the tile host is refused at
+           CONNECT: the canvas mounts, the style request fails with
+           ERR_TUNNEL_CONNECTION_FAILED, no tile is ever requested, and the reader is left with
+           MapLibre's empty background and a note claiming the project is "Matched to:" an
+           address. A blank panel that says it succeeded is the failure this whole section was
+           written to avoid. */
+        function degradeToAtlas(reason) {
+          if (!window.LinAtlas) {
+            if (note) {
+              note.className = "detail-globe-note ws-note ws-geo-warn";
+              note.textContent = reason;
+            }
+            return;
+          }
+          host.innerHTML = "";
+          LinAtlas.render(host, [p], { focusId: p.id }).then(() => {
+            if (!note) return;
+            const ln = window.linLocationNote ? linLocationNote(p) : null;
+            note.className = "detail-globe-note ws-note ws-geo-warn";
+            note.textContent = reason
+              + (ln ? " " + ln.text
+                    : p.formattedAddress ? " Matched to: " + p.formattedAddress : "");
+          }).catch(() => {
+            if (note) {
+              note.className = "detail-globe-note ws-note ws-geo-warn";
+              note.textContent = reason;
+            }
+          });
+        }
+
         const canGl = typeof maplibregl !== "undefined" && Number.isFinite(lat)
                       && Number.isFinite(lng);
         if (canGl) {
@@ -1094,9 +1129,12 @@
             // "Cannot read properties of null". One flag, checked before the handler does
             // anything, so a map that has been torn down stays torn down.
             var dead = false;
+            var mapLoaded = false;
+            var degraded = false;
             detailGlobe = { destroy: function () { dead = true; try { m.remove(); } catch (e) {} } };
             m.on("load", function () {
               if (dead) return;
+              mapLoaded = true;
               if (typeof maplibregl.NavigationControl === "function") {
                 m.addControl(new maplibregl.NavigationControl(), "top-right");
               }
@@ -1106,10 +1144,21 @@
               // anyone: a flight that never runs leaves the map where it began, on the site.
               try { m.flyTo({ center: [lng, lat], zoom: 17, duration: 900 }); } catch (e) {}
             });
-            // MapLibre's transient tile errors are swallowed exactly as the portfolio map
-            // swallows them. A style that never loads leaves the container showing the map's
-            // own background rather than throwing into the render path.
-            m.on("error", function () {});
+            // A TRANSIENT TILE ERROR IS STILL SWALLOWED. A STYLE THAT NEVER LOADS IS NOT.
+            //
+            // The distinction is `load`: MapLibre fires it once the style has been fetched and
+            // parsed, so an error BEFORE that means there is no basemap at all and never will
+            // be, while an error after it is one tile of a map the reader can already see.
+            // Only the first is fatal, and only the first degrades to the outline. Guarded by
+            // `degraded` so a burst of failures produces one fallback, not one per request.
+            m.on("error", function () {
+              if (dead || mapLoaded || degraded) return;
+              degraded = true;
+              try { m.remove(); } catch (e) {}
+              detailGlobe = null;
+              degradeToAtlas("The street map could not be reached, so this is the outline "
+                + "view.");
+            });
             if (note) {
               const ln0 = window.linLocationNote ? linLocationNote(p) : null;
               note.className = "detail-globe-note ws-note" + (ln0 && ln0.warn ? " ws-geo-warn" : "");
