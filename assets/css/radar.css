@@ -354,7 +354,12 @@ body::before {
   transition: opacity .35s ease;
 }
 
-.app { position: relative; z-index: 1; max-width: 1320px; margin: 0 auto; padding: 0 20px 64px; }
+/* The application column. The 1320px cap left a wide monitor showing a narrow strip with
+   large empty margins on both sides, so a page that had room for several panels side by side
+   drew one and ran long instead. It is raised rather than removed: an unbounded column turns
+   paragraphs into single lines that are hard to read, and `min()` keeps the useful bound while
+   letting a wide window actually use its width. */
+.app { position: relative; z-index: 1; max-width: min(2100px, 96vw); margin: 0 auto; padding: 0 20px 64px; }
 
 /* ---------- top bar ---------- */
 .topbar {
@@ -1756,7 +1761,12 @@ body.t-light .lwr-robot-svg {
 .collapse-body > .panel {
   border: none; background: transparent; box-shadow: none; margin: 0; padding: 0;
 }
-.collapse-body > .detail-grid { display: block; margin: 0; }
+/* .detail-grid is a two-column grid. Forcing it to `display: block` inside a collapsible
+   section threw those columns away, so every panel in every open section stacked vertically:
+   the other half of "too tall and too narrow". It keeps its own columns here; only the margin
+   is dropped, which is what this rule was for. The grid's existing narrow-window breakpoint at
+   940px still collapses it to one column, so nothing regresses on a small screen. */
+.collapse-body > .detail-grid { margin: 0; }
 .sig-cat-desc { margin: 0 0 12px; }
 
 /* ===== Portfolio AI executive summary ===== */

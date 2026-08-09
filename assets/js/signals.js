@@ -1241,6 +1241,21 @@
     "Resource Report", "Cost Report", "Past Performance Report"
   ];
 
+  /* The reporting period the person stated on this dropzone.
+
+     Scoped to the dropzone's own container so the modal and the Signals tab each read their
+     own controls. Falls back to period one only when the field has been emptied, which stops a
+     malformed entry posting NaN; it is not a silent default for "unstated", because the field
+     carries a visible value from the moment the dropzone renders. */
+  function readStatedPeriod(container) {
+    var scope = container || document;
+    var numEl = scope.querySelector ? scope.querySelector(".dz-period") : null;
+    var endEl = scope.querySelector ? scope.querySelector(".dz-period-end") : null;
+    var n = numEl ? parseInt(numEl.value, 10) : 1;
+    if (!isFinite(n) || n < 1) n = 1;
+    return { period: n, periodEnd: (endEl && endEl.value) ? endEl.value : null };
+  }
+
   function dropzoneHtml(fixedId) {
     const projectField = fixedId
       ? `<input type="hidden" class="dz-project" value="${esc(fixedId)}" />`
@@ -1253,6 +1268,20 @@
         <p class="dtr-note">Upload any combination — documents are identified automatically.</p>
       </div>
       <div class="dz-project-row">${projectField}</div>
+      <!-- THE REPORTING PERIOD, STATED. This surface is the one a project manager actually
+           uploads through (the project detail page's Upload documents button opens it), and it
+           was the ONE upload surface left without a period selector, so everything filed here
+           defaulted to period one: a second period's documents landed in the first. The same
+           two controls as the Period documents panel and the Files tab. -->
+      <div class="ws-period-picker dz-period-row">
+        <label class="ws-field-label" for="dz-period">Reporting period</label>
+        <input id="dz-period" class="ws-input ws-input-inline dz-period" type="number"
+               min="1" step="1" value="1" inputmode="numeric">
+        <label class="ws-field-label" for="dz-period-end">Period ending</label>
+        <input id="dz-period-end" class="ws-input ws-input-inline dz-period-end" type="date">
+      </div>
+      <p class="ws-note dz-period-note">These documents are filed to the period you state here.
+        A document dated outside it is still stored, and reported back to you.</p>
       <div class="dropzone">
         <div class="dz-icon" aria-hidden="true">↑</div>
         <div class="dz-title">Drop documents here</div>
@@ -1391,13 +1420,19 @@
 
       let docType = "auto";
       try {
+        // The stated reporting period travels with the document. `extractsignals` forwards
+        // the whole payload to the upload path, which reads `period` and `period_end`, so
+        // sending them is all this surface needed to stop defaulting everything to period one.
+        const statedPeriod = readStatedPeriod(container);
         const extractPayload = {
           action: "extractsignals",
           id,
           docType: "auto",
           dataBase64: base64,
           mimeType: file.type || "application/pdf",
-          fileName: file.name
+          fileName: file.name,
+          period: statedPeriod.period,
+          period_end: statedPeriod.periodEnd
         };
         // Extract with auto-retry on Anthropic rate-limit (429) errors. Returns the
         // successful response; throws on a non-rate-limit failure or exhausted

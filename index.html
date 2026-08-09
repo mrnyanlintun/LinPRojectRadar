@@ -572,7 +572,7 @@
       <div class="fallback">
         <h3 id="list-heading">Projects</h3>
         <div class="recompute-all-row">
-          <button id="recompute-all-btn" class="recompute-all-btn" title="Repair tool: re-runs local computation for every project and refreshes Portfolio Health (no AI calls, no re-extraction, no document re-upload)">Rebuild signals (repair)</button>
+          <button id="recompute-all-btn" class="recompute-all-btn" title="Repair tool for EVERY project at once: re-runs the legacy in-browser computation over extraction results already on file and refreshes Portfolio Health. No AI calls, no re-extraction, no document re-upload. It does not clear anything, and it does not re-run the server analysis.">Recompute every project (repair)</button>
           <span id="recompute-all-status" class="recompute-all-status"></span>
         </div>
         <ul id="project-list" aria-labelledby="list-heading"></ul>
@@ -598,20 +598,12 @@
            refused server-side for them by gate_action regardless of what this markup does —
            the researcher creates a participant's project together with its assignment, so a
            participant can never hold a project the decision sequence cannot act on. -->
-      <div class="ws-card" id="ws-create-card">
-        <h3 style="margin-top:0;">Create a project</h3>
-        <label class="ws-field-label" for="ws-new-name">Project name</label>
-        <input id="ws-new-name" class="ws-input" placeholder="e.g. Clarksville USPS ARCH">
-        <label class="ws-field-label" for="ws-new-sector">Sector (optional)</label>
-        <input id="ws-new-sector" class="ws-input" placeholder="e.g. Federal / Aviation">
-        <label class="ws-field-label" for="ws-new-address">Site address (optional)</label>
-        <input id="ws-new-address" class="ws-input"
-               placeholder="e.g. 1200 Terminal Road, Clarksville, TN">
-        <p class="ws-note">Used to place the project on the map. The more complete the
-          address, the more reliably it resolves.</p>
-        <button id="ws-create-btn" class="ws-btn">Create project</button>
-        <p id="ws-create-error" class="ws-error" style="display:none;"></p>
-      </div>
+      <!-- The "Create a project" card was here and is removed: project creation is reached
+           from the Portfolio flyout's "+ New Project", which opens LinIngest.openCreateModal.
+           That path was verified to work independently of this panel before it was taken out,
+           and the administration surface keeps its own creation form for ResearchAdmin. Two
+           forms for one action, one of them without the project-number field the other
+           requires, is how two projects end up created differently. -->
       <!-- The former "Your projects" card is removed. It listed the same projects
            as the stage list above ("Projects"), differing only in the membership
            columns (PM role, current period, computed state) it carried. Those
@@ -1285,6 +1277,12 @@
        MapLibre vendoring removed, on the surfaces operational users actually work on.
        pdf.worker.min.js is vendored too: PDF.js loads it separately at runtime, so vendoring
        only the main file would have left the worker fetching from a CDN that is not there. -->
+  <!-- MapLibre, vendored. PR #216 removed these two lines when the flat atlas became the
+       portfolio default, which left `createGlMap` bailing on `typeof maplibregl === "undefined"`
+       and the project detail map with no way to zoom: the atlas is a 2:1 world outline and has
+       no street data to zoom into. Restored so the detail map can reach street level. -->
+  <link rel="stylesheet" href="assets/vendor/maplibre-gl.min.css">
+  <script src="assets/vendor/maplibre-gl.min.js"></script>
   <script src="assets/vendor/pdf.min.js"></script>
   <!-- SheetJS: client-side XLSX generation for audit export. Vendored, same reasoning. -->
   <script src="assets/vendor/xlsx.full.min.js"></script>

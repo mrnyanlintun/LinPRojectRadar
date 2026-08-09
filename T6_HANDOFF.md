@@ -9,6 +9,86 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-08 — Six fixes: the period reaches the surface people use, and the recommendation states its rule
+
+Branch `claude/six-fixes-1nfjnx`, from `origin/main` at `a9464da`. Filed as
+`REPORT_2026-08-08_six-fixes.md`.
+
+**WHY THE PERIOD ASSIGNMENT DID NOT LAND: the selector was not on the surface people use, and the
+previous report said so.** It went on the Workspace panel and the Files tab; the project detail
+page's own upload path was recorded as "not changed, and reported". That is the one a PM reaches
+— **Upload documents** calls `LinIngest.openUploadModal`, which mounts `LinSignals.dropzoneHtml`
+and posts `extractsignals` with no period, so everything defaulted to 1 and the same page's
+control then truthfully reported "period 1 (27 document(s) added)". THE SERVER WAS NEVER THE
+PROBLEM: `a_extractsignals` does `upload = dict(payload)`, so the period travels the moment the
+client sends it. Fix is client-only: the same two controls in `dropzoneHtml`, read per container
+so the modal and the Signals tab do not read each other's fields. Browser-verified
+`{1: 1, 2: 2}`, `periods=[1,2]`, period 1 skipped and BYTE-IDENTICAL with its `result_id` intact.
+
+**WHAT SETS THE RECOMMENDATION, AND WHICH OPTION: option 1, the rule is stored and stated.** It
+is in the regret module: score from a FIXED matrix, take the lowest, then override on the
+period's own figures — either below 0.88 escalate, else either below 0.95 investigate. **AND THE
+SCORES ARE THE SAME FOR EVERY PROJECT AND EVERY PERIOD** (`11 / 5 / 8` always; the matrix and
+probabilities are literals with no input dependence). So the card was wrong twice: it could not
+explain the recommendation, and it called a constant "the courses the analysis scored for this
+period". Both corrected. `server/app/recommendation_basis.py` (new) is the one authority, served
+on `projectresults`, rendered by the card. **THE THRESHOLDS ARE MIRRORED, NOT IMPORTED** — they
+are inline literals in the module body and `simulation/` is out of scope — so `test_six_fixes.py`
+section 3 drives the REAL module across each threshold INCLUDING EXACTLY AT EACH BOUNDARY (`<`
+not `<=`) and asserts the predicted branch is the one that fires. A 0.88→0.80 drift takes it to
+37/38.
+
+**GRAFT IT OR THE CARD NEVER SEES IT.** `rowFor` prefers `storedResult`, and `primeAndRefresh`
+grafted only `module_results` and `signal_inputs`. The basis needed the same graft or the card
+fell back to "not established" on a row whose basis the server had supplied.
+
+**3. MAP: MapLibre, because the flat atlas cannot.** It is a 2:1 world outline with NO street
+data; a viewBox tween magnifies an empty vector field. **PR #216 removed MapLibre's `<script>`
+and `<link>` from index.html** — that is the whole orphaning; the files and every caller
+survived, so `createGlMap` has bailed on an undefined global ever since. Tags restored; detail
+map centres at zoom 16 and flies to 17 with NavigationControl; **atlas kept as fallback**. No
+coordinates throws nothing (verified on a REAL coordinate-less project). **TILES UNVERIFIED HERE:
+`tiles.openfreemap.org` is blackholed by this container's proxy; what is verified is that a
+`.maplibregl-canvas` mounts at 1650px and nothing throws.** A defect I introduced and fixed: the
+hydrate re-render destroys the map under its own pending `load`, which threw on a detached map —
+established as MINE by re-running the drive against stashed `origin/main` assets. Guarded.
+
+**4. WIDTH, two causes.** `.app { max-width: 1320px }` → `min(2100px, 96vw)` (1320px → **1728px**
+measured at an 1800px viewport), AND `.collapse-body > .detail-grid { display: block }` was
+throwing away the grid's two columns so every panel stacked — that is the "too tall" half. Only
+the margin reset kept; the 940px breakpoint still collapses on small screens.
+
+**5. CREATE ONCE.** `#ws-create-card` removed. Verified first that the Portfolio flyout's
+"+ New Project" reaches `LinIngest.openCreateModal` independently. Note the two forms were NOT
+identical — the modal asks for a project number the panel did not.
+
+**6. THEY DIFFER, so both relabelled.** Reset signals = server write clearing the legacy signal
+blobs for ONE project (destructive) → **"Clear stored signals for this project"**. Rebuild
+signals = client loop re-running `LinSignals.runModels` IN THE BROWSER for EVERY project, clears
+nothing → **"Recompute every project (repair)"**. **Flagged, not changed: that control computes
+in the browser, which contradicts the platform's own standing description.** Neither touches
+`computed_results`.
+
+**A TEST WENT RED AND IT RECORDED THE OLD DEFECT.** `tests_render.html` group 15 asserted the
+card said "It does not record the rule that set the recommendation against the score" — the
+defect's own sentence pinned as expected behaviour. Rewritten, not deleted, and sharpened to
+assert BOTH directions: with a served basis it states the rule; with none it falls back rather
+than inventing one.
+
+**Verify.** Server suite 50 suites **2664/2664** (new `test_six_fixes.py` = 38). `tests.html`
+**51/51**. `tests_render.html` **208/209** (+4 net; the one red is the pre-existing auth-gated
+production-read check). Two faults (37/38; and the browser fault landing the second period's
+document in period 1, `{1: 2, 2: 0}`), each confirmed applied, each detected, each reverted
+SHA-256 identical with the baseline reconfirmed.
+
+**NO MIGRATION ADDED. Unapplied in production, unchanged: 0020, 0021, 0022, 0023.**
+
+Files: `server/app/recommendation_basis.py` (new), `server/app/documents.py`,
+`server/tools/test_six_fixes.py` (new), `assets/js/signals.js`, `assets/js/detail.js`,
+`assets/js/recommendation_options.js`, `assets/js/app.js`, `assets/css/radar.css`, `index.html`,
+`tests_render.html`, `REPORT_2026-08-08_six-fixes.md` (new), this entry. No
+`server/app/simulation/` file touched.
+
 # 2026-08-08 — The two period defects interacting: the compound case, proved
 
 Branch `claude/period-assignment-and-recompute-1nfjnx`, from `origin/main` at `1434b57`. Filed as
