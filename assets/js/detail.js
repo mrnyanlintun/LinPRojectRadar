@@ -955,7 +955,8 @@
                 from it, and the platform has already lost one action that way. The button
                 reports what it did instead of asking permission first. */""}
            <button class="btn small detail-compute-all" data-compute-all="${esc(p.id)}">Generate signals for every period</button>
-           <button class="btn small detail-reset" data-reset="${esc(p.id)}">Reset signals</button>
+           <button class="btn small detail-reset" data-reset="${esc(p.id)}"
+             title="Clears this project's stored signal values so its documents can be read again. Does not delete documents and does not touch other projects.">Clear stored signals for this project</button>
            <span class="detail-compute-all-msg kn-sub" aria-live="polite"></span>
            <span class="detail-reset-msg kn-sub" aria-live="polite"></span>
          </div>
@@ -1049,6 +1050,76 @@
         // Releases any globe this view previously built, so a detail page rendered before this
         // change does not leave a WebGL context behind when it re-renders.
         if (detailGlobe) { try { detailGlobe.destroy(); } catch (e) {} detailGlobe = null; }
+
+        /* STREET-LEVEL ZOOM, ON MAPLIBRE.
+
+           The flat atlas cannot do this and no amount of tweening makes it able to: it is a
+           2:1 equirectangular world outline with coastlines and country borders and NO street
+           data, so shrinking its viewBox to street scale magnifies an empty vector field
+           around a marker. Zoom needs tiles that carry streets, and MapLibre is vendored with
+           exactly that. PR #216 removed its script tag when the atlas became the portfolio
+           default, which is why `createGlMap` has been bailing on an undefined global and why
+           PR #215's NavigationControl has been dead ever since; the tag is restored in
+           index.html.
+
+           The atlas stays as the FALLBACK, for the reason the earlier session gave: a section
+           headed "Location" that renders black is worse than no section at all. If MapLibre is
+           absent, or its tiles cannot be reached, the map degrades to the outline rather than
+           to nothing. */
+        const lat = Number(p.lat), lng = Number(p.lng);
+        const canGl = typeof maplibregl !== "undefined" && Number.isFinite(lat)
+                      && Number.isFinite(lng);
+        if (canGl) {
+          host.innerHTML = "";
+          let m = null;
+          try {
+            m = new maplibregl.Map({
+              container: host,
+              style: (document.body.dataset.theme === "light")
+                ? "https://tiles.openfreemap.org/styles/positron"
+                : "https://tiles.openfreemap.org/styles/dark",
+              center: [lng, lat],
+              // STREET LEVEL. 16 puts a site in its block with the surrounding streets named,
+              // which is what "zoom to the street" means and what the whole-world atlas at a
+              // single marker could not show.
+              zoom: 16,
+              maxZoom: 19,
+              attributionControl: true
+            });
+          } catch (e) { m = null; }
+          if (m) {
+            // The detail page re-renders while the map is still mounting (the full-project
+            // hydrate does exactly that), and `destroy` removes the map underneath its own
+            // pending "load". Anything the handler then touches is detached, which threw
+            // "Cannot read properties of null". One flag, checked before the handler does
+            // anything, so a map that has been torn down stays torn down.
+            var dead = false;
+            detailGlobe = { destroy: function () { dead = true; try { m.remove(); } catch (e) {} } };
+            m.on("load", function () {
+              if (dead) return;
+              if (typeof maplibregl.NavigationControl === "function") {
+                m.addControl(new maplibregl.NavigationControl(), "top-right");
+              }
+              try { new maplibregl.Marker().setLngLat([lng, lat]).addTo(m); } catch (e) {}
+              // Arrive at street level rather than cutting to it, so the viewer keeps their
+              // bearings. The camera is already centred on the project, so this cannot strand
+              // anyone: a flight that never runs leaves the map where it began, on the site.
+              try { m.flyTo({ center: [lng, lat], zoom: 17, duration: 900 }); } catch (e) {}
+            });
+            // MapLibre's transient tile errors are swallowed exactly as the portfolio map
+            // swallows them. A style that never loads leaves the container showing the map's
+            // own background rather than throwing into the render path.
+            m.on("error", function () {});
+            if (note) {
+              const ln0 = window.linLocationNote ? linLocationNote(p) : null;
+              note.className = "detail-globe-note ws-note" + (ln0 && ln0.warn ? " ws-geo-warn" : "");
+              note.textContent = ln0 ? ln0.text
+                : (p.formattedAddress ? "Matched to: " + p.formattedAddress : "Located.");
+            }
+            return;
+          }
+        }
+
         if (!window.LinAtlas) {
           if (note) note.textContent = p.formattedAddress || "Location recorded.";
           return;
@@ -1165,6 +1236,13 @@
       }
       if (resp.result.signal_inputs && !p.storedResult.signal_inputs) {
         p.storedResult.signal_inputs = resp.result.signal_inputs;
+      }
+      // The served basis for the recommendation travels with the row for the same reason the
+      // other two fields do: `rowFor` prefers `storedResult`, and the Governance Decision card
+      // reads the basis off whatever `rowFor` returns. Without this graft the card fell back to
+      // saying the reason was not established on a row whose basis the server had supplied.
+      if (resp.result.recommendation_basis && !p.storedResult.recommendation_basis) {
+        p.storedResult.recommendation_basis = resp.result.recommendation_basis;
       }
     } else {
       // a_get delivered no storedResult (a race, or the list projection had not attached it

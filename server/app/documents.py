@@ -79,6 +79,7 @@ from .research_models import (
     ComputedResult, Decision, Document, DocumentUpload, Observation, ScheduleActivity,
     UploadAttempt, new_ulid,
 )
+from .recommendation_basis import recommendation_basis
 from .schedule_activities import read_activity_table, select_for_display
 from .schedule_table import activity_rows_from_document, activity_table_from_document
 
@@ -1122,6 +1123,15 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
         # that migration, which is honest rather than backfilled: see the migration's note.
         "source_documents": row.source_documents,
     }
+    # WHY THE RECOMMENDED COURSE IS THE ONE RECOMMENDED. Derived from what this row already
+    # holds, and served beside it so the card explains the recommendation instead of saying it
+    # cannot. Absent when the action-bearing fields were withheld by the reveal gate, which is
+    # correct: there is no recommendation on that read to explain.
+    _mods = row.module_results if include_recommendation else None
+    _regret = next((m for m in (_mods or [])
+                    if isinstance(m, dict) and m.get("method_class") == "Regret_Minimization"),
+                   None)
+    view["recommendation_basis"] = recommendation_basis(row.signal_inputs, _regret)
     if include_recommendation and package is not None:
         view["recommendation"] = {
             "package_id": package.package_id,

@@ -2759,7 +2759,7 @@
       const projects = (LinStore.cachedActive ? LinStore.cachedActive() : []);
       if (!projects.length) { status.textContent = "No ingested projects found."; return; }
       const confirmed = window.confirm(
-        "Rebuild signals (repair)\n\n" +
+        "Recompute every project (repair)\n\n" +
         "This re-runs local computation for all " + projects.length + " project" + (projects.length === 1 ? "" : "s") +
         " and refreshes Portfolio Health from the results already on file.\n\n" +
         "No AI calls, no document re-extraction: extraction results already on file are reused. " +

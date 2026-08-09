@@ -240,10 +240,17 @@
       };
     });
 
-    /* The recommendation is the one the stored result holds. It is read back, never re-derived
-       here, and where it is not the lowest-scoring course the difference is stated as not
-       established rather than explained by a rule this file would be guessing at. */
+    /* The recommendation is the one the stored result holds. It is read back, never
+       re-derived here, and the reason it differs from the ranking is the SERVED basis
+       (`recommendation_basis`), which is derived server-side from this same row and pinned
+       against the analysis's own rule by a check. This file states it; it does not decide it.
+
+       The card used to say the difference was "not established". It was always establishable:
+       the rule is a threshold on the period's own cost and schedule performance, and it is
+       what chooses. Saying so is the difference between a recommendation a project manager can
+       argue with and one they cannot. */
     var recKey = regret.recommended_action || null;
+    var basis = (result && result.recommendation_basis) || null;
     var recommendation = null;
     if (recKey) {
       var recScore = isNum(scores[recKey]) ? Number(scores[recKey]) : null;
@@ -251,24 +258,24 @@
         return Number(scores[k]) + " for " + (ACTION_TITLE[k] || k).toLowerCase();
       });
       var reason;
-      if (recScore !== null && recScore === lowest) {
-        reason = "It carries the smallest worst case of the set, " + recScore + " out of 30"
-          + (others.length ? ", against " + others.join(" and ") : "") + ".";
-      } else if (recScore !== null) {
-        reason = "It is not the lowest scoring course: it scores " + recScore + " out of 30"
-          + (others.length ? ", against " + others.join(" and ") : "")
-          + ". The stored result records the recommendation and the scores. It does not record "
-          + "the rule that set the recommendation against the score, so the reason for the "
-          + "difference is not established here.";
-      } else {
+      if (recScore === null) {
         reason = unknown("the stored result names a recommended course of action it holds no "
           + "score for");
+      } else {
+        reason = "It scores " + recScore + " out of 30"
+          + (others.length ? ", against " + others.join(" and ") : "") + ". ";
+        reason += (basis && basis.sentence)
+          ? basis.sentence
+          : ("The stored result records the recommendation and the scores. The rule that set "
+             + "the recommendation against the score is not on this result, so the reason is "
+             + "not established here.");
       }
       var evidence = [];
       if (isNum(si.cpi)) evidence.push("cost performance stands at " + si.cpi);
       if (isNum(si.spi)) evidence.push("schedule performance at " + si.spi);
       recommendation = {
         key: recKey,
+        scoresAreFixed: !!(basis && basis.scores_are_fixed),
         title: ACTION_TITLE[recKey] || recKey,
         reason: reason,
         evidence: evidence.length ? evidence.join(" and ") + "." : null
@@ -323,11 +330,20 @@
 
     return '<div class="ro-block" id="ro-block">'
       + '<h3 class="ro-title">Courses of action</h3>'
-      + '<p class="ro-lede">These are the courses of action the analysis scored for this '
-      + "period, each with what it costs, what it closes off, and what it protects. Where the "
-      + "platform does not hold what would be needed to state a consequence, it says so instead "
-      + "of asserting one. The recommendation follows the options, so the choice stays yours."
-      + "</p>"
+      + '<p class="ro-lede">These are the courses of action open to you, each with what it '
+      + "costs, what it closes off, and what it protects. Where the platform does not hold what "
+      + "would be needed to state a consequence, it says so instead of asserting one. The "
+      + "recommendation follows the options, so the choice stays yours.</p>"
+      // THE SCORES ARE A PROPERTY OF THE METHOD, NOT A FINDING ABOUT THIS PERIOD. The payoff
+      // matrix and the future probabilities behind them are fixed, so every project and every
+      // period scores 11, 5 and 8. Calling them "the courses the analysis scored for this
+      // period" told a reader their own evidence produced those numbers. It did not, and the
+      // recommendation is not taken from them either. Said once, here, rather than repeated.
+      + (spec.recommendation && spec.recommendation.scoresAreFixed
+          ? '<p class="ro-lede ro-lede-note">The scores below rank the courses by worst case '
+            + "and are the same for every project: they come from the method, not from this "
+            + "period's evidence. What decides the recommendation is stated with it.</p>"
+          : "")
       + body + rec + "</div>";
   }
 

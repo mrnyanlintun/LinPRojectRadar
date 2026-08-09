@@ -1321,16 +1321,51 @@
     assert("group 15: the stored score for escalating is quoted exactly", true,
       blockText.indexOf("worst case of this course at 8 out of 30") >= 0);
 
-    /* The recommendation is the stored one, and where it is not the lowest-scoring course the
-       difference is stated as not established rather than explained by a guessed rule. */
+    /* The recommendation is the stored one, and the reason it differs from the ranking comes
+       from the SERVED basis or is not stated at all.
+
+       REWRITTEN 2026-08-08. This block used to assert the card said "It does not record the
+       rule that set the recommendation against the score" — the exact sentence of the defect,
+       pinned as expected behaviour. The rule was never absent: it is a threshold on the
+       period's own cost and schedule performance in the regret module, and the card now states
+       it from `recommendation_basis` served beside the result.
+
+       The property the old check was reaching for is real and is kept below, sharpened: the
+       card must never INVENT a rationale. So both directions are asserted — with a served
+       basis it states the rule, and with none it falls back to saying so rather than guessing.
+       `fullRow()` deliberately carries no basis, which is the fallback case. */
     const rec = block ? block.querySelector("#ro-recommendation") : null;
     assert("group 15: the recommendation follows the options", true, !!rec);
     assert("group 15: the recommendation is the stored recommended course", true,
       !!rec && rec.textContent.indexOf("Recommended: Escalate to management review") >= 0);
-    assert("group 15: a recommendation that is not the lowest score says the reason is not "
-      + "established", true,
-      !!rec && rec.textContent.indexOf("It does not record the rule that set the "
-        + "recommendation against the score") >= 0);
+    assert("group 15: with no served basis the card does NOT invent a rule", true,
+      !!rec && rec.textContent.indexOf("is not established here") >= 0);
+    assert("group 15: and it still quotes the stored score rather than hiding it", true,
+      !!rec && rec.textContent.indexOf("It scores 8 out of 30") >= 0);
+
+    /* With the basis served, the card states the rule and the threshold, and stops calling
+       the difference unestablished. Every figure in the sentence is one the platform holds. */
+    const withBasis = fullRow();
+    withBasis.recommendation_basis = {
+      rule: "performance_override",
+      scores_are_fixed: true,
+      recommended: "escalate",
+      lowest: ["investigate"],
+      sentence: "The recommendation is not taken from the scores. This period's cost "
+        + "performance at 0.84 is below 0.88, and the analysis escalates whenever either "
+        + "figure falls below 0.88, whatever the ranking says."
+    };
+    const basisHtml = window.LinRecOptions.html(window.LinRecOptions.build(withBasis));
+    const basisDiv = scratch();
+    basisDiv.innerHTML = basisHtml;
+    const basisRec = basisDiv.querySelector("#ro-recommendation");
+    assert("group 15: with a served basis the card states the rule", true,
+      !!basisRec && basisRec.textContent.indexOf("escalates whenever either figure falls "
+        + "below 0.88") >= 0);
+    assert("group 15: and no longer says the reason is not established", -1,
+      basisRec ? basisRec.textContent.indexOf("is not established here") : -1);
+    assert("group 15: the fixed scores are named as a property of the method", true,
+      basisDiv.textContent.indexOf("the same for every project") >= 0);
 
     /* The card's own fields. */
     const auth = host.querySelector("#dc-authority");
