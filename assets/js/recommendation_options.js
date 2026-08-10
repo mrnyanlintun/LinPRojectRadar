@@ -132,6 +132,28 @@
     var regret = mods.Regret_Minimization;
     var scores = regret && regret.expected_regret;
 
+    // Run 1 remediation (remediation_decisions_answered.md 1.1, 1.2; the run-1 prompt Part 3).
+    // The seven CORE modules vote on project status on an interim basis; every other module,
+    // including the one that scores these courses of action, does not -- and non-voting means
+    // excluded from generated recommendation text and courses of action, not only from the
+    // status fusion. `votes` is a new field on the stored module result (server/app/simulation/
+    // registry.py run_all()); a module computed before this run has no such field and reads as
+    // undefined, never as false, so this only fires once a period has actually been recomputed
+    // under the new scope.
+    if (regret && regret.votes === false) {
+      return {
+        available: false,
+        reason: "The analysis that scores the courses of action against each other is not one "
+          + "of the modules validated to vote on project status on an interim basis, so its "
+          + "scoring is not carried into a recommended course of action here. Its own finding "
+          + "still appears on the signal ledger.",
+        nonVoting: true,
+        options: [],
+        recommendation: null,
+        unknowns: []
+      };
+    }
+
     if (!scores || typeof scores !== "object" || Object.keys(scores).length < 2) {
       // THREE DIFFERENT FACTS REACH HERE AND THEY MUST NOT SHARE A SENTENCE.
       //

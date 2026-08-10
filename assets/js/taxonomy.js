@@ -79,7 +79,7 @@ window.LIN_CATEGORIES = [
       { id: 'a3_5', num: 'A3.5', name: 'Overhead Absorption Rate', method_class: 'Overhead_Absorption', active: true, required: ['indirectCostPlan','indirectCostActual'] },
       { id: 'a3_6', num: 'A3.6', name: 'Cost Risk Analysis P80', method_class: 'Cost_Risk_Analysis', active: true, required: ['bac','cpi','ac','ev'] },
       { id: 'a3_7', num: 'A3.7', name: 'Analogous Estimating Ratio', method_class: 'Analogous_Estimating', active: true, required: ['analogousOverrunPct','bac'] },
-      { id: 'a3_8', num: 'A3.8', name: 'Parametric Cost Index', method_class: 'Parametric_Cost', active: true, required: ['bac','ev','ac','actualPctComplete'] },
+      { id: 'a3_8', num: 'A3.8', name: 'Parametric Cost Index', method_class: 'Parametric_Cost', active: true, disabled: true, required: ['bac','ev','ac','actualPctComplete'] },
       { id: 'a3_9', num: 'A3.9', name: 'Inflation Adjustment Index', method_class: 'Inflation_Adjustment', active: true, required: ['materialCostBaseline','materialCostCurrent'] }
     ]
   },
@@ -153,9 +153,9 @@ window.LIN_CATEGORIES = [
       { id: 'b2_4', num: 'B2.4', name: 'Interval Fuzzy Sets', method_class: 'Interval_Fuzzy_Sets', active: true, required: ['cpi','spi'] },
       { id: 'b2_5', num: 'B2.5', name: 'Z-numbers', method_class: 'Z_Numbers', active: true, required: ['cpi','spi','docRiskScore'] },
       { id: 'b2_6', num: 'B2.6', name: 'PLTS', method_class: 'PLTS', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_7', num: 'B2.7', name: 'Plithogenic Sets', method_class: 'Plithogenic_Sets', active: true, required: ['cpi','spi','docRiskScore'] },
+      { id: 'b2_7', num: 'B2.7', name: 'Plithogenic Sets', method_class: 'Plithogenic_Sets', active: true, disabled: true, required: ['cpi','spi','docRiskScore'] },
       { id: 'b2_8', num: 'B2.8', name: 'Belief Rule Base', method_class: 'Belief_Rule_Base', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_9', num: 'B2.9', name: 'Quantum Probability', method_class: 'Quantum_Probability', active: true, required: ['cpi','spi','docRiskScore'] },
+      { id: 'b2_9', num: 'B2.9', name: 'Quantum Probability', method_class: 'Quantum_Probability', active: true, disabled: true, required: ['cpi','spi','docRiskScore'] },
       { id: 'b2_10', num: 'B2.10', name: 'Pythagorean Fuzzy Sets', method_class: 'Pythagorean_Fuzzy', active: true, required: ['cpi','spi','docRiskScore'] },
       { id: 'b2_11', num: 'B2.11', name: 'Picture Fuzzy Sets', method_class: 'Picture_Fuzzy', active: true, required: ['cpi','spi','docRiskScore'] },
       { id: 'b2_12', num: 'B2.12', name: 'Hesitant Fuzzy Sets', method_class: 'Hesitant_Fuzzy', active: true, required: ['cpi','spi'] },
@@ -166,7 +166,7 @@ window.LIN_CATEGORIES = [
       { id: 'b2_17', num: 'B2.17', name: 'Fermatean Fuzzy Sets', method_class: 'Fermatean_Fuzzy', active: true, required: ['cpi','spi'] },
       { id: 'b2_18', num: 'B2.18', name: 'MARCOS Ranking', method_class: 'MARCOS', active: true, required: ['cpi','spi','docRiskScore'] },
       { id: 'b2_19', num: 'B2.19', name: 'CRITIC-TOPSIS', method_class: 'CRITIC_TOPSIS', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_20', num: 'B2.20', name: 'Hypersoft Sets', method_class: 'Hypersoft_Sets', active: true, required: ['cpi','spi','docRiskScore'] }
+      { id: 'b2_20', num: 'B2.20', name: 'Hypersoft Sets', method_class: 'Hypersoft_Sets', active: true, disabled: true, required: ['cpi','spi','docRiskScore'] }
     ]
   },
   {
@@ -188,12 +188,12 @@ window.LIN_CATEGORIES = [
     color: '#a78bfa',
     description: 'Decision optimisation and trade-off analysis over the available courses of action.',
     modules: [
-      { id: 'b4_1', num: 'B4.1', name: 'Multi-Objective Optimization', method_class: 'Multi_Objective_Optimization', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b4_2', num: 'B4.2', name: 'Linear Programming', method_class: 'Linear_Programming', active: true, required: ['bac','ev','ac','cpi'] },
+      { id: 'b4_1', num: 'B4.1', name: 'Multi-Objective Optimization', method_class: 'Multi_Objective_Optimization', active: true, disabled: true, required: ['cpi','spi','docRiskScore'] },
+      { id: 'b4_2', num: 'B4.2', name: 'Linear Programming', method_class: 'Linear_Programming', active: true, disabled: true, required: ['bac','ev','ac','cpi'] },
       { id: 'b4_3', num: 'B4.3', name: 'Constraint Satisfaction Analysis', method_class: 'Constraint_Satisfaction', active: true, required: ['cpi','spi','bac'] },
       { id: 'b4_4', num: 'B4.4', name: 'What-If Scenario Matrix', method_class: 'WhatIf_Scenario_Matrix', active: true, required: ['bac','ev','ac','cpi','spi'] },
-      { id: 'b4_5', num: 'B4.5', name: 'Decision Sensitivity Matrix', method_class: 'Decision_Sensitivity_Matrix', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b4_6', num: 'B4.6', name: 'Pareto Frontier Analysis', method_class: 'Pareto_Frontier', active: true, required: ['cpi','spi','docRiskScore'] },
+      { id: 'b4_5', num: 'B4.5', name: 'Decision Sensitivity Matrix', method_class: 'Decision_Sensitivity_Matrix', active: true, disabled: true, required: ['cpi','spi','docRiskScore'] },
+      { id: 'b4_6', num: 'B4.6', name: 'Pareto Frontier Analysis', method_class: 'Pareto_Frontier', active: true, disabled: true, required: ['cpi','spi','docRiskScore'] },
       { id: 'b4_7', num: 'B4.7', name: 'Regret Minimization Index', method_class: 'Regret_Minimization', active: true, required: ['cpi','spi','bac'] }
     ]
   },
@@ -258,6 +258,34 @@ window.isModuleSectorNA = function (methodClass, project) {
   var sectors = moduleSectorMap()[methodClass];
   if (!sectors) return false;
   return sectors.indexOf(window.normalizeSector(project && project.sector)) < 0;
+};
+
+/* ------------------------------------------------------------
+   Remediation Run 1 (remediation_programme.md, remediation_decisions_answered.md 1.3). The
+   eight concept-only modules the external arithmetic audit found undefensible: none implements
+   the analytical structure its name claims. Non-executable in production, non-voting, excluded
+   from every fusion input. Marked `disabled: true` on their taxonomy entries above.
+
+   Reuses the EXISTING not-relevant state (blue, distinct from grey no-data) rather than
+   inventing a sixth verdict -- the same state a sector-excluded module already carries. The row
+   stays: it reads as not available for production use, it does not disappear. See
+   getModuleStatus below, which checks this before falling back to the stored row exactly the
+   way it already does for isModuleSectorNA. */
+var LIN_DISABLED_MODULES = null; // method_class → true (lazy, built once)
+function disabledModuleMap() {
+  if (LIN_DISABLED_MODULES) return LIN_DISABLED_MODULES;
+  LIN_DISABLED_MODULES = {};
+  (window.LIN_CATEGORIES || []).forEach(function (c) {
+    (c.modules || []).forEach(function (m) {
+      if (m.disabled) LIN_DISABLED_MODULES[m.method_class] = true;
+    });
+  });
+  return LIN_DISABLED_MODULES;
+}
+/* True for one of the eight disabled concept-only modules, unconditionally -- not a sector
+   question, so it does not depend on the project. */
+window.isModuleDisabled = function (methodClass) {
+  return !!disabledModuleMap()[methodClass];
 };
 /* The modules of one category that are N/A for this project's sector —
    drives the one-line explanatory note under the category header. */
@@ -412,7 +440,10 @@ window.projectLevelCategories = function () {
      compute.py's rollup, which never reads either):
 
        'NA'     — the module's sector tag excludes this project (a construction-phase module
-                  on a Design project, or the reverse). Read from the taxonomy, not guessed.
+                  on a Design project, or the reverse), OR the module is one of the eight
+                  disabled concept-only modules (remediation Run 1) -- not available for
+                  production use on any project, any sector. Read from the taxonomy, not
+                  guessed.
        'NODATA' — the row exists (this project HAS been computed for this period) but this
                   module has no entry in it: it ran and abstained, because a figure or series
                   the module needed was not in the documents.
@@ -422,6 +453,7 @@ window.projectLevelCategories = function () {
      handled entirely elsewhere (the "Awaiting analysis" ledger state). */
   window.getModuleStatus = function (methodClass, project) {
     if (!project) return null;
+    if (window.isModuleDisabled && window.isModuleDisabled(methodClass)) return "NA";
     if (window.isModuleSectorNA && window.isModuleSectorNA(methodClass, project)) return "NA";
     var row = rowFor(project);
     if (!row || !Array.isArray(row.module_results)) return null;

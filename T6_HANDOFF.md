@@ -5529,3 +5529,63 @@ fault is fixed.
 Files changed: `assets/js/signals.js`, `assets/js/ingest.js`, `assets/js/app.js`,
 `assets/css/radar.css`, `server/app/documents.py`, `server/tools/test_period_number_picker.py`,
 `REPORT_2026-08-10_upload-modal-and-period.md`, this entry.
+
+# 2026-08-10 -- Remediation Run 1: disable the 8, relabel the 30
+
+Branch `claude/remediation-run1-disable-relabel`. Report at
+`REPORT_2026-08-10_run1-disable-and-relabel.md`. Run 1 of the 5-run remediation programme in
+`remediation_programme.md` (also new; `remediation_decisions_answered.md` too), written against
+`PCEIF_Claude_Module_Arithmetic_Audit_2026-08-10.md`'s finding that 0 of 101 units were approved
+for project-impacting status, most damagingly because canonical names claim methods the
+arithmetic does not implement.
+
+**THE EIGHT CONCEPT-ONLY MODULES ARE DISABLED.** Parametric Cost Index, Plithogenic Sets,
+Quantum Probability, Hypersoft Sets, Multi-Objective Optimization, Linear Programming, Decision
+Sensitivity Matrix, Pareto Frontier Analysis. `server/app/simulation/registry.py`'s
+`run_module()` now short-circuits on `DISABLED_CONCEPT_ONLY` membership BEFORE calling any
+formula function -- non-executable in production, not merely non-voting. They still render on
+the Signal Ledger, reusing the platform's existing not-relevant state (blue, distinct from grey
+no-data) rather than a new one, via a new `disabled: true` flag on `assets/js/taxonomy.js`'s
+matching entries. The row stays; it reads "not available for production use" now.
+
+**THE THIRTY PROXIES CARRY THEIR CANONICAL NAME PLUS A QUALIFIER, IN THE EXPORT, THE API AND THE
+METHODS TAB ONLY.** Established first, by inspection: the Signal Ledger IS reachable from the
+participant decision sequence (same page as the Governance Decision card, no gating between
+them), so the qualifier does not render there -- canonical name only, unchanged. New
+`activation_state`/`proxy_qualifier`/`proxy_label` keys on the stored module result reach the
+API response without reaching the ledger, because `taxonomy.js`'s four status accessors never
+read them.
+
+**VOTING IS NOW SCOPED TO THE SEVEN CORE MODULES, ON AN INTERIM BASIS, ACROSS ALL THREE LAYERS.**
+`compute.py`'s category rollup now fuses only CORE-carrying categories (layer a). Found that
+`recommendation_options.js`'s courses of action are generated from `Regret_Minimization` alone,
+which is not CORE -- added a `votes`-field gate so it now says "not available" instead of scoring
+options (layer b). The Governance Decision card's health state already read the restricted
+project status, so layer c needed no separate change; `deriveActionPlan`'s sub-block was found
+to already be dead code (stale `cat1..cat11` keys against `a1..d1` ids) and left as found.
+
+**THE OVERLAP ACROSS ALL FIVE RUNS, TWELVE MODULES.** Weather Day Impact (Runs 1, 2, 5) is the
+only three-run one. B2.7/B2.9 appear in both Run 1's disabled-8 and Run 3's 14-module adapter
+list -- resolved by construction, since the disable check in `run_module()` fires before any
+adapter-supplied input is ever consulted, so Run 3 does not need to do anything differently.
+B1.1/B2.1 appear in Run 2's defects and Run 3's adapter list, which is why Run 3 was already
+moved ahead of Run 2. Full table in the report.
+
+Verified: server suite **57 files, 3109/3109**, fresh SQLite per file, including a new
+`test_run1_disable_and_relabel.py` (68/68) that proves the single most important check --
+project status unchanged when only non-CORE inputs move -- can actually fail (shown red under a
+CORE perturbation, confirmed still green under a non-CORE-only one) before showing it passes.
+Two pre-existing suites (`test_d1_module_inputs.py`, `test_training_detail.py`) updated for the
+new rollup scope, not loosened -- see the report for exactly what and why. `node --check` clean
+on every changed JS file. **Not done: real-browser verification** (`tests_render.html`,
+`tests.html`, both themes) -- this container has Playwright but no downloaded Chromium binary,
+and pulling one was judged outside this session's time budget. Flagged plainly in the report as
+the next thing a browser-capable session should do.
+
+Files changed: `server/app/simulation/registry.py`, `server/app/simulation/compute.py`,
+`server/app/research_export.py`, `assets/js/taxonomy.js`, `assets/js/app.js`,
+`assets/js/knowledge.js`, `assets/js/recommendation_options.js`,
+`server/tools/test_d1_module_inputs.py`, `server/tools/test_training_detail.py`,
+`server/tools/test_run1_disable_and_relabel.py` (new), `remediation_programme.md` (new),
+`remediation_decisions_answered.md` (new), `REPORT_2026-08-10_run1-disable-and-relabel.md`, this
+entry.

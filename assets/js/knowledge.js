@@ -1371,9 +1371,62 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
     if (m.hj) return m.hj;
     return "Read as evidence, not verdict: corroborate against the other signals in its category before acting, and record a rationale if you set it aside. No silent override, the reasoning enters the audit trail.";
   }
+  // Run 1 remediation (remediation_programme.md, remediation_decisions_answered.md 1.3, 1.4).
+  // This is the "methods documentation" surface the run's Part 4 names as one of the three
+  // places the proxy qualifier and the disabled note are allowed to appear -- never the
+  // participant ledger or decision card, which read a module's status and finding from the
+  // stored row and never reach this file. Mirrored from server/app/simulation/registry.py's
+  // PROXY_QUALIFIERS and DISABLED_CONCEPT_ONLY (that file is the source of truth; this is
+  // presentation only, duplicated because the frontend has no import path into the backend
+  // package). Keyed by method_class, matching the m.mc values below.
+  const RUN1_PROXY_QUALIFIER = {
+    CUSUM: "hard-coded transformations of two-sided CUSUM on real SPI history; k, H, sigma floor and Amber band uncalibrated",
+    Bayesian_EAC: "Normal-normal updating with designed constant variances, not a governed Bayesian model",
+    Kalman_Filter: "Scalar Kalman recursion with fixed Q and R, short history, no calibrated filtering claim",
+    Budget_Execution_Rate: "an expenditure-versus-progress control ratio, not a standardised statistical test",
+    Regression_To_Mean: "fixed 50 per cent shrinkage toward historical mean; coefficient not estimated",
+    Schedule_Compression: "a custom compression ratio; no network-based crashing model or calibrated bands",
+    SCurve_Deviation: "a single planned versus actual snapshot, not a longitudinal S-curve analysis",
+    Milestone_Trend: "a simplified shift summary on real milestone history, bands uncalibrated",
+    Labor_Productivity: "a labour-hours ratio, not an earned-output productivity model",
+    Overhead_Absorption: "a transparent ratio; validity depends on whether the indirect plan is total or period-to-date",
+    Analogous_Estimating: "an analogous-cost ratio; project selection, normalisation and adaptation ungoverned",
+    Inflation_Adjustment: "a material-escalation ratio with no external price index, time base or geography",
+    Weather_Impact: "a lost-days over available-float proxy with fallback behaviour and ungoverned bands",
+    CO_Frequency: "contract growth plus a raw count; no time or exposure denominator",
+    Dispute_Escalation: "an ad hoc 0.3 / 0.3 / 0.4 weighted sum; weights and dependence uncalibrated",
+    Subcontractor_Performance: "a precomputed compliance score; provenance and construction unvalidated",
+    Sensitivity_Analysis: "local CPI perturbation plus deviations, not calibrated multivariate sensitivity",
+    Tornado_Diagram: "a ranking of four present-state deviations; no outcome-response ranges estimated",
+    Pythagorean_Fuzzy: "hard-coded transformations of raw CPI, SPI and document risk",
+    Picture_Fuzzy: "hard-coded memberships consuming raw metrics; no calibration evidenced",
+    Hesitant_Fuzzy: "designed perturbations, not elicited or observed hesitant assessments",
+    Type2_Fuzzy: "membership intervals that are designed constants",
+    Maximum_Entropy: "entropy over designed state probabilities; measures the lookup, not the project",
+    Possibility_Theory: "fixed mappings from raw metrics; no governed possibility distribution",
+    Spherical_Fuzzy: "algebraically bounded but fixed memberships on raw unqualified inputs",
+    Fermatean_Fuzzy: "formula-shaped with designed memberships, no empirical or elicitation basis",
+    Contract_Mod_Frequency: "a raw modification count; not a frequency without a denominator",
+    Constraint_Satisfaction: "an explainable four-rule checklist, not a constraint-satisfaction solver",
+    WhatIf_Scenario_Matrix: "four deterministic EAC variants; not an action-by-scenario matrix or optimiser",
+    Portfolio_Outlier: "an empirical CPI and SPI percentile rank; small-n behaviour and bands unvalidated"
+  };
+  const RUN1_DISABLED = {
+    Parametric_Cost: true, Plithogenic_Sets: true, Quantum_Probability: true, Hypersoft_Sets: true,
+    Multi_Objective_Optimization: true, Linear_Programming: true, Decision_Sensitivity_Matrix: true,
+    Pareto_Frontier: true
+  };
   function modDoc(m) {
+    const qualifier = RUN1_PROXY_QUALIFIER[m.mc];
+    const disabled = !!RUN1_DISABLED[m.mc];
+    const remediationNote = disabled
+      ? `<p class="kn-remediation"><strong>Status.</strong> Disabled. This module is concept-only: it has no production implementation of the analytical structure its name claims. It is not executed, does not vote on category or project status, and is excluded from every fusion input. See remediation_programme.md, Run 1.</p>`
+      : qualifier
+        ? `<p class="kn-remediation"><strong>Status.</strong> Proxy: ${esc(qualifier)}. Advisory, non-voting. See remediation_programme.md, Run 1.</p>`
+        : "";
     const html = `
       <p><strong>Purpose.</strong> ${m.purpose}</p>
+      ${remediationNote}
       <p><strong>Computation.</strong> ${m.formula}</p>
       ${m.bands ? modBands(m.bands) : ""}
       ${m.abstain ? `<p><strong>Abstains (Insufficient data) when:</strong> ${m.abstain}</p>` : ""}

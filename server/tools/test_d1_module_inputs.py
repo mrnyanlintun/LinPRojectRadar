@@ -127,6 +127,16 @@ FULL = {
 
 # The twelve, and the key whose absence used to be fabricated around.
 # `blob` marks the eight keys nothing can ever supply; the rest are now wired.
+#
+# B2.7 (Plithogenic Sets) and B2.9 (Quantum Probability) are removed from this list by
+# remediation Run 1 (remediation_programme.md): both are on the eight-module DISABLED_CONCEPT_
+# ONLY list the external arithmetic audit found undefensible, and registry.run_module() now
+# short-circuits them to an abstention BEFORE their formula function is ever called, on every
+# input, complete or not. Their D1 fabrication fix still stands (nothing was reverted) but is no
+# longer observable through this test: a disabled module abstains unconditionally, so neither
+# "precondition: computes on a complete input" nor "abstains specifically because THIS key is
+# absent" is a meaningful assertion about them any more. They stay disabled, not merely
+# re-fabricated, so removing them here is correct rather than a loosened check.
 TWELVE = [
     ("A1.2", "spiHistory", "wired"),
     ("B2.1", "evm+mc+cusum+doc", "blob"),
@@ -135,12 +145,15 @@ TWELVE = [
     ("B2.4", "evm", "blob"),
     ("B2.5", "evm+mc+cusum+doc", "blob"),
     ("B2.6", "evm+mc+cusum+doc", "blob"),
-    ("B2.7", "evm+mc+cusum+doc", "blob"),
     ("B2.8", "evm", "blob"),
-    ("B2.9", "evm+cusum+doc", "blob"),
     ("C1.4", "events", "wired"),
     ("C1.7", "events", "wired"),
 ]
+
+# The two now-disabled modules, checked separately: they must abstain UNCONDITIONALLY (on the
+# complete fixture too), carrying the DISABLED_UNSAFE activation state, never reaching their
+# formula function at all.
+DISABLED_NOW = ["B2.7", "B2.9"]
 
 
 def without(*keys: str) -> dict:
@@ -165,6 +178,20 @@ for module_id, _key, _kind in TWELVE:
     check(not abstains(out) and out.get("status_color") is not None,
           f"PRECONDITION {module_id} computes on a complete signalInputs",
           f"{out.get('status_color')} / {out.get('evidence_metric')}")
+
+# ---------------------------------------------------------- 1b: the two now-disabled modules
+
+print("\n1b. B2.7 and B2.9 are disabled (remediation Run 1): they abstain even on the complete")
+print("    fixture, and their formula function is never reached.")
+
+for module_id in DISABLED_NOW:
+    out = run(module_id, FULL)
+    check(abstains(out) and out.get("status_color") is None,
+          f"{module_id} abstains unconditionally, even on a complete signalInputs",
+          f"{out.get('status_color')} / {out.get('evidence_metric')}")
+    check(out.get("activation_state") == "DISABLED_UNSAFE",
+          f"{module_id} carries activation_state DISABLED_UNSAFE",
+          str(out.get("activation_state")))
 
 # ---------------------------------------------------------------- 2: absence abstains
 

@@ -36,6 +36,7 @@ from app.research_models import Participant  # noqa: E402
 from app import training_engine as eng  # noqa: E402
 from app.training import _abstained_by_category  # noqa: E402
 from app.simulation import compute_project, unported_modules  # noqa: E402
+from app.simulation import fusion  # noqa: E402
 from app.simulation.registry import registry_index  # noqa: E402
 
 client = TestClient(main.app, raise_server_exceptions=False)
@@ -134,29 +135,59 @@ cats = run["category_statuses"]
 by_cat: dict[str, list] = {}
 for m in mods:
     by_cat.setdefault(m["category"], []).append(m)
-check(len(by_cat) >= 6 and all(cats.get(c) for c in by_cat),
-      "every category with contributors has a rollup to open", str(sorted(by_cat))[:90])
-check(all(len(v) >= 1 for v in by_cat.values()),
-      "and each carries the computations that fed it")
+
+# Remediation Run 1 (remediation_programme.md, remediation_decisions_answered.md 1.1, 1.2):
+# only the seven CORE modules vote on an interim basis, so a category's rollup now opens ONLY
+# when at least one of its contributors is CORE -- every other category still carries its
+# computations in `mods` (the ledger keeps them, per Part 3's ledger-visibility guarantee) but
+# has no entry in `cats` at all. This replaced "every category with contributors has a rollup",
+# which was the pre-Run-1 fusion scope; that scope is documented as retired, not silently
+# dropped.
+from app.simulation.registry import CORE_VOTING_MODULES  # noqa: E402
+
+voting_cats = {m["category"] for m in mods if m["module_id"] in CORE_VOTING_MODULES}
+check(voting_cats and voting_cats == set(cats.keys()),
+      "exactly the categories carrying a CORE voting module have a rollup to open",
+      str((sorted(voting_cats), sorted(cats.keys()))))
+check(all(len(v) >= 1 for cat, v in by_cat.items() if cat in voting_cats),
+      "and each of those carries the computations that fed it")
+check(any(cat not in cats for cat in by_cat),
+      "while a category with no CORE contributor still shows its computations in the ledger "
+      "and has no interim rollup of its own",
+      str(sorted(set(by_cat) - voting_cats)))
 
 # THE MEASURED CORRECTION the report leads with: the category status is an evidence
 # combination, NOT the worst contributor. If this ever became a true maximum the display's
-# wording would be wrong, so it is asserted rather than assumed.
+# wording would be wrong, so it is asserted rather than assumed. Only the CORE contributors that
+# actually fed the rollup are compared against it now.
 RANK = {"green": 0, "yellow": 1, "amber": 2, "red": 3}
 BANDS = ["Green", "Yellow", "Amber", "Red"]
 divergent = []
-for cat, members in by_cat.items():
+for cat in voting_cats:
+    members = [m for m in by_cat[cat] if m["module_id"] in CORE_VOTING_MODULES]
     worst = BANDS[max(RANK[str(m["status_color"]).lower()] for m in members)]
     if worst.lower() != str(cats[cat]["status"]).lower():
         divergent.append((cat, worst, cats[cat]["status"]))
-check(divergent,
-      "the category status DIFFERS from its worst contributor in this period: the rollup is "
-      "an evidence combination, not worst-status-wins",
-      str(divergent[:3]))
-check(any(w == "Red" and str(f).lower() == "green" for _, w, f in divergent)
-      or any(RANK[w.lower()] - RANK[str(f).lower()] >= 2 for _, w, f in divergent),
-      "including at least one category whose worst contributor is two bands more severe than "
-      "the category reads", str(divergent[:3]))
+# Remediation Run 1 note: this property (the fused status differs from a simple worst-status-
+# wins reading) was demonstrated pre-Run-1 with every category's full contributor list, often a
+# dozen modules deep. Under the interim voting scope each category has at most the CORE modules
+# CORE_VOTING_MODULES assigns it -- one or two -- and Dempster-Shafer combination over one or
+# two sources frequently agrees with the worst one; divergence is no longer guaranteed to be
+# observable on this fixture. The mechanism (fusion.py, untouched by this run) still performs a
+# real combination rather than a maximum; this is now demonstrated directly on fusion.py's own
+# STATUS_MASS table (still true, still a fact about the un-touched arithmetic) rather than
+# required to fall out of this fixture's four-CORE-category rollup.
+combine_demo = fusion.dst_fuse(["Yellow", "Green"])
+check(combine_demo is not None and combine_demo["status"] == "Green",
+      "fusion.py's own combination (untouched by this run) still differs from a worst-status-"
+      "wins maximum: Yellow+Green reads Green, not the worst input Yellow",
+      str(combine_demo))
+if divergent:
+    check(True, "and this period's rollup also shows the effect directly", str(divergent[:3]))
+else:
+    print("  ....  (no category in this period's fixture happened to diverge from its worst "
+          "contributor -- expected under the interim CORE-only voting scope; see the note "
+          "above and fusion.py's own combination check just above, which still passed)")
 
 # Abstentions: named absences, derived from the registry, excluding group D and unported.
 ab = _abstained_by_category(mods)
@@ -176,14 +207,19 @@ idx = registry_index()
 check(all(i in idx for v in ab.values() for i in v),
       "every abstention names a registered computation, so the screen can render its NAME")
 
-# Group C's exclusion from project status is carried, not left to inference.
-c_cats = [c for c, v in cats.items() if v.get("group") == "C"]
-check(c_cats and all(cats[c]["contributes_to_project_status"] is False for c in c_cats),
-      "Data & Evidence Health is marked as not contributing to project status",
-      str(c_cats))
+# Group C's exclusion from project status is carried, not left to inference. Remediation Run 1
+# means Group C now has no rollup entry at all (it carries no CORE module, so it is not in
+# `cats`), which is a STRICTER exclusion than before, not a weaker one -- checked against the
+# registry directly rather than against `cats`, since `cats` can no longer answer the question
+# for an excluded group by construction.
+c_registry_cats = {row["category"] for row in registry_index().values() if row["group"] == "C"}
+check(c_registry_cats and not (c_registry_cats & set(cats.keys())),
+      "Data & Evidence Health carries no rollup entry at all under the interim voting scope",
+      str(sorted(c_registry_cats)))
 check(all(cats[c]["contributes_to_project_status"] is True
           for c, v in cats.items() if v.get("group") == "A"),
-      "while Project Health does contribute, so the flag is discriminating and not a constant")
+      "while every Project Health category that DOES have a rollup does contribute, so the "
+      "flag is discriminating and not a constant")
 
 work_js_detail = work_js[work_js.index("function categoryDetailHtml"):]
 # Matched against the EMITTED MARKUP, not the phrase: an earlier version of this check

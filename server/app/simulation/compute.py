@@ -11,7 +11,7 @@ from typing import Any
 
 from .fusion import dst_fuse
 from .models import SIMULATION_VERSION
-from .registry import registry_index, run_all
+from .registry import CORE_VOTING_MODULES, registry_index, run_all
 
 
 def contributes_to_project_status(group: str) -> bool:
@@ -40,9 +40,17 @@ def compute_project(si: dict, scenario_id: str, period: str,
     run = run_all(si, scenario_id, period, period_cutoff)
     index = registry_index()
 
-    # Category rollup, then project rollup, matching the frontend's two-stage fusion.
+    # Run 1 remediation, fusion-exclusion list (remediation_decisions_answered.md 1.1, Option C;
+    # 1.2). The seven CORE_VOTING_MODULES vote on project status on an interim basis; every other
+    # module still computes and still appears in `run["computed"]` for the ledger, but its status
+    # is withheld from the category rollup below and therefore from project status fusion, the
+    # generated recommendation text, and the decision card -- all three read this same
+    # category_statuses / project_status result. Ledger visibility is untouched: this loop is the
+    # ONLY thing that changed, nothing upstream of `run["computed"]` did.
     by_category: dict[str, list[str]] = {}
     for row in run["computed"]:
+        if row["module_id"] not in CORE_VOTING_MODULES:
+            continue
         by_category.setdefault(row["category"], []).append(row["status_color"])
 
     category_statuses: dict[str, dict[str, Any]] = {}

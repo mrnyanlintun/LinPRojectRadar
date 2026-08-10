@@ -1175,13 +1175,16 @@
   // getModuleStatus in taxonomy.js and contributesToProjectStatus. Each carries its own shape
   // (square-cornered, dashed border) distinct from the five verdicts' rounded pills, so the
   // difference reads without relying on colour.
-  function statusPill(status, naSector) {
+  function statusPill(status, naSector, naReason) {
     if (!status || status === "NODATA") {
       const full = "No data: this module needed a figure or series the documents did not carry.";
       return `<span class="pill pill-nodata" title="${esc(full)}">No data</span>`;
     }
     if (status === "NA") {
-      const full = `Not relevant: this module does not apply to ${naSector || "this sector's"} projects`;
+      // Run 1 remediation: the same NA pill now also carries the eight disabled concept-only
+      // modules (window.isModuleDisabled), which is not a sector question, so it needs its own
+      // sentence rather than the sector one.
+      const full = naReason || `Not relevant: this module does not apply to ${naSector || "this sector's"} projects`;
       return `<span class="pill pill-notrelevant" title="${esc(full)}">Not relevant</span>`;
     }
     const key = String(status).toLowerCase().replace("-review", "");
@@ -1314,10 +1317,17 @@
           ? getModuleAbstentionReason(m.method_class, p) : null;
         const reasonHtml = reason
           ? `<div class="cat-mod-reason">${esc(reason)}</div>` : "";
-        return `<div class="cat-mod-row${na ? " cat-mod-na" : ""}"${na ? ` title="Not relevant: this module does not apply to ${esc(secName)}-sector projects"` : ""}>
+        // Run 1 remediation: the eight disabled concept-only modules share the NA pill with
+        // sector abstention but need their own sentence -- "not relevant" for a sector reason
+        // and "not available for production use" are different facts and must not share one.
+        const disabledHere = window.isModuleDisabled && window.isModuleDisabled(m.method_class);
+        const naTitle = disabledHere
+          ? "Not available for production use: this module has no production implementation of the analytical structure its name claims."
+          : `Not relevant: this module does not apply to ${secName}-sector projects`;
+        return `<div class="cat-mod-row${na ? " cat-mod-na" : ""}"${na ? ` title="${esc(naTitle)}"` : ""}>
           <span class="cat-mod-num">${esc(m.num)}</span>
           <span class="cat-mod-name">${esc(m.name)}</span>
-          ${statusPill(st, secName + "-sector")}
+          ${statusPill(st, secName + "-sector", na ? naTitle : null)}
         </div>${finding}${reasonHtml}${chart}`;
       }).join("");
       // Sector-abstention note — the category stays; only its construction-phase

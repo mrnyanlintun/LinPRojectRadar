@@ -31,6 +31,116 @@ class PortfolioModuleError(RuntimeError):
     """Raised when a single-project computation reaches a Group D module."""
 
 
+# ---------------------------------------------------------------------------------------------
+# Remediation Run 1 (see remediation_programme.md and remediation_decisions_answered.md at the
+# repository root). Label strings, the activation-state field, and the fusion-exclusion list
+# ONLY -- no arithmetic in this file or anywhere under simulation/ is touched by this run.
+# ---------------------------------------------------------------------------------------------
+
+#: The eight concept-only modules the external arithmetic audit found undefensible: none
+#: implements the analytical structure its name claims. Non-executable in production, non-voting,
+#: excluded from every fusion input and every rollup. run_module() below refuses to call their
+#: formula function at all -- see the short-circuit there. Code ids per
+#: remediation_decisions_answered.md 1.3.
+DISABLED_CONCEPT_ONLY: dict[str, str] = {
+    "A3.8": "Parametric Cost Index",
+    "B2.7": "Plithogenic Sets",
+    "B2.9": "Quantum Probability",
+    "B2.20": "Hypersoft Sets",
+    "B4.1": "Multi-Objective Optimization",
+    "B4.2": "Linear Programming",
+    "B4.5": "Decision Sensitivity Matrix",
+    "B4.6": "Pareto Frontier Analysis",
+}
+
+#: The seven CORE modules the audit approves to vote on project status, on an interim basis,
+#: until Run 4 validates them and Run 4's acceptance criterion restores voting on a durable
+#: footing (remediation_decisions_answered.md 1.1, Option C; 4.3). Every other live module keeps
+#: computing and keeps showing in the ledger -- it simply does not feed category rollup, project
+#: status fusion, generated recommendation text, courses of action, or the decision card. See
+#: compute.py, which is the only place this set is read for fusion purposes.
+CORE_VOTING_MODULES: frozenset[str] = frozenset({
+    "A1.7",   # TCPI
+    "A1.8",   # Variance at Completion
+    "A2.8",   # Look-Ahead Schedule Health
+    "A3.2",   # Contingency Burn Rate
+    "A3.4",   # Material Cost Variance
+    "A4.2",   # RFI Velocity
+    "A4.3",   # Submittal Rejection Rate
+})
+
+#: The thirty proxy modules and the qualifier appended to their canonical name wherever the
+#: qualifier is shown. Per remediation_decisions_answered.md 1.4 and Part 4 of the Run 1 prompt,
+#: that is the export, the API response (a new field alongside the unchanged module_id and
+#: evidence_metric -- see run_module()'s "proxy_qualifier" key below), and the methods
+#: documentation. It is NEVER shown on the participant ledger or decision-card surface, which
+#: read a module's canonical name from the frontend taxonomy and its finding from
+#: evidence_metric, neither of which this run touches.
+PROXY_QUALIFIERS: dict[str, str] = {
+    "A1.2": "hard-coded transformations of two-sided CUSUM on real SPI history; k, H, sigma "
+            "floor and Amber band uncalibrated",
+    "A1.3": "Normal-normal updating with designed constant variances, not a governed Bayesian "
+            "model",
+    "A1.4": "Scalar Kalman recursion with fixed Q and R, short history, no calibrated filtering "
+            "claim",
+    "A1.9": "an expenditure-versus-progress control ratio, not a standardised statistical test",
+    "A1.10": "fixed 50 per cent shrinkage toward historical mean; coefficient not estimated",
+    "A2.4": "a custom compression ratio; no network-based crashing model or calibrated bands",
+    "A2.6": "a single planned versus actual snapshot, not a longitudinal S-curve analysis",
+    "A2.7": "a simplified shift summary on real milestone history, bands uncalibrated",
+    "A3.3": "a labour-hours ratio, not an earned-output productivity model",
+    "A3.5": "a transparent ratio; validity depends on whether the indirect plan is total or "
+            "period-to-date",
+    "A3.7": "an analogous-cost ratio; project selection, normalisation and adaptation "
+            "ungoverned",
+    "A3.9": "a material-escalation ratio with no external price index, time base or geography",
+    "A4.5": "a lost-days over available-float proxy with fallback behaviour and ungoverned bands",
+    "A4.6": "contract growth plus a raw count; no time or exposure denominator",
+    "A4.7": "an ad hoc 0.3 / 0.3 / 0.4 weighted sum; weights and dependence uncalibrated",
+    "A4.8": "a precomputed compliance score; provenance and construction unvalidated",
+    "A5.2": "local CPI perturbation plus deviations, not calibrated multivariate sensitivity",
+    "A5.3": "a ranking of four present-state deviations; no outcome-response ranges estimated",
+    "B2.10": "hard-coded transformations of raw CPI, SPI and document risk",
+    "B2.11": "hard-coded memberships consuming raw metrics; no calibration evidenced",
+    "B2.12": "designed perturbations, not elicited or observed hesitant assessments",
+    "B2.13": "membership intervals that are designed constants",
+    "B2.14": "entropy over designed state probabilities; measures the lookup, not the project",
+    "B2.15": "fixed mappings from raw metrics; no governed possibility distribution",
+    "B2.16": "algebraically bounded but fixed memberships on raw unqualified inputs",
+    "B2.17": "formula-shaped with designed memberships, no empirical or elicitation basis",
+    "B3.5": "a raw modification count; not a frequency without a denominator",
+    "B4.3": "an explainable four-rule checklist, not a constraint-satisfaction solver",
+    "B4.4": "four deterministic EAC variants; not an action-by-scenario matrix or optimiser",
+    "D1.2": "an empirical CPI and SPI percentile rank; small-n behaviour and bands unvalidated",
+}
+
+
+def activation_state(new_id: str) -> str:
+    """
+    One of the auditor's required activation states (see remediation_programme.md, "Activation
+    states the auditor requires"), for this run's purposes only. Read-only classification -- it
+    changes no arithmetic and is not itself consulted by run_module()'s abstention contract
+    except for the disabled set, which is short-circuited explicitly below.
+    """
+    if new_id in DISABLED_CONCEPT_ONLY:
+        return "DISABLED_UNSAFE"
+    if new_id in CORE_VOTING_MODULES:
+        return "ENABLED_QUALIFIED"
+    return "ADVISORY_ONLY"
+
+
+def proxy_label(new_id: str, canonical_name: str) -> str | None:
+    """
+    The canonical name plus its proxy qualifier, in the one fixed form used on every surface the
+    qualifier is allowed to appear on (export, API, methods documentation). Returns None for a
+    module that is not one of the thirty relabeled proxies.
+    """
+    qualifier = PROXY_QUALIFIERS.get(new_id)
+    if qualifier is None:
+        return None
+    return f"{canonical_name} (proxy: {qualifier}. Advisory, non-voting.)"
+
+
 def load_registry() -> list[dict[str, str]]:
     """Every live module from the CSV, in file order."""
     with CSV_PATH.open(encoding="utf-8-sig") as fh:
@@ -74,6 +184,10 @@ def run_module(new_id: str, si: dict, rand: Callable[[], float],
     Group D is a hard error here rather than an abstention: those modules need three or more
     projects, so a single-project path reaching one is a routing mistake, not missing data, and
     reporting it as "insufficient data" would hide the mistake.
+
+    A concept-only module in DISABLED_CONCEPT_ONLY is short-circuited HERE, before its formula
+    function is ever called: it is genuinely non-executable in production, not merely
+    non-voting. No arithmetic in the module itself is touched or reached.
     """
     index = registry_index()
     if new_id not in index:
@@ -83,6 +197,17 @@ def run_module(new_id: str, si: dict, rand: Callable[[], float],
             f"{new_id} is a Group D portfolio-level module and requires 3 or more projects; "
             f"it cannot be computed on a single project"
         )
+    if new_id in DISABLED_CONCEPT_ONLY:
+        return {
+            "status_color": None,
+            "insufficient_data": True,
+            "activation_state": "DISABLED_UNSAFE",
+            "evidence_metric": (
+                f"{DISABLED_CONCEPT_ONLY[new_id]} is disabled: it is a concept-only module with "
+                "no production implementation of the analytical structure its name claims. Not "
+                "executed, not voting, excluded from every fusion input and rollup."
+            ),
+        }
     if new_id not in VALIDATED:
         raise MissingModuleError(
             f"{new_id} ({index[new_id]['module_name']}) has not been ported and validated "
@@ -123,7 +248,11 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
             # Retain the module's own abstention message (evidence_metric), when it gave one, so
             # the ledger can say why a module is silent instead of showing only its bare id. A
             # module that produced no message is recorded with reason=None; nothing is invented.
-            abstained.append({"module_id": new_id, "reason": out.get("evidence_metric")})
+            abstained.append({
+                "module_id": new_id,
+                "reason": out.get("evidence_metric"),
+                "activation_state": out.get("activation_state") or activation_state(new_id),
+            })
             continue
         out = dict(out)
         out["module_id"] = new_id
@@ -131,6 +260,17 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
         out["category"] = index[new_id]["category"]
         if new_id in STOCHASTIC:
             out["seed"] = seed
+        # Run 1 remediation: activation state and, for the thirty relabeled proxies, the
+        # canonical-name-plus-qualifier label. New keys on the result dict only -- module_id,
+        # status_color and evidence_metric (what the participant ledger renders) are untouched.
+        # This is what makes the qualifier reach the API response without reaching the ledger:
+        # taxonomy.js's getModuleStatus/getModuleResult never read these two keys.
+        out["activation_state"] = activation_state(new_id)
+        label = proxy_label(new_id, index[new_id]["module_name"])
+        if label is not None:
+            out["proxy_qualifier"] = PROXY_QUALIFIERS[new_id]
+            out["proxy_label"] = label
+        out["votes"] = new_id in CORE_VOTING_MODULES
         results.append(out)
 
     return {

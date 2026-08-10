@@ -188,6 +188,7 @@ MODULE_RESULT_COLUMNS: tuple[str, ...] = (
     "computed_at",
     "computation",
     "group",
+    "activation_state",
     "status_color",
     "evidence_metric",
     "result_json",
@@ -206,6 +207,88 @@ GROUP_NAMES: dict[str, str] = {
 # dependency on the simulation package at all.
 _MODULE_NAME_CSV = (pathlib.Path(__file__).resolve().parents[2]
                     / "p0-baseline" / "module_renumbering_map.csv")
+
+# Run 1 remediation (remediation_programme.md, remediation_decisions_answered.md 1.3, 1.4; the
+# run-1 prompt Part 4). Mirrored from server/app/simulation/registry.py's DISABLED_CONCEPT_ONLY,
+# CORE_VOTING_MODULES and PROXY_QUALIFIERS -- that file is the source of truth for these three
+# sets; this module mirrors rather than imports them for the same reason it mirrors module
+# names above, so the export keeps no import dependency on the simulation package at all. The
+# export is one of the three surfaces (export, API, methods documentation) the qualifier is
+# allowed on; the participant ledger and decision card are not, and neither reads this file.
+_RUN1_DISABLED: dict[str, str] = {
+    "A3.8": "Parametric Cost Index",
+    "B2.7": "Plithogenic Sets",
+    "B2.9": "Quantum Probability",
+    "B2.20": "Hypersoft Sets",
+    "B4.1": "Multi-Objective Optimization",
+    "B4.2": "Linear Programming",
+    "B4.5": "Decision Sensitivity Matrix",
+    "B4.6": "Pareto Frontier Analysis",
+}
+
+_RUN1_CORE_VOTING: frozenset[str] = frozenset({
+    "A1.7", "A1.8", "A2.8", "A3.2", "A3.4", "A4.2", "A4.3",
+})
+
+_RUN1_PROXY_QUALIFIERS: dict[str, str] = {
+    "A1.2": "hard-coded transformations of two-sided CUSUM on real SPI history; k, H, sigma "
+            "floor and Amber band uncalibrated",
+    "A1.3": "Normal-normal updating with designed constant variances, not a governed Bayesian "
+            "model",
+    "A1.4": "Scalar Kalman recursion with fixed Q and R, short history, no calibrated filtering "
+            "claim",
+    "A1.9": "an expenditure-versus-progress control ratio, not a standardised statistical test",
+    "A1.10": "fixed 50 per cent shrinkage toward historical mean; coefficient not estimated",
+    "A2.4": "a custom compression ratio; no network-based crashing model or calibrated bands",
+    "A2.6": "a single planned versus actual snapshot, not a longitudinal S-curve analysis",
+    "A2.7": "a simplified shift summary on real milestone history, bands uncalibrated",
+    "A3.3": "a labour-hours ratio, not an earned-output productivity model",
+    "A3.5": "a transparent ratio; validity depends on whether the indirect plan is total or "
+            "period-to-date",
+    "A3.7": "an analogous-cost ratio; project selection, normalisation and adaptation "
+            "ungoverned",
+    "A3.9": "a material-escalation ratio with no external price index, time base or geography",
+    "A4.5": "a lost-days over available-float proxy with fallback behaviour and ungoverned "
+            "bands",
+    "A4.6": "contract growth plus a raw count; no time or exposure denominator",
+    "A4.7": "an ad hoc 0.3 / 0.3 / 0.4 weighted sum; weights and dependence uncalibrated",
+    "A4.8": "a precomputed compliance score; provenance and construction unvalidated",
+    "A5.2": "local CPI perturbation plus deviations, not calibrated multivariate sensitivity",
+    "A5.3": "a ranking of four present-state deviations; no outcome-response ranges estimated",
+    "B2.10": "hard-coded transformations of raw CPI, SPI and document risk",
+    "B2.11": "hard-coded memberships consuming raw metrics; no calibration evidenced",
+    "B2.12": "designed perturbations, not elicited or observed hesitant assessments",
+    "B2.13": "membership intervals that are designed constants",
+    "B2.14": "entropy over designed state probabilities; measures the lookup, not the project",
+    "B2.15": "fixed mappings from raw metrics; no governed possibility distribution",
+    "B2.16": "algebraically bounded but fixed memberships on raw unqualified inputs",
+    "B2.17": "formula-shaped with designed memberships, no empirical or elicitation basis",
+    "B3.5": "a raw modification count; not a frequency without a denominator",
+    "B4.3": "an explainable four-rule checklist, not a constraint-satisfaction solver",
+    "B4.4": "four deterministic EAC variants; not an action-by-scenario matrix or optimiser",
+    "D1.2": "an empirical CPI and SPI percentile rank; small-n behaviour and bands unvalidated",
+}
+
+
+def _run1_activation_state(new_id: str) -> str:
+    if new_id in _RUN1_DISABLED:
+        return "DISABLED_UNSAFE"
+    if new_id in _RUN1_CORE_VOTING:
+        return "ENABLED_QUALIFIED"
+    return "ADVISORY_ONLY"
+
+
+def _run1_label(new_id: str, canonical_name: str) -> str:
+    """The canonical name, plus its proxy qualifier or its disabled note, in the export's one
+    fixed form. Every other module's label is its unmodified canonical name."""
+    if new_id in _RUN1_DISABLED:
+        return (f"{canonical_name} (disabled: concept-only, no production implementation of "
+                "the analytical structure its name claims. Not executed, non-voting.)")
+    qualifier = _RUN1_PROXY_QUALIFIERS.get(new_id)
+    if qualifier is not None:
+        return f"{canonical_name} (proxy: {qualifier}. Advisory, non-voting.)"
+    return canonical_name
+
 
 _module_names_cache: dict[str, str] | None = None
 
@@ -620,12 +703,14 @@ def build_module_results_rows(session: Session, project_legacy_ids: set[str] | N
             group_letter = str(module.get("group") or "")
             extra = {k: v for k, v in module.items()
                     if k not in ("module_id", "group", "status_color", "evidence_metric")}
+            canonical_name = names.get(module_id, module_id)
             rows.append({
                 "project": legacy,
                 "period": result.period,
                 "computed_at": _iso(result.computed_at),
-                "computation": names.get(module_id, module_id),
+                "computation": _run1_label(module_id, canonical_name),
                 "group": GROUP_NAMES.get(group_letter, group_letter),
+                "activation_state": _run1_activation_state(module_id),
                 "status_color": module.get("status_color"),
                 "evidence_metric": module.get("evidence_metric"),
                 "result_json": json.dumps(extra, sort_keys=True, default=str),
