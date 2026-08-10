@@ -1601,7 +1601,6 @@
   function categoryLedgerHtml(p) {
     if (!window.LIN_CATEGORIES) return "";
     const projectCats = window.projectLevelCategories ? projectLevelCategories() : LIN_CATEGORIES.filter((c) => !(c && c.level === "portfolio"));
-    const healthCat = LIN_CATEGORIES.find((c) => c && c.level === "portfolio");
     const rows = projectCats.map((cat) => {
       const status = window.getCategoryStatus ? getCategoryStatus(cat.id, p) : null;
       const open = cat.id === "b3" ? " open" : "";   // Governance (Group B: Regulatory & Authority Thresholds) open by default
@@ -1660,23 +1659,27 @@
       </details>`;
     }).join("");
 
-    // Portfolio Health — separated row, not part of the numbered 1-10 sequence.
-    let healthRow = "";
-    if (healthCat) {
-      healthRow = `<div class="cat-row cat-row-health" data-cat="${esc(healthCat.id)}">
-        <div class="cat-row-head">
-          <span class="cat-row-num" style="color:${esc(healthCat.color)}">${esc(healthCat.num)}</span>
-          <span class="cat-row-name">${esc(healthCat.name)}</span>
-        </div>
-        <p class="cat-row-desc">${esc(healthCat.description)} Portfolio-scale: compares this project against the rest of the portfolio, not a numbered project category.</p>
-      </div>`;
-    }
-    return rows + healthRow;
+    // PORTFOLIO HEALTH IS NOT RENDERED HERE ANY MORE.
+    //
+    // This ledger has exactly one host: the project detail page (see the guard at the top of
+    // renderLedger). Portfolio Health is Group D, portfolio level: it detects patterns ACROSS
+    // projects, its five modules all require `portfolioVectors`, and it cannot compute for the
+    // single project whose page this is. It was rendered as a separated row carrying its own
+    // explanation that it "compares this project against the rest of the portfolio", which is
+    // a true sentence about a category that has nothing to say on this screen, sitting under a
+    // heading that had just counted its five modules into the project's total.
+    //
+    // It is unchanged on the portfolio, which is where it belongs: the "Portfolio health"
+    // card (index.html, filled by `renderPortfolio` in workspace.js) reads it from each
+    // project's own stored result. Checked, not assumed -- `LinIngest.openHealthModal`, which
+    // `deepdive.js:2260` reaches for, does not exist anywhere in this codebase, so that call
+    // is a no-op behind its own guard and is NOT the surface this row was standing in for.
+    return rows;
   }
 
   function wireCategoryLedger(root) {
-    // details/summary handles the 1-10 rows' toggling natively; the separated
-    // Portfolio Health row is read-only prose, so there is nothing to wire.
+    // details/summary handles the project-level rows' toggling natively, and there is no
+    // longer a Portfolio Health row here to wire.
     if (!root) return;
   }
 
