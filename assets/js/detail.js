@@ -1194,6 +1194,8 @@
       if (body && body.style.display !== "none") runLazyInit(secId);
     });
 
+    buildSectionNav(root);
+
     // T13. Fetch the full stored result (module_results + signal_inputs) and graft it onto
     // the project so every surface on this page reads from the same computed row.
     // a_get (called by hydrateFullProject) returns only category_statuses, not module_results,
@@ -1222,6 +1224,74 @@
     const secId = e && e.detail && e.detail.id;
     if (secId) runLazyInit(secId);
   });
+
+  /* ---------- section navigator (second, left-side menu bar) ----------
+     Lists every collapsible section on the detail page, in page order, derived
+     from the actual rendered .collapse-section elements rather than a
+     hand-maintained duplicate list — so it can never drift out of sync with
+     the sections render() actually built, whatever order they end up in.
+     Labelled by each section's own title text (NAMING_AUTHORITY.md: purpose
+     only, no module ids or numbers — the titles passed to collapsibleSection
+     already satisfy that, so this reads them verbatim rather than inventing
+     its own wording). */
+  let secNavObserver = null;
+  function buildSectionNav(root) {
+    const nav = document.getElementById("detail-secnav");
+    if (!nav) return;
+    if (secNavObserver) { try { secNavObserver.disconnect(); } catch (e) {} secNavObserver = null; }
+    const sections = Array.prototype.slice.call(root.querySelectorAll(".collapse-section"));
+    if (!sections.length) { nav.hidden = true; nav.innerHTML = ""; return; }
+    nav.hidden = false;
+    nav.innerHTML = sections.map((sec, i) => {
+      const secId = String(sec.id || "").replace(/^section-/, "");
+      const titleEl = sec.querySelector(".collapse-title");
+      const label = titleEl ? titleEl.textContent : secId;
+      return '<div class="detail-secnav-item">' +
+        '<button type="button" class="detail-secnav-btn" data-secnav-target="' + esc(secId) + '" ' +
+          'aria-label="' + esc(label) + '">' + (i + 1) + '</button>' +
+        '<span class="detail-secnav-label">' + esc(label) + '</span>' +
+      '</div>';
+    }).join("");
+
+    nav.querySelectorAll("[data-secnav-target]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const secId = btn.getAttribute("data-secnav-target");
+        const sec = document.getElementById("section-" + secId);
+        if (!sec) return;
+        // Expand it first (if folded) so the scroll lands on real content, not a
+        // collapsed header that then pushes past the viewport as it opens.
+        if (!sec.classList.contains("open") && typeof window.toggleSection === "function") {
+          window.toggleSection(secId);
+        }
+        sec.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
+    // Scroll-spy: highlight whichever section is currently most in view.
+    const setActive = (secId) => {
+      nav.querySelectorAll(".detail-secnav-btn").forEach((b) => {
+        b.classList.toggle("active", b.getAttribute("data-secnav-target") === secId);
+      });
+    };
+    if (typeof IntersectionObserver === "function") {
+      const visible = {};
+      secNavObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          const id = entry.target.id.replace(/^section-/, "");
+          visible[id] = entry.isIntersecting ? entry.intersectionRatio : 0;
+        });
+        let bestId = null, bestRatio = 0;
+        Object.keys(visible).forEach((id) => {
+          if (visible[id] > bestRatio) { bestRatio = visible[id]; bestId = id; }
+        });
+        if (bestId) setActive(bestId);
+      }, { root: null, rootMargin: "-15% 0px -60% 0px", threshold: [0, .25, .5, .75, 1] });
+      sections.forEach((sec) => secNavObserver.observe(sec));
+    }
+    // Seed with the first section active until the observer reports in.
+    const first = sections[0];
+    if (first) setActive(String(first.id || "").replace(/^section-/, ""));
+  }
 
   /* ---------- fetch full stored result and refresh open sections ----------
      Called at the end of render(). Fetches projectresults (which includes

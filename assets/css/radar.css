@@ -4608,3 +4608,56 @@ body[data-theme="plain"] .admin-pill-off { background: #fbdcdb; color: #8a0e16; 
 .ro-cost-list { margin: 0 0 6px; padding-left: 18px; font-size: 12.5px; line-height: 1.55; }
 .ro-cost-list li { display: list-item; margin: 0 0 3px; }
 .ro-flag { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px; font-size: 10.5px; background: var(--accent, #4ea0ff); color: #06101f; }
+
+/* ============================================================
+   Detail page section navigator — a second, left-side menu bar
+   listing every collapsible section on the project detail page.
+   Collapsed to a slim rail of numbered dots (like .icon-dock's own
+   circular buttons) so it never has to be wide enough to cover
+   text content or narrow .app's own max-width on desktop; each
+   dot's label appears as a transient hover/focus flyout, the same
+   pattern .dock-label already uses, rather than a permanently
+   visible wide panel. */
+.detail-secnav {
+  position: fixed; left: 12px; top: 50%; transform: translateY(-50%); z-index: 55;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 10px 6px; border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  border: 1px solid var(--line); box-shadow: var(--shadow);
+  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  opacity: .7; transition: opacity .3s ease;
+  max-height: 70vh; overflow-y: auto;
+}
+.detail-secnav:hover, .detail-secnav:focus-within { opacity: 1; }
+.detail-secnav[hidden] { display: none; }
+.detail-secnav-item { position: relative; }
+.detail-secnav-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%; padding: 0;
+  background: transparent; color: var(--muted);
+  border: 1px solid var(--line-strong); cursor: pointer;
+  font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+  transition: color .15s, background .15s, border-color .15s;
+}
+.detail-secnav-btn:hover { color: var(--phosphor); border-color: var(--phosphor); }
+.detail-secnav-btn:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
+.detail-secnav-btn.active { color: #fff; background: var(--phosphor); border-color: var(--phosphor); }
+body[data-theme="newyork"] .detail-secnav-btn.active { background: transparent; color: var(--nyc-gold); border-color: var(--nyc-gold); }
+
+.detail-secnav-label {
+  position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+  white-space: nowrap; pointer-events: none;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .04em; font-weight: 600;
+  color: var(--text); background: var(--surface); border: 1px solid var(--line);
+  padding: 4px 8px; border-radius: 6px; box-shadow: var(--shadow);
+  opacity: 0; transition: opacity .15s ease; z-index: 56;
+}
+.detail-secnav-btn:hover + .detail-secnav-label,
+.detail-secnav-btn:focus-visible + .detail-secnav-label { opacity: 1; }
+
+/* Mobile: collapses/hides rather than taking width. The dock itself repositions
+   at this breakpoint (see .icon-dock's 700px rule above); the section navigator
+   has no compact form worth keeping on a phone viewport, so it simply hides. */
+@media (max-width: 700px) {
+  .detail-secnav { display: none; }
+}

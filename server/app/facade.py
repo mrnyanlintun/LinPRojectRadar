@@ -207,8 +207,19 @@ def _project(session: Session, legacy_id: str | None) -> Project | None:
 def _ordered(session: Session, archived: bool):
     # created_at preserves the live ordering, which the fixtures show is stable and which the
     # frontend relies on for the portfolio list.
+    #
+    # Training projects (`is_training`) are excluded here, not layered on as a separate filter
+    # downstream, because every portfolio surface (project list, status legend counts, map/radar/
+    # globe placement, Portfolio Health's client-side aggregate, and its own "3+ projects" pool
+    # threshold) is fed from this one query via window.LIN_PROJECTS. Filtering at the source closes
+    # all of them at once instead of requiring each consumer to remember to filter. This is
+    # deliberately independent of the research-export isolation filter in research_export.py,
+    # which stays untouched — this is the portfolio-surface filter the training-gating report
+    # flagged as "not yet decided" and left out of scope.
     return session.scalars(
-        select(Project).where(Project.archived == archived).order_by(Project.created_at, Project.legacy_id)
+        select(Project)
+        .where(Project.archived == archived, Project.is_training.is_(False))
+        .order_by(Project.created_at, Project.legacy_id)
     ).all()
 
 

@@ -5440,3 +5440,41 @@ makes zero Google requests; a no-coordinate project throws nothing and stays lis
 the same pre-existing auth-gated row). **Eight faults injected** — stray `mapWrap` (server + a
 browser drive that re-blanked the globe), `atlas.js` resurrected, marker colour constant, dropped
 letter, removed framing, unmarked no-key host — each turned its own check red, then reverted.
+
+## Training projects leave the portfolio, and a detail-page section navigator (2026-08-10, fourth session)
+
+Branch `claude/training-projects-portfolio-jrorzf`. Report at
+`REPORT_2026-08-10_training-separation-and-nav.md`.
+
+**THE PORTFOLIO DECISION THE TRAINING-GATING REPORT LEFT OPEN IS NOW MADE.**
+`REPORT_2026-08-04_training-gating.md` built the flag and the isolation for the research export
+and research chain only, and flagged the portfolio itself as "not yet decided ... a product
+decision for roadmap item 8." Training projects now leave the portfolio entirely: the project
+list, the status legend counts, the map/radar/globe stage views, and Portfolio Health's client-
+built aggregate snapshot are ALL fed from one place — `window.LIN_PROJECTS`, populated only from
+`a_list`/`a_listslim`/`a_listarchived` — so one filter in `server/app/facade.py`'s `_ordered()`
+(`Project.is_training.is_(False)`) closes every one of them at once. **Portfolio Health's "3+
+projects" anomaly-detection pool threshold WAS counting training projects before this fix** (it
+reads the same `LIN_PROJECTS` mirror) and is not after it. The pre-existing research-export
+isolation filter (`research_export.py`) is untouched and independently re-verified. The Train tab
+does not go through the filtered actions at all, so training projects stay reachable there
+unchanged.
+
+**A SECOND, LEFT-SIDE MENU BAR ON PROJECT DETAIL.** `#detail-secnav` mirrors the existing right-
+side `.icon-dock`'s floating-pill approach — `position: fixed`, outside `.app`'s own width
+calculation — so it adds zero pixels to `.app`'s desktop `max-width` (verified: identical bounding
+box with and without it) and collapses to `display: none` under 700px on phones. It lists every
+`.collapse-section` on the page, built from the live rendered DOM (not a hand-maintained list) so
+it cannot drift out of sync with what `render()` actually built; a click expands the section if
+folded and scrolls to it; an `IntersectionObserver` runs scroll-spy. Labels are each section's own
+title text — purpose-only, no module ids, per `NAMING_AUTHORITY.md`. 10 sections currently exist
+(the "Signal Stack"/`d-stack` section named in `REPORT_2026-08-05_surface-inventory.md` no longer
+exists in source).
+
+Verified: server suite 55 files, 3022/3022 (new `test_training_portfolio_isolation.py`, 13/13,
+fault-injected and reverted). `tests.html` 51/51. `tests_render.html` 286/287 (same pre-existing
+auth-gated production-read row, unrelated). Driven in a real browser (headless Chromium,
+SwiftShader WebGL), both operational light (Fairbanks) and dark (NYC/Gotham) themes, desktop and a
+390x844 mobile viewport: training project absent from every portfolio surface and reachable via
+Train; navigator lists all 10 sections, clicking expands and scrolls; `.app` width unchanged;
+navigator hidden (not narrowed) on mobile.
