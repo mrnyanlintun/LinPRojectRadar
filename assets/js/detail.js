@@ -51,61 +51,21 @@
 
   /* ---------- Google Maps, keyed from the deployment's environment ----------
 
-     The Location section shows streets when the deployment has a browser map key, and the flat
-     atlas when it does not. The key never lives in a committed file: the page asks the server
-     for it at /mapconfig, so a deployment sets GOOGLE_MAPS_BROWSER_KEY and nothing in the repo
-     changes. See server/app/map_config.py for why a browser map key is exposed to the browser
-     where the geocoding key is not.
+     The Location section shows streets when the deployment has a browser map key, and a note that
+     the map is unavailable when it does not. The plumbing — the /mapconfig fetch, the on-demand
+     API loader, the status colours — is SHARED with the portfolio Map view in assets/js/gmap.js
+     (window.LinGMap), so the two surfaces cannot drift into two behaviours or two keys. The key
+     never lives in a committed file; see server/app/map_config.py.
 
-     NO KEY, NO REQUEST TO GOOGLE. Without a key the script below is never injected, so a
-     deployment that has not set one makes no call to any Google host from this page. The only
-     request the no-key path makes is the same-origin /mapconfig fetch that tells it there is no
-     key. */
+     NO KEY, NO REQUEST TO GOOGLE. Without a key LinGMap.ensure is never called, so the API script
+     is never injected and this page makes no call to any Google host. The only request the no-key
+     path makes is the same-origin /mapconfig fetch that tells it there is no key.
 
-  // The /mapconfig answer, fetched once per page-load. A rejected fetch resolves to the no-key
-  // shape rather than rejecting, so a config endpoint that is briefly unreachable degrades to
-  // the atlas exactly as an absent key does, instead of throwing into the section render.
-  let _mapConfigPromise = null;
-  // Test seam. The /mapconfig answer and the Maps-API load below are each cached for the page's
-  // lifetime, because a page fetches its key once and loads the library once. A render test that
-  // needs to exercise BOTH the keyed and the no-key branch inside one page load resets those two
-  // caches between renders. Nothing in the application calls this; production never re-keys a
-  // live page.
-  function __resetMapForTest() { _mapConfigPromise = null; _gmapsPromise = null; }
-  function getMapConfig() {
-    if (_mapConfigPromise) return _mapConfigPromise;
-    _mapConfigPromise = fetch("/mapconfig", { credentials: "same-origin" })
-      .then((r) => (r.ok ? r.json() : { present: false, apiKey: null }))
-      .catch(() => ({ present: false, apiKey: null }));
-    return _mapConfigPromise;
-  }
-
-  // Resolves to the google.maps namespace, loading the Maps JavaScript API once if it is not
-  // already present. If window.google.maps already exists it resolves immediately, which is also
-  // the seam a test uses to stand in a stub for the real API (the container this is verified in
-  // cannot reach maps.gstatic.com, the same class of block that ruled MapLibre out).
-  let _gmapsPromise = null;
-  function ensureGoogleMaps(apiKey) {
-    if (window.google && window.google.maps) return Promise.resolve(window.google.maps);
-    if (_gmapsPromise) return _gmapsPromise;
-    _gmapsPromise = new Promise((resolve, reject) => {
-      const cbName = "__ogGoogleMapsReady";
-      const timer = setTimeout(() => reject(new Error("google maps load timed out")), 15000);
-      window[cbName] = function () {
-        clearTimeout(timer);
-        try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
-        if (window.google && window.google.maps) resolve(window.google.maps);
-        else reject(new Error("google maps callback fired without the namespace"));
-      };
-      const s = document.createElement("script");
-      s.async = true;
-      s.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(apiKey)
-        + "&v=weekly&loading=async&callback=" + cbName;
-      s.onerror = () => { clearTimeout(timer); reject(new Error("google maps script failed to load")); };
-      document.head.appendChild(s);
-    });
-    return _gmapsPromise;
-  }
+     __resetMapForTest is kept on LinDetail for the render harness, which reset the detail map's
+     caches between the keyed and no-key branches; it now delegates to the shared module. */
+  function __resetMapForTest() { if (window.LinGMap && LinGMap.__resetForTest) LinGMap.__resetForTest(); }
+  function getMapConfig() { return LinGMap.config(); }
+  function ensureGoogleMaps(apiKey) { return LinGMap.ensure(apiKey); }
 
   const esc = (s) => String(s == null ? "" : s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -1130,20 +1090,21 @@
           }
           return;
         }
-        // STREETS ON GOOGLE MAPS WHERE A KEY IS SET, THE FLAT ATLAS WHERE IT IS NOT.
+        // STREETS ON GOOGLE MAPS WHERE A KEY IS SET, A NOTE WHERE IT IS NOT.
         //
         // The point of this section is to place the project at street level, which needs street
-        // data. The atlas has none: it is a world outline and cannot zoom to a road. Google Maps
-        // is drawn in the browser from a key the deployment sets in its environment, which the
-        // page fetches at /mapconfig rather than reading from any committed file.
+        // data. Google Maps is drawn in the browser from a key the deployment sets in its
+        // environment, which the page fetches at /mapconfig rather than reading from any committed
+        // file. This is the SAME plumbing (window.LinGMap) the portfolio Map view uses.
         //
-        // With no key: no request to Google, and the atlas stays as the no-key map, which still
-        // places the project, under the same address line. With a key that fails to load: the
-        // atlas again, and the note says the street map could not be reached, rather than a
-        // broken Google frame.
+        // With no key: no request to Google, and the section says the map is unavailable under the
+        // matched-address line — the SAME no-key answer the portfolio gives, so the site does not
+        // carry two different no-key behaviours. With a key that fails to load: the note says the
+        // street map could not be reached, rather than a broken Google frame. The flat atlas that
+        // used to be the no-key fallback here is gone.
         //
-        // Releases any globe this view previously built, so a detail page rendered before this
-        // change does not leave a WebGL context behind when it re-renders.
+        // Releases any map this view previously built, so a detail page rendered before this
+        // change does not leave a WebGL/map context behind when it re-renders.
         if (detailGlobe) { try { detailGlobe.destroy(); } catch (e) {} detailGlobe = null; }
 
         function setLocationNote(extra) {
@@ -1158,26 +1119,18 @@
           note.textContent = extra ? extra + " " + base : base;
         }
 
-        function renderAtlas(extra) {
+        // No key, or the API could not be reached: no map, a note that says so, and the matched
+        // address stays beneath. No Google request is made on this path.
+        function setMapUnavailable(reason) {
+          if (detailGlobe) { try { detailGlobe.destroy(); } catch (e) {} detailGlobe = null; }
           host.classList.remove("detail-globe--gmap");
-          host.innerHTML = "";
-          if (!window.LinAtlas) {
-            // The atlas module itself failed to load. Say where the project is in words rather
-            // than leaving a section headed "Location" empty.
-            if (note) {
-              note.className = "detail-globe-note ws-note ws-geo-warn";
-              note.textContent = (extra || "Map unavailable on this page.")
-                + (p.formattedAddress ? " Matched to: " + p.formattedAddress : "");
-            }
-            return;
-          }
-          setLocationNote(extra);
-          LinAtlas.render(host, [p], { focusId: p.id })
-            .then(() => setLocationNote(extra))
-            .catch(() => setLocationNote(extra));
+          host.classList.add("detail-globe--unavailable");
+          host.innerHTML = '<div class="detail-globe-unavail">Map unavailable</div>';
+          setLocationNote(reason);
         }
 
         function renderGoogleMap(gmaps) {
+          host.classList.remove("detail-globe--unavailable");
           host.classList.add("detail-globe--gmap");
           host.innerHTML = "";
           const inner = document.createElement("div");
@@ -1203,16 +1156,15 @@
 
         getMapConfig().then((cfg) => {
           if (!cfg || !cfg.present || !cfg.apiKey) {
-            // No key: the atlas is the map, and no Google request is made. The note says the
-            // street map is unavailable, so the outline view reads as a deliberate fallback
-            // rather than a blank or a map that failed to draw.
-            renderAtlas("The street map is unavailable, so this is the outline view.");
+            // No key: no request to Google, and the section says the map is unavailable with the
+            // matched address kept beneath — the same no-key answer the portfolio Map view gives.
+            setMapUnavailable("The map is unavailable.");
             return;
           }
           ensureGoogleMaps(cfg.apiKey)
             .then((gmaps) => renderGoogleMap(gmaps))
-            .catch(() => renderAtlas("The street map could not be reached, so this is the outline view."));
-        }).catch(() => renderAtlas());
+            .catch(() => setMapUnavailable("The map could not be reached."));
+        }).catch(() => setMapUnavailable("The map is unavailable."));
       },
       // Uploaded-docs table is already in the section HTML; the extracted-
       // signals panel below it renders on expand.

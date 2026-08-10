@@ -5387,3 +5387,56 @@ no module id, "and" not "&") added; the one red is the same pre-existing auth-ga
 row. **Ten faults injected** across both suites — categoryies, lower-case status, ampersand, street
 zoom, map centre, marker, no-key note, no-key no-request, `maplibregl`-returned, CSP-dropped,
 map_config-no-key — each confirmed to turn its own check red, then reverted to green.
+
+## The globe restored, and the portfolio map moved to Google (2026-08-10, third session)
+
+Branch `claude/period-recompute-new-docs-1nfjnx`. Report at `REPORT_2026-08-10_globe-and-map.md`.
+Fixes two defects the owner saw on the live site.
+
+**THE GLOBE WENT BLANK, AND THE BREAKING COMMIT IS NAMED: `bf2a2e9`** (the previous session, the
+MapLibre removal — not the copy sweep, not the ledger count). That commit deleted
+`const mapWrap = document.querySelector(".map-wrap")` from `setPortfolioView` but left
+`buildGeoStage(globeWrap, mapWrap, atlasWrap)` referencing it. `app.js` is `"use strict"`, so
+reading the undeclared `mapWrap` threw a `ReferenceError` on the **globe branch only** — Map and
+Radar never touched it — so the globe drew nothing while Map worked, and the default view being
+"globe" meant it threw on load. Reproduced (`canvasCount: 0`, `mapWrap is not defined`) before
+fixing. Fix: `buildGeoStage(globeWrap)`. A server check (section 3c) now fails if any standalone
+`mapWrap` token returns, with a self-test proving it fires on the bug and not on the real
+`gmapWrap`.
+
+**THE PORTFOLIO MAP IS GOOGLE MAPS NOW, AND THE ATLAS IS REMOVED.** "There is no reason for two map
+implementations on one site" — so the `/mapconfig` fetch, the on-demand API loader and the
+status-colour resolver moved into a shared `assets/js/gmap.js` (`window.LinGMap`) that BOTH the
+detail street map and the portfolio Map view use: one key (`GOOGLE_MAPS_BROWSER_KEY`), one loader,
+one no-key answer. The portfolio map draws one marker per placed project (status colour + letter,
+theme-aware), frames them with `fitBounds` (not street zoom), pans to a project when its list row
+is selected, keeps the placed/unplaced count and the unplaced projects in the list, and with no key
+says "The map is unavailable" and makes **no Google request**. The detail page's no-key state
+changed from the atlas to the same note, so the two surfaces no longer differ.
+
+**THE FLAT ATLAS IS GONE, AND WHAT DEPENDED ON IT IS NAMED IN THE REPORT.** `assets/js/atlas.js` is
+deleted, its `.atlas-wrap` markup and script tag are out of `index.html`, and its CSS (`.atlas-*`
+rules + 22 `--atlas-*` variables) is removed. Everything that used it — the Map view, the globe's
+degrade fallback, the detail no-key fallback, `focusAtlasProject`/`resetAtlasView`/`atlasViewActive`,
+and the two test suites — was moved to Google Maps or a note first. **The globe's vendored
+`ne_110m_admin_0_countries.geojson` STAYS** (globe.js reads it for country outlines; it was never
+the atlas's file), and a check pins that it does, so a future "remove atlas assets" sweep cannot
+take it by association.
+
+**THE KEY IS UNCHANGED.** Nothing new is required of the owner; the provisioning is as the prior
+report stated (`GOOGLE_MAPS_BROWSER_KEY`, Maps JavaScript API, HTTP-referrer restriction). The same
+key now serves both surfaces.
+
+Test seam added: `LinApp.__renderPortfolioMapForTest(gmaps, host, projects)` lets the render harness
+draw the portfolio map with a stubbed `google.maps` (the container cannot reach `maps.gstatic.com`)
+and read back the markers, their colours and letters, and the framing.
+
+Verified: real browser (SwiftShader WebGL) — globe renders with points in BOTH themes; keyed
+portfolio map draws four coloured, lettered, clickable markers and frames them; selecting a row
+pans to it; detail still opens at street zoom 17; no key on either surface says unavailable and
+makes zero Google requests; a no-coordinate project throws nothing and stays listed. Server suite
+**54 files, 3009/3009**, `test_map_and_module_count.py` 72/72 with new section 3c. `tests.html`
+51/51. `tests_render.html` **286/287** (group 8 rewritten to a Google-map marker test; the one red
+the same pre-existing auth-gated row). **Eight faults injected** — stray `mapWrap` (server + a
+browser drive that re-blanked the globe), `atlas.js` resurrected, marker colour constant, dropped
+letter, removed framing, unmarked no-key host — each turned its own check red, then reverted.

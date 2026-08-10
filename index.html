@@ -504,10 +504,10 @@
              Radar | Map view toggle. -->
         <div class="stage-toggle" role="group" aria-label="Portfolio view">
           <button type="button" class="stage-btn" data-view="radar">Radar</button>
-          <!-- T11: Map is the DEFAULT geographic view and is drawn as flat SVG — no WebGL, no
-               3D library, no animation loop. It replaced the globe as the default because the
-               globe could not be verified to render at all in two consecutive sessions, and a
-               black sphere in front of a director is not a risk worth carrying. -->
+          <!-- Map is Google Maps (assets/js/gmap.js), the same implementation and key as the
+               project detail map. It frames the placed projects and moves to one when it is
+               selected. With no key it shows a note that the map is unavailable and makes no
+               Google request. -->
           <button type="button" class="stage-btn" data-view="map">Map</button>
           <!-- The globe is kept and is a view you choose. It loads globe.gl and its texture only
                when selected, and falls back to the Map above if WebGL is missing or it fails to
@@ -526,28 +526,31 @@
              aria-label="Radar scope. Radial distance indicates drift from baseline; angular sectors group projects by delivery type (Design, Construction, Hybrid); marker color indicates status. Selecting a project marker opens its detail view; the project list below is an equivalent keyboard control path.">
         </svg>
       </div>
-      <!-- T11. The default geographic view: flat SVG, no WebGL. One marker per located project,
-           coloured AND lettered by the status the SERVER computed and stored. Selecting a marker
-           opens that project's detail view, the same path the map has always used. Projects
-           without coordinates cannot be placed and are counted in the note below rather than
-           silently dropped; they remain in the project list, which is the keyboard path. -->
-      <div class="atlas-wrap">
-        <div id="atlas-canvas"></div>
-        <p class="atlas-note ws-note" id="atlas-note"></p>
+      <!-- The Map view: Google Maps, the SAME implementation and browser key as the project
+           detail map (assets/js/gmap.js). One marker per located project, coloured AND lettered
+           by the status the SERVER computed and stored; selecting a marker opens that project's
+           detail view. The view FRAMES the placed projects (it shows a portfolio, not one site);
+           selecting a project in the list moves the map to it. Projects without coordinates are
+           counted in the note and remain in the project list below, which is the keyboard path.
+           With no key the note says the map is unavailable and no Google request is made — the
+           same no-key answer the detail page gives. -->
+      <div class="gmap-wrap" hidden>
+        <div id="portfolio-gmap" role="application"
+             aria-label="Portfolio map. One marker per project with a stored location; marker colour and letter indicate the stored project status. Selecting a marker opens that project's detail view. Projects without a location are not shown here and remain in the project list below, which is an equivalent keyboard control path."></div>
+        <p class="gmap-note ws-note" id="gmap-note"></p>
       </div>
       <div class="globe-wrap" hidden>
         <!-- One point per project with a stored location, coloured by the status the SERVER
              computed and stored. Selecting a point opens that project's detail view, which is
              what selecting a map marker has always done. Projects without coordinates cannot be
              placed and are not points; they remain in the project list below, which is the same
-             keyboard path the radar has always had. -->
+             keyboard path the radar has always had. If the globe cannot draw (no WebGL, a phone
+             viewport, or it never paints) it degrades to the Google Map view, or to a note when
+             no key is set — never to an empty panel. -->
         <div id="globe-canvas" role="application"
              aria-label="Interactive globe. One point per project with a stored location; point color indicates the stored project status. Selecting a point opens that project's detail view. Projects without a location are not shown here and remain in the project list below, which is an equivalent keyboard control path."></div>
         <p class="globe-note ws-note" id="globe-note"></p>
       </div>
-      <!-- The MapLibre street-map stage that used to sit here is gone (2026-08-10). The
-           portfolio's Map view has been the flat SVG atlas since T11; the MapLibre stage was
-           unreachable and is removed along with its app.js code and its vendored library. -->
 
       <!-- The single project list for the portfolio. It is a permanent section
            beneath the Radar / Map / Globe views, not a fourth view switched
@@ -1272,6 +1275,10 @@
   <!-- SheetJS: client-side XLSX generation for audit export. Vendored, same reasoning. -->
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="assets/js/config.js"></script>
+  <!-- Shared Google Maps plumbing (config, on-demand loader, status colours), used by BOTH the
+       detail street map and the portfolio Map view. Early so window.LinGMap exists before
+       detail.js and app.js run. -->
+  <script src="assets/js/gmap.js"></script>
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/data.js"></script>
   <!-- T6 Part 3. taxonomy.js replaces categories.js here, and sim.js / simulations.js are gone
@@ -1329,9 +1336,9 @@
   <script src="assets/js/admin-ops.js"></script>
   <script src="assets/js/questionnaires.js"></script>
   <script src="assets/js/decision-ui.js"></script>
-  <!-- The flat map. ~9 KB and no dependencies; the country geometry it draws is fetched only
-       when the view is actually rendered. -->
-  <script src="assets/js/atlas.js"></script>
+  <!-- The flat SVG atlas that used to load here is gone (2026-08-10): the portfolio Map view is
+       Google Maps now, the same implementation as the detail map, so there is one map on the
+       site, not two. The globe keeps drawing its country outlines from the vendored geojson. -->
   <script src="assets/js/globe.js"></script>
   <script src="assets/js/app.js"></script>
 </body>

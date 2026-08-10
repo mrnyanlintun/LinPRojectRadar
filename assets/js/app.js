@@ -178,7 +178,7 @@
      carry that blob, so every such project fell into "empty" and the five real bands all read 0.
      deriveHealthState() was already reading the stored row correctly through getProjectFusion; it
      simply never got asked. This reads getProjectFusion() directly, which is the same source
-     atlas.js and globe.js colour their markers from, so the key and the markers cannot disagree.
+     the map and globe colour their markers from, so the key and the markers cannot disagree.
 
      "AWAITING ANALYSIS" is the wording the rest of the platform uses for a project with no stored
      result, and it is what deriveHealthState() returns. The legend said "Awaiting", and stateLabel
@@ -620,6 +620,12 @@
   // view keeps its own), so each caller holds and tears down the one it made.
   let portfolioGlobe = null;
   let globeMountToken = 0;
+  // The portfolio Google map (assets/js/gmap.js) and its markers, torn down the same way the
+  // globe is when the view is left. mapMountToken supersedes an async mount the way globeMountToken
+  // does, so a rapid view switch cannot leave two maps or a stale marker set live.
+  let portfolioMap = null;
+  let portfolioMarkers = {};
+  let mapMountToken = 0;
 
   /* MAPLIBRE STAGE REMOVED (2026-08-10). The portfolio's second geographic view has been the
      flat SVG atlas since T11, and the MapLibre street map it replaced was left in place as an
@@ -682,13 +688,13 @@
   // globe degrades to when it cannot draw — and the globe itself.
   function maybeFlyToSelection(id) {
     if (!id) return;   // selectProject already returned the viewer to the wide view
-    if (atlasViewActive()) focusAtlasProject(id);
+    if (mapViewActive()) focusGoogleMapProject(id);
     else if (globeViewActive()) focusGlobeProject(id);
   }
 
-  function atlasViewActive() {
+  function mapViewActive() {
     const page = document.querySelector('.page[data-page="portfolio"]');
-    const wrap = document.querySelector(".atlas-wrap");
+    const wrap = document.querySelector(".gmap-wrap");
     return !!(page && !page.hidden && wrap && !wrap.hidden);
   }
 
@@ -698,26 +704,23 @@
     return !!(page && !page.hidden && wrap && !wrap.hidden);
   }
 
-  /* Atlas equivalent of flyToProject: zooms the SVG viewBox in on the project. A project with no
-     usable coordinates leaves the viewBox exactly where it was — atlas.js's focus() already
-     guards this, checked again here so a project not even in LIN_PROJECTS cannot reach it. */
-  function focusAtlasProject(id) {
-    if (!window.LinAtlas || typeof LinAtlas.focus !== "function") return;
-    const host = document.getElementById("atlas-canvas");
+  /* Move the Google map to a project. A project with no usable coordinates leaves the map exactly
+     where it was — the same contract focusGlobeProject keeps — checked here so a project not even
+     in LIN_PROJECTS cannot reach it. */
+  function focusGoogleMapProject(id) {
+    if (!portfolioMap) return;
     const p = LIN_PROJECTS.find((x) => x.id === id);
-    if (!host || !p) return;
-    try { LinAtlas.focus(host, p); } catch (e) {}
+    const lat = p && Number(p.lat), lng = p && Number(p.lng);
+    if (!p || !isFinite(lat) || !isFinite(lng)) return;
+    try { portfolioMap.panTo({ lat: lat, lng: lng }); portfolioMap.setZoom(12); } catch (e) {}
   }
 
-  function resetAtlasView() {
-    if (!window.LinAtlas || typeof LinAtlas.resetView !== "function") return;
-    const host = document.getElementById("atlas-canvas");
-    if (!host) return;
-    try { LinAtlas.resetView(host); } catch (e) {}
+  function resetGoogleMapView() {
+    if (portfolioMap && typeof portfolioMap.__fitAll === "function") { try { portfolioMap.__fitAll(); } catch (e) {} }
   }
 
   /* Focus the globe on a project. A project with no usable coordinates leaves the camera
-     exactly where it was, which is the same contract focusAtlasProject keeps. */
+     exactly where it was, which is the same contract focusGoogleMapProject keeps. */
   function focusGlobeProject(id) {
     if (!portfolioGlobe || typeof portfolioGlobe.focus !== "function") return;
     const p = LIN_PROJECTS.find((x) => x.id === id);
@@ -731,20 +734,61 @@
   }
 
   // The Ctrl/Cmd+0 and Escape "world view" reset for the removed MapLibre stage is gone with it.
-  // The atlas and globe have their own reset, wired to the reset button's click below and to
-  // resetAtlasView / resetGlobeView.
+  // The map and globe have their own reset, wired to the reset button's click below and to
+  // resetGoogleMapView / resetGlobeView.
 
-  /* ---------- Radar | Map | Globe view toggle (persisted; MAP is the default) ----------
+  /* ---------- Radar | Map | Globe view toggle (persisted; GLOBE is the default) ----------
 
-     T11. Three buttons, four possible stages. The default is "map", the flat SVG atlas, because
-     it is the only geographic view that cannot fail to draw: no WebGL, no 3D library, no
-     animation loop, every mark a DOM node the moment it is built. The globe stayed in the
-     codebase but stopped being the thing the portfolio depends on.
+     Three buttons. Map is Google Maps (assets/js/gmap.js), the SAME implementation and browser
+     key as the detail page's street map, so the site has one map, not two. Globe is vendored
+     globe.gl on Three.js. When the globe cannot draw — no WebGL, a phone viewport, or it never
+     paints — it degrades to the Map, which itself falls back to a note when no key is set. The
+     flat SVG atlas both views used to fall back to is removed; there is one map and one no-key
+     answer across the whole site. */
 
-     "globe" now degrades to the ATLAS rather than to MapLibre. That is a shorter chain and a
-     better one: the atlas needs no network at all beyond geometry already vendored, whereas
-     MapLibre needed tiles from a host a corporate network may well block — the fallback was
-     itself the most fragile link. */
+  function placeableGeo(p) {
+    const lat = Number(p && p.lat), lng = Number(p && p.lng);
+    return isFinite(lat) && isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+  }
+  function statusOfProject(p) {
+    try { const f = window.getProjectFusion ? window.getProjectFusion(p) : null; return (f && f.status) || null; }
+    catch (e) { return null; }
+  }
+  // "N project(s) placed. ..." — the exact wording the atlas note used, so a reader who learned to
+  // trust the count does not see it change when the implementation did.
+  function placedNote(placed, unplaced) {
+    return unplaced > 0
+      ? placed + " project(s) placed. " + unplaced + " have no location yet and are listed below."
+      : placed + " project(s) placed. Select one to open it.";
+  }
+
+  function teardownPortfolioMap() {
+    try {
+      Object.keys(portfolioMarkers).forEach((k) => { try { portfolioMarkers[k].setMap(null); } catch (e) {} });
+    } catch (e) {}
+    portfolioMarkers = {};
+    portfolioMap = null;
+  }
+
+  // Recolour the live markers when the theme changes, in place, so the map keeps its current pan
+  // and zoom. Each marker's icon fill and label ink are resolved status colours, so they are the
+  // only thing a theme change has to touch here.
+  function rethemePortfolioMap() {
+    if (!portfolioMap) return;
+    LIN_PROJECTS.forEach((p) => {
+      const m = portfolioMarkers[p.id];
+      if (!m || typeof m.getIcon !== "function") return;
+      const status = statusOfProject(p);
+      const color = LinGMap.statusColor(status);
+      const letter = window.linStatusLetter ? linStatusLetter(status) : "";
+      try {
+        const icon = m.getIcon() || {};
+        icon.fillColor = color;
+        m.setIcon(icon);
+        if (letter) m.setLabel({ text: letter, color: LinGMap.inkFor(color), fontSize: "11px", fontWeight: "700" });
+      } catch (e) {}
+    });
+  }
   function setPortfolioView(view, persist) {
     // An unrecognised value is a corrupt or legacy preference; send it to the default rather than
     // to a particular view, so there is one answer to "what does a user with no valid preference
@@ -753,30 +797,35 @@
     const wantsGeo = view === "globe" || view === "map";
     const radarWrap = document.querySelector(".radar-wrap");
     const globeWrap = document.querySelector(".globe-wrap");
-    const atlasWrap = document.querySelector(".atlas-wrap");
+    const gmapWrap = document.querySelector(".gmap-wrap");
     const note = document.querySelector(".radar-note");
     if (radarWrap) radarWrap.hidden = wantsGeo;
     if (note) note.hidden = wantsGeo;           // radar caption; the geo views have their own
     document.querySelectorAll(".stage-btn").forEach((b) =>
       b.classList.toggle("active", b.dataset.view === view));
 
-    // Whatever we are switching to, the globe's context goes if it is not the globe. A renderer
-    // left running behind a hidden panel costs a small instance all afternoon.
+    // Whatever we are switching to, the globe's WebGL context goes if it is not the globe. A
+    // renderer left running behind a hidden panel costs a small instance all afternoon.
     if (view !== "globe") {
       if (globeWrap) globeWrap.hidden = true;
       try { if (portfolioGlobe) { portfolioGlobe.destroy(); portfolioGlobe = null; } } catch (e) {}
       globeMountToken++;   // supersede any mount still resolving, so it releases itself
     }
-
-    if (view === "radar") {
-      if (atlasWrap) atlasWrap.hidden = true;
-    } else if (view === "map") {
-      if (atlasWrap) atlasWrap.hidden = false;
-      buildAtlasStage();
-    } else {
-      if (atlasWrap) atlasWrap.hidden = true;
-      buildGeoStage(globeWrap, mapWrap, atlasWrap);
+    // Leaving the map releases its markers and instance, and supersedes any mount still resolving,
+    // so a rapid globe->map->globe does not leave a Google map live behind a hidden panel.
+    if (view !== "map") {
+      if (gmapWrap) gmapWrap.hidden = true;
+      teardownPortfolioMap();
+      mapMountToken++;
     }
+
+    if (view === "map") {
+      buildGoogleMapStage();
+    } else if (view === "globe") {
+      buildGeoStage(globeWrap);
+    }
+    // radar: both geo wraps are already hidden above.
+
     // The key is shared markup outside every stage, so switching view does not remove it. This
     // re-render is here so it is correct on the first switch even if the portfolio hydrated after
     // the last refresh, which is the ordering that made it read zero.
@@ -784,33 +833,93 @@
     if (persist !== false) { try { localStorage.setItem(VIEW_KEY, view); } catch (e) {} }
   }
 
-  /* The default stage. Nothing here can fail in a way that leaves an empty panel: the frame and
-     the markers are drawn synchronously, and the coastlines are a fetch of already-vendored
-     geometry that resolves to nothing rather than rejecting. */
-  async function buildAtlasStage() {
-    const host = document.getElementById("atlas-canvas");
-    const noteEl = document.getElementById("atlas-note");
-    if (!host || !window.LinAtlas) return;
+  /* The Map view: Google Maps, framed on the placed projects, from the SAME key and loader as the
+     detail page (assets/js/gmap.js). With no key it makes NO request to Google and says the map is
+     unavailable; the projects are still listed below either way, so the panel is never empty. */
+  async function buildGoogleMapStage() {
+    const wrap = document.querySelector(".gmap-wrap");
+    const host = document.getElementById("portfolio-gmap");
+    const noteEl = document.getElementById("gmap-note");
+    if (!wrap || !host) return;
+    wrap.hidden = false;
     if (noteEl) noteEl.textContent = "Locating projects…";
     await hydrateProjectsForGeo();
-    const res = await LinAtlas.render(host, LIN_PROJECTS, {
-      onSelect: (id) => openDetail(id)
-    });
-    if (noteEl && res) {
-      // Say plainly that some projects are not shown, rather than letting a director count the
-      // markers and wonder. They are still in the list below.
-      noteEl.textContent = res.unplaced > 0
-        ? res.placed + " project(s) placed. " + res.unplaced
-          + " have no location yet and are listed below."
-        : res.placed + " project(s) placed. Select one to open it.";
+    const placed = LIN_PROJECTS.filter(placeableGeo);
+    const unplaced = LIN_PROJECTS.length - placed.length;
+
+    const token = ++mapMountToken;
+    const cfg = await LinGMap.config();
+    if (token !== mapMountToken) return;   // a newer mount superseded this one while config was in flight
+    if (!cfg || !cfg.present || !cfg.apiKey) {
+      // No key: no request to Google, a note, and the projects still in the list below.
+      teardownPortfolioMap();
+      host.classList.add("gmap-unavailable");
+      host.innerHTML = '<div class="gmap-unavailable-msg">The map is unavailable.</div>';
+      if (noteEl) noteEl.textContent = "The map is unavailable. " + placedNote(placed.length, unplaced);
+      return;
     }
+    let gmaps;
+    try { gmaps = await LinGMap.ensure(cfg.apiKey); }
+    catch (e) {
+      if (token !== mapMountToken) return;
+      teardownPortfolioMap();
+      host.classList.add("gmap-unavailable");
+      host.innerHTML = '<div class="gmap-unavailable-msg">The map could not be reached.</div>';
+      if (noteEl) noteEl.textContent = "The map could not be reached. " + placedNote(placed.length, unplaced);
+      return;
+    }
+    if (token !== mapMountToken) return;
+    renderPortfolioGoogleMap(gmaps, host, placed);
+    if (noteEl) noteEl.textContent = placedNote(placed.length, unplaced);
+  }
+
+  /* Draw the framed portfolio map. One marker per placed project, coloured and lettered by the
+     stored status; selecting a marker opens that project's detail view, which is what selecting a
+     map marker has always done. */
+  function renderPortfolioGoogleMap(gmaps, host, placed) {
+    teardownPortfolioMap();
+    host.classList.remove("gmap-unavailable");
+    host.innerHTML = "";
+    const map = new gmaps.Map(host, {
+      center: { lat: 39.5, lng: -98.35 }, zoom: 4,   // a US default; __fitAll frames the real set
+      mapTypeControl: false, streetViewControl: false, fullscreenControl: false
+    });
+    portfolioMap = map;
+    portfolioMarkers = {};
+    const bounds = new gmaps.LatLngBounds();
+    placed.forEach((p) => {
+      const lat = Number(p.lat), lng = Number(p.lng);
+      const status = statusOfProject(p);
+      const color = LinGMap.statusColor(status);
+      const letter = window.linStatusLetter ? linStatusLetter(status) : "";
+      const marker = new gmaps.Marker({
+        position: { lat: lat, lng: lng },
+        map: map,
+        title: (p.name || p.id) + (status ? " — " + status : ""),
+        icon: { path: gmaps.SymbolPath.CIRCLE, fillColor: color, fillOpacity: 1,
+                scale: 9, strokeColor: "#05080b", strokeWeight: 2 },
+        label: letter ? { text: letter, color: LinGMap.inkFor(color), fontSize: "11px", fontWeight: "700" } : null
+      });
+      try { marker.addListener("click", () => openDetail(p.id)); } catch (e) {}
+      portfolioMarkers[p.id] = marker;
+      bounds.extend({ lat: lat, lng: lng });
+    });
+    // Frame the projects rather than open at street zoom, since this shows a portfolio and not one
+    // site. A single project gets a sensible city zoom rather than the maximum a fit would give.
+    map.__fitAll = function () {
+      try {
+        if (placed.length === 1) { map.setCenter(bounds.getCenter()); map.setZoom(11); }
+        else if (placed.length > 1) { map.fitBounds(bounds, 60); }
+      } catch (e) {}
+    };
+    map.__fitAll();
   }
 
   /* The degradation chain, in one place so it cannot disagree with itself:
-         globe  ->  the flat atlas  ->  the project list that is always in the DOM
+         globe  ->  the Google Map (or a no-key note)  ->  the project list always in the DOM
      Each step is only reached because the one before it could not run. */
-  async function buildGeoStage(globeWrap, mapWrap, atlasWrap) {
-    if (!window.LinGlobe) { showAtlasInstead(globeWrap, atlasWrap); return; }
+  async function buildGeoStage(globeWrap) {
+    if (!window.LinGlobe) { showMapInstead(globeWrap); return; }
     // JS, NOT CSS, BECAUSE THIS DECIDES WHICH CODE RUNS, NOT HOW IT LOOKS. A media query can
     // hide the globe's canvas; it cannot stop LinGlobe.mount() below from opening a WebGL
     // context and starting globe.gl's animation loop before that hidden canvas is ever
@@ -822,9 +931,8 @@
     // path for "cannot draw" — this adds one more reason to take it, before any WebGL work
     // starts, rather than mounting and then discovering the viewport was never right for it.
     const isPhoneViewport = window.matchMedia && window.matchMedia("(max-width: 700px)").matches;
-    if (isPhoneViewport) { showAtlasInstead(globeWrap, atlasWrap); return; }
+    if (isPhoneViewport) { showMapInstead(globeWrap); return; }
     if (globeWrap) globeWrap.hidden = false;
-    if (mapWrap) mapWrap.hidden = true;
 
     const host = document.getElementById("globe-canvas");
     const noteEl = document.getElementById("globe-note");
@@ -865,7 +973,7 @@
       if (Date.now() - startedAt < DEADLINE_MS) return;
       settled = true; clearInterval(poll);
       try { if (portfolioGlobe) { portfolioGlobe.destroy(); portfolioGlobe = null; } } catch (e) {}
-      showAtlasInstead(globeWrap, atlasWrap);
+      showMapInstead(globeWrap);
     }, POLL_MS);
     const giveUp = { stop: () => { settled = true; clearInterval(poll); } };
 
@@ -884,7 +992,7 @@
       if (!res || !res.ok) {
         // WebGL missing, or the library never arrived — a real failure, and known immediately.
         giveUp.stop();
-        showAtlasInstead(globeWrap, atlasWrap);
+        showMapInstead(globeWrap);
         return;
       }
       // Hand the handle to the poller and let it decide. Deliberately NOT stood down here: at
@@ -905,19 +1013,18 @@
     });
   }
 
-  /* The globe could not run. Show the flat map instead — never an empty panel, and no longer
-     MapLibre, whose tiles are the one part of the old chain a blocked network could still take
-     out. */
-  function showAtlasInstead(globeWrap, atlasWrap) {
+  /* The globe could not run. Show the Google Map instead — never an empty panel — which itself
+     falls back to a note when no key is set. One degrade target, and the same no-key answer
+     everywhere on the site. */
+  function showMapInstead(globeWrap) {
     if (globeWrap) globeWrap.hidden = true;
-    if (atlasWrap) atlasWrap.hidden = false;
-    buildAtlasStage();
+    buildGoogleMapStage();
   }
   function wireViewToggle() {
     document.querySelectorAll(".stage-btn").forEach((b) =>
       b.addEventListener("click", () => setPortfolioView(b.dataset.view)));
-    // The MapLibre stage's "world view" reset button is gone with the stage. The atlas and
-    // globe reset through resetAtlasView / resetGlobeView, not this control.
+    // The MapLibre stage's "world view" reset button is gone with the stage. The map and
+    // globe reset through resetGoogleMapView / resetGlobeView, not this control.
   }
 
   /* ---------- accessible fallback list ---------- */
@@ -1460,7 +1567,7 @@
       // return to the portfolio-wide view rather than leaving the camera where it was.
       highlightBlip();
       highlightListItem();
-      if (atlasViewActive()) resetAtlasView();
+      if (mapViewActive()) resetGoogleMapView();
       if (globeViewActive()) resetGlobeView();
       return;
     }
@@ -1529,12 +1636,10 @@
     // every live globe repaints in place. After LIN_STATUS_COLORS.refresh(), because the point
     // colours it re-resolves are status colours.
     try { if (window.LinGlobe && LinGlobe.retheme) LinGlobe.retheme(); } catch (e) {}
-    // T11. The atlas has almost nothing to do here — its fills are var() references, so the
-    // cascade has already repainted it. Only the status letters' ink is a resolved colour and
-    // has to be recomputed.
-    try { if (window.LinAtlas && LinAtlas.retheme) LinAtlas.retheme(); } catch (e) {}
-    // The MapLibre style swap is gone with the stage; the atlas retheme above is the only
-    // geographic surface that needs a theme hook now.
+    // The Google map's markers carry RESOLVED status colours (a Google marker icon takes a colour,
+    // not a var()), so unlike the globe's var()-driven canvas they do not repaint with the cascade
+    // and are recoloured here in place — no rebuild, so the current pan and zoom are kept.
+    try { rethemePortfolioMap(); } catch (e) {}
   }
 
   /* ---------- the server is the authority on which theme renders ----------
@@ -2395,7 +2500,7 @@
     syncTheme: syncThemeFromServer,
     refresh() {
       buildRadar(); buildFallbackList(); renderStatusLegend();
-      // The geographic views re-render on their own switch (buildAtlasStage / buildGeoStage);
+      // The geographic views re-render on their own switch (buildGoogleMapStage / buildGeoStage);
       // the removed MapLibre stage's sync-on-refresh went with it.
       // if the selected project was archived, fall back to the first active one
       if (selectedId && !LIN_PROJECTS.some((p) => p.id === selectedId) && LIN_PROJECTS.length) {
@@ -2424,6 +2529,16 @@
     setPortfolioView,
     wireViewToggle,
     getPortfolioGlobe() { return portfolioGlobe; },
+    // Exposed for the render harness: draw the portfolio Google map into a given host with a
+    // stubbed google.maps (the container cannot reach maps.gstatic.com), so the markers, their
+    // status colours and letters, and the framing can be read back without a network map. Returns
+    // the live marker handles keyed by project id. Not used by production, which reaches the map
+    // through buildGoogleMapStage on a view switch.
+    __renderPortfolioMapForTest(gmaps, host, projects) {
+      renderPortfolioGoogleMap(gmaps, host, (projects || []).filter(placeableGeo));
+      return portfolioMarkers;
+    },
+    __placeableGeo: placeableGeo,
     // Re-key the cached selection after a project-number change (setprojectnumber)
     // so the detail page / highlights keep pointing at the renamed project.
     renameSelection(oldId, newId) { if (selectedId === oldId) selectedId = newId; },

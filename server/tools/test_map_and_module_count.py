@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-MapLibre is gone from the pages entirely, the detail map is Google Maps keyed from the
-environment, and a project page counts only what a project has.
+MapLibre is gone from the pages entirely, BOTH map surfaces are Google Maps keyed from the
+environment (the detail street map and the portfolio Map view, sharing one loader), the flat atlas
+is removed, and a project page counts only what a project has.
 
 Run (from server/):
 
@@ -34,9 +35,15 @@ THE DEFECTS THIS GUARDS.
   The detail page showed no map. MapLibre was there to draw streets, streets come from
   `tiles.openfreemap.org`, and that host is refused at CONNECT by the network this platform runs
   on. Every reader downloaded 837 KB of library and got an empty panel. The map is now Google
-  Maps where the deployment sets a browser key, and the flat atlas where it does not: no key, no
-  request to Google, and the section says the street map is unavailable rather than showing a
-  blank or a broken frame.
+  Maps where the deployment sets a browser key, and a note that the map is unavailable where it
+  does not: no key, no request to Google, and no broken frame.
+
+  The portfolio globe went blank (2026-08-10, second session). The same MapLibre removal deleted
+  `const mapWrap` from setPortfolioView but left `buildGeoStage(globeWrap, mapWrap, atlasWrap)`
+  referencing it; strict mode threw a ReferenceError on the globe branch, so the globe drew
+  nothing while Map still worked. Section 3c guards the fix. The portfolio Map view is Google Maps
+  now too (same loader as the detail page), and the flat atlas both views fell back to is removed;
+  the globe keeps its vendored country geojson, which was never the atlas's file.
 
   The browser map key is exposed on purpose and read from the environment, never a committed
   file. It is a DIFFERENT key from the server-side geocoding one and carries a different
@@ -111,6 +118,13 @@ def main() -> None:
           "and does NOT fire on prose mentioning it")
     check("x" not in strip_js_comments("/* x */\n// x\n"),
           "the comment stripper removes both comment forms")
+    # The stray-mapWrap detector (section 3c) must catch a standalone token and NOT fire on the
+    # real variable gmapWrap, or the globe-regression guard is vacuous either way.
+    _STRAY = re.compile(r"(?<![A-Za-z])mapWrap(?![A-Za-z])")
+    check(bool(_STRAY.search("buildGeoStage(globeWrap, mapWrap, atlasWrap)")),
+          "the stray-mapWrap detector CATCHES the exact reference the globe defect left behind")
+    check(not _STRAY.search("const gmapWrap = document.querySelector('.gmap-wrap');"),
+          "and does NOT fire on the real variable gmapWrap")
 
     section("1. MAPLIBRE IS NOT LOADED BY THE APPLICATION PAGE")
 
@@ -148,39 +162,47 @@ def main() -> None:
     check("maps.googleapis.com" in csp and "maps.gstatic.com" in csp,
           "and connect-src permits the Google Maps data hosts", csp[:140])
 
-    section("2. THE DETAIL PAGE DRAWS GOOGLE MAPS ON A KEY, THE ATLAS WITHOUT ONE")
+    section("2. THE DETAIL PAGE DRAWS GOOGLE MAPS ON A KEY, A NOTE WITHOUT ONE")
 
     detail_src = strip_js_comments(read("assets/js/detail.js"))
     check(not _GLOBAL_USE.search(detail_src),
           "detail.js contains no live use of the maplibregl global",
           str(_GLOBAL_USE.findall(detail_src)[:4]))
-    # The three client seams of the new behaviour: ask the server for the key, load the Maps JS
-    # API on demand, draw the map. Named individually so a regression that drops one is caught.
+    # The client seams: the shared module for the key and the loader, the render path, and the
+    # no-key note that replaced the atlas. Named individually so a regression that drops one is
+    # caught.
     for needle, label in [
-        ("getMapConfig", "detail.js asks the server whether a browser map key is set"),
+        ("getMapConfig", "detail.js asks whether a browser map key is set"),
         ("ensureGoogleMaps", "and loads the Google Maps JavaScript API on demand"),
         ("renderGoogleMap", "and has a Google-Maps render path"),
-        ("LinAtlas.render", "and keeps the flat atlas as the no-key / failed-load map"),
+        ("setMapUnavailable", "and says the map is unavailable when there is no key, not the atlas"),
+        ("LinGMap", "through the SHARED gmap.js module (same key and path as the portfolio map)"),
     ]:
         check(needle in detail_src, label)
-    # The Google path must open at street level, or the whole change is pointless (the atlas
-    # already showed a country). Seventeen is a block, not a nation.
+    check("LinAtlas" not in detail_src,
+          "detail.js no longer falls back to the removed flat atlas")
+    # The Google path must open at street level, or the whole change is pointless (a framed map
+    # already shows a region). Seventeen is a block, not a nation.
     gmap_zoom = re.search(r"zoom:\s*17\b", detail_src)
     check(bool(gmap_zoom), "the Google map opens at street zoom (17)")
-    # No key -> no request to Google. The script is only injected inside ensureGoogleMaps, which
-    # is only reached when map_config reports a key; the no-key branch calls renderAtlas and
-    # returns. Pinned as: the maps.googleapis.com script URL appears exactly once, in the loader.
-    api_url_hits = detail_src.count("maps.googleapis.com/maps/api/js")
-    check(api_url_hits == 1,
-          "the Google Maps script URL is built in exactly one place (the on-demand loader)",
-          str(api_url_hits))
-    # The atlas path must be reachable WITHOUT a prior failure: the no-key branch, not a catch.
+    # No key -> no request to Google. The API script URL is owned by the SHARED loader (gmap.js),
+    # not built here, so detail.js contains no maps.googleapis.com URL at all.
+    check(detail_src.count("maps.googleapis.com/maps/api/js") == 0,
+          "detail.js builds no Google Maps script URL itself (the shared loader owns it)")
+    # The no-key note must be reachable on its OWN branch, not only after a failure.
     globe_section = detail_src[detail_src.index('"d-globe": () =>'):]
     globe_section = globe_section[:globe_section.index('"d-docsignals"')]
-    check("renderAtlas(" in globe_section,
-          "the Location section renders the atlas on its own no-key path, not only after a failure")
+    check("setMapUnavailable(" in globe_section,
+          "the Location section says the map is unavailable on its own no-key path, not only on failure")
     check("hasCoordsFor" in globe_section,
           "and still refuses to draw a marker for a project with no coordinates")
+
+    # The shared loader is the one place the Maps API script URL is built, for BOTH surfaces.
+    gmap_src = strip_js_comments(read("assets/js/gmap.js"))
+    check(gmap_src.count("maps.googleapis.com/maps/api/js") == 1,
+          "the Google Maps script URL is built in exactly one place — the shared loader gmap.js")
+    for needle in ["function config", "function ensure", "function statusColor"]:
+        check(needle in gmap_src, f"gmap.js exposes {needle.split()[1]} for both surfaces to share")
 
     section("3. MAPLIBRE IS REMOVED OUTRIGHT — STAGE, FILES, CSS, MARKUP")
 
@@ -201,9 +223,42 @@ def main() -> None:
     css = read("assets/css/radar.css")
     for sel in [".map-wrap", "#map-gl", ".gl-pin", "maplibregl"]:
         check(sel not in css, f"radar.css carries no '{sel}' rule")
-    # And the portfolio, which never depended on any of it, still renders its atlas.
-    check("buildAtlasStage()" in stripped_app,
-          "the portfolio Map view still renders the atlas")
+    # And the portfolio Map view is Google Maps now — the same implementation as the detail page —
+    # not the flat atlas, which is removed.
+    check("buildGoogleMapStage(" in stripped_app,
+          "the portfolio Map view builds a Google map")
+    check("renderPortfolioGoogleMap(" in stripped_app,
+          "and draws one marker per placed project")
+
+    section("3c. THE GLOBE RENDERS, AND THE FLAT ATLAS IS REMOVED")
+
+    # THE DEFECT: the previous session's MapLibre removal deleted `const mapWrap = …` from
+    # setPortfolioView but left the call `buildGeoStage(globeWrap, mapWrap, atlasWrap)` referencing
+    # it. app.js is strict mode, so reading the undeclared `mapWrap` threw a ReferenceError on the
+    # globe branch only — the globe went blank while Map still worked. The guard: no standalone
+    # `mapWrap` token survives (gmapWrap, the real variable, is not matched by the boundary).
+    stray_mapwrap = re.search(r"(?<![A-Za-z])mapWrap(?![A-Za-z])", stripped_app)
+    check(stray_mapwrap is None,
+          "app.js references no undeclared 'mapWrap' — the globe branch cannot throw on it again",
+          stray_mapwrap.group(0) if stray_mapwrap else "")
+    check("buildGeoStage(globeWrap)" in stripped_app,
+          "and setPortfolioView calls buildGeoStage with only the arguments it declares")
+    # The atlas is gone: its module deleted, its markup out of the page, and no live LinAtlas use.
+    check(not (ROOT / "assets/js/atlas.js").exists(),
+          "assets/js/atlas.js is deleted")
+    check("LinAtlas" not in stripped_app,
+          "app.js makes no live use of the removed LinAtlas")
+    index = read("index.html")
+    check("atlas-wrap" not in index and 'assets/js/atlas.js' not in index,
+          "index.html carries no atlas markup and does not load atlas.js")
+    check('assets/js/gmap.js' in index,
+          "index.html loads the shared gmap.js")
+    # The globe keeps drawing its country outlines from the vendored geojson — that STAYS; it was
+    # never the atlas's file. Pinned so a later "remove the atlas assets" sweep does not take it.
+    check((ROOT / "assets/vendor/ne_110m_admin_0_countries.geojson").exists(),
+          "the globe's vendored country geojson is still on disk (the globe reads it)")
+    check("ne_110m_admin_0_countries.geojson" in read("assets/js/globe.js"),
+          "and globe.js still references it")
 
     section("3b. THE BROWSER MAP KEY IS READ FROM THE ENVIRONMENT, NOT A COMMITTED FILE")
 

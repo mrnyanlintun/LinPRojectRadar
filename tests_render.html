@@ -103,11 +103,12 @@
 <script src="assets/js/module_charts.js"></script>
 <script src="assets/js/recommendation_options.js"></script>
 <script src="assets/js/decision.js"></script>
-<!-- store.js and atlas.js are loaded for group 8. Neither self-boots: store.js only defines
-     window.LinStore (every network path is gated on LIN_API_URL being configured, which it is
-     not here), and atlas.js only defines window.LinAtlas. -->
+<!-- store.js is loaded for group 8 (it defines window.LinStore; every network path is gated on
+     LIN_API_URL, which is not configured here). gmap.js is the shared Google Maps plumbing that
+     app.js and detail.js both use — loaded before them so window.LinGMap exists; it self-boots
+     nothing and touches no host until asked. The flat atlas it replaced is gone. -->
 <script src="assets/js/store.js"></script>
-<script src="assets/js/atlas.js"></script>
+<script src="assets/js/gmap.js"></script>
 <script src="assets/js/app.js"></script>
 <!-- detail.js is loaded so group 3b can call LinDetail.render for real. Nothing in this
      harness called it before 2026-08-02, which is how a fatal ReferenceError inside its
@@ -545,9 +546,11 @@
   //    the entire defect, because the render site was never wrong. The second half asserts the
   //    data survives the round trip that actually broke it. Do not drop the second half.
   (function () {
-    function located(id, lat, lng) {
-      return { id: id, name: id, sector: "construction", status: "Green",
-               address: "somewhere", formattedAddress: "Somewhere, USA", lat: lat, lng: lng };
+    function located(id, lat, lng, status) {
+      return { id: id, name: id, sector: "construction", status: status || "Green",
+               address: "somewhere", formattedAddress: "Somewhere, USA", lat: lat, lng: lng,
+               // getProjectFusion reads the stored row, so the marker's colour/letter has a status.
+               storedResult: { project_status: status || "Green", red_review: false } };
     }
     // What the server's slim projection returns for the same project: no location fields.
     function slimOf(p) {
@@ -555,24 +558,53 @@
                updatedAt: "2026-08-02T00:00:00.000Z", cpi: null, spi: null, docRiskScore: null,
                actualPctComplete: null, simModuleCount: 0, docCount: 0, slim: true };
     }
-    function markersFor(projects) {
-      const host = document.getElementById("atlas-host");
-      host.innerHTML = "";
-      // render() appends every marker synchronously and only THEN awaits the coastline fetch,
-      // so the marker count is readable the moment it returns. No await, no timing dependency.
-      window.LinAtlas.render(host, projects, {});
-      return host.querySelectorAll(".atlas-marker").length;
+    // The container cannot reach maps.gstatic.com, so a minimal google.maps stub stands in and the
+    // harness reads back what the portfolio map WOULD draw: one marker per located project, each
+    // carrying a status fill colour and letter, and the view framed with fitBounds. This is the
+    // SAME render path (LinApp.__renderPortfolioMapForTest -> renderPortfolioGoogleMap) production
+    // uses on a Map-view switch.
+    function stubMaps() {
+      const rec = { markers: [], fit: 0, zooms: [] };
+      function Bounds() { this.pts = []; }
+      Bounds.prototype.extend = function (p) { this.pts.push(p); return this; };
+      Bounds.prototype.getCenter = function () { return this.pts[0] || { lat: 0, lng: 0 }; };
+      function Map(el, opts) { this.el = el; this.opts = opts || {}; this._zoom = (opts || {}).zoom; }
+      Map.prototype.fitBounds = function () { rec.fit++; };
+      Map.prototype.setZoom = function (z) { rec.zooms.push(z); };
+      Map.prototype.setCenter = function () {};
+      function Marker(o) { o = o || {}; this._icon = o.icon; this._label = o.label; this._pos = o.position; rec.markers.push(this); }
+      Marker.prototype.addListener = function (ev, fn) { this["on_" + ev] = fn; };
+      Marker.prototype.setMap = function () {};
+      Marker.prototype.getIcon = function () { return this._icon; };
+      Marker.prototype.setIcon = function (i) { this._icon = i; };
+      Marker.prototype.setLabel = function (l) { this._label = l; };
+      return { maps: { Map: Map, Marker: Marker, LatLngBounds: Bounds, SymbolPath: { CIRCLE: 0 } }, rec: rec };
+    }
+    function drawMap(projects) {
+      const stub = stubMaps();
+      window.LinApp.__renderPortfolioMapForTest(stub.maps, scratch(), projects);
+      return stub.rec;
     }
 
-    const a = located("PRJ-GEO-A", 36.5298, -87.3595);
-    const b = located("PRJ-GEO-B", 39.87397, -75.24382);
+    const a = located("PRJ-GEO-A", 36.5298, -87.3595, "Green");
+    const b = located("PRJ-GEO-B", 39.87397, -75.24382, "Red");
     const nowhere = { id: "PRJ-GEO-NONE", name: "No address", sector: "design", status: "Green" };
 
-    // -- half one: the render site places what it is given.
-    assert("atlas: a project with coordinates produces a marker", 1, markersFor([a]));
-    assert("atlas: every located project produces a marker", 2, markersFor([a, b]));
-    assert("atlas: a project with no coordinates produces no marker, and does not stop the rest",
-      2, markersFor([a, b, nowhere]));
+    // -- half one: the render site places what it is given, as coloured, lettered markers.
+    assert("map: a project with coordinates produces a marker", 1, drawMap([a]).markers.length);
+    assert("map: every located project produces a marker", 2, drawMap([a, b]).markers.length);
+    assert("map: a project with no coordinates produces no marker, and does not stop the rest",
+      2, drawMap([a, b, nowhere]).markers.length);
+    const rec = drawMap([a, b]);
+    assert("map: every marker carries a status fill colour", true,
+      rec.markers.every(function (m) { return !!(m._icon && m._icon.fillColor); }));
+    assert("map: a Green project's marker is lettered G", "G", (rec.markers[0]._label || {}).text);
+    assert("map: an Amber/Red project's marker is lettered R", "R", (rec.markers[1]._label || {}).text);
+    assert("map: the two statuses draw two different colours", true,
+      rec.markers[0]._icon.fillColor !== rec.markers[1]._icon.fillColor);
+    assert("map: the view frames the projects (fitBounds), not a street zoom", true, rec.fit >= 1);
+    assert("map: selecting a marker is wired to open the project", "function",
+      typeof rec.markers[0].on_click);
 
     // -- half two: the coordinates survive a slim portfolio refresh.
     window.LIN_PROJECTS.length = 0;
@@ -587,7 +619,7 @@
     assert("refresh: the matched address survives too (the map note reads it)",
       "Somewhere, USA", (after[0] || {}).formattedAddress);
     assert("refresh: a located project STILL produces a marker after a portfolio refresh",
-      2, markersFor(after));
+      2, drawMap(after).markers.length);
   })();
 
   // 9. THE FILES TAB PAINTS THE ARORA TREE AND THE FILE LIST.
@@ -2013,10 +2045,9 @@
 
      THE MAP. MapLibre was on this page to show streets, and streets come from
      `tiles.openfreemap.org`, which the network this platform is used on refuses at CONNECT.
-     The reported result was no map at all. The atlas is now the map itself rather than the
-     thing shown after MapLibre fails, so it draws on first open and asks nothing of the
-     network. These checks fail if MapLibre comes back, if the atlas stops rendering, or if a
-     project with no coordinates draws a marker for a position it does not have.
+     The reported result was no map at all. The map is now Google Maps, keyed from the
+     environment (GROUP 21 opens the section and reads the keyed and no-key branches). These
+     checks assert the host and the count; a project with no coordinates draws no marker.
 
      THE COUNT. `LIN_CATEGORIES` is the whole taxonomy, twelve categories and 101 modules.
      Group D is portfolio level: its one category, Portfolio Health, needs more than one
@@ -2079,7 +2110,7 @@
        `server/tools/test_map_and_module_count.py`, which reads the files themselves.
 
        This group renders the page but does NOT open the Location section (the map is lazy). The
-       branch a reader sees — Google Maps on a key, the atlas without one — is opened and read in
+       branch a reader sees — Google Maps on a key, a note without one — is opened and read in
        GROUP 21. Here we only assert the host is present and no MapLibre canvas is in it. */
     const globeHost = root.querySelector(".detail-globe");
     assert("group 20: the Location section has its map host", true, !!globeHost);
@@ -2131,27 +2162,28 @@
       badge ? badge.textContent.trim() : "(no badge)");
     const globeHost = root.querySelector(".detail-globe");
     assert("group 20c: and draws no marker for a position it does not have", 0,
-      globeHost ? globeHost.querySelectorAll("circle, .atlas-marker").length : -1);
+      globeHost ? globeHost.querySelectorAll("circle, .gm-style img").length : -1);
     try { if (window.LinDetail.teardown) LinDetail.teardown(); } catch (e) {}
     root.innerHTML = "";
   })();
 
-  /* GROUP 21 — THE DETAIL MAP IS GOOGLE MAPS ON A KEY, THE ATLAS WITHOUT ONE.
+  /* GROUP 21 — THE DETAIL MAP IS GOOGLE MAPS ON A KEY, A NOTE WITHOUT ONE.
 
      The Location section draws streets through the Google Maps JavaScript API when the
-     deployment has a browser key, and the flat atlas when it does not. Both are exercised here
-     against the RENDERED section, which is the only place the branch a reader sees can be seen.
+     deployment has a browser key, and says the map is unavailable when it does not. Both are
+     exercised here against the RENDERED section, which is the only place the branch a reader sees
+     can be seen. The plumbing is shared with the portfolio map via window.LinGMap.
 
      The key path is stubbed, deliberately: the container this runs in cannot reach
      maps.gstatic.com (the same class of block that ruled MapLibre out), so the real tiles never
-     paint. `ensureGoogleMaps` resolves immediately when `window.google.maps` already exists —
-     that is the seam a stub stands in on — so the CLIENT logic (street zoom, the project's
-     coordinates, a marker, the gmap host class) is verified without a network map.
+     paint. LinGMap.ensure resolves immediately when `window.google.maps` already exists — that is
+     the seam a stub stands in on — so the CLIENT logic (street zoom, the project's coordinates, a
+     marker, the gmap host class) is verified without a network map.
 
      The no-key path needs no stub: `/mapconfig` is asked over the wire and, with no key set in
-     this environment, answers "no key", so the atlas is what renders and NO Google script is
-     injected. That the section makes no request to Google without a key is the property, checked
-     by counting the maps.googleapis.com script tags before and after. */
+     this environment, answers "no key", so the section says the map is unavailable and NO Google
+     script is injected. That the section makes no request to Google without a key is the property,
+     checked by counting the maps.googleapis.com script tags before and after. */
   async function mapRenderTests() {
     const root = document.getElementById("detail-root");
     const origFetch = window.fetch;
@@ -2172,7 +2204,7 @@
     }
 
     try {
-      // ---- NO KEY: atlas is the map, the note says the street map is unavailable, no request ---
+      // ---- NO KEY: a note says the map is unavailable, no map is drawn, no Google request ---
       if (window.LinDetail.__resetMapForTest) window.LinDetail.__resetMapForTest();
       try { delete window.google; } catch (e) { window.google = undefined; }
       stubMapConfig({ present: false, apiKey: null, provider: null });
@@ -2189,8 +2221,12 @@
       assert("group 21 no-key: no Google Maps script is injected", scriptsBefore, gmapScriptCount());
       assert("group 21 no-key: the Location host is NOT a Google map", false,
         hostNo ? hostNo.classList.contains("detail-globe--gmap") : "(no host)");
-      assert("group 21 no-key: the note says the street map is unavailable", true,
+      assert("group 21 no-key: the host shows the unavailable state, not the atlas", true,
+        hostNo ? hostNo.classList.contains("detail-globe--unavailable") : "(no host)");
+      assert("group 21 no-key: the note says the map is unavailable", true,
         !!(noteNo && noteNo.textContent.toLowerCase().indexOf("unavailable") >= 0));
+      assert("group 21 no-key: the matched address stays under the note", true,
+        !!(noteNo && noteNo.textContent.indexOf("Pennsylvania") >= 0));
       try { if (window.LinDetail.teardown) window.LinDetail.teardown(); } catch (e) {}
 
       // ---- KEY PRESENT (stubbed API): street-zoom map centered on the project's coordinates ---
@@ -2216,7 +2252,7 @@
       assert("group 21 keyed: centered on the project's longitude", -74.006,
         mapArgs && mapArgs.opts.center ? mapArgs.opts.center.lng : "(none)");
       assert("group 21 keyed: a marker was placed for the project", true, !!markerArgs);
-      assert("group 21 keyed: the Location host is a Google map, not the atlas", true,
+      assert("group 21 keyed: the Location host is a Google map, not a note", true,
         hostYes ? hostYes.classList.contains("detail-globe--gmap") : "(no host)");
       try { if (window.LinDetail.teardown) window.LinDetail.teardown(); } catch (e) {}
     } finally {
