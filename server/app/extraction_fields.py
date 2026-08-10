@@ -199,12 +199,28 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "safety_actions_open", "environmental_issues_discussed", "quality_issues_discussed",
         "weather_days_discussed",
     ],
-    # The legacy `case 'correspondence_notice':` has no body and falls through to
-    # `case 'risk_register':`. That fall-through is intentional, not a missing break: both are
-    # narrative documents with no structured project-controls content, so all the extractor is
-    # asked for is a risk score and a date. Duplicated explicitly here; the self-check asserts
-    # the two lists stay equal so a future edit to one is caught.
-    "correspondence_notice": ["document_risk_score", "document_date"],
+    # THE LEGACY FALL-THROUGH IS OVER, and the two types have parted for different reasons.
+    #
+    # `case 'correspondence_notice':` had no body and fell through to `case 'risk_register':`,
+    # on the reading that both were narrative documents with no structured project-controls
+    # content. That reading was wrong about both of them.
+    #
+    # A NOTICE IS AN EVENT. Someone served it, on someone, it asserts something, and under the
+    # contract form it starts a clock that can extinguish a right. Reducing that to a number
+    # between zero and one threw away every part of it a project manager acts on. The fields
+    # below are the ones a notice states in prose, which is why they are asked of the model;
+    # the DEADLINE is not among them, because a deadline is derived in code from the form the
+    # document named (`contract_notices.deadline_for`) and a model-stated deadline would be a
+    # number with no rule behind it.
+    #
+    # A REGISTER IS A TABLE, so it gains no fields at all. Its rows are read from the document
+    # by `risk_register`, one decision per table rather than one per row, and asking the model
+    # for them is the unbounded-output failure `milestones_json` already demonstrated.
+    "correspondence_notice": [
+        "document_risk_score", "document_date",
+        "notice_served_by", "notice_served_on", "notice_claim", "notice_date_served",
+        "notice_contract_form", "notice_kind", "notice_references",
+    ],
     "risk_register": ["document_risk_score", "document_date"],
     "inspection_report": [
         "document_risk_score", "document_date", "items_inspected", "items_passed", "items_failed",
@@ -401,7 +417,18 @@ if __name__ == "__main__":
     assert guess_type_from_filename("weekly-lookahead-schedule.pdf") == "lookahead_schedule"
     assert guess_type_from_filename("schedule-update-may.pdf") == "schedule_update"
 
-    # The intentional legacy fall-through.
-    assert extraction_fields_for("correspondence_notice") == extraction_fields_for("risk_register")
+    # THE LEGACY FALL-THROUGH IS DELIBERATELY BROKEN. This assertion used to require the two
+    # lists to stay equal, which was the right tripwire while both types were treated as
+    # narrative. A notice is an event and now carries the fields an event needs, so the
+    # assertion is inverted: what has to stay true is that the notice carries MORE than the
+    # narrative default and that the register carries exactly it, since the register's rows are
+    # read from the document rather than asked for.
+    _notice = extraction_fields_for("correspondence_notice")
+    _register = extraction_fields_for("risk_register")
+    assert _register == ["document_risk_score", "document_date"], _register
+    assert set(_register).issubset(set(_notice)) and len(_notice) > len(_register)
+    assert "notice_date_served" in _notice and "notice_contract_form" in _notice
+    # A DEADLINE IS NEVER ASKED OF THE MODEL. It is derived in code from the named form.
+    assert not any("deadline" in f for f in _notice), _notice
 
     print("extraction_fields self-check: OK")

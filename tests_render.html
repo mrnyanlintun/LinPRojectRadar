@@ -1308,16 +1308,37 @@
     /* EXACTNESS. Every numeric token in the whole block must be a figure the stored row
        holds (or the fixed denominator of the score). A fabricated or drifted figure fails
        here, which is what makes this check able to fail. */
-    const ALLOWED = ["15,748,571", "31.2", "0.84", "0.88"];
+    const ALLOWED = ["0.84", "0.88"];
     const blockText = block ? (block.textContent || "") : "";
     const tokens = (blockText.match(/\d[\d,.]*/g) || [])
       .map(function (t) { return t.replace(/[.,]+$/, ""); });
     const stray = tokens.filter(function (t) { return ALLOWED.indexOf(t) < 0; });
     assert("group 15: every figure quoted is a stored value, no other number appears", "",
       stray.join(" | "));
-    assert("group 15: the figure scan actually saw figures", true, tokens.length >= 3);
-    assert("group 15: the stored completion estimate is quoted exactly", true,
-      blockText.indexOf("15,748,571 dollars, 31.2 per cent above budget") >= 0);
+    assert("group 15: the figure scan actually saw figures", true, tokens.length >= 2);
+
+    /* THE FABRICATED PERCENTILE IS NO LONGER QUOTED, AND THIS CHECK REPLACES ONE THAT REQUIRED
+       IT TO BE. Until 2026-08-10 this asserted:
+
+         blockText.indexOf("15,748,571 dollars, 31.2 per cent above budget") >= 0
+         "group 15: the stored completion estimate is quoted exactly"
+
+       That figure is `Cost_Risk_Analysis.p80_eac`, whose entire spread is
+       `max(0.03, abs(1 - cpi)) * 0.5` multiplied by a literal 1.28. The document sets supply no
+       distribution and no percentile of any kind, so it is not a measurement of the project it
+       is printed beside: on a real design project with an authored estimate at completion of
+       4,835,600 dollars the same formula produced 10,555,811.
+
+       The property the old check protected is real and is KEPT, twice over: a figure the card
+       quotes must be quoted exactly and no other number may appear (the allowlist scan above,
+       which now has the percentile OFF it, so its reappearance anywhere in the block fails),
+       and the anti-vacuity guard above still requires the scan to have seen figures. What is
+       inverted is the requirement that this particular figure be present, because a figure with
+       no input behind it must not be presented as a finding at all. */
+    assert("group 15: no eightieth-percentile figure is quoted, having no input behind it", -1,
+      blockText.indexOf("eightieth percentile"));
+    assert("group 15: and the fabricated figure itself appears nowhere in the block", -1,
+      blockText.indexOf("15,748,571"));
 
     /* THE SCORES ARE NOT QUOTED, AND THIS CHECK REPLACES TWO THAT RECORDED THE DEFECT.
        Until 2026-08-09 this group asserted `"worst case of this course at 8 out of 30"` and
@@ -1447,6 +1468,74 @@
     /* The block must not quietly become a second recommendation. It reports; it does not rank
        and it does not advise. */
     assert("group 15: the documents block ranks nothing", -1, docsText.indexOf("out of 30"));
+
+    /* THE REGISTER AND THE NOTICES REACH THE CARD, EACH NAMING ITS SOURCE.
+       A risk register was, until 2026-08-10, a document risk score and a date: the card could
+       only say a register was present and unread. It is read now, and what the card may say
+       about it is bounded by the same rule as everything else here -- a band is quoted as the
+       band the register wrote, never as a number derived from it. */
+    const withReg = fullRow();
+    withReg.document_evidence = {
+      documents_read: [{ filename: "Register.docx", doc_type: "risk_register" }],
+      findings: [], not_established: [],
+      register: {
+        open_count: 3, unnamed: 2,
+        named: [{ sentence: "R-002, utility relocation delayed by a third party, is open: "
+                    + "likelihood High, cost impact 120,000 dollars. The register records it "
+                    + "owned by M. Chen, response Transfer.",
+                  risk_key: "R-002", owner: "M. Chen", response_strategy: "Transfer",
+                  unmitigated: false }],
+        exposure: { risk_count: 3, usable_count: 2, expected_value: 397500.0,
+                    contributors: [], refused: [] }
+      },
+      notices: [{ sentence: "A Contractor served notice on the Authority on 2026-04-18. It "
+                    + "claims additional compensation.",
+                  clock: "The deadline it starts is 2026-05-02 (A201-2017 Section 3.7.4).",
+                  filename: "Notice.docx", second_step: null }],
+      ranking: { possible: false, reason: "no ranking" }
+    };
+    const regDiv = scratch();
+    regDiv.innerHTML = window.LinRecOptions.html(window.LinRecOptions.build(withReg));
+    const regText = (regDiv.querySelector("#ro-documents") || {}).textContent || "";
+    assert("group 15: the card NAMES a risk the register recorded", true,
+      regText.indexOf("R-002") >= 0);
+    assert("group 15: quoting the register's band, not a number derived from it", true,
+      regText.indexOf("likelihood High") >= 0);
+    assert("group 15: and never turning that band into a probability", -1,
+      regText.indexOf("0.7"));
+    assert("group 15: it says how many open risks there are and how many it named", true,
+      regText.indexOf("3 open risks") >= 0);
+    assert("group 15: a notice is reported as an event, with who served it", true,
+      regText.indexOf("A Contractor served notice on the Authority") >= 0);
+    assert("group 15: and the deadline the named contract form starts", true,
+      regText.indexOf("2026-05-02") >= 0 && regText.indexOf("3.7.4") >= 0);
+
+    /* THE EXPOSURE SENTENCE NOW COMES FROM THE REGISTER, NOT FROM A MODULE'S LITERAL SPREAD. */
+    const regBlock = (regDiv.querySelector("#ro-block") || {}).textContent || "";
+    assert("group 15: the exposure quoted is the register's, named as such", true,
+      regBlock.indexOf("risk exposure of 397,500 dollars") >= 0);
+    assert("group 15: and it says how many risks in the register support it", true,
+      regBlock.indexOf("2 risks in the register that state both") >= 0);
+    assert("group 15: with no eightieth percentile anywhere", -1,
+      regBlock.indexOf("eightieth percentile"));
+
+    /* A REGISTER THAT SUPPORTS NO EXPOSURE PRODUCES NO FIGURE, AND SAYS SO. This is the case
+       that matters: every risk scored in bands only. The card must not fall back to the
+       module's percentile, which is exactly what it used to do. */
+    const bandsOnly = fullRow();
+    bandsOnly.document_evidence = JSON.parse(JSON.stringify(withReg.document_evidence));
+    bandsOnly.document_evidence.register.exposure =
+      { risk_count: 3, usable_count: 0, expected_value: null, contributors: [],
+        refused: [{ risk_key: "R-002", reason: "probability is stated as the band 'High'" }] };
+    const bandsDiv = scratch();
+    bandsDiv.innerHTML = window.LinRecOptions.html(window.LinRecOptions.build(bandsOnly));
+    const bandsText = (bandsDiv.querySelector("#ro-block") || {}).textContent || "";
+    assert("group 15: a band-only register yields NO exposure figure", -1,
+      bandsText.indexOf("risk exposure of"));
+    assert("group 15: and still no fallback to the module's percentile", -1,
+      bandsText.indexOf("eightieth percentile"));
+    assert("group 15: the card says the consequence is not established instead", true,
+      bandsText.indexOf("Not established") >= 0);
 
     /* Served evidence must not disturb the surface-parity or determinism guarantees below. */
     assert("group 15: rendering with document evidence is byte-identical twice",

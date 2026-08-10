@@ -76,11 +76,15 @@ from .research_membership import (
     require_member,
 )
 from .research_models import (
-    ComputedResult, Decision, Document, DocumentUpload, Observation, ScheduleActivity,
+    ComputedResult, Decision, Document, DocumentUpload, Observation, ProjectNotice,
+    ProjectRisk,
+    ScheduleActivity,
     UploadAttempt, new_ulid,
 )
 from .document_evidence import document_evidence
 from .recommendation_basis import recommendation_basis
+from .risk_exposure import register_exposure
+from .risk_register import risk_rows_from_document
 from .schedule_activities import read_activity_table, select_for_display
 from .schedule_table import activity_rows_from_document, activity_table_from_document
 
@@ -477,6 +481,204 @@ def _persist_observations(session: Session, project: Project, period: int) -> in
                 entity_key=o["entity_key"] or "", entity_state=o["entity_state"],
                 as_of=o["as_of"], document_id=d.document_id,
                 revision_of=o["revision_of"], source_doc_type=o["doc_type"],
+            ))
+            inserted += 1
+    return inserted
+
+
+def _period_risks(session: Session, project: Project, period: int) -> list[dict]:
+    """
+    This period's risks, as dicts, for the card and for the exposure input.
+
+    BOUNDED BY THE PERIOD BEING ASKED ABOUT, exactly as the schedule readers are: rows are
+    selected on their own period, so a later period's register can never change what an earlier
+    period reports. That bound is what makes recomputing an earlier period reproduce it.
+    """
+    rows = session.scalars(
+        select(ProjectRisk)
+        .where(ProjectRisk.project_id == project.id, ProjectRisk.period == period)
+        .order_by(ProjectRisk.document_id, ProjectRisk.project_risk_id)
+    ).all()
+    return [{
+        "risk_key": r.risk_key, "keyed_by_position": r.keyed_by_position,
+        "description": r.description, "category": r.category,
+        "probability": r.probability, "probability_band": r.probability_band,
+        "cost_impact": r.cost_impact, "time_impact_days": r.time_impact_days,
+        "score": r.score, "owner": r.owner, "response_strategy": r.response_strategy,
+        "mitigation_status": r.mitigation_status, "residual_position": r.residual_position,
+        "is_open": r.is_open, "unparsed": r.unparsed,
+        "usable_for_exposure": r.usable_for_exposure,
+    } for r in rows]
+
+
+def _period_notices(session: Session, project: Project, period: int) -> list[dict]:
+    """This period's served notices, as dicts. Same period bound, same reason."""
+    rows = session.scalars(
+        select(ProjectNotice)
+        .where(ProjectNotice.project_id == project.id, ProjectNotice.period == period)
+        .order_by(ProjectNotice.project_notice_id)
+    ).all()
+    return [{
+        "filename": n.filename, "served_by": n.served_by, "served_on": n.served_on,
+        "claim": n.claim,
+        "date_served": n.date_served.isoformat() if n.date_served else None,
+        "date_served_refusal": n.date_served_refusal,
+        "contract_form": n.contract_form, "notice_kind": n.notice_kind,
+        "references_text": n.references_text,
+        "deadline_date": n.deadline_date.isoformat() if n.deadline_date else None,
+        "deadline_days": n.deadline_days, "deadline_kind": n.deadline_kind,
+        "deadline_citation": n.deadline_citation, "deadline_basis": n.deadline_basis,
+        "second_step": n.second_step,
+    } for n in rows]
+
+
+def _persist_project_notices(session: Session, project: Project, period: int) -> int:
+    """
+    0025. Project this period's notices into the notice ledger, deadline derived.
+
+    Same rules as the other two stores: every upload in the period is projected, rows are keyed
+    so re-deriving inserts only what is missing, nothing is updated in place, and a period's
+    notices are never rewritten by a later period.
+
+    THE DEADLINE IS DERIVED HERE, IN CODE, from the form the DOCUMENT named. The model is asked
+    what the notice says; it is never asked when the deadline is, because a model-stated deadline
+    is a date with no rule behind it. `contract_notices.deadline_for` applies the form's own
+    published period and says plainly when it cannot.
+
+    THE DATE THAT STARTS THE CLOCK USES THE REFUSING PARSER. `_parse_as_of` accepts strict ISO
+    only and returns None on anything else with no reason recorded, which is tolerable for an
+    as-of and not for a date a deadline is measured from. `parse_schedule_date` refuses loudly,
+    never infers a year, and its refusal is stored.
+    """
+    from .contract_notices import deadline_for, identify_form, identify_notice_type, second_step_for
+    from .schedule_dates import DateRefusal, parse_schedule_date
+
+    rows = session.execute(
+        select(Document, DocumentUpload.supersedes_document_id)
+        .join(DocumentUpload, DocumentUpload.document_id == Document.document_id)
+        .where(DocumentUpload.project_id == project.id, DocumentUpload.period == period)
+    ).all()
+    existing = {
+        r[0] for r in session.execute(
+            select(ProjectNotice.document_id)
+            .where(ProjectNotice.project_id == project.id, ProjectNotice.period == period)
+        ).all()
+    }
+    inserted = 0
+    for d, _supersedes in rows:
+        if (d.doc_type or "") != "correspondence_notice" or d.document_id in existing:
+            continue
+        ex = d.extraction if isinstance(d.extraction, dict) else {}
+        existing.add(d.document_id)
+
+        raw_served = ex.get("notice_date_served") or ex.get("document_date")
+        parsed = parse_schedule_date(raw_served)
+        served = getattr(parsed, "value", None)
+        refusal = parsed.reason if isinstance(parsed, DateRefusal) else None
+
+        # The form and the kind come from what the document SAID, preferring the model's own
+        # reading of the prose and falling back to a phrase match over the same text. Neither
+        # consults a project default, because this platform holds none and inventing one would
+        # put a confident deadline on a notice from a regime nobody named.
+        stated_form = str(ex.get("notice_contract_form") or "")
+        form = identify_form(stated_form) or identify_form(
+            " ".join(str(ex.get(k) or "") for k in ("notice_kind", "notice_claim",
+                                                    "notice_references")))
+        kind = identify_notice_type(
+            " ".join(str(ex.get(k) or "") for k in ("notice_kind", "notice_claim")))
+
+        derived = deadline_for(form, kind, served)
+        step = second_step_for(form, kind, served)
+
+        session.add(ProjectNotice(
+            project_id=project.id, period=period, document_id=d.document_id,
+            filename=d.filename,
+            served_by=_text_or_none(ex.get("notice_served_by")),
+            served_on=_text_or_none(ex.get("notice_served_on")),
+            claim=_text_or_none(ex.get("notice_claim")),
+            date_served=served,
+            date_served_raw=_text_or_none(raw_served),
+            date_served_refusal=refusal,
+            contract_form=form, notice_kind=kind,
+            references_text=_text_or_none(ex.get("notice_references")),
+            deadline_date=(date.fromisoformat(derived["date"]) if derived.get("date") else None),
+            deadline_days=derived.get("days"),
+            deadline_kind=derived.get("kind"),
+            deadline_citation=derived.get("citation"),
+            deadline_basis=derived.get("basis") or "",
+            second_step=step,
+            as_of=document_as_of(d.doc_type or UNMAPPED, ex),
+            source_doc_type=d.doc_type or UNMAPPED,
+        ))
+        inserted += 1
+    return inserted
+
+
+def _text_or_none(value: Any) -> str | None:
+    """A trimmed string, or None where the value says nothing."""
+    cleaned = " ".join(str(value if value is not None else "").split()).strip()
+    return cleaned or None
+
+
+def _persist_project_risks(session: Session, project: Project, period: int) -> int:
+    """
+    0024. Project this period's stored risk registers into the risk store.
+
+    The same shape as `_persist_observations` and `_persist_schedule_activities`, for the same
+    reasons: every upload in the period is projected (superseded ones included, because storage
+    retains and selection excludes), rows are keyed by (project, period, document, risk) so
+    re-deriving inserts only what is missing, and nothing is ever updated in place. A document's
+    register is content-addressed and immutable, so the same document always projects the same
+    rows, and recomputing an earlier period after later ones exist reproduces it exactly.
+
+    A ROW THAT WOULD NOT PARSE IS STILL STORED, with its refusals and `usable_for_exposure`
+    false. A register of two hundred risks that yielded ninety usable probabilities has to be
+    able to say which hundred and ten refused and why, and a dropped row cannot.
+
+    Returns the number of rows inserted.
+    """
+    rows = session.execute(
+        select(Document, DocumentUpload.supersedes_document_id)
+        .join(DocumentUpload, DocumentUpload.document_id == Document.document_id)
+        .where(DocumentUpload.project_id == project.id, DocumentUpload.period == period)
+    ).all()
+    existing = {
+        (r[0], r[1]) for r in session.execute(
+            select(ProjectRisk.document_id, ProjectRisk.risk_key)
+            .where(ProjectRisk.project_id == project.id, ProjectRisk.period == period)
+        ).all()
+    }
+    inserted = 0
+    for d, _supersedes in rows:
+        ex = d.extraction if isinstance(d.extraction, dict) else {}
+        # THE READER TAKES THE ROWS, from the document's own stored bytes. Twenty risks and five
+        # hundred cost the same, and no row can be silently mistyped on the way. There is
+        # deliberately NO model-returned fallback here: a register was never asked for as a
+        # JSON field, and adding one would reintroduce exactly the unbounded-output failure this
+        # treatment exists to avoid. A register in a PDF yields no rows and says so.
+        risks = risk_rows_from_document(d.content or b"", d.mime_type or "", d.filename or "")
+        if not risks:
+            continue
+        doc_type = d.doc_type or UNMAPPED
+        as_of = document_as_of(doc_type, ex)
+        for r in risks:
+            key = (d.document_id, r["risk_key"])
+            if key in existing:
+                continue
+            existing.add(key)
+            session.add(ProjectRisk(
+                project_id=project.id, period=period, document_id=d.document_id,
+                risk_key=r["risk_key"], keyed_by_position=bool(r["keyed_by_position"]),
+                description=r["description"], category=r["category"],
+                probability=r["probability"], probability_band=r["probability_band"],
+                probability_raw=r["probability_raw"], cost_impact=r["cost_impact"],
+                time_impact_days=r["time_impact_days"], score=r["score"], owner=r["owner"],
+                response_strategy=r["response_strategy"],
+                mitigation_status=r["mitigation_status"],
+                residual_position=r["residual_position"], is_open=r["is_open"],
+                unparsed=r["unparsed"],
+                usable_for_exposure=bool(r["usable_for_exposure"]),
+                as_of=as_of, source_doc_type=doc_type,
             ))
             inserted += 1
     return inserted
@@ -946,6 +1148,10 @@ def _compute_and_store(session: Session, project: Project, period: int,
     # it — added later to the period — cannot silently change what the period reports.
     _persist_observations(session, project, period)
     _persist_schedule_activities(session, project, period)
+    # 0024. The register, same rule: written once for this period, never rewritten by a later
+    # one, which is what keeps a recompute of an earlier period byte-identical.
+    _persist_project_risks(session, project, period)
+    _persist_project_notices(session, project, period)
     observations: list[dict] = []
     for d in documents:
         observations.extend(emit_observations(d))
@@ -1013,6 +1219,28 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
     milestone_history = _milestone_history(session, project, period)
     if len(milestone_history) >= 2:
         si["milestoneHistory"] = milestone_history
+
+    # 0024. THE REGISTER'S EXPOSURE, SERVED TO THE MODULES THAT WOULD NEED IT.
+    #
+    # Part 2 of the change that added this asked that the cost-forecasting modules be given a
+    # real input rather than generating from literals. This is that input, in the same shape
+    # and by the same route as `milestoneHistory` above: read from this period's own store,
+    # bounded to this period, attached after selection, ignored by every module that does not
+    # want it.
+    #
+    # NO MODULE CONSUMES IT TODAY, and that is reported rather than quietly true. Cost Risk
+    # Analysis computes its whole spread as `max(0.03, abs(1 - cpi)) * 0.5` times a literal
+    # 1.28, which has no slot for a list of probability and impact pairs; Reference Class
+    # Forecasting is an OUTSIDE-view method whose meaning would invert if fed this project's own
+    # inside view. Both would need their arithmetic changed, which was explicitly out of scope,
+    # so the data is put where they can reach it and the change to reach for it is left to be
+    # authorised. See REPORT_2026-08-10_risk-register-and-notices.md.
+    #
+    # THE KEY IS ABSENT WHERE THE REGISTER SUPPORTS NOTHING, so a module guarding on it abstains
+    # on its own guard rather than on an exposure of zero, which is a different claim.
+    exposure = register_exposure(_period_risks(session, project, period))
+    if exposure["usable_count"]:
+        si["registerExposure"] = exposure
 
     run = compute_project(si, project.legacy_id, f"P{period}", cutoff)
 
@@ -1543,6 +1771,9 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
     # 0021. The same moment, for the same reason: the schedule is structured data the store
     # holds from the instant the evidence arrives, not something derived at compute time.
     _persist_schedule_activities(session, project, period)
+    # 0024/0025. And the risk register and any notice, for the same reason again.
+    _persist_project_risks(session, project, period)
+    _persist_project_notices(session, project, period)
 
     audit(session, "documents_uploaded", participant_id=caller.participant_id,
           project_id=project.legacy_id, period=period, files=len(decoded),
@@ -2203,7 +2434,9 @@ def a_projectresults(session: Session, payload: dict, secret: str, ttl: int) -> 
     # to account is `test_period_picker_and_evidence.py` section 6, which scans every sentence
     # this table can generate against the same leak vocabulary and is proven able to fail.
     view["document_evidence"] = document_evidence(
-        _period_documents(session, project, row.period))
+        _period_documents(session, project, row.period),
+        risks=_period_risks(session, project, row.period),
+        notices=_period_notices(session, project, row.period))
 
     return {
         "ok": True,

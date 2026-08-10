@@ -5199,3 +5199,69 @@ Verified: server suite **52 files, 2826/2826**, fresh SQLite per file, the new
 twelve net new checks, the one red the same pre-existing auth-gated row. Real browser drives of
 the picker (14/14 on a fresh database), the diagram, the card and the map. Four faults injected,
 each confirmed applied by hash, each detected, each reverted with the hash matching.
+
+## The risk register read as data, notices as events, and three forecasting modules that generate from nothing (2026-08-10)
+
+Branch `claude/period-recompute-new-docs-1nfjnx`. Report at
+`REPORT_2026-08-10_risk-register-and-notices.md`.
+
+**PART 2 IS A STOP AND REPORT AND THE REPORT LEADS WITH IT. No module arithmetic was changed.**
+Cost Risk Analysis computes its whole spread as `max(0.03, abs(1 - cpi)) * 0.5` times a literal
+1.28 and has no slot for probability/impact pairs; consuming a register means changing it from a
+multiplicative fractional spread to an additive dollar one. Reference Class Forecasting is an
+OUTSIDE-view method and a register is this project's inside view, so feeding it would invert the
+method while keeping its name; its `pctile` is index-based over nine literals, so **P80 is always
+1.38 and its overrun is +38 per cent on every project and every period, forever** (asserted), and
+it cannot abstain at all today because `num(si.get("bac"), 0.0)` defaults a missing budget to
+zero. **Parametric Cost invents nothing** — it is a ratio of two EAC conventions over four real
+extracted figures, only its RAG thresholds are literals, and including it in the fabricating set
+was a misdiagnosis; its name oversells it, which is a naming question. The suite REPRODUCES the
+reported 10,555,811 / 79.7 per cent from Cost Risk Analysis exactly, so all of this is measured.
+
+**WHAT PROTECTS THE READER MEANWHILE IS OUTSIDE `simulation/`.** The card no longer prints any
+eightieth percentile from either Cost Risk Analysis or Monte Carlo (which stores the same
+`p80_eac` key with a LARGER invented-parameter surface, and would have re-sourced the sentence if
+only the first were silenced). It prints the exposure the register supports instead. The exposure
+is also served as `si["registerExposure"]` by the `milestoneHistory` route, so the data is in
+place when the arithmetic change is authorised; **no module consumes it today and the code says
+so**.
+
+**A BAND IS NEVER A NUMBER.** Percentages and fractions read; a word, an ordinal, and the
+midpoint of a stated range all refuse and keep the band for quoting. A bare number refuses unless
+the column heading states the unit. `Mitigated` refuses as a status because it states treatment,
+not whether the risk is carried. A currency the platform does not convert refuses rather than
+being summed as dollars. Refusals never drop the row.
+
+**A DEFECT FOUND THE WAY THE BRIEF PREDICTED.** The first realistic register had a column headed
+`Schedule Impact (days)`; exact heading matching resolved it to nothing and every time impact was
+silently dropped. The register reader now tolerates a trailing UNIT qualifier (units only, so
+"Probability Rating" does not collapse onto "Probability"), exact match first.
+**`schedule_activities._HEADINGS` has the same brittleness and was NOT touched** — "Baseline
+finish (date)" would resolve to nothing there. Worth a follow-up.
+
+**Stores: 0024 `project_risks`, 0025 `project_notices`, both UNAPPLIED IN PRODUCTION.** One row
+per (project, period, document, risk/notice), the observations rule, so an earlier period
+recomputes byte-identical after a later register arrives — proven with a later period whose
+register restates R-001 at a different probability.
+
+**Notices carry the three contract traps as behaviour, not comments.** A201 differing site
+conditions is 14 days not 21; ConsensusDocs runs a second 21-day documentation clock **from the
+notice**; the federal 20-day figure is a LOOKBACK and carries no date. Where the document names
+no form, no deadline is stated and the reason is printed. Deadlines are derived in code from the
+named form and never asked of the model.
+
+**THREE RED TESTS, THREE DIFFERENT KINDS.** One recorded the defect (asserted the fabricated
+percentile was quoted) and was replaced. One protected a real property and only needed its
+threshold adjusted. **The third is a kind not seen before: a property whose MECHANISM moved** —
+"a document whose content is not stored is reported by name" was right about the property and
+wrong about the mechanism once a notice's content became stored. Re-pointed, not deleted.
+
+**The real document sets were NOT run against**: they are on the owner's Windows machine and this
+container cannot reach them. Section 11 of `test_risk_register_and_notices.py` is env-gated on
+`REAL_RISK_REGISTER` and `REAL_NOTICE_DOC` and prints that it did not run. **Run it locally
+before trusting the fixture green** — it prints the resolved column map, the row count, the
+usable count and the first refusals, which is what would expose a real register's shapes.
+
+Verified: server suite **53 files, 2937/2937**, fresh SQLite per file. `tests.html` 51/51.
+`tests_render.html` 233/234, twelve new checks, the one red the same pre-existing auth-gated row.
+Two faults injected, hash-confirmed applied and reverted, one caught by eleven checks.
