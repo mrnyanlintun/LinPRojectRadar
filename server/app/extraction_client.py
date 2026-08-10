@@ -471,6 +471,7 @@ class AnthropicExtractor:
         # `milestones_json` is not asked for, and the table's rows are not sent either. The
         # scalar fields then have the whole budget, which is what they always needed and never
         # had — the response that failed three times died at its seventh scalar key.
+        from .risk_register import risk_table_from_document
         from .schedule_table import activity_table_from_document
 
         table = activity_table_from_document(raw, mime_type, filename)
@@ -478,6 +479,16 @@ class AnthropicExtractor:
         if table is not None:
             fields = [f for f in fields if f != "milestones_json"]
             elide = {table.index: table.elision_note()}
+        # THE SAME SEPARATION FOR THE RISK REGISTER, and it was never asked for as a field, so
+        # there is nothing to drop from `fields` -- only the rows to keep out of the prompt. A
+        # register of five hundred risks and one of twenty therefore cost the same call: the
+        # header row survives so the model can still see the document HAS a register and answer
+        # its scalar fields, and the unbounded part is read by `risk_register` from the document
+        # itself.
+        risks = risk_table_from_document(raw, mime_type, filename)
+        if risks is not None and (table is None or risks.index != table.index):
+            elide = dict(elide or {})
+            elide[risks.index] = risks.elision_note()
         block = self._content_block(raw, mime_type, filename, elide)
         extracted = parse_json_response(self._post(build_prompt(resolved, fields), block,
                                                    MAX_TOKENS))

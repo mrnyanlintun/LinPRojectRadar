@@ -868,3 +868,162 @@ class TrainingRun(Base):
     __table_args__ = (
         CheckConstraint("status IN ('active','complete')", name="ck_training_runs_status"),
     )
+
+
+class ProjectRisk(Base):
+    """
+    0024. One row per (project, period, document, risk). The risk register, kept as data.
+
+    WHY THIS TABLE EXISTS. The register yielded a document risk score and a date and nothing
+    else, so the recommendation was made with no knowledge of what the project was already
+    worried about, and the three cost-forecasting modules had no calibration data at all. The
+    measured consequence: on a design project whose authored estimate at completion was
+    4,835,600 dollars, the platform produced an eightieth percentile of 10,555,811. The document
+    sets supply no distribution and no percentile of any kind, so that figure came from
+    literals. A register carries probability and cost impact per risk, which is a real input.
+
+    ONE OBSERVATION PER REPORTING PERIOD, the rule the observations store and the schedule store
+    both follow: the same risk seen in four periods is FOUR ROWS, one per period, not four rows
+    competing to be current. An earlier period's account of a risk is never rewritten by a later
+    one, which is what makes recomputing that earlier period reproduce it byte for byte.
+
+    WHY NOT THE OBSERVATIONS TABLE. An `Observation` row is one VALUE per (field, entity). A
+    risk is a dozen attributes that only mean anything together: a probability without its cost
+    impact cannot enter an exposure, and an owner without its risk names nobody. Splitting one
+    risk across twelve observation rows would make every read a reassembly, and the schedule
+    store set the precedent for exactly this shape.
+
+    A BAND IS NOT A PROBABILITY, AND THE DISTINCTION IS A COLUMN. `probability` holds a number
+    only where the register stated one numerically. Where it said "High", or scored the risk 4
+    of 5, `probability` is NULL and `probability_band` carries the words verbatim. Nothing in
+    this platform converts the second into the first: "High" has no numeric value the document
+    states, and every mapping of it to 0.7 or 0.8 imports a number from outside the document and
+    presents it as read. That import is the defect this table exists to end, so it is refused at
+    the point of storage rather than guarded downstream.
+
+    `usable_for_exposure` is true when the row carries BOTH a numeric probability and a numeric
+    cost impact, which is exactly the pair a cost distribution needs. It derives nothing; it
+    records whether the two numbers are present. A forecasting module with no usable rows
+    abstains, and this column is how it knows.
+
+    `unparsed` holds one entry per cell that REFUSED, with the field and the reason. A risk
+    whose probability would not parse is still stored: a register of two hundred risks that
+    yielded ninety usable probabilities has to be able to say which hundred and ten refused and
+    why, and a dropped row cannot.
+    """
+
+    __tablename__ = "project_risks"
+
+    project_risk_id: Mapped[str] = mapped_column(ULID, primary_key=True, default=new_ulid)
+    project_id: Mapped[str] = mapped_column(
+        Uuid(), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    period: Mapped[int] = mapped_column(Integer, nullable=False)
+    document_id: Mapped[str] = mapped_column(
+        ULID, ForeignKey("documents.document_id"), nullable=False
+    )
+    risk_key: Mapped[str] = mapped_column(Text, nullable=False)
+    # True where the register did not number its rows and the key is the row's position in the
+    # table. Stored so a reader is never told a positional key is the register's own identifier.
+    keyed_by_position: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+    category: Mapped[str] = mapped_column(Text, nullable=True)
+    probability: Mapped[float] = mapped_column(Float, nullable=True)
+    probability_band: Mapped[str] = mapped_column(Text, nullable=True)
+    probability_raw: Mapped[str] = mapped_column(Text, nullable=True)
+    cost_impact: Mapped[float] = mapped_column(Float, nullable=True)
+    time_impact_days: Mapped[float] = mapped_column(Float, nullable=True)
+    score: Mapped[float] = mapped_column(Float, nullable=True)
+    owner: Mapped[str] = mapped_column(Text, nullable=True)
+    response_strategy: Mapped[str] = mapped_column(Text, nullable=True)
+    mitigation_status: Mapped[str] = mapped_column(Text, nullable=True)
+    residual_position: Mapped[str] = mapped_column(Text, nullable=True)
+    is_open: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    unparsed: Mapped[dict] = mapped_column(JSONType, nullable=True)
+    usable_for_exposure: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    as_of: Mapped[date] = mapped_column(Date, nullable=True)
+    source_doc_type: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "probability IS NULL OR (probability >= 0 AND probability <= 1)",
+            name="ck_project_risks_probability_band",
+        ),
+    )
+
+
+class ProjectNotice(Base):
+    """
+    0025. One row per (project, period, document). A notice served, kept as the event it is.
+
+    WHY THIS TABLE EXISTS. `correspondence_notice` extracted a document risk score and a date, so
+    a notice served on a project was, to this platform, a number between zero and one. A notice
+    is not a number. Someone served it, on someone, it asserts something, and under the contract
+    form it starts a clock that can extinguish a right. That is the treatment change orders
+    already have, and a served notice had none of it.
+
+    ONE ROW PER DOCUMENT, not per field. The `observations` store holds one VALUE per (field,
+    entity), which fits a change order's revised contract sum and does not fit a notice: who
+    served it, on whom, what it claims and what it references only mean anything together, and
+    splitting them across seven observation rows would make every read a reassembly. This
+    follows `schedule_activities` and `project_risks` instead, keyed by (project, period,
+    document) because a notice document IS one notice.
+
+    ONE OBSERVATION PER REPORTING PERIOD, the rule the other two stores keep: a notice is written
+    once for the period it was filed to and never rewritten by a later one, so recomputing an
+    earlier period reproduces it.
+
+    THE DEADLINE IS DERIVED AND ITS BASIS IS STORED BESIDE IT. `deadline_date` is non-NULL only
+    where the document named a contract form this platform holds periods for AND that form puts a
+    fixed day count on this kind of notice AND the date served could be read. `deadline_basis`
+    always says which of those held or did not, so a reader is never shown a blank where a rule
+    should be. `deadline_kind` separates a DEADLINE from a LOOKBACK: the federal twenty-day
+    figure is a cost cutoff, not an expiry, and printing it as a date would tell a reader their
+    claim dies when it does not.
+
+    `date_served_refusal` carries the reason a served date would not parse, using the same
+    parser the schedule uses, which refuses rather than inferring a year. A notice whose date
+    cannot be read starts no clock this platform will state.
+    """
+
+    __tablename__ = "project_notices"
+
+    project_notice_id: Mapped[str] = mapped_column(ULID, primary_key=True, default=new_ulid)
+    project_id: Mapped[str] = mapped_column(
+        Uuid(), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    period: Mapped[int] = mapped_column(Integer, nullable=False)
+    document_id: Mapped[str] = mapped_column(
+        ULID, ForeignKey("documents.document_id"), nullable=False
+    )
+    filename: Mapped[str] = mapped_column(Text, nullable=True)
+    served_by: Mapped[str] = mapped_column(Text, nullable=True)
+    served_on: Mapped[str] = mapped_column(Text, nullable=True)
+    claim: Mapped[str] = mapped_column(Text, nullable=True)
+    date_served: Mapped[date] = mapped_column(Date, nullable=True)
+    date_served_raw: Mapped[str] = mapped_column(Text, nullable=True)
+    date_served_refusal: Mapped[str] = mapped_column(Text, nullable=True)
+    contract_form: Mapped[str] = mapped_column(Text, nullable=True)
+    notice_kind: Mapped[str] = mapped_column(Text, nullable=True)
+    references_text: Mapped[str] = mapped_column(Text, nullable=True)
+    deadline_date: Mapped[date] = mapped_column(Date, nullable=True)
+    deadline_days: Mapped[int] = mapped_column(Integer, nullable=True)
+    deadline_kind: Mapped[str] = mapped_column(Text, nullable=True)
+    deadline_citation: Mapped[str] = mapped_column(Text, nullable=True)
+    deadline_basis: Mapped[str] = mapped_column(Text, nullable=False)
+    second_step: Mapped[dict] = mapped_column(JSONType, nullable=True)
+    as_of: Mapped[date] = mapped_column(Date, nullable=True)
+    source_doc_type: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "deadline_kind IS NULL OR deadline_kind IN ('deadline','lookback')",
+            name="ck_project_notices_deadline_kind",
+        ),
+    )

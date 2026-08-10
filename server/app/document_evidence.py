@@ -39,6 +39,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from .risk_exposure import register_exposure
+
 # --------------------------------------------------------------------------- the findings table
 #
 # One row per (doc_type, field) that says something a reader would act on differently if they
@@ -110,10 +112,18 @@ _FINDINGS: tuple[dict[str, Any], ...] = (
 # Document types whose stored extraction is a risk score and a date and nothing else, so their
 # CONTENT is not available to quote. Named here so the card can say a document is present and
 # unread rather than staying silent about it. Kept in step with the vocabulary by a check.
-_CONTENT_NOT_STORED: dict[str, str] = {
-    "correspondence_notice": "correspondence or a notice",
-    "risk_register": "a risk register",
-}
+# BOTH ENTRIES ARE GONE, and that is the whole point of this change.
+#
+# This map used to carry `correspondence_notice` and `risk_register`, because the extraction for
+# each was a risk score and a date and the card could only say a document was present and unread.
+# Both are read now: a register's rows come from the document itself (`risk_register`), and a
+# notice's who, what, when and which-clock come from its own prose plus a deadline derived in
+# code from the form it named (`contract_notices`). Naming them here now would be the card
+# claiming it had not read something it had.
+#
+# The map is kept, empty, rather than deleted: it is the right place for the next document type
+# whose content genuinely is not stored, and a check asserts every key in it is a real type.
+_CONTENT_NOT_STORED: dict[str, str] = {}
 
 # The words the card prints when it declines to rank. Held here, next to the reason it is true,
 # so the sentence and its justification cannot drift apart.
@@ -135,7 +145,149 @@ def _as_int(value: Any) -> int | None:
     return None
 
 
-def document_evidence(documents: list[dict] | None) -> dict[str, Any]:
+def register_findings(risks: list[dict] | None) -> list[dict[str, Any]]:
+    """
+    What the risk register establishes, each statement naming the risk it came from.
+
+    A RISK IS NAMED, NOT COUNTED. "Four risks are open" tells a project manager nothing they can
+    act on; "R-002, utility relocation delayed by a third party, is open, scored High, owned by
+    M. Chen, response Transfer" is a sentence they can take to the person named in it. So this
+    reports the risks that carry the most weight the register itself assigned, by key.
+
+    NOTHING HERE RANKS OR SCORES. The ordering is the register's own score where it stated one,
+    and the register's own order where it did not. No risk is promoted or demoted by anything
+    this platform decided.
+
+    A BAND IS QUOTED AS A BAND. Where the register said "High", the sentence says High. It is
+    never turned into a number, here or anywhere else.
+    """
+    rows = [r for r in (risks or []) if isinstance(r, dict)]
+    live = [r for r in rows if r.get("is_open") is not False]
+    if not live:
+        return []
+
+    # The register's own score orders them where it stated one; everything unscored keeps the
+    # register's order behind everything scored. Stable, and decided by the document.
+    def sort_key(item):
+        index, row = item
+        score = row.get("score")
+        return (0, -float(score), index) if isinstance(score, (int, float)) else (1, 0.0, index)
+
+    ordered = [r for _, r in sorted(enumerate(live), key=sort_key)]
+
+    out: list[dict[str, Any]] = []
+    for r in ordered[:MAX_NAMED_RISKS]:
+        key = str(r.get("risk_key") or "").strip()
+        description = str(r.get("description") or "").strip()
+        if not key and not description:
+            continue
+        # The weight the register assigned, quoted in the register's own terms.
+        weight: list[str] = []
+        if isinstance(r.get("score"), (int, float)):
+            weight.append(f"scored {_plain(r['score'])} by the register")
+        if r.get("probability_band"):
+            weight.append(f"likelihood {r['probability_band']}")
+        elif isinstance(r.get("probability"), (int, float)):
+            weight.append(f"likelihood {round(float(r['probability']) * 100)} per cent")
+        if isinstance(r.get("cost_impact"), (int, float)):
+            weight.append(f"cost impact {_money(r['cost_impact'])}")
+        if isinstance(r.get("time_impact_days"), (int, float)) and r["time_impact_days"]:
+            weight.append(f"time impact {_plain(r['time_impact_days'])} days")
+
+        held = []
+        if r.get("owner"):
+            held.append(f"owned by {r['owner']}")
+        if r.get("response_strategy"):
+            held.append(f"response {r['response_strategy']}")
+        if r.get("residual_position"):
+            held.append(f"residual position {r['residual_position']}")
+
+        name = f"{key}, {description}" if key and description else (key or description)
+        sentence = f"{name} is open"
+        if weight:
+            sentence += ": " + ", ".join(weight)
+        if held:
+            sentence += ". The register records it " + ", ".join(held)
+        out.append({
+            "sentence": sentence + ".",
+            "risk_key": key or None,
+            "owner": r.get("owner") or None,
+            "response_strategy": r.get("response_strategy") or None,
+            "unmitigated": not r.get("mitigation_status"),
+        })
+    return out
+
+
+def notice_findings(notices: list[dict] | None) -> list[dict[str, Any]]:
+    """
+    What each notice in the period asserts, and what clock it started.
+
+    A DEADLINE IS PRINTED ONLY WHERE ONE WAS DERIVED. Where the document named no contract form,
+    the sentence says the deadline is not established and why, rather than leaving a reader to
+    assume there is no clock. A LOOKBACK IS NEVER PRINTED AS A DEADLINE: the federal twenty-day
+    figure bars no claim and saying it does would be worse than saying nothing.
+    """
+    out: list[dict[str, Any]] = []
+    for n in (notices or []):
+        if not isinstance(n, dict):
+            continue
+        parts: list[str] = []
+        served_by, served_on = n.get("served_by"), n.get("served_on")
+        if served_by and served_on:
+            parts.append(f"{served_by} served notice on {served_on}")
+        elif served_by:
+            parts.append(f"{served_by} served notice")
+        else:
+            parts.append("A notice was served")
+        if n.get("date_served"):
+            parts.append(f"on {n['date_served']}")
+        elif n.get("date_served_refusal"):
+            parts.append("on a date this platform could not read")
+        sentence = " ".join(parts)
+        if n.get("claim"):
+            sentence += f". It claims {n['claim']}"
+        if n.get("references_text"):
+            sentence += f". It references {n['references_text']}"
+
+        if n.get("deadline_kind") == "lookback" and n.get("deadline_days"):
+            clock = (f"{n['deadline_citation']} sets no notice deadline; costs incurred more "
+                     f"than {n['deadline_days']} days before written notice are not "
+                     f"recoverable. This bars no claim.")
+        elif n.get("deadline_date"):
+            clock = (f"The deadline it starts is {n['deadline_date']} "
+                     f"({n.get('deadline_citation') or 'the named form'}).")
+        else:
+            clock = "Not established: " + (n.get("deadline_basis")
+                                           or "no deadline could be derived") + "."
+        out.append({
+            "sentence": sentence.rstrip(".") + ".",
+            "clock": clock,
+            "filename": n.get("filename"),
+            "second_step": (n.get("second_step") or {}).get("basis")
+            if isinstance(n.get("second_step"), dict) else None,
+        })
+    return out
+
+
+def _plain(value: Any) -> str:
+    """A number as the card prints it, unaltered in value."""
+    text = f"{float(value):.2f}".rstrip("0").rstrip(".")
+    return text or "0"
+
+
+def _money(value: Any) -> str:
+    return f"{int(round(float(value))):,} dollars"
+
+
+# How many risks the card names. The register is unbounded and the card is not: naming forty
+# risks is a list nobody reads, and naming none is the state this change exists to end. The
+# count is stated here rather than buried, and the block says how many were left unnamed.
+MAX_NAMED_RISKS = 5
+
+
+def document_evidence(documents: list[dict] | None,
+                      risks: list[dict] | None = None,
+                      notices: list[dict] | None = None) -> dict[str, Any]:
     """
     What this period's documents establish, each statement naming the document behind it.
 
@@ -199,9 +351,27 @@ def document_evidence(documents: list[dict] | None) -> dict[str, Any]:
                              f"so what it says is not established here."),
             })
 
+    register = register_findings(risks)
+    named = len(register)
+    live_risks = [r for r in (risks or [])
+                  if isinstance(r, dict) and r.get("is_open") is not False]
     return {
         "documents_read": documents_read,
         "findings": findings,
         "not_established": not_established,
+        # What the register says, by named risk. `unnamed` is stated rather than left implicit:
+        # a card showing five of forty open risks must say it is showing five of forty.
+        "register": {
+            "open_count": len(live_risks),
+            "named": register,
+            "unnamed": max(0, len(live_risks) - named),
+            # The exposure the register itself supports: probability times cost impact over the
+            # rows carrying both numbers, and nothing else. This is the ONLY completion-side
+            # figure on this card that has an input behind it, which is why the card prints it
+            # and refuses the modules' percentile. See `risk_exposure`.
+            "exposure": register_exposure(live_risks),
+        },
+        # Each notice as the event it is, with the clock it started or the reason none is stated.
+        "notices": notice_findings(notices),
         "ranking": {"possible": False, "reason": NO_RANKING_REASON},
     }

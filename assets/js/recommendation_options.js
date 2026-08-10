@@ -85,25 +85,37 @@
      Monte Carlo EAC stores the same quantity from its own simulation. Either is quoted
      verbatim. When neither computed, the exposure is stated as not established rather than
      replaced with an adjective. */
-  function exposure(mods, si) {
-    var bac = si && si.bac;
-    var cra = mods.Cost_Risk_Analysis;
-    var mc = mods.Monte_Carlo;
-    if (cra && isNum(cra.p80_eac) && isNum(cra.p80_delta_pct)) {
+  function exposure(mods, si, docEv) {
+    /* NO FORECAST FIGURE APPEARS WITHOUT AN INPUT BEHIND IT.
+
+       This used to print `Cost_Risk_Analysis.p80_eac` as "an eightieth percentile estimate at
+       completion", falling back to `Monte_Carlo.p80_eac`. Neither has a distribution behind it.
+       The first computes its whole spread as `max(0.03, abs(1 - cpi)) * 0.5`, multiplied by a
+       literal 1.28; the second from literal weights and a literal Beta-PERT spread. The
+       document sets supply no distribution and no percentile of any kind, so those figures are
+       not measurements of the project they are printed beside. On a design project whose
+       authored estimate at completion was 4,835,600 dollars this produced 10,555,811.
+
+       So the percentile is not printed. What IS printed is the exposure the RISK REGISTER
+       supports: the sum of probability times cost impact over the risks that stated both
+       numbers, which is arithmetic the register itself implies and which names the risks it
+       came from. Where the register supports none, the exposure is not established and the
+       card says so, which is the state this card was already built to express.
+
+       The modules are not changed by any of this: changing their arithmetic was out of scope,
+       and what a module stores is still stored. This decides only what a reader is shown as a
+       finding about their project. */
+    var reg = docEv && docEv.register;
+    var exp = reg && reg.exposure;
+    if (exp && isNum(exp.expected_value) && exp.usable_count > 0) {
       return {
-        text: "an eightieth percentile estimate at completion of " + money(cra.p80_eac)
-          + " dollars, " + cra.p80_delta_pct + " per cent above budget",
+        text: "a risk exposure of " + money(exp.expected_value) + " dollars, being the sum of "
+          + "probability times cost impact across the " + exp.usable_count + " risk"
+          + (exp.usable_count === 1 ? "" : "s") + " in the register that state both",
         known: true
       };
     }
-    if (mc && isNum(mc.p80_eac)) {
-      return {
-        text: "an eightieth percentile estimate at completion of " + money(mc.p80_eac)
-          + " dollars" + (isNum(bac) ? " against a budget of " + money(bac) + " dollars" : ""),
-        known: true
-      };
-    }
-    return { text: null, known: false };
+    return { text: null, known: false, refusedForecast: true };
   }
 
   /* ---------------------------------------------------------- build */
@@ -164,7 +176,10 @@
       };
     }
 
-    var exp = exposure(mods, si);
+    // Declared before `exposure` reads it: with `var` hoisting a later
+    // declaration would leave it undefined here and the gate would never fire.
+    var docEv = (result && result.document_evidence) || null;
+    var exp = exposure(mods, si, docEv);
     var gov = mods.ABM_Governance;
     var authority = (gov && gov.authority) ? String(gov.authority) : null;
 
@@ -254,7 +269,6 @@
        argue with and one they cannot. */
     var recKey = regret.recommended_action || null;
     var basis = (result && result.recommendation_basis) || null;
-    var docEv = (result && result.document_evidence) || null;
     var recommendation = null;
     if (recKey) {
       /* NO SCORE IS QUOTED, BECAUSE NO SCORE IS ABOUT THIS PROJECT.
@@ -308,7 +322,14 @@
       var unread = (docEv.not_established || []).filter(function (f) {
         return f && f.sentence && f.filename;
       });
+      var reg = docEv.register || {};
       documents = {
+        register: {
+          openCount: reg.open_count || 0,
+          unnamed: reg.unnamed || 0,
+          named: (reg.named || []).filter(function (f) { return f && f.sentence; })
+        },
+        notices: (docEv.notices || []).filter(function (n) { return n && n.sentence; }),
         readCount: (docEv.documents_read || []).length,
         findings: findings.map(function (f) {
           return { sentence: f.sentence, filename: f.filename, bearing: f.bearing };
@@ -362,7 +383,8 @@
     var docs = "";
     if (spec.documents) {
       var d = spec.documents;
-      if (d.findings.length || d.notEstablished.length) {
+      if (d.findings.length || d.notEstablished.length
+          || (d.register && d.register.named.length) || (d.notices && d.notices.length)) {
         docs = '<div class="ro-documents" id="ro-documents">'
           + '<h4 class="ro-option-title">What this period\'s documents say</h4>'
           + '<p class="ro-what">These are read from the documents uploaded for this period, not '
@@ -375,6 +397,32 @@
                 }).join("") + "</ul>"
               : '<p class="ro-doc-none">No document in this period records an open item of a '
                 + "kind this platform reads back.</p>")
+          + (d.register && d.register.named.length
+              ? '<h4 class="ro-option-title ro-sub">What the risk register records</h4>'
+                + '<p class="ro-what">' + esc(String(d.register.openCount)) + " open risk"
+                + (d.register.openCount === 1 ? "" : "s") + " in the register for this period"
+                + (d.register.unnamed
+                    ? ", of which the " + esc(String(d.register.named.length))
+                      + " carrying the most weight the register itself assigned are named here"
+                    : "") + ". Bands are quoted as the register wrote them and are never turned "
+                + "into numbers.</p>"
+                + '<ul class="ro-doc-findings">' + d.register.named.map(function (f) {
+                    return '<li class="ro-doc-finding">' + esc(f.sentence) + "</li>";
+                  }).join("") + "</ul>"
+              : "")
+          + (d.notices && d.notices.length
+              ? '<h4 class="ro-option-title ro-sub">Notices served this period</h4>'
+                + '<ul class="ro-doc-findings">' + d.notices.map(function (n) {
+                    return '<li class="ro-doc-finding">' + esc(n.sentence)
+                      + " " + esc(n.clock)
+                      + (n.second_step ? " " + esc(n.second_step) : "")
+                      + (n.filename
+                          ? ' <span class="ro-doc-source">Read from ' + esc(n.filename)
+                            + ".</span>"
+                          : "")
+                      + "</li>";
+                  }).join("") + "</ul>"
+              : "")
           + (d.notEstablished.length
               ? '<ul class="ro-doc-unread">' + d.notEstablished.map(function (f) {
                   return '<li class="ro-doc-finding">' + esc(f.sentence)

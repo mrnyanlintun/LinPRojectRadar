@@ -210,9 +210,22 @@ def main() -> None:
           "every finding names the document it came from")
     check(all(f["value"] == int(f["value"]) for f in ev["findings"]),
           "every finding's value is the whole count that was read")
-    check(len(ev["not_established"]) == 1
-          and ev["not_established"][0]["filename"] == "Notice.pdf",
-          "a document whose content is not stored is reported by name, not omitted",
+    # THE PROPERTY SURVIVES; ITS IMPLEMENTATION CHANGED. This check read:
+    #
+    #   len(ev["not_established"]) == 1 and ev["not_established"][0]["filename"] == "Notice.pdf"
+    #   "a document whose content is not stored is reported by name, not omitted"
+    #
+    # The property it protects is real and is kept: a document present in the period must never
+    # be silently absent from the card. What changed is that a notice's content IS stored now --
+    # who served it, on whom, what it claims, and the clock the named contract form starts -- so
+    # asserting the card still calls it unread would pin a limitation that has been removed.
+    # This is the third kind of red test: not a defect recorded as expected behaviour, and not a
+    # property that failed, but a property whose mechanism moved. It is re-pointed, not deleted.
+    check(any(d.get("filename") == "Notice.pdf" for d in ev["documents_read"]),
+          "a notice in the period is still never silently omitted: it is listed as read",
+          str([d.get("filename") for d in ev["documents_read"]]))
+    check(ev["not_established"] == [],
+          "and it is no longer reported as content this platform could not read",
           str(ev["not_established"]))
 
     # Singular phrasing, and a float that is a whole number, and one that is not.
