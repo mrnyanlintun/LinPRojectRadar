@@ -5265,3 +5265,58 @@ usable count and the first refusals, which is what would expose a real register'
 Verified: server suite **53 files, 2937/2937**, fresh SQLite per file. `tests.html` 51/51.
 `tests_render.html` 233/234, twelve new checks, the one red the same pre-existing auth-gated row.
 Two faults injected, hash-confirmed applied and reverted, one caught by eleven checks.
+
+## The detail page map, and 101 modules where a project has 96 (2026-08-10)
+
+Branch `claude/period-recompute-new-docs-1nfjnx`. Report at
+`REPORT_2026-08-10_map-and-module-count.md`.
+
+**THE ATLAS IS THE MAP ON PROJECT DETAIL NOW, NOT A FALLBACK.** MapLibre was there for streets,
+streets come from `tiles.openfreemap.org`, that host is refused at CONNECT on the network this
+platform runs on, and the degrade-to-atlas fix did not help because a map that only appears after
+a failure has to fail first. Streets are no longer attempted. `detail.js` renders `LinAtlas`
+directly on first open; the address line stays; no coordinates means no marker and a note saying
+so. The `<link>` and `<script>` tags are out of `index.html` (837 KB nobody was getting a map
+from) and `tiles.openfreemap.org` is off the CSP.
+
+**WHAT DEPENDED ON MAPLIBRE: nothing live, VERIFIED BY TRACING not by reading the comment.**
+`app.js`'s stage really is orphaned — `scheduleMapWarmup()` has no callers, and `buildMap()`'s one
+other reference is guarded by `mapBuilt`, which is assigned only inside `buildMap()` itself. It is
+LEFT IN PLACE (~400 lines + two vendored files = its own change), guards on `typeof maplibregl ===
+"undefined"`, and the new suite pins both the orphan marker and that guard. **The portfolio Map
+view never had this problem** and was not touched: it calls `buildAtlasStage()` and hides the
+MapLibre container unconditionally. Different call site from the detail page.
+
+**THE 101 WAS THE WHOLE TAXONOMY ON A ONE-PROJECT PAGE.** `LIN_CATEGORIES` is 12 categories / 101
+modules; Group D is portfolio level, needs more than one project, and its five modules all require
+`portfolioVectors`. Twelve sites in `detail.js` counted or ITERATED it — six of them iterated,
+so D1's modules were plotted onto a project's Ensemble Scatter (as a twelfth column with its own
+legend pill), its Signal Web, and its "also elevated" list. All now go through one pair of
+helpers, `projectCats()` / `projectModuleCount()`. The Signal Ledger's Portfolio Health row is
+gone from the detail page; Portfolio Health is untouched in the taxonomy and on the portfolio's
+own "Portfolio health" card.
+
+**`parked` IS NOT THE DISCRIMINATOR AND A FALLBACK GOT THIS WRONG.** D1 is `parked: false`, so
+`LIN_CATEGORIES.filter(c => !c.parked)` KEEPS Portfolio Health. `detail.js:802` used exactly that
+on its fallback arm. Filter on `level`/`portfolioLevel`, which is what `projectLevelCategories()`
+does. A check now records this so the reasoning survives.
+
+**A CHECK I WROTE COULD NOT FAIL, AND INJECTING THE FAULT IS WHAT FOUND IT.** Group 20 asserted
+`typeof window.maplibregl === "undefined"`. Restoring the script tag to `index.html` left
+`tests_render.html` GREEN, because that harness has its own script list and never loads
+`index.html`. **Any assertion in tests_render.html about what index.html loads is vacuous.** The
+file-level properties live in the new `server/tools/test_map_and_module_count.py`, where reading
+the file is the check, and the browser group asserts only what it can see.
+
+**NEITHER DEFECT HAD ANY COVERAGE** before this: both browser suites were green with the page
+advertising 101 modules and rendering the portfolio row.
+
+Still outstanding: the orphaned MapLibre stage and its two vendored files (837 KB) are on disk;
+`app.js activeModuleTotal()` (falls back to a literal 103) and `detail.js buildModuleAxes()` both
+count the whole taxonomy and both have no callers — dead, reported, left alone, and the suite
+asserts `buildModuleAxes` stays uncalled.
+
+Verified: server suite **54 files, 2970/2970**, fresh SQLite per file. `tests.html` 51/51.
+`tests_render.html` 257/258, 23 new checks, the one red the same pre-existing auth-gated row.
+Browser drive of the detail page 20/20 plus a no-coordinates drive. Four faults injected, each
+hash-confirmed applied and reverted.

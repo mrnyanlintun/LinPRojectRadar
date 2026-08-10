@@ -20,7 +20,7 @@
     font-src 'self';
     img-src 'self' data: blob: https:;
     worker-src 'self' blob:;
-    connect-src 'self' https://script.google.com https://api.openai.com https://accounts.google.com https://tiles.openfreemap.org;
+    connect-src 'self' https://script.google.com https://api.openai.com https://accounts.google.com;
     frame-src 'self' https://accounts.google.com;
     frame-ancestors 'none';
   " />
@@ -1277,12 +1277,17 @@
        MapLibre vendoring removed, on the surfaces operational users actually work on.
        pdf.worker.min.js is vendored too: PDF.js loads it separately at runtime, so vendoring
        only the main file would have left the worker fetching from a CDN that is not there. -->
-  <!-- MapLibre, vendored. PR #216 removed these two lines when the flat atlas became the
-       portfolio default, which left `createGlMap` bailing on `typeof maplibregl === "undefined"`
-       and the project detail map with no way to zoom: the atlas is a 2:1 world outline and has
-       no street data to zoom into. Restored so the detail map can reach street level. -->
-  <link rel="stylesheet" href="assets/vendor/maplibre-gl.min.css">
-  <script src="assets/vendor/maplibre-gl.min.js"></script>
+  <!-- MAPLIBRE IS NOT LOADED. It was restored here so the project detail map could reach
+       street level, and street level needs tiles from `tiles.openfreemap.org`, which the
+       network this platform is used on refuses at CONNECT. The detail map therefore showed
+       nothing, and every reader downloaded 837 KB of library to be shown nothing.
+       A paid tile source and Google Maps are both ruled out, so streets are no longer
+       attempted: `detail.js` renders the vendored flat atlas as the map itself.
+       The portfolio never depended on these tags -- its Map view has rendered the atlas since
+       T11 and its MapLibre stage has been unreachable since then (see the "ORPHANED AS OF T11"
+       note in app.js). That dead path guards on `typeof maplibregl === "undefined"` and bails,
+       so it is unaffected by their removal; the vendored files stay on disk for it, and
+       deleting it is its own change. -->
   <script src="assets/vendor/pdf.min.js"></script>
   <!-- SheetJS: client-side XLSX generation for audit export. Vendored, same reasoning. -->
   <script src="assets/vendor/xlsx.full.min.js"></script>

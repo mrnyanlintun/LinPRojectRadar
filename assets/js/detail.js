@@ -14,6 +14,34 @@
   // independent of the portfolio's and each is torn down by whoever made it.
   let detailGlobe = null;
 
+  /* THE CATEGORIES A SINGLE PROJECT HAS, AND WHY EVERY COUNT ON THIS PAGE USES THEM.
+
+     `LIN_CATEGORIES` is the whole taxonomy: Group A 52 modules, Group B 36, Group C 7 and
+     Group D 5, across twelve categories. Group D is PORTFOLIO LEVEL. Its one category,
+     Portfolio Health, detects patterns ACROSS projects and requires more than one by
+     definition; its five modules all declare `required: ['portfolioVectors']`. They cannot
+     compute for a single project and they do not belong on a single project's page.
+
+     Counting the whole taxonomy on this page is how the detail view came to advertise 101
+     modules across 12 categories while the Signal Flow diagram in the same page, which already
+     filtered correctly, read 96 across 11. Every count, every axis and every iteration below
+     goes through these two functions so the page cannot disagree with itself again.
+
+     Portfolio Health is unaffected on the portfolio, where it belongs: the "Portfolio
+     health" card (index.html, filled by `renderPortfolio` in workspace.js) reads it from each
+     project's own stored result. */
+  function projectCats() {
+    const all = window.LIN_CATEGORIES || [];
+    if (window.projectLevelCategories) {
+      try { return window.projectLevelCategories() || []; } catch (e) { /* fall through */ }
+    }
+    return all.filter((c) => !(c && (c.level === "portfolio" || c.portfolioLevel)));
+  }
+
+  function projectModuleCount() {
+    return projectCats().reduce((n, c) => n + ((c && c.modules) || []).length, 0);
+  }
+
   // A project is placeable when it has finite coordinates in range. Same test the portfolio
   // globe and the map use; kept here rather than imported so detail.js stays free of app.js.
   function hasCoordsFor(p) {
@@ -183,7 +211,7 @@
   // Category-axis helpers — 9 axes evenly spaced (40deg apart), CSS centred
   // on (210, 190) like the previous module web.
   function catPointFor(i, radiusFactor, outerRadius) {
-    const cx = 210, cy = 190, n = LIN_CATEGORIES.length;
+    const cx = 210, cy = 190, n = projectCats().length;
     const angle = -Math.PI / 2 + (Math.PI * 2 * i / n);
     const r = outerRadius * radiusFactor;
     return {
@@ -324,10 +352,10 @@
     if (!window.LIN_CATEGORIES) return "";
     if (!(window.LinResults && LinResults.hasResult(project))) return "";
     const cur = currentSnapshot(project);
-    const totalModules = LIN_CATEGORIES.reduce((n, c) => n + c.modules.length, 0);
+    const totalModules = projectModuleCount();
     const counts = { Red: 0, Amber: 0, Yellow: 0, Green: 0, Complete: 0 };
     let activeCount = 0;
-    LIN_CATEGORIES.forEach((cat) => {
+    projectCats().forEach((cat) => {
       cat.modules.forEach((m) => {
         const active = !(cat.parked || m.active === false);
         const status = active && window.getModuleStatus ? getModuleStatus(m.method_class, project) : null;
@@ -378,7 +406,7 @@
     const counts = { Complete: 0, Green: 0, Yellow: 0, Amber: 0, Red: 0, none: 0 };
     const rows = [];
     let idx = 0;
-    LIN_CATEGORIES.forEach((cat) => {
+    projectCats().forEach((cat) => {
       cat.modules.forEach((m) => {
         idx += 1;
         const active = !(cat.parked || m.active === false);
@@ -402,7 +430,7 @@
     const { counts } = ensembleTally(project);
     const activeTotal = ["Complete","Green","Yellow","Amber","Red"].reduce((n, k) => n + counts[k], 0);
     if (!activeTotal) return "";
-    const totalModules = LIN_CATEGORIES.reduce((n, c) => n + c.modules.length, 0);
+    const totalModules = projectModuleCount();
     return `<section class="panel ens-panel scatter3d-panel" aria-label="Ensemble analysis">
       <div class="sw-head">
         <div>
@@ -770,8 +798,10 @@
       (window.getProjectFusion ? ((window.getProjectFusion(project) || {}).status) : null);
     if (!projStatus) return null;
 
-    const cats = window.projectLevelCategories ? window.projectLevelCategories()
-      : LIN_CATEGORIES.filter((c) => !c.parked);
+    // Was `LIN_CATEGORIES.filter((c) => !c.parked)` on the fallback arm, which leaks Portfolio
+    // Health: it is portfolio-level but it is NOT parked, so `!parked` keeps it. `projectCats`
+    // filters on what actually matters, which is the level.
+    const cats = projectCats();
     let worstCat = null, worstCatStatus = null, worstCatRank = 99, catTieCount = 0;
     cats.forEach((c) => {
       const st = window.getCategoryStatus(c.id, project);
@@ -800,7 +830,7 @@
     // Every OTHER Red/Amber module across the whole project (not just the
     // worst category), for the "also elevated: …" list.
     const otherFlags = [];
-    LIN_CATEGORIES.forEach((c) => {
+    projectCats().forEach((c) => {
       if (c.parked) return;
       (c.modules || []).forEach((m) => {
         if (m.method_class === worstMod.method_class) return;
@@ -927,8 +957,8 @@
     const uploadCount = (typeof uploadedDocEvents === "function") ? uploadedDocEvents(p).length : 0;
     const inputFieldCount = Object.keys(p.signalInputs || {})
       .filter((k) => k !== "sources" && p.signalInputs[k] != null && p.signalInputs[k] !== "").length;
-    const totalCats = LIN_CATEGORIES.length;
-    const totalModulesForBadge = LIN_CATEGORIES.reduce((n, c) => n + c.modules.length, 0);
+    const totalCats = projectCats().length;
+    const totalModulesForBadge = projectModuleCount();
 
     root.innerHTML =
       `<div class="detail-head">
@@ -1042,146 +1072,55 @@
           }
           return;
         }
-        // T11. The flat atlas, not the globe. Project detail gets the same default as the
-        // portfolio and for the same reason: this has to draw on any machine, and a section
-        // headed "Location" that renders black is worse than no section at all. The globe is
-        // still reachable from the portfolio's Globe view; it is not the thing detail depends on.
+        // THE ATLAS IS THE MAP HERE. NOT A FALLBACK, AND NOT MAPLIBRE.
+        //
+        // This page tried to show streets, on MapLibre, from `tiles.openfreemap.org`. That host
+        // is refused at CONNECT by the network this platform is used on, so the style request
+        // failed, no tile was ever fetched, and the reader got an empty canvas under a note
+        // saying the project was "Matched to:" an address. A degrade path was then added, and
+        // the reported result was still no map: a map that only appears after a failure has to
+        // fail first, and every reader paid 837 KB of vendored library to find that out.
+        //
+        // A paid tile source and Google Maps are both ruled out, so the decision is to stop
+        // trying to show streets on this page. The atlas is what the platform already vendors:
+        // a flat world outline drawn from geometry that ships with the application. No tile
+        // host, no key, NO EXTERNAL REQUEST OF ANY KIND. It cannot show streets, and it does
+        // place the project, which is what a project detail page needs it to do.
+        //
+        // It renders on first open, synchronously as far as the reader is concerned, rather
+        // than after something has gone wrong.
         //
         // Releases any globe this view previously built, so a detail page rendered before this
         // change does not leave a WebGL context behind when it re-renders.
         if (detailGlobe) { try { detailGlobe.destroy(); } catch (e) {} detailGlobe = null; }
 
-        /* STREET-LEVEL ZOOM, ON MAPLIBRE.
-
-           The flat atlas cannot do this and no amount of tweening makes it able to: it is a
-           2:1 equirectangular world outline with coastlines and country borders and NO street
-           data, so shrinking its viewBox to street scale magnifies an empty vector field
-           around a marker. Zoom needs tiles that carry streets, and MapLibre is vendored with
-           exactly that. PR #216 removed its script tag when the atlas became the portfolio
-           default, which is why `createGlMap` has been bailing on an undefined global and why
-           PR #215's NavigationControl has been dead ever since; the tag is restored in
-           index.html.
-
-           The atlas stays as the FALLBACK, for the reason the earlier session gave: a section
-           headed "Location" that renders black is worse than no section at all. If MapLibre is
-           absent, or its tiles cannot be reached, the map degrades to the outline rather than
-           to nothing. */
-        const lat = Number(p.lat), lng = Number(p.lng);
-
-        /* THE FALLBACK, EXTRACTED SO THE TILE-FAILURE PATH CAN ACTUALLY REACH IT.
-           The comment above has always promised that the map degrades to the outline "if
-           MapLibre is absent, OR ITS TILES CANNOT BE REACHED". Only the first half was true:
-           the tile half ran through `m.on("error", function () {})`, a no-op, after which the
-           block returned. Measured in this container, where the tile host is refused at
-           CONNECT: the canvas mounts, the style request fails with
-           ERR_TUNNEL_CONNECTION_FAILED, no tile is ever requested, and the reader is left with
-           MapLibre's empty background and a note claiming the project is "Matched to:" an
-           address. A blank panel that says it succeeded is the failure this whole section was
-           written to avoid. */
-        function degradeToAtlas(reason) {
-          if (!window.LinAtlas) {
-            if (note) {
-              note.className = "detail-globe-note ws-note ws-geo-warn";
-              note.textContent = reason;
-            }
-            return;
-          }
-          host.innerHTML = "";
-          LinAtlas.render(host, [p], { focusId: p.id }).then(() => {
-            if (!note) return;
-            const ln = window.linLocationNote ? linLocationNote(p) : null;
-            note.className = "detail-globe-note ws-note ws-geo-warn";
-            note.textContent = reason
-              + (ln ? " " + ln.text
-                    : p.formattedAddress ? " Matched to: " + p.formattedAddress : "");
-          }).catch(() => {
-            if (note) {
-              note.className = "detail-globe-note ws-note ws-geo-warn";
-              note.textContent = reason;
-            }
-          });
-        }
-
-        const canGl = typeof maplibregl !== "undefined" && Number.isFinite(lat)
-                      && Number.isFinite(lng);
-        if (canGl) {
-          host.innerHTML = "";
-          let m = null;
-          try {
-            m = new maplibregl.Map({
-              container: host,
-              style: (document.body.dataset.theme === "light")
-                ? "https://tiles.openfreemap.org/styles/positron"
-                : "https://tiles.openfreemap.org/styles/dark",
-              center: [lng, lat],
-              // STREET LEVEL. 16 puts a site in its block with the surrounding streets named,
-              // which is what "zoom to the street" means and what the whole-world atlas at a
-              // single marker could not show.
-              zoom: 16,
-              maxZoom: 19,
-              attributionControl: true
-            });
-          } catch (e) { m = null; }
-          if (m) {
-            // The detail page re-renders while the map is still mounting (the full-project
-            // hydrate does exactly that), and `destroy` removes the map underneath its own
-            // pending "load". Anything the handler then touches is detached, which threw
-            // "Cannot read properties of null". One flag, checked before the handler does
-            // anything, so a map that has been torn down stays torn down.
-            var dead = false;
-            var mapLoaded = false;
-            var degraded = false;
-            detailGlobe = { destroy: function () { dead = true; try { m.remove(); } catch (e) {} } };
-            m.on("load", function () {
-              if (dead) return;
-              mapLoaded = true;
-              if (typeof maplibregl.NavigationControl === "function") {
-                m.addControl(new maplibregl.NavigationControl(), "top-right");
-              }
-              try { new maplibregl.Marker().setLngLat([lng, lat]).addTo(m); } catch (e) {}
-              // Arrive at street level rather than cutting to it, so the viewer keeps their
-              // bearings. The camera is already centred on the project, so this cannot strand
-              // anyone: a flight that never runs leaves the map where it began, on the site.
-              try { m.flyTo({ center: [lng, lat], zoom: 17, duration: 900 }); } catch (e) {}
-            });
-            // A TRANSIENT TILE ERROR IS STILL SWALLOWED. A STYLE THAT NEVER LOADS IS NOT.
-            //
-            // The distinction is `load`: MapLibre fires it once the style has been fetched and
-            // parsed, so an error BEFORE that means there is no basemap at all and never will
-            // be, while an error after it is one tile of a map the reader can already see.
-            // Only the first is fatal, and only the first degrades to the outline. Guarded by
-            // `degraded` so a burst of failures produces one fallback, not one per request.
-            m.on("error", function () {
-              if (dead || mapLoaded || degraded) return;
-              degraded = true;
-              try { m.remove(); } catch (e) {}
-              detailGlobe = null;
-              degradeToAtlas("The street map could not be reached, so this is the outline "
-                + "view.");
-            });
-            if (note) {
-              const ln0 = window.linLocationNote ? linLocationNote(p) : null;
-              note.className = "detail-globe-note ws-note" + (ln0 && ln0.warn ? " ws-geo-warn" : "");
-              note.textContent = ln0 ? ln0.text
-                : (p.formattedAddress ? "Matched to: " + p.formattedAddress : "Located.");
-            }
-            return;
-          }
-        }
-
-        if (!window.LinAtlas) {
-          if (note) note.textContent = p.formattedAddress || "Location recorded.";
-          return;
-        }
-        LinAtlas.render(host, [p], { focusId: p.id }).then(() => {
+        function setLocationNote() {
+          if (!note) return;
           // A RETAINED position is drawn and labelled as belonging to the previous address.
           // Drawing it under "Matched to:" would present an old pin as the current one, which
           // is the failure the retention change exists to make visible rather than to hide.
-          if (!note) return;
           const ln = window.linLocationNote ? linLocationNote(p) : null;
           note.className = "detail-globe-note ws-note" + (ln && ln.warn ? " ws-geo-warn" : "");
           note.textContent = ln ? ln.text
             : (p.formattedAddress ? "Matched to: " + p.formattedAddress : "Located.");
+        }
+
+        if (!window.LinAtlas) {
+          // The atlas module itself failed to load. Say where the project is in words rather
+          // than leaving a section headed "Location" empty.
+          if (note) {
+            note.className = "detail-globe-note ws-note ws-geo-warn";
+            note.textContent = p.formattedAddress
+              ? "Map unavailable on this page. Matched to: " + p.formattedAddress
+              : "Map unavailable on this page.";
+          }
+          return;
+        }
+        setLocationNote();
+        LinAtlas.render(host, [p], { focusId: p.id }).then(setLocationNote).catch(function () {
+          // The coastline geometry resolves to nothing rather than rejecting, so this is the
+          // unexpected path. The address line is still correct and still shown.
+          setLocationNote();
         });
       },
       // Uploaded-docs table is already in the section HTML; the extracted-
@@ -1588,7 +1527,7 @@
 
     return advisor +
       "Briefing subject: " + (snapshot.project_name || project.name) + " (Project " + snapshot.project_id + ", " + (snapshot.sector || "unknown") + " sector). " +
-      "The platform computed " + totalModules + " signal modules across " + LIN_CATEGORIES.length + " analytical categories from a stored log dated " + computedDay + ".\n\n" +
+      "The platform computed " + totalModules + " signal modules across " + projectCats().length + " analytical categories from a stored log dated " + computedDay + ".\n\n" +
       "Category statuses grouped by color (internal context, use these groupings, do NOT re-list each category individually):\n" + groupsText +
       "\n\nComputed key signal values (internal context, quote these ACTUAL numbers in Key Drivers):\n" + signalsText +
       "\n\nPer-category worst module (internal context, do NOT quote raw module names or metrics):\n" + catSummary +
@@ -1873,7 +1812,7 @@
     if (state === "loading") {
       return `<div class="eb-body eb-loading" aria-live="polite">
         <span class="eb-shimmer"></span>
-        <span class="eb-status">Analysing signals across ${LIN_CATEGORIES.length} categories…</span>
+        <span class="eb-status">Analysing signals across ${projectCats().length} categories…</span>
       </div>`;
     }
     if (state === "skipped") {
@@ -1940,7 +1879,7 @@
       <div class="eb-head">
         <div>
           <p class="eyebrow eb-eyebrow">Executive brief${project && project.name ? " — " + esc(project.name) : ""}</p>
-          <p class="kn-sub eb-sub">${period ? "Reporting period: " + esc(period) + " · " : ""}grouped analysis across ${LIN_CATEGORIES.length} signal categories</p>
+          <p class="kn-sub eb-sub">${period ? "Reporting period: " + esc(period) + " · " : ""}grouped analysis across ${projectCats().length} signal categories</p>
         </div>
         <button type="button" class="btn small eb-regen" data-eb-regen="${esc(projectId)}" aria-label="Regenerate brief">Regenerate ↺</button>
       </div>
@@ -2204,7 +2143,7 @@
       ((window.normalizeSector ? normalizeSector(project.sector) : (project.sector || "hybrid"))
         .replace(/^./, (c) => c.toUpperCase())) + "-sector projects";
     const moduleList = [];
-    LIN_CATEGORIES.forEach((cat) => {
+    projectCats().forEach((cat) => {
       cat.modules.forEach((m) => {
         const active = !(cat.parked || cat.conditional || m.active === false);
         const status = active && window.getModuleStatus ? getModuleStatus(m.method_class, project) : null;
@@ -2224,7 +2163,7 @@
                sx: r * Math.cos(theta), sy: yUnit, sz: r * Math.sin(theta), ml, i };
     });
 
-    const catLabels = LIN_CATEGORIES.map((cat) => {
+    const catLabels = projectCats().map((cat) => {
       let sx = 0, sy = 0, sz = 0, n = 0;
       pts.forEach((pt) => { if (pt.ml.cat.id === cat.id) { sx += pt.sx; sy += pt.sy; sz += pt.sz; n++; } });
       if (!n) return null;
@@ -2365,9 +2304,9 @@
 
     const scatterData = [];
     // Centre the category columns on the X axis whatever the category count.
-    const CAT_MID = (LIN_CATEGORIES.length - 1) / 2;
+    const CAT_MID = (projectCats().length - 1) / 2;
     let idx = 0;
-    LIN_CATEGORIES.forEach((cat, catIdx) => {
+    projectCats().forEach((cat, catIdx) => {
       cat.modules.forEach((m) => {
         idx++;
         const active = !(cat.parked || m.active === false);
@@ -2425,7 +2364,7 @@
       }
 
       // X axis labels — 10px, category name (group letter), category color, centered
-      LIN_CATEGORIES.forEach((cat,i)=>{
+      projectCats().forEach((cat,i)=>{
         const p=rxf(ryf({x:(i-CAT_MID)*55,y:GRID_Y+14,z:0},rotY),rotX), pp=proj(p);
         ctx.font="10px SFMono-Regular,ui-monospace,monospace";
         ctx.fillStyle=cat.color||"#64748b";
@@ -2521,7 +2460,7 @@
     // Fix 3: category legend pills
     const legendEl=root.querySelector(".scatter-legend");
     if(legendEl){
-      LIN_CATEGORIES.forEach((cat,ci)=>{
+      projectCats().forEach((cat,ci)=>{
         const pill=document.createElement("span");
         pill.className="scatter-legend-pill";
         pill.dataset.cat=cat.id;

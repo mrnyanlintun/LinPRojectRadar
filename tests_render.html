@@ -2002,6 +2002,135 @@
   })();
 
   // ---- render results ----
+  /* GROUP 20 — the project detail page is a PROJECT surface: it maps without a tile host,
+     and it counts only what a single project has.
+
+     TWO DEFECTS, ONE CAUSE IN COMMON: a project page was being handed the whole platform.
+
+     THE MAP. MapLibre was on this page to show streets, and streets come from
+     `tiles.openfreemap.org`, which the network this platform is used on refuses at CONNECT.
+     The reported result was no map at all. The atlas is now the map itself rather than the
+     thing shown after MapLibre fails, so it draws on first open and asks nothing of the
+     network. These checks fail if MapLibre comes back, if the atlas stops rendering, or if a
+     project with no coordinates draws a marker for a position it does not have.
+
+     THE COUNT. `LIN_CATEGORIES` is the whole taxonomy, twelve categories and 101 modules.
+     Group D is portfolio level: its one category, Portfolio Health, needs more than one
+     project by definition and its five modules all require `portfolioVectors`. Counting it on
+     a project page produced "101 modules" and "12 categories" in the section badges while the
+     Signal Flow diagram inside the same page, which already filtered, read 96 and 11.
+
+     There was NO existing coverage of either: both browser suites were green with the page
+     advertising 101 modules and rendering a Portfolio Health row. That is why this group
+     exists rather than an assertion being adjusted somewhere. */
+  (function () {
+    const root = document.getElementById("detail-root");
+
+    // ---- the count, from the taxonomy the page actually reads -------------------------
+    const all = window.LIN_CATEGORIES || [];
+    const proj = window.projectLevelCategories ? window.projectLevelCategories() : [];
+    const sum = (cs) => cs.reduce((n, c) => n + ((c && c.modules) || []).length, 0);
+    // Anti-vacuity: the two must genuinely differ, or every check below passes for free.
+    assert("group 20: the taxonomy really does have a portfolio-level category to exclude",
+      true, all.length > proj.length && sum(all) > sum(proj));
+    assert("group 20: the project-level count is 96 modules", 96, sum(proj));
+    assert("group 20: across 11 categories", 11, proj.length);
+    assert("group 20: and the whole taxonomy is still 101 across 12, unchanged",
+      "101/12", sum(all) + "/" + all.length);
+    assert("group 20: no project-level category is portfolio level", 0,
+      proj.filter((c) => c && (c.level === "portfolio" || c.portfolioLevel)).length);
+    // `parked` is NOT the discriminator, and a fallback that used it leaked Portfolio Health.
+    assert("group 20: filtering on 'parked' would NOT exclude it, which is why level is used",
+      true, all.filter((c) => !c.parked).some((c) => c.id === "d1"));
+
+    // ---- the rendered page ------------------------------------------------------------
+    const p = fresh("Yellow");
+    p.lat = 38.9072; p.lng = -77.0369;
+    p.formattedAddress = "1600 Pennsylvania Ave NW, Washington, DC";
+    root.innerHTML = "";
+    let threw = "";
+    try { window.LinDetail.render(p.id); } catch (e) { threw = String(e); }
+    assert("group 20: the detail page renders with coordinates and does not throw", "", threw);
+
+    const badges = Array.from(root.querySelectorAll(".collapse-badge"))
+      .map((e) => e.textContent.replace(/\s+/g, " ").trim())
+      .filter((s) => /\d+\s+(modules|categories)/.test(s));
+    assert("group 20: the page renders count badges at all (the scan is not vacuous)",
+      true, badges.length > 0);
+    const joined = badges.join(" | ");
+    assert("group 20: no badge on a project page says 101 modules", -1,
+      joined.indexOf("101 modules"));
+    assert("group 20: and none says 12 categories", -1, joined.indexOf("12 categories"));
+    assert("group 20: the badges report the project-level module count", true,
+      joined.indexOf("96 modules") >= 0);
+    assert("group 20: and the project-level category count", true,
+      joined.indexOf("11 categories") >= 0);
+
+    /* ---- THE ATLAS IS THE MAP, RENDERED ON FIRST OPEN ----------------------------------
+
+       NOT a `typeof maplibregl === "undefined"` check. This harness has its own script list
+       and never loads index.html, so such an assertion passes whatever index.html does: I
+       restored the maplibre script tag to index.html and this group stayed green, which is a
+       check that cannot fail. That property is real and is pinned where it can be measured, in
+       `server/tools/test_map_and_module_count.py`, which reads the files themselves.
+
+       What IS measurable here is the thing a reader cares about: opening a project with
+       coordinates puts a map in the Location section, straight away, and it is the atlas. */
+    const globeHost = root.querySelector(".detail-globe");
+    assert("group 20: the Location section has its map host", true, !!globeHost);
+    assert("group 20: and no MapLibre canvas is mounted in it", null,
+      root.querySelector(".maplibregl-canvas"));
+    const locNote = root.querySelector(".detail-globe-note");
+    assert("group 20: the Location badge says the project is located", "located",
+      (root.querySelector("#section-d-globe .collapse-badge") || {}).textContent);
+
+    try { if (window.LinDetail.teardown) LinDetail.teardown(); } catch (e) {}
+    root.innerHTML = "";
+  })();
+
+  /* GROUP 20b — the Signal Ledger on a project page lists project-level categories only. */
+  (function () {
+    const p = fresh("Amber");
+    const host = scratch();
+    let threw = "";
+    try { window.LinApp.renderLedger(p, host); } catch (e) { threw = String(e); }
+    assert("group 20b: the ledger renders and does not throw", "", threw);
+    const rows = host.querySelectorAll(".cat-row");
+    assert("group 20b: it renders a row per project-level category, and no more", 11,
+      rows.length);
+    assert("group 20b: no Portfolio Health row", null, host.querySelector(".cat-row-health"));
+    assert("group 20b: no portfolio-level category anywhere in it", null,
+      host.querySelector('[data-cat="d1"]'));
+    /* The row carried its own explanation that it "compares this project against the rest of
+       the portfolio". True of the category, and nothing a reader of ONE project can act on. */
+    assert("group 20b: and no 'rest of the portfolio' note on a single project's page", -1,
+      host.textContent.indexOf("rest of the portfolio"));
+    // Portfolio Health itself is untouched: this is a rendering decision, not a taxonomy edit.
+    const d1 = (window.LIN_CATEGORIES || []).filter((c) => c.id === "d1")[0];
+    assert("group 20b: Portfolio Health still exists in the taxonomy with all five modules",
+      5, d1 ? d1.modules.length : 0);
+  })();
+
+  /* GROUP 20c — a project with no coordinates. No marker, no throw, and it says so. */
+  (function () {
+    const root = document.getElementById("detail-root");
+    const p = fresh("Green");
+    delete p.lat; delete p.lng;
+    p.formattedAddress = null;
+    root.innerHTML = "";
+    let threw = "";
+    try { window.LinDetail.render(p.id); } catch (e) { threw = String(e); }
+    assert("group 20c: a project with no coordinates renders and throws nothing", "", threw);
+    const badge = root.querySelector("#section-d-globe .collapse-badge");
+    assert("group 20c: the Location section says so in its badge", "no location",
+      badge ? badge.textContent.trim() : "(no badge)");
+    const globeHost = root.querySelector(".detail-globe");
+    assert("group 20c: and draws no marker for a position it does not have", 0,
+      globeHost ? globeHost.querySelectorAll("circle, .atlas-marker").length : -1);
+    try { if (window.LinDetail.teardown) LinDetail.teardown(); } catch (e) {}
+    root.innerHTML = "";
+  })();
+
   function renderResults() {
   const tbody = document.querySelector("#results tbody");
   let passed = 0;
