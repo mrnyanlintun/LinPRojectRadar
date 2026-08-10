@@ -555,7 +555,7 @@
     var scopeHtml = '<p class="ws-note">' +
       esc(resp.research_account_filtered
         ? "Filtered to research accounts."
-        : "NOT filtered to research accounts — a project's results carry no account type.") +
+        : "NOT filtered to research accounts. A project's results carry no account type.") +
       "</p>";
     if (resp.format === "xlsx" && resp.payload_base64) {
       target.innerHTML = reviewHtml + scopeHtml +

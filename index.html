@@ -13,14 +13,19 @@
          Script redirect hop, which the same-origin /exec does not perform. script.google.com
          remains solely for the documented rollback in assets/js/config.js.
        - frame-ancestors 'none' is a hard clickjacking block. -->
+  <!-- Google Maps JavaScript API (project detail Location section) needs its loader and runtime
+       from maps.googleapis.com and maps.gstatic.com (script + connect), its tiles over https
+       (already covered by img-src https:), and Roboto from fonts.gstatic.com. The key is loaded
+       only when the deployment sets one; the hosts sit in the policy either way so that a
+       key-present deployment is not blocked by the CSP. -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://unpkg.com https://accounts.google.com;
-    style-src 'self' 'unsafe-inline' https://accounts.google.com https://cdnjs.cloudflare.com;
-    font-src 'self';
+    script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://unpkg.com https://accounts.google.com https://maps.googleapis.com https://maps.gstatic.com;
+    style-src 'self' 'unsafe-inline' https://accounts.google.com https://cdnjs.cloudflare.com https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com;
     img-src 'self' data: blob: https:;
     worker-src 'self' blob:;
-    connect-src 'self' https://script.google.com https://api.openai.com https://accounts.google.com;
+    connect-src 'self' https://script.google.com https://api.openai.com https://accounts.google.com https://maps.googleapis.com https://maps.gstatic.com;
     frame-src 'self' https://accounts.google.com;
     frame-ancestors 'none';
   " />
@@ -540,29 +545,9 @@
              aria-label="Interactive globe. One point per project with a stored location; point color indicates the stored project status. Selecting a point opens that project's detail view. Projects without a location are not shown here and remain in the project list below, which is an equivalent keyboard control path."></div>
         <p class="globe-note ws-note" id="globe-note"></p>
       </div>
-      <div class="map-wrap" hidden>
-        <!-- Real street-level map (MapLibre GL + OpenFreeMap vector tiles). One
-             building marker per located project; marker color indicates status.
-             Selecting a marker flies to street level and opens a popup;
-             double-click opens its detail view. Press Escape or Control+0 to
-             return to the world view. The project list below is an equivalent
-             keyboard control path. -->
-        <div id="map-gl" role="application"
-             aria-label="Interactive world map. One building marker per project with a stored location; marker color indicates status. Selecting a marker flies to it and opens a popup; double-clicking opens its detail view. Press Escape or Control+0 to return to the world view. The project list below is an equivalent keyboard control path."></div>
-        <!-- HUD instrument overlay: CRT scanline texture + a slow top→bottom sweep.
-             Sits above the map canvas but pointer-events:none so it never blocks
-             marker clicks, map panning, or the reset control. -->
-        <div class="map-fx" aria-hidden="true">
-          <div class="map-scan-texture"></div>
-          <div class="map-scan-line"></div>
-        </div>
-        <button type="button" id="map-reset-btn" class="map-reset-btn" hidden title="World view (Ctrl+0 / Esc)">⤢ World view</button>
-        <!-- Boot feedback for a genuinely cold map (no warm-up finished yet):
-             swaps to the quiet attribution-adjacent state once tiles/style load. -->
-        <p class="map-boot-status" id="map-boot-status" hidden aria-live="polite">ACQUIRING TILES…</p>
-        <p class="map-nolocation" id="map-nolocation" hidden></p>
-        <p class="map-caption">Locations are illustrative: synthetic demonstration data.</p>
-      </div>
+      <!-- The MapLibre street-map stage that used to sit here is gone (2026-08-10). The
+           portfolio's Map view has been the flat SVG atlas since T11; the MapLibre stage was
+           unreachable and is removed along with its app.js code and its vendored library. -->
 
       <!-- The single project list for the portfolio. It is a permanent section
            beneath the Radar / Map / Globe views, not a fourth view switched
@@ -1277,21 +1262,15 @@
        MapLibre vendoring removed, on the surfaces operational users actually work on.
        pdf.worker.min.js is vendored too: PDF.js loads it separately at runtime, so vendoring
        only the main file would have left the worker fetching from a CDN that is not there. -->
-  <!-- MAPLIBRE IS NOT LOADED. It was restored here so the project detail map could reach
-       street level, and street level needs tiles from `tiles.openfreemap.org`, which the
-       network this platform is used on refuses at CONNECT. The detail map therefore showed
-       nothing, and every reader downloaded 837 KB of library to be shown nothing.
-       A paid tile source and Google Maps are both ruled out, so streets are no longer
-       attempted: `detail.js` renders the vendored flat atlas as the map itself.
-       The portfolio never depended on these tags -- its Map view has rendered the atlas since
-       T11 and its MapLibre stage has been unreachable since then (see the "ORPHANED AS OF T11"
-       note in app.js). That dead path guards on `typeof maplibregl === "undefined"` and bails,
-       so it is unaffected by their removal; the vendored files stay on disk for it, and
-       deleting it is its own change. -->
+  <!-- MAPLIBRE IS GONE (2026-08-10). The project detail map now reaches street level through
+       the Google Maps JavaScript API, injected on demand by detail.js when the server reports a
+       browser key is provisioned; with no key the detail page falls back to the flat SVG atlas.
+       MapLibre's vendored library (837 KB), its unreachable portfolio stage in app.js, its CSS
+       and its `.map-wrap` markup were all removed in the same change. The portfolio Map view has
+       rendered the atlas since T11 and never depended on MapLibre. -->
   <script src="assets/vendor/pdf.min.js"></script>
   <!-- SheetJS: client-side XLSX generation for audit export. Vendored, same reasoning. -->
   <script src="assets/vendor/xlsx.full.min.js"></script>
-  <!-- MapLibre GL JS is injected on demand by app.js, not loaded here. -->
   <script src="assets/js/config.js"></script>
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/data.js"></script>

@@ -49,6 +49,64 @@
     return isFinite(lat) && isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
   }
 
+  /* ---------- Google Maps, keyed from the deployment's environment ----------
+
+     The Location section shows streets when the deployment has a browser map key, and the flat
+     atlas when it does not. The key never lives in a committed file: the page asks the server
+     for it at /mapconfig, so a deployment sets GOOGLE_MAPS_BROWSER_KEY and nothing in the repo
+     changes. See server/app/map_config.py for why a browser map key is exposed to the browser
+     where the geocoding key is not.
+
+     NO KEY, NO REQUEST TO GOOGLE. Without a key the script below is never injected, so a
+     deployment that has not set one makes no call to any Google host from this page. The only
+     request the no-key path makes is the same-origin /mapconfig fetch that tells it there is no
+     key. */
+
+  // The /mapconfig answer, fetched once per page-load. A rejected fetch resolves to the no-key
+  // shape rather than rejecting, so a config endpoint that is briefly unreachable degrades to
+  // the atlas exactly as an absent key does, instead of throwing into the section render.
+  let _mapConfigPromise = null;
+  // Test seam. The /mapconfig answer and the Maps-API load below are each cached for the page's
+  // lifetime, because a page fetches its key once and loads the library once. A render test that
+  // needs to exercise BOTH the keyed and the no-key branch inside one page load resets those two
+  // caches between renders. Nothing in the application calls this; production never re-keys a
+  // live page.
+  function __resetMapForTest() { _mapConfigPromise = null; _gmapsPromise = null; }
+  function getMapConfig() {
+    if (_mapConfigPromise) return _mapConfigPromise;
+    _mapConfigPromise = fetch("/mapconfig", { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : { present: false, apiKey: null }))
+      .catch(() => ({ present: false, apiKey: null }));
+    return _mapConfigPromise;
+  }
+
+  // Resolves to the google.maps namespace, loading the Maps JavaScript API once if it is not
+  // already present. If window.google.maps already exists it resolves immediately, which is also
+  // the seam a test uses to stand in a stub for the real API (the container this is verified in
+  // cannot reach maps.gstatic.com, the same class of block that ruled MapLibre out).
+  let _gmapsPromise = null;
+  function ensureGoogleMaps(apiKey) {
+    if (window.google && window.google.maps) return Promise.resolve(window.google.maps);
+    if (_gmapsPromise) return _gmapsPromise;
+    _gmapsPromise = new Promise((resolve, reject) => {
+      const cbName = "__ogGoogleMapsReady";
+      const timer = setTimeout(() => reject(new Error("google maps load timed out")), 15000);
+      window[cbName] = function () {
+        clearTimeout(timer);
+        try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+        if (window.google && window.google.maps) resolve(window.google.maps);
+        else reject(new Error("google maps callback fired without the namespace"));
+      };
+      const s = document.createElement("script");
+      s.async = true;
+      s.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(apiKey)
+        + "&v=weekly&loading=async&callback=" + cbName;
+      s.onerror = () => { clearTimeout(timer); reject(new Error("google maps script failed to load")); };
+      document.head.appendChild(s);
+    });
+    return _gmapsPromise;
+  }
+
   const esc = (s) => String(s == null ? "" : s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -434,7 +492,7 @@
     return `<section class="panel ens-panel scatter3d-panel" aria-label="Ensemble analysis">
       <div class="sw-head">
         <div>
-          <p class="eyebrow">Ensemble Scatter — ${activeTotal} active modules (${totalModules} total)</p>
+          <p class="eyebrow">Ensemble Scatter · ${activeTotal} active modules (${totalModules} total)</p>
           <p class="kn-sub sw-vs">${totalModules} modules in 3D · X = category · Y = status severity · drag to rotate</p>
         </div>
       </div>
@@ -877,12 +935,12 @@
   function provenancePanelHtml(t) {
     const rows = [];
     rows.push(`<div class="det-prov-hop"><b>Project</b>: ${esc(t.projStatus)}</div>`);
-    rows.push(`<div class="det-prov-hop"><b>${esc(t.worstCat.name)}</b>: ${esc(t.worstCatStatus)}${t.catTieCount > 1 ? ` (tied with ${t.catTieCount - 1} other category${t.catTieCount - 1 === 1 ? "" : "ies"} at this severity — first shown)` : ""}</div>`);
-    rows.push(`<div class="det-prov-hop"><b>${esc(t.worstMod.name)}</b>: ${esc(t.worstModStatus)}${t.modTieCount > 1 ? ` (tied with ${t.modTieCount - 1} other module${t.modTieCount - 1 === 1 ? "" : "s"} at this severity — first shown)` : ""}${t.evidenceMetric ? `<div class="kn-sub">${esc(t.evidenceMetric)}</div>` : ""}</div>`);
+    rows.push(`<div class="det-prov-hop"><b>${esc(t.worstCat.name)}</b>: ${esc(normalizeStatus(t.worstCatStatus) || t.worstCatStatus)}${t.catTieCount > 1 ? ` (tied with ${t.catTieCount - 1} other ${t.catTieCount - 1 === 1 ? "category" : "categories"} at this severity, shown first)` : ""}</div>`);
+    rows.push(`<div class="det-prov-hop"><b>${esc(t.worstMod.name)}</b>: ${esc(normalizeStatus(t.worstModStatus) || t.worstModStatus)}${t.modTieCount > 1 ? ` (tied with ${t.modTieCount - 1} other module${t.modTieCount - 1 === 1 ? "" : "s"} at this severity, shown first)` : ""}${t.evidenceMetric ? `<div class="kn-sub">${esc(t.evidenceMetric)}</div>` : ""}</div>`);
     if (t.source) {
       const docLabel = (window.LinSignals && LinSignals.DOC_TYPE_LABEL && LinSignals.DOC_TYPE_LABEL[t.source.docType]) || t.source.docType;
       const docDate = t.source.at ? (window.LinTZ ? LinTZ.format(t.source.at) : String(t.source.at).slice(0, 10)) : "date unknown";
-      rows.push(`<div class="det-prov-hop"><b>Source</b>: ${esc(docLabel)}${t.source.fileName ? " (" + esc(t.source.fileName) + ")" : ""}, ${esc(docDate)}${t.source.derived ? " — estimated field, not a direct extraction" : ""}</div>`);
+      rows.push(`<div class="det-prov-hop"><b>Source</b>: ${esc(docLabel)}${t.source.fileName ? " (" + esc(t.source.fileName) + ")" : ""}, ${esc(docDate)}${t.source.derived ? " (estimated field, not a direct extraction)" : ""}</div>`);
     } else {
       rows.push(`<div class="det-prov-hop"><b>Source</b>: no traceable document for this module's inputs.</div>`);
     }
@@ -1072,56 +1130,89 @@
           }
           return;
         }
-        // THE ATLAS IS THE MAP HERE. NOT A FALLBACK, AND NOT MAPLIBRE.
+        // STREETS ON GOOGLE MAPS WHERE A KEY IS SET, THE FLAT ATLAS WHERE IT IS NOT.
         //
-        // This page tried to show streets, on MapLibre, from `tiles.openfreemap.org`. That host
-        // is refused at CONNECT by the network this platform is used on, so the style request
-        // failed, no tile was ever fetched, and the reader got an empty canvas under a note
-        // saying the project was "Matched to:" an address. A degrade path was then added, and
-        // the reported result was still no map: a map that only appears after a failure has to
-        // fail first, and every reader paid 837 KB of vendored library to find that out.
+        // The point of this section is to place the project at street level, which needs street
+        // data. The atlas has none: it is a world outline and cannot zoom to a road. Google Maps
+        // is drawn in the browser from a key the deployment sets in its environment, which the
+        // page fetches at /mapconfig rather than reading from any committed file.
         //
-        // A paid tile source and Google Maps are both ruled out, so the decision is to stop
-        // trying to show streets on this page. The atlas is what the platform already vendors:
-        // a flat world outline drawn from geometry that ships with the application. No tile
-        // host, no key, NO EXTERNAL REQUEST OF ANY KIND. It cannot show streets, and it does
-        // place the project, which is what a project detail page needs it to do.
-        //
-        // It renders on first open, synchronously as far as the reader is concerned, rather
-        // than after something has gone wrong.
+        // With no key: no request to Google, and the atlas stays as the no-key map, which still
+        // places the project, under the same address line. With a key that fails to load: the
+        // atlas again, and the note says the street map could not be reached, rather than a
+        // broken Google frame.
         //
         // Releases any globe this view previously built, so a detail page rendered before this
         // change does not leave a WebGL context behind when it re-renders.
         if (detailGlobe) { try { detailGlobe.destroy(); } catch (e) {} detailGlobe = null; }
 
-        function setLocationNote() {
+        function setLocationNote(extra) {
           if (!note) return;
           // A RETAINED position is drawn and labelled as belonging to the previous address.
           // Drawing it under "Matched to:" would present an old pin as the current one, which
           // is the failure the retention change exists to make visible rather than to hide.
           const ln = window.linLocationNote ? linLocationNote(p) : null;
-          note.className = "detail-globe-note ws-note" + (ln && ln.warn ? " ws-geo-warn" : "");
-          note.textContent = ln ? ln.text
+          const base = ln ? ln.text
             : (p.formattedAddress ? "Matched to: " + p.formattedAddress : "Located.");
+          note.className = "detail-globe-note ws-note" + (ln && ln.warn ? " ws-geo-warn" : "");
+          note.textContent = extra ? extra + " " + base : base;
         }
 
-        if (!window.LinAtlas) {
-          // The atlas module itself failed to load. Say where the project is in words rather
-          // than leaving a section headed "Location" empty.
-          if (note) {
-            note.className = "detail-globe-note ws-note ws-geo-warn";
-            note.textContent = p.formattedAddress
-              ? "Map unavailable on this page. Matched to: " + p.formattedAddress
-              : "Map unavailable on this page.";
+        function renderAtlas(extra) {
+          host.classList.remove("detail-globe--gmap");
+          host.innerHTML = "";
+          if (!window.LinAtlas) {
+            // The atlas module itself failed to load. Say where the project is in words rather
+            // than leaving a section headed "Location" empty.
+            if (note) {
+              note.className = "detail-globe-note ws-note ws-geo-warn";
+              note.textContent = (extra || "Map unavailable on this page.")
+                + (p.formattedAddress ? " Matched to: " + p.formattedAddress : "");
+            }
+            return;
           }
-          return;
+          setLocationNote(extra);
+          LinAtlas.render(host, [p], { focusId: p.id })
+            .then(() => setLocationNote(extra))
+            .catch(() => setLocationNote(extra));
         }
-        setLocationNote();
-        LinAtlas.render(host, [p], { focusId: p.id }).then(setLocationNote).catch(function () {
-          // The coastline geometry resolves to nothing rather than rejecting, so this is the
-          // unexpected path. The address line is still correct and still shown.
+
+        function renderGoogleMap(gmaps) {
+          host.classList.add("detail-globe--gmap");
+          host.innerHTML = "";
+          const inner = document.createElement("div");
+          inner.className = "gmap-inner";
+          host.appendChild(inner);
+          const lat = Number(p.lat), lng = Number(p.lng);
+          // Street level. Seventeen shows the block and the surrounding roads, which is the
+          // whole reason for the change from the world atlas.
+          const map = new gmaps.Map(inner, {
+            center: { lat: lat, lng: lng },
+            zoom: 17,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: false,
+          });
+          try { new gmaps.Marker({ position: { lat: lat, lng: lng }, map: map }); } catch (e) {}
+          // Torn down like the globe was, so re-rendering the page does not leak a map.
+          detailGlobe = { destroy: function () {
+            try { host.classList.remove("detail-globe--gmap"); host.innerHTML = ""; } catch (e) {}
+          } };
           setLocationNote();
-        });
+        }
+
+        getMapConfig().then((cfg) => {
+          if (!cfg || !cfg.present || !cfg.apiKey) {
+            // No key: the atlas is the map, and no Google request is made. The note says the
+            // street map is unavailable, so the outline view reads as a deliberate fallback
+            // rather than a blank or a map that failed to draw.
+            renderAtlas("The street map is unavailable, so this is the outline view.");
+            return;
+          }
+          ensureGoogleMaps(cfg.apiKey)
+            .then((gmaps) => renderGoogleMap(gmaps))
+            .catch(() => renderAtlas("The street map could not be reached, so this is the outline view."));
+        }).catch(() => renderAtlas());
       },
       // Uploaded-docs table is already in the section HTML; the extracted-
       // signals panel below it renders on expand.
@@ -1471,7 +1562,7 @@
           .filter((m) => m.status)
           .slice()
           .sort((a, b) => (order[a.status] != null ? order[a.status] : 3) - (order[b.status] != null ? order[b.status] : 3))[0];
-        const worstDesc = worst ? " (worst: " + worst.name + (worst.evidence_metric ? " — " + worst.evidence_metric : "") + ")" : "";
+        const worstDesc = worst ? " (worst: " + worst.name + (worst.evidence_metric ? ", " + worst.evidence_metric : "") + ")" : "";
         return c.num + " " + c.name + ": " + c.status + worstDesc;
       }).join("\n");
 
@@ -1734,8 +1825,8 @@
     [["Red", "RED"], ["Amber", "AMBER"], ["Green", "GREEN"], ["Conditional", "CONDITIONAL / NO DATA"]].forEach((g) => {
       const arr = groups[g[0]];
       if (!arr.length) return;
-      patternLines.push("● " + g[1] + " (" + arr.length + " categor" + (arr.length === 1 ? "y" : "ies") + ") — " +
-        arr.join(", ") + ": " + phraseFor[g[0]] + ".");
+      patternLines.push("● " + g[1] + " (" + arr.length + " categor" + (arr.length === 1 ? "y" : "ies") + "): " +
+        arr.join(", ") + ". " + phraseFor[g[0]] + ".");
     });
     const patternBlock = patternLines.length ? patternLines.join("\n") : "No category has computed data yet.";
 
@@ -1878,7 +1969,7 @@
     return `<section class="panel eb-panel eb-accent-${esc(accent)}" aria-label="Executive brief" data-eb-id="${esc(projectId)}">
       <div class="eb-head">
         <div>
-          <p class="eyebrow eb-eyebrow">Executive brief${project && project.name ? " — " + esc(project.name) : ""}</p>
+          <p class="eyebrow eb-eyebrow">Executive brief${project && project.name ? ": " + esc(project.name) : ""}</p>
           <p class="kn-sub eb-sub">${period ? "Reporting period: " + esc(period) + " · " : ""}grouped analysis across ${projectCats().length} signal categories</p>
         </div>
         <button type="button" class="btn small eb-regen" data-eb-regen="${esc(projectId)}" aria-label="Regenerate brief">Regenerate ↺</button>
@@ -2486,5 +2577,5 @@
     if (detailGlobe) { try { detailGlobe.destroy(); } catch (e) {} detailGlobe = null; }
   }
 
-  window.LinDetail = { render, teardown };
+  window.LinDetail = { render, teardown, __resetMapForTest };
 })();

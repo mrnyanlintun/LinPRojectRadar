@@ -89,7 +89,11 @@
 
 <script>
   // See the header note: this is what stops app.js from booting the real application.
-  window.LinAuth = { init: function () { return false; }, getEmail: function () { return ""; } };
+  // getToken is stubbed so the detail page's primeAndRefresh (which reads a token before its
+  // over-the-wire refresh) does not throw a TypeError into an unhandled rejection on every render;
+  // null is the honest "not signed in" answer and the refresh is a no-op without a token here.
+  window.LinAuth = { init: function () { return false; }, getEmail: function () { return ""; },
+    getToken: function () { return null; } };
 </script>
 <script src="assets/js/config.js"></script>
 <script src="assets/js/data.js"></script>
@@ -844,12 +848,12 @@
       leaves.length > 10);
     // And the names that must be there instead, proving the absence is not an empty render.
     assert("group 10: categories are named by purpose", true,
-      text.indexOf("Cost & EVM Performance") >= 0 && text.indexOf("Cost Risk") >= 0);
+      text.indexOf("Cost and EVM Performance") >= 0 && text.indexOf("Cost Risk") >= 0);
     assert("group 10: computations are named by purpose", true,
       text.indexOf("Monte Carlo EAC") >= 0
       && text.indexOf("Reference Class Forecasting") >= 0);
     assert("group 10: groups are named by purpose", true,
-      text.indexOf("Project Health") >= 0 && text.indexOf("Data & Evidence Health") >= 0);
+      text.indexOf("Project Health") >= 0 && text.indexOf("Data and Evidence Health") >= 0);
 
     // 2. A CATEGORY DISCLOSES ITS CONTRIBUTORS, and marks the most severe.
     const a3 = host.querySelector('[data-cat-detail="A3"]');
@@ -2066,7 +2070,7 @@
     assert("group 20: and the project-level category count", true,
       joined.indexOf("11 categories") >= 0);
 
-    /* ---- THE ATLAS IS THE MAP, RENDERED ON FIRST OPEN ----------------------------------
+    /* ---- THE LOCATION SECTION HAS A MAP HOST, AND NO MAPLIBRE -------------------------
 
        NOT a `typeof maplibregl === "undefined"` check. This harness has its own script list
        and never loads index.html, so such an assertion passes whatever index.html does: I
@@ -2074,8 +2078,9 @@
        check that cannot fail. That property is real and is pinned where it can be measured, in
        `server/tools/test_map_and_module_count.py`, which reads the files themselves.
 
-       What IS measurable here is the thing a reader cares about: opening a project with
-       coordinates puts a map in the Location section, straight away, and it is the atlas. */
+       This group renders the page but does NOT open the Location section (the map is lazy). The
+       branch a reader sees — Google Maps on a key, the atlas without one — is opened and read in
+       GROUP 21. Here we only assert the host is present and no MapLibre canvas is in it. */
     const globeHost = root.querySelector(".detail-globe");
     assert("group 20: the Location section has its map host", true, !!globeHost);
     assert("group 20: and no MapLibre canvas is mounted in it", null,
@@ -2131,6 +2136,178 @@
     root.innerHTML = "";
   })();
 
+  /* GROUP 21 — THE DETAIL MAP IS GOOGLE MAPS ON A KEY, THE ATLAS WITHOUT ONE.
+
+     The Location section draws streets through the Google Maps JavaScript API when the
+     deployment has a browser key, and the flat atlas when it does not. Both are exercised here
+     against the RENDERED section, which is the only place the branch a reader sees can be seen.
+
+     The key path is stubbed, deliberately: the container this runs in cannot reach
+     maps.gstatic.com (the same class of block that ruled MapLibre out), so the real tiles never
+     paint. `ensureGoogleMaps` resolves immediately when `window.google.maps` already exists —
+     that is the seam a stub stands in on — so the CLIENT logic (street zoom, the project's
+     coordinates, a marker, the gmap host class) is verified without a network map.
+
+     The no-key path needs no stub: `/mapconfig` is asked over the wire and, with no key set in
+     this environment, answers "no key", so the atlas is what renders and NO Google script is
+     injected. That the section makes no request to Google without a key is the property, checked
+     by counting the maps.googleapis.com script tags before and after. */
+  async function mapRenderTests() {
+    const root = document.getElementById("detail-root");
+    const origFetch = window.fetch;
+    const origGoogle = Object.prototype.hasOwnProperty.call(window, "google") ? window.google : undefined;
+    const hadGoogle = origGoogle !== undefined;
+    const tick = () => new Promise((r) => setTimeout(r, 25));
+    const openGlobe = () =>
+      document.dispatchEvent(new CustomEvent("lin:section-opened", { detail: { id: "d-globe" } }));
+    const gmapScriptCount = () =>
+      document.querySelectorAll('script[src*="maps.googleapis.com"]').length;
+
+    function stubMapConfig(answer) {
+      window.fetch = function (url, opts) {
+        if (String(url).indexOf("/mapconfig") >= 0)
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(answer) });
+        return origFetch.call(window, url, opts);
+      };
+    }
+
+    try {
+      // ---- NO KEY: atlas is the map, the note says the street map is unavailable, no request ---
+      if (window.LinDetail.__resetMapForTest) window.LinDetail.__resetMapForTest();
+      try { delete window.google; } catch (e) { window.google = undefined; }
+      stubMapConfig({ present: false, apiKey: null, provider: null });
+      const pNo = fresh("Yellow");
+      pNo.lat = 38.9072; pNo.lng = -77.0369;
+      pNo.formattedAddress = "1600 Pennsylvania Ave NW, Washington, DC";
+      root.innerHTML = "";
+      const scriptsBefore = gmapScriptCount();
+      window.LinDetail.render(pNo.id);
+      openGlobe();
+      await tick(); await tick();
+      const hostNo = root.querySelector(".detail-globe");
+      const noteNo = root.querySelector(".detail-globe-note");
+      assert("group 21 no-key: no Google Maps script is injected", scriptsBefore, gmapScriptCount());
+      assert("group 21 no-key: the Location host is NOT a Google map", false,
+        hostNo ? hostNo.classList.contains("detail-globe--gmap") : "(no host)");
+      assert("group 21 no-key: the note says the street map is unavailable", true,
+        !!(noteNo && noteNo.textContent.toLowerCase().indexOf("unavailable") >= 0));
+      try { if (window.LinDetail.teardown) window.LinDetail.teardown(); } catch (e) {}
+
+      // ---- KEY PRESENT (stubbed API): street-zoom map centered on the project's coordinates ---
+      let mapArgs = null, markerArgs = null;
+      window.google = { maps: {
+        Map: function (el, opts) { mapArgs = { el: el, opts: opts || {} }; },
+        Marker: function (opts) { markerArgs = opts || {}; }
+      } };
+      if (window.LinDetail.__resetMapForTest) window.LinDetail.__resetMapForTest();
+      stubMapConfig({ present: true, apiKey: "TEST-BROWSER-KEY", provider: "google" });
+      const pYes = fresh("Amber");
+      pYes.lat = 40.7128; pYes.lng = -74.006;
+      pYes.formattedAddress = "New York, NY";
+      root.innerHTML = "";
+      window.LinDetail.render(pYes.id);
+      openGlobe();
+      await tick(); await tick();
+      const hostYes = root.querySelector(".detail-globe");
+      assert("group 21 keyed: a Google map was constructed", true, !!mapArgs);
+      assert("group 21 keyed: it opened at street zoom", 17, mapArgs ? mapArgs.opts.zoom : "(none)");
+      assert("group 21 keyed: centered on the project's latitude", 40.7128,
+        mapArgs && mapArgs.opts.center ? mapArgs.opts.center.lat : "(none)");
+      assert("group 21 keyed: centered on the project's longitude", -74.006,
+        mapArgs && mapArgs.opts.center ? mapArgs.opts.center.lng : "(none)");
+      assert("group 21 keyed: a marker was placed for the project", true, !!markerArgs);
+      assert("group 21 keyed: the Location host is a Google map, not the atlas", true,
+        hostYes ? hostYes.classList.contains("detail-globe--gmap") : "(no host)");
+      try { if (window.LinDetail.teardown) window.LinDetail.teardown(); } catch (e) {}
+    } finally {
+      window.fetch = origFetch;
+      if (hadGoogle) window.google = origGoogle;
+      else { try { delete window.google; } catch (e) { window.google = undefined; } }
+      if (window.LinDetail.__resetMapForTest) window.LinDetail.__resetMapForTest();
+      root.innerHTML = "";
+    }
+  }
+
+  /* GROUP 22 — THE RENDERED TEXT CARRIES NONE OF THE COPY ERRORS THAT WERE FIXED.
+
+     The owner found "categoryies" and a lower-case "red" on the project detail page, which means
+     the rendered text had never been read. This group renders that text and reads it: the tie
+     line the typo lived on, the status word the case error lived on, the em dashes that were in
+     prose, and the category name whose ampersand should be the word "and". The status-word case
+     error is invisible in source — the value comes from data — so this drives it from data: the
+     stored row below carries LOWER-CASE statuses, exactly as the computed row does, and the
+     assertion is on what the panel renders, which must be capitalised.
+
+     buildProvenanceTrace needs a worst category and module, so the row carries three categories
+     tied at Red (to exercise the "N other categories" plural the typo was in) and two tied
+     modules under the worst one. The detail page primes its stored row in production
+     (workspace.js fetches projectresults and primes), so priming here is the real route. */
+  function copyScanTests() {
+    const root = document.getElementById("detail-root");
+    // Lower-case statuses, as the stored/computed row actually carries them (status_color).
+    const row = {
+      project_status: "Red",
+      red_review: false,
+      category_statuses: { A1: { status: "red" }, A2: { status: "red" }, A3: { status: "red" } },
+      module_results: [
+        { module_id: "A1.1", status_color: "red" },
+        { module_id: "A1.2", status_color: "red" }
+      ]
+    };
+    const p = fresh("Red");
+    p.lat = 38.9; p.lng = -77.0;
+    p.formattedAddress = "Test Ave, DC";
+    window.LinResults.prime(p.id, row);   // the detail page's production route
+    p.storedResult = row;
+    root.innerHTML = "";
+    let threw = "";
+    try { window.LinDetail.render(p.id); } catch (e) { threw = String(e); }
+    assert("group 22: the populated detail page renders and does not throw", "", threw);
+
+    // The provenance rows render as `.det-prov-hop` divs. They sit as siblings of the `.det-prov`
+    // line rather than inside its `hidden` panel span: a <div> inside a <p> makes the HTML parser
+    // close the <p> early, so the block content lands outside the span. That is a pre-existing
+    // structural quirk of this panel, not part of the copy sweep; what matters here is the TEXT
+    // those rows carry, wherever they sit, so the scan reads the rows directly.
+    const hops = Array.from(root.querySelectorAll(".det-prov-hop")).map((e) => e.textContent);
+    const provText = hops.join(" | ");
+    assert("group 22: the provenance rows actually rendered (the scan is not vacuous)", true,
+      hops.length >= 3 && provText.indexOf("Red") >= 0);
+    // The typo, exactly. It was assembled at a plural count, so the tie must be plural to catch it.
+    assert("group 22: three categories tied, so the plural branch is exercised", true,
+      provText.indexOf("2 other categories") >= 0);
+    assert("group 22: and it does not read 'categoryies'", -1, provText.indexOf("categoryies"));
+    // The case error: a lower-case status word came from the data; the render must capitalise it.
+    assert("group 22: the worst module's status renders capitalised, not 'red'", true,
+      provText.indexOf(": red") === -1 && provText.indexOf("Red") >= 0);
+    // No em dash anywhere in the provenance prose (they were replaced with commas / parentheses).
+    assert("group 22: no em dash in the provenance panel", -1, provText.indexOf("—"));
+
+    // The whole rendered detail page: no prose em dash (a letter, spaced em dash, a letter), and
+    // no module id. The empty-value glyph "—" standing alone is not matched by this.
+    const pageText = root.textContent || "";
+    assert("group 22: no prose em dash on the detail page", null,
+      pageText.match(/[A-Za-z] — [A-Za-z]/));
+    assert("group 22: no module id (letter-digit.digit) on the detail page", null,
+      pageText.match(/\b[A-D]\d\.\d\b/));
+
+    // The category name reads "and", not "&", per NAMING_AUTHORITY, and consistently with the
+    // knowledge library. Rendered on the ledger, so render that too.
+    const ledgerHost = scratch();
+    let ledgerThrew = "";
+    try { window.LinApp.renderLedger(p, ledgerHost); } catch (e) { ledgerThrew = String(e); }
+    assert("group 22: the ledger renders and does not throw", "", ledgerThrew);
+    const ledgerText = ledgerHost.textContent || "";
+    assert("group 22: the ledger names the category with 'and', not '&'", true,
+      ledgerText.indexOf("Cost and EVM Performance") >= 0);
+    assert("group 22: and no '&' form of that category name survives", -1,
+      ledgerText.indexOf("Cost & EVM Performance"));
+    assert("group 22: no 'categoryies' on the ledger either", -1, ledgerText.indexOf("categoryies"));
+
+    try { if (window.LinDetail.teardown) window.LinDetail.teardown(); } catch (e) {}
+    root.innerHTML = "";
+  }
+
   function renderResults() {
   const tbody = document.querySelector("#results tbody");
   let passed = 0;
@@ -2158,6 +2335,16 @@
     .catch(function (e) {
       assert("production read path: group ran to completion", "no throw",
         "threw: " + (e && e.message));
+    })
+    .then(mapRenderTests)
+    .catch(function (e) {
+      assert("group 21 (map render): ran to completion", "no throw", "threw: " + (e && e.message));
+    })
+    .then(function () {
+      // copyScanTests is synchronous but must run after the async map group so its fetch/global
+      // stubs are already restored and the detail-root is clean.
+      try { copyScanTests(); }
+      catch (e) { assert("group 22 (copy scan): ran to completion", "no throw", "threw: " + (e && e.message)); }
     })
     .then(renderResults);
 })();

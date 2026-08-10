@@ -360,7 +360,7 @@
     // Design project). Shown in the tooltip in place of a status word.
     var secName = (window.normalizeSector ? window.normalizeSector(project.sector)
       : String(project.sector || 'hybrid')).replace(/^./, function(c) { return c.toUpperCase(); });
-    var sectorNAText = 'N/A — not applicable to ' + secName + '-sector projects';
+    var sectorNAText = 'N/A: not applicable to ' + secName + '-sector projects';
     function modInfo(m) {
       var r = byClass[m.mc];
       var metric = r && r.evidence_metric ? String(r.evidence_metric) : null;
@@ -681,7 +681,7 @@
         var rt = se('text', { x:x+14, y:y+9, fill:'var(--faint, #6f7d90)', 'font-size':'9', 'font-style':'italic', 'font-family':'monospace', 'dominant-baseline':'middle', class:'lnf-halo lnf-cat-role' }, g);
         rt.textContent = role;
         var rtitle = se('title', {}, rt);
-        rtitle.textContent = cat.name + ' — ' + role;
+        rtitle.textContent = cat.name + ' · ' + role;
       }
 
       g.addEventListener('mouseenter', (function(cat, ci, cs, color, circle) {

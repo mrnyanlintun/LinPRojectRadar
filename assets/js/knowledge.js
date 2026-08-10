@@ -1799,7 +1799,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       ground: "Weighting a risk score by document volume with a sub-linear (square-root) dampening is a standard technique for avoiding double-counting when two correlated signals (document risk and RFI count) are combined into one index." }
   ];
 
-  /* ---------- System Dynamics and Complexity, System Dynamics & Complexity (5.1-5.8) ---------- */
+  /* ---------- System Dynamics and Complexity, System Dynamics and Complexity (5.1-5.8) ---------- */
   const CAT5_MODULES = [
     { n: "A5.1", name: "DSM Rework Propagation", mc: "DSM_Rework_Cat5",
       purpose: "The System Dynamics and Complexity (systems view) presentation of the same DSM rework-propagation result computed once in DSM Rework Propagation, read here as a demonstration of how a design change amplifies through the interacting system rather than as a cost estimate.",

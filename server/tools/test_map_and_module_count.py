@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-MapLibre is gone from the pages, and a project page counts only what a project has.
+MapLibre is gone from the pages entirely, the detail map is Google Maps keyed from the
+environment, and a project page counts only what a project has.
 
 Run (from server/):
 
@@ -13,16 +14,34 @@ WHY THIS SUITE EXISTS RATHER THAN MORE CHECKS IN tests_render.html. The browser 
 own script list and never loads `index.html`, so an assertion there that `typeof maplibregl` is
 "undefined" passes no matter what `index.html` does. That was MEASURED, not assumed: the maplibre
 script tag was restored to `index.html` and the harness stayed green at 256/257. A check that
-cannot fail is worse than no check, so the browser group now asserts what it can actually see
-(the atlas renders into the Location section) and the file-level properties are pinned here,
-where reading the file is the check.
+cannot fail is worse than no check, so the browser group asserts what it can actually see (the
+map host renders into the Location section) and the file-level properties are pinned here, where
+reading the file is the check.
 
-THE TWO DEFECTS THIS GUARDS.
+WHAT CHANGED 2026-08-10, AND ONE RED THAT RECORDED A DEFECT RATHER THAN A PROPERTY. The previous
+session left MapLibre as an unreachable ~400-line stage in app.js, guarded so it could not run,
+plus 837 KB of vendored library on disk. This session removed the stage, the vendored files, the
+CSS and the `.map-wrap` markup outright, and gave the detail page a real street map through the
+Google Maps JavaScript API keyed from `GOOGLE_MAPS_BROWSER_KEY`. Section 3 here USED to assert
+"app.js still marks its MapLibre stage as orphaned" and "still guards on the global being absent"
+— it went red because the stage it was protecting no longer exists. That red recorded the
+intermediate state, not a property worth keeping: full removal is a strictly stronger guarantee
+than a guarded dead stage. Section 3 now asserts the stronger property (the stage and its files
+are gone), which is why it reads differently from the run that preceded it.
+
+THE DEFECTS THIS GUARDS.
 
   The detail page showed no map. MapLibre was there to draw streets, streets come from
   `tiles.openfreemap.org`, and that host is refused at CONNECT by the network this platform runs
-  on. Every reader downloaded 837 KB of library and got an empty panel. The atlas is the map now:
-  vendored geometry, no tile host, no key, no external request.
+  on. Every reader downloaded 837 KB of library and got an empty panel. The map is now Google
+  Maps where the deployment sets a browser key, and the flat atlas where it does not: no key, no
+  request to Google, and the section says the street map is unavailable rather than showing a
+  blank or a broken frame.
+
+  The browser map key is exposed on purpose and read from the environment, never a committed
+  file. It is a DIFFERENT key from the server-side geocoding one and carries a different
+  restriction (HTTP referrer, not IP). `map_config.py` and the `/mapconfig` endpoint are pinned
+  here so the key plumbing cannot silently regress to reading a hard-coded value.
 
   The detail page advertised 101 modules across 12 categories. That is the whole taxonomy. Group
   D is portfolio level, needs more than one project by definition, and its five modules all
@@ -104,47 +123,121 @@ def main() -> None:
 
     # The tile host has no business in the policy either, once nothing requests it. A CSP that
     # permits a host nothing uses is a standing permission for nothing.
-    csp = next((ln for ln in index.splitlines() if "connect-src" in ln), "")
-    check(bool(csp), "the page still declares a connect-src policy (the scan is not vacuous)",
-          csp.strip()[:70])
+    #
+    # The directive LINE, not the first line that mentions the word: the comment above the meta
+    # tag says "connect-src" too, and selecting on the substring picked it up, which made the
+    # openfreemap check pass against a comment rather than the policy. A directive line, after
+    # stripping, begins with the directive name; the comment line begins with "-".
+    def directive(name: str) -> str:
+        for ln in index.splitlines():
+            s = ln.strip()
+            if s.startswith(name + " ") and ("'self'" in s or "https://" in s):
+                return s
+        return ""
+    csp = directive("connect-src")
+    script_src = directive("script-src")
+    check(bool(csp) and bool(script_src),
+          "the page declares real connect-src and script-src directives (the scan is not vacuous)",
+          (csp[:50] + " || " + script_src[:50]))
     check("openfreemap" not in csp,
-          "and it no longer permits the tile host", csp.strip()[:110])
+          "connect-src no longer permits the tile host", csp[:110])
+    # Google Maps is loaded as a script and talks to Google's map hosts, so the policy must now
+    # permit exactly those, or the map is dead on arrival behind the CSP.
+    check("maps.googleapis.com" in script_src,
+          "script-src permits the Google Maps script host", script_src[:120])
+    check("maps.googleapis.com" in csp and "maps.gstatic.com" in csp,
+          "and connect-src permits the Google Maps data hosts", csp[:140])
 
-    section("2. THE DETAIL PAGE CONSTRUCTS NO MAPLIBRE MAP")
+    section("2. THE DETAIL PAGE DRAWS GOOGLE MAPS ON A KEY, THE ATLAS WITHOUT ONE")
 
     detail_src = strip_js_comments(read("assets/js/detail.js"))
     check(not _GLOBAL_USE.search(detail_src),
           "detail.js contains no live use of the maplibregl global",
           str(_GLOBAL_USE.findall(detail_src)[:4]))
-    check("LinAtlas.render" in detail_src,
-          "and it renders the atlas instead")
-    # The atlas must be the map, not the thing reached after a failure. A `catch`-only path
-    # would satisfy the check above while still needing something to fail first.
-    # Anchored on the lazy-init entry, NOT the first '"d-globe"' in the file: that one is the
-    # section MARKUP higher up, and slicing from it grabbed the wrong region entirely.
+    # The three client seams of the new behaviour: ask the server for the key, load the Maps JS
+    # API on demand, draw the map. Named individually so a regression that drops one is caught.
+    for needle, label in [
+        ("getMapConfig", "detail.js asks the server whether a browser map key is set"),
+        ("ensureGoogleMaps", "and loads the Google Maps JavaScript API on demand"),
+        ("renderGoogleMap", "and has a Google-Maps render path"),
+        ("LinAtlas.render", "and keeps the flat atlas as the no-key / failed-load map"),
+    ]:
+        check(needle in detail_src, label)
+    # The Google path must open at street level, or the whole change is pointless (the atlas
+    # already showed a country). Seventeen is a block, not a nation.
+    gmap_zoom = re.search(r"zoom:\s*17\b", detail_src)
+    check(bool(gmap_zoom), "the Google map opens at street zoom (17)")
+    # No key -> no request to Google. The script is only injected inside ensureGoogleMaps, which
+    # is only reached when map_config reports a key; the no-key branch calls renderAtlas and
+    # returns. Pinned as: the maps.googleapis.com script URL appears exactly once, in the loader.
+    api_url_hits = detail_src.count("maps.googleapis.com/maps/api/js")
+    check(api_url_hits == 1,
+          "the Google Maps script URL is built in exactly one place (the on-demand loader)",
+          str(api_url_hits))
+    # The atlas path must be reachable WITHOUT a prior failure: the no-key branch, not a catch.
     globe_section = detail_src[detail_src.index('"d-globe": () =>'):]
     globe_section = globe_section[:globe_section.index('"d-docsignals"')]
-    check("LinAtlas.render" in globe_section,
-          "the Location section itself renders the atlas, on its own path")
+    check("renderAtlas(" in globe_section,
+          "the Location section renders the atlas on its own no-key path, not only after a failure")
     check("hasCoordsFor" in globe_section,
           "and still refuses to draw a marker for a project with no coordinates")
 
-    section("3. THE PORTFOLIO WAS NEVER AFFECTED, AND STILL IS NOT")
+    section("3. MAPLIBRE IS REMOVED OUTRIGHT — STAGE, FILES, CSS, MARKUP")
 
     app_src = read("assets/js/app.js")
-    # app.js keeps an unreachable MapLibre stage (see its "ORPHANED AS OF T11" note). It is not
-    # removed here -- that is ~400 lines and its own change -- but it MUST stay unreachable, and
-    # it must keep the guard that makes it harmless now the library is not loaded.
-    check("ORPHANED AS OF T11" in app_src,
-          "app.js still marks its MapLibre stage as orphaned")
-    check('typeof maplibregl === "undefined"' in app_src,
-          "and that dead path still guards on the global being absent, so it bails rather than "
-          "throwing now that nothing loads it")
     stripped_app = strip_js_comments(app_src)
-    check(stripped_app.count("buildMap()") <= 2,
-          "buildMap has no new callers", str(stripped_app.count("buildMap()")))
+    # The stage is GONE, not merely guarded. This is a strictly stronger property than the
+    # previous "orphaned but present" one, and it is what replaced the red that recorded the old
+    # intermediate state. Each removed identifier is a live-code check (comments are stripped).
+    for dead in ["buildMap(", "createGlMap(", "loadMapAssets(", "scheduleMapWarmup(",
+                 "addGlMarkers(", "maplibregl"]:
+        check(dead not in stripped_app,
+              f"app.js has no live '{dead}' — the MapLibre stage is gone, not just unreachable",
+              dead)
+    # The vendored library is off disk. 837 KB that drew nothing.
+    for rel in ["assets/vendor/maplibre-gl.min.js", "assets/vendor/maplibre-gl.min.css"]:
+        check(not (ROOT / rel).exists(), f"the vendored file {rel} is deleted")
+    # The CSS that dressed the stage is gone too, so it cannot rot as unused rules.
+    css = read("assets/css/radar.css")
+    for sel in [".map-wrap", "#map-gl", ".gl-pin", "maplibregl"]:
+        check(sel not in css, f"radar.css carries no '{sel}' rule")
+    # And the portfolio, which never depended on any of it, still renders its atlas.
     check("buildAtlasStage()" in stripped_app,
-          "and the portfolio Map view still renders the atlas")
+          "the portfolio Map view still renders the atlas")
+
+    section("3b. THE BROWSER MAP KEY IS READ FROM THE ENVIRONMENT, NOT A COMMITTED FILE")
+
+    mc = read("server/app/map_config.py")
+    check('GOOGLE_MAPS_BROWSER_KEY' in mc,
+          "map_config.py reads the browser key from GOOGLE_MAPS_BROWSER_KEY")
+    check("os.environ" in mc,
+          "and reads it from the environment at the point of use")
+    # The key must not be a committed constant anywhere a page could read it.
+    config_js = read("assets/js/config.js")
+    check("GOOGLE_MAPS_BROWSER_KEY" not in config_js and "maps_browser_key" not in config_js.lower(),
+          "config.js holds no browser map key (it comes from the environment via /mapconfig)")
+    main_py = read("server/app/main.py")
+    check("/mapconfig" in main_py,
+          "main.py serves the /mapconfig endpoint the page fetches the key from")
+    # Behaviour, not just presence: no key -> present False and no apiKey; a key -> both set.
+    sys.path.insert(0, str(ROOT / "server"))
+    import importlib
+    mcmod = importlib.import_module("app.map_config")
+    import os as _os
+    _saved = _os.environ.pop("GOOGLE_MAPS_BROWSER_KEY", None)
+    try:
+        cfg_absent = mcmod.map_config()
+        _os.environ["GOOGLE_MAPS_BROWSER_KEY"] = "AIza-test-key"
+        cfg_present = mcmod.map_config()
+    finally:
+        if _saved is None:
+            _os.environ.pop("GOOGLE_MAPS_BROWSER_KEY", None)
+        else:
+            _os.environ["GOOGLE_MAPS_BROWSER_KEY"] = _saved
+    check(cfg_absent["present"] is False and cfg_absent["apiKey"] is None,
+          "with no key the config reports present False and no apiKey", json.dumps(cfg_absent))
+    check(cfg_present["present"] is True and cfg_present["apiKey"] == "AIza-test-key",
+          "with a key set it reports present True and the key", json.dumps(cfg_present))
 
     section("4. A PROJECT PAGE COUNTS ONLY WHAT A PROJECT HAS")
 

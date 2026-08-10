@@ -232,8 +232,8 @@
       if (!opts.onSelect) { g.removeAttribute("tabindex"); g.removeAttribute("role"); }
 
       var title = document.createElementNS(SVG_NS, "title");
-      title.textContent = (p.name || "Untitled project") + " — " + (status || "Awaiting analysis")
-        + (p.formattedAddress ? " — " + p.formattedAddress : "");
+      title.textContent = (p.name || "Untitled project") + " · " + (status || "Awaiting analysis")
+        + (p.formattedAddress ? " · " + p.formattedAddress : "");
       g.appendChild(title);
 
       g.appendChild(el("circle", {

@@ -29,7 +29,7 @@
       return;
     }
     if (typeof XLSX === "undefined") {
-      alert("XLSX library not loaded — cannot export the report.");
+      alert("XLSX library not loaded: cannot export the report.");
       return;
     }
     const snapshot = (project.history && project.history.length)
@@ -56,7 +56,7 @@
     // it. It switches on account type exactly as every other surface does.
     const D = window.LinDisclaimers;
     if (D && typeof D.currentNotice === "function") {
-      const noticeRows = [["OPUS GUBERNATIO — NOTICE"], [""]];
+      const noticeRows = [["OPUS GUBERNATIO: NOTICE"], [""]];
       D.currentNotice().forEach((p) => { noticeRows.push([p], [""]); });
       noticeRows.push([D.attribution], [""], [D.copyright]);
       const wsNotice = XLSX.utils.aoa_to_sheet(noticeRows);
@@ -71,7 +71,7 @@
     const brief = snapshot.executive_brief || project.executiveBrief || null;
 
     const summaryRows = [
-      ["OPUS GUBERNATIO — PROJECT REPORT"],
+      ["OPUS GUBERNATIO: PROJECT REPORT"],
       [""],
       ["Project:",       snapshot.project_name || ""],
       ["Project ID:",    snapshot.project_id || ""],
@@ -137,7 +137,7 @@
       const cat = cats[key];
       if (!cat) return;
       if (cat.parked) {
-        catRows.push([cat.num, cat.name, "Stage 2 — not yet active", "", "", "", ""]);
+        catRows.push([cat.num, cat.name, "Stage 2: not yet active", "", "", "", ""]);
         catRows.push(["", "", "", "", "", "", ""]);
         return;
       }
@@ -168,9 +168,9 @@
       // as-is — only the header string changed. No category id or number in
       // the header text (see NAMING_AUTHORITY.md).
       const histRows = [[
-        "Period", "Cost & EVM Performance", "Schedule Performance", "Cost Risk",
-        "Document-Derived Condition Signals", "System Dynamics & Complexity", "Signal Synthesis",
-        "Evidence Combination", "Regulatory & Authority Thresholds", "Overall"
+        "Period", "Cost and EVM Performance", "Schedule Performance", "Cost Risk",
+        "Document-Derived Condition Signals", "System Dynamics and Complexity", "Signal Synthesis",
+        "Evidence Combination", "Regulatory and Authority Thresholds", "Overall"
       ]];
       project.history.forEach((h) => {
         const c = (h.summary && h.summary.by_category) || {};

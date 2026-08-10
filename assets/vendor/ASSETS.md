@@ -8,8 +8,6 @@ licence below.
 | File | Size | Source | Licence |
 |---|---|---|---|
 | `globe.gl.min.js` | 1,443 KB | [globe.gl](https://github.com/vasturiano/globe.gl) (bundles three.js) | MIT |
-| `maplibre-gl.min.js` | 773 KB | [MapLibre GL JS](https://github.com/maplibre/maplibre-gl-js) | BSD-3-Clause |
-| `maplibre-gl.min.css` | 64 KB | MapLibre GL JS | BSD-3-Clause |
 | `pdf.min.js` | 313 KB | [PDF.js](https://github.com/mozilla/pdf.js) | Apache-2.0 |
 | `pdf.worker.min.js` | 1,062 KB | PDF.js | Apache-2.0 |
 | `xlsx.full.min.js` | 861 KB | [SheetJS](https://github.com/SheetJS/sheetjs) | Apache-2.0 |
@@ -17,12 +15,12 @@ licence below.
 | `ne_110m_admin_0_countries.geojson` | 240 KB | [Natural Earth](https://www.naturalearthdata.com/) 1:110m Admin 0 Countries | **Public domain** |
 | `fonts.css` + `fonts/*.woff2` (18 files) | 679 KB | Google Fonts — Archivo, Inter, IBM Plex Mono | **SIL Open Font License 1.1** |
 
-Total: **5.9 MB**.
+Total: **5.1 MB**.
 
 ## The fonts, and why they are here
 
 They used to load from `fonts.googleapis.com`, which is the same corporate-network argument that
-got MapLibre, globe.gl, PDF.js and SheetJS vendored: on a blocked network the platform silently
+got globe.gl, PDF.js and SheetJS vendored: on a blocked network the platform silently
 fell back to system fonts and stopped looking like itself.
 
 `fonts.css` was generated from the Google Fonts `css2` response for the exact families and weights
@@ -44,11 +42,11 @@ Vendoring removed Google Fonts entirely. Two dependencies remain and neither can
 - **`accounts.google.com`** — required for Google sign-in. **Verified** that with the Google
   global absent the username and password form still renders, stays enabled and authenticates, so
   a blocked network does not lock anyone out.
-- **`tiles.openfreemap.org`** — the tile source for the MapLibre map, which is the globe's
-  fallback when WebGL is unavailable. Tiles are a live service and cannot be vendored. **Verified**
-  that the failure path degrades to a muted panel reading "Map tiles unavailable: check
-  connection" with the project list still present, not a blank panel. A 9-second watchdog in
-  `app.js` covers the case where the style never loads.
+- **`maps.googleapis.com`** — the Google Maps JavaScript API, loaded on demand by `detail.js` for
+  the project detail street map. It is a live keyed service and cannot be vendored, and it is only
+  requested when the server reports a browser key is provisioned. **Verified** that with no key the
+  detail page never requests it and falls back to the flat SVG atlas, and that when the library
+  cannot be reached the section degrades to the atlas with a note rather than a blank frame.
 
 ## `earth-blue-marble-clouds.jpg` — how it was made
 

@@ -5320,3 +5320,70 @@ Verified: server suite **54 files, 2970/2970**, fresh SQLite per file. `tests.ht
 `tests_render.html` 257/258, 23 new checks, the one red the same pre-existing auth-gated row.
 Browser drive of the detail page 20/20 plus a no-coordinates drive. Four faults injected, each
 hash-confirmed applied and reverted.
+
+## Google Maps on the detail page, MapLibre removed outright, and a site-wide copy sweep (2026-08-10)
+
+Branch `claude/period-recompute-new-docs-1nfjnx`. Report at
+`REPORT_2026-08-10_google-maps-and-copy.md`. This completes the "still outstanding" items the
+section above left: the MapLibre stage and vendored files are gone, and the detail map is real.
+
+**THE ATLAS IS NO LONGER THE DETAIL MAP; GOOGLE MAPS IS, KEYED FROM THE ENVIRONMENT.** The atlas
+cannot zoom to a street because it holds no street data, which was the whole complaint. The detail
+Location section now draws the **Google Maps JavaScript API** at **street zoom 17** on the
+project's coordinates, keyed from **`GOOGLE_MAPS_BROWSER_KEY`**. To turn it on, the owner sets that
+env var, enables **Maps JavaScript API** in the Cloud console, and puts an **HTTP-referrer**
+restriction on the key (a browser map key is public by design; the referrer restriction is its
+protection — unlike the server-side geocoding key, which is IP-restricted and never leaves the
+backend). The key never lives in a committed file: `server/app/map_config.py` reads it from the
+environment at the point of use and a new **`GET /mapconfig`** endpoint reports
+`{provider, present, apiKey}`; `detail.js` fetches that, then loads the API on demand.
+
+**NO KEY IS A SUPPORTED STATE, AND IT MAKES NO REQUEST.** Without the env var the page never asks
+Google for anything; the atlas renders as the no-key map under a note reading "The street map is
+unavailable, so this is the outline view." Key set but the library unreachable → the atlas again,
+with "could not be reached". No coordinates → no map, no marker, nothing thrown. The **portfolio
+Map view was not touched** — it keeps the atlas.
+
+**MAPLIBRE IS GONE, NOT GUARDED.** The ~400-line stage in `app.js`, the two vendored files (837
+KB), all the MapLibre CSS in `radar.css`, and the `.map-wrap` markup are removed; `ASSETS.md` and
+the CSP updated (the tile host permission dropped, the Google Maps hosts added). The rewritten
+`test_map_and_module_count.py` §3 now asserts the stage is **absent** — **this is one of the "a red
+recorded a defect, not a property" cases the task warned about**: the old §3 ("still marks its
+stage as orphaned / still guards on the global") went red because full removal deleted what it
+protected, which is a stronger guarantee, so it was rewritten upward, not restored. The two dead
+functions `activeModuleTotal()` / `buildModuleAxes()` were left alone as instructed.
+
+**THE COPY SWEEP.** The owner found "categoryies" (a plural-assembly bug: `category`+`ies`) and
+"Monte Carlo EAC Forecast: red" (a status word rendered in the data's own lower case) on the
+detail-page provenance trace. Both fixed — the plural now assembles "categories"/"category"
+correctly and statuses render through `normalizeStatus`. The status-case error is invisible in
+source (the value comes from data), so a render test now drives a lower-case row and asserts the
+capitalised output. Site-wide: **59 prose em dashes** replaced with correct punctuation (or the
+house middle-dot for value pairs) across admin/signals/auditor/export/detail/atlas/neural/network;
+**"&" → "and"** in the five taxonomy group/category names (Cost and EVM Performance, System
+Dynamics and Complexity, Regulatory and Authority Thresholds, Recommendation and Governance, Data
+and Evidence Health), which the Knowledge Library already used — 41 occurrences; and one empty-state
+case fix ("no data" → "No data" in the training figures).
+
+**DELIBERATELY LEFT, FLAGGED IN THE REPORT.** Module numbers on the **portfolio** Signal Ledger
+(`cat-mod-num`/`cat-row-num`) — "do not touch the portfolio", and removing a column is not a copy
+fix; module numbers in the Knowledge Library and researcher deep-dive — a technical catalogue whose
+structure *is* the index; the lone "—" empty-value glyph in table cells — a convention, not prose,
+so the rendered scanner is scoped to prose em dashes; "&" in document-type labels and researcher
+short-aliases and in citation authors (correct there). The **detail page itself carries no module
+ids** (`BRIEF_CAT_LABEL` with "(Cat N)" is dead code, never rendered). One structural observation:
+the `.det-prov-panel` is a `<span>` inside a `<p>` holding `<div>` rows, so the parser closes the
+`<p>` and the rows render outside the "hidden" span — always visible, which is why the owner saw
+them. Pre-existing, flagged, not changed.
+
+**A NEW TEST SEAM.** `detail.js` exposes `LinDetail.__resetMapForTest()` (nulls the per-page
+`/mapconfig` and Maps-API caches) so one harness page can exercise both the keyed and no-key
+branches; nothing in the app calls it.
+
+Verified: server suite **54 files, 2992/2992**, fresh SQLite per file. `tests.html` 51/51.
+`tests_render.html` **278/279**, GROUP 21 (map: keyed street-zoom on coords + marker; no-key note +
+zero requests) and GROUP 22 (rendered copy scan: no "categoryies", status capitalised, no em dash,
+no module id, "and" not "&") added; the one red is the same pre-existing auth-gated production-read
+row. **Ten faults injected** across both suites — categoryies, lower-case status, ampersand, street
+zoom, map centre, marker, no-key note, no-key no-request, `maplibregl`-returned, CSP-dropped,
+map_config-no-key — each confirmed to turn its own check red, then reverted to green.

@@ -167,7 +167,7 @@
   function projectOptions(selectedId) {
     const list = (LinStore.cachedActive && LinStore.cachedActive()) || [];
     return `<option value="">Select project…</option>` +
-      list.map((p) => `<option value="${esc(p.id)}"${p.id === selectedId ? " selected" : ""}>${esc(p.id)} — ${esc(p.name)}</option>`).join("");
+      list.map((p) => `<option value="${esc(p.id)}"${p.id === selectedId ? " selected" : ""}>${esc(p.id)} · ${esc(p.name)}</option>`).join("");
   }
   function sourceLog(si, key) {
     const src = si && si.sources && si.sources[key];
@@ -905,7 +905,7 @@
       }
     };
     if (window.LinUI && LinUI.toast) {
-      LinUI.toast("Signal results failed to save — retry", false, { label: "Retry", onClick: retry });
+      LinUI.toast("Signal results failed to save. Retry", false, { label: "Retry", onClick: retry });
     }
   }
 
@@ -1051,8 +1051,8 @@
       const missingNames = (opts.missing || [])
         .map((m) => (typeof m === "string" ? m : (m.field || m.label || ""))).filter(Boolean);
       const runLine = opts.ran
-        ? `<p class="ds-modal-run ok">✓ All models complete — view results below.</p>`
-        : (opts.readyToRun ? `<p class="ds-modal-run">Models could not run — check CPI / SPI.</p>` : "");
+        ? `<p class="ds-modal-run ok">✓ All models complete. View results below.</p>`
+        : (opts.readyToRun ? `<p class="ds-modal-run">Models could not run: check CPI / SPI.</p>` : "");
       inner = `<div class="ds-modal ds-modal-success" role="dialog" aria-label="Signals extracted">
         <button class="ds-modal-x" aria-label="Close">×</button>
         <svg class="ds-anim-check" viewBox="0 0 52 52" aria-hidden="true">
@@ -1150,7 +1150,7 @@
         // Born-digital PDFs take the text path above (no dataBase64) and are
         // unaffected by this cap.
         if (dataBase64.length > 5000000) {
-          status.textContent = "File too large — maximum 3MB. Please compress the PDF.";
+          status.textContent = "File too large: maximum 3MB. Please compress the PDF.";
           return; // finally{} re-enables the button + clears the overlay
         }
         const resp = await LinStore.extractSignals(args);
@@ -1177,8 +1177,8 @@
         let saveFailed = false;
         if (canCompute && project) {
           status.textContent = readyToRun
-            ? "CPI and SPI ready — running models…"
-            : "CPI or SPI ready — running models…";
+            ? "CPI and SPI ready. Running models…"
+            : "CPI or SPI ready. Running models…";
           // Merge into accumulated inputs so successive single-file uploads on the same project
           // don't overwrite prior fields with null (each doc only carries its own field set).
           const accSi = Object.assign({}, project.signalInputs || {});
@@ -1197,11 +1197,11 @@
         await refreshProject(id);
 
         status.textContent = saveFailed
-          ? "Extracted, but saving the signal results failed — use Retry (results are not yet stored)."
+          ? "Extracted, but saving the signal results failed. Use Retry (results are not yet stored)."
           : ran
-            ? "Extracted — models ran on the extracted signals."
+            ? "Extracted. Models ran on the extracted signals."
             : (canCompute
-                ? "Extracted — but the models could not run (check CPI/SPI)."
+                ? "Extracted, but the models could not run (check CPI/SPI)."
                 : "Extracted. Upload a document with CPI or SPI to run the models (see Details below).");
         if (window.LinApp) LinApp.refresh();
         if (onResult) onResult(id, { signalInputs: si, missing, readyToRun, ran });
@@ -1210,7 +1210,7 @@
       } catch (e) {
         console.error("Upload fetch error:", e && e.name, e && e.message);
         const msg = (e && e.message ? e.message : "store unreachable");
-        status.textContent = "Extraction failed: " + msg + ". The form is still usable — retry.";
+        status.textContent = "Extraction failed: " + msg + ". The form is still usable. Retry.";
         stopLoading();
         showResultModal({ success: false, error: msg, onTryAgain: () => { const f = $c(".ds-file"); if (f) f.focus(); } });
       } finally {
@@ -1276,7 +1276,7 @@
         readout.className = "dz-period-derived ws-error";
         return null;
       }
-      readout.textContent = "Period " + r.period + (r.existing ? "" : " (new)") + " — " + r.basis;
+      readout.textContent = "Period " + r.period + (r.existing ? "" : " (new)") + " · " + r.basis;
       readout.className = "dz-period-derived ws-note";
       return r;
     }).catch(function () {
@@ -1295,7 +1295,7 @@
       <div class="doc-type-reference">
         <div class="dtr-title">Supported document types</div>
         <div class="dtr-grid">${DROPZONE_REFERENCE.map((t) => `<span class="dtr-pill">${esc(t)}</span>`).join("")}</div>
-        <p class="dtr-note">Upload any combination — documents are identified automatically.</p>
+        <p class="dtr-note">Upload any combination. Documents are identified automatically.</p>
       </div>
       <div class="dz-project-row">${projectField}</div>
       <!-- THE REPORTING PERIOD IS PICKED ON A CALENDAR, AND THE NUMBER IS DERIVED FROM IT.
@@ -1411,7 +1411,7 @@
       let remaining = Math.round(ms / 1000);
       return new Promise(function (resolve) {
         (function tick() {
-          if (statusEl) statusEl.textContent = "⏳ Rate limited — retrying in " + remaining + "s…";
+          if (statusEl) statusEl.textContent = "⏳ Rate limited. Retrying in " + remaining + "s…";
           if (remaining <= 0) return resolve();
           remaining -= 1;
           setTimeout(tick, 1000);
@@ -1445,8 +1445,8 @@
       reportBatch({ type: "file", name: file.name, state: "uploading" });
 
       if (file.size > 20 * 1024 * 1024) {
-        setError(item, file, "File too large — max 20 MB");
-        return { name: file.name, status: "failed", error: "File too large — max 20 MB" };
+        setError(item, file, "File too large: max 20 MB");
+        return { name: file.name, status: "failed", error: "File too large: max 20 MB" };
       }
 
       let base64;
@@ -1454,8 +1454,8 @@
       catch (e) { setError(item, file, "Couldn't read file"); return { name: file.name, status: "failed", error: "Couldn't read file" }; }
 
       if (base64.length > 5000000) {
-        setError(item, file, "File too large — maximum ~3 MB. Please compress the PDF.");
-        return { name: file.name, status: "failed", error: "File too large — compress the PDF (~3 MB max)" };
+        setError(item, file, "File too large: maximum ~3 MB. Please compress the PDF.");
+        return { name: file.name, status: "failed", error: "File too large: compress the PDF (~3 MB max)" };
       }
 
       // Single call: extract everything AND infer the document type at once
@@ -1542,7 +1542,7 @@
         return { name: file.name, status: "done", fields: appliedCount };
       } catch (e) {
         console.error("[dropzone] extract error:", e);
-        setError(item, file, (e && e.message) || "Network error — check console",
+        setError(item, file, (e && e.message) || "Network error: check console",
           function () { item.remove(); processOne(id, file); });
         return { name: file.name, status: "failed", error: (e && e.message) || "Network error" };
       }
@@ -1559,7 +1559,7 @@
       if (projectEl && projectEl.tagName === "SELECT" && projectEl.options.length <= 1) {
         projectEl.innerHTML = `<option value="">Select project…</option>` +
           ((LinStore.cachedActive && LinStore.cachedActive()) || [])
-            .map(function (p) { return `<option value="${esc(p.id)}">${esc(p.id)} — ${esc(p.name)}</option>`; })
+            .map(function (p) { return `<option value="${esc(p.id)}">${esc(p.id)} · ${esc(p.name)}</option>`; })
             .join("");
         id = projectEl.value;
       }
@@ -1773,7 +1773,7 @@
 
   function missingHtml(missing) {
     if (!missing || !missing.length) {
-      return `<p class="kn-sub ds-missing-clear">All required values present — nothing outstanding.</p>`;
+      return `<p class="kn-sub ds-missing-clear">All required values present. Nothing outstanding.</p>`;
     }
     const items = missing.map((m) => {
       if (typeof m === "string") return `<li class="ds-missing-row">${esc(m)}</li>`;
@@ -1782,7 +1782,7 @@
       // of Values") or just a doc reference we phrase as "Upload <doc>".
       const doc = m.requiredDoc || m.docLabel || (m.docType && DOC_TYPE_LABEL[m.docType]) || m.doc || "";
       const instruction = m.note ? esc(m.note) : (doc ? `Upload ${esc(doc)}` : "");
-      return `<li class="ds-missing-row">${esc(what)}${instruction ? ` — <span class="ds-missing-doc">${instruction}</span>` : ""}</li>`;
+      return `<li class="ds-missing-row">${esc(what)}${instruction ? `: <span class="ds-missing-doc">${instruction}</span>` : ""}</li>`;
     }).join("");
     return `<ul class="ds-missing-list">${items}</ul>`;
   }
@@ -1799,7 +1799,7 @@
         const to = e.to != null ? fmtNum(e.to) : (e.value != null ? fmtNum(e.value) : "—");
         const reason = e.reason || "(no reason given)";
         return `<li class="ds-audit-row ds-audit-overwrite">
-          <span class="ds-audit-main">Overwrote <strong>${esc(field)}</strong>: ${esc(from)} → ${esc(to)} — reason: “${esc(reason)}”</span>
+          <span class="ds-audit-main">Overwrote <strong>${esc(field)}</strong>: ${esc(from)} → ${esc(to)}, reason: “${esc(reason)}”</span>
           <span class="ds-audit-time">${esc(when)}</span></li>`;
       }
       if (t === "baseline_adjusted_eot") {
@@ -1814,7 +1814,7 @@
       const applied = Array.isArray(appliedSrc) ? appliedSrc.join(", ") : (appliedSrc || "signals");
       const docTypeLabel = e.docType ? (DOC_TYPE_LABEL[e.docType] || e.docType) : "document";
       return `<li class="ds-audit-row ds-audit-extract">
-        <span class="ds-audit-main">Signals extracted from <strong>${esc(docTypeLabel)}</strong> — applied: ${esc(applied)}</span>
+        <span class="ds-audit-main">Signals extracted from <strong>${esc(docTypeLabel)}</strong>, applied: ${esc(applied)}</span>
         <span class="ds-audit-time">${esc(when)}</span></li>`;
     }).join("") + `</ul>`;
   }
@@ -1862,7 +1862,7 @@
     if (!container) return;
     container.innerHTML =
       `<details class="kn-topic ds-panel">
-         <summary>Details — extracted signals, missing values, and audit trail</summary>
+         <summary>Details: extracted signals, missing values, and audit trail</summary>
          <div class="ds-panel-body">${panelInnerHtml(project)}</div>
        </details>`;
     wirePanel(container, project);

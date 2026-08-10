@@ -29,7 +29,7 @@
 
 window.LIN_CATEGORIES = [
   {
-    id: 'a1', num: 'A1', name: 'Cost & EVM Performance',
+    id: 'a1', num: 'A1', name: 'Cost and EVM Performance',
     group: 'A', groupName: 'Project Health',
     color: '#4ea0ff',
     description: 'Cost and schedule performance indices derived from verified pay applications and schedules.',
@@ -102,7 +102,7 @@ window.LIN_CATEGORIES = [
     ]
   },
   {
-    id: 'a5', num: 'A5', name: 'System Dynamics & Complexity',
+    id: 'a5', num: 'A5', name: 'System Dynamics and Complexity',
     group: 'A', groupName: 'Project Health',
     color: '#ff7ac6',
     description: 'System dynamics, feedback and complexity behavior.',
@@ -131,7 +131,7 @@ window.LIN_CATEGORIES = [
   },
   {
     id: 'b1', num: 'B1', name: 'Signal Synthesis',
-    group: 'B', groupName: 'Recommendation & Governance',
+    group: 'B', groupName: 'Recommendation and Governance',
     color: '#ffd05a',
     description: 'Synthesis of the assembled signal set into a single recommended posture.',
     modules: [
@@ -143,7 +143,7 @@ window.LIN_CATEGORIES = [
   },
   {
     id: 'b2', num: 'B2', name: 'Evidence Combination',
-    group: 'B', groupName: 'Recommendation & Governance',
+    group: 'B', groupName: 'Recommendation and Governance',
     color: '#5ed7ff',
     description: 'Evidence combination under uncertainty: fuzzy, rough, neutrosophic and belief-function methods.',
     modules: [
@@ -170,8 +170,8 @@ window.LIN_CATEGORIES = [
     ]
   },
   {
-    id: 'b3', num: 'B3', name: 'Regulatory & Authority Thresholds',
-    group: 'B', groupName: 'Recommendation & Governance',
+    id: 'b3', num: 'B3', name: 'Regulatory and Authority Thresholds',
+    group: 'B', groupName: 'Recommendation and Governance',
     color: '#e0556b',
     description: 'Regulatory and authority thresholds that determine who must act and at what level.',
     modules: [
@@ -184,7 +184,7 @@ window.LIN_CATEGORIES = [
   },
   {
     id: 'b4', num: 'B4', name: 'Decision Optimization',
-    group: 'B', groupName: 'Recommendation & Governance',
+    group: 'B', groupName: 'Recommendation and Governance',
     color: '#a78bfa',
     description: 'Decision optimisation and trade-off analysis over the available courses of action.',
     modules: [
@@ -199,7 +199,7 @@ window.LIN_CATEGORIES = [
   },
   {
     id: 'c1', num: 'C1', name: 'Data Integrity',
-    group: 'C', groupName: 'Data & Evidence Health',
+    group: 'C', groupName: 'Data and Evidence Health',
     color: '#94a3b8',
     authoringOnly: true, excludeFromProjectStatus: true,
     description: 'Evidence quality of the underlying document set. Authoring-time only: these describe how trustworthy the evidence is, never the condition of the project.',
@@ -280,7 +280,7 @@ window.isPortfolioLevelCategory = function (cat) {
 /* ------------------------------------------------------------
    Does this category describe the CONDITION of the project?
 
-   Group C (Data & Evidence Health) does not. Its modules measure how trustworthy the evidence
+   Group C (Data and Evidence Health) does not. Its modules measure how trustworthy the evidence
    base is, which is a quality gate on scenario construction, not a property of the project. A
    project with healthy EVM recorded on a thin document trail is a healthy project recorded on
    thin evidence; folding the thinness into the status conflates the two and would have made

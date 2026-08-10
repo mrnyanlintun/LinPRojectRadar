@@ -2513,7 +2513,7 @@
       ctx.font='8px SFMono-Regular,monospace';ctx.fillStyle='#9fb0cc';ctx.textAlign='right';ctx.fillText(projects[ri],PAD.l-3,PAD.t+ri*rh+rh/2+3);ctx.textAlign='left';
     });
     metrics.forEach(function(m,i){ctx.font='8px SFMono-Regular,monospace';ctx.fillStyle='#64748b';ctx.textAlign='center';ctx.fillText(m,PAD.l+i*cw+cw/2,PAD.t+CH+12);ctx.textAlign='left';});
-    aL(ctx,14,14,'P06 row highlighted — consistent underperformer','#64748b');
+    aL(ctx,14,14,'P06 row highlighted: consistent underperformer','#64748b');
   }
   function render_85(ctx,W,H,m,rx,ry){ // Anomaly Score — arc rings
     var cx=W/2,cy=H/2+8;

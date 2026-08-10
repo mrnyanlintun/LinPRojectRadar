@@ -54,17 +54,17 @@
 
   var GROUP_NAMES = {
     A: "Project Health",
-    B: "Recommendation & Governance",
-    C: "Data & Evidence Health",
+    B: "Recommendation and Governance",
+    C: "Data and Evidence Health",
     D: "Portfolio Level"
   };
   var GROUP_ORDER = ["A", "B", "C", "D"];
   var CATEGORY_NAMES = {
-    A1: "Cost & EVM Performance", A2: "Schedule Performance", A3: "Cost Risk",
-    A4: "Document-Derived Condition Signals", A5: "System Dynamics & Complexity",
+    A1: "Cost and EVM Performance", A2: "Schedule Performance", A3: "Cost Risk",
+    A4: "Document-Derived Condition Signals", A5: "System Dynamics and Complexity",
     A6: "Delivery Quality Performance",
     B1: "Signal Synthesis", B2: "Evidence Combination",
-    B3: "Regulatory & Authority Thresholds", B4: "Decision Optimization",
+    B3: "Regulatory and Authority Thresholds", B4: "Decision Optimization",
     C1: "Data Integrity", D1: "Portfolio Health"
   };
   var MODULE_NAMES = {

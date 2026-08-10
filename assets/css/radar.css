@@ -565,8 +565,7 @@ body.t-light .theme-switch button.active { color: #fff; }
    paint-order:stroke keeps the stroke behind the fill, so a 1.5px hairline
    never eats into a small dot's colour. */
 .blip-icon,
-.scope-col-status circle,
-.gl-pin-glyph {
+.scope-col-status circle {
   stroke: var(--status-outline);
   stroke-width: var(--status-outline-w);
   paint-order: stroke;
@@ -2218,15 +2217,6 @@ body.t-light .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
 .recompute-overlay .ro-track { height: 5px; background: var(--surface-soft); border-radius: 3px; overflow: hidden; }
 .recompute-overlay .ro-bar { height: 100%; width: 0; background: var(--phosphor); border-radius: 3px; transition: width .25s ease; }
 
-/* 'loading' working-robot centered over the map panel while it initializes */
-.map-boot-robot {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  z-index: 5; pointer-events: none;
-  padding: 12px 16px; border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  border: 1px solid var(--line);
-}
-
 /* Upload progress dialog — determinate bar + live counts, then a summary view */
 .up-progress { margin: 4px 0 12px; }
 .up-progress[hidden], .up-summary[hidden] { display: none; }
@@ -3426,9 +3416,6 @@ body.t-light .kn-content,
 body.t-light .kn-nav,
 body.t-light .about-section { border-top-color: var(--hairline-gold); }
 
-/* map stage: light tiles keep their style; the stage gets a sun-gold edge */
-body.t-light #map-gl { border: 1px solid var(--sun-gold); }
-
 /* secondary highlights — coral edges on hover, dark ink stays for the label */
 body.t-light .li-open:hover,
 body.t-light .kn-chip:hover,
@@ -3443,12 +3430,6 @@ body.t-light .recompute-all-btn:hover:not(:disabled) { border-color: var(--coral
    is left on --yellow — darkening it there would erase the only cue. */
 body.t-light .pill-yellow,
 body.t-light .state-badge.state-yellow { color: var(--text); }
-
-body.t-light .gl-pill[data-st="yellow"] {
-  color: var(--text);
-  border-color: var(--yellow);
-  background: color-mix(in srgb, var(--yellow) 22%, transparent);
-}
 
 body.t-light .dd-verdict.status-yellow { color: var(--text); }
 /* .dd-verdict i is background:currentColor — pin the dot so it stays yellow */
@@ -4226,181 +4207,6 @@ body[data-theme="newyork"] .hb-tab.active { background: transparent; color: var(
 .hb-panel[hidden] { display: none; }
 .hb-methods-note { margin: 0 0 16px; }
 
-.map-wrap { position: relative; width: 100%; }
-.map-wrap[hidden] { display: none; }
-/* real MapLibre map stage — fills the panel at the former artwork aspect so the
-   HUD scanline overlay (same aspect-ratio box) still aligns exactly */
-#map-gl {
-  position: relative; width: 100%; aspect-ratio: 2000 / 848;
-  border-radius: 10px; overflow: hidden;
-  background: var(--surface, #0b0e17);   /* shown while tiles load */
-}
-#map-gl .maplibregl-canvas { outline: none; }
-/* keep the attribution legible on every theme surface */
-.maplibregl-ctrl-attrib { font-family: var(--font-mono); font-size: 10px; }
-
-/* muted panel when the library/style/tiles can't load — radar stays usable */
-.gl-fail {
-  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  text-align: center; padding: 0 24px;
-  font-family: var(--font-mono); font-size: 12px; color: var(--muted);
-  background: var(--surface, #0b0e17);
-}
-
-/* HUD instrument overlay — CRT scanline texture + a slow top→bottom sweep.
-   Stage-fixed (a DOM overlay, not an SVG child) so the fly-to viewBox zoom
-   leaves it untouched; sized to the map box via the same aspect-ratio and
-   pointer-events:none so it never intercepts marker clicks or the reset
-   control. z-index keeps it above the artwork/pins but below the reset btn (5)
-   and the body-level info card/tooltip (9998/9999). */
-.map-fx {
-  position: absolute; top: 0; left: 0; width: 100%;
-  aspect-ratio: 2000 / 848;
-  overflow: hidden; pointer-events: none; z-index: 2;
-}
-.map-scan-texture {
-  position: absolute; inset: 0;
-  background: repeating-linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--flow-accent) 3%, transparent) 0,
-    color-mix(in srgb, var(--flow-accent) 3%, transparent) 1px,
-    transparent 1px, transparent 4px);
-}
-body.t-light .map-scan-texture { display: none; }   /* CRT texture is a dark-themes cue */
-/* --scan-accent lets a theme colour the sweep independently of the Signal Flow
-   doc→model lines (--flow-accent). Only Miami sets it (coral); Gotham and NYC
-   don't declare it, so they fall back to --flow-accent exactly as before. */
-.map-scan-line {
-  position: absolute; left: 0; top: 0; width: 100%; height: 100%;
-  will-change: transform;
-  background: linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent calc(100% - 42px),
-    color-mix(in srgb, var(--scan-accent, var(--flow-accent)) 42%, transparent) calc(100% - 2px),
-    var(--scan-accent, var(--flow-accent)) 100%);   /* 40px trail rising to a 2px core at the bottom edge */
-  animation: map-scan 6s linear infinite;
-}
-/* element is full map-box height; its bottom-edge core sweeps top→bottom as
-   the whole layer translates from one box-height up to home. translateY uses
-   %, so it stays correct through any stage resize — no measured px. */
-@keyframes map-scan { from { transform: translateY(-100%); } to { transform: translateY(0); } }
-
-/* ── MapLibre markers ─────────────────────────────────────────────
-   .gl-pin is the marker element MapLibre positions (it owns that
-   element's transform), so ALL visual state — blink, scale, dim —
-   lives on the inner wrapper .gl-pin-inner, never on .gl-pin. */
-.gl-pin { cursor: pointer; }
-.gl-pin:focus-visible { outline: none; }
-.gl-pin-inner {
-  position: relative; display: flex; flex-direction: column; align-items: center;
-  color: var(--pin-color, var(--muted));
-  filter: drop-shadow(0 0 5px var(--pin-color, var(--muted)));
-  animation: map-pin-blink 2s ease-in-out infinite;   /* status-colored blink */
-}
-.gl-pin-glyph { display: block; }
-/* The id label sits ABOVE the head and is taken OUT OF FLOW on purpose: the
-   pin's tip is the anchor, so .gl-pin-inner's bottom edge must be the tip and
-   nothing may add height below the glyph. (In flow, this label would push the
-   tip up by its own height and the pin would point above the real location.) */
-.gl-pin-num {
-  position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
-  margin-bottom: 1px;
-  font-family: var(--font-mono); font-size: 9px; line-height: 1;
-  color: var(--pin-color, var(--muted));
-  text-shadow: 0 0 3px var(--page-bg, #000), 0 0 3px var(--page-bg, #000);
-}
-/* Red blinks faster (urgency reads at a glance); Complete pulses slowly */
-.gl-pin[data-status="red"] .gl-pin-inner { animation-duration: 1.2s; }
-.gl-pin[data-status="complete"] .gl-pin-inner { animation-duration: 3s; }
-@keyframes map-pin-blink {
-  0%, 100% { opacity: 1;   filter: drop-shadow(0 0 6px var(--pin-color, var(--muted))); }
-  50%      { opacity: .45; filter: drop-shadow(0 0 2px var(--pin-color, var(--muted))); }
-}
-/* selection: the chosen marker scales 1.4× and holds steady; the rest dim */
-.gl-pin-inner { transition: transform .3s ease, opacity .3s ease; transform-origin: bottom center; }
-.gl-pin.gl-selected .gl-pin-inner {
-  animation: none; opacity: 1; transform: scale(1.4);
-  filter: drop-shadow(0 0 8px var(--pin-color, var(--muted)));
-}
-/* while one pin is selected the rest hold dim + still (animation would
-   otherwise drive opacity and override this dim) */
-#map-gl.gl-any-selected .gl-pin:not(.gl-selected) .gl-pin-inner { animation: none; opacity: .4; }
-/* one-shot ring pulse on the selected marker */
-/* 37.5% == the pin head's centre (y=12 of the 32-tall viewBox), so the pulse
-   rings the head rather than the taper. */
-.gl-pin.gl-ring .gl-pin-inner::after {
-  content: ""; position: absolute; left: 50%; top: 37.5%;
-  width: 16px; height: 16px; margin: -8px 0 0 -8px;
-  border: 2px solid var(--pin-color, var(--muted)); border-radius: 50%;
-  animation: gl-ring-pulse .9s ease-out 1; pointer-events: none;
-}
-@keyframes gl-ring-pulse {
-  0%   { opacity: .9; transform: scale(.5); }
-  100% { opacity: 0;  transform: scale(3.2); }
-}
-
-/* on-screen reset control (top-right of the map stage) */
-.map-reset-btn {
-  position: absolute; top: 10px; right: 10px; z-index: 5;
-  font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em;
-  padding: 5px 12px; border-radius: 999px; cursor: pointer;
-  border: 1px solid var(--line); background: var(--surface); color: var(--muted);
-  transition: color .15s, border-color .15s;
-}
-.map-reset-btn:hover { color: var(--text); border-color: var(--phosphor); }
-
-/* boot feedback — bottom-left mono status, attribution-adjacent */
-.map-boot-status {
-  position: absolute; left: 10px; bottom: 8px; z-index: 5;
-  font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em;
-  color: var(--muted); pointer-events: none;
-  text-shadow: 0 1px 2px rgba(0,0,0,.6);
-}
-.map-boot-status[hidden] { display: none; }
-
-@media (prefers-reduced-motion: reduce) {
-  .gl-pin-inner { animation: none; opacity: 1; transition: none; }   /* static glow, no blink */
-  .gl-pin.gl-ring .gl-pin-inner::after { display: none; }            /* no ring pulse */
-  .map-scan-line { display: none; }                                  /* no sweep; texture (dark themes) stays */
-}
-
-/* captions + no-location note */
-.map-caption { font-family: var(--font-body); font-size: 12px; color: var(--faint); margin: 8px 0 0; }
-.map-nolocation { font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin: 8px 0 0; }
-.map-noloc-id {
-  font-family: var(--font-mono); font-size: 11px; color: var(--phosphor);
-  background: transparent; border: 0; padding: 0 1px; cursor: pointer; text-decoration: underline;
-}
-/* ── MapLibre popup (themed to match the instrument surface) ─────── */
-.gl-popup .maplibregl-popup-content {
-  background: var(--surface, #0c1422); border: 1px solid var(--line, #2a3a5c);
-  border-radius: 8px; padding: 10px 28px 10px 14px;
-  font-family: var(--font-mono); font-size: 11px; color: var(--text); line-height: 1.55;
-  box-shadow: var(--shadow);
-}
-.gl-popup .maplibregl-popup-close-button { color: var(--muted); font-size: 15px; }
-.gl-popup .maplibregl-popup-tip { border-top-color: var(--line, #2a3a5c); border-bottom-color: var(--line, #2a3a5c); }
-.gl-pop .mt-num { font-size: 10px; color: var(--phosphor); }
-.gl-pop .mt-name { font-weight: 600; }
-.gl-pop .mt-sub { color: var(--muted); margin-top: 1px; }
-.gl-pop .mt-addr { color: var(--muted); font-size: 10.5px; margin-top: 2px; }
-.gl-pill {
-  display: inline-block; padding: 0 6px; border-radius: 999px;
-  border: 1px solid currentColor; font-size: 9.5px; letter-spacing: .03em;
-  color: var(--muted);
-}
-.gl-pill[data-st="complete"] { color: var(--status-complete-text); }
-.gl-pill[data-st="green"]    { color: var(--clear-green); }
-.gl-pill[data-st="yellow"]   { color: var(--yellow); }
-.gl-pill[data-st="amber"]    { color: var(--radar-amber); }
-.gl-pill[data-st="red"]      { color: var(--alarm-red); }
-.map-card-open {
-  margin-top: 6px; font-family: var(--font-mono); font-size: 10.5px;
-  color: var(--phosphor); background: transparent; border: 0; padding: 0;
-  cursor: pointer; text-decoration: underline; display: block;
-}
-
 /* Edit info inline panel grid (extends the .pr-editnum chrome) */
 .pr-editinfo-grid { display: grid; grid-template-columns: repeat(3, minmax(160px, 1fr)); gap: 10px 14px; width: 100%; }
 .pr-editinfo-addr { grid-column: 1 / -1; }   /* the address field spans the full row */
@@ -4698,6 +4504,10 @@ body[data-theme="plain"] .admin-pill-off { background: #fbdcdb; color: #8a0e16; 
 .detail-globe canvas { display: block; }
 .detail-globe .atlas-svg { width: 100%; height: auto; }
 .detail-globe-note { text-align: center; margin: 6px 0 0; }
+/* Google Maps needs its container to carry an explicit height, unlike the atlas SVG which sizes
+   itself through its viewBox. This modifier is added only while a street map is mounted. */
+.detail-globe--gmap { display: block; height: 360px; border-radius: 6px; overflow: hidden; }
+.detail-globe--gmap .gmap-inner { width: 100%; height: 100%; }
 
 /* ============================================================
    The Files tab (assets/js/files.js).

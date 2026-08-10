@@ -145,11 +145,11 @@
      through. It used to ask hasSignals(p) — the legacy client-side p.signals blob — and return
      "empty" when that was absent, which is wrong for every project the server has analysed.
 
-     This drives EIGHT call sites, and they are not cosmetic: proxyHealth() places the project's
+     This drives several call sites, and they are not cosmetic: proxyHealth() places the project's
      radar blip by it (an analysed project sat on the neutral mid-ring rather than its real band),
-     statusColorFor() colours markers by it, and the project list row takes its state- CSS class
-     from it. The T12 legend fix added a separate storedStatusKey() helper beside this one instead
-     of correcting it, so the legend read correctly while everything else kept reading "empty".
+     and the project list row takes its state- CSS class from it. The T12 legend fix added a
+     separate storedStatusKey() helper beside this one instead of correcting it, so the legend
+     read correctly while everything else kept reading "empty".
      That duplicate is gone; the legend calls this.
 
      Found by tests_render.html, which is the whole reason that harness exists: in a page without
@@ -594,7 +594,6 @@
       const on = b.getAttribute("data-id") === selectedId;
       b.classList.toggle("selected", on);
     });
-    highlightPin();
   }
 
   /* ============================================================
@@ -610,142 +609,27 @@
      functional — no console error storms.
      ============================================================ */
   const VIEW_KEY = "lin-portfolio-view";
-  const GL_STYLE = {
-    dark:  "https://tiles.openfreemap.org/styles/dark",      // Gotham + NYC
-    light: "https://tiles.openfreemap.org/styles/positron"   // Miami
-  };
-  const GL_WORLD = { center: [20, 20], zoom: 1.6 };
-  let mapBuilt = false;      // lazily built on first switch
   /* Which project ids have already had their full JSON fetched for a geographic view. A SET,
      NOT A BOOLEAN: the boolean this replaces latched on the first geographic open, so a view
-     opened before the portfolio had loaded — or before a project was created — latched with
+     opened before the portfolio had loaded, or before a project was created, latched with
      nothing fetched and never tried again for the rest of the session. Keyed by id, the work
      is still done at most once per project per session, and a project that arrives later is
      not locked out of ever being placed. */
   const geoHydratedIds = new Set();
-  let glMap = null;          // MapLibre instance (null until built / after failure)
-  let glMarkers = {};        // id → { marker, el, p }
-  let glPopup = null;        // the single open popup, if any
-  let glLoadTimer = null;    // style-load watchdog → failure panel
-  let glFailed = false;
-  let mapBootRobot = null;   // 'loading' working-robot shown while tiles/style init
-  let focusedPinId = null;   // the flown-to / selected marker
-  // The portfolio globe's own handle. LinGlobe is no longer a singleton — the project detail
-  // view keeps its own — so each caller holds and tears down the one it made.
+  // The portfolio globe's own handle. LinGlobe is no longer a singleton (the project detail
+  // view keeps its own), so each caller holds and tears down the one it made.
   let portfolioGlobe = null;
   let globeMountToken = 0;
 
-  // VENDORED, NOT CDN. These were cdnjs URLs, which meant the map failed on any corporate
-  // network that blocks a public CDN — a realistic case for the directors this platform is for,
-  // and one that looks like a broken product rather than a blocked request. Serving them from
-  // /assets reduces the failure question to WebGL alone, which showMapFailure() already handles.
-  //
-  // Still loaded on demand rather than as static tags, unchanged: the map is one tab of one page
-  // and has never been worth blocking the initial load for.
-  const GL_CSS_URL = "assets/vendor/maplibre-gl.min.css";
-  const GL_JS_URL  = "assets/vendor/maplibre-gl.min.js";
-  let mapAssetsPromise = null;
-
-  /* inject the MapLibre CSS/JS on demand (background warm-up or first Map
-     toggle) instead of blocking the initial page load with static tags. */
-  function loadMapAssets() {
-    if (typeof maplibregl !== "undefined") return Promise.resolve();
-    if (mapAssetsPromise) return mapAssetsPromise;
-    mapAssetsPromise = new Promise((resolve, reject) => {
-      if (!document.querySelector('link[data-maplibre-css]')) {
-        const link = document.createElement("link");
-        link.rel = "stylesheet";
-        link.href = GL_CSS_URL;
-        link.dataset.maplibreCss = "1";
-        document.head.appendChild(link);
-      }
-      const script = document.createElement("script");
-      script.src = GL_JS_URL;
-      script.dataset.maplibreJs = "1";
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error("maplibre load failed"));
-      document.head.appendChild(script);
-    });
-    return mapAssetsPromise;
-  }
-
-  /* respect constrained connections: no background warm-up on save-data or 2g */
-  function shouldSkipMapWarmup() {
-    try {
-      const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-      if (!c) return false;
-      if (c.saveData) return true;
-      if (c.effectiveType && /2g/.test(c.effectiveType)) return true;
-    } catch (e) {}
-    return false;
-  }
-
-  /* background warm-up: after the portfolio list has painted and the browser
-     is idle, preload the MapLibre assets and build the (hidden) map instance
-     so style/fonts/sprites/tiles fetch while the user is still on the radar. */
-  /* ORPHANED AS OF T11 — READ BEFORE REUSING.
-     The MapLibre map is no longer reachable from any user path. It was two things: the second
-     portfolio stage, and the fallback the globe degraded to. The flat atlas is now both, so
-     nothing routes here any more — scheduleMapWarmup() has no callers, and buildMap() is only
-     reachable from a flag that buildMap() itself is the only thing to set.
-
-     It is left in place rather than deleted because removing it touches ~400 lines, two vendored
-     files (837 KB), the CSP, and the map markup, and that is its own change with its own
-     verification. It costs nothing where it stands: no path loads maplibre-gl, so the default
-     path never pays for it. Deleting it is a clean follow-up, not a loose end that will bite —
-     but do not "fix" it back into service by wiring a caller. */
-  function scheduleMapWarmup() {
-    if (shouldSkipMapWarmup()) return;
-    const idle = window.requestIdleCallback || function (cb) { setTimeout(cb, 1200); };
-    idle(() => {
-      if (mapBuilt || glMap) return;   // already built (or being built) — nothing to warm
-      loadMapAssets().then(() => { if (!mapBuilt && !glMap) createGlMap(false); }).catch(() => {});
-    }, { timeout: 3000 });   // force a fire even under sustained load — never wait forever
-  }
-
-  function showBootStatus(msg) {
-    const el = document.getElementById("map-boot-status");
-    if (el) { el.textContent = msg; el.hidden = false; }
-    // 'loading' working-robot (sm, indeterminate — no real progress signal for
-    // tile/style init, so no invented bar). Mounted once; removed on the map's
-    // first idle/load or on the failure path (hideBootStatus / showMapFailure).
-    const host = document.getElementById("map-gl");
-    if (host && host.parentNode && !mapBootRobot && window.LinWorkingRobot) {
-      const holder = document.createElement("div");
-      holder.className = "map-boot-robot";
-      host.parentNode.insertBefore(holder, host.nextSibling);
-      const handle = LinWorkingRobot.mount(holder, {
-        variant: "loading", size: "sm", message: "Loading map…", progress: null
-      });
-      mapBootRobot = { handle, holder };
-    }
-  }
-  function hideBootStatus() {
-    const el = document.getElementById("map-boot-status");
-    if (el) el.hidden = true;
-    if (mapBootRobot) {
-      try { mapBootRobot.handle.destroy(); } catch (e) {}
-      if (mapBootRobot.holder && mapBootRobot.holder.parentNode) mapBootRobot.holder.parentNode.removeChild(mapBootRobot.holder);
-      mapBootRobot = null;
-    }
-  }
-
-  function hasCoords(p) {
-    return !!p && p.lat != null && p.lng != null &&
-      Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng));
-  }
-  // Whether a project has an ADDRESS (for the "no address set" note), tolerant
-  // of BOTH shapes: full projects and v10.32 slim rows both surface
-  // address / formattedAddress / lat / lng at the top level. A project counts as
-  // located if it has coords OR a non-empty address string — so a project whose
-  // address is set but not yet geocoded is no longer wrongly flagged.
-  function hasAddress(p) {
-    if (!p) return false;
-    if (hasCoords(p)) return true;
-    const a = p.formattedAddress || p.address;
-    return !!(a && String(a).trim());
-  }
-
+  /* MAPLIBRE STAGE REMOVED (2026-08-10). The portfolio's second geographic view has been the
+     flat SVG atlas since T11, and the MapLibre street map it replaced was left in place as an
+     unreachable stage: `buildMap()` was only reachable behind a flag `buildMap()` itself set,
+     `scheduleMapWarmup()` had no callers, and its markers, popups, theme swap and reset were
+     called from live code only as no-ops over an empty marker set on a `.map-wrap` that view
+     switching keeps permanently hidden. All of that, its two vendored files
+     (assets/vendor/maplibre-gl.min.{js,css}, 837 KB), its `.map-wrap` markup and its CSS are
+     gone. The atlas and globe are untouched; the interaction the removed no-ops stood in for
+     is served for those two by focusAtlas/GlobeProject and resetAtlas/GlobeView below. */
   /* Sector-changed flag: changing a project's sector invalidates sector-gated
      module results, so the row is flagged "recompute" until its signals are
      recomputed (recompute-all or a per-project populate). Persisted so the flag
@@ -760,285 +644,11 @@
   function markSectorDirty(id) { const s = readSectorDirty(); if (s.indexOf(id) < 0) { s.push(id); writeSectorDirty(s); } }
   function clearSectorDirty(id) { writeSectorDirty(readSectorDirty().filter((x) => x !== id)); }
 
-  function glStyleForTheme() {
-    return document.body.dataset.theme === "light" ? GL_STYLE.light : GL_STYLE.dark;
-  }
   function sectorLabel(p) {
     return { design: "Design", construction: "Construction", hybrid: "Hybrid", combined: "Hybrid" }[String(p.sector || "").toLowerCase()] || p.sector || "N/A";
   }
-  function statusColorFor(p) {
-    const status = statusKey(p);
-    return status === "complete" ? STATUS_COLOR.complete :
-      status === "green"  ? STATUS_COLOR.green :
-      status === "yellow" ? STATUS_COLOR.yellow :
-      status === "amber"  ? STATUS_COLOR.amber :
-      status === "red"    ? STATUS_COLOR.red : "var(--muted)";
-  }
-
-  /* muted failure panel inside the stage; the Radar view keeps working */
-  function showMapFailure(msg) {
-    glFailed = true;
-    if (glLoadTimer) { clearTimeout(glLoadTimer); glLoadTimer = null; }
-    if (glMap) { try { glMap.remove(); } catch (e) {} glMap = null; }
-    glMarkers = {}; glPopup = null; focusedPinId = null;
-    hideBootStatus();   // the fail panel below is the single source of truth for the error
-    const host = document.getElementById("map-gl");
-    if (host) host.innerHTML = `<div class="gl-fail">${esc(msg || "Map tiles unavailable: check connection")}</div>`;
-    const rb = document.getElementById("map-reset-btn");
-    if (rb) rb.hidden = true;
-  }
-
-  /* build the MapLibre map for the current theme (markers added on load).
-     showStatus: false during background warm-up (stage isn't visible, no
-     need to tell the user anything); true when built because the user is
-     actually looking at the map stage and waiting on it. */
-  function createGlMap(showStatus) {
-    const host = document.getElementById("map-gl");
-    if (!host) return;
-    if (typeof maplibregl === "undefined") { if (showStatus) showMapFailure(); return; }   // CDN blocked / offline
-    host.innerHTML = "";
-    glFailed = false;
-    if (showStatus) showBootStatus("ACQUIRING TILES…");
-    try {
-      glMap = new maplibregl.Map({
-        container: host,
-        style: glStyleForTheme(),
-        center: GL_WORLD.center,
-        zoom: GL_WORLD.zoom,
-        attributionControl: true,      // "© OpenStreetMap contributors" stays visible (license)
-        maxZoom: 18
-      });
-    } catch (e) { if (showStatus) showMapFailure(); return; }
-
-    // watchdog: if the style never loads (offline / CDN down), show the panel
-    glLoadTimer = setTimeout(() => {
-      if (glMap && !glMap.isStyleLoaded()) showMapFailure();
-    }, 9000);
-
-    glMap.on("load", () => {
-      if (glLoadTimer) { clearTimeout(glLoadTimer); glLoadTimer = null; }
-      hideBootStatus();
-      // T13. Add zoom controls. NavigationControl is vendored with MapLibre GL so no
-      // new dependency is introduced. Position top-right to avoid the attribution badge.
-      if (typeof maplibregl.NavigationControl === "function") {
-        glMap.addControl(new maplibregl.NavigationControl(), "top-right");
-      }
-      addGlMarkers();
-    });
-    // swallow MapLibre's transient tile/sprite errors so they neither storm the
-    // console nor nuke the map. A genuine style-load failure (offline / CDN down)
-    // is caught by the watchdog above: 'load' never fires, panel shows.
-    glMap.on("error", () => {});
-  }
-
-  /* ---------- the shared map-pin shape ----------
-     Classic teardrop, defined ONCE in a hidden <defs> and referenced by every
-     marker via <use>; only the status colour varies per instance (the body is
-     fill:currentColor, and .gl-pin-inner sets color from --pin-color).
-
-     Geometry matters here: the viewBox is 24×32 and the TIP sits at exactly
-     (12, 32) — the bottom-centre of the box. Combined with MapLibre's
-     anchor:"bottom" (which puts the element's bottom-centre on the coordinate)
-     that lands the point, not the head, on the exact lat/lng. Anything that
-     adds height below the svg would push the tip off the coordinate, which is
-     why .gl-pin-num is taken out of flow in CSS.
-
-     The radar keeps its own building glyph (#blip-building) — this is map-only. */
-  const GL_PIN_DEFS_ID = "gl-pin-defs";
-  function ensureGlPinDefs() {
-    if (document.getElementById(GL_PIN_DEFS_ID)) return;
-    const holder = document.createElementNS(SVG_NS, "svg");
-    holder.id = GL_PIN_DEFS_ID;
-    holder.setAttribute("aria-hidden", "true");
-    holder.setAttribute("width", "0");
-    holder.setAttribute("height", "0");
-    holder.style.cssText = "position:absolute;width:0;height:0;overflow:hidden";
-    holder.innerHTML =
-      '<defs><g id="gl-pin-shape">' +
-        // head: r9.5 circle centred (12,12); flanks sweep down to the tip at (12,32)
-        '<path class="gl-pin-body" fill="currentColor" ' +
-          'd="M12 32 C12 32 21.5 20.2 21.5 12 A9.5 9.5 0 1 0 2.5 12 C2.5 20.2 12 32 12 32 Z"/>' +
-      '</g></defs>';
-      // (The former decorative "hole" circle at (12,12) was replaced by the
-      // color-blind-safe status LETTER drawn per-marker in pinMarkerEl() —
-      // same visual anchor, now carries information instead of just contrast.)
-    document.body.appendChild(holder);
-  }
-
-  /* one custom HTML marker per project — pin glyph, status color, blink.
-     All visual state lives on .gl-pin-inner; MapLibre owns .gl-pin's transform
-     for positioning, so we never set transform on the marker element itself. */
-  function pinMarkerEl(p) {
-    ensureGlPinDefs();
-    const el = document.createElement("div");
-    el.className = "gl-pin";
-    el.dataset.status = statusKey(p);
-    el.style.setProperty("--pin-color", statusColorFor(p));
-    el.setAttribute("role", "button");
-    el.setAttribute("tabindex", "0");
-    el.setAttribute("aria-label", `${p.id} ${p.name}, ${stateLabel(p)}`);
-    const inner = document.createElement("div");
-    inner.className = "gl-pin-inner";
-    inner.style.animationDelay = mapPinBlinkDelay(p.id).toFixed(2) + "s";   // stagger the fleet
-    // 30px tall at the 24×32 aspect → 22.5 wide. The <use> pulls the shared
-    // teardrop; currentColor resolves from --pin-color on .gl-pin-inner.
-    // color-blind-safe cue: a status letter (C/G/Y/A/R) inside the pin head —
-    // the head is a 19px circle, big enough for a legible letter (unlike the
-    // 16-unit radar blip icon, which uses a shape badge instead — see
-    // shapeBadge() above). Ink auto-contrasts per status via linStatusInk().
-    const sKey = statusKey(p);
-    const letter = window.linStatusLetter ? linStatusLetter(sKey) : "";
-    const capName = sKey === "complete" ? "Complete" : sKey === "green" ? "Green" :
-      sKey === "yellow" ? "Yellow" : sKey === "amber" ? "Amber" : sKey === "red" ? "Red" : null;
-    const ink = (capName && window.LIN_STATUS_COLORS && window.linStatusInk)
-      ? linStatusInk(LIN_STATUS_COLORS[capName]) : "#0b1220";
-    const letterSvg = letter
-      ? `<text class="gl-pin-letter" x="12" y="12" text-anchor="middle" dominant-baseline="central" ` +
-        `font-family="var(--font-mono, monospace)" font-size="10" font-weight="700" fill="${ink}" ` +
-        `aria-hidden="true">${esc(letter)}</text>`
-      // no signals yet: keep the old decorative "hole" dot instead of a letter
-      : '<circle class="gl-pin-hole" cx="12" cy="12" r="3.4" fill="rgba(0,8,18,.82)" stroke="none"/>';
-    inner.innerHTML =
-      '<svg class="gl-pin-glyph" viewBox="0 0 24 32" width="22.5" height="30" aria-hidden="true">' +
-      '<use href="#gl-pin-shape"/>' + letterSvg + '</svg>' +
-      `<span class="gl-pin-num">${esc(p.id)}</span>`;
-    el.appendChild(inner);
-    return el;
-  }
-
-  function addGlMarkers() {
-    if (!glMap) return;
-    Object.keys(glMarkers).forEach((id) => { try { glMarkers[id].marker.remove(); } catch (e) {} });
-    glMarkers = {};
-    LIN_PROJECTS.filter(hasCoords).forEach((p) => {
-      // regression guard: |lat| > 90 means lat/lng got swapped upstream
-      if (Math.abs(Number(p.lat)) > 90) {
-        console.warn(`[map] project ${p.id}: latitude ${p.lat} out of range (±90). Check lat/lng order`);
-      }
-      const el = pinMarkerEl(p);
-      const marker = new maplibregl.Marker({ element: el, anchor: "bottom" })
-        .setLngLat([Number(p.lng), Number(p.lat)])   // MapLibre = [lng, lat]
-        .addTo(glMap);
-      el.dataset.id = p.id;
-      el.setAttribute("aria-label", `${p.id} ${p.name}, ${stateLabel(p)}`);   // MapLibre resets it to "Map marker" on add
-      const open = () => { selectProject(p.id); flyToProject(p.id); };
-      el.addEventListener("click", (e) => { e.stopPropagation(); open(); });
-      el.addEventListener("dblclick", (e) => { e.stopPropagation(); hideMapCard(); openDetail(p.id); });
-      el.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
-      });
-      glMarkers[p.id] = { marker, el, p };
-    });
-    updateNoLocationNote();
-    if (focusedPinId && !glMarkers[focusedPinId]) focusedPinId = null;   // stale focus after refresh
-    highlightPin();
-    applyGlFocus();
-  }
-
-  /* "No address set" side note — each id opens that project's inline Manage
-     accordion on the Portfolio list (address is edited there now). */
-  function updateNoLocationNote() {
-    const note = document.getElementById("map-nolocation");
-    if (!note) return;
-    const unlocated = LIN_PROJECTS.filter((p) => !hasAddress(p));
-    if (unlocated.length) {
-      note.hidden = false;
-      note.innerHTML = "No address set: " + unlocated.map((p) =>
-        `<button type="button" class="map-noloc-id" data-editloc="${esc(p.id)}">${esc(p.id)}</button>`).join(", ");
-      note.querySelectorAll("[data-editloc]").forEach((b) =>
-        b.addEventListener("click", () => {
-          showPage("portfolio");
-          if (window.LinIngest && LinIngest.openInlineManage) LinIngest.openInlineManage(b.dataset.editloc);
-        }));
-    } else {
-      note.hidden = true;
-      note.innerHTML = "";
-    }
-  }
-
-  /* popup on click: number · name · sector · status pill · address · Open detail */
-  function hideMapCard() { if (glPopup) { try { glPopup.remove(); } catch (e) {} glPopup = null; } }
-  function openGlPopup(p) {
-    if (!glMap) return;
-    hideMapCard();
-    const node = document.createElement("div");
-    node.className = "gl-pop";
-    const addr = p.formattedAddress || p.address;
-    node.innerHTML =
-      `<div class="mt-num">${esc(p.id)}</div>` +
-      `<div class="mt-name">${esc(p.name)}</div>` +
-      `<div class="mt-sub">${esc(sectorLabel(p))} · <span class="gl-pill" data-st="${esc(statusKey(p))}">${esc(stateLabel(p))}</span></div>` +
-      (addr ? `<div class="mt-addr">${esc(addr)}</div>` : "") +
-      `<button type="button" class="map-card-open">Open detail →</button>`;
-    node.querySelector(".map-card-open").addEventListener("click", () => { hideMapCard(); openDetail(p.id); });
-    glPopup = new maplibregl.Popup({ offset: 30, closeButton: true, closeOnClick: false, className: "gl-popup", maxWidth: "260px" })
-      .setLngLat([Number(p.lng), Number(p.lat)])
-      .setDOMContent(node)
-      .addTo(glMap);
-  }
-
-  /* selection sync (list row ↔ marker): the selected marker scales + others dim */
-  function highlightPin() {
-    const host = document.getElementById("map-gl");
-    Object.keys(glMarkers).forEach((id) => {
-      const on = id === selectedId;
-      const el = glMarkers[id].el;
-      const was = el.classList.contains("gl-selected");
-      el.classList.toggle("gl-selected", on);
-      if (on && !was) { el.classList.remove("gl-ring"); void el.offsetWidth; el.classList.add("gl-ring"); }  // one-shot ring
-      if (!on) el.classList.remove("gl-ring");
-    });
-    if (host) host.classList.toggle("gl-any-selected", !!(selectedId && glMarkers[selectedId]));
-  }
-
-  /* keep the reset control + focus dim in sync with the flown-to pin */
-  function applyGlFocus() {
-    const rb = document.getElementById("map-reset-btn");
-    if (rb) rb.hidden = !focusedPinId;
-  }
-
-  /* ============================================================
-     Cinematic entrance. Selecting a project (pin click, or list-row
-     selection while the map view is active) flies to street level
-     with MapLibre's built-in arc; the selected marker scales 1.4×
-     with a one-shot ring pulse and the rest dim. Reduced motion →
-     jumpTo (no arc). Reset returns to the world view.
-     ============================================================ */
-  function flyToProject(id) {
-    const m = glMarkers[id];
-    if (!glMap || !m) return;                 // no marker (no coordinates) → no flight
-    focusedPinId = id;
-    applyGlFocus();
-    highlightPin();                            // ensure scale/dim reflect this pin
-    const center = [Number(m.p.lng), Number(m.p.lat)];
-    if (reduceMotion()) glMap.jumpTo({ center, zoom: 16 });
-    else glMap.flyTo({ center, zoom: 16, speed: 1.2, curve: 1.6, essential: true });
-    openGlPopup(m.p);
-  }
-
-  function resetMapView() {
-    focusedPinId = null;
-    hideMapCard();
-    // clear the map's visual selection so the world view isn't left with one pin
-    // scaled 1.4× and the rest dimmed (list-row selection is unaffected)
-    const host = document.getElementById("map-gl");
-    if (host) host.classList.remove("gl-any-selected");
-    Object.keys(glMarkers).forEach((id) => glMarkers[id].el.classList.remove("gl-selected", "gl-ring"));
-    applyGlFocus();
-    if (!glMap) return;
-    if (reduceMotion()) glMap.jumpTo(GL_WORLD);
-    else glMap.flyTo({ center: GL_WORLD.center, zoom: GL_WORLD.zoom, speed: 1.2, curve: 1.6, essential: true });
-  }
-
-  /* theme switch → swap the OpenFreeMap style (markers persist across setStyle) */
-  function onMapThemeChange() {
-    if (!glMap || glFailed) return;
-    try { glMap.setStyle(glStyleForTheme()); } catch (e) {}
-  }
-
-  /* Lazy map build: on first use, swap slim portfolio records for full
-     project JSON (the slim list carries no coordinates) — one GET per
-     project, once per session, only when the map view is actually opened. */
+  /* Swap slim portfolio records for full project JSON on first geographic open: the slim list
+     carries no coordinates, one GET per project, once per session. */
   /* Swap slim portfolio records for full project JSON. THE SLIM LIST CARRIES NO COORDINATES —
      facade.slim_row() returns status and metrics and nothing about location — so any view that
      places projects geographically has to do this first. Shared by the map and the globe so
@@ -1065,27 +675,6 @@
     }
   }
 
-  async function buildMap() {
-    const host = document.getElementById("map-gl");
-    if (!host) return;
-    await hydrateProjectsForGeo();
-    if (!glMap) {
-      glFailed = false;
-      try { await loadMapAssets(); } catch (e) { showMapFailure(); mapBuilt = true; return; }
-      createGlMap(true);                          // markers added when the style loads
-    } else {
-      try { glMap.resize(); } catch (e) {}        // container was hidden until now
-      if (glMap.isStyleLoaded()) addGlMarkers();
-      else { showBootStatus("ACQUIRING TILES…"); glMap.once("load", () => { hideBootStatus(); addGlMarkers(); }); }
-    }
-    mapBuilt = true;
-  }
-
-  function mapViewActive() {
-    const page = document.querySelector('.page[data-page="portfolio"]');
-    const wrap = document.querySelector(".map-wrap");
-    return !!(page && !page.hidden && wrap && !wrap.hidden);
-  }
   // list-row selections fly only when the map view is actually showing
   // T11 orphaned the MapLibre stage (see the "ORPHANED AS OF T11" note above
   // scheduleMapWarmup): the "Map" button now shows the flat SVG atlas, not glMap. So the live
@@ -1127,9 +716,8 @@
     try { LinAtlas.resetView(host); } catch (e) {}
   }
 
-  /* Globe equivalent of flyToProject. A project with no usable coordinates leaves the camera
-     exactly where it was — same contract as the map's flyToProject, which also does nothing
-     when there is no marker to fly to. */
+  /* Focus the globe on a project. A project with no usable coordinates leaves the camera
+     exactly where it was, which is the same contract focusAtlasProject keeps. */
   function focusGlobeProject(id) {
     if (!portfolioGlobe || typeof portfolioGlobe.focus !== "function") return;
     const p = LIN_PROJECTS.find((x) => x.id === id);
@@ -1142,21 +730,9 @@
     if (portfolioGlobe && typeof portfolioGlobe.resetView === "function") portfolioGlobe.resetView();
   }
 
-  // Ctrl/Cmd+0 + Escape → world view — the handler only acts (and only calls
-  // preventDefault) while the map view is active AND a project is focused or
-  // keyboard focus is inside the map stage, so the browser's page-zoom reset
-  // keeps working everywhere else.
-  document.addEventListener("keydown", (e) => {
-    const zeroCombo = (e.ctrlKey || e.metaKey) && e.key === "0";
-    if (!zeroCombo && e.key !== "Escape") return;
-    if (!mapViewActive()) return;
-    const wrap = document.querySelector(".map-wrap");
-    const stageFocused = wrap && wrap.contains(document.activeElement);
-    if (!focusedPinId && !stageFocused) return;
-    if (zeroCombo) e.preventDefault();
-    resetMapView();
-  });
-
+  // The Ctrl/Cmd+0 and Escape "world view" reset for the removed MapLibre stage is gone with it.
+  // The atlas and globe have their own reset, wired to the reset button's click below and to
+  // resetAtlasView / resetGlobeView.
 
   /* ---------- Radar | Map | Globe view toggle (persisted; MAP is the default) ----------
 
@@ -1175,9 +751,7 @@
     // get". The globe still degrades to the map on its own if it cannot draw.
     if (view !== "map" && view !== "globe" && view !== "radar") view = "globe";
     const wantsGeo = view === "globe" || view === "map";
-    if (!wantsGeo) hideMapCard();   // the pinned card is fixed-positioned — never leave it over the radar
     const radarWrap = document.querySelector(".radar-wrap");
-    const mapWrap = document.querySelector(".map-wrap");
     const globeWrap = document.querySelector(".globe-wrap");
     const atlasWrap = document.querySelector(".atlas-wrap");
     const note = document.querySelector(".radar-note");
@@ -1193,7 +767,6 @@
       try { if (portfolioGlobe) { portfolioGlobe.destroy(); portfolioGlobe = null; } } catch (e) {}
       globeMountToken++;   // supersede any mount still resolving, so it releases itself
     }
-    if (mapWrap) mapWrap.hidden = true;
 
     if (view === "radar") {
       if (atlasWrap) atlasWrap.hidden = true;
@@ -1343,8 +916,8 @@
   function wireViewToggle() {
     document.querySelectorAll(".stage-btn").forEach((b) =>
       b.addEventListener("click", () => setPortfolioView(b.dataset.view)));
-    const rb = document.getElementById("map-reset-btn");
-    if (rb) rb.addEventListener("click", resetMapView);
+    // The MapLibre stage's "world view" reset button is gone with the stage. The atlas and
+    // globe reset through resetAtlasView / resetGlobeView, not this control.
   }
 
   /* ---------- accessible fallback list ---------- */
@@ -1603,7 +1176,7 @@
     const projectCats = window.projectLevelCategories ? projectLevelCategories() : LIN_CATEGORIES.filter((c) => !(c && c.level === "portfolio"));
     const rows = projectCats.map((cat) => {
       const status = window.getCategoryStatus ? getCategoryStatus(cat.id, p) : null;
-      const open = cat.id === "b3" ? " open" : "";   // Governance (Group B: Regulatory & Authority Thresholds) open by default
+      const open = cat.id === "b3" ? " open" : "";   // Governance (Group B: Regulatory and Authority Thresholds) open by default
       const desc = esc(cat.description);
       const rowPill = statusPill(status);
 
@@ -1960,7 +1533,8 @@
     // cascade has already repainted it. Only the status letters' ink is a resolved colour and
     // has to be recomputed.
     try { if (window.LinAtlas && LinAtlas.retheme) LinAtlas.retheme(); } catch (e) {}
-    onMapThemeChange();   // swap the OpenFreeMap dark/positron style if the map is live
+    // The MapLibre style swap is gone with the stage; the atlas retheme above is the only
+    // geographic surface that needs a theme hook now.
   }
 
   /* ---------- the server is the authority on which theme renders ----------
@@ -2034,8 +1608,7 @@
       s.toggleAttribute("hidden", s.dataset.page !== page));
     document.querySelectorAll("[data-nav]").forEach((b) =>
       b.classList.toggle("active", b.dataset.nav === page));
-    // the pinned map card is fixed-positioned — never leave it over another page
-    if (page !== "portfolio") hideMapCard();
+    // (The pinned MapLibre marker card is gone with its stage; there is nothing to hide here.)
     // (re)render content pages so they reflect the latest portfolio state.
     // Guarded so a single page-render error can never leave navigation half-done.
     try {
@@ -2822,7 +2395,8 @@
     syncTheme: syncThemeFromServer,
     refresh() {
       buildRadar(); buildFallbackList(); renderStatusLegend();
-      if (mapBuilt) buildMap();   // keep the map view in sync once initialized
+      // The geographic views re-render on their own switch (buildAtlasStage / buildGeoStage);
+      // the removed MapLibre stage's sync-on-refresh went with it.
       // if the selected project was archived, fall back to the first active one
       if (selectedId && !LIN_PROJECTS.some((p) => p.id === selectedId) && LIN_PROJECTS.length) {
         selectProject(LIN_PROJECTS[0].id);
@@ -2844,12 +2418,11 @@
     openDetail,
     showPage,
     getSelectedId() { return selectedId; },
-    // Exposed for tests_render.html / a Playwright harness so the Map/Globe flyTo behaviour
-    // can be driven and read back without a real network. Not used by production UI code,
-    // which reaches these through wireViewToggle()'s own listeners.
+    // Exposed for tests_render.html / a Playwright harness so the view toggle and globe
+    // behaviour can be driven and read back without a real network. Not used by production UI
+    // code, which reaches these through wireViewToggle()'s own listeners.
     setPortfolioView,
     wireViewToggle,
-    getGlMap() { return glMap; },
     getPortfolioGlobe() { return portfolioGlobe; },
     // Re-key the cached selection after a project-number change (setprojectnumber)
     // so the detail page / highlights keep pointing at the renamed project.

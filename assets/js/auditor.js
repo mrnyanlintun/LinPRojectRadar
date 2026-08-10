@@ -133,7 +133,7 @@
   function projectOptions() {
     const list = (LinStore.cachedActive && LinStore.cachedActive()) || [];
     return `<option value="">Select a project…</option>` +
-      list.map((p) => `<option value="${esc(p.id)}"${p.id === state.projectId ? " selected" : ""}>${esc(p.id)} — ${esc(p.name)}</option>`).join("");
+      list.map((p) => `<option value="${esc(p.id)}"${p.id === state.projectId ? " selected" : ""}>${esc(p.id)} · ${esc(p.name)}</option>`).join("");
   }
   function statusKey(s) {
     const v = String(s || "").toLowerCase().trim();
@@ -160,7 +160,7 @@
       state.corpus = Array.isArray(list) ? list : [];
     } catch (e) {
       state.corpus = [];
-      state.corpusError = "Couldn't load corpus — store unreachable.";
+      state.corpusError = "Couldn't load corpus: store unreachable.";
     } finally {
       state.corpusLoading = false;
     }
@@ -207,7 +207,7 @@
   /* ---------- XLSX export ---------- */
   function exportAuditXLSX(auditData, projectId) {
     const XL = window.XLSX;
-    if (!XL) { alert("SheetJS not loaded — cannot export XLSX."); return; }
+    if (!XL) { alert("SheetJS not loaded: cannot export XLSX."); return; }
     const r = auditData;
     const items = Array.isArray(r.items) ? r.items : (Array.isArray(r.results) ? r.results : []);
     const rows = [
@@ -334,7 +334,7 @@
     const draftRow = (needsDraft && draft && (draft.text || draft.loading || draft.error))
       ? `<tr class="aud-draft-row"><td colspan="5">
           <div class="aud-draft">
-            <p class="aud-draft-label kn-sub">Draft response request (for contractor fairness gate) — requires human review before sending</p>
+            <p class="aud-draft-label kn-sub">Draft response request (for contractor fairness gate): requires human review before sending</p>
             ${draft.loading ? `<p class="kn-sub">Drafting with AI…</p>`
               : draft.error ? `<p class="aud-msg warn">${esc(draft.error)}</p>`
               : `<textarea class="aud-draft-text" rows="5" readonly>${esc(draft.text)}</textarea>`}
@@ -391,7 +391,7 @@
 
     return `<div class="aud-result">
       <div class="aud-summary">
-        <strong>${total}</strong> items reviewed —
+        <strong>${total}</strong> items reviewed:
         <span class="aud-status aud-status-approved">${ap} Approved</span>,
         <span class="aud-status aud-status-approved-as-noted">${apN} Approved as Noted</span>,
         <span class="aud-status aud-status-rejected">${rj} Rejected</span>,
@@ -586,7 +586,7 @@
           dataBase64: b64,
           masterFormatSections: sections
         });
-        state.uploadMsg = "✓ Uploaded — " + f.name +
+        state.uploadMsg = "✓ Uploaded: " + f.name +
           (sections.length ? " · " + sections.length + " MasterFormat section" + (sections.length > 1 ? "s" : "") + " detected" : "");
         state.pickFile = null;
         await loadCorpus();

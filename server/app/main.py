@@ -195,6 +195,25 @@ def readyz() -> JSONResponse:
     return JSONResponse(status_code=200 if ready else 503, content=body)
 
 
+# ---------------------------------------------------------------- browser map config
+
+
+@app.get("/mapconfig", include_in_schema=False)
+def map_config_endpoint() -> JSONResponse:
+    """
+    What the project detail page needs to decide whether to draw a real map.
+
+    The browser map key lives in the deployment's environment, not in a committed file, so the
+    page asks for it here rather than reading a baked-in value. When no key is set this returns
+    `present: false` and no key, and the page keeps the flat atlas as its no-key map rather than
+    loading anything from Google. See `map_config.py` for why exposing a browser map key is
+    correct where exposing the geocoding key is not.
+    """
+    from .map_config import map_config
+
+    return JSONResponse(content=map_config())
+
+
 # ---------------------------------------------------------------- /exec facade
 
 

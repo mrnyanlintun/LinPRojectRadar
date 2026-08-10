@@ -57,7 +57,7 @@ var LinAdmin = (function () {
       '<input type="text" readonly class="ig-input admin-secret-input" value="' + esc(secretValue) + '">' +
       '<button type="button" class="btn small admin-copy-btn">Copy</button>' +
       '<p class="admin-secret-warning">Shown once. It is stored hashed and cannot be retrieved ' +
-      'again — write it down or copy it now.</p>' +
+      'again. Write it down or copy it now.</p>' +
     '</div>';
   }
 
@@ -68,7 +68,7 @@ var LinAdmin = (function () {
         var text = input ? input.value : "";
         copyToClipboard(text).then(function (ok) {
           if (window.LinUI && LinUI.toast) {
-            LinUI.toast(ok ? "Copied" : "Copy failed — select the field and copy manually", ok);
+            LinUI.toast(ok ? "Copied" : "Copy failed. Select the field and copy manually", ok);
           }
           if (input) { input.focus(); input.select(); }
         });
@@ -175,13 +175,13 @@ var LinAdmin = (function () {
           // standard participant decisions are scored against (T6 Part F).
           '<label class="login-field-label" for="admin-new-role">Role</label>' +
           '<select id="admin-new-role" class="ig-input">' +
-            '<option value="Participant">Participant — research subject</option>' +
-            '<option value="ResearchAdmin">Admin — manages users, membership, export</option>' +
-            '<option value="Expert">Expert — research review panel</option>' +
+            '<option value="Participant">Participant: research subject</option>' +
+            '<option value="ResearchAdmin">Admin: manages users, membership, export</option>' +
+            '<option value="Expert">Expert: research review panel</option>' +
           '</select>' +
-          '<label class="login-field-label">Username (optional — generated as PM-### if left blank)</label>' +
+          '<label class="login-field-label">Username (optional, generated as PM-### if left blank)</label>' +
           '<input type="text" id="admin-new-code" class="ig-input" placeholder="PM-001">' +
-          '<label class="login-field-label">Initial password (optional — generated if left blank)</label>' +
+          '<label class="login-field-label">Initial password (optional, generated if left blank)</label>' +
           '<input type="text" id="admin-new-password" class="ig-input" placeholder="Leave blank to generate">' +
           '<div id="admin-new-operational-fields" hidden>' +
             '<label class="login-field-label">Display name</label>' +
@@ -238,10 +238,10 @@ var LinAdmin = (function () {
   function openResetModal(p) {
     if (!window.LinUI || !LinUI.openModal) return;
     LinUI.openModal({
-      title: "Reset password — " + (p.display_name || p.pseudonymous_code),
+      title: "Reset password: " + (p.display_name || p.pseudonymous_code),
       mount: function (body) {
         body.innerHTML =
-          '<label class="login-field-label">New password (optional — generated if left blank)</label>' +
+          '<label class="login-field-label">New password (optional, generated if left blank)</label>' +
           '<input type="text" id="admin-reset-password-input" class="ig-input" placeholder="Leave blank to generate">' +
           '<button type="button" class="btn primary" id="admin-reset-submit">Reset</button>' +
           '<div id="admin-reset-result"></div>';
@@ -330,7 +330,7 @@ var LinAdmin = (function () {
   function openLinkGoogleModal(p) {
     if (!window.LinUI || !LinUI.openModal) return;
     LinUI.openModal({
-      title: "Link Google account — " + (p.display_name || p.pseudonymous_code),
+      title: "Link Google account: " + (p.display_name || p.pseudonymous_code),
       mount: function (body) {
         body.innerHTML =
           '<label class="login-field-label">Google account email</label>' +
@@ -359,7 +359,7 @@ var LinAdmin = (function () {
   function openFlagsModal(p) {
     if (!window.LinUI || !LinUI.openModal) return;
     LinUI.openModal({
-      title: "Feature flags — " + (p.display_name || p.pseudonymous_code),
+      title: "Feature flags: " + (p.display_name || p.pseudonymous_code),
       mount: function (body) { paintFlags(body, p); }
     });
   }

@@ -36,15 +36,15 @@
   // Compact display name for a category, derived from its canonical name so labels never overflow
   // the node. No category numbers are shown (NAMING_AUTHORITY: groups and purposes only).
   var SHORT_NAME_BY_NAME = {
-    "Cost & EVM Performance": "Cost & EVM",
+    "Cost and EVM Performance": "Cost and EVM",
     "Schedule Performance": "Schedule",
     "Cost Risk": "Cost Risk",
     "Document-Derived Condition Signals": "Doc Signals",
-    "System Dynamics & Complexity": "Sys Dynamics",
+    "System Dynamics and Complexity": "Sys Dynamics",
     "Delivery Quality Performance": "Delivery Quality",
     "Signal Synthesis": "Synthesis",
     "Evidence Combination": "Evidence",
-    "Regulatory & Authority Thresholds": "Governance",
+    "Regulatory and Authority Thresholds": "Governance",
     "Decision Optimization": "Decision",
     "Data Integrity": "Data Integrity"
   };
@@ -237,9 +237,9 @@
     container.innerHTML =
       '<section class="panel projnet2d-panel" aria-label="Project signal network">' +
         '<div class="projnet2d-head">' +
-          '<p class="eyebrow">PROJECT SIGNAL NETWORK — ' + totalModules + ' modules · ' + cats.length + ' categories</p>' +
+          '<p class="eyebrow">PROJECT SIGNAL NETWORK · ' + totalModules + ' modules · ' + cats.length + ' categories</p>' +
           '<p class="kn-sub">Derived from this project’s extracted signals</p>' +
-          (anyData ? "" : '<p class="projnet2d-awaiting">Awaiting signal extraction — all categories shown as no-data.</p>') +
+          (anyData ? "" : '<p class="projnet2d-awaiting">Awaiting signal extraction. All categories shown as no-data.</p>') +
         '</div>' +
         '<div class="projnet2d-legend" aria-hidden="true">' +
           '<span><i style="background:var(--status-complete)"></i>Complete</span>' +
@@ -451,7 +451,7 @@
       var b = statusBucket(d.status);
       var word = d.status ? (b ? BUCKET_WORD[b] : String(d.status)) : "No data";
       var color = b ? BUCKET_FILL[b] : inkColor;
-      return '<span class="pn2d-co-cat">' + esc(label) + '</span> — ' + colorSpan(word, color);
+      return '<span class="pn2d-co-cat">' + esc(label) + '</span> · ' + colorSpan(word, color);
     }
 
     function showCallout(key, wx, wy, html) {

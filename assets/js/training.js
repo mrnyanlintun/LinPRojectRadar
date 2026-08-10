@@ -224,8 +224,8 @@ var LinTraining = (function () {
   function figuresHtml(s, n) {
     var floatLeft = s.float_total_days - s.float_consumed_days;
     return '<div class="tr-figures" id="tr-figures">' +
-      fig("Cost performance", s.ac ? (s.ev / s.ac).toFixed(3) : "no data", "tr-cpi") +
-      fig("Schedule performance", s.pv ? (s.ev / s.pv).toFixed(3) : "no data", "tr-spi") +
+      fig("Cost performance", s.ac ? (s.ev / s.ac).toFixed(3) : "No data", "tr-cpi") +
+      fig("Schedule performance", s.pv ? (s.ev / s.pv).toFixed(3) : "No data", "tr-spi") +
       fig("Float remaining", floatLeft + " of " + s.float_total_days + " days", "tr-float") +
       fig("Contingency", money(s.contingency_remaining) + " of " +
           money(s.contingency_original), "tr-contingency") +
