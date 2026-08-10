@@ -1496,6 +1496,19 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
     # wrong place to argue about a date format, and a NULL simply means the out-of-period check
     # has nothing to measure against and says nothing.
     period_end = _parse_iso_date(payload.get("period_end") or payload.get("periodEnd"))
+
+    # THE NUMBER-ONLY PATH. The period picker now offers a NUMBER (the periods this project
+    # already holds, plus the next one) rather than a calendar — see period_number_options and
+    # ws-upload-period-select. A caller that states only the number sends no date at all, so
+    # this reproduces the same derivation `period_for_end_date` used to do for a MATCHED
+    # existing period: it returns the period's own previously STATED ending date, not a guess.
+    # A brand-new period (never uploaded to before) has no stated date to reuse, so this stays
+    # NULL exactly as an unstated date always has — the out-of-period check below then has
+    # nothing to measure against and correctly says nothing, which is the pre-existing behaviour
+    # for any period with no known ending date, not a new gap.
+    if period_end is None:
+        period_end = dict(_stated_period_ends(session, project)).get(period)
+
     previous_end = _previous_period_end(session, project, period)
 
     entries = payload.get("documents")
@@ -2572,11 +2585,57 @@ def a_projectperiodfordate(session: Session, payload: dict, secret: str,
     }
 
 
+def a_projectperiods(session: Session, payload: dict, secret: str, ttl: int) -> dict[str, Any]:
+    """
+    Any active member. READS ONLY. Which periods this project already holds, and the next
+    number the picker should offer for a new one.
+
+    THE PICKER OFFERS A NUMBER, BOUNDED TO WHAT EXISTS PLUS ONE NEW ONE. Periods are
+    sequential bookkeeping the platform assigns in order (`_highest_period` + 1 is always the
+    next one a new upload opens); a free-text number field would let a person open period 9
+    while periods 2-8 stay forever empty, which is a gap nothing here is built to explain. So
+    this lists every period the project already holds evidence for, each with its stated ending
+    date where one is on file, plus the one new period a person can open next. A research
+    project's period is set by its study sequence, not by this list, and that is called out
+    rather than silently offered as a choice.
+    """
+    caller, problem = resolve_caller(session, payload, secret)
+    if problem:
+        return problem
+    project, member, problem = require_member(session, caller, payload, "projectperiods")
+    if problem:
+        return problem
+
+    ends = dict(_stated_period_ends(session, project))
+    highest = _highest_period(session, project)
+    periods = [{"period": p, "period_end": ends.get(p).isoformat() if ends.get(p) else None}
+               for p in range(1, highest + 1)]
+
+    assignment, _decision, _package = project_decision_state(session, project)
+    server_derived = None
+    if assignment is not None:
+        from .research_decision import current_period
+        server_derived = _period_number(current_period(session, assignment))
+
+    return {
+        "ok": True,
+        "project_id": project.legacy_id,
+        "periods": periods,
+        "next_period": highest + 1,
+        "server_derived": server_derived,
+        "server_time": now_iso(),
+    }
+
+
 DOCUMENT_ACTIONS: dict[str, Callable[[Session, dict, str, int], dict]] = {
     "projectupload": a_projectupload,
     # The calendar picker's read-only preview: a date in, the period it names out. Same rule the
-    # upload applies, so the number shown is the number written.
+    # upload applies, so the number shown is the number written. Kept for callers still keyed on
+    # a date (workspace.js's Period documents panel offers a date field of its own).
     "projectperiodfordate": a_projectperiodfordate,
+    # The upload modal's period picker: which periods this project already holds, and the next
+    # number it can open. READ ONLY.
+    "projectperiods": a_projectperiods,
     # The legacy one-document ingest, adapted onto projectupload. See a_extractsignals for why
     # it is an adapter and not a second extraction path.
     "extractsignals": a_extractsignals,

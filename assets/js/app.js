@@ -1942,7 +1942,8 @@
     const back = document.createElement("div");
     back.className = "app-modal-backdrop";
     back.innerHTML =
-      '<div class="app-modal" role="dialog" aria-modal="true" aria-label="' + esc(opts.title || "Dialog") + '">' +
+      '<div class="app-modal' + (opts.wide ? " app-modal-wide" : "") +
+        '" role="dialog" aria-modal="true" aria-label="' + esc(opts.title || "Dialog") + '">' +
         '<button type="button" class="app-modal-x" aria-label="Close">×</button>' +
         '<h2 class="app-modal-title">' + esc(opts.title || "") + '</h2>' +
         '<div class="app-modal-body"></div>' +

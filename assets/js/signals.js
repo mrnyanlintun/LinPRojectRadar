@@ -1243,45 +1243,63 @@
   /* The reporting period the person stated on this dropzone.
 
      Scoped to the dropzone's own container so the modal and the Signals tab each read their
-     own controls. Falls back to period one only when the field has been emptied, which stops a
-     malformed entry posting NaN; it is not a silent default for "unstated", because the field
-     carries a visible value from the moment the dropzone renders. */
+     own controls. The period is a NUMBER, picked from a list built by `refreshPeriodOptions`
+     of the periods this project already holds plus the next one — not typed freely, so there
+     is no malformed entry to fall back from. Nothing is sent until a period has been chosen. */
   function readStatedPeriod(container) {
     var scope = container || document;
-    var endEl = scope.querySelector ? scope.querySelector(".dz-period-end") : null;
-    return { periodEnd: (endEl && endEl.value) ? endEl.value : null };
+    var selEl = scope.querySelector ? scope.querySelector(".dz-period-select") : null;
+    var v = selEl ? selEl.value : "";
+    var n = v ? parseInt(v, 10) : NaN;
+    return { period: isFinite(n) && n >= 1 ? n : null };
   }
 
-  /* The period the picked date names, previewed from the server.
+  /* Populate the period select with what this project already holds, plus the next new one.
 
-     The NUMBER IS NOT COMPUTED HERE. `documents.period_for_end_date` decides it and
-     `_resolve_period` applies the same function at the upload, so what this shows is what the
-     upload writes. A second copy of the rule in JavaScript would drift from the one that
-     actually files the document, and the person would be told one period and get another. */
-  function previewPeriod(container, projectId, isoDate) {
-    var readout = container.querySelector(".dz-period-derived");
-    if (!readout) return Promise.resolve(null);
-    if (!projectId || !isoDate) {
-      readout.textContent = "Pick the date this reporting period ends.";
-      readout.className = "dz-period-derived ws-note";
+     THE NUMBER IS NOT INVENTED HERE. `documents.a_projectperiods` reads the project's own
+     stored periods and states the next one; this only renders what it returns, so the choices
+     offered always match what the server would actually accept. Bounded to existing periods
+     plus one new period deliberately: periods are sequential bookkeeping the platform assigns
+     in order, and a free-text number would let someone open period 9 while 2 through 8 stay
+     forever empty, a gap nothing here explains. */
+  function refreshPeriodOptions(container, projectId) {
+    var sel = container.querySelector(".dz-period-select");
+    var note = container.querySelector(".dz-period-derived");
+    if (!sel) return Promise.resolve(null);
+    if (!projectId) {
+      sel.innerHTML = '<option value="">Select a project first…</option>';
+      sel.disabled = true;
+      if (note) { note.textContent = "Select a project above to see its reporting periods."; note.className = "dz-period-derived ws-note"; }
       return Promise.resolve(null);
     }
-    readout.textContent = "Checking which period that is…";
-    readout.className = "dz-period-derived ws-note";
-    return LinStore.postWithTimeout({
-      action: "projectperiodfordate", id: projectId, period_end: isoDate
-    }).then(function (r) {
+    sel.disabled = true;
+    sel.innerHTML = '<option value="">Loading periods…</option>';
+    return LinStore.postWithTimeout({ action: "projectperiods", id: projectId }).then(function (r) {
       if (!r || r.ok !== true) {
-        readout.textContent = (r && r.error) || "Could not resolve that date to a period.";
-        readout.className = "dz-period-derived ws-error";
+        sel.innerHTML = '<option value="">Could not load periods</option>';
+        if (note) { note.textContent = (r && r.error) || "Could not load this project's periods."; note.className = "dz-period-derived ws-error"; }
         return null;
       }
-      readout.textContent = "Period " + r.period + (r.existing ? "" : " (new)") + " · " + r.basis;
-      readout.className = "dz-period-derived ws-note";
+      sel.disabled = false;
+      var opts = (r.periods || []).map(function (p) {
+        var label = "Period " + p.period + (p.period_end ? " (ends " + p.period_end + ")" : "");
+        return '<option value="' + p.period + '">' + esc(label) + "</option>";
+      });
+      opts.push('<option value="' + r.next_period + '">Period ' + r.next_period + " (new)</option>");
+      sel.innerHTML = opts.join("");
+      sel.value = String(r.next_period);
+      if (note) {
+        if (r.server_derived != null) {
+          note.textContent = "This project's period is set by its study sequence: period " + r.server_derived + ".";
+        } else {
+          note.textContent = "These documents are filed to the period you pick.";
+        }
+        note.className = "dz-period-derived ws-note";
+      }
       return r;
     }).catch(function () {
-      readout.textContent = "Could not reach the server to resolve that date.";
-      readout.className = "dz-period-derived ws-error";
+      sel.innerHTML = '<option value="">Could not reach the server</option>';
+      if (note) { note.textContent = "Could not reach the server to load periods."; note.className = "dz-period-derived ws-error"; }
       return null;
     });
   }
@@ -1298,22 +1316,22 @@
         <p class="dtr-note">Upload any combination. Documents are identified automatically.</p>
       </div>
       <div class="dz-project-row">${projectField}</div>
-      <!-- THE REPORTING PERIOD IS PICKED ON A CALENDAR, AND THE NUMBER IS DERIVED FROM IT.
-           A person knows the date their reporting period ends; the period NUMBER is bookkeeping
-           they should not have to keep in their head, and a number typed into a spinner is the
-           easiest thing in this dialog to get silently wrong. So the calendar is the control:
-           the date is what is picked, and the projectperiodfordate action resolves it to the
-           period the upload will actually write to, shown back before anything is uploaded.
-           No number is sent. The server derives it from this date with the same function that
-           answered the preview, so the period shown is the period written. -->
+      <!-- THE REPORTING PERIOD IS PICKED AS A NUMBER — what the platform actually stores and
+           shows everywhere else, not a date. The choices offered are the periods this project
+           already holds, read from the server, plus the one new period a person can open next;
+           the ending date each existing period was stated with (if any) is shown beside it so
+           the number is not a bare digit. The server derives whatever ending date it needs for
+           a document-outside-period check from the period the person picked, the same way it
+           always resolved one for a matched period: by reusing that period's own stored ending
+           date, never a fresh guess. -->
       <div class="ws-period-picker dz-period-row">
-        <label class="ws-field-label" for="dz-period-end">Reporting period ending</label>
-        <input id="dz-period-end" class="ws-input ws-input-inline dz-period-end" type="date"
-               required aria-describedby="dz-period-derived">
+        <label class="ws-field-label" for="dz-period-select">Reporting period</label>
+        <select id="dz-period-select" class="ws-input ws-input-inline dz-period-select" required
+                aria-describedby="dz-period-derived"><option value="">Select a project first…</option></select>
       </div>
-      <p id="dz-period-derived" class="dz-period-derived ws-note" aria-live="polite">Pick the date
-        this reporting period ends.</p>
-      <p class="ws-note dz-period-note">These documents are filed to the period that date names.
+      <p id="dz-period-derived" class="dz-period-derived ws-note" aria-live="polite">Select a
+        project above to see its reporting periods.</p>
+      <p class="ws-note dz-period-note">These documents are filed to the period you pick.
         A document dated outside it is still stored, and reported back to you.</p>
       <div class="dropzone">
         <div class="dz-icon" aria-hidden="true">↑</div>
@@ -1338,20 +1356,18 @@
     browse.addEventListener("click", () => input.click());
     input.addEventListener("change", (e) => { handleFiles(e.target.files); input.value = ""; });
 
-    // The calendar drives the readout. Every date change re-asks the server which period that
-    // date names, so the person sees the answer before they drop anything, and sees it change
-    // if they pick a different date. Scoped to this dropzone's own container: the detail modal
-    // and the Signals tab each render one and must not read each other's controls.
-    const dateEl = container.querySelector(".dz-period-end");
+    // Choosing a project loads that project's own periods into the select. Scoped to this
+    // dropzone's own container: the detail modal and the Signals tab each render one and must
+    // not read each other's controls.
     const projSel = container.querySelector(".dz-project");
     function currentProjectId() {
       return projSel ? projSel.value : "";
     }
-    function refreshPeriodPreview() {
-      previewPeriod(container, currentProjectId(), dateEl ? dateEl.value : "");
+    function reloadPeriods() {
+      refreshPeriodOptions(container, currentProjectId());
     }
-    if (dateEl) dateEl.addEventListener("change", refreshPeriodPreview);
-    if (projSel && projSel.tagName === "SELECT") projSel.addEventListener("change", refreshPeriodPreview);
+    if (projSel && projSel.tagName === "SELECT") projSel.addEventListener("change", reloadPeriods);
+    reloadPeriods();
     ["dragenter", "dragover"].forEach((ev) =>
       dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add("dragover"); }));
     dz.addEventListener("dragleave", (e) => {
@@ -1468,11 +1484,10 @@
 
       let docType = "auto";
       try {
-        // ONLY THE DATE TRAVELS. `_resolve_period` derives the period number from `period_end`
-        // using `period_for_end_date`, the same function that answered this dropzone's preview,
-        // so there is no number for the client to get wrong and nothing to disagree about. A
-        // number sent from here would override that derivation, which is precisely the drift
-        // the single-function rule exists to prevent.
+        // THE NUMBER TRAVELS, NOT A DATE. `_resolve_period` honours an explicit `period`
+        // directly; the server separately derives whatever ending date it needs for the
+        // out-of-period check by reusing this period's own previously stated ending date, so
+        // there is nothing for the client to compute or disagree with the server about.
         const statedPeriod = readStatedPeriod(container);
         const extractPayload = {
           action: "extractsignals",
@@ -1481,7 +1496,7 @@
           dataBase64: base64,
           mimeType: file.type || "application/pdf",
           fileName: file.name,
-          period_end: statedPeriod.periodEnd
+          period: statedPeriod.period
         };
         // Extract with auto-retry on Anthropic rate-limit (429) errors. Returns the
         // successful response; throws on a non-rate-limit failure or exhausted
@@ -1570,16 +1585,16 @@
         queue.appendChild(note);
         return;
       }
-      // NO DATE, NO UPLOAD. The period used to default to one when nothing was stated, which is
-      // how a second period's documents silently landed in the first. Refusing here is the
+      // NO PERIOD, NO UPLOAD. The period used to default to one when nothing was stated, which
+      // is how a second period's documents silently landed in the first. Refusing here is the
       // loud version of that: the person is told what is missing and nothing is filed to a
       // period they did not choose.
-      const statedEnd = readStatedPeriod(container).periodEnd;
-      if (!statedEnd) {
+      const statedPeriod = readStatedPeriod(container).period;
+      if (!statedPeriod) {
         const note = document.createElement("div");
         note.className = "dz-item dz-error";
-        note.innerHTML = `<span class="dz-item-error">Pick the date this reporting period ends ` +
-          `before dropping documents. The period is taken from that date.</span>`;
+        note.innerHTML = `<span class="dz-item-error">Pick the reporting period ` +
+          `before dropping documents.</span>`;
         queue.appendChild(note);
         return;
       }

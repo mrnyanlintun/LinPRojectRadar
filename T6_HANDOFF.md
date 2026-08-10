@@ -5478,3 +5478,54 @@ SwiftShader WebGL), both operational light (Fairbanks) and dark (NYC/Gotham) the
 390x844 mobile viewport: training project absent from every portfolio surface and reachable via
 Train; navigator lists all 10 sections, clicking expands and scrolls; `.app` width unchanged;
 navigator hidden (not narrowed) on mobile.
+
+## The upload modal goes wide, and the period picker is a number (2026-08-10, fifth session)
+
+Branch `claude/upload-modal-and-period-picker`. Report at
+`REPORT_2026-08-10_upload-modal-and-period.md`.
+
+**THE UPLOAD MODAL (`ingest.js:openUploadModal`, built from `signals.js:dropzoneHtml`) IS WIDE
+NOW.** `LinUI.openModal` takes `opts.wide`; only the upload modal sets it. `.app-modal-wide`
+is `min(920px, 96vw)`, Create Project and Archived stay at 480px. The document-type reference
+grid and the per-file results grid (`.dz-queue`, now CSS grid `auto-fill minmax(260px,1fr)`) both
+just needed the width — no markup rewrite, no content change. The phone-width media query
+already covered every modal and now explicitly beats the wide rule's specificity too, so mobile
+is unaffected. The approved notice text (`disclaimers.js`) was not touched; a browser check reads
+it back character-for-character from the live DOM.
+
+**THE PERIOD PICKER ON THAT SAME MODAL IS A NUMBER NOW, NOT THE CALENDAR THE PRIOR SESSION
+BUILT.** The owner settled on the number as what the platform actually stores and shows
+everywhere. Read the code first: `period_for_end_date`'s matched-period arms already returned a
+period's own STORED ending date, never the freshly typed one — so the derivation reproduces
+exactly that, starting from a number instead of a date. `a_projectupload` now falls back to
+`dict(_stated_period_ends(session, project)).get(period)` whenever the client sends a period
+number and no date, which is what the dropzone now always does. A brand-new period has no stated
+date to fall back to and stays NULL — the same "nothing to measure against" behaviour an absent
+date always produced, not a new gap. `period_for_end_date`, `projectperiodfordate`, and
+`workspace.js`'s own explicit period+date fields are UNTOUCHED.
+
+**THE PICKER OFFERS EXISTING PERIODS PLUS ONE NEW ONE, NOT A FREE-TEXT NUMBER.** New read-only
+action `projectperiods` lists what `_highest_period`/`_stated_period_ends` already know; the
+`<select>` can never disagree with what the server would do with that number, because it reads
+the same tables. A free-text field would let someone open period 9 while 2-8 stay empty forever,
+a gap nothing downstream explains. `_resolve_period` still accepts any `period >= 1` from a
+payload for backward compatibility — this only bounds what the picker's dropdown *offers*.
+
+**Existing documents keep their existing period. Nothing was re-filed or recomputed.**
+`ComputedResult.period_cutoff` still derives from the period's own evidence dates (0023,
+untouched). `server/app/simulation/` untouched.
+
+**Verify.** Server suite 56 suites, **3047/3047** (new `test_period_number_picker.py` = 25,
+fault-injected on the fallback and reverted). `tests.html` **51/51**. `tests_render.html`
+**286/287** (the one red is the same pre-existing auth-gated production-read row, unrelated).
+Real headless-Chromium drive against a live in-process server (stub extractor), **26/26**:
+desktop wide modal, phone-collapsed modal with no horizontal scroll, notice text verified
+byte-for-byte from the DOM, a period-2 document landing in and computing as period 2 with a
+distinct stored result from period 1, an out-of-window document flagged AND stored (not
+rejected) with zero date sent in that particular upload, a genuine extraction failure (unrecorded
+document hash) rendering its own error row and Retry control, and a successful retry once the
+fault is fixed.
+
+Files changed: `assets/js/signals.js`, `assets/js/ingest.js`, `assets/js/app.js`,
+`assets/css/radar.css`, `server/app/documents.py`, `server/tools/test_period_number_picker.py`,
+`REPORT_2026-08-10_upload-modal-and-period.md`, this entry.

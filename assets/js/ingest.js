@@ -467,6 +467,11 @@
     const projName = preselectId ? ((LinStore.getCached(preselectId) || {}).name || "") : "";
     LinUI.openModal({
       title: locked ? "Upload Documents" : "Upload Documents",
+      // Wide: the document-type reference and the per-file results list are both cramped in
+      // the default 480px modal — the types wrap across many rows and each result truncates to
+      // a narrow strip. See .app-modal-wide in radar.css; it still collapses to full width on a
+      // phone viewport exactly like every other modal.
+      wide: true,
       // Non-dismissable while a batch runs: the backdrop is inert, Escape / ×
       // prompt "leave anyway?". Once the summary shows (busy=false) closing is free.
       canClose: () => !busy,
