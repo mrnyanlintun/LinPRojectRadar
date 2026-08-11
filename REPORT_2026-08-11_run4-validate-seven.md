@@ -93,7 +93,7 @@ the audit called most damaging.
 
 | Item | Value |
 |---|---|
-| Commit at the freeze | (recorded below, after merge) |
+| Commit at the freeze | `4292bafb6df6ecc99c130de17726433258bfee5b` on `claude/remediation-validate-seven`, merged to `main` as the commit that follows it |
 | Branch cut from | `origin/main` at `640c355` |
 | Analytical layer version | `sim-2026.08-v2` (was `sim-2026.07-v1` through all four remediation runs; moved once, here) |
 | Voting modules | A1.7 TCPI, A1.8 Variance at Completion |
