@@ -1300,6 +1300,23 @@ _acc = re.search(r"getModuleAbstentionReason\s*=\s*function[\s\S]{0,900}", _tax)
 check(_acc is not None and "abstained" in _acc.group(0),
       "the accessor reads the abstention list off the row, which is the graft the freeze run "
       "installed")
+# THE JOIN BETWEEN THE STORED ROW AND THE SURFACE. The renderer reads a reason off an entry keyed
+# by the module's method class, matched through the taxonomy. Both keys the accessor needs are
+# asserted to be on what the server actually stores, so the two halves cannot drift apart while
+# each half's own test stays green.
+_absent_run = registry.run_all({}, "scenario-run6", "P1", "2025-06-30")
+_shape = {k for e in _absent_run["abstained"] for k in e}
+check({"module_id", "reason"} <= _shape,
+      "the server stores every abstention as a module id and a reason, which is the pair the "
+      "renderer reads", str(sorted(_shape)))
+_with_reason = [e for e in _absent_run["abstained"] if e.get("reason")]
+check(len(_with_reason) >= 30,
+      f"{len(_with_reason)} of {len(_absent_run['abstained'])} abstentions carry a reason for "
+      f"the ledger to print")
+check(all("_" not in (e["reason"] or "") and "—" not in (e["reason"] or "")
+          and not re.search(r"\b[A-D]\d+\.\d+\b", e["reason"] or "")
+          for e in _with_reason),
+      "every stored reason is speakable: no key name, no module id, no em dash")
 
 
 # =================================================================================================
