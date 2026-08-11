@@ -9,6 +9,121 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-11 — Remediation Run 8: the 27 unresolved modules retested and classified, and two more modules that cannot report a healthy project
+
+**Branch `claude/run8-retest-classify-27` from `origin/main` at `18b6b80`, the Run 7 merge. THIS
+RUN CHANGES NO PRODUCTION CODE.** Tests, `code_audit/` artefacts, the report and this entry only.
+Report: `REPORT_2026-08-11_run8-retest-and-classify-27.md`, which is controlling and
+self-contained. Suite: `server/tools/test_run8_retest_classify_27.py`, **232/232 checks, 185
+cases, every expectation proved able to fail by perturbation**.
+
+**THE EXACT 27, RECONCILED RATHER THAN COPIED.** The suite recomputes Run 6's own coverage
+arithmetic from the same sources, reading Run 6's `COVERED_HERE` set out of the merged suite file
+rather than retyping ids: 100 registry-computed, minus 63 covered by Run 6, minus 2 by Run 4,
+minus 8 disabled concept-only, leaves exactly 27, matching Run 6's printed list character for
+character. They are:
+
+`A1.1 A1.5 A1.6 A1.11 A2.1 A2.2 A2.3 A2.5 A2.9 A2.10 A2.11 A3.1 A3.6 A4.4 A4.10 A5.1 A5.4 A5.5
+A5.6 A5.7 A5.8 A6.1 A6.2 A6.3 A6.4 B2.18 B2.19`
+
+**BUCKET TOTALS: 1 = 0, 2 = 16, 3 = 7, 4 = 2, 5 = 2, unresolved = 0, total 27.** Bucket 1 being
+empty is a finding, not an omission: nine of the 27 pass their current arithmetic exactly and are
+in Buckets 3, 4 or 5 solely because the canonical method their name claims needs a structure the
+corpus does not hold. **None of the 27 carries a Run 1 proxy qualifier**, asserted by
+intersecting the derived 27 with `registry.PROXY_QUALIFIERS`.
+
+**THE TWO LEAD FINDINGS ARE BOTH "A HEALTHY READING IS UNREACHABLE", WHICH IS RUN 6's FINDING 1.1
+IN TWO FURTHER PLACES.**
+- **B2.18 MARCOS Ranking.** The module sets the anti-ideal utility to one minus the ideal
+  utility, so the two sum to one by construction, the score collapses to
+  `1 / (1 + (1-u)/u + u/(1-u))`, that expression is symmetric about a utility of one half and is
+  bounded above by one third, and the Amber edge is 0.35. **Only Red is reachable, exhausted over
+  65,856 combinations, and a project at every ideal scores zero** because the anti arm divides by
+  zero. Recommended disposition is abstention, the same one you gave the regret module in Run 7,
+  and the reason code already exists.
+- **A2.1 PERT Network Criticality.** The band divides an eightieth percentile of a sum of
+  triangular durations by a baseline that is a **sum of modes**. The expected finish already
+  exceeds the baseline by eight per cent before the percentile is taken. **Green is unreachable
+  over 200 seeds crossed with eight schedule indices**, lowest ratio observed 1.16 against a Green
+  edge of 1.15. A project running twice as fast as plan reads Amber.
+
+**FIVE OF THE SIXTEEN BUCKET 2 DEFECTS ARE A FIX THAT DID NOT CARRY ACROSS TO THE MODULE NEXT
+DOOR.** A2.10 Schedule Risk Analysis carries the exact unguarded denominator the fifteen-defects
+run removed from Cost Risk Analysis, and **a schedule index of zero RAISES rather than
+abstaining**, losing the whole project computation; a negative index reports the project 1,075
+days early and reads Green. A5.5 Rework Feedback Loop is Run 6 finding 1.4 standing in the module
+beside the one Run 7 corrected: **0.64 and Red with both logs, 0.04 and Green with neither**, all
+four evidence subsets exhausted, and a reported zero is indistinguishable from an absent log
+because the guard is a truthiness test. A6.2 Safety Performance is the fifteen-defects run's
+defect 15 in the neighbouring module: with no reported incident rate it converts meeting mentions
+into a rate at ten points per mention, so **a project where safety was never discussed reads Green
+with the best safety index the module can award**. A4.10 accepts a document risk of minus one half
+and lands **Green**. A6.1 accepts an audited quality score of 150 out of 100 and reads Green.
+
+The other Bucket 2 modules are A1.5, A1.6 (which also requires earned value, planned value and
+budget and reads none of them), A1.11, A2.5, A2.9, A2.11, A3.6 (a participant-facing sentence
+reading `+-28.8% BAC`), A5.8 and A6.4.
+
+**WHAT CHATGPT MUST CREATE, AND NONE OF IT IS CREATED HERE.** Complete schemas are in
+`code_audit/run8_required_project_corpus_specs.csv` and
+`code_audit/run8_required_reference_decision_specs.csv`; every asset must be labelled
+`SYNTHETIC_RESEARCH_FIXTURE`.
+- **Corpus A, project structures.** `CORPUS_A2_activity_network` is the highest-leverage single
+  asset in the report: it serves **four Bucket 2 modules** (A2.1, A2.5, A2.10, A2.11) as their
+  follow-on as well as feeding `CORPUS_A2_critical_chain` for A2.3. Then
+  `CORPUS_A2_linear_production` (A2.2), `CORPUS_A1_cost_uncertainty` (A1.1),
+  `CORPUS_A4_quality_audit` (A4.4), `CORPUS_A5_flow_processes` (A5.6),
+  `CORPUS_A5_supply_agents` (A5.7), `CORPUS_A6_environmental_audit` (A6.3).
+- **Corpus B, reference and decision objects.** `DATASET_B1_scenario_payoff` (A5.4) and
+  `DATASET_B2_alternatives_matrix` (B2.19, and B2.18 as its follow-on).
+- **Corpus C, optional disabled modules.** `DATASET_B3_reference_class` (A3.1) and
+  `DATASET_B4_dependency_matrix` (A5.1). Both carry an incremental-value test that must pass
+  before activation, and **neither module is reactivated by this run**.
+
+**BUCKET 5 IS A3.1 AND A5.1, AND THEY ARE NOT THE RUN 1 DISABLED EIGHT.** Their off state rests on
+Run 7's unconditional abstention, not on the registry short circuit, and the suite asserts that
+distinction so a later run does not assume otherwise. Both were driven on an empty and a fully
+populated input, both abstain in every case with a speakable reason, both appear on the production
+abstention list carrying a reason and an activation state, and neither votes.
+
+**BOUNDARY INCLUSIVITY IS STILL TWO CONVENTIONS WITH NO RULE.** A2.9, A6.2, A6.3 and A4.10 are
+inclusive on the calmer side; A5.6, A5.7 and A4.4 are exclusive, on ratios of the same kind. Run 7
+brought A5.6 and A5.7 into agreement with the look-ahead measure on abstention and they remain in
+disagreement with it on inclusivity. A2.3 has a degenerate edge: at zero chain completion the
+Amber threshold is zero and the arm is inclusive, so **a project exactly on plan, having consumed
+no buffer at all, reads Amber in its first period**.
+
+**PRODUCTION PATH.** All 27 driven through `compute_project` and `registry.run_all`, not only
+through their functions: every one is reached, ten production values equal their hand-derived
+direct-case values module by module, every stored band is recognised by `fusion.normalise_status`,
+**not one of the 27 votes**, the voting set is still exactly `{A1.7, A1.8}`, and on an empty input
+the production path bands none of the 27.
+
+**VERIFY.** Frozen-file guard re-based to `18b6b80` with an **empty** permitted set, so any
+difference under `server/app/` or `assets/` fails; production-tree hash taken at the start of the
+run and matched at the end; `git diff --name-only origin/main` contains only tests, audit outputs,
+the report and this entry. **185 of 185 expectations red under perturbation**, plus a hand
+injection of three expectations taking the suite to 229/232 and back to 232/232 on restore. One
+perturbation bug was found and fixed in the harness itself: `expected * 2 + 1` is a fixed point at
+minus one and would have made one case silently unprovable.
+
+**NO MIGRATION.** No schema touched. **0020 through 0025 remain unapplied in production.**
+Production never inspected or queried; throwaway SQLite only.
+
+**WHAT THE NEXT SESSION NEEDS.** Disposition the sixteen Bucket 2 defects as four classes rather
+than sixteen items (unreachable bands, unguarded domains, absent-source composites, fabricated
+inputs); run a **band-reachability sweep across every banded module**, since two of the four the
+taxonomy has checked so far have an unreachable healthy band; build `CORPUS_A2_activity_network`
+first; and settle the boundary-inclusivity convention, which is now three runs of findings and no
+rule.
+
+Files: `server/tools/test_run8_retest_classify_27.py` (new),
+`REPORT_2026-08-11_run8-retest-and-classify-27.md` (new), `code_audit/run8_unresolved_27_universe.csv`,
+`code_audit/run8_module_test_results.csv`, `code_audit/run8_module_classification.csv`,
+`code_audit/run8_expectation_mutation_proof.csv`, `code_audit/run8_required_project_corpus_specs.csv`,
+`code_audit/run8_required_reference_decision_specs.csv` (all new), this entry. No file under
+`server/app/`, `assets/` or `research/`.
+
 # 2026-08-11 — Remediation Run 7: the fix-now defects, and sixteen modules that stop reporting on projects they were told nothing about
 
 Branch `claude/run7-fix-now-defects` from `origin/main` at `021d5e2`. Filed as
