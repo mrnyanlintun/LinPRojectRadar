@@ -1429,12 +1429,30 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
     Interval_Fuzzy_Sets: true, Z_Numbers: true, PLTS: true, Plithogenic_Sets: true,
     Belief_Rule_Base: true, Quantum_Probability: true, ABM_Governance: true
   };
+  // Remediation Run 4, the freeze point. The band boundaries of the two measures that
+  // contribute to project status are cited to published sources; the five held back are the
+  // ones no source was found for, and no citation was stretched to cover them. Mirrored from
+  // server/app/simulation/registry.py (BAND_SOURCES, HELD_NON_VOTING_UNSOURCED_BANDS,
+  // BAND_SOURCE_LIMIT), which is the source of truth. Keyed by method_class. This is the
+  // methods documentation surface, not the participant decision sequence.
+  const RUN4_BAND_STATUS = {
+    TCPI: "Contributes to project status. The boundaries of its bands are cited above, and the citation establishes where the boundaries come from, not how often the reading is right.",
+    VAC: "Contributes to project status. The boundaries of its bands are cited above, and the citation establishes where the boundaries come from, not how often the reading is right.",
+    Lookahead_Health: "Advisory, and it does not contribute to project status. No published source was found that states a threshold for the share of look-ahead activities carrying an open constraint. The plan-reliability benchmarks in the lean construction literature measure a different quantity, so they were not borrowed for it. The boundaries below are uncalibrated and uncited.",
+    Contingency_Burn_Rate: "Advisory, and it does not contribute to project status. No published source was found that states a threshold for contingency consumption against progress, and the premise the first boundary rests on, that a reserve should be drawn down in proportion to progress, is not what the contingency literature describes. The boundaries below are uncalibrated and uncited.",
+    Material_Cost_Variance: "Advisory, and it does not contribute to project status. No published source was found that states a control limit for a material variance measured mid-execution against a progress-adjusted baseline. Published estimate accuracy ranges describe how far an estimate may sit from eventual cost when it is prepared, which is a different question, so they were not borrowed for it. The boundaries below are uncalibrated and uncited.",
+    RFI_Velocity: "Advisory, and it does not contribute to project status. No published source was found that states a per-week request rate or a share-overdue threshold. Published studies report counts per project and response times, which a normalisation this measure does not perform sits between. The boundaries below are uncalibrated and uncited.",
+    Submittal_Rejection: "Advisory, and it does not contribute to project status. No published source was found that states a threshold for the share of submittals rejected. The boundaries below are uncalibrated and uncited."
+  };
   function modDoc(m) {
     const qualifier = RUN1_PROXY_QUALIFIER[m.mc];
     const disabled = !!RUN1_DISABLED[m.mc];
     const newlyWired = !disabled && !!RUN3_NEWLY_WIRED[m.mc];
     const wiringNote = newlyWired
       ? `<p class="kn-remediation"><strong>Wiring.</strong> Newly wired and unvalidated. This module reads an assembled signal package, and the computation path supplied a flat set of figures, so it produced no finding on any real reporting period until that assembly was built. It now runs on every period. Its output has not been validated against real project evidence, it is advisory and does not vote, and it reads raw signals: the eligibility gate that would qualify a signal package before evidence combination and governance read it is not implemented. See remediation_programme.md, the adapter run.</p>`
+      : "";
+    const bandStatus = RUN4_BAND_STATUS[m.mc]
+      ? `<p class="kn-remediation"><strong>Band boundaries.</strong> ${esc(RUN4_BAND_STATUS[m.mc])}</p>`
       : "";
     const remediationNote = disabled
       ? `<p class="kn-remediation"><strong>Status.</strong> Disabled. This module is concept-only: it has no production implementation of the analytical structure its name claims. It is not executed, does not vote on category or project status, and is excluded from every fusion input. See remediation_programme.md, Run 1.</p>`
@@ -1444,6 +1462,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
     const html = `
       <p><strong>Purpose.</strong> ${m.purpose}</p>
       ${remediationNote}
+      ${bandStatus}
       ${wiringNote}
       <p><strong>Computation.</strong> ${m.formula}</p>
       ${m.bands ? modBands(m.bands) : ""}
@@ -1579,20 +1598,20 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       ground: "Earned Schedule (Lipke, 2003) extends classic EVM by re-expressing schedule performance in time units rather than cost units, correcting the well-documented failure of SPI to signal schedule problems near project completion." },
     { n: "A1.7", name: "TCPI", mc: "TCPI",
       purpose: "Answers 'what cost-efficiency must the remaining work achieve to finish on budget', the forward-looking complement to CPI's backward-looking read.",
-      formula: "TCPI = (BAC − EV) / (BAC − AC). If remaining budget (BAC − AC) ≤ 0, the module reports Red directly ('Budget exhausted: no remaining funds') without computing a ratio.",
-      bands: [["green","Green","TCPI ≤ 1.05, achievable"], ["yellow","Yellow","1.05-1.10, challenging"], ["amber","Amber","1.10-1.20, very difficult"], ["red","Red","&gt; 1.20, unrealistic, or budget exhausted"]],
-      abstain: "bac, ev or ac missing.",
+      formula: "TCPI = (BAC − EV) / (BAC − AC).",
+      bands: [["green","Green","TCPI ≤ 1.00, within the efficiency already planned"], ["amber","Amber","1.00-1.10, above the efficiency planned"], ["red","Red","&gt; 1.10, beyond the improvement a cumulative cost index is observed to make"]],
+      abstain: "bac, ev or ac missing, or remaining budget (BAC − AC) is zero or below, which is the ordinary state of a project whose actual cost has reached its budget. There is no cost efficiency that finishes the remaining work inside a remaining budget of nothing, so the measure gives no finding rather than its worst finding.",
       sources: "Pay Application, Schedule of Values, Cost Report.",
       interp: "A TCPI well above the project's demonstrated CPI-to-date is a credibility check: if the project has never sustained that efficiency level, budget completion is unrealistic without a scope, schedule, or funding change.",
-      ground: "TCPI is a standard PMI EVM-standard index (Project Management Institute, 2019) used specifically to test the achievability of the current EAC/BAC assumption against required future performance." },
+      ground: "This index is defined by the Project Management Institute (A Guide to the Project Management Body of Knowledge, 6th edition, 2017, section 7.4.2.2; Practice Standard for Earned Value Management, 2nd edition, 2011) as the cost efficiency the remaining work must achieve to meet the stated financial goal, which is what makes 1.00 a boundary the source itself specifies rather than one chosen here. The second boundary applies a number from Christensen and Heise, Cost Performance Index Stability, National Contract Management Journal 25(1), 1993, pages 7 to 15: the cumulative cost performance index was found not to move by more than 0.10 after the twenty per cent completion point, so a demand for more than that much improvement asks for a movement the remaining work is not observed to make. That step from the finding to the boundary is an inference drawn here, and it is stated so that a reader can weigh it." },
     { n: "A1.8", name: "Variance at Completion", mc: "VAC",
       purpose: "States the projected dollar (and percentage) gap between the approved budget and the forecast final cost, in a form finance can put directly into a funding request.",
       formula: "EAC = BAC / CPI; VAC = BAC − EAC; VAC% = (VAC / BAC) × 100.",
-      bands: [["green","Green","VAC% ≥ −5%"], ["yellow","Yellow","−10% to −5%"], ["amber","Amber","−20% to −10%"], ["red","Red","&lt; −20%"]],
-      abstain: "bac or cpi missing.",
+      bands: [["green","Green","VAC% ≥ 0%, the forecast meets the budget"], ["amber","Amber","−11.11% to 0%, a forecast overrun within the movement a cumulative cost index is observed to make"], ["red","Red","&lt; −11.11%"]],
+      abstain: "bac or cpi missing, cpi zero or below (the forecast is the budget divided by that index and cannot be formed), or bac zero.",
       sources: "Pay Application, Schedule of Values, Cost Report.",
       interp: "A negative VAC means projected overrun; its magnitude in dollars, not just percent, is what a program controls office takes into a contingency-draw conversation.",
-      ground: "Variance at Completion is a standard PMI EVM output (Project Management Institute, 2019), the completion-date analogue of the point-in-time cost variance (CV)." },
+      ground: "Variance at completion is defined by the Project Management Institute (A Guide to the Project Management Body of Knowledge, 6th edition, 2017, section 7.4.2.2; Practice Standard for Earned Value Management, 2nd edition, 2011) as the difference between the approved budget and the forecast final cost, so zero is a boundary the source specifies. Because the forecast used here is the index-based one, the percentage is an exact restatement of the cost performance index, and the second boundary is the index value 0.90 expressed as a percentage. That value applies the 0.10 stability finding of Christensen and Heise, Cost Performance Index Stability, National Contract Management Journal 25(1), 1993, pages 7 to 15, by an inference stated here rather than left implicit. The limit of that citation belongs with it: the stability finding is conditional on the project being past twenty per cent complete, and this measure does not read percent complete, so the condition is not enforced." },
     { n: "A1.9", name: "Budget Execution Rate", mc: "Budget_Execution_Rate",
       purpose: "Checks whether spend is tracking ahead of, at, or behind the pace implied by percent complete, a different lens from CPI because it compares AC to expected spend, not to EV.",
       formula: "expectedSpend = BAC × (actualPctComplete / 100); executionRate = AC / expectedSpend.",
@@ -1678,7 +1697,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       purpose: "Measures what share of near-term planned activities are constrained (blocked by a predecessor, permit, or resource) in the 6-week look-ahead, a leading indicator of near-term schedule disruption.",
       formula: "constraintRate = activitiesConstrained / activitiesPlanned.",
       bands: [["green","Green","≤ 10%"], ["yellow","Yellow","10-25%"], ["amber","Amber","25-40%"], ["red","Red","&gt; 40%"]],
-      abstain: "activitiesPlanned or activitiesConstrained missing.",
+      abstain: "activitiesPlanned or activitiesConstrained missing, no activities planned in the window (a constraint share has no denominator), or a constrained count outside the planned count.",
       sources: "Look-Ahead Schedule (6-week).",
       interp: "A high constraint rate flags near-term activities that cannot start as planned; because this is the 6-week window, it gives the PM roughly a month and a half of lead time to clear constraints before they hit the critical path.",
       ground: "Six-week look-ahead constraint tracking is a core Last Planner System practice (Ballard, 2000) for surfacing near-term make-ready problems before they consume schedule float." },
@@ -1725,7 +1744,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       purpose: "Compares how much of the contingency reserve has been spent against how much of the physical work has been completed, flagging contingency being drawn down faster than the project is progressing.",
       formula: "burnRate = (originalContingency − remainingContingency) / originalContingency; expectedBurn = actualPctComplete/100; burnStress = burnRate / expectedBurn.",
       bands: [["green","Green","burnStress ≤ 1.0"], ["yellow","Yellow","1.0-1.3"], ["amber","Amber","1.3-1.6"], ["red","Red","&gt; 1.6"]],
-      abstain: "originalContingency, remainingContingency or actualPctComplete missing, or originalContingency ≤ 0.",
+      abstain: "originalContingency, remainingContingency or actualPctComplete missing, originalContingency ≤ 0, reported progress at zero (there is nothing yet to compare consumption against), or a remaining contingency outside the range zero to the original amount.",
       sources: "Pay Application (contingency line item), Cost Report.",
       interp: "A burn stress above 1.0 means contingency is being consumed faster than the work is being earned; sustained stress above 1.6 means the reserve will be exhausted well before completion at the current draw rate.",
       ground: "Contingency drawdown-versus-progress tracking is a standard program-controls discipline for public capital budgets, where contingency is a finite, board-approved reserve rather than an open-ended buffer." },
@@ -1741,7 +1760,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       purpose: "Compares actual material cost against the baseline expectation at current progress, isolating material-price risk from labor or overhead variance.",
       formula: "expected = materialCostBaseline × (actualPctComplete/100); variance = (materialCostCurrent − expected) / expected.",
       bands: [["green","Green","|variance| ≤ 5%"], ["yellow","Yellow","5-12%"], ["amber","Amber","12-20%"], ["red","Red","&gt; 20%"]],
-      abstain: "materialCostBaseline or materialCostCurrent missing.",
+      abstain: "materialCostBaseline or materialCostCurrent missing, reported progress missing (the comparison is against the share of the baseline the completed work has earned, and assuming the project is finished would read every project mid-way through as a large underrun), or an expected material cost of zero.",
       sources: "Cost Report; when absent, the value is estimated as ~40% of BAC/AC and flagged '[est.]', a Data and Evidence Health (Source Reliability) input.",
       interp: "This module isolates material cost specifically; a material variance that is much worse than the overall CPI points to a commodity price or procurement issue rather than a general execution problem.",
       ground: "Cost-variance-by-cost-category decomposition (material, labor, overhead) is standard practice for pinpointing which cost driver is responsible for an overall CPI shortfall, rather than treating cost variance as a single undifferentiated number." },
@@ -1800,15 +1819,15 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       purpose: "Tracks the rate of new RFIs per week and the share overdue, a classic leading indicator of scope ambiguity, design conflicts, or coordination problems.",
       formula: "rfiPerWeek = (rfiCount / rfiPeriodDays) × 7; overdueRatio = rfiOverdue / rfiCount (when overdue data is available). Status is the worse of the velocity band and the overdue band.",
       bands: [["green","Green","≤ 2 RFIs/week, and overdue ratio &lt; 10%"], ["yellow","Yellow","2-4/week, or overdue ratio 10-20%"], ["amber","Amber","4-8/week, or overdue ratio 20-35%"], ["red","Red","&gt; 8/week, or overdue ratio ≥ 35%"]],
-      abstain: "rfiCount (or the legacy rfiNumber fallback) is null.",
-      sources: "RFI / RFI Log, with period-days, overdue count, average response days, and oldest-open days used when available; falls back to an estimated 30-day period (flagged '[est.]') if the RFI log lacks explicit dates.",
+      abstain: "rfiCount (or the legacy rfiNumber fallback) is null, the number of days the log covers is absent or not above zero (a rate over time needs the span of time it was measured over), or an overdue count outside the total.",
+      sources: "RFI / RFI Log, with period-days, overdue count, average response days, and oldest-open days used when available. The log period is required and is no longer assumed to be thirty days when the log does not state it.",
       interp: "A high overdue ratio combined with a slow average response time (&gt;14 days) points to dispute risk on top of raw volume, worth flagging even if the raw per-week velocity still reads Green.",
       ground: "RFI velocity and aging are standard leading indicators in construction claims and delay-analysis practice; a spike in RFI volume with slow turnaround is a well-documented precursor to schedule and cost impact well before it registers in EVM." },
     { n: "A4.3", name: "Submittal Rejection Rate", mc: "Submittal_Rejection",
       purpose: "Tracks the share of submittals (or RFAs) rejected or requiring revise-and-resubmit, a leading indicator of design/spec quality and contractor coordination problems.",
       formula: "rejectionRate = rejected / total, preferring the RFA log (rfaTotal/rfaRejected) when present, falling back to the submittal register (submittalsTotal/submittalsRejected).",
       bands: [["green","Green","≤ 5%"], ["yellow","Yellow","5-15%"], ["amber","Amber","15-25%"], ["red","Red","&gt; 25%"]],
-      abstain: "both total and rejected counts (RFA or submittal) are missing.",
+      abstain: "both total and rejected counts (RFA or submittal) are missing, the total is not above zero, or a rejected count outside the total.",
       sources: "RFA / Approval Log (preferred), Submittal / Submittal Register (fallback); estimated from document risk when neither is available and flagged '[est.]'.",
       interp: "A high rejection rate concentrated in one discipline usually points to a specification or coordination issue at the design level, not contractor performance, worth checking against Spec Conflict Density before attributing it to the sub.",
       ground: "Submittal cycle-time and rejection-rate tracking is a standard construction quality-management metric; repeated rejections consume float invisibly, a well-known driver of schedule slip that predates any EVM impact." },

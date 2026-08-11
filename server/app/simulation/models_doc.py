@@ -39,12 +39,45 @@ _RANK = {"Green": 0, "Yellow": 1, "Amber": 2, "Red": 3}
 
 def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     count = si.get("rfiCount") if si.get("rfiCount") is not None else si.get("rfiNumber")
-    days = si.get("rfiPeriodDays") if si.get("rfiPeriodDays") is not None else 30
+    days = si.get("rfiPeriodDays")
     if count is None:
         return insufficient("RFI_Velocity")
+    # THE ABSTENTION GUARDS. Run 4 (validate the seven). The elapsed days are the denominator of
+    # a velocity, and the module's own declared input contract names them, yet an absent figure
+    # was replaced by thirty and the finding then stated "over 30 days" as though the document
+    # had said so. The note that would have marked it as assumed rides on a derived-source flag
+    # that nothing on the server ever sets, so on the real path the substitution was silent. A
+    # count of requests or a span of days below zero, and an overdue count larger than the total,
+    # are outside the domain of the two ratios this module forms.
+    if days is None:
+        return insufficient(
+            "RFI_Velocity",
+            "Awaiting the number of days the request log covers: a rate of requests over time "
+            "cannot be formed without the span of time it was measured over",
+        )
+    if not days > 0 or count < 0:
+        return insufficient(
+            "RFI_Velocity",
+            "Awaiting a request count and a log period that can form a rate: the figures read "
+            "from the request log cannot both be right",
+        )
+    overdue_raw = si.get("rfiOverdue")
+    if overdue_raw is not None and (overdue_raw < 0 or overdue_raw > count):
+        return insufficient(
+            "RFI_Velocity",
+            "Awaiting an overdue count that lies within the total: the figures read from the "
+            "request log cannot both be right",
+        )
     is_derived = _derived(si, "rfiPeriodDays")
-    per30 = js_round((count / days) * 300) / 10 if days > 0 else 0
-    per_week = js_round((count / days) * 70) / 10 if days > 0 else 0
+    per30 = js_round((count / days) * 300) / 10
+    per_week = js_round((count / days) * 70) / 10
+    # THE BAND, AND WHAT IT IS SOURCED TO: NOTHING. Run 4 looked for a source specifying two,
+    # four and eight requests per week, and for one specifying ten, twenty and thirty-five per
+    # cent overdue, and found neither. Industry studies of requests for information do publish
+    # numbers -- counts per project and average response times -- but a count per project or a
+    # response time is not a per-week rate threshold, and a normalisation this module does not
+    # perform (by contract value, by trade, by phase) sits between them. The boundaries are left
+    # as they were, uncited, and this module DOES NOT VOTE. See registry.CORE_VOTING_MODULES.
     vel_status = ("Green" if per_week <= 2 else "Yellow" if per_week <= 4
                   else "Amber" if per_week <= 8 else "Red")
     overdue_ratio = None
@@ -98,8 +131,27 @@ def run_submittal_rejection(si: dict, rand: Callable[[], float], period_cutoff) 
     if total is None or rejected is None:
         return insufficient("Submittal_Rejection")
     if not total > 0:
-        return insufficient("Submittal_Rejection")
+        return insufficient(
+            "Submittal_Rejection",
+            "Awaiting a submittal register with entries in it: a rejection share has no "
+            "denominator without one",
+        )
+    # THE ABSTENTION GUARD. Run 4 (validate the seven). A rejected count outside the total is
+    # outside the domain of a share of one in the other, and produced a rate above one, which
+    # every band above the top boundary silently absorbs into Red.
+    if rejected < 0 or rejected > total:
+        return insufficient(
+            "Submittal_Rejection",
+            "Awaiting a rejected count that lies within the total: the figures read from the "
+            "register cannot both be right",
+        )
     rate = js_round((rejected / total) * 1000) / 1000
+    # THE BAND, AND WHAT IT IS SOURCED TO: NOTHING. Run 4 looked for a source specifying five,
+    # fifteen and twenty-five per cent for a submittal rejection share and found none. Rejection
+    # depends on what the specification requires a submittal to contain and on the reviewer's
+    # own practice, and no recommended practice or peer-reviewed study located here states a
+    # numeric threshold for it. The boundaries are left as they were, uncited, and this module
+    # DOES NOT VOTE. See registry.CORE_VOTING_MODULES.
     color = ("Green" if rate <= 0.05 else "Yellow" if rate <= 0.15
              else "Amber" if rate <= 0.25 else "Red")
     is_derived = not use_rfa and _derived(si, "submittalsTotal")

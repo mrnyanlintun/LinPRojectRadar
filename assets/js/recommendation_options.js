@@ -143,10 +143,15 @@
     if (regret && regret.votes === false) {
       return {
         available: false,
+        // The word "validated" was removed here by Run 4 (the freeze point). It claimed a
+        // standard nothing on this platform meets: band boundaries are sourced to published
+        // literature, and false-positive and false-negative performance has never been measured
+        // on labelled cases. The sentence now says what is true, which is which measures
+        // contribute to project status. The substance a participant reads is unchanged.
         reason: "The analysis that scores the courses of action against each other is not one "
-          + "of the modules validated to vote on project status on an interim basis, so its "
-          + "scoring is not carried into a recommended course of action here. Its own finding "
-          + "still appears on the signal ledger.",
+          + "of the measures that contribute to project status, so its scoring is not carried "
+          + "into a recommended course of action here. Its own finding still appears on the "
+          + "signal ledger.",
         nonVoting: true,
         options: [],
         recommendation: null,

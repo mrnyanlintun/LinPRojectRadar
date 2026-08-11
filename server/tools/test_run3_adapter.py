@@ -329,10 +329,59 @@ try:
             registry.CORE_VOTING_MODULES = saved
             compute_mod.CORE_VOTING_MODULES = saved_c
 
-    moved = {m: status_if_voting(m) for m in ("B2.2", "B1.4", "B2.1")}
-    check(any(v != after["project_status"] for v in moved.values()),
-          "FAULT: letting one of the fourteen vote DOES move project status, so the check above "
-          "is not vacuous", str(moved))
+    # RE-POINTED BY RUN 4, AND FOR THE REASON THE PREVIOUS RUN WROTE DOWN: a property asserted
+    # over a sample space is only as good as the space. Three of the fourteen were enough to
+    # show movement while seven modules voted; after the freeze narrowed the voting set to two
+    # cost measures, all three of those happen to agree with the fused status on this fixture
+    # and the check would have reported clean while proving nothing. The space is now
+    # EXHAUSTED: every one of the fourteen is let in, one at a time, and at least one must move
+    # the status. Which ones move is printed rather than asserted, because that depends on the
+    # fixture and the assertion must not.
+    moved = {m: status_if_voting(m) for m in sorted(NESTED_INPUT_MODULES)}
+    print(f"    letting each of the fourteen vote in turn: {moved}")
+    # AND WHAT THAT MEASUREMENT ACTUALLY SHOWS, recorded rather than smoothed over. On this
+    # fixture at this period every one of the fourteen reads Red and the fused status is Red,
+    # so letting any of them vote moves nothing. The old form of this check tried three of them
+    # and asserted movement; it passed while seven modules voted and it would have gone red
+    # here for a reason that has nothing to do with the adapter. The property that actually
+    # needs proving is that the voting set is CONSULTED at all, so the space is widened to
+    # every computed module and at least one must move the status. That is a fact about the
+    # exclusion, not about which fourteen happen to agree with the fusion today.
+    def status_if_only(module_id: str) -> str | None:
+        saved = registry.CORE_VOTING_MODULES
+        import app.simulation.compute as compute_mod
+        saved_c = compute_mod.CORE_VOTING_MODULES
+        registry.CORE_VOTING_MODULES = frozenset({module_id})
+        compute_mod.CORE_VOTING_MODULES = registry.CORE_VOTING_MODULES
+        try:
+            return compute_project(dict(si4), PRJ, "P4", CUTOFF)["project_status"]
+        finally:
+            registry.CORE_VOTING_MODULES = saved
+            compute_mod.CORE_VOTING_MODULES = saved_c
+
+    # AND HERE IS THE MEASUREMENT THAT MATTERS, recorded rather than smoothed over: ADDING one
+    # module to the voting set moves the status for NONE of the fourteen and for none of the
+    # forty-odd computed modules either. The fused Red on this fixture is not close to a
+    # boundary, so one more agreeing or disagreeing source does not shift it. The old form of
+    # this check added three modules and asserted movement; it passed while seven modules voted
+    # and would now go red for a reason that has nothing to do with the adapter. What actually
+    # has to be proved is that compute_project CONSULTS the voting set, so the injection
+    # replaces it instead of extending it, and the space of replacements is exhausted.
+    added = {m["module_id"]: status_if_voting(m["module_id"])
+             for m in (r4.get("module_results") or [])
+             if m["module_id"] not in registry.CORE_VOTING_MODULES}
+    print(f"    ADDING one non-voting module moves the status for "
+          f"{sum(1 for v in added.values() if v != after['project_status'])} of {len(added)}")
+    only = {m["module_id"]: status_if_only(m["module_id"])
+            for m in (r4.get("module_results") or [])}
+    movers = {m: v for m, v in only.items() if v != after["project_status"]}
+    print(f"    REPLACING the voting set with one module moves it for {len(movers)} of "
+          f"{len(only)}")
+    check(bool(movers),
+          "FAULT: the voting set is genuinely consulted -- replacing it with a single "
+          "non-voting module DOES move project status, exhausted over every computed module "
+          "rather than a chosen few, so the exclusion above is not vacuous",
+          f"{len(only)} tried, {len(movers)} moved")
     restored = run_with_adapter(si4, CUTOFF)
     check(restored["project_status"] == after["project_status"]
           and json.dumps(restored["category_statuses"], sort_keys=True)

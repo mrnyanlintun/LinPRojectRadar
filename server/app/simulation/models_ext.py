@@ -296,8 +296,36 @@ def run_lookahead_health(si: dict, rand: Callable[[], float], period_cutoff) -> 
         return insufficient("Lookahead_Health")
     planned = si["activitiesPlanned"]
     constrained = si["activitiesConstrained"]
-    rate = constrained / planned if planned > 0 else 0
+    # THE ABSTENTION GUARDS. Run 4 (validate the seven). `planned` is the denominator, and a
+    # look-ahead window with no activities planned in it used to substitute a rate of zero,
+    # which is the best band this module has: a project reporting nothing to do was reported as
+    # having nothing constrained. A count of constrained activities larger than the count
+    # planned, or a negative count, is outside the domain of a ratio of one to the other and is
+    # a reading error in the document rather than a condition of the project.
+    if not planned > 0:
+        return insufficient(
+            "Lookahead_Health",
+            "Awaiting a look-ahead window with activities planned in it: a constraint rate has "
+            "no denominator without one",
+        )
+    if constrained < 0 or constrained > planned:
+        return insufficient(
+            "Lookahead_Health",
+            "Awaiting a constrained count that lies within the planned count: the figures read "
+            "from the look-ahead schedule cannot both be right",
+        )
+    rate = constrained / planned
     is_derived = _derived(si, "activitiesPlanned")
+    # THE BAND, AND WHAT IT IS SOURCED TO: NOTHING. Run 4 (validate the seven) looked for a
+    # source that specifies these numbers for a constraint rate and did not find one. The lean
+    # construction literature does publish numeric benchmarks for plan reliability -- Ballard,
+    # H. G., "The Last Planner System of Production Control", PhD thesis, University of
+    # Birmingham, 2000, reports percent plan complete rising from around half to around seventy
+    # per cent -- but percent plan complete is the share of committed tasks actually finished,
+    # which is a different measurement from the share of look-ahead activities carrying an open
+    # constraint. Citing it here would attach a number to a quantity it was not measured on.
+    # The boundaries are therefore left exactly as they were, uncited, and this module DOES NOT
+    # VOTE on category or project status. See registry.CORE_VOTING_MODULES.
     color = ("Green" if rate <= 0.10 else "Yellow" if rate <= 0.25
              else "Amber" if rate <= 0.40 else "Red")
     return {
@@ -401,10 +429,40 @@ def run_contingency_burn(si: dict, rand: Callable[[], float], period_cutoff) -> 
         return insufficient("Contingency_Burn_Rate")
     burned = si["originalContingency"] - si["remainingContingency"]
     if not si["originalContingency"] > 0:
-        return insufficient("Contingency_Burn_Rate")
+        return insufficient(
+            "Contingency_Burn_Rate",
+            "Awaiting an original contingency amount above zero: the share consumed has no "
+            "denominator without one",
+        )
+    # THE ABSTENTION GUARDS. Run 4 (validate the seven). Two denominators and one domain.
+    # Percent complete is the second denominator, and at zero per cent complete the code
+    # substituted the raw burn share for the ratio of burn to progress, which is a different
+    # quantity reported under the same name and lands in the calmest band whenever nothing has
+    # been burned yet. A remaining contingency above the original, or below zero, is outside the
+    # domain: it makes the consumed share negative or greater than one.
+    if si["remainingContingency"] < 0 or si["remainingContingency"] > si["originalContingency"]:
+        return insufficient(
+            "Contingency_Burn_Rate",
+            "Awaiting a remaining contingency that lies between zero and the original amount: "
+            "the figures read from the pay application cannot both be right",
+        )
     burn_rate = burned / si["originalContingency"]
     expected = si["actualPctComplete"] / 100
-    stress = round2(burn_rate / expected if expected > 0 else burn_rate)
+    if not expected > 0:
+        return insufficient(
+            "Contingency_Burn_Rate",
+            "Awaiting reported progress above zero: contingency consumption is compared against "
+            "how much of the work is complete, and there is nothing to compare it against yet",
+        )
+    stress = round2(burn_rate / expected)
+    # THE BAND, AND WHAT IT IS SOURCED TO: NOTHING. Run 4 looked and did not find a source
+    # specifying 1.0, 1.3 and 1.6 for contingency consumption against progress. AACE
+    # International's contingency recommended practices treat contingency as an amount
+    # determined by risk analysis, and the risk exposure a contingency covers is not spread
+    # evenly across a project's duration, so the premise the 1.0 boundary rests on -- that
+    # contingency should be consumed in proportion to progress -- is not only uncited, it is
+    # not what the literature describes. The boundaries are left as they were, uncited, and
+    # this module DOES NOT VOTE. See registry.CORE_VOTING_MODULES.
     color = ("Green" if stress <= 1.0 else "Yellow" if stress <= 1.3
              else "Amber" if stress <= 1.6 else "Red")
     is_derived = _derived(si, "originalContingency", "remainingContingency")
@@ -455,12 +513,39 @@ def run_material_cost_variance(si: dict, rand: Callable[[], float],
                                period_cutoff) -> dict[str, Any]:
     if not check_inputs(si, ("materialCostBaseline", "materialCostCurrent")):
         return insufficient("Material_Cost_Variance")
-    pct = si["actualPctComplete"] / 100 if si.get("actualPctComplete") is not None else None
-    expected = si["materialCostBaseline"] * pct if pct is not None else si["materialCostBaseline"]
-    variance = (si["materialCostCurrent"] - expected) / expected if expected > 0 else 0
+    # THE ABSTENTION GUARDS. Run 4 (validate the seven). The comparison is material cost to
+    # date against the share of the material baseline the project's progress has earned, so
+    # percent complete is part of the arithmetic and not an optional refinement. When it was
+    # absent the code compared cost to date against the WHOLE baseline, which is the same as
+    # assuming the project is finished: every project mid-way through then reads as a large
+    # underrun. That is a substituted input, not a missing one, and it abstains now. The
+    # expected amount is also the denominator, so it must be above zero.
+    if si.get("actualPctComplete") is None:
+        return insufficient(
+            "Material_Cost_Variance",
+            "Awaiting reported progress: material cost to date is compared against the share of "
+            "the material baseline the work completed has earned, and that share is not known",
+        )
+    pct = si["actualPctComplete"] / 100
+    expected = si["materialCostBaseline"] * pct
+    if not expected > 0:
+        return insufficient(
+            "Material_Cost_Variance",
+            "Awaiting a material baseline and reported progress above zero: there is no expected "
+            "material cost at this point to compare the cost to date against",
+        )
+    variance = (si["materialCostCurrent"] - expected) / expected
     variance = _round3(variance)
     is_derived = _derived(si, "materialCostBaseline")
     a = abs(variance)
+    # THE BAND, AND WHAT IT IS SOURCED TO: NOTHING. Run 4 looked. AACE International's cost
+    # estimate classification recommended practice (18R-97) does publish numeric accuracy ranges
+    # by estimate class, and it is tempting to read five and twenty per cent off them, but those
+    # ranges describe how far an ESTIMATE may sit from the eventual cost at the point it is
+    # prepared. They are not control limits for a variance measured mid-execution against a
+    # progress-adjusted baseline, and using them as such would attach a published number to a
+    # quantity it was not measured on. The boundaries are left as they were, uncited, and this
+    # module DOES NOT VOTE. See registry.CORE_VOTING_MODULES.
     color = ("Green" if a <= 0.05 else "Yellow" if a <= 0.12
              else "Amber" if a <= 0.20 else "Red")
     return {

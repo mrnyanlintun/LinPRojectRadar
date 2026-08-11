@@ -190,6 +190,7 @@ MODULE_RESULT_COLUMNS: tuple[str, ...] = (
     "group",
     "activation_state",
     "signal_qualification",
+    "band_source",
     "status_color",
     "evidence_metric",
     "result_json",
@@ -227,9 +228,61 @@ _RUN1_DISABLED: dict[str, str] = {
     "B4.6": "Pareto Frontier Analysis",
 }
 
-_RUN1_CORE_VOTING: frozenset[str] = frozenset({
-    "A1.7", "A1.8", "A2.8", "A3.2", "A3.4", "A4.2", "A4.3",
-})
+# Run 4 (validate the seven) narrowed the voting set to the two whose band boundaries a source
+# actually specifies. Mirrored from registry.CORE_VOTING_MODULES, which stays the source of
+# truth. The other five compute and show exactly as before and are advisory.
+_RUN1_CORE_VOTING: frozenset[str] = frozenset({"A1.7", "A1.8"})
+
+# Run 4, mirrored from registry.BAND_SOURCES, HELD_NON_VOTING_UNSOURCED_BANDS and
+# BAND_SOURCE_LIMIT. The export is committee-facing evidence, so the citation for every band a
+# voting computation uses travels with the row, together with the sentence stating what the
+# citation does not establish.
+_RUN4_BAND_SOURCES: dict[str, str] = {
+    "A1.7": (
+        "Green at or below 1.00, Amber at or below 1.10, Red above. 1.00 is definitional: "
+        "Project Management Institute, A Guide to the Project Management Body of Knowledge, "
+        "6th edition, 2017, section 7.4.2.2, and PMI Practice Standard for Earned Value "
+        "Management, 2nd edition, 2011. 1.10 applies, by stated inference, the 0.10 cumulative "
+        "cost index stability finding of Christensen and Heise, Cost Performance Index "
+        "Stability, National Contract Management Journal 25(1), 1993, pages 7 to 15."
+    ),
+    "A1.8": (
+        "Green at or above zero per cent, Amber at or above minus 11.11 per cent, Red below. "
+        "Zero is definitional: Project Management Institute, A Guide to the Project Management Body "
+        "of Knowledge, 6th edition, 2017, section 7.4.2.2. Minus 11.11 per cent is the exact "
+        "restatement of "
+        "a cost performance index of 0.90, applying Christensen and Heise's 0.10 stability "
+        "finding by stated inference; that finding is conditional on the project being past "
+        "twenty per cent complete and this measure does not read percent complete."
+    ),
+}
+
+_RUN4_HELD_NON_VOTING: dict[str, str] = {
+    "A2.8": "no source specifies a constraint-rate threshold",
+    "A3.2": "no source specifies a burn-against-progress threshold",
+    "A3.4": "no source specifies a control limit for a mid-execution material variance",
+    "A4.2": "no source specifies a per-week request rate or overdue-share threshold",
+    "A4.3": "no source specifies a rejection-share threshold",
+}
+
+_RUN4_BAND_SOURCE_LIMIT = (
+    "Band boundaries are sourced to published literature. False-positive and false-negative "
+    "performance is not measured: no labelled holdout corpus and no expert reference standard "
+    "exist for this platform, so how often a band is right is unknown."
+)
+
+
+def _run4_band_source(new_id: str) -> str:
+    """What the export records about this computation's band boundaries: the citation and its
+    limit, the reason it is held non-voting, or that no band question arises."""
+    cited = _RUN4_BAND_SOURCES.get(new_id)
+    if cited is not None:
+        return f"{cited} {_RUN4_BAND_SOURCE_LIMIT}"
+    held = _RUN4_HELD_NON_VOTING.get(new_id)
+    if held is not None:
+        return (f"Held non-voting: {held}. The boundaries this computation uses are "
+                "uncalibrated and uncited.")
+    return "Uncalibrated and uncited; advisory, non-voting."
 
 _RUN1_PROXY_QUALIFIERS: dict[str, str] = {
     "A1.2": "hard-coded transformations of two-sided CUSUM on real SPI history; k, H, sigma "
@@ -739,6 +792,7 @@ def build_module_results_rows(session: Session, project_legacy_ids: set[str] | N
                 "group": GROUP_NAMES.get(group_letter, group_letter),
                 "activation_state": _run1_activation_state(module_id),
                 "signal_qualification": _SIGNAL_QUALIFICATION,
+                "band_source": _run4_band_source(module_id),
                 "status_color": module.get("status_color"),
                 "evidence_metric": module.get("evidence_metric"),
                 "result_json": json.dumps(extra, sort_keys=True, default=str),
