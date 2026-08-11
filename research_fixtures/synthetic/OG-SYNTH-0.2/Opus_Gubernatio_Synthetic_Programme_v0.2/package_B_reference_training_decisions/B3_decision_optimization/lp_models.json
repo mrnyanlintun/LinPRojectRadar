@@ -1,0 +1,1124 @@
+{
+  "data_origin": "SYNTHETIC_RESEARCH_FIXTURE",
+  "models": [
+    {
+      "constraints": [
+        {
+          "coefficients": [
+            1.6,
+            1.1,
+            1.4,
+            0.6
+          ],
+          "name": "ACTION_COST_CAP",
+          "rhs": 9.625,
+          "sense": "LE",
+          "unit": "USD_MILLIONS"
+        },
+        {
+          "coefficients": [
+            2.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "name": "CREW_CAPACITY",
+          "rhs": 3.0,
+          "sense": "LE",
+          "unit": "CREW"
+        },
+        {
+          "coefficients": [
+            0.0,
+            0.15,
+            0.0,
+            0.0
+          ],
+          "name": "OVERTIME_CAP",
+          "rhs": 0.2,
+          "sense": "LE",
+          "unit": "FRACTION"
+        }
+      ],
+      "decision_problem_id": "DP-01",
+      "ground_truth": {
+        "objective_value": -848000.0,
+        "solution": {
+          "add_crew": 1.0,
+          "expedite": 1.0,
+          "overtime": 1.0,
+          "resequence": 1.0
+        },
+        "success": true
+      },
+      "model_class": "LINEAR_PROGRAM",
+      "objective": {
+        "coefficients": [
+          -160000.0,
+          -128000.0,
+          -176000.0,
+          -384000.0
+        ],
+        "constant": 0.0,
+        "sense": "MIN",
+        "unit": "USD_EQUIVALENT"
+      },
+      "solver_reference": {
+        "library": "scipy.optimize.linprog",
+        "method": "highs"
+      },
+      "variables": [
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "add_crew_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "overtime_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "expedite_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "resequence_intensity",
+          "upper": 1.0
+        }
+      ]
+    },
+    {
+      "constraints": [
+        {
+          "coefficients": [
+            1.6,
+            1.1,
+            1.4,
+            0.6
+          ],
+          "name": "ACTION_COST_CAP",
+          "rhs": 5.25,
+          "sense": "LE",
+          "unit": "USD_MILLIONS"
+        },
+        {
+          "coefficients": [
+            2.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "name": "CREW_CAPACITY",
+          "rhs": 3.0,
+          "sense": "LE",
+          "unit": "CREW"
+        },
+        {
+          "coefficients": [
+            0.0,
+            0.15,
+            0.0,
+            0.0
+          ],
+          "name": "OVERTIME_CAP",
+          "rhs": 0.2,
+          "sense": "LE",
+          "unit": "FRACTION"
+        }
+      ],
+      "decision_problem_id": "DP-02",
+      "ground_truth": {
+        "objective_value": -901000.0,
+        "solution": {
+          "add_crew": 1.0,
+          "expedite": 1.0,
+          "overtime": 1.0,
+          "resequence": 1.0
+        },
+        "success": true
+      },
+      "model_class": "LINEAR_PROGRAM",
+      "objective": {
+        "coefficients": [
+          -170000.0,
+          -136000.0,
+          -187000.0,
+          -408000.0
+        ],
+        "constant": 0.0,
+        "sense": "MIN",
+        "unit": "USD_EQUIVALENT"
+      },
+      "solver_reference": {
+        "library": "scipy.optimize.linprog",
+        "method": "highs"
+      },
+      "variables": [
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "add_crew_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "overtime_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "expedite_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "resequence_intensity",
+          "upper": 1.0
+        }
+      ]
+    },
+    {
+      "constraints": [
+        {
+          "coefficients": [
+            1.6,
+            1.1,
+            1.4,
+            0.6
+          ],
+          "name": "ACTION_COST_CAP",
+          "rhs": 11.5,
+          "sense": "LE",
+          "unit": "USD_MILLIONS"
+        },
+        {
+          "coefficients": [
+            2.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "name": "CREW_CAPACITY",
+          "rhs": 3.0,
+          "sense": "LE",
+          "unit": "CREW"
+        },
+        {
+          "coefficients": [
+            0.0,
+            0.15,
+            0.0,
+            0.0
+          ],
+          "name": "OVERTIME_CAP",
+          "rhs": 0.2,
+          "sense": "LE",
+          "unit": "FRACTION"
+        }
+      ],
+      "decision_problem_id": "DP-03",
+      "ground_truth": {
+        "objective_value": -954000.0,
+        "solution": {
+          "add_crew": 1.0,
+          "expedite": 1.0,
+          "overtime": 1.0,
+          "resequence": 1.0
+        },
+        "success": true
+      },
+      "model_class": "LINEAR_PROGRAM",
+      "objective": {
+        "coefficients": [
+          -180000.0,
+          -144000.0,
+          -198000.0,
+          -432000.0
+        ],
+        "constant": 0.0,
+        "sense": "MIN",
+        "unit": "USD_EQUIVALENT"
+      },
+      "solver_reference": {
+        "library": "scipy.optimize.linprog",
+        "method": "highs"
+      },
+      "variables": [
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "add_crew_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "overtime_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "expedite_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "resequence_intensity",
+          "upper": 1.0
+        }
+      ]
+    },
+    {
+      "constraints": [
+        {
+          "coefficients": [
+            1.6,
+            1.1,
+            1.4,
+            0.6
+          ],
+          "name": "ACTION_COST_CAP",
+          "rhs": 4.375,
+          "sense": "LE",
+          "unit": "USD_MILLIONS"
+        },
+        {
+          "coefficients": [
+            2.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "name": "CREW_CAPACITY",
+          "rhs": 3.0,
+          "sense": "LE",
+          "unit": "CREW"
+        },
+        {
+          "coefficients": [
+            0.0,
+            0.15,
+            0.0,
+            0.0
+          ],
+          "name": "OVERTIME_CAP",
+          "rhs": 0.2,
+          "sense": "LE",
+          "unit": "FRACTION"
+        }
+      ],
+      "decision_problem_id": "DP-04",
+      "ground_truth": {
+        "objective_value": -968406.25,
+        "solution": {
+          "add_crew": 0.7968749999999999,
+          "expedite": 1.0,
+          "overtime": 1.0,
+          "resequence": 1.0
+        },
+        "success": true
+      },
+      "model_class": "LINEAR_PROGRAM",
+      "objective": {
+        "coefficients": [
+          -190000.0,
+          -152000.0,
+          -209000.0,
+          -456000.0
+        ],
+        "constant": 0.0,
+        "sense": "MIN",
+        "unit": "USD_EQUIVALENT"
+      },
+      "solver_reference": {
+        "library": "scipy.optimize.linprog",
+        "method": "highs"
+      },
+      "variables": [
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "add_crew_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "overtime_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "expedite_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "resequence_intensity",
+          "upper": 1.0
+        }
+      ]
+    },
+    {
+      "constraints": [
+        {
+          "coefficients": [
+            1.6,
+            1.1,
+            1.4,
+            0.6
+          ],
+          "name": "ACTION_COST_CAP",
+          "rhs": 7.25,
+          "sense": "LE",
+          "unit": "USD_MILLIONS"
+        },
+        {
+          "coefficients": [
+            2.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "name": "CREW_CAPACITY",
+          "rhs": 3.0,
+          "sense": "LE",
+          "unit": "CREW"
+        },
+        {
+          "coefficients": [
+            0.0,
+            0.15,
+            0.0,
+            0.0
+          ],
+          "name": "OVERTIME_CAP",
+          "rhs": 0.2,
+          "sense": "LE",
+          "unit": "FRACTION"
+        }
+      ],
+      "decision_problem_id": "DP-05",
+      "ground_truth": {
+        "objective_value": -1060000.0,
+        "solution": {
+          "add_crew": 1.0,
+          "expedite": 1.0,
+          "overtime": 1.0,
+          "resequence": 1.0
+        },
+        "success": true
+      },
+      "model_class": "LINEAR_PROGRAM",
+      "objective": {
+        "coefficients": [
+          -200000.0,
+          -160000.0,
+          -220000.0,
+          -480000.0
+        ],
+        "constant": 0.0,
+        "sense": "MIN",
+        "unit": "USD_EQUIVALENT"
+      },
+      "solver_reference": {
+        "library": "scipy.optimize.linprog",
+        "method": "highs"
+      },
+      "variables": [
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "add_crew_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "overtime_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "expedite_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "resequence_intensity",
+          "upper": 1.0
+        }
+      ]
+    },
+    {
+      "constraints": [
+        {
+          "coefficients": [
+            1.6,
+            1.1,
+            1.4,
+            0.6
+          ],
+          "name": "ACTION_COST_CAP",
+          "rhs": 6.0,
+          "sense": "LE",
+          "unit": "USD_MILLIONS"
+        },
+        {
+          "coefficients": [
+            2.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "name": "CREW_CAPACITY",
+          "rhs": 3.0,
+          "sense": "LE",
+          "unit": "CREW"
+        },
+        {
+          "coefficients": [
+            0.0,
+            0.15,
+            0.0,
+            0.0
+          ],
+          "name": "OVERTIME_CAP",
+          "rhs": 0.2,
+          "sense": "LE",
+          "unit": "FRACTION"
+        }
+      ],
+      "decision_problem_id": "DP-06",
+      "ground_truth": {
+        "objective_value": -1113000.0,
+        "solution": {
+          "add_crew": 1.0,
+          "expedite": 1.0,
+          "overtime": 1.0,
+          "resequence": 1.0
+        },
+        "success": true
+      },
+      "model_class": "LINEAR_PROGRAM",
+      "objective": {
+        "coefficients": [
+          -210000.0,
+          -168000.0,
+          -231000.0,
+          -504000.0
+        ],
+        "constant": 0.0,
+        "sense": "MIN",
+        "unit": "USD_EQUIVALENT"
+      },
+      "solver_reference": {
+        "library": "scipy.optimize.linprog",
+        "method": "highs"
+      },
+      "variables": [
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "add_crew_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "overtime_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "expedite_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "resequence_intensity",
+          "upper": 1.0
+        }
+      ]
+    },
+    {
+      "constraints": [
+        {
+          "coefficients": [
+            1.6,
+            1.1,
+            1.4,
+            0.6
+          ],
+          "name": "ACTION_COST_CAP",
+          "rhs": 9.625,
+          "sense": "LE",
+          "unit": "USD_MILLIONS"
+        },
+        {
+          "coefficients": [
+            2.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "name": "CREW_CAPACITY",
+          "rhs": 3.0,
+          "sense": "LE",
+          "unit": "CREW"
+        },
+        {
+          "coefficients": [
+            0.0,
+            0.15,
+            0.0,
+            0.0
+          ],
+          "name": "OVERTIME_CAP",
+          "rhs": 0.2,
+          "sense": "LE",
+          "unit": "FRACTION"
+        }
+      ],
+      "decision_problem_id": "DP-07",
+      "ground_truth": {
+        "objective_value": -1166000.0,
+        "solution": {
+          "add_crew": 1.0,
+          "expedite": 1.0,
+          "overtime": 1.0,
+          "resequence": 1.0
+        },
+        "success": true
+      },
+      "model_class": "LINEAR_PROGRAM",
+      "objective": {
+        "coefficients": [
+          -220000.0,
+          -176000.0,
+          -242000.0,
+          -528000.0
+        ],
+        "constant": 0.0,
+        "sense": "MIN",
+        "unit": "USD_EQUIVALENT"
+      },
+      "solver_reference": {
+        "library": "scipy.optimize.linprog",
+        "method": "highs"
+      },
+      "variables": [
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "add_crew_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "overtime_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "expedite_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "resequence_intensity",
+          "upper": 1.0
+        }
+      ]
+    },
+    {
+      "constraints": [
+        {
+          "coefficients": [
+            1.6,
+            1.1,
+            1.4,
+            0.6
+          ],
+          "name": "ACTION_COST_CAP",
+          "rhs": 5.25,
+          "sense": "LE",
+          "unit": "USD_MILLIONS"
+        },
+        {
+          "coefficients": [
+            2.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "name": "CREW_CAPACITY",
+          "rhs": 3.0,
+          "sense": "LE",
+          "unit": "CREW"
+        },
+        {
+          "coefficients": [
+            0.0,
+            0.15,
+            0.0,
+            0.0
+          ],
+          "name": "OVERTIME_CAP",
+          "rhs": 0.2,
+          "sense": "LE",
+          "unit": "FRACTION"
+        }
+      ],
+      "decision_problem_id": "DP-08",
+      "ground_truth": {
+        "objective_value": -1219000.0,
+        "solution": {
+          "add_crew": 1.0,
+          "expedite": 1.0,
+          "overtime": 1.0,
+          "resequence": 1.0
+        },
+        "success": true
+      },
+      "model_class": "LINEAR_PROGRAM",
+      "objective": {
+        "coefficients": [
+          -230000.0,
+          -184000.0,
+          -253000.0,
+          -552000.0
+        ],
+        "constant": 0.0,
+        "sense": "MIN",
+        "unit": "USD_EQUIVALENT"
+      },
+      "solver_reference": {
+        "library": "scipy.optimize.linprog",
+        "method": "highs"
+      },
+      "variables": [
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "add_crew_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "overtime_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "expedite_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "resequence_intensity",
+          "upper": 1.0
+        }
+      ]
+    },
+    {
+      "constraints": [
+        {
+          "coefficients": [
+            1.6,
+            1.1,
+            1.4,
+            0.6
+          ],
+          "name": "ACTION_COST_CAP",
+          "rhs": 11.5,
+          "sense": "LE",
+          "unit": "USD_MILLIONS"
+        },
+        {
+          "coefficients": [
+            2.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "name": "CREW_CAPACITY",
+          "rhs": 3.0,
+          "sense": "LE",
+          "unit": "CREW"
+        },
+        {
+          "coefficients": [
+            0.0,
+            0.15,
+            0.0,
+            0.0
+          ],
+          "name": "OVERTIME_CAP",
+          "rhs": 0.2,
+          "sense": "LE",
+          "unit": "FRACTION"
+        }
+      ],
+      "decision_problem_id": "DP-09",
+      "ground_truth": {
+        "objective_value": -1272000.0,
+        "solution": {
+          "add_crew": 1.0,
+          "expedite": 1.0,
+          "overtime": 1.0,
+          "resequence": 1.0
+        },
+        "success": true
+      },
+      "model_class": "LINEAR_PROGRAM",
+      "objective": {
+        "coefficients": [
+          -240000.0,
+          -192000.0,
+          -264000.0,
+          -576000.0
+        ],
+        "constant": 0.0,
+        "sense": "MIN",
+        "unit": "USD_EQUIVALENT"
+      },
+      "solver_reference": {
+        "library": "scipy.optimize.linprog",
+        "method": "highs"
+      },
+      "variables": [
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "add_crew_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "overtime_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "expedite_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "resequence_intensity",
+          "upper": 1.0
+        }
+      ]
+    },
+    {
+      "constraints": [
+        {
+          "coefficients": [
+            1.6,
+            1.1,
+            1.4,
+            0.6
+          ],
+          "name": "ACTION_COST_CAP",
+          "rhs": 4.375,
+          "sense": "LE",
+          "unit": "USD_MILLIONS"
+        },
+        {
+          "coefficients": [
+            2.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "name": "CREW_CAPACITY",
+          "rhs": 3.0,
+          "sense": "LE",
+          "unit": "CREW"
+        },
+        {
+          "coefficients": [
+            0.0,
+            0.15,
+            0.0,
+            0.0
+          ],
+          "name": "OVERTIME_CAP",
+          "rhs": 0.2,
+          "sense": "LE",
+          "unit": "FRACTION"
+        }
+      ],
+      "decision_problem_id": "DP-10",
+      "ground_truth": {
+        "objective_value": -1274218.75,
+        "solution": {
+          "add_crew": 0.7968749999999999,
+          "expedite": 1.0,
+          "overtime": 1.0,
+          "resequence": 1.0
+        },
+        "success": true
+      },
+      "model_class": "LINEAR_PROGRAM",
+      "objective": {
+        "coefficients": [
+          -250000.0,
+          -200000.0,
+          -275000.0,
+          -600000.0
+        ],
+        "constant": 0.0,
+        "sense": "MIN",
+        "unit": "USD_EQUIVALENT"
+      },
+      "solver_reference": {
+        "library": "scipy.optimize.linprog",
+        "method": "highs"
+      },
+      "variables": [
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "add_crew_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "overtime_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "expedite_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "resequence_intensity",
+          "upper": 1.0
+        }
+      ]
+    },
+    {
+      "constraints": [
+        {
+          "coefficients": [
+            1.6,
+            1.1,
+            1.4,
+            0.6
+          ],
+          "name": "ACTION_COST_CAP",
+          "rhs": 7.25,
+          "sense": "LE",
+          "unit": "USD_MILLIONS"
+        },
+        {
+          "coefficients": [
+            2.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "name": "CREW_CAPACITY",
+          "rhs": 3.0,
+          "sense": "LE",
+          "unit": "CREW"
+        },
+        {
+          "coefficients": [
+            0.0,
+            0.15,
+            0.0,
+            0.0
+          ],
+          "name": "OVERTIME_CAP",
+          "rhs": 0.2,
+          "sense": "LE",
+          "unit": "FRACTION"
+        }
+      ],
+      "decision_problem_id": "DP-11",
+      "ground_truth": {
+        "objective_value": -1378000.0,
+        "solution": {
+          "add_crew": 1.0,
+          "expedite": 1.0,
+          "overtime": 1.0,
+          "resequence": 1.0
+        },
+        "success": true
+      },
+      "model_class": "LINEAR_PROGRAM",
+      "objective": {
+        "coefficients": [
+          -260000.0,
+          -208000.0,
+          -286000.0,
+          -624000.0
+        ],
+        "constant": 0.0,
+        "sense": "MIN",
+        "unit": "USD_EQUIVALENT"
+      },
+      "solver_reference": {
+        "library": "scipy.optimize.linprog",
+        "method": "highs"
+      },
+      "variables": [
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "add_crew_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "overtime_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "expedite_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "resequence_intensity",
+          "upper": 1.0
+        }
+      ]
+    },
+    {
+      "constraints": [
+        {
+          "coefficients": [
+            1.6,
+            1.1,
+            1.4,
+            0.6
+          ],
+          "name": "ACTION_COST_CAP",
+          "rhs": 6.0,
+          "sense": "LE",
+          "unit": "USD_MILLIONS"
+        },
+        {
+          "coefficients": [
+            2.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "name": "CREW_CAPACITY",
+          "rhs": 3.0,
+          "sense": "LE",
+          "unit": "CREW"
+        },
+        {
+          "coefficients": [
+            0.0,
+            0.15,
+            0.0,
+            0.0
+          ],
+          "name": "OVERTIME_CAP",
+          "rhs": 0.2,
+          "sense": "LE",
+          "unit": "FRACTION"
+        }
+      ],
+      "decision_problem_id": "DP-12",
+      "ground_truth": {
+        "objective_value": -1430999.9999999998,
+        "solution": {
+          "add_crew": 1.0,
+          "expedite": 1.0,
+          "overtime": 1.0,
+          "resequence": 1.0
+        },
+        "success": true
+      },
+      "model_class": "LINEAR_PROGRAM",
+      "objective": {
+        "coefficients": [
+          -270000.0,
+          -216000.0,
+          -296999.99999999977,
+          -648000.0
+        ],
+        "constant": 0.0,
+        "sense": "MIN",
+        "unit": "USD_EQUIVALENT"
+      },
+      "solver_reference": {
+        "library": "scipy.optimize.linprog",
+        "method": "highs"
+      },
+      "variables": [
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "add_crew_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "overtime_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "expedite_intensity",
+          "upper": 1.0
+        },
+        {
+          "integrality": 0,
+          "lower": 0.0,
+          "name": "resequence_intensity",
+          "upper": 1.0
+        }
+      ]
+    }
+  ],
+  "not_for_empirical_validation": true,
+  "programme_version": "OG-SYNTH-0.2",
+  "schema_version": "LP-MODEL-0.2"
+}

@@ -1,0 +1,176 @@
+{
+  "ground_truth_scenarios": [
+    {
+      "evidence_completeness": 0.850702,
+      "ground_truth_severity": 0.040955,
+      "ground_truth_status": "GREEN",
+      "scenario_id": "ESC-01",
+      "scenario_name": "Epistemic Scenario 1"
+    },
+    {
+      "evidence_completeness": 0.632803,
+      "ground_truth_severity": 0.1134,
+      "ground_truth_status": "GREEN",
+      "scenario_id": "ESC-02",
+      "scenario_name": "Epistemic Scenario 2"
+    },
+    {
+      "evidence_completeness": 0.794715,
+      "ground_truth_severity": 0.116161,
+      "ground_truth_status": "GREEN",
+      "scenario_id": "ESC-03",
+      "scenario_name": "Epistemic Scenario 3"
+    },
+    {
+      "evidence_completeness": 0.851402,
+      "ground_truth_severity": 0.200414,
+      "ground_truth_status": "GREEN",
+      "scenario_id": "ESC-04",
+      "scenario_name": "Epistemic Scenario 4"
+    },
+    {
+      "evidence_completeness": 0.665332,
+      "ground_truth_severity": 0.267711,
+      "ground_truth_status": "YELLOW",
+      "scenario_id": "ESC-05",
+      "scenario_name": "Epistemic Scenario 5"
+    },
+    {
+      "evidence_completeness": 0.710107,
+      "ground_truth_severity": 0.268497,
+      "ground_truth_status": "YELLOW",
+      "scenario_id": "ESC-06",
+      "scenario_name": "Epistemic Scenario 6"
+    },
+    {
+      "evidence_completeness": 0.693837,
+      "ground_truth_severity": 0.268881,
+      "ground_truth_status": "YELLOW",
+      "scenario_id": "ESC-07",
+      "scenario_name": "Epistemic Scenario 7"
+    },
+    {
+      "evidence_completeness": 0.776305,
+      "ground_truth_severity": 0.342899,
+      "ground_truth_status": "YELLOW",
+      "scenario_id": "ESC-08",
+      "scenario_name": "Epistemic Scenario 8"
+    },
+    {
+      "evidence_completeness": 0.848575,
+      "ground_truth_severity": 0.356965,
+      "ground_truth_status": "YELLOW",
+      "scenario_id": "ESC-09",
+      "scenario_name": "Epistemic Scenario 9"
+    },
+    {
+      "evidence_completeness": 0.70395,
+      "ground_truth_severity": 0.381283,
+      "ground_truth_status": "YELLOW",
+      "scenario_id": "ESC-10",
+      "scenario_name": "Epistemic Scenario 10"
+    },
+    {
+      "evidence_completeness": 0.948013,
+      "ground_truth_severity": 0.415622,
+      "ground_truth_status": "YELLOW",
+      "scenario_id": "ESC-11",
+      "scenario_name": "Epistemic Scenario 11"
+    },
+    {
+      "evidence_completeness": 0.903883,
+      "ground_truth_severity": 0.478242,
+      "ground_truth_status": "YELLOW",
+      "scenario_id": "ESC-12",
+      "scenario_name": "Epistemic Scenario 12"
+    },
+    {
+      "evidence_completeness": 0.725426,
+      "ground_truth_severity": 0.461621,
+      "ground_truth_status": "YELLOW",
+      "scenario_id": "ESC-13",
+      "scenario_name": "Epistemic Scenario 13"
+    },
+    {
+      "evidence_completeness": 0.88486,
+      "ground_truth_severity": 0.578799,
+      "ground_truth_status": "AMBER",
+      "scenario_id": "ESC-14",
+      "scenario_name": "Epistemic Scenario 14"
+    },
+    {
+      "evidence_completeness": 0.892191,
+      "ground_truth_severity": 0.605053,
+      "ground_truth_status": "AMBER",
+      "scenario_id": "ESC-15",
+      "scenario_name": "Epistemic Scenario 15"
+    },
+    {
+      "evidence_completeness": 0.866825,
+      "ground_truth_severity": 0.570398,
+      "ground_truth_status": "AMBER",
+      "scenario_id": "ESC-16",
+      "scenario_name": "Epistemic Scenario 16"
+    },
+    {
+      "evidence_completeness": 0.751571,
+      "ground_truth_severity": 0.72959,
+      "ground_truth_status": "AMBER",
+      "scenario_id": "ESC-17",
+      "scenario_name": "Epistemic Scenario 17"
+    },
+    {
+      "evidence_completeness": 0.968268,
+      "ground_truth_severity": 0.706247,
+      "ground_truth_status": "AMBER",
+      "scenario_id": "ESC-18",
+      "scenario_name": "Epistemic Scenario 18"
+    },
+    {
+      "evidence_completeness": 0.748312,
+      "ground_truth_severity": 0.731358,
+      "ground_truth_status": "AMBER",
+      "scenario_id": "ESC-19",
+      "scenario_name": "Epistemic Scenario 19"
+    },
+    {
+      "evidence_completeness": 0.909896,
+      "ground_truth_severity": 0.714168,
+      "ground_truth_status": "AMBER",
+      "scenario_id": "ESC-20",
+      "scenario_name": "Epistemic Scenario 20"
+    },
+    {
+      "evidence_completeness": 0.813502,
+      "ground_truth_severity": 0.863703,
+      "ground_truth_status": "RED",
+      "scenario_id": "ESC-21",
+      "scenario_name": "Epistemic Scenario 21"
+    },
+    {
+      "evidence_completeness": 0.783293,
+      "ground_truth_severity": 0.84591,
+      "ground_truth_status": "RED",
+      "scenario_id": "ESC-22",
+      "scenario_name": "Epistemic Scenario 22"
+    },
+    {
+      "evidence_completeness": 0.94219,
+      "ground_truth_severity": 0.87232,
+      "ground_truth_status": "RED",
+      "scenario_id": "ESC-23",
+      "scenario_name": "Epistemic Scenario 23"
+    },
+    {
+      "evidence_completeness": 0.669353,
+      "ground_truth_severity": 0.908833,
+      "ground_truth_status": "RED",
+      "scenario_id": "ESC-24",
+      "scenario_name": "Epistemic Scenario 24"
+    }
+  ],
+  "notes": [
+    "Reliability is generated independently from severity.",
+    "These fixtures verify implementation behavior and do not establish empirical calibration."
+  ]
+}

@@ -1,0 +1,5 @@
+alternative_id,alternative_name,data_origin,programme_version,package_version,generator_version,random_seed,not_for_empirical_validation,record_hash
+PLAN_A,Plan A,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.2,C-0.2,build_opus_synthetic_programme_v0_2.py@0.2,20260811,True,2cb248d71d46f8ec56632ea969f3a562d44b9f4d4b824fd9ce851b7b159fd6b2
+PLAN_B,Plan B,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.2,C-0.2,build_opus_synthetic_programme_v0_2.py@0.2,20260811,True,08e98314d878701c86c4936130ff070662d15464887dff6449b9b1bc8c6ac9be
+PLAN_C,Plan C,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.2,C-0.2,build_opus_synthetic_programme_v0_2.py@0.2,20260811,True,e6d1688557c43b4be16a935f91894a0f34cc99ed7a056a7edeb0e825622640a0
+PLAN_D,Plan D,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.2,C-0.2,build_opus_synthetic_programme_v0_2.py@0.2,20260811,True,e0378675fc9c11ea5bcdbe07f7d4eaf4373f9ee2ee32708a435530da86581a31

@@ -1,0 +1,11 @@
+{
+  "base_archive": "Opus_Gubernatio_Synthetic_Programme_v0.1.zip",
+  "base_archive_sha256": "fe5806b831d4ab5a32c7beb249fc66eaedbe641fa87b87db8df01491f2ec2796",
+  "builder": "build_opus_synthetic_programme_v0_2.py",
+  "builder_sha256": "9e5479497c6824e68b4e01951341cc60065b7e85dc95f99b27300dc3ce3aaa98",
+  "generated_at": "2026-08-11T00:00:00Z",
+  "programme_version": "OG-SYNTH-0.2",
+  "random_seed": 20260811,
+  "validator": "validate_synthetic_programme_v0_2.py",
+  "validator_sha256": "5022c5d485f0f77bc0164d12329385a5a408555cfd531352adf517aaef4ad2a6"
+}
