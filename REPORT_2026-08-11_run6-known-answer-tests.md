@@ -355,10 +355,9 @@ with a defect.
 ## 9. Verification performed
 
 Server suite, fresh SQLite per file via `alembic upgrade head`, `PYTHONIOENCODING=utf-8`
-throughout, interpreter confirmed real. **62 files, 4,063/4,063 checks under the `RESULT: n/n`
-convention, plus `test_run5_export.py`'s own 34/34, so 4,097 in total, 0 failing files.** The
-baseline was 3,628/3,628 across 60 files under that convention; this run's new file adds 435 of
-the 437 it reports (two of its checks are the coverage roster, which reports rather than counts).
+throughout, interpreter confirmed real. **62 files, 4,065/4,065 checks under the `RESULT: n/n`
+convention, plus `test_run5_export.py`'s own 34/34, so 4,099 in total, 0 failing files.** The
+baseline was 3,628/3,628 across 60 files under that convention; this run's new file adds all 437.
 **No existing check went red.** Nothing had to be re-pointed, loosened or rewritten, which is
 itself worth recording after three consecutive runs in which existing suites turned out to encode
 an old defect.

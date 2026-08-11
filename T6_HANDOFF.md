@@ -77,7 +77,7 @@ no qualification anywhere.** Live, loaded by index.html. Not edited; the content
 decision. **The browser instrument is unchanged**: `sim.js` still defines `DEMO_BAC` and still
 emits `p80eacOverrunPct`, and `research/deepdive.html` still loads both files.
 
-**Verify.** Server suite **62 files, 4,063/4,063** under the `RESULT: n/n` convention plus
+**Verify.** Server suite **62 files, 4,065/4,065** under the `RESULT: n/n` convention plus
 `test_run5_export.py`'s 34/34, 0 failing files, fresh SQLite per file. **No existing check went
 red and nothing had to be re-pointed**, which is worth recording after three runs in which
 existing suites turned out to encode an old defect. `tests.html` **51/51**, `tests_render.html`
