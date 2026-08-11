@@ -929,6 +929,186 @@ for mid, label in (("B1.1", "conservative dominance"), ("B3.1", "abm governance"
 
 
 # =================================================================================================
+section("3b. GROUP C, THE PORTFOLIO GROUP AND THE GOVERNANCE THRESHOLDS")
+# =================================================================================================
+
+print("\n-- Group C, data and evidence health (seven modules, none of which votes) --")
+# C1.1 Missing Data Index. HAND: eleven core fields; supplying four leaves seven missing, a
+# missing ratio of 7/11 = 0.63636, which is above 0.45, so Red. Completeness is
+# Math.round((1-0.63636)*100) = Math.round(36.36) = 36.
+r = registry.run_module("C1.1", {"bac": 1, "ev": 1, "ac": 1, "pv": 1}, NOOP, "2025-06-30")
+ka((r["missing_count"], r["total_fields"], r["completeness_pct"]), (7, 11, 36),
+   "missing data index: seven of eleven core fields absent")
+ka(band(r), "Red", "missing data index: band")
+
+# C1.2 Data Timeliness. HAND: 2025-04-01 to 2025-06-30 is 30 + 31 + 29 = 90 days, and 90 <= 90,
+# so Amber. The finding adds the stale note because 90 is above 60.
+r = registry.run_module("C1.2", {"docDate": "2025-04-01"}, NOOP, "2025-06-30")
+ka(r["days_since_last_doc"], 90, "data timeliness: ninety days")
+ka(band(r), "Amber", "data timeliness: band at the inclusive edge")
+ka(r["evidence_metric"], "Last document: 2025-04-01 (90 days ago, data may be stale)",
+   "data timeliness: finding")
+r = registry.run_module("C1.2", {"docDate": "2025-04-02"}, NOOP, "2025-06-30")
+ka((r["days_since_last_doc"], band(r)), (89, "Amber"),
+   "data timeliness: eighty-nine days is still Amber, so the sixty-day edge is the one below")
+
+# C1.3 Source Reliability. HAND: a pay application weighs 0.90 and OAC minutes 0.55; the mean is
+# 0.725, which is >= 0.65 and < 0.80, so Yellow. Nothing is derived, so the finding says measured.
+r = registry.run_module("C1.3", {"sources": {"bac": {"docType": "pay_application"},
+                                             "rfiCount": {"docType": "oac_minutes"}}},
+                        NOOP, "2025-06-30")
+ka(r["avg_reliability"], 0.73, "source reliability: mean of 0.90 and 0.55 rounds to 0.73")
+ka(band(r), "Yellow", "source reliability: band")
+ka(r["evidence_metric"], "Avg source reliability: 73%, all measured",
+   "source reliability: finding")
+
+# C1.4 Audit Trail. HAND: both required events are present, so completeness is 1.0, but the Green
+# arm additionally requires at least three events and there are two, so it falls to Yellow.
+_ev = [{"event": "project_created", "at": "2025-01-01"},
+       {"event": "simulation_run", "at": "2025-02-01"}]
+r = registry.run_module("C1.4", {"events": _ev}, NOOP, "2025-06-30")
+ka((r["completeness_pct"], r["total_events"], r["has_decision_record"]), (100, 2, False),
+   "audit trail: both required events present, two events, no decision")
+ka(band(r), "Yellow", "audit trail: complete but under the three-event Green condition")
+
+# C1.5 Information Completeness. HAND: nineteen declared fields; four supplied with no source
+# entry count as measured, so the ratio is 4/19 = 0.21053, which is below 0.35, so Red, and the
+# reported percentage is Math.round(21.05) = 21.
+r = registry.run_module("C1.5", {"bac": 1, "ev": 1, "ac": 1, "pv": 1}, NOOP, "2025-06-30")
+ka((r["measured"], r["estimated"], r["missing"], r["total"]), (4, 0, 15, 19),
+   "information completeness: four measured of nineteen")
+ka((r["completeness_ratio"], band(r)), (21, "Red"), "information completeness: band")
+
+# C1.6 Cross-document Consistency. HAND: three checks are possible. The cost index derived from
+# 400,000/500,000 is 0.8 and matches; the schedule index derived from 400,000/400,000 is 1.0
+# against a reported 0.9, which is inconsistent; the progress derived from 400,000/1,000,000 is
+# 40.0 against a reported 40, which matches. Two of three, a score of 0.66667, which is below
+# 0.67, so Amber, and the reported percentage is Math.round(66.667) = 67.
+r = registry.run_module("C1.6", {"ev": 400000, "ac": 500000, "pv": 400000, "cpi": 0.8,
+                                 "spi": 0.9, "bac": 1000000, "actualPctComplete": 40},
+                        NOOP, "2025-06-30")
+ka((r["checks_performed"], r["inconsistencies"], r["consistency_score"]), (3, 1, 67),
+   "cross-document consistency: one of three checks disagrees")
+ka(band(r), "Amber", "cross-document consistency: band, because 0.6667 is below the 0.67 edge")
+
+# C1.7 Reporting Frequency. HAND: two extraction events twenty days apart give an average interval
+# of twenty days, which is above 14 and at or below 30, so Yellow.
+_ev2 = [{"event": "signals_extracted", "at": "2025-01-01"},
+        {"event": "signals_extracted", "at": "2025-01-21"}]
+r = registry.run_module("C1.7", {"events": _ev2}, NOOP, "2025-06-30")
+ka((r["avg_interval_days"], r["uploads"]), (20, 2), "reporting frequency: twenty-day interval")
+ka(band(r), "Yellow", "reporting frequency: band")
+ka(r["evidence_metric"],
+   "20 day avg interval between document uploads, monthly reporting cycle",
+   "reporting frequency: finding")
+
+print("\n-- The governance thresholds (B3.2, B3.3, B3.4) and the regret module (B4.7) --")
+# B3.2 FAR. HAND: forecast 10,000,000/0.85 = 11,764,705.88, an overrun of 17.647 per cent, which
+# rounds to 17.6. 17.6 is above 15 and at or below 25, so Amber, and the headroom is
+# 25 - 17.647 = 7.353, rounding to 7.4.
+r = registry.run_module("B3.2", {"bac": 10000000, "cpi": 0.85, "ev": 4000000, "ac": 4700000},
+                        NOOP, "2025-06-30")
+ka((r["overrun_pct"], r["distance_to_threshold"], r["far_reporting_required"]),
+   (17.6, 7.4, False), "far threshold: overrun, headroom and the reporting flag")
+ka(band(r), "Amber", "far threshold: band")
+
+# B3.3 OMB A-11. HAND: an index of 0.85 is below 0.90 and the budget is at or above ten million,
+# so reporting is triggered; 0.85 is below 0.88, so Red.
+r = registry.run_module("B3.3", {"bac": 10000000, "cpi": 0.85, "actualPctComplete": 40},
+                        NOOP, "2025-06-30")
+ka((r["cpi_below_90"], r["major_program"], r["reporting_triggered"]), (True, True, True),
+   "omb a-11: both conditions and the trigger")
+ka(band(r), "Red", "omb a-11: band")
+# The boundary the module names: a budget one unit below ten million is not a major programme.
+r = registry.run_module("B3.3", {"bac": 9999999, "cpi": 0.85, "actualPctComplete": 40},
+                        NOOP, "2025-06-30")
+ka(r["reporting_triggered"], False,
+   "omb a-11: the ten-million boundary is inclusive, so one unit below does not trigger")
+
+# B3.4 EVM Reporting Threshold. HAND: cost 0.85 is below 0.90 and schedule 0.95 is not, so exactly
+# one is breached, which is the Yellow arm whatever the forecast delta.
+r = registry.run_module("B3.4", {"bac": 10000000, "cpi": 0.85, "spi": 0.95}, NOOP, "2025-06-30")
+ka((r["cpi_breached"], r["spi_breached"], r["both_breached"]), (True, False, False),
+   "evm reporting threshold: one of the two indices breached")
+ka(band(r), "Yellow", "evm reporting threshold: band")
+
+# B4.7 Regret Minimization. HAND: the regret matrix and the state probabilities are literals with
+# no input dependence, so the expected regrets are always
+#   monitor      0*0.3 + 5*0.4 + 30*0.3 = 11
+#   investigate  5*0.3 + 0*0.4 + 10*0.3 = 4.5, rounded half up to 5
+#   escalate    15*0.3 + 8*0.4 +  0*0.3 = 7.7, rounded half up to 8
+# and the minimum is always 5. The recommendation is then overridden on the project's own indices:
+# below 0.88 escalate, else below 0.95 investigate.
+r = registry.run_module("B4.7", {"cpi": 0.92, "spi": 0.99, "bac": 1000000}, NOOP, "2025-06-30")
+ka(r["expected_regret"], {"monitor": 11, "investigate": 5, "escalate": 8},
+   "regret minimization: the scores are the same for every project and every period")
+ka((r["recommended_action"], band(r)), ("investigate", "Amber"),
+   "regret minimization: an index below 0.95 investigates")
+ka(registry.run_module("B4.7", {"cpi": 0.87, "spi": 0.99, "bac": 1},
+                       NOOP, "x")["recommended_action"], "escalate",
+   "regret minimization: an index below 0.88 escalates")
+# THE FINDING THIS CASE FOUND, and it is not a small one. The matrix's own minimum is
+# investigate at 5, not monitor at 11, so with neither override firing the recommendation is
+# STILL investigate. The override can only move it to escalate. Monitor is therefore unreachable
+# for every project in every period, and monitor is the only branch that produces Green.
+ka(registry.run_module("B4.7", {"cpi": 1.20, "spi": 1.20, "bac": 1},
+                       NOOP, "x")["recommended_action"], "investigate",
+   "regret minimization: a project performing well above plan is STILL told to investigate, "
+   "because the matrix's own minimum is investigate and the overrides only make it worse")
+_greens = []
+for _c in [x / 100 for x in range(70, 131)]:
+    for _sp in [x / 100 for x in range(70, 131)]:
+        _rr = registry.run_module("B4.7", {"cpi": _c, "spi": _sp, "bac": 1}, NOOP, "x")
+        if _rr["status_color"] == "Green":
+            _greens.append((_c, _sp))
+ka(len(_greens), 0,
+   "regret minimization: Green is unreachable over the whole index grid (3,721 index pairs), so "
+   "the module that scores the courses of action can never report a healthy project")
+ka(registry.run_module("B4.7", {"cpi": 0.88, "spi": 0.95, "bac": 1},
+                       NOOP, "x")["recommended_action"], "investigate",
+   "regret minimization: exactly at 0.88 the escalation test does not fire but the investigation "
+   "test does, so the two boundaries are both exclusive")
+
+print("\n-- The portfolio group, D1.1, D1.3, D1.4 and D1.5 --")
+# HAND, a four-project portfolio of identical vectors except the current one. Each dimension's
+# standard deviation is floored at 0.001 only when the variance is exactly zero.
+_pfid = [{"id": "a", "cpi": 1.00, "spi": 1.00, "docRiskScore": 0.10, "actualPctComplete": 50},
+         {"id": "b", "cpi": 1.00, "spi": 1.00, "docRiskScore": 0.10, "actualPctComplete": 50},
+         {"id": "c", "cpi": 1.00, "spi": 1.00, "docRiskScore": 0.10, "actualPctComplete": 50}]
+_out = compute_portfolio(_pfid, "a", None, "2025-06-30")["results"]
+# Every vector is the centroid, so every distance is zero and the current project is not an
+# anomaly however the threshold is computed.
+ka((_out["cat8_1_isolation_forest"]["distance"],
+    _out["cat8_1_isolation_forest"]["is_anomaly"]), (0, False),
+   "isolation forest: an identical portfolio puts every project at the centroid")
+ka(band(_out["cat8_1_isolation_forest"]), "Green", "isolation forest: band")
+# Cross-project pattern: the other two projects are at distance zero, so both match, and their
+# mean cost index is 1.00, which is at or above 1.00, so Green rather than a distress pattern.
+ka((_out["cat8_4_cross_project_pattern"]["similar_project_count"],
+    band(_out["cat8_4_cross_project_pattern"])), (2, "Green"),
+   "cross-project pattern: a matched cluster performing at plan reads Green, which the ladder "
+   "could not reach before the fifteen-defects run")
+# Anomaly score: with no usable history the mean is taken over the two terms actually measured,
+# the anomaly score (0) and one minus the composite rank (1 - 1.0 = 0), so the composite is 0.
+ka((_out["cat8_5_anomaly_score"]["composite_score"], band(_out["cat8_5_anomaly_score"])),
+   (0, "Green"),
+   "anomaly score: no placeholder third term, so the least anomalous project scores zero")
+check("cat8_3_trajectory_classifier" not in _out,
+      "trajectory classifier: absent entirely rather than present with a colour, when there is "
+      "no history")
+# D1.3 Trajectory Classifier. HAND: cost indices of 0.90, 1.00 and 1.10 are TWO intervals of one
+# tenth, so the trend is 0.1 per period, not 0.0667. 0.1 >= 0.01, so Green.
+_hist = [{"signal_inputs": {"cpi": 0.90}}, {"signal_inputs": {"cpi": 1.00}},
+         {"signal_inputs": {"cpi": 1.10}}]
+_traj = compute_portfolio(_pfid, "a", _hist, "2025-06-30")["results"][
+    "cat8_3_trajectory_classifier"]
+ka(_traj["trend"], 0.1,
+   "trajectory classifier: the slope divides by intervals, not observations")
+ka((band(_traj), _traj["evidence_metric"]), ("Green", "CPI trend: +10% per period"),
+   "trajectory classifier: band and finding")
+
+
+# =================================================================================================
 section("4. THE SHARED MACHINERY")
 # =================================================================================================
 
@@ -1053,6 +1233,10 @@ ka(set(res["category_statuses"].keys()), _voting_cats,
 ka(res["categories_voting"], 1,
    "rollup: one category votes, so project conflict of zero means one source and not agreement")
 ka(res["project_conflict"], 0.0, "rollup: project conflict is structurally zero")
+_c_cats = {registry.registry_index()[m]["category"] for m in VALIDATED
+           if registry.group_of(m) == "C"}
+ka(_c_cats & set(res["category_statuses"].keys()), set(),
+   "rollup: no data and evidence health category has a fused status on a real computation")
 _votes = {m["module_id"] for m in res["modules"] if m.get("votes")}
 ka(_votes, set(registry.CORE_VOTING_MODULES),
    "rollup: exactly two modules carry a vote on the stored row")
