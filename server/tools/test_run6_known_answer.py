@@ -1544,6 +1544,49 @@ check("sim.js" in _deep and "simulations.js" in _deep,
 
 
 # =================================================================================================
+section("9. COVERAGE, COUNTED AGAINST THE REGISTRY RATHER THAN CLAIMED")
+# =================================================================================================
+
+#: Every module this suite gives a known-answer case to: a stated input, an expected value or band
+#: computed by hand from the module's own formula, and the expected finding text.
+COVERED_HERE = {
+    # the five CORE modules held non-voting
+    "A2.8", "A3.2", "A3.4", "A4.2", "A4.3",
+    # the thirty advisory proxies
+    "A1.2", "A1.3", "A1.4", "A1.9", "A1.10", "A2.4", "A2.6", "A2.7", "A3.3", "A3.5", "A3.7",
+    "A3.9", "A4.5", "A4.6", "A4.7", "A4.8", "A5.2", "A5.3", "B2.10", "B2.11", "B2.12", "B2.13",
+    "B2.14", "B2.15", "B2.16", "B2.17", "B3.5", "B4.3", "B4.4", "D1.2",
+    # the twelve newly wired that compute
+    "B1.1", "B1.2", "B1.3", "B1.4", "B2.1", "B2.2", "B2.3", "B2.4", "B2.5", "B2.6", "B2.8",
+    "B3.1",
+    # data and evidence health
+    "C1.1", "C1.2", "C1.3", "C1.4", "C1.5", "C1.6", "C1.7",
+    # governance thresholds and the module that scores the courses of action
+    "B3.2", "B3.3", "B3.4", "B4.7",
+    # the portfolio group
+    "D1.1", "D1.3", "D1.4", "D1.5",
+    # covered as the fifteen-defects run's own case, re-derived here by hand
+    "A4.9",
+}
+#: Given a known-answer case and exhausted boundary tests by the validate-seven run, not here.
+COVERED_BY_RUN_4 = {"A1.7", "A1.8"}
+
+_registered = {m for m in registry.registry_index()
+               if m in VALIDATED or m in registry.PORTFOLIO_VALIDATED}
+_disabled = set(registry.DISABLED_CONCEPT_ONLY)
+_uncovered = sorted(_registered - COVERED_HERE - COVERED_BY_RUN_4 - _disabled)
+check(COVERED_HERE <= _registered, "every id this suite claims to cover is a registered module",
+      str(sorted(COVERED_HERE - _registered)))
+print(f"     registry-computed modules: {len(_registered)}")
+print(f"     given a known-answer case here: {len(COVERED_HERE)}")
+print(f"     given one by the validate-seven run: {len(COVERED_BY_RUN_4)}")
+print(f"     disabled as concept-only, never executed: {len(_disabled)}")
+print(f"     NOT given a known-answer case: {len(_uncovered)}")
+print(f"     {' '.join(_uncovered)}")
+# Every uncovered module is nevertheless covered by the abstention sweep and the domain sweep
+# above, so none of them is untested; what none of them has is a hand-computed expected value.
+check(all(m in _registered for m in _uncovered), "the uncovered set is drawn from the registry")
+
 print()
 print("=" * 78)
 print(f"Known-answer cases: {CASES}; expectations proved live by perturbation: {PERTURBED}")
