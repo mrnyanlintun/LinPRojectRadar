@@ -1,5 +1,17 @@
 # Module source export by group, for external audit — 2026-08-10
 
+**SUPERSEDED. Read `REPORT_2026-08-11_run5-export.md` instead.** The four group files this report
+accompanied wrote 43 of the 52 Group A sections the counts on this page claim, omitting A4.2
+through A4.10 (RFI Velocity, Submittal Rejection Rate, NCR Rate, Weather Day Impact, Change Order
+Frequency, Dispute Escalation Index, Subcontractor Performance, Procurement Lead Time Monitor,
+Specification Conflict Density), because nothing checked the emitted section count against the
+expected id set. The group files in this directory have since been regenerated in full from the
+registry, with that check now enforced; this report's own count tables and analysis below describe
+the incomplete export and are kept only as the historical record of that defect, not as current
+guidance. Any external review already performed against the four group files as they stood on
+2026-08-10 was performed against that incomplete package and its Group A findings should be
+re-read against the regenerated files.
+
 This report accompanies four group files (`GROUP_A_project-health.md`, `GROUP_B_recommendation-
 governance.md`, `GROUP_C_data-evidence-health.md`, `GROUP_D_portfolio-level.md`) and one shared-
 machinery file (`SHARED_MACHINERY.md`), all in this `code_audit/` directory. Together they export

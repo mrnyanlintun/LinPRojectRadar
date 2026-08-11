@@ -72,13 +72,15 @@ a real project document. Do not strengthen this wording.
 | C | Data and Evidence Health, how trustworthy the evidence is | 7 |
 | D | Portfolio Level, requires more than one project | 5 |
 
-Where the count appears in user-facing text, it is 100, with the footnote that Document Risk Score
-is recorded as a value the extraction model supplies rather than one the analytical server
-computes.
+Where the count appears in user-facing text, it is 100 registry-computed modules (Group A 52 of
+them). Document Risk Score is not one of the 100 and not one of Group A's 52: it is a value the
+extraction model supplies rather than one the analytical server computes, so it has no formula to
+count. Group A's full roster is 53 named entries: 52 registry-computed plus Document Risk Score,
+supplied.
 
 That figure is current rather than permanent. Document Risk Score is absent from `VALIDATED` and
 the registry reports it as not ported. If it is later implemented server-side the count becomes
-101.
+101, and Group A's registry-computed count becomes 53.
 
 **Group C does not contribute to project status.** Evidence quality describes what is known about
 a project, not the project's condition.
