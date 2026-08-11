@@ -1,0 +1,366 @@
+{
+  "data_origin": "SYNTHETIC_RESEARCH_FIXTURE",
+  "models": [
+    {
+      "bounds": {
+        "lower": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "upper": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "constraints": [
+        "action_cost <= budget_cap",
+        "crew_increment <= capacity",
+        "overtime <= limit"
+      ],
+      "decision_problem_id": "DP-01",
+      "ground_truth_row": "DP-01",
+      "objective_description": "Minimize action cost plus monetized schedule delay in the synthetic benchmark.",
+      "variables": [
+        "add_crew_intensity",
+        "overtime_intensity",
+        "expedite_intensity",
+        "resequence_intensity"
+      ]
+    },
+    {
+      "bounds": {
+        "lower": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "upper": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "constraints": [
+        "action_cost <= budget_cap",
+        "crew_increment <= capacity",
+        "overtime <= limit"
+      ],
+      "decision_problem_id": "DP-02",
+      "ground_truth_row": "DP-02",
+      "objective_description": "Minimize action cost plus monetized schedule delay in the synthetic benchmark.",
+      "variables": [
+        "add_crew_intensity",
+        "overtime_intensity",
+        "expedite_intensity",
+        "resequence_intensity"
+      ]
+    },
+    {
+      "bounds": {
+        "lower": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "upper": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "constraints": [
+        "action_cost <= budget_cap",
+        "crew_increment <= capacity",
+        "overtime <= limit"
+      ],
+      "decision_problem_id": "DP-03",
+      "ground_truth_row": "DP-03",
+      "objective_description": "Minimize action cost plus monetized schedule delay in the synthetic benchmark.",
+      "variables": [
+        "add_crew_intensity",
+        "overtime_intensity",
+        "expedite_intensity",
+        "resequence_intensity"
+      ]
+    },
+    {
+      "bounds": {
+        "lower": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "upper": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "constraints": [
+        "action_cost <= budget_cap",
+        "crew_increment <= capacity",
+        "overtime <= limit"
+      ],
+      "decision_problem_id": "DP-04",
+      "ground_truth_row": "DP-04",
+      "objective_description": "Minimize action cost plus monetized schedule delay in the synthetic benchmark.",
+      "variables": [
+        "add_crew_intensity",
+        "overtime_intensity",
+        "expedite_intensity",
+        "resequence_intensity"
+      ]
+    },
+    {
+      "bounds": {
+        "lower": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "upper": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "constraints": [
+        "action_cost <= budget_cap",
+        "crew_increment <= capacity",
+        "overtime <= limit"
+      ],
+      "decision_problem_id": "DP-05",
+      "ground_truth_row": "DP-05",
+      "objective_description": "Minimize action cost plus monetized schedule delay in the synthetic benchmark.",
+      "variables": [
+        "add_crew_intensity",
+        "overtime_intensity",
+        "expedite_intensity",
+        "resequence_intensity"
+      ]
+    },
+    {
+      "bounds": {
+        "lower": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "upper": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "constraints": [
+        "action_cost <= budget_cap",
+        "crew_increment <= capacity",
+        "overtime <= limit"
+      ],
+      "decision_problem_id": "DP-06",
+      "ground_truth_row": "DP-06",
+      "objective_description": "Minimize action cost plus monetized schedule delay in the synthetic benchmark.",
+      "variables": [
+        "add_crew_intensity",
+        "overtime_intensity",
+        "expedite_intensity",
+        "resequence_intensity"
+      ]
+    },
+    {
+      "bounds": {
+        "lower": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "upper": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "constraints": [
+        "action_cost <= budget_cap",
+        "crew_increment <= capacity",
+        "overtime <= limit"
+      ],
+      "decision_problem_id": "DP-07",
+      "ground_truth_row": "DP-07",
+      "objective_description": "Minimize action cost plus monetized schedule delay in the synthetic benchmark.",
+      "variables": [
+        "add_crew_intensity",
+        "overtime_intensity",
+        "expedite_intensity",
+        "resequence_intensity"
+      ]
+    },
+    {
+      "bounds": {
+        "lower": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "upper": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "constraints": [
+        "action_cost <= budget_cap",
+        "crew_increment <= capacity",
+        "overtime <= limit"
+      ],
+      "decision_problem_id": "DP-08",
+      "ground_truth_row": "DP-08",
+      "objective_description": "Minimize action cost plus monetized schedule delay in the synthetic benchmark.",
+      "variables": [
+        "add_crew_intensity",
+        "overtime_intensity",
+        "expedite_intensity",
+        "resequence_intensity"
+      ]
+    },
+    {
+      "bounds": {
+        "lower": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "upper": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "constraints": [
+        "action_cost <= budget_cap",
+        "crew_increment <= capacity",
+        "overtime <= limit"
+      ],
+      "decision_problem_id": "DP-09",
+      "ground_truth_row": "DP-09",
+      "objective_description": "Minimize action cost plus monetized schedule delay in the synthetic benchmark.",
+      "variables": [
+        "add_crew_intensity",
+        "overtime_intensity",
+        "expedite_intensity",
+        "resequence_intensity"
+      ]
+    },
+    {
+      "bounds": {
+        "lower": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "upper": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "constraints": [
+        "action_cost <= budget_cap",
+        "crew_increment <= capacity",
+        "overtime <= limit"
+      ],
+      "decision_problem_id": "DP-10",
+      "ground_truth_row": "DP-10",
+      "objective_description": "Minimize action cost plus monetized schedule delay in the synthetic benchmark.",
+      "variables": [
+        "add_crew_intensity",
+        "overtime_intensity",
+        "expedite_intensity",
+        "resequence_intensity"
+      ]
+    },
+    {
+      "bounds": {
+        "lower": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "upper": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "constraints": [
+        "action_cost <= budget_cap",
+        "crew_increment <= capacity",
+        "overtime <= limit"
+      ],
+      "decision_problem_id": "DP-11",
+      "ground_truth_row": "DP-11",
+      "objective_description": "Minimize action cost plus monetized schedule delay in the synthetic benchmark.",
+      "variables": [
+        "add_crew_intensity",
+        "overtime_intensity",
+        "expedite_intensity",
+        "resequence_intensity"
+      ]
+    },
+    {
+      "bounds": {
+        "lower": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "upper": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "constraints": [
+        "action_cost <= budget_cap",
+        "crew_increment <= capacity",
+        "overtime <= limit"
+      ],
+      "decision_problem_id": "DP-12",
+      "ground_truth_row": "DP-12",
+      "objective_description": "Minimize action cost plus monetized schedule delay in the synthetic benchmark.",
+      "variables": [
+        "add_crew_intensity",
+        "overtime_intensity",
+        "expedite_intensity",
+        "resequence_intensity"
+      ]
+    }
+  ],
+  "programme_version": "OG-SYNTH-0.1"
+}

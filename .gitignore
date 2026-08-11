@@ -25,3 +25,8 @@ server/dev_fixtures/
 
 # NOTE: p0-baseline/ is deliberately NOT ignored. Its contents are captured
 # evidence of what the live endpoint reported and must be committed.
+
+# research fixture scratch and regeneration areas, never the authoritative package
+research_fixtures/**/_scratch/
+research_fixtures/**/_regen/
+research_fixtures/**/*.tmp

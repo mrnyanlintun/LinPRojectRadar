@@ -1,0 +1,33 @@
+{
+  "archetype_base_millions": {
+    "AIRPORT_TERMINAL": 85,
+    "DATA_CENTER": 60,
+    "HIGHWAY_CORRIDOR": 45,
+    "RAIL_STATION": 70,
+    "VERTICAL_HOSPITAL": 95,
+    "WATER_TREATMENT": 55
+  },
+  "coefficients_millions": {
+    "capacity_units": 0.18,
+    "complexity_index": 55.0,
+    "floors": 1.8,
+    "gross_area_m2": 0.0009,
+    "length_km": 2.6
+  },
+  "delivery_effect_fraction": {
+    "CMAR": 0.0,
+    "DESIGN_BID_BUILD": 0.04,
+    "DESIGN_BUILD": -0.01,
+    "EPCM": 0.02
+  },
+  "description": "Archetype base plus area, length, capacity, floors, complexity, region and delivery effects with Gaussian noise.",
+  "model_family": "SYNTHETIC_PARAMETRIC_COST_GENERATOR",
+  "random_seed": 20260811,
+  "region_factor": {
+    "US-MIDWEST": 0.91,
+    "US-NORTHEAST": 1.18,
+    "US-SOUTHEAST": 0.94,
+    "US-WEST": 1.12
+  },
+  "response": "baseline_cost_usd"
+}

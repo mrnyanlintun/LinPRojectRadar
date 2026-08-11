@@ -1,0 +1,75 @@
+check,result,detail
+provenance:all_csv_records,PASS,[]
+record_hash:present,PASS,[]
+record_hash:unique_within_file,PASS,[]
+pk:projects_unique,PASS,n=6
+fk:reporting_periods_project,PASS,n=36
+pk:reporting_periods_unique,PASS,
+pk:schedule_activities_unique,PASS,n=72
+fk:schedule_activities_project,PASS,
+fk:schedule_dependencies_activities,PASS,n=78
+schedule:acyclic_per_project,PASS,[]
+pert:optimistic_le_mode_le_pessimistic,PASS,[]
+pert:durations_positive,PASS,
+ground_truth:schedule_p80_ge_p50,PASS,"['p50_finish_day'] vs ['p80_finish_day', 'p80_overrun_days']"
+split:one_split_per_project,PASS,[]
+split:partitions_disjoint,PASS,"{'VALIDATION': 72, 'DEVELOPMENT': 216, 'LOCKED_HOLDOUT': 72}"
+split:manifest_agrees_with_reference_projects,PASS,[]
+fk:reference_project_periods.csv_reference_project,PASS,[]
+leakage:reference_project_periods.csv_split_agrees_with_manifest,PASS,[]
+fk:parametric_cost_training.csv_reference_project,PASS,[]
+leakage:parametric_cost_training.csv_split_agrees_with_manifest,PASS,[]
+fk:anomaly_labels.csv_reference_project,PASS,[]
+fk:rough_set_decision_table.csv_reference_project,PASS,[]
+leakage:rough_set_decision_table.csv_split_agrees_with_manifest,PASS,[]
+fk:reference_outcomes.csv_reference_project,PASS,[]
+fk:reference_class_membership.csv_reference_project,PASS,[]
+leakage:no_duplicate_feature_vector_across_splits,PASS,0 collisions
+leakage:analogous_pairs_do_not_bridge_holdout,PASS,cols=[] bridges=0
+packageC:benchmark_rows,PASS,n=1
+fk:actions_problem,PASS,n=72
+fk:scenarios_problem,PASS,n=60
+fk:criteria_problem,PASS,n=60
+fk:payoff_matrices_problem,PASS,n=360
+fk:action_scenario_outcomes_problem,PASS,n=360
+completeness:action_by_scenario_matrix_full,PASS,[]
+completeness:scenario_probabilities_sum_to_one,PASS,[]
+completeness:alternative_by_criteria_matrix_full,PASS,[]
+completeness:criteria_columns_cover_criteria_table,PASS,criteria per problem=[5] value cols=5
+completeness:no_blank_criterion_cells,PASS,[]
+suitability:critic_needs_two_or_more_alternatives,PASS,12/12 problems have 2+ alternatives
+completeness:payoff_matrix_full,PASS,[]
+suitability:regret_non_negative,PASS,n_negative=0
+suitability:regret_zero_present_per_scenario,PASS,[]
+suitability:lp_models_have_variables_and_bounds,PASS,n=12
+fk:lp_models_decision_problem,PASS,n=12 problems=12
+suitability:lp_constraints_machine_readable,FAIL,12/12 models express constraints only as prose strings
+suitability:lp_models_have_machine_readable_objective,FAIL,12/12 models carry only objective_description prose
+suitability:brb_has_antecedent_states_and_beliefs,PASS,"antecedents=['cost_state', 'document_state', 'schedule_state'] beliefs=['belief_amber', 'belief_green', 'belief_red']"
+suitability:brb_beliefs_sum_to_one,PASS,n=27
+suitability:brb_has_rule_weights,PASS,
+completeness:brb_rule_base_covers_antecedent_space,PASS,rules=27 antecedent_space=27
+suitability:rough_set_has_decision_attribute,PASS,['decision_class']
+suitability:rough_set_has_condition_attributes,PASS,"['complexity_band', 'early_cpi_band', 'early_spi_band', 'document_risk_band']"
+dates:required_finish_not_before_baseline_start,PASS,[]
+units:monetary_columns_named_with_unit,PASS,
+suitability:lob_has_location_crew_quantity_rate,PASS,"['project_id', 'period_id', 'location_id', 'location_sequence', 'work_type_id', 'crew_id', 'quantity', 'unit', 'planned_production_rate_locations_per_day', 'actual_production_rate_locations_per_day', 'planned_start_day', 'actual_start_day', 'minimum_separation_days', 'data_origin', 'programme_version', 'package_version', 'generator_version', 'random_seed', 'not_for_empirical_validation', 'record_hash']"
+suitability:ccpm_has_buffer_and_chain,PASS,"['project_id', 'period_id', 'buffer_id', 'buffer_type', 'chain_id', 'original_buffer_days', 'remaining_buffer_days', 'chain_progress_fraction', 'buffer_sizing_method', 'data_origin', 'programme_version', 'package_version', 'generator_version', 'random_seed', 'not_for_empirical_validation', 'record_hash']"
+suitability:queue_has_arrival_service_capacity_discipline,PASS,"['project_id', 'queue_id', 'entity_id', 'arrival_time_day', 'service_start_day', 'service_end_day', 'service_duration_days', 'wait_time_days', 'server_id', 'queue_discipline', 'data_origin', 'programme_version', 'package_version', 'generator_version', 'random_seed', 'not_for_empirical_validation', 'record_hash']"
+suitability:abm_has_agents_states_rules_time,PASS,"['project_id', 'agent_id', 'agent_type', 'base_capacity_units', 'base_lead_time_steps', 'reliability', 'decision_rule_id', 'network_group', 'data_origin', 'programme_version', 'package_version', 'generator_version', 'random_seed', 'not_for_empirical_validation', 'record_hash']['project_id', 'time_step', 'agent_id', 'state', 'demand_units', 'delivered_units', 'inventory_end_units', 'effective_capacity_units', 'lead_time_steps', 'data_origin', 'programme_version', 'package_version', 'generator_version', 'random_seed', 'not_for_empirical_validation', 'record_hash']"
+suitability:des_has_events_entities_resources_queue_clock,PASS,"['project_id', 'entity_id', 'event_id', 'event_type', 'queue_id', 'resource_id', 'event_arrival_day', 'event_start_day', 'event_end_day', 'wait_days', 'service_duration_days', 'routing_rule', 'data_origin', 'programme_version', 'package_version', 'generator_version', 'random_seed', 'not_for_empirical_validation', 'record_hash']"
+suitability:dsm_is_project_specific,PASS,projects=6
+suitability:cost_risk_has_three_point_ranges,PASS,"['project_id', 'risk_event_id', 'risk_name', 'probability', 'low_impact_usd', 'most_likely_impact_usd', 'high_impact_usd', 'data_origin', 'programme_version', 'package_version', 'generator_version', 'random_seed', 'not_for_empirical_validation', 'record_hash']"
+known_answer:queue_mean_wait_reproduces,PASS,6 ground-truth rows
+known_answer:ccpm_buffer_consumption_reproduces,PASS,36 ground-truth rows
+suitability:ccpm_buffers_traceable_to_chain_activities,FAIL,"buffers carry chain_id but activities carry only a boolean flag, so a buffer cannot be traced to the activities of its chain"
+suitability:ccpm_buffers_sized_from_activity_estimates,FAIL,"project buffers are a flat fifteen per cent of baseline, not sized from activity estimates"
+suitability:abm_interaction_rules_defined,FAIL,agents carry decision_rule_id but no table defines what the rules are
+confidentiality:no_emails_phones_or_ssns,PASS,[]
+safety:no_executable_or_secret_files,PASS,[]
+handoff_claim_present:MANIFEST.csv,FAIL,not supplied with the three archives
+handoff_claim_present:validation_report.json,FAIL,not supplied with the three archives
+handoff_claim_present:module_asset_map.csv,FAIL,not supplied with the three archives
+handoff_claim_present:validators/validate_synthetic_programme.py,FAIL,not supplied with the three archives
+handoff_claim_present:generators/generate_opus_synthetic_programme.py,FAIL,not supplied with the three archives
+handoff_claim_present:schemas/schema_catalog.json,FAIL,not supplied with the three archives
