@@ -145,13 +145,16 @@ denominator can be zero, and boundary tests.
 
 ## Run 5 — regenerate the Group A export — Sonnet
 
-OPEN
-
-The export wrote 43 sections while its report claimed 52, omitting A4.2 through A4.10. Regenerate
-from the registry, and make the exporter compare emitted IDs against expected before declaring
-success.
-
-Also: the two export report files are byte-identical duplicates, not independent reports.
+DONE. `server/tools/export_module_source.py` (new) regenerates all four `code_audit/GROUP_*.md`
+files from the registry, asserting emitted ids equal the expected set per group before writing
+anything and refusing (nonzero exit, no files written) on a mismatch -- proved by injection in
+`server/tools/test_run5_export.py`. A4.2 through A4.10 are present; every section carries an
+activation state; Group A's registry-computed count is 52, with Document Risk Score exported
+separately as a labelled "supplied, not computed" entry (53 named Group A entries in total, 52
+computed plus 1 supplied -- see `code_audit/REPORT_2026-08-11_run5-export.md`). The former
+byte-identical duplicate report is marked superseded and kept as the historical defect record; one
+authoritative report plus `code_audit/CHECKSUMS.sha256` (recomputed at write time, covering every
+file in `code_audit/`) replace it.
 
 ---
 

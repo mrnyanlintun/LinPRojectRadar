@@ -51,6 +51,12 @@ a Document Risk Score specific exclusion, and it must not be described as one.
 computation, the count becomes 101 and Group A becomes 53. Anything written against this file
 should be easy to change for that reason.
 
+**Group A's full roster is 53 named entries, not 52.** The 52 in the table above is the
+registry-computed count, exactly as used everywhere else in this file. Document Risk Score is the
+53rd named entry: declared in the registry, supplied by the extraction model rather than computed,
+and excluded from every count on this page (Run 5, `code_audit/REPORT_2026-08-11_run5-export.md`,
+confirmed directly against `VALIDATED` in the code: 52 Group A ids present, `A4.1` absent).
+
 ## The registered computations
 
 Generated from the code: the validated single project registry plus the portfolio registry. The

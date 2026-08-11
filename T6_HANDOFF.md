@@ -5878,3 +5878,96 @@ ds_defensibility_data}.js`, `server/tools/test_run4_validate_seven.py` (new),
 `server/tools/drive_run4_validate_seven.py` (new), `server/tools/test_run1_disable_and_relabel.py`,
 `server/tools/test_run2_fifteen_defects.py`, `server/tools/test_run3_adapter.py`,
 `remediation_programme.md`, `REPORT_2026-08-11_run4-validate-seven.md` (new), this entry.
+
+# 2026-08-11 — Regenerate the Group A export, and the freeze programme closes
+
+Branch `claude/remediation-regenerate-export` from `origin/main` at `3dc1312`. Run 5 of the
+revised order 1, 3, 2, 4, 5, and the last of the five. `remediation_decisions_answered.md` 5.1 to
+5.3. **No file under `server/app/simulation/` changed. The platform stayed frozen.**
+
+**THE 2026-08-10 EXPORT CLAIMED 52 GROUP A MODULES AND WROTE 43, OMITTING A4.2 THROUGH A4.10,
+BECAUSE NOTHING CHECKED THE EMITTED COUNT AGAINST THE EXPECTED SET. FIXED WITH AN ASSERTION THAT
+REFUSES RATHER THAN A NUMBER NOBODY CHECKED.** New `server/tools/export_module_source.py` reads
+`VALIDATED`/`PORTFOLIO_VALIDATED` from the code, compares the ids it is about to emit against
+that expected set per group, and writes nothing if they disagree, naming exactly what is missing
+or unexpected. Proved able to fail: dropping a real id (`A4.6`) makes it refuse and name the id;
+restoring makes it clean again (52/36/7/5, 100 total). All four `code_audit/GROUP_*.md` files
+regenerated in full from the registry, not from the previous export -- RFI Velocity, Submittal
+Rejection Rate, NCR Rate, Weather Day Impact, Change Order Frequency, Dispute Escalation Index,
+Subcontractor Performance, Procurement Lead Time Monitor and Specification Conflict Density are
+all present now. Every section carries an activation state (enabled and voting, advisory and
+non-voting with the specific held-back reason where one exists, disabled, or newly wired and
+unvalidated, and a module can carry more than one). Group D's five modules share one function,
+`compute_portfolio`, so it is transcribed once with each module's subsection naming its returned
+keys.
+
+**THE TASK PROMPT'S OWN "51 COMPUTED PLUS 1 SUPPLIED" DID NOT SURVIVE VERIFICATION AGAINST THE
+CODE.** `VALIDATED` contains exactly 52 Group A ids, none of them `A4.1`. The registry CSV
+declares 53 Group A rows; `A4.1` (Document Risk Score) is the one with no formula function
+anywhere under `server/app/simulation/`. So Group A is **52 computed plus 1 supplied, 53 named
+entries total** -- not 51 plus 1. `code_audit/REPORT_2026-08-10_module-source-export.md`'s own
+independent hand-count already found this (Section 1: "the one-module gap in Group A... is
+exactly A4.1"), and `GROUP_ASSIGNMENT.md`'s registry block already listed exactly 52 Group A ids
+excluding `A4.1`. Used throughout this run rather than the prompt's own arithmetic, per
+`NAMING_AUTHORITY.md`'s standing rule to verify against the code.
+
+**THE FOOTNOTE WAS AMBIGUOUS RATHER THAN WRONG, AND IS NOW EXPLICIT.** `NAMING_AUTHORITY.md` and
+`GROUP_ASSIGNMENT.md` already excluded Document Risk Score's arithmetic from every total; the
+sentence describing that exclusion could be misread as counting it inside the 100. Both now state
+plainly that Document Risk Score is not one of the 100 and not one of Group A's 52, and that
+Group A's full named roster is 53. `remediation_programme.md`'s Run 5 entry marked DONE.
+`code_audit/REPORT_2026-08-10_module-source-export.md` carries a superseded notice pointing to
+the new report; its body is left intact as the historical record of the defect. Checked every
+other location a Group A total or this footnote could appear (`README.md`, `assets/js/
+knowledge.js`, `assets/js/categories.js`, `p0-baseline/MODULE_TAXONOMY.md`,
+`server/tools/test_group_assignment.py`) -- all already correct and left unchanged.
+
+**AN EXISTING FROZEN-FILE GUARD CAUGHT A REAL MISTAKE THIS RUN MADE.** A first attempt also fixed
+a stale "Group A 52 modules" comment in `assets/js/detail.js` (describing the whole client
+taxonomy, which is 53/101, not 52/100). `test_run2_fifteen_defects.py`'s byte-identical assertion
+against the frozen baseline caught it (2 checks red, 231/233). Reverted; that file's final diff
+against `origin/main` is empty. The stale comment is left as an incidental finding for whichever
+future session has a legitimate reason to touch that file.
+
+**ONE AUTHORITATIVE REPORT PLUS A CHECKSUM MANIFEST REPLACE THE DUPLICATE DOWNLOADS.** Both
+prior report downloads shared SHA-256 `f1c9e769...`, confirmed byte-identical again here.
+`code_audit/CHECKSUMS.sha256` (new), generated at write time by the exporter, covers every file
+in `code_audit/` with a freshly computed sha256 each; verified by recomputing (not trusting the
+writer) in `server/tools/test_run5_export.py` section 5, and proved able to fail in section 6 by
+corrupting a real file and confirming the digest disagrees, then restoring.
+
+**Verify.** New `server/tools/test_run5_export.py`, 34 checks, every one proved able to fail by
+injection before being trusted: the count assertion (drop a real id, confirm refusal, restore,
+confirm clean), the nine previously-missing sections present by name, every section in all four
+files carries an activation state (caught and fixed one real gap during this run -- the Group D
+shared-source preamble initially lacked one), no module id in any heading (regex proved able to
+fail against a deliberately poisoned copy, never written to disk), and the manifest verified by
+recomputation with the fail-then-restore proof. **Server suite, full clean re-run after the
+`detail.js` revert: 61 files, 3662/3662 checks, 0 failing files**, fresh SQLite via
+`alembic upgrade head` per file, `PYTHONIOENCODING=utf-8` throughout, interpreter confirmed real
+by successful `fastapi`/`sqlalchemy`/`alembic` imports in every process. `tests.html` **51/51**.
+`tests_render.html` **286/287** (the pre-existing auth-gated production-read row, unchanged since
+Run 2, not a regression here). Real headless Chromium,
+`/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell`.
+
+**NO MIGRATION.** Alembic head unchanged at `0025_project_notices`. **Unapplied in production:
+0020 through 0025**, same as every run since Run 2 reported it. Throwaway SQLite only; production
+never inspected or queried.
+
+**THIS CLOSES THE FIVE-RUN REMEDIATION PROGRAMME.** Run 1 disabled the eight concept-only modules
+and relabelled the thirty proxies. Run 3 (the adapter) reached fourteen more computations. Run 2
+fixed fifteen arithmetic defects. Run 4 validated the seven CORE candidates, restored TCPI and
+Variance at Completion to voting, and froze the platform. Run 5 regenerated the Group A export
+those first four runs' evidence rests on, fixed the count assertion that let it silently drop
+nine modules, and made the Document Risk Score footnote say plainly what
+`GROUP_ASSIGNMENT.md`'s own numbers already meant. What remains -- the REBUILD items, a
+Document-Risk-Score extraction-model audit with a labelled corpus, Category 9 as a two-pass gate
+-- is recorded in `remediation_programme.md` as deliberately deferred, not as unfinished pieces
+of this programme.
+
+Files: `server/tools/export_module_source.py` (new), `server/tools/test_run5_export.py` (new),
+`code_audit/GROUP_A_project-health.md`, `GROUP_B_recommendation-governance.md`,
+`GROUP_C_data-evidence-health.md`, `GROUP_D_portfolio-level.md` (all regenerated),
+`code_audit/CHECKSUMS.sha256` (new), `code_audit/REPORT_2026-08-10_module-source-export.md`
+(superseded notice), `code_audit/REPORT_2026-08-11_run5-export.md` (new), `NAMING_AUTHORITY.md`,
+`GROUP_ASSIGNMENT.md`, `remediation_programme.md`, this entry.
