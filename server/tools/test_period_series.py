@@ -225,8 +225,17 @@ check(isinstance(traj, dict) and traj.get("periods_analyzed") == 3,
 # Its figure must be reproducible from the stored periods alone: portfolio.py's own expression
 # over the last three stored cpi values. Recomputed here from the STORED rows, not from the
 # module's output, so a wrong series cannot satisfy it.
+#
+# THIS CHECK WENT RED ON THE FIFTEEN-DEFECTS RUN, and the diagnosis is that it does BOTH things
+# at once. The property it protects is real and is kept: the classifier's figure must be
+# derivable from the stored periods alone, recomputed here from the stored rows rather than read
+# back from the module. But its copy of the arithmetic divided the rise by the number of
+# OBSERVATIONS, which is defect 6 of the fifteen, so the copy recorded the defect while the
+# property stood. The rise is spread over the INTERVALS between the observations: three periods
+# are two intervals. Written as a slope below so the same drift cannot recur silently.
 cpis = [si1["cpi"], si2["cpi"], si3["cpi"]]
-expected_trend = (cpis[-1] - cpis[0]) / len(cpis)
+intervals = len(cpis) - 1
+expected_trend = (cpis[-1] - cpis[0]) / intervals
 check(isinstance(traj, dict)
       and abs(traj.get("trend", 0) - round(expected_trend * 1000) / 1000) < 1e-9,
       "and its trend is the stored periods' own cpi movement, recomputed independently here",

@@ -9,12 +9,21 @@ The two modules are projections of one derivation: Conservative Dominance record
 {state, conflict} (the instrument's m09_conservative), ABM Governance records
 {state, authority, action, fairness_gate} (m19_abm).
 
+THE FIFTEEN DEFECTS, defect 1, fixed here. classifyConflict and the health-state fallback used
+to compare statuses in LOWERCASE ("red", "green", "amber"), so a capitalised "Red" from a signal
+did not count as red: on the audit's own input (cost performance Red, forecast Red, control chart
+Green, document risk Green) this counted zero reds and returned Green where the correct answer is
+a red review. Every comparison here now runs through the one shared vocabulary in fusion.py,
+which is case-insensitive and returns None for a value it does not recognise.
+
+The same fix closes the second half of the defect, the bucket. The old Green arm was "no reds and
+no ambers", so a Yellow signal, a light-amber signal, an unrecognised string and a missing signal
+all produced agreement at low risk. The Green arm now requires all four signals to be present and
+all four to be Green; anything else is at best an early warning. That is the conservative
+direction, which is what this computation is named for.
+
 Quirks reproduced deliberately (validated against decision.js executed in the browser):
 
-- classifyConflict and the health-state fallback compare statuses in LOWERCASE ("red",
-  "green", "amber"). A capitalized "Red" from a signal does not count as red there. That is
-  what the instrument executes; reproduced, not fixed, and covered by fixture cases in both
-  casings.
 - deriveHealthState prefers window.getProjectFusion when signals.js is loaded; the server (and
   the harness, which loads decision.js alone) uses the signal-class fallback rule. Same
   treatment as A4.8's deriveExtendedFields note.
@@ -27,16 +36,24 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
+from .fusion import normalise_status
 from .models import insufficient
+
+SIGNAL_NAMES = ("evm", "mc", "cusum", "doc")
 
 
 def _signal_statuses(project: dict) -> dict:
+    """
+    The four assembled signal statuses, each normalised onto one band or None.
+
+    None means "this signal did not contribute": either it is absent, or it carried a value
+    outside the platform's status vocabulary. Both are treated the same way downstream, and
+    neither is allowed to read as Green. See fusion.normalise_status.
+    """
     s = project.get("signals") or {}
     return {
-        "evm": (s["evm"].get("status") if s.get("evm") is not None else None),
-        "mc": (s["mc"].get("status") if s.get("mc") is not None else None),
-        "cusum": (s["cusum"].get("status") if s.get("cusum") is not None else None),
-        "doc": (s["doc"].get("status") if s.get("doc") is not None else None),
+        name: (normalise_status(s[name].get("status")) if s.get(name) is not None else None)
+        for name in SIGNAL_NAMES
     }
 
 
@@ -44,18 +61,23 @@ def _count(statuses: dict, level: str) -> int:
     return sum(1 for v in statuses.values() if v == level)
 
 
+def _all_green(statuses: dict) -> bool:
+    """Agreement at low risk needs every signal present AND every one of them Green."""
+    return all(statuses.get(name) == "Green" for name in SIGNAL_NAMES)
+
+
 def _classify_conflict(project: dict) -> str:
     s = _signal_statuses(project)
-    reds = _count(s, "red")
+    reds = _count(s, "Red")
     if reds >= 2:
         return "Multi-signal red-review"
-    if project["signals"]["cusum"].get("breached") and s["doc"] == "green":
+    if project["signals"]["cusum"].get("breached") and s["doc"] == "Green":
         return "Anomaly without narrative"
-    if s["mc"] == "red" and s["evm"] != "red":
+    if s["mc"] == "Red" and s["evm"] != "Red":
         return "Forecast ahead of status"
-    if s["doc"] in ("amber", "red") and s["evm"] == "green":
+    if s["doc"] in ("Amber", "Red") and s["evm"] == "Green":
         return "Leading document risk"
-    if all(v == "green" for v in s.values()):
+    if _all_green(s):
         return "Agreement: low risk"
     return "Mixed early warning"
 
@@ -63,15 +85,16 @@ def _classify_conflict(project: dict) -> str:
 def _derive_health_state(project: dict) -> str:
     # Signal-class rule (the decision.js fallback; getProjectFusion is browser-only).
     s = _signal_statuses(project)
-    reds = _count(s, "red")
-    ambers = _count(s, "amber")
+    reds = _count(s, "Red")
     signals = project.get("signals") or {}
     cusum = signals.get("cusum")
     cusum_breached = bool(cusum.get("breached")) if cusum is not None else False
-    if reds == 0 and ambers == 0:
-        return "Green"
-    if reds >= 2 or (cusum_breached and s["mc"] == "red"):
+    # The red review is tested FIRST, before the low-risk arm, so that no ordering accident can
+    # let a project with two red signals reach a Green answer again.
+    if reds >= 2 or (cusum_breached and s["mc"] == "Red"):
         return "Red-review"
+    if _all_green(s):
+        return "Green"
     return "Amber"
 
 

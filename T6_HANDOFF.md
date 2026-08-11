@@ -5669,3 +5669,106 @@ Files: `server/app/simulation/signal_package.py` (new), `server/app/simulation/r
 the moment the module became reachable), `server/app/research_export.py`, `assets/js/knowledge.js`,
 `server/tools/test_run3_adapter.py` (new), `server/tools/test_d1_module_inputs.py`,
 `remediation_programme.md`, `REPORT_2026-08-11_run2-adapter.md` (new), this entry.
+
+# 2026-08-11 -- Remediation: the fifteen defects, and what fixing ignorance did to project status
+
+Branch `claude/remediation-fifteen-defects` from `origin/main` at `c2c609e`. This is the run
+`remediation_programme.md` calls Run 2, executed third under the revised order 1, 3, 2, 4, 5.
+Audit P0 findings 3, 4 and 9. **NOTE: the standalone `REPORT_2026-08-11_run3-fifteen-defects.md`
+was NOT written -- the session was blocked from creating report files -- so this entry carries the
+full record instead, and the report text was delivered to the owner in the session response.**
+
+**ALL FIFTEEN ARE FIXED. NONE WAS DISABLED. NINE PRODUCE OUTPUT ON THE REAL PATH AND SIX ABSTAIN,
+and the six abstentions are the correct outcome**: in each, the remedy was to delete a fabricated
+input and require a real one the corpus does not carry. Producing: Conservative Dominance,
+Dempster-Shafer, Quality Compliance, Procurement Lead Time, Cost Risk P80, Signal Trajectory,
+Cross-project Pattern, Anomaly Score, Scenario Modeling (and its sibling What-If), Monte Carlo EAC
+where a budget exists, Contractor Performance where the evaluation exists. Abstaining: Float
+Consumption, NCR Rate, Weather Day Impact, Environmental Compliance. **Three of those resolve when
+the corpus lands** (Quality Audit and Environmental Compliance reports, Project 1 only today).
+**Two will not on any timetable this programme controls**: float consumption and weather day impact
+both need network-derived float, and no activity network exists.
+
+**THE ROLLUP EVIDENCE, MEASURED, NOT AVOIDED. PROJECT STATUS MOVED IN TWO OF FOUR PERIODS, Red to
+Amber.** Project conflict moved in all four (0.83337 -> 0.812951 twice, then 0.483921 -> 0.665104
+and 0.599853 -> 0.721441). Category status did not move once in sixteen category-periods; category
+conflict moved in twelve. The "before" is the same `compute_project` over the same stored inputs
+with `origin/main`'s own `dst_combine` swapped in, and the "after" is checked to equal what the
+real path actually stored. **ONE APPLICATION of the rule can never record more conflict (asserted
+over 4000 random mass pairs, fell in all, rose in none). A WHOLE FUSION CAN**, because `dst_fuse`
+renormalises between combines: over all 340 sequences up to length four, fused conflict falls in
+287, rises in 49, unchanged in 4. **The first version of that check asserted monotonicity, passed
+on the handful of sequences first chosen, and was FALSE.** Caught by exhausting the space.
+
+**EVERY AUDIT PROOF IS ASSERTED IN BOTH DIRECTIONS AGAINST THE REAL OLD CODE.** The suite extracts
+`origin/main`'s actual simulation sources with `git show` into a throwaway package and calls the
+same functions there -- not a hand copy, not an injection that might not apply. Section 0 first
+proves the baseline reproduces the audit's own figures (pass rate -60, ratio 1.8, conflict 0.32,
+Green 0.941176), and **refuses to run at all if the extraction fails** rather than testing one
+direction and reporting clean. Fourteen fault injections, each putting the real old function back
+in the LIVE module, probe flips, restore, probe flips back.
+
+**DEFECT 1 WAS EXTENDED TO THE THREE VOTING ENSEMBLES, as the adapter run's handover required.**
+One shared vocabulary now lives in `fusion.normalise_status` and `status_to_mass` is defined in
+terms of it, so there is one recogniser rather than four. Case insensitive, and **an unrecognised
+value returns NO BAND** -- `red`, `light-amber` and `unexpected` all used to fall through a final
+`else Green`. Worst-N-of-M carried its own capitalised comparisons and was banded the same way.
+Conservative Dominance's low-risk arm now requires all four signals present and all four Green.
+
+**DEFECT 2: `Unknown` is Theta, the whole frame, so it intersects every state.** Conflict 0, Green
+0.96, Theta 0.04 on the audit's proof.
+
+**THE TWO WORST THINGS FOUND, NEITHER NAMED BY THE AUDIT.** (1) NCR Rate returned **Green** with
+"No NCRs issued this period" on a project carrying an open backlog of any size: a computation
+reporting the opposite of its evidence. (2) Scenario Modeling classified a **negative** worst-case
+forecast as **Green**, because an unguarded negative index put the number on the comfortable side
+of a threshold.
+
+**WEATHER DAY IMPACT'S LABEL WAS REVISITED, as the task required.** It said "fallback behaviour",
+the fallbacks are gone, so the label was inaccurate in the opposite direction. Now "a lost-days
+over available-float ratio with ungoverned bands, computed only from verified lost days and a
+reported float figure", in both `registry.py` and `research_export.py`.
+
+**Verify.** Server suite 59 files, **3394/3394**, fresh SQLite per file (baseline on this branch
+first: 3167/3167 across 58). New `test_run2_fifteen_defects.py` = 227. `tests.html` **51/51**.
+`tests_render.html` **286/287** (the one red is the pre-existing auth-gated production-read row).
+Real Chromium, both themes, **40/40**: two projects on one server from identical documents, one
+computed on this branch and one with `origin/main`'s module functions swapped in. **The registry
+captures formula functions BY VALUE at import, so the swap also rebinds the registry table --
+without that the drive would have compared a project with itself and reported clean.** The ledger
+shows "weighted disruption 0.65" against "1.8", the contractor row names the quality rating and
+reads Red, and "Environmental compliance: 90%" is gone. No qualifier text on that page in either
+theme.
+
+**ONE EXISTING CHECK WENT RED AND IT DID BOTH THINGS AT ONCE.** `test_period_series.py`'s
+trajectory check protects a real property (the figure must be derivable from the stored periods)
+**and its hand-maintained copy of the arithmetic divided by observations rather than intervals** --
+failure mode 4. Divisor corrected, written as an explicit interval count. No other suite changed.
+**3166 of 3167 existing checks did not notice fifteen arithmetic defects being fixed**: the suites
+verified reachability, storage, periods, abstention contracts and rollup scope, and almost never
+the numbers.
+
+**INCIDENTAL, AND THE NEXT RUN NEEDS THE FIRST TWO.** (1) **The browser instrument still contains
+every one of these fifteen defects** -- `sim.js` still defines `DEMO_BAC = 100`, `simulations.js`
+still carries the twenty-item inspection default and the synthetic environmental score. Neither
+loads on a participant route, but `research/deepdive.html` loads both, so **the researcher
+deep-dive route still shows the defective arithmetic**, and `VALIDATION.md`'s parity claims for
+these fifteen are now parity with a defect. (2) **The status vocabulary really is mixed in stored
+results**: Monte Carlo stores `"red"` lowercase while nearly everything else stores `"Red"`, so any
+new case-sensitive status comparison will be silently wrong about at least one computation. (3)
+`p80DeltaPct` swept, contract intact. (4) The portfolio results are keyed `cat8_1_*`..`cat8_5_*`, a
+retired numbering, but consistent end to end and left as found. (5) **`_derived` never fires on the
+server** -- nothing writes a source `docType` of `"derived"` -- so derived-input guards are correct
+but unreachable on the real path today.
+
+**NO MIGRATION.** The last run recorded 0020-0023 unapplied in production; this repository's head is
+now `0025_project_notices`, so **0024 and 0025 should be checked alongside them**. Throwaway SQLite
+only; production never inspected or queried.
+
+Files: `server/app/simulation/fusion.py`, `models_decision.py`, `models_doc.py`, `models_ext.py`,
+`models_gov.py`, `models_sim.py`, `portfolio.py`, `registry.py` (one label string),
+`server/app/research_export.py` (the same label string), `assets/js/knowledge.js` (thirteen module
+entries whose formula/abstain/sources lines described arithmetic that no longer exists),
+`server/tools/test_run2_fifteen_defects.py` (new), `server/tools/drive_run2_fifteen_defects.py`
+(new), `server/tools/test_period_series.py`, `remediation_programme.md`, this entry. **No
+participant-facing script was changed, asserted byte for byte against `origin/main` in the suite.**

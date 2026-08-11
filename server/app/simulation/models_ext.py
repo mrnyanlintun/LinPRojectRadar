@@ -150,13 +150,38 @@ def run_schedule_compression(si: dict, rand: Callable[[], float], period_cutoff)
 
 
 def run_float_consumption(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    THE FIFTEEN DEFECTS, defect 10, and it is one of the permanent abstentions.
+
+    The whole computation is a comparison of float consumed against work completed: consuming
+    forty per cent of the float by forty per cent completion is on plan, and consuming it by ten
+    per cent completion is not. When completion was absent, `_or_default(..., 50)` supplied FIFTY
+    PER CENT, so the comparison was made against a completion figure nobody had reported. Every
+    project without a pay application or a monthly report was measured against an invented
+    halfway point, and the stress ratio, which is the only thing this computation outputs and the
+    only thing its bands read, was that invention divided into a real number.
+
+    The fallback is removed and completion is required. Note what that means honestly: this
+    computation reads total and consumed float from a schedule update, which is float derived
+    from an activity network with logic and durations. The document corpus does not carry one,
+    and the programme's deferred list records building one as a second corpus programme rather
+    than a fix. So this computation is expected to abstain on the real corpus for the
+    foreseeable future, and abstaining is the correct outcome, not a failure of this run.
+    """
     if not check_inputs(si, ("totalFloat", "consumedFloat")):
         return insufficient("Float_Consumption")
     float_remaining = si["totalFloat"] - si["consumedFloat"]
     if not si["totalFloat"] > 0:
-        return insufficient("Float_Consumption")
+        return insufficient(
+            "Float_Consumption",
+            "No positive total float is recorded, so no consumption rate is measurable")
     consumption_rate = si["consumedFloat"] / si["totalFloat"]
-    pct_complete = _or_default(si.get("actualPctComplete"), 50)
+    pct_complete = num(si.get("actualPctComplete"), None)
+    if pct_complete is None or not pct_complete > 0:
+        return insufficient(
+            "Float_Consumption",
+            "Awaiting a reported completion percentage: float consumption is only meaningful "
+            "against the work actually completed")
     expected = pct_complete / 100
     stress = round2(consumption_rate / max(expected, 0.01))
     color = ("Green" if stress <= 1.0 else "Yellow" if stress <= 1.3
@@ -481,8 +506,31 @@ def run_overhead_absorption(si: dict, rand: Callable[[], float], period_cutoff) 
 
 
 def run_cost_risk(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    THE FIFTEEN DEFECTS, defect 5, and STRICTLY the domain crash.
+
+    `bac / cpi` had no guard at all, so a cost performance index of exactly zero raised inside
+    the computation rather than abstaining, and every project-level result of that run was lost
+    to an exception rather than to one module's stated abstention. A zero index abstains now,
+    as it already did in the four other computations that divide by it, and a zero or negative
+    budget abstains with it because the delta below is a percentage OF that budget.
+
+    THE METHOD IS NOT REBUILT AND MUST NOT BE. The eightieth percentile here is a deterministic
+    inflation of the current index, not a cost risk analysis over a risk register, and the
+    owner's open items already record that this computation cannot consume register data without
+    changing its arithmetic. That is a different piece of work with a different owner. Fixing the
+    crash is in scope; making this a real analysis is not.
+    """
     if not check_inputs(si, ("bac", "cpi", "ac", "ev")):
         return insufficient("Cost_Risk_Analysis")
+    if si["cpi"] <= 0:
+        return insufficient(
+            "Cost_Risk_Analysis",
+            "Cost performance is recorded as zero or below, which no forecast can be scaled by")
+    if si["bac"] <= 0:
+        return insufficient(
+            "Cost_Risk_Analysis",
+            "No positive budget at completion is recorded to measure an overrun against")
     eac = si["bac"] / si["cpi"]
     uncertainty = max(0.03, abs(1 - si["cpi"])) * 0.5
     p80_eac = eac * (1 + uncertainty * 1.28)

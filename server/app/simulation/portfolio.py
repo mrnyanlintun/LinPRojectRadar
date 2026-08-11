@@ -132,7 +132,15 @@ def compute_portfolio(portfolio: list[dict], current_id, history: list[dict] | N
                       if h.get("signal_inputs")]
         cpi_values = [v for v in cpi_values if v is not None]
         if len(cpi_values) >= 2:
-            trend = (cpi_values[-1] - cpi_values[0]) / len(cpi_values)
+            # THE FIFTEEN DEFECTS, defect 6. The change per period is a slope, so it divides by
+            # the number of INTERVALS between the observations, not by the number of
+            # observations. Cost performance of 0.9, 1.0 and 1.1 is two intervals of one tenth
+            # each: the trend is 0.1 per period, and this returned 0.066667 because it divided
+            # the same rise by three. It understated every trajectory it classified, by a factor
+            # that grew with the length of the history, and the band ladder below reads the
+            # number directly, so a project improving or deteriorating fast enough to change
+            # band was reported in a calmer one.
+            trend = (cpi_values[-1] - cpi_values[0]) / (len(cpi_values) - 1)
             trajectory_status = ("Green" if trend >= 0.01 else "Yellow" if trend >= -0.01
                                  else "Amber" if trend >= -0.03 else "Red")
             trajectory_desc = (f"CPI trend: {'+' if trend >= 0 else ''}"
@@ -149,15 +157,29 @@ def compute_portfolio(portfolio: list[dict], current_id, history: list[dict] | N
     pattern_status = "Green"
     pattern_desc = "No similar distress pattern found in portfolio"
     if similar:
+        # THE FIFTEEN DEFECTS, defect 7. The ladder ended at Yellow, so the moment ANY project
+        # in the portfolio resembled this one the answer could never be Green again, however
+        # well every one of them was performing. A cluster of healthy projects is not a distress
+        # pattern; it is the portfolio behaving. The band now continues past Yellow, so a
+        # matched cluster whose cost performance is at or above plan reads Green, and the
+        # question the computation is named for ("do similar projects show distress?") can be
+        # answered no rather than only "less badly".
         avg_cpi = sum(v["v"][0] for v in similar) / len(similar)
-        pattern_status = "Red" if avg_cpi < 0.90 else "Amber" if avg_cpi < 0.95 else "Yellow"
+        pattern_status = ("Red" if avg_cpi < 0.90 else "Amber" if avg_cpi < 0.95
+                          else "Yellow" if avg_cpi < 1.00 else "Green")
         pattern_desc = f"{len(similar)} project(s) show similar signal pattern"
     cross_project = {
         "method_class": "Cross_Project_Pattern", "status_color": pattern_status,
         "similar_project_count": len(similar), "evidence_metric": pattern_desc,
     }
 
-    scores = [anomaly_score, 1 - composite_rank, 0.5]
+    # THE FIFTEEN DEFECTS, defect 8. The third element of this list was the literal 0.5. It was
+    # not a measurement of anything: it was a placeholder that entered the mean on every project
+    # in every portfolio and pulled every composite score toward the middle. A project that is
+    # the least anomalous in its portfolio and ranks best on both indices scored 0.166667 where
+    # the honest answer is zero, and the ladder below reads it directly. The mean is now taken
+    # over the terms that were actually measured.
+    scores = [anomaly_score, 1 - composite_rank]
     if len(history) >= 2 and trend != 0:
         scores.append(min(1, abs(trend) * 20))
     composite_anomaly = round2(sum(scores) / len(scores))
