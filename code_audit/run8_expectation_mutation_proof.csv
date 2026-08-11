@@ -182,3 +182,5 @@ A1.6,A1.6: the production path gives 0.889 for spi_time,production_path,0.889,2.
 A2.11,A2.11: the production path gives 0.889 for critical_path_index,production_path,0.889,2.778,0.889,yes,yes,(0.888888 + 0.889)/2
 ,every band the 27 store is recognised by the status vocabulary,production_path,[],['perturbed'],[],yes,yes,
 ,on an empty input the production path bands none of the 27,production_path,[],['perturbed'],[],yes,yes,
+,every case wrote a mutation-proof row,derivation,185,371,185,yes,yes,
+,every expectation went red under perturbation,derivation,[],['perturbed'],[],yes,yes,

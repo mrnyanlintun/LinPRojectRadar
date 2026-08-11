@@ -7,7 +7,7 @@
 **Production files changed:** none. Not one file under `server/app/`, `assets/` or `research/` differs from the pinned baseline, asserted in section 0 of the new suite with an empty permitted set and re-checked against a tree hash taken at the start of the run.
 **Exact unresolved universe:** **27**, reconciled mechanically rather than copied. The suite recomputes Run 6's own coverage arithmetic from the same sources: 100 registry-computed modules, minus the 63 Run 6 covered (read out of the merged Run 6 suite's own set rather than retyped), minus the 2 the validate-seven run covered, minus the 8 disabled concept-only, leaves exactly 27, and the 27 it leaves are character for character the list Run 6 printed.
 **New tests:** one file, `server/tools/test_run8_retest_classify_27.py`.
-**Total checks:** 232, all passing. 185 of those are known-answer, property, boundary, domain, abstention, pass-through or production-path cases, and every one of the 185 is proved able to fail by perturbing its expectation.
+**Total checks:** 233, all passing. 185 of those are known-answer, property, boundary, domain, abstention, pass-through or production-path cases, and every one of the 185 is proved able to fail by perturbing its expectation.
 **Final unclassified count:** **0**. All 27 carry exactly one owner-action bucket.
 
 The headline is not the classification. It is that **two more modules were found that cannot report a healthy project**, which is Run 6's finding 1.1 in two further places, and that **five of the sixteen defect-class findings are a defect the previous three runs already fixed in the module next door and did not carry across**.
@@ -237,11 +237,11 @@ Two modules: **A3.1 Reference Class Forecasting** and **A5.1 DSM Rework Propagat
 
 ## Expectation-Mutation Proof
 
-`code_audit/run8_expectation_mutation_proof.csv`, 185 rows, one per case, each carrying the module, the check label, the kind, the expected value, the perturbed expectation, the actual value, whether the check went red under perturbation, whether it went green when restored, and the hand derivation.
+`code_audit/run8_expectation_mutation_proof.csv`, 185 rows, one per case, verified by re-reading the file back and comparing the row count against the case count, each carrying the module, the check label, the kind, the expected value, the perturbed expectation, the actual value, whether the check went red under perturbation, whether it went green when restored, and the hand derivation.
 
-**Mechanically:** `ka()` refuses any case whose expectation cannot be perturbed and asserts both that the actual equals the expectation and that it does *not* equal a perturbation of it. **185 of 185 went red under perturbation.** One perturbation bug was found and fixed while building this: `expected * 2 + 1` is a fixed point at −1, which would have silently made one case unprovable; the perturbation now falls back to a shift whenever the doubling returns the value it was meant to differ from. That case is A4.10's negative density, and it is now proved live.
+**Mechanically:** `ka()` refuses any case whose expectation cannot be perturbed and asserts both that the actual equals the expectation and that it does *not* equal a perturbation of it. **185 of 185 went red under perturbation.** Two harness faults were found and fixed while building this. First,: `expected * 2 + 1` is a fixed point at −1, which would have silently made one case unprovable; the perturbation now falls back to a shift whenever the doubling returns the value it was meant to differ from. That case is A4.10's negative density, and it is now proved live. Second, the artefact was being written two rows short, because the two checks that verify the artefact are themselves cases and were recorded after the file had been flushed; the file is now written after them and the suite reads it back and compares the row count against the case count.
 
-**End to end, by hand, as the instruction requires.** Three expectations were perturbed in the file itself — the MARCOS maximum from 0.333 to 0.999, the rework index from 0.64 to 0.99, and the schedule-risk delay from 90 to 91 — the suite was run and returned **229/232 with exactly those three red**, the file was restored, and the suite returned **232/232**.
+**End to end, by hand, as the instruction requires.** Three expectations were perturbed in the file itself — the MARCOS maximum from 0.333 to 0.999, the rework index from 0.64 to 0.99, and the schedule-risk delay from 90 to 91 — the suite was run and returned **230/233 with exactly those three red**, the file was restored, and the suite returned **233/233**.
 
 ---
 

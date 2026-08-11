@@ -1188,6 +1188,14 @@ section("13. THE AUDIT ARTEFACTS THIS RUN WRITES")
 
 AUDIT = ROOT / "code_audit"
 AUDIT.mkdir(exist_ok=True)
+
+# The two checks below are themselves cases, so they must be recorded BEFORE the file is written
+# or the file carries two fewer rows than the run produced. That is exactly what happened on the
+# first pass, and it is the kind of quiet off-by-two an audit artefact must not have.
+ka(len(MUTATION_ROWS) + 2, CASES + 2, "every case wrote a mutation-proof row", "", "derivation")
+_unprovable = [r["check_label"] for r in MUTATION_ROWS if r["red_under_perturbation"] != "yes"]
+ka(_unprovable, [], "every expectation went red under perturbation", "", "derivation")
+
 with (AUDIT / "run8_expectation_mutation_proof.csv").open("w", newline="",
                                                           encoding="utf-8") as fh:
     w = csv.DictWriter(fh, fieldnames=["module_id", "check_label", "kind", "expected",
@@ -1199,9 +1207,11 @@ with (AUDIT / "run8_expectation_mutation_proof.csv").open("w", newline="",
         w.writerow(row)
 check((AUDIT / "run8_expectation_mutation_proof.csv").exists(),
       "the expectation-mutation proof is written to code_audit/")
-ka(len(MUTATION_ROWS), CASES, "every case wrote a mutation-proof row", "", "derivation")
-_unprovable = [r["check_label"] for r in MUTATION_ROWS if r["red_under_perturbation"] != "yes"]
-ka(_unprovable, [], "every expectation went red under perturbation", "", "derivation")
+_written = list(csv.DictReader(
+    (AUDIT / "run8_expectation_mutation_proof.csv").open(encoding="utf-8", newline="")))
+check(len(_written) == CASES,
+      "the artefact on disk carries one row for every case in this run",
+      f"{len(_written)} rows for {CASES} cases")
 
 print()
 print("=" * 78)

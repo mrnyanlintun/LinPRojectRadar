@@ -14,7 +14,7 @@
 **Branch `claude/run8-retest-classify-27` from `origin/main` at `18b6b80`, the Run 7 merge. THIS
 RUN CHANGES NO PRODUCTION CODE.** Tests, `code_audit/` artefacts, the report and this entry only.
 Report: `REPORT_2026-08-11_run8-retest-and-classify-27.md`, which is controlling and
-self-contained. Suite: `server/tools/test_run8_retest_classify_27.py`, **232/232 checks, 185
+self-contained. Suite: `server/tools/test_run8_retest_classify_27.py`, **233/233 checks, 185
 cases, every expectation proved able to fail by perturbation**.
 
 **THE EXACT 27, RECONCILED RATHER THAN COPIED.** The suite recomputes Run 6's own coverage
@@ -103,9 +103,11 @@ the production path bands none of the 27.
 difference under `server/app/` or `assets/` fails; production-tree hash taken at the start of the
 run and matched at the end; `git diff --name-only origin/main` contains only tests, audit outputs,
 the report and this entry. **185 of 185 expectations red under perturbation**, plus a hand
-injection of three expectations taking the suite to 229/232 and back to 232/232 on restore. One
-perturbation bug was found and fixed in the harness itself: `expected * 2 + 1` is a fixed point at
-minus one and would have made one case silently unprovable.
+injection of three expectations taking the suite to 230/233 and back to 233/233 on restore. Two
+harness faults were found and fixed: `expected * 2 + 1` is a fixed point at minus one and would
+have made one case silently unprovable, and the artefact was being written two rows short because
+the checks that verify it are themselves cases. The suite now reads the file back and compares the
+row count against the case count.
 
 **NO MIGRATION.** No schema touched. **0020 through 0025 remain unapplied in production.**
 Production never inspected or queried; throwaway SQLite only.
