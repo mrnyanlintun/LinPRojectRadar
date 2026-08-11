@@ -1052,6 +1052,7 @@ try:
     # differ ONLY by no longer making the validation claim, and every other participant script
     # must still be byte for byte identical.
     RUN4_PERMITTED = "assets/js/recommendation_options.js"
+    RUN4_PERMITTED_2 = "assets/js/detail.js"
     for rel in PARTICIPANT_JS:
         live = (ROOT / rel).read_text(encoding="utf-8")
         base = subprocess.run(["git", "show", f"{BASELINE_REV}:{rel}"],
@@ -1081,6 +1082,25 @@ try:
                   f"the same explanation sentence", str(added)[:200])
             check("still appears on the" in live and "signal ledger" in live,
                   f"{rel}: the substance a participant reads is unchanged")
+            continue
+        if rel == RUN4_PERMITTED_2:
+            # The second permitted difference, and it is the freeze point's, not this run's.
+            # The ledger has always had code to print a module's own abstention reason under a
+            # silent row, and it never ran, because the row the page reads is the list
+            # projection and nothing grafted `abstained` onto it. Run 4 added that graft, which
+            # is why the sentences THIS run wrote are on the page at all. Named exactly rather
+            # than tolerated: the file must differ only by that graft.
+            removed = [ln.strip() for ln in base.splitlines()
+                       if ln not in live.splitlines()]
+            added = [ln.strip() for ln in live.splitlines() if ln not in base.splitlines()]
+            check(not removed,
+                  f"{rel}: the freeze removed nothing from this file", str(removed)[:200])
+            check(all(ln.startswith("//") or "abstained" in ln or ln == "}" for ln in added),
+                  f"{rel}: and everything it added is the abstention-reason graft or the "
+                  f"comment recording why", str(added)[:200])
+            check("p.storedResult.abstained = resp.result.abstained" in live,
+                  f"{rel}: which is the one line that makes an abstaining module say what it "
+                  f"is waiting for on the page a project manager reads")
             continue
         check(live == base,
               f"this run changed nothing on the participant surface ({rel})",

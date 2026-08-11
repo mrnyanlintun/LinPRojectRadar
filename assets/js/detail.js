@@ -1345,6 +1345,17 @@
       if (resp.result.recommendation_basis && !p.storedResult.recommendation_basis) {
         p.storedResult.recommendation_basis = resp.result.recommendation_basis;
       }
+      // THE FOURTH FIELD, AND IT WAS THE ONE THAT MADE THREE RUNS' WORK INVISIBLE. The ledger
+      // has code to print a module's own abstention reason under its row, and that code has
+      // never run on this page: it reads `row.abstained`, the projection does not carry it,
+      // `rowFor` prefers the projection, and so every module that abstained showed a bare
+      // "No data" pill and nothing else. Two earlier runs wrote careful sentences saying what
+      // each silent module was waiting for, asserted them on the stored row, and recorded that
+      // the ledger renders them. The row had them; the page never saw them. Same graft, same
+      // reason, as the three fields above.
+      if (resp.result.abstained && !p.storedResult.abstained) {
+        p.storedResult.abstained = resp.result.abstained;
+      }
     } else {
       // a_get delivered no storedResult (a race, or the list projection had not attached it
       // yet) but the row exists. Attach it so every rowFor(p) on this page reads the complete
