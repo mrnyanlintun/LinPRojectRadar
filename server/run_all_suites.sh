@@ -33,9 +33,17 @@ for f in tools/test_*.py; do
   cp "$TEMPLATE_DB" "$DB"
   case "$VENV_PY" in /*) PY="$VENV_PY" ;; *) PY="../$VENV_PY" ;; esac
   OUT=$(cd tools && DATABASE_URL="sqlite:///$DB" SESSION_SECRET="$SESSION_SECRET" PYTHONIOENCODING=utf-8 "$PY" "$(basename "$f")" 2>&1)
-  RESULT_LINE=$(echo "$OUT" | grep -E "RESULT:|^[0-9]+/[0-9]+" | tail -1)
-  if echo "$OUT" | grep -qE "RESULT:.*[0-9]+/[0-9]+"; then
-    NUMS=$(echo "$OUT" | grep -oE "RESULT:.*" | tail -1 | grep -oE "[0-9]+/[0-9]+" | tail -1)
+  RC=$?
+  # Canonical RESULT line only: "RESULT: <passed>/<total> checks passed". Prose summaries
+  # ("34 passed, 0 failed") are NOT accepted — a suite that crashes before printing this,
+  # or that prints its own wording, must fail the runner rather than look clean.
+  RESULT_LINE=$(echo "$OUT" | grep -E "^RESULT: [0-9]+/[0-9]+( checks passed)?$" | tail -1)
+  if [ -z "$RESULT_LINE" ]; then
+    FAILED_SUITES+=("$f: NO CANONICAL RESULT LINE (exit $RC)")
+    echo "FAIL  $f  (no canonical RESULT: line, exit $RC — see below)"
+    echo "$OUT" | tail -20
+  else
+    NUMS=$(echo "$RESULT_LINE" | grep -oE "[0-9]+/[0-9]+" | tail -1)
     PASS=$(echo "$NUMS" | cut -d/ -f1)
     TOT=$(echo "$NUMS" | cut -d/ -f2)
     TOTAL_PASS=$((TOTAL_PASS+PASS))
@@ -43,13 +51,13 @@ for f in tools/test_*.py; do
     if [ "$PASS" != "$TOT" ]; then
       FAILED_SUITES+=("$f: $NUMS")
       echo "FAIL  $f  $NUMS"
+    elif [ "$RC" -ne 0 ]; then
+      # Green result line but a nonzero exit means the process died after reporting.
+      FAILED_SUITES+=("$f: $NUMS but exit $RC")
+      echo "FAIL  $f  $NUMS but exit $RC"
     else
       echo "ok    $f  $NUMS"
     fi
-  else
-    FAILED_SUITES+=("$f: NO RESULT LINE")
-    echo "FAIL  $f  (no RESULT: line — see below)"
-    echo "$OUT" | tail -20
   fi
 done
 

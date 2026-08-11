@@ -1,0 +1,36 @@
+asset,key_or_case,result,detail
+missing asset,package_A_project_structures/no_such_file.csv,refused,missing synthetic asset: package_A_project_structures/no_such_file.csv
+path escape,../../../../etc/passwd,refused,refusing to read outside the synthetic package: ../../../../etc/passwd
+wrong package,reporting_periods.csv,refused,package_A_project_structures/reporting_periods.csv is not in package package_B_reference_t
+invalid data_origin,scratch record,rejected,"scratch.csv row 1: data_origin is 'PRODUCTION_PROJECT_RECORD', not 'SYNTHETIC_RESEARCH_FIX"
+invalid not_for_empirical_validation,scratch record,rejected,"scratch.csv row 1: not_for_empirical_validation is 'False', not true"
+malformed asset,/tmp/run9_scratch/malformed.csv,refused,not inside the package
+foreign key,ncr_events.source_audit_id -> quality_audits.audit_id,clean,0
+projects.csv,project_id,loaded,"6 rows, A-0.2"
+reporting_periods.csv,project_id|period_id,loaded,"36 rows, A-0.2"
+ncr_events.csv,ncr_id,loaded,"69 rows, A-0.2"
+ncr_ground_truth.csv,project_id|period_id,loaded,"36 rows, A-0.2"
+quality_audits.csv,audit_id,loaded,"36 rows, A-0.2"
+environmental_requirements.csv,requirement_id,loaded,"48 rows, A-0.2"
+environmental_assessments.csv,assessment_id,loaded,"288 rows, A-0.2"
+environmental_violations.csv,violation_id,loaded,"28 rows, A-0.2"
+environmental_ground_truth.csv,project_id|period_id,loaded,"36 rows, A-0.2"
+schedule_activities.csv,project_id|activity_id,loaded,"72 rows, A-0.2"
+ccpm_chains.csv,project_id|chain_id,loaded,"18 rows, A-0.2"
+ccpm_chain_activities.csv,project_id|chain_id|activity_id,loaded,"72 rows, A-0.2"
+ccpm_buffers.csv,project_id|period_id|buffer_id,loaded,"108 rows, A-0.2"
+agents.csv,project_id|agent_id,loaded,"48 rows, A-0.2"
+agent_decision_rules.csv,decision_rule_id|rule_order,loaded,"3 rows, A-0.2"
+agent_state_history.csv,project_id|agent_id|time_step,loaded,"576 rows, A-0.2"
+dsm_nodes.csv,project_id|node_id,loaded,"48 rows, A-0.2"
+dsm_edges.csv,project_id|source_node_id|target_node_id,loaded,"54 rows, A-0.2"
+queue_events.csv,project_id|queue_id|entity_id,loaded,"240 rows, A-0.2"
+cost_elements.csv,project_id|cost_element_id,loaded,"60 rows, A-0.2"
+cost_risk_events.csv,project_id|risk_event_id,loaded,"36 rows, A-0.2"
+reference_projects.csv,reference_project_id,loaded,"360 rows, B1-0.2"
+split_manifest.csv,reference_project_id,loaded,"360 rows, B1-0.2"
+decision_problems.csv,decision_problem_id,loaded,"12 rows, B3-0.2"
+actions.csv,decision_problem_id|action_id,loaded,"72 rows, B3-0.2"
+scenarios.csv,decision_problem_id|scenario_id,loaded,"60 rows, B3-0.2"
+action_scenario_outcomes.csv,decision_problem_id|action_id|scenario_id,loaded,"360 rows, B3-0.2"
+ground_truth_decisions.csv,decision_problem_id,loaded,"12 rows, B3-0.2"

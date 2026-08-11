@@ -1,0 +1,12 @@
+repository_module_id,module_name,bucket,synthetic_module_id,alias_source,staged_assets,join,asset_presence
+A1.1,Monte Carlo EAC,3,1.1,run9_overlay_derived,4,automatic,all present
+A2.2,Line of Balance,3,2.2,package_module_id_aliases,2,automatic,all present
+A2.3,CCPM Buffer Health,3,2.3,package_module_id_aliases,5,automatic,all present
+A3.1,Reference Class Forecasting,5,3.1,package_module_id_aliases,3,automatic,all present
+A4.4,NCR Rate,3,4.4,package_module_id_aliases,3,automatic,all present
+A5.1,DSM Rework Propagation,5,5.1,package_module_id_aliases,3,automatic,all present
+A5.4,Scenario Modeling,4,5.4,run9_overlay_derived,6,automatic,all present
+A5.6,Queueing Theory Bottleneck,3,5.6,package_module_id_aliases,2,automatic,all present
+A5.7,Agent-Based Supply Chain,3,5.7,package_module_id_aliases,5,automatic,all present
+A6.3,Environmental Compliance Rate,3,8.8,package_module_id_aliases,4,automatic,all present
+B2.19,CRITIC-TOPSIS,4,7.19,package_module_id_aliases,2,automatic,all present

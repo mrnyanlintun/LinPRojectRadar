@@ -174,5 +174,7 @@ finally:
           "file restored to exactly the manifest-covered content")
 
 
-print(f"\n{PASSED} passed, {FAILED} failed")
+print("=" * 78)
+print(f"RESULT: {PASSED}/{PASSED + FAILED} checks passed")
+print("=" * 78)
 sys.exit(1 if FAILED else 0)
