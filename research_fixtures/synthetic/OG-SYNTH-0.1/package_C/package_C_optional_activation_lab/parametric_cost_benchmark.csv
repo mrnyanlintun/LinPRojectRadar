@@ -1,0 +1,2 @@
+module_id,model,holdout_projects,holdout_mae_usd,naive_archetype_mean_mae_usd,improvement_fraction,activation_gate_passed,data_origin,programme_version,package_version,generator_version,random_seed,not_for_empirical_validation,record_hash
+3.8,SYNTHETIC_OLS_PARAMETRIC_COST,72,7894399.93,19504960.71,0.595262,True,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.1,C-0.1,generate_opus_synthetic_programme.py@0.1,20260811,True,ee6cefbcd69c9f00b1e59d4e9b6a994587a33dbdcdb573e8b232959826a680da

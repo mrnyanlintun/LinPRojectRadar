@@ -1,0 +1,9 @@
+module_id,module_name,reused_package,additional_c_fixture_required,data_origin,programme_version,package_version,generator_version,random_seed,not_for_empirical_validation,record_hash
+3.8,Parametric Cost Index,B1_reference_population,False,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.1,C-0.1,generate_opus_synthetic_programme.py@0.1,20260811,True,d1d187b81dd6f4eb8dc0814fff18a1cb7fe4f116a2d0d19099d711c0e2d3934e
+7.7,Plithogenic Sets,B2_expert_epistemic,True,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.1,C-0.1,generate_opus_synthetic_programme.py@0.1,20260811,True,195259700eb472fbc2c9f360ef0c6fbd1f7d12c3a6b316139dfc799819f3e810
+7.9,Quantum Probability,C_quantum,True,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.1,C-0.1,generate_opus_synthetic_programme.py@0.1,20260811,True,df00cacaeef3a8a8a6072ea45ec06da3874b19b85907dee9c027817d21709183
+7.20,Hypersoft Sets,C_hypersoft,True,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.1,C-0.1,generate_opus_synthetic_programme.py@0.1,20260811,True,ee77545d6dfe0871827f4a6b08f25bba04529a259c21229e46a87e39b8ed89e2
+10.1,Multi-Objective Optimization,B3_decision_optimization,False,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.1,C-0.1,generate_opus_synthetic_programme.py@0.1,20260811,True,3cec47dbc2973c0ddfd8f4f55c479ef843a81a8d23d8674901a35a1435dd086d
+10.2,Linear Programming,B3_decision_optimization,False,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.1,C-0.1,generate_opus_synthetic_programme.py@0.1,20260811,True,b5419bcabe89b2d605fdf58c0dd3ad85a91008f21ac3ec07dba9df7719fd6384
+10.5,Decision Sensitivity Matrix,B3_decision_optimization,False,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.1,C-0.1,generate_opus_synthetic_programme.py@0.1,20260811,True,f02399340259dabd0a870800f30b71900c5bee6f2da06a1821aa96b4b20f2b50
+10.6,Pareto Frontier Analysis,B3_decision_optimization,False,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.1,C-0.1,generate_opus_synthetic_programme.py@0.1,20260811,True,4e4179baf74a7c4966697751c653e3d4a78a886baf3af2af68885daf9431a9ef

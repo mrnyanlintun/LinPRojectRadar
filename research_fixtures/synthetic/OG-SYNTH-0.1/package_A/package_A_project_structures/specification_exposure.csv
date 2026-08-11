@@ -1,0 +1,7 @@
+project_id,specification_sections_reviewed,clauses_reviewed,exposure_unit,data_origin,programme_version,package_version,generator_version,random_seed,not_for_empirical_validation,record_hash
+PRJ-AIR,140,1400,CLAUSE,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.1,A-0.1,generate_opus_synthetic_programme.py@0.1,20260811,True,6c80075b68bf95cd7e592d8ee103a082d2c221dd10b4d9c85b00e33cae903cb1
+PRJ-HWY,150,1600,CLAUSE,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.1,A-0.1,generate_opus_synthetic_programme.py@0.1,20260811,True,3c5d7133d4525b1a56e7bdbe8f176397d6f6d29f7b5da2b3e7b588f827fee517
+PRJ-HSP,160,1800,CLAUSE,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.1,A-0.1,generate_opus_synthetic_programme.py@0.1,20260811,True,284e61f123aec7ed175984c514b6a5e04bf9b6e10f655935676261c7ae0d900b
+PRJ-WTR,170,2000,CLAUSE,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.1,A-0.1,generate_opus_synthetic_programme.py@0.1,20260811,True,da391daccc968905f04b9104861f3f0a379c9316a14015814854c4175fe9475c
+PRJ-RAL,180,2200,CLAUSE,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.1,A-0.1,generate_opus_synthetic_programme.py@0.1,20260811,True,f49c363eb29a2a5e18326aaf2bef3f1844c703c5a3d7f02d7aa0d6197cb1cb9e
+PRJ-DCT,190,2400,CLAUSE,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.1,A-0.1,generate_opus_synthetic_programme.py@0.1,20260811,True,fff96d45cc267bc92308d9feca06a09190dffc4d5b20fc0df0b306315c683428
