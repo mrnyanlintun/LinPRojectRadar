@@ -6416,3 +6416,53 @@ Files: `server/tools/export_module_source.py` (new), `server/tools/test_run5_exp
 `code_audit/CHECKSUMS.sha256` (new), `code_audit/REPORT_2026-08-10_module-source-export.md`
 (superseded notice), `code_audit/REPORT_2026-08-11_run5-export.md` (new), `NAMING_AUTHORITY.md`,
 `GROUP_ASSIGNMENT.md`, `remediation_programme.md`, this entry.
+
+# 2026-08-11 — Run 9: the false-clean harness closed, and the synthetic fixtures reach tests only
+
+**THE RUNNER COULD NOT SEE A SUITE THAT NEVER REPORTED, AND NOW IT CAN.** `test_run5_export.py`
+ended with a prose summary, not the canonical `RESULT: N/M` line, and `run_all_suites.sh` threw
+away every suite's exit code. The suite now prints the canonical line; the runner accepts only
+`^RESULT: N/M( checks passed)?$`, fails and names any suite that does not print it, and fails a
+suite whose line is green but whose exit code is nonzero. Proved with a discarded scratch suite
+across five injections: prose summary, reported failure, green line with nonzero exit, silent
+crash, and a green control. `code_audit/run9_harness_failure_proof.csv`.
+
+**ALL ELEVEN RUN 8 MODULES NOW JOIN THE SYNTHETIC PACKAGE BY IDENTIFIER.** The two that needed a
+manual join, Monte Carlo EAC and Scenario Modeling, were missing **aliases, not assets**; every
+file each needs is staged. `research_fixtures/synthetic/module_id_aliases_overlay.csv` adds
+A1.1 to 1.1 and A5.4 to 5.4, marked `run9_overlay_derived`. The 5.4 identifier follows the
+package's own category 5 suffix rule; **1.1 is minted by the overlay** because the package holds
+no category 1 row at all, and that is an owner decision left open. The package is unedited: its
+alias table still matches its own checksum entry.
+
+**THE FIXTURES ARE TEST-ONLY AND READ-ONLY.** `server/tests/synthetic_fixtures/` with a frozen
+record importer that refuses anything outside the staged package, rejects any record whose
+`data_origin` is not `SYNTHETIC_RESEARCH_FIXTURE` or whose `not_for_empirical_validation` is not
+true, enforces keys, carries provenance, and holds no database path, no network client and no
+write call. `server/tools/test_run9_synthetic_integration.py`, 84 of 84.
+
+**THE STORED VALIDATOR WAS NOT TRUSTED.** All ten NCR quantities and all eight environmental
+quantities recomputed at all 36 cutoffs; every CCPM buffer resized from three-point estimates as
+1.645 times the root sum of PERT variances; all 576 agent-state rows replayed; DSM located in
+package A from the files on disk; all twelve numerical models solved with an independent solver;
+leakage checked over all three splits and all 120 analogous pairs. The period **end**, not the
+status date, is the cutoff the stored ground truth uses; that was established by recomputation.
+
+**TWO THINGS DID NOT RECOMPUTE AND ARE RECORDED AS SUCH.** The DSM stored propagation vector sits
+about one per cent below seed times edge strength in six first-order cases, and the stored
+impacted node count disagrees with the positively impacted node count in eleven of thirty-six
+rows. The Monte Carlo mean total cost sits 0.84 to 1.00 per cent above the analytic Beta-PERT
+mean in every project, a one-sided bias a five thousand draw mean should not show. Neither was
+resolved and neither was absorbed into a tolerance.
+
+**NOTHING OPERATIONAL MOVED.** `server/app` and `assets` are byte-identical to `origin/main`. No
+migration applied; **0020 through 0025 remain unapplied in production**. Voting set unchanged at
+two, disabled concept-only set unchanged at eight, and both Bucket 5 modules abstain on fifty
+randomised inputs each. lxml is still absent from the normal interpreter and no generator
+environment was created; regeneration was unnecessary.
+
+Files: `server/run_all_suites.sh`, `server/tools/test_run5_export.py`,
+`server/tools/test_run9_synthetic_integration.py` (new), `server/tests/synthetic_fixtures/`
+(new), `research_fixtures/synthetic/module_id_aliases_overlay.csv` (new), the seven
+`code_audit/run9_*.csv` files (new),
+`REPORT_2026-08-11_run9-test-only-synthetic-integration.md` (new), this entry.

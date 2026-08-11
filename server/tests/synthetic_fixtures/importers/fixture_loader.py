@@ -171,6 +171,29 @@ def load_table(
     return FixtureTable(relpath, rows, FrozenRecord(provenance))
 
 
+def load_metadata_table(relpath: str) -> tuple[FrozenRecord, ...]:
+    """Load a package METADATA file (manifest, checksum index).
+
+    These files describe the package rather than carrying data records, so they have no
+    data_origin column to enforce. They are still read-only and still confined to the staged
+    package. No data record is ever loaded through this function: it is used for manifests.
+    """
+    path = _resolve(relpath)
+    with path.open(newline="", encoding="utf-8") as fh:
+        return tuple(FrozenRecord(row) for row in csv.DictReader(fh))
+
+
+def load_metadata_json(relpath: str) -> Mapping[str, Any]:
+    """Load a JSON asset that carries no row-level provenance block.
+
+    One staged asset, the reference population's generator model, has no data_origin marker.
+    load_json refuses it, correctly; this function exists so a test can still read it while the
+    missing marker is reported as a provenance gap rather than silently tolerated.
+    """
+    path = _resolve(relpath)
+    return FrozenRecord(json.loads(path.read_text(encoding="utf-8")))
+
+
 def load_json(relpath: str) -> Mapping[str, Any]:
     """Load a JSON asset, enforcing the same origin contract at the document level."""
     path = _resolve(relpath)

@@ -1,0 +1,58 @@
+module_id,module_name,bucket,case,outcome,note
+A1.1,Monte Carlo EAC,3,missing asset,refused,no production call made
+A1.1,Monte Carlo EAC,3,wrong package,refused,no production call made
+A1.1,Monte Carlo EAC,3,invalid data_origin,rejected,no production call made
+A1.1,Monte Carlo EAC,3,invalid not_for_empirical_validation,rejected,no production call made
+A1.1,Monte Carlo EAC,3,malformed asset,refused,no production call made
+A2.2,Line of Balance,3,missing asset,refused,no production call made
+A2.2,Line of Balance,3,wrong package,refused,no production call made
+A2.2,Line of Balance,3,invalid data_origin,rejected,no production call made
+A2.2,Line of Balance,3,invalid not_for_empirical_validation,rejected,no production call made
+A2.2,Line of Balance,3,malformed asset,refused,no production call made
+A2.3,CCPM Buffer Health,3,missing asset,refused,no production call made
+A2.3,CCPM Buffer Health,3,wrong package,refused,no production call made
+A2.3,CCPM Buffer Health,3,invalid data_origin,rejected,no production call made
+A2.3,CCPM Buffer Health,3,invalid not_for_empirical_validation,rejected,no production call made
+A2.3,CCPM Buffer Health,3,malformed asset,refused,no production call made
+A3.1,Reference Class Forecasting,5,missing asset,refused,no production call made
+A3.1,Reference Class Forecasting,5,wrong package,refused,no production call made
+A3.1,Reference Class Forecasting,5,invalid data_origin,rejected,no production call made
+A3.1,Reference Class Forecasting,5,invalid not_for_empirical_validation,rejected,no production call made
+A3.1,Reference Class Forecasting,5,malformed asset,refused,no production call made
+A4.4,NCR Rate,3,missing asset,refused,no production call made
+A4.4,NCR Rate,3,wrong package,refused,no production call made
+A4.4,NCR Rate,3,invalid data_origin,rejected,no production call made
+A4.4,NCR Rate,3,invalid not_for_empirical_validation,rejected,no production call made
+A4.4,NCR Rate,3,malformed asset,refused,no production call made
+A5.1,DSM Rework Propagation,5,missing asset,refused,no production call made
+A5.1,DSM Rework Propagation,5,wrong package,refused,no production call made
+A5.1,DSM Rework Propagation,5,invalid data_origin,rejected,no production call made
+A5.1,DSM Rework Propagation,5,invalid not_for_empirical_validation,rejected,no production call made
+A5.1,DSM Rework Propagation,5,malformed asset,refused,no production call made
+A5.4,Scenario Modeling,4,missing asset,refused,no production call made
+A5.4,Scenario Modeling,4,wrong package,refused,no production call made
+A5.4,Scenario Modeling,4,invalid data_origin,rejected,no production call made
+A5.4,Scenario Modeling,4,invalid not_for_empirical_validation,rejected,no production call made
+A5.4,Scenario Modeling,4,malformed asset,refused,no production call made
+A5.6,Queueing Theory Bottleneck,3,missing asset,refused,no production call made
+A5.6,Queueing Theory Bottleneck,3,wrong package,refused,no production call made
+A5.6,Queueing Theory Bottleneck,3,invalid data_origin,rejected,no production call made
+A5.6,Queueing Theory Bottleneck,3,invalid not_for_empirical_validation,rejected,no production call made
+A5.6,Queueing Theory Bottleneck,3,malformed asset,refused,no production call made
+A5.7,Agent-Based Supply Chain,3,missing asset,refused,no production call made
+A5.7,Agent-Based Supply Chain,3,wrong package,refused,no production call made
+A5.7,Agent-Based Supply Chain,3,invalid data_origin,rejected,no production call made
+A5.7,Agent-Based Supply Chain,3,invalid not_for_empirical_validation,rejected,no production call made
+A5.7,Agent-Based Supply Chain,3,malformed asset,refused,no production call made
+A6.3,Environmental Compliance Rate,3,missing asset,refused,no production call made
+A6.3,Environmental Compliance Rate,3,wrong package,refused,no production call made
+A6.3,Environmental Compliance Rate,3,invalid data_origin,rejected,no production call made
+A6.3,Environmental Compliance Rate,3,invalid not_for_empirical_validation,rejected,no production call made
+A6.3,Environmental Compliance Rate,3,malformed asset,refused,no production call made
+B2.19,CRITIC-TOPSIS,4,missing asset,refused,no production call made
+B2.19,CRITIC-TOPSIS,4,wrong package,refused,no production call made
+B2.19,CRITIC-TOPSIS,4,invalid data_origin,rejected,no production call made
+B2.19,CRITIC-TOPSIS,4,invalid not_for_empirical_validation,rejected,no production call made
+B2.19,CRITIC-TOPSIS,4,malformed asset,refused,no production call made
+A3.1,Reference Class Forecasting,5,production behaviour,abstains on 50 randomised inputs,non-voting
+A5.1,DSM Rework Propagation,5,production behaviour,abstains on 50 randomised inputs,non-voting
