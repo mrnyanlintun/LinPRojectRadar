@@ -109,6 +109,14 @@ have made one case silently unprovable, and the artefact was being written two r
 the checks that verify it are themselves cases. The suite now reads the file back and compares the
 row count against the case count.
 
+**SERVER SUITE, FULL CLEAN RUN.** Fresh SQLite per file via `alembic upgrade head`,
+`PYTHONIOENCODING=utf-8` throughout, interpreter confirmed real before any file ran. **64 files,
+4,612/4,612 checks under the `RESULT: n/n` convention, plus `test_run5_export.py`'s own 34/34
+under its different convention, so 4,646 in total, 0 failing files.** No existing check went red
+and nothing had to be re-pointed or loosened. Browser and render suites were not run and that is
+stated rather than skipped: none of the 27 depends on end-to-end rendering for anything this run
+classifies, and the browser-driving files inside the server suite ran as part of the 64.
+
 **NO MIGRATION.** No schema touched. **0020 through 0025 remain unapplied in production.**
 Production never inspected or queried; throwaway SQLite only.
 
