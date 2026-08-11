@@ -1,0 +1,7 @@
+injection,scratch_suite,suite_behaviour,runner_exit,runner_named_suite,verdict
+A_control,tools/test_zz_scratch_probe.py,"prints canonical RESULT: 2/2, exit 0",0,n/a (ok line),green as expected
+B_no_result_line,tools/test_zz_scratch_probe.py,"prints prose '34 passed, 0 failed', exit 0",1,yes (NO CANONICAL RESULT LINE),runner fails loudly
+C_reported_failure,tools/test_zz_scratch_probe.py,"prints RESULT: 1/2, exit 1",1,yes (1/2),runner fails loudly
+D_green_line_nonzero_exit,tools/test_zz_scratch_probe.py,"prints RESULT: 2/2, exit 3",1,yes (2/2 but exit 3),runner fails loudly
+E_crash_no_output,tools/test_zz_scratch_probe.py,"writes to stderr and exits nonzero, no RESULT line",1,yes (NO CANONICAL RESULT LINE),runner fails loudly
+F_restore,n/a,scratch suite deleted; test_run5_export.py prints canonical RESULT line,0,n/a,64 suites green
