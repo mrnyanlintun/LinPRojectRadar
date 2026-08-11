@@ -5589,3 +5589,83 @@ Files changed: `server/app/simulation/registry.py`, `server/app/simulation/compu
 `server/tools/test_run1_disable_and_relabel.py` (new), `remediation_programme.md` (new),
 `remediation_decisions_answered.md` (new), `REPORT_2026-08-10_run1-disable-and-relabel.md`, this
 entry.
+
+# 2026-08-11 -- Remediation: the flat-to-nested adapter, fourteen computations reach the normal path
+
+Branch `claude/remediation-adapter-run` from `origin/main` at `9e3bc84`. Report at
+`REPORT_2026-08-11_run2-adapter.md`. This is the run `remediation_programme.md` calls Run 3, run
+second per the revised order 1, 3, 2, 4, 5. Audit P0 finding 1.
+
+**TWELVE OF THE FOURTEEN NOW COMPUTE ON `documents.run_and_store`; THE OTHER TWO ARE THE
+CONCEPT-ONLY PAIR THE PREVIOUS RUN DISABLED, refused before their input is ever consulted, exactly
+as that run predicted.** Conservative Dominance and ABM Governance additionally abstain in a
+project's FIRST period, because they refuse without a performance trend and a trend needs two
+periods of index history; from period two they compute. Every abstention among the fourteen now
+states, in words, which assembled signals it was given and which it was not and why.
+
+**ONE ADAPTER, ONE FILE, ONE CALL SITE.** `server/app/simulation/signal_package.py`;
+`registry.run_all()` calls it and hands the result to exactly those fourteen, in three tiers,
+because each tier's input is the tier before it (the signal package, then Conservative Dominance's
+decision snapshot, then the array of results so far) -- the browser's own assembly order. **It
+routes evidence and manufactures none**: the forecast signal IS this run's Monte Carlo result and
+the trend signal IS this run's control-chart result, so a computation that abstained yields an
+absent signal rather than an invented one, and one index alone assembles no index pair. The only
+arithmetic added is the two status-band functions transcribed from `sim.js`. No module's formula was
+touched. The adapter copies rather than mutates, so `signal_inputs` on the row and every other
+module's input are byte-identical to before.
+
+**PROJECT STATUS IS UNCHANGED AND IT WAS PROVED ABLE TO FAIL FIRST.** The "before" is the same
+`compute_project` with the adapter's module set emptied, which is the pre-adapter path by
+construction. Status, conflict and every category rollup identical; letting one of the fourteen vote
+DOES move status (shown red), then reverted and the baseline reconfirmed. Every other module's
+result byte-identical with and without the adapter, stochastic ones included: none of the fourteen
+draws from the shared generator, so deferring them moves nobody's position in the stream.
+
+**CATEGORY 9 IS A RECORDED DEVIATION, NOT A GAP THAT WAS WORKED AROUND. THESE FOURTEEN CONSUME
+UNQUALIFIED SIGNALS.** No eligibility gate exists anywhere in this platform; excluding the
+evidence-health group from the vote is a different thing and does not stop poor evidence being
+combined. Carried on the data (`signal_qualification` on every result and abstention), in the export
+(a new column, filled on EVERY row, because the gate is absent for every computation), and in the
+methods documentation.
+
+**MARKED NEWLY WIRED AND UNVALIDATED in the API, the export and the Methods tab, and NOT on the
+participant surface**, honouring the previous run's finding that the Signal Ledger is reachable from
+the participant decision sequence. Browser-confirmed: no wiring qualifier and no proxy qualifier
+renders on that page in either theme. They stay non-voting.
+
+**BROWSER VERIFICATION IS AVAILABLE IN THIS CONTAINER; the previous run's report that it was not is
+wrong and cost that run its browser checks.** Chromium is at `/opt/pw-browsers`; the installed
+Playwright expects `chromium-1140` and the container has `1194`, so pass
+`executable_path=/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell` -- the
+headless SHELL, because `chromium-1194/chrome-linux/chrome` has had old headless mode removed.
+
+**Verify.** Server suite 58 files, **3167/3167**, fresh SQLite per file (baseline on `origin/main`
+first: 3109/3109 across 57). New `test_run3_adapter.py` = 51. `tests.html` **51/51**.
+`tests_render.html` **286/287** (the one red is the pre-existing auth-gated production-read row).
+Real Chromium, both themes, a four-period project uploaded and computed through the API: the ledger
+renders all twelve with their findings. **THE BROWSER CHECK WAS PROVED ABLE TO FAIL END TO END** --
+a second server started with the adapter's module set emptied renders "No data" on those same rows.
+
+**ONE SUITE ASSERTED THE DEFECT AND WAS REWRITTEN.** `test_d1_module_inputs.py` section 5 asserted
+seven evidence-combination modules "contribute no colour" on a healthy project. They contributed
+none because they could not RUN, not because there was no evidence -- the old wiring failure pinned
+as expected behaviour. Now asserted in both directions: they combine the evidence a project holds,
+and still abstain on a project with none. D1's fabrication fixes are untouched.
+
+**INCIDENTAL, AND THE NEXT RUN NEEDS BOTH.** (1) The browser's `buildSignals` emits
+`p80eacOverrunPct` while every consuming module reads `p80DeltaPct`, so in the browser that arm read
+undefined and fell to the calmest branch on every project -- another retired-key defect. The adapter
+supplies the key the contract names, which is a deliberate divergence from the JavaScript.
+(2) **The case defect is wider than Conservative Dominance**: the three voting ensembles bucket
+against a capitalised vocabulary while the instrument emits lowercase, so their three primary
+signals fall through to Green. Not normalised here, because that would change their arithmetic from
+outside and hide the defect. **Extend defect 1 to them.**
+
+**NO MIGRATION. Unapplied in production, unchanged: 0020, 0021, 0022, 0023.** Throwaway SQLite only;
+production never inspected or queried.
+
+Files: `server/app/simulation/signal_package.py` (new), `server/app/simulation/registry.py`,
+`server/app/simulation/models_decision.py` (one display string: an em dash that became user-facing
+the moment the module became reachable), `server/app/research_export.py`, `assets/js/knowledge.js`,
+`server/tools/test_run3_adapter.py` (new), `server/tools/test_d1_module_inputs.py`,
+`remediation_programme.md`, `REPORT_2026-08-11_run2-adapter.md` (new), this entry.

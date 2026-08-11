@@ -19,6 +19,10 @@ from typing import Any, Callable
 from .models import SIMULATION_VERSION, STOCHASTIC, VALIDATED  # noqa: F401
 from .portfolio import PORTFOLIO_VALIDATED
 from .rng import make_rng, seed_from
+from .signal_package import (
+    ADAPTER_TIERS, CATEGORY_9_DEVIATION, NESTED_INPUT_MODULES, SIGNAL_QUALIFICATION,
+    WIRING_NOTE, adapt, array_entry, build_signals, decision_snapshot, supplied_and_absent,
+)
 
 CSV_PATH = pathlib.Path(__file__).resolve().parents[3] / "p0-baseline" / "module_renumbering_map.csv"
 
@@ -242,18 +246,38 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
 
     results = []
     abstained = []
-    for new_id in ids:
-        out = run_module(new_id, si, rand, period_cutoff)
+
+    def record(new_id: str, out: dict, adapted: str | None = None) -> None:
+        """
+        One module's outcome, stored the same way whichever pass produced it.
+
+        `adapted` is the assembly note for one of the fourteen nested-input modules: what the
+        adapter could supply it and what it could not. It is appended to the abstention reason
+        so a module of the fourteen that still abstains says WHY, rather than being silent and
+        indistinguishable from the wiring failure this adapter fixed.
+        """
         if out.get("insufficient_data") or out.get("status_color") is None:
             # Retain the module's own abstention message (evidence_metric), when it gave one, so
             # the ledger can say why a module is silent instead of showing only its bare id. A
             # module that produced no message is recorded with reason=None; nothing is invented.
-            abstained.append({
+            reason = out.get("evidence_metric")
+            # A module disabled as concept-only already states why it is silent, and the
+            # adapter is not part of that answer: it is refused before its input is consulted.
+            if new_id in DISABLED_CONCEPT_ONLY:
+                adapted = None
+            if adapted is not None:
+                reason = f"{reason} {adapted}" if reason else adapted
+            entry = {
                 "module_id": new_id,
-                "reason": out.get("evidence_metric"),
+                "reason": reason,
                 "activation_state": out.get("activation_state") or activation_state(new_id),
-            })
-            continue
+            }
+            if new_id in NESTED_INPUT_MODULES:
+                entry["newly_wired_unvalidated"] = True
+                entry["wiring_note"] = WIRING_NOTE
+                entry["signal_qualification"] = SIGNAL_QUALIFICATION
+            abstained.append(entry)
+            return
         out = dict(out)
         out["module_id"] = new_id
         out["group"] = index[new_id]["group"]
@@ -271,7 +295,57 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
             out["proxy_qualifier"] = PROXY_QUALIFIERS[new_id]
             out["proxy_label"] = label
         out["votes"] = new_id in CORE_VOTING_MODULES
+        # Remediation Run 3 (the adapter). The fourteen nested-input modules are reachable,
+        # shown, and explicitly marked as newly wired and unvalidated -- in the API response,
+        # the export and the methods documentation, never on the participant surface, exactly
+        # like Run 1's proxy qualifier and by the same mechanism (new keys the frontend's
+        # status accessors do not read). `signal_qualification` records the Category 9
+        # deviation on the data itself: these fourteen consume raw, unqualified signals.
+        if new_id in NESTED_INPUT_MODULES:
+            out["newly_wired_unvalidated"] = True
+            out["wiring_note"] = WIRING_NOTE
+            out["signal_qualification"] = SIGNAL_QUALIFICATION
+            out["category_9_deviation"] = CATEGORY_9_DEVIATION
         results.append(out)
+
+    # ------------------------------------------------------------------ pass 1: flat inputs
+    # Every module whose input contract is the flat signalInputs dictionary, in exactly the
+    # order, and against exactly the shared generator, it always ran in. The fourteen
+    # nested-input modules never draw from `rand` (verified: no rand() call in models_gov.py,
+    # models_evc.py or models_decision.py), so deferring them to the passes below cannot move
+    # any other module's position in the random stream. That is what makes the other modules'
+    # results provably byte-identical to a run without this adapter.
+    flat_ids = [i for i in ids if i not in NESTED_INPUT_MODULES]
+    for new_id in flat_ids:
+        record(new_id, run_module(new_id, si, rand, period_cutoff))
+
+    # ------------------------------------------------- passes 2 to 4: the assembled package
+    # ONE adapter, three tiers, because each tier's input is the tier before it: the signal
+    # package, then the decision snapshot B1.1 produces, then the array of everything computed
+    # so far. This is the browser's own assembly order (signals.js), and it is the only place
+    # in the server where the nested package exists.
+    nested_ids = [i for i in ids if i in NESTED_INPUT_MODULES]
+    if nested_ids:
+        signals, absence = build_signals(si, results)
+        note = supplied_and_absent(signals, absence)
+        decision = None
+        for tier in ADAPTER_TIERS:
+            tier_ids = [i for i in tier if i in nested_ids]
+            if not tier_ids:
+                continue
+            adapted_si = adapt(si, signals, decision=decision,
+                               signal_array=[array_entry(r) for r in results])
+            for new_id in tier_ids:
+                record(new_id, run_module(new_id, adapted_si, rand, period_cutoff), adapted=note)
+            if decision is None:
+                decision = decision_snapshot(
+                    next((r for r in results if r.get("module_id") == "B1.1"), None))
+
+    # Stable order, independent of which pass produced a row: string-sorted by module id, which
+    # is the order `available_modules()` already yielded, so every row a run without the adapter
+    # produced keeps its position.
+    results.sort(key=lambda r: r["module_id"])
+    abstained.sort(key=lambda r: r["module_id"])
 
     return {
         "simulation_version": SIMULATION_VERSION,

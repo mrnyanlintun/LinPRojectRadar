@@ -189,6 +189,7 @@ MODULE_RESULT_COLUMNS: tuple[str, ...] = (
     "computation",
     "group",
     "activation_state",
+    "signal_qualification",
     "status_color",
     "evidence_metric",
     "result_json",
@@ -270,6 +271,26 @@ _RUN1_PROXY_QUALIFIERS: dict[str, str] = {
 }
 
 
+# Remediation Run 3, the flat-to-nested adapter. The fourteen modules whose declared input is a
+# NESTED assembled signal package, which the normal path never constructed, so they abstained on
+# every real run. Mirrored from server/app/simulation/signal_package.py's NESTED_INPUT_MODULES,
+# the source of truth, for the same no-import-dependency reason as the Run 1 tables above.
+_RUN3_NEWLY_WIRED: frozenset[str] = frozenset({
+    "B1.1", "B1.2", "B1.3", "B1.4",
+    "B2.1", "B2.2", "B2.3", "B2.4", "B2.5", "B2.6", "B2.7", "B2.8", "B2.9",
+    "B3.1",
+})
+
+# Audit P0 finding 2, recorded on every row rather than only in a report. The Category 9
+# eligibility gate the architecture requires is not implemented anywhere in this platform: no
+# module's inputs are qualified before it reads them, and evidence combination and governance
+# therefore run on raw signals. It is stated for every computation, not only for the fourteen the
+# adapter reached, because it is true of every computation, and marking only the fourteen would
+# imply the rest are qualified.
+_SIGNAL_QUALIFICATION = ("unqualified: no eligibility gate qualifies a signal package before "
+                         "evidence combination and governance read it")
+
+
 def _run1_activation_state(new_id: str) -> str:
     if new_id in _RUN1_DISABLED:
         return "DISABLED_UNSAFE"
@@ -287,6 +308,10 @@ def _run1_label(new_id: str, canonical_name: str) -> str:
     qualifier = _RUN1_PROXY_QUALIFIERS.get(new_id)
     if qualifier is not None:
         return f"{canonical_name} (proxy: {qualifier}. Advisory, non-voting.)"
+    if new_id in _RUN3_NEWLY_WIRED:
+        return (f"{canonical_name} (newly wired and unvalidated: reachable on the normal "
+                "computation path only since the flat-to-nested signal adapter, and not "
+                "validated against real project evidence. Advisory, non-voting.)")
     return canonical_name
 
 
@@ -711,6 +736,7 @@ def build_module_results_rows(session: Session, project_legacy_ids: set[str] | N
                 "computation": _run1_label(module_id, canonical_name),
                 "group": GROUP_NAMES.get(group_letter, group_letter),
                 "activation_state": _run1_activation_state(module_id),
+                "signal_qualification": _SIGNAL_QUALIFICATION,
                 "status_color": module.get("status_color"),
                 "evidence_metric": module.get("evidence_metric"),
                 "result_json": json.dumps(extra, sort_keys=True, default=str),

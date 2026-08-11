@@ -14,7 +14,7 @@ Status key: OPEN / RUNNING / DONE. Update after every session report.
 
 ## Run 1 — disable and relabel — Sonnet
 
-OPEN
+DONE 2026-08-10. `REPORT_2026-08-10_run1-disable-and-relabel.md`.
 
 **Disable the 8 concept-only modules.** Non-executable in production, non-voting, excluded from
 fusion and rollups.
@@ -96,7 +96,9 @@ OPEN
 
 ## Run 3 — the adapter — Opus
 
-OPEN
+DONE 2026-08-11. `REPORT_2026-08-11_run2-adapter.md`. Twelve of the fourteen compute on the normal
+path; the other two are the concept-only pair Run 1 disabled. Category 9 remains a recorded
+deviation: the fourteen consume unqualified signals.
 
 **One flat-to-nested adapter** so the 14 unreachable Group B modules run on the normal path, with
 reachability tests on `documents.run_and_store`.
