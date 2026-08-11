@@ -9,6 +9,84 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-11 — Known-answer testing across the taxonomy, after the freeze
+
+Branch `claude/known-answer-tests` from `origin/main` at `cdc1d8a`. Filed as
+`REPORT_2026-08-11_run6-known-answer-tests.md`. **NO PRODUCTION CODE CHANGED. The frozen-file
+guard was not tripped**, asserted by the suite itself: no file under `server/app/` or `assets/`
+differs from `origin/main`. New `server/tools/test_run6_known_answer.py`: **268 known-answer
+cases, 437 checks, all passing**, every expected value hand-computed from the module's own stated
+formula with the derivation written beside it, and every one of the 268 expectations proved live
+by perturbing the EXPECTED value rather than the input.
+
+**THE ONE TO PUT IN FRONT OF THE OWNER FIRST: the module that scores the courses of action can
+never report a healthy project.** Regret Minimization's expected regrets are literals — monitor
+11, investigate 5, escalate 8 — so the matrix's own minimum is ALWAYS investigate, and the
+signal-state override can only move it to escalate. Monitor is the only branch producing Green.
+Exhausted over 3,721 cost and schedule index pairs from 0.70 to 1.30: **not one produces Green.**
+A project twenty per cent above plan on both indices is still told to investigate. The 2026-08-08
+run found the scores are constant; it did not find that one of the three options is unreachable.
+
+**SEVEN MODULES PRODUCE A STATUS BAND FROM AN EMPTY INPUT DICTIONARY.** Two correctly (their
+subject is absence). Five do not: PERT Green, Line of Balance Green, CCPM Amber, Reference Class
+Forecasting Red, DSM Rework Amber. The last two read no project input at all. This is the audit's
+sixth release blocker measured rather than asserted, and three of the five carry no qualifier
+anywhere.
+
+**THE SUBSTITUTE-INSTEAD-OF-REFUSE CLASS IS NINE MODULES WIDER THAN THE SEVEN**, which is Run 4's
+incidental finding 4 enumerated: Overhead Absorption (Green on a zero indirect plan), Inflation
+Adjustment (Green on a zero baseline), Queueing Bottleneck and Agent Supply Chain (Green on an
+empty log, the same `max(count, 1)` the fifteen-defects run removed from their NEIGHBOURS reading
+the identical fields), Schedule Compression (Green on a zero index, via `spi || 1.0`), Critical
+Path Index and Discrete Event Simulation (a substituted progress ratio), Safety Performance
+(Green on nothing discussed), Specification Conflict Density.
+
+**A COMPOSITE INDEX IMPROVES WHEN EVIDENCE IS WITHHELD.** Dispute Escalation scores 0.8 with a
+request log and a change order log and **0.2 with neither**, because an absent source contributes
+zero rather than being renormalised out. Its finding text also names "RFI velocity" and "CO
+frequency" for terms that are raw capped counts.
+
+**THE REPORTED CONFLICT DEPENDS ON THE ORDER SOURCES ARRIVE IN.** Exhausted over every permutation
+of every multiset of length two to four: the fused STATUS is order-invariant in all 65 (good, and
+now proved), the CONFLICT differs in 50. `dst_fuse` records the last genuine combine and arrival
+order decides which is last. A conflict of zero already meant "one source"; it now also means
+"whichever source was last".
+
+**COVERAGE, counted against the registry rather than claimed.** 100 registry-computed modules: 63
+given a known-answer case here (all five CORE held non-voting, all thirty proxies, all twelve
+newly wired, all seven evidence-health, the three thresholds plus regret, all five portfolio), 2
+by Run 4, 8 disabled and never executed, **27 not given one** — printed by the suite. Two of those
+are honestly uncomputable by hand (Monte Carlo's 5,000 Beta-PERT draws, PERT's 2,000 triangular
+draws) and skipped rather than recorded from a run; thirteen are straightforwardly computable and
+simply were not reached, which is the cheapest remaining coverage.
+
+**METAMORPHIC FAILURES.** The audit's Isolation Forest proof reproduced (the distance IS invariant
+to rescaling document risk; the THRESHOLD is not, because it sums raw standard deviations).
+Schedule Compression is not invariant to duration: the same index reads Red on a year-long project
+and Green on a two-day one, because available days are floored at one. Held: majority under
+reordering, procurement ratio under scaling, Kalman on a constant series.
+
+**BOUNDARY INCLUSIVITY, stated because the code does not state it.** The four CORE ladders are
+inclusive on the calmer side. **RFI Velocity carries two ladders that disagree with each other**:
+per-week uses `<=` so exactly two a week is Green, overdue uses `<` so exactly ten per cent is
+Yellow. Cross-document Consistency has an unreachable edge: two of three checks gives 0.6667
+against a 0.67 boundary.
+
+**ds_defensibility_data.js: 103 module entries, 69 state the module HAS BEEN VALIDATED, 75 carry
+no qualification anywhere.** Live, loaded by index.html. Not edited; the content is the owner's
+decision. **The browser instrument is unchanged**: `sim.js` still defines `DEMO_BAC` and still
+emits `p80eacOverrunPct`, and `research/deepdive.html` still loads both files.
+
+**Verify.** Server suite **62 files, 4,063/4,063** under the `RESULT: n/n` convention plus
+`test_run5_export.py`'s 34/34, 0 failing files, fresh SQLite per file. **No existing check went
+red and nothing had to be re-pointed**, which is worth recording after three runs in which
+existing suites turned out to encode an old defect. `tests.html` **51/51**, `tests_render.html`
+**286/287** (the pre-existing auth-gated row). Real headless Chromium.
+
+**NO MIGRATION. 0020 through 0025 remain unapplied in production**; production never inspected or
+queried. Files: `server/tools/test_run6_known_answer.py` (new),
+`REPORT_2026-08-11_run6-known-answer-tests.md` (new), this entry.
+
 # 2026-08-08 — Six fixes: the period reaches the surface people use, and the recommendation states its rule
 
 Branch `claude/six-fixes-1nfjnx`, from `origin/main` at `a9464da`. Filed as
