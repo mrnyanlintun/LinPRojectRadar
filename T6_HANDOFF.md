@@ -9,6 +9,71 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-11 — Synthetic package ingest and Run 8 reconciliation, audit and staging only
+
+**Branch `claude/synthetic-package-ingest` from `origin/main` at `3fc37cc`, the Run 8 merge. THIS
+RUN CHANGES NO PRODUCTION CODE.** Report:
+`REPORT_2026-08-11_synthetic-package-ingest-and-reconciliation.md`, which is controlling and
+self-contained. No module was integrated, activated or made voting, and no synthetic record entered
+an operational or participant database.
+
+**THE COMBINED ARCHIVE WAS NEVER SUPPLIED.** The prompt named
+`Opus_Gubernatio_Synthetic_Programme_v0.1.zip` as authoritative and told this run to ignore the
+three separate package archives. Only the three separate archives arrived, so the prompt's own
+fallback rule applied and **the three package archives are the authoritative source of record for
+OG-SYNTH-0.1** until the owner says otherwise.
+
+**STAGED ONCE at `research_fixtures/synthetic/OG-SYNTH-0.1/{package_A,package_B,package_C}`**, a
+new top-level directory, deliberately separate from production data, participant data, operational
+project documents and research exports. Archives were checked for path traversal and absolute paths
+before extraction. The fixture is committed rather than gitignored, for the reason in section 2 of
+the report; `.gitignore` now excludes scratch and regeneration areas beneath it.
+
+**CHECKSUMS PASS, 85 OF 90, ZERO MISMATCHES.** All three archives ship the identical
+**programme-level** `CHECKSUMS.sha256`, so no archive can verify itself and verification must run
+against a merged tree. The five files that could not be verified are exactly the programme-level
+ones that would have lived only in the combined archive: the validator, the generator,
+`validation_report.json`, the programme `module_asset_map.csv` and `schemas/schema_catalog.json`.
+`MANIFEST.csv`, which the handoff claims, is absent from the checksum manifest as well and appears
+never to have been generated.
+
+**THE CLAIMED 160 CHECKS WITH ZERO FAILURES ARE UNVERIFIED, BECAUSE THE VALIDATOR WAS NOT SHIPPED.**
+Do not repeat the claim as established. In its place this run wrote an independent checker,
+`tools/audit_synthetic_package.py`, written against the data rather than against the package's own
+report: **74 checks, 63 pass, 11 fail**, results in
+`code_audit/synthetic_package_independent_checks.csv`, and proved able to fail by three injections
+into a discarded scratch copy (a split moved, a provenance field blanked, a schedule cycle added).
+**Generator reproducibility from seed `20260811` could not be assessed at all.**
+
+**ALL 11 RUN 8 BUCKET 3, 4 AND 5 MODULES ARE RECONCILED**, verified as 7 plus 2 plus 2 against
+`code_audit/run8_module_classification.csv` and asserted by set equality rather than copied.
+Eight are complete, two are partial, one has no asset at all and one more has none:
+- **absent outright: A4.4 NCR Rate and A6.3 Environmental Compliance Rate.** Package A contains no
+  quality audit cohort and no category 6 asset whatsoever. Both keep abstaining.
+- **partial: A2.3 CCPM** (buffers carry `chain_id` but activities carry only a boolean flag, so no
+  buffer is traceable to its chain, and buffers are a flat fifteen per cent of baseline rather than
+  sized from activity estimates) and **A5.7 ABM** (agents carry `decision_rule_id` but no table
+  defines the rules).
+- **A3.1 Reference Class Forecasting and A5.1 DSM Rework Propagation stay DISABLED and abstaining.**
+  Complete fixtures now exist for both and that changes nothing: a fixture does not authorise a
+  disabled module to run.
+- **the packages use a different module numbering from Run 8** (`2.1`, `7.19` where Run 8 says
+  `A2.1`, `B2.19`), which no automated join would survive.
+- **the linear programming models are prose**, objective and constraints both, so no solver can
+  consume them. That will block the optimisation modules later.
+
+**NOTHING LOOKED LIKE REAL DATA.** Every CSV was screened explicitly for addresses, telephone
+numbers and social security patterns; nothing was found, there is no free-text narrative field, and
+every record of every file carries `data_origin = SYNTHETIC_RESEARCH_FIXTURE`,
+`not_for_empirical_validation = true` and `programme_version = OG-SYNTH-0.1`. **No leakage across
+the development, validation and locked-holdout splits**, checked past filenames by hunting for
+duplicate feature vectors spanning splits and for analogous pairs bridging the holdout.
+
+**NONE OF THIS IS EMPIRICAL VALIDATION** and no surface may describe it as such. Artefacts:
+`code_audit/synthetic_package_file_inventory.csv`, `synthetic_package_checksum_results.csv`,
+`synthetic_package_module_reconciliation.csv`, `synthetic_package_integration_plan.csv`,
+`synthetic_package_independent_checks.csv`.
+
 # 2026-08-11 — Remediation Run 8: the 27 unresolved modules retested and classified, and two more modules that cannot report a healthy project
 
 **Branch `claude/run8-retest-classify-27` from `origin/main` at `18b6b80`, the Run 7 merge. THIS
