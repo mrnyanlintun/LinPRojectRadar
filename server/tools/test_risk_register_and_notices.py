@@ -331,18 +331,30 @@ def main() -> None:
           "serving the register changes NOTHING in its answer: it has no slot for the data",
           f"{again['p80_eac']} == {cra['p80_eac']}")
 
+    # THIS BLOCK RECORDED A DEFECT AND RUN 7 CORRECTED IT, so it now records the correction.
+    # What it recorded: the reference-class percentiles are literals, so the overrun was +38 per
+    # cent on every project whatever its figures, and an empty input still produced a colour.
+    # The percentile helper is still asserted, because that half was about the helper and is
+    # unchanged. The module itself no longer forecasts: no reference class of comparable
+    # completed projects exists on this platform, and the run's ruling is that where the
+    # defining structure of a method is absent, abstention is the fix.
     ordered = sorted([1.00, 1.04, 1.10, 1.14, 1.15, 1.26, 1.38, 1.45, 1.52])
     check(pctile(ordered, 0.80) == 1.38 and pctile(ordered, 0.50) == 1.15,
-          "Reference Class Forecasting's percentiles are fixed literals", "1.15 / 1.38")
-    rcf_a = run_rcf({"bac": 1_000_000.0}, lambda: 0.5, date(2026, 4, 30))
-    rcf_b = run_rcf({"bac": 9_000_000.0}, lambda: 0.5, date(2026, 4, 30))
-    check(rcf_a["vs_bac_pct"] == rcf_b["vs_bac_pct"] == 38.0,
-          "so its overrun is +38 per cent on EVERY project, whatever the inputs",
-          f"{rcf_a['vs_bac_pct']} and {rcf_b['vs_bac_pct']}")
-    rcf_none = run_rcf({}, lambda: 0.5, date(2026, 4, 30))
-    check(rcf_none.get("status_color") is not None,
-          "and with NO budget at all it still returns a colour rather than abstaining",
-          str(rcf_none.get("status_color")))
+          "the percentile helper still returns 1.15 and 1.38 on that list", "1.15 / 1.38")
+    for label, si_rcf in (("a million", {"bac": 1_000_000.0}),
+                          ("nine million", {"bac": 9_000_000.0}),
+                          ("nothing at all", {})):
+        rcf = run_rcf(dict(si_rcf), lambda: 0.5, date(2026, 4, 30))
+        check(rcf.get("status_color") is None and rcf.get("insufficient_data") is True,
+              f"Reference Class Forecasting abstains on a budget of {label}",
+              str(rcf.get("status_color")))
+        check(rcf.get("vs_bac_pct") is None and rcf.get("debiasing_factor") is None,
+              f"and offers no overrun figure or debiasing factor on {label}", str(rcf)[:120])
+        check(rcf.get("abstention_reason_code") == "canonical_structure_absent",
+              f"naming the missing structure rather than the missing budget on {label}",
+              str(rcf.get("abstention_reason_code")))
+        check("reference class" in str(rcf.get("evidence_metric")),
+              f"in words a reader can speak on {label}", str(rcf.get("evidence_metric"))[:90])
 
     pc = run_parametric_cost(dict(SI), lambda: 0.5, date(2026, 4, 30))
     check(pc.get("parametric_index") is not None, "Parametric Cost computes today",

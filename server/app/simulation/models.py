@@ -34,26 +34,143 @@ from .rng import as_percent, clamp, num, pctile, round1, round2
 # sourced boundaries, and every result computed through all of it still said sim-2026.07-v1. The
 # stamp exists precisely so a change to this layer is detectable in already-collected data, so it
 # moves once, here, at the point the platform is frozen for the study.
-SIMULATION_VERSION = "sim-2026.08-v2"
+#
+# RUN 7 (FIX-NOW DEFECTS) moves it again, to sim-2026.08-v3, and sim-2026.08-v2 remains the
+# historical audit baseline for every result already collected under it. Run 7 corrected sixteen
+# modules that emitted a status where they held no input to emit one from: five banded from an
+# empty dictionary, nine substituted a denominator or an input rather than refusing, one improved
+# when evidence was withheld, and one scored courses of action from a payoff matrix the corpus
+# does not contain. The stamp exists so a change to this layer is detectable in already-collected
+# data, and this is such a change.
+SIMULATION_VERSION = "sim-2026.08-v3"
 
 
-def insufficient(method_class: str, message: str | None = None) -> dict[str, Any]:
+# -------------------------------------------------------------------------------------------
+# RUN 7: THE SHARED INPUT-ELIGIBILITY AND ABSTENTION LAYER.
+#
+# Sixteen modules were found emitting a band from something they had not been given: an absent
+# schedule index defaulted to one, an absent denominator floored to one, an absent progress
+# ratio substituted by a different index. Each had been patched locally, or not at all, and the
+# two modules that read the identical pair of fields disagreed about whether an empty window was
+# an abstention or a Green. This layer is the one place that decides, so a module states what it
+# needs and the decision is made the same way for all of them.
+#
+# It validates five things and nothing else: required inputs present, a denominator in a valid
+# domain, a required canonical structure present, a minimum history present, and applicability.
+# It is not a scoring engine and it does not band. A module still owns its own arithmetic.
+#
+# The reason CODE is a stable machine string carried beside the result for the API, the export
+# and the analysis. The reason SENTENCE is what a reader sees, and it obeys the naming rules:
+# words, no module ids, no key names, no em dashes. The two are deliberately separate, because a
+# code in a sentence is the exact thing the ledger must never show.
+# -------------------------------------------------------------------------------------------
+
+#: Missing scalar inputs: a figure the module reads was not reported for this period.
+ABSTAIN_MISSING_INPUT = "missing_required_input"
+#: Missing canonical structure: the defining structure of the named method is not in the corpus
+#: at all, so no input could make the module eligible. Abstention is the fix, not a proxy.
+ABSTAIN_STRUCTURE_ABSENT = "canonical_structure_absent"
+#: The same, for a decision method whose defining structure is an action-by-scenario matrix.
+ABSTAIN_DECISION_STRUCTURE_ABSENT = "canonical_decision_structure_absent"
+#: A denominator outside the domain on which the module's own ratio is defined.
+ABSTAIN_INVALID_DENOMINATOR = "invalid_denominator"
+#: No exposure: the population, window or log the rate is measured over is empty, so a zero in
+#: the numerator is not evidence of a zero rate.
+ABSTAIN_NO_EXPOSURE = "no_exposure"
+#: Not applicable: the quantity is undefined for this project's state rather than unmeasured.
+ABSTAIN_NOT_APPLICABLE = "not_applicable"
+#: Insufficient history: fewer periods than the method needs.
+ABSTAIN_INSUFFICIENT_HISTORY = "insufficient_history"
+#: Malformed input: present, but not a number, or outside the domain it must lie in.
+ABSTAIN_MALFORMED_INPUT = "malformed_input"
+
+#: Every code the layer can emit, so the export and the API can enumerate them without guessing.
+ABSTENTION_REASON_CODES: tuple[str, ...] = (
+    ABSTAIN_MISSING_INPUT,
+    ABSTAIN_STRUCTURE_ABSENT,
+    ABSTAIN_DECISION_STRUCTURE_ABSENT,
+    ABSTAIN_INVALID_DENOMINATOR,
+    ABSTAIN_NO_EXPOSURE,
+    ABSTAIN_NOT_APPLICABLE,
+    ABSTAIN_INSUFFICIENT_HISTORY,
+    ABSTAIN_MALFORMED_INPUT,
+)
+
+#: The four dispositions Run 7 classified every zero-or-missing case into, recorded here so the
+#: classification is in the code rather than only in a report. RETURN_ZERO_TRUE_ZERO is the one
+#: that still computes: a zero measured over a valid positive exposure is a finding.
+ZERO_CASE_DISPOSITIONS: tuple[str, ...] = (
+    "RETURN_ZERO_TRUE_ZERO",
+    "ABSTAIN_NO_EXPOSURE",
+    "ABSTAIN_INVALID_DENOMINATOR",
+    "NOT_APPLICABLE",
+)
+
+
+def insufficient(method_class: str, message: str | None = None,
+                 reason_code: str | None = None) -> dict[str, Any]:
     """
     The abstention contract, matching the JavaScript helper exactly.
 
     A module with missing inputs abstains. It does not fall back to a neutral value: a fabricated
     Green is indistinguishable from a measured one once it reaches fusion.
+
+    `reason_code` is Run 7's addition: a stable machine string from the list above, carried on
+    the result and propagated to the stored abstention row, the API and the export. It is never
+    rendered: the sentence in `evidence_metric` is what a reader sees. Omitted rather than set to
+    None when absent, so a result computed before Run 7 and one computed after are distinguishable
+    rather than both carrying an empty field.
     """
-    return {
+    out: dict[str, Any] = {
         "method_class": method_class,
         "status_color": None,
         "insufficient_data": True,
         "evidence_metric": message or "Insufficient data: upload required documents",
     }
+    if reason_code is not None:
+        out["abstention_reason_code"] = reason_code
+    return out
 
 
 def check_inputs(si: dict, required: tuple[str, ...]) -> bool:
     return all(si.get(k) is not None for k in required)
+
+
+def eligible(si: dict, required: tuple[tuple[str, str], ...] = (),
+             positive: tuple[tuple[str, str], ...] = ()) -> tuple[str, str] | None:
+    """
+    The shared preflight. Returns (reason_code, sentence) when the module must abstain, else None.
+
+    `required` and `positive` are pairs of (input key, the plain words for what that input IS).
+    The words are the module's, because only the module knows what its own figure is called in a
+    document; the layer decides what happens when it is absent, malformed or out of domain, and
+    it decides it identically everywhere.
+
+    - required: absent gives ABSTAIN_MISSING_INPUT; present but not a finite number gives
+      ABSTAIN_MALFORMED_INPUT.
+    - positive: the same, and additionally a value at or below zero gives
+      ABSTAIN_INVALID_DENOMINATOR. A denominator of zero is never floored to one here: that
+      floor is the defect this layer exists to remove.
+    """
+    for key, words in tuple(required) + tuple(positive):
+        raw = si.get(key)
+        if raw is None:
+            return (ABSTAIN_MISSING_INPUT,
+                    f"Insufficient data: {words} has not been reported for this period.")
+        if num(raw, None) is None:
+            return (ABSTAIN_MALFORMED_INPUT,
+                    f"Insufficient data: {words} was reported in a form that is not a number.")
+    for key, words in positive:
+        if num(si.get(key), 0.0) <= 0:
+            return (ABSTAIN_INVALID_DENOMINATOR,
+                    f"Insufficient data: {words} is zero or below, and a rate cannot be formed "
+                    f"on it. No substitute figure is used in its place.")
+    return None
+
+
+def refuse(method_class: str, verdict: tuple[str, str]) -> dict[str, Any]:
+    """`eligible`'s verdict as the abstention contract. One call site shape for all sixteen."""
+    return insufficient(method_class, verdict[1], verdict[0])
 
 
 def _sample_triangular(a: float, m: float, b: float, rand: Callable[[], float]) -> float:
@@ -74,7 +191,18 @@ def run_pert(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
 
     The only stochastic model in the ported set. The caller seeds from (scenario_id, period), so
     every participant on that scenario and period draws the identical sample path.
+
+    RUN 7. Handed an empty dictionary this read Green. The schedule index defaulted to 1.0, which
+    is the value of a project exactly on plan, so a project about which nothing had been reported
+    was modelled as a project performing to plan and banded accordingly. The index is now
+    required. The activity durations remain the module's own literals and this run does not
+    pretend otherwise: a project-specific activity network is not in the corpus, and building one
+    is out of scope. What is corrected is that the module no longer reports on a project it has
+    been told nothing about.
     """
+    verdict = eligible(si, required=(("spi", "the schedule performance index"),))
+    if verdict:
+        return refuse("PERT_Network_Criticality", verdict)
     spi = num(si.get("spi"), 1.0)
     pess = 1 + max(0.0, 1 - spi) * 0.8
     a_act = (8.0, 10.0, 14.0)
@@ -118,7 +246,17 @@ def run_pert(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
 
 
 def run_lob(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    """Line of balance: leader (grading) against follower (paving), buffer eroding per unit."""
+    """
+    Line of balance: leader (grading) against follower (paving), buffer eroding per unit.
+
+    RUN 7. Same defect as the network model above and the same correction: an empty dictionary
+    defaulted the schedule index to 1.0 and read Green. The unit count, the two production rates
+    and the buffer stay the module's own literals, because locations, crews and production rates
+    are not in the corpus and inventing them is out of scope.
+    """
+    verdict = eligible(si, required=(("spi", "the schedule performance index"),))
+    if verdict:
+        return refuse("Line_of_Balance_Velocity", verdict)
     spi = num(si.get("spi"), 1.0)
     units = 20
     grading_rate = 2.0
@@ -158,10 +296,34 @@ def run_lob(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
 
 
 def run_ccpm(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    """CCPM buffer-health fever chart: buffer consumption against chain completion."""
+    """
+    CCPM buffer-health fever chart: buffer consumption against chain completion.
+
+    RUN 7. Handed an empty dictionary this read Amber: chain completion fell back to zero per
+    cent and the schedule index to 1.0, and the fever chart placed a project nobody had reported
+    on in the warning zone. Both figures are now required, chain completion from either the
+    reported or the planned completion, and the module abstains without them. The buffer itself
+    remains derived from the schedule index rather than from a governed critical-chain buffer,
+    which is out of scope, and the qualifier says so.
+    """
+    verdict = eligible(si, required=(("spi", "the schedule performance index"),))
+    if verdict:
+        return refuse("CCPM_Buffer_Health", verdict)
     raw = si.get("actualPctComplete")
     if raw is None:
         raw = si.get("plannedPctComplete")
+    if raw is None:
+        return insufficient(
+            "CCPM_Buffer_Health",
+            "Insufficient data: neither a reported nor a planned percent complete has been "
+            "reported for this period, so there is no chain completion to place the buffer "
+            "against.",
+            ABSTAIN_MISSING_INPUT)
+    if num(raw, None) is None:
+        return insufficient(
+            "CCPM_Buffer_Health",
+            "Insufficient data: percent complete was reported in a form that is not a number.",
+            ABSTAIN_MALFORMED_INPUT)
     pct_chain = as_percent(raw, 0.0)
     spi = num(si.get("spi"), 1.0)
     pct_buffer = clamp((1 - spi) * 100 * 1.5, 0, 100)
@@ -187,35 +349,33 @@ def run_ccpm(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
 
 
 def run_rcf(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    """Reference class forecasting: empirical overrun multipliers as a cost prior."""
-    bac = num(si.get("bac"), 0.0)
-    ordered = sorted([1.00, 1.04, 1.10, 1.14, 1.15, 1.26, 1.38, 1.45, 1.52])
-    p50 = pctile(ordered, 0.50)
-    p80 = pctile(ordered, 0.80)
-    p50_adj = bac * p50
-    p80_adj = bac * p80
-    over = (p80 - 1) * 100
-    color = "Green" if over <= 10 else ("Amber" if over <= 25 else "Red")
+    """
+    Reference class forecasting: empirical overrun multipliers as a cost prior.
 
-    if bac > 0:
-        evidence = (f"P80 cost prior ${int(math.floor(p80_adj + 0.5)):,} "
-                    f"(+{round1(over)}% vs BAC); debias x{round2(p80)}")
-    else:
-        evidence = f"Debias x{round2(p80)} (+{round1(over)}% P80 prior; BAC not yet extracted)"
+    RUN 7, AND THIS ONE ABSTAINS UNCONDITIONALLY.
 
-    return {
-        "method_class": "Reference_Class_Forecasting",
-        "status_color": color,
-        "rcf_p50_adjusted": int(math.floor(p50_adj + 0.5)),
-        "rcf_p80_adjusted": int(math.floor(p80_adj + 0.5)),
-        "debiasing_factor": round2(p80),
-        "vs_bac_pct": round1(over),
-        "p50_multiplier": round2(p50),
-        "p80_multiplier": round2(p80),
-        "multipliers": list(ordered),
-        "bac": bac,
-        "evidence_metric": evidence,
-    }
+    The method is defined by its reference class: a population of comparable completed projects
+    whose realised overruns give the distribution the forecast is drawn from. This platform holds
+    no such population. The nine multipliers below are literals, so the percentile, the debiasing
+    factor and therefore the band are the same numbers on every project and in every period, and
+    handed an empty dictionary the module read Red about a project nobody had reported anything
+    for. It read the budget only to scale a figure it displayed; nothing about a project could
+    move the band.
+
+    There is no input that would make it eligible, so there is no preflight to write: the missing
+    thing is the reference class itself. Building one is out of scope, and a proxy that keeps
+    emitting a constant band is the fault this run exists to remove. The module therefore refuses
+    and states that the reference class is absent. The arithmetic it used to perform is not kept
+    here as dead code: the suite reads it out of the pinned baseline commit, which is how every
+    remediation run on this repository has proved what the shipped code did.
+    """
+    return insufficient(
+        "Reference_Class_Forecasting",
+        "Insufficient data: no reference class of comparable completed projects is held, so "
+        "there is no distribution of realised overruns to place this project against. No "
+        "forecast is offered in its place.",
+        ABSTAIN_STRUCTURE_ABSENT)
+
 
 
 # ---------------------------------------------------------------- A5.1 DSM
@@ -225,41 +385,26 @@ def run_dsm(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
     """
     Design structure matrix rework propagation across Arch, Structural and MEP.
 
-    The 3x3 multiply is written out rather than taken from numpy: the service has been bitten
-    twice by compiled-wheel availability and does not need the dependency for nine multiplies.
-    The discarded spike also had 0.40 where the instrument has 0.30 at [2][1].
-    """
-    matrix = [
-        [0.0, 0.30, 0.10],
-        [0.50, 0.0, 0.20],
-        [0.40, 0.30, 0.0],
-    ]
-    wave = [1.0, 0.0, 0.0]
-    cumulative = list(wave)
-    for _ in range(4):
-        nxt = [0.0, 0.0, 0.0]
-        for i in range(3):
-            for j in range(3):
-                nxt[i] += matrix[i][j] * wave[j]
-        for k in range(3):
-            cumulative[k] += nxt[k]
-        wave = nxt
+    RUN 7, AND THIS ONE ABSTAINS UNCONDITIONALLY.
 
-    total = cumulative[0] + cumulative[1] + cumulative[2]
-    color = "Amber" if total > 2.5 else "Green"
-    return {
-        "method_class": "DSM_Rework_Cat5",
-        "status_color": color,
-        "rework_multiplier": round2(total),
-        "matrix": [list(r) for r in matrix],
-        "arch_impact": round2(cumulative[0]),
-        "structural_impact": round2(cumulative[1]),
-        "mep_impact": round2(cumulative[2]),
-        "evidence_metric": (
-            f"Architectural change -> x{round2(total)} cumulative rework across "
-            f"Arch/Struct/MEP (4 propagation passes)"
-        ),
-    }
+    The method is defined by its dependency matrix: which parts of a project's design depend on
+    which others, and how strongly, for the project being analysed. The nine coefficients below
+    were literals, the initiating wave was a literal, and no project input was read anywhere in
+    the computation. Handed an empty dictionary the module read Amber, and handed a complete
+    project it read the same Amber, because nothing about a project could reach the arithmetic.
+    The result had the shape of an analysis of a project and was a property of the file.
+
+    No dependency matrix is in the corpus and building one is out of scope, so there is no input
+    that would make the module eligible. It refuses and says which structure is missing. The
+    suite reads the previous arithmetic out of the pinned baseline commit rather than this file
+    keeping it as dead code.
+    """
+    return insufficient(
+        "DSM_Rework_Cat5",
+        "Insufficient data: no dependency matrix has been established for this project, so "
+        "there is no record of which parts of the design depend on which others and a rework "
+        "wave cannot be traced through them. No multiplier is offered in its place.",
+        ABSTAIN_STRUCTURE_ABSENT)
 
 
 # Validated against the JavaScript. Keyed by the registry's new id.

@@ -76,6 +76,31 @@ def modules_of(result: dict) -> dict:
             if isinstance(m, dict)}
 
 
+# RUN 7 CHANGED WHAT CARRIES THE GATE'S PAYLOAD, SO THE SUITE STOPS NAMING ONE MODULE.
+#
+# Every assertion in this file used the module that scored the courses of action as the vehicle:
+# its scored set was the action-bearing payload the reveal gate strips before a participant has
+# locked a preliminary judgment. Run 7 established that the set was three literals identical on
+# every project in every period, that the healthy course was unreachable from any input, and
+# that no action by scenario payoff matrix exists to compute a real one from. The module
+# abstains, so no row carries those fields anywhere.
+#
+# The GATE is unchanged and so is every property this suite exists to protect. What changes is
+# how they are read: action-bearing is a set of KEYS, defined by the redactor, and a read is
+# gated when the response says the recommendation was withheld and no module on it carries one
+# of those keys. Nothing here is retargeted onto a module that happens to be quiet.
+ACTION_KEYS = {"recommended_action", "expected_regret", "action", "authority"}
+
+
+def action_bearing(result: dict) -> list:
+    return sorted(m.get("method_class") for m in (result.get("module_results") or [])
+                  if isinstance(m, dict) and ACTION_KEYS & set(m))
+
+
+def abstained_ids(result: dict) -> set:
+    return {a.get("module_id") for a in (result.get("abstained") or [])}
+
+
 ADMIN = "coa-admin"
 OPS = "PRJ-COA-OPS"
 RES = "PRJ-COA-RES"
@@ -150,23 +175,20 @@ try:
     mods = modules_of(result)
     regret = mods.get("Regret_Minimization")
 
-    check(regret is not None,
-          "the analysis that scores the courses of action is present in the stored result")
-    scores = (regret or {}).get("expected_regret")
-    check(isinstance(scores, dict) and len(scores) == 3,
-          "and it carries the full scored course set, no longer stripped", str(scores))
-    check(scores == {"monitor": 11, "investigate": 5, "escalate": 8},
-          "the scores are exactly the stored values", str(scores))
-    check((regret or {}).get("recommended_action") == "escalate",
-          "the recommended course survives the read",
-          str((regret or {}).get("recommended_action")))
-    check((regret or {}).get("recommendation_withheld") is None,
-          "nothing on the module is marked withheld for an operational project",
-          str((regret or {}).get("recommendation_withheld")))
-    check("withheld until the preliminary judgment"
-          not in str((regret or {}).get("evidence_metric")),
-          "and its finding text is the real one, not the withheld placeholder",
-          str((regret or {}).get("evidence_metric"))[:90])
+    check(regret is None,
+          "the analysis that scored the courses of action carries no stored row: it abstains "
+          "for want of an action by scenario payoff matrix", str(regret)[:140])
+    check("B4.7" in abstained_ids(result),
+          "and its silence is recorded as an abstention, so absent is not mistaken for "
+          "withheld", str(sorted(abstained_ids(result)))[:140])
+    check(len(mods) > 0,
+          "while the rest of the ledger computed for this project", str(len(mods)))
+    check(not any(m.get("recommendation_withheld") for m in mods.values()),
+          "nothing on this operational read is marked withheld",
+          str([k for k, m in mods.items() if m.get("recommendation_withheld")]))
+    check(all("withheld until the preliminary judgment" not in str(m.get("evidence_metric"))
+              for m in mods.values()),
+          "and no finding text is the withheld placeholder")
     check(result.get("recommendation_withheld") is None,
           "the response does not claim a recommendation was withheld from an operational read",
           str(result.get("recommendation_withheld")))
@@ -178,9 +200,18 @@ try:
 
     ares = post({"action": "projectresults", "session_token": ops, "id": ABST, "period": 1})
     amods = modules_of(ares["result"])
+    # This project omits the budget at completion, so a number of modules abstain on a missing
+    # input rather than on a missing structure. The distinction is asserted rather than assumed:
+    # the ledger must be able to say WHICH kind of silence it is looking at.
     check("Regret_Minimization" not in amods,
-          "with no budget at completion the scoring analysis abstains and never reaches the row",
+          "the scoring analysis is absent here too, and never reaches the row",
           str(sorted(amods)[:5]))
+    _areasons = {a.get("module_id"): a for a in (ares["result"].get("abstained") or [])}
+    check(_areasons.get("B4.7", {}).get("abstention_reason_code")
+          == "canonical_decision_structure_absent",
+          "and its stable reason names a missing structure, not a missing figure, on a project "
+          "that is genuinely missing a figure",
+          str(_areasons.get("B4.7", {}).get("abstention_reason_code")))
     check(len(amods) > 0,
           "while other modules on the same project did compute, so the absence is specific",
           str(len(amods)))
@@ -232,19 +263,16 @@ try:
     post({"action": "projectcompute", "session_token": rtok, "id": RES, "period": 1})
 
     pre = post({"action": "projectresults", "session_token": rtok, "id": RES, "period": 1})
-    pre_regret = modules_of(pre["result"]).get("Regret_Minimization")
-    check(pre_regret is not None,
-          "before the lock the module is still present, so the ledger can show its status")
-    check(pre_regret.get("expected_regret") is None,
-          "but the scored course set is withheld", str(pre_regret.get("expected_regret")))
-    check(pre_regret.get("recommended_action") is None,
-          "and so is the recommended course")
-    check(pre_regret.get("recommendation_withheld") is True,
-          "marked as withheld, which is what lets the surface say so instead of guessing")
     check(pre["result"].get("recommendation_withheld") is True,
-          "and the response says the recommendation itself was withheld")
+          "before the lock the response says the recommendation was withheld")
+    check(pre["result"].get("recommendation") is None,
+          "and the recommendation package itself is not on the read",
+          str(pre["result"].get("recommendation"))[:110])
+    check(action_bearing(pre["result"]) == [],
+          "no module on the pre-lock read carries an action-bearing key",
+          str(action_bearing(pre["result"])))
     blob = json.dumps(pre)
-    for leak in ("escalate", "expected_regret"):
+    for leak in ("Escalate to recovery review", "expected_regret", "recommended_action"):
         check(leak not in blob, f"the pre-lock response leaks no {leak!r}")
 
     lock = post({"action": "researchprejudgment", "session_token": rtok,
@@ -253,13 +281,15 @@ try:
           "the preliminary judgment locks", str(lock)[:160])
 
     postl = post({"action": "projectresults", "session_token": rtok, "id": RES, "period": 1})
-    post_regret = modules_of(postl["result"]).get("Regret_Minimization")
-    check(post_regret.get("expected_regret") == {"monitor": 11, "investigate": 5,
-                                                 "escalate": 8},
-          "after the lock the same scored set the operational project shows is released",
-          str(post_regret.get("expected_regret")))
-    check(post_regret.get("recommended_action") == "escalate",
-          "and the recommended course with it")
+    check(postl["result"].get("recommendation_withheld") is None,
+          "after the lock nothing on the read is reported as withheld",
+          str(postl["result"].get("recommendation_withheld")))
+    rec = postl["result"].get("recommendation") or {}
+    check(rec.get("recommended_action") == "Escalate to recovery review",
+          "and the researcher-authored recommendation package is released, which is the "
+          "treatment the gate holds back", str(rec)[:140])
+    check("Escalate to recovery review" in json.dumps(postl),
+          "so the course the study serves reaches the participant only after the lock")
 
     print()
     print("=" * 78)
@@ -318,12 +348,13 @@ try:
 
     obs_read = post({"action": "projectresults", "session_token": obs, "id": RES2,
                      "period": 1})
-    obs_regret = modules_of(obs_read["result"]).get("Regret_Minimization")
     check(obs_read.get("ok") is True, "the operational-account observer can read the project")
-    check(obs_regret is not None and obs_regret.get("expected_regret") is None,
+    check(obs_read["result"].get("recommendation_withheld") is True
+          and action_bearing(obs_read["result"]) == [],
           "AN OPERATIONAL ACCOUNT READING A RESEARCH PROJECT IS STILL GATED: the branch is on "
-          "the project, not the caller", str(obs_regret))
-    check("escalate" not in json.dumps(obs_read),
+          "the project, not the caller",
+          str(obs_read["result"].get("recommendation_withheld")))
+    check("escalate" not in json.dumps(obs_read).lower(),
           "and nothing action-bearing leaks to that observer")
 
     # 4b. A research project whose PM membership is REVOKED. project_decision_state resolves
@@ -339,13 +370,14 @@ try:
 
     revoked_read = post({"action": "projectresults", "session_token": obs, "id": RES2,
                          "period": 1})
-    rev_regret = modules_of(revoked_read["result"]).get("Regret_Minimization")
     check(revoked_read.get("ok") is True,
           "the observer can still read the project after the PM row is revoked")
-    check(rev_regret is not None and rev_regret.get("expected_regret") is None,
+    check(revoked_read["result"].get("recommendation_withheld") is True
+          and action_bearing(revoked_read["result"]) == [],
           "A RESEARCH PROJECT WITH NO RESOLVABLE DECISION IS STILL GATED: the Decision row is "
-          "not the discriminator", str(rev_regret))
-    check("escalate" not in json.dumps(revoked_read),
+          "not the discriminator",
+          str(revoked_read["result"].get("recommendation_withheld")))
+    check("escalate" not in json.dumps(revoked_read).lower(),
           "and nothing action-bearing leaks in that state either")
 
     print()

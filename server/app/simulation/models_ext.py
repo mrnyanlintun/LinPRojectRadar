@@ -27,7 +27,11 @@ import math
 import re
 from typing import Any, Callable
 
-from .models import check_inputs, insufficient
+from .models import (
+    ABSTAIN_INVALID_DENOMINATOR, ABSTAIN_MALFORMED_INPUT, ABSTAIN_MISSING_INPUT,
+    ABSTAIN_NOT_APPLICABLE,
+    check_inputs, eligible, insufficient, refuse,
+)
 from .rng import clamp, js_round, num, round1, round2
 
 _DATE_RE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
@@ -116,21 +120,58 @@ def _derived(si: dict, *fields: str) -> bool:
 
 
 def run_schedule_compression(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 7. Three substitutions, all removed.
+
+    1. The schedule index came through `_or_default(..., 1.0)`, JavaScript truthiness, so an
+       index of exactly zero and an index never reported both became an index of one, the value
+       of a project running exactly to plan. It is now required and must be above zero: at zero
+       there is no rate of progress for remaining work to be delivered at, so no compression
+       ratio exists.
+    2. The available days were floored at one day, `max(available_days, 1)`. That floor is why
+       the same index gave a different ratio on a long baseline and a short one, which the
+       known-answer run recorded as a failure of scale invariance: a year-long baseline at an
+       index of 0.50 read 2.0 and Red, a two-day baseline at the SAME index read 1.0 and Green.
+       With the floor removed the ratio is required over available, which is one over the index,
+       and it is invariant under scaling the duration, as the stated ratio always should have
+       been. This is an arithmetic correction to the stated proxy, not a new method.
+    3. A project with no remaining work returned a ratio of one, which banded Green. There is no
+       compression to measure when there is nothing left to compress: that is not applicable
+       rather than comfortable, and it abstains.
+    """
     if not check_inputs(si, ("baselineEnd", "baselineStart", "actualPctComplete")):
-        return insufficient("Schedule_Compression")
+        return insufficient("Schedule_Compression",
+                            "Insufficient data: the baseline dates and the reported percent "
+                            "complete are needed to measure compression, and at least one of "
+                            "them has not been reported for this period.",
+                            ABSTAIN_MISSING_INPUT)
+    verdict = eligible(si, positive=(("spi", "the schedule performance index"),))
+    if verdict:
+        return refuse("Schedule_Compression", verdict)
     end_ms = _js_date_ms(si.get("baselineEnd"))
     start_ms = _js_date_ms(si.get("baselineStart"))
     if end_ms is None or start_ms is None:
-        return insufficient("Schedule_Compression")
+        return insufficient("Schedule_Compression",
+                            "Insufficient data: a baseline date was reported in a form that is "
+                            "not a date.",
+                            ABSTAIN_MALFORMED_INPUT)
     total_days = (end_ms - start_ms) / 86400000
     if total_days <= 0:
-        return insufficient("Schedule_Compression")
+        return insufficient("Schedule_Compression",
+                            "Insufficient data: the baseline finish is not after the baseline "
+                            "start, so the baseline has no duration to compress.",
+                            ABSTAIN_MALFORMED_INPUT)
     remaining_pct = (100 - si["actualPctComplete"]) / 100
     remaining_days = total_days * remaining_pct
-    spi = _or_default(si.get("spi"), 1.0)
+    if remaining_days <= 0:
+        return insufficient("Schedule_Compression",
+                            "No remaining work is reported for this project, so there is no "
+                            "remaining duration to compress and no ratio to report.",
+                            ABSTAIN_NOT_APPLICABLE)
+    spi = num(si.get("spi"), None)
     required_days = remaining_days
     available_days = remaining_days * spi
-    ratio = required_days / max(available_days, 1) if required_days > 0 else 1
+    ratio = required_days / available_days
     ratio = round2(ratio)
     color = ("Green" if ratio <= 1.05 else "Yellow" if ratio <= 1.15
              else "Amber" if ratio <= 1.30 else "Red")
@@ -405,10 +446,25 @@ def run_schedule_risk(si: dict, rand: Callable[[], float], period_cutoff) -> dic
 
 
 def run_critical_path_index(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 7. The index is the average of two things: progress against plan, and the schedule
+    index. Where no planned progress had been reported the first of the two was replaced by the
+    second, so the average became the schedule index averaged with itself and the module reported
+    a two-input measure it had one input for. On a project with no planned progress that produced
+    Amber. Planned progress is now required to be above zero, because it is the denominator of
+    the ratio, and the module abstains rather than quietly reporting a different measure under
+    the same name.
+    """
     if not check_inputs(si, ("spi", "plannedPctComplete", "actualPctComplete")):
-        return insufficient("Critical_Path_Index")
-    progress_ratio = (si["actualPctComplete"] / si["plannedPctComplete"]
-                      if si["plannedPctComplete"] > 0 else si["spi"])
+        return insufficient("Critical_Path_Index",
+                            "Insufficient data: the schedule performance index and both the "
+                            "planned and reported percent complete are needed, and at least one "
+                            "of them has not been reported for this period.",
+                            ABSTAIN_MISSING_INPUT)
+    verdict = eligible(si, positive=(("plannedPctComplete", "the planned percent complete"),))
+    if verdict:
+        return refuse("Critical_Path_Index", verdict)
+    progress_ratio = si["actualPctComplete"] / si["plannedPctComplete"]
     cpi_schedule = si["spi"]
     index = _round3((progress_ratio + cpi_schedule) / 2)
     color = ("Green" if index >= 0.95 else "Yellow" if index >= 0.92
@@ -565,11 +621,31 @@ def run_material_cost_variance(si: dict, rand: Callable[[], float],
 
 
 def run_overhead_absorption(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 7. An indirect plan of zero, or a plan scaled by a reported completion of zero, made the
+    denominator zero and the absorption ratio was substituted as exactly 1, which is the value of
+    a project absorbing overhead precisely as planned, and which banded Green. There is no
+    planned indirect cost to absorb against in that state, so no absorption ratio exists and the
+    module refuses. The proxy itself is unchanged: it remains a ratio of actual indirect cost to
+    a progress-scaled indirect plan, with the qualifier it already carries about whether the plan
+    is a total or a period figure.
+    """
     if not check_inputs(si, ("indirectCostPlan", "indirectCostActual")):
-        return insufficient("Overhead_Absorption")
+        return insufficient("Overhead_Absorption",
+                            "Insufficient data: the planned and actual indirect cost figures "
+                            "are needed, and at least one of them has not been reported for "
+                            "this period.",
+                            ABSTAIN_MISSING_INPUT)
     pct = si["actualPctComplete"] / 100 if si.get("actualPctComplete") is not None else None
     planned = si["indirectCostPlan"] * pct if pct is not None else si["indirectCostPlan"]
-    absorption = si["indirectCostActual"] / planned if planned > 0 else 1
+    if not (planned > 0):
+        return insufficient("Overhead_Absorption",
+                            "Insufficient data: the planned indirect cost at this project's "
+                            "reported progress is zero or below, so there is nothing to absorb "
+                            "against and no absorption ratio can be formed. No substitute "
+                            "figure is used in its place.",
+                            ABSTAIN_INVALID_DENOMINATOR)
+    absorption = si["indirectCostActual"] / planned
     absorption = _round3(absorption)
     is_derived = _derived(si, "indirectCostPlan")
     color = ("Green" if absorption <= 1.05 else "Yellow" if absorption <= 1.15
@@ -689,11 +765,30 @@ def run_parametric_cost(si: dict, rand: Callable[[], float], period_cutoff) -> d
 
 def run_inflation_adjustment(si: dict, rand: Callable[[], float],
                              period_cutoff) -> dict[str, Any]:
+    """
+    RUN 7. A material baseline of zero, or a baseline scaled by a reported completion of zero,
+    made the denominator zero and the escalation was substituted as exactly 0, which is the value
+    of a project with no material escalation at all, and which banded Green. There is no
+    progress-adjusted baseline to measure escalation above in that state, so the module refuses.
+    The proxy is unchanged: still a ratio above a progress-adjusted baseline with no external
+    price index, time base or geography, exactly as its qualifier says.
+    """
     if not check_inputs(si, ("materialCostBaseline", "materialCostCurrent")):
-        return insufficient("Inflation_Adjustment")
+        return insufficient("Inflation_Adjustment",
+                            "Insufficient data: the baseline and current material cost figures "
+                            "are needed, and at least one of them has not been reported for "
+                            "this period.",
+                            ABSTAIN_MISSING_INPUT)
     pct = si["actualPctComplete"] / 100 if si.get("actualPctComplete") is not None else None
     expected = si["materialCostBaseline"] * pct if pct is not None else si["materialCostBaseline"]
-    escalation = max(0, (si["materialCostCurrent"] - expected) / expected) if expected > 0 else 0
+    if not (expected > 0):
+        return insufficient("Inflation_Adjustment",
+                            "Insufficient data: the material cost baseline at this project's "
+                            "reported progress is zero or below, so there is no baseline for "
+                            "current costs to have escalated above. No substitute figure is "
+                            "used in its place.",
+                            ABSTAIN_INVALID_DENOMINATOR)
+    escalation = max(0, (si["materialCostCurrent"] - expected) / expected)
     escalation = _round3(escalation)
     is_derived = _derived(si, "materialCostBaseline")
     color = ("Green" if escalation <= 0.04 else "Yellow" if escalation <= 0.08
