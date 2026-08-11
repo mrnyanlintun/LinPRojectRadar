@@ -29,7 +29,12 @@ from .rng import as_percent, clamp, num, pctile, round1, round2
 
 # Stamped on every result set, so a later change to this layer is detectable in already-collected
 # data rather than being invisible in the analysis.
-SIMULATION_VERSION = "sim-2026.07-v1"
+# Bumped by remediation Run 4, the freeze point. Runs 1 to 4 changed which modules vote, fixed
+# fifteen arithmetic defects, made fourteen computations reachable, and re-banded two measures on
+# sourced boundaries, and every result computed through all of it still said sim-2026.07-v1. The
+# stamp exists precisely so a change to this layer is detectable in already-collected data, so it
+# moves once, here, at the point the platform is frozen for the study.
+SIMULATION_VERSION = "sim-2026.08-v2"
 
 
 def insufficient(method_class: str, message: str | None = None) -> dict[str, Any]:

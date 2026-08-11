@@ -115,7 +115,16 @@ print("=" * 78)
 print("RUN 1: fusion-exclusion list -- the seven CORE modules vote, the other ninety-four do not")
 print("=" * 78)
 
-check(len(CORE_VOTING_MODULES) == 7, "exactly seven CORE modules", str(sorted(CORE_VOTING_MODULES)))
+# RE-POINTED BY RUN 4, THE FREEZE POINT, AND WHAT IT PROTECTS IS UNCHANGED. This check has
+# always protected one property: the voting set is exactly the set the programme intends, and
+# not whatever the code happens to contain. Run 1 intended the seven the audit calls CORE, on an
+# interim basis. Run 4 examined all seven and restored voting to the two whose band boundaries a
+# published source actually specifies, holding the other five back because no source states
+# theirs. The number in this assertion is therefore updated, and the property is asserted more
+# tightly than before: the exact ids, not the count.
+check(set(CORE_VOTING_MODULES) == {"A1.7", "A1.8"},
+      "the voting set is exactly the two measures whose band boundaries are sourced",
+      str(sorted(CORE_VOTING_MODULES)))
 core_cats = {m["category"] for m in run["modules"] if m["module_id"] in CORE_VOTING_MODULES}
 check(core_cats == set(run["category_statuses"].keys()),
       "layer (a): category rollup opens only for categories carrying a CORE module",
@@ -165,18 +174,22 @@ check(base_status is not None, "baseline project status computes", str(base_stat
 # FAULT INJECTION 1, proving the check CAN fail: perturb a CORE module's own input and confirm
 # status DOES change. If this went green with no change, the whole exercise below would be
 # vacuous -- so it is asserted, not assumed.
+# RE-POINTED BY RUN 4: request velocity no longer votes, so perturbing it correctly leaves
+# status alone, and using it here would have made this injection prove nothing. The injection
+# now moves the cost performance index, which is the input of both voting measures.
 core_fault = dict(base)
-core_fault["rfiCount"] = 400   # drives A4.2 RFI Velocity, one of the seven CORE modules, to Red
+core_fault["cpi"] = 0.55   # drives the two voting cost measures to Red
+core_fault["ac"] = 7900000
 core_status = status(core_fault)
 check(core_status != base_status,
-      "FAULT INJECTION: perturbing a CORE module's own input (RFI Velocity) changes project "
-      "status -- proves this check can go red",
+      "FAULT INJECTION: perturbing a voting module's own input changes project status -- proves "
+      "this check can go red",
       f"base={base_status} perturbed={core_status}")
 
 # FAULT INJECTION 2 (the inverse), proving the check is not trivially insensitive: perturbing a
 # NON-core module's input must NOT change status.
 non_core_fault = dict(base)
-non_core_fault["weatherDaysLost"] = 400   # Weather Day Impact, a proxy, not CORE
+non_core_fault["weatherDaysLost"] = 400   # Weather Day Impact, a proxy, non-voting
 non_core_status = status(non_core_fault)
 check(non_core_status == base_status,
       "perturbing only a non-CORE module's input (Weather Day Impact) leaves project status "
@@ -190,10 +203,18 @@ regression_fault["docRiskScore"] = 0.95
 regression_fault["changeOrderCount"] = 60
 regression_fault["weatherDaysLost"] = 45
 regression_fault["subcontractorComplianceScore"] = 0.1
+# Run 4 additions: the five measures it held back are non-voting too, so their own inputs
+# moving sharply must leave project status where it was. They are the newest members of the
+# non-voting side and therefore the ones most worth naming here.
+regression_fault["rfiCount"] = 400
+regression_fault["submittalsRejected"] = 38
+regression_fault["activitiesConstrained"] = 49
+regression_fault["remainingContingency"] = 1000
+regression_fault["materialCostCurrent"] = 3000000
 regression_status = status(regression_fault)
 check(regression_status == base_status,
-      "REGRESSION: project status is unchanged for a project whose seven CORE modules' own "
-      "inputs are unchanged, even though several non-voting modules' inputs moved sharply",
+      "REGRESSION: project status is unchanged for a project whose voting modules' own inputs "
+      "are unchanged, even though nine non-voting modules' inputs moved sharply",
       f"base={base_status} regression={regression_status}")
 
 print()

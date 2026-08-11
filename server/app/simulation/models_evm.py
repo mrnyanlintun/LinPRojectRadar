@@ -175,6 +175,35 @@ def run_earned_schedule(si: dict, rand: Callable[[], float], period_cutoff) -> d
 
 # ------------------------------------------------------------ A1.7 TCPI
 
+#: THE BAND, AND WHERE EACH BOUNDARY COMES FROM. Run 4 (validate the seven). The formula is
+#: untouched; only the boundaries and the abstention guard below are this run's work.
+#:
+#: 1.00 -- DEFINITIONAL, and the source states it in exactly these terms. Project Management
+#: Institute, "A Guide to the Project Management Body of Knowledge (PMBOK Guide)", 6th edition,
+#: 2017, section 7.4.2.2, and PMI's "Practice Standard for Earned Value Management", 2nd
+#: edition, 2011: TCPI is the cost performance the REMAINING work must achieve to meet the
+#: stated financial goal. At or below 1.00 the remaining budget is sufficient at the efficiency
+#: already planned; above 1.00 the project must do better than planned for the rest of the work.
+#: The source specifies this boundary, not merely the metric.
+#:
+#: 1.10 -- SOURCED NUMBER, APPLIED BY INFERENCE, and the inference is stated rather than hidden.
+#: Christensen, D. S. and Heise, S. R., "Cost Performance Index Stability", National Contract
+#: Management Journal, 25(1), 1993, pp. 7-15: on a large defence acquisition sample the
+#: CUMULATIVE cost performance index does not change by more than 0.10 from the twenty per cent
+#: completion point to the end of the project. The number 0.10 is the source's own. The
+#: INFERENCE this run draws from it, and it is an inference: a demand for cost efficiency more
+#: than 0.10 above what is currently planned asks for a movement in the cumulative index larger
+#: than the one that study observed, so it is not supported by the remaining work. That is the
+#: same reasoning defence earned-value practice applies when it compares TCPI against CPI; this
+#: module has no CPI term, so the 0.10 is applied to the planned efficiency of 1.00.
+#:
+#: NO SOURCE was found for the boundaries this module carried before (1.05, 1.10, 1.20). They
+#: are removed rather than re-cited. The band has three levels because two boundaries are
+#: sourced; a fourth level would need a third boundary and there is not one.
+_TCPI_PLANNED_EFFICIENCY = 1.00
+_TCPI_STABILITY_MARGIN = 0.10
+_TCPI_BEYOND_OBSERVED = _TCPI_PLANNED_EFFICIENCY + _TCPI_STABILITY_MARGIN
+
 
 def run_tcpi(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     if not check_inputs(si, ("bac", "ev", "ac")):
@@ -182,40 +211,93 @@ def run_tcpi(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
     remaining_work = si["bac"] - si["ev"]
     remaining_budget = si["bac"] - si["ac"]
     if remaining_budget <= 0:
-        return {
-            "method_class": "TCPI",
-            "status_color": "Red",
-            "tcpi": None,
-            "evidence_metric": "Budget exhausted: no remaining funds",
-        }
+        # THE ABSTENTION GUARD THE RUN NAMES. (BAC - AC) is the denominator, and it is exactly
+        # zero when actual cost has reached the budget, which is the ordinary state of a project
+        # at completion rather than an exotic one. This used to return Red with no ratio: a
+        # status manufactured from a division that could not be performed, indistinguishable at
+        # every downstream surface from a Red that was measured. There is no cost efficiency
+        # that finishes the remaining work inside a remaining budget of nothing, so the honest
+        # output is no finding, not the worst finding.
+        return insufficient(
+            "TCPI",
+            "Awaiting a remaining budget to measure against: actual cost has reached or passed "
+            "the budget at completion, so there is no remaining funding for the efficiency this "
+            "measure states",
+        )
     tcpi = _round3(remaining_work / remaining_budget)
-    color = ("Green" if tcpi <= 1.05 else "Yellow" if tcpi <= 1.10
-             else "Amber" if tcpi <= 1.20 else "Red")
-    word = ("achievable" if tcpi <= 1.05 else "challenging" if tcpi <= 1.10
-            else "very difficult" if tcpi <= 1.20 else "unrealistic")
+    color = ("Green" if tcpi <= _TCPI_PLANNED_EFFICIENCY
+             else "Amber" if tcpi <= _TCPI_BEYOND_OBSERVED else "Red")
+    word = ("within the efficiency already planned" if tcpi <= _TCPI_PLANNED_EFFICIENCY
+            else "above the efficiency planned" if tcpi <= _TCPI_BEYOND_OBSERVED
+            else "beyond the improvement a cumulative cost index is observed to make")
     return {
         "method_class": "TCPI",
         "status_color": color,
         "tcpi": tcpi,
-        "evidence_metric": f"TCPI: {_js_str(tcpi)}, {word} to finish within budget",
+        "evidence_metric": (
+            f"TCPI: {_js_str(tcpi)}, the cost efficiency the remaining work must achieve to "
+            f"finish within budget, {word}"
+        ),
     }
 
 
 # ------------------------------------------------------------ A1.8 Variance at Completion
 
+#: THE BAND, AND WHERE EACH BOUNDARY COMES FROM. Run 4 (validate the seven). The formula is
+#: untouched: EAC = BAC / CPI, VAC = BAC - EAC, and the percentage is VAC over BAC. Because the
+#: forecast is the index-based one, the percentage is an exact restatement of the index:
+#: VAC% = (1 - 1/CPI) x 100. A boundary on the percentage is therefore a boundary on CPI, exactly
+#: and not approximately, which is what lets a sourced statement about CPI be cited here honestly.
+#:
+#: 0 per cent -- DEFINITIONAL. Project Management Institute, "A Guide to the Project Management
+#: Body of Knowledge (PMBOK Guide)", 6th edition, 2017, section 7.4.2.2, and PMI's "Practice
+#: Standard for Earned Value Management", 2nd edition, 2011: variance at completion is the
+#: difference between the approved budget and the forecast final cost, and a negative variance
+#: at completion is a forecast overrun. The source specifies the boundary: at zero the forecast
+#: meets the budget, below zero it does not. This is the boundary the metric is defined around.
+#:
+#: -11.11 per cent -- SOURCED NUMBER, APPLIED BY INFERENCE, stated rather than hidden.
+#: Christensen, D. S. and Heise, S. R., "Cost Performance Index Stability", National Contract
+#: Management Journal, 25(1), 1993, pp. 7-15: the CUMULATIVE cost performance index does not
+#: change by more than 0.10 from the twenty per cent completion point to the end. The number is
+#: the source's own. The INFERENCE: an index below 0.90 forecasts an overrun the remaining work
+#: is not observed to recover, because recovery would require the cumulative index to move
+#: further than that study saw it move. The percentage is computed from 0.90 rather than
+#: written as a rounded figure, so the boundary is the source's number and not a near one.
+#:
+#: NO SOURCE was found for the boundaries this module carried before (-5, -10, -20 per cent).
+#: They are removed rather than re-cited.
+#:
+#: THE LIMIT OF THIS CITATION, and it belongs beside the band. The stability finding is
+#: conditional on the project being past twenty per cent complete, and this module does not read
+#: percent complete, so the condition is not enforced here. Enforcing it would change the
+#: module's input contract, which this run is not permitted to do. Recorded as a stated limit of
+#: the band rather than left for a reader to discover.
+_VAC_STABILITY_CPI = 0.90
+_VAC_BUDGET_MET_PCT = 0.0
+_VAC_BEYOND_OBSERVED_PCT = (1 - 1 / _VAC_STABILITY_CPI) * 100
+
 
 def run_vac(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     if not check_inputs(si, ("bac", "cpi")):
         return insufficient("VAC")
-    if si["cpi"] == 0:
-        return insufficient("VAC")  # JS Infinity arithmetic; refused, see VALIDATION.md
+    if si["cpi"] <= 0:
+        # JS Infinity arithmetic at zero (see VALIDATION.md), and a NEGATIVE index is outside
+        # the domain of the index-based forecast entirely: it produces a negative estimate at
+        # completion, hence a positive variance, hence Green on a project that has recorded no
+        # earned value at all. Both refuse.
+        return insufficient(
+            "VAC",
+            "Awaiting a cost performance index above zero: the forecast at completion is the "
+            "budget divided by that index, which cannot be formed here",
+        )
     eac = si["bac"] / si["cpi"]
     vac = si["bac"] - eac
     vac_pct = (vac / si["bac"]) * 100 if si["bac"] != 0 else float("nan")
     if vac_pct != vac_pct:
         return insufficient("VAC")  # bac=0: JS NaN fallthrough, refused likewise
-    color = ("Green" if vac_pct >= -5 else "Yellow" if vac_pct >= -10
-             else "Amber" if vac_pct >= -20 else "Red")
+    color = ("Green" if vac_pct >= _VAC_BUDGET_MET_PCT
+             else "Amber" if vac_pct >= _VAC_BEYOND_OBSERVED_PCT else "Red")
     return {
         "method_class": "VAC",
         "status_color": color,

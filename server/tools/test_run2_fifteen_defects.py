@@ -1007,10 +1007,14 @@ try:
     print("=" * 78)
 
     from app.simulation.registry import CORE_VOTING_MODULES  # noqa: E402
-    check(CORE_VOTING_MODULES == frozenset({"A1.7", "A1.8", "A2.8", "A3.2", "A3.4",
-                                            "A4.2", "A4.3"}),
-          "the interim voting set is still exactly the seven CORE modules",
-          str(sorted(CORE_VOTING_MODULES)))
+    # RE-POINTED BY RUN 4, THE FREEZE POINT. What this check protects is that fixing arithmetic
+    # did not hand anything a vote, and that property is unchanged. The set it compares against
+    # is now the one Run 4 left behind: the two measures whose band boundaries a published
+    # source specifies. The five it held back are still non-voting, which is what the next
+    # assertion reads.
+    check(CORE_VOTING_MODULES == frozenset({"A1.7", "A1.8"}),
+          "the voting set is the two measures Run 4 restored, and nothing this run touched "
+          "joined them", str(sorted(CORE_VOTING_MODULES)))
     fixed_that_compute = [m for m in FIFTEEN if m in comp]
     check(all(comp[m].get("votes") is False for m in fixed_that_compute
               if m not in CORE_VOTING_MODULES),
@@ -1039,10 +1043,45 @@ try:
     PARTICIPANT_JS = ("assets/js/taxonomy.js", "assets/js/app.js", "assets/js/detail.js",
                       "assets/js/module_charts.js", "assets/js/export.js",
                       "assets/js/recommendation_options.js", "assets/js/decision.js")
+    #
+    # RUN 4 NOTE, AND IT IS THE HONEST WAY TO KEEP THIS CHECK RATHER THAN WEAKEN IT. One of
+    # these files did change after this run, at the freeze point: the courses-of-action
+    # explanation said a module was "validated" to vote, a word the platform cannot support,
+    # and Run 4 removed it. Loosening the check to "these files may differ" would throw away
+    # the property. Instead the one permitted difference is named exactly: that file must
+    # differ ONLY by no longer making the validation claim, and every other participant script
+    # must still be byte for byte identical.
+    RUN4_PERMITTED = "assets/js/recommendation_options.js"
     for rel in PARTICIPANT_JS:
-        live = (ROOT / rel).read_bytes()
+        live = (ROOT / rel).read_text(encoding="utf-8")
         base = subprocess.run(["git", "show", f"{BASELINE_REV}:{rel}"],
-                              cwd=ROOT, capture_output=True, check=True).stdout
+                              cwd=ROOT, capture_output=True, check=True,
+                              text=True).stdout
+        if rel == RUN4_PERMITTED:
+            check("modules validated to vote" in base,
+                  f"{rel}: the baseline did carry the validation claim, so what follows is "
+                  f"about a real difference and not an imagined one")
+            live_code = "\n".join(ln for ln in live.splitlines()
+                                  if not ln.strip().startswith("//"))
+            check("validated" not in live_code,
+                  f"{rel}: and no line the file can put in front of a reader makes a "
+                  f"validation claim; the word survives only in the comment recording why it "
+                  f"was removed")
+            removed = [ln.strip() for ln in base.splitlines()
+                       if ln not in live.splitlines()]
+            added = [ln.strip() for ln in live.splitlines()
+                     if ln not in base.splitlines()]
+            check(all("validated" in ln or ln.startswith("+")
+                      or ln.startswith('+ "') for ln in removed),
+                  f"{rel}: every line the freeze removed carried the validation claim",
+                  str(removed)[:200])
+            check(all(ln.startswith("//") or ln.startswith('+ "') or ln.startswith('reason:')
+                      or ln.startswith("reason:") for ln in added),
+                  f"{rel}: and every line it added is either a comment or a continuation of "
+                  f"the same explanation sentence", str(added)[:200])
+            check("still appears on the" in live and "signal ledger" in live,
+                  f"{rel}: the substance a participant reads is unchanged")
+            continue
         check(live == base,
               f"this run changed nothing on the participant surface ({rel})",
               f"{len(live)} bytes vs {len(base)}")

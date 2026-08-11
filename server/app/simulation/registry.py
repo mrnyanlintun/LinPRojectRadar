@@ -63,15 +63,80 @@ DISABLED_CONCEPT_ONLY: dict[str, str] = {
 #: computing and keeps showing in the ledger -- it simply does not feed category rollup, project
 #: status fusion, generated recommendation text, courses of action, or the decision card. See
 #: compute.py, which is the only place this set is read for fusion purposes.
+#
+# RUN 4 (VALIDATE THE SEVEN) NARROWED THIS SET, AND THAT IS THE RUN'S RESULT RATHER THAN A
+# FAILURE OF IT. A module votes only when all three of the run's bars are cleared: its band
+# boundaries are sourced, its abstention guards exist, and its boundary tests pass. Guards were
+# built and boundary tests written for all seven. Two have band boundaries a source actually
+# specifies; five do not, and no source was stretched to cover them. See BAND_SOURCES below,
+# the comment beside each band in the module's own file, and
+# REPORT_2026-08-11_run4-validate-seven.md.
 CORE_VOTING_MODULES: frozenset[str] = frozenset({
     "A1.7",   # TCPI
     "A1.8",   # Variance at Completion
-    "A2.8",   # Look-Ahead Schedule Health
-    "A3.2",   # Contingency Burn Rate
-    "A3.4",   # Material Cost Variance
-    "A4.2",   # RFI Velocity
-    "A4.3",   # Submittal Rejection Rate
 })
+
+#: The five that stay non-voting after Run 4, each with the reason, so the set is a record and
+#: not an absence. They compute, they show their finding on the ledger exactly as before, and
+#: they are excluded from category rollup, project status fusion, generated recommendation text,
+#: courses of action and the decision card, on the same footing as every other advisory module.
+HELD_NON_VOTING_UNSOURCED_BANDS: dict[str, str] = {
+    "A2.8": "Look-Ahead Schedule Health: no source specifies a constraint-rate threshold; the "
+            "published plan-reliability benchmarks measure a different quantity",
+    "A3.2": "Contingency Burn Rate: no source specifies a burn-against-progress threshold, and "
+            "the proportional-drawdown premise the band rests on is not what the contingency "
+            "literature describes",
+    "A3.4": "Material Cost Variance: no source specifies a control limit for a mid-execution "
+            "variance against a progress-adjusted baseline; the published accuracy ranges "
+            "describe estimate accuracy at preparation",
+    "A4.2": "RFI Velocity: no source specifies a per-week request rate or an overdue-share "
+            "threshold",
+    "A4.3": "Submittal Rejection Rate: no source specifies a rejection-share threshold",
+}
+
+#: The citation for every band boundary a voting module carries, recorded here as well as beside
+#: the band in the module's own file, so the export and the API can carry it without the
+#: frontend or the exporter reaching into a formula file. This is the freeze record's own copy.
+BAND_SOURCES: dict[str, str] = {
+    "A1.7": (
+        "Green at or below 1.00, Amber at or below 1.10, Red above. 1.00 is definitional: "
+        "Project Management Institute, A Guide to the Project Management Body of Knowledge, "
+        "6th edition, 2017, section 7.4.2.2, and PMI Practice Standard for Earned Value "
+        "Management, 2nd edition, 2011, define this index as the cost efficiency the remaining "
+        "work must achieve, so at or below 1.00 the remaining budget suffices at the efficiency "
+        "already planned. 1.10 applies a sourced number by stated inference: Christensen and "
+        "Heise, Cost Performance Index Stability, National Contract Management Journal 25(1), "
+        "1993, pages 7 to 15, found the cumulative cost performance index does not move by more "
+        "than 0.10 after the twenty per cent completion point, so a demand for more than that "
+        "improvement is beyond what the remaining work is observed to deliver."
+    ),
+    "A1.8": (
+        "Green at or above zero per cent, Amber at or above minus 11.11 per cent, Red below. "
+        "Zero is definitional: the Project Management Institute (A Guide to the Project Management "
+        "Body of Knowledge, 6th edition, 2017, section 7.4.2.2; Practice Standard for Earned "
+        "Value Management, 2nd edition, 2011) defines variance at completion as budget minus "
+        "forecast, so a negative variance is a forecast overrun. Minus 11.11 per cent is the "
+        "exact restatement of a cost performance index of 0.90, because this forecast is the "
+        "index-based one, and 0.90 applies the 0.10 stability finding of Christensen and Heise "
+        "(National Contract Management Journal 25(1), 1993, pages 7 to 15) by stated inference. The stated limit of that citation: the stability finding is "
+        "conditional on the project being past twenty per cent complete and this measure does "
+        "not read percent complete, so the condition is not enforced."
+    ),
+}
+
+#: WHAT THESE CITATIONS DO NOT ESTABLISH, carried in the code because the same sentence has to
+#: appear in the export, the methods documentation and the report without being reinvented.
+#: They establish that the boundaries come from a published source rather than from nobody. They
+#: do not establish how often the measure is right. The auditor's production re-entry gate
+#: requires false-positive and false-negative performance measured on labelled holdout cases;
+#: no labelled corpus and no expert reference standard exist for this platform, so that
+#: performance is unmeasured and no surface may describe these modules as validated without
+#: this qualification.
+BAND_SOURCE_LIMIT: str = (
+    "Band boundaries are sourced to published literature. False-positive and false-negative "
+    "performance is not measured: no labelled holdout corpus and no expert reference standard "
+    "exist for this platform, so how often a band is right is unknown."
+)
 
 #: The thirty proxy modules and the qualifier appended to their canonical name wherever the
 #: qualifier is shown. Per remediation_decisions_answered.md 1.4 and Part 4 of the Run 1 prompt,
@@ -303,6 +368,17 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
             out["proxy_qualifier"] = PROXY_QUALIFIERS[new_id]
             out["proxy_label"] = label
         out["votes"] = new_id in CORE_VOTING_MODULES
+        # Remediation Run 4 (validate the seven). A voting module carries the citation for its
+        # own band boundaries and the sentence stating what that citation does not establish;
+        # one held non-voting for want of a source carries the reason. New keys on the result
+        # dict only, read by the export and the API, never by the participant ledger's status
+        # accessors -- the same mechanism Run 1 and Run 3 used.
+        if new_id in BAND_SOURCES:
+            out["band_source"] = BAND_SOURCES[new_id]
+            out["band_source_limit"] = BAND_SOURCE_LIMIT
+        elif new_id in HELD_NON_VOTING_UNSOURCED_BANDS:
+            out["band_source"] = None
+            out["held_non_voting_reason"] = HELD_NON_VOTING_UNSOURCED_BANDS[new_id]
         # Remediation Run 3 (the adapter). The fourteen nested-input modules are reachable,
         # shown, and explicitly marked as newly wired and unvalidated -- in the API response,
         # the export and the methods documentation, never on the participant surface, exactly
