@@ -5772,3 +5772,109 @@ entries whose formula/abstain/sources lines described arithmetic that no longer 
 `server/tools/test_run2_fifteen_defects.py` (new), `server/tools/drive_run2_fifteen_defects.py`
 (new), `server/tools/test_period_series.py`, `remediation_programme.md`, this entry. **No
 participant-facing script was changed, asserted byte for byte against `origin/main` in the suite.**
+
+# 2026-08-11 -- Remediation Run 4: validate the seven, restore voting, and the freeze
+
+Branch `claude/remediation-validate-seven` from `origin/main` at `640c355`. Report at
+`REPORT_2026-08-11_run4-validate-seven.md`. **THE PLATFORM IS FROZEN FOR THE STUDY FROM THIS RUN:
+no algorithm changes, no threshold changes, no band changes.** `remediation_decisions_answered.md`
+X1, 4.1 to 4.3.
+
+**THE EIGHTH HOLD MODULE IS THE DOCUMENT RISK SCORE, AND IT IS NOT CORE.** The matrix is not in
+the repository, so the eighth row was established from the triage arithmetic (CORE 7 plus
+EXTERNAL 1 are the only dispositions that produce a held, non-voting row; withdraw is disabled,
+proxy is advisory, and fix, wire and rebuild are remediate-then-reconsider) and confirmed in the
+code: it is declared in the registry, implemented by no formula function, and is the one genuinely
+unported declaration. **Ruled OUT of the seven**: it is a value the extraction model supplies
+rather than a measure this platform computes, so there is no formula to validate, no band to
+source and no guard to write here; its validation question is precision, recall and calibration of
+a text-scoring model on labelled documents, which is the evidence the programme records as absent;
+and `VALIDATION.md` already records that its description and its implementation do not match.
+
+**TWO OF THE SEVEN VOTE. FIVE DO NOT, FOR WANT OF A SOURCE, AND THAT IS THE RESULT RATHER THAN A
+FAILURE.** A module votes only when its band is sourced, its guard exists and its boundary tests
+pass. **TCPI**: Green at or below 1.00, Amber at or below 1.10, Red above. **Variance at
+Completion**: Green at or above 0 per cent, Amber at or above minus 11.11 per cent, Red below.
+1.00 and 0 per cent are definitional, from PMI's PMBOK Guide 6th edition section 7.4.2.2 and the
+Practice Standard for Earned Value Management 2nd edition. 1.10 and minus 11.11 per cent (which is
+exactly an index of 0.90) apply the 0.10 cumulative index stability finding of Christensen and
+Heise, National Contract Management Journal 25(1), 1993, pages 7 to 15, **by an inference that is
+written beside the band rather than presented as the source's own statement**, together with the
+known limit that the finding is conditional on twenty per cent complete and neither measure reads
+percent complete. **Look-Ahead Schedule Health, Contingency Burn Rate, Material Cost Variance, RFI
+Velocity and Submittal Rejection Rate: no source states their numbers.** The lean plan-reliability
+benchmarks, the AACE estimate accuracy ranges and the published request studies each measure a
+different quantity, and borrowing them would repeat the exact fault the audit called most
+damaging. **No formula was changed**: every number is byte-identical to the shipped one, only the
+band it falls in moved.
+
+**ELEVEN NEW ABSTENTION GUARDS, EACH PROVED AGAINST THE CODE THAT SHIPPED**, extracted with
+`git show` from the pinned baseline rather than injected or hand-copied. The case the run names:
+**TCPI divides by (BAC minus AC), zero at completion, and the shipped code returned Red with no
+ratio** -- a status manufactured from a division it could not perform. It abstains now. Also
+closed: a look-ahead window with nothing planned read Green; contingency burn at zero progress
+substituted the raw burn share; material variance with no reported progress compared cost to date
+against the WHOLE baseline, that is, assumed the project had finished; **request velocity
+substituted thirty days for an absent log period and then said "over 30 days" as though the
+document had said so.**
+
+**THE ROLLUP BASELINE WAS ESTABLISHED FRESH, NOT REMEMBERED, and its two consequences belong in
+the methods chapter.** Same stored inputs, the baseline's own seven formula functions AND its
+seven-module voting set swapped in (both, because the registry captures functions by value at
+import). Status moved in one of four periods, Red to Amber at period three. **Project status is
+now a cost statement**: both voting measures sit in one category, so schedule, contingency and
+document-derived condition no longer contribute to it at all. **Project-level conflict is now
+structurally zero**, which means "one source", not "sources agree", and anything reading it as
+agreement will be wrong.
+
+**THE AUDITOR GATE IS NOT MET AND NOTHING CLAIMS IT IS.** Sourced boundaries establish provenance,
+not accuracy. No labelled holdout corpus and no expert reference standard exist, so
+false-positive and false-negative performance is unmeasured. The sentence is carried in the code
+(`BAND_SOURCE_LIMIT`), on every voting module's stored result, in the export's new `band_source`
+column on EVERY row, in the methods documentation and in the report in quotable form. The word
+"validated" was removed from the one participant-facing string that used it.
+
+**THE LARGEST INCIDENTAL FINDING, AND IT MADE THREE RUNS' WORK INVISIBLE: ABSTENTION REASONS HAVE
+NEVER RENDERED ON THE SIGNAL LEDGER.** The ledger has had the code since the reasons were written.
+It reads `row.abstained`; the row the page reads is the list projection; the projection does not
+carry it; and `detail.js` grafts `module_results`, `signal_inputs` and `recommendation_basis` onto
+the projection but not that. Every abstaining module showed a bare "No data" pill and nothing
+more, while two runs asserted the sentences on the stored row and recorded that the ledger renders
+them. **Fixed with the same graft, confirmed in a real browser.** Fourth instance of that defect
+shape in one file.
+
+**OTHER INCIDENTALS.** (1) `ds_defensibility_data.js` is LIVE, loaded by `index.html`, and states
+old ladders, "calibrated control limits" and "validated by the tests.html band harness" for the
+two voting measures; both entries corrected here, **the other ninety-odd carry the same
+boilerplate and were not touched** and are now the largest overclaim surface. (2) A rate is banded
+AFTER it is rounded: 2.01 requests a week bands as 2.0. (3) The same zero-denominator substitution
+the guards close also sits in Inflation Adjustment Index, out of scope here. (4) `_derived` still
+never fires on the server, which is why the thirty-day substitution was silent rather than
+flagged.
+
+**Verify.** Server suite 60 files, **3628/3628**, fresh SQLite per file (baseline on `origin/main`
+first: 3394/3394 across 59). New `test_run4_validate_seven.py` = 228. New browser drive
+`drive_run4_validate_seven.py` **84/84**: three projects on one server, one on this branch, one
+with the baseline's own seven swapped in, one at completion, both themes. `tests.html` **51/51**.
+`tests_render.html` **286/287** (the pre-existing auth-gated row). **Three existing suites went red
+and each protected a real property**: two asserted a voting set of seven (re-pointed to exact ids),
+one asserted participant scripts byte-identical (the two files this run legitimately changed are
+named individually with the permitted difference asserted exactly, not loosened), and one proved
+its exclusion non-vacuous over three modules -- **exhausting the space showed that ADDING any one
+non-voting module moves project status for NONE of forty-eight, so the injection now replaces the
+voting set rather than extending it.**
+
+**FREEZE RECORD.** Analytical layer version moved once, here: `sim-2026.07-v1` to
+**`sim-2026.08-v2`**, having been unchanged through three runs that changed arithmetic. Voting:
+A1.7, A1.8. Held non-voting: A2.8, A3.2, A3.4, A4.2, A4.3. Disabled: eight, unchanged. Proxies:
+thirty, unchanged. Newly wired: fourteen, unchanged. Pins: fastapi 0.115.6, uvicorn 0.34.0,
+sqlalchemy 2.0.36, psycopg 3.2.13, alembic 1.14.0, openpyxl 3.1.5, google-auth 2.37.0,
+google-api-python-client 2.155.0, google-auth-httplib2 0.2.0; vendored globe.gl 1.15.0, PDF.js
+3.11.174, SheetJS 0.18.5. **NO MIGRATION. Unapplied in production: 0020 through 0025.**
+
+Files: `server/app/simulation/{models,models_evm,models_ext,models_doc,registry}.py`,
+`server/app/research_export.py`, `assets/js/{knowledge,recommendation_options,detail,
+ds_defensibility_data}.js`, `server/tools/test_run4_validate_seven.py` (new),
+`server/tools/drive_run4_validate_seven.py` (new), `server/tools/test_run1_disable_and_relabel.py`,
+`server/tools/test_run2_fifteen_defects.py`, `server/tools/test_run3_adapter.py`,
+`remediation_programme.md`, `REPORT_2026-08-11_run4-validate-seven.md` (new), this entry.

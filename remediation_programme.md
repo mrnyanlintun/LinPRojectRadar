@@ -112,7 +112,25 @@ nested assembled objects, so they abstain on every real run. One adapter, not fo
 
 ## Run 4 — validate the seven — Opus
 
-OPEN
+DONE 2026-08-11. `REPORT_2026-08-11_run4-validate-seven.md`. **THE PLATFORM IS FROZEN FROM THIS
+RUN: no algorithm changes, no threshold changes, no band changes.**
+
+**Two of the seven vote, not seven.** TCPI and Variance at Completion have band boundaries a
+published source specifies (PMI's definitions of both measures, plus Christensen and Heise 1993
+on cumulative cost index stability, applied by an inference stated beside the band). The other
+five have guards and passing boundary tests and no source for their numbers, so they stay
+non-voting. No citation was stretched.
+
+**The eighth HOLD module is the Document Risk Score, and it is not CORE.** It is a value the
+extraction model supplies, not a measure this platform computes; its validation question is
+precision and recall of a text-scoring model on labelled documents, which is the evidence the
+programme records as absent; and its description is already known not to match its implementation.
+Non-voting, and unable to vote by construction.
+
+**Consequences that belong in the methods chapter.** Project status is now a cost statement:
+both voting measures sit in one category, so schedule, contingency and document-derived condition
+no longer contribute. Project-level conflict is structurally zero, meaning "one source" rather
+than "sources agree".
 
 The only seven the audit calls CORE. Each needs a sourced band, an abstention guard where a
 denominator can be zero, and boundary tests.
