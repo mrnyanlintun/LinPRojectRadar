@@ -9,8 +9,12 @@ All twenty are deterministic; `rand` is accepted only for the registry's one cal
 
 Porting hazards specific to this file:
 
-- Truthiness contributions: Dispute Escalation and Rework Feedback weight `si.rfiCount ? ... : 0`
-  — an rfiCount of 0 contributes nothing via JS falsiness, reproduced with explicit checks.
+- Truthiness contributions: Rework Feedback still weights `si.rfiCount ? ... : 0`, so a reported
+  zero contributes nothing there via JS falsiness, reproduced with explicit checks. RUN 7 REMOVED
+  THAT FROM DISPUTE ESCALATION, because it made an absent log and a log that recorded nothing
+  indistinguishable and let a project improve its reading by withholding evidence. Rework Feedback
+  carries the identical construct and was NOT in the Run 6 defect list, so it is unchanged and
+  recorded in the Run 7 report as the clearest candidate for the next run.
 - Weather Day Impact is Green iff `weatherDaysLost === 0` exactly; the ratio ladder starts at
   Yellow. `(si.consumedFloat || 0)` is JS truthiness again.
 - Subcontractor Performance in the browser can lazily derive `subcontractorComplianceScore`
