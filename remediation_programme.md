@@ -75,7 +75,11 @@ distinct from no-data, which may serve.
 
 ## Run 2 — the 15 defects — Opus
 
-OPEN
+DONE 2026-08-11. Recorded in `T6_HANDOFF.md` under "the fifteen defects". All fifteen fixed, none
+disabled: nine produce output on the real path and six abstain because the remedy required data the
+corpus does not carry. The Dempster-Shafer fix moved project status in two of four periods on the
+measured project, evidenced rather than avoided. Defect 1 was extended to the three voting
+ensembles per the adapter run's handover.
 
 1. Conservative Dominance compares lowercase strings against a capitalised vocabulary, so two Red
    inputs can return Green.

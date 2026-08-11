@@ -37,7 +37,7 @@ from __future__ import annotations
 import math
 from typing import Any, Callable
 
-from .fusion import dst_combine
+from .fusion import dst_combine, normalise_status
 from .models import check_inputs, insufficient
 from .models_ext import _derived, _js_str
 from .rng import js_round, round1, round2
@@ -160,16 +160,23 @@ def run_dst(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
 
 
 def _vote_bucket(status) -> str | None:
-    """Anything containing 'Red' -> Red; exactly Amber/Yellow -> themselves; else Green."""
-    if not status:
-        return None
-    if "Red" in status:
-        return "Red"
-    if status == "Amber":
-        return "Amber"
-    if status == "Yellow":
-        return "Yellow"
-    return "Green"
+    """
+    Bucket one status onto a band, or None to cast no vote at all.
+
+    THE FIFTEEN DEFECTS, defect 1, extended to the three voting ensembles per the adapter run's
+    incidental finding 2. This function used to match `"Red" in status` and then EXACTLY "Amber"
+    or EXACTLY "Yellow", with a final `else Green`. Every one of those tests is case-sensitive
+    and capitalised, while the assembled primary signals these three ensembles read arrive in
+    LOWERCASE from the instrument's own assembler. So `red` was not Red, `light-amber` was not
+    Amber, and an unrecognised value was not refused: all three landed in the final else and
+    voted GREEN. The forecast, the control chart and the document risk signals therefore voted
+    green on every project regardless of what they said.
+
+    Two changes, and they are separate. Matching now runs through the shared vocabulary, so
+    casing cannot decide a vote. And an unrecognised value now casts NO VOTE rather than a Green
+    one, because a value this platform does not recognise is not evidence that a project is well.
+    """
+    return normalise_status(status)
 
 
 def run_weighted_voting(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
@@ -266,11 +273,17 @@ def run_worst_n_of_m(si: dict, rand: Callable[[], float], period_cutoff) -> dict
     for m in sim:
         if m.get("status_color"):
             all_statuses.append(m["status_color"])
-    if not all_statuses:
+    # Defect 1 again, third of the three ensembles. `"Red" in st` and `st == "Amber"` are the
+    # same capitalised comparisons _vote_bucket carried, applied directly here: the lowercase
+    # primary signals counted as neither red nor amber and simply vanished from both tallies
+    # while still inflating the denominator. Every status is banded first, and one outside the
+    # vocabulary is dropped from the denominator too rather than diluting the red fraction.
+    bands = [b for b in (normalise_status(st) for st in all_statuses) if b]
+    if not bands:
         return insufficient("Worst_N_of_M")
-    red_count = sum(1 for st in all_statuses if st and "Red" in st)
-    amber_count = sum(1 for st in all_statuses if st == "Amber")
-    m_total = len(all_statuses)
+    red_count = sum(1 for b in bands if b == "Red")
+    amber_count = sum(1 for b in bands if b == "Amber")
+    m_total = len(bands)
     if red_count >= math.ceil(m_total * 0.3):
         status = "Red"
     elif amber_count >= math.ceil(m_total * 0.4):
@@ -510,10 +523,35 @@ def run_constraint_satisfaction(si: dict, rand: Callable[[], float],
 
 
 def run_whatif_matrix(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    THE FIFTEEN DEFECTS, defect 13, applied to the second of the two computations it can name.
+
+    The defect list identifies this one by code and by the name of its sibling, so both were
+    read and both carried the same unguarded earned value domains: a guard at exactly zero, and
+    nothing at all for a negative index, a negative budget, or earned value exceeding the budget
+    at completion. The guards below are the same as the sibling's and refuse for the same
+    reasons. Which of the two the audit meant does not change what either needed.
+    """
     if not check_inputs(si, ("bac", "ev", "ac", "cpi", "spi")):
         return insufficient("WhatIf_Scenario_Matrix")
-    if si["cpi"] == 0 or si["bac"] == 0:
-        return insufficient("WhatIf_Scenario_Matrix")  # JS Infinity/NaN; refused
+    if si["cpi"] <= 0 or si["spi"] <= 0:
+        return insufficient(
+            "WhatIf_Scenario_Matrix",
+            "Cost or schedule performance is recorded as zero or below, which no remaining "
+            "work can be divided by")
+    if si["bac"] <= 0:
+        return insufficient(
+            "WhatIf_Scenario_Matrix",
+            "No positive budget at completion is recorded to scale the scenarios against")
+    if si["ev"] < 0 or si["ac"] < 0:
+        return insufficient(
+            "WhatIf_Scenario_Matrix",
+            "Negative earned value or actual cost is not a measurable position to forecast from")
+    if si["ev"] > si["bac"]:
+        return insufficient(
+            "WhatIf_Scenario_Matrix",
+            "More value is recorded as earned than the budget at completion contains, so there "
+            "is no remaining work to forecast")
     remaining = si["bac"] - si["ev"]
     scenarios = [
         {"name": "Optimistic (CPI recovers to 1.0)", "eac": si["ac"] + remaining * 1.00},

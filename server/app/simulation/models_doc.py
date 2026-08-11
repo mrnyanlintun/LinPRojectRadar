@@ -130,26 +130,59 @@ def run_submittal_rejection(si: dict, rand: Callable[[], float], period_cutoff) 
 
 
 def run_ncr_rate(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    THE FIFTEEN DEFECTS, defect 11, and it is one of the permanent abstentions.
+
+    The ratio was open nonconformances over nonconformances ISSUED THIS PERIOD, which are not
+    one set. The open figure is a backlog, a stock carried from every period since the project
+    began; the issued figure is this period's flow. Dividing one by the other is not a rate of
+    anything, and it is unbounded above: a project that closed its intake but still carries
+    twelve open nonconformances and issued two this period scored six. `max(issued, 1)` then
+    invented a denominator of one whenever the intake was empty, so a backlog of twelve against
+    no intake at all scored twelve, and the ladder below read every one of those as Red.
+
+    The zero-intake arm was worse than unbounded, it was backwards: it returned GREEN, with the
+    finding "No NCRs issued this period", on a project that could be carrying an unresolved
+    backlog of any size. Issuing nothing new is not evidence of quality.
+
+    A backlog needs a cohort to be a rate of: the audited population of nonconformances the
+    backlog is drawn from. That is what the Quality Audit Report carries as its findings total,
+    and it is required now. No cohort, no rate: this abstains, and states that it is waiting for
+    the audited cohort rather than reporting a number built from two different sets.
+
+    The Quality Audit Report type exists for one project in the corpus today, so this
+    computation abstains on the rest until the corpus lands (remediation_decisions_answered.md
+    2.3). That is the expected outcome of this fix, not a shortfall in it.
+    """
     if not check_inputs(si, ("ncrIssued", "ncrClosed", "ncrOpen")):
         return insufficient("NCR_Rate")
     issued = num(si.get("ncrIssued"), 0)
     open_ = num(si.get("ncrOpen"), 0)
-    if issued == 0:
-        return {
-            "method_class": "NCR_Rate",
-            "status_color": "Green",
-            "open_ratio": 0,
-            "evidence_metric": "No NCRs issued this period",
-        }
-    open_ratio = open_ / max(issued, 1)
+    cohort = num(si.get("totalFindings"), None)
+    if cohort is None or cohort <= 0:
+        return insufficient(
+            "NCR_Rate",
+            "Awaiting an audited nonconformance cohort: the open backlog is carried across "
+            "periods and cannot be measured against one period's intake")
+    if open_ < 0:
+        return insufficient(
+            "NCR_Rate", "A negative count of open nonconformances is not a measurable backlog")
+    if open_ > cohort:
+        return insufficient(
+            "NCR_Rate",
+            f"More nonconformances are recorded open ({_js_str(open_)}) than the audited "
+            f"cohort contains ({_js_str(cohort)}), so no proportion is measurable from this pair")
+    open_ratio = open_ / cohort
     color = ("Green" if open_ratio < 0.15 else "Yellow" if open_ratio < 0.30
              else "Amber" if open_ratio < 0.50 else "Red")
     return {
         "method_class": "NCR_Rate",
         "status_color": color,
         "open_ratio": round2(open_ratio),
+        "audited_cohort": cohort,
         "evidence_metric": (
-            f"{_js_str(open_)} open of {_js_str(issued)} NCRs issued "
+            f"{_js_str(open_)} open of an audited cohort of {_js_str(cohort)} "
+            f"nonconformances, {_js_str(issued)} issued this period "
             f"(open ratio {_js_str(round2(open_ratio))})"
         ),
     }
@@ -159,27 +192,60 @@ def run_ncr_rate(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str
 
 
 def run_weather_impact(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    THE FIFTEEN DEFECTS, defect 12, and it is one of the permanent abstentions.
+
+    This computation reports lost days as a proportion of the float available to absorb them, and
+    it fabricated that proportion in two ways.
+
+    When no float figure existed at all, the ratio was set to 1.0 whenever any day had been lost.
+    That is not an unknown reported as an unknown, it is the WORST case asserted as a
+    measurement: one lost day on a project with a year of float scored identically to one that
+    had none, and the ladder read it Red either way. When float was recorded as zero or negative,
+    the same line fired, so a project already behind was assigned a ratio rather than refused.
+
+    The days themselves were also allowed to be a derivation rather than a count. The field
+    report's own weather-day figure is a verified count; anything the pipeline inferred is not,
+    and the module carried the inference into the same arithmetic and appended a parenthetical
+    to the sentence. A qualifier in a display string is not a substitute for refusing.
+
+    Both are removed. Verified lost days and a positive float figure are required, and the ratio
+    is computed only from the two of them. Note the honest consequence: the float here is
+    network-derived, and the corpus does not carry an activity network, so this computation is
+    expected to abstain until it does. Abstaining is the correct outcome.
+    """
     if not check_inputs(si, ("weatherDaysLost",)):
         return insufficient("Weather_Impact")
-    is_derived = _derived(si, "weatherDaysLost")
+    if _derived(si, "weatherDaysLost"):
+        return insufficient(
+            "Weather_Impact",
+            "Awaiting verified lost days: the weather days available were inferred rather "
+            "than counted in a field report")
     lost = si["weatherDaysLost"]
+    if lost < 0:
+        return insufficient(
+            "Weather_Impact", "A negative count of lost days is not a measurable weather impact")
     if si.get("floatRemaining") is not None:
         flt = si["floatRemaining"]
-    elif si.get("totalFloat") is not None:
-        flt = si["totalFloat"] - (si.get("consumedFloat") or 0)
+    elif si.get("totalFloat") is not None and si.get("consumedFloat") is not None:
+        flt = si["totalFloat"] - si["consumedFloat"]
     else:
         flt = None
-    if flt is not None and flt > 0:
-        ratio = lost / flt
-    else:
-        ratio = 1.0 if lost > 0 else 0
+    if flt is None:
+        return insufficient(
+            "Weather_Impact",
+            "Awaiting the schedule float available to absorb the lost days: without it there "
+            "is nothing to measure the impact against")
+    if not flt > 0:
+        return insufficient(
+            "Weather_Impact",
+            "No positive float remains to absorb lost days, so no proportion of it is "
+            "measurable")
+    ratio = lost / flt
     color = ("Green" if lost == 0 else "Yellow" if ratio <= 0.20
              else "Amber" if ratio <= 0.50 else "Red")
-    evidence = f"{_js_str(lost)} weather days lost"
-    if flt is not None:
-        evidence += f", {int(js_round(ratio * 100))}% of available float consumed"
-    if is_derived:
-        evidence += " (estimated; upload Field Report for precise figures)"
+    evidence = (f"{_js_str(lost)} weather days lost, "
+                f"{int(js_round(ratio * 100))}% of available float consumed")
     return {
         "method_class": "Weather_Impact",
         "status_color": color,
@@ -289,12 +355,49 @@ def run_subcontractor_performance(si: dict, rand: Callable[[], float],
 
 def run_procurement_lead_time(si: dict, rand: Callable[[], float],
                               period_cutoff) -> dict[str, Any]:
+    """
+    THE FIFTEEN DEFECTS, defect 4. The weighted ratio was `(at_risk + 2 * delayed) / total`, and
+    a procurement log recording ten long-lead items of which eight are at risk and five are
+    already delayed produced 1.8: a proportion of a set, reported as one hundred and eighty per
+    cent of it.
+
+    Two errors compounded. A delayed item is an at-risk item that has already slipped, so it was
+    counted twice, once in each term. And the doubling of the delayed term put the numerator
+    above the denominator without anything noticing, because nothing bounded the result.
+
+    Delayed items are now treated as the subset of at-risk items they are: each delayed item
+    carries full weight, each remaining at-risk item carries half, and the ratio is a genuine
+    proportion of the long-lead set. On the audit's own figures it is 0.65 rather than 1.8.
+
+    The domain is enforced rather than assumed. `max(total, 1)` silently invented a denominator
+    of one for an empty procurement log, so a single delayed item out of no items scored 2.0;
+    an empty log now abstains. Counts that cannot describe one set (more at risk than exist, more
+    delayed than are at risk, a negative count) abstain and say which pair disagreed.
+    """
     if not check_inputs(si, ("longLeadItemsTotal", "longLeadAtRisk", "longLeadDelayed")):
         return insufficient("Procurement_Lead_Time")
     total = num(si.get("longLeadItemsTotal"), 0)
     at_risk = num(si.get("longLeadAtRisk"), 0)
     delayed = num(si.get("longLeadDelayed"), 0)
-    risk_ratio = (at_risk + 2 * delayed) / max(total, 1)
+    if total <= 0:
+        return insufficient(
+            "Procurement_Lead_Time",
+            "No long-lead items are recorded, so there is no set to measure disruption against")
+    if at_risk < 0 or delayed < 0:
+        return insufficient(
+            "Procurement_Lead_Time",
+            "A negative count of long-lead items is not a measurable procurement state")
+    if at_risk > total:
+        return insufficient(
+            "Procurement_Lead_Time",
+            f"More long-lead items are recorded at risk ({_js_str(at_risk)}) than exist "
+            f"({_js_str(total)}), so no proportion is measurable from this pair")
+    if delayed > at_risk:
+        return insufficient(
+            "Procurement_Lead_Time",
+            f"More long-lead items are recorded delayed ({_js_str(delayed)}) than at risk "
+            f"({_js_str(at_risk)}), and a delayed item is an at-risk item that has slipped")
+    risk_ratio = (delayed + 0.5 * (at_risk - delayed)) / total
     color = ("Green" if risk_ratio < 0.15 else "Yellow" if risk_ratio < 0.30
              else "Amber" if risk_ratio < 0.50 else "Red")
     return {
@@ -411,11 +514,41 @@ def run_tornado_diagram(si: dict, rand: Callable[[], float], period_cutoff) -> d
 
 
 def run_scenario_modeling(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    THE FIFTEEN DEFECTS, defect 13. The earned value domains here were guarded only at exactly
+    zero, and the guard at zero is the least of what can go wrong.
+
+    A NEGATIVE cost or schedule index passed every check and then divided the remaining work,
+    turning a forecast into a number below the money already spent: the pessimistic case came
+    out cheaper than the optimistic one, the range went negative, and the ladder read the whole
+    thing Green because a negative pessimistic forecast is comfortably under the budget. A
+    negative budget did the same to the range, which is a percentage of it. Earned value above
+    the budget at completion made the remaining work negative, so every scenario forecast a
+    project finishing below what it had already spent.
+
+    None of these is a project condition. Each is an input pair that cannot be reconciled, and
+    each abstains and says which one it was.
+    """
     if not check_inputs(si, ("bac", "ev", "ac", "cpi", "spi")):
         return insufficient("Scenario_Modeling")
-    if si["cpi"] == 0 or min(si["cpi"], si["spi"]) == 0 or si["bac"] == 0:
-        # JS: Infinity/NaN fallthrough onto a conjured status. Refused; see VALIDATION.md.
-        return insufficient("Scenario_Modeling")
+    if si["cpi"] <= 0 or si["spi"] <= 0:
+        return insufficient(
+            "Scenario_Modeling",
+            "Cost or schedule performance is recorded as zero or below, which no remaining "
+            "work can be divided by")
+    if si["bac"] <= 0:
+        return insufficient(
+            "Scenario_Modeling",
+            "No positive budget at completion is recorded to scale the scenarios against")
+    if si["ev"] < 0 or si["ac"] < 0:
+        return insufficient(
+            "Scenario_Modeling",
+            "Negative earned value or actual cost is not a measurable position to forecast from")
+    if si["ev"] > si["bac"]:
+        return insufficient(
+            "Scenario_Modeling",
+            "More value is recorded as earned than the budget at completion contains, so there "
+            "is no remaining work to forecast")
     remaining = si["bac"] - si["ev"]
     optimistic = si["ac"] + remaining * 1.00
     realistic = si["ac"] + remaining / si["cpi"]
@@ -533,22 +666,67 @@ def run_discrete_event_sim(si: dict, rand: Callable[[], float], period_cutoff) -
 
 
 def run_quality_compliance(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    THE FIFTEEN DEFECTS, defect 3. This returned quality scores outside the domain a percentage
+    can occupy: five items inspected and eight failed gave a pass rate of minus sixty per cent
+    and a score of minus sixty out of a hundred, which the band ladder then read as Red. Red is
+    the right colour for the wrong reason, and the number beside it was not a quantity.
+
+    Three fabrications are removed and one refusal added.
+
+    The inspected count no longer defaults to TWENTY. There is no inspection of twenty items; it
+    was a placeholder, and it silently set the denominator of every project that never uploaded
+    an inspection report.
+
+    The failed count no longer falls back to the deficiency count. Those are two different
+    quantities counted by two different documents: a deficiency noted in a field report is not an
+    inspection lot that failed, and substituting one for the other is the class of error the
+    extraction prompt was rewritten to forbid.
+
+    A pass rate is therefore computed only from a real inspected and failed pair, and an audit
+    score only from a real audited score. With neither, the computation abstains.
+
+    And the refusal: more failures than inspections is not a project condition, it is an
+    inconsistent input pair. Returning a number outside the domain for it is worse than saying
+    so, so it abstains and states what it saw.
+    """
     if not check_inputs(si, ("qualityDeficienciesNoted",)):
         return insufficient("Quality_Compliance")
     is_derived = _derived(si, "qualityDeficienciesNoted")
-    inspected = si.get("itemsInspected") if si.get("itemsInspected") is not None else 20
-    failed = (si.get("itemsFailed") if si.get("itemsFailed") is not None
-              else si["qualityDeficienciesNoted"])
-    pass_rate = (inspected - failed) / inspected if inspected > 0 else 1
-    audit = (si.get("qualityAuditScore") if si.get("qualityAuditScore") is not None
-             else pass_rate * 100)
+    inspected = si.get("itemsInspected")
+    failed = si.get("itemsFailed")
+    audit = si.get("qualityAuditScore")
+    pass_rate = None
+    if inspected is not None and failed is not None:
+        if inspected <= 0:
+            return insufficient(
+                "Quality_Compliance",
+                "No items were recorded as inspected, so no pass rate can be measured")
+        if failed > inspected:
+            return insufficient(
+                "Quality_Compliance",
+                f"More items are recorded as failed ({_js_str(failed)}) than as inspected "
+                f"({_js_str(inspected)}), so no pass rate is measurable from this pair")
+        if failed < 0:
+            return insufficient(
+                "Quality_Compliance",
+                "A negative number of failed items is not a measurable inspection result")
+        pass_rate = (inspected - failed) / inspected
+    if audit is None:
+        if pass_rate is None:
+            return insufficient(
+                "Quality_Compliance",
+                "Awaiting an audited quality score, or a recorded inspected and failed pair")
+        audit = pass_rate * 100
     color = ("Green" if audit >= 85 else "Yellow" if audit >= 70
              else "Amber" if audit >= 55 else "Red")
     return {
         "method_class": "Quality_Compliance",
         "status_color": color,
         "quality_score": int(js_round(audit)),
-        "pass_rate": int(js_round(pass_rate * 100)),
+        # None, not a substituted figure, when no inspected/failed pair was recorded: the score
+        # came from the audit and there is no pass rate to report beside it.
+        "pass_rate": (int(js_round(pass_rate * 100)) if pass_rate is not None else None),
         "deficiencies": si["qualityDeficienciesNoted"],
         "evidence_metric": (
             f"Quality compliance: {int(js_round(audit))}/100, "
@@ -594,21 +772,46 @@ def run_safety_performance(si: dict, rand: Callable[[], float], period_cutoff) -
 
 def run_environmental_compliance(si: dict, rand: Callable[[], float],
                                  period_cutoff) -> dict[str, Any]:
+    """
+    THE FIFTEEN DEFECTS, defect 15, and it is one of the permanent abstentions.
+
+    When no compliance rate had been reported, this computed one: `max(50, 100 - issues * 5)`.
+    That formula is not a measurement and does not derive from one. It converts a count of times
+    the environment came up in a meeting into a percentage, at five points per mention, floored
+    so it can never fall below fifty however many times it was raised. A project where the
+    subject was never discussed scored one hundred per cent compliant, which is the opposite of
+    what silence means. The band ladder then read that number, so a project's environmental
+    status was set by how talkative its minutes were.
+
+    An environmental compliance rate is a proportion of audited permit conditions met, and only
+    an environmental compliance report carries it. It is required now, and a rate outside nought
+    to a hundred is refused rather than clipped, because clipping a figure into the domain hides
+    that the figure was wrong.
+
+    The Environmental Compliance Report type exists for one project in the corpus today, so this
+    computation abstains on the rest until the corpus lands (remediation_decisions_answered.md
+    2.3). That is the expected outcome of this fix.
+    """
     if not check_inputs(si, ("environmentalIssuesDiscussed",)):
         return insufficient("Environmental_Compliance")
-    is_derived = _derived(si, "environmentalIssuesDiscussed")
-    rate = (si.get("environmentalComplianceRate")
-            if si.get("environmentalComplianceRate") is not None
-            else max(50, 100 - si["environmentalIssuesDiscussed"] * 5))
-    rate = min(100, round1(rate))
+    rate = si.get("environmentalComplianceRate")
+    if rate is None:
+        return insufficient(
+            "Environmental_Compliance",
+            "Awaiting audited permit compliance data: how often the subject was raised in a "
+            "meeting is not a measure of compliance")
+    if rate < 0 or rate > 100:
+        return insufficient(
+            "Environmental_Compliance",
+            f"A compliance rate of {_js_str(round1(rate))} per cent is outside the range a "
+            f"proportion of permit conditions can take")
+    rate = round1(rate)
     color = ("Green" if rate >= 95 else "Yellow" if rate >= 85
              else "Amber" if rate >= 70 else "Red")
     violations = si.get("environmentalViolations") or 0
     evidence = f"Environmental compliance: {_js_str(rate)}%"
     if violations:
         evidence += f", {_js_str(violations)} violations recorded"
-    if is_derived:
-        evidence += " (estimated from meeting records; upload Environmental Report for permit data)"
     return {
         "method_class": "Environmental_Compliance",
         "status_color": color,
@@ -624,21 +827,40 @@ def run_environmental_compliance(si: dict, rand: Callable[[], float],
 
 def run_contractor_performance(si: dict, rand: Callable[[], float],
                                period_cutoff) -> dict[str, Any]:
+    """
+    THE FIFTEEN DEFECTS, defect 14. A performance evaluation carries four ratings and this read
+    three of them. `qualityRating` is a declared field, the extraction pipeline emits it from the
+    same performance evaluation as the other three, it arrives in the same dictionary, and the
+    computation stepped over it: the worst rating was taken across overall, schedule and cost
+    only. So a contractor rated well on cost and schedule and badly on QUALITY reported its
+    schedule or cost figure as its worst, and the band ladder read the evaluation as satisfactory
+    on the strength of the three questions the assessor was less worried about.
+
+    The quality rating now enters on the same footing as the other three, and is not required:
+    an evaluation that did not rate quality is scored on what it did rate, and the finding names
+    exactly which ratings were read.
+    """
     if not check_inputs(si, ("overallRating", "scheduleRating", "costRating")):
         return insufficient("Contractor_Performance")
     overall = num(si.get("overallRating"), 0)
     sched = num(si.get("scheduleRating"), 0)
     cost = num(si.get("costRating"), 0)
-    worst = min(overall, sched, cost)
+    quality = num(si.get("qualityRating"), None)
+    rated = [overall, sched, cost] + ([quality] if quality is not None else [])
+    worst = min(rated)
     color = ("Green" if worst >= 4.0 else "Yellow" if worst >= 3.5
              else "Amber" if worst >= 3.0 else "Red")
     return {
         "method_class": "Contractor_Performance",
         "status_color": color,
         "min_rating": round1(worst),
+        "quality_rating": (round1(quality) if quality is not None else None),
+        "ratings_read": len(rated),
         "evidence_metric": (
             f"Ratings: overall {_js_str(round1(overall))}, schedule {_js_str(round1(sched))}, "
-            f"cost {_js_str(round1(cost))} (worst {_js_str(round1(worst))}/5)"
+            f"cost {_js_str(round1(cost))}"
+            + (f", quality {_js_str(round1(quality))}" if quality is not None else "")
+            + f" (worst {_js_str(round1(worst))}/5)"
         ),
     }
 

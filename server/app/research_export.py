@@ -249,8 +249,10 @@ _RUN1_PROXY_QUALIFIERS: dict[str, str] = {
     "A3.7": "an analogous-cost ratio; project selection, normalisation and adaptation "
             "ungoverned",
     "A3.9": "a material-escalation ratio with no external price index, time base or geography",
-    "A4.5": "a lost-days over available-float proxy with fallback behaviour and ungoverned "
-            "bands",
+    # Revised by the fifteen-defects run, mirroring registry.py: the fallbacks this label named
+    # no longer exist, so the label no longer names them. See the note there.
+    "A4.5": "a lost-days over available-float ratio with ungoverned bands, computed only from "
+            "verified lost days and a reported float figure",
     "A4.6": "contract growth plus a raw count; no time or exposure denominator",
     "A4.7": "an ad hoc 0.3 / 0.3 / 0.4 weighted sum; weights and dependence uncalibrated",
     "A4.8": "a precomputed compliance score; provenance and construction unvalidated",

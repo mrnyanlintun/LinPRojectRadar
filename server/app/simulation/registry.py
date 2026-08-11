@@ -98,7 +98,15 @@ PROXY_QUALIFIERS: dict[str, str] = {
     "A3.7": "an analogous-cost ratio; project selection, normalisation and adaptation "
             "ungoverned",
     "A3.9": "a material-escalation ratio with no external price index, time base or geography",
-    "A4.5": "a lost-days over available-float proxy with fallback behaviour and ungoverned bands",
+    # REVISED BY THE FIFTEEN-DEFECTS RUN, and revised deliberately rather than left standing.
+    # The previous run's label named "fallback behaviour" as part of what this computation does.
+    # Defect 12 removed the fallbacks, so the label had stopped describing the module: it now
+    # requires verified lost days and a positive float figure and refuses without either, and a
+    # label that still advertised a fabrication would be inaccurate in the opposite direction
+    # from the one the labelling exercise was correcting. What remains uncalibrated is the band
+    # ladder, and that is what the qualifier now says.
+    "A4.5": "a lost-days over available-float ratio with ungoverned bands, computed only from "
+            "verified lost days and a reported float figure",
     "A4.6": "contract growth plus a raw count; no time or exposure denominator",
     "A4.7": "an ad hoc 0.3 / 0.3 / 0.4 weighted sum; weights and dependence uncalibrated",
     "A4.8": "a precomputed compliance score; provenance and construction unvalidated",

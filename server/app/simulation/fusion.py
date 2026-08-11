@@ -25,38 +25,84 @@ STATUS_MASS: dict[str, dict[str, float]] = {
 }
 
 
-def status_to_mass(status) -> dict[str, float] | None:
+#: The four condition bands, and the ONE place the platform's status vocabulary is recognised.
+BANDS = ("Green", "Yellow", "Amber", "Red")
+
+
+def normalise_status(status) -> str | None:
     """
-    Map a status string to a belief mass. Returns None to abstain.
+    Map any status string this platform emits onto one of the four bands. Returns None for a
+    value outside the vocabulary, which is an ABSTENTION and never a band.
+
+    THE FIFTEEN DEFECTS, defect 1, and the reason it is shared rather than local. The analytical
+    layer emits capitalised bands ("Red"); the instrument's own signal assembler and the two
+    governance projections emit lowercase ones ("red"); the conservative health state emits
+    "Red-review". Four separate computations each carried their own comparison against ONE of
+    those casings, so a status in the other casing missed every arm and fell through to whatever
+    the final `else` happened to be. In three voting ensembles and in Conservative Dominance that
+    final else was Green, so a Red signal, a light-amber signal and an unrecognised string alike
+    became reassuring evidence. Matching is therefore case-insensitive here, and an unrecognised
+    value returns None so that a caller must decide what to do with it rather than being handed a
+    silent Green.
 
     The Yellow test runs before Amber deliberately: "light-amber" contains the substring "amber",
     so testing Amber first would misclassify it.
     """
-    s = "" if status is None else str(status).lower()
+    s = "" if status is None else str(status).strip().lower()
     if not s:
         return None
     if "red" in s:
-        return STATUS_MASS["Red"]
+        return "Red"
     if "yellow" in s or "light-amber" in s:
-        return STATUS_MASS["Yellow"]
+        return "Yellow"
     if "amber" in s or "orange" in s:
-        return STATUS_MASS["Amber"]
+        return "Amber"
     if "green" in s:
-        return STATUS_MASS["Green"]
+        return "Green"
     # Complete is not a fused band; a completed source contributes best-case evidence.
     if "complete" in s or "blue" in s:
-        return STATUS_MASS["Green"]
+        return "Green"
     return None
 
 
+def status_to_mass(status) -> dict[str, float] | None:
+    """Map a status string to a belief mass. Returns None to abstain."""
+    band = normalise_status(status)
+    return STATUS_MASS[band] if band else None
+
+
+#: "Unknown" is not a fifth condition a project can be in. It is Θ, the whole frame of
+#: discernment: the mass a source declines to commit, which is compatible with EVERY state.
+#: Dempster's rule intersects focal elements, and {Green,Yellow,Amber,Red} ∩ {Green} is {Green},
+#: not the empty set. Treating Θ as a disjoint singleton made ignorance into conflict, which is
+#: the second of the fifteen defects (audit P0 finding 4).
+IGNORANCE = "Unknown"
+
+
 def dst_combine(m1: dict[str, float], m2: dict[str, float]) -> dict[str, float]:
-    """Dempster's rule. Returns the normalised combination plus the conflict coefficient K."""
+    """
+    Dempster's rule over the four condition states plus Θ. Returns the normalised combination
+    plus the conflict coefficient K.
+
+    THE FIFTEEN DEFECTS, defect 2. Θ (`Unknown`) is the whole frame, so it intersects every
+    state rather than conflicting with it: Θ ∩ {s} = {s}, and Θ ∩ Θ = Θ. Only two DISTINCT
+    condition states are genuinely disjoint, and only those contribute to K.
+
+    Worked proof, the audit's own: two sources each Green 0.8, Θ 0.2. The products are
+    Green·Green 0.64 -> Green, Green·Θ 0.16 -> Green, Θ·Green 0.16 -> Green, Θ·Θ 0.04 -> Θ.
+    K is 0, Green is 0.96 and Θ is 0.04. Before this fix K was 0.32 and Green 0.941176, because
+    the two cross terms were counted as disagreement between a belief and an abstention.
+    """
     combined = {s: 0.0 for s in STATES}
     k = 0.0
     for s1 in STATES:
         for s2 in STATES:
             mass = m1.get(s1, 0.0) * m2.get(s2, 0.0)
             if s1 == s2:
+                combined[s1] += mass
+            elif s1 == IGNORANCE:
+                combined[s2] += mass
+            elif s2 == IGNORANCE:
                 combined[s1] += mass
             else:
                 k += mass

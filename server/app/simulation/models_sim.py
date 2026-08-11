@@ -22,7 +22,14 @@ from typing import Any, Callable
 
 from .rng import clamp, make_rng, pctile
 
-DEMO_BAC = 100.0
+# THE FIFTEEN DEFECTS, defect 9. `DEMO_BAC = 100.0` used to live here, and `bac` was read as
+# `float(inputs.get("bac") or 0) or DEMO_BAC`, so a project with a budget of zero, or with a
+# budget the extraction model returned as null, was forecast against a budget of one hundred
+# units. Every figure downstream of it, the fiftieth and eightieth percentile forecasts and both
+# overrun percentages, was then a percentage of a number no document contained. It is removed
+# rather than raised, because there is no correct placeholder: a forecast needs the project's own
+# budget or it needs to abstain. The same applies to the two indices, which fell back to 1.0 and
+# so forecast an on-plan project whenever performance was recorded as zero.
 
 
 def _normal(rand: Callable[[], float]) -> float:
@@ -61,10 +68,18 @@ def _beta(alpha: float, beta_param: float, rand: Callable[[], float]) -> float:
 
 
 def monte_carlo_eac(inputs: dict, seed: int, iterations: int = 5000) -> dict[str, Any]:
-    """Monte Carlo over a Beta-PERT derived from the project's EVM and risk signals."""
-    cpi = float(inputs.get("cpi") or 0) or 1.0
-    spi = float(inputs.get("spi") or 0) or 1.0
-    bac = float(inputs.get("bac") or 0) or DEMO_BAC
+    """
+    Monte Carlo over a Beta-PERT derived from the project's EVM and risk signals.
+
+    Requires a positive budget and positive indices. The caller (run_monte_carlo) refuses before
+    reaching here; this assertion exists so that no later caller can reintroduce the fallback by
+    passing a falsy budget and receiving a silent substitute.
+    """
+    cpi = float(inputs.get("cpi") or 0)
+    spi = float(inputs.get("spi") or 0)
+    bac = float(inputs.get("bac") or 0)
+    if not (bac > 0 and cpi > 0 and spi > 0):
+        raise ValueError("monte_carlo_eac requires a positive bac, cpi and spi")
     doc_score = clamp(float(inputs.get("docScore") or 0), 0, 1)
 
     m_eac = bac / cpi
@@ -163,10 +178,27 @@ def cusum_status(cu: dict) -> str:
 
 
 def run_monte_carlo(si: dict, rand, seed: int) -> dict[str, Any]:
-    """A1.1. Abstains when bac, cpi or spi is absent, matching the registry's required list."""
+    """
+    A1.1. Abstains when bac, cpi or spi is absent, matching the registry's required list, and
+    now also when any of them is present but not positive.
+
+    THE FIFTEEN DEFECTS, defect 9. The absence check was `is not None`, which a budget of zero
+    passes: the forecast then ran against the hundred-unit placeholder above, and a zero index
+    against a substituted 1.0. A budget of zero is not a budget and a cost or schedule index of
+    zero is not performance, so all three refuse rather than being replaced.
+    """
     from .models import insufficient
     if any(si.get(k) is None for k in ("bac", "cpi", "spi")):
         return insufficient("Monte_Carlo")
+    if not si["bac"] > 0:
+        return insufficient(
+            "Monte_Carlo",
+            "No positive budget at completion is recorded to forecast against")
+    if not (si["cpi"] > 0 and si["spi"] > 0):
+        return insufficient(
+            "Monte_Carlo",
+            "Cost or schedule performance is recorded as zero or below, which no forecast "
+            "can be scaled by")
 
     mc = monte_carlo_eac(
         {"cpi": si.get("cpi"), "spi": si.get("spi"), "bac": si.get("bac"),
