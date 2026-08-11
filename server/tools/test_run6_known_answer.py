@@ -200,6 +200,9 @@ RUN7_SCOPED_FILES = {
     "server/app/simulation/models_ext.py",
     "server/app/simulation/models_gov.py",
     "server/app/simulation/registry.py",
+    # The export carries the abstention reason from the corrected runtime state, which the
+    # owner's instruction names as metadata this run may update.
+    "server/app/research_export.py",
 }
 
 _diff = subprocess.run(["git", "diff", "--name-only", GUARD_BASELINE_REV, "--"],

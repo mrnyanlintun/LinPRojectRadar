@@ -405,7 +405,18 @@ def run_pert(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
 
     The only stochastic model in the ported set. The caller seeds from (scenario_id, period), so
     every participant on that scenario and period draws the identical sample path.
+
+    RUN 7. Handed an empty dictionary this read Green. The schedule index defaulted to 1.0, which
+    is the value of a project exactly on plan, so a project about which nothing had been reported
+    was modelled as a project performing to plan and banded accordingly. The index is now
+    required. The activity durations remain the module's own literals and this run does not
+    pretend otherwise: a project-specific activity network is not in the corpus, and building one
+    is out of scope. What is corrected is that the module no longer reports on a project it has
+    been told nothing about.
     """
+    verdict = eligible(si, required=(("spi", "the schedule performance index"),))
+    if verdict:
+        return refuse("PERT_Network_Criticality", verdict)
     spi = num(si.get("spi"), 1.0)
     pess = 1 + max(0.0, 1 - spi) * 0.8
     a_act = (8.0, 10.0, 14.0)
@@ -494,10 +505,25 @@ Method class: `Critical_Path_Index`
 
 ```python
 def run_critical_path_index(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 7. The index is the average of two things: progress against plan, and the schedule
+    index. Where no planned progress had been reported the first of the two was replaced by the
+    second, so the average became the schedule index averaged with itself and the module reported
+    a two-input measure it had one input for. On a project with no planned progress that produced
+    Amber. Planned progress is now required to be above zero, because it is the denominator of
+    the ratio, and the module abstains rather than quietly reporting a different measure under
+    the same name.
+    """
     if not check_inputs(si, ("spi", "plannedPctComplete", "actualPctComplete")):
-        return insufficient("Critical_Path_Index")
-    progress_ratio = (si["actualPctComplete"] / si["plannedPctComplete"]
-                      if si["plannedPctComplete"] > 0 else si["spi"])
+        return insufficient("Critical_Path_Index",
+                            "Insufficient data: the schedule performance index and both the "
+                            "planned and reported percent complete are needed, and at least one "
+                            "of them has not been reported for this period.",
+                            ABSTAIN_MISSING_INPUT)
+    verdict = eligible(si, positive=(("plannedPctComplete", "the planned percent complete"),))
+    if verdict:
+        return refuse("Critical_Path_Index", verdict)
+    progress_ratio = si["actualPctComplete"] / si["plannedPctComplete"]
     cpi_schedule = si["spi"]
     index = _round3((progress_ratio + cpi_schedule) / 2)
     color = ("Green" if index >= 0.95 else "Yellow" if index >= 0.92
@@ -522,7 +548,17 @@ Method class: `Line_of_Balance_Velocity`
 
 ```python
 def run_lob(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    """Line of balance: leader (grading) against follower (paving), buffer eroding per unit."""
+    """
+    Line of balance: leader (grading) against follower (paving), buffer eroding per unit.
+
+    RUN 7. Same defect as the network model above and the same correction: an empty dictionary
+    defaulted the schedule index to 1.0 and read Green. The unit count, the two production rates
+    and the buffer stay the module's own literals, because locations, crews and production rates
+    are not in the corpus and inventing them is out of scope.
+    """
+    verdict = eligible(si, required=(("spi", "the schedule performance index"),))
+    if verdict:
+        return refuse("Line_of_Balance_Velocity", verdict)
     spi = num(si.get("spi"), 1.0)
     units = 20
     grading_rate = 2.0
@@ -570,10 +606,34 @@ Method class: `CCPM_Buffer_Health`
 
 ```python
 def run_ccpm(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    """CCPM buffer-health fever chart: buffer consumption against chain completion."""
+    """
+    CCPM buffer-health fever chart: buffer consumption against chain completion.
+
+    RUN 7. Handed an empty dictionary this read Amber: chain completion fell back to zero per
+    cent and the schedule index to 1.0, and the fever chart placed a project nobody had reported
+    on in the warning zone. Both figures are now required, chain completion from either the
+    reported or the planned completion, and the module abstains without them. The buffer itself
+    remains derived from the schedule index rather than from a governed critical-chain buffer,
+    which is out of scope, and the qualifier says so.
+    """
+    verdict = eligible(si, required=(("spi", "the schedule performance index"),))
+    if verdict:
+        return refuse("CCPM_Buffer_Health", verdict)
     raw = si.get("actualPctComplete")
     if raw is None:
         raw = si.get("plannedPctComplete")
+    if raw is None:
+        return insufficient(
+            "CCPM_Buffer_Health",
+            "Insufficient data: neither a reported nor a planned percent complete has been "
+            "reported for this period, so there is no chain completion to place the buffer "
+            "against.",
+            ABSTAIN_MISSING_INPUT)
+    if num(raw, None) is None:
+        return insufficient(
+            "CCPM_Buffer_Health",
+            "Insufficient data: percent complete was reported in a form that is not a number.",
+            ABSTAIN_MALFORMED_INPUT)
     pct_chain = as_percent(raw, 0.0)
     spi = num(si.get("spi"), 1.0)
     pct_buffer = clamp((1 - spi) * 100 * 1.5, 0, 100)
@@ -607,21 +667,58 @@ Method class: `Schedule_Compression`
 
 ```python
 def run_schedule_compression(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 7. Three substitutions, all removed.
+
+    1. The schedule index came through `_or_default(..., 1.0)`, JavaScript truthiness, so an
+       index of exactly zero and an index never reported both became an index of one, the value
+       of a project running exactly to plan. It is now required and must be above zero: at zero
+       there is no rate of progress for remaining work to be delivered at, so no compression
+       ratio exists.
+    2. The available days were floored at one day, `max(available_days, 1)`. That floor is why
+       the same index gave a different ratio on a long baseline and a short one, which the
+       known-answer run recorded as a failure of scale invariance: a year-long baseline at an
+       index of 0.50 read 2.0 and Red, a two-day baseline at the SAME index read 1.0 and Green.
+       With the floor removed the ratio is required over available, which is one over the index,
+       and it is invariant under scaling the duration, as the stated ratio always should have
+       been. This is an arithmetic correction to the stated proxy, not a new method.
+    3. A project with no remaining work returned a ratio of one, which banded Green. There is no
+       compression to measure when there is nothing left to compress: that is not applicable
+       rather than comfortable, and it abstains.
+    """
     if not check_inputs(si, ("baselineEnd", "baselineStart", "actualPctComplete")):
-        return insufficient("Schedule_Compression")
+        return insufficient("Schedule_Compression",
+                            "Insufficient data: the baseline dates and the reported percent "
+                            "complete are needed to measure compression, and at least one of "
+                            "them has not been reported for this period.",
+                            ABSTAIN_MISSING_INPUT)
+    verdict = eligible(si, positive=(("spi", "the schedule performance index"),))
+    if verdict:
+        return refuse("Schedule_Compression", verdict)
     end_ms = _js_date_ms(si.get("baselineEnd"))
     start_ms = _js_date_ms(si.get("baselineStart"))
     if end_ms is None or start_ms is None:
-        return insufficient("Schedule_Compression")
+        return insufficient("Schedule_Compression",
+                            "Insufficient data: a baseline date was reported in a form that is "
+                            "not a date.",
+                            ABSTAIN_MALFORMED_INPUT)
     total_days = (end_ms - start_ms) / 86400000
     if total_days <= 0:
-        return insufficient("Schedule_Compression")
+        return insufficient("Schedule_Compression",
+                            "Insufficient data: the baseline finish is not after the baseline "
+                            "start, so the baseline has no duration to compress.",
+                            ABSTAIN_MALFORMED_INPUT)
     remaining_pct = (100 - si["actualPctComplete"]) / 100
     remaining_days = total_days * remaining_pct
-    spi = _or_default(si.get("spi"), 1.0)
+    if remaining_days <= 0:
+        return insufficient("Schedule_Compression",
+                            "No remaining work is reported for this project, so there is no "
+                            "remaining duration to compress and no ratio to report.",
+                            ABSTAIN_NOT_APPLICABLE)
+    spi = num(si.get("spi"), None)
     required_days = remaining_days
     available_days = remaining_days * spi
-    ratio = required_days / max(available_days, 1) if required_days > 0 else 1
+    ratio = required_days / available_days
     ratio = round2(ratio)
     color = ("Green" if ratio <= 1.05 else "Yellow" if ratio <= 1.15
              else "Amber" if ratio <= 1.30 else "Red")
@@ -915,35 +1012,32 @@ Method class: `Reference_Class_Forecasting`
 
 ```python
 def run_rcf(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    """Reference class forecasting: empirical overrun multipliers as a cost prior."""
-    bac = num(si.get("bac"), 0.0)
-    ordered = sorted([1.00, 1.04, 1.10, 1.14, 1.15, 1.26, 1.38, 1.45, 1.52])
-    p50 = pctile(ordered, 0.50)
-    p80 = pctile(ordered, 0.80)
-    p50_adj = bac * p50
-    p80_adj = bac * p80
-    over = (p80 - 1) * 100
-    color = "Green" if over <= 10 else ("Amber" if over <= 25 else "Red")
+    """
+    Reference class forecasting: empirical overrun multipliers as a cost prior.
 
-    if bac > 0:
-        evidence = (f"P80 cost prior ${int(math.floor(p80_adj + 0.5)):,} "
-                    f"(+{round1(over)}% vs BAC); debias x{round2(p80)}")
-    else:
-        evidence = f"Debias x{round2(p80)} (+{round1(over)}% P80 prior; BAC not yet extracted)"
+    RUN 7, AND THIS ONE ABSTAINS UNCONDITIONALLY.
 
-    return {
-        "method_class": "Reference_Class_Forecasting",
-        "status_color": color,
-        "rcf_p50_adjusted": int(math.floor(p50_adj + 0.5)),
-        "rcf_p80_adjusted": int(math.floor(p80_adj + 0.5)),
-        "debiasing_factor": round2(p80),
-        "vs_bac_pct": round1(over),
-        "p50_multiplier": round2(p50),
-        "p80_multiplier": round2(p80),
-        "multipliers": list(ordered),
-        "bac": bac,
-        "evidence_metric": evidence,
-    }
+    The method is defined by its reference class: a population of comparable completed projects
+    whose realised overruns give the distribution the forecast is drawn from. This platform holds
+    no such population. The nine multipliers below are literals, so the percentile, the debiasing
+    factor and therefore the band are the same numbers on every project and in every period, and
+    handed an empty dictionary the module read Red about a project nobody had reported anything
+    for. It read the budget only to scale a figure it displayed; nothing about a project could
+    move the band.
+
+    There is no input that would make it eligible, so there is no preflight to write: the missing
+    thing is the reference class itself. Building one is out of scope, and a proxy that keeps
+    emitting a constant band is the fault this run exists to remove. The module therefore refuses
+    and states that the reference class is absent. The arithmetic it used to perform is not kept
+    here as dead code: the suite reads it out of the pinned baseline commit, which is how every
+    remediation run on this repository has proved what the shipped code did.
+    """
+    return insufficient(
+        "Reference_Class_Forecasting",
+        "Insufficient data: no reference class of comparable completed projects is held, so "
+        "there is no distribution of realised overruns to place this project against. No "
+        "forecast is offered in its place.",
+        ABSTAIN_STRUCTURE_ABSENT)
 ```
 
 ---
@@ -1122,11 +1216,31 @@ Method class: `Overhead_Absorption`
 
 ```python
 def run_overhead_absorption(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 7. An indirect plan of zero, or a plan scaled by a reported completion of zero, made the
+    denominator zero and the absorption ratio was substituted as exactly 1, which is the value of
+    a project absorbing overhead precisely as planned, and which banded Green. There is no
+    planned indirect cost to absorb against in that state, so no absorption ratio exists and the
+    module refuses. The proxy itself is unchanged: it remains a ratio of actual indirect cost to
+    a progress-scaled indirect plan, with the qualifier it already carries about whether the plan
+    is a total or a period figure.
+    """
     if not check_inputs(si, ("indirectCostPlan", "indirectCostActual")):
-        return insufficient("Overhead_Absorption")
+        return insufficient("Overhead_Absorption",
+                            "Insufficient data: the planned and actual indirect cost figures "
+                            "are needed, and at least one of them has not been reported for "
+                            "this period.",
+                            ABSTAIN_MISSING_INPUT)
     pct = si["actualPctComplete"] / 100 if si.get("actualPctComplete") is not None else None
     planned = si["indirectCostPlan"] * pct if pct is not None else si["indirectCostPlan"]
-    absorption = si["indirectCostActual"] / planned if planned > 0 else 1
+    if not (planned > 0):
+        return insufficient("Overhead_Absorption",
+                            "Insufficient data: the planned indirect cost at this project's "
+                            "reported progress is zero or below, so there is nothing to absorb "
+                            "against and no absorption ratio can be formed. No substitute "
+                            "figure is used in its place.",
+                            ABSTAIN_INVALID_DENOMINATOR)
+    absorption = si["indirectCostActual"] / planned
     absorption = _round3(absorption)
     is_derived = _derived(si, "indirectCostPlan")
     color = ("Green" if absorption <= 1.05 else "Yellow" if absorption <= 1.15
@@ -1278,11 +1392,30 @@ Method class: `Inflation_Adjustment`
 ```python
 def run_inflation_adjustment(si: dict, rand: Callable[[], float],
                              period_cutoff) -> dict[str, Any]:
+    """
+    RUN 7. A material baseline of zero, or a baseline scaled by a reported completion of zero,
+    made the denominator zero and the escalation was substituted as exactly 0, which is the value
+    of a project with no material escalation at all, and which banded Green. There is no
+    progress-adjusted baseline to measure escalation above in that state, so the module refuses.
+    The proxy is unchanged: still a ratio above a progress-adjusted baseline with no external
+    price index, time base or geography, exactly as its qualifier says.
+    """
     if not check_inputs(si, ("materialCostBaseline", "materialCostCurrent")):
-        return insufficient("Inflation_Adjustment")
+        return insufficient("Inflation_Adjustment",
+                            "Insufficient data: the baseline and current material cost figures "
+                            "are needed, and at least one of them has not been reported for "
+                            "this period.",
+                            ABSTAIN_MISSING_INPUT)
     pct = si["actualPctComplete"] / 100 if si.get("actualPctComplete") is not None else None
     expected = si["materialCostBaseline"] * pct if pct is not None else si["materialCostBaseline"]
-    escalation = max(0, (si["materialCostCurrent"] - expected) / expected) if expected > 0 else 0
+    if not (expected > 0):
+        return insufficient("Inflation_Adjustment",
+                            "Insufficient data: the material cost baseline at this project's "
+                            "reported progress is zero or below, so there is no baseline for "
+                            "current costs to have escalated above. No substitute figure is "
+                            "used in its place.",
+                            ABSTAIN_INVALID_DENOMINATOR)
+    escalation = max(0, (si["materialCostCurrent"] - expected) / expected)
     escalation = _round3(escalation)
     is_derived = _derived(si, "materialCostBaseline")
     color = ("Green" if escalation <= 0.04 else "Yellow" if escalation <= 0.08
@@ -1313,12 +1446,32 @@ Method class: `Spec_Conflict_Density`
 ```python
 def run_spec_conflict_density(si: dict, rand: Callable[[], float],
                               period_cutoff) -> dict[str, Any]:
+    """
+    RUN 7. The density is the document risk weighted by request volume: risk times the count over
+    the square root of the count. With no requests there is no volume to weight by, and the code
+    substituted the unweighted document risk, so a project with an empty request log was assigned
+    a conflict density it had reported nothing to support and read Yellow. The substitution is
+    removed: with no requests the module abstains on no exposure rather than reporting the
+    document risk under a different name. A negative count is refused as malformed.
+    """
     if not check_inputs(si, ("docRiskScore", "rfiCount")):
-        return insufficient("Spec_Conflict_Density")
-    if si["rfiCount"] > 0:
-        density = (si["docRiskScore"] * si["rfiCount"]) / math.sqrt(si["rfiCount"])
-    else:
-        density = si["docRiskScore"]
+        return insufficient("Spec_Conflict_Density",
+                            "Insufficient data: a document risk score and a count of requests "
+                            "for information are needed, and at least one of them has not been "
+                            "reported for this period.",
+                            ABSTAIN_MISSING_INPUT)
+    if num(si.get("rfiCount"), None) is None or si["rfiCount"] < 0:
+        return insufficient("Spec_Conflict_Density",
+                            "Insufficient data: the count of requests for information was "
+                            "reported in a form that is not a count.",
+                            ABSTAIN_MALFORMED_INPUT)
+    if si["rfiCount"] == 0:
+        return insufficient("Spec_Conflict_Density",
+                            "No requests for information are recorded for this project, so "
+                            "there is no request volume for a conflict density to be measured "
+                            "over. The document risk score is not reported in its place.",
+                            ABSTAIN_NO_EXPOSURE)
+    density = (si["docRiskScore"] * si["rfiCount"]) / math.sqrt(si["rfiCount"])
     density = min(1, round2(density))
     color = ("Green" if density <= 0.15 else "Yellow" if density <= 0.35
              else "Amber" if density <= 0.60 else "Red")
@@ -1688,10 +1841,61 @@ Method class: `Dispute_Escalation`
 
 ```python
 def run_dispute_escalation(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    if not check_inputs(si, ("docRiskScore",)):
-        return insufficient("Dispute_Escalation")
-    rfi_w = min(si["rfiCount"] / 20, 1) * 0.3 if si.get("rfiCount") else 0
-    co_w = min(si["changeOrderCount"] / 10, 1) * 0.3 if si.get("changeOrderCount") else 0
+    """
+    RUN 7. THE SIGNAL IMPROVED WHEN EVIDENCE WAS WITHHELD, AND THAT IS WHAT IS CORRECTED.
+
+    The weights are 0.3 for the request term, 0.3 for the change term and 0.4 for the document
+    risk, and only the document risk was required. An absent request log and an absent change
+    order log each contributed zero to the sum rather than being absent from it, so the identical
+    project read 0.8 when it reported both logs and 0.2 when it reported neither: three bands
+    better for withholding the evidence. A composite whose missing terms score zero rewards
+    silence, and silence is the one thing a project condition must never reward.
+
+    The correction is to the missingness semantics, not to the weights and not to the method.
+    All three inputs are now required. A project that reports every source is measured on the
+    same ad hoc weighted sum it always was, with the same weights and the same bands. A project
+    that reports fewer abstains and says which source is missing, because there is no defensible
+    reading of a three-source composite from one source: renormalising the present terms would
+    still let removing a high term improve the reading, which is the same fault in a subtler
+    form.
+
+    A reported count of zero is evidence and is treated as one. The previous code tested the
+    counts for JavaScript truthiness, so a log that had been read and recorded no entries was
+    indistinguishable from a log that had never been read.
+
+    The finding text named two quantities the module does not compute. It said "RFI velocity"
+    where the term is a raw request count capped at twenty, and "CO frequency" where the term is
+    a raw change order count capped at ten. Neither has a time or exposure denominator, so
+    neither is a velocity or a frequency, and the text now names the counts it actually uses.
+
+    No dispute document, claim register or new corpus is introduced by this run, and no formal
+    dispute is inferred from this activity: the module stays the advisory, non-voting proxy its
+    qualifier describes.
+    """
+    required = (
+        ("docRiskScore", "a document risk score"),
+        ("rfiCount", "a count of requests for information"),
+        ("changeOrderCount", "a count of change orders"),
+    )
+    missing = [words for key, words in required if si.get(key) is None]
+    if missing:
+        return insufficient(
+            "Dispute_Escalation",
+            "Insufficient data: this reading combines a document risk score, a count of "
+            "requests for information and a count of change orders, and it is missing "
+            + _and_list(missing)
+            + ". A reading is not offered from the remaining sources, because a source that is "
+            "absent would otherwise count as a source that is quiet.",
+            ABSTAIN_MISSING_INPUT)
+    for key, words in required:
+        if num(si.get(key), None) is None or si[key] < 0:
+            return insufficient(
+                "Dispute_Escalation",
+                f"Insufficient data: {words} was reported as a negative figure or in a form "
+                f"that is not a number.",
+                ABSTAIN_MALFORMED_INPUT)
+    rfi_w = min(si["rfiCount"] / 20, 1) * 0.3
+    co_w = min(si["changeOrderCount"] / 10, 1) * 0.3
     doc_w = si["docRiskScore"] * 0.4
     index = round2(rfi_w + co_w + doc_w)
     color = ("Green" if index <= 0.20 else "Yellow" if index <= 0.40
@@ -1700,9 +1904,15 @@ def run_dispute_escalation(si: dict, rand: Callable[[], float], period_cutoff) -
         "method_class": "Dispute_Escalation",
         "status_color": color,
         "escalation_index": index,
+        # The trace: every source this reading rests on, so which evidence is behind the number
+        # is visible rather than inferred from the number. All three are present or the module
+        # has already abstained above, and the qualification says so either way.
+        "sources_used": ["document risk score", "count of requests for information",
+                         "count of change orders"],
+        "sources_missing": [],
         "evidence_metric": (
             f"Dispute escalation index: {_js_str(index)} "
-            f"(doc risk + RFI velocity + CO frequency combined)"
+            f"(document risk, request count and change order count combined)"
         ),
     }
 ```
@@ -1840,41 +2050,26 @@ def run_dsm(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
     """
     Design structure matrix rework propagation across Arch, Structural and MEP.
 
-    The 3x3 multiply is written out rather than taken from numpy: the service has been bitten
-    twice by compiled-wheel availability and does not need the dependency for nine multiplies.
-    The discarded spike also had 0.40 where the instrument has 0.30 at [2][1].
-    """
-    matrix = [
-        [0.0, 0.30, 0.10],
-        [0.50, 0.0, 0.20],
-        [0.40, 0.30, 0.0],
-    ]
-    wave = [1.0, 0.0, 0.0]
-    cumulative = list(wave)
-    for _ in range(4):
-        nxt = [0.0, 0.0, 0.0]
-        for i in range(3):
-            for j in range(3):
-                nxt[i] += matrix[i][j] * wave[j]
-        for k in range(3):
-            cumulative[k] += nxt[k]
-        wave = nxt
+    RUN 7, AND THIS ONE ABSTAINS UNCONDITIONALLY.
 
-    total = cumulative[0] + cumulative[1] + cumulative[2]
-    color = "Amber" if total > 2.5 else "Green"
-    return {
-        "method_class": "DSM_Rework_Cat5",
-        "status_color": color,
-        "rework_multiplier": round2(total),
-        "matrix": [list(r) for r in matrix],
-        "arch_impact": round2(cumulative[0]),
-        "structural_impact": round2(cumulative[1]),
-        "mep_impact": round2(cumulative[2]),
-        "evidence_metric": (
-            f"Architectural change -> x{round2(total)} cumulative rework across "
-            f"Arch/Struct/MEP (4 propagation passes)"
-        ),
-    }
+    The method is defined by its dependency matrix: which parts of a project's design depend on
+    which others, and how strongly, for the project being analysed. The nine coefficients below
+    were literals, the initiating wave was a literal, and no project input was read anywhere in
+    the computation. Handed an empty dictionary the module read Amber, and handed a complete
+    project it read the same Amber, because nothing about a project could reach the arithmetic.
+    The result had the shape of an analysis of a project and was a property of the file.
+
+    No dependency matrix is in the corpus and building one is out of scope, so there is no input
+    that would make the module eligible. It refuses and says which structure is missing. The
+    suite reads the previous arithmetic out of the pinned baseline commit rather than this file
+    keeping it as dead code.
+    """
+    return insufficient(
+        "DSM_Rework_Cat5",
+        "Insufficient data: no dependency matrix has been established for this project, so "
+        "there is no record of which parts of the design depend on which others and a rework "
+        "wave cannot be traced through them. No multiplier is offered in its place.",
+        ABSTAIN_STRUCTURE_ABSENT)
 ```
 
 ---
@@ -2080,11 +2275,39 @@ Method class: `Queueing_Bottleneck`
 
 ```python
 def run_queueing_bottleneck(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 7. `max(planned, 1)` invented a denominator of one activity for a project that planned
+    none, so an empty look-ahead window produced a queue ratio of zero and read Green. This is
+    the same fabricated denominator the fifteen-defects run removed from the look-ahead measure
+    and the procurement measure, still standing in a module that reads the identical two fields.
+    The known-answer run put it plainly: two modules read the same window and one abstained on it
+    while the other read Green. They now agree, through the shared eligibility layer.
+
+    A constrained count above the planned count is malformed rather than missing, and refused on
+    the same footing the look-ahead measure refuses it.
+
+    The module remains what its qualifier says it is. A queueing model needs arrival rates,
+    service rates, capacity and a queue discipline, none of which are in the corpus, and this run
+    does not invent them.
+    """
     if not check_inputs(si, ("activitiesPlanned", "activitiesConstrained")):
-        return insufficient("Queueing_Bottleneck")
+        return insufficient("Queueing_Bottleneck",
+                            "Insufficient data: the planned and constrained activity counts are "
+                            "needed, and at least one of them has not been reported for this "
+                            "period.",
+                            ABSTAIN_MISSING_INPUT)
+    verdict = eligible(si, positive=(("activitiesPlanned", "the count of planned activities"),))
+    if verdict:
+        return refuse("Queueing_Bottleneck", verdict)
     planned = num(si.get("activitiesPlanned"), 0)
     constrained = num(si.get("activitiesConstrained"), 0)
-    ratio = constrained / max(planned, 1)
+    if constrained < 0 or constrained > planned:
+        return insufficient("Queueing_Bottleneck",
+                            "Insufficient data: the number of constrained activities reported "
+                            "is negative or larger than the number planned, so the two figures "
+                            "do not describe the same window.",
+                            ABSTAIN_MALFORMED_INPUT)
+    ratio = constrained / planned
     color = ("Green" if ratio < 0.15 else "Yellow" if ratio < 0.25
              else "Amber" if ratio < 0.40 else "Red")
     return {
@@ -2110,11 +2333,37 @@ Method class: `Agent_Supply_Chain`
 
 ```python
 def run_agent_supply_chain(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 7. `max(total, 1)` invented one long-lead item for a project whose long-lead log is
+    empty, so an at-risk share of zero was reported and read Green. An empty log is not evidence
+    that nothing is at risk; it is the absence of the population the share is a share OF. The
+    module abstains on no exposure, and a count of items at risk exceeding the total is refused
+    as malformed.
+
+    Agents, states, rules and interactions are not in the corpus. The module is a share of a
+    procurement log and this run does not turn it into anything else.
+    """
     if not check_inputs(si, ("longLeadItemsTotal", "longLeadAtRisk")):
-        return insufficient("Agent_Supply_Chain")
+        return insufficient("Agent_Supply_Chain",
+                            "Insufficient data: the total and at-risk long-lead item counts are "
+                            "needed, and at least one of them has not been reported for this "
+                            "period.",
+                            ABSTAIN_MISSING_INPUT)
     total = num(si.get("longLeadItemsTotal"), 0)
     at_risk = num(si.get("longLeadAtRisk"), 0)
-    ratio = at_risk / max(total, 1)
+    if total <= 0:
+        return insufficient("Agent_Supply_Chain",
+                            "No long-lead items are recorded for this project, so there is no "
+                            "set of items for a share of them to be at risk. No share is "
+                            "reported in place of one.",
+                            ABSTAIN_NO_EXPOSURE)
+    if at_risk < 0 or at_risk > total:
+        return insufficient("Agent_Supply_Chain",
+                            "Insufficient data: the number of long-lead items reported at risk "
+                            "is negative or larger than the number recorded, so the two figures "
+                            "do not describe the same log.",
+                            ABSTAIN_MALFORMED_INPUT)
+    ratio = at_risk / total
     color = ("Green" if ratio < 0.10 else "Yellow" if ratio < 0.20
              else "Amber" if ratio < 0.35 else "Red")
     return {
@@ -2140,10 +2389,26 @@ Method class: `Discrete_Event_Sim`
 
 ```python
 def run_discrete_event_sim(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 7. Where no planned progress had been reported the progress ratio was substituted as
+    exactly 1, the value of a project running precisely to plan, which drove the interruption
+    term to zero and read Green. Planned progress is the denominator of that ratio and is now
+    required to be above zero.
+
+    Events, entities, resources, queues and a clock are not in the corpus. This module is a
+    throughput index computed from two indices and a progress ratio, and the correction is to its
+    refusal behaviour only.
+    """
     if not check_inputs(si, ("spi", "actualPctComplete", "plannedPctComplete", "cpi")):
-        return insufficient("Discrete_Event_Sim")
-    progress_ratio = (si["actualPctComplete"] / si["plannedPctComplete"]
-                      if si["plannedPctComplete"] > 0 else 1)
+        return insufficient("Discrete_Event_Sim",
+                            "Insufficient data: both performance indices and both the planned "
+                            "and reported percent complete are needed, and at least one of them "
+                            "has not been reported for this period.",
+                            ABSTAIN_MISSING_INPUT)
+    verdict = eligible(si, positive=(("plannedPctComplete", "the planned percent complete"),))
+    if verdict:
+        return refuse("Discrete_Event_Sim", verdict)
+    progress_ratio = si["actualPctComplete"] / si["plannedPctComplete"]
     interruption = max(0, 1 - progress_ratio) + max(0, 1 - si["spi"]) * 0.5
     throughput = js_round((1 / (1 + interruption)) * 1000) / 1000
     color = ("Green" if throughput >= 0.92 else "Yellow" if throughput >= 0.85
@@ -2255,14 +2520,42 @@ Method class: `Safety_Performance`
 
 ```python
 def run_safety_performance(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 7, AND THIS ONE KEEPS COMPUTING, WHICH IS THE POINT OF CLASSIFYING RATHER THAN REFUSING
+    EVERYWHERE.
+
+    A reported zero incidents is a measurement, not an absence: the safety records were read and
+    they recorded nothing. The band is therefore left standing on a reported zero, which is the
+    disposition the owner's instruction calls a true zero.
+
+    What was wrong is the index beside it. The safety index is the benchmark over the reported
+    rate, capped by the module's own `min(2, ...)`. At a rate of zero that ratio is unbounded and
+    the cap is the module's own answer to an unbounded ratio, which is 2. The code substituted 1
+    instead, a number the formula never produces at a zero rate and which reads as performance
+    exactly at benchmark. The cap is now used, so the index is derived from the module's own
+    stated formula in every case rather than from a literal in one of them.
+
+    A negative rate is refused: it is outside the domain a rate can occupy, and left alone it
+    banded Green because a negative number is below the benchmark.
+    """
     if not check_inputs(si, ("safetyIncidentsDiscussed",)):
-        return insufficient("Safety_Performance")
+        return insufficient("Safety_Performance",
+                            "Insufficient data: no safety record has been reported for this "
+                            "period.",
+                            ABSTAIN_MISSING_INPUT)
     is_derived = _derived(si, "safetyIncidentsDiscussed")
     rate = (si.get("oshaIncidentRate") if si.get("oshaIncidentRate") is not None
             else si["safetyIncidentsDiscussed"] * 10)
+    if num(rate, None) is None or rate < 0:
+        return insufficient("Safety_Performance",
+                            "Insufficient data: the safety incident rate was reported as a "
+                            "negative figure or in a form that is not a number, and a rate "
+                            "cannot be either.",
+                            ABSTAIN_MALFORMED_INPUT)
     benchmark = 3.0
-    index = benchmark / rate if rate > 0 else 1
-    index = min(2, round2(index))
+    # The module's own cap is its own answer to a ratio without an upper bound, and a rate of
+    # zero is exactly that case. No literal is substituted here.
+    index = min(2, round2(benchmark / rate)) if rate > 0 else 2
     color = ("Green" if rate <= benchmark else "Yellow" if rate <= benchmark * 2
              else "Amber" if rate <= benchmark * 5 else "Red")
     evidence = f"Safety: {_js_str(si['safetyIncidentsDiscussed'])} incidents in OAC records"

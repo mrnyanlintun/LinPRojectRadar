@@ -193,6 +193,12 @@ MODULE_RESULT_COLUMNS: tuple[str, ...] = (
     "band_source",
     "status_color",
     "evidence_metric",
+    # RUN 7. The stable machine reason a computation abstained, from the analytical layer's own
+    # list of codes: a missing required input, an absent canonical structure, an invalid
+    # denominator, no exposure, not applicable, insufficient history or malformed input. Empty
+    # on a row that computed. It is a code and it belongs HERE, in the export and the API, and
+    # never on a participant surface: the sentence in evidence_metric is what a reader sees.
+    "abstention_reason_code",
     "result_json",
 )
 
@@ -732,6 +738,12 @@ def build_analysis_long_rows(session: Session, start: datetime | None,
     return [{k: r[k] for k in LONG_COLUMNS} for r in rows]
 
 
+def _group_letter_of(module_id: str) -> str:
+    """The registry's group letter for a module that produced no row to carry one."""
+    from .simulation.registry import group_of
+    return group_of(module_id)
+
+
 def build_module_results_rows(session: Session, project_legacy_ids: set[str] | None,
                               start: datetime | None,
                               end: datetime | None) -> list[dict[str, Any]]:
@@ -795,7 +807,43 @@ def build_module_results_rows(session: Session, project_legacy_ids: set[str] | N
                 "band_source": _run4_band_source(module_id),
                 "status_color": module.get("status_color"),
                 "evidence_metric": module.get("evidence_metric"),
+                "abstention_reason_code": "",
                 "result_json": json.dumps(extra, sort_keys=True, default=str),
+            })
+
+        # RUN 7. THE ABSTENTIONS, WHICH THIS EXPORT HAD NEVER CARRIED.
+        #
+        # A module that abstains produces no module_results entry, so it was simply absent from
+        # this file, and an analyst comparing two periods could not tell a computation that was
+        # never registered from one that refused and said why. Run 7 made sixteen computations
+        # refuse where they had been emitting a status from an input they did not have, which
+        # turns that gap from a tidiness question into a hole in the record: the reason a
+        # computation is silent is now the most informative thing about it.
+        #
+        # One row per abstention, with the status column empty rather than a band, the module's
+        # own sentence in evidence_metric, and the stable code beside it. The activation state,
+        # the label and the band-source columns are filled the same way a computed row fills
+        # them, so a reader can group across both without a join.
+        for entry in (result.abstained or []):
+            if not isinstance(entry, dict):
+                continue
+            module_id = str(entry.get("module_id") or "")
+            canonical_name = names.get(module_id, module_id)
+            rows.append({
+                "project": legacy,
+                "period": result.period,
+                "computed_at": _iso(result.computed_at),
+                "computation": _run1_label(module_id, canonical_name),
+                "group": GROUP_NAMES.get(_group_letter_of(module_id),
+                                         _group_letter_of(module_id)),
+                "activation_state": (entry.get("activation_state")
+                                     or _run1_activation_state(module_id)),
+                "signal_qualification": _SIGNAL_QUALIFICATION,
+                "band_source": _run4_band_source(module_id),
+                "status_color": None,
+                "evidence_metric": entry.get("reason"),
+                "abstention_reason_code": entry.get("abstention_reason_code") or "",
+                "result_json": json.dumps({"abstained": True}, sort_keys=True),
             })
     return rows
 
