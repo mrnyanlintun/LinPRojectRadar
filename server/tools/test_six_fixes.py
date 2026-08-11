@@ -210,87 +210,69 @@ try:
 
     print()
     print("=" * 78)
-    print("3. The stated rule IS the analysis's rule, driven across each threshold")
+    print("3, 4 and 5. THE RULE THIS SECTION USED TO PIN NO LONGER HAS A MODULE.")
     print("=" * 78)
 
-    def basis_for(cpi, spi):
-        mod = run_regret_minimization({"cpi": cpi, "spi": spi, "bac": 1e7},
-                                      lambda: 0.5, None)
-        return mod, recommendation_basis({"cpi": cpi, "spi": spi}, mod)
+    # WHAT THIS SECTION PROTECTED, AND WHAT IT PROTECTS NOW.
+    #
+    # The six-fixes run corrected the courses-of-action card to state WHY the recommended
+    # course was recommended, and pinned the served sentence against the scoring module's own
+    # threshold rule so a mirrored constant could not drift. That was the right property while
+    # the module produced a ranking.
+    #
+    # Run 7 established that it never produced one. The three expected regrets were literals,
+    # so the minimum was the same course on every project in every period, the healthy course
+    # was unreachable from any input, and the ranking the card explained was a property of the
+    # file rather than a finding about a project. The module abstains now, and no payoff matrix
+    # exists to replace it with.
+    #
+    # So the property is restated rather than deleted: there is no ranking, on any input, and
+    # nothing downstream invents one. The threshold constants stay imported and are driven over
+    # the same grid this section always drove, to prove that no branch of the old rule fires
+    # anywhere, rather than to prove a constant matches.
 
-    # Below the escalation threshold on either figure.
-    for cpi, spi, why in ((0.84, 0.99, "cost"), (0.99, 0.84, "schedule"),
-                          (0.5, 0.5, "both")):
-        mod, b = basis_for(cpi, spi)
-        check(mod["recommended_action"] == "escalate",
-              f"the module escalates below {ESCALATE_BELOW} on {why}")
-        check(b["rule"] == "performance_override",
-              f"and the stated basis calls it an override on {why}", str(b["rule"]))
-        check(str(ESCALATE_BELOW) in b["sentence"],
-              f"naming the {ESCALATE_BELOW} threshold on {why}", b["sentence"][:100])
-
-    # Between the two thresholds.
-    mod, b = basis_for(0.92, 0.99)
-    check(mod["recommended_action"] == "investigate",
-          f"the module investigates between {ESCALATE_BELOW} and {INVESTIGATE_BELOW}")
-    check(b["rule"] == "performance_override" and str(INVESTIGATE_BELOW) in b["sentence"],
-          "and the basis names that threshold", b["sentence"][:110])
-
-    # Above both: nothing overrides, the ranking stands.
-    mod, b = basis_for(1.05, 1.05)
-    check(b["rule"] == "ranking",
-          "above both thresholds the basis says the ranking stands", str(b["rule"]))
-    check(mod["recommended_action"] in b["lowest"],
-          "and the module's choice IS the lowest-scoring course there",
-          f"{mod['recommended_action']} vs {b['lowest']}")
-
-    # THE THRESHOLD BOUNDARIES THEMSELVES. `<` not `<=`, so exactly at the threshold the
-    # branch must NOT fire. This is what catches a mirrored constant drifting by a hair.
-    mod, b = basis_for(ESCALATE_BELOW, 0.99)
-    check(mod["recommended_action"] != "escalate",
-          f"exactly at {ESCALATE_BELOW} the module does not escalate",
-          mod["recommended_action"])
-    check(b["rule"] == "performance_override" and str(INVESTIGATE_BELOW) in b["sentence"],
-          "and the basis falls to the investigate branch, as the module does")
-    mod, b = basis_for(INVESTIGATE_BELOW, INVESTIGATE_BELOW)
-    check(b["rule"] == "ranking",
-          f"exactly at {INVESTIGATE_BELOW} no performance rule applies", str(b["rule"]))
-
-    print()
-    print("=" * 78)
-    print("4. The scores are a property of the method, not a finding about the period")
-    print("=" * 78)
-
-    seen = set()
-    for cpi, spi in ((0.5, 0.5), (0.84, 0.88), (0.92, 0.99), (1.05, 1.05), (2.0, 2.0)):
-        mod = run_regret_minimization({"cpi": cpi, "spi": spi, "bac": 1e7},
-                                      lambda: 0.5, None)
-        seen.add(json.dumps(mod["expected_regret"], sort_keys=True))
-    check(len(seen) == 1,
-          "every project and every period scores identically, whatever its figures",
-          str(seen))
-    check(json.loads(next(iter(seen))) == {"monitor": 11, "investigate": 5, "escalate": 8},
-          "and the constant is 11 / 5 / 8", str(seen))
-    _, b = basis_for(0.84, 0.88)
-    check(b["scores_are_fixed"] is True,
-          "the served basis says so, so the card can stop calling it a per-period finding")
-
-    print()
-    print("=" * 78)
-    print("5. The basis is served on the result, and withheld when the gate withholds")
-    print("=" * 78)
+    grid = ((0.5, 0.5), (0.84, 0.88), (0.84, 0.99), (0.99, 0.84),
+            (ESCALATE_BELOW, 0.99), (0.92, 0.99), (INVESTIGATE_BELOW, INVESTIGATE_BELOW),
+            (1.05, 1.05), (1.20, 1.20), (2.0, 2.0))
+    abstained_all = True
+    ranked_any = False
+    basis_any = False
+    for cpi, spi in grid:
+        mod = run_regret_minimization({"cpi": cpi, "spi": spi, "bac": 1e7}, lambda: 0.5, None)
+        abstained_all = abstained_all and mod.get("status_color") is None \
+            and mod.get("insufficient_data") is True
+        ranked_any = ranked_any or ("expected_regret" in mod) or ("recommended_action" in mod)
+        basis_any = basis_any or recommendation_basis({"cpi": cpi, "spi": spi}, mod) is not None
+    check(abstained_all,
+          "the scoring analysis abstains on every pair of indices, including the pairs that "
+          "used to trip each branch of the threshold rule")
+    check(not ranked_any,
+          "and it emits no ranking and no recommended course anywhere on that grid")
+    check(not basis_any,
+          "so the served basis has nothing to state, on every one of them")
+    check(str(ESCALATE_BELOW) and str(INVESTIGATE_BELOW),
+          "the threshold constants are still imported here, and now describe no live module")
 
     served = post({"action": "projectresults", "session_token": pm, "id": PRJ,
                    "period": 2})["result"]
-    sb = served.get("recommendation_basis")
-    check(isinstance(sb, dict) and sb.get("sentence"),
-          "projectresults carries the basis beside the result", str(sb)[:140])
-    check("not taken from the scores" in sb["sentence"] or "lowest scoring" in sb["sentence"],
-          "and it states what decided the recommendation", sb["sentence"][:140])
-    check(sb["sentence"] != "" and "not established" not in sb["sentence"].lower(),
-          "the card no longer has to say the reason is not established",
-          sb["sentence"][:140])
+    check(served.get("recommendation_basis") is None,
+          "the API serves no basis beside a result whose scoring analysis abstained",
+          str(served.get("recommendation_basis"))[:140])
+    _mods = {m.get("method_class"): m for m in (served.get("module_results") or [])
+             if isinstance(m, dict)}
+    check("Regret_Minimization" not in _mods,
+          "and the abstaining module is absent from the stored module rows, as every "
+          "abstention is", str(sorted(_mods))[:140])
+    _abst = {a.get("module_id"): a for a in (served.get("abstained") or [])}
+    check("B4.7" in _abst and _abst["B4.7"].get("reason"),
+          "while the abstention row carries a reason the ledger can speak",
+          str(_abst.get("B4.7"))[:160])
+    check(_abst.get("B4.7", {}).get("abstention_reason_code")
+          == "canonical_decision_structure_absent",
+          "and the stable code names the structure that is missing, beside the sentence and "
+          "never inside it", str(_abst.get("B4.7", {}).get("abstention_reason_code")))
 
+    # The helper itself still refuses to invent, which was always its own property.
     check(recommendation_basis(None, None) is None,
           "no module, no basis: nothing is invented")
     check(recommendation_basis({"cpi": 0.8}, {"method_class": "Regret_Minimization"}) is None,

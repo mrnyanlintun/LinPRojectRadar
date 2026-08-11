@@ -256,10 +256,19 @@ redacted_any = any(
 check(not redacted_any,
       "no module is marked withheld on an operational project",
       f"redacted_any={redacted_any}")
+# RUN 7. This asserted the scored course set was readable on an operational project. Those
+# scores were literals identical on every project, and the module abstains now, so what is
+# asserted is the property the check was for: nothing on this read is withheld, and the module
+# is recorded as an abstention rather than vanishing without explanation.
 _reg = next((m for m in (r["module_results"] or [])
              if isinstance(m, dict) and m.get("method_class") == "Regret_Minimization"), None)
-check(_reg is not None and isinstance(_reg.get("expected_regret"), dict),
-      "and the PM can read the scored courses of action on their own project", str(_reg)[:160])
+check(_reg is None,
+      "the analysis that scored the courses of action carries no row, because it abstains",
+      str(_reg)[:160])
+_abst_ids = {a.get("module_id") for a in (r.get("abstained") or [])}
+check("B4.7" in _abst_ids,
+      "and its silence is recorded as an abstention on the PM's own read",
+      str(sorted(_abst_ids))[:120])
 
 
 # ---------------------------------------------------------------- Guarantee 9

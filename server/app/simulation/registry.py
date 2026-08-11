@@ -345,6 +345,15 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
                 "reason": reason,
                 "activation_state": out.get("activation_state") or activation_state(new_id),
             }
+            # RUN 7. The stable machine code for WHY, beside the sentence that says why in
+            # words. The sentence is what the ledger renders and it carries no code, no key name
+            # and no module id; the code is what the API, the export and the analysis group on,
+            # and it never reaches a participant surface. Present only on modules corrected by
+            # Run 7 and any module that adopts the shared layer later, so a row computed before
+            # Run 7 and one computed after are distinguishable rather than both carrying an
+            # empty field.
+            if out.get("abstention_reason_code"):
+                entry["abstention_reason_code"] = out["abstention_reason_code"]
             if new_id in NESTED_INPUT_MODULES:
                 entry["newly_wired_unvalidated"] = True
                 entry["wiring_note"] = WIRING_NOTE

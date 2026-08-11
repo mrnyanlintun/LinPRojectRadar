@@ -278,11 +278,45 @@ check(pr.get("ok") is True, "projectresults readable pre-lock (the evidence scre
 check(len(findings) == 0, "projectresults leaks nothing pre-lock", str(findings))
 check(pr["result"]["recommendation"] is None, "recommendation is null pre-lock")
 mods = pr["result"]["module_results"] or []
-withheld = [m for m in mods if isinstance(m, dict) and m.get("recommendation_withheld")]
-check(len(withheld) > 0, "action-bearing modules are marked withheld",
-      f"{len(withheld)} of {len(mods)}")
 check(all("recommends:" not in json.dumps(m).lower() for m in mods),
       "no module's prose restates a recommendation")
+
+# RUN 7 REMOVED THIS READ'S ONLY ACTION-BEARING MODULE, AND THAT IS WORTH SAYING PRECISELY.
+#
+# This check read "action-bearing modules are marked withheld" off the served rows. The module
+# it found was the one that scored the courses of action, and Run 7 established that its scores
+# were literals and its healthy course unreachable, so it abstains and reaches no row. The other
+# action-bearing module, the governance projection, abstains in a first reporting period for a
+# reason of its own that resolves in the second.
+#
+# The redaction is therefore unexercised BY THIS READ, not removed, and asserting "some module
+# was marked withheld" against a read that now carries none would either fail forever or be
+# quietly retargeted onto something that proves nothing. So the guarantee is asserted where it
+# lives: the redactor itself, driven over each action-bearing key, and the served read is
+# asserted to carry no action-bearing key at all, which is the outcome the guarantee exists for.
+from app.documents import _redact_module_actions  # noqa: E402
+
+for key, value in (("recommended_action", "escalate"), ("expected_regret", {"monitor": 11}),
+                   ("action", "recovery-plan review"), ("authority", "Program director")):
+    probe = [{"method_class": "Probe", key: value,
+              "evidence_metric": "Minimax regret recommends: escalate"}]
+    out = _redact_module_actions(probe)[0]
+    check(key not in out, f"the redactor strips {key} from a withheld read", str(out)[:110])
+    check(out.get("recommendation_withheld") is True,
+          f"and marks the module withheld when it strips {key}", str(out)[:110])
+    check("recommends:" not in out.get("evidence_metric", "").lower(),
+          f"and replaces the prose that restated it beside {key}",
+          out.get("evidence_metric", "")[:80])
+probe_clean = [{"method_class": "Probe", "evidence_metric": "Cost performance stands at 0.95"}]
+clean_out = _redact_module_actions(probe_clean)[0]
+check(clean_out == probe_clean[0],
+      "a module that recommends nothing is passed through untouched", str(clean_out)[:110])
+
+action_keys = {"recommended_action", "expected_regret", "action", "authority"}
+leaked = [m.get("method_class") for m in mods
+          if isinstance(m, dict) and action_keys & set(m)]
+check(not leaked, "and the pre-lock read carries no action-bearing key on any module",
+      str(leaked))
 
 
 # --------------------------------------------------------------- Guarantee 2

@@ -9,8 +9,12 @@ All twenty are deterministic; `rand` is accepted only for the registry's one cal
 
 Porting hazards specific to this file:
 
-- Truthiness contributions: Dispute Escalation and Rework Feedback weight `si.rfiCount ? ... : 0`
-  — an rfiCount of 0 contributes nothing via JS falsiness, reproduced with explicit checks.
+- Truthiness contributions: Rework Feedback still weights `si.rfiCount ? ... : 0`, so a reported
+  zero contributes nothing there via JS falsiness, reproduced with explicit checks. RUN 7 REMOVED
+  THAT FROM DISPUTE ESCALATION, because it made an absent log and a log that recorded nothing
+  indistinguishable and let a project improve its reading by withholding evidence. Rework Feedback
+  carries the identical construct and was NOT in the Run 6 defect list, so it is unchanged and
+  recorded in the Run 7 report as the clearest candidate for the next run.
 - Weather Day Impact is Green iff `weatherDaysLost === 0` exactly; the ratio ladder starts at
   Yellow. `(si.consumedFloat || 0)` is JS truthiness again.
 - Subcontractor Performance in the browser can lazily derive `subcontractorComplianceScore`
@@ -27,11 +31,21 @@ from __future__ import annotations
 import math
 from typing import Any, Callable
 
-from .models import check_inputs, insufficient
+from .models import (
+    ABSTAIN_INVALID_DENOMINATOR, ABSTAIN_MALFORMED_INPUT, ABSTAIN_MISSING_INPUT,
+    ABSTAIN_NO_EXPOSURE, check_inputs, eligible, insufficient, refuse,
+)
 from .models_ext import _derived, _js_str
 from .rng import js_round, num, round1, round2
 
 _RANK = {"Green": 0, "Yellow": 1, "Amber": 2, "Red": 3}
+
+
+def _and_list(items: list[str]) -> str:
+    """A list of things in prose. The word "and", never an ampersand, per the naming rules."""
+    if len(items) == 1:
+        return items[0]
+    return ", ".join(items[:-1]) + " and " + items[-1]
 
 
 # ------------------------------------------------------------ A4.2 RFI Velocity
@@ -342,10 +356,61 @@ def run_co_frequency(si: dict, rand: Callable[[], float], period_cutoff) -> dict
 
 
 def run_dispute_escalation(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    if not check_inputs(si, ("docRiskScore",)):
-        return insufficient("Dispute_Escalation")
-    rfi_w = min(si["rfiCount"] / 20, 1) * 0.3 if si.get("rfiCount") else 0
-    co_w = min(si["changeOrderCount"] / 10, 1) * 0.3 if si.get("changeOrderCount") else 0
+    """
+    RUN 7. THE SIGNAL IMPROVED WHEN EVIDENCE WAS WITHHELD, AND THAT IS WHAT IS CORRECTED.
+
+    The weights are 0.3 for the request term, 0.3 for the change term and 0.4 for the document
+    risk, and only the document risk was required. An absent request log and an absent change
+    order log each contributed zero to the sum rather than being absent from it, so the identical
+    project read 0.8 when it reported both logs and 0.2 when it reported neither: three bands
+    better for withholding the evidence. A composite whose missing terms score zero rewards
+    silence, and silence is the one thing a project condition must never reward.
+
+    The correction is to the missingness semantics, not to the weights and not to the method.
+    All three inputs are now required. A project that reports every source is measured on the
+    same ad hoc weighted sum it always was, with the same weights and the same bands. A project
+    that reports fewer abstains and says which source is missing, because there is no defensible
+    reading of a three-source composite from one source: renormalising the present terms would
+    still let removing a high term improve the reading, which is the same fault in a subtler
+    form.
+
+    A reported count of zero is evidence and is treated as one. The previous code tested the
+    counts for JavaScript truthiness, so a log that had been read and recorded no entries was
+    indistinguishable from a log that had never been read.
+
+    The finding text named two quantities the module does not compute. It said "RFI velocity"
+    where the term is a raw request count capped at twenty, and "CO frequency" where the term is
+    a raw change order count capped at ten. Neither has a time or exposure denominator, so
+    neither is a velocity or a frequency, and the text now names the counts it actually uses.
+
+    No dispute document, claim register or new corpus is introduced by this run, and no formal
+    dispute is inferred from this activity: the module stays the advisory, non-voting proxy its
+    qualifier describes.
+    """
+    required = (
+        ("docRiskScore", "a document risk score"),
+        ("rfiCount", "a count of requests for information"),
+        ("changeOrderCount", "a count of change orders"),
+    )
+    missing = [words for key, words in required if si.get(key) is None]
+    if missing:
+        return insufficient(
+            "Dispute_Escalation",
+            "Insufficient data: this reading combines a document risk score, a count of "
+            "requests for information and a count of change orders, and it is missing "
+            + _and_list(missing)
+            + ". A reading is not offered from the remaining sources, because a source that is "
+            "absent would otherwise count as a source that is quiet.",
+            ABSTAIN_MISSING_INPUT)
+    for key, words in required:
+        if num(si.get(key), None) is None or si[key] < 0:
+            return insufficient(
+                "Dispute_Escalation",
+                f"Insufficient data: {words} was reported as a negative figure or in a form "
+                f"that is not a number.",
+                ABSTAIN_MALFORMED_INPUT)
+    rfi_w = min(si["rfiCount"] / 20, 1) * 0.3
+    co_w = min(si["changeOrderCount"] / 10, 1) * 0.3
     doc_w = si["docRiskScore"] * 0.4
     index = round2(rfi_w + co_w + doc_w)
     color = ("Green" if index <= 0.20 else "Yellow" if index <= 0.40
@@ -354,9 +419,15 @@ def run_dispute_escalation(si: dict, rand: Callable[[], float], period_cutoff) -
         "method_class": "Dispute_Escalation",
         "status_color": color,
         "escalation_index": index,
+        # The trace: every source this reading rests on, so which evidence is behind the number
+        # is visible rather than inferred from the number. All three are present or the module
+        # has already abstained above, and the qualification says so either way.
+        "sources_used": ["document risk score", "count of requests for information",
+                         "count of change orders"],
+        "sources_missing": [],
         "evidence_metric": (
             f"Dispute escalation index: {_js_str(index)} "
-            f"(doc risk + RFI velocity + CO frequency combined)"
+            f"(document risk, request count and change order count combined)"
         ),
     }
 
@@ -468,12 +539,32 @@ def run_procurement_lead_time(si: dict, rand: Callable[[], float],
 
 def run_spec_conflict_density(si: dict, rand: Callable[[], float],
                               period_cutoff) -> dict[str, Any]:
+    """
+    RUN 7. The density is the document risk weighted by request volume: risk times the count over
+    the square root of the count. With no requests there is no volume to weight by, and the code
+    substituted the unweighted document risk, so a project with an empty request log was assigned
+    a conflict density it had reported nothing to support and read Yellow. The substitution is
+    removed: with no requests the module abstains on no exposure rather than reporting the
+    document risk under a different name. A negative count is refused as malformed.
+    """
     if not check_inputs(si, ("docRiskScore", "rfiCount")):
-        return insufficient("Spec_Conflict_Density")
-    if si["rfiCount"] > 0:
-        density = (si["docRiskScore"] * si["rfiCount"]) / math.sqrt(si["rfiCount"])
-    else:
-        density = si["docRiskScore"]
+        return insufficient("Spec_Conflict_Density",
+                            "Insufficient data: a document risk score and a count of requests "
+                            "for information are needed, and at least one of them has not been "
+                            "reported for this period.",
+                            ABSTAIN_MISSING_INPUT)
+    if num(si.get("rfiCount"), None) is None or si["rfiCount"] < 0:
+        return insufficient("Spec_Conflict_Density",
+                            "Insufficient data: the count of requests for information was "
+                            "reported in a form that is not a count.",
+                            ABSTAIN_MALFORMED_INPUT)
+    if si["rfiCount"] == 0:
+        return insufficient("Spec_Conflict_Density",
+                            "No requests for information are recorded for this project, so "
+                            "there is no request volume for a conflict density to be measured "
+                            "over. The document risk score is not reported in its place.",
+                            ABSTAIN_NO_EXPOSURE)
+    density = (si["docRiskScore"] * si["rfiCount"]) / math.sqrt(si["rfiCount"])
     density = min(1, round2(density))
     color = ("Green" if density <= 0.15 else "Yellow" if density <= 0.35
              else "Amber" if density <= 0.60 else "Red")
@@ -650,11 +741,39 @@ def run_rework_feedback(si: dict, rand: Callable[[], float], period_cutoff) -> d
 
 
 def run_queueing_bottleneck(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 7. `max(planned, 1)` invented a denominator of one activity for a project that planned
+    none, so an empty look-ahead window produced a queue ratio of zero and read Green. This is
+    the same fabricated denominator the fifteen-defects run removed from the look-ahead measure
+    and the procurement measure, still standing in a module that reads the identical two fields.
+    The known-answer run put it plainly: two modules read the same window and one abstained on it
+    while the other read Green. They now agree, through the shared eligibility layer.
+
+    A constrained count above the planned count is malformed rather than missing, and refused on
+    the same footing the look-ahead measure refuses it.
+
+    The module remains what its qualifier says it is. A queueing model needs arrival rates,
+    service rates, capacity and a queue discipline, none of which are in the corpus, and this run
+    does not invent them.
+    """
     if not check_inputs(si, ("activitiesPlanned", "activitiesConstrained")):
-        return insufficient("Queueing_Bottleneck")
+        return insufficient("Queueing_Bottleneck",
+                            "Insufficient data: the planned and constrained activity counts are "
+                            "needed, and at least one of them has not been reported for this "
+                            "period.",
+                            ABSTAIN_MISSING_INPUT)
+    verdict = eligible(si, positive=(("activitiesPlanned", "the count of planned activities"),))
+    if verdict:
+        return refuse("Queueing_Bottleneck", verdict)
     planned = num(si.get("activitiesPlanned"), 0)
     constrained = num(si.get("activitiesConstrained"), 0)
-    ratio = constrained / max(planned, 1)
+    if constrained < 0 or constrained > planned:
+        return insufficient("Queueing_Bottleneck",
+                            "Insufficient data: the number of constrained activities reported "
+                            "is negative or larger than the number planned, so the two figures "
+                            "do not describe the same window.",
+                            ABSTAIN_MALFORMED_INPUT)
+    ratio = constrained / planned
     color = ("Green" if ratio < 0.15 else "Yellow" if ratio < 0.25
              else "Amber" if ratio < 0.40 else "Red")
     return {
@@ -672,11 +791,37 @@ def run_queueing_bottleneck(si: dict, rand: Callable[[], float], period_cutoff) 
 
 
 def run_agent_supply_chain(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 7. `max(total, 1)` invented one long-lead item for a project whose long-lead log is
+    empty, so an at-risk share of zero was reported and read Green. An empty log is not evidence
+    that nothing is at risk; it is the absence of the population the share is a share OF. The
+    module abstains on no exposure, and a count of items at risk exceeding the total is refused
+    as malformed.
+
+    Agents, states, rules and interactions are not in the corpus. The module is a share of a
+    procurement log and this run does not turn it into anything else.
+    """
     if not check_inputs(si, ("longLeadItemsTotal", "longLeadAtRisk")):
-        return insufficient("Agent_Supply_Chain")
+        return insufficient("Agent_Supply_Chain",
+                            "Insufficient data: the total and at-risk long-lead item counts are "
+                            "needed, and at least one of them has not been reported for this "
+                            "period.",
+                            ABSTAIN_MISSING_INPUT)
     total = num(si.get("longLeadItemsTotal"), 0)
     at_risk = num(si.get("longLeadAtRisk"), 0)
-    ratio = at_risk / max(total, 1)
+    if total <= 0:
+        return insufficient("Agent_Supply_Chain",
+                            "No long-lead items are recorded for this project, so there is no "
+                            "set of items for a share of them to be at risk. No share is "
+                            "reported in place of one.",
+                            ABSTAIN_NO_EXPOSURE)
+    if at_risk < 0 or at_risk > total:
+        return insufficient("Agent_Supply_Chain",
+                            "Insufficient data: the number of long-lead items reported at risk "
+                            "is negative or larger than the number recorded, so the two figures "
+                            "do not describe the same log.",
+                            ABSTAIN_MALFORMED_INPUT)
+    ratio = at_risk / total
     color = ("Green" if ratio < 0.10 else "Yellow" if ratio < 0.20
              else "Amber" if ratio < 0.35 else "Red")
     return {
@@ -694,10 +839,26 @@ def run_agent_supply_chain(si: dict, rand: Callable[[], float], period_cutoff) -
 
 
 def run_discrete_event_sim(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 7. Where no planned progress had been reported the progress ratio was substituted as
+    exactly 1, the value of a project running precisely to plan, which drove the interruption
+    term to zero and read Green. Planned progress is the denominator of that ratio and is now
+    required to be above zero.
+
+    Events, entities, resources, queues and a clock are not in the corpus. This module is a
+    throughput index computed from two indices and a progress ratio, and the correction is to its
+    refusal behaviour only.
+    """
     if not check_inputs(si, ("spi", "actualPctComplete", "plannedPctComplete", "cpi")):
-        return insufficient("Discrete_Event_Sim")
-    progress_ratio = (si["actualPctComplete"] / si["plannedPctComplete"]
-                      if si["plannedPctComplete"] > 0 else 1)
+        return insufficient("Discrete_Event_Sim",
+                            "Insufficient data: both performance indices and both the planned "
+                            "and reported percent complete are needed, and at least one of them "
+                            "has not been reported for this period.",
+                            ABSTAIN_MISSING_INPUT)
+    verdict = eligible(si, positive=(("plannedPctComplete", "the planned percent complete"),))
+    if verdict:
+        return refuse("Discrete_Event_Sim", verdict)
+    progress_ratio = si["actualPctComplete"] / si["plannedPctComplete"]
     interruption = max(0, 1 - progress_ratio) + max(0, 1 - si["spi"]) * 0.5
     throughput = js_round((1 / (1 + interruption)) * 1000) / 1000
     color = ("Green" if throughput >= 0.92 else "Yellow" if throughput >= 0.85
@@ -793,14 +954,42 @@ def run_quality_compliance(si: dict, rand: Callable[[], float], period_cutoff) -
 
 
 def run_safety_performance(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 7, AND THIS ONE KEEPS COMPUTING, WHICH IS THE POINT OF CLASSIFYING RATHER THAN REFUSING
+    EVERYWHERE.
+
+    A reported zero incidents is a measurement, not an absence: the safety records were read and
+    they recorded nothing. The band is therefore left standing on a reported zero, which is the
+    disposition the owner's instruction calls a true zero.
+
+    What was wrong is the index beside it. The safety index is the benchmark over the reported
+    rate, capped by the module's own `min(2, ...)`. At a rate of zero that ratio is unbounded and
+    the cap is the module's own answer to an unbounded ratio, which is 2. The code substituted 1
+    instead, a number the formula never produces at a zero rate and which reads as performance
+    exactly at benchmark. The cap is now used, so the index is derived from the module's own
+    stated formula in every case rather than from a literal in one of them.
+
+    A negative rate is refused: it is outside the domain a rate can occupy, and left alone it
+    banded Green because a negative number is below the benchmark.
+    """
     if not check_inputs(si, ("safetyIncidentsDiscussed",)):
-        return insufficient("Safety_Performance")
+        return insufficient("Safety_Performance",
+                            "Insufficient data: no safety record has been reported for this "
+                            "period.",
+                            ABSTAIN_MISSING_INPUT)
     is_derived = _derived(si, "safetyIncidentsDiscussed")
     rate = (si.get("oshaIncidentRate") if si.get("oshaIncidentRate") is not None
             else si["safetyIncidentsDiscussed"] * 10)
+    if num(rate, None) is None or rate < 0:
+        return insufficient("Safety_Performance",
+                            "Insufficient data: the safety incident rate was reported as a "
+                            "negative figure or in a form that is not a number, and a rate "
+                            "cannot be either.",
+                            ABSTAIN_MALFORMED_INPUT)
     benchmark = 3.0
-    index = benchmark / rate if rate > 0 else 1
-    index = min(2, round2(index))
+    # The module's own cap is its own answer to a ratio without an upper bound, and a rate of
+    # zero is exactly that case. No literal is substituted here.
+    index = min(2, round2(benchmark / rate)) if rate > 0 else 2
     color = ("Green" if rate <= benchmark else "Yellow" if rate <= benchmark * 2
              else "Amber" if rate <= benchmark * 5 else "Red")
     evidence = f"Safety: {_js_str(si['safetyIncidentsDiscussed'])} incidents in OAC records"

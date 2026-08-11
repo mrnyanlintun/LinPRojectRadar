@@ -9,6 +9,100 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-11 — Remediation Run 7: the fix-now defects, and sixteen modules that stop reporting on projects they were told nothing about
+
+Branch `claude/run7-fix-now-defects` from `origin/main` at `021d5e2`. Filed as
+`REPORT_2026-08-11_run7-fix-now-defects.md`. **PRODUCTION CODE CHANGED, under the owner's named
+exception**, scoped to the fix-now defect class Run 6 identified and the shared eligibility
+machinery required to correct it. **The analytical layer is now `sim-2026.08-v3`.
+`sim-2026.08-v2` remains the historical audit baseline for every result collected under it and
+was not rewritten or relabelled.**
+
+**Sixteen modules, derived from the merged Run 6 tests and the current code rather than from the
+prompt, and written into the suite as `FIX_NOW` so the scope is in the code.** Group 1, the
+analysis that scored the courses of action: B4.7. Group 2, banded from an empty input: A2.1,
+A2.2, A2.3, A3.1, A5.1. Group 3, substituted rather than refused: A2.4, A2.11, A3.5, A3.9,
+A4.10, A5.6, A5.7, A5.8, A6.2. Group 4, the composite that improved when evidence was withheld:
+A4.7. No module appears in two groups.
+
+**Three modules abstain unconditionally now, and that is the fix rather than a failure to fix.**
+Reference-class forecasting has no reference population, the design structure matrix has no
+dependency matrix, and minimax regret has no action-by-scenario payoff matrix. All three read no
+project input at all: their multipliers, coefficients and regrets were literals, so the band was
+a property of the file. The regret module's healthy branch was unreachable from any input, which
+Run 6 proved over 3,721 index pairs and this run re-asserts over the same grid as "no band, no
+ranking, no recommended course anywhere on it". **The courses of action were already unavailable
+from that module since Run 1 by the owner's settled non-voting decision, so nothing new is
+suppressed and no new decision policy was introduced. No file under `assets/` was edited.**
+
+**Two formulas changed and only two, both corrections to a module's own stated arithmetic.** The
+schedule compression ratio lost its one-day denominator floor, which is why the same index used
+to give 2.0 and Red on a year-long baseline and 1.0 and Green on a two-day one; the ratio is one
+over the index and is now invariant to duration, exhausted over six baseline lengths. The safety
+index at a rate of zero is the module's own `min(2, ...)` cap rather than the literal 1 the
+shipped code substituted. Everything else changed refusal behaviour only, and the three
+index-reading schedule modules are proved byte-identical to the shipped code on a real input.
+
+**The dispute composite required all three of its sources.** Absent sources scored zero rather
+than being absent, so the identical project read 0.8 with two logs and 0.2 with neither: three
+bands better for withholding. Renormalising was rejected, because removing a high term would
+still improve the reading. Requiring all three is asserted over **all seven strict subsets**. A
+reported zero is now evidence and computes; the finding text stopped naming a velocity and a
+frequency it does not compute.
+
+**One shared eligibility layer**, in `models.py`: eight stable reason codes, one preflight
+validating required inputs, denominator domain and well-formedness, one refusal. **The reason
+CODE is machine-readable and the reason SENTENCE is what a reader sees, and they are separate on
+purpose** -- a code in a sentence is exactly what the Signal Ledger must never render. The code
+propagates to the stored abstention row, the API read and a new `abstention_reason_code` column
+in the module-results export. **That export had never carried an abstention at all**, so a reader
+could not tell a computation that was never registered from one that refused and said why.
+
+**THE FROZEN-FILE GUARD WAS RE-BASED, NOT DELETED, and it is narrower than before.** It now
+compares against a pinned sha (`021d5e2`) rather than `origin/main`, enumerates by name the six
+production files this run was authorised to change, asserts that **nothing under `assets/`
+differs at all**, and asserts that it can still see the files that did change so an empty diff
+cannot pass it silently. The next run inherits that list and should narrow it back to empty.
+
+**Voting is untouched.** `{A1.7, A1.8}` before and after, the same five held non-voting for want
+of a sourced band, the same eight disabled and each proved still to refuse on a fully reported
+project, and no band created, relaxed or cited. **No corrected module votes, so no correction can
+move project status.**
+
+**Every "the old code did this" half is the ACTUAL shipped function**, extracted with `git show`
+from the pinned baseline into a throwaway package and run on the identical input, which is the
+mechanism Runs 2 and 4 established. Three direct fault injections were performed, caught and
+restored; 283 of 283 known-answer expectations proved live by perturbation.
+
+**Server suite: 63 files, 4,379/4,379 checks plus `test_run5_export.py`'s own 34/34, so 4,413,
+0 failing files** (baseline 4,065 plus 34). New `server/tools/test_run7_fix_now_defects.py` =
+265. Eight existing suites moved, every one because its property needed restating rather than its
+expectation relaxing -- most of them used the regret module as the vehicle for the reveal gate,
+which is now asserted on what actually defines it, the action-bearing key set and the
+researcher-authored recommendation package. `tests.html` **51/51**, `tests_render.html`
+**286/287** (the pre-existing auth-gated row, red since Run 2), both identical to Run 6, which is
+the point: no participant surface moved.
+
+**DIVERGENCE INCREASED, DELIBERATELY AND REPORTED.** `assets/js/simulations.js` and `sim.js` now
+lag the server by sixteen more modules on top of the original fifteen, and
+`research/deepdive.html` still loads both. Repairing them was out of scope unless the same source
+was necessarily changed, and it was not. Owner decision, unchanged from Run 6.
+
+**Deliberately not fixed:** `A5.5` Rework Feedback Loop carries the same missingness construct as
+the dispute composite and **is not in the Run 6 list**, so touching it would have been a stop
+condition. It is the clearest candidate for the next run. Also untouched: the order dependence of
+the fused conflict figure, the defensibility handbook's 69 validation claims, and the browser
+instrument.
+
+**NO MIGRATION.** Alembic head unchanged at `0025_project_notices`; **0020 through 0025 remain
+unapplied in production**, which was never inspected or queried. Throwaway SQLite only.
+
+Files: `server/app/simulation/models.py`, `models_doc.py`, `models_ext.py`, `models_gov.py`,
+`registry.py`, `server/app/research_export.py`, `server/tools/test_run7_fix_now_defects.py`
+(new), eight existing suites, `code_audit/GROUP_A_project-health.md`,
+`code_audit/GROUP_B_recommendation-governance.md`, `code_audit/CHECKSUMS.sha256` (regenerated),
+`REPORT_2026-08-11_run7-fix-now-defects.md` (new), this entry.
+
 # 2026-08-11 — Known-answer testing across the taxonomy, after the freeze
 
 Branch `claude/known-answer-tests` from `origin/main` at `cdc1d8a`. Filed as

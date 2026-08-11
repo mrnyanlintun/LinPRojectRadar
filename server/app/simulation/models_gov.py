@@ -38,7 +38,7 @@ import math
 from typing import Any, Callable
 
 from .fusion import dst_combine, normalise_status
-from .models import check_inputs, insufficient
+from .models import ABSTAIN_DECISION_STRUCTURE_ABSENT, check_inputs, insufficient
 from .models_ext import _derived, _js_str
 from .rng import js_round, round1, round2
 
@@ -651,42 +651,37 @@ def run_pareto_frontier(si: dict, rand: Callable[[], float], period_cutoff) -> d
 
 def run_regret_minimization(si: dict, rand: Callable[[], float],
                             period_cutoff) -> dict[str, Any]:
-    if not check_inputs(si, ("cpi", "spi", "bac")):
-        return insufficient("Regret_Minimization")
-    future = {"improves": 0.3, "stable": 0.4, "worsens": 0.3}
-    matrix = {
-        "monitor": {"improves": 0, "stable": 5, "worsens": 30},
-        "investigate": {"improves": 5, "stable": 0, "worsens": 10},
-        "escalate": {"improves": 15, "stable": 8, "worsens": 0},
-    }
-    expected = {}
-    for decision, regrets in matrix.items():  # insertion order; do not sort
-        expected[decision] = int(js_round(
-            regrets["improves"] * future["improves"]
-            + regrets["stable"] * future["stable"]
-            + regrets["worsens"] * future["worsens"]
-        ))
-    min_regret = min(expected.values())
-    recommended = next(d for d in expected if expected[d] == min_regret)
-    # Signal-state override: escalate on FAR breach, investigate below 0.95.
-    if si["cpi"] < 0.88 or si["spi"] < 0.88:
-        recommended = "escalate"
-    elif si["cpi"] < 0.95 or si["spi"] < 0.95:
-        recommended = "investigate"
-    color = ("Green" if recommended == "monitor"
-             else "Amber" if recommended == "investigate" else "Red")
-    return {
-        "method_class": "Regret_Minimization",
-        "status_color": color,
-        "recommended_action": recommended,
-        "expected_regret": expected,
-        "min_regret_score": min_regret,
-        "evidence_metric": (
-            f"Minimax regret recommends: {recommended} "
-            f"(expected regret score {min_regret}/30); "
-            f"this decision minimizes worst-case outcome under uncertain future states"
-        ),
-    }
+    """
+    RUN 7, AND THIS ONE ABSTAINS UNCONDITIONALLY.
+
+    Minimax regret is defined by an action-by-scenario payoff matrix: what each course of action
+    costs under each future state, for the decision actually in front of the reader. This
+    platform holds no such matrix. The one below was nine literals and three literal state
+    probabilities, so the three expected regrets were 11, 5 and 8 on every project and in every
+    period, the minimum was always to investigate, and the two overrides could only move that to
+    escalate. The known-answer run exhausted 3,721 cost and schedule index pairs from 0.70 to
+    1.30 and found no pair that produced a healthy reading: a project twenty per cent ahead on
+    both indices was still told to investigate, because the only branch that reads healthy was
+    unreachable from any input.
+
+    The corpus was searched for a governed payoff matrix before this was written, and there is
+    none: no action-by-scenario structure exists anywhere in the repository outside these
+    literals. Substituting different literals would repeat the fault at a different set of
+    numbers, and building a real minimax-regret engine needs owner approval and a matrix that
+    does not exist. So the module refuses and states which structure is missing.
+
+    What this does NOT do is decide anything for a participant. The courses of action a
+    participant chooses among were already outside this module's reach: a non-voting module is
+    excluded from the recommendation text and the courses of action by the owner's settled
+    decision, which this module has been subject to since Run 1, and it stays non-voting here.
+    No new decision policy is introduced by this run.
+    """
+    return insufficient(
+        "Regret_Minimization",
+        "Insufficient data: no set of courses of action scored against defined future states is "
+        "held for this project, so there is no worst case per course to compare and no course "
+        "can be identified as carrying the smallest one. No ranking is offered in its place.",
+        ABSTAIN_DECISION_STRUCTURE_ABSENT)
 
 
 GOV_BATCH_A: dict[str, tuple[str, Callable]] = {

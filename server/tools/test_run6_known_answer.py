@@ -162,17 +162,64 @@ def speakable(result, label: str) -> None:
 
 
 # =================================================================================================
-section("0. THE FREEZE IS INTACT: this run changed no production code")
+section("0. THE FROZEN-FILE GUARD, RE-BASED BY RUN 7 AND NARROWED RATHER THAN REMOVED")
 # =================================================================================================
+
+# WHAT THIS GUARD WAS, WHY IT HAD TO MOVE, AND WHAT IT PROTECTS NOW.
+#
+# Run 4 froze the analytical layer and this section asserted that NOTHING under server/app/ or
+# assets/ differed from origin/main. Run 6 added tests only, so it passed untouched.
+#
+# Run 7 is authorised by the owner to change production files, scoped to the fix-now defect class
+# and the shared eligibility machinery. A guard that compares against origin/main would then be
+# comparing this branch with itself the moment the run merged, and a guard that was deleted would
+# protect nothing. So it is RE-BASED, deliberately and in one place:
+#
+#   - the comparison is against a PINNED SHA, the commit this run was cut from, not a branch name,
+#     so it keeps meaning the same thing after the merge;
+#   - the set of files permitted to differ is enumerated here by name, so a change to any OTHER
+#     file under server/app/ or assets/ still fails this check;
+#   - assets/ is in the permitted set nowhere at all, so the browser instrument and every
+#     participant surface remain byte-identical to the freeze, which is asserted rather than
+#     described.
+#
+# What it no longer protects is the five named files, and that is the whole of what the owner
+# authorised. The next run inherits this list and should narrow it back to empty once its own
+# scope is settled.
 
 import subprocess  # noqa: E402
 
-_diff = subprocess.run(["git", "diff", "--name-only", "origin/main", "--"],
+#: The commit Run 7 was cut from: origin/main after Run 6 merged. Pinned by sha, never by branch.
+GUARD_BASELINE_REV = "021d5e2"
+
+#: The only production files Run 7 is authorised to change. Anything else under server/app/ or
+#: assets/ differing from the pinned baseline is a scope breach and fails here.
+RUN7_SCOPED_FILES = {
+    "server/app/simulation/models.py",
+    "server/app/simulation/models_doc.py",
+    "server/app/simulation/models_ext.py",
+    "server/app/simulation/models_gov.py",
+    "server/app/simulation/registry.py",
+    # The export carries the abstention reason from the corrected runtime state, which the
+    # owner's instruction names as metadata this run may update.
+    "server/app/research_export.py",
+}
+
+_diff = subprocess.run(["git", "diff", "--name-only", GUARD_BASELINE_REV, "--"],
                        cwd=str(ROOT), capture_output=True, text=True).stdout.split()
 _prod = [p for p in _diff if p.startswith("server/app/") or p.startswith("assets/")]
-check(not _prod, "no file under server/app/ or assets/ differs from origin/main", str(_prod))
-check(registry.SIMULATION_VERSION == "sim-2026.08-v2",
-      "the analytical layer is still stamped at the freeze version",
+_unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES)
+check(not _unscoped,
+      "no production file outside Run 7's authorised scope differs from the pinned baseline",
+      str(_unscoped))
+_assets = sorted(p for p in _prod if p.startswith("assets/"))
+check(not _assets,
+      "and nothing under assets/ differs at all, so every participant surface and the browser "
+      "instrument are byte-identical to the freeze", str(_assets))
+check(_prod, "the guard is live: it does see the files this run did change", str(_prod))
+check(registry.SIMULATION_VERSION == "sim-2026.08-v3",
+      "the analytical layer is stamped at Run 7's successor version, and sim-2026.08-v2 remains "
+      "the historical audit baseline for results already collected under it",
       registry.SIMULATION_VERSION)
 
 
@@ -573,14 +620,28 @@ r = run_dispute_escalation({"rfiCount": 10, "changeOrderCount": 5, "docRiskScore
 ka(r["escalation_index"], 0.5, "dispute escalation: 0.5")
 ka(band(r), "Amber", "dispute escalation: band")
 # THE WEIGHTS ARE THE ONES THE QUALIFIER NAMES, asserted by isolating each term.
-ka(run_dispute_escalation({"docRiskScore": 1.0}, NOOP, "x")["escalation_index"], 0.4,
+# RUN 7. These three cases used to isolate a term by OMITTING the other two, which is the very
+# thing Run 6 found wrong with this module: an omitted source scored zero instead of being
+# absent, so the reading improved when evidence was withheld. All three sources are now
+# required and a reported zero is a reported zero, so each term is isolated by REPORTING the
+# other two as zero. The weights, the saturation points and the expected values are unchanged,
+# and each is still derived by hand from the module's own formula.
+ka(run_dispute_escalation({"rfiCount": 0, "changeOrderCount": 0, "docRiskScore": 1.0},
+                          NOOP, "x")["escalation_index"], 0.4,
    "dispute escalation: the document-risk term carries exactly 0.4")
-ka(run_dispute_escalation({"rfiCount": 20, "docRiskScore": 0.0},
+ka(run_dispute_escalation({"rfiCount": 20, "changeOrderCount": 0, "docRiskScore": 0.0},
                           NOOP, "x")["escalation_index"], 0.3,
    "dispute escalation: the request term carries exactly 0.3 and saturates at twenty")
-ka(run_dispute_escalation({"changeOrderCount": 10, "docRiskScore": 0.0},
+ka(run_dispute_escalation({"rfiCount": 0, "changeOrderCount": 10, "docRiskScore": 0.0},
                           NOOP, "x")["escalation_index"], 0.3,
    "dispute escalation: the change-order term carries exactly 0.3 and saturates at ten")
+# AND THE FINDING TEXT NAMES WHAT THE MODULE COMPUTES. It used to say "RFI velocity" of a raw
+# count capped at twenty and "CO frequency" of a raw count capped at ten. Neither term has a
+# time or exposure denominator, so neither was a velocity or a frequency.
+ka(r["evidence_metric"],
+   "Dispute escalation index: 0.5 (document risk, request count and change order count "
+   "combined)",
+   "dispute escalation: finding names the counts it actually uses")
 
 print("\n-- Subcontractor Performance (A4.8): a precomputed compliance score --")
 # HAND: the score is carried through and multiplied by a hundred: 0.72 -> 72.
@@ -1032,42 +1093,41 @@ ka((r["cpi_breached"], r["spi_breached"], r["both_breached"]), (True, False, Fal
    "evm reporting threshold: one of the two indices breached")
 ka(band(r), "Yellow", "evm reporting threshold: band")
 
-# B4.7 Regret Minimization. HAND: the regret matrix and the state probabilities are literals with
-# no input dependence, so the expected regrets are always
+# B4.7 Regret Minimization. RUN 6 FOUND THAT GREEN WAS UNREACHABLE; RUN 7 REMOVED THE MODULE'S
+# OUTPUT ENTIRELY, AND THIS BLOCK NOW ASSERTS THE SECOND FACT OVER THE SAME EXHAUSTED DOMAIN.
+#
+# What Run 6 established by hand and this file recorded: the regret matrix and the state
+# probabilities were literals with no input dependence, so the expected regrets were always
 #   monitor      0*0.3 + 5*0.4 + 30*0.3 = 11
 #   investigate  5*0.3 + 0*0.4 + 10*0.3 = 4.5, rounded half up to 5
 #   escalate    15*0.3 + 8*0.4 +  0*0.3 = 7.7, rounded half up to 8
-# and the minimum is always 5. The recommendation is then overridden on the project's own indices:
-# below 0.88 escalate, else below 0.95 investigate.
-r = registry.run_module("B4.7", {"cpi": 0.92, "spi": 0.99, "bac": 1000000}, NOOP, "2025-06-30")
-ka(r["expected_regret"], {"monitor": 11, "investigate": 5, "escalate": 8},
-   "regret minimization: the scores are the same for every project and every period")
-ka((r["recommended_action"], band(r)), ("investigate", "Amber"),
-   "regret minimization: an index below 0.95 investigates")
-ka(registry.run_module("B4.7", {"cpi": 0.87, "spi": 0.99, "bac": 1},
-                       NOOP, "x")["recommended_action"], "escalate",
-   "regret minimization: an index below 0.88 escalates")
-# THE FINDING THIS CASE FOUND, and it is not a small one. The matrix's own minimum is
-# investigate at 5, not monitor at 11, so with neither override firing the recommendation is
-# STILL investigate. The override can only move it to escalate. Monitor is therefore unreachable
-# for every project in every period, and monitor is the only branch that produces Green.
-ka(registry.run_module("B4.7", {"cpi": 1.20, "spi": 1.20, "bac": 1},
-                       NOOP, "x")["recommended_action"], "investigate",
-   "regret minimization: a project performing well above plan is STILL told to investigate, "
-   "because the matrix's own minimum is investigate and the overrides only make it worse")
-_greens = []
+# the minimum was always investigate, the two overrides could only move it to escalate, and
+# monitor was the only branch that produced Green. Green was therefore unreachable across all
+# 3,721 index pairs from 0.70 to 1.30 in hundredths.
+#
+# Minimax regret is defined by an action by scenario payoff matrix, and the corpus contains
+# none, so Run 7's disposition is abstention rather than different literals. The property is
+# exhausted over the SAME grid, which is what makes this a stronger assertion than the one it
+# replaces: not "no pair produces Green" but "no pair produces any band, any ranking or any
+# recommended course at all".
+_banded, _ranked = [], []
 for _c in [x / 100 for x in range(70, 131)]:
     for _sp in [x / 100 for x in range(70, 131)]:
         _rr = registry.run_module("B4.7", {"cpi": _c, "spi": _sp, "bac": 1}, NOOP, "x")
-        if _rr["status_color"] == "Green":
-            _greens.append((_c, _sp))
-ka(len(_greens), 0,
-   "regret minimization: Green is unreachable over the whole index grid (3,721 index pairs), so "
-   "the module that scores the courses of action can never report a healthy project")
-ka(registry.run_module("B4.7", {"cpi": 0.88, "spi": 0.95, "bac": 1},
-                       NOOP, "x")["recommended_action"], "investigate",
-   "regret minimization: exactly at 0.88 the escalation test does not fire but the investigation "
-   "test does, so the two boundaries are both exclusive")
+        if _rr.get("status_color") is not None:
+            _banded.append((_c, _sp))
+        if "expected_regret" in _rr or "recommended_action" in _rr:
+            _ranked.append((_c, _sp))
+ka(len(_banded), 0,
+   "regret minimization: no band anywhere on the whole index grid (3,721 index pairs), where "
+   "the shipped code banded on every one of them and could reach Green on none")
+ka(len(_ranked), 0,
+   "regret minimization: and no ranking and no recommended course on any of the 3,721 either")
+r = registry.run_module("B4.7", {"cpi": 0.92, "spi": 0.99, "bac": 1000000}, NOOP, "2025-06-30")
+ka(r["insufficient_data"], True, "regret minimization: it abstains on a complete input")
+ka(r["abstention_reason_code"], "canonical_decision_structure_absent",
+   "regret minimization: the stable reason names the structure the corpus does not contain")
+speakable(r, "regret minimization")
 
 print("\n-- The portfolio group, D1.1, D1.3, D1.4 and D1.5 --")
 # HAND, a four-project portfolio of identical vectors except the current one. Each dimension's
@@ -1255,8 +1315,16 @@ section("5. ABSTENTION: every module, on an input that carries nothing")
 # five are the deterministic-constant computations the audit's sixth release blocker names: they
 # read an index with a default of 1.0, or no input at all, and report a status about a project
 # nothing has been reported for.
+#
+# RUN 7 CORRECTED THE FIVE. Three of them read the schedule index with a default of 1.0, the
+# value of a project exactly on plan, and now require it. The other two read no project input at
+# all: the reference-class multipliers and the dependency-matrix coefficients were literals, and
+# a project could not move either band. Neither method's defining structure is in the corpus, so
+# they abstain unconditionally rather than being handed a proxy that keeps emitting a constant.
+# The expected set is therefore the two that measure absence, and no others.
 _MEASURES_ABSENCE = {"C1.1", "C1.5"}
-_CONSTANT_FROM_NOTHING = {"A2.1", "A2.2", "A2.3", "A3.1", "A5.1"}
+_CONSTANT_FROM_NOTHING = set()
+_CORRECTED_BY_RUN7 = {"A2.1", "A2.2", "A2.3", "A3.1", "A5.1"}
 _banded_on_nothing = []
 _raised = []
 for mid in sorted(VALIDATED):
@@ -1272,12 +1340,23 @@ for mid in sorted(VALIDATED):
     else:
         speakable(rr, f"{mid} on an empty input")
 check(not _raised, "no module raises on an empty input", str(_raised[:3]))
-ka({m for m, _ in _banded_on_nothing}, _MEASURES_ABSENCE | _CONSTANT_FROM_NOTHING,
-   "exactly seven modules produce a band from an empty input: the two that measure absence, and "
-   "five that report a status about a project nothing has been reported for")
-for _m, _c in sorted(_banded_on_nothing):
-    if _m in _CONSTANT_FROM_NOTHING:
-        print(f"     {_m} bands {_c} on an input carrying nothing at all")
+ka({m for m, _ in _banded_on_nothing}, _MEASURES_ABSENCE,
+   "exactly two modules produce a band from an empty input, and both have absence as their "
+   "subject: how many core fields are missing, and how much of the field set came from documents")
+_still_banding = _CORRECTED_BY_RUN7 & {m for m, _ in _banded_on_nothing}
+ka(_still_banding, set(),
+   "none of the five Run 7 corrected reports a status about a project nothing has been reported "
+   "for, where every one of them did before")
+for _m in sorted(_CORRECTED_BY_RUN7):
+    _rr = registry.run_module(_m, {}, lambda: 0.5, "2025-06-30")
+    ka(_rr.get("insufficient_data"), True, f"{_m} abstains on an input carrying nothing")
+    ka(_rr.get("status_color"), None, f"{_m} offers no band on an input carrying nothing")
+    check(bool(_rr.get("abstention_reason_code")),
+          f"{_m} carries a stable machine reason beside its sentence",
+          str(_rr.get("abstention_reason_code")))
+    check("_" not in str(_rr.get("evidence_metric")),
+          f"{_m} keeps that code OUT of the sentence a reader sees",
+          str(_rr.get("evidence_metric"))[:80])
 
 print("\n-- The reason reaches the surface that renders it, not only the stored row --")
 # The freeze run found abstention reasons had never rendered: the ledger reads row.abstained, the
@@ -1345,31 +1424,63 @@ check(_ia["status_color"] != _ib["status_color"] or _ia["threshold"] != _ib["thr
 
 print("\n-- Scaling a project's duration should not change a compression RATIO --")
 # HAND: the ratio is required over available, and available is required multiplied by the schedule
-# index, so the ratio is exactly one over the index whatever the duration. Except that the
-# denominator is floored at one day.
+# index, so the ratio is exactly one over the index whatever the duration. Run 6 found the
+# denominator floored at one day, `max(available_days, 1)`, which broke that invariance: a
+# year-long baseline at an index of 0.50 read 2.0 and Red, and a two-day baseline at the SAME
+# index read 1.0 and Green. Run 7 removed the floor, which is an arithmetic correction to the
+# module's own stated ratio and not a new method, so the invariance the ratio always claimed now
+# holds. Exhausted over baseline lengths rather than asserted on the two the finding used.
 _long = run_schedule_compression({"baselineStart": "2025-01-01", "baselineEnd": "2025-12-31",
                                   "actualPctComplete": 50, "spi": 0.50}, NOOP, "2025-06-30")
 _short = run_schedule_compression({"baselineStart": "2025-01-01", "baselineEnd": "2025-01-03",
                                    "actualPctComplete": 50, "spi": 0.50}, NOOP, "2025-06-30")
 ka(_long["compression_ratio"], 2.0,
    "schedule compression: on a year-long baseline the ratio is one over the index")
-ka(_short["compression_ratio"], 1.0,
-   "schedule compression: on a two-day baseline the SAME index gives 1.0, because the available "
-   "days are floored at one, so the ratio is not invariant to duration")
-ka((band(_long), band(_short)), ("Red", "Green"),
-   "schedule compression: the same schedule index reads Red on a long project and Green on a "
+ka(_short["compression_ratio"], 2.0,
+   "schedule compression: on a two-day baseline the SAME index gives the SAME 2.0, because the "
+   "one-day floor that broke the invariance is gone")
+ka((band(_long), band(_short)), ("Red", "Red"),
+   "schedule compression: the same schedule index reads the same band on a long project and a "
    "short one")
+_ENDS = ("2025-01-03", "2025-01-08", "2025-02-01", "2025-04-15", "2025-12-31", "2027-06-30")
+_scale_stable = all(
+    run_schedule_compression({"baselineStart": "2025-01-01", "baselineEnd": _e,
+                              "actualPctComplete": 50, "spi": 0.50},
+                             NOOP, "2025-06-30")["compression_ratio"] == 2.0
+    for _e in _ENDS)
+check(_scale_stable,
+      "schedule compression: the ratio is one over the index at every baseline length tried, "
+      "from two days to two and a half years")
 
 print("\n-- Adding evidence should not improve a composite index --")
-# HAND: the dispute index adds a term per source and never renormalises, so a project that reports
-# a request log scores HIGHER than the identical project that reports none. Absence reads as best
-# case rather than as absence.
+# HAND: Run 6 found that the dispute index added a term per source and never renormalised, so a
+# project reporting a request log and a change order log scored 0.8 while the identical project
+# reporting neither scored 0.2. Three bands better for withholding the evidence.
+#
+# Run 7 required all three sources. The project that reports them all is measured on the same
+# weighted sum with the same weights and the same bands, and 0.8 is re-derived by hand here:
+# min(20/20,1)*0.3 + min(10/10,1)*0.3 + 0.5*0.4 = 0.3 + 0.3 + 0.2 = 0.8. The project that
+# withholds a source abstains, so it cannot read better, and that is asserted over EVERY strict
+# subset of the three inputs rather than on the one the finding used.
 _with = run_dispute_escalation({"rfiCount": 20, "changeOrderCount": 10, "docRiskScore": 0.5},
-                               NOOP, "x")["escalation_index"]
-_without = run_dispute_escalation({"docRiskScore": 0.5}, NOOP, "x")["escalation_index"]
-ka((_with, _without), (0.8, 0.2),
-   "dispute escalation: the identical project scores 0.8 with two logs and 0.2 with neither, so "
-   "withholding evidence improves the reading")
+                               NOOP, "x")
+ka(_with["escalation_index"], 0.8,
+   "dispute escalation: the project that reports every source still scores 0.8")
+_FULL_DISPUTE = {"rfiCount": 20, "changeOrderCount": 10, "docRiskScore": 0.5}
+_improved_by_withholding = []
+for _r in range(3):
+    for _keep in itertools.combinations(sorted(_FULL_DISPUTE), _r):
+        _sub = {k: _FULL_DISPUTE[k] for k in _keep}
+        _out = run_dispute_escalation(_sub, NOOP, "x")
+        if _out.get("status_color") is not None:
+            _improved_by_withholding.append(sorted(_sub))
+ka(_improved_by_withholding, [],
+   "dispute escalation: every strict subset of the three sources abstains, so removing evidence "
+   "cannot produce any reading at all, let alone a better one (seven subsets exhausted)")
+ka(run_dispute_escalation({"rfiCount": 0, "changeOrderCount": 0, "docRiskScore": 0.5},
+                          NOOP, "x")["escalation_index"], 0.2,
+   "dispute escalation: a REPORTED zero on both logs is evidence and still computes, at 0.2, "
+   "which is the reading the withheld project used to get for free")
 
 print("\n-- Reordering the sources must not change a majority --")
 _perm_stable = True
@@ -1456,29 +1567,62 @@ domain(run_weather_impact, {"weatherDaysLost": 3},
 domain(run_weather_impact, {"weatherDaysLost": -1, "floatRemaining": 5},
        "weather day impact, a negative count of lost days", True)
 
-print("\n-- The same substitution pattern, in modules the fifteen did not cover --")
+print("\n-- The same substitution pattern, in the nine modules Run 7 corrected --")
+# RUN 6 FOUND NINE MODULES BEYOND THE ORIGINAL FIFTEEN THAT SUBSTITUTED RATHER THAN REFUSED, AND
+# EIGHT OF THEM NOW REFUSE. Each was classified into exactly one disposition before it was
+# touched, and the classification is what decides whether it refuses at all:
+#
+#   overhead absorption          zero planned indirect cost      invalid denominator, refuses
+#   inflation adjustment         zero progress-adjusted baseline invalid denominator, refuses
+#   queueing bottleneck          nothing planned                 invalid denominator, refuses
+#   supply chain                 an empty long-lead log          no exposure, refuses
+#   schedule compression         a schedule index of zero        invalid denominator, refuses
+#   critical path index          no planned progress             invalid denominator, refuses
+#   discrete event simulation    no planned progress             invalid denominator, refuses
+#   specification conflict       no requests                     no exposure, refuses
+#   safety performance           zero incidents reported         a true zero, and it computes
+#
+# The ninth is the one that proves the classification is doing work rather than refusing
+# everywhere: a safety record that was read and recorded no incidents is a measurement, and it
+# keeps its band. What it does not keep is the fabricated index beside that band. See below.
 domain(run_overhead_absorption, {"indirectCostPlan": 0, "indirectCostActual": 50000,
                                  "actualPctComplete": 40},
-       "overhead absorption, an indirect plan of zero", False)
+       "overhead absorption, an indirect plan of zero", True)
 domain(run_inflation_adjustment, {"materialCostBaseline": 0, "materialCostCurrent": 50000,
                                   "actualPctComplete": 40},
-       "inflation adjustment, a material baseline of zero", False)
+       "inflation adjustment, a material baseline of zero", True)
 domain(run_queueing_bottleneck, {"activitiesPlanned": 0, "activitiesConstrained": 0},
-       "queueing bottleneck, nothing planned", False)
+       "queueing bottleneck, nothing planned", True)
 domain(run_agent_supply_chain, {"longLeadItemsTotal": 0, "longLeadAtRisk": 0},
-       "supply chain, an empty long-lead log", False)
+       "supply chain, an empty long-lead log", True)
 domain(run_schedule_compression, {"baselineStart": "2025-01-01", "baselineEnd": "2025-12-31",
                                   "actualPctComplete": 50, "spi": 0},
-       "schedule compression, a schedule index of zero", False)
+       "schedule compression, a schedule index of zero", True)
 domain(run_critical_path_index, {"spi": 0.9, "plannedPctComplete": 0, "actualPctComplete": 0},
-       "critical path index, no planned progress", False)
+       "critical path index, no planned progress", True)
 domain(run_discrete_event_sim, {"spi": 0.9, "cpi": 0.9, "plannedPctComplete": 0,
                                 "actualPctComplete": 0},
-       "discrete event simulation, no planned progress", False)
+       "discrete event simulation, no planned progress", True)
+# THE ONE THAT STILL COMPUTES, AND WHY. A reported zero incidents is a measurement over a
+# reported record, so the band stands: that is the true-zero disposition. What Run 6 found and
+# Run 7 removed is the safety INDEX beside it, which is the benchmark over the rate, capped by
+# the module's own min(2, ...). At a rate of zero the ratio is unbounded and the module's own
+# answer to an unbounded ratio is its cap, which is 2. The shipped code substituted 1, a value
+# the formula never produces at a zero rate and which reads as performance exactly at benchmark.
 domain(run_safety_performance, {"safetyIncidentsDiscussed": 0},
-       "safety performance, nothing discussed", False)
+       "safety performance, a reported zero incidents", False)
+_sp0 = run_safety_performance({"safetyIncidentsDiscussed": 0}, NOOP, "2025-06-30")
+ka(_sp0["safety_index"], 2,
+   "safety performance: at a rate of zero the index is the module's own cap of 2, not the "
+   "literal 1 the shipped code substituted")
+ka(_sp0["incident_rate"], 0.0, "safety performance: and the rate itself is the reported zero")
+ka(band(_sp0), "Green",
+   "safety performance: the band stands on a reported zero, which is a measurement rather than "
+   "an absence")
+domain(run_safety_performance, {"oshaIncidentRate": -4, "safetyIncidentsDiscussed": 1},
+       "safety performance, a negative incident rate", True)
 domain(run_spec_conflict_density, {"docRiskScore": 0.2, "rfiCount": 0},
-       "specification conflict density, no requests", False)
+       "specification conflict density, no requests", True)
 
 print("\n-- Ratio-domain inputs above one, where no module guards them --")
 # Document risk is declared a zero-to-one score and is range-guarded at ingestion, not in the

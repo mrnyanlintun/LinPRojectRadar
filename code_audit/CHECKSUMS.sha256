@@ -1,7 +1,7 @@
 # SHA-256 checksums of every file in code_audit/, recomputed at write time.
 # Verify with: sha256sum -c CHECKSUMS.sha256 (from code_audit/)
-ff04217c9619df50e82d0fb7b20148dcb34441994b06e16f30799315c50bb976  GROUP_A_project-health.md
-dcc6be501521602c479e132f4032069a1515b5a717d2011f66f1adc5d074b34d  GROUP_B_recommendation-governance.md
+99f4f93533b39ec43dc8ca3943e1d9ad310697537c7243b44821a23b4d49e93e  GROUP_A_project-health.md
+3e6dc2fb4111d64debc6b96facf17a64efb2dc103a1378fe0d57069e2f83a145  GROUP_B_recommendation-governance.md
 032e16e882b08551cf10352c41077f49bff9bc8f9697a81bacfbb8434216830b  GROUP_C_data-evidence-health.md
 14ad8133aa09b4096be436470b983d3d7e7b34a966535ea0b5b6b913d3e49e4c  GROUP_D_portfolio-level.md
 b687622a897f951bed9fd5a40bbf1f0b9aff5cc052d61f3f9a3da57d4a8c3c6f  REPORT_2026-08-10_module-source-export.md

@@ -432,14 +432,28 @@ for marker in ("ZQMARK", "package_hash", "package_id",
         i = body.index(marker)
         print(f"    LEAK CONTEXT: ...{body[max(0, i - 220):i + 90]}...")
     check(not present, f"response does not contain {marker!r}")
-# The module's own scored courses ARE readable here, which is the behaviour Guarantee 6 used
-# to forbid. Asserted rather than merely no longer forbidden, so a regression is visible.
-_mods = {m.get("method_class"): m for m in
-         (json.loads(body)["result"].get("module_results") or []) if isinstance(m, dict)}
-_reg = _mods.get("Regret_Minimization")
-check(_reg is not None and isinstance(_reg.get("expected_regret"), dict),
-      "the operational PM CAN read the scored courses of action on their own project",
-      str(_reg)[:160])
+# THE OPERATIONAL PM IS NOT BEING WITHHELD FROM, WHICH IS WHAT THIS ASSERTED AND STILL DOES.
+#
+# It used to assert that by finding the scored course set on the row: the behaviour Guarantee 6
+# once forbade and this run restored. Run 7 established that those scores were literals with no
+# input dependence, so the module abstains and there is no scored set on any row, on this path
+# or any other. The distinction the check exists to protect is between WITHHELD and ABSENT, so
+# it is asserted directly: no module on this read is marked withheld, and the module that used
+# to carry the scores is recorded as an abstention with a reason rather than being silently
+# missing.
+_res = json.loads(body)["result"]
+_mods = {m.get("method_class"): m for m in (_res.get("module_results") or [])
+         if isinstance(m, dict)}
+check(not any(m.get("recommendation_withheld") for m in _mods.values()),
+      "nothing is withheld from the operational PM on their own project",
+      str([k for k, m in _mods.items() if m.get("recommendation_withheld")]))
+check("Regret_Minimization" not in _mods,
+      "and the analysis that scored the courses of action carries no row, because it abstains "
+      "for want of an action by scenario payoff matrix", str(sorted(_mods))[:120])
+_abst = {a.get("module_id"): a for a in (_res.get("abstained") or [])}
+check("B4.7" in _abst and _abst["B4.7"].get("reason"),
+      "its silence is recorded with a reason, so absent is distinguishable from withheld",
+      str(_abst.get("B4.7"))[:160])
 
 
 # ---------------------------------------------------------------- Guarantee 7

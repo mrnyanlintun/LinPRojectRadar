@@ -642,10 +642,25 @@ check(len(by_cat_shown) > len(voting_cats),
       "the visibility the owner decision keeps", f"{len(by_cat_shown)} shown, "
                                                  f"{len(voting_cats)} rolled up")
 # Layer (b): generated recommendation text and courses of action.
-regret = comp.get("B4.7") or {}
-check(regret.get("votes") is False,
-      "layer two, the courses of action: the module that scores them does not vote, which is "
-      "the field the recommendation builder gates on", str(regret.get("votes")))
+#
+# RUN 7 MOVED WHAT THIS CHECK CAN LOOK AT, AND THE EXCLUSION IT PROTECTS IS UNCHANGED. This run
+# asserted `votes is False` on the stored row of the module that scores the courses of action.
+# Run 7 established that the module scored them from a payoff matrix the corpus does not
+# contain, so it abstains, and an abstaining module has no stored row to carry a field. The
+# exclusion is therefore now doubled rather than weakened: the module is not in the voting set,
+# and it produces no result to be excluded in the first place. Both halves are asserted, so a
+# later change that restored the module without restoring its exclusion would be caught.
+check("B4.7" not in registry.CORE_VOTING_MODULES,
+      "layer two, the courses of action: the module that scores them is not in the voting set",
+      str(sorted(registry.CORE_VOTING_MODULES)))
+regret = comp.get("B4.7")
+check(regret is None,
+      "and it has no stored row at all, because it abstains for want of an action by scenario "
+      "payoff matrix", str(regret)[:120])
+_r4_abst = {a.get("module_id") for a in (r4.get("abstained") or [])}
+check("B4.7" in _r4_abst,
+      "recorded as an abstention on the same result, so its silence is explained rather than "
+      "unexplained", str(sorted(_r4_abst))[:120])
 # Layer (c): the decision card reads the fused project status, which layer one restricts.
 check(r4.get("project_status") in ("Green", "Yellow", "Amber", "Red", None),
       "layer three, the decision card: it reads the fused project status, and that status is "
