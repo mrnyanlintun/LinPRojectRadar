@@ -90,6 +90,7 @@ aliases,maps:4.4->A4.4,PASS,A4.4
 aliases,maps:8.8->A6.3,PASS,A6.3
 aliases,asset_map_agrees_with_alias_table,PASS,[]
 aliases,every_asset_map_module_has_an_alias,PASS,[]
+aliases,every_run8_bucket345_module_has_an_alias_row,FAIL,"11 modules in scope; not mapped: ['A1.1', 'A5.4']"
 provenance,every_record_marked_synthetic,PASS,92 csv files; []
 privacy,no_personal_identifiers_in_any_csv,PASS,[]
 privacy,json_files_scanned,PASS,

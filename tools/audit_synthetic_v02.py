@@ -612,6 +612,22 @@ def check_aliases(root: Path) -> None:
     missing = [r["module_id"] for r in asset_map if r["module_id"] not in mapping]
     ck("aliases", "every_asset_map_module_has_an_alias", not missing, missing[:5])
 
+    # Every Run 8 Bucket 3/4/5 module should be joinable by code id.
+    classification = read_csv(REPO / "code_audit/run8_module_classification.csv")
+    run8 = {
+        r["module_id"]
+        for r in classification
+        if r["final_owner_action_bucket"] in ("3", "4", "5")
+    }
+    covered = set(code)
+    uncovered = sorted(run8 - covered)
+    ck(
+        "aliases",
+        "every_run8_bucket345_module_has_an_alias_row",
+        not uncovered,
+        f"{len(run8)} modules in scope; not mapped: {uncovered}",
+    )
+
 
 # ------------------------------------------------- provenance, privacy, splits
 

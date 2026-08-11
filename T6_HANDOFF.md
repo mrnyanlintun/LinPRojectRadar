@@ -9,6 +9,89 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-11 — Synthetic programme v0.2 re-ingest and closure audit, staging and verification only
+
+**Branch `claude/synthetic-v02-reingest` from `origin/main` at `08c4905`, the v0.1 ingest audit
+merge. THIS RUN CHANGES NO PRODUCTION CODE.** Report:
+`REPORT_2026-08-11_synthetic-v0.2-reingest-and-closure.md`, which is controlling and
+self-contained. No module was integrated, activated or made voting, no disabled module was
+reactivated, and no synthetic record entered an operational or participant database.
+
+**THE COMBINED ARCHIVE WAS SUPPLIED THIS TIME and is the sole source of truth**, sha256
+`2606b6bfecbdbb86393c1473e036ff33a3502e695d6d7f835d7fb3c513139e1a`, 118 files. Staged at
+`research_fixtures/synthetic/OG-SYNTH-0.2/`. **The v0.1 staging, report and audit CSVs are
+untouched history** and were not overwritten or integrated. v0.1 is used only as the builder's
+bundled base archive.
+
+```
+Archive verified: yes            Programme checksums: 117/117 recomputed, 0 mismatch
+Package-local checksums: pass, each package verifies alone (the v0.1 defect is closed)
+Validator: 681 checks, 0 failures, rerun not accepted
+Validator fault injections: 7 of 7 detected AND named, baseline restored afterwards
+Generator reproducibility: two builds byte-identical; the rebuild equals the supplied archive bit for bit
+Run 8 mappings reconciled: 11/11 complete       Prior gaps closed: 6 of 7 fully, 1 partly
+Production files changed: none
+```
+
+**All six prior gaps re-tested by recomputation, not by reading.** NCR and environmental corpora
+now exist and reconcile on every quantity at all 36 cutoffs and periods. CCPM buffers all trace to
+a declared chain and every one recomputes as 1.645 times the root of the summed PERT variance; the
+flat fifteen per cent sizing is gone. Agent rules are defined, every branch resolves, branch
+selection was replayed for all 576 state rows and the branch counts reproduced. DSM is Package A in
+all four places. All 12 LP models are numeric and were solved independently to the stored ground
+truth. **The one partial closure is module numbering:** the alias table is genuinely one-to-one and
+carries `7.19 -> B2.19`, `4.4 -> A4.4` and `8.8 -> A6.3`, but **Monte Carlo EAC and Scenario
+Modeling have no row in it or in the asset map**, so those two joins stay manual.
+
+**Two things a later run must not rediscover the hard way.**
+
+1. **`lxml` is not in `requirements-lock.txt`, and it changes the archive bytes.** openpyxl
+   serialises `package_summary.xlsx` differently with and without it, and `MANIFEST.csv` and
+   `CHECKSUMS.sha256` follow because they carry its digest. With lxml installed the rebuild equals
+   the supplied archive exactly. Without it, 116 of 118 files still match.
+2. **Installing lxml into the repository interpreter breaks three suites**
+   (`test_export_workbook.py`, `test_run5_export.py`, `test_training_gating.py`), because the
+   export workbook is then serialised through lxml and the suites reparse it. Do the regeneration
+   in a separate virtual environment. This run did, and removed lxml before the final suite run.
+
+**Where the shipped validator is thinner than 681 suggests**, found by writing independent checks
+beside it rather than trusting it: it recomputes only issued and open for NCR and only the rate for
+environmental; it consumes `LE` constraints only when solving the LP models; it flags
+holdout-to-holdout analogous pairs but not an analog drawn from the holdout; it reads only the
+alias table for the DSM boundary; and it never recomputes the agent branch counts. Every one of
+those properties was checked here and holds. `tools/audit_synthetic_v02.py` is the independent
+checker, 107 checks; the two failures are the unmapped-module finding and the note that the low
+inventory restock branch is declared but never exercised.
+
+**Modules unchanged.** Reference Class Forecasting and DSM Rework Propagation **stay disabled and
+abstaining** although both now have complete fixtures. A fixture does not authorise a disabled
+module to run. NCR Rate and Environmental Compliance Rate still abstain in production: a research
+fixture is not the platform holding the data. No voting change, no participant-surface change.
+
+**Verify.** Server suite on the merged branch: 64 suites, **4612/4612 checks**, fresh SQLite via
+`alembic upgrade head` per file, `PYTHONIOENCODING=utf-8` throughout. `run_all_suites.sh` reports
+`test_run5_export.py` as having no result line: that suite passes 34 of 34 and prints
+`34 passed, 0 failed` instead of the `RESULT: n/n` line the runner greps for. **Pre-existing since
+the Run 5 merge, untouched here**, and worth fixing in a run allowed to change that file.
+
+**NO MIGRATION.** Alembic head unchanged. **Unapplied in production: 0020 through 0025.**
+Throwaway SQLite only; production never inspected or queried.
+
+**Is v0.2 ready for a scoped integration run: yes, test-only, with three conditions** stated in
+section 11 of the report: add the two missing alias rows or hard-code those joins, keep the lxml
+environment away from the test interpreter, and hold the scope to test-only importers, read-only
+research schemas, known-answer tests and abstention tests, with no voting, no activation and no
+participant-visible change.
+
+Files: `research_fixtures/synthetic/OG-SYNTH-0.2/` (new, staged),
+`tools/audit_synthetic_v02.py`, `tools/mutate_synthetic_v02.py`,
+`tools/reproduce_synthetic_v02.py`, `tools/report_synthetic_v02.py` (all new),
+`code_audit/synthetic_v02_file_inventory.csv`, `synthetic_v02_checksum_results.csv`,
+`synthetic_v02_mutation_proof.csv`, `synthetic_v02_reproducibility.csv`,
+`synthetic_v02_run8_reconciliation.csv`, `synthetic_v02_gap_closure.csv`,
+`synthetic_v02_independent_checks.csv` (all new),
+`REPORT_2026-08-11_synthetic-v0.2-reingest-and-closure.md` (new), this entry.
+
 # 2026-08-11 — Synthetic package ingest and Run 8 reconciliation, audit and staging only
 
 **Branch `claude/synthetic-package-ingest` from `origin/main` at `3fc37cc`, the Run 8 merge. THIS
