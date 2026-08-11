@@ -1,0 +1,3414 @@
+{
+  "check_count": 681,
+  "checks": [
+    {
+      "check": "required:module_asset_map.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "required:module_id_aliases.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "required:schemas/schema_catalog.json",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "required:generators/build_opus_synthetic_programme_v0_2.py",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "required:generators/validate_synthetic_programme_v0_2.py",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "required:generators/verify_synthetic_checksums_v0_2.py",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "required:generators/base/Opus_Gubernatio_Synthetic_Programme_v0.1.zip",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "required:requirements-lock.txt",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "required:AUDIT_RESOLUTION_v0.2.md",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:module_asset_map.csv",
+      "detail": "rows=39 cols=15",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:module_asset_map.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:module_asset_map.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:module_asset_map.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:module_asset_map.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:module_id_aliases.csv",
+      "detail": "rows=39 cols=13",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:module_id_aliases.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:module_id_aliases.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:module_id_aliases.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:module_id_aliases.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/abm_ground_truth.csv",
+      "detail": "rows=6 cols=13",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/abm_ground_truth.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/abm_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/abm_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/abm_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/abm_rule_ground_truth.csv",
+      "detail": "rows=12 cols=11",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/abm_rule_ground_truth.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/abm_rule_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/abm_rule_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/abm_rule_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/activity_weather_impacts.csv",
+      "detail": "rows=72 cols=14",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/activity_weather_impacts.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/activity_weather_impacts.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/activity_weather_impacts.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/activity_weather_impacts.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/agent_decision_rules.csv",
+      "detail": "rows=3 cols=14",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/agent_decision_rules.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/agent_decision_rules.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/agent_decision_rules.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/agent_decision_rules.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/agent_state_history.csv",
+      "detail": "rows=576 cols=18",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/agent_state_history.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/agent_state_history.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/agent_state_history.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/agent_state_history.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/agents.csv",
+      "detail": "rows=48 cols=15",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/agents.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/agents.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/agents.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/agents.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/ccpm_buffer_sizing_inputs.csv",
+      "detail": "rows=72 cols=17",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/ccpm_buffer_sizing_inputs.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/ccpm_buffer_sizing_inputs.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/ccpm_buffer_sizing_inputs.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/ccpm_buffer_sizing_inputs.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/ccpm_buffers.csv",
+      "detail": "rows=108 cols=18",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/ccpm_buffers.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/ccpm_buffers.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/ccpm_buffers.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/ccpm_buffers.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/ccpm_chain_activities.csv",
+      "detail": "rows=72 cols=13",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/ccpm_chain_activities.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/ccpm_chain_activities.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/ccpm_chain_activities.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/ccpm_chain_activities.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/ccpm_chains.csv",
+      "detail": "rows=18 cols=17",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/ccpm_chains.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/ccpm_chains.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/ccpm_chains.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/ccpm_chains.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/ccpm_ground_truth.csv",
+      "detail": "rows=36 cols=13",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/ccpm_ground_truth.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/ccpm_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/ccpm_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/ccpm_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/claims.csv",
+      "detail": "rows=36 cols=16",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/claims.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/claims.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/claims.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/claims.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/cost_correlations.csv",
+      "detail": "rows=600 cols=11",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/cost_correlations.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/cost_correlations.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/cost_correlations.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/cost_correlations.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/cost_elements.csv",
+      "detail": "rows=60 cols=14",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/cost_elements.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/cost_elements.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/cost_elements.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/cost_elements.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/cost_risk_events.csv",
+      "detail": "rows=36 cols=14",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/cost_risk_events.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/cost_risk_events.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/cost_risk_events.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/cost_risk_events.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/cost_risk_ground_truth.csv",
+      "detail": "rows=6 cols=13",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/cost_risk_ground_truth.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/cost_risk_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/cost_risk_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/cost_risk_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/des_entities.csv",
+      "detail": "rows=120 cols=11",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/des_entities.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/des_entities.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/des_entities.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/des_entities.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/des_events.csv",
+      "detail": "rows=480 cols=19",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/des_events.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/des_events.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/des_events.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/des_events.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/des_ground_truth.csv",
+      "detail": "rows=6 cols=13",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/des_ground_truth.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/des_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/des_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/des_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/dispute_events.csv",
+      "detail": "rows=108 cols=13",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/dispute_events.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/dispute_events.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/dispute_events.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/dispute_events.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/dispute_ground_truth.csv",
+      "detail": "rows=36 cols=12",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/dispute_ground_truth.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/dispute_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/dispute_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/dispute_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/dsm_edges.csv",
+      "detail": "rows=54 cols=13",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/dsm_edges.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/dsm_edges.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/dsm_edges.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/dsm_edges.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/dsm_ground_truth.csv",
+      "detail": "rows=36 cols=14",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/dsm_ground_truth.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/dsm_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/dsm_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/dsm_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/dsm_nodes.csv",
+      "detail": "rows=48 cols=11",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/dsm_nodes.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/dsm_nodes.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/dsm_nodes.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/dsm_nodes.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/environmental_assessments.csv",
+      "detail": "rows=288 cols=15",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/environmental_assessments.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/environmental_assessments.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/environmental_assessments.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/environmental_assessments.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/environmental_ground_truth.csv",
+      "detail": "rows=36 cols=17",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/environmental_ground_truth.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/environmental_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/environmental_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/environmental_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/environmental_requirements.csv",
+      "detail": "rows=48 cols=16",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/environmental_requirements.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/environmental_requirements.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/environmental_requirements.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/environmental_requirements.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/environmental_violations.csv",
+      "detail": "rows=28 cols=17",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/environmental_violations.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/environmental_violations.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/environmental_violations.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/environmental_violations.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/lob_ground_truth.csv",
+      "detail": "rows=54 cols=15",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/lob_ground_truth.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/lob_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/lob_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/lob_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/lob_work_packages.csv",
+      "detail": "rows=432 cols=20",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/lob_work_packages.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/lob_work_packages.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/lob_work_packages.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/lob_work_packages.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/ncr_events.csv",
+      "detail": "rows=69 cols=16",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/ncr_events.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/ncr_events.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/ncr_events.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/ncr_events.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/ncr_ground_truth.csv",
+      "detail": "rows=36 cols=19",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/ncr_ground_truth.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/ncr_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/ncr_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/ncr_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/projects.csv",
+      "detail": "rows=6 cols=18",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/projects.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/projects.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/projects.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/projects.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/quality_audits.csv",
+      "detail": "rows=36 cols=16",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/quality_audits.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/quality_audits.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/quality_audits.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/quality_audits.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/queue_events.csv",
+      "detail": "rows=240 cols=17",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/queue_events.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/queue_events.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/queue_events.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/queue_events.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/queue_ground_truth.csv",
+      "detail": "rows=6 cols=16",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/queue_ground_truth.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/queue_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/queue_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/queue_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/reporting_periods.csv",
+      "detail": "rows=36 cols=14",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/reporting_periods.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/reporting_periods.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/reporting_periods.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/reporting_periods.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/schedule_activities.csv",
+      "detail": "rows=72 cols=22",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/schedule_activities.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/schedule_activities.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/schedule_activities.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/schedule_activities.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/schedule_dependencies.csv",
+      "detail": "rows=78 cols=12",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/schedule_dependencies.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/schedule_dependencies.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/schedule_dependencies.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/schedule_dependencies.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/schedule_ground_truth.csv",
+      "detail": "rows=36 cols=21",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/schedule_ground_truth.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/schedule_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/schedule_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/schedule_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/schedule_status.csv",
+      "detail": "rows=432 cols=19",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/schedule_status.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/schedule_status.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/schedule_status.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/schedule_status.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/specification_conflicts.csv",
+      "detail": "rows=72 cols=16",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/specification_conflicts.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/specification_conflicts.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/specification_conflicts.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/specification_conflicts.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/specification_exposure.csv",
+      "detail": "rows=6 cols=11",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/specification_exposure.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/specification_exposure.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/specification_exposure.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/specification_exposure.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/specification_ground_truth.csv",
+      "detail": "rows=6 cols=11",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/specification_ground_truth.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/specification_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/specification_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/specification_ground_truth.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/system_dynamics_parameters.csv",
+      "detail": "rows=18 cols=11",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/system_dynamics_parameters.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/system_dynamics_parameters.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/system_dynamics_parameters.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/system_dynamics_parameters.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/system_dynamics_timeseries.csv",
+      "detail": "rows=72 cols=15",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/system_dynamics_timeseries.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/system_dynamics_timeseries.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/system_dynamics_timeseries.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/system_dynamics_timeseries.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/weather_events.csv",
+      "detail": "rows=72 cols=14",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_A_project_structures/weather_events.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_A_project_structures/weather_events.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_A_project_structures/weather_events.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_A_project_structures/weather_events.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B1_reference_population/analogous_pairs.csv",
+      "detail": "rows=120 cols=13",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B1_reference_population/analogous_pairs.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B1_reference_population/analogous_pairs.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B1_reference_population/analogous_pairs.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B1_reference_population/analogous_pairs.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B1_reference_population/anomaly_labels.csv",
+      "detail": "rows=360 cols=10",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B1_reference_population/anomaly_labels.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B1_reference_population/anomaly_labels.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B1_reference_population/anomaly_labels.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B1_reference_population/anomaly_labels.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B1_reference_population/inflation_index.csv",
+      "detail": "rows=1536 cols=13",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B1_reference_population/inflation_index.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B1_reference_population/inflation_index.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B1_reference_population/inflation_index.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B1_reference_population/inflation_index.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B1_reference_population/parametric_cost_training.csv",
+      "detail": "rows=360 cols=20",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B1_reference_population/parametric_cost_training.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B1_reference_population/parametric_cost_training.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B1_reference_population/parametric_cost_training.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B1_reference_population/parametric_cost_training.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B1_reference_population/reference_class_membership.csv",
+      "detail": "rows=360 cols=11",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B1_reference_population/reference_class_membership.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B1_reference_population/reference_class_membership.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B1_reference_population/reference_class_membership.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B1_reference_population/reference_class_membership.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B1_reference_population/reference_outcomes.csv",
+      "detail": "rows=360 cols=14",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B1_reference_population/reference_outcomes.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B1_reference_population/reference_outcomes.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B1_reference_population/reference_outcomes.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B1_reference_population/reference_outcomes.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B1_reference_population/reference_project_periods.csv",
+      "detail": "rows=2880 cols=18",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B1_reference_population/reference_project_periods.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B1_reference_population/reference_project_periods.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B1_reference_population/reference_project_periods.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B1_reference_population/reference_project_periods.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B1_reference_population/reference_projects.csv",
+      "detail": "rows=360 cols=27",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B1_reference_population/reference_projects.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B1_reference_population/reference_projects.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B1_reference_population/reference_projects.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B1_reference_population/reference_projects.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B1_reference_population/rough_set_decision_table.csv",
+      "detail": "rows=360 cols=14",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B1_reference_population/rough_set_decision_table.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B1_reference_population/rough_set_decision_table.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B1_reference_population/rough_set_decision_table.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B1_reference_population/rough_set_decision_table.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B1_reference_population/split_manifest.csv",
+      "detail": "rows=360 cols=10",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B1_reference_population/split_manifest.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B1_reference_population/split_manifest.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B1_reference_population/split_manifest.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B1_reference_population/split_manifest.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B2_expert_epistemic/ds_mass_assignments.csv",
+      "detail": "rows=360 cols=14",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B2_expert_epistemic/ds_mass_assignments.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B2_expert_epistemic/ds_mass_assignments.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B2_expert_epistemic/ds_mass_assignments.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B2_expert_epistemic/ds_mass_assignments.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B2_expert_epistemic/epistemic_scenarios.csv",
+      "detail": "rows=24 cols=12",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B2_expert_epistemic/epistemic_scenarios.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B2_expert_epistemic/epistemic_scenarios.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B2_expert_epistemic/epistemic_scenarios.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B2_expert_epistemic/epistemic_scenarios.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B2_expert_epistemic/expert_profiles.csv",
+      "detail": "rows=15 cols=12",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B2_expert_epistemic/expert_profiles.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B2_expert_epistemic/expert_profiles.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B2_expert_epistemic/expert_profiles.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B2_expert_epistemic/expert_profiles.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B2_expert_epistemic/fuzzy_memberships.csv",
+      "detail": "rows=360 cols=18",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B2_expert_epistemic/fuzzy_memberships.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B2_expert_epistemic/fuzzy_memberships.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B2_expert_epistemic/fuzzy_memberships.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B2_expert_epistemic/fuzzy_memberships.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B2_expert_epistemic/plts_assessments.csv",
+      "detail": "rows=360 cols=14",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B2_expert_epistemic/plts_assessments.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B2_expert_epistemic/plts_assessments.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B2_expert_epistemic/plts_assessments.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B2_expert_epistemic/plts_assessments.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B2_expert_epistemic/possibility_distributions.csv",
+      "detail": "rows=360 cols=14",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B2_expert_epistemic/possibility_distributions.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B2_expert_epistemic/possibility_distributions.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B2_expert_epistemic/possibility_distributions.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B2_expert_epistemic/possibility_distributions.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B2_expert_epistemic/z_number_assessments.csv",
+      "detail": "rows=360 cols=14",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B2_expert_epistemic/z_number_assessments.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B2_expert_epistemic/z_number_assessments.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B2_expert_epistemic/z_number_assessments.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B2_expert_epistemic/z_number_assessments.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B3_decision_optimization/action_scenario_outcomes.csv",
+      "detail": "rows=360 cols=16",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B3_decision_optimization/action_scenario_outcomes.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B3_decision_optimization/action_scenario_outcomes.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B3_decision_optimization/action_scenario_outcomes.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B3_decision_optimization/action_scenario_outcomes.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B3_decision_optimization/actions.csv",
+      "detail": "rows=72 cols=18",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B3_decision_optimization/actions.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B3_decision_optimization/actions.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B3_decision_optimization/actions.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B3_decision_optimization/actions.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B3_decision_optimization/alternative_criteria_matrix.csv",
+      "detail": "rows=72 cols=14",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B3_decision_optimization/alternative_criteria_matrix.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B3_decision_optimization/alternative_criteria_matrix.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B3_decision_optimization/alternative_criteria_matrix.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B3_decision_optimization/alternative_criteria_matrix.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B3_decision_optimization/constraints.csv",
+      "detail": "rows=36 cols=12",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B3_decision_optimization/constraints.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B3_decision_optimization/constraints.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B3_decision_optimization/constraints.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B3_decision_optimization/constraints.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B3_decision_optimization/criteria.csv",
+      "detail": "rows=60 cols=13",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B3_decision_optimization/criteria.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B3_decision_optimization/criteria.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B3_decision_optimization/criteria.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B3_decision_optimization/criteria.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B3_decision_optimization/decision_problems.csv",
+      "detail": "rows=12 cols=15",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B3_decision_optimization/decision_problems.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B3_decision_optimization/decision_problems.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B3_decision_optimization/decision_problems.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B3_decision_optimization/decision_problems.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B3_decision_optimization/ground_truth_decisions.csv",
+      "detail": "rows=12 cols=18",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B3_decision_optimization/ground_truth_decisions.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B3_decision_optimization/ground_truth_decisions.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B3_decision_optimization/ground_truth_decisions.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B3_decision_optimization/ground_truth_decisions.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B3_decision_optimization/payoff_matrices.csv",
+      "detail": "rows=360 cols=12",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B3_decision_optimization/payoff_matrices.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B3_decision_optimization/payoff_matrices.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B3_decision_optimization/payoff_matrices.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B3_decision_optimization/payoff_matrices.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B3_decision_optimization/scenarios.csv",
+      "detail": "rows=60 cols=15",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B3_decision_optimization/scenarios.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B3_decision_optimization/scenarios.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B3_decision_optimization/scenarios.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B3_decision_optimization/scenarios.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B3_decision_optimization/sensitivity_cases.csv",
+      "detail": "rows=120 cols=13",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_B_reference_training_decisions/B3_decision_optimization/sensitivity_cases.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_B_reference_training_decisions/B3_decision_optimization/sensitivity_cases.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_B_reference_training_decisions/B3_decision_optimization/sensitivity_cases.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_B_reference_training_decisions/B3_decision_optimization/sensitivity_cases.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_C_optional_activation_lab/activation_benchmark_plan.csv",
+      "detail": "rows=8 cols=13",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_C_optional_activation_lab/activation_benchmark_plan.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_C_optional_activation_lab/activation_benchmark_plan.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_C_optional_activation_lab/activation_benchmark_plan.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_C_optional_activation_lab/activation_benchmark_plan.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_C_optional_activation_lab/activation_candidates.csv",
+      "detail": "rows=8 cols=14",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_C_optional_activation_lab/activation_candidates.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_C_optional_activation_lab/activation_candidates.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_C_optional_activation_lab/activation_candidates.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_C_optional_activation_lab/activation_candidates.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_C_optional_activation_lab/hypersoft_approximation.csv",
+      "detail": "rows=144 cols=14",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_C_optional_activation_lab/hypersoft_approximation.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_C_optional_activation_lab/hypersoft_approximation.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_C_optional_activation_lab/hypersoft_approximation.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_C_optional_activation_lab/hypersoft_approximation.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_C_optional_activation_lab/hypersoft_parameters.csv",
+      "detail": "rows=10 cols=9",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_C_optional_activation_lab/hypersoft_parameters.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_C_optional_activation_lab/hypersoft_parameters.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_C_optional_activation_lab/hypersoft_parameters.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_C_optional_activation_lab/hypersoft_parameters.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_C_optional_activation_lab/hypersoft_universe.csv",
+      "detail": "rows=4 cols=9",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_C_optional_activation_lab/hypersoft_universe.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_C_optional_activation_lab/hypersoft_universe.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_C_optional_activation_lab/hypersoft_universe.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_C_optional_activation_lab/hypersoft_universe.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_C_optional_activation_lab/parametric_cost_benchmark.csv",
+      "detail": "rows=1 cols=14",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_C_optional_activation_lab/parametric_cost_benchmark.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_C_optional_activation_lab/parametric_cost_benchmark.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_C_optional_activation_lab/parametric_cost_benchmark.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_C_optional_activation_lab/parametric_cost_benchmark.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_C_optional_activation_lab/plithogenic_appurtenance.csv",
+      "detail": "rows=48 cols=11",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_C_optional_activation_lab/plithogenic_appurtenance.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_C_optional_activation_lab/plithogenic_appurtenance.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_C_optional_activation_lab/plithogenic_appurtenance.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_C_optional_activation_lab/plithogenic_appurtenance.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_C_optional_activation_lab/plithogenic_attributes.csv",
+      "detail": "rows=12 cols=11",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_C_optional_activation_lab/plithogenic_attributes.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_C_optional_activation_lab/plithogenic_attributes.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_C_optional_activation_lab/plithogenic_attributes.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_C_optional_activation_lab/plithogenic_attributes.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_C_optional_activation_lab/plithogenic_contradictions.csv",
+      "detail": "rows=36 cols=11",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_C_optional_activation_lab/plithogenic_contradictions.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_C_optional_activation_lab/plithogenic_contradictions.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_C_optional_activation_lab/plithogenic_contradictions.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_C_optional_activation_lab/plithogenic_contradictions.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_C_optional_activation_lab/quantum_order_effects.csv",
+      "detail": "rows=1200 cols=11",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_C_optional_activation_lab/quantum_order_effects.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_C_optional_activation_lab/quantum_order_effects.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_C_optional_activation_lab/quantum_order_effects.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_C_optional_activation_lab/quantum_order_effects.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_C_optional_activation_lab/reuse_manifest.csv",
+      "detail": "rows=8 cols=12",
+      "passed": true
+    },
+    {
+      "check": "provenance_columns:package_C_optional_activation_lab/reuse_manifest.csv",
+      "detail": "[]",
+      "passed": true
+    },
+    {
+      "check": "provenance_origin:package_C_optional_activation_lab/reuse_manifest.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "provenance_nonempirical:package_C_optional_activation_lab/reuse_manifest.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "record_hash_nonblank:package_C_optional_activation_lab/reuse_manifest.csv",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/projects.csv",
+      "detail": "rows=6 cols=18",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/reporting_periods.csv",
+      "detail": "rows=36 cols=14",
+      "passed": true
+    },
+    {
+      "check": "A:6_projects",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "A:36_periods",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "A:period_pk",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/schedule_activities.csv",
+      "detail": "rows=72 cols=22",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/schedule_dependencies.csv",
+      "detail": "rows=78 cols=12",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/schedule_status.csv",
+      "detail": "rows=432 cols=19",
+      "passed": true
+    },
+    {
+      "check": "schedule:activity_pk",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "schedule:dependency_fk",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "schedule:status_fk",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "schedule:acyclic:PRJ-AIR",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "schedule:acyclic:PRJ-DCT",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "schedule:acyclic:PRJ-HSP",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "schedule:acyclic:PRJ-HWY",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "schedule:acyclic:PRJ-RAL",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "schedule:acyclic:PRJ-WTR",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/ccpm_chains.csv",
+      "detail": "rows=18 cols=17",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/ccpm_chain_activities.csv",
+      "detail": "rows=72 cols=13",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/ccpm_buffer_sizing_inputs.csv",
+      "detail": "rows=72 cols=17",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/ccpm_buffers.csv",
+      "detail": "rows=108 cols=18",
+      "passed": true
+    },
+    {
+      "check": "ccpm:chain_pk",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:activity_fk",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:chain_activity_fk",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:buffer_chain_fk",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:activity_chain_columns",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:sizing:PRJ-AIR-CC",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:member_count:PRJ-AIR-CC",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:sizing:PRJ-AIR-FC1",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:member_count:PRJ-AIR-FC1",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:sizing:PRJ-AIR-FC2",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:member_count:PRJ-AIR-FC2",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:sizing:PRJ-DCT-CC",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:member_count:PRJ-DCT-CC",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:sizing:PRJ-DCT-FC1",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:member_count:PRJ-DCT-FC1",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:sizing:PRJ-DCT-FC2",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:member_count:PRJ-DCT-FC2",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:sizing:PRJ-HSP-CC",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:member_count:PRJ-HSP-CC",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:sizing:PRJ-HSP-FC1",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:member_count:PRJ-HSP-FC1",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:sizing:PRJ-HSP-FC2",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:member_count:PRJ-HSP-FC2",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:sizing:PRJ-HWY-CC",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:member_count:PRJ-HWY-CC",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:sizing:PRJ-HWY-FC1",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:member_count:PRJ-HWY-FC1",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:sizing:PRJ-HWY-FC2",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:member_count:PRJ-HWY-FC2",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:sizing:PRJ-RAL-CC",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:member_count:PRJ-RAL-CC",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:sizing:PRJ-RAL-FC1",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:member_count:PRJ-RAL-FC1",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:sizing:PRJ-RAL-FC2",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:member_count:PRJ-RAL-FC2",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:sizing:PRJ-WTR-CC",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:member_count:PRJ-WTR-CC",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:sizing:PRJ-WTR-FC1",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:member_count:PRJ-WTR-FC1",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:sizing:PRJ-WTR-FC2",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:member_count:PRJ-WTR-FC2",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ccpm:sizing_activity_fk",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/agent_decision_rules.csv",
+      "detail": "rows=3 cols=14",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/agents.csv",
+      "detail": "rows=48 cols=15",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/agent_state_history.csv",
+      "detail": "rows=576 cols=18",
+      "passed": true
+    },
+    {
+      "check": "abm:agent_rule_fk",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "abm:history_rule_fk",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "abm:valid_condition_json",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "abm:valid_action_json",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/quality_audits.csv",
+      "detail": "rows=36 cols=16",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/ncr_events.csv",
+      "detail": "rows=69 cols=16",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/ncr_ground_truth.csv",
+      "detail": "rows=36 cols=19",
+      "passed": true
+    },
+    {
+      "check": "ncr:event_pk",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:audit_fk",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-AIR:P01",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-AIR:P01",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-AIR:P02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-AIR:P02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-AIR:P03",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-AIR:P03",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-AIR:P04",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-AIR:P04",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-AIR:P05",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-AIR:P05",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-AIR:P06",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-AIR:P06",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-DCT:P01",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-DCT:P01",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-DCT:P02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-DCT:P02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-DCT:P03",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-DCT:P03",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-DCT:P04",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-DCT:P04",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-DCT:P05",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-DCT:P05",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-DCT:P06",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-DCT:P06",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-HSP:P01",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-HSP:P01",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-HSP:P02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-HSP:P02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-HSP:P03",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-HSP:P03",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-HSP:P04",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-HSP:P04",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-HSP:P05",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-HSP:P05",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-HSP:P06",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-HSP:P06",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-HWY:P01",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-HWY:P01",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-HWY:P02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-HWY:P02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-HWY:P03",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-HWY:P03",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-HWY:P04",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-HWY:P04",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-HWY:P05",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-HWY:P05",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-HWY:P06",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-HWY:P06",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-RAL:P01",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-RAL:P01",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-RAL:P02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-RAL:P02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-RAL:P03",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-RAL:P03",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-RAL:P04",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-RAL:P04",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-RAL:P05",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-RAL:P05",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-RAL:P06",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-RAL:P06",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-WTR:P01",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-WTR:P01",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-WTR:P02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-WTR:P02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-WTR:P03",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-WTR:P03",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-WTR:P04",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-WTR:P04",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-WTR:P05",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-WTR:P05",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:issued:PRJ-WTR:P06",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "ncr:open:PRJ-WTR:P06",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/environmental_requirements.csv",
+      "detail": "rows=48 cols=16",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/environmental_assessments.csv",
+      "detail": "rows=288 cols=15",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/environmental_violations.csv",
+      "detail": "rows=28 cols=17",
+      "passed": true
+    },
+    {
+      "check": "load:package_A_project_structures/environmental_ground_truth.csv",
+      "detail": "rows=36 cols=17",
+      "passed": true
+    },
+    {
+      "check": "env:req_pk",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:assessment_fk",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:violation_assessment_fk",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-AIR:P01",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-AIR:P02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-AIR:P03",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-AIR:P04",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-AIR:P05",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-AIR:P06",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-DCT:P01",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-DCT:P02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-DCT:P03",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-DCT:P04",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-DCT:P05",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-DCT:P06",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-HSP:P01",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-HSP:P02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-HSP:P03",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-HSP:P04",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-HSP:P05",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-HSP:P06",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-HWY:P01",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-HWY:P02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-HWY:P03",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-HWY:P04",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-HWY:P05",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-HWY:P06",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-RAL:P01",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-RAL:P02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-RAL:P03",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-RAL:P04",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-RAL:P05",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-RAL:P06",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-WTR:P01",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-WTR:P02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-WTR:P03",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-WTR:P04",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-WTR:P05",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "env:rate:PRJ-WTR:P06",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B1_reference_population/reference_projects.csv",
+      "detail": "rows=360 cols=27",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B1_reference_population/split_manifest.csv",
+      "detail": "rows=360 cols=10",
+      "passed": true
+    },
+    {
+      "check": "B1:360_projects",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "B1:unique_split",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "B1:no_duplicate_feature_vectors_across_splits",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:package_B_reference_training_decisions/B1_reference_population/analogous_pairs.csv",
+      "detail": "rows=120 cols=13",
+      "passed": true
+    },
+    {
+      "check": "B1:no_holdout_to_holdout_analog_pairs",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:load",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:schema_v02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:solve:DP-01",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:objective:DP-01",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:solve:DP-02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:objective:DP-02",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:solve:DP-03",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:objective:DP-03",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:solve:DP-04",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:objective:DP-04",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:solve:DP-05",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:objective:DP-05",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:solve:DP-06",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:objective:DP-06",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:solve:DP-07",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:objective:DP-07",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:solve:DP-08",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:objective:DP-08",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:solve:DP-09",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:objective:DP-09",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:solve:DP-10",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:objective:DP-10",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:solve:DP-11",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:objective:DP-11",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:solve:DP-12",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "LP:objective:DP-12",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "load:module_id_aliases.csv",
+      "detail": "rows=39 cols=13",
+      "passed": true
+    },
+    {
+      "check": "aliases:unique_literature",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "aliases:unique_code",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "aliases:critic_topsis",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "boundary:DSM_in_A",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "local_manifest:package_A_project_structures",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "local_checksums:package_A_project_structures",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "local_checksum_verify:package_A_project_structures",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "local_manifest:package_B_reference_training_decisions",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "local_checksums:package_B_reference_training_decisions",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "local_checksum_verify:package_B_reference_training_decisions",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "local_manifest:package_C_optional_activation_lab",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "local_checksums:package_C_optional_activation_lab",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "check": "local_checksum_verify:package_C_optional_activation_lab",
+      "detail": "",
+      "passed": true
+    }
+  ],
+  "failed_count": 0,
+  "generated_at": "2026-08-11T00:00:00Z",
+  "passed": true,
+  "programme_version": "OG-SYNTH-0.2"
+}

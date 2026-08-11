@@ -1,0 +1,108 @@
+area,check,result,detail
+artefacts,present:AUDIT_RESOLUTION_v0.2.md,PASS,
+artefacts,present:BUILD_PROVENANCE.json,PASS,
+artefacts,present:CHECKSUMS.sha256,PASS,
+artefacts,present:CLAUDE_CODE_HANDOFF_v0.2.md,PASS,
+artefacts,present:MANIFEST.csv,PASS,
+artefacts,present:README.md,PASS,
+artefacts,present:VALIDATION_SUMMARY.md,PASS,
+artefacts,present:validation_report.json,PASS,
+artefacts,present:data_dictionary.csv,PASS,
+artefacts,present:module_asset_map.csv,PASS,
+artefacts,present:module_id_aliases.csv,PASS,
+artefacts,present:package_summary.xlsx,PASS,
+artefacts,present:requirements-lock.txt,PASS,
+artefacts,present:schemas/schema_catalog.json,PASS,
+artefacts,present:generators/build_opus_synthetic_programme_v0_2.py,PASS,
+artefacts,present:generators/validate_synthetic_programme_v0_2.py,PASS,
+artefacts,present:generators/verify_synthetic_checksums_v0_2.py,PASS,
+artefacts,present:generators/base/Opus_Gubernatio_Synthetic_Programme_v0.1.zip,PASS,
+artefacts,provenance_hash:builder_sha256,PASS,9e5479497c6824e68b4e01951341cc60065b7e85dc95f99b27300dc3ce3aaa98
+artefacts,provenance_hash:validator_sha256,PASS,5022c5d485f0f77bc0164d12329385a5a408555cfd531352adf517aaef4ad2a6
+artefacts,provenance_hash:base_archive_sha256,PASS,fe5806b831d4ab5a32c7beb249fc66eaedbe641fa87b87db8df01491f2ec2796
+artefacts,provenance_seed_20260811,PASS,
+artefacts,provenance_version_0_2,PASS,
+checksums,manifest_covers_every_file,PASS,[]
+checksums,programme_checksums_recomputed_independently,PASS,117 entries; []
+checksums,package_A_project_structures:self_contained_no_external_paths,PASS,[]
+checksums,package_A_project_structures:local_checksums_verify_alone,PASS,49 entries; []
+checksums,package_A_project_structures:local_manifest_covers_package,PASS,[]
+checksums,package_A_project_structures:agrees_with_programme_manifest,PASS,[]
+checksums,package_B_reference_training_decisions:self_contained_no_external_paths,PASS,[]
+checksums,package_B_reference_training_decisions:local_checksums_verify_alone,PASS,34 entries; []
+checksums,package_B_reference_training_decisions:local_manifest_covers_package,PASS,[]
+checksums,package_B_reference_training_decisions:agrees_with_programme_manifest,PASS,[]
+checksums,package_C_optional_activation_lab:self_contained_no_external_paths,PASS,[]
+checksums,package_C_optional_activation_lab:local_checksums_verify_alone,PASS,14 entries; []
+checksums,package_C_optional_activation_lab:local_manifest_covers_package,PASS,[]
+checksums,package_C_optional_activation_lab:agrees_with_programme_manifest,PASS,[]
+ncr,exists:quality_audits.csv,PASS,
+ncr,exists:ncr_events.csv,PASS,
+ncr,exists:ncr_ground_truth.csv,PASS,
+ncr,event_audit_fk,PASS,every NCR traces to a declared quality audit
+ncr,event_pk_unique,PASS,
+ncr,recomputed_ground_truth_all_cutoffs,PASS,"36 period rows, 10 quantities each; mismatches: []"
+env,exists:environmental_requirements.csv,PASS,
+env,exists:environmental_assessments.csv,PASS,
+env,exists:environmental_violations.csv,PASS,
+env,exists:environmental_ground_truth.csv,PASS,
+env,assessment_requirement_fk,PASS,
+env,violation_assessment_fk,PASS,
+env,recomputed_compliance_all_periods,PASS,36 period rows; mismatches: []
+ccpm,exists:ccpm_chains.csv,PASS,
+ccpm,exists:ccpm_chain_activities.csv,PASS,
+ccpm,exists:ccpm_buffer_sizing_inputs.csv,PASS,
+ccpm,exists:ccpm_buffers.csv,PASS,
+ccpm,exists:ccpm_ground_truth.csv,PASS,
+ccpm,chain_pk_unique,PASS,
+ccpm,member_traces_to_chain_and_activity,PASS,
+ccpm,buffer_traces_to_chain,PASS,
+ccpm,sizing_input_traces_to_chain_and_activity,PASS,
+ccpm,schedule_activity_carries_chain_id,PASS,
+ccpm,pert_sigma_and_variance_recomputed,PASS,[]
+ccpm,buffers_recomputed_from_RSS_PERT_variance_z1645,PASS,18 chains; []
+ccpm,flat_15pct_sizing_absent,PASS,[]
+ccpm,buffer_rows_agree_with_chain_sizing,PASS,[]
+abm,exists:agent_decision_rules.csv,PASS,
+abm,exists:agents.csv,PASS,
+abm,exists:agent_state_history.csv,PASS,
+abm,exists:abm_rule_ground_truth.csv,PASS,
+abm,agent_rule_fk,PASS,
+abm,history_rule_branch_resolves,PASS,576 state rows against 3 declared branches
+abm,every_condition_and_action_is_a_json_object,PASS,6 objects parsed
+abm,branch_reproduced_from_condition_json,PASS,576 rows replayed; []
+abm,note_every_declared_branch_is_exercised,FAIL,declared but never applied: ['LOW_INVENTORY_RESTOCK']
+abm,branch_counts_recomputed,PASS,12 ground-truth rows; [] extra=[]
+dsm,alias_assigns_package_A,PASS,['A']
+dsm,asset_map_assigns_package_A,PASS,['A']
+dsm,package_A_readme_states_DSM,PASS,
+dsm,audit_resolution_states_DSM_in_A,PASS,
+dsm,dsm_files_live_in_package_A,PASS,
+lp,schema_version_0_2,PASS,
+lp,twelve_models,PASS,12
+lp,all_models_machine_readable,PASS,[]
+lp,all_models_solved_independently_match_ground_truth,PASS,12 models solved; []
+aliases,literature_ids_unique,PASS,
+aliases,code_ids_unique,PASS,
+aliases,mapping_is_one_to_one,PASS,39 rows
+aliases,maps:7.19->B2.19,PASS,B2.19
+aliases,maps:4.4->A4.4,PASS,A4.4
+aliases,maps:8.8->A6.3,PASS,A6.3
+aliases,asset_map_agrees_with_alias_table,PASS,[]
+aliases,every_asset_map_module_has_an_alias,PASS,[]
+aliases,every_run8_bucket345_module_has_an_alias_row,FAIL,"11 modules in scope; not mapped: ['A1.1', 'A5.4']"
+provenance,every_record_marked_synthetic,PASS,92 csv files; []
+privacy,no_personal_identifiers_in_any_csv,PASS,[]
+privacy,json_files_scanned,PASS,
+privacy,no_executable_or_secret_files,PASS,[]
+splits,360_reference_projects,PASS,360
+splits,manifest_covers_every_project,PASS,
+splits,manifest_agrees_with_inline_split,PASS,
+splits,each_project_in_exactly_one_split,PASS,
+splits,no_duplicate_feature_vector_crosses_a_split,PASS,6 features; 0 crossing vectors
+splits,no_analog_is_drawn_from_the_locked_holdout,PASS,120 pairs; []
+splits,no_holdout_to_holdout_analogous_pair,PASS,[]
+splits,analog_direction_is_always_into_development,PASS,"[('LOCKED_HOLDOUT', 'DEVELOPMENT'), ('VALIDATION', 'DEVELOPMENT')]"
+splits,derived_split_agrees:reference_project_periods.csv,PASS,[]
+splits,derived_split_agrees:parametric_cost_training.csv,PASS,[]
+splits,derived_split_agrees:rough_set_decision_table.csv,PASS,[]
