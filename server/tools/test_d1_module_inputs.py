@@ -126,7 +126,11 @@ FULL = {
 }
 
 # The twelve, and the key whose absence used to be fabricated around.
-# `blob` marks the eight keys nothing can ever supply; the rest are now wired.
+# `blob` MARKED THE KEYS NOTHING COULD SUPPLY, and that is no longer true: the flat-to-nested
+# adapter (remediation Run 3, server/app/simulation/signal_package.py) assembles evm, mc, cusum,
+# doc and decision from the flat inputs and this run's own results, so these seven now receive
+# their declared contract on the normal path. The label is kept because it names the class of
+# fix each check below is about; section 5 records what changed and why.
 #
 # B2.7 (Plithogenic Sets) and B2.9 (Quantum Probability) are removed from this list by
 # remediation Run 1 (remediation_programme.md): both are on the eight-module DISABLED_CONCEPT_
@@ -299,9 +303,41 @@ check(healthy_run["project_status"] == "Green",
 check("A1.2" in {a["module_id"] for a in healthy_run["abstained"]},
       "and it is Green because CUSUM abstains rather than reporting a synthesised breach")
 statuses = {m["module_id"]: m.get("status_color") for m in healthy_run["modules"]}
-for module_id, _key, _kind in TWELVE:
+
+# WHAT THIS SECTION USED TO ASSERT, AND WHY IT WAS REWRITTEN RATHER THAN LOOSENED.
+#
+# It asserted that ALL twelve contribute no colour on this fixture. For the wired three (A1.2,
+# C1.4, C1.7) that is a real property and it still holds below: they have no history and no
+# event log here, so they abstain. For the seven evidence-combination modules it was true for a
+# DIFFERENT reason, and the reason was a defect: their input contract is a nested assembled
+# signal package, the computation path supplied a flat dictionary, and nothing anywhere
+# assembled one -- so they abstained on every project regardless of what evidence it held. That
+# is audit P0 finding 1, and the flat-to-nested adapter (remediation Run 3,
+# server/app/simulation/signal_package.py) fixes it.
+#
+# So this check was recording the old wiring failure as expected behaviour. The property D1
+# actually protects is that no colour is produced from an EMPTY evidence set, and that is what
+# is asserted now, in both directions: with cost and schedule indices present the seven combine
+# real evidence, and with no evidence at all they still abstain. Nothing in D1's fabrication
+# fixes was reverted -- section 2 above still drives each module directly and proves each one
+# abstains when its own key is removed.
+BLOB_SEVEN = [m for m, _k, kind in TWELVE if kind == "blob"]
+WIRED_THREE = [m for m, _k, kind in TWELVE if kind == "wired"]
+for module_id in WIRED_THREE:
     check(module_id not in statuses,
           f"{module_id} contributes no colour to a project with no D1 evidence")
+for module_id in BLOB_SEVEN:
+    check(statuses.get(module_id) is not None,
+          f"{module_id} now combines the evidence this project DOES hold, through the adapter",
+          str(statuses.get(module_id)))
+
+EMPTY = {"actualPctComplete": 62}
+empty_run = compute_project(dict(EMPTY), "sc-d1", "P1", CUTOFF)
+empty_statuses = {m["module_id"] for m in empty_run["modules"]}
+for module_id in BLOB_SEVEN:
+    check(module_id not in empty_statuses,
+          f"{module_id} still abstains on a project with NO evidence to combine, which is the "
+          f"property D1 protects")
 
 DISTRESSED = {"spi": 0.70, "cpi": 0.80, "bac": 12500000, "actualPctComplete": 15}
 distressed_run = compute_project(dict(DISTRESSED), "sc-d1", "P1", CUTOFF)

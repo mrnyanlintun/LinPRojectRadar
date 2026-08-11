@@ -1416,9 +1416,26 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
     Multi_Objective_Optimization: true, Linear_Programming: true, Decision_Sensitivity_Matrix: true,
     Pareto_Frontier: true
   };
+  // Remediation Run 3, the flat-to-nested adapter. These fourteen declare a NESTED assembled
+  // signal package as their input contract, and the normal computation path supplied a flat
+  // dictionary, so until the adapter landed they abstained on every real run. They are now
+  // reachable and shown, and marked here as newly wired and unvalidated -- on this surface, the
+  // export and the API response, never the participant ledger or decision card, exactly as the
+  // Run 1 qualifier is. Mirrored from server/app/simulation/signal_package.py, which is the
+  // source of truth. Keyed by method_class.
+  const RUN3_NEWLY_WIRED = {
+    Conservative_Dominance: true, Weighted_Voting: true, Majority_Rules: true, Worst_N_of_M: true,
+    DST_Evidence_Combination: true, Rough_Sets_Classification: true, Neutrosophic_Logic: true,
+    Interval_Fuzzy_Sets: true, Z_Numbers: true, PLTS: true, Plithogenic_Sets: true,
+    Belief_Rule_Base: true, Quantum_Probability: true, ABM_Governance: true
+  };
   function modDoc(m) {
     const qualifier = RUN1_PROXY_QUALIFIER[m.mc];
     const disabled = !!RUN1_DISABLED[m.mc];
+    const newlyWired = !disabled && !!RUN3_NEWLY_WIRED[m.mc];
+    const wiringNote = newlyWired
+      ? `<p class="kn-remediation"><strong>Wiring.</strong> Newly wired and unvalidated. This module reads an assembled signal package, and the computation path supplied a flat set of figures, so it produced no finding on any real reporting period until that assembly was built. It now runs on every period. Its output has not been validated against real project evidence, it is advisory and does not vote, and it reads raw signals: the eligibility gate that would qualify a signal package before evidence combination and governance read it is not implemented. See remediation_programme.md, the adapter run.</p>`
+      : "";
     const remediationNote = disabled
       ? `<p class="kn-remediation"><strong>Status.</strong> Disabled. This module is concept-only: it has no production implementation of the analytical structure its name claims. It is not executed, does not vote on category or project status, and is excluded from every fusion input. See remediation_programme.md, Run 1.</p>`
       : qualifier
@@ -1427,6 +1444,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
     const html = `
       <p><strong>Purpose.</strong> ${m.purpose}</p>
       ${remediationNote}
+      ${wiringNote}
       <p><strong>Computation.</strong> ${m.formula}</p>
       ${m.bands ? modBands(m.bands) : ""}
       ${m.abstain ? `<p><strong>Abstains (Insufficient data) when:</strong> ${m.abstain}</p>` : ""}

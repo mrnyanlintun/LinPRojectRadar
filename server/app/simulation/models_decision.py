@@ -147,7 +147,12 @@ def run_conservative_dominance(si: dict, rand: Callable[[], float],
         "status_color": d["healthState"],
         "state": d["healthState"],
         "conflict": d["conflictType"],
-        "evidence_metric": f"{d['healthState']} — {d['conflictType']}",
+        # NO EM DASH. This string is what the Signal Ledger renders as this module's finding,
+        # and until the flat-to-nested adapter landed it reached no screen, because the module
+        # could not execute on the normal path at all. The moment it became reachable it became
+        # user-facing text, which NAMING_AUTHORITY.md's standing rule covers. The separator is
+        # the only change: no arithmetic, no state name, no classification is touched.
+        "evidence_metric": f"{d['healthState']}: {d['conflictType']}",
     }
 
 
