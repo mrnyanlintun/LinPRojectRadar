@@ -1,0 +1,9 @@
+module_id,method_class,defect_pattern,probe,disposition
+A1.7,TCPI,out-of-domain input reads Green,ac set negative,"OUT OF SCOPE, report only"
+A1.9,Budget_Execution_Rate,out-of-domain input reads Green,ac set negative,"OUT OF SCOPE, report only"
+A2.6,SCurve_Deviation,out-of-domain input reads Green,plannedPctComplete set negative,"OUT OF SCOPE, report only"
+A3.9,Inflation_Adjustment,out-of-domain input reads Green,materialCostCurrent set negative,"OUT OF SCOPE, report only"
+A3.9,Inflation_Adjustment,removing evidence improves the reading,actualPctComplete removed,"OUT OF SCOPE, report only"
+A5.2,Sensitivity_Analysis,removing evidence improves the reading,docRiskScore removed,"OUT OF SCOPE, report only"
+A5.3,Tornado_Diagram,out-of-domain input reads Green,docRiskScore set negative,"OUT OF SCOPE, report only"
+B3.2,FAR_Threshold,out-of-domain input reads Green,cpi set negative,"OUT OF SCOPE, report only"

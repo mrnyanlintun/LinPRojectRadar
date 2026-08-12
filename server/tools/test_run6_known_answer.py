@@ -231,9 +231,10 @@ check(not _assets,
       "and nothing under assets/ differs at all, so every participant surface and the browser "
       "instrument are byte-identical to the freeze", str(_assets))
 check(_prod, "the guard is live: it does see the files this run did change", str(_prod))
-check(registry.SIMULATION_VERSION == "sim-2026.08-v3",
-      "the analytical layer is stamped at Run 7's successor version, and sim-2026.08-v2 remains "
-      "the historical audit baseline for results already collected under it",
+check(registry.SIMULATION_VERSION == "sim-2026.08-v4",
+      "the analytical layer is stamped at Run 10's version, and sim-2026.08-v2 and "
+      "sim-2026.08-v3 both remain historical audit baselines for results already collected "
+      "under them",
       registry.SIMULATION_VERSION)
 
 

@@ -42,7 +42,15 @@ from .rng import as_percent, clamp, num, pctile, round1, round2
 # when evidence was withheld, and one scored courses of action from a payoff matrix the corpus
 # does not contain. The stamp exists so a change to this layer is detectable in already-collected
 # data, and this is such a change.
-SIMULATION_VERSION = "sim-2026.08-v3"
+#
+# RUN 10 (PRODUCTION REMEDIATION AND SYNTHETIC INTEGRATION) moves it again, to sim-2026.08-v4,
+# and sim-2026.08-v2 and sim-2026.08-v3 both remain the historical audit baselines for the
+# results already collected under them. Run 10 corrected the sixteen modules Run 8 placed in the
+# fix-with-current-data bucket: eleven had an open input domain that let a reading outside the
+# domain a quantity can occupy reach a band, two rewarded missing evidence with a better reading,
+# two carried a disposition no input could reach, and one printed a sign the figure did not
+# carry. This is a change to what this layer emits, so the stamp moves with it.
+SIMULATION_VERSION = "sim-2026.08-v4"
 
 
 # -------------------------------------------------------------------------------------------
