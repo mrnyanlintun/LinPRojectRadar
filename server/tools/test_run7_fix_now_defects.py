@@ -247,35 +247,47 @@ check(_r10_pert.get("abstention_reason_code") == "canonical_structure_absent",
       "A2.1: and names the absent canonical structure as the reason",
       str(_r10_pert.get("abstention_reason_code")))
 
-for mid, fn, old_fn in (("A2.2", run_lob, old_models.run_lob),
-                        ("A2.3", run_ccpm, old_models.run_ccpm)):
+# RUN 10B SUPERSEDES THE REST OF THIS BLOCK FOR THE TWO REMAINING MODULES, AND THE ROWS ARE
+# MOVED RATHER THAN DELETED, on the same footing as the criticality module above. Run 7's finding
+# for both is unchanged and is still proved by the block above: an empty input abstains. What
+# changed in Run 10B is that a reported schedule index is no longer sufficient for either of
+# them, because neither is a schedule-index measure. A line-of-balance measure needs a line of
+# balance and a critical-chain fever chart needs a sized critical-chain buffer, and where the
+# structure is absent both abstain rather than reading the index. The original Run 7 assertion,
+# that each computed on a reported index and matched the shipped arithmetic byte for byte, held
+# at the time it was written and is recorded here as the reason this restatement exists.
+for mid, fn in (("A2.2", run_lob), ("A2.3", run_ccpm)):
     si = {"spi": 0.92, "actualPctComplete": 40.0}
     a = fn(dict(si), NOOP, CUTOFF)
-    b = old_fn(dict(si), NOOP, CUTOFF)
-    check(a.get("status_color") is not None,
-          f"{mid}: computes on a reported schedule index", str(a.get("status_color")))
-    check(json.dumps(a, sort_keys=True, default=str) == json.dumps(b, sort_keys=True, default=str),
-          f"{mid}: and its whole result is byte-identical to the shipped code's, so no formula "
-          f"moved", f"{a.get('status_color')} vs {b.get('status_color')}")
-    # Malformed: the index present but not a number.
+    check(abstains(a),
+          f"{mid}: Run 10B abstains on a reported schedule index alone, because the index is "
+          f"not the structure this method is named for", str(a.get("status_color")))
+    check(a.get("abstention_reason_code") == ABSTAIN_STRUCTURE_ABSENT,
+          f"{mid}: and names the absent canonical structure as the reason",
+          str(a.get("abstention_reason_code")))
+    speakable(a, f"{mid} canonical structure absent")
     m = fn({"spi": "not a number", "actualPctComplete": 40.0}, NOOP, CUTOFF)
-    check(abstains(m) and m.get("abstention_reason_code") == ABSTAIN_MALFORMED_INPUT,
-          f"{mid}: an index reported in a form that is not a number is refused as malformed",
+    check(abstains(m),
+          f"{mid}: an index reported in a form that is not a number still abstains, now because "
+          f"the structure is absent before the index is ever consulted",
           str(m.get("abstention_reason_code")))
-    mi = fn({"actualPctComplete": 40.0}, NOOP, CUTOFF)
-    check(abstains(mi) and mi.get("abstention_reason_code") == ABSTAIN_MISSING_INPUT,
-          f"{mid}: and an absent index is refused as a missing input, which is a different "
-          f"reason and says so", str(mi.get("abstention_reason_code")))
 
-print("\n-- CCPM needs a completion figure as well as an index, and says which is missing --")
+print("\n-- CCPM needs the chain and the buffer, and says which is missing --")
 _c = run_ccpm({"spi": 0.92}, NOOP, CUTOFF)
-check(abstains(_c) and _c.get("abstention_reason_code") == ABSTAIN_MISSING_INPUT,
-      "CCPM with an index but no completion figure abstains", str(_c.get("abstention_reason_code")))
-check("chain completion" in str(_c.get("evidence_metric")),
-      "and names the completion figure rather than the index", str(_c.get("evidence_metric"))[:90])
-check(run_ccpm({"spi": 0.92, "plannedPctComplete": 40.0}, NOOP,
-               CUTOFF).get("status_color") is not None,
-      "while a planned completion serves where a reported one is absent, as it always did")
+check(abstains(_c) and _c.get("abstention_reason_code") == ABSTAIN_STRUCTURE_ABSENT,
+      "CCPM with an index and no critical chain abstains",
+      str(_c.get("abstention_reason_code")))
+# RUN 10B RESTATEMENT, original reason preserved: Run 7 required a completion figure beside the
+# index and asserted the abstention named the completion figure rather than the index. Run 10B
+# requires the chain and its sized buffer, of which the completion is one part, so the sentence
+# now names the chain. Neither requirement was dropped; the second contains the first.
+check("critical chain" in str(_c.get("evidence_metric")),
+      "and names the chain and its buffer rather than the index",
+      str(_c.get("evidence_metric"))[:90])
+_c2 = run_ccpm({"spi": 0.92, "plannedPctComplete": 40.0}, NOOP, CUTOFF)
+check(abstains(_c2),
+      "while a planned completion no longer serves in place of a chain, because a completion "
+      "percentage is not a buffer", str(_c2.get("status_color")))
 
 print("\n-- the two that read NO project input abstain on every input, not only an empty one --")
 # THE PROPERTY. There is no input that could make either eligible: what is missing is the
@@ -326,14 +338,6 @@ _G3 = [
      # (440,000 - 400,000)/400,000 = 0.10 exactly, reported as 10 per cent.
      {"materialCostBaseline": 1000000, "materialCostCurrent": 440000, "actualPctComplete": 40},
      10, "escalation_pct"),
-    ("A5.6", "queueing bottleneck", run_queueing_bottleneck, old_doc.run_queueing_bottleneck,
-     {"activitiesPlanned": 0, "activitiesConstrained": 0}, ABSTAIN_INVALID_DENOMINATOR,
-     # HAND: 37 of 200 is 0.185, rounded to two places 0.19 (ties toward positive infinity).
-     {"activitiesPlanned": 200, "activitiesConstrained": 37}, 0.19, "constraint_ratio"),
-    ("A5.7", "agent-based supply chain", run_agent_supply_chain, old_doc.run_agent_supply_chain,
-     {"longLeadItemsTotal": 0, "longLeadAtRisk": 0}, ABSTAIN_NO_EXPOSURE,
-     # HAND: 3 of 20 is 0.15 exactly.
-     {"longLeadItemsTotal": 20, "longLeadAtRisk": 3}, 0.15, "at_risk_ratio"),
     ("A2.4", "schedule compression", run_schedule_compression, old_ext.run_schedule_compression,
      {"baselineStart": "2025-01-01", "baselineEnd": "2025-12-31", "actualPctComplete": 50,
       "spi": 0}, ABSTAIN_INVALID_DENOMINATOR,
@@ -440,19 +444,39 @@ check(old_doc.run_safety_performance({"safetyIncidentsDiscussed": 1, "oshaIncide
                                      NOOP, CUTOFF).get("status_color") == "Green",
       "where the shipped code read Green on it, because a negative number is below the benchmark")
 
+# RUN 10B RESTATEMENT, WITH RUN 7'S FINDING PRESERVED AS THE REASON. Run 7 found a fabricated
+# denominator in the queueing measure and a fabricated exposure in the supply chain measure, and
+# corrected both: an empty look-ahead window and an empty procurement log stopped reading Green.
+# Those findings stand and nothing about them is reversed. Run 10B goes further and requires each
+# module's defining structure, so neither reads the look-ahead counts or the procurement counts at
+# all any more, which is why their rows leave the zero-case list above rather than being deleted
+# from the record. The corrected behaviour is asserted here in its new form.
+for _name, _fn, _si in (
+        ("queueing bottleneck", run_queueing_bottleneck,
+         {"activitiesPlanned": 0, "activitiesConstrained": 0}),
+        ("queueing bottleneck", run_queueing_bottleneck,
+         {"activitiesPlanned": 200, "activitiesConstrained": 37}),
+        ("queueing bottleneck", run_queueing_bottleneck, {"activitiesConstrained": 3}),
+        ("agent-based supply chain", run_agent_supply_chain,
+         {"longLeadItemsTotal": 0, "longLeadAtRisk": 0}),
+        ("agent-based supply chain", run_agent_supply_chain,
+         {"longLeadItemsTotal": 20, "longLeadAtRisk": 3}),
+        ("agent-based supply chain", run_agent_supply_chain,
+         {"longLeadItemsTotal": 10, "longLeadAtRisk": 40})):
+    _rr = _fn(dict(_si), NOOP, CUTOFF)
+    check(abstains(_rr) and _rr.get("abstention_reason_code") == ABSTAIN_STRUCTURE_ABSENT,
+          f"{_name}: neither an empty count nor a full one produces a reading now, because the "
+          f"counts are not the structure this method is named for",
+          f"{_si} -> {_rr.get('abstention_reason_code')}")
+    speakable(_rr, f"{_name} canonical structure absent")
+
 print("\n-- the malformed and out-of-domain cases the modules now own --")
 for name, fn, si, code in (
-        ("queueing bottleneck", run_queueing_bottleneck,
-         {"activitiesPlanned": 10, "activitiesConstrained": 40}, ABSTAIN_MALFORMED_INPUT),
-        ("agent-based supply chain", run_agent_supply_chain,
-         {"longLeadItemsTotal": 10, "longLeadAtRisk": 40}, ABSTAIN_MALFORMED_INPUT),
         ("specification conflict density", run_spec_conflict_density,
          {"docRiskScore": 0.2, "rfiCount": -3}, ABSTAIN_MALFORMED_INPUT),
         ("schedule compression", run_schedule_compression,
          {"baselineStart": "2025-12-31", "baselineEnd": "2025-01-01", "actualPctComplete": 50,
           "spi": 0.8}, ABSTAIN_MALFORMED_INPUT),
-        ("queueing bottleneck", run_queueing_bottleneck,
-         {"activitiesConstrained": 3}, ABSTAIN_MISSING_INPUT),
         ("critical path index", run_critical_path_index,
          {"spi": 0.9, "actualPctComplete": 40}, ABSTAIN_MISSING_INPUT)):
     rr = fn(dict(si), NOOP, CUTOFF)
@@ -678,12 +702,23 @@ _abst = {a.get("module_id"): a for a in (served.get("abstained") or [])
 # A project that reports its indices and its progress SHOULD still get the three index-reading
 # modules, and this run would be a regression if it did not: the correction was to refuse where
 # nothing was reported, not to stop computing where something was.
-# RUN 10: the criticality module leaves this set, for the reason recorded above. The other two
-# still compute, which is the part of Run 7's guarantee that survives unchanged.
-check({"A2.2", "A2.3"} <= _computed_ids,
-      "the two remaining modules that read the schedule index still compute on a project that "
-      "reports one, so the correction removed a refusal case and no more",
-      str(sorted({"A2.2", "A2.3"} - _computed_ids)))
+# RUN 10: the criticality module leaves this set, for the reason recorded above.
+# RUN 10B: the other two leave it as well, and the original guarantee is restated rather than
+# dropped. Run 7's guarantee was that its correction refused where nothing was reported and did
+# not stop computing where something was, and that guarantee held for these two at the time. Run
+# 10B makes a different and deliberate change: a line-of-balance measure requires a line of
+# balance and a critical-chain fever chart requires a sized buffer, and this project's documents
+# carry neither, so both abstain here and name the structure that is missing. What must NOT
+# happen is silence, and that is what is asserted now.
+for _mid in ("A2.2", "A2.3"):
+    check(_mid in _abst,
+          f"{_mid}: abstains on the real production path, because the documents carry no line "
+          f"of balance and no sized critical-chain buffer", str(sorted(_abst)))
+    check(_abst.get(_mid, {}).get("abstention_reason_code") == ABSTAIN_STRUCTURE_ABSENT,
+          f"{_mid}: and the stored row names the absent canonical structure",
+          str(_abst.get(_mid, {}).get("abstention_reason_code")))
+    check(bool(_abst.get(_mid, {}).get("reason")),
+          f"{_mid}: and carries the sentence the ledger shows, so the module is not silent")
 check("A2.1" not in _computed_ids and "A2.1" in _abst,
       "and the criticality module is absent from the stored rows and present in the abstention "
       "list, on a real project computed through the real route")

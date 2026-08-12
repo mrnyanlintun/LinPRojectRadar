@@ -14,7 +14,12 @@ from __future__ import annotations
 import math
 from typing import Any, Callable
 
-from .models import check_inputs, insufficient
+from .canonical import (
+    StructureAbsent,
+    critic_topsis as critic_topsis_decision,
+    require_reference_object,
+)
+from .models import ABSTAIN_DECISION_STRUCTURE_ABSENT, check_inputs, insufficient
 from .models_ext import _js_str
 from .models_gov import _jsdiv
 from .rng import js_round, round2
@@ -339,6 +344,50 @@ def run_marcos(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, 
 
 
 def run_critic_topsis(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 10B, GATE 4. This method weights criteria by how much the ALTERNATIVES differ on them,
+    so it needs alternatives. Run 8 recorded the degeneracy that follows from having only one:
+    the weighting fell back to the spread of a single project's own three criteria, and a
+    criterion equal to their mean carried a weight of exactly zero and dropped out of its own
+    decision.
+
+    Where a decision matrix is provided this now computes the method across the alternatives, and
+    the version, split and self-comparison guards are applied before it. The single-project
+    behaviour is KEPT for the case where no decision matrix is provided, with its degeneracy
+    stated on the result rather than hidden, because removing it is not this run's authorisation.
+    The band is unchanged and reads the same closeness coefficient it always read.
+    """
+    matrix = si.get("decisionMatrix")
+    if matrix is not None:
+        try:
+            obj = require_reference_object(si, "B2.19")
+            reading = critic_topsis_decision(obj)
+        except StructureAbsent as absent:
+            return insufficient("CRITIC_TOPSIS", absent.sentence,
+                                ABSTAIN_DECISION_STRUCTURE_ABSENT)
+        score = _round3(reading["closeness"])
+        color = ("Green" if score >= 0.65 else "Yellow" if score >= 0.50
+                 else "Amber" if score >= 0.35 else "Red")
+        return {
+            "method_class": "CRITIC_TOPSIS",
+            "status_color": color,
+            "topsis_score": score,
+            "top_alternative": reading["top_alternative"],
+            "ranking": reading["ranking"],
+            "criteria_weights": {k: _round3(v) for k, v in reading["weights"].items()},
+            "alternatives_considered": reading["alternatives"],
+            "distance_ideal": _round3(reading["distance_ideal"]),
+            "distance_anti": _round3(reading["distance_anti"]),
+            "reference_object": str(obj.get("decision_object_id") or ""),
+            "reference_asset_version": str(obj.get("asset_version") or ""),
+            "reference_split": str(obj.get("split") or "").upper(),
+            "canonical_structure": "alternatives_by_criteria_matrix",
+            "evidence_metric": (
+                f"Of {_js_str(reading['alternatives'])} alternatives scored against "
+                f"{_js_str(len(reading['weights']))} criteria, the closest to the best "
+                f"achievable option scores {_js_str(score)}"
+            ),
+        }
     if not check_inputs(si, ("cpi", "spi", "docRiskScore")):
         return insufficient("CRITIC_TOPSIS")
     criteria = [si["cpi"], si["spi"], 1 - (si.get("docRiskScore") or 0)]

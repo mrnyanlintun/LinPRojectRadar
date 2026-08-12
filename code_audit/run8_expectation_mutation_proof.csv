@@ -101,33 +101,42 @@ A1.1,A1.1: the same seed gives the same path,property,1130395.6988754726,2260792
 A1.1,A1.1: the iteration count is the module's own literal,known_answer,5000,10001,5000,yes,yes,
 A1.1,A1.1: equivariance holds at every scale from one to a thousand,property,[],['perturbed'],[],yes,yes,
 A1.1,"A1.1: a budget of zero is refused, not substituted",abstention,True,False,True,yes,yes,
-A2.2,A2.2: the paving rate is 1.8 scaled by the index,known_answer,1.62,4.24,1.62,yes,yes,"1.8 * clamp(0.9, 0.3, 1.2)"
-A2.2,A2.2: the minimum buffer is 2.7 days by hand,known_answer,2.7,6.4,2.7,yes,yes,5.0 - 20 * (1/1.62 - 1/2.0)
-A2.2,A2.2: 2.7 days is Amber,boundary,'Amber','Amber (perturbed)','Amber',yes,yes,
-A2.2,"A2.2: the unit count is a literal in the file, not a project figure",known_answer,20,41,20,yes,yes,no locations or units are carried in the corpus
-A2.2,A2.2: every index at or above 1.2 gives the identical buffer,property,[5.0],"[5.0, 'perturbed']",[5.0],yes,yes,"clamp(spi, 0.3, 1.2) saturates, so the lag floors at zero"
-A2.3,A2.3: the buffer consumed is 15 per cent by hand,known_answer,15.0,31.0,15.0,yes,yes,(1 - 0.9) * 100 * 1.5
+A2.2,"A2.2: a schedule index alone no longer produces a reading, because the index is not a line of balance",abstention,True,False,True,yes,yes,
+A2.2,A2.2: the minimum separation is 2.6 days by hand,known_answer,2.6,6.2,2.6,yes,yes,2.5 + 0.125 * 1
+A2.2,A2.2: 2.6 days is Amber,boundary,'Amber','Amber (perturbed)','Amber',yes,yes,
+A2.2,"A2.2: the locations are the ones the structure carries, not a literal in the file",known_answer,5,11,5,yes,yes,five locations in sequence
+A2.2,A2.2: the following rate is the one the crews were working at,known_answer,1.6,4.2,1.6,yes,yes,
+A2.2,A2.2: a faster following line closes the separation and the minimum is at the last location,known_answer,1.9,4.8,1.9,yes,yes,2.5 - 0.125 * 5
+A2.2,A2.2: and the module names that last location as the critical one,known_answer,5,11,5,yes,yes,
+A2.3,"A2.3: an index and a completion percentage no longer produce a reading, because neither is a sized buffer",abstention,True,False,True,yes,yes,
+A2.3,A2.3: the buffer consumed is 45 per cent by hand,known_answer,45.0,91.0,45.0,yes,yes,(20 - 11) / 20
 A2.3,A2.3: the Amber edge is the chain completion itself,known_answer,40.0,81.0,40.0,yes,yes,
 A2.3,A2.3: the Red edge is a third of the way to completion,known_answer,60.0,121.0,60.0,yes,yes,40 + (100 - 40)/3
-A2.3,A2.3: 15 against an edge of 40 is Green,boundary,'Green','Green (perturbed)','Green',yes,yes,
-A2.3,A2.3: a project exactly on plan consumes no buffer,known_answer,0.0,1.0,0.0,yes,yes,(1 - 1.0) * 100 * 1.5
+A2.3,A2.3: 45 against edges of 40 and 60 is Amber,boundary,'Amber','Amber (perturbed)','Amber',yes,yes,
+A2.3,A2.3: 15 per cent consumed at 40 per cent complete is Green,boundary,'Green','Green (perturbed)','Green',yes,yes,
+A2.3,A2.3: 65 per cent consumed at 40 per cent complete is Red,boundary,'Red','Red (perturbed)','Red',yes,yes,
+A2.3,A2.3: an untouched buffer is nought per cent consumed,known_answer,0.0,1.0,0.0,yes,yes,
 A2.3,"A2.3: and at zero chain completion it still reads Amber, because the edge is inclusive at zero",boundary,'Amber','Amber (perturbed)','Amber',yes,yes,
 A4.4,A4.4: the open ratio is 0.15 by hand,known_answer,0.15,1.3,0.15,yes,yes,6 open of an audited cohort of 40
 A4.4,"A4.4: exactly 0.15 is Yellow, so the Green edge is exclusive",boundary,'Yellow','Yellow (perturbed)','Yellow',yes,yes,
 A4.4,A4.4: just below 0.15 is Green,boundary,'Green','Green (perturbed)','Green',yes,yes,
 A4.4,"A4.4: without an audited cohort it abstains, which is the expected outcome on this corpus",abstention,True,False,True,yes,yes,
 A4.4,A4.4: a backlog larger than the cohort is refused,domain,True,False,True,yes,yes,
-A5.6,"A5.6: 37 of 200 is 0.185, reported to two places as 0.19",known_answer,0.19,1.38,0.19,yes,yes,"37/200 = 0.185, rounded half up"
-A5.6,A5.6: 0.185 lands Yellow,boundary,'Yellow','Yellow (perturbed)','Yellow',yes,yes,
-A5.6,"A5.6: exactly 0.15 is Yellow, so the Green edge is EXCLUSIVE here",boundary,'Yellow','Yellow (perturbed)','Yellow',yes,yes,
-A5.6,A5.6: just below 0.15 is Green,boundary,'Green','Green (perturbed)','Green',yes,yes,
-A5.6,"A5.6: nothing planned abstains, as Run 7 installed",abstention,True,False,True,yes,yes,
-A5.6,A5.6: the ratio is invariant under scaling the whole window,property,[0.15],"[0.15, 'perturbed']",[0.15],yes,yes,6/40 at every multiple from one to twenty-four
-A5.7,A5.7: 3 of 20 at risk is 0.15 by hand,known_answer,0.15,1.3,0.15,yes,yes,
+A5.6,"A5.6: a look-ahead window no longer produces a reading, because a share of constrained activities is not a queue",abstention,True,False,True,yes,yes,
+A5.6,A5.6: utilisation is 0.5 by hand,known_answer,0.5,2.0,0.5,yes,yes,20 service days over 2 servers times a 20 day window
+A5.6,A5.6: a utilisation below one is a queue with a steady state,boundary,'Green','Green (perturbed)','Green',yes,yes,
+A5.6,"A5.6: exactly one is unstable, so the boundary is inclusive on the unstable side",boundary,'Red','Red (perturbed)','Red',yes,yes,
+A5.6,A5.6: just below one still has a steady state,boundary,'Green','Green (perturbed)','Green',yes,yes,
+A5.6,A5.6: the ninetieth percentile wait is 8.1 days by hand,known_answer,8.1,17.2,8.1,yes,yes,linear interpolation at index 0.9 * (10 - 1)
+A5.6,A5.6: and the mean wait is 4.5 days,known_answer,4.5,10.0,4.5,yes,yes,
+A5.6,A5.6: utilisation is invariant under scaling the whole run,property,[0.5],"[0.5, 'perturbed']",[0.5],yes,yes,the same queue observed for longer is the same queue
+A5.7,"A5.7: a procurement log no longer produces a reading, because a list of items is not a set of agents",abstention,True,False,True,yes,yes,
+A5.7,A5.7: 3 of 20 agents disrupted is 0.15 by hand,known_answer,0.15,1.3,0.15,yes,yes,
 A5.7,A5.7: 0.15 lands Yellow,boundary,'Yellow','Yellow (perturbed)','Yellow',yes,yes,
+A5.7,A5.7: and the run covers the time steps the history carries,known_answer,2,5,2,yes,yes,
 A5.7,"A5.7: exactly 0.10 is Yellow, so the Green edge is exclusive",boundary,'Yellow','Yellow (perturbed)','Yellow',yes,yes,
-A5.7,"A5.7: an empty long-lead log abstains, as Run 7 installed",abstention,True,False,True,yes,yes,
-A5.7,A5.7: more items at risk than recorded is refused,domain,True,False,True,yes,yes,
+A5.7,A5.7: just below 0.10 is Green,boundary,'Green','Green (perturbed)','Green',yes,yes,
+A5.7,A5.7: a single point in time is not a run over time and is refused,domain,True,False,True,yes,yes,
 A6.3,A6.3: the audited rate is passed through unchanged,pass_through,95,191,95.0,yes,yes,
 A6.3,"A6.3: exactly 95 per cent is Green, inclusive",boundary,'Green','Green (perturbed)','Green',yes,yes,
 A6.3,A6.3: just below 95 per cent is Yellow,boundary,'Yellow','Yellow (perturbed)','Yellow',yes,yes,
@@ -155,17 +164,19 @@ A5.1,A5.1: abstains on a fully populated input,disabled_contract,True,False,True
 A5.1,A5.1: no band is reachable from any input,disabled_contract,None,'__not-none__',None,yes,yes,
 A5.1,A5.1: is not a voting module,disabled_contract,False,True,False,yes,yes,
 ,"A3.1 and A5.1 are off by abstention, not by the registry's disabled set",derivation,[],['perturbed'],[],yes,yes,
-,four of the 27 are inclusive on the calmer side of their edge,boundary,"['A2.9', 'A4.10', 'A6.2', 'A6.3']","['A2.9', 'A4.10', 'A6.2', 'A6.3', 'perturbed']","['A2.9', 'A4.10', 'A6.2', 'A6.3']",yes,yes,
-,three of the 27 are exclusive on the calmer side of the same kind of edge,boundary,"['A4.4', 'A5.6', 'A5.7']","['A4.4', 'A5.6', 'A5.7', 'perturbed']","['A4.4', 'A5.6', 'A5.7']",yes,yes,
+,"five of the 27 are inclusive at the edge, counting the queueing measure whose single boundary is inclusive on the unstable side",boundary,"['A2.9', 'A4.10', 'A5.6', 'A6.2', 'A6.3']","['A2.9', 'A4.10', 'A5.6', 'A6.2', 'A6.3', 'perturbed']","['A2.9', 'A4.10', 'A5.6', 'A6.2', 'A6.3']",yes,yes,
+,two of the 27 are exclusive on the calmer side of the same kind of edge,boundary,"['A4.4', 'A5.7']","['A4.4', 'A5.7', 'perturbed']","['A4.4', 'A5.7']",yes,yes,
 ,"every one of the 27 is reached by the production path, computed or abstaining",production_path,[],['perturbed'],[],yes,yes,
 ,the two unconditionally abstaining modules appear on the production abstention list,production_path,"['A3.1', 'A5.1']","['A3.1', 'A5.1', 'perturbed']","['A3.1', 'A5.1']",yes,yes,
+A5.6,"A5.6: on the real production path it abstains, because the documents carry no queue and no agents",production_path,True,False,True,yes,yes,
+A5.6,A5.6: and the stored row names the absent canonical structure,production_path,'canonical_structure_absent','canonical_structure_absent (perturbed)','canonical_structure_absent',yes,yes,
+A5.7,"A5.7: on the real production path it abstains, because the documents carry no queue and no agents",production_path,True,False,True,yes,yes,
+A5.7,A5.7: and the stored row names the absent canonical structure,production_path,'canonical_structure_absent','canonical_structure_absent (perturbed)','canonical_structure_absent',yes,yes,
 ,not one of the 27 carries a vote on the stored row,production_path,[],['perturbed'],[],yes,yes,
 ,the voting set is unchanged by this run,production_path,"['A1.7', 'A1.8']","['A1.7', 'A1.8', 'perturbed']","['A1.7', 'A1.8']",yes,yes,
 A2.9,A2.9: the production path gives 1.05 for load_ratio,production_path,1.05,3.1,1.05,yes,yes,1050/1000
 A2.5,A2.5: the production path gives 1.0 for float_stress,production_path,1.0,3.0,1.0,yes,yes,0.40 consumed at 40 per cent complete
 A4.4,A4.4: the production path gives 0.15 for open_ratio,production_path,0.15,1.3,0.15,yes,yes,6 of an audited cohort of 40
-A5.6,A5.6: the production path gives 0.19 for constraint_ratio,production_path,0.19,1.38,0.19,yes,yes,37 of 200
-A5.7,A5.7: the production path gives 0.15 for at_risk_ratio,production_path,0.15,1.3,0.15,yes,yes,3 of 20
 A6.1,A6.1: the production path gives 92 for quality_score,production_path,92,185,92,yes,yes,(100 - 8)/100
 A6.3,A6.3: the production path gives 97 for compliance_rate,production_path,97,195,97.0,yes,yes,the audited rate passed through
 A6.4,A6.4: the production path gives 3.2 for min_rating,production_path,3.2,7.4,3.2,yes,yes,"min(4.2, 3.9, 4.0, 3.2)"
@@ -173,5 +184,5 @@ A1.6,A1.6: the production path gives 0.889 for spi_time,production_path,0.889,2.
 A2.11,A2.11: the production path gives 0.889 for critical_path_index,production_path,0.889,2.778,0.889,yes,yes,(0.888888 + 0.889)/2
 ,every band the 27 store is recognised by the status vocabulary,production_path,[],['perturbed'],[],yes,yes,
 ,on an empty input the production path bands none of the 27,production_path,[],['perturbed'],[],yes,yes,
-,every case wrote a mutation-proof row,derivation,176,353,176,yes,yes,
+,every case wrote a mutation-proof row,derivation,187,375,187,yes,yes,
 ,every expectation went red under perturbation,derivation,[],['perturbed'],[],yes,yes,

@@ -626,9 +626,17 @@ check(voting_ids == VOTING_AFTER_RUN4,
       "exactly two computed modules vote and the other ninety-plus do not, measured on the "
       "stored row rather than on the constant", str(sorted(voting_ids)))
 non_voting_count = sum(1 for r in comp.values() if not r.get("votes"))
-check(non_voting_count > 50,
+# RUN 10B RESTATEMENT, ORIGINAL FINDING PRESERVED. Run 4 asserted that more than fifty computed
+# modules do not vote, as a plain statement that the non-voting set is the bulk of the platform
+# rather than a handful. That is still what is being asserted. The threshold moves because Run
+# 10B requires four canonical methods to hold their defining structure before computing, and the
+# document corpus does not carry a line of balance, a sized critical-chain buffer, a queue or a
+# set of agents, so those four now abstain on this project instead of computing a proxy. They are
+# still non-voting; they are no longer counted here because they no longer compute at all.
+check(non_voting_count > 40 and non_voting_count == len(comp) - len(voting_ids),
       "and the ones that do not vote are the bulk of the platform, computed and stored as "
-      "before", str(non_voting_count))
+      "before: every computed module except the two voters",
+      f"{non_voting_count} non-voting of {len(comp)} computed")
 # Layer (a): category rollup and project status fusion.
 cats = r4.get("category_statuses") or {}
 index = registry.registry_index()
