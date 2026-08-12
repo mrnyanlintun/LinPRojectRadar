@@ -307,9 +307,25 @@ RUN15_SCOPED_FILES = {
     "assets/js/knowledge.js",
 }
 
+# RUN 16 corrected the Signal Flow diagram, which reported the platform's registry counts as
+# the project's own activity and animated every connection on a project with no evidence; made
+# the clear-all workflow invalidate the results derived from the evidence it clears, which is a
+# write-path change; and disabled Material Cost Variance from operational execution, which the
+# registry enforces and the export mirrors.
+RUN16_SCOPED_FILES = {
+    "assets/js/neural_flow.js",
+    "assets/js/detail.js",
+    "assets/js/taxonomy.js",
+    "server/app/writes.py",
+    "server/app/research_export.py",
+    "server/app/simulation/registry.py",
+    "server/app/simulation/qualification.py",
+    "server/app/simulation/models.py",
+}
+
 _unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES
                    - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES - RUN14_SCOPED_FILES
-                   - RUN15_SCOPED_FILES)
+                   - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES)
 check(not _unscoped,
       "no production file outside the authorised scope of Run 7, Run 10, Run 10B, Run 11, "
       "Run 12 or Run 14 differs from the pinned baseline",
@@ -320,10 +336,10 @@ _assets = sorted(p for p in _prod if p.startswith("assets/"))
 # the dormant client arithmetic, so the assertion narrows to those and keeps its force over
 # every other participant surface.
 check(not (set(_assets) - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES
-           - RUN15_SCOPED_FILES),
+           - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES),
       "every participant surface outside Run 11's authorised browser scope is byte-identical "
       "to the freeze", str(sorted(set(_assets) - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES
-                 - RUN15_SCOPED_FILES)))
+                 - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES)))
 check(_prod, "the guard is live: it does see the files this run did change", str(_prod))
 # RESTATED BY RUN 10B, with the original reason preserved: this check has tracked the current
 # stamp since Run 6, and it read sim-2026.08-v4 while Run 10 was current.
