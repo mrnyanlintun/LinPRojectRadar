@@ -1,0 +1,59 @@
+record_type,module_id,canonical_name,item,value,source_or_basis
+CANONICAL,D1.1,Isolation Forest,primary source,"Liu, Ting and Zhou, Isolation Forest, Proceedings of the 2008 Eighth IEEE International Conference on Data Mining, pages 413 to 422, doi:10.1109/ICDM.2008.17; extended as Isolation-Based Anomaly Detection, ACM TKDD 6(1) 2012, doi:10.1145/2133360.2133363",primary literature
+CANONICAL,D1.1,Isolation Forest,random attribute selection,an attribute q is drawn uniformly at random at each internal node,implemented
+CANONICAL,D1.1,Isolation Forest,random split selection,a split point p is drawn uniformly at random between the minimum and maximum of q over the node population,implemented
+CANONICAL,D1.1,Isolation Forest,isolation trees,proper binary trees grown to a height limit of ceil(log2(psi)),implemented
+CANONICAL,D1.1,Isolation Forest,subsampling,each tree grown on an independent subsample of size psi drawn without replacement,implemented
+CANONICAL,D1.1,Isolation Forest,path length,edges traversed plus c(size) at an external node holding more than one point,implemented
+CANONICAL,D1.1,Isolation Forest,unsuccessful-search adjustment,c(n) = 2H(n-1) - 2(n-1)/n,implemented; H taken by the paper own ln + Euler estimate
+CANONICAL,D1.1,Isolation Forest,ensemble aggregation,E(h(x)) is the mean path length over the trees,implemented
+CANONICAL,D1.1,Isolation Forest,score,"s(x,n) = 2 ** (-E(h(x)) / c(psi)); tends to 1 as the path shortens, to 0.5 at c(n), to 0 as it lengthens",implemented and asserted
+CANONICAL,D1.1,Isolation Forest,published defaults,"t = 100 trees, psi = 256",adopted
+IMPLEMENTATION,D1.1,Isolation Forest,strategy,a pure-Python implementation of the published algorithm at server/app/simulation/isolation_forest.py,
+IMPLEMENTATION,D1.1,Isolation Forest,why not a library,"the repository pins a deliberately pure-Python dependency set with no numeric extension of any kind, and the deployment target is a small Render service. Adding scikit-learn pulls numpy, scipy and joblib and their compiled wheels into the production image for one module. The dependency was judged inappropriate; the decision is recorded rather than assumed.","documented reason, per the run instruction to prefer a library only where the dependency is appropriate"
+IMPLEMENTATION,D1.1,Isolation Forest,independent cross-check against a maintained library,scikit-learn 1.9.0 IsolationForest was installed in the DEVELOPMENT container only and used as an oracle. On a seeded three-dimensional fixture of 512 reference points and 180 query points: Spearman rank correlation of the two score vectors 0.9952; maximum absolute score difference 0.0214; mean absolute difference 0.0054; identical ROC-AUC of 1.000; our c(256) and scikit-learn _average_path_length(256) agree to nine significant figures at 10.244771.,scikit-learn is NOT in server/requirements.txt and is not imported by any committed file
+IMPLEMENTATION,D1.1,Isolation Forest,determinism,a fixed seed constant of 20250815; a given portfolio returns the same score every time; a different seed grows a different forest,asserted in the suite
+IMPLEMENTATION,D1.1,Isolation Forest,preprocessing,"the four features are cost index, schedule index, document risk and percent complete divided by one hundred; no standardisation is applied, because isolation forest splits on raw ranges and is scale free per attribute",
+SPLITS,D1.1,Isolation Forest,training and reference population,300 seeded normal projects,tools/run15_isolation_forest_calibration.py
+SPLITS,D1.1,Isolation Forest,calibration split,"106 labelled cases, nine families, used ONLY to select the threshold",
+SPLITS,D1.1,Isolation Forest,holdout split,"106 labelled cases from a separate draw, scored ONCE at the frozen threshold",
+SPLITS,D1.1,Isolation Forest,leakage guards,"labels exist before any score; no holdout case is in the reference population; in production the forest is grown on the OTHER projects and never on the project being scored, which the retired detector did not do",asserted in the suite
+THRESHOLD,D1.1,Isolation Forest,predeclared objective,"the smallest threshold whose specificity on the calibration split is at least 0.95, that is at most one false positive in twenty",declared before any threshold was scored; the retired detector figure of 0.720 was not used to set it
+THRESHOLD,D1.1,Isolation Forest,selected,0.576,calibration split
+THRESHOLD,D1.1,Isolation Forest,retired threshold carried over,NO,the standardised-distance expression mean distance plus one and a half times the summed per-axis spreads is gone from the module
+THRESHOLD,D1.1,Isolation Forest,stability across reference population sizes,"0.580 at 10 projects, 0.576 at 20, 0.576 at 40, 0.555 at 80, 0.576 at 300",
+THRESHOLD,D1.1,Isolation Forest,bands,"Green below 0.5 on the authority of the paper, which states a score near one half means the sample holds no distinct anomaly; Red at the calibrated 0.576; one interior boundary two thirds of the way between, stated as a convention of this platform and not a result from the paper",
+CALIBRATION_METRICS,D1.1,Isolation Forest,confusion at the threshold,"true positives 32, false positives 2, true negatives 48, false negatives 24",calibration split
+CALIBRATION_METRICS,D1.1,Isolation Forest,precision,0.9412,calibration split
+CALIBRATION_METRICS,D1.1,Isolation Forest,recall,0.5714,calibration split
+CALIBRATION_METRICS,D1.1,Isolation Forest,specificity,0.9600,calibration split
+CALIBRATION_METRICS,D1.1,Isolation Forest,false_positive_rate,0.0400,calibration split
+HOLDOUT_METRICS,D1.1,Isolation Forest,ROC-AUC,0.9607,"holdout, scored once"
+HOLDOUT_METRICS,D1.1,Isolation Forest,PR-AUC,0.9620,"holdout, scored once"
+HOLDOUT_METRICS,D1.1,Isolation Forest,confusion at the frozen threshold,"true positives 32, false positives 0, true negatives 50, false negatives 24",holdout
+HOLDOUT_METRICS,D1.1,Isolation Forest,precision,1.0000,holdout
+HOLDOUT_METRICS,D1.1,Isolation Forest,recall,0.5714,holdout
+HOLDOUT_METRICS,D1.1,Isolation Forest,specificity,1.0000,holdout
+HOLDOUT_METRICS,D1.1,Isolation Forest,false_positive_rate,0.0000,holdout
+HOLDOUT_FAMILY,D1.1,Isolation Forest,clean normal,label 0; mean score 0.430; flagged fraction 0.000,holdout
+HOLDOUT_FAMILY,D1.1,Isolation Forest,duplicated normal,label 0; mean score 0.431; flagged fraction 0.000,holdout
+HOLDOUT_FAMILY,D1.1,Isolation Forest,boundary near-normal,label 0; mean score 0.482; flagged fraction 0.000,holdout
+HOLDOUT_FAMILY,D1.1,Isolation Forest,extreme single feature,label 1; mean score 0.526; flagged fraction 0.000,holdout
+HOLDOUT_FAMILY,D1.1,Isolation Forest,moderate single feature,label 1; mean score 0.511; flagged fraction 0.000,holdout
+HOLDOUT_FAMILY,D1.1,Isolation Forest,multivariate joint anomaly,label 1; mean score 0.717; flagged fraction 1.000,holdout
+HOLDOUT_FAMILY,D1.1,Isolation Forest,unusual feature combination,label 1; mean score 0.758; flagged fraction 1.000,holdout
+HOLDOUT_FAMILY,D1.1,Isolation Forest,isolated outlier,label 1; mean score 0.751; flagged fraction 1.000,holdout
+HOLDOUT_FAMILY,D1.1,Isolation Forest,small anomaly cluster,label 1; mean score 0.747; flagged fraction 1.000,holdout
+COMPARISON,D1.1,Isolation Forest,against the retired detector,"the retired standardised-distance detector reached ROC-AUC 0.994 and recall 1.000 at specificity 0.720. The real isolation forest reaches ROC-AUC 0.961 and recall 0.571 at specificity 1.000. The separation figure is LOWER, and this is reported rather than smoothed: the Run 14 anomaly families were constructed as departures from a centroid, which is precisely what the retired detector measures, so that fixture favours it. The forest trades recall for false alarms at a threshold chosen for few false alarms.","honest comparison, not a claim of improvement on every axis"
+LIMITATION,D1.1,Isolation Forest,small portfolios,"with only ten other projects to grow the trees on, holdout ROC-AUC falls to 0.677; at twenty it is 0.826; at eighty 0.911. An isolation forest needs a population and this platform frequently will not have one.","measured across reference sizes 10, 20, 40, 80 and 300"
+LIMITATION,D1.1,Isolation Forest,single-feature anomalies,"extreme and moderate single-feature anomalies are ranked above normal cases but sit below the calibrated threshold, so they are not flagged",a known property of random attribute selection
+LIMITATION,D1.1,Isolation Forest,features,the four features are equally available to the splitter with no stated basis for the choice of those four,unchanged from the retired detector
+LIMITATION,D1.1,Isolation Forest,missing inputs,"absent figures are still replaced by fixed stand-in values in the vector builder, so an absent figure enters as a value rather than as an abstention",unchanged this run; outside the authorised change
+LEGACY,D1.1,Isolation Forest,disposition,"the standardised-distance score is no longer computed, named or reported under the isolation forest identity. The quantity survives at one line, renamed relative_distance, solely because D1.5 Anomaly Score composes it with the percentile rank, and D1.5 is a separately registered module this run was not authorised to change. D1.5 output is unchanged.",B7
+LEGACY,D1.1,Isolation Forest,browser or client resurrection,the browser never computed it; it posts to the server and merges the result. The client method descriptions that described this module as a distance proxy were corrected in knowledge.js and ds_defensibility_data.js.,
+LEGACY,D1.1,Isolation Forest,second active module,NO: there is one anomaly implementation under the isolation forest identity,
+STATE,D1.1,Isolation Forest,METHOD_FIDELITY,VERIFIED,
+STATE,D1.1,Isolation Forest,CANONICAL_BEHAVIOR,PASS,"trees, splits, subsampling, height limit, path lengths, normalisation, score limits, seeding, permutation, no fallback, six mutation proofs"
+STATE,D1.1,Isolation Forest,ANOMALY_DETECTION_FUNCTION,VERIFIED,
+STATE,D1.1,Isolation Forest,CONTROLLED_THRESHOLD_CALIBRATION,VERIFIED,synthetic seeded populations only
+STATE,D1.1,Isolation Forest,FIELD_EMPIRICAL_VALIDATION,NOT_CLAIMED,no project data was used at any point

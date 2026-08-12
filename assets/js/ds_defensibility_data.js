@@ -279,7 +279,7 @@ const DS_DEFENSIBILITY = {
    {
     "id_display": "D1.1",
     "currentName": "Isolation Forest",
-    "finding": "The backend computes a standardized distance from the portfolio centroid. It does not construct isolation trees and therefore is not an Isolation Forest implementation.",
+    "finding": "The backend now grows an ensemble of isolation trees on the other projects in the portfolio and scores by normalised mean path length, which is the published algorithm. The standardised distance it used to report under this name has been removed from this module.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    }
   ]
@@ -3532,9 +3532,9 @@ const DS_DEFENSIBILITY = {
      "explainability": "Portfolio trace: standardized feature vector, comparator cohort, distance or percentile rank, component contribution, leave-one-feature-out sensitivity, and small-n warning. Do not use Tree SHAP unless a real tree ensemble is implemented.",
      "oversightLevel": "INFORM_ONLY_FLAG",
      "oversightDescription": "Inform-only / flag - supplies uncertainty, conflict, or portfolio context; never a sole action trigger.",
-     "failureModes": "Very small portfolio; scaling sensitivity; mislabeled algorithm; outliers dominating centroid/stddev.",
+     "failureModes": "Very small portfolio, where an ensemble grown on a handful of projects separates poorly; a threshold calibrated on synthetic data rather than on field data.",
      "assumptionsLimitations": "Requires 3+ projects (stated explicitly; modules abstain below that). Small-n portfolios give unstable scores - reported as exploratory signals, never as sole escalation triggers.",
-     "implementationFidelity": "The backend computes a standardized distance from the portfolio centroid. It does not construct isolation trees and therefore is not an Isolation Forest implementation.",
+     "implementationFidelity": "The backend grows an ensemble of isolation trees on the other projects in the portfolio and scores by normalised mean path length, which is the published algorithm.",
      "accreditationBasis": "Isolation Forest (Liu et al. 2008) peer-reviewed. Validation for this method would consist of seeding a known-deviant synthetic project and confirming it ranks top of the anomaly ordering. None of that has been performed on this platform. What the repository holds is known-answer testing of the stated formula and, for many modules, a domain and boundary enumeration. That supports the claim that the arithmetic is independently verified for the stated formula. It does not establish empirical validation or calibration.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 7-10; ISO/IEC 23894 risk analysis/evaluation; W3C PROV-O for traceability where source records drive the indicator.",

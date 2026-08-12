@@ -42,6 +42,69 @@ PORTFOLIO_VALIDATED = {
 }
 
 
+# ---------------------------------------------------------------- D1.1 Isolation Forest
+#
+# RUN 15. D1.1 is a real isolation forest, per Liu, Ting and Zhou (ICDM 2008,
+# doi:10.1109/ICDM.2008.17). The algorithm lives in `isolation_forest.py`; this is the wiring.
+#
+# REFERENCE POPULATION. The forest is grown on the OTHER projects in the portfolio, never on
+# the project being scored. Production previously formed its centroid and spread from a
+# population that included the scored project, so a project partly set its own normal. Nothing
+# scores itself here.
+#
+# DETERMINISM. The seed is a fixed constant, so a given portfolio returns the same score every
+# time, which this platform requires of every module. The randomisation is real: the trees
+# differ under a different seed.
+#
+# THRESHOLD. 0.576, selected on a synthetic calibration split under a predeclared objective of
+# at most one false positive in twenty, then frozen and evaluated once on a holdout. The
+# retired standardised-distance threshold was NOT carried over. See
+# code_audit/run15_isolation_forest_validation.csv and tools/run15_isolation_forest_calibration.py.
+#
+# BANDS. Liu, Ting and Zhou state that a score near 0.5 means the sample holds no distinct
+# anomaly, so the Green boundary sits at 0.5 on the authority of the paper. Red sits at the
+# calibrated threshold. The single interior boundary is two thirds of the way from 0.5 to the
+# threshold and is stated to be a convention of this platform, not a result from the paper.
+IF_ANOMALY_THRESHOLD = 0.576
+IF_TREES = 100
+IF_SUBSAMPLE = 256
+IF_SEED = 20250815
+
+
+def _isolation_forest_result(vectors, current_id, current_vec, n) -> dict[str, Any]:
+    from .models import insufficient
+    from .isolation_forest import IsolationForest
+
+    reference = [v["v"] for v in vectors if v["id"] != current_id]
+    if len(reference) < 2:
+        return insufficient(
+            "Isolation_Forest",
+            "Two other projects are needed before a project can be compared against them")
+
+    forest = IsolationForest(reference, n_trees=IF_TREES,
+                             subsample=min(IF_SUBSAMPLE, len(reference)), seed=IF_SEED)
+    score = forest.anomaly_score(current_vec)
+    mean_path = forest.mean_path_length(current_vec)
+    t = IF_ANOMALY_THRESHOLD
+    interior = 0.5 + (2.0 / 3.0) * (t - 0.5)
+    status = ("Red" if score >= t else "Amber" if score >= interior
+              else "Yellow" if score >= 0.5 else "Green")
+    return {
+        "method_class": "Isolation_Forest", "status_color": status,
+        "anomaly_score": round2(score),
+        "mean_path_length": round2(mean_path),
+        "normaliser": round2(forest.normaliser),
+        "trees": forest.n_trees, "subsample": forest.subsample,
+        "threshold": t, "portfolio_size": n, "reference_size": len(reference),
+        "is_anomaly": score >= t,
+        "evidence_metric": (
+            f"Isolation Forest: anomaly score {int(js_round(score * 100))}% from a mean path "
+            f"length of {mean_path:.2f} over {forest.n_trees} isolation trees grown on "
+            f"{len(reference)} other projects"
+        ),
+    }
+
+
 def _insufficient(current_id, message: str) -> dict[str, Any]:
     return {"ok": True, "id": current_id, "insufficient_data": True,
             "message": message, "results": {}}
@@ -90,19 +153,17 @@ def compute_portfolio(portfolio: list[dict], current_id, history: list[dict] | N
     all_dists = [mahalanobis(v["v"]) for v in vectors]
     current_dist = mahalanobis(current_vec)
     max_dist = max(all_dists)
-    mean_dist = sum(all_dists) / len(all_dists)
-    threshold = mean_dist + 1.5 * sum(stddev)
-    anomaly_score = min(1, current_dist / (max_dist or 1))
-    iso_status = ("Red" if current_dist > threshold
-                  else "Amber" if current_dist > threshold * 0.7
-                  else "Yellow" if current_dist > threshold * 0.4 else "Green")
-    isolation_forest = {
-        "method_class": "Isolation_Forest", "status_color": iso_status,
-        "anomaly_score": round2(anomaly_score), "distance": round2(current_dist),
-        "threshold": round2(threshold), "portfolio_size": n,
-        "is_anomaly": current_dist > threshold,
-        "evidence_metric": f"Isolation Forest: anomaly score {int(js_round(anomaly_score * 100))}%",
-    }
+
+    # RUN 15. `relative_distance` below is the standardised-distance quantity that used to be
+    # reported as the Isolation Forest score. It is NOT an isolation forest and never was: no
+    # tree, no ensemble, no random split, no path length. D1.1 now runs a real isolation forest
+    # (see `isolation_forest.py` and the block below) and this quantity is left in place ONLY
+    # because D1.5 Anomaly_Score composes it with the percentile rank and D1.5 is a separately
+    # registered module this run was not authorised to change. It is no longer reachable under
+    # the isolation forest identity: the name is not on it, and nothing in D1.1 reads it.
+    relative_distance = min(1, current_dist / (max_dist or 1))
+
+    isolation_forest = _isolation_forest_result(vectors, current_id, current_vec, n)
 
     cpi_rank = sum(1 for v in vectors if v["v"][0] <= current_vec[0]) / n
     spi_rank = sum(1 for v in vectors if v["v"][1] <= current_vec[1]) / n
@@ -179,7 +240,7 @@ def compute_portfolio(portfolio: list[dict], current_id, history: list[dict] | N
     # the least anomalous in its portfolio and ranks best on both indices scored 0.166667 where
     # the honest answer is zero, and the ladder below reads it directly. The mean is now taken
     # over the terms that were actually measured.
-    scores = [anomaly_score, 1 - composite_rank]
+    scores = [relative_distance, 1 - composite_rank]
     if len(history) >= 2 and trend != 0:
         scores.append(min(1, abs(trend) * 20))
     composite_anomaly = round2(sum(scores) / len(scores))
