@@ -1,0 +1,11 @@
+fault,mutation_applied,check_turned_red,detail
+wrong Earned Schedule interpolation,True,True,
+Dempster-Shafer ignorance converted to conflict,True,True,"canonical Green 0.8, mutated 0.6"
+Pareto dominated point admitted,True,True,"canonical frontier [(8, 8), (10, 5), (12, 4)]"
+M/M/1 denominator operator error,True,True,"canonical L=2, mutated 0.4000"
+Isolation Forest score exponent sign,True,True,mutated score 1.5476 leaves the unit interval
+Pythagorean admissibility violation,True,True,
+Linear Programming wrong optimum,True,True,"vertex enumeration gives (2, 6) with objective 36"
+regulatory rule-version mismatch,True,True,
+Category-9 raw bypass,True,True,"the ensemble returns the same answer with and without a qualification marker, so qualification is not enforced at the boundary"
+random-seed perturbation,True,True,
