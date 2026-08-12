@@ -68,6 +68,7 @@ from .jdrive_tree import (
 from .facade import err, now_iso
 from .models import Project
 from .simulation.fusion import governed_status_semantics
+from .simulation.qualification import qualification_for_stored_result
 from .research_identity import audit, resolve_caller
 from .research_membership import (
     ROLE_PM,
@@ -1425,6 +1426,19 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
         # before this run answers exactly as one stored after it, and migrations 0020 through
         # 0025 stay where they are.
         **governed_status_semantics(row.category_statuses),
+        # RUN 12, GATE 2. The evidence qualification, derived at read time from what this row
+        # already holds, by the same function the compute path uses. Metadata only: it carries
+        # no score, casts no vote and cannot change `project_status`, which is read from the
+        # stored row above and never revised here. Its unanswerable dimensions stay PARTIAL and
+        # NOT_ESTIMABLE on the read path exactly as they are on the compute path.
+        "evidence_qualification": qualification_for_stored_result(
+            signal_inputs=row.signal_inputs,
+            module_results=row.module_results,
+            abstained=row.abstained,
+            project_id=None,
+            period=(f"P{row.period}" if row.period is not None else None),
+            period_cutoff=row.period_cutoff,
+        ),
         "portfolio_snapshot": row.portfolio_snapshot,
         "simulation_version": row.simulation_version,
         "seed": row.seed,

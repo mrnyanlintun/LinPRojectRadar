@@ -11,6 +11,7 @@ from typing import Any
 
 from .fusion import dst_fuse, governed_status_semantics
 from .models import SIMULATION_VERSION
+from .qualification import build_qualification
 from .registry import CORE_VOTING_MODULES, registry_index, run_all
 
 
@@ -79,7 +80,7 @@ def compute_project(si: dict, scenario_id: str, period: str,
     voting_module_ids = sorted(r["module_id"] for r in run["computed"]
                                if r["module_id"] in CORE_VOTING_MODULES)
 
-    return {
+    result = {
         "simulation_version": SIMULATION_VERSION,
         "seed": run["seed"],
         "scenario_id": scenario_id,
@@ -98,3 +99,20 @@ def compute_project(si: dict, scenario_id: str, period: str,
         "voting_module_ids": voting_module_ids,
         "categories_voting": len(voting),
     }
+
+    # ------------------------------------------------------------------------ RUN 12, GATE 2
+    # The evidence qualification (the category nine question), attached AFTER the status is
+    # fused and derived FROM the run that produced it. Placed here and only here because this is
+    # the smallest point at which the resolved evidence and the abstentions it caused are both
+    # in hand. It is metadata: it adds no module, casts no vote, moves no band and cannot change
+    # `project_status`, which is already computed above and is not read back. The two dimensions
+    # this repository cannot answer stay PARTIAL and NOT_ESTIMABLE rather than becoming a
+    # penalty or a score.
+    result["evidence_qualification"] = build_qualification(
+        si, result,
+        project_id=si.get("projectId") or si.get("id"),
+        reporting_period=period,
+        period_cutoff=period_cutoff,
+        generated_at=None,
+    )
+    return result

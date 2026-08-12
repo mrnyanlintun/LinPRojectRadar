@@ -1,0 +1,15 @@
+step,route,detail
+bootstrap research administrator,direct row, no route exists,the only account that cannot be made by a route
+administrator session,researchlogin,
+operational uploader account,adminparticipantcreate + researchlogin,
+evidence uploaded and computed,projectupload + projectcomputeall,2 projects, 2 periods each
+frozen project packages (scenarios),adminscenariocreate,period_count=2
+configuration and sequence, frozen,adminconfigurationcreate + adminsequencecreate,
+action families and period transition rules, frozen,adminactionfamilycreate + admintransitionrulecreate,ok=True, 5 families
+decision support packages, frozen,adminpackagecreate,2 packages, sha256 hashes
+test participant account,adminparticipantcreate + researchlogin,01KZVEPSTH308H36WS8BW6ADS0
+consent granted,consentgrant,ok=True
+participant profile (intake),intakesave,ok=True
+participant made project manager of the assigned evidence projects,adminmemberadd,required: researchadvance and projectresults both refuse a non-member
+project and period assignment,adminassign,ok=True
+packages attached to assignments,adminpackageattach,2

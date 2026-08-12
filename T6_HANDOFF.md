@@ -6789,3 +6789,90 @@ generated), `signals.js`, `detail.js`, `taxonomy.js`, `app.js`, `ds_defensibilit
 `run11_participant_route_verification.csv`, `run11_neighbour_defects_fixed.csv`,
 `run11_defensibility_claim_audit.csv`, `run11_category9_qualification.csv` (new),
 `REPORT_2026-08-12_run11-browser-participant-governance-cleanup.md` (new), this entry.
+
+# Run 12 — final qualification, participant cycle and refreeze (2026-08-12)
+
+**Branch `claude/run12-final-qualification-and-refreeze` from `origin/main` at `3139773`, the Run
+11 merge. Report:
+`REPORT_2026-08-12_run12-final-qualification-participant-cycle-refreeze.md`, which is controlling
+and self-contained.**
+
+**Simulation version sim-2026.08-v6 to sim-2026.08-v7. Synthetic package OG-SYNTH-0.3, unchanged
+and not re-ingested. Participant and study package version og-participant-2026.08-v1, minted by
+this run. Category nine qualification version cat9-qual-v1. Production Postgres never touched.
+Migrations 0020 to 0025 still unapplied, and this run added none: the qualification object is
+derived at read time from what a stored row already holds.**
+
+**Handoff audit: no repair needed.** Every session since the last entry is represented and both
+version histories are complete. Two discrepancies recorded rather than reconstructed: there is no
+`COMMON_PREAMBLE.md` in this repository, and the `code_audit/run10_*.csv` files named in the Run
+10 entry are not present. Pre-change suite reproduced the recorded baseline exactly: **75 suites,
+5981 of 5981**.
+
+**GATE 7 OF RUN 11 IS CLOSED. The Category-9 qualification object exists.**
+`server/app/simulation/qualification.py`, explicit dimensions and **no composite score anywhere**,
+asserted by a check that fails if any leaf of any dimension is a number. Required inputs and
+canonical structure are answerable and report PASS or PARTIAL; period applicability is answerable;
+**provenance and timeliness are permanently PARTIAL and revision resolution is permanently
+NOT_ESTIMABLE**, because a per-field document identity, a per-field as-of date and a revision
+lineage joined to a field do not exist here and were not fabricated. Only the answerable
+dimensions can affect execution, and they do it through the abstention behaviour that already
+existed; the other three are metadata and are never converted to a penalty. Attached in
+`compute.compute_project` after the status is fused, and derived at read time in
+`documents._result_view` by the same function.
+
+**GATE 5 OF THIS RUN FOUND A LIVE PARTICIPANT-BLOCKING DEFECT THAT NO SUITE COULD CATCH.** The
+preliminary judgment card is removed from the document at the lock, deliberately, and nothing put
+it back. Advancing to the next reporting period returns the stage to evidence IN PLACE, without a
+page load, so **a participant could not begin their second reporting period at all**: the form
+renderer wrote into a null and threw. Every server suite was green throughout. Fixed in
+`assets/js/decision-ui.js` by retaining the detached node and re-inserting it when the stage
+legitimately returns to evidence; the removal at the lock is kept.
+
+**The full cycle was driven end to end in a real browser on the real route**, with a test
+participant provisioned entirely through the application's own operator routes:
+`drive_run12_participant_cycle.py`, **56 of 56**. Evidence, preliminary judgment, lock, reveal,
+final decision, lock, advance, and the second period's preliminary lock. **Both locks are enforced
+server-side**, proved by calling the routes directly with the participant's own session and being
+refused, and the preliminary lock is additionally enforced by the append-only database trigger when
+the application is bypassed. `pre_locked_at <= reveal_at <= final_submitted_at`. The
+confirm-gated commit was proved to no-op with dialogs suppressed BEFORE a dialog handler was
+installed, so the container fact is recorded rather than assumed away.
+
+**Two provisioning facts discovered by driving it.** The participant must be project manager of
+the assigned evidence project or `researchadvance` and `projectresults` both refuse them, and the
+uploader holds that single slot until revoked. And an action with no frozen family mapping cannot
+advance a period, which is the application correctly refusing to invent a branch.
+
+**Voting and activation unchanged: exactly A1.7 and A1.8 vote.** Bucket-5 still two disabled.
+Governed label still Cost Recovery Status; conflict still NOT_ESTIMABLE_SINGLE_LINEAGE with no
+coefficient published. Defensibility evidence regenerates byte for byte from the registry.
+
+**Test totals: 77 suites, 6102 of 6102, all green**, each against its own freshly migrated
+database. `tests.html` 51 of 51; `tests_render.html` 286 of 287, the same one non-pass since Run
+10B. Two new suites; five restated with every original finding preserved. Nine mutations plus the
+five harness cases, every one confirmed to alter bytes, every one restored.
+**The frozen-file guard tripped for real on the new file before its scope was declared, and was
+then tripped deliberately on `assets/js/store.js` and restored.**
+
+**Release: PARTICIPANT READY**, at merged commit recorded in the report. The verdict rests on the
+decision-card correction above; without driving the cycle it would have shipped behind a green
+suite.
+
+**Remaining deviations.** Category-9 provenance, timeliness and revision resolution cannot be
+completed without evidence structures the repository does not hold, which is an owner decision.
+`tests_render.html` check 264 still needs a signed-in session token. The dead control-chart penalty
+in the forecast module, the registry canonical name for the forecast module, and the two audit
+artefacts rewritten by their own suites all stand exactly as Run 10 and Run 10B left them; the two
+artefacts were restored rather than committed in this run.
+
+Files: `server/app/simulation/qualification.py` (new), `compute.py`, `models.py`,
+`server/app/documents.py`, `assets/js/decision-ui.js`,
+`server/tools/test_run12_category9_qualification.py`, `test_run12_final_verification.py`,
+`drive_run12_participant_cycle.py` (all new), `test_run6_known_answer.py`,
+`test_run8_retest_classify_27.py`, `test_run10_state_protection.py`,
+`test_run7_fix_now_defects.py`, `test_run10b_a1_7_domain.py` (restated),
+`code_audit/run12_participant_cycle_evidence.csv`, `run12_participant_provisioning.csv`,
+`run12_mutation_proof.csv`, `run12_harness_failure_proof.csv`,
+`run12_participant_package_checksums.sha256`, `run12_release_freeze.md` (new),
+`REPORT_2026-08-12_run12-final-qualification-participant-cycle-refreeze.md` (new), this entry.

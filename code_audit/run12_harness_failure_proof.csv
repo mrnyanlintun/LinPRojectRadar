@@ -1,0 +1,6 @@
+injection,what_the_scratch_suite_printed,runner_verdict,runner_exit
+green control,RESULT: 3/3 checks passed,ok 1 suite 3/3 ALL SUITES GREEN,0
+no canonical RESULT line,"3 passed, 0 failed",FAIL no canonical RESULT: line,1
+reported failure,RESULT: 2/3 checks passed,FAIL 2/3,1
+green line with nonzero exit,RESULT: 3/3 then sys.exit(1),FAIL 3/3 but exit 1,1
+crash before reporting,raise SystemError,FAIL no canonical RESULT: line exit 1,1

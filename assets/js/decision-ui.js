@@ -159,6 +159,12 @@
      the participant never saw. */
   var STATE = { server: null, evidenceLabels: [] };
 
+  // The preliminary judgment card, held while it is out of the document, and the sibling it
+  // sits before. See the note in render(): the card is removed at the lock and must come back
+  // when the next reporting period returns the stage to evidence.
+  var detachedPreCard = null;
+  var preCardAnchor = null;
+
   // T6. decision.html is gone. This renders into the Period decision tab of the Project page,
   // so the sequence is a step in the period rather than a place a participant navigates to —
   // which is the point: T4 put a page load between forming a judgment and recording it.
@@ -272,12 +278,29 @@
     show("dc-advance", stage === "complete");
 
     if (stage === "evidence") {
+      // RUN 12, found by driving the whole cycle in a real browser and not findable any other
+      // way. The card below is REMOVED from the document once the judgment is locked, and
+      // nothing put it back. Advancing to the next reporting period returns the stage to
+      // evidence in place, without a page load, so the participant arrived at their second
+      // period with no preliminary judgment form at all: renderPreForm() wrote into a null and
+      // threw, and the sequence could not be continued. The removal is kept, because a
+      // submittable locked form must not sit in the DOM; the node is retained and re-inserted
+      // in its original position when the stage legitimately returns to evidence.
+      if (!$("dc-prejudgment") && detachedPreCard && preCardAnchor
+          && preCardAnchor.parentNode) {
+        preCardAnchor.parentNode.insertBefore(detachedPreCard, preCardAnchor);
+        show("dc-prejudgment", true);
+      }
       renderPreForm();
     } else {
       // Past the lock: remove the form from the document entirely. Hiding it would
       // leave a submittable form in the DOM.
       var pre = $("dc-prejudgment");
-      if (pre && pre.parentNode) pre.parentNode.removeChild(pre);
+      if (pre && pre.parentNode) {
+        preCardAnchor = pre.nextElementSibling || null;
+        detachedPreCard = pre;
+        pre.parentNode.removeChild(pre);
+      }
     }
 
     if (stage === "awaiting_reveal") {

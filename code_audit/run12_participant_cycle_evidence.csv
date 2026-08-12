@@ -1,0 +1,57 @@
+outcome,check,detail
+PASS,GATE 4: the provisioned participant starts at the evidence stage,evidence
+PASS,GATE 4: on the first reporting period,P1
+PASS,the real participant application is the page under test,39
+PASS,GATE 8: the served participant page still does not load sim.js,
+PASS,GATE 8: the served participant page still does not load simulations.js,
+PASS,GATE 8: the served participant page still does not load categories.js,
+PASS,GATE 8: and the historical client arithmetic is undefined here,
+PASS,GATE 5: the five stage cards are on the served participant page,
+PASS,GATE 5: the fixed evidence package is visible,3461
+PASS,GATE 5: the AI recommendation is NOT in the served page before the lock,
+PASS,GATE 5: and the reveal card is not offered before the preliminary lock,
+PASS,GATE 5: the participant records a preliminary action,monitor
+PASS,GATE 5: and a preliminary confidence,60
+PASS,container fact proved, not assumed: with dialogs suppressed the confirm-gated commit no-ops and NOTHING was submitted,evidence
+PASS,GATE 5: the preliminary decision submitted from the real control and LOCKED,awaiting_reveal
+PASS,GATE 7: the SERVER refuses a direct route edit of the locked preliminary decision,{'ok': False, 'error': 'preliminary judgment is already locked and cannot be resubmitted'}
+PASS,GATE 7: the stored row is locked with a lock timestamp,
+PASS,GATE 7: and holds exactly what the participant recorded,('monitor', 60)
+PASS,GATE 7: no reveal has happened yet,
+PASS,GATE 7: and the database itself refuses the edit when the application is bypassed,(sqlite3.IntegrityError) pre-judgment is locked: pre_action and pre_confidence are immutable after pre_locked_at [SQL: U
+PASS,GATE 7: the preliminary record is preserved byte for byte,
+PASS,GATE 5: the recommendation is STILL absent after the lock and before the reveal,
+PASS,GATE 5: the reveal control is now offered,
+PASS,GATE 5: after the reveal the participant can inspect the intended recommendation,
+PASS,GATE 5 and 7: the reveal is recorded and happened AFTER the preliminary lock,2026-08-12 17:01:12 -> 2026-08-12 17:01:21
+PASS,GATE 7: the revealed package hash is the frozen package's own,
+PASS,GATE 5: the participant records a final action and a disposition,monitor / accept
+PASS,GATE 5: the final decision submitted from the real control and LOCKED,complete
+PASS,GATE 7: the SERVER refuses a direct route edit of the locked final decision,{'ok': False, 'error': 'a final decision has already been recorded for this assignment'}
+PASS,GATE 7: the final record is preserved and is what the participant recorded,monitor / accept
+PASS,GATE 7: with a final submission timestamp that is the lock,
+PASS,GATE 7: the three timestamps are in the governed order,
+PASS,GATE 7: recorded against the correct assignment and project period,
+PASS,GATE 5: the advance control is offered once the period is complete,
+PASS,GATE 5: the governed transition to the next reporting period occurred,{"period": "P2", "sequence_number": null, "current_stage": "evidence"}
+PASS,GATE 5: and the next period starts at evidence again, with no recommendation,evidence
+PASS,GATE 5: the preliminary judgment card is present again in the next period,
+PASS,GATE 5: and its form renders, so the second period can actually be started,
+PASS,GATE 5: and the second period's preliminary decision locks the same way,awaiting_reveal
+PASS,GATE 5: the instrument offers the governed disposition set,['accept', 'accept_with_conditions', 'modify', 'reject', 'defer', 'request_evidence', 'escalate', 'transfer_authority']
+PASS,GATE 5: and the page offers no disposition the server does not accept,['accept', 'accept_with_conditions', 'modify', 'reject', 'defer', 'request_evidence', 'escalate', 'transfer_authority']
+PASS,GATE 5: a disposition outside the governed set is refused,{'ok': False, 'error': 'the decision support package must be revealed before a final decision can be recorded'
+PASS,the participant can read the stored result behind the page,{'ok': True, 'project_id': 'PRJ-R12-EV-1', 'result': {'result_id': '01KZVEPSG711KTA0N5ZWES
+PASS,GATE 6: the governed status label is served,Cost Recovery Status
+PASS,GATE 6: the one-lineage conflict semantics are served,NOT_ESTIMABLE_SINGLE_LINEAGE
+PASS,GATE 6: and no conflict coefficient is published,
+PASS,GATE 6: the qualification reaches the served read as NOT_ESTIMABLE,NOT_ESTIMABLE
+PASS,GATE 6: provenance is not dressed up as healthy,PARTIAL
+PASS,GATE 6: no machine or overclaiming vocabulary reached the participant page: 'remediation',
+PASS,GATE 6: no machine or overclaiming vocabulary reached the participant page: 'defect',
+PASS,GATE 6: no machine or overclaiming vocabulary reached the participant page: 'not_estimable_single_lineage',
+PASS,GATE 6: no machine or overclaiming vocabulary reached the participant page: 'cat9-qual',
+PASS,GATE 6: no machine or overclaiming vocabulary reached the participant page: 'partial',
+PASS,GATE 6: no machine or overclaiming vocabulary reached the participant page: 'calibrated',
+PASS,GATE 6: no em dash on the participant page,
+PASS,no uncaught page error across the whole cycle,[]
