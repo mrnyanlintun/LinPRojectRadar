@@ -1,0 +1,15 @@
+gate,injection,file,bytes_altered,expected,observed
+1,revision resolution reported as PASS,server/app/simulation/qualification.py,yes,red,63/70 (7 reds)
+1,overall state no longer takes the weakest dimension,server/app/simulation/qualification.py,yes,red,69/70
+1,absent provenance reported as PASS,server/app/simulation/qualification.py,yes,red,67/70
+9,voting set widened by one module,server/app/simulation/registry.py,yes,red,47/49
+9,defensibility evidence object hand edited,assets/js/ds_defensibility_evidence.js,yes,red,48/49
+8,index.html loads the retired client model file,index.html,yes,red,48/49
+9,qualification object described as calibrated,server/app/simulation/qualification.py,yes,red,48/49
+12,unauthorised change to a participant asset outside every run's scope,assets/js/store.js,yes,red,471/473
+5,the preliminary judgment card never restored after a period advance,assets/js/decision-ui.js,yes,red,page error and the second period cannot be started
+harness,no canonical RESULT line,scratch suite,yes,runner fails,FAIL no canonical RESULT: line exit 1
+harness,reported failure,scratch suite,yes,runner fails,FAIL 2/3 exit 1
+harness,green RESULT line with nonzero exit,scratch suite,yes,runner fails,FAIL 3/3 but exit 1 exit 1
+harness,crash before reporting,scratch suite,yes,runner fails,FAIL no canonical RESULT: line exit 1
+harness,green control,scratch suite,yes,runner passes,ALL SUITES GREEN exit 0

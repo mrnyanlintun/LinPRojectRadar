@@ -144,9 +144,16 @@ RUN11_BROWSER_SCOPE = {
 # index.html gains one script tag: the GENERATED defensibility evidence object, which the
 # handbook on that page reads. It is a load, not a surface change of its own.
 RUN11_PAGE_SCOPE = {"research/deepdive.html", "index.html"}
+# RESTATED BY RUN 12, ORIGINAL FINDING PRESERVED. Run 11's list stands exactly as Run 11 left
+# it. Run 12 adds ONE browser asset and names it here rather than widening the rule: the decision
+# card, where driving the whole participant cycle in a real browser found that the preliminary
+# judgment card was removed at the lock and never restored, so the second reporting period could
+# not be started at all.
+RUN12_BROWSER_SCOPE = {"assets/js/decision-ui.js"}
 check("this run touched no participant-facing browser asset outside Run 11's authorised scope",
       not [d for d in diff_names
-           if d.startswith("assets/") and d not in RUN11_BROWSER_SCOPE])
+           if d.startswith("assets/") and d not in RUN11_BROWSER_SCOPE
+           and d not in RUN12_BROWSER_SCOPE])
 check("this run touched no page the participant is served",
       not [d for d in diff_names if d.endswith(".html") and not d.startswith("tests")
            and d not in RUN11_PAGE_SCOPE])
@@ -168,9 +175,12 @@ check("this run changed only the analytical layer under the application, plus th
 # below still proves every earlier stamp is preserved rather than overwritten.
 check("the analytical layer is stamped at this run's version, and Run 10's sim-2026.08-v4 is "
       "kept as a historical audit baseline rather than being overwritten",
-      SIMULATION_VERSION == "sim-2026.08-v6")
+      SIMULATION_VERSION == "sim-2026.08-v7")
 history = (ROOT / "server" / "app" / "simulation" / "models.py").read_text(encoding="utf-8")
-for old in ("sim-2026.08-v2", "sim-2026.08-v3", "sim-2026.08-v4"):
+# RESTATED BY RUN 12, every earlier entry preserved: v5 and v6 join the list rather than
+# replacing it, so each run's freeze record is asserted present for as long as the file exists.
+for old in ("sim-2026.08-v2", "sim-2026.08-v3", "sim-2026.08-v4", "sim-2026.08-v5",
+            "sim-2026.08-v6"):
     check(f"the freeze record for {old} is preserved rather than overwritten", old in history)
 check("the synthetic package version in use is the corrected one",
       (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.3").is_dir())

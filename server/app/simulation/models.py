@@ -71,7 +71,14 @@ from .rng import as_percent, clamp, num, pctile, round1, round2
 # reproduced and left standing: five modules banded a reading from an input outside the domain
 # the quantity can occupy, and two rewarded a withheld input with a calmer band. All seven are
 # non-voting and none became voting. This changes what this layer emits, so the stamp moves.
-SIMULATION_VERSION = "sim-2026.08-v6"
+# RUN 12 (FINAL QUALIFICATION, PARTICIPANT CYCLE AND REFREEZE) moves it again, to
+# sim-2026.08-v7. Every earlier stamp remains the historical audit baseline for the results
+# already collected under it; none is overwritten. Run 12 attaches the evidence qualification
+# object to every computed result, so a result carries a new field and this layer emits
+# something it did not emit before. NOTHING ARITHMETICAL CHANGED WITH IT: no band, no boundary,
+# no module, no vote and no status. The stamp moves because the emitted object changed, which is
+# the rule this file has followed since Run 4, not because a number did.
+SIMULATION_VERSION = "sim-2026.08-v7"
 
 
 # -------------------------------------------------------------------------------------------
