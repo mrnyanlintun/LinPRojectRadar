@@ -7170,7 +7170,10 @@ evidence scripts; six existing suites;
 ## 2026-08-12 — Run 16: low-hanging instrument cleanup, empty-project truthfulness, and Material Cost Variance disabled
 
 **Branch `claude/run16-instrument-cleanup` from `origin/main` at `9b55824`, the Run 15 push.
-Merged at `RUN16_MERGE_COMMIT`.** Report:
+Merged at `71150dd` (hash repaired by Run 17's handoff audit: the entry carried the literal
+placeholder `RUN16_MERGE_COMMIT`, and `71150dd` is the actual merge commit derived from Git,
+`Merge branch 'claude/run16-instrument-cleanup'`; nothing else in this entry was altered).**
+Report:
 `REPORT_2026-08-12_run16-low-hanging-instrument-cleanup.md`, which is controlling. Simulation
 version **sim-2026.08-v9 to sim-2026.08-v10**. Synthetic package OG-SYNTH-0.3 and the participant
 package are unchanged, and the participant decision sequence is untouched.
@@ -7284,3 +7287,138 @@ Files: `code_audit/run16_final_flow_before.csv`, `run16_final_flow_after.csv` an
 screenshots (all new); `server/tools/drive_run16_final_flow.py` and the three new suites; the eight
 production files above; six existing suites;
 `REPORT_2026-08-12_run16-low-hanging-instrument-cleanup.md` (new); this entry.
+
+## 2026-08-12 — Run 17: literature-grounded scientific method audit of 100 modules
+
+**Branch `claude/run17-scientific-method-audit` from `origin/main` at `71150dd`, the Run 16
+merge. Merged at `RUN17_MERGE_COMMIT_PENDING`.** Report:
+`REPORT_2026-08-12_run17-scientific-method-audit.md`, which is controlling. Simulation version
+**sim-2026.08-v10, UNCHANGED**. Synthetic package OG-SYNTH-0.3 unchanged. **TEST AND AUDIT ONLY:
+no production algorithm, no participant asset, no voting and no activation was changed, and the
+run was not permitted to change them.**
+
+**THIS IS A TRUTHFUL PARTIAL AUDIT AND THE ARTIFACTS SAY SO. 21 of the 100 targets carry a full
+determination; 79 carry `NOT_REACHED_IN_THIS_RUN` with every assurance column `NOT_ASSESSED`.**
+No prior run's finding was carried into a Run-17 row as though Run 17 had confirmed it, and no
+uncertainty was rounded into SCIENTIFIC_PASS to reach a hundred. Categories 1 and 6 and Portfolio
+Health are complete; Category 7 has 1 of 20; Categories 2, 3, 4, 5, 8, 9 and 10 were not reached.
+
+**THE POPULATION PROOF FOUND A TRAP THAT WOULD HAVE EXCLUDED THE WRONG MODULE.**
+`p0-baseline/module_renumbering_map.csv` has an `old_id` column that looks like the v0.5
+Module_ID_Text_Key and is not: two retired alias rows displace every later id by one, so `old_id`
+3.4 is Labor Productivity Index while the v0.5 key 3.4 is Material Cost Variance. The key is
+instead `new_id` with the group letter mapped to the category number, and `server/tools/run17/
+population.py` PROVES that mapping by module name against the supervisory specification's own
+list of all 101 names, with zero disagreements. Groups B3 and A6 both feed category 8 and group
+B4 feeds category 10, so the mapping is not recoverable from the group letter alone.
+**101 live = 96 project + 5 portfolio; 96 − 1 = 95; + 5 = 100 unique targets.** Identifiers are
+kept as text; the reconciliation records the five float collisions avoided (1.1/1.10, 2.1/2.10,
+4.1/4.10, 7.1/7.10, 7.2/7.20).
+
+**RUN-16 PREREQUISITE: FULLY PROVED from merged main.** 3.4 disabled under its own
+`DISABLED_EVIDENCE_UNDER_REVIEW` state and refused before its formula function on four input
+shapes; registry identity and name retained; non-voting; voting set exactly `{A1.7, A1.8}`; the
+Run-16 clear-all and final-flow suites green; 87 suites and 6957 of 6957 green on merged main.
+**One handoff defect repaired: the Run-16 entry's `RUN16_MERGE_COMMIT` placeholder, corrected to
+`71150dd` from Git.**
+
+**DISPOSITIONS, of the 21 reached:** 2 SCIENTIFIC_PASS (1.7 TCPI, 1.8 Variance at Completion,
+which are also the only two voting modules); 7 METHOD_PASS_CALIBRATION_PENDING (1.1, 1.2, 1.3,
+1.4, 6.3, 7.1, PH.1); 4 METHOD_LABEL_MISMATCH (1.5, 1.6, 1.11, 6.2); 3 CORRECT_PROXY_ONLY (1.9,
+PH.2, PH.3); 3 IMPLEMENTATION_DEFECT (6.1, 6.4, PH.5); 1 MISSING_CANONICAL_DATA_STRUCTURE (1.10);
+1 OWNER_DECISION_REQUIRED (PH.4). **EMPIRICAL VALIDATION IS `NOT_DONE` FOR ALL 21** and the word
+validated appears as a verdict nowhere in the artifacts.
+
+**THE THREE IMPLEMENTATION DEFECTS. 6.1 Conservative Dominance absorbs a single Red signal into
+Amber**, escalating only at two Reds or a breached control chart beside a Red forecast, so a lone
+Red selects routine early warning rather than management escalation through the governance layer.
+**6.4 Worst-N-of-M dilutes an unchanged adverse finding**: its Red arm fires at a count of
+ceil(0.3 M), so three signals with one Red report Red and adding a single Green downgrades them
+to Yellow. It is neither worst-N-of-M nor a collapse to conservative dominance. **PH.5 Anomaly
+Score re-weights its own constituents with data availability**, the divisor moving from two to
+three when a history exists, and it additionally recycles the standardised-distance proxy Run 15
+retired from PH.1 and duplicates PH.2's percentile rank.
+
+**THE ARCHITECTURAL FINDING IS LARGER THAN ANY ARITHMETIC ONE. The Category-9 qualification
+boundary is not enforced in code**: a Category-6 ensemble accepts a raw assembled status with no
+qualification object and returns a project status from it, and returns the SAME answer with and
+without a qualification marker. **No module carries a lineage identifier**, so a second transform
+of the same adverse evidence raises the adverse count, and Dempster combination sharpens belief
+when a source is combined with an identical copy. Both deviations are honestly declared in
+`signal_package.py`; neither is prevented. **Not repaired: Run 17 is an audit.**
+
+**HOW DEFECTS ARE HELD WITHOUT FOSSILISING THEM.** `proposition()` in the new suite records each
+failing canonical proposition in an anti-fossilisation register that fails in BOTH directions: an
+unrecorded defect fails the suite, and **a registered defect that starts holding also fails the
+suite**, saying the Run-17 disposition is stale and must be revised. That is deliberate: five
+suites in this programme have already been found encoding a defect as expected behaviour.
+
+**ORACLES.** `server/tools/run17/oracle/canonical_oracles.py` is written from the supervisory
+specification's equations and self-proves against that specification's own worked answers, 22
+propositions, zero failures, before it judges anything. No production formula was copied into a
+test. Production output was never used as its own oracle.
+
+**PH.1 ISOLATION FOREST: RUN 15'S CLAIM WAS CHECKED, NOT BELIEVED, AND IT HOLDS.** Genuine
+canonical isolation forest, verified against an independently computed c(n) using the EXACT
+harmonic number. **Two new limits found:** on a degenerate cohort, where document risk and
+progress are constant and the cost index takes three values, an extreme outlier and a central
+inlier receive the SAME score, because splits are drawn between the reference min and max so an
+out-of-range point can never be separated by one split; and because each project is scored
+against a forest excluding itself, two projects' scores come from different forests and are not
+comparable. **The 0.576 threshold was NOT retuned**, nor were CUSUM's k and h.
+
+**THRESHOLD PROVENANCE, reached modules:** 2 LITERATURE_EXACT (TCPI 1.00, VAC 0 per cent, both
+definitional); 2 LITERATURE_INFERRED (TCPI 1.10, VAC −11.11 per cent, applying the Christensen
+and Heise 0.10 figure by an inference declared in code, deliberately NOT called exact); 2
+EMPIRICALLY_CALIBRATED on synthetic data (CUSUM, Isolation Forest); 4 OWNER_POLICY unversioned
+(all Category-6 ensembles); 11 HEURISTIC_UNCALIBRATED; 0 UNSUPPORTED; 0 REGULATORY_EXACT, since
+Category 8 was not reached. **No citation was stretched to cover a threshold it does not state.**
+
+**Production files changed: NONE.** All 115 production files under `server/app/`, `assets/`,
+`p0-baseline/` and `index.html` SHA-256 hashed before and after and byte-identical;
+`git diff origin/main` over those paths empty. **Test and audit files changed:**
+`server/tools/test_run17_scientific_methods.py` (new, 250 checks);
+`server/tools/run17/` (population.py, findings.py, build_artifacts.py, method_cards.json,
+scientific_results.csv, source_ledger.csv, coverage.csv, oracle/canonical_oracles.py);
+`code_audit/run17_fault_injection.csv` and `run17_failed_propositions.csv`; the report; this entry.
+
+**Test totals: 88 suites, 7207 of 7207, all green**, each against its own freshly migrated
+database, confirmed on merged main before the push. **Fault injection: 10 faults, each
+byte-confirmed to have applied, each turning its guarded check red, each restored**, wrong
+earned-schedule interpolation, Dempster ignorance converted to conflict, Pareto dominated point
+admitted, M/M/1 denominator operator error, isolation-forest exponent sign, Pythagorean
+admissibility violation, wrong LP optimum, regulatory version mismatch, Category-9 raw bypass,
+seed perturbation. Harness integrity re-proved against all four known lies.
+
+**Voting state: exactly 2, TCPI and Variance at Completion, unchanged. Activation state: the
+eight concept-only modules still `DISABLED_UNSAFE`, each re-checked individually and each
+refusing to execute; Material Cost Variance still `DISABLED_EVIDENCE_UNDER_REVIEW`.** No
+production Postgres, no production migration, no deployment, no real participant data. Migrations
+0020 through 0025 remain unapplied.
+
+**OWNER DECISIONS SURFACED, NOT MADE:** PH.4's pattern definition, feature span and radius (it
+ignores the fourth feature of its own declared vector); PH.5's composite weights and whether the
+retired proxy keeps feeding it; whether 1.5, 1.6 and 1.11 are renamed, given proxy qualifiers or
+rebuilt; Worst-N-of-M's exact aggregation, noting that the collapsing form makes it redundant
+with 6.1; whether a single Red should escalate under 6.1; whether the Category-6 bands become
+versioned owner policy; whether the Category-9 boundary is enforced in code or stays a declared
+deviation.
+
+**EXACT NEXT-SESSION REQUIREMENT: RUN 18 IS THE FIRST REMEDIATION RUN AGAINST THIS AUDIT, AND
+ITS QUEUE IS SECTION 36 OF THE REPORT. P0A: none. P0B: 6.1's absorbed single Red, 6.4's benign
+dilution, PH.5's availability re-weighting, and the Category-9 raw bypass with the missing
+lineage identifier. P0C: none found, and Category 8 is UNASSESSED rather than cleared. P1: none
+beyond P0B. P2: the calibration and provenance list. P3: the four naming items. BUT THE LARGER
+OBLIGATION IS THE 79 UNREACHED TARGETS**, Categories 2, 3, 4, 5, 8, 9 and 10 and 19 of the 20
+Category-7 modules have NO Run-17 determination, and **absence of a finding is not a clean bill.**
+A follow-up resumes cleanly by adding entries to `server/tools/run17/findings.py` keyed by
+Module_ID_Text_Key and re-running `build_artifacts.py`; every unreached row is already stubbed.
+
+**Unresolved.** All decisions outstanding from Runs 10B, 11, 12, 14, 15 and 16 remain open,
+including the Material Cost Variance disposition and the collapse control the owner described,
+which is still not on that route in this baseline.
+
+Files: `server/tools/test_run17_scientific_methods.py`, the whole of `server/tools/run17/`, the
+two `code_audit/run17_*` evidence files (all new);
+`REPORT_2026-08-12_run17-scientific-method-audit.md` (new); this entry and the Run-16 hash repair
+above.
