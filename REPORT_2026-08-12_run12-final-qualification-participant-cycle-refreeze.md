@@ -1,6 +1,6 @@
 Run 12 — Final Qualification, Participant Cycle and Refreeze
 Starting commit: 3139773
-Ending commit: PENDING_MERGE
+Ending commit: 058345c (merge of 73933a3)
 Previous simulation version: sim-2026.08-v6
 Final simulation version: sim-2026.08-v7
 Synthetic package version: OG-SYNTH-0.3

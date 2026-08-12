@@ -6855,7 +6855,7 @@ five harness cases, every one confirmed to alter bytes, every one restored.
 **The frozen-file guard tripped for real on the new file before its scope was declared, and was
 then tripped deliberately on `assets/js/store.js` and restored.**
 
-**Release: PARTICIPANT READY**, at merged commit recorded in the report. The verdict rests on the
+**Release: PARTICIPANT READY.** Ending commit `73933a3`, merged as `058345c`; the complete suite was reconfirmed on merged main at 77 suites and 6102 of 6102. The verdict rests on the
 decision-card correction above; without driving the cycle it would have shipped behind a green
 suite.
 
