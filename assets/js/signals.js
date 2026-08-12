@@ -272,6 +272,13 @@
   }
 
   function ensureSimulations(project, force) {
+    // RUN 11, GATE 1. Retained as a no-op so the one caller (buildHistorySnapshot) keeps its
+    // shape, but it must never recompute. simulations.js is not loaded on the application page,
+    // so the guard below was already never false here; leaving it as a presence check meant a
+    // future edit that reloaded that file would silently reactivate a second arithmetic source
+    // whose bands are those of an earlier simulation version. The refusal is now unconditional
+    // on the participant route and does not depend on which scripts a page happens to include.
+    if (!window.LIN_ALLOW_CLIENT_ANALYTICS) return;
     if (!project || !project.signals || !window.LinSimulations) return;
     const arr = project.simulationSignals && project.simulationSignals.signal_array;
     const meta = project.simulationSignals && project.simulationSignals.signal_metadata;
@@ -736,6 +743,22 @@
     // extracted should still compute — buildSignals uses a neutral 1.0 for the
     // missing index (the model logic itself is unchanged).
     if (!haveCpi && !haveSpi) return false;
+    // RUN 11, GATE 1. THE SERVER IS THE SINGLE COMPUTATIONAL AUTHORITY.
+    //
+    // The line below used to call LinSim.buildSignals unguarded. sim.js is not loaded on the
+    // application page, so on the participant route that reference threw a ReferenceError from
+    // inside a live call site rather than doing anything a reader could act on. The two ingest
+    // entry points beside it had already been given an explicit refusal; this one had not.
+    //
+    // It is a refusal and not a repair: nothing here should derive a signal package in the
+    // browser. projectupload extracts, projectcompute runs the analytical layer once and stores
+    // the answer, projectresults reads it back. Returning false says "the browser did not
+    // compute", which is what the callers of this function actually need to know.
+    if (!window.LinSim) {
+      console.warn("[signals] client-side model derivation is retired; the server computes and "
+                   + "stores the analysis. Run the analysis on the project page.");
+      return false;
+    }
     const bac = Number(si.bac);
     const docScore = Number(si.docRiskScore);
     // Keep the extracted inputs on the project (matches the signalInputs model
@@ -762,7 +785,9 @@
     // runAll() returns modules 04-08 + 11-18. DST (Module 10) runs separately
     // after the core signal package is assembled so it reads live signal data.
     let simPayload = null;
-    if (window.LinSimulations) {
+    // RUN 11, GATE 1. Same rule as ensureSimulations above: no client recompute on the
+    // application route, regardless of which scripts are present on the page.
+    if (window.LIN_ALLOW_CLIENT_ANALYTICS && window.LinSimulations) {
       try {
         const simResults = LinSimulations.runAll(si, project.signals, project);
         // Module 10: DST runs separately — needs the assembled project.signals

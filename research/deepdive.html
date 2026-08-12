@@ -53,6 +53,8 @@
     <p id="dd-error" class="ws-error" style="display:none;"></p>
   </div>
 
+  <p id="dd-version-guard" class="ws-error" style="display:none;"></p>
+
   <div class="ws-card">
     <div class="detail-modules" id="dd-host">
       <p class="ws-note">Load a project to re-run its models.</p>
@@ -63,7 +65,11 @@
 <script src="../assets/js/config.js"></script>
 <script src="../assets/js/auth.js"></script>
 <script src="../assets/js/store.js"></script>
-<!-- The three the application deliberately does not load. -->
+<!-- RUN 11, GATE 1. The algorithm version guard. Loaded BEFORE the historical model files so
+     nothing can render before the comparison is available. -->
+<script src="../assets/js/client_algorithm_version.js"></script>
+<!-- The three the application deliberately does not load. HISTORICAL TEST ARTEFACTS: the
+     arithmetic here predates the server remediation runs and is never the current analysis. -->
 <script src="../assets/js/categories.js"></script>
 <script src="../assets/js/decision.js"></script>
 <script src="../assets/js/sim.js"></script>
@@ -96,6 +102,19 @@
           + "with an account that may read it.";
         err.style.display = "block";
         return;
+      }
+      // RUN 11, GATE 1. The version comparison happens before anything is drawn, and its
+      // sentence stays on the page beside the figures rather than being shown once and
+      // dismissed. A reader who scrolls past the banner must still not be able to mistake a
+      // recomputed figure for the stored one.
+      var v = LinClientAlgorithmVersion.compare(project);
+      var banner = $("dd-version-guard");
+      if (v.state === "current") {
+        banner.style.display = "none";
+        banner.textContent = "";
+      } else {
+        banner.textContent = v.sentence;
+        banner.style.display = "block";
       }
       LinDeepDive.render(project, $("dd-host"));
     });
