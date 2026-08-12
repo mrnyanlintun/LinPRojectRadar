@@ -1,6 +1,6 @@
 Run 10B — Critical Voter Fix and Bucket-3/4 Integration
 Starting commit: c5d7101
-Ending commit: see the final line of this report
+Ending commit: recorded in the handoff entry at merge
 Previous simulation version: sim-2026.08-v4
 New simulation version: sim-2026.08-v5
 Synthetic package version: OG-SYNTH-0.3
