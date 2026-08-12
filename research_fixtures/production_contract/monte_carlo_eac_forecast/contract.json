@@ -1,0 +1,71 @@
+{
+  "fixture_family": "MC-EAC-PROD-0.1",
+  "canonical_module_name": "Monte Carlo EAC",
+  "owner_prose_alias": "Monte Carlo EAC Forecast",
+  "backward_compatible_aliases": ["Monte Carlo EAC Forecast", "Monte_Carlo", "1.1"],
+  "repository_module_id": "A1.1",
+  "synthetic_module_id": "1.1",
+  "data_origin": "SYNTHETIC_RESEARCH_FIXTURE",
+  "not_for_empirical_validation": true,
+  "distinct_from": {
+    "family": "OG-SYNTH-0.3 package_A cost_risk (bottom-up triangular cost build-up with Bernoulli risk events)",
+    "reason": "That family is a bottom-up cost model over a quantified cost risk register. This family is the top-down earned-value index model the production module actually implements. They are different conceptual models and neither is an oracle for the other."
+  },
+  "production_source": "server/app/simulation/models_sim.py: monte_carlo_eac and run_monte_carlo",
+  "inputs_actually_read": {
+    "bac": "budget at completion, must be > 0 or the module abstains",
+    "cpi": "cost performance index, must be > 0 or the module abstains",
+    "spi": "schedule performance index, must be > 0 or the module abstains",
+    "docRiskScore": "document risk score, clamped to [0,1], defaults to 0 when absent"
+  },
+  "inputs_not_read": {
+    "ac": "actual cost is not an input to this module",
+    "ev": "earned value is not an input to this module",
+    "formula_selection_rule": "there is none: the module applies one transformation unconditionally",
+    "cusum_penalty": "monte_carlo_eac accepts cusumBreached, cusumDrift and cusumThreshold, but run_monte_carlo never passes them, so on the production path the penalty is always zero"
+  },
+  "eac_transformation": "mode EAC = bac / cpi, the index-based independent estimate at completion",
+  "spread_driver": "s = clamp(0.5*(1-cpi) + 0.3*(1-spi) + 0.2*docRiskScore, 0, 1) on the production path",
+  "bounds": {
+    "optimistic": "o = mEAC * (1 - 0.10*s)",
+    "most_likely": "m = mEAC",
+    "pessimistic": "p = mEAC * (1 + 0.40*s)"
+  },
+  "distribution": {
+    "type": "BETA_PERT",
+    "lambda": 4,
+    "alpha": "1 + 4*(m-o)/(p-o)",
+    "beta": "1 + 4*(p-m)/(p-o)",
+    "sampling": "beta variate by ratio of two Marsaglia-Tsang gamma variates, each gamma driven by Box-Muller normals over the base generator",
+    "degenerate_case": "when p - o < 1e-9 every sample is exactly mEAC, so the forecast collapses deterministically"
+  },
+  "analytic": {
+    "mean": "(o + 4*m + p)/6 = mEAC * (1 + 0.05*s)",
+    "variance": "(mean - o)*(p - mean)/(lambda + 3) = 0.0075 * s^2 * mEAC^2",
+    "sd": "sqrt(0.0075) * s * mEAC"
+  },
+  "correlation": "none: a single scalar is sampled per iteration, so there is no correlation structure to declare",
+  "truncation": "none beyond the [o,p] support of the Beta-PERT itself",
+  "rng": {
+    "implementation": "mulberry32, unsigned 32-bit, bit-for-bit as the browser runs it",
+    "seed_derivation": "sha256(scenario_id|period)[:4] as an unsigned 32-bit integer",
+    "participant_id_excluded": true
+  },
+  "iterations": 5000,
+  "percentile_convention": "index based on the ascending sample, i = floor(q*(N-1)), no interpolation",
+  "rounding": "no rounding of the percentile figures; the evidence sentence formats to zero and one decimal place for display only",
+  "abstention_rules": [
+    "bac, cpi or spi absent: abstain",
+    "bac not greater than zero: abstain with the no-positive-budget reason",
+    "cpi or spi not greater than zero: abstain with the zero-or-below-performance reason",
+    "no fallback budget and no fallback index exists: the removed DEMO_BAC substitution must never return"
+  ],
+  "acceptance_rule": {
+    "statistic": "abs(simulated_mean - analytic_mean)",
+    "threshold": "z * simulated_sd / sqrt(iterations)",
+    "z": 3.290526731491896,
+    "alpha_two_sided": 0.001,
+    "justification": "alpha 0.001 is 0.05 Bonferroni corrected across fifty mean checks in the programme. The rule is fixed before any result is computed."
+  },
+  "convergence_sample_counts": [1000, 5000, 20000]
+}
