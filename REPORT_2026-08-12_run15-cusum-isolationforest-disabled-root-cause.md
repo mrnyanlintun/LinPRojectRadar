@@ -1,6 +1,6 @@
 Run 15 — CUSUM Calibration, Real Isolation Forest and Disabled-Method Root-Cause Review
 Starting commit: 99be1a6
-Ending commit: PENDING_MERGE
+Ending commit: 66d7993 (merge), recorded by the commit that follows it
 Previous simulation version: sim-2026.08-v8
 New simulation version: sim-2026.08-v9
 Synthetic package: OG-SYNTH-0.3, unchanged and not regenerated

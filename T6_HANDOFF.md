@@ -7058,7 +7058,8 @@ existing suites, `REPORT_2026-08-12_run14-targeted-remediation-anomaly-validatio
 ## 2026-08-12 — Run 15: CUSUM calibration, a real isolation forest, and the disabled-method root-cause review
 
 **Branch `claude/run15-cusum-isoforest-rootcause` from `origin/main` at `99be1a6`, the Run 14
-merge. Merged commit recorded at the end of this entry. Simulation version `sim-2026.08-v8` to
+merge. Merged to `main` at `66d7993`, with the full suite re-run green on merged main before the
+push. Simulation version `sim-2026.08-v8` to
 `sim-2026.08-v9`. Synthetic package OG-SYNTH-0.3, unchanged and not regenerated. Participant
 package unchanged and not regenerated.**
 
