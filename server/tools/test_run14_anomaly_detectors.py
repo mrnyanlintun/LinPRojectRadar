@@ -357,284 +357,56 @@ check(run_cusum({"spi": 1.0}, None, 0).get("insufficient_data") is True,
 
 
 # =================================================================================================
-section("5. D1.1 METHOD FIDELITY: IS THIS AN ISOLATION FOREST")
+section("5 TO 7. D1.1: RETIRED BY RUN 15, AND THE ORIGINAL FINDING PRESERVED")
 # =================================================================================================
 #
-# The canonical definition: an isolation forest builds an ensemble of random binary trees, each
-# splitting a random feature at a random value on a subsample, and scores a point by its mean
-# path length to isolation, normalised against the expected path length of an unsuccessful
-# binary search. The defining artefacts are an ensemble, random splits, subsampling and a
-# path-length score. Fidelity is judged against those, not against the name on the result.
-_psrc = inspect.getsource(P)
-_psrc_no_name = _psrc.replace("Isolation_Forest", "").replace("Isolation Forest", "").lower()
-for _artefact in ("tree", "path_length", "subsample", "n_estimators", "isolation depth"):
-    check(_artefact not in _psrc_no_name,
-          f"once the method NAME is removed, the portfolio layer contains no {_artefact} "
-          f"construct anywhere")
-check("mahalanobis" in _psrc,
-      "what it does contain is a standardised distance from the portfolio centroid")
-check("random" not in _psrc.lower(),
-      "and there is no randomisation at all, where an isolation forest is randomised by "
-      "construction")
-
-
-def portfolio_of(rows: list[dict]) -> list[dict]:
-    return [dict(FIXTURE_ORIGIN, id=r["id"], cpi=r["cpi"], spi=r["spi"],
-                 docRiskScore=r["risk"], actualPctComplete=r["pct"]) for r in rows]
-
-
-def score_of(rows: list[dict], target_id: str) -> dict:
-    out = P.compute_portfolio(portfolio_of(rows), target_id, [], "2025-06-30")
-    return out["results"]["cat8_1_isolation_forest"]
-
-
-# A deterministic score is a behavioural proof, not only a source-reading one: an ensemble of
-# randomised trees does not return the identical score on repeated calls unless it is seeded,
-# and nothing here is seeded because nothing here is random.
-_ref = [{"id": f"N{i}", "cpi": 0.95 + 0.01 * (i % 5), "spi": 0.95 + 0.01 * (i % 4),
-         "risk": 0.2 + 0.02 * (i % 3), "pct": 40 + i} for i in range(20)]
-_a = score_of(_ref, "N3")
-_b = score_of(_ref, "N3")
-check(_a == _b, "the score is identical on repeated calls, with no seed anywhere")
-check(_a["method_class"] == "Isolation_Forest",
-      "and it is nevertheless reported under the isolation forest name, which is the fidelity "
-      "finding rather than an implementation detail", str(_a["method_class"]))
-
-
-# =================================================================================================
-section("6. D1.1 DETECTION ON A LABELLED HOLDOUT THE DETECTOR DID NOT SEE")
-# =================================================================================================
+# WHAT RUN 14 FOUND, AND IT STANDS AS THE RECORD OF WHAT WAS SHIPPED THEN. The module registered
+# as an isolation forest was not one. It computed a per-axis standardised Euclidean distance from
+# the portfolio centroid over four features and banded it against the mean distance plus one and
+# a half times the sum of the per-axis standard deviations. No tree, no ensemble, no random split,
+# no subsampling and no path length appeared anywhere. As the standardised-distance detector it
+# actually was, it scored ROC-AUC 0.994 and PR-AUC 0.995 on a labelled holdout of a hundred and
+# six cases, and at the shipped threshold recall 1.000, precision 0.800 and specificity 0.720.
+# Those figures are Run 14's and are carried below as literals so that
+# code_audit/run14_anomaly_detector_validation.csv remains exactly the artefact Run 14 committed.
 #
-# THE TRAINING/REFERENCE SET AND THE HOLDOUT ARE SEPARATE POPULATIONS. The reference normal set
-# is what the centroid and the per-axis spread are formed from. The holdout carries labelled
-# cases that were never in that reference set, one at a time, and each holdout case is scored
-# against the reference population it did not contribute to. Labels come from the generator.
-GEN = random.Random(99001)
-REF = [{"id": f"R{i}",
-        "cpi": GEN.gauss(0.98, 0.05), "spi": GEN.gauss(0.98, 0.05),
-        "risk": min(0.9, max(0.0, GEN.gauss(0.30, 0.08))),
-        "pct": min(95, max(5, GEN.gauss(45, 10)))} for i in range(40)]
+# WHY THE LIVE MEASUREMENTS ARE GONE FROM HERE. Run 15 replaced that implementation with a real
+# isolation forest, so there is no longer a distance to measure and re-deriving Run 14's numbers
+# from Run 15's module would be a false record. The current detector is validated in
+# tools/test_run15_isolation_forest.py against the published algorithm, and its own controlled
+# calibration is in code_audit/run15_isolation_forest_validation.csv.
+#
+# WHAT IS ASSERTED HERE IS THAT THE RETIREMENT REALLY HAPPENED.
+_p_src = inspect.getsource(P)
+check("mean_dist + 1.5 * sum(stddev)" not in _p_src,
+      "the standardised-distance threshold expression is gone from the portfolio layer")
+_d11_block = _p_src.split("def _isolation_forest_result")[1].split("def _insufficient")[0]
+check("mahalanobis" not in _d11_block and "centroid" not in _d11_block,
+      "and no distance arithmetic remains anywhere under the isolation forest identity")
+check("IsolationForest(" in _d11_block,
+      "what stands in its place grows a real forest")
+for _artefact in ("tree", "path_length", "subsample", "c_factor"):
+    check(_artefact in inspect.getsource(__import__(
+        "app.simulation.isolation_forest", fromlist=["x"])),
+        f"the algorithm file carries the {_artefact} construct the method is defined by")
 
-HOLDOUT: list[tuple[str, dict, int]] = []
+_ref20 = [{"id": f"N{i}", "cpi": 0.95 + 0.01 * (i % 5), "spi": 0.95 + 0.01 * (i % 4),
+           "docRiskScore": 0.2 + 0.02 * (i % 3), "actualPctComplete": 40 + i}
+          for i in range(20)]
+_now = P.compute_portfolio(_ref20, "N3", [], "2025-06-30")["results"][
+    "cat8_1_isolation_forest"]
+check("distance" not in _now,
+      "the reported result no longer carries a distance at all")
+check("mean_path_length" in _now and _now["trees"] == 100,
+      "it carries a mean path length over a hundred isolation trees instead")
+check(_now["threshold"] == 0.576,
+      "and the threshold is Run 15's calibrated one, not the retired distance threshold")
 
-
-def hold(family: str, row: dict, label: int) -> None:
-    HOLDOUT.append((family, row, label))
-
-
-for i in range(30):
-    hold("clean normal holdout",
-         {"id": f"H{i}", "cpi": GEN.gauss(0.98, 0.05), "spi": GEN.gauss(0.98, 0.05),
-          "risk": min(0.9, max(0.0, GEN.gauss(0.30, 0.08))),
-          "pct": min(95, max(5, GEN.gauss(45, 10)))}, 0)
-for i in range(10):
-    hold("duplicated normal observation",
-         dict(REF[i], id=f"D{i}"), 0)
-for i in range(10):
-    hold("boundary near-normal",
-         {"id": f"B{i}", "cpi": 0.98 + 0.11, "spi": GEN.gauss(0.98, 0.05),
-          "risk": 0.30, "pct": 45}, 0)
-for i in range(12):
-    hold("extreme single feature",
-         {"id": f"X{i}", "cpi": 0.98 + GEN.choice([-1, 1]) * GEN.uniform(0.35, 0.6),
-          "spi": GEN.gauss(0.98, 0.05), "risk": 0.30, "pct": 45}, 1)
-for i in range(12):
-    hold("moderate single feature",
-         {"id": f"M{i}", "cpi": 0.98, "spi": 0.98,
-          "risk": min(0.98, 0.30 + GEN.uniform(0.30, 0.45)), "pct": 45}, 1)
-for i in range(12):
-    hold("multivariate joint anomaly",
-         {"id": f"J{i}", "cpi": 0.98 + 0.13, "spi": 0.98 - 0.13,
-          "risk": 0.30 + 0.16, "pct": 45 + 22}, 1)
-for i in range(8):
-    hold("unusual feature combination",
-         {"id": f"U{i}", "cpi": 1.20, "spi": 0.70, "risk": 0.85, "pct": 90}, 1)
-for i in range(6):
-    hold("isolated outlier",
-         {"id": f"O{i}", "cpi": 2.5, "spi": 0.2, "risk": 0.95, "pct": 5}, 1)
-for i in range(6):
-    hold("small anomaly cluster",
-         {"id": f"C{i}", "cpi": 1.45 + 0.01 * i, "spi": 1.45 + 0.01 * i,
-          "risk": 0.80, "pct": 85}, 1)
-
-check(len(HOLDOUT) == 106, "the labelled holdout carries a hundred and six cases",
-      str(len(HOLDOUT)))
-check(sum(1 for _, _, y in HOLDOUT if y == 1) == 56
-      and sum(1 for _, _, y in HOLDOUT if y == 0) == 50,
-      "with both classes present by construction",
-      str((sum(y for _, _, y in HOLDOUT), len(HOLDOUT))))
-check(not (set(r["id"] for r in REF) & set(r["id"] for _, r, _ in HOLDOUT)),
-      "no holdout case appears in the reference population, so nothing scores itself")
-
-# THE LEAKAGE THAT IS IN PRODUCTION, MEASURED RATHER THAN AVOIDED. Production forms the centroid,
-# the spread and the threshold from the portfolio that INCLUDES the project being scored. That is
-# a real property of the shipped detector, so both readings are taken: the leaked one production
-# gives, and the clean one where the reference population excludes the case.
-SCORES: list[tuple[str, float, int, bool, float]] = []
-for family, row, label in HOLDOUT:
-    clean = score_of(REF + [row], row["id"])
-    SCORES.append((family, clean["distance"], label, clean["is_anomaly"], clean["threshold"]))
-_leak_diffs = []
-for family, row, label in HOLDOUT[:20]:
-    with_self = score_of(REF + [row], row["id"])["distance"]
-    dense = score_of(REF + [row] * 6, row["id"])["distance"]
-    _leak_diffs.append(with_self - dense)
-check(any(abs(d) > 1e-9 for d in _leak_diffs),
-      "the score of a case depends on the population it is scored against, and production scores "
-      "a project against a portfolio containing it, so the reference set is not independent of "
-      "the case being judged", f"max shift {max(abs(d) for d in _leak_diffs):.4f}")
-
-
-def auc_roc(pairs: list[tuple[float, int]]) -> float:
-    pos = [s for s, y in pairs if y == 1]
-    neg = [s for s, y in pairs if y == 0]
-    if not pos or not neg:
-        return float("nan")
-    wins = sum((1.0 if a > b else 0.5 if a == b else 0.0) for a in pos for b in neg)
-    return wins / (len(pos) * len(neg))
-
-
-def auc_pr(pairs: list[tuple[float, int]]) -> float:
-    ordered = sorted(pairs, key=lambda t: -t[0])
-    tp = fp = 0
-    total_pos = sum(y for _, y in pairs)
-    last_recall, area = 0.0, 0.0
-    for _s, y in ordered:
-        tp += y
-        fp += 1 - y
-        recall = tp / total_pos
-        precision = tp / (tp + fp)
-        area += precision * (recall - last_recall)
-        last_recall = recall
-    return area
-
-
-_pairs = [(d, y) for _f, d, y, _a, _t in SCORES]
-ROC = auc_roc(_pairs)
-PR = auc_pr(_pairs)
-print(f"    ROC-AUC {ROC:.3f}   PR-AUC {PR:.3f} over {len(_pairs)} labelled holdout cases")
-check(ROC > 0.5,
-      "the continuous distance orders the labelled anomalies above the labelled normal cases "
-      "better than chance", f"ROC-AUC {ROC:.3f}")
-check(ROC > 0.85,
-      "and it separates them well on this fixture, which is a statement about the score and not "
-      "about the band drawn on it", f"ROC-AUC {ROC:.3f}")
-
-# The confusion matrix AT THE PRODUCTION DECISION THRESHOLD, which was not chosen on this
-# holdout and is not adjusted here.
-_tp = sum(1 for _f, _d, y, flag, _t in SCORES if y == 1 and flag)
-_fn = sum(1 for _f, _d, y, flag, _t in SCORES if y == 1 and not flag)
-_fp = sum(1 for _f, _d, y, flag, _t in SCORES if y == 0 and flag)
-_tn = sum(1 for _f, _d, y, flag, _t in SCORES if y == 0 and not flag)
-_recall = _tp / (_tp + _fn) if (_tp + _fn) else float("nan")
-_precision = _tp / (_tp + _fp) if (_tp + _fp) else float("nan")
-_specificity = _tn / (_tn + _fp) if (_tn + _fp) else float("nan")
-print(f"    at the shipped threshold: TP {_tp}  FN {_fn}  FP {_fp}  TN {_tn}  "
-      f"recall {_recall:.3f}  precision {_precision:.3f}  specificity {_specificity:.3f}")
-check(True,
-      "the confusion matrix at the shipped decision threshold is reported as measured, and the "
-      "threshold was not selected on this holdout",
-      f"TP {_tp} FN {_fn} FP {_fp} TN {_tn}")
-# THE DIRECTION THE UNCALIBRATED THRESHOLD ERRS IN, MEASURED. It is not conservative: it calls
-# a labelled normal case an anomaly roughly a quarter to a third of the time on this fixture,
-# while missing none of the labelled anomalies. That is a threshold set too low for the score it
-# is drawn on, and it is exactly the kind of statement that cannot be made from the detector's
-# own output. It is reported, not repaired: moving it here would be inventing a calibration.
-check(_specificity < 0.9,
-      "the shipped threshold is NOT conservative: it calls labelled normal cases anomalies at a "
-      "rate a calibrated band would not, which is the finding this workstream exists to produce",
-      f"specificity {_specificity:.3f}, {_fp} of 50 normal cases flagged")
-_by_family = {}
-for family, d, y, flag, _t in SCORES:
-    _by_family.setdefault(family, []).append(flag)
-for _fam in sorted(_by_family):
-    print(f"    {_fam:<32} flagged {sum(_by_family[_fam])}/{len(_by_family[_fam])}")
-check(sum(_by_family["duplicated normal observation"]) == 0,
-      "a normal case duplicated from the reference population is never flagged, so the false "
-      "positives sit on the edge of the normal region rather than everywhere")
-check(sum(_by_family["extreme single feature"]) > sum(_by_family["clean normal holdout"]),
-      "an extreme single-feature anomaly is flagged more often than a clean normal case",
-      f"{sum(_by_family['extreme single feature'])} against "
-      f"{sum(_by_family['clean normal holdout'])}")
-check(_recall == 1.0 and _precision < 1.0,
-      "and it misses no labelled anomaly while flagging normal cases, so the score orders the "
-      "two classes well and the band drawn on the score does not separate them",
-      f"recall {_recall:.3f}, precision {_precision:.3f}")
-
-# Stability across controlled seeds: the fixture is regenerated from different seeds and the
-# ordering quality is required to hold rather than to have been a property of one draw.
-_stability = []
-for _seed in (11, 22, 33, 44, 55):
-    g = random.Random(_seed)
-    ref = [{"id": f"S{i}", "cpi": g.gauss(0.98, 0.05), "spi": g.gauss(0.98, 0.05),
-            "risk": 0.3, "pct": 45} for i in range(40)]
-    pairs = []
-    for i in range(30):
-        pairs.append((score_of(ref + [{"id": "T", "cpi": g.gauss(0.98, 0.05),
-                                       "spi": g.gauss(0.98, 0.05), "risk": 0.3,
-                                       "pct": 45}], "T")["distance"], 0))
-    for i in range(30):
-        pairs.append((score_of(ref + [{"id": "T", "cpi": 0.98 + g.choice([-1, 1]) * 0.4,
-                                       "spi": g.gauss(0.98, 0.05), "risk": 0.3,
-                                       "pct": 45}], "T")["distance"], 1))
-    _stability.append(auc_roc(pairs))
-print(f"    ROC-AUC across five independent fixture seeds: "
-      f"{[round(v, 3) for v in _stability]}")
-check(min(_stability) > 0.9,
-      "the ordering holds across five independently seeded fixtures rather than on one draw",
-      str([round(v, 3) for v in _stability]))
-
-# THE THRESHOLD ITSELF. Reported for what it is: an expression mixing a standardised distance
-# with a sum of per-axis standard deviations, with no source behind either the summation or the
-# multiplier.
-_t = SCORES[0][4]
-check(_t > 0, "the shipped threshold is a positive number the band is drawn at", str(_t))
-_probe = score_of(REF + [{"id": "P", "cpi": 0.98, "spi": 0.98, "risk": 0.3, "pct": 45}], "P")
-check("threshold" in _probe and _probe["threshold"] != _probe["distance"],
-      "and it is computed from the portfolio rather than being a fixed constant, so it moves "
-      "with the population as well as with the project")
-
-
-# =================================================================================================
-section("7. D1.1 MUTATION PROOF: THE HOLDOUT EXPERIMENT CAN FAIL")
-# =================================================================================================
-_orig_round = P.round2
-_saved_compute = P.compute_portfolio
-
-
-def _reversed_scores() -> float:
-    """Anomaly score reversed: the labels should stop being ordered."""
-    pairs = [(-d, y) for _f, d, y, _a, _t in SCORES]
-    return auc_roc(pairs)
-
-
-check(abs(_reversed_scores() - (1 - ROC)) < 1e-9 and _reversed_scores() < 0.5,
-      "reversing the anomaly score destroys the ordering, so the ordering measured above is a "
-      "property of the score and not of the arithmetic that summarises it",
-      f"{_reversed_scores():.3f} against {ROC:.3f}")
-_shuffled = [(d, y) for _f, d, y, _a, _t in SCORES]
-_rand = random.Random(7)
-_labels = [y for _d, y in _shuffled]
-_rand.shuffle(_labels)
-_rand_auc = auc_roc([(d, y) for (d, _old), y in zip(_shuffled, _labels)])
-check(abs(_rand_auc - 0.5) < 0.15,
-      "and randomising the labels collapses the measure to chance, so the labels are carrying "
-      "the result rather than the fixture size", f"{_rand_auc:.3f}")
-# Bypassing the standardisation: with every axis given the same scale, a feature measured in
-# percent dominates one measured as a ratio and the detector stops being scale robust.
-_flat_pairs = []
-for family, row, label in HOLDOUT:
-    v = [row["cpi"], row["spi"], row["risk"], row["pct"] / 100]
-    c = [sum(r[k] for r in REF) / len(REF) for k in ("cpi", "spi", "risk")] + \
-        [sum(r["pct"] for r in REF) / len(REF) / 100]
-    _flat_pairs.append((math.sqrt(sum((a - b) ** 2 for a, b in zip(v, c))), label))
-check(auc_roc(_flat_pairs) != ROC,
-      "and removing the per-axis standardisation changes the measured separation, so that step "
-      "is doing work rather than being decorative",
-      f"{auc_roc(_flat_pairs):.3f} against {ROC:.3f}")
-check(P.compute_portfolio is _saved_compute and P.round2 is _orig_round,
-      "the production layer is untouched by any of the above")
-
+# Run 14's recorded figures, carried as literals so the committed artefact is unchanged.
+ROC, PR = 0.994, 0.995
+_recall, _precision, _specificity = 1.000, 0.800, 0.720
+_tp, _fn, _fp, _tn = 56, 0, 14, 36
+_stability = [1.0, 1.0, 1.0, 1.0, 1.0]
 
 # =================================================================================================
 section("8. THE EVIDENCE FILE")

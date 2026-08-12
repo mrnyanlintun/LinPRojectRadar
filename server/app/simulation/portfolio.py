@@ -87,8 +87,11 @@ def _isolation_forest_result(vectors, current_id, current_vec, n) -> dict[str, A
     mean_path = forest.mean_path_length(current_vec)
     t = IF_ANOMALY_THRESHOLD
     interior = 0.5 + (2.0 / 3.0) * (t - 0.5)
+    # Green is score AT OR BELOW one half, on the authority of the paper: a sample in which
+    # every instance scores about one half holds no distinct anomaly, so a degenerate portfolio
+    # of identical projects, which scores exactly one half, must read Green and not a caution.
     status = ("Red" if score >= t else "Amber" if score >= interior
-              else "Yellow" if score >= 0.5 else "Green")
+              else "Yellow" if score > 0.5 else "Green")
     return {
         "method_class": "Isolation_Forest", "status_color": status,
         "anomaly_score": round2(score),
@@ -253,11 +256,20 @@ def compute_portfolio(portfolio: list[dict], current_id, history: list[dict] | N
     }
 
     results = {
-        "cat8_1_isolation_forest": isolation_forest,
         "cat8_2_portfolio_outlier": portfolio_outlier,
     }
     if trajectory_classifier is not None:
         results["cat8_3_trajectory_classifier"] = trajectory_classifier
+    # RUN 15. D1.1 abstains BY ABSENCE when there are fewer than two other projects to grow the
+    # trees on, which is the same contract D1.3 follows and the same one the project-level
+    # modules follow: an abstention never appears beside a colour. The retired distance detector
+    # always returned a number here, because a distance from a centroid is defined even when the
+    # population is one point. A forest is not.
+    if not isolation_forest.get("insufficient_data"):
+        results["cat8_1_isolation_forest"] = isolation_forest
+    # The stored snapshot's keys are asserted to be in a stable sorted order, and D1.1 is added
+    # after D1.3 above, so the mapping is rebuilt in key order rather than insertion order.
+    results = {k: results[k] for k in sorted(results)}
     results["cat8_4_cross_project_pattern"] = cross_project
     results["cat8_5_anomaly_score"] = anomaly_result
 

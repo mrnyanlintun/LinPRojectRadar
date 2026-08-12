@@ -7054,3 +7054,114 @@ Files: `code_audit/run14_scope.csv`, `run14_mismatch_remediation.csv`,
 `test_run14_disabled_method_functional.py` (all new), the seven production files named above, six
 existing suites, `REPORT_2026-08-12_run14-targeted-remediation-anomaly-validation-disabled-method-tests.md`
 (new), this entry.
+
+## 2026-08-12 — Run 15: CUSUM calibration, a real isolation forest, and the disabled-method root-cause review
+
+**Branch `claude/run15-cusum-isoforest-rootcause` from `origin/main` at `99be1a6`, the Run 14
+merge. Merged commit recorded at the end of this entry. Simulation version `sim-2026.08-v8` to
+`sim-2026.08-v9`. Synthetic package OG-SYNTH-0.3, unchanged and not regenerated. Participant
+package unchanged and not regenerated.**
+
+**Handoff audit: no repair needed.** Every session through Run 14 is represented, in order, with
+a starting commit, a report file that exists on disk, and a version record. Nothing was
+reconstructed and nothing was invented.
+
+**Scope was derived from Run 14's own CSVs rather than transcribed from the prompt**, giving one
+CUSUM module (A1.2), one isolation forest module (D1.1) and the eight disabled methods (A3.8,
+B2.7, B2.9, B2.20, B4.1, B4.2, B4.5, B4.6), which matches the state carried forward.
+
+**A1.2 CUSUM was calibrated and NOT changed.** The known-answer test passes on both arms: eleven
+observations against a hand-derived cumulative sum sequence with the scale held fixed, matching
+term for term with the first crossing at the eleventh observation, and the reflected series
+giving the mirror image on the other arm. Objectives were declared before tuning. **One of them
+was declared wrong against published theory and the mis-declaration is recorded rather than
+deleted**: a median delay of five periods at a one-sigma shift is unreachable at k = 0.5, whose
+published ARL1 is 10.38, so that objective was re-anchored to the published table from the
+citation and not from our grid. Of 72 combinations swept, 19 met every objective, and **the
+winner among those realisable on the data this platform holds is the design already shipped**:
+k = 0.5 sigma, h = 5 sigma, scale estimated from the monitored series. Holdout ARL0 302.3,
+one-sigma detection 0.940 in both directions at a median delay of 9 periods, two-sigma 1.000 at
+4 periods, symmetry exact to three decimals. **The reference-window estimators are the
+methodologically correct Phase I formulation and were rejected on availability, not preference:
+they need twelve periods or more of designated in-control history, which a typical project does
+not have before the detector must report.** That is a limitation of the data and is recorded as
+one. **Isolated one-period spikes are OUT OF SCOPE for CUSUM by design and it was not corrupted
+to catch them**; holding the scale at its true value raises spike detection only from 0.065 to
+0.307, which is not detection either. The unsourced amber band at six tenths of the decision
+interval was not moved.
+
+**D1.1 is now a real isolation forest.** `server/app/simulation/isolation_forest.py` implements
+Liu, Ting and Zhou (ICDM 2008) in pure Python: random attribute and split selection, isolation
+trees to a height limit of ceil(log2(psi)), subsampling, path lengths with the c(n) adjustment,
+100 trees, psi 256, and the published score. **scikit-learn was used as an independent oracle in
+the development container only and is NOT a repository dependency**: Spearman 0.9952, maximum
+score difference 0.0214, identical AUC, and our normaliser matching theirs to nine significant
+figures. The forest is grown on the OTHER projects and never on the project being scored, which
+the retired detector did not manage. **Threshold 0.576, selected under a predeclared objective of
+at most one false positive in twenty, frozen, then evaluated once on holdout: ROC-AUC 0.9607,
+specificity 1.000, precision 1.000, recall 0.571.** Green now sits at or below 0.5 on the
+authority of the paper. **The comparison is reported honestly and does not flatter this run: the
+retired proxy scored ROC-AUC 0.994 and recall 1.000 at specificity 0.720**, because the Run 14
+fixture was built as departures from a centroid, which is what the proxy measures. Discrimination
+is weak on small portfolios (ROC-AUC 0.677 at ten reference projects). **The standardised-distance
+arithmetic is gone from the isolation forest identity**; it survives at one line, renamed, only
+because D1.5 composes it and D1.5 was outside the authorised change. D1.1 now **abstains by
+absence** when fewer than two other projects carry signal data, matching D1.3.
+
+**The eight disabled methods were investigated in isolation and none was activated or altered.
+All eight are recognised formal methods, all eight got a canonical known-answer problem, and
+none of the eight current implementations can solve its own.** Primary root causes: four
+IMPLEMENTATION_DEFECT (B2.7, B2.9, B2.20, B4.5) and four MISSING_CANONICAL_DATA_STRUCTURE (A3.8,
+B4.1, B4.2, B4.6). **Not one is a literature problem and not one is untestable.** B4.2 was tested
+against a published LP, the Wyndor Glass problem, whose optimum of 36 at (2, 6) was reproduced
+independently by vertex enumeration; the module cannot represent it. **B4.1 and B4.6 share one
+missing structure and would be solved together**: the platform generates courses of action, but
+only in the browser at display time, so the analytical layer never sees a set of alternatives.
+**A Run 14 count was corrected: six of the twenty-seven hypersoft tuples fall to a silent
+default, not two, the difference being that this run exhausted the product rather than sampling
+it.** The primary PDFs for the plithogenic, hypersoft and isolation forest definitions are
+blocked by the container egress proxy; that is stated where it matters rather than papered over.
+**No KEEP, REMOVE, ACTIVATE or RETAIN conclusion was reached, deliberately.**
+
+**Tests added:** `server/tools/test_run15_cusum_calibration.py` (82),
+`test_run15_isolation_forest.py` (81), `test_run15_disabled_root_cause.py` (64), plus two
+non-suite evidence scripts, `run15_cusum_calibration.py` and
+`run15_isolation_forest_calibration.py`. Six existing suites had an expectation corrected, each
+with its reason recorded at the change, and all six follow from D1.1 becoming a different method.
+**The D1.1 half of the Run 14 anomaly suite was converted to a retirement record with its
+findings preserved verbatim and its figures carried as literals, so
+`run14_anomaly_detector_validation.csv` is byte-identical to what Run 14 committed.**
+
+**Test totals: 84 suites, 6780 of 6780, all green**, each against its own freshly migrated
+database, reconfirmed on merged main before the push.
+
+**Voting state: exactly 2, A1.7 and A1.8, both cost lineage, neither being either detector.
+Activation state: the eight disabled modules unchanged and still refused by the registry after
+the canonical harness ran every one of them directly.** The participant decision sequence, Cost
+Recovery Status, Category-9 behaviour, browser and server authority and the synthetic and
+operational separation are untouched. No production Postgres, no production migration, no
+production deployment, no real participant data. Migrations 0020 through 0025 remain unapplied.
+
+**Unresolved limitations.** CUSUM's amber band, reference value and scale floor remain unsourced.
+CUSUM detects a 0.5-sigma persistent shift in about four runs in ten. The isolation forest is
+weak on portfolios below about twenty projects, misses single-feature anomalies at its calibrated
+threshold, and its vector builder still substitutes stand-in values for absent inputs. **All
+calibration in this run is controlled and synthetic. No field empirical validation is claimed for
+either detector.**
+
+**Owner decisions required next.** The disposition of each of the eight disabled methods, from
+`code_audit/run15_disabled_methods_root_cause.csv`; **whether courses of action are assembled
+server side as objective vectors, which is what B4.1 and B4.6 both need and is the
+highest-leverage item in the eight**; whether CUSUM's amber band is sourced or declared
+unsourced; whether CUSUM's scale moves to a designated in-control window once projects carry
+enough history; whether the platform needs a point-outlier detector, given that CUSUM will not be
+one; whether the forest's recall of 0.571 at specificity 1.000 is the right trade; and whether
+D1.1 should run at all on portfolios below about twenty projects. All decisions outstanding from
+Runs 10B, 11, 12 and 14 remain open.
+
+Files: `code_audit/run15_scope.csv`, `run15_cusum_calibration.csv`,
+`run15_isolation_forest_validation.csv`, `run15_disabled_methods_root_cause.csv` (all new);
+`server/app/simulation/isolation_forest.py` (new), `portfolio.py`, `models.py`;
+`assets/js/knowledge.js`, `assets/js/ds_defensibility_data.js`; the three new suites and the two
+evidence scripts; six existing suites;
+`REPORT_2026-08-12_run15-cusum-isolationforest-disabled-root-cause.md` (new); this entry.

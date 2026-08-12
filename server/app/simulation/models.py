@@ -88,7 +88,17 @@ from .rng import as_percent, clamp, num, pctile, round1, round2
 # upper end of the domain for the fields whose definition supplies one. All eight are
 # non-voting, none became voting, and no band boundary moved. This changes what the layer
 # emits, so the stamp moves with it.
-SIMULATION_VERSION = "sim-2026.08-v8"
+# RUN 15 (CUSUM CALIBRATION, A REAL ISOLATION FOREST AND THE DISABLED-METHOD ROOT-CAUSE
+# REVIEW) moves it to sim-2026.08-v9. The portfolio anomaly module registered as an isolation
+# forest now IS one: an ensemble of isolation trees grown on the other projects in the
+# portfolio, scored by normalised mean path length, per Liu, Ting and Zhou. The standardised
+# distance it used to report under that name is gone from it, its threshold was recalibrated
+# on a controlled synthetic population, and it now abstains rather than scoring a project
+# against a population that includes the project itself. CUSUM was calibrated and NOT changed:
+# the design the calibration selected is the one already shipped, so no CUSUM parameter, band
+# or boundary moved. The eight disabled modules were investigated and none was activated or
+# altered. The stamp moves because the portfolio layer emits a different object.
+SIMULATION_VERSION = "sim-2026.08-v9"
 
 
 # -------------------------------------------------------------------------------------------

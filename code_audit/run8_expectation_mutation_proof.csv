@@ -142,18 +142,13 @@ A6.3,"A6.3: exactly 95 per cent is Green, inclusive",boundary,'Green','Green (pe
 A6.3,A6.3: just below 95 per cent is Yellow,boundary,'Yellow','Yellow (perturbed)','Yellow',yes,yes,
 A6.3,"A6.3: without an audited rate it abstains, and does not count meeting mentions",abstention,True,False,True,yes,yes,
 A6.3,A6.3: a rate above a hundred per cent is refused rather than clipped,domain,True,False,True,yes,yes,
-A5.4,"A5.4: the optimistic forecast is 1,040,000 by hand",known_answer,1040000,2080001,1040000,yes,yes,"440,000 + 600,000"
-A5.4,"A5.4: the likely forecast is 1,100,066 by hand",known_answer,1100066,2200133,1100066,yes,yes,"440,000 + 600,000/0.909"
-A5.4,"A5.4: the worst forecast is 1,114,916 by hand",known_answer,1114916,2229833,1114916,yes,yes,"440,000 + 600,000/0.889"
-A5.4,A5.4: the range is 7.5 per cent of the budget,known_answer,7.5,16.0,7.5,yes,yes,"(1,114,915.6 - 1,040,000)/1,000,000 * 100"
-A5.4,A5.4: and the reading is Amber,boundary,'Amber','Amber (perturbed)','Amber',yes,yes,
-A5.4,A5.4: the scenario range is invariant under monetary scaling,property,[],['perturbed'],[],yes,yes,
-A5.4,"A5.4: a negative cost index is refused, as the fifteen-defects run installed",abstention,True,False,True,yes,yes,
-B2.19,B2.19: the distance to the ideal is 0.135 by hand,known_answer,0.135,1.27,0.135,yes,yes,sqrt(one third of 0.055)
-B2.19,B2.19: the distance to the anti-ideal is 0.356 by hand,known_answer,0.356,1.712,0.356,yes,yes,sqrt(one third of 0.38)
-B2.19,B2.19: the closeness coefficient is 0.724 by hand,known_answer,0.724,2.448,0.724,yes,yes,0.355903 / (0.135401 + 0.355903 + 0.0001)
-B2.19,B2.19: 0.724 lands Green,boundary,'Green','Green (perturbed)','Green',yes,yes,
-B2.19,"B2.19: all four bands are reachable, unlike the ranking module beside it",property,"['Amber', 'Green', 'Red', 'Yellow']","['Amber', 'Green', 'Red', 'Yellow', 'perturbed']","['Amber', 'Green', 'Red', 'Yellow']",yes,yes,
+A5.4,A5.4: with no decision problem in the corpus the module abstains rather than reporting an earned value forecast under the name of a scenario model,canonical_structure,True,False,True,yes,yes,
+A5.4,A5.4: and the abstention names the absent decision structure,canonical_structure,'canonical_decision_structure_absent','canonical_decision_structure_absent (perturbed)','canonical_decision_structure_absent',yes,yes,
+A5.4,A5.4: none of the five figures this section used to assert is returned any more,canonical_structure,[],['perturbed'],[],yes,yes,
+A5.4,"A5.4: a negative cost index abstains on the absent structure, which is decided first",abstention,'canonical_decision_structure_absent','canonical_decision_structure_absent (perturbed)','canonical_decision_structure_absent',yes,yes,
+B2.19,B2.19: with no matrix of alternatives in the corpus the module abstains rather than weighting one project's own criteria against each other,canonical_structure,True,False,True,yes,yes,
+B2.19,B2.19: and the abstention names the absent decision structure,canonical_structure,'canonical_decision_structure_absent','canonical_decision_structure_absent (perturbed)','canonical_decision_structure_absent',yes,yes,
+B2.19,B2.19: no band is reachable from any single-project input across the whole grid,property,[None],"[None, 'perturbed']",[None],yes,yes,
 B2.19,B2.19: a criterion equal to the mean of the three carries no weight at all,known_answer,0.0,1.0,0.0,yes,yes,abs(0.90 - 0.90) divided by the standard deviation
 A3.1,A3.1: abstains on an empty input,disabled_contract,True,False,True,yes,yes,
 A3.1,A3.1: abstains on a fully populated input,disabled_contract,True,False,True,yes,yes,
@@ -184,5 +179,5 @@ A1.6,A1.6: the production path gives 0.889 for spi_time,production_path,0.889,2.
 A2.11,A2.11: the production path gives 0.889 for critical_path_index,production_path,0.889,2.778,0.889,yes,yes,(0.888888 + 0.889)/2
 ,every band the 27 store is recognised by the status vocabulary,production_path,[],['perturbed'],[],yes,yes,
 ,on an empty input the production path bands none of the 27,production_path,[],['perturbed'],[],yes,yes,
-,every case wrote a mutation-proof row,derivation,187,375,187,yes,yes,
+,every case wrote a mutation-proof row,derivation,182,365,182,yes,yes,
 ,every expectation went red under perturbation,derivation,[],['perturbed'],[],yes,yes,

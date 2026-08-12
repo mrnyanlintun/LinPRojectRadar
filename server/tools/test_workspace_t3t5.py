@@ -296,11 +296,16 @@ check(snap2 is not None and snap2.get("insufficient_data") is not True,
 # Classifier abstains BY ABSENCE — the same contract as project-level modules, where an
 # abstention never appears with a colour. Four results, and cat8_3 specifically absent:
 # asserting only a count would pass again if a different module vanished for a wrong reason.
-check(isinstance(snap2, dict) and "results" in snap2 and len(snap2["results"]) == 4,
-      "the real snapshot carries the 4 computable D1 sub-results",
+# RESTATED BY RUN 15. Three, not four: D1.1 became a real isolation forest and needs at least
+# two other projects to grow trees on, so on this two-project portfolio it abstains by absence
+# exactly as D1.3 does. Both abstentions are asserted specifically below.
+check(isinstance(snap2, dict) and "results" in snap2 and len(snap2["results"]) == 3,
+      "the real snapshot carries the 3 computable D1 sub-results",
       str(sorted(snap2.get("results", {}).keys())))
 check("cat8_3_trajectory_classifier" not in snap2.get("results", {}),
       "D1.3 abstains by absence with no history — never a colour beside insufficient_data")
+check("cat8_1_isolation_forest" not in snap2.get("results", {}),
+      "D1.1 abstains by absence too: two projects leave one other to grow trees on")
 check(all(not v.get("insufficient_data") for v in snap2.get("results", {}).values()),
       "no stored D1 sub-result carries a colour and an insufficiency flag together")
 

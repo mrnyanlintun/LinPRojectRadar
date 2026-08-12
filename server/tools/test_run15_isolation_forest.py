@@ -370,10 +370,11 @@ check("it reports the reference population size, excluding the project itself",
 check("the production result is identical on a repeated call, as this platform requires",
       P.compute_portfolio(pf, HOLD[-1][1]["id"], [], "2025-06-30")["results"][
           "cat8_1_isolation_forest"] == d11)
-check("a project cannot be compared against fewer than two others",
-      P.compute_portfolio(portfolio_rows(REF[:1] + [dict(HOLD[-1][1])]),
-                          HOLD[-1][1]["id"], [], "2025-06-30")["results"][
-        "cat8_1_isolation_forest"].get("insufficient_data") is True)
+check("a project cannot be compared against fewer than two others, and it abstains BY ABSENCE "
+      "rather than appearing beside a colour",
+      "cat8_1_isolation_forest" not in P.compute_portfolio(
+          portfolio_rows(REF[:1] + [dict(HOLD[-1][1])]),
+          HOLD[-1][1]["id"], [], "2025-06-30")["results"])
 check("the composite anomaly module is still produced and still reads its own band",
       res["cat8_5_anomaly_score"]["method_class"] == "Anomaly_Score")
 check("Group D is still refused on the single-project path",
