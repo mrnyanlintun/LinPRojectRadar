@@ -6695,3 +6695,96 @@ Files: `server/app/simulation/canonical.py` (new), `models.py`, `models_doc.py`,
 `test_run10_state_protection.py` (restated), `code_audit/run10b_bucket3_integration.csv`,
 `run10b_bucket4_integration.csv`, `run10b_neighbour_findings.csv` (new),
 `REPORT_2026-08-12_run10b-critical-voter-and-bucket34-integration.md` (new), this entry.
+
+# Run 11 — browser, participant and governance cleanup (2026-08-12)
+
+**Branch `claude/run11-browser-participant-governance` from `origin/main` at `68fe615`, the Run
+10B merge. Report: `REPORT_2026-08-12_run11-browser-participant-governance-cleanup.md`, which is
+controlling and self-contained.**
+
+**Simulation version sim-2026.08-v5 to sim-2026.08-v6. Synthetic package v0.3, unchanged and not
+re-ingested. Production Postgres never touched. Migrations 0020 to 0025 still unapplied, and this
+run added none: both new governance fields are derived at read time from the category statuses
+every stored row already carries.**
+
+**Handoff audit: no repair needed.** Every session since the last entry is represented. The file
+is not in chronological order, which is why Runs 6 to 8 looked missing on a first reading; they
+are at lines 379, 285 and 160. Simulation version history is complete and nothing was overwritten.
+Pre-change suite reproduced the recorded baseline exactly: **71 suites, 5627 of 5627**.
+
+**Gate 1, and the state was better than the gate assumed except in one place.** index.html already
+loaded none of `sim.js`, `simulations.js` or `categories.js`. What it left were five DORMANT call
+sites guarded by presence checks, one of them an UNGUARDED `LinSim.buildSignals` that threw a
+ReferenceError from a live participant call site. All are now gated on an opt-in the application
+never sets. The three browser model files are retained as HISTORICAL TEST ARTEFACTS on the
+researcher deep dive only, behind a new algorithm version guard
+(`assets/js/client_algorithm_version.js`) that refuses to render browser figures as current when
+the client stamp and the stored `simulation_version` differ — which they do, and are expected to.
+
+**Gate 2 caught a real defect that no suite could have.** Driving the served application found the
+participant's conflict banner still reading "Mixed early warning" on a project whose server result
+says the conflict is not estimable: `rowFor()` prefers the slim list projection, that projection
+carries no conflict state, and `getProjectFusion` did not fall back to the primed row. Fixed in
+`taxonomy.js` and re-driven. **`drive_run11_participant_route.py`, 52 of 52.**
+
+**Gate 3, the seven neighbour defects, all fixed and all still non-voting.** A1.9, A2.6, A3.9
+(twice), A5.2, A5.3, B3.2. Five out-of-domain banding, two missingness improving the reading. No
+band moved and no threshold was introduced; every domain came from what the quantity is, and where
+one already existed for the same field it was reused verbatim.
+
+**Gate 4.** 69 of 103 handbook entries said a module HAD BEEN VALIDATED. Now zero. The replacement
+evidence object is GENERATED from the registry by `tools/build_run11_defensibility_evidence.py`
+and the suite compares it byte for byte, so a hand edit fails. 65 modules may claim their
+arithmetic is independently verified for the stated formula; 28 may claim only implementation; 8
+are disabled and claim nothing.
+
+**Gates 5 and 6.** Both voting modules are category A1, so the governed rollup is labelled **Cost
+Recovery Status** (display only, no constant renamed, Group A still called Project Health), and
+its conflict is **NOT_ESTIMABLE_SINGLE_LINEAGE**, shown as "Conflict: not estimable from one
+voting lineage". Established exhaustively that no genuine two-source combine yields K = 0.0, so a
+published zero could only mean nothing was combined. Both derived from the voting set as it
+stands, so both widen by themselves if a second lineage ever votes.
+
+**GATE 7 IS NOT COMPLETE AND IS NOT CLAIMED.** Category 9 was audited
+(`code_audit/run11_category9_qualification.csv`): required inputs, canonical structure and
+reporting-period applicability are knowable; provenance and timeliness only partly; revision
+resolution not at all. No qualification object was built and nothing downstream consumes one,
+because the three missing pieces would need evidence structures the repository does not hold.
+
+**Voting and activation unchanged: exactly A1.7 and A1.8 vote.** Bucket-5 still two disabled. No
+integrated module became voting. No participant sequence change.
+
+**Participant-visible wording DID change**, and only in the four permitted ways: the conflict
+banner sentence, the governed status label, the qualified defensibility claims, and the seven
+corrected modules' abstention sentences.
+
+**Test totals: 75 suites, 5980 of 5980, all green**, each against its own freshly migrated
+database. Four new suites; five earlier ones restated with every original finding preserved as the
+reason, none deleted and none loosened. `run_all_suites.sh` untouched and still strict.
+
+**Next session, exactly.** Run the complete suite first and record **75 and 5980** as the baseline,
+and re-run `drive_run11_participant_route.py` expecting 52 of 52. Then either close Gate 7 or
+record the qualification gap as an accepted stated limit; then build the full
+preliminary-lock-reveal-decide-lock browser fixture or record that gap as accepted. Re-run
+`tools/build_run11_defensibility_evidence.py` and confirm the committed file is unchanged. **Do
+not reopen the seven neighbour corrections, the Gate 1 refusals, the Cost Recovery Status label or
+the single-lineage conflict semantics unless a regression test proves one is broken.**
+
+**Owner decisions outstanding.** Whether to build the Category 9 evidence structures or accept the
+gap; whether to build the decision-sequence browser fixture; whether "Cost Recovery Status" should
+also reach the exported workbook and the Methods tab; plus all four items carried forward from Run
+10B, which remain open.
+
+Files: `assets/js/client_algorithm_version.js` (new), `ds_defensibility_evidence.js` (new,
+generated), `signals.js`, `detail.js`, `taxonomy.js`, `app.js`, `ds_defensibility_data.js`,
+`index.html`, `research/deepdive.html`, `server/app/simulation/compute.py`, `fusion.py`,
+`models.py`, `models_evm.py`, `models_ext.py`, `models_doc.py`, `models_gov.py`,
+`server/app/documents.py`, `tools/build_run11_defensibility_evidence.py` (new),
+`server/tools/test_run11_browser_server_authority.py`, `test_run11_neighbour_defects.py`,
+`test_run11_status_and_conflict.py`, `test_run11_defensibility_claims.py`,
+`drive_run11_participant_route.py` (all new), `test_run2_fifteen_defects.py`,
+`test_run4_validate_seven.py`, `test_run6_known_answer.py`, `test_run8_retest_classify_27.py`,
+`test_run10_state_protection.py` (restated), `code_audit/run11_browser_server_parity.csv`,
+`run11_participant_route_verification.csv`, `run11_neighbour_defects_fixed.csv`,
+`run11_defensibility_claim_audit.csv`, `run11_category9_qualification.csv` (new),
+`REPORT_2026-08-12_run11-browser-participant-governance-cleanup.md` (new), this entry.
