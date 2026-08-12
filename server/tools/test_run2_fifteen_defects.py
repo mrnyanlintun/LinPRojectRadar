@@ -1095,9 +1095,20 @@ try:
             added = [ln.strip() for ln in live.splitlines() if ln not in base.splitlines()]
             check(not removed,
                   f"{rel}: the freeze removed nothing from this file", str(removed)[:200])
-            check(all(ln.startswith("//") or "abstained" in ln or ln == "}" for ln in added),
-                  f"{rel}: and everything it added is the abstention-reason graft or the "
-                  f"comment recording why", str(added)[:200])
+            # RESTATED BY RUN 11, ORIGINAL FINDING PRESERVED. Until Run 11 this file differed
+            # from the freeze only by Run 4's abstention-reason graft, and that record stands.
+            # Run 11 Gate 1 adds exactly one statement to it: the opt-in gate that stops the
+            # client-side evidence-module backfill from recomputing on the participant route.
+            # It is named here rather than tolerated as an unexplained difference, so the file
+            # still has no addition that is not accounted for by a run's authorised scope.
+            RUN11_GATE_1_LINE = "if (!window.LIN_ALLOW_CLIENT_ANALYTICS) return;"
+            check(all(ln.startswith("//") or "abstained" in ln or ln == "}"
+                      or ln == RUN11_GATE_1_LINE for ln in added),
+                  f"{rel}: and everything it added is the abstention-reason graft, Run 11's "
+                  f"client-analytics gate, or the comment recording why", str(added)[:200])
+            check(RUN11_GATE_1_LINE in [ln.strip() for ln in live.splitlines()],
+                  f"{rel}: and Run 11's gate is actually present, so the allowance above is "
+                  f"not a licence for an absent line")
             check("p.storedResult.abstained = resp.result.abstained" in live,
                   f"{rel}: which is the one line that makes an abstaining module say what it "
                   f"is waiting for on the page a project manager reads")

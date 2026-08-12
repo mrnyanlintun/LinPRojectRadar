@@ -254,8 +254,40 @@ def run_float_consumption(si: dict, rand: Callable[[], float], period_cutoff) ->
 
 
 def run_scurve_deviation(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 11, NEIGHBOUR DEFECT 2 OF 7. OUT-OF-DOMAIN BANDING.
+
+    The reproducer from the Run 10B sweep: planned progress of -60 per cent turned Amber into
+    Green. The first half of the combined figure is actual progress minus planned progress, so a
+    negative planned figure is subtracted and inflates the deviation upward without bound. The
+    band is one-sided at the calm end, so it lands in Green.
+
+    THE DOMAIN. Both figures are percentages complete: shares of the work, in nought to one
+    hundred. Earned and planned value are cumulative values of work and cannot be below zero.
+    Nothing about the band changed; outside the domain the module reports no S-curve deviation.
+    """
     if not check_inputs(si, ("actualPctComplete", "plannedPctComplete", "ev", "pv")):
         return insufficient("SCurve_Deviation")
+    _domains = (
+        (si["actualPctComplete"], lambda v: 0 <= v <= 100,
+         "the reported progress falls outside nought to one hundred per cent"),
+        (si["plannedPctComplete"], lambda v: 0 <= v <= 100,
+         "the planned progress falls outside nought to one hundred per cent"),
+        (si["ev"], lambda v: v >= 0,
+         "the earned value is reported below zero, and the value of work performed cannot be "
+         "negative"),
+        (si["pv"], lambda v: v >= 0,
+         "the planned value is reported below zero, and the value of work scheduled cannot be "
+         "negative"),
+    )
+    for _raw, _ok, _words in _domains:
+        _v = num(_raw, None)
+        if _v is None or not _ok(_v):
+            return insufficient(
+                "SCurve_Deviation",
+                f"No deviation from the planned progress curve is measurable: {_words}. No "
+                f"substitute figure is used in its place.",
+                ABSTAIN_MALFORMED_INPUT)
     pct_dev = si["actualPctComplete"] - si["plannedPctComplete"]
     if not si["pv"] > 0:
         return insufficient("SCurve_Deviation")
@@ -828,8 +860,52 @@ def run_inflation_adjustment(si: dict, rand: Callable[[], float],
                             "are needed, and at least one of them has not been reported for "
                             "this period.",
                             ABSTAIN_MISSING_INPUT)
-    pct = si["actualPctComplete"] / 100 if si.get("actualPctComplete") is not None else None
-    expected = si["materialCostBaseline"] * pct if pct is not None else si["materialCostBaseline"]
+    # RUN 11, NEIGHBOUR DEFECTS 3 AND 4 OF 7.
+    #
+    # DEFECT 3, OUT-OF-DOMAIN BANDING. Current material cost of -100,000 turned Red into Green.
+    # The escalation is floored at zero by max(), so any current cost below the progress-adjusted
+    # baseline reads as exactly nought escalation, which is the reading of a project with no
+    # material escalation at all. A negative material cost is not that project. Material costs
+    # are money and cannot be below zero.
+    #
+    # DEFECT 4, MISSINGNESS IMPROVING THE READING. Removing the reported progress turned Red into
+    # Amber. The line below used to scale the baseline by progress WHEN progress was present and
+    # silently use the full unscaled baseline when it was absent. The full baseline is the larger
+    # denominator, so withholding the progress figure always produced a smaller escalation and
+    # never a larger one: the module paid for missing evidence with a calmer band. Progress is
+    # required now. It is not defaulted, and no substitute is used.
+    _domains = (
+        (si["materialCostBaseline"], lambda v: v >= 0,
+         "the material cost baseline is reported below zero, and a cost cannot be negative"),
+        (si["materialCostCurrent"], lambda v: v >= 0,
+         "the current material cost is reported below zero, and a cost cannot be negative"),
+    )
+    for _raw, _ok, _words in _domains:
+        _v = num(_raw, None)
+        if _v is None or not _ok(_v):
+            return insufficient(
+                "Inflation_Adjustment",
+                f"No material escalation is measurable: {_words}. No substitute figure is used "
+                f"in its place.",
+                ABSTAIN_MALFORMED_INPUT)
+    pct_raw = num(si.get("actualPctComplete"), None)
+    if pct_raw is None:
+        return insufficient(
+            "Inflation_Adjustment",
+            "Insufficient data: the reported progress is needed to scale the material cost "
+            "baseline to the work actually done, and it has not been reported for this period. "
+            "The unscaled baseline is not used in its place, because it would understate the "
+            "escalation rather than leave it unmeasured.",
+            ABSTAIN_MISSING_INPUT)
+    if not 0 <= pct_raw <= 100:
+        return insufficient(
+            "Inflation_Adjustment",
+            "No material escalation is measurable: the reported progress falls outside nought "
+            "to one hundred per cent, so it is not a share of the work. No substitute figure is "
+            "used in its place.",
+            ABSTAIN_MALFORMED_INPUT)
+    pct = pct_raw / 100
+    expected = si["materialCostBaseline"] * pct
     if not (expected > 0):
         return insufficient("Inflation_Adjustment",
                             "Insufficient data: the material cost baseline at this project's "

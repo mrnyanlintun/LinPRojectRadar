@@ -181,17 +181,44 @@ RUN10B_SCOPED_FILES = {
     "server/app/simulation/canonical.py",
 }
 
+#: RUN 11's authorised scope, added on the same footing so each run's authorisation is readable
+#: on its own. The four model files hold the seven remaining neighbour defects; the browser files
+#: are Gate 1's subject, the first time this guard has admitted an asset (see the restated
+#: assets/ check below, whose original finding is preserved for every other surface).
+RUN11_SCOPED_FILES = {
+    "server/app/simulation/models.py",
+    "server/app/simulation/models_doc.py",
+    "server/app/simulation/models_evm.py",
+    "server/app/simulation/models_ext.py",
+    "server/app/simulation/models_gov.py",
+    "server/app/simulation/models_dq.py",
+    "server/app/simulation/fusion.py",
+    "server/app/simulation/registry.py",
+    "assets/js/client_algorithm_version.js",
+    "assets/js/detail.js",
+    "assets/js/signals.js",
+    "assets/js/taxonomy.js",
+    "assets/js/ds_defensibility_data.js",
+    "assets/js/app.js",
+    "assets/js/decision.js",
+}
+
 _diff = subprocess.run(["git", "diff", "--name-only", GUARD_BASELINE_REV, "--"],
                        cwd=str(ROOT), capture_output=True, text=True).stdout.split()
 _prod = [p for p in _diff
          if (p.startswith("server/app/") or p.startswith("assets/"))
          and p not in RUN8_SCOPED_FILES and p not in RUN10_SCOPED_FILES
-         and p not in RUN10B_SCOPED_FILES]
+         and p not in RUN10B_SCOPED_FILES and p not in RUN11_SCOPED_FILES]
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
-check(not any(p.startswith("assets/") for p in _diff),
-      "nothing under assets/ differs from the pinned baseline",
-      " ".join(p for p in _diff if p.startswith("assets/")))
+# RESTATED BY RUN 11, original finding preserved. This read "nothing under assets/ differs"
+# until Run 11 Gate 1, which is authorised to change exactly the browser files that carried the
+# dormant client arithmetic. It keeps its full force over every other participant surface.
+_unscoped_assets = sorted(p for p in _diff
+                          if p.startswith("assets/") and p not in RUN11_SCOPED_FILES)
+check(not _unscoped_assets,
+      "nothing under assets/ outside Run 11's authorised browser scope differs from the pinned "
+      "baseline", " ".join(_unscoped_assets))
 
 
 # =================================================================================================

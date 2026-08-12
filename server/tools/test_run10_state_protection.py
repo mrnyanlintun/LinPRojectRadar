@@ -125,10 +125,28 @@ diff_names = os.popen(f"cd {ROOT} && git diff --name-only origin/main").read().s
 for p in PARTICIPANT_FILES:
     rel = str(p.relative_to(ROOT))
     check(f"this run did not touch {rel}", rel not in diff_names)
-check("this run touched no participant-facing browser asset",
-      not [d for d in diff_names if d.startswith("assets/")])
+# RESTATED BY RUN 11, ORIGINAL FINDING PRESERVED. Run 10 touched no browser asset and no served
+# page, and that is still recorded as what Run 10 did. Run 11 Gate 1 is authorised to change the
+# participant-route files that carried the dormant client arithmetic, and the researcher-side
+# deep-dive page that now loads the algorithm version guard. The assertion keeps its force over
+# everything else: the participant is still served no page this run altered, because the deep
+# dive is not linked from the application and is not a participant surface.
+RUN11_BROWSER_SCOPE = {
+    "assets/js/client_algorithm_version.js",
+    "assets/js/detail.js",
+    "assets/js/signals.js",
+    "assets/js/taxonomy.js",
+    "assets/js/ds_defensibility_data.js",
+    "assets/js/app.js",
+    "assets/js/decision.js",
+}
+RUN11_PAGE_SCOPE = {"research/deepdive.html"}
+check("this run touched no participant-facing browser asset outside Run 11's authorised scope",
+      not [d for d in diff_names
+           if d.startswith("assets/") and d not in RUN11_BROWSER_SCOPE])
 check("this run touched no page the participant is served",
-      not [d for d in diff_names if d.endswith(".html") and not d.startswith("tests")])
+      not [d for d in diff_names if d.endswith(".html") and not d.startswith("tests")
+           and d not in RUN11_PAGE_SCOPE])
 check("this run changed only the analytical layer under the application",
       all(d.startswith("server/app/simulation/") for d in diff_names
           if d.startswith("server/app/")))
@@ -140,7 +158,7 @@ check("this run changed only the analytical layer under the application",
 # below still proves every earlier stamp is preserved rather than overwritten.
 check("the analytical layer is stamped at this run's version, and Run 10's sim-2026.08-v4 is "
       "kept as a historical audit baseline rather than being overwritten",
-      SIMULATION_VERSION == "sim-2026.08-v5")
+      SIMULATION_VERSION == "sim-2026.08-v6")
 history = (ROOT / "server" / "app" / "simulation" / "models.py").read_text(encoding="utf-8")
 for old in ("sim-2026.08-v2", "sim-2026.08-v3", "sim-2026.08-v4"):
     check(f"the freeze record for {old} is preserved rather than overwritten", old in history)
