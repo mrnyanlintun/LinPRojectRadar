@@ -6466,3 +6466,60 @@ Files: `server/run_all_suites.sh`, `server/tools/test_run5_export.py`,
 (new), `research_fixtures/synthetic/module_id_aliases_overlay.csv` (new), the seven
 `code_audit/run9_*.csv` files (new),
 `REPORT_2026-08-11_run9-test-only-synthetic-integration.md` (new), this entry.
+
+---
+
+## 2026-08-12, Run 10: synthetic programme v0.3, Monte Carlo and DSM correction
+
+**THE ONE PER CENT MONTE CARLO BIAS WAS THE ORACLE, NOT THE GENERATOR.** The cost risk fixtures
+sample **triangular** marginals under a Gaussian copula, with risk events as an independent
+Bernoulli occurrence times a triangular impact. Run 9's oracle assumed Beta-PERT, which for these
+right-skewed three-point estimates sits about 0.9 per cent lower by construction:
+`(a+m+b)/3` against `(a+4m+b)/6`. Measured against the triangular expectation the stored means
+are within 0.05 per cent. Beta-PERT does appear in the same generator, for schedule durations,
+which is a different family. **Do not reintroduce a Beta-PERT oracle for the cost risk family.**
+
+**THE DSM ARITHMETIC WAS NEVER WRONG; THE CONTRACT WAS.** `total_propagated_rework` was the
+multi-step propagated total excluding the seed, so comparing it with a first-order product
+disagreed. `impacted_node_count` was a material count above 0.05 **including** the seed node, so
+comparing it with a positive count disagreed. v0.3 stores seed, first order, multi-step,
+cumulative state, two positive counts, two material counts, the threshold, seed-inclusion flags
+and cycle handling as separate declared fields. The contract reproduces every one of the 36 v0.2
+rows exactly.
+
+**MONTE CARLO EAC AND SCENARIO MODELING ARE PERMANENT.** Rows 1.1 to A1.1 and 5.4 to A5.4 are in
+the package alias table and asset map. The v0.3 importer switches the Run 9 overlay off, so a
+module that still needed it would fail rather than pass. The overlay stays only for v0.2.
+
+**v0.3 IS `research_fixtures/synthetic/OG-SYNTH-0.3/`.** 126 files, validator 1,609 checks zero
+failures, checksums verified, byte-for-byte reproducible in a second isolated build (archive
+digest `b478a2cb21d8acda89767abb6582913f39b64f3b20afd9ef2cdf0095cd5d93a6`). v0.2 is left exactly
+as it was so the Run 9 record stays true; Run 9 still reads it and still reports its
+disagreements.
+
+**TOLERANCE IS STATISTICAL, NOT A PERCENTAGE.** `abs(simulated mean - analytic mean) <= z * sd /
+sqrt(N)` with z = 3.2905, alpha 0.001, Bonferroni corrected across fifty checks, fixed in
+`monte_carlo_contract.json` before any result. Convergence at 1,000, 5,000 and 20,000 draws is
+inside the rule for all six projects and the standard error contracts near the root of the sample
+ratio. **Do not widen this to a percentage.**
+
+**SIXTEEN OF SIXTEEN FAULT INJECTIONS CAUGHT BY NAME**, each in a discarded scratch copy, each
+proved to alter bytes, each restored.
+
+**NOTHING OPERATIONAL MOVED.** `server/app` and `assets` byte-identical to `origin/main`. No
+migration applied; **0020 through 0025 remain unapplied in production**. Voting set unchanged at
+two, disabled set unchanged at eight, A1.1 still not voting. lxml absent from the normal
+interpreter and from the generator environment. The corrected assets were **not** connected to
+production module execution; that remains open work.
+
+**OPEN FOR THE OWNER.** The production Monte Carlo EAC module is a Beta-PERT over earned value
+indices; the synthetic family mapped to it is a bottom-up triangular cost model. They are
+different models, so this family is not a drop-in oracle for that module. The registry calls
+A1.1 "Monte Carlo EAC Forecast" and the synthetic tables call it "Monte Carlo EAC".
+
+Files: `research_fixtures/synthetic/OG-SYNTH-0.3/` (new),
+`server/tools/test_run10_synthetic_v03.py` (new),
+`server/tests/synthetic_fixtures/importers/fixture_loader_v03.py` (new),
+`server/tests/synthetic_fixtures/validators/recomputations_v03.py` (new), the
+`code_audit/run10_*.csv` and `code_audit/synthetic_v03_*.csv` files (new),
+`REPORT_2026-08-12_synthetic-v0.3-monte-carlo-dsm-correction.md` (new), this entry.
