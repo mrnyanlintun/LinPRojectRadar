@@ -6876,3 +6876,72 @@ Files: `server/app/simulation/qualification.py` (new), `compute.py`, `models.py`
 `run12_mutation_proof.csv`, `run12_harness_failure_proof.csv`,
 `run12_participant_package_checksums.sha256`, `run12_release_freeze.md` (new),
 `REPORT_2026-08-12_run12-final-qualification-participant-cycle-refreeze.md` (new), this entry.
+
+# Run 13 — 101-module independent test evidence audit (2026-08-12)
+
+**Branch `claude/run13-101-module-evidence-audit` from `origin/main` at `7e8648b`, the Run 12
+merge record. Report: `REPORT_2026-08-12_run13-101-module-test-evidence.md`, which is controlling
+and self-contained.**
+
+**EVIDENCE COLLECTION ONLY. No architectural disposition was assigned, no production algorithm
+was touched, no defect was repaired and no participant-visible behaviour changed.** Simulation
+version unchanged at sim-2026.08-v7; synthetic package OG-SYNTH-0.3 unchanged and not
+re-ingested; participant package og-participant-2026.08-v1 unchanged; qualification version
+cat9-qual-v1 unchanged. Production Postgres never touched; migrations 0020 to 0025 still
+unapplied and this run added none.
+
+**Handoff audit: no repair needed.** Every session through Run 12 is represented, in order, with
+its commit, versions, scope, files, voting state, totals, deviations and next-session
+requirements. The two discrepancies Run 12 recorded stand and were not reconstructed: there is no
+`COMMON_PREAMBLE.md` here, and the `code_audit/run10_*.csv` files named in the Run 10 entry are
+not present. Pre-change suite reproduced the baseline exactly: **77 suites, 6102 of 6102**.
+
+**The inventory reconciles mechanically: 96 project, 5 portfolio, 101 total; 8 disabled, 93
+non-disabled; 87 executable project modules, A4.1 being registered and never ported and refused
+loudly by the registry.** Derived from the governed registry CSV and the implementation tables,
+not from the prompt. **Voting is still exactly A1.7 and A1.8.**
+
+**Factual results across all 101: MATCH 83, MISMATCH 8, NOT_TESTABLE 2, DISABLED_AS_DESIGNED 8.**
+2,508 module test cases; 188 new strict checks; 83 of 87 executable modules carry a fault proof
+that turned red and was restored, the other four abstaining unconditionally so no fault site
+exists. Fifty-nine production files hashed before and after: all identical.
+
+**THE EIGHT MISMATCHES, NONE OF THEM VOTING, SO NONE CAN AFFECT COST RECOVERY STATUS. NOT FIXED,
+DELIBERATELY.** (1) A percentage above one hundred is unguarded anywhere in the stack and reads
+as health in A2.11, A3.2, A3.3, A3.5 and A5.8: `validate_numeric_fields` bounds a value from
+below and never from above, and banding runs before any domain guard. (2) Removing evidence
+improves the reading in A3.5, where absent progress leaves the indirect plan un-prorated so the
+denominator grows, and in C1.6, where an absent field cannot be inconsistent. (3) A5.4 and B2.19
+compute a stated proxy when their defining decision structure is absent, which Run 10B chose
+deliberately and disclosed in the code. A6.3 was examined for the same class and is not an
+instance. **NOT_TESTABLE: A1.2, no derivable expectation for its uncalibrated control constants;
+D1.1, no source for its anomaly threshold multiplier or band fractions.**
+
+**Test totals: 78 suites, 6290 of 6290, all green**, each against its own freshly migrated
+database, reconfirmed on merged main. One new suite; no existing suite altered. The strict
+harness was re-proved by running the real `run_all_suites.sh` over four planted suites (prose
+instead of a result line, reported failures, green line then a nonzero exit, silent death) and it
+failed all four.
+
+**Next session, exactly.** The owner's classification of the eight mismatches and the two
+untestable modules is the next step, module by module, from
+`code_audit/run13_101_module_evidence.csv` and `run13_failures_and_anomalies.csv`. **Do not
+repair any of them before that decision.** If a repair is authorised, the percentage-above-one-
+hundred class is one change at the ingestion boundary affecting five modules and should be
+treated as one decision, not five. Record the baseline as **78 and 6290**. Do not reopen the
+voting set, the Cost Recovery Status label, the single-lineage conflict semantics or the disabled
+eight unless a regression test proves one is broken.
+
+**Owner decisions outstanding.** All four carried from Run 10B and the three from Run 11 and 12
+remain open, plus: the disposition of each of the eight mismatches; whether band boundaries
+outside the two voters are to be sourced or the platform is to state that they are not; and
+whether D1.1's threshold constants are to be sourced or the module recorded as untestable
+permanently.
+
+Files: `code_audit/run13_master_101_inventory.csv`, `run13_101_module_evidence.csv`,
+`run13_failures_and_anomalies.csv`, `run13_mutation_proof.csv`,
+`run13_production_hashes.sha256` (all new), `server/tools/build_run13_inventory.py`,
+`build_run13_evidence.py`, `build_run13_mutation_proof.py`,
+`test_run13_module_evidence.py` (all new),
+`REPORT_2026-08-12_run13-101-module-test-evidence.md` (new), this entry. **No production file
+changed.**
