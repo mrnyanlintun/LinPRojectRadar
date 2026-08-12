@@ -50,7 +50,14 @@ from .rng import as_percent, clamp, num, pctile, round1, round2
 # domain a quantity can occupy reach a band, two rewarded missing evidence with a better reading,
 # two carried a disposition no input could reach, and one printed a sign the figure did not
 # carry. This is a change to what this layer emits, so the stamp moves with it.
-SIMULATION_VERSION = "sim-2026.08-v4"
+# RUN 10B (CRITICAL VOTER FIX AND CANONICAL-STRUCTURE INTEGRATION) moves it again, to
+# sim-2026.08-v5. Every earlier stamp remains the historical audit baseline for the results
+# already collected under it; none is overwritten. Run 10B closed the open input domain in the
+# to-complete cost efficiency measure, which is one of the two modules that vote on project
+# status and could therefore turn an out-of-domain reading into a favourable project status, and
+# it required the defining structure of six canonical methods before they compute. Both change
+# what this layer emits, so the stamp moves with them.
+SIMULATION_VERSION = "sim-2026.08-v5"
 
 
 # -------------------------------------------------------------------------------------------

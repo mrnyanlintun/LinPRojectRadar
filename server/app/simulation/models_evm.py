@@ -233,6 +233,56 @@ _TCPI_BEYOND_OBSERVED = _TCPI_PLANNED_EFFICIENCY + _TCPI_STABILITY_MARGIN
 def run_tcpi(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     if not check_inputs(si, ("bac", "ev", "ac")):
         return insufficient("TCPI")
+    # RUN 10B, GATE 1. THE DOMAIN GUARD, AND WHY IT IS THE HIGHEST-SEVERITY ONE IN THE LAYER.
+    # This module is one of the two that vote on project status, so an out-of-domain reading here
+    # does not merely mis-state one row on the ledger, it moves the project's status. The Run 10
+    # neighbour sweep found the reproducer: an actual cost reported below zero enlarges the
+    # denominator (BAC - AC) beyond the budget itself, the ratio falls, and the module reads
+    # Green. The same shape reaches the numerator from the other side: an earned value above the
+    # budget at completion makes the remaining work negative and the ratio negative, which is
+    # also Green.
+    #
+    # NO BOUNDARY MOVES AND NOTHING IS CLAMPED. The three sourced band edges above are untouched,
+    # and an out-of-domain figure is NOT pulled back to the nearest admissible value, because
+    # clamping would hand the module a number nobody reported and it would land, in every case
+    # found, in the favourable direction. The module refuses instead.
+    #
+    # WHERE EACH DOMAIN COMES FROM, and each is definitional rather than chosen here:
+    #   budget at completion  > 0   -- it is the authorised total budget of the work. There is no
+    #                                  cost efficiency that finishes remaining work against a
+    #                                  budget of nothing or less.
+    #   earned value         >= 0   -- it is the budgeted value of work PERFORMED. Negative work
+    #                                  has not been performed.
+    #   earned value      <= budget -- the same definition bounds it above: the value that can be
+    #                                  earned is the value that was budgeted.
+    #   actual cost          >= 0   -- it is cost incurred. A negative incurred cost is not a
+    #                                  measurement of spending.
+    _domains = (
+        ("bac", si["bac"], lambda v: v > 0,
+         "the budget at completion is reported at or below zero, which is not a budget the "
+         "remaining work can be measured against"),
+        ("ev", si["ev"], lambda v: v >= 0,
+         "the earned value is reported below zero, and the budgeted value of work performed "
+         "cannot be negative"),
+        ("ac", si["ac"], lambda v: v >= 0,
+         "the actual cost is reported below zero, and a cost incurred cannot be negative"),
+    )
+    for _key, _raw, _ok, _words in _domains:
+        _v = num(_raw, None)
+        if _v is None or not _ok(_v):
+            return insufficient(
+                "TCPI",
+                f"No cost efficiency is measurable for the remaining work: {_words}. No "
+                f"substitute figure is used in its place.",
+                ABSTAIN_MALFORMED_INPUT)
+    if num(si["ev"], None) > num(si["bac"], None):
+        return insufficient(
+            "TCPI",
+            "No cost efficiency is measurable for the remaining work: the earned value is "
+            "reported above the budget at completion, and the budgeted value of work performed "
+            "cannot exceed the value that was budgeted. No substitute figure is used in its "
+            "place.",
+            ABSTAIN_MALFORMED_INPUT)
     remaining_work = si["bac"] - si["ev"]
     remaining_budget = si["bac"] - si["ac"]
     if remaining_budget <= 0:

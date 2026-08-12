@@ -170,10 +170,14 @@ import oldsim7.models_gov as old_gov  # noqa: E402
 check(old_models.SIMULATION_VERSION == "sim-2026.08-v2",
       "the pinned baseline is stamped at the freeze version it shipped under",
       old_models.SIMULATION_VERSION)
-check(SIMULATION_VERSION == "sim-2026.08-v4",
-      "and this branch is stamped at Run 10's version, so results computed before and after "
-      "each run are distinguishable in the data. Run 7 shipped sim-2026.08-v3 and that record "
-      "is preserved in the version history rather than overwritten", SIMULATION_VERSION)
+# RESTATED BY RUN 10B, original reason preserved: Run 7 shipped sim-2026.08-v3 and Run 10
+# shipped sim-2026.08-v4, and both records are preserved in the version history rather than
+# overwritten. This branch is Run 10B's.
+check(SIMULATION_VERSION == "sim-2026.08-v5",
+      "and this branch is stamped at Run 10B's version, so results computed before and after "
+      "each run are distinguishable in the data. Run 7 shipped sim-2026.08-v3 and Run 10 "
+      "shipped sim-2026.08-v4, and both records are preserved in the version history rather "
+      "than overwritten", SIMULATION_VERSION)
 check(old_models.run_pert is not run_pert and old_gov.run_regret_minimization
       is not run_regret_minimization,
       "the baseline functions are genuinely different objects from the live ones")
