@@ -532,6 +532,16 @@ window.projectLevelCategories = function () {
     return {
       status: row.project_status || null,
       redReview: !!row.red_review,
+      /* RUN 11, GATES 5 AND 6. Both are read from the stored row, never derived here. The
+         server decides what the governed rollup may be called and whether its conflict
+         coefficient can be estimated at all; this file does the reading and nothing else.
+         A row computed before Run 11 carries neither field, so both come back null and the
+         callers fall back to what they showed before rather than inventing a label. */
+      statusLabel: row.project_status_label || null,
+      statusScope: row.project_status_scope || null,
+      conflict: row.project_conflict != null ? row.project_conflict : null,
+      conflictState: row.project_conflict_state || null,
+      conflictSentence: row.project_conflict_sentence || null,
       /* Kept so a caller can tell a stored answer from a missing one without reaching for
          LinResults directly. */
       stored: true

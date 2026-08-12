@@ -260,6 +260,8 @@ RUN11_SCOPED_FILES = {
     "assets/js/ds_defensibility_data.js",
     "assets/js/app.js",
     "assets/js/decision.js",
+    "server/app/documents.py",
+    "server/app/simulation/compute.py",
 }
 
 _unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES
@@ -1355,7 +1357,18 @@ ka(set(res["category_statuses"].keys()), _voting_cats,
    "rollup: exactly the categories carrying a voting module have a fused status")
 ka(res["categories_voting"], 1,
    "rollup: one category votes, so project conflict of zero means one source and not agreement")
-ka(res["project_conflict"], 0.0, "rollup: project conflict is structurally zero")
+# RESTATED BY RUN 11 GATE 6, AND THE ORIGINAL FINDING IS THE REASON THE RESTATEMENT EXISTS.
+# Run 6 recorded that the rollup's conflict was structurally zero, and named why in the line
+# above: one source, not agreement. That finding was correct and it is what Run 11 acted on. A
+# zero is now withheld rather than published, because zero is a number the coefficient reaches
+# only by never combining anything, and no genuine two-source combine produces it. The assertion
+# is therefore that the coefficient is NOT REPORTED under one-lineage voting, and that the state
+# says so in words.
+ka(res["project_conflict"], None,
+   "rollup: with one voting lineage no conflict coefficient is published, because zero would "
+   "read as agreement that was never tested")
+ka(res["project_conflict_state"], "NOT_ESTIMABLE_SINGLE_LINEAGE",
+   "rollup: and the state names why rather than leaving a blank")
 _c_cats = {registry.registry_index()[m]["category"] for m in VALIDATED
            if registry.group_of(m) == "C"}
 ka(_c_cats & set(res["category_statuses"].keys()), set(),
@@ -1734,9 +1747,19 @@ print(f"     {len(_claims_validated)} state that the module has been VALIDATED")
 print(f"     {len(_unqualified)} carry no calibration or validation qualification anywhere")
 check(len(_entries) == 103, "ds_defensibility_data.js holds 103 module entries",
       str(len(_entries)))
-check(len(_claims_validated) > 0,
-      f"{len(_claims_validated)} entries claim validation the platform does not have; reported, "
-      f"not edited, because the content is the owner's decision")
+# RESTATED BY RUN 11 GATE 4, AND THE ORIGINAL FINDING IS EXACTLY WHY. Run 6 measured this and
+# reported it rather than editing it, because the handbook's content was the owner's decision at
+# the time: 69 of 103 entries stated that a module HAD BEEN VALIDATED, on a platform that holds
+# no validation evidence for any module. Run 11 was authorised to correct it, and did: each of
+# those entries now states what such validation would consist of, that none of it has been
+# performed, and what the repository actually holds instead. The assertion therefore flips from
+# "the overclaim is present, and here is how many" to "the overclaim is gone", and the measure
+# itself is unchanged so the two runs are counting the same thing.
+check(len(_claims_validated) == 0,
+      f"no entry claims validation the platform does not have; Run 6 measured 69 of 103 and "
+      f"reported them, Run 11 corrected them, and this run counts "
+      f"{len(_claims_validated)}",
+      str(_claims_validated[:5]))
 check((ROOT / "index.html").read_text(encoding="utf-8").find("ds_defensibility_data.js") >= 0,
       "ds_defensibility_data.js is loaded by index.html, so it is a LIVE surface")
 

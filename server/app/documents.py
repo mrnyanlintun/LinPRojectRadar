@@ -67,6 +67,7 @@ from .jdrive_tree import (
 )
 from .facade import err, now_iso
 from .models import Project
+from .simulation.fusion import governed_status_semantics
 from .research_identity import audit, resolve_caller
 from .research_membership import (
     ROLE_PM,
@@ -1419,6 +1420,11 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
         "abstained": row.abstained,
         "category_statuses": row.category_statuses,
         "project_status": row.project_status,
+        # RUN 11, GATES 5 AND 6. Derived at read time from the category statuses this row already
+        # holds, by the same function the compute path uses. No column is added, so a row stored
+        # before this run answers exactly as one stored after it, and migrations 0020 through
+        # 0025 stay where they are.
+        **governed_status_semantics(row.category_statuses),
         "portfolio_snapshot": row.portfolio_snapshot,
         "simulation_version": row.simulation_version,
         "seed": row.seed,

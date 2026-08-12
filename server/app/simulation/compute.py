@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .fusion import dst_fuse
+from .fusion import dst_fuse, governed_status_semantics
 from .models import SIMULATION_VERSION
 from .registry import CORE_VOTING_MODULES, registry_index, run_all
 
@@ -70,6 +70,15 @@ def compute_project(si: dict, scenario_id: str, period: str,
               if c["status"] and c["contributes_to_project_status"]]
     project = dst_fuse(voting)
 
+    # ------------------------------------------------------------------ RUN 11, GATES 5 AND 6
+    # Derived, not asserted, and derived by the same pure function the read path uses, so a
+    # freshly computed response and a stored row read back can never disagree about what the
+    # rollup is called or whether its conflict is estimable. See fusion.governed_status_semantics.
+    semantics = governed_status_semantics(category_statuses,
+                                          project["conflict"] if project else 0.0)
+    voting_module_ids = sorted(r["module_id"] for r in run["computed"]
+                               if r["module_id"] in CORE_VOTING_MODULES)
+
     return {
         "simulation_version": SIMULATION_VERSION,
         "seed": run["seed"],
@@ -81,6 +90,11 @@ def compute_project(si: dict, scenario_id: str, period: str,
         "unported": run["unported"],
         "category_statuses": category_statuses,
         "project_status": project["status"] if project else None,
-        "project_conflict": project["conflict"] if project else 0.0,
+        # RUN 11, GATES 5 AND 6. project_conflict keeps its original name so every reader that
+        # already looks for it keeps working, but it is None rather than 0.0 when the coefficient
+        # cannot be estimated: a consumer that prints it now prints nothing instead of printing a
+        # zero it would have read as independent agreement.
+        **semantics,
+        "voting_module_ids": voting_module_ids,
         "categories_voting": len(voting),
     }

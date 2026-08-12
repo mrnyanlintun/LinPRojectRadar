@@ -716,6 +716,13 @@ check(_probe_new["project_status"] == r4.get("project_status"),
       "the live path and not a private one",
       f"{_probe_new['project_status']} vs {r4.get('project_status')}")
 
+# RUN 11 GATE 6. The conflict coefficient is None when it cannot be estimated from one voting
+# lineage, and None does not round. Printed as the words the platform now uses rather than
+# coerced to a zero, which is the reading this run removed.
+def _k(v):
+    return "not estimable" if v is None else round(v, 6)
+
+
 print()
 print("   period | project status before -> after | conflict before -> after")
 status_moves = 0
@@ -726,7 +733,7 @@ for p in (1, 2, 3, 4):
     if before["project_status"] != after["project_status"]:
         status_moves += 1
     print(f"     {p}    | {before['project_status']} -> {after['project_status']}   | "
-          f"{round(before['project_conflict'], 6)} -> {round(after['project_conflict'], 6)}")
+          f"{_k(before['project_conflict'])} -> {_k(after['project_conflict'])}")
     check(after["project_status"] == STORED[p].get("project_status"),
           f"period {p}: the recomputed 'after' equals what the real path stored",
           f"{after['project_status']} vs {STORED[p].get('project_status')}")

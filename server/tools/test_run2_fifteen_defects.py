@@ -80,6 +80,12 @@ PASSED = 0
 FAILED = 0
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
+# RUN 11 GATE 6. The conflict coefficient is None when it cannot be estimated from one voting
+# lineage, and None does not round. Printed as the words the platform now uses rather than
+# coerced to a zero, which is the reading this run removed.
+def _k(v):
+    return "not estimable" if v is None else round(v, 6)
+
 #: THE BASELINE COMMIT, PINNED BY SHA AND NOT BY BRANCH NAME.
 #:
 #: This must not be `origin/main`. The moment this run merges, `origin/main` becomes the FIXED
@@ -875,7 +881,7 @@ try:
     conflict_moves = 0
     for p, before, after, stored_row in rows:
         b_s, a_s = before["project_status"], after["project_status"]
-        b_k, a_k = round(before["project_conflict"], 6), round(after["project_conflict"], 6)
+        b_k, a_k = _k(before["project_conflict"]), _k(after["project_conflict"])
         if b_s != a_s:
             status_moves += 1
         if b_k != a_k:
@@ -1112,6 +1118,24 @@ try:
             check("p.storedResult.abstained = resp.result.abstained" in live,
                   f"{rel}: which is the one line that makes an abstaining module say what it "
                   f"is waiting for on the page a project manager reads")
+            continue
+        # RESTATED BY RUN 11 GATES 5 AND 6, ORIGINAL FINDING PRESERVED. Every run since the
+        # freeze left the participant surface byte-identical, and that record stands. Run 11 is
+        # authorised to change what a participant is TOLD about the governed status and its
+        # conflict, and nothing else: taxonomy.js gains the read of the two stored fields, and
+        # app.js prefers the server's conflict sentence over a legacy classification that reads
+        # evidence which does not vote. Each is named here, and each is required to be present,
+        # so the allowance cannot cover an unrelated edit.
+        RUN11_WORDING_SCOPE = {
+            "assets/js/taxonomy.js": "conflictSentence: row.project_conflict_sentence",
+            "assets/js/app.js": "_f.conflictSentence",
+        }
+        if rel in RUN11_WORDING_SCOPE and live != base:
+            marker = RUN11_WORDING_SCOPE[rel]
+            check(marker in live,
+                  f"{rel}: Run 11's authorised wording change is actually present")
+            check(marker not in base,
+                  f"{rel}: and it is what the file gained rather than something already there")
             continue
         check(live == base,
               f"this run changed nothing on the participant surface ({rel})",

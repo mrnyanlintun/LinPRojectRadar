@@ -147,9 +147,16 @@ check("this run touched no participant-facing browser asset outside Run 11's aut
 check("this run touched no page the participant is served",
       not [d for d in diff_names if d.endswith(".html") and not d.startswith("tests")
            and d not in RUN11_PAGE_SCOPE])
-check("this run changed only the analytical layer under the application",
-      all(d.startswith("server/app/simulation/") for d in diff_names
-          if d.startswith("server/app/")))
+# RESTATED BY RUN 11, ORIGINAL FINDING PRESERVED. Run 10 changed only the analytical layer, and
+# that record stands. Run 11 Gate 6 additionally touches one file outside it: the read path that
+# serves a stored result, which must derive the same conflict state the compute path derives or
+# a stored row and a fresh response would disagree about whether the coefficient is estimable.
+# It is named rather than admitted by widening the rule to "server/app/".
+RUN11_NON_ANALYTICAL_SCOPE = {"server/app/documents.py"}
+check("this run changed only the analytical layer under the application, plus the read path "
+      "Run 11 Gate 6 names",
+      all(d.startswith("server/app/simulation/") or d in RUN11_NON_ANALYTICAL_SCOPE
+          for d in diff_names if d.startswith("server/app/")))
 
 # ---------------------------------------------------------------- GATE 10: versioning
 # RESTATED BY RUN 10B. The original assertion, that the layer is stamped sim-2026.08-v4, was
