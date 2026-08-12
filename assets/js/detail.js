@@ -981,6 +981,11 @@
     const uploadCount = (typeof uploadedDocEvents === "function") ? uploadedDocEvents(p).length : 0;
     const inputFieldCount = Object.keys(p.signalInputs || {})
       .filter((k) => k !== "sources" && p.signalInputs[k] != null && p.signalInputs[k] !== "").length;
+    // RUN 16, WORKSTREAM A5 AND A2. These two are REGISTRY counts, not this project's activity:
+    // how many categories and project modules the platform declares. They used to be badged as
+    // "11 categories" and "96 modules" beside a project that had computed nothing, which reads
+    // as a tally of what ran. The figures are unchanged and still derived from the taxonomy
+    // rather than typed in; the word beside them now says which kind of number they are.
     const totalCats = projectCats().length;
     const totalModulesForBadge = projectModuleCount();
 
@@ -1028,11 +1033,11 @@
              `<div class="detail-globe" data-project-id="${esc(p.id)}"></div>
               <p class="detail-globe-note ws-note"></p>`,
              false, hasCoordsFor(p) ? "located" : "no location")}
-        ${cs("d-projnet", "Project Signal Network", `<div class="detail-projnet2d"></div>`, false, totalCats + " categories")}
-        ${cs("d-neural", "Signal Flow", `<div class="detail-neural-flow" data-project-id="${esc(p.id)}"></div>`, false, `${totalModulesForBadge} modules`)}
+        ${cs("d-projnet", "Project Signal Network", `<div class="detail-projnet2d"></div>`, false, totalCats + " registered")}
+        ${cs("d-neural", "Signal Flow", `<div class="detail-neural-flow" data-project-id="${esc(p.id)}"></div>`, false, `${totalModulesForBadge} registered`)}
         ${cs("d-brief", "Executive Brief", executiveBriefHtml(p), false, "")}
         ${cs("d-decision", "Governance Decision", `<section class="panel detail-decision" aria-label="Governance decision (project detail)"></section>`, false, pillBadge(overallState))}
-        ${cs("d-web", "Signal Web", signalWebHtml(p), false, totalModulesForBadge + " modules")}
+        ${cs("d-web", "Signal Web", signalWebHtml(p), false, totalModulesForBadge + " registered")}
         ${cs("d-ledger", "Signal Inputs", `<section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>`, false, pillBadge(overallState))}
         ${cs("d-docsignals", "Documents & Extracted Signals",
              uploadedDocsPanelHtml(p) +
@@ -2210,6 +2215,15 @@
         // Drop the dropzone's per-project extraction cache so the signals panel
         // doesn't re-show stale inputs after the reset.
         if (window.LinSignals && LinSignals.clearCache) LinSignals.clearCache(id);
+        // RUN 16, WORKSTREAM A7, THE SAME-SESSION HALF. The server now invalidates the derived
+        // result (writes.py w_resetsignals supersedes every live row), but this tab still holds
+        // the row it primed earlier, and every stored-row accessor reads from that cache. Until
+        // this line, the browser drive found the cleared project still drawing 41 modules with a
+        // current result and a project rollup of Amber in the same session, from a row the
+        // server had already retired. The cache is dropped so the accessors fall back to the
+        // server's answer, which is now correctly that there is none. NOTHING is recomputed
+        // here: this discards a copy, it does not derive a replacement.
+        if (window.LinResults && LinResults.clear) LinResults.clear();
         // Re-fetch the (now-cleared) server copy; fall back to the cached copy.
         try {
           const fresh = await LinStore.getProject(id);
