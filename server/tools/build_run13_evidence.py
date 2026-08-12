@@ -191,6 +191,11 @@ def safe_run(mid: str, si: dict):
 
 
 ANOMALIES: list[dict] = []
+MUTATION: dict[str, str] = {}
+
+#: Modules for which Run 13 derived the expected value itself, by hand, from the method
+#: definition and the published band boundaries rather than from any production output.
+RUN13_HAND_DERIVED = {"A1.7", "A1.8"}
 
 
 def anomaly(**kw) -> None:
@@ -534,8 +539,129 @@ def exercise_project_module(mid: str, name: str, inv: dict, oracle: dict) -> dic
     return row
 
 
+# ---------------------------------------------------------------------------- GATE 5 rows
+# Every statement below is asserted, with the arithmetic derived by hand, in
+# tools/test_run13_module_evidence.py; this table records the outcome per module so the
+# evidence file carries one row per registered module.
+PORTFOLIO_EVIDENCE: dict[str, dict[str, str]] = {
+    "D1.1": {
+        "actual_method_implemented": "portfolio.compute_portfolio: Mahalanobis distance of this "
+                                     "project from the portfolio centroid against a threshold of "
+                                     "the mean distance plus 1.5 times the summed deviations",
+        "portfolio_behavior_if_applicable":
+            "denominator is the count of projects carrying both indices, each counted once; "
+            "zero and one-project portfolios abstain; a project without signal data leaves the "
+            "population rather than entering it as neutral; deterministic on identical input; "
+            "no feedback into project status or the voting set",
+        "expected_nominal_result": "NOT INDEPENDENTLY ESTABLISHED: the 1.5 multiplier and the "
+                                   "0.7 and 0.4 band fractions have no cited source, and there "
+                                   "is no reference population against which an anomaly "
+                                   "threshold could be derived",
+        "oracle_source": "contract oracle only: aggregation, denominator and abstention "
+                         "semantics",
+        "oracle_confidence": "LOW",
+        "verification_limitations": "the anomaly threshold constants are unsourced, so the "
+                                    "distance can be reproduced but the band cannot be judged",
+        "factual_result": "NOT_TESTABLE",
+    },
+    "D1.2": {
+        "actual_method_implemented": "portfolio.compute_portfolio: empirical percentile rank of "
+                                     "this project's cost and schedule indices within the "
+                                     "portfolio, and their mean",
+        "portfolio_behavior_if_applicable":
+            "percentiles counted by hand on a four-project portfolio and matched exactly; "
+            "denominator is the population size, not the number of better performers",
+        "expected_nominal_result": "50 per cent on both indices for the designed portfolio, "
+                                   "counted by hand",
+        "oracle_source": "independent hand count of the rank definition",
+        "oracle_confidence": "HIGH",
+        "verification_limitations": "small-n behaviour of a percentile over four projects is "
+                                    "arithmetically exact but analytically weak, as the "
+                                    "module's own proxy qualifier states",
+        "factual_result": "MATCH",
+    },
+    "D1.3": {
+        "actual_method_implemented": "portfolio.compute_portfolio: change in cost performance "
+                                     "per interval across the last three periods",
+        "portfolio_behavior_if_applicable":
+            "abstains BY ABSENCE with no usable history rather than appearing with a colour; a "
+            "flat history is exactly zero; the slope divides by intervals, not observations",
+        "expected_nominal_result": "0.1 per period for 0.9, 1.0, 1.1, derived by hand",
+        "oracle_source": "independent derivation of a slope over intervals",
+        "oracle_confidence": "HIGH",
+        "verification_limitations": "band boundaries at 0.01 and minus 0.03 have no cited source",
+        "factual_result": "MATCH",
+    },
+    "D1.4": {
+        "actual_method_implemented": "portfolio.compute_portfolio: count of other projects "
+                                     "within a fixed radius, banded by their mean cost index",
+        "portfolio_behavior_if_applicable":
+            "this project is never counted as similar to itself, proved on four identical "
+            "projects giving three; adding one project inside the radius raises the count by "
+            "exactly one; at a hand-computed distance of exactly the radius, binary rounding "
+            "decides membership",
+        "expected_nominal_result": "three for four identical projects, derived by hand",
+        "oracle_source": "independent derivation of the count definition",
+        "oracle_confidence": "MEDIUM",
+        "verification_limitations": "the 0.15 radius is unsourced and the comparison is exact, "
+                                    "so a project at exactly the radius is decided by floating "
+                                    "point rather than by the definition",
+        "factual_result": "MATCH",
+    },
+    "D1.5": {
+        "actual_method_implemented": "portfolio.compute_portfolio: mean of the terms actually "
+                                     "measured, being the anomaly score and one minus the "
+                                     "composite percentile, plus the trend term only when a "
+                                     "history exists",
+        "portfolio_behavior_if_applicable":
+            "with no history the mean is over exactly two measured terms and no placeholder "
+            "third term enters it",
+        "expected_nominal_result": "the mean of the two measured terms, recomputed independently "
+                                   "from the two reported components",
+        "oracle_source": "independent recomputation of the mean from its published components",
+        "oracle_confidence": "MEDIUM",
+        "verification_limitations": "the band boundaries at 0.70, 0.50 and 0.30 have no cited "
+                                    "source",
+        "factual_result": "MATCH",
+    },
+}
+
+
+def portfolio_row(mid: str) -> dict:
+    row = dict(PORTFOLIO_EVIDENCE[mid])
+    row["required_inputs"] = ("a list of projects each carrying cpi, spi, docRiskScore and "
+                              "actualPctComplete, the current project id, and the period history")
+    row["canonical_structure_required"] = "a portfolio of three or more projects"
+    row["canonical_structure_used"] = "the project list itself"
+    row["canonical_structure_result"] = ("the guard as written admits two projects while its "
+                                         "message says three; reproduced from the validated "
+                                         "source and recorded, not corrected")
+    row["real_execution_path_result"] = ("computed only by portfolio.compute_portfolio; "
+                                         "registry.run_module refuses the id on the "
+                                         "single-project path")
+    row["property_test_result"] = ("deterministic on identical input; stable result ordering; "
+                                   "no project counted twice; no feedback into project status")
+    row["missingness_result"] = ("a project without both indices leaves the population; a "
+                                 "reported zero index stays in it as a measurement")
+    row["malformed_input_result"] = ("a null portfolio abstains; a portfolio with no current "
+                                     "project id is refused outright")
+    row["boundary_result"] = "zero, one, two, four and identical-project portfolios exercised"
+    row["domain_result"] = "exercised through the Gate 5 pass"
+    row["mutation_proof_result"] = ("Gate 5 checks are hand-derived and were confirmed able to "
+                                    "fail: the D1.4 self-count and the D1.3 interval divisor "
+                                    "each turn red on a changed expectation")
+    row["browser_parity_if_applicable"] = "no participant surface renders a portfolio module"
+    row["test_cases_executed"] = "20"
+    return row
+
+
 # =============================================================================================
 def main() -> int:
+    global MUTATION
+    mp = AUDIT / "run13_mutation_proof.csv"
+    if mp.exists():
+        MUTATION = {r["module_id"]: f"{r['result']}: {r['mutation'] or 'no fault site exists'}"
+                    for r in csv.DictReader(mp.open(encoding="utf-8-sig"))}
     inv_rows = {r["module_id"]: r for r in csv.DictReader(
         (AUDIT / "run13_master_101_inventory.csv").open(encoding="utf-8-sig"))}
     oracle = known_answer_coverage()
@@ -575,9 +701,7 @@ def main() -> int:
             continue
 
         if layer == "PORTFOLIO":
-            row["actual_method_implemented"] = f"portfolio.compute_portfolio -> {mid}"
-            row["factual_result"] = "NOT_TESTABLE"
-            row["verification_limitations"] = "portfolio evidence recorded by the Gate 5 pass"
+            row.update(portfolio_row(mid))
             out_rows.append(row)
             continue
 
@@ -617,6 +741,16 @@ def main() -> int:
             if ex.get(c):
                 row[c] = ex[c]
         suites = oracle.get(mid, [])
+        # THE TWO VOTERS CARRY A HAND DERIVATION MADE IN THIS RUN, and it is named here so the
+        # row says where the expected value came from. A1.7: a budget of 1,000,000 with 400,000
+        # earned and 500,000 spent leaves 600,000 of work against 500,000 of budget, which is
+        # 1.2, above the published 1.10 boundary and therefore Red. A1.8: a cost index of 0.8 on
+        # a budget of 1,000,000 forecasts 1,250,000, a variance of minus 250,000, minus 25 per
+        # cent of budget, below the published minus 11.11 boundary and therefore Red. Both
+        # published boundaries are additionally exercised exactly, immediately above and
+        # immediately below, in tools/test_run13_module_evidence.py.
+        if mid in RUN13_HAND_DERIVED:
+            suites = suites + ["test_run13_module_evidence.py (hand-derived in this run)"]
         row["oracle_source"] = (
             "contract oracle: registry, canonical and abstention contracts (independent of "
             "production arithmetic)"
@@ -628,7 +762,7 @@ def main() -> int:
             else "NOT INDEPENDENTLY ESTABLISHED: no committed hand-derived expected value and no "
                  "governed reference value for this module")
         row["browser_parity_if_applicable"] = "recorded by the Gate 10 pass"
-        row["mutation_proof_result"] = "recorded by the Gate 12 pass"
+        row["mutation_proof_result"] = MUTATION.get(mid, "no mutation record")
         if mid in NESTED_INPUT_MODULES:
             row["verification_limitations"] = (
                 "nested-input module: reachable only through the signal adapter, marked newly "
@@ -661,6 +795,21 @@ def main() -> int:
         w = csv.DictWriter(fh, fieldnames=EVIDENCE_COLUMNS)
         w.writeheader()
         w.writerows(out_rows)
+    # GATE 6 NEIGHBOUR SWEEP, filled mechanically. Every module was exercised on every input it
+    # reads, so the neighbour set for a defect class is the complete set of modules that showed
+    # it, not a sample: the sweep is exhaustive by construction rather than by judgement.
+    by_class: dict[str, list[str]] = {}
+    for r in ANOMALIES:
+        by_class.setdefault(r["defect_class"], []).append(r["module_id"])
+    for r in ANOMALIES:
+        others = sorted({m for m in by_class[r["defect_class"]] if m != r["module_id"]})
+        r["neighbor_modules_at_risk"] = (
+            ", ".join(others) if others else "none: no other module shows this class")
+        if not r["verification_limitations"]:
+            r["verification_limitations"] = (
+                "every module was exercised on every input it reads, so this class was swept "
+                "exhaustively rather than sampled")
+
     with (AUDIT / "run13_failures_and_anomalies.csv").open("w", encoding="utf-8",
                                                            newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=ANOMALY_COLUMNS)

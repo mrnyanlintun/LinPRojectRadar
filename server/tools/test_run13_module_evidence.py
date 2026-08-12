@@ -169,6 +169,52 @@ check(P.compute_portfolio(None, "P1", [], CUTOFF).get("insufficient_data") is Tr
       "a null portfolio abstains")
 check(P.compute_portfolio(PORTFOLIO, None, [], CUTOFF).get("ok") is False,
       "a portfolio with no current project id is refused outright")
+# D1.3: the trend is a slope over INTERVALS. Cost performance of 0.9, 1.0 and 1.1 is two
+# intervals of one tenth each, so the trend is 0.1 per period and the ladder reads Green.
+HIST = [{"signal_inputs": {"cpi": 0.9}}, {"signal_inputs": {"cpi": 1.0}},
+        {"signal_inputs": {"cpi": 1.1}}]
+res_hist = P.compute_portfolio(PORTFOLIO, "P2", HIST, CUTOFF)
+traj = res_hist["results"]["cat8_3_trajectory_classifier"]
+check(round(traj["trend"], 6) == 0.1, "D1.3: the trend over two intervals is 0.1 per period, "
+                                      "derived by hand", str(traj["trend"]))
+check(traj["status_color"] == "Green", "D1.3: which bands Green")
+flat = [{"signal_inputs": {"cpi": 1.0}}, {"signal_inputs": {"cpi": 1.0}}]
+check(P.compute_portfolio(PORTFOLIO, "P2", flat, CUTOFF)["results"][
+          "cat8_3_trajectory_classifier"]["trend"] == 0,
+      "D1.3: a flat history has a trend of exactly zero")
+# D1.4: the similar-project count is a count of OTHER projects inside the radius, never this one.
+near = PORTFOLIO + [{"id": "P5", "cpi": 0.905, "spi": 0.955, "docRiskScore": 0.30,
+                     "actualPctComplete": 50}]
+pattern = P.compute_portfolio(near, "P2", [], CUTOFF)["results"]["cat8_4_cross_project_pattern"]
+base_pattern = P.compute_portfolio(PORTFOLIO, "P2", [], CUTOFF)["results"][
+    "cat8_4_cross_project_pattern"]
+check(pattern["similar_project_count"] == base_pattern["similar_project_count"] + 1,
+      "D1.4: adding one project inside the radius raises the count by exactly one",
+      f"{base_pattern['similar_project_count']} then {pattern['similar_project_count']}")
+# THE RADIUS IS A HARD BOUNDARY AND FLOATING POINT DECIDES IT. Two of the four projects sit at
+# a distance of exactly 0.15 from this one by hand; the comparison is strictly less than 0.15,
+# and one of the two evaluates to 0.1499999999999999 in binary while the other evaluates to
+# 0.15. The count of 1 is therefore a boundary artefact rather than a project fact, and it is
+# recorded here rather than asserted away.
+check(base_pattern["similar_project_count"] == 1,
+      "D1.4: at a hand-computed distance of exactly the radius, one of the two neighbours falls "
+      "inside and one falls outside, decided by binary rounding at the boundary",
+      str(base_pattern["similar_project_count"]))
+allsame = [dict(p, id=f"Q{i}") for i, p in enumerate([PORTFOLIO[1]] * 4)]
+allsame[1]["id"] = "P2"
+same_count = P.compute_portfolio(allsame, "P2", [], CUTOFF)["results"][
+    "cat8_4_cross_project_pattern"]["similar_project_count"]
+check(same_count == 3,
+      "D1.4: with four identical projects the count is three, so this project is never counted "
+      "as similar to itself", str(same_count))
+# D1.5: the composite is the mean of the terms actually measured, with no placeholder third term.
+comp = P.compute_portfolio(PORTFOLIO, "P2", [], CUTOFF)["results"]["cat8_5_anomaly_score"]
+iso = P.compute_portfolio(PORTFOLIO, "P2", [], CUTOFF)["results"]["cat8_1_isolation_forest"]
+check(abs(comp["composite_score"]
+          - round((iso["anomaly_score"] + (1 - 0.50)) / 2, 2)) < 0.02,
+      "D1.5: with no history the composite is the mean of exactly two measured terms",
+      f"{comp['composite_score']} vs {iso['anomaly_score']}")
+
 # the single-project path must never reach one of them
 for mid in sorted(P.PORTFOLIO_VALIDATED):
     try:
