@@ -136,6 +136,36 @@ ALL_SI_FIELDS: frozenset[str] = (
 SIGNED_SI_FIELDS: frozenset[str] = frozenset(
     {"totalFloat", "consumedFloat", "floatRemaining", "analogousOverrunPct"})
 
+# RUN 14. THE UPPER END OF THE DOMAIN, PER FIELD, FOR THE FIELDS THAT HAVE ONE.
+#
+# Run 13 recorded five modules that read an impossible figure as evidence of health, and the
+# reason was the same in all five: the numeric contract bounded values from BELOW only, so a
+# percent complete of ten thousand was stored, reached the analytical layer, and banded Green
+# because the arithmetic it feeds is monotone in the favourable direction. The fix belongs
+# here, with the field, because the bound is a property of the quantity and not of any module.
+#
+# ONLY FIELDS WHOSE QUANTITY IS BOUNDED BY ITS OWN DEFINITION ARE LISTED. A percent complete
+# cannot exceed one hundred; a compliance RATE expressed as a share cannot exceed one; an audit
+# SCORE on a hundred point scale cannot exceed one hundred. A cost index, an hour figure, a
+# count, a sum and a reference project's overrun have no upper limit their definition supplies,
+# and NO limit is invented for them: an implausible figure is not an impossible one, and a
+# blanket percentage ceiling over semantically different quantities would refuse real projects.
+#
+# The membership of this table is not new to Run 14. It is the bounded set Run 13's own
+# evidence builder declared when it classified which out-of-domain values were findings
+# (tools/build_run13_evidence.py, BOUNDED_MAX), so the production guard and the audit that
+# found the defect agree by construction rather than by coincidence.
+#
+# docRiskScore is deliberately ABSENT: validate_doc_risk_score is and stays the authority for
+# its 0..1 range, and two authorities for one field is how a range check drifts.
+BOUNDED_MAX_SI_FIELDS: dict[str, float] = {
+    "actualPctComplete": 100.0,
+    "plannedPctComplete": 100.0,
+    "environmentalComplianceRate": 1.0,
+    "qualityAuditScore": 100.0,
+    "subcontractorComplianceScore": 100.0,
+}
+
 
 # --------------------------------------------------------------------------- writer tiers
 #

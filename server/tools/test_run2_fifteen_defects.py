@@ -536,10 +536,16 @@ try:
         "where the old code computed and appended a note to the sentence", "")
 
     # ---- defect 13, scenario modeling and its sibling
-    for fn, old_fn, name in ((run_scenario_modeling, old_doc.run_scenario_modeling,
-                              "Scenario Modeling"),
-                             (run_whatif_matrix, old_gov.run_whatif_matrix,
-                              "What-If Scenario Matrix")):
+    # RUN 14, EXPECTATION CORRECTED WITH ITS REASON. Defect 13 was a domain defect in an
+    # earned-value forecast that Scenario Modeling carried as its behaviour when no decision
+    # problem was provided. Run 13 recorded that fallback itself as a mismatch, because a reader
+    # received a band under the name of a method the platform was not running, and Run 14
+    # removed it. The domain guards Run 2 added to that fallback went with the code they
+    # guarded, so this loop now covers the What-If matrix, which is unchanged and still carries
+    # them, and Scenario Modeling is asserted separately below on the behaviour it has now. The
+    # old-code half of every check is untouched: the defect is still shown to have been real.
+    for fn, old_fn, name in ((run_whatif_matrix, old_gov.run_whatif_matrix,
+                              "What-If Scenario Matrix"),):
         for label, si in (
                 ("a negative cost index",
                  {"bac": 1_000_000, "ev": 400_000, "ac": 500_000, "cpi": -0.9, "spi": 1.0}),
@@ -559,6 +565,28 @@ try:
         check(old_fn(dict(good), None, None).get("evidence_metric")
               == fn(dict(good), None, None).get("evidence_metric"),
               f"{name}: with the identical finding, so only the domain changed")
+    # Scenario Modeling after Run 14: with no decision problem in the corpus it abstains, and it
+    # does so naming the missing structure rather than the missing figures, on every one of the
+    # inputs above INCLUDING the internally consistent one. The old code produced a status on
+    # all four.
+    for label, si in (
+            ("a negative cost index",
+             {"bac": 1_000_000, "ev": 400_000, "ac": 500_000, "cpi": -0.9, "spi": 1.0}),
+            ("a negative budget",
+             {"bac": -1_000_000, "ev": 400_000, "ac": 500_000, "cpi": 0.9, "spi": 1.0}),
+            ("earned value above the budget",
+             {"bac": 1_000_000, "ev": 1_400_000, "ac": 500_000, "cpi": 0.9, "spi": 1.0}),
+            ("a consistent earned value position",
+             {"bac": 1_000_000, "ev": 400_000, "ac": 500_000, "cpi": 0.9, "spi": 0.95})):
+        old_s = old_doc.run_scenario_modeling(dict(si), None, None)
+        new_s = run_scenario_modeling(dict(si), None, None)
+        check(not abstains(old_s),
+              f"Scenario Modeling: {label} produced a status on the old code",
+              str(old_s.get("status_color")))
+        check(abstains(new_s)
+              and new_s.get("abstention_reason_code") == "canonical_decision_structure_absent",
+              f"Scenario Modeling: {label} abstains now, naming the absent decision structure",
+              str(new_s.get("abstention_reason_code")))
     neg = old_doc.run_scenario_modeling(
         {"bac": 1_000_000, "ev": 400_000, "ac": 500_000, "cpi": -0.9, "spi": 1.0}, None, None)
     check(neg.get("status_color") == "Green" and neg.get("pessimistic_eac", 0) < 0,
@@ -771,7 +799,17 @@ try:
     check(not (set(FIFTEEN) & set()),
           "and none of the fifteen was moved to the disabled set by this run")
 
-    for mid in ("A4.9", "A6.1", "A6.4", "A1.1", "A5.4", "A3.6", "B1.1", "B2.1"):
+    # RUN 14, EXPECTATION CORRECTED WITH ITS REASON. A5.4 is no longer in this list, and the
+    # check that replaces it below is the stronger one. Until Run 14 it produced a finding on
+    # every project because it fell back to an earned-value forecast when no decision problem
+    # was in the corpus; Run 13 recorded that as a mismatch and Run 14 removed the fallback. On
+    # this project, which carries no decision problem, the correct behaviour is an abstention
+    # naming the absent structure, and it is asserted as such rather than dropped.
+    check("A5.4" not in comp and "A5.4" in abst,
+          "Scenario Modeling abstains on the real path where no decision problem is in the "
+          "corpus, rather than reporting a forecast under its name",
+          str(abst.get("A5.4", {}).get("reason"))[:120])
+    for mid in ("A4.9", "A6.1", "A6.4", "A1.1", "A3.6", "B1.1", "B2.1"):
         check(mid in comp, f"{FIFTEEN[mid]} produces a finding on the real path",
               str(abst.get(mid, {}).get("reason"))[:90])
     # These three refuse for want of data the fix now requires, and each states which data.

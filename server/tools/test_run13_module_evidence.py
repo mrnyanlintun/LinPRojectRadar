@@ -76,8 +76,20 @@ check({r["module_id"] for r in port} == set(P.PORTFOLIO_VALIDATED),
       "and the five are exactly the Group D implementations")
 check(len([r for r in proj if r["disabled"] == "YES"]) == 8, "8 disabled project modules")
 check(len([r for r in inv if r["disabled"] == "NO"]) == 93, "93 non-disabled modules")
-check(all(r["simulation_version"] == SIMULATION_VERSION for r in inv),
-      f"every row is stamped {SIMULATION_VERSION}")
+# RUN 14, PINNED TO THE STAMP THE EVIDENCE WAS PRODUCED UNDER, WITH THE REASON RECORDED. This
+# read the CURRENT stamp, which was right while Run 13 was the current run and wrong the moment
+# the analytical layer moved again: the inventory is a record of what the platform did under
+# sim-2026.08-v7 and it is not reproduced under a later stamp. Run 14 corrected eight modules and
+# moved the stamp to sim-2026.08-v8 without re-running the hundred-and-one module classification,
+# so the assertion is that the file is internally consistent at ITS OWN version, and that that
+# version is one the layer has actually carried rather than an arbitrary string.
+RUN13_INVENTORY_VERSION = "sim-2026.08-v7"
+check(all(r["simulation_version"] == RUN13_INVENTORY_VERSION for r in inv),
+      f"every row is stamped {RUN13_INVENTORY_VERSION}, the version the inventory was built at")
+check(RUN13_INVENTORY_VERSION <= SIMULATION_VERSION,
+      "and that version is at or behind the layer's current stamp, so the inventory is a "
+      "historical record rather than a claim about a version that does not exist",
+      f"{RUN13_INVENTORY_VERSION} vs {SIMULATION_VERSION}")
 check(len([r for r in inv if r["voting"] == "YES"]) == 2, "exactly two rows are voting")
 
 # =============================================================================================

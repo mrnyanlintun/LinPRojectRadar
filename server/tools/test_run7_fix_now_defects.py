@@ -173,7 +173,7 @@ check(old_models.SIMULATION_VERSION == "sim-2026.08-v2",
 # RESTATED BY RUN 10B, original reason preserved: Run 7 shipped sim-2026.08-v3 and Run 10
 # shipped sim-2026.08-v4, and both records are preserved in the version history rather than
 # overwritten. This branch is Run 10B's.
-check(SIMULATION_VERSION == "sim-2026.08-v7",
+check(SIMULATION_VERSION == "sim-2026.08-v8",
       "and this branch is stamped at Run 10B's version, so results computed before and after "
       "each run are distinguishable in the data. Run 7 shipped sim-2026.08-v3 and Run 10 "
       "shipped sim-2026.08-v4, and both records are preserved in the version history rather "
@@ -886,7 +886,14 @@ check(_compared > 80,
 # than replacing it. The two sets stay separate so each run's authorisation remains readable.
 RUN10_CORRECTED = {"A1.5", "A1.6", "A1.11", "A2.1", "A2.5", "A2.9", "A2.10", "A2.11", "A3.6",
                    "A4.10", "A5.5", "A5.8", "A6.1", "A6.2", "A6.4", "B2.18"}
-check(set(_moved) <= (FIX_NOW | RUN10_CORRECTED),
+# RUN 14 corrects the eight modules Run 13's evidence recorded as mismatches, so its authorised
+# list joins the two above rather than replacing either. Five of the eight are unchanged on a
+# fully reported project (their correction only fires on an impossible or a withheld figure) and
+# so do not appear in the moved set at all; the three that do appear are the two that abstain
+# without their defining structure and the one whose consistency score now counts the checks the
+# method is defined over rather than the subset the corpus supported.
+RUN14_CORRECTED = {"A2.11", "A3.2", "A3.3", "A3.5", "A5.4", "A5.8", "B2.19", "C1.6"}
+check(set(_moved) <= (FIX_NOW | RUN10_CORRECTED | RUN14_CORRECTED),
       "every module whose result moved on a fully reported project is in the fix-now list or "
       "Run 10's corrected list",
       str(sorted(set(_moved) - FIX_NOW)))

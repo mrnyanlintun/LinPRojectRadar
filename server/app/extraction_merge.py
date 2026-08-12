@@ -348,7 +348,7 @@ def _range_check(si_field: str | None, n: float | int, src: str,
                  filename: str | None) -> None:
     """Refuse a readable value outside the field's permitted range. docRiskScore keeps its
     own 0..1 authority (validate_doc_risk_score, run separately at the same boundaries)."""
-    from .field_registry import SIGNED_SI_FIELDS
+    from .field_registry import BOUNDED_MAX_SI_FIELDS, SIGNED_SI_FIELDS
     if si_field == "docRiskScore":
         return
     if (si_field is None or si_field not in SIGNED_SI_FIELDS) and n < 0:
@@ -357,6 +357,18 @@ def _range_check(si_field: str | None, n: float | int, src: str,
             f"{src}{where} is {_fmt_num(n)}, and this field cannot be negative. Nothing was "
             f"stored for this document and no figures from it were used. Check the document, "
             f"or re-run the extraction."
+        )
+    # RUN 14. The other end of the same contract. Refused, never clamped: clamping ten thousand
+    # per cent complete to one hundred manufactures a finished project out of a typing mistake,
+    # and the repair would be in the reassuring direction, which is the one nothing downstream
+    # can trace. Only fields whose own definition supplies a ceiling are bounded here.
+    upper = BOUNDED_MAX_SI_FIELDS.get(si_field or "")
+    if upper is not None and n > upper:
+        where = f" in {filename}" if filename else ""
+        raise NumericRangeError(
+            f"{src}{where} is {_fmt_num(n)}, and this field cannot be above {_fmt_num(upper)}. "
+            f"Nothing was stored for this document and no figures from it were used. Check the "
+            f"document, or re-run the extraction."
         )
 
 
@@ -413,11 +425,19 @@ def validate_signal_value(field: str, value: Any) -> None:
     if field == "docRiskScore":
         validate_doc_risk_score(value)
         return
-    from .field_registry import SIGNED_SI_FIELDS
+    from .field_registry import BOUNDED_MAX_SI_FIELDS, SIGNED_SI_FIELDS
     if field not in SIGNED_SI_FIELDS and n < 0:
         raise NumericRangeError(
             f"{field} cannot be set to {_fmt_num(n)}: this field cannot be negative. "
             f"Nothing was changed."
+        )
+    # RUN 14. The same upper domain as the document boundary, on the legacy direct-write path,
+    # so the two entry points cannot disagree about what the field may hold.
+    upper = BOUNDED_MAX_SI_FIELDS.get(field)
+    if upper is not None and n > upper:
+        raise NumericRangeError(
+            f"{field} cannot be set to {_fmt_num(n)}: this field cannot be above "
+            f"{_fmt_num(upper)}. Nothing was changed."
         )
 
 

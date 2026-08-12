@@ -594,7 +594,14 @@ check(plain["categories_voting"] == rich["categories_voting"],
       f"{rich['categories_voting']}")
 _rich_computed = {m["module_id"] for m in rich["modules"]}
 _plain_computed = {m["module_id"] for m in plain["modules"]}
-check(_rich_computed - _plain_computed == set(SIX),
+# RUN 14, EXPECTATION CORRECTED WITH ITS REASON. Until Run 14 the two reference-object modules
+# computed with or without their decision object, because each kept a single-project fallback,
+# so only the six structure modules appeared in this difference. Run 13 recorded that fallback
+# as a mismatch (a band under the canonical method's name computed from something that is not
+# that method) and Run 14 removed it, so those two now abstain without their structure and
+# compute with it. The set this check names is therefore the eight, and the check is stronger
+# than it was: it now asserts the full correspondence between a structure and a reading.
+check(_rich_computed - _plain_computed == set(SIX) | set(BUCKET_4),
       "the modules that gained a reading are exactly the ones given a structure",
       str(sorted(_rich_computed - _plain_computed)))
 check(not (_plain_computed - _rich_computed),

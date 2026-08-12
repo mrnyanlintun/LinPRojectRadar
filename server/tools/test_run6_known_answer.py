@@ -281,11 +281,27 @@ RUN12_SCOPED_FILES = {
     "server/app/documents.py",
 }
 
+#: RUN 14 adds its own authorised production scope, and it is the smallest of the three parts of
+#: that run. The numeric contract gains the upper end of the domain it never had (the registry
+#: table and the two entry-point validators), the shared analytical preflight applies the same
+#: bound to the inputs a module declares, and four model files carry the module-level
+#: corrections Run 13's evidence required. No asset, no participant surface, no registry entry,
+#: no migration. Every earlier run's list is left exactly as that run left it.
+RUN14_SCOPED_FILES = {
+    "server/app/field_registry.py",
+    "server/app/extraction_merge.py",
+    "server/app/simulation/models.py",
+    "server/app/simulation/models_ext.py",
+    "server/app/simulation/models_doc.py",
+    "server/app/simulation/models_dq.py",
+    "server/app/simulation/models_fuzzy.py",
+}
+
 _unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES
-                   - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES)
+                   - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES - RUN14_SCOPED_FILES)
 check(not _unscoped,
-      "no production file outside the authorised scope of Run 7, Run 10, Run 10B, Run 11 or Run 12 "
-      "differs from the pinned baseline",
+      "no production file outside the authorised scope of Run 7, Run 10, Run 10B, Run 11, "
+      "Run 12 or Run 14 differs from the pinned baseline",
       str(_unscoped))
 _assets = sorted(p for p in _prod if p.startswith("assets/"))
 # RESTATED BY RUN 11, original finding preserved. Until Run 11 this read "nothing under assets/
@@ -298,7 +314,7 @@ check(not (set(_assets) - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES),
 check(_prod, "the guard is live: it does see the files this run did change", str(_prod))
 # RESTATED BY RUN 10B, with the original reason preserved: this check has tracked the current
 # stamp since Run 6, and it read sim-2026.08-v4 while Run 10 was current.
-check(registry.SIMULATION_VERSION == "sim-2026.08-v7",
+check(registry.SIMULATION_VERSION == "sim-2026.08-v8",
       "the analytical layer is stamped at Run 10B's version, and sim-2026.08-v2, "
       "sim-2026.08-v3 and sim-2026.08-v4 all remain historical audit baselines for results "
       "already collected under them",

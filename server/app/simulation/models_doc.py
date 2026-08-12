@@ -827,47 +827,23 @@ def run_scenario_modeling(si: dict, rand: Callable[[], float], period_cutoff) ->
                 f"scenario"
             ),
         }
-    if not check_inputs(si, ("bac", "ev", "ac", "cpi", "spi")):
-        return insufficient("Scenario_Modeling")
-    if si["cpi"] <= 0 or si["spi"] <= 0:
-        return insufficient(
-            "Scenario_Modeling",
-            "Cost or schedule performance is recorded as zero or below, which no remaining "
-            "work can be divided by")
-    if si["bac"] <= 0:
-        return insufficient(
-            "Scenario_Modeling",
-            "No positive budget at completion is recorded to scale the scenarios against")
-    if si["ev"] < 0 or si["ac"] < 0:
-        return insufficient(
-            "Scenario_Modeling",
-            "Negative earned value or actual cost is not a measurable position to forecast from")
-    if si["ev"] > si["bac"]:
-        return insufficient(
-            "Scenario_Modeling",
-            "More value is recorded as earned than the budget at completion contains, so there "
-            "is no remaining work to forecast")
-    remaining = si["bac"] - si["ev"]
-    optimistic = si["ac"] + remaining * 1.00
-    realistic = si["ac"] + remaining / si["cpi"]
-    pessimistic = si["ac"] + remaining / min(si["cpi"], si["spi"])
-    scenario_range = (pessimistic - optimistic) / si["bac"] * 100
-    color = ("Green" if pessimistic <= si["bac"] * 1.05
-             else "Yellow" if pessimistic <= si["bac"] * 1.10
-             else "Amber" if pessimistic <= si["bac"] * 1.20 else "Red")
-    return {
-        "method_class": "Scenario_Modeling",
-        "status_color": color,
-        "optimistic_eac": int(js_round(optimistic)),
-        "realistic_eac": int(js_round(realistic)),
-        "pessimistic_eac": int(js_round(pessimistic)),
-        "scenario_range_pct": round1(scenario_range),
-        "evidence_metric": (
-            f"Scenarios: best ${int(js_round(optimistic / 1000))}k / "
-            f"likely ${int(js_round(realistic / 1000))}k / "
-            f"worst ${int(js_round(pessimistic / 1000))}k"
-        ),
-    }
+    # RUN 14. THE FALLBACK IS GONE. Run 10B kept the three-divisor earned-value forecast for the
+    # case where no decision problem is provided, on the reasoning that it is a guarded forecast
+    # in its own right. Run 13 tested what a reader actually receives and recorded the mismatch:
+    # with the defining structure removed the module still returned a band, under this method's
+    # name, computed from something that is not this method. An actions-by-scenarios payoff with
+    # stated probabilities is what the named method IS, and where the corpus does not carry one
+    # there is no scenario model to report. The module abstains and says which structure is
+    # missing. The three-divisor forecast is not renamed or relocated in this run: that is a
+    # design decision for the owner, and the modules that forecast an estimate at completion
+    # from the same figures are unchanged and still report it under their own names.
+    return insufficient(
+        "Scenario_Modeling",
+        "No decision problem has been provided for this project, and a scenario model is a set "
+        "of courses of action costed under stated scenarios with their probabilities. Without "
+        "that structure there is nothing for this method to weigh, and no substitute forecast "
+        "is reported in its place.",
+        ABSTAIN_DECISION_STRUCTURE_ABSENT)
 
 
 # ------------------------------------------------------------ A5.5 Rework Feedback Loop
@@ -1029,7 +1005,11 @@ def run_discrete_event_sim(si: dict, rand: Callable[[], float], period_cutoff) -
                             "and reported percent complete are needed, and at least one of them "
                             "has not been reported for this period.",
                             ABSTAIN_MISSING_INPUT)
-    verdict = eligible(si, positive=(("plannedPctComplete", "the planned percent complete"),))
+    # RUN 14. The reported percent complete is declared to the preflight so its upper domain is
+    # applied; Run 13 read a reported progress of ten thousand per cent as Green here.
+    verdict = eligible(si,
+                       required=(("actualPctComplete", "the reported percent complete"),),
+                       positive=(("plannedPctComplete", "the planned percent complete"),))
     if verdict:
         return refuse("Discrete_Event_Sim", verdict)
     # RUN 10, BUCKET 2. The same residue as the critical path module: Run 7 guarded the

@@ -1,0 +1,19 @@
+module_id,canonical_name,run13_state,workstream,defect_or_limitation,run13_evidence_pointer,voting,live_enabled,production_change_authorized
+A2.11,Critical Path Index,MISMATCH,A_MISMATCH_FIX,out-of-domain favourable banding,code_audit/run13_101_module_evidence.csv; code_audit/run13_failures_and_anomalies.csv,NO,YES,YES
+A3.2,Contingency Burn Rate,MISMATCH,A_MISMATCH_FIX,out-of-domain favourable banding,code_audit/run13_101_module_evidence.csv; code_audit/run13_failures_and_anomalies.csv,NO,YES,YES
+A3.3,Labor Productivity Index,MISMATCH,A_MISMATCH_FIX,out-of-domain favourable banding,code_audit/run13_101_module_evidence.csv; code_audit/run13_failures_and_anomalies.csv,NO,YES,YES
+A3.5,Overhead Absorption Rate,MISMATCH,A_MISMATCH_FIX,missingness: drop one required input; out-of-domain favourable banding,code_audit/run13_101_module_evidence.csv; code_audit/run13_failures_and_anomalies.csv,NO,YES,YES
+A5.4,Scenario Modeling,MISMATCH,A_MISMATCH_FIX,canonical structure absent,code_audit/run13_101_module_evidence.csv; code_audit/run13_failures_and_anomalies.csv,NO,YES,YES
+A5.8,Discrete Event Simulation,MISMATCH,A_MISMATCH_FIX,out-of-domain favourable banding,code_audit/run13_101_module_evidence.csv; code_audit/run13_failures_and_anomalies.csv,NO,YES,YES
+B2.19,CRITIC-TOPSIS,MISMATCH,A_MISMATCH_FIX,canonical structure absent,code_audit/run13_101_module_evidence.csv; code_audit/run13_failures_and_anomalies.csv,NO,YES,YES
+C1.6,Cross-document Consistency Score,MISMATCH,A_MISMATCH_FIX,missingness: drop one required input,code_audit/run13_101_module_evidence.csv; code_audit/run13_failures_and_anomalies.csv,NO,YES,YES
+A1.2,CUSUM Anomaly Monitor,NOT_TESTABLE,B_ANOMALY_VALIDATION,"stochastic: exercised on the fixed seeded generator; contract dimensions all conform, but no independent numeric oracle exists for the nominal value, so the reading itself is unverified",code_audit/run13_101_module_evidence.csv,NO,YES,NO
+D1.1,Isolation Forest,NOT_TESTABLE,B_ANOMALY_VALIDATION,"the anomaly threshold constants are unsourced, so the distance can be reproduced but the band cannot be judged",code_audit/run13_101_module_evidence.csv,NO,YES,NO
+A3.8,Parametric Cost Index,DISABLED_AS_DESIGNED,C_DISABLED_FUNCTIONAL_TEST,not independently testable in Run 13,code_audit/run13_101_module_evidence.csv,NO,NO,NO
+B2.20,Hypersoft Sets,DISABLED_AS_DESIGNED,C_DISABLED_FUNCTIONAL_TEST,not independently testable in Run 13,code_audit/run13_101_module_evidence.csv,NO,NO,NO
+B2.7,Plithogenic Sets,DISABLED_AS_DESIGNED,C_DISABLED_FUNCTIONAL_TEST,not independently testable in Run 13,code_audit/run13_101_module_evidence.csv,NO,NO,NO
+B2.9,Quantum Probability,DISABLED_AS_DESIGNED,C_DISABLED_FUNCTIONAL_TEST,not independently testable in Run 13,code_audit/run13_101_module_evidence.csv,NO,NO,NO
+B4.1,Multi-Objective Optimization,DISABLED_AS_DESIGNED,C_DISABLED_FUNCTIONAL_TEST,not independently testable in Run 13,code_audit/run13_101_module_evidence.csv,NO,NO,NO
+B4.2,Linear Programming,DISABLED_AS_DESIGNED,C_DISABLED_FUNCTIONAL_TEST,not independently testable in Run 13,code_audit/run13_101_module_evidence.csv,NO,NO,NO
+B4.5,Decision Sensitivity Matrix,DISABLED_AS_DESIGNED,C_DISABLED_FUNCTIONAL_TEST,not independently testable in Run 13,code_audit/run13_101_module_evidence.csv,NO,NO,NO
+B4.6,Pareto Frontier Analysis,DISABLED_AS_DESIGNED,C_DISABLED_FUNCTIONAL_TEST,not independently testable in Run 13,code_audit/run13_101_module_evidence.csv,NO,NO,NO

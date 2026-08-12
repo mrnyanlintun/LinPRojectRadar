@@ -6947,3 +6947,110 @@ Files: `code_audit/run13_master_101_inventory.csv`, `run13_101_module_evidence.c
 `test_run13_module_evidence.py` (all new),
 `REPORT_2026-08-12_run13-101-module-test-evidence.md` (new), this entry. **No production file
 changed.**
+
+---
+
+## 2026-08-12 — Run 14: targeted remediation, anomaly validation and disabled-method functional tests
+
+**Starting commit `ed762bf`. Ending commit PENDING_MERGE.** Simulation version moved from
+`sim-2026.08-v7` to **`sim-2026.08-v8`**. Synthetic package OG-SYNTH-0.3 unchanged and not
+reingested; participant package og-participant-2026.08-v1 unchanged.
+
+**Handoff audit first.** Run 13's entry was checked against the committed reports and the git
+history and reconciled exactly: the two commits, the four evidence files, and the baseline of 78
+suites and 6290 checks all matched, which the session reproduced before touching anything. No
+entry was missing and nothing was repaired. Recorded once more: there is no `COMMON_PREAMBLE.md`
+in this repository, whatever the prompts say.
+
+**Scope, derived from Run 13's own evidence at test time rather than transcribed.** 83 MATCH,
+8 MISMATCH, 8 DISABLED_AS_DESIGNED, 2 NOT_TESTABLE, three disjoint populations, eighteen unique
+modules. `code_audit/run14_scope.csv`.
+
+**The eight mismatch modules, all fixed and all now matching:** A2.11 Critical Path Index, A3.2
+Contingency Burn Rate, A3.3 Labor Productivity Index, A3.5 Overhead Absorption Rate, A5.4
+Scenario Modeling, A5.8 Discrete Event Simulation, B2.19 CRITIC-TOPSIS, C1.6 Cross-document
+Consistency Score. Nine defect occurrences across those eight; **the overlapping module is A3.5**,
+where the banding case and the missingness case are the same line read from two directions.
+
+**Run 13's diagnosis of the five banding cases held, with one correction.** The numeric contract
+did bound from below only and the invalid figure did reach the modules. But it is NOT true that no
+upper range check existed anywhere: `validate_doc_risk_score` has always enforced 0 to 1, and A6.3
+already refused a rate above a hundred per cent. What was missing was the principle applied per
+field. `field_registry.BOUNDED_MAX_SI_FIELDS` now declares the upper end for the five fields whose
+definition supplies one, both entry points refuse rather than clamp, and the shared preflight
+applies the same bound to declared inputs under the existing `malformed_input` code. No new string
+key. No band boundary moved. No ceiling invented for any unbounded quantity.
+
+**A ninth production module was corrected: A3.4 Material Cost Variance.** It is not one of the
+eight. The dependent sweep over the changed validator found it banding Red to Yellow on a reported
+progress a fraction above a hundred per cent. Run 13 drove that field only to ten thousand, at
+which A3.4 did not improve, so it was classified MATCH on a sample where a sweep was needed. **Read
+that as a caution about the Run 13 domain pass generally.**
+
+**Production files changed:** `server/app/field_registry.py`, `server/app/extraction_merge.py`,
+`server/app/simulation/models.py`, `models_ext.py`, `models_doc.py`, `models_dq.py`,
+`models_fuzzy.py`. Nothing else. No asset, no route, no participant surface, no migration.
+
+**The two not-testable modules: A1.2 CUSUM Anomaly Monitor and D1.1 Isolation Forest.** Both are
+now tested against controlled fixtures labelled before the detector runs, and their four result
+states are reported separately and do not agree:
+
+| Module | Method fidelity | Detection function | Parameter basis | Threshold basis |
+|---|---|---|---|---|
+| A1.2 | VERIFIED | VERIFIED | UNCALIBRATED | UNCALIBRATED |
+| D1.1 | MISMATCH | VERIFIED for the implemented method | UNSOURCED | UNSOURCED |
+
+A1.2 is a real two-sided tabular CUSUM: both large shifts detected in 200 of 200 runs at a median
+delay of three periods with the correct arm breaching, ARL0 about 390, ARL1 about 4.3. **It does
+not detect an isolated one-period spike at all**, and holding the scale at its true in-control
+value restores detection, which locates the cause in the scale being estimated from the series
+being monitored. D1.1 is **not an isolation forest**: no tree, no ensemble, no random split, no
+path length, and a deterministic score. As the standardised-distance detector it actually is, it
+scores ROC-AUC 0.994 and PR-AUC 0.995 on a labelled holdout, but at the shipped threshold recall
+is 1.000 with precision 0.800 and specificity 0.720, so **the uncalibrated threshold calls
+ordinary projects anomalous**. It was not moved.
+
+**The eight disabled methods were functionally tested in isolation, never activated.** All eight
+WORK in the factual sense: they execute, are deterministic, abstain correctly and reproduce
+hand-derived known answers. **Six implement something other than the method they are named for**
+(A3.8, B2.9, B4.1, B4.2, B4.5, B4.6 are PROXY_ONLY with method fidelity MISMATCH) and two carry
+part of their method's defining structure (B2.7 and B2.20, PARTIAL). B2.9 has no normalised state
+and no Born rule; B4.1 optimises nothing; B4.2 has no program; B4.5 perturbs nothing; B4.6 holds
+one point where dominance needs a set; B2.20's table leaves two reachable tuples falling to a
+silent default. **No KEEP, REMOVE, RETAIN or ACTIVATE conclusion was reached, deliberately.**
+
+**Tests added:** `server/tools/test_run14_mismatch_remediation.py` (112),
+`test_run14_anomaly_detectors.py` (58), `test_run14_disabled_method_functional.py` (111). Six
+existing suites had an expectation corrected, each with its reason recorded at the change; one of
+those was a section of the Run 8 suite asserting, literal by literal, the two proxies Run 13
+recorded as mismatches, which is the failure mode the discipline notes warn about.
+
+**Test totals: 81 suites, 6569 of 6569, all green**, each against its own freshly migrated
+database, reconfirmed on merged main before the push.
+
+**Voting state: exactly 2, A1.7 and A1.8, both cost lineage, neither among the corrected eight.
+Activation state: the eight disabled modules unchanged and still refused by the registry after the
+functional suite ran them directly.** Cost Recovery Status, the single-lineage conflict semantics
+and the participant decision sequence are untouched. No production Postgres access, no production
+migration, no synthetic fixture in operational storage.
+
+**Deviations.** One production module outside the authorised eight was corrected (A3.4), on the
+ground that it is the same defect on the same field reached through the same shared validator this
+run was authorised to change; it is reported prominently rather than folded in. A5.4's retired
+three-divisor forecast was deleted rather than renamed or relocated, because relocating it is a
+design decision the run was not authorised to make.
+
+**Owner decisions required next.** The disposition of each of the eight disabled methods; what to
+do about D1.1 being named for a method it does not implement; whether the two detectors'
+parameters and thresholds are to be sourced or the platform is to state that they are not; whether
+A1.2's scale should be estimated from a designated in-control window; whether A5.4's retired
+forecast should return under a name of its own; and whether the other 82 MATCH modules warrant a
+re-sweep on the axes Run 14 swept, given how A3.4 was missed. All decisions outstanding from Runs
+10B, 11 and 12 remain open.
+
+Files: `code_audit/run14_scope.csv`, `run14_mismatch_remediation.csv`,
+`run14_anomaly_detector_validation.csv`, `run14_disabled_method_functional_tests.csv` (all new),
+`server/tools/test_run14_mismatch_remediation.py`, `test_run14_anomaly_detectors.py`,
+`test_run14_disabled_method_functional.py` (all new), the seven production files named above, six
+existing suites, `REPORT_2026-08-12_run14-targeted-remediation-anomaly-validation-disabled-method-tests.md`
+(new), this entry.
