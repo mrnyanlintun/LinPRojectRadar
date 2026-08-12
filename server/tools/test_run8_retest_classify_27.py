@@ -163,11 +163,23 @@ section("0. THE FROZEN-FILE GUARD, INHERITED FROM RUN 7 AND NARROWED BACK TO EMP
 GUARD_BASELINE_REV = "18b6b80"
 RUN8_SCOPED_FILES: set[str] = set()
 
+#: RUN 10 is a production run and declares its own authorised set here rather than emptying
+#: Run 8's, so Run 8's own claim — that it changed no production code — remains readable as
+#: written. Anything under server/app/ or assets/ outside BOTH sets is still a scope breach.
+RUN10_SCOPED_FILES = {
+    "server/app/simulation/models.py",
+    "server/app/simulation/models_doc.py",
+    "server/app/simulation/models_evm.py",
+    "server/app/simulation/models_ext.py",
+    "server/app/simulation/models_fuzzy.py",
+    "server/app/simulation/models_sim.py",
+}
+
 _diff = subprocess.run(["git", "diff", "--name-only", GUARD_BASELINE_REV, "--"],
                        cwd=str(ROOT), capture_output=True, text=True).stdout.split()
 _prod = [p for p in _diff
          if (p.startswith("server/app/") or p.startswith("assets/"))
-         and p not in RUN8_SCOPED_FILES]
+         and p not in RUN8_SCOPED_FILES and p not in RUN10_SCOPED_FILES]
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
 check(not any(p.startswith("assets/") for p in _diff),
@@ -284,32 +296,53 @@ section("3. A2.1 PERT NETWORK CRITICALITY: A HEALTHY READING IS STRUCTURALLY UNR
 # gap, because p = 1 is the floor and the literals are fixed. Asserted below over 200 seeds and
 # eight indices spanning 0.6 to 2.0, so the claim rests on the domain and not on one draw.
 
+# RUN 10 RESOLVES THIS ONE. The finding above is unchanged and is the reason for the
+# correction: the two sides of the ratio were different statistics of the same distribution, so
+# no schedule index could close the gap. Run 10 did not move the boundary to make a healthy
+# reading reachable, because that would have left the deeper fault standing: the three activities
+# were this file's own literals and not the project's network, so the index described the file
+# rather than the project. The literal-driven sampling is removed and the module abstains on the
+# absent activity network, on the same footing as reference class forecasting and rework
+# propagation. What is asserted here now is that no reading of any kind reaches a participant.
 _pert_bands = set()
-_pert_min_ratio = None
 for seed in range(200):
     for spi in (0.6, 0.8, 0.9, 1.0, 1.05, 1.2, 1.5, 2.0):
         r = run_pert({"spi": spi}, make_rng(seed), "2025-06-30")
-        _pert_bands.add(r["status_color"])
-        ratio = r["p80_duration_days"] / r["baseline_days"]
-        if _pert_min_ratio is None or ratio < _pert_min_ratio:
-            _pert_min_ratio = ratio
-ka(sorted(_pert_bands), ["Amber", "Red"], "A2.1: only Amber and Red are reachable over 1,600 "
-   "seed and index combinations", "A2.1", "property",
-   "Green needs P80/baseline <= 1.15; the numerator is a P80 and the denominator a sum of modes")
-check(_pert_min_ratio > 1.15,
-      "A2.1: the lowest ratio observed anywhere in the domain is still above the Green edge",
-      f"lowest {_pert_min_ratio:.4f}")
-ka(round(25.0, 1), 25.0, "A2.1: the baseline is the sum of the modes, 10 + max(15, 13)",
-   "A2.1", "known_answer", "a_mode 10 plus max(b_mode 15, c_mode 13)")
-_r = run_pert({"spi": 2.0}, make_rng(11), "2025-06-30")
-ka(_r["baseline_days"], 25.0, "A2.1: a project twice as fast as plan still divides by 25 days",
-   "A2.1", "known_answer", "p is floored at 1, so the literals and the baseline do not move")
-ka(_r["status_color"], "Amber", "A2.1: a project twice as fast as plan reads Amber",
-   "A2.1", "enumerated")
+        _pert_bands.add(r.get("status_color"))
+        check("p80_duration_days" not in r and "path_criticality_index" not in r,
+              f"A2.1: no duration or criticality figure at index {spi}, seed {seed}") \
+            if seed == 0 else None
+ka(sorted(str(b) for b in _pert_bands), ["None"],
+   "A2.1: no band at all is reachable over 1,600 seed and index combinations, because the "
+   "module abstains on the absent network", "A2.1", "property",
+   "Run 10 removed the literal-driven sampling rather than moving the Green edge")
+ka(run_pert({"spi": 2.0}, make_rng(11), "2025-06-30").get("abstention_reason_code"),
+   "canonical_structure_absent",
+   "A2.1: the abstention names the absent canonical structure", "A2.1", "known_answer",
+   "an activity network with logic and three-point durations is not in the corpus")
 # The abstention Run 7 installed still holds.
 ka(abstains(run_pert({}, make_rng(1), "2025-06-30")), True,
    "A2.1: still abstains without a schedule index", "A2.1", "abstention")
 
+
+
+# =================================================================================================
+# RUN 10 SUPERSESSION HELPER.
+#
+# Run 8 recorded, module by module, the figure and the band each of these modules returned for an
+# input that cannot describe a project. Those findings are the reason Run 10 corrected them and
+# they are left in place above each case as the record. What can no longer be asserted is the
+# figure itself, because the module now abstains before producing one. Each superseded case is
+# restated here as: the module refuses, it publishes no figure, and it publishes no band. The
+# in-domain known answers beside them are untouched and still assert the arithmetic.
+# =================================================================================================
+
+
+def superseded(result, module, label, *absent_fields):
+    ka(abstains(result), True, f"{module}: {label} is now refused rather than banded",
+       module, "abstention", "Run 10 correction")
+    for f in absent_fields:
+        check(f not in result, f"{module}: and no {f} is published for it")
 
 # =================================================================================================
 section("4. B2.18 MARCOS: THE SCORE IS SYMMETRIC IN UTILITY, SO ONLY RED IS REACHABLE")
@@ -348,36 +381,36 @@ for cpi_i in range(50, 161, 2):
             _marcos_bands[r["status_color"]] = _marcos_bands.get(r["status_color"], 0) + 1
             if _marcos_max is None or r["marcos_score"] > _marcos_max:
                 _marcos_max = r["marcos_score"]
-ka(sorted(_marcos_bands), ["Red"], "B2.18: Red is the only band reachable over 65,856 "
-   "index and document-risk combinations", "B2.18", "property",
-   "the score is bounded above by 1/3 and the Amber edge is 0.35")
-ka(_marcos_max, 0.333, "B2.18: the highest score anywhere in the domain is 1/3",
-   "B2.18", "known_answer", "denominator minimised at u = 0.5 gives 1/(1+1+1)")
+# RUN 10 RESOLVES THIS ONE. The derivation above is unchanged and is why the correction was
+# made: two utility degrees that sum to one by construction are one number and its complement,
+# not two measurements, and the score built from them was bounded above by a third. Run 10 did
+# not move a band boundary; the boundaries below are exactly the ones the module already carried.
+# It restored the method's own structure, in which the two utility degrees are the alternative's
+# weighted sum measured separately against the ideal and against the anti-ideal reference. What
+# is asserted here now is that the whole ladder is reachable and that the score responds to the
+# inputs rather than folding about the middle of its own scale.
+ka(sorted(_marcos_bands), ["Amber", "Green", "Red", "Yellow"],
+   "B2.18: all four bands are reachable over 65,856 index and document-risk combinations",
+   "B2.18", "property", "Run 10 restored two independent utility degrees")
+check(_marcos_max > 0.65,
+      "B2.18: the highest score in the domain now reaches the healthy arm of the ladder",
+      f"highest {_marcos_max}")
 
-# The symmetry, asserted as an equality between two projects rather than as a shape.
-# cpi and spi enter through norm = (v - anti)/(ideal - anti) clamped to [0, 1], weights
-# 0.40 / 0.35 / 0.25, anti 0.80 / 0.80 / 0.30, ideal 1.05 / 1.05 / 1.00.
-#
-#   PROJECT ONE  cpi 1.05, spi 1.05, docRisk 0.00
-#     cost     (1.05 - 0.80)/0.25 = 1.00 -> 1.00 * 0.40 = 0.400
-#     schedule (1.05 - 0.80)/0.25 = 1.00 -> 1.00 * 0.35 = 0.350
-#     risk     value 1 - 0 = 1.00, (1.00 - 0.30)/0.70 = 1.00 -> 1.00 * 0.25 = 0.250
-#     u = 1.000  -> score 0 (division by zero on the anti arm)
-#   PROJECT TWO  cpi 0.80, spi 0.80, docRisk 0.70
-#     cost 0.000, schedule 0.000, risk value 0.30, (0.30 - 0.30)/0.70 = 0 -> 0.000
-#     u = 0.000  -> score 0
-# A perfect project and the worst project the criteria admit receive the same score.
 _best = run_marcos({"cpi": 1.05, "spi": 1.05, "docRiskScore": 0.0}, NO_ARG, "2025-06-30")
 _worst = run_marcos({"cpi": 0.80, "spi": 0.80, "docRiskScore": 0.70}, NO_ARG, "2025-06-30")
-ka(_best["utility_ideal"], 1.0, "B2.18: a project at every ideal has utility 1",
-   "B2.18", "known_answer", "0.40 + 0.35 + 0.25")
-ka(_worst["utility_ideal"], 0.0, "B2.18: a project at every anti-ideal has utility 0",
-   "B2.18", "known_answer", "three clamped normalisations of zero")
-ka(_best["marcos_score"], _worst["marcos_score"],
-   "B2.18: the best and the worst admissible project receive the identical score",
-   "B2.18", "property", "the score is symmetric under u -> 1 - u")
-ka(_best["status_color"], "Red", "B2.18: a project at every ideal reads Red", "B2.18",
+check(_best["marcos_score"] > _worst["marcos_score"],
+      "B2.18: the best admissible project now outscores the worst one",
+      f"{_best['marcos_score']} vs {_worst['marcos_score']}")
+ka(_best["status_color"], "Green", "B2.18: a project at every ideal reads Green", "B2.18",
    "enumerated")
+# A project sitting exactly ON the anti-ideal reference scores the ratio of the anti-ideal
+# weighted sum to itself, which is the middle of the scale rather than its floor, and the floor
+# belongs to projects below the anti-ideal. Both are asserted.
+ka(_worst["status_color"], "Yellow",
+   "B2.18: a project exactly at the anti-ideal reference sits mid-ladder", "B2.18", "enumerated")
+ka(run_marcos({"cpi": 0.50, "spi": 0.50, "docRiskScore": 1.0}, NO_ARG,
+              "2025-06-30")["status_color"], "Red",
+   "B2.18: a project below the anti-ideal reference reads Red", "B2.18", "enumerated")
 
 # The symmetry exhausted rather than illustrated: every utility pair (u, 1 - u) on a hundredth
 # grid must score the same. Utility is driven here through the document-risk criterion alone,
@@ -391,8 +424,9 @@ for k in range(0, 101):
     hi = 1 / (1 + u / (1 - u) + (1 - u) / u)
     if abs(lo - hi) > 1e-12:
         _sym_failures.append(u)
-ka(_sym_failures, [], "B2.18: the closed form is symmetric at every hundredth of utility",
-   "B2.18", "property", "algebraic identity checked over the whole grid")
+ka(_sym_failures, [], "B2.18: the SUPERSEDED closed form was symmetric at every hundredth of "
+   "utility, which is the algebra Run 10 replaced", "B2.18", "property",
+   "algebraic identity of the old expression, kept as the record of why it was replaced")
 
 
 # =================================================================================================
@@ -409,11 +443,14 @@ _BASE = {"spi": 1.0, "baselineStart": "2025-01-01", "baselineEnd": "2025-12-31",
          "actualPctComplete": 40}
 _crashed = False
 try:
-    run_schedule_risk({**_BASE, "spi": 0}, NO_ARG, "2025-06-30")
+    _zero_spi = run_schedule_risk({**_BASE, "spi": 0}, NO_ARG, "2025-06-30")
 except ZeroDivisionError:
     _crashed = True
-ka(_crashed, True, "A2.10: a schedule index of zero raises rather than abstaining",
-   "A2.10", "domain", "remaining_days / spi with no guard on spi")
+ka(_crashed, False, "A2.10: a schedule index of zero no longer raises", "A2.10", "abstention",
+   "Run 10 guards the denominator before the division")
+superseded(_zero_spi, "A2.10", "a schedule index of zero", "p80_delay_days", "p50_delay_days")
+ka(_zero_spi.get("abstention_reason_code"), "invalid_denominator",
+   "A2.10: and names the invalid denominator as the reason", "A2.10", "abstention")
 
 # A NEGATIVE index is worse than the crash, because it does not announce itself.
 #   total_days from 2025-01-01 to 2025-12-31 = 364 days
@@ -425,10 +462,7 @@ ka(_crashed, True, "A2.10: a schedule index of zero raises rather than abstainin
 # The Green arm is delay <= 0, so a project whose schedule index is recorded as negative is
 # reported as finishing 1,075 days EARLY and reads Green.
 _neg = run_schedule_risk({**_BASE, "spi": -0.5}, NO_ARG, "2025-06-30")
-ka(_neg["p80_delay_days"], -1075, "A2.10: a negative schedule index yields a delay of -1075 days",
-   "A2.10", "known_answer",
-   "364 * 0.6 = 218.4; 218.4 / -0.5 = -436.8; * (1 + 0.75 * 1.28) = -856.128; -856.128 - 218.4")
-ka(_neg["status_color"], "Green", "A2.10: and that project reads Green", "A2.10", "domain")
+superseded(_neg, "A2.10", "a negative schedule index", "p80_delay_days", "p50_delay_days")
 
 # A completion above one hundred per cent makes the remaining work negative and reads Green.
 #   remaining = 364 * (100 - 120)/100 = -72.8 days; p50 = -72.8 / 1.0 = -72.8
@@ -436,9 +470,7 @@ ka(_neg["status_color"], "Green", "A2.10: and that project reads Green", "A2.10"
 #   p80 = -72.8 * (1 + 0.025 * 1.28) = -72.8 * 1.032 = -75.1296
 #   delay = round(-75.1296 - (-72.8)) = round(-2.3296) = -2
 _over = run_schedule_risk({**_BASE, "actualPctComplete": 120}, NO_ARG, "2025-06-30")
-ka(_over["p80_delay_days"], -2, "A2.10: a completion of 120 per cent yields a delay of -2 days",
-   "A2.10", "known_answer", "364 * -0.2 = -72.8; * 1.032 = -75.1296; less -72.8")
-ka(_over["status_color"], "Green", "A2.10: and that project reads Green too", "A2.10", "domain")
+superseded(_over, "A2.10", "a completion of 120 per cent", "p80_delay_days")
 
 # The valid case, by hand, so the module is shown to compute correctly where it is in domain.
 #   spi 0.8: remaining 218.4; p50 = 273.0; uncertainty = max(0.05, 0.2) * 0.5 = 0.10
@@ -479,9 +511,8 @@ _bare = run_rework_feedback({"cpi": 0.90}, NO_ARG, "2025-06-30")
 ka(_full["rework_index"], 0.64, "A5.5: with both logs the index is 0.64", "A5.5",
    "known_answer", "0.30 + 0.30 + 0.04")
 ka(_full["status_color"], "Red", "A5.5: with both logs it reads Red", "A5.5", "enumerated")
-ka(_bare["rework_index"], 0.04, "A5.5: with neither log the index is 0.04", "A5.5",
-   "known_answer", "0 + 0 + 0.04")
-ka(_bare["status_color"], "Green", "A5.5: with neither log it reads Green", "A5.5", "enumerated")
+superseded(_bare, "A5.5", "an absent request log and an absent change order log",
+           "rework_index")
 
 # Monotonicity in evidence, exhausted over all four subsets of the two logs rather than shown
 # on one pair. Adding a document must never improve the reading; here it always worsens it,
@@ -494,32 +525,34 @@ for rfi in (None, 30):
             si["rfiCount"] = rfi
         if co is not None:
             si["changeOrderCount"] = co
-        _subsets.append(run_rework_feedback(si, NO_ARG, "2025-06-30")["rework_index"])
-ka(sorted(_subsets), [0.04, 0.34, 0.34, 0.64],
-   "A5.5: the four evidence subsets give four different indices for one project",
-   "A5.5", "property", "0.04 / 0.04+0.30 / 0.04+0.30 / 0.04+0.30+0.30")
+        _subsets.append(run_rework_feedback(si, NO_ARG, "2025-06-30").get("rework_index"))
+ka(sorted(x for x in _subsets if x is not None), [0.64],
+   "A5.5: only the complete evidence set produces an index; every strict subset refuses",
+   "A5.5", "property", "Run 10 requires both logs rather than scoring an absence as nought")
 
 # A REPORTED ZERO AND AN ABSENT LOG ARE INDISTINGUISHABLE, because the guard is a truthiness
 # test (`if si.get("rfiCount")`), so a genuine zero is discarded as though nothing was reported.
 _zero = run_rework_feedback({"cpi": 0.90, "rfiCount": 0, "changeOrderCount": 0},
                             NO_ARG, "2025-06-30")
-ka(_zero["rework_index"], _bare["rework_index"],
-   "A5.5: a reported zero and an absent log produce the identical index", "A5.5", "domain",
-   "the guard is truthiness, so 0 takes the absent arm")
+ka(_zero["rework_index"], 0.04,
+   "A5.5: a REPORTED zero is a measurement and still produces an index", "A5.5", "known_answer",
+   "0 + 0 + 0.04, and the absent case beside it now refuses instead")
+check(abstains(_bare) and not abstains(_zero),
+      "A5.5: a reported zero and an absent log are no longer indistinguishable")
 
 # NEGATIVE COUNTS ARE NOT REFUSED, and drive the index below the domain an index can occupy.
 #   rfi = min(-5/30, 1) * 0.3 = -0.16666 * 0.3 = -0.05; cpi term 0.04; index = -0.01
 _negc = run_rework_feedback({"cpi": 0.90, "rfiCount": -5}, NO_ARG, "2025-06-30")
-ka(_negc["rework_index"], -0.01, "A5.5: a negative request count gives a negative index",
-   "A5.5", "domain", "min(-5/30, 1) * 0.3 = -0.05, plus 0.04")
-ka(_negc["status_color"], "Green", "A5.5: and a negative index reads Green", "A5.5", "domain")
-# A negative cost index is not refused either.
-ka(run_rework_feedback({"cpi": -1.0}, NO_ARG, "2025-06-30")["rework_index"], 0.8,
-   "A5.5: a cost index of -1 contributes 0.8 to the index", "A5.5", "domain",
-   "max(0, 1 - (-1)) * 0.4")
+superseded(_negc, "A5.5", "a negative request count", "rework_index")
+superseded(run_rework_feedback({"cpi": -1.0}, NO_ARG, "2025-06-30"), "A5.5",
+           "a cost index of minus one with no logs", "rework_index")
 
 # The finding text names a quantity the module does not compute: the term is a raw count
 # capped at thirty, not a rate over time, and the sentence says otherwise.
+_negc = run_rework_feedback({"cpi": 0.90, "rfiCount": -5, "changeOrderCount": 2},
+                            NO_ARG, "2025-06-30")
+superseded(_negc, "A5.5", "a negative request count beside a present change order count",
+           "rework_index")
 check("RFI" in _full["evidence_metric"] and "combined" in _full["evidence_metric"],
       "A5.5: the finding text names the request term without a time denominator",
       _full["evidence_metric"])
@@ -537,15 +570,12 @@ section("7. THE DOMAIN SWEEP: NINE MORE OF THE 27 ACCEPT AN INPUT OUTSIDE ITS OW
 _es_neg = run_earned_schedule({"ev": 400, "pv": 450, "bac": 1000,
                                "actualPctComplete": -40, "plannedPctComplete": 45},
                               NO_ARG, "2025-06-30")
-ka(_es_neg["spi_time"], -0.889, "A1.6: a negative completion gives a negative schedule index",
-   "A1.6", "domain", "-40/45 = -0.8888..., rounded to three places")
+superseded(_es_neg, "A1.6", "a completion of minus forty per cent", "spi_time", "delay_days")
 #      actual 140, planned 45 -> 3.111111 -> 3.111; the Green arm is >= 0.95.
 _es_over = run_earned_schedule({"ev": 400, "pv": 450, "bac": 1000,
                                 "actualPctComplete": 140, "plannedPctComplete": 45},
                                NO_ARG, "2025-06-30")
-ka(_es_over["spi_time"], 3.111, "A1.6: a completion of 140 per cent gives an index of 3.111",
-   "A1.6", "domain", "140/45 = 3.1111...")
-ka(_es_over["status_color"], "Green", "A1.6: and that reads Green", "A1.6", "domain")
+superseded(_es_over, "A1.6", "a completion of a hundred and forty per cent", "spi_time")
 #      The in-domain case, by hand: 40/45 = 0.888888 -> 0.889, Amber arm is >= 0.88.
 _es_ok = run_earned_schedule({"ev": 400, "pv": 450, "bac": 1000,
                              "actualPctComplete": 40, "plannedPctComplete": 45},
@@ -558,18 +588,17 @@ ka(_es_ok["status_color"], "Amber", "A1.6: 0.889 lands Amber", "A1.6", "boundary
 #      project that reported its progress but no earned value abstains for no arithmetic reason.
 _es_no_ev = run_earned_schedule({"actualPctComplete": 40, "plannedPctComplete": 45},
                                 NO_ARG, "2025-06-30")
-ka(abstains(_es_no_ev), True,
-   "A1.6: abstains without earned value even though earned value is never used", "A1.6",
-   "domain", "check_inputs requires ev, pv and bac; the arithmetic reads neither")
+ka(abstains(_es_no_ev), False,
+   "A1.6: Run 10 no longer demands the three figures the arithmetic never reads", "A1.6",
+   "known_answer", "the requirement is now the two completion percentages it actually uses")
+ka(_es_no_ev["spi_time"], 0.889,
+   "A1.6: and computes the same index from them, 40/45 by hand", "A1.6", "known_answer")
 
 # ---- A1.11 ICE Ratio. A negative cost index produces a negative forecast reported as money.
 #      eac_cpi = 1000 / -0.5 = -2000; eac_parametric = 800 + (1000 - 400) = 1400
 #      ice = -2000 / 1400 = -1.42857 -> -1.429; |ice - 1| = 2.429, Red arm is > 0.20.
 _ice = run_ice_ratio({"bac": 1000, "cpi": -0.5, "ev": 400, "ac": 800}, NO_ARG, "2025-06-30")
-ka(_ice["ice_ratio"], -1.429, "A1.11: a negative cost index gives a ratio of -1.429", "A1.11",
-   "domain", "(1000 / -0.5) / (800 + 600)")
-ka(_ice["eac_cpi"], -2000, "A1.11: and a forecast at completion of minus two thousand",
-   "A1.11", "domain", "1000 / -0.5")
+superseded(_ice, "A1.11", "a negative cost index", "ice_ratio", "eac_cpi")
 #      The in-domain case by hand: 1000/0.8 = 1250; parametric 800 + 600 = 1400;
 #      1250/1400 = 0.892857 -> 0.893; |0.893 - 1| = 0.107, Amber arm is <= 0.20.
 _ice_ok = run_ice_ratio({"bac": 1000, "cpi": 0.8, "ev": 400, "ac": 800}, NO_ARG, "2025-06-30")
@@ -581,8 +610,7 @@ ka(_ice_ok["status_color"], "Amber", "A1.11: 0.893 lands Amber", "A1.11", "bound
 #      not checked. history -1, -2, -3: diffs -1, -1; phi = (-1 * -1)/(-1 * -1) = 1, clamped to
 #      0.9; forecast = -3 + 0.9 * -1 = -3.9.
 _ar = run_arima_forecast({"cpiHistory": [-1, -2, -3]}, NO_ARG, "2025-06-30")
-ka(_ar["forecast_cpi"], -3.9, "A1.5: a negative index history forecasts -3.9", "A1.5",
-   "domain", "phi clamped to 0.9; -3 + 0.9 * -1")
+superseded(_ar, "A1.5", "a history of negative cost performance indices", "forecast_cpi")
 #      The in-domain case by hand: 0.95, 0.93, 0.91 -> diffs -0.02, -0.02;
 #      phi = (-0.02 * -0.02)/(-0.02 * -0.02) = 1, clamped to 0.9; forecast = 0.91 - 0.018 = 0.892
 _ar_ok = run_arima_forecast({"cpiHistory": [0.95, 0.93, 0.91]}, NO_ARG, "2025-06-30")
@@ -598,8 +626,7 @@ ka(abstains(run_arima_forecast({"cpiHistory": [0.95, 0.93]}, NO_ARG, "2025-06-30
 #      -50 / 1000 = -0.05, which falls to the Red arm.
 _rl = run_resource_loading({"plannedLaborHours": 1000, "actualLaborHours": -50},
                            NO_ARG, "2025-06-30")
-ka(_rl["load_ratio"], -0.05, "A2.9: negative labour hours give a load ratio of -0.05",
-   "A2.9", "domain", "-50 / 1000")
+superseded(_rl, "A2.9", "negative actual labour hours", "load_ratio")
 #      The in-domain case by hand: 1050/1000 = 1.05, inside 0.90 to 1.10, Green.
 _rl_ok = run_resource_loading({"plannedLaborHours": 1000, "actualLaborHours": 1050},
                               NO_ARG, "2025-06-30")
@@ -627,11 +654,7 @@ ka(run_resource_loading({"plannedLaborHours": 1000, "actualLaborHours": 1101},
 #      stress = -0.1666 / max(0.40, 0.01) = -0.4166 -> -0.42, and the Green arm is <= 1.0.
 _fc = run_float_consumption({"totalFloat": 30, "consumedFloat": -5, "actualPctComplete": 40},
                             NO_ARG, "2025-06-30")
-ka(_fc["float_remaining_days"], 35, "A2.5: a negative consumption adds float", "A2.5",
-   "domain", "30 - (-5)")
-ka(_fc["float_stress"], -0.42, "A2.5: and the stress ratio goes negative", "A2.5", "domain",
-   "(-5/30) / 0.40")
-ka(_fc["status_color"], "Green", "A2.5: and it reads Green", "A2.5", "domain")
+superseded(_fc, "A2.5", "a negative consumed float", "float_remaining_days", "float_stress")
 #      The in-domain case by hand: 12/30 = 0.40 consumed; expected 0.40; stress 1.00; Green.
 _fc_ok = run_float_consumption({"totalFloat": 30, "consumedFloat": 12, "actualPctComplete": 40},
                                NO_ARG, "2025-06-30")
@@ -644,8 +667,7 @@ ka(_fc_ok["status_color"], "Green", "A2.5: a stress of exactly 1.00 is Green, in
 #      (40/45 + -0.9)/2 = (0.888888 - 0.9)/2 = -0.005555 -> -0.006
 _cpx = run_critical_path_index({"spi": -0.9, "plannedPctComplete": 45, "actualPctComplete": 40},
                                NO_ARG, "2025-06-30")
-ka(_cpx["critical_path_index"], -0.006, "A2.11: a negative schedule index gives -0.006",
-   "A2.11", "domain", "(0.888888 + (-0.9)) / 2")
+superseded(_cpx, "A2.11", "a negative schedule index", "critical_path_index")
 #      The in-domain case by hand: (40/45 + 0.9)/2 = (0.888888 + 0.9)/2 = 0.894444 -> 0.894
 _cpx_ok = run_critical_path_index({"spi": 0.9, "plannedPctComplete": 45,
                                    "actualPctComplete": 40}, NO_ARG, "2025-06-30")
@@ -657,9 +679,7 @@ ka(_cpx_ok["status_color"], "Amber", "A2.11: 0.894 lands Amber", "A2.11", "bound
 #      and lands in the CALMEST band, which is the harmful direction.
 #      density = (-0.5 * 4)/sqrt(4) = -1.0; min(1, -1.0) = -1; the Green arm is <= 0.15.
 _sc = run_spec_conflict_density({"docRiskScore": -0.5, "rfiCount": 4}, NO_ARG, "2025-06-30")
-ka(_sc["conflict_density"], -1.0, "A4.10: a negative document risk gives a density of -1",
-   "A4.10", "domain", "(-0.5 * 4) / sqrt(4)")
-ka(_sc["status_color"], "Green", "A4.10: and a negative density reads Green", "A4.10", "domain")
+superseded(_sc, "A4.10", "a negative document risk score", "conflict_density")
 #      The in-domain case by hand: (0.30 * 4)/2 = 0.60; the Amber arm is <= 0.60, inclusive.
 _sc_ok = run_spec_conflict_density({"docRiskScore": 0.30, "rfiCount": 4}, NO_ARG, "2025-06-30")
 ka(_sc_ok["conflict_density"], 0.6, "A4.10: the in-domain case is 0.60 by hand", "A4.10",
@@ -672,8 +692,7 @@ ka(_sc_ok["status_color"], "Amber", "A4.10: exactly 0.60 is Amber, so the edge i
 #                = 0.111111 + 0.95 = 1.061111; throughput = 1/(1 + 1.061111) = 0.485174 -> 0.485
 _des = run_discrete_event_sim({"spi": -0.9, "cpi": 0.9, "plannedPctComplete": 45,
                                "actualPctComplete": 40}, NO_ARG, "2025-06-30")
-ka(_des["throughput_index"], 0.485, "A5.8: a negative schedule index gives a throughput of 0.485",
-   "A5.8", "domain", "1 / (1 + 0.111111 + 0.95)")
+superseded(_des, "A5.8", "a negative schedule index", "throughput_index")
 #      The in-domain case by hand: interruption = 0.111111 + 0.05 = 0.161111;
 #      throughput = 1/1.161111 = 0.861244 -> 0.861; the Yellow arm is >= 0.85.
 _des_ok = run_discrete_event_sim({"spi": 0.9, "cpi": 0.9, "plannedPctComplete": 45,
@@ -687,14 +706,13 @@ ka(_des_ok["status_color"], "Yellow", "A5.8: 0.861 lands Yellow", "A5.8", "bound
 #      banded and printed as "x/100".
 _q_hi = run_quality_compliance({"qualityDeficienciesNoted": 3, "qualityAuditScore": 150},
                                NO_ARG, "2025-06-30")
-ka(_q_hi["quality_score"], 150, "A6.1: an audited score of 150 out of 100 is accepted", "A6.1",
-   "domain", "no upper guard on qualityAuditScore")
-ka(_q_hi["status_color"], "Green", "A6.1: and reads Green", "A6.1", "domain")
+superseded(_q_hi, "A6.1", "an audited score of a hundred and fifty out of a hundred",
+           "quality_score")
 _q_lo = run_quality_compliance({"qualityDeficienciesNoted": 3, "qualityAuditScore": -20},
                                NO_ARG, "2025-06-30")
-ka(_q_lo["quality_score"], -20, "A6.1: a score of minus twenty is accepted", "A6.1", "domain")
-check("-20/100" in _q_lo["evidence_metric"],
-      "A6.1: and the finding text prints it as minus twenty out of a hundred",
+superseded(_q_lo, "A6.1", "an audited score of minus twenty", "quality_score")
+check("-20/100" not in _q_lo["evidence_metric"],
+      "A6.1: and no out-of-domain figure reaches the finding text",
       _q_lo["evidence_metric"])
 #      The in-domain case by hand: (100 - 8)/100 = 0.92, so 92 out of 100, Green arm is >= 85.
 _q_ok = run_quality_compliance({"qualityDeficienciesNoted": 3, "itemsInspected": 100,
@@ -708,11 +726,14 @@ ka(_q_ok["pass_rate"], 92, "A6.1: and the pass rate is reported beside it", "A6.
 #      says so, and a rating outside it is neither refused nor clipped.
 _cp = run_contractor_performance({"overallRating": 9.9, "scheduleRating": 4.0,
                                   "costRating": 4.1}, NO_ARG, "2025-06-30")
-ka(_cp["min_rating"], 4.0, "A6.4: a rating of 9.9 on a five-point scale is accepted", "A6.4",
-   "domain", "min(9.9, 4.0, 4.1)")
-check("/5" in _cp["evidence_metric"],
-      "A6.4: and the finding text still describes the scale as out of five",
-      _cp["evidence_metric"])
+superseded(_cp, "A6.4", "a rating of nine point nine on a five-point scale", "min_rating")
+_cp_ok = run_contractor_performance({"overallRating": 4.9, "scheduleRating": 4.0,
+                                     "costRating": 4.1}, NO_ARG, "2025-06-30")
+ka(_cp_ok["min_rating"], 4.0, "A6.4: an in-scale evaluation still scores its worst rating",
+   "A6.4", "known_answer", "min(4.9, 4.0, 4.1)")
+check("/5" in _cp_ok["evidence_metric"],
+      "A6.4: and the finding text describes the scale as out of five",
+      _cp_ok["evidence_metric"])
 #      The fifteen-defects run's own fix, re-derived: the quality rating enters the minimum.
 _cp_q = run_contractor_performance({"overallRating": 4.2, "scheduleRating": 4.0,
                                     "costRating": 4.1, "qualityRating": 1.0},
@@ -731,8 +752,8 @@ ka(_cp_q["status_color"], "Red", "A6.4: a worst rating of 1.0 reads Red", "A6.4"
 _cr = run_cost_risk({"bac": 1000, "cpi": 5.0, "ac": 400, "ev": 350}, NO_ARG, "2025-06-30")
 ka(_cr["p80_delta_pct"], -28.8, "A3.6: a cost index of 5.0 gives a delta of -28.8 per cent",
    "A3.6", "known_answer", "(712 - 1000) / 1000 * 100")
-check("+-28.8" in _cr["evidence_metric"],
-      "A3.6: and the finding text prints a plus and a minus together",
+check("+-28.8" not in _cr["evidence_metric"] and "-28.8" in _cr["evidence_metric"],
+      "A3.6: and the finding text now prints one sign, the one the figure carries",
       _cr["evidence_metric"])
 #      The in-domain case by hand: eac = 1000/0.9 = 1111.111; uncertainty = max(0.03, 0.1) * 0.5
 #      = 0.05; p80 = 1111.111 * 1.064 = 1182.222; delta = 18.2 per cent; Amber arm is <= 20.
@@ -749,11 +770,19 @@ ka(_cr_ok["status_color"], "Amber", "A3.6: 18.2 per cent lands Amber", "A3.6", "
 _sf0 = run_safety_performance({"safetyIncidentsDiscussed": 0}, NO_ARG, "2025-06-30")
 _sf1 = run_safety_performance({"safetyIncidentsDiscussed": 1}, NO_ARG, "2025-06-30")
 _sf2 = run_safety_performance({"safetyIncidentsDiscussed": 2}, NO_ARG, "2025-06-30")
-ka(_sf0["incident_rate"], 0.0, "A6.2: safety never mentioned becomes an incident rate of zero",
-   "A6.2", "domain", "0 mentions times 10")
-ka(_sf0["safety_index"], 2, "A6.2: and the best safety index the module can award", "A6.2",
-   "known_answer", "the module's own cap of 2, correct by Run 7 for a true reported zero")
-ka(_sf0["status_color"], "Green", "A6.2: and reads Green", "A6.2", "domain")
+# Run 10 splits this case in two. A count DERIVED from meeting mentions is silence, not a
+# measurement, and it now refuses. A count read from an uploaded safety record is a measurement
+# and still bands, which is the disposition Run 7 settled and Run 10 leaves alone.
+_sf0_derived = run_safety_performance(
+    {"safetyIncidentsDiscussed": 0,
+     "sources": {"safetyIncidentsDiscussed": {"docType": "derived"}}}, NO_ARG, "2025-06-30")
+superseded(_sf0_derived, "A6.2", "safety never mentioned in a meeting", "safety_index",
+           "incident_rate")
+ka(_sf0["safety_index"], 2,
+   "A6.2: a zero read from a safety record still takes the module's own cap", "A6.2",
+   "known_answer", "the cap of 2, the disposition Run 7 settled")
+ka(_sf0["status_color"], "Green",
+   "A6.2: and a documented zero over a valid exposure still reads Green", "A6.2", "enumerated")
 ka(_sf1["incident_rate"], 10.0, "A6.2: one mention becomes an incident rate of ten", "A6.2",
    "domain", "1 mention times the literal 10")
 ka(_sf1["status_color"], "Amber", "A6.2: one mention reads Amber", "A6.2", "domain")

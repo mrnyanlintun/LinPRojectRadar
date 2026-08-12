@@ -13,87 +13,78 @@ module_id,check_label,kind,expected,perturbed_expectation,actual,red_under_pertu
 ,bucket totals sum to 27,derivation,27,55,27,yes,yes,
 ,no module in the unresolved 27 carries a Run 1 proxy qualifier,derivation,[],['perturbed'],[],yes,yes,registry.PROXY_QUALIFIERS intersected with the derived 27
 ,not one of the 27 produces a band from an empty input,domain,[],['perturbed'],[],yes,yes,every module executed on {} and the banders collected
-A2.1,"A2.1: only Amber and Red are reachable over 1,600 seed and index combinations",property,"['Amber', 'Red']","['Amber', 'Red', 'perturbed']","['Amber', 'Red']",yes,yes,Green needs P80/baseline <= 1.15; the numerator is a P80 and the denominator a sum of modes
-A2.1,"A2.1: the baseline is the sum of the modes, 10 + max(15, 13)",known_answer,25.0,51.0,25.0,yes,yes,"a_mode 10 plus max(b_mode 15, c_mode 13)"
-A2.1,A2.1: a project twice as fast as plan still divides by 25 days,known_answer,25.0,51.0,25.0,yes,yes,"p is floored at 1, so the literals and the baseline do not move"
-A2.1,A2.1: a project twice as fast as plan reads Amber,enumerated,'Amber','Amber (perturbed)','Amber',yes,yes,
+A2.1,"A2.1: no band at all is reachable over 1,600 seed and index combinations, because the module abstains on the absent network",property,['None'],"['None', 'perturbed']",['None'],yes,yes,Run 10 removed the literal-driven sampling rather than moving the Green edge
+A2.1,A2.1: the abstention names the absent canonical structure,known_answer,'canonical_structure_absent','canonical_structure_absent (perturbed)','canonical_structure_absent',yes,yes,an activity network with logic and three-point durations is not in the corpus
 A2.1,A2.1: still abstains without a schedule index,abstention,True,False,True,yes,yes,
-B2.18,"B2.18: Red is the only band reachable over 65,856 index and document-risk combinations",property,['Red'],"['Red', 'perturbed']",['Red'],yes,yes,the score is bounded above by 1/3 and the Amber edge is 0.35
-B2.18,B2.18: the highest score anywhere in the domain is 1/3,known_answer,0.333,1.666,0.333,yes,yes,denominator minimised at u = 0.5 gives 1/(1+1+1)
-B2.18,B2.18: a project at every ideal has utility 1,known_answer,1.0,3.0,1.0,yes,yes,0.40 + 0.35 + 0.25
-B2.18,B2.18: a project at every anti-ideal has utility 0,known_answer,0.0,1.0,0.0,yes,yes,three clamped normalisations of zero
-B2.18,B2.18: the best and the worst admissible project receive the identical score,property,0.0,1.0,0.0,yes,yes,the score is symmetric under u -> 1 - u
-B2.18,B2.18: a project at every ideal reads Red,enumerated,'Red','Red (perturbed)','Red',yes,yes,
-B2.18,B2.18: the closed form is symmetric at every hundredth of utility,property,[],['perturbed'],[],yes,yes,algebraic identity checked over the whole grid
-A2.10,A2.10: a schedule index of zero raises rather than abstaining,domain,True,False,True,yes,yes,remaining_days / spi with no guard on spi
-A2.10,A2.10: a negative schedule index yields a delay of -1075 days,known_answer,-1075,-2149,-1075,yes,yes,364 * 0.6 = 218.4; 218.4 / -0.5 = -436.8; * (1 + 0.75 * 1.28) = -856.128; -856.128 - 218.4
-A2.10,A2.10: and that project reads Green,domain,'Green','Green (perturbed)','Green',yes,yes,
-A2.10,A2.10: a completion of 120 per cent yields a delay of -2 days,known_answer,-2,-3,-2,yes,yes,364 * -0.2 = -72.8; * 1.032 = -75.1296; less -72.8
-A2.10,A2.10: and that project reads Green too,domain,'Green','Green (perturbed)','Green',yes,yes,
+B2.18,"B2.18: all four bands are reachable over 65,856 index and document-risk combinations",property,"['Amber', 'Green', 'Red', 'Yellow']","['Amber', 'Green', 'Red', 'Yellow', 'perturbed']","['Amber', 'Green', 'Red', 'Yellow']",yes,yes,Run 10 restored two independent utility degrees
+B2.18,B2.18: a project at every ideal reads Green,enumerated,'Green','Green (perturbed)','Green',yes,yes,
+B2.18,B2.18: a project exactly at the anti-ideal reference sits mid-ladder,enumerated,'Yellow','Yellow (perturbed)','Yellow',yes,yes,
+B2.18,B2.18: a project below the anti-ideal reference reads Red,enumerated,'Red','Red (perturbed)','Red',yes,yes,
+B2.18,"B2.18: the SUPERSEDED closed form was symmetric at every hundredth of utility, which is the algebra Run 10 replaced",property,[],['perturbed'],[],yes,yes,"algebraic identity of the old expression, kept as the record of why it was replaced"
+A2.10,A2.10: a schedule index of zero no longer raises,abstention,False,True,False,yes,yes,Run 10 guards the denominator before the division
+A2.10,A2.10: a schedule index of zero is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
+A2.10,A2.10: and names the invalid denominator as the reason,abstention,'invalid_denominator','invalid_denominator (perturbed)','invalid_denominator',yes,yes,
+A2.10,A2.10: a negative schedule index is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
+A2.10,A2.10: a completion of 120 per cent is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
 A2.10,A2.10: the in-domain case is 90 days by hand,known_answer,90,181,90,yes,yes,218.4 / 0.8 = 273.0; * 1.128 = 307.944; less 218.4 = 89.544
 A2.10,A2.10: 90 days beyond the baseline reads Red,boundary,'Red','Red (perturbed)','Red',yes,yes,Red arm is delay > 30
 A2.10,A2.10: exactly complete gives a delay of zero,boundary,0,1,0,yes,yes,
 A2.10,A2.10: the Green arm is inclusive at a delay of zero,boundary,'Green','Green (perturbed)','Green',yes,yes,
 A5.5,A5.5: with both logs the index is 0.64,known_answer,0.64,2.2800000000000002,0.64,yes,yes,0.30 + 0.30 + 0.04
 A5.5,A5.5: with both logs it reads Red,enumerated,'Red','Red (perturbed)','Red',yes,yes,
-A5.5,A5.5: with neither log the index is 0.04,known_answer,0.04,1.08,0.04,yes,yes,0 + 0 + 0.04
-A5.5,A5.5: with neither log it reads Green,enumerated,'Green','Green (perturbed)','Green',yes,yes,
-A5.5,A5.5: the four evidence subsets give four different indices for one project,property,"[0.04, 0.34, 0.34, 0.64]","[0.04, 0.34, 0.34, 0.64, 'perturbed']","[0.04, 0.34, 0.34, 0.64]",yes,yes,0.04 / 0.04+0.30 / 0.04+0.30 / 0.04+0.30+0.30
-A5.5,A5.5: a reported zero and an absent log produce the identical index,domain,0.04,1.08,0.04,yes,yes,"the guard is truthiness, so 0 takes the absent arm"
-A5.5,A5.5: a negative request count gives a negative index,domain,-0.01,0.98,-0.01,yes,yes,"min(-5/30, 1) * 0.3 = -0.05, plus 0.04"
-A5.5,A5.5: and a negative index reads Green,domain,'Green','Green (perturbed)','Green',yes,yes,
-A5.5,A5.5: a cost index of -1 contributes 0.8 to the index,domain,0.8,2.6,0.8,yes,yes,"max(0, 1 - (-1)) * 0.4"
-A1.6,A1.6: a negative completion gives a negative schedule index,domain,-0.889,-0.778,-0.889,yes,yes,"-40/45 = -0.8888..., rounded to three places"
-A1.6,A1.6: a completion of 140 per cent gives an index of 3.111,domain,3.111,7.222,3.111,yes,yes,140/45 = 3.1111...
-A1.6,A1.6: and that reads Green,domain,'Green','Green (perturbed)','Green',yes,yes,
+A5.5,A5.5: an absent request log and an absent change order log is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
+A5.5,A5.5: only the complete evidence set produces an index; every strict subset refuses,property,[0.64],"[0.64, 'perturbed']",[0.64],yes,yes,Run 10 requires both logs rather than scoring an absence as nought
+A5.5,A5.5: a REPORTED zero is a measurement and still produces an index,known_answer,0.04,1.08,0.04,yes,yes,"0 + 0 + 0.04, and the absent case beside it now refuses instead"
+A5.5,A5.5: a negative request count is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
+A5.5,A5.5: a cost index of minus one with no logs is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
+A5.5,A5.5: a negative request count beside a present change order count is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
+A1.6,A1.6: a completion of minus forty per cent is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
+A1.6,A1.6: a completion of a hundred and forty per cent is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
 A1.6,A1.6: the in-domain case is 0.889 by hand,known_answer,0.889,2.778,0.889,yes,yes,40/45
 A1.6,A1.6: 0.889 lands Amber,boundary,'Amber','Amber (perturbed)','Amber',yes,yes,
-A1.6,A1.6: abstains without earned value even though earned value is never used,domain,True,False,True,yes,yes,"check_inputs requires ev, pv and bac; the arithmetic reads neither"
-A1.11,A1.11: a negative cost index gives a ratio of -1.429,domain,-1.429,-1.858,-1.429,yes,yes,(1000 / -0.5) / (800 + 600)
-A1.11,A1.11: and a forecast at completion of minus two thousand,domain,-2000,-3999,-2000,yes,yes,1000 / -0.5
+A1.6,A1.6: Run 10 no longer demands the three figures the arithmetic never reads,known_answer,False,True,False,yes,yes,the requirement is now the two completion percentages it actually uses
+A1.6,"A1.6: and computes the same index from them, 40/45 by hand",known_answer,0.889,2.778,0.889,yes,yes,
+A1.11,A1.11: a negative cost index is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
 A1.11,A1.11: the in-domain case is 0.893 by hand,known_answer,0.893,2.786,0.893,yes,yes,1250 / 1400
 A1.11,A1.11: 0.893 lands Amber,boundary,'Amber','Amber (perturbed)','Amber',yes,yes,
-A1.5,A1.5: a negative index history forecasts -3.9,domain,-3.9,-6.8,-3.9,yes,yes,phi clamped to 0.9; -3 + 0.9 * -1
+A1.5,A1.5: a history of negative cost performance indices is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
 A1.5,A1.5: the in-domain case forecasts 0.892 by hand,known_answer,0.892,2.784,0.892,yes,yes,0.91 + 0.9 * (-0.02)
 A1.5,"A1.5: the coefficient is the clamp, not an estimate, on three points",known_answer,0.9,2.8,0.9,yes,yes,"with three points there is one product pair, so phi is d1/d0 and clamps at 0.9"
 A1.5,"A1.5: two periods abstain, three are required",abstention,True,False,True,yes,yes,
-A2.9,A2.9: negative labour hours give a load ratio of -0.05,domain,-0.05,0.9,-0.05,yes,yes,-50 / 1000
+A2.9,A2.9: negative actual labour hours is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
 A2.9,A2.9: the in-domain case is 1.05 by hand,known_answer,1.05,3.1,1.05,yes,yes,1050 / 1000
 A2.9,A2.9: 1.05 is inside the Green corridor,boundary,'Green','Green (perturbed)','Green',yes,yes,
 A2.9,A2.9: exactly 0.90 is Green,boundary,'Green','Green (perturbed)','Green',yes,yes,
 A2.9,A2.9: just below 0.90 is Yellow,boundary,'Yellow','Yellow (perturbed)','Yellow',yes,yes,
 A2.9,A2.9: exactly 1.10 is Green,boundary,'Green','Green (perturbed)','Green',yes,yes,
 A2.9,A2.9: just above 1.10 is Yellow,boundary,'Yellow','Yellow (perturbed)','Yellow',yes,yes,
-A2.5,A2.5: a negative consumption adds float,domain,35,71,35,yes,yes,30 - (-5)
-A2.5,A2.5: and the stress ratio goes negative,domain,-0.42,0.16000000000000003,-0.42,yes,yes,(-5/30) / 0.40
-A2.5,A2.5: and it reads Green,domain,'Green','Green (perturbed)','Green',yes,yes,
+A2.5,A2.5: a negative consumed float is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
 A2.5,A2.5: the in-domain case has a stress of exactly 1.00,known_answer,1.0,3.0,1.0,yes,yes,0.40 consumed against 0.40 complete
 A2.5,"A2.5: a stress of exactly 1.00 is Green, inclusive",boundary,'Green','Green (perturbed)','Green',yes,yes,
-A2.11,A2.11: a negative schedule index gives -0.006,domain,-0.006,0.988,-0.006,yes,yes,(0.888888 + (-0.9)) / 2
+A2.11,A2.11: a negative schedule index is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
 A2.11,A2.11: the in-domain case is 0.894 by hand,known_answer,0.894,2.7880000000000003,0.894,yes,yes,(0.888888 + 0.9) / 2
 A2.11,A2.11: 0.894 lands Amber,boundary,'Amber','Amber (perturbed)','Amber',yes,yes,
-A4.10,A4.10: a negative document risk gives a density of -1,domain,-1.0,-2.0,-1.0,yes,yes,(-0.5 * 4) / sqrt(4)
-A4.10,A4.10: and a negative density reads Green,domain,'Green','Green (perturbed)','Green',yes,yes,
+A4.10,A4.10: a negative document risk score is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
 A4.10,A4.10: the in-domain case is 0.60 by hand,known_answer,0.6,2.2,0.6,yes,yes,(0.30 * 4) / sqrt(4)
 A4.10,"A4.10: exactly 0.60 is Amber, so the edge is inclusive",boundary,'Amber','Amber (perturbed)','Amber',yes,yes,
-A5.8,A5.8: a negative schedule index gives a throughput of 0.485,domain,0.485,1.97,0.485,yes,yes,1 / (1 + 0.111111 + 0.95)
+A5.8,A5.8: a negative schedule index is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
 A5.8,A5.8: the in-domain case is 0.861 by hand,known_answer,0.861,2.722,0.861,yes,yes,1 / (1 + 0.111111 + 0.05)
 A5.8,A5.8: 0.861 lands Yellow,boundary,'Yellow','Yellow (perturbed)','Yellow',yes,yes,
-A6.1,A6.1: an audited score of 150 out of 100 is accepted,domain,150,301,150,yes,yes,no upper guard on qualityAuditScore
-A6.1,A6.1: and reads Green,domain,'Green','Green (perturbed)','Green',yes,yes,
-A6.1,A6.1: a score of minus twenty is accepted,domain,-20,-39,-20,yes,yes,
+A6.1,A6.1: an audited score of a hundred and fifty out of a hundred is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
+A6.1,A6.1: an audited score of minus twenty is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
 A6.1,A6.1: the in-domain case is 92 by hand,known_answer,92,185,92,yes,yes,(100 - 8) / 100 as a percentage
 A6.1,A6.1: and the pass rate is reported beside it,known_answer,92,185,92,yes,yes,
-A6.4,A6.4: a rating of 9.9 on a five-point scale is accepted,domain,4.0,9.0,4.0,yes,yes,"min(9.9, 4.0, 4.1)"
+A6.4,A6.4: a rating of nine point nine on a five-point scale is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
+A6.4,A6.4: an in-scale evaluation still scores its worst rating,known_answer,4.0,9.0,4.0,yes,yes,"min(4.9, 4.0, 4.1)"
 A6.4,A6.4: the quality rating enters the minimum,known_answer,1.0,3.0,1.0,yes,yes,"min(4.2, 4.0, 4.1, 1.0)"
 A6.4,A6.4: four ratings are read when four are given,known_answer,4,9,4,yes,yes,
 A6.4,A6.4: a worst rating of 1.0 reads Red,boundary,'Red','Red (perturbed)','Red',yes,yes,
 A3.6,A3.6: a cost index of 5.0 gives a delta of -28.8 per cent,known_answer,-28.8,-56.6,-28.8,yes,yes,(712 - 1000) / 1000 * 100
 A3.6,A3.6: the in-domain case is 18.2 per cent by hand,known_answer,18.2,37.4,18.2,yes,yes,1000/0.9 * 1.064 = 1182.22; (1182.22 - 1000)/1000 * 100
 A3.6,A3.6: 18.2 per cent lands Amber,boundary,'Amber','Amber (perturbed)','Amber',yes,yes,
-A6.2,A6.2: safety never mentioned becomes an incident rate of zero,domain,0.0,1.0,0.0,yes,yes,0 mentions times 10
-A6.2,A6.2: and the best safety index the module can award,known_answer,2,5,2,yes,yes,"the module's own cap of 2, correct by Run 7 for a true reported zero"
-A6.2,A6.2: and reads Green,domain,'Green','Green (perturbed)','Green',yes,yes,
+A6.2,A6.2: safety never mentioned in a meeting is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
+A6.2,A6.2: a zero read from a safety record still takes the module's own cap,known_answer,2,5,2,yes,yes,"the cap of 2, the disposition Run 7 settled"
+A6.2,A6.2: and a documented zero over a valid exposure still reads Green,enumerated,'Green','Green (perturbed)','Green',yes,yes,
 A6.2,A6.2: one mention becomes an incident rate of ten,domain,10.0,21.0,10.0,yes,yes,1 mention times the literal 10
 A6.2,A6.2: one mention reads Amber,domain,'Amber','Amber (perturbed)','Amber',yes,yes,
 A6.2,A6.2: two mentions read Red,domain,'Red','Red (perturbed)','Red',yes,yes,
@@ -182,5 +173,5 @@ A1.6,A1.6: the production path gives 0.889 for spi_time,production_path,0.889,2.
 A2.11,A2.11: the production path gives 0.889 for critical_path_index,production_path,0.889,2.778,0.889,yes,yes,(0.888888 + 0.889)/2
 ,every band the 27 store is recognised by the status vocabulary,production_path,[],['perturbed'],[],yes,yes,
 ,on an empty input the production path bands none of the 27,production_path,[],['perturbed'],[],yes,yes,
-,every case wrote a mutation-proof row,derivation,185,371,185,yes,yes,
+,every case wrote a mutation-proof row,derivation,176,353,176,yes,yes,
 ,every expectation went red under perturbation,derivation,[],['perturbed'],[],yes,yes,

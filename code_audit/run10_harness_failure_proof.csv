@@ -1,0 +1,6 @@
+injected_suite,harness_verdict,runner_exit_code
+missing RESULT line,rejected,1
+reported failure,rejected,1
+green RESULT with nonzero exit,rejected,1
+crash before any output,rejected,1
+green control,accepted,0

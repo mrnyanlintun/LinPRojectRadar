@@ -42,7 +42,15 @@ from .rng import as_percent, clamp, num, pctile, round1, round2
 # when evidence was withheld, and one scored courses of action from a payoff matrix the corpus
 # does not contain. The stamp exists so a change to this layer is detectable in already-collected
 # data, and this is such a change.
-SIMULATION_VERSION = "sim-2026.08-v3"
+#
+# RUN 10 (PRODUCTION REMEDIATION AND SYNTHETIC INTEGRATION) moves it again, to sim-2026.08-v4,
+# and sim-2026.08-v2 and sim-2026.08-v3 both remain the historical audit baselines for the
+# results already collected under them. Run 10 corrected the sixteen modules Run 8 placed in the
+# fix-with-current-data bucket: eleven had an open input domain that let a reading outside the
+# domain a quantity can occupy reach a band, two rewarded missing evidence with a better reading,
+# two carried a disposition no input could reach, and one printed a sign the figure did not
+# carry. This is a change to what this layer emits, so the stamp moves with it.
+SIMULATION_VERSION = "sim-2026.08-v4"
 
 
 # -------------------------------------------------------------------------------------------
@@ -200,46 +208,35 @@ def run_pert(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
     is out of scope. What is corrected is that the module no longer reports on a project it has
     been told nothing about.
     """
-    verdict = eligible(si, required=(("spi", "the schedule performance index"),))
-    if verdict:
-        return refuse("PERT_Network_Criticality", verdict)
-    spi = num(si.get("spi"), 1.0)
-    pess = 1 + max(0.0, 1 - spi) * 0.8
-    a_act = (8.0, 10.0, 14.0)
-    b_act = (12.0, 15.0, 22.0 * pess)
-    c_act = (10.0, 13.0, 18.0 * pess)
-
-    n = 2000
-    totals = []
-    b_critical = 0
-    for _ in range(n):
-        a = _sample_triangular(*a_act, rand)
-        b = _sample_triangular(*b_act, rand)
-        c = _sample_triangular(*c_act, rand)
-        totals.append(a + max(b, c))
-        if b >= c:
-            b_critical += 1
-
-    totals.sort()
-    p50 = pctile(totals, 0.50)
-    p80 = pctile(totals, 0.80)
-    crit = b_critical / n
-    baseline = a_act[1] + max(b_act[1], c_act[1])
-    ratio = p80 / baseline
-    color = "Red" if ratio > 1.30 else ("Amber" if ratio > 1.15 else "Green")
-
-    return {
-        "method_class": "PERT_Network_Criticality",
-        "status_color": color,
-        "p50_duration_days": round1(p50),
-        "p80_duration_days": round1(p80),
-        "baseline_days": round1(baseline),
-        "path_criticality_index": round2(crit),
-        "evidence_metric": (
-            f"P80 path {round1(p80)}d vs baseline {round1(baseline)}d; "
-            f"structural path critical {int(math.floor(crit * 100 + 0.5))}% of runs"
-        ),
-    }
+    # RUN 10, BUCKET 2. Run 8 established that Green is structurally unreachable here: the band
+    # divides an eightieth percentile of a SUM of right-skewed activity durations by a baseline
+    # built from the MODES of the same activities, and that ratio sits above the Amber boundary
+    # whatever the schedule index does. The two sides of the ratio are not the same quantity.
+    #
+    # The correction is not a new boundary. Inventing one to make Green reachable would leave the
+    # deeper fault standing, which is that the three activities below are this FILE'S literals
+    # and not the project's network: the durations, the logic and the parallel branch are the
+    # same for every project the platform holds. A criticality index computed from literals is a
+    # statement about this file, published under the project's name.
+    #
+    # Canonical criticality needs an activity network with logic and three-point durations. The
+    # production corpus carries no such object: the schedule reader assembles a milestone and
+    # activity table with dates and percent complete, and no predecessor logic and no optimistic
+    # or pessimistic duration anywhere. So the module abstains on the absent structure, on the
+    # same footing as reference class forecasting and rework propagation, and the aggregate-index
+    # arithmetic is not retained under a canonical label. The sampling code below is reached only
+    # when a real network is supplied, and no production path supplies one today.
+    # No production path supplies such a network today, so this module abstains on every
+    # project the platform holds. The literal-driven sampling that used to stand here is removed
+    # rather than gated: leaving it reachable would keep aggregate arithmetic over three
+    # hard-coded activities running under a canonical criticality label, which is the fault
+    # itself and not merely its trigger.
+    return insufficient(
+        "PERT_Network_Criticality",
+        "This method needs the project's activity network: the activities, the logic between "
+        "them and a three-point duration for each. No such network has been recorded for this "
+        "project, and a criticality index is not reported from stand-in durations.",
+        ABSTAIN_STRUCTURE_ABSENT)
 
 
 # ---------------------------------------------------------------- A2.2 LOB

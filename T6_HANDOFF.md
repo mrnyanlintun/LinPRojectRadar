@@ -6523,3 +6523,90 @@ Files: `research_fixtures/synthetic/OG-SYNTH-0.3/` (new),
 `server/tests/synthetic_fixtures/validators/recomputations_v03.py` (new), the
 `code_audit/run10_*.csv` and `code_audit/synthetic_v03_*.csv` files (new),
 `REPORT_2026-08-12_synthetic-v0.3-monte-carlo-dsm-correction.md` (new), this entry.
+
+# 2026-08-12, Run 10 (owner programme): production remediation, and a Monte Carlo fixture that matches production
+
+**Branch `claude/run10-production-remediation-and-integration` from `origin/main` at `e93a239`,
+the synthetic v0.3 merge. PRODUCTION CODE CHANGED, under the owner's standing permission for the
+sixteen modules Run 8 placed in the fix-with-current-data bucket.** Report:
+`REPORT_2026-08-12_run10-production-remediation-and-synthetic-integration.md`, which is
+controlling and much fuller than this entry.
+
+**THIS RUN IS PARTIAL AND SAYS SO.** Gates 0, 1, 2, 5, 6, 7, 8, 9, 10 and 11 are complete.
+**Gates 3 and 4, the integration of the seven project-structure modules and the two reference and
+decision modules, were NOT started.** Nothing was half-integrated. Section 21 of the report is the
+resumption specification and it is exact.
+
+**Handoff audit.** Every committed report since the last entry is represented and both version
+histories are continuous. No repair was needed and none was made. One naming collision is
+recorded rather than resolved: the previous session filed its work under the name "Run 10" too,
+and the two are distinguished by date, branch and subject.
+
+**Simulation version sim-2026.08-v3 to sim-2026.08-v4.** v2 and v3 freeze records preserved
+verbatim in `models.py` and asserted present by a suite. Synthetic package version in use:
+OG-SYNTH-0.3, untouched, as are 0.2 and 0.1.
+
+**The production Monte Carlo contract, established from the code and not from the fixture.**
+The module reads budget at completion, both performance indices and the document risk score.
+**It does NOT read actual cost, it does NOT read earned value, and there is no formula-selection
+rule**: one transformation is applied unconditionally, budget over the cost index, and a
+Beta-PERT with lambda four is drawn over bounds derived from a spread driver, on mulberry32,
+five thousand iterations, index-based percentiles, seeded from scenario and period. The existing
+OG-SYNTH family is a bottom-up triangular build-up with Bernoulli risk events on PCG64. **They
+are different models and neither is an oracle for the other.** The new family lives at
+`research_fixtures/production_contract/monte_carlo_eac_forecast/`, generated once by
+`tools/derive_mc_eac_fixture.py`, which does not import or call production. Ten cases, closed-form
+analytic mean and standard deviation, and a real sampling-error acceptance rule at three sample
+counts rather than an arbitrary percentage. Permanent identity needs no overlay: v0.3 already
+carries authoritative alias and asset-map rows for A1.1 and A5.4.
+
+**The sixteen corrections, by class.** Eleven open input domains now refuse instead of banding a
+reading outside the domain a quantity can occupy (A1.5, A1.6, A1.11, A2.5, A2.9, A2.10, A2.11,
+A4.10, A5.8, A6.1, A6.4). One finding text took its sign from the figure instead of a hard-coded
+plus (A3.6). Two stopped rewarding absent evidence (A5.5, over every strict subset exhaustively;
+A6.2, where meeting silence is no longer a safety measurement). Two had a disposition no input
+could reach: B2.18's two utility degrees are now separate ratios rather than a number and its
+complement, **with no boundary moved**, and A2.1's literal-driven sampling is **removed** and the
+module abstains on the absent activity network rather than describing this file under the
+project's name.
+
+**Voting and activation are unchanged: exactly A1.7 and A1.8 vote, the eight concept-only modules
+are still disabled, and A3.1 and A5.1 still abstain unconditionally.** No participant-visible
+change; no browser asset and no served page touched; production Postgres not accessed.
+
+**Test totals: 70 suites, 5315 of 5315, all green**, each against its own freshly migrated
+database. Pre-change baseline was 66 suites and 4851 checks. Twenty-four mutations were injected
+and every one produced a red; two survived the first pass, were treated as suite defects and
+closed. The strict harness was reproved against all four failure modes plus a green control.
+Four earlier suites asserted behaviour this run corrects and each was **restated with its original
+finding preserved as the reason**, never deleted and never loosened.
+
+**Unresolved, and the first one matters most.** The neighbour sweep found eight same-class
+neighbours outside this run's authorisation and fixed none.
+**A1.7 accepts a negative actual cost and reads Green, and A1.7 is one of the two modules that
+vote on project status.** The other seven are A1.9, A2.6, A3.9 (both patterns), A5.2, A5.3 and
+B3.2. Also unresolved: the control-chart penalty in the forecast module is accepted by the
+arithmetic and never passed by the wrapper, so it is dead on every production path; the registry
+canonical name is "Monte Carlo EAC" while the programme prose says "Monte Carlo EAC Forecast";
+and two prior-run audit artefacts are rewritten by their own suites on every execution, which
+overwrites a prior run's recorded digest.
+
+**Next session, exactly.** Run the complete suite first and record 70 and 5315 as the baseline.
+Then Gate 3 for A1.1, A2.2, A2.3, A4.4, A5.6, A5.7 and A6.3, and Gate 4 for A5.4 and B2.19, to
+the owner's Run 10 prompt, which stands unchanged for those two gates.
+**Before writing any A1.1 importer, resolve this: A1.1's Bucket-3 canonical structure is the
+bottom-up cost risk register, which is a different model from the production Beta-PERT above.
+Integrating it means either changing what A1.1 computes, which needs authorisation, or
+abstaining.** A2.1 now abstains on the absent activity network and v0.3 does carry activity and
+dependency tables, but A2.1 is not in Bucket 3 and integrating it needs separate authorisation.
+
+Files: `server/app/simulation/models.py`, `models_doc.py`, `models_evm.py`, `models_ext.py`,
+`models_fuzzy.py`, `models_sim.py` (all changed), `server/tools/test_run10_monte_carlo_eac_fixture.py`,
+`test_run10_bucket2_corrections.py`, `test_run10_state_protection.py` (new),
+`server/tools/test_run6_known_answer.py`, `test_run7_fix_now_defects.py`,
+`test_run8_retest_classify_27.py`, `test_simulation.py` (restated),
+`research_fixtures/production_contract/monte_carlo_eac_forecast/` (new),
+`tools/derive_mc_eac_fixture.py` (new), `code_audit/run10_bucket2_scope.csv`,
+`run10_bucket2_mutation_proof.csv`, `run10_mc_eac_statistical_acceptance.csv`,
+`run10_neighbour_sweep.csv`, `run10_harness_failure_proof.csv` (new),
+`REPORT_2026-08-12_run10-production-remediation-and-synthetic-integration.md` (new), this entry.

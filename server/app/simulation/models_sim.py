@@ -80,6 +80,8 @@ def monte_carlo_eac(inputs: dict, seed: int, iterations: int = 5000) -> dict[str
     bac = float(inputs.get("bac") or 0)
     if not (bac > 0 and cpi > 0 and spi > 0):
         raise ValueError("monte_carlo_eac requires a positive bac, cpi and spi")
+    if not (isinstance(iterations, int) and iterations >= 1):
+        raise ValueError("monte_carlo_eac requires a positive whole iteration count")
     doc_score = clamp(float(inputs.get("docScore") or 0), 0, 1)
 
     m_eac = bac / cpi
@@ -94,6 +96,14 @@ def monte_carlo_eac(inputs: dict, seed: int, iterations: int = 5000) -> dict[str
     o = m_eac * (1 - 0.10 * s)
     m = m_eac
     p = m_eac * (1 + 0.40 * s)
+
+    # RUN 10, GATE 1. The three bounds are derived above rather than supplied, so this cannot
+    # trip on any input the module accepts. It exists so that a later edit which makes the
+    # bounds settable cannot sample a Beta-PERT whose optimistic value exceeds its mode or
+    # whose mode exceeds its pessimistic value: that draw would be silently wrong rather than
+    # loud, and the shape parameters would come back negative.
+    if not (o <= m <= p):
+        raise ValueError("monte_carlo_eac requires optimistic <= most likely <= pessimistic")
 
     rand = make_rng(seed)
     if p - o < 1e-9:

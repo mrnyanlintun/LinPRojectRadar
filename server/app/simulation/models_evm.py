@@ -26,9 +26,9 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from .models import check_inputs, insufficient
+from .models import ABSTAIN_MALFORMED_INPUT, check_inputs, insufficient
 from .models_ext import _js_date_ms, _js_str, _money
-from .rng import clamp, js_round, round1
+from .rng import clamp, js_round, num, round1
 
 _round3 = lambda v: js_round(v * 1000) / 1000  # noqa: E731
 
@@ -118,6 +118,16 @@ def run_arima_forecast(si: dict, rand: Callable[[], float], period_cutoff) -> di
     history = _history(si, "cpiHistory", "cpi")
     if not history or len(history) < 3:
         return insufficient("ARIMA_Forecast", "Awaiting history (3 periods needed)")
+    # RUN 10, BUCKET 2. The history domain was unguarded: a series carrying a zero or a negative
+    # entry was differenced and forecast as though those were performance readings. A cost
+    # performance index is earned value over actual cost and cannot be zero or below, so such a
+    # series is a malformed reading rather than a poor project, and it abstains.
+    if any(not (v > 0) for v in history):
+        return insufficient(
+            "ARIMA_Forecast",
+            "The cost performance history contains a reading of zero or below, which no cost "
+            "performance index can be, so the series is not forecastable",
+            ABSTAIN_MALFORMED_INPUT)
     diffs = [history[i] - history[i - 1] for i in range(1, len(history))]
     phi = 0.0
     if len(diffs) >= 2:
@@ -145,8 +155,23 @@ def run_arima_forecast(si: dict, rand: Callable[[], float], period_cutoff) -> di
 
 
 def run_earned_schedule(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    if not check_inputs(si, ("ev", "pv", "bac", "actualPctComplete", "plannedPctComplete")):
+    # RUN 10, BUCKET 2. Two faults. First, earned value, planned value and budget were required
+    # and never read, so the module abstained on the absence of three figures its arithmetic does
+    # not use. They are dropped from the requirement, which is what the arithmetic actually needs.
+    # Second, the completion domain was unguarded: a percentage below zero or above one hundred
+    # was divided straight into a schedule index, so a reported completion outside the domain a
+    # percentage occupies produced a schedule index and a delay figure from a reading that is not
+    # a percentage.
+    if not check_inputs(si, ("actualPctComplete", "plannedPctComplete")):
         return insufficient("Earned_Schedule")
+    for key in ("actualPctComplete", "plannedPctComplete"):
+        v = num(si.get(key), None)
+        if v is None or v < 0 or v > 100:
+            return insufficient(
+                "Earned_Schedule",
+                "A reported completion percentage falls outside the range a percentage can "
+                "occupy, so no schedule index is measurable from it",
+                ABSTAIN_MALFORMED_INPUT)
     actual_pct = si["actualPctComplete"] / 100
     planned_pct = si["plannedPctComplete"] / 100
     spi_t = actual_pct / planned_pct if planned_pct > 0 else None
@@ -365,8 +390,15 @@ def run_regression_to_mean(si: dict, rand: Callable[[], float], period_cutoff) -
 def run_ice_ratio(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     if not check_inputs(si, ("bac", "cpi", "ev", "ac")):
         return insufficient("ICE_Ratio")
-    if si["cpi"] == 0:
-        return insufficient("ICE_Ratio")  # JS Infinity arithmetic; refused
+    # RUN 10, BUCKET 2. A zero index was refused and a NEGATIVE one was not, so a negative index
+    # produced a negative completion forecast that the finding then printed as a currency figure.
+    # A cost performance index is earned value over actual cost and cannot be at or below zero.
+    if not si["cpi"] > 0:
+        return insufficient(
+            "ICE_Ratio",
+            "Cost performance is recorded as zero or below, which no completion forecast can "
+            "be scaled by",
+            ABSTAIN_MALFORMED_INPUT)
     eac_cpi = si["bac"] / si["cpi"]
     eac_parametric = si["ac"] + (si["bac"] - si["ev"])
     ice = eac_cpi / eac_parametric if eac_parametric > 0 else None
