@@ -221,9 +221,19 @@ RUN10_SCOPED_FILES = {
     "server/app/simulation/models_sim.py",
 }
 
-_unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES)
+#: RUN 10B adds its own authorised production scope on the same footing, so each run's
+#: authorisation stays readable on its own. Run 10B corrects the open input domain in one of the
+#: two voting modules and requires the defining structure of six canonical methods and the
+#: reference objects of two more, which touches the files above and adds one new file: the
+#: canonical-structure layer itself.
+RUN10B_SCOPED_FILES = {
+    "server/app/simulation/canonical.py",
+}
+
+_unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES)
 check(not _unscoped,
-      "no production file outside the authorised scope of Run 7 or Run 10 differs from the "
+      "no production file outside the authorised scope of Run 7, Run 10 or Run 10B differs "
+      "from the "
       "pinned baseline",
       str(_unscoped))
 _assets = sorted(p for p in _prod if p.startswith("assets/"))
@@ -231,10 +241,12 @@ check(not _assets,
       "and nothing under assets/ differs at all, so every participant surface and the browser "
       "instrument are byte-identical to the freeze", str(_assets))
 check(_prod, "the guard is live: it does see the files this run did change", str(_prod))
-check(registry.SIMULATION_VERSION == "sim-2026.08-v4",
-      "the analytical layer is stamped at Run 10's version, and sim-2026.08-v2 and "
-      "sim-2026.08-v3 both remain historical audit baselines for results already collected "
-      "under them",
+# RESTATED BY RUN 10B, with the original reason preserved: this check has tracked the current
+# stamp since Run 6, and it read sim-2026.08-v4 while Run 10 was current.
+check(registry.SIMULATION_VERSION == "sim-2026.08-v5",
+      "the analytical layer is stamped at Run 10B's version, and sim-2026.08-v2, "
+      "sim-2026.08-v3 and sim-2026.08-v4 all remain historical audit baselines for results "
+      "already collected under them",
       registry.SIMULATION_VERSION)
 
 

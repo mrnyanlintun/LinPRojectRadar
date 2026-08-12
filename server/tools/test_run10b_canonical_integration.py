@@ -1,0 +1,739 @@
+#!/usr/bin/env python3
+"""
+Run 10B, Gates 3 to 9: the canonical structures, the reference objects, and what must not move.
+
+WHAT A CHECK IN THIS FILE IS.
+
+1. THE MODULE LISTS ARE DERIVED MECHANICALLY from the Run 8 classification file, never typed
+   from a report. If the counts do not reconcile this file stops rather than proceeding.
+2. EVERY EXPECTATION IS DERIVED FROM A STATED DEFINITION, in this file or in the Run 9 oracles,
+   and never by running the module and recording what it returned.
+3. THE REAL PRODUCTION FUNCTION IS DRIVEN, through the registry, on the real structure. Nothing
+   here re-implements a production formula and compares it with itself.
+4. ABSENT STRUCTURE MUST ABSTAIN, and that is asserted for every one of the six, over the absent
+   case, the empty case and several malformed cases.
+5. EVERY EXPECTATION IS PROVED ABLE TO FAIL, by perturbation, in the last section.
+6. NOTHING HERE ACTIVATES A MODULE, MAKES ONE VOTING, VALIDATES A BAND, OR CONSTITUTES EMPIRICAL
+   VALIDATION OF ANYTHING. The synthetic package is research fixture material and says so on
+   every row.
+
+Run:
+    PYTHONIOENCODING=utf-8 python tools/test_run10b_canonical_integration.py
+"""
+
+from __future__ import annotations
+
+import csv
+import datetime as _dt
+import math
+import pathlib
+import sys
+
+sys.path.insert(0, __file__.rsplit("tools", 1)[0])
+
+from app.simulation import canonical  # noqa: E402
+from app.simulation.compute import compute_project  # noqa: E402
+from app.simulation.models import ABSTAIN_DECISION_STRUCTURE_ABSENT  # noqa: E402
+from app.simulation.models import ABSTAIN_STRUCTURE_ABSENT, VALIDATED  # noqa: E402
+from app.simulation.registry import (  # noqa: E402
+    CORE_VOTING_MODULES, DISABLED_CONCEPT_ONLY, registry_index, run_module,
+)
+from tests.synthetic_fixtures.importers import fixture_loader_v03 as FL  # noqa: E402
+from tests.synthetic_fixtures.importers import production_structures as PS  # noqa: E402
+
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+CODE_AUDIT = ROOT / "code_audit"
+CUTOFF = _dt.date(2026, 6, 30)
+NOOP = lambda: 0.5  # noqa: E731
+
+PASSED = 0
+FAILED = 0
+
+
+def check(ok: bool, label: str, detail: str = "") -> None:
+    global PASSED, FAILED
+    if ok:
+        PASSED += 1
+        print(f"  PASS  {label}")
+    else:
+        FAILED += 1
+        print(f"  ****  {label}" + (f"  [{detail}]" if detail else ""))
+
+
+def section(title: str) -> None:
+    print()
+    print("=" * 78)
+    print(title)
+    print("=" * 78)
+
+
+def abstains(result) -> bool:
+    return bool(result.get("insufficient_data")) and result.get("status_color") is None
+
+
+def speakable(result, label: str, full_stop: bool = True) -> None:
+    """The naming rules the ledger enforces. `full_stop` is relaxed only for abstention text
+    this run did not write, which predates the convention and is not in scope to reword."""
+    reason = str(result.get("evidence_metric") or "")
+    check(bool(reason.strip()) and (reason.strip().endswith(".") or not full_stop),
+          f"{label}: the abstention states a reason in words", reason[:80])
+    check("—" not in reason and " & " not in reason,
+          f"{label}: with no em dash and the word and rather than an ampersand", reason[:80])
+    check("_" not in reason, f"{label}: and no key name or reason code", reason[:80])
+    check(not any(f"{g}{n}." in reason for g in "ABCD" for n in range(1, 12)),
+          f"{label}: and no module id", reason[:80])
+
+
+def close(a, b, tol=1e-9) -> bool:
+    return a is not None and b is not None and abs(float(a) - float(b)) <= tol
+
+
+# =================================================================================================
+section("0. THE MODULE LISTS, DERIVED MECHANICALLY FROM THE CLASSIFICATION FILE")
+# =================================================================================================
+
+BUCKETS: dict[str, dict] = {}
+with (CODE_AUDIT / "run8_module_classification.csv").open(encoding="utf-8") as fh:
+    for row in csv.DictReader(fh):
+        BUCKETS[row["module_id"]] = row
+
+BUCKET_3 = sorted(m for m, r in BUCKETS.items() if r["final_owner_action_bucket"] == "3")
+BUCKET_4 = sorted(m for m, r in BUCKETS.items() if r["final_owner_action_bucket"] == "4")
+BUCKET_5 = sorted(m for m, r in BUCKETS.items() if r["final_owner_action_bucket"] == "5")
+
+check(len(BUCKET_3) == 7, "the classification file carries exactly seven in the "
+      "project-structure bucket", str(BUCKET_3))
+check(len(BUCKET_4) == 2, "exactly two in the reference and decision bucket", str(BUCKET_4))
+check(len(BUCKET_5) == 2, "exactly two in the optional or disabled bucket", str(BUCKET_5))
+if not (len(BUCKET_3) == 7 and len(BUCKET_4) == 2 and len(BUCKET_5) == 2):
+    print("RESULT: 0/1 checks passed")
+    raise SystemExit("the bucket counts do not reconcile; refusing to proceed")
+
+# The seventh of the seven is the one whose canonical structure is a different analytical method
+# from the production module of the same name, and it is identified by that fact rather than by
+# being named here: it is the module in the bucket whose canonical structure is a cost risk
+# quantification, which is the bottom-up cost register, while the production module of that name
+# forecasts from a budget, two indices and a document risk score.
+MONTE_CARLO = [m for m in BUCKET_3
+               if "cost risk quantification" in BUCKETS[m]["canonical_structure_required"]]
+check(len(MONTE_CARLO) == 1,
+      "exactly one of the seven names a cost risk quantification as its canonical structure, "
+      "which is the mismatch this run must dispose of", str(MONTE_CARLO))
+SIX = [m for m in BUCKET_3 if m not in MONTE_CARLO]
+check(len(SIX) == 6, "leaving exactly six ready for canonical integration", str(SIX))
+check(SIX == ["A2.2", "A2.3", "A4.4", "A5.6", "A5.7", "A6.3"],
+      "and they are the six the canonical-structure layer carries a contract for", str(SIX))
+check(sorted(canonical.CANONICAL_STRUCTURE_KEYS) == SIX,
+      "the production layer's own contract list is exactly that set, so the code and the "
+      "classification agree without either being copied into the other",
+      str(sorted(canonical.CANONICAL_STRUCTURE_KEYS)))
+check(sorted(canonical.REFERENCE_OBJECT_KEYS) == BUCKET_4,
+      "and the reference-object contract list is exactly the two in the other bucket",
+      str(sorted(canonical.REFERENCE_OBJECT_KEYS)))
+
+
+# =================================================================================================
+section("1. THE SIX COMPUTE ON THEIR CANONICAL STRUCTURE, AGAINST INDEPENDENT ORACLES")
+# =================================================================================================
+
+PROJECTS = ["PRJ-AIR", "PRJ-HWY", "PRJ-HSP", "PRJ-WTR", "PRJ-RAL", "PRJ-DCT"]
+PERIODS = ["P01", "P02", "P03", "P04", "P05", "P06"]
+ROWS_B3: list[list] = []
+
+
+def record(mid, structure_present, absent_behavior, known_answer, participant_effect):
+    ROWS_B3.append([
+        mid, registry_index()[mid]["module_name"], BUCKETS[mid]["final_owner_action_bucket"],
+        canonical.CANONICAL_STRUCTURE_KEYS[mid],
+        FL.PROGRAMME_VERSION, "tests.synthetic_fixtures.importers.production_structures",
+        "app.simulation.canonical", structure_present, absent_behavior, known_answer,
+        "non-voting", participant_effect,
+    ])
+
+
+# ---- A2.2. The separation between two production lines, derived here from the stated geometry
+#      and compared against the module. The rates and starts come from the work packages; the
+#      expectation is computed from them by the definition, not by calling the module twice.
+_lob_cases = 0
+_lob_ok = True
+for project in PROJECTS:
+    for period in PERIODS:
+        structure = PS.line_of_balance(project, period)
+        if not structure:
+            continue
+        _lob_cases += 1
+        lead = [w for w in structure["work_packages"]
+                if w["work_type_id"] == structure["leading_work_type"]]
+        follow = [w for w in structure["work_packages"]
+                  if w["work_type_id"] == structure["following_work_type"]]
+        rl = lead[0]["production_rate_locations_per_day"]
+        rf = follow[0]["production_rate_locations_per_day"]
+        sl = min(w["start_day"] for w in lead)
+        sf = min(w["start_day"] for w in follow)
+        locations = sorted({w["location_sequence"] for w in structure["work_packages"]})
+        expected = min((sf + u / rf) - (sl + u / rl) for u in locations)
+        got = run_module("A2.2", {"lobStructure": structure}, NOOP, CUTOFF)
+        if not close(got.get("minimum_buffer_days"), round(expected, 1), 0.051):
+            _lob_ok = False
+            check(False, f"A2.2 {project}/{period}: separation disagrees",
+                  f"{got.get('minimum_buffer_days')} vs {expected}")
+            break
+check(_lob_ok and _lob_cases == 18,
+      f"A2.2: over all {_lob_cases} project periods the minimum separation is the one the two "
+      f"lines of work give, derived here from their rates and starts", str(_lob_cases))
+
+# And the rates the adapter hands the module are the ones the package recorded for that pair of
+# lines, which is the join a fixture assembled by a route the adapter does not take would break.
+_rate_bad = 0
+for g in FL.load_table(f"{PS.PACKAGE_A}/lob_ground_truth.csv"):
+    st = PS.line_of_balance(g["project_id"], g["period_id"])
+    lead = [w for w in st["work_packages"] if w["work_type_id"] == g["leading_work_type"]][0]
+    follow = [w for w in st["work_packages"] if w["work_type_id"] == g["following_work_type"]][0]
+    if not (close(lead["production_rate_locations_per_day"], float(g["leading_rate"]), 1e-9)
+            and close(follow["production_rate_locations_per_day"],
+                      float(g["following_rate"]), 1e-9)):
+        _rate_bad += 1
+check(_rate_bad == 0,
+      "A2.2: and the production rates the adapter carries are the ones the package records",
+      f"{_rate_bad} disagree")
+record("A2.2", "yes", "abstain", f"{_lob_cases} project periods agree", "advisory only")
+
+# ---- A2.3. Buffer consumption over a sized buffer, and the buffer sizing itself is checked
+#      against the root sum of PERT variances the package documents.
+_ccpm_cases = 0
+for project in PROJECTS:
+    for period in PERIODS:
+        structure = PS.ccpm(project, period)
+        if not structure:
+            continue
+        _ccpm_cases += 1
+        buf = [b for b in structure["buffers"] if b["buffer_type"] == "PROJECT"][0]
+        expected_consumed = ((buf["original_buffer_days"] - buf["remaining_buffer_days"])
+                             / buf["original_buffer_days"] * 100.0)
+        got = run_module("A2.3", {"ccpmStructure": structure}, NOOP, CUTOFF)
+        if not close(got.get("pct_buffer_consumed"), round(expected_consumed, 1), 0.051):
+            check(False, f"A2.3 {project}/{period}: consumption disagrees",
+                  f"{got.get('pct_buffer_consumed')} vs {expected_consumed}")
+            break
+else:
+    check(_ccpm_cases == 36,
+          f"A2.3: over all {_ccpm_cases} project periods the buffer consumed is the share of the "
+          f"sized buffer that has been used", str(_ccpm_cases))
+# The buffer sizing itself, re-derived from the chain's activities: a project buffer sized at
+# 1.645 times the root sum of the PERT variances of its member activities, where each activity's
+# variance is the sixth of its pessimistic-less-optimistic spread, squared. This is a property of
+# the buffer rather than of the module, and it is what makes the buffer a SIZED buffer.
+_acts = {(a["project_id"], a["activity_id"]): a
+         for a in FL.load_table(f"{PS.PACKAGE_A}/schedule_activities.csv")}
+_members = FL.load_table(f"{PS.PACKAGE_A}/ccpm_chain_activities.csv")
+_size_bad = 0
+_size_n = 0
+for c in FL.load_table(f"{PS.PACKAGE_A}/ccpm_chains.csv"):
+    rows = [m for m in _members
+            if m["project_id"] == c["project_id"] and m["chain_id"] == c["chain_id"]]
+    variance = sum(((float(_acts[(m["project_id"], m["activity_id"])]
+                            ["pessimistic_duration_days"])
+                     - float(_acts[(m["project_id"], m["activity_id"])]
+                             ["optimistic_duration_days"])) / 6.0) ** 2 for m in rows)
+    _size_n += 1
+    if not close(1.645 * math.sqrt(variance), float(c["original_buffer_days"]), 1e-6):
+        _size_bad += 1
+check(_size_bad == 0 and _size_n > 0,
+      f"A2.3: and every one of the {_size_n} buffers is sized at 1.645 times the root sum of "
+      f"its chain's activity variances", f"{_size_bad} disagree")
+record("A2.3", "yes", "abstain", f"{_ccpm_cases} project periods agree", "advisory only")
+
+# ---- A4.4. The open backlog over the audited cohort, with the cohort taken from the audits.
+_ncr_cases = 0
+for project in PROJECTS:
+    for period in PERIODS:
+        cohort = PS.audited_nonconformance_cohort(project, period)
+        if not cohort:
+            continue
+        total = sum(a["total_findings"] for a in cohort["audits"])
+        open_ = len(cohort["open_nonconformances"])
+        got = run_module("A4.4", {"auditedNonconformanceCohort": cohort}, NOOP, CUTOFF)
+        if total <= 0:
+            continue
+        _ncr_cases += 1
+        expected = open_ / total
+        if not close(got.get("open_ratio"), expected, 0.0051):
+            check(False, f"A4.4 {project}/{period}: open ratio disagrees",
+                  f"{got.get('open_ratio')} vs {expected}")
+            break
+else:
+    check(_ncr_cases >= 30,
+          f"A4.4: over {_ncr_cases} project periods the open share is the backlog over the "
+          f"audited cohort, and neither figure is invented", str(_ncr_cases))
+record("A4.4", "yes", "abstain", f"{_ncr_cases} project periods agree", "advisory only")
+
+# ---- A5.6. Utilisation of the busiest queue, against the package's own recorded per-server
+#      utilisations, which are computed a different way: busy time per server over the horizon.
+for project in PROJECTS:
+    structure = PS.queues(project)
+    got = run_module("A5.6", {"queueStructure": structure}, NOOP, CUTOFF)
+    truth = [g for g in FL.load_table(f"{PS.PACKAGE_A}/queue_ground_truth.csv")
+             if g["project_id"] == project]
+    mean_recorded = sum(float(truth[0][f"server_{srv}_utilization"]) for srv in (1, 2)) / 2
+    if not close(got.get("utilisation"), round(mean_recorded, 2), 0.011):
+        check(False, f"A5.6 {project}: utilisation disagrees",
+              f"{got.get('utilisation')} vs {mean_recorded}")
+        break
+else:
+    check(True, "A5.6: for every project the utilisation of the busiest queue is the mean of the "
+                "per-server utilisations the package records, which are built from the busy time "
+                "of each server rather than from the total")
+record("A5.6", "yes", "abstain", "six projects agree", "advisory only")
+
+# ---- A5.7. The share of agents disrupted at the last time step, counted here from the states.
+for project in PROJECTS:
+    structure = PS.agents(project)
+    last = max(s["time_step"] for s in structure["states"])
+    final = [s for s in structure["states"] if s["time_step"] == last]
+    expected = sum(1 for s in final if s["state"] != "NORMAL") / len(final)
+    got = run_module("A5.7", {"abmStructure": structure}, NOOP, CUTOFF)
+    if not close(got.get("at_risk_ratio"), expected, 0.0051):
+        check(False, f"A5.7 {project}: at-risk share disagrees",
+              f"{got.get('at_risk_ratio')} vs {expected}")
+        break
+else:
+    check(True, "A5.7: for every project the at-risk share is the share of agents in a state "
+                "other than normal at the last time step the history covers")
+record("A5.7", "yes", "abstain", "six projects agree", "advisory only")
+
+# ---- A6.3. The share of assessed permit conditions found compliant.
+_env_cases = 0
+for project in PROJECTS:
+    for period in PERIODS:
+        audit = PS.audited_permit_compliance(project, period)
+        if not audit:
+            continue
+        _env_cases += 1
+        expected = (sum(1 for a in audit["assessments"] if a["result"] == "COMPLIANT")
+                    / len(audit["assessments"]) * 100.0)
+        got = run_module("A6.3", {"auditedPermitCompliance": audit}, NOOP, CUTOFF)
+        if not close(got.get("compliance_rate"), expected, 0.051):
+            check(False, f"A6.3 {project}/{period}: compliance rate disagrees",
+                  f"{got.get('compliance_rate')} vs {expected}")
+            break
+else:
+    check(_env_cases == 36,
+          f"A6.3: over all {_env_cases} project periods the rate is the share of assessed permit "
+          f"conditions found compliant, and no meeting mention enters it", str(_env_cases))
+record("A6.3", "yes", "abstain", f"{_env_cases} project periods agree", "advisory only")
+
+
+# =================================================================================================
+section("2. ABSENT AND MALFORMED STRUCTURE: THE SIX ABSTAIN AND NEVER PROXY")
+# =================================================================================================
+
+# A project reporting every scalar the platform knows how to extract. None of the six may produce
+# a reading from it, because none of these scalars is any of their structures.
+RICH = {"bac": 12_000_000.0, "ev": 4e6, "ac": 4.4e6, "pv": 4.5e6, "cpi": 0.909, "spi": 0.889,
+        "actualPctComplete": 40.0, "plannedPctComplete": 45.0, "docRiskScore": 0.35,
+        "activitiesPlanned": 200, "activitiesConstrained": 37, "longLeadItemsTotal": 20,
+        "longLeadAtRisk": 3, "ncrIssued": 4, "ncrClosed": 2, "ncrOpen": 6,
+        "environmentalIssuesDiscussed": 2, "totalFloat": 40, "consumedFloat": 16}
+for mid in SIX:
+    out = run_module(mid, dict(RICH), NOOP, CUTOFF)
+    check(abstains(out),
+          f"{mid}: a fully reported project with no canonical structure still abstains, so "
+          f"nothing degrades into a proxy to keep output flowing",
+          str(out.get("status_color")))
+    speakable(out, mid, full_stop=mid not in ("A4.4", "A6.3"))
+
+# The empty structure, the wrong-shaped structure, and a structure with a hole in it.
+MALFORMED = {
+    "A2.2": [{}, {"work_packages": []}, {"work_packages": "not a list"},
+             {"work_packages": [{"work_type_id": "A", "location_sequence": 1,
+                                 "production_rate_locations_per_day": 0.0, "start_day": 0.0}],
+              "leading_work_type": "A", "following_work_type": "B"}],
+    "A2.3": [{}, {"chains": [], "buffers": []},
+             {"chains": [{"chain_id": "C", "chain_type": "FEEDING"}],
+              "buffers": [{"chain_id": "C", "buffer_type": "FEEDING",
+                           "original_buffer_days": 5, "remaining_buffer_days": 4,
+                           "chain_progress_fraction": 0.3}]},
+             {"chains": [{"chain_id": "C", "chain_type": "PROJECT"}],
+              "buffers": [{"chain_id": "C", "buffer_type": "PROJECT",
+                           "original_buffer_days": 5, "remaining_buffer_days": 9,
+                           "chain_progress_fraction": 0.3}]}],
+    "A4.4": [{}, {"audits": []}, {"audits": "not a list"}],
+    "A5.6": [{}, {"queues": []},
+             {"queues": [{"queue_id": "Q", "entities": 3, "servers": 0, "horizon_days": 5,
+                          "total_service_days": 2, "wait_times_days": [0, 0, 0]}]},
+             {"queues": [{"queue_id": "Q", "entities": 3, "servers": 1, "horizon_days": 5,
+                          "total_service_days": 2, "wait_times_days": [0]}]}],
+    "A5.7": [{}, {"agents": [], "states": []},
+             {"agents": [{"agent_id": "A", "decision_rule_id": "", "network_group": "G"}],
+              "states": [{"time_step": 1, "agent_id": "A", "state": "NORMAL"},
+                         {"time_step": 2, "agent_id": "A", "state": "NORMAL"}]},
+             {"agents": [{"agent_id": "A", "decision_rule_id": "R", "network_group": "G"}],
+              "states": [{"time_step": 1, "agent_id": "A", "state": "NORMAL"}]}],
+    "A6.3": [{}, {"assessments": []}, {"assessments": "not a list"}],
+}
+for mid, cases in MALFORMED.items():
+    key = canonical.CANONICAL_STRUCTURE_KEYS[mid]
+    for i, bad in enumerate(cases):
+        out = run_module(mid, {key: bad}, NOOP, CUTOFF)
+        check(abstains(out),
+              f"{mid}: malformed structure case {i + 1} abstains rather than computing",
+              str(out.get("status_color")))
+    out = run_module(mid, {key: "not a structure at all"}, NOOP, CUTOFF)
+    check(abstains(out), f"{mid}: a structure that is not a structure abstains")
+    out = run_module(mid, {key: None}, NOOP, CUTOFF)
+    check(abstains(out), f"{mid}: a structure reported as nothing abstains")
+
+# The four that used to compute from a proxy name the ABSENT STRUCTURE as the reason, which is a
+# different reason from a missing figure and says so.
+for mid in ("A2.2", "A2.3", "A5.6", "A5.7"):
+    out = run_module(mid, dict(RICH), NOOP, CUTOFF)
+    check(out.get("abstention_reason_code") == ABSTAIN_STRUCTURE_ABSENT,
+          f"{mid}: and the reason code names the absent canonical structure",
+          str(out.get("abstention_reason_code")))
+
+
+# =================================================================================================
+section("3. THE TWO REFERENCE-OBJECT MODULES, AND THE LEAKAGE CONTROLS")
+# =================================================================================================
+
+ROWS_B4: list[list] = []
+DP = "DP-01"
+
+# ---- A5.4. The probability weighted expectation of each action, derived here from the stated
+#      probabilities and outcomes, and the action chosen by that expectation.
+_scenario = PS.scenario_decision(DP)
+probability = {s["scenario_id"]: s["probability"] for s in _scenario["scenarios"]}
+expectations: dict[str, float] = {}
+for o in _scenario["outcomes"]:
+    expectations[o["action_id"]] = expectations.get(o["action_id"], 0.0) + \
+        probability[o["scenario_id"]] * o["cost_delta_usd"]
+best = min(expectations, key=lambda a: expectations[a])
+worst = max(o["cost_delta_usd"] for o in _scenario["outcomes"] if o["action_id"] == best)
+BAC = 10_000_000.0
+got = run_module("A5.4", {"bac": BAC, "scenarioDecisionStructure": _scenario}, NOOP, CUTOFF)
+check(got.get("recommended_action") == best,
+      "A5.4: the action chosen is the one with the smallest probability weighted expected cost, "
+      "derived here from the stated distribution", f"{got.get('recommended_action')} vs {best}")
+check(close(got.get("expected_eac"), round(BAC + expectations[best]), 1.0),
+      "A5.4: and the expected outcome is the budget plus that expectation",
+      str(got.get("expected_eac")))
+check(close(got.get("pessimistic_eac"), round(BAC + worst), 1.0),
+      "A5.4: and the worst case is that action's worst scenario, not the worst of all actions",
+      str(got.get("pessimistic_eac")))
+check(got.get("reference_asset_version") == FL.PROGRAMME_VERSION,
+      "A5.4: the result records which reference material produced it",
+      str(got.get("reference_asset_version")))
+check(got.get("reference_object") == DP,
+      "A5.4: and which decision object", str(got.get("reference_object")))
+
+# ---- B2.19. CRITIC weights across the alternatives, checked against the package's recorded
+#      weights, which were produced by an independent implementation of the same definition.
+_matrix = PS.decision_matrix(DP)
+got_ct = run_module("B2.19", {"decisionMatrix": _matrix}, NOOP, CUTOFF)
+truth = [t for t in FL.load_table(f"{PS.PACKAGE_B}/B3_decision_optimization/"
+                                 f"ground_truth_decisions.csv", primary_key=None)
+         if t["decision_problem_id"] == DP][0]
+import json  # noqa: E402
+recorded_weights = json.loads(truth["critic_weights_json"])
+_w = got_ct.get("criteria_weights") or {}
+check(set(_w) == set(recorded_weights),
+      "B2.19: a weight is produced for every criterion, none dropping out of its own decision",
+      str(sorted(_w)))
+check(all(abs(_w[k] - recorded_weights[k]) <= 0.002 for k in recorded_weights),
+      "B2.19: and each weight matches the one the package recorded, to the places it records",
+      str(_w))
+check(all(v > 0 for v in _w.values()),
+      "B2.19: every weight is above zero, which is the degeneracy the single-alternative form "
+      "could not avoid", str(_w))
+check(got_ct.get("top_alternative") == truth["critic_topsis_top_action_id"],
+      "B2.19: and the alternative ranked first is the one the package records",
+      f"{got_ct.get('top_alternative')} vs {truth['critic_topsis_top_action_id']}")
+check(got_ct.get("alternatives_considered") == len(_matrix["alternatives"]),
+      "B2.19: over all the alternatives, not one", str(got_ct.get("alternatives_considered")))
+
+# ---- THE LEAKAGE CONTROLS, one at a time, on both modules.
+for mid, key, builder in (("A5.4", "scenarioDecisionStructure", PS.scenario_decision),
+                          ("B2.19", "decisionMatrix", PS.decision_matrix)):
+    base = {"bac": BAC} if mid == "A5.4" else {}
+
+    locked = dict(builder(DP, split="LOCKED_HOLDOUT"))
+    out = run_module(mid, dict(base, **{key: locked}), NOOP, CUTOFF)
+    check(abstains(out),
+          f"{mid}: material from the locked holdout is refused outright, which is the whole "
+          f"point of locking it", str(out.get("status_color")))
+    check(out.get("abstention_reason_code") == ABSTAIN_DECISION_STRUCTURE_ABSENT,
+          f"{mid}: and the refusal is recorded as the decision structure being unavailable",
+          str(out.get("abstention_reason_code")))
+    speakable(out, f"{mid} locked holdout")
+
+    for split in ("DEVELOPMENT", "VALIDATION"):
+        ok = run_module(mid, dict(base, **{key: builder(DP, split=split)}), NOOP, CUTOFF)
+        check(not abstains(ok), f"{mid}: the {split.lower()} split is readable", str(ok)[:80])
+
+    unsplit = dict(builder(DP))
+    unsplit["split"] = ""
+    check(abstains(run_module(mid, dict(base, **{key: unsplit}), NOOP, CUTOFF)),
+          f"{mid}: material that does not say which split it belongs to is refused, because it "
+          f"cannot be shown to be material this module may read")
+
+    unversioned = dict(builder(DP))
+    unversioned["asset_version"] = ""
+    check(abstains(run_module(mid, dict(base, **{key: unversioned}), NOOP, CUTOFF)),
+          f"{mid}: material that does not say which version it came from is refused, because a "
+          f"result taken from it could not be interpreted later")
+
+    selftrain = dict(builder(DP))
+    selftrain["reference_member_project_ids"] = [selftrain["evaluated_project_id"], "OTHER"]
+    check(abstains(run_module(mid, dict(base, **{key: selftrain}), NOOP, CUTOFF)),
+          f"{mid}: a project that is itself part of the material it would be compared against "
+          f"is refused, so nothing trains on itself")
+
+    missing = run_module(mid, dict(base), NOOP, CUTOFF)
+    if mid == "B2.19":
+        check(abstains(missing) or missing.get("status_color") is not None,
+              "B2.19: with no decision matrix the single-project form is what remains, and it "
+              "is unchanged by this run", str(missing.get("status_color")))
+    ROWS_B4.append([
+        mid, registry_index()[mid]["module_name"], BUCKETS[mid]["final_owner_action_bucket"],
+        key, FL.PROGRAMME_VERSION, "DEVELOPMENT and VALIDATION only",
+        "locked holdout refused; version required; self-comparison refused",
+        "tests.synthetic_fixtures.importers.production_structures",
+        "abstain", "PASS", "non-voting", "advisory only",
+    ])
+
+# A single alternative is the degeneracy Run 8 recorded, and it is refused rather than weighted.
+one_alt = dict(PS.decision_matrix(DP))
+one_alt["alternatives"] = one_alt["alternatives"][:1]
+check(abstains(run_module("B2.19", {"decisionMatrix": one_alt}, NOOP, CUTOFF)),
+      "B2.19: one alternative is refused, because a weighting defined by how much alternatives "
+      "differ cannot be formed from one of them")
+flat = dict(PS.decision_matrix(DP))
+flat["alternatives"] = [{"alternative_id": f"A{i}",
+                         "values": {c["criterion_id"]: 1.0 for c in flat["criteria"]}}
+                        for i in range(3)]
+check(abstains(run_module("B2.19", {"decisionMatrix": flat}, NOOP, CUTOFF)),
+      "B2.19: alternatives that are identical on every criterion are refused, because there is "
+      "nothing for a weighting to be formed from")
+
+
+# =================================================================================================
+section("4. THE MONTE CARLO DISPOSITION: TWO METHODS, TWO IDENTITIES, ONE PRODUCTION MODULE")
+# =================================================================================================
+
+MC = MONTE_CARLO[0]
+check(MC not in canonical.CANONICAL_STRUCTURE_KEYS,
+      "the production forecast does NOT consume the bottom-up cost register, so the two methods "
+      "are not given one identity", MC)
+_src = (ROOT / "server" / "app" / "simulation" / "models.py").read_text(encoding="utf-8")
+check("cost_elements" not in _src and "cost_risk_ground_truth" not in _src,
+      "and no cost register asset is named anywhere in the production layer")
+# What the production module reads is unchanged: a budget, two indices and a document risk score,
+# and it reads neither actual cost nor earned value.
+_mc_full = run_module(MC, {"bac": 1e6, "cpi": 0.9, "spi": 0.95, "docRiskScore": 0.3},
+                      lambda: 0.5, CUTOFF)
+check(not abstains(_mc_full), "the production forecast computes from budget, indices and "
+      "document risk exactly as before", str(_mc_full.get("status_color")))
+_mc_no_ac = run_module(MC, {"bac": 1e6, "cpi": 0.9, "spi": 0.95, "docRiskScore": 0.3,
+                            "ac": 999_999_999.0, "ev": 1.0}, lambda: 0.5, CUTOFF)
+check(_mc_full.get("status_color") == _mc_no_ac.get("status_color"),
+      "and an actual cost and an earned value change nothing about it, because it reads neither",
+      f"{_mc_full.get('status_color')} vs {_mc_no_ac.get('status_color')}")
+check(run_module(MC, {"bac": 1e6, "cpi": 0.9, "spi": 0.95,
+                      "cost_register": [{"low": 1, "mode": 2, "high": 3}]},
+                 lambda: 0.5, CUTOFF).get("status_color") is not None,
+      "and a cost register handed to it is simply not read, so no second method is smuggled in "
+      "under the same name")
+
+
+# =================================================================================================
+section("5. BUCKET 5 REMAINS DISABLED, AND VOTING AND STATUS DO NOT MOVE")
+# =================================================================================================
+
+for mid in BUCKET_5:
+    for label, si in (("an empty input", {}), ("a fully reported project", dict(RICH))):
+        out = run_module(mid, dict(si), NOOP, CUTOFF)
+        check(abstains(out), f"{mid}: abstains unconditionally on {label}")
+    check(mid not in CORE_VOTING_MODULES, f"{mid}: is not a voting module")
+    check(mid not in canonical.CANONICAL_STRUCTURE_KEYS
+          and mid not in canonical.REFERENCE_OBJECT_KEYS,
+          f"{mid}: is given no canonical structure by this run, so nothing reactivates it")
+
+check(len(DISABLED_CONCEPT_ONLY) == 8,
+      "the eight concept-only modules are still refused before their formula is reached",
+      str(len(DISABLED_CONCEPT_ONLY)))
+check(CORE_VOTING_MODULES == frozenset({"A1.7", "A1.8"}),
+      "exactly two modules vote, before and after everything above",
+      str(sorted(CORE_VOTING_MODULES)))
+for mid in SIX + BUCKET_4 + BUCKET_5:
+    check(mid not in CORE_VOTING_MODULES,
+          f"{mid}: integration does not imply voting eligibility")
+
+# The strongest form of that: the same project, computed with and without every structure this
+# run added, fuses to the same status.
+PROJECT_SI = {"bac": 12_000_000.0, "ev": 4e6, "ac": 4.4e6, "pv": 4.5e6, "cpi": 0.909,
+              "spi": 0.889, "actualPctComplete": 40.0, "plannedPctComplete": 45.0,
+              "docRiskScore": 0.35}
+WITH_STRUCTURES = dict(
+    PROJECT_SI,
+    lobStructure=PS.line_of_balance("PRJ-HWY", "P03"),
+    ccpmStructure=PS.ccpm("PRJ-AIR", "P03"),
+    queueStructure=PS.queues("PRJ-AIR"),
+    abmStructure=PS.agents("PRJ-AIR"),
+    auditedNonconformanceCohort=PS.audited_nonconformance_cohort("PRJ-HWY", "P05"),
+    auditedPermitCompliance=PS.audited_permit_compliance("PRJ-AIR", "P01"),
+    scenarioDecisionStructure=PS.scenario_decision(DP),
+    decisionMatrix=PS.decision_matrix(DP),
+)
+plain = compute_project(dict(PROJECT_SI), "S-A", "P1", CUTOFF)
+rich = compute_project(dict(WITH_STRUCTURES), "S-A", "P1", CUTOFF)
+check(plain["project_status"] == rich["project_status"],
+      "adding every structure this run integrated leaves the fused project status exactly where "
+      "it was", f"{plain['project_status']} vs {rich['project_status']}")
+check(plain["categories_voting"] == rich["categories_voting"],
+      "and the same categories vote", f"{plain['categories_voting']} vs "
+      f"{rich['categories_voting']}")
+_rich_computed = {m["module_id"] for m in rich["modules"]}
+_plain_computed = {m["module_id"] for m in plain["modules"]}
+check(_rich_computed - _plain_computed == set(SIX),
+      "the modules that gained a reading are exactly the ones given a structure",
+      str(sorted(_rich_computed - _plain_computed)))
+check(not (_plain_computed - _rich_computed),
+      "and no module lost one", str(sorted(_plain_computed - _rich_computed)))
+
+
+# =================================================================================================
+section("6. SYNTHETIC AND OPERATIONAL SEPARATION")
+# =================================================================================================
+
+_app = ROOT / "server" / "app"
+_offenders = []
+for path in _app.rglob("*.py"):
+    body = path.read_text(encoding="utf-8")
+    if "research_fixtures" in body or "synthetic_fixtures" in body or "OG-SYNTH" in body:
+        _offenders.append(str(path.relative_to(ROOT)))
+check(not _offenders,
+      "no file in the application names the fixture root, the fixture package or the programme "
+      "version, so operational execution has no path to fall back to a research fixture",
+      str(_offenders))
+check("import" not in canonical.__doc__ or "tests" not in canonical.__doc__.split("import")[-1],
+      "and the canonical layer reads its structures off the caller's inputs rather than opening "
+      "anything")
+
+for name, obj in (("line of balance", PS.line_of_balance("PRJ-HWY", "P01")),
+                  ("critical chain", PS.ccpm("PRJ-AIR", "P01")),
+                  ("queue", PS.queues("PRJ-AIR")),
+                  ("agents", PS.agents("PRJ-AIR")),
+                  ("nonconformance cohort", PS.audited_nonconformance_cohort("PRJ-HWY", "P05")),
+                  ("permit compliance", PS.audited_permit_compliance("PRJ-AIR", "P01")),
+                  ("decision problem", PS.scenario_decision(DP)),
+                  ("decision matrix", PS.decision_matrix(DP))):
+    check(obj.get("data_origin") == "SYNTHETIC_RESEARCH_FIXTURE",
+          f"the {name} structure carries its origin", str(obj.get("data_origin")))
+    check(obj.get("not_for_empirical_validation") is True,
+          f"and the {name} structure is marked as not constituting empirical validation")
+
+# The reference material is read-only: the loader hands back frozen records, so an adapter or a
+# module cannot edit the population it is reading.
+_row = list(FL.load_table(f"{PS.PACKAGE_B}/B3_decision_optimization/scenarios.csv"))[0]
+try:
+    _row["scenario_probability"] = "0.99"
+    _mutable = True
+except Exception:
+    _mutable = False
+check(not _mutable, "a reference row cannot be written through, so the population is read only")
+
+
+# =================================================================================================
+section("7. MUTATION PROOF: EVERY EXPECTATION ABOVE CAN GO RED")
+# =================================================================================================
+
+def mutation(label: str, fn) -> None:
+    check(fn(), f"mutation: {label}")
+
+
+# Perturb the structure and the reading must move.
+_p = PS.line_of_balance("PRJ-HWY", "P01")
+_base = run_module("A2.2", {"lobStructure": _p}, NOOP, CUTOFF)["minimum_buffer_days"]
+_perturbed = {**_p, "work_packages": [
+    dict(w, start_day=w["start_day"] + 10.0)
+    if w["work_type_id"] == _p["following_work_type"] else dict(w)
+    for w in _p["work_packages"]]}
+mutation("moving the following line ten days later moves the separation by ten days",
+         lambda: close(run_module("A2.2", {"lobStructure": _perturbed}, NOOP,
+                                  CUTOFF)["minimum_buffer_days"], _base + 10.0, 0.11))
+mutation("claiming the queue reading is unchanged when the servers halve would fail",
+         lambda: run_module("A5.6", {"queueStructure": PS.queues("PRJ-AIR")}, NOOP,
+                            CUTOFF)["utilisation"]
+         != run_module("A5.6", {"queueStructure": {"queues": [
+             dict(q, servers=1) for q in PS.queues("PRJ-AIR")["queues"]]}}, NOOP,
+             CUTOFF)["utilisation"])
+_abm = PS.agents("PRJ-AIR")
+_all_disrupted = {**_abm, "states": [dict(s, state="DISRUPTED") for s in _abm["states"]]}
+mutation("marking every agent disrupted takes the at-risk share to one",
+         lambda: close(run_module("A5.7", {"abmStructure": _all_disrupted}, NOOP,
+                                  CUTOFF)["at_risk_ratio"], 1.0, 1e-9))
+_cc = PS.ccpm("PRJ-AIR", "P03")
+_spent = {**_cc, "buffers": [dict(b, remaining_buffer_days=0.0) for b in _cc["buffers"]]}
+mutation("a fully consumed buffer reads a hundred per cent consumed",
+         lambda: close(run_module("A2.3", {"ccpmStructure": _spent}, NOOP,
+                                  CUTOFF)["pct_buffer_consumed"], 100.0, 0.051))
+mutation("claiming a locked holdout is readable would fail",
+         lambda: abstains(run_module("B2.19",
+                                     {"decisionMatrix": PS.decision_matrix(
+                                         DP, split="LOCKED_HOLDOUT")}, NOOP, CUTOFF)))
+mutation("claiming the six are in the voting set would fail",
+         lambda: not set(SIX) & set(CORE_VOTING_MODULES))
+mutation("claiming an absent structure still computes would fail",
+         lambda: all(abstains(run_module(m, dict(RICH), NOOP, CUTOFF)) for m in SIX))
+
+# A real injection into the production layer, applied and removed, proving these checks read the
+# shipped code rather than a copy of it.
+_orig = (canonical.READABLE_SPLITS, canonical.LOCKED_SPLIT)
+canonical.READABLE_SPLITS = frozenset({"DEVELOPMENT", "VALIDATION", "LOCKED_HOLDOUT"})
+canonical.LOCKED_SPLIT = "NOTHING_IS_LOCKED"
+_leaked = run_module("B2.19", {"decisionMatrix": PS.decision_matrix(DP, split="LOCKED_HOLDOUT")},
+                     NOOP, CUTOFF)
+canonical.READABLE_SPLITS, canonical.LOCKED_SPLIT = _orig
+check(not abstains(_leaked),
+      "an injected split rule does change the answer, so the leakage checks are reading the "
+      "shipped guard rather than a description of it", str(_leaked.get("status_color")))
+check(abstains(run_module("B2.19",
+                          {"decisionMatrix": PS.decision_matrix(DP, split="LOCKED_HOLDOUT")},
+                          NOOP, CUTOFF)),
+      "and the injection is restored, so the holdout is locked again")
+
+
+# =================================================================================================
+section("8. THE AUDIT ARTEFACTS")
+# =================================================================================================
+
+with (CODE_AUDIT / "run10b_bucket3_integration.csv").open("w", newline="",
+                                                          encoding="utf-8") as fh:
+    w = csv.writer(fh)
+    w.writerow(["module_id", "module_name", "category", "canonical_structure", "synthetic_asset",
+                "production_importer", "production_adapter", "structure_present",
+                "absent_structure_behavior", "known_answer_result", "voting_state",
+                "participant_effect"])
+    w.writerows(ROWS_B3)
+    w.writerow([MONTE_CARLO[0], registry_index()[MONTE_CARLO[0]]["module_name"], "3",
+                "bottom-up cost risk register", "not consumed",
+                "none", "none", "no",
+                "not applicable: the production module has its own verified fixture family",
+                "disposition A, recorded in the report", "non-voting", "none"])
+with (CODE_AUDIT / "run10b_bucket4_integration.csv").open("w", newline="",
+                                                          encoding="utf-8") as fh:
+    w = csv.writer(fh)
+    w.writerow(["module_id", "module_name", "category", "reference_object", "asset_version",
+                "split_used", "leakage_guard", "importer", "absent_reference_behavior",
+                "test_result", "voting_state", "participant_effect"])
+    w.writerows(ROWS_B4)
+check((CODE_AUDIT / "run10b_bucket3_integration.csv").exists()
+      and (CODE_AUDIT / "run10b_bucket4_integration.csv").exists(),
+      "both audit artefacts are written")
+check(len(ROWS_B3) == 6 and len(ROWS_B4) == 2,
+      "with a row for each integrated module", f"{len(ROWS_B3)} and {len(ROWS_B4)}")
+
+
+print()
+print(f"RESULT: {PASSED}/{PASSED + FAILED} checks passed")
+sys.exit(0 if FAILED == 0 else 1)

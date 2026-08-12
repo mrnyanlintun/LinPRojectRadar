@@ -25,6 +25,14 @@ from __future__ import annotations
 import math
 from typing import Any, Callable
 
+from .canonical import (
+    StructureAbsent,
+    agent_supply_chain as canonical_agent_supply_chain,
+    ccpm_buffer_health as canonical_ccpm,
+    line_of_balance as canonical_line_of_balance,
+    queue_bottleneck as canonical_queue,
+    require_structure,
+)
 from .rng import as_percent, clamp, num, pctile, round1, round2
 
 # Stamped on every result set, so a later change to this layer is detectable in already-collected
@@ -50,7 +58,14 @@ from .rng import as_percent, clamp, num, pctile, round1, round2
 # domain a quantity can occupy reach a band, two rewarded missing evidence with a better reading,
 # two carried a disposition no input could reach, and one printed a sign the figure did not
 # carry. This is a change to what this layer emits, so the stamp moves with it.
-SIMULATION_VERSION = "sim-2026.08-v4"
+# RUN 10B (CRITICAL VOTER FIX AND CANONICAL-STRUCTURE INTEGRATION) moves it again, to
+# sim-2026.08-v5. Every earlier stamp remains the historical audit baseline for the results
+# already collected under it; none is overwritten. Run 10B closed the open input domain in the
+# to-complete cost efficiency measure, which is one of the two modules that vote on project
+# status and could therefore turn an out-of-domain reading into a favourable project status, and
+# it required the defining structure of six canonical methods before they compute. Both change
+# what this layer emits, so the stamp moves with them.
+SIMULATION_VERSION = "sim-2026.08-v5"
 
 
 # -------------------------------------------------------------------------------------------
@@ -244,47 +259,44 @@ def run_pert(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
 
 def run_lob(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    Line of balance: leader (grading) against follower (paving), buffer eroding per unit.
+    Line of balance: the smallest time separation between a leading and a following line of work.
 
-    RUN 7. Same defect as the network model above and the same correction: an empty dictionary
-    defaulted the schedule index to 1.0 and read Green. The unit count, the two production rates
-    and the buffer stay the module's own literals, because locations, crews and production rates
-    are not in the corpus and inventing them is out of scope.
+    RUN 7 removed a default that let an empty dictionary read Green, and left the unit count, the
+    two production rates and the buffer as literals in this file, because locations, crews and
+    production rates were not in the corpus.
+
+    RUN 10B REQUIRES THE LINE OF BALANCE ITSELF. A line-of-balance measure computed from literals
+    and a schedule index describes this file, not the project, and a reader cannot tell the two
+    apart on the ledger. The canonical structure is now required: locations in sequence, the
+    crews working them, and a production rate and a start for each line of work. Where it is
+    absent this ABSTAINS. It does not fall back to the schedule index, and it does not fall back
+    to the literals it used to carry. The band is unchanged and is applied to the same quantity
+    it always read, the minimum separation in days, now taken from the real lines of work.
     """
-    verdict = eligible(si, required=(("spi", "the schedule performance index"),))
-    if verdict:
-        return refuse("Line_of_Balance_Velocity", verdict)
-    spi = num(si.get("spi"), 1.0)
-    units = 20
-    grading_rate = 2.0
-    paving_rate = 1.8 * clamp(spi, 0.3, 1.2)
-    initial_buffer = 5.0
-    lag = max(0.0, (1 / paving_rate) - (1 / grading_rate))
+    try:
+        structure = require_structure(si, "A2.2")
+        reading = canonical_line_of_balance(structure)
+    except StructureAbsent as absent:
+        return insufficient("Line_of_Balance_Velocity", absent.sentence,
+                            ABSTAIN_STRUCTURE_ABSENT)
 
-    min_buffer = initial_buffer
-    crit_unit = units
-    flagged = False
-    for u in range(1, units + 1):
-        buf = initial_buffer - u * lag
-        if buf < min_buffer:
-            min_buffer = buf
-        if not flagged and buf <= 1.5:
-            crit_unit = u
-            flagged = True
-
+    min_buffer = reading["minimum_separation_days"]
     color = "Red" if min_buffer <= 1.5 else ("Amber" if min_buffer <= 3.0 else "Green")
     return {
         "method_class": "Line_of_Balance_Velocity",
         "status_color": color,
         "minimum_buffer_days": round1(min_buffer),
-        "critical_unit_index": crit_unit,
-        "grading_rate": grading_rate,
-        "paving_rate": round2(paving_rate),
-        "initial_buffer_days": initial_buffer,
-        "units": units,
+        "critical_unit_index": reading["critical_location_sequence"],
+        "grading_rate": round2(reading["leading_rate"]),
+        "paving_rate": round2(reading["following_rate"]),
+        "initial_buffer_days": round1(reading["first_separation_days"]),
+        "units": reading["locations"],
+        "canonical_structure": "line_of_balance",
         "evidence_metric": (
-            f"Min crew buffer {round1(min_buffer)}d (paving {round2(paving_rate)} "
-            f"vs grading {grading_rate} units/day)"
+            f"Minimum crew separation {round1(min_buffer)} days across "
+            f"{reading['locations']} locations, with the following line advancing at "
+            f"{round2(reading['following_rate'])} against {round2(reading['leading_rate'])} "
+            f"locations per day"
         ),
     }
 
@@ -296,34 +308,23 @@ def run_ccpm(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
     """
     CCPM buffer-health fever chart: buffer consumption against chain completion.
 
-    RUN 7. Handed an empty dictionary this read Amber: chain completion fell back to zero per
-    cent and the schedule index to 1.0, and the fever chart placed a project nobody had reported
-    on in the warning zone. Both figures are now required, chain completion from either the
-    reported or the planned completion, and the module abstains without them. The buffer itself
-    remains derived from the schedule index rather than from a governed critical-chain buffer,
-    which is out of scope, and the qualifier says so.
+    RUN 7 required both figures and removed the defaults that placed an unreported project in the
+    warning zone. The buffer itself remained derived from the schedule performance index rather
+    than from a sized critical-chain buffer, and the qualifier said so.
+
+    RUN 10B REQUIRES THE CHAIN AND THE BUFFER. A buffer derived from a performance index is not a
+    sized buffer, and a fever chart drawn on one is not this method. The critical chain with its
+    activities and a sized project buffer is now required, and where it is absent this ABSTAINS
+    rather than falling back to the index. The fever-chart zones are unchanged.
     """
-    verdict = eligible(si, required=(("spi", "the schedule performance index"),))
-    if verdict:
-        return refuse("CCPM_Buffer_Health", verdict)
-    raw = si.get("actualPctComplete")
-    if raw is None:
-        raw = si.get("plannedPctComplete")
-    if raw is None:
-        return insufficient(
-            "CCPM_Buffer_Health",
-            "Insufficient data: neither a reported nor a planned percent complete has been "
-            "reported for this period, so there is no chain completion to place the buffer "
-            "against.",
-            ABSTAIN_MISSING_INPUT)
-    if num(raw, None) is None:
-        return insufficient(
-            "CCPM_Buffer_Health",
-            "Insufficient data: percent complete was reported in a form that is not a number.",
-            ABSTAIN_MALFORMED_INPUT)
-    pct_chain = as_percent(raw, 0.0)
-    spi = num(si.get("spi"), 1.0)
-    pct_buffer = clamp((1 - spi) * 100 * 1.5, 0, 100)
+    try:
+        structure = require_structure(si, "A2.3")
+        reading = canonical_ccpm(structure)
+    except StructureAbsent as absent:
+        return insufficient("CCPM_Buffer_Health", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+
+    pct_chain = reading["pct_chain_complete"]
+    pct_buffer = reading["pct_buffer_consumed"]
     amber = pct_chain
     red = pct_chain + (100 - pct_chain) / 3
     color = "Red" if pct_buffer >= red else ("Amber" if pct_buffer >= amber else "Green")

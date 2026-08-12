@@ -134,10 +134,15 @@ check("this run changed only the analytical layer under the application",
           if d.startswith("server/app/")))
 
 # ---------------------------------------------------------------- GATE 10: versioning
-check("the analytical layer is stamped at Run 10's version",
-      SIMULATION_VERSION == "sim-2026.08-v4")
+# RESTATED BY RUN 10B. The original assertion, that the layer is stamped sim-2026.08-v4, was
+# correct for Run 10 and its record is kept here: Run 10 shipped sim-2026.08-v4. Run 10B changes
+# what the layer emits again, so the stamp moves again and this check follows it, while the check
+# below still proves every earlier stamp is preserved rather than overwritten.
+check("the analytical layer is stamped at this run's version, and Run 10's sim-2026.08-v4 is "
+      "kept as a historical audit baseline rather than being overwritten",
+      SIMULATION_VERSION == "sim-2026.08-v5")
 history = (ROOT / "server" / "app" / "simulation" / "models.py").read_text(encoding="utf-8")
-for old in ("sim-2026.08-v2", "sim-2026.08-v3"):
+for old in ("sim-2026.08-v2", "sim-2026.08-v3", "sim-2026.08-v4"):
     check(f"the freeze record for {old} is preserved rather than overwritten", old in history)
 check("the synthetic package version in use is the corrected one",
       (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.3").is_dir())

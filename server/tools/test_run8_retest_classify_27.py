@@ -175,11 +175,18 @@ RUN10_SCOPED_FILES = {
     "server/app/simulation/models_sim.py",
 }
 
+#: RUN 10B declares its own authorised set on the same footing, so Run 8's claim that it changed
+#: no production code and Run 10's own scope both remain readable exactly as written.
+RUN10B_SCOPED_FILES = {
+    "server/app/simulation/canonical.py",
+}
+
 _diff = subprocess.run(["git", "diff", "--name-only", GUARD_BASELINE_REV, "--"],
                        cwd=str(ROOT), capture_output=True, text=True).stdout.split()
 _prod = [p for p in _diff
          if (p.startswith("server/app/") or p.startswith("assets/"))
-         and p not in RUN8_SCOPED_FILES and p not in RUN10_SCOPED_FILES]
+         and p not in RUN8_SCOPED_FILES and p not in RUN10_SCOPED_FILES
+         and p not in RUN10B_SCOPED_FILES]
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
 check(not any(p.startswith("assets/") for p in _diff),
@@ -857,44 +864,103 @@ ka(_eq_fail, [], "A1.1: equivariance holds at every scale from one to a thousand
 ka(abstains(run_monte_carlo({"bac": 0, "cpi": 0.9, "spi": 0.9}, None, 42)), True,
    "A1.1: a budget of zero is refused, not substituted", "A1.1", "abstention")
 
-# ---- A2.2 Line of Balance. Hand-derived from the module's own literals.
-#      units 20, grading 2.0/day, paving 1.8 * clamp(spi, 0.3, 1.2), buffer 5.0 days.
-#      spi 0.9: paving = 1.62; lag = 1/1.62 - 1/2.0 = 0.617284 - 0.5 = 0.117284
-#      minimum buffer at unit 20 = 5.0 - 20 * 0.117284 = 5.0 - 2.345679 = 2.654321 -> 2.7
-#      Amber arm is min buffer <= 3.0 and Red is <= 1.5, so 2.7 is Amber.
-_lob = run_lob({"spi": 0.9}, NO_ARG, "2025-06-30")
-ka(_lob["paving_rate"], 1.62, "A2.2: the paving rate is 1.8 scaled by the index", "A2.2",
-   "known_answer", "1.8 * clamp(0.9, 0.3, 1.2)")
-ka(_lob["minimum_buffer_days"], 2.7, "A2.2: the minimum buffer is 2.7 days by hand", "A2.2",
-   "known_answer", "5.0 - 20 * (1/1.62 - 1/2.0)")
-ka(_lob["status_color"], "Amber", "A2.2: 2.7 days is Amber", "A2.2", "boundary")
-ka(_lob["units"], 20, "A2.2: the unit count is a literal in the file, not a project figure",
-   "A2.2", "known_answer", "no locations or units are carried in the corpus")
-#      A project at or above an index of 1.2 saturates the clamp, so no faster project can be
-#      distinguished from any other. Exhausted over the range above the clamp.
-_sat = {run_lob({"spi": s / 10}, NO_ARG, "2025-06-30")["minimum_buffer_days"]
-        for s in range(12, 41)}
-ka(sorted(_sat), [5.0], "A2.2: every index at or above 1.2 gives the identical buffer",
-   "A2.2", "property", "clamp(spi, 0.3, 1.2) saturates, so the lag floors at zero")
+# ---- A2.2 Line of Balance.
+#      RUN 8 FOUND, AND THE FINDING IS PRESERVED HERE AS THE REASON THIS BLOCK WAS RESTATED: the
+#      unit count, both production rates and the buffer were literals in the module's own file,
+#      so the arithmetic was faithful to the file rather than to any project, and the method
+#      needed a real line-of-balance structure. Run 10B supplies that requirement. The module now
+#      abstains on a schedule index alone and computes on locations, crews and production rates.
+ka(abstains(run_lob({"spi": 0.9}, NO_ARG, "2025-06-30")), True,
+   "A2.2: a schedule index alone no longer produces a reading, because the index is not a line "
+   "of balance", "A2.2", "abstention")
+#      HAND DERIVATION. The leading line advances at 2.0 locations a day from day 0 and the
+#      following line at 1.6 from day 2.5, so the leading crew reaches location u on day u/2.0
+#      and the following crew on day 2.5 + u/1.6. The separation at location u is therefore
+#      2.5 + u(0.625 - 0.5) = 2.5 + 0.125u, which grows with u, so its minimum is at the first
+#      location: 2.5 + 0.125 = 2.625, reported to one place as 2.6. The Amber arm is a minimum
+#      separation at or below 3.0 days and the Red arm at or below 1.5, so 2.6 is Amber.
+_LOB_STRUCTURE = {
+    "leading_work_type": "EARLY_WORK",
+    "following_work_type": "STRUCTURE",
+    "work_packages": (
+        [{"work_type_id": "EARLY_WORK", "location_sequence": u,
+          "production_rate_locations_per_day": 2.0, "start_day": 0.0} for u in range(1, 6)]
+        + [{"work_type_id": "STRUCTURE", "location_sequence": u,
+            "production_rate_locations_per_day": 1.6, "start_day": 2.5} for u in range(1, 6)]),
+}
+_lob = run_lob({"lobStructure": _LOB_STRUCTURE}, NO_ARG, "2025-06-30")
+ka(_lob["minimum_buffer_days"], 2.6, "A2.2: the minimum separation is 2.6 days by hand",
+   "A2.2", "known_answer", "2.5 + 0.125 * 1")
+ka(_lob["status_color"], "Amber", "A2.2: 2.6 days is Amber", "A2.2", "boundary")
+ka(_lob["units"], 5, "A2.2: the locations are the ones the structure carries, not a literal in "
+   "the file", "A2.2", "known_answer", "five locations in sequence")
+ka(_lob["paving_rate"], 1.6, "A2.2: the following rate is the one the crews were working at",
+   "A2.2", "known_answer")
+#      THE INTERFERENCE CASE the method exists to find: a following line faster than the leading
+#      one closes the separation, so the minimum is at the LAST location rather than the first.
+#      Leading 1.6 from day 0, following 2.0 from day 2.5: separation = 2.5 - 0.125u, which at
+#      the fifth location is 2.5 - 0.625 = 1.875, reported 1.9, and 1.9 is above 1.5 so Amber.
+_LOB_FAST = {
+    "leading_work_type": "EARLY_WORK", "following_work_type": "STRUCTURE",
+    "work_packages": (
+        [{"work_type_id": "EARLY_WORK", "location_sequence": u,
+          "production_rate_locations_per_day": 1.6, "start_day": 0.0} for u in range(1, 6)]
+        + [{"work_type_id": "STRUCTURE", "location_sequence": u,
+            "production_rate_locations_per_day": 2.0, "start_day": 2.5} for u in range(1, 6)]),
+}
+_lobf = run_lob({"lobStructure": _LOB_FAST}, NO_ARG, "2025-06-30")
+ka(_lobf["minimum_buffer_days"], 1.9,
+   "A2.2: a faster following line closes the separation and the minimum is at the last location",
+   "A2.2", "known_answer", "2.5 - 0.125 * 5")
+ka(_lobf["critical_unit_index"], 5,
+   "A2.2: and the module names that last location as the critical one", "A2.2", "known_answer")
 
-# ---- A2.3 CCPM Buffer Health. Hand-derived.
-#      spi 0.9, chain complete 40 per cent:
-#      buffer consumed = clamp((1 - 0.9) * 100 * 1.5, 0, 100) = 15.0
-#      amber edge = chain = 40.0; red edge = 40 + (100 - 40)/3 = 40 + 20 = 60.0
-#      15.0 < 40.0, so Green.
-_cc = VALIDATED["A2.3"][1]({"spi": 0.9, "actualPctComplete": 40}, NO_ARG, "2025-06-30")
-ka(_cc["pct_buffer_consumed"], 15.0, "A2.3: the buffer consumed is 15 per cent by hand",
-   "A2.3", "known_answer", "(1 - 0.9) * 100 * 1.5")
+# ---- A2.3 CCPM Buffer Health.
+#      RUN 8 FOUND, AND THE FINDING IS PRESERVED: the fever chart was faithful arithmetic over a
+#      buffer derived from the schedule index rather than from a sized critical-chain buffer, and
+#      Run 8 also recorded the degenerate point, that at zero chain completion the Amber edge is
+#      zero and inclusive so a project exactly on plan read Amber. Run 10B requires the chain and
+#      its sized buffer. The degenerate point is re-derived below on the canonical structure,
+#      because it is a property of the fever chart's edges and not of where the buffer came from.
+ka(abstains(VALIDATED["A2.3"][1]({"spi": 0.9, "actualPctComplete": 40}, NO_ARG, "2025-06-30")),
+   True, "A2.3: an index and a completion percentage no longer produce a reading, because "
+   "neither is a sized buffer", "A2.3", "abstention")
+
+
+def _ccpm_structure(original, remaining, progress):
+    return {"ccpmStructure": {
+        "chains": [{"chain_id": "CC", "chain_type": "PROJECT", "activity_count": 10}],
+        "buffers": [{"chain_id": "CC", "buffer_type": "PROJECT",
+                     "original_buffer_days": original, "remaining_buffer_days": remaining,
+                     "chain_progress_fraction": progress}],
+    }}
+
+
+#      HAND DERIVATION. A project buffer sized at 20 days with 11 left has consumed 9 of 20,
+#      which is 45 per cent, at a chain 40 per cent complete. The Amber edge is the chain
+#      completion itself, 40, and the Red edge is 40 + (100 - 40)/3 = 60. 45 is at or above 40
+#      and below 60, so Amber.
+_cc = VALIDATED["A2.3"][1](_ccpm_structure(20.0, 11.0, 0.40), NO_ARG, "2025-06-30")
+ka(_cc["pct_buffer_consumed"], 45.0, "A2.3: the buffer consumed is 45 per cent by hand",
+   "A2.3", "known_answer", "(20 - 11) / 20")
 ka(_cc["amber_threshold"], 40.0, "A2.3: the Amber edge is the chain completion itself",
    "A2.3", "known_answer")
 ka(_cc["red_threshold"], 60.0, "A2.3: the Red edge is a third of the way to completion",
    "A2.3", "known_answer", "40 + (100 - 40)/3")
-ka(_cc["status_color"], "Green", "A2.3: 15 against an edge of 40 is Green", "A2.3", "boundary")
-#      THE DEGENERATE POINT. At zero chain completion the Amber edge is zero and the arm is
-#      inclusive, so a project exactly on plan, having consumed no buffer at all, reads Amber.
-_cc0 = VALIDATED["A2.3"][1]({"spi": 1.0, "actualPctComplete": 0}, NO_ARG, "2025-06-30")
-ka(_cc0["pct_buffer_consumed"], 0.0, "A2.3: a project exactly on plan consumes no buffer",
-   "A2.3", "known_answer", "(1 - 1.0) * 100 * 1.5")
+ka(_cc["status_color"], "Amber", "A2.3: 45 against edges of 40 and 60 is Amber", "A2.3",
+   "boundary")
+ka(VALIDATED["A2.3"][1](_ccpm_structure(20.0, 17.0, 0.40),
+                        NO_ARG, "2025-06-30")["status_color"], "Green",
+   "A2.3: 15 per cent consumed at 40 per cent complete is Green", "A2.3", "boundary")
+ka(VALIDATED["A2.3"][1](_ccpm_structure(20.0, 7.0, 0.40),
+                        NO_ARG, "2025-06-30")["status_color"], "Red",
+   "A2.3: 65 per cent consumed at 40 per cent complete is Red", "A2.3", "boundary")
+#      THE DEGENERATE POINT, re-derived on the canonical structure. At zero chain completion the
+#      Amber edge is zero and the arm is inclusive, so a project that has consumed no buffer at
+#      all still reads Amber. Run 8 recorded this and Run 10B does not move the edge.
+_cc0 = VALIDATED["A2.3"][1](_ccpm_structure(20.0, 20.0, 0.0), NO_ARG, "2025-06-30")
+ka(_cc0["pct_buffer_consumed"], 0.0, "A2.3: an untouched buffer is nought per cent consumed",
+   "A2.3", "known_answer")
 ka(_cc0["status_color"], "Amber",
    "A2.3: and at zero chain completion it still reads Amber, because the edge is inclusive "
    "at zero", "A2.3", "boundary")
@@ -918,44 +984,91 @@ ka(abstains(run_ncr_rate({"ncrIssued": 4, "ncrClosed": 2, "ncrOpen": 50, "totalF
                          NO_ARG, "2025-06-30")), True,
    "A4.4: a backlog larger than the cohort is refused", "A4.4", "domain")
 
-# ---- A5.6 Queueing Theory Bottleneck. Hand-derived: 37/200 = 0.185, Yellow arm is < 0.25.
-_qb = run_queueing_bottleneck({"activitiesPlanned": 200, "activitiesConstrained": 37},
-                              NO_ARG, "2025-06-30")
-ka(_qb["constraint_ratio"], 0.19, "A5.6: 37 of 200 is 0.185, reported to two places as 0.19",
-   "A5.6", "known_answer", "37/200 = 0.185, rounded half up")
-ka(_qb["status_color"], "Yellow", "A5.6: 0.185 lands Yellow", "A5.6", "boundary")
-ka(run_queueing_bottleneck({"activitiesPlanned": 100, "activitiesConstrained": 15},
-                           NO_ARG, "2025-06-30")["status_color"], "Yellow",
-   "A5.6: exactly 0.15 is Yellow, so the Green edge is EXCLUSIVE here", "A5.6", "boundary")
-ka(run_queueing_bottleneck({"activitiesPlanned": 100, "activitiesConstrained": 14},
-                           NO_ARG, "2025-06-30")["status_color"], "Green",
-   "A5.6: just below 0.15 is Green", "A5.6", "boundary")
-ka(abstains(run_queueing_bottleneck({"activitiesPlanned": 0, "activitiesConstrained": 0},
+# ---- A5.6 Queueing Theory Bottleneck.
+#      RUN 8 FOUND, AND THE FINDING IS PRESERVED: this was a transparent share of a look-ahead
+#      window, scale invariant and agreeing with the look-ahead measure that reads the same two
+#      fields, and no queueing model was present. Run 10B requires the queue.
+ka(abstains(run_queueing_bottleneck({"activitiesPlanned": 200, "activitiesConstrained": 37},
                                     NO_ARG, "2025-06-30")), True,
-   "A5.6: nothing planned abstains, as Run 7 installed", "A5.6", "abstention")
-# Scale invariance: the ratio must not depend on the size of the window. Exhausted over
-# twenty-four scalings of the same proportion.
-_qb_ratios = {run_queueing_bottleneck({"activitiesPlanned": 40 * k,
-                                       "activitiesConstrained": 6 * k},
-                                      NO_ARG, "2025-06-30")["constraint_ratio"]
-              for k in range(1, 25)}
-ka(sorted(_qb_ratios), [0.15], "A5.6: the ratio is invariant under scaling the whole window",
-   "A5.6", "property", "6/40 at every multiple from one to twenty-four")
+   "A5.6: a look-ahead window no longer produces a reading, because a share of constrained "
+   "activities is not a queue", "A5.6", "abstention")
 
-# ---- A5.7 Agent-Based Supply Chain. Hand-derived: 3/20 = 0.15, Yellow arm is < 0.20.
-_as = run_agent_supply_chain({"longLeadItemsTotal": 20, "longLeadAtRisk": 3},
-                             NO_ARG, "2025-06-30")
-ka(_as["at_risk_ratio"], 0.15, "A5.7: 3 of 20 at risk is 0.15 by hand", "A5.7", "known_answer")
+
+def _queue(entities, servers, horizon, service, waits=None):
+    return {"queueStructure": {"queues": [{
+        "queue_id": "Q1", "entities": entities, "servers": servers,
+        "horizon_days": horizon, "total_service_days": service,
+        "wait_times_days": waits if waits is not None else [0.0] * entities}]}}
+
+
+#      HAND DERIVATION. Utilisation is the server time occupied divided by the server time
+#      available. Twenty days of service given by two servers over a twenty day window is
+#      20 / (2 * 20) = 0.5, which is below one, so the queue has a steady state.
+_qb = run_queueing_bottleneck(_queue(10, 2, 20.0, 20.0), NO_ARG, "2025-06-30")
+ka(_qb["utilisation"], 0.5, "A5.6: utilisation is 0.5 by hand", "A5.6", "known_answer",
+   "20 service days over 2 servers times a 20 day window")
+ka(_qb["status_color"], "Green", "A5.6: a utilisation below one is a queue with a steady state",
+   "A5.6", "boundary")
+#      THE ONE BOUNDARY, AND IT IS DEFINITIONAL. At a utilisation of exactly one the servers are
+#      occupied every moment they are available, the queue has no steady state and waiting grows
+#      without bound. The boundary is inclusive on the unstable side.
+ka(run_queueing_bottleneck(_queue(10, 2, 20.0, 40.0),
+                           NO_ARG, "2025-06-30")["status_color"], "Red",
+   "A5.6: exactly one is unstable, so the boundary is inclusive on the unstable side",
+   "A5.6", "boundary")
+ka(run_queueing_bottleneck(_queue(10, 2, 20.0, 39.9),
+                           NO_ARG, "2025-06-30")["status_color"], "Green",
+   "A5.6: just below one still has a steady state", "A5.6", "boundary")
+#      The measured waits are reported rather than modelled. Nine of ten waits inside the
+#      ninetieth percentile, taken by linear interpolation on the sorted waits: for the ten
+#      values 0 to 9 the index is 0.9 * 9 = 8.1, so the value is 8 + 0.1 * (9 - 8) = 8.1.
+_qw = run_queueing_bottleneck(_queue(10, 2, 20.0, 20.0, [float(i) for i in range(10)]),
+                              NO_ARG, "2025-06-30")
+ka(_qw["p90_wait_days"], 8.1, "A5.6: the ninetieth percentile wait is 8.1 days by hand",
+   "A5.6", "known_answer", "linear interpolation at index 0.9 * (10 - 1)")
+ka(_qw["mean_wait_days"], 4.5, "A5.6: and the mean wait is 4.5 days", "A5.6", "known_answer")
+#      Scale invariance: doubling the window, the service and the arrivals together leaves the
+#      utilisation where it was. Exhausted over twenty-four scalings.
+_qb_ratios = {run_queueing_bottleneck(_queue(10 * k, 2, 20.0 * k, 20.0 * k),
+                                      NO_ARG, "2025-06-30")["utilisation"]
+              for k in range(1, 25)}
+ka(sorted(_qb_ratios), [0.5], "A5.6: utilisation is invariant under scaling the whole run",
+   "A5.6", "property", "the same queue observed for longer is the same queue")
+
+# ---- A5.7 Agent-Based Supply Chain.
+#      RUN 8 FOUND, AND THE FINDING IS PRESERVED: this was a transparent share of a procurement
+#      log with every guard Run 7 installed holding, and no agent model was present. Run 10B
+#      requires agents, rules, an interaction group and a state history across time steps.
+ka(abstains(run_agent_supply_chain({"longLeadItemsTotal": 20, "longLeadAtRisk": 3},
+                                   NO_ARG, "2025-06-30")), True,
+   "A5.7: a procurement log no longer produces a reading, because a list of items is not a set "
+   "of agents", "A5.7", "abstention")
+
+
+def _abm(disrupted, agents=20, steps=2):
+    return {"abmStructure": {
+        "agents": [{"agent_id": f"AG{i}", "decision_rule_id": "RESTOCK", "network_group": "G1"}
+                   for i in range(agents)],
+        "states": [{"time_step": t, "agent_id": f"AG{i}",
+                    "state": "DISRUPTED" if (t == steps and i < disrupted) else "NORMAL"}
+                   for t in range(1, steps + 1) for i in range(agents)],
+    }}
+
+
+#      HAND DERIVATION. Three of twenty agents disrupted at the last time step is 0.15, and the
+#      Yellow arm is a share at or above 0.10 and below 0.20.
+_as = run_agent_supply_chain(_abm(3), NO_ARG, "2025-06-30")
+ka(_as["at_risk_ratio"], 0.15, "A5.7: 3 of 20 agents disrupted is 0.15 by hand", "A5.7",
+   "known_answer")
 ka(_as["status_color"], "Yellow", "A5.7: 0.15 lands Yellow", "A5.7", "boundary")
-ka(run_agent_supply_chain({"longLeadItemsTotal": 100, "longLeadAtRisk": 10},
-                          NO_ARG, "2025-06-30")["status_color"], "Yellow",
+ka(_as["time_steps"], 2, "A5.7: and the run covers the time steps the history carries",
+   "A5.7", "known_answer")
+ka(run_agent_supply_chain(_abm(2), NO_ARG, "2025-06-30")["status_color"], "Yellow",
    "A5.7: exactly 0.10 is Yellow, so the Green edge is exclusive", "A5.7", "boundary")
-ka(abstains(run_agent_supply_chain({"longLeadItemsTotal": 0, "longLeadAtRisk": 0},
-                                   NO_ARG, "2025-06-30")), True,
-   "A5.7: an empty long-lead log abstains, as Run 7 installed", "A5.7", "abstention")
-ka(abstains(run_agent_supply_chain({"longLeadItemsTotal": 20, "longLeadAtRisk": 25},
-                                   NO_ARG, "2025-06-30")), True,
-   "A5.7: more items at risk than recorded is refused", "A5.7", "domain")
+ka(run_agent_supply_chain(_abm(1), NO_ARG, "2025-06-30")["status_color"], "Green",
+   "A5.7: just below 0.10 is Green", "A5.7", "boundary")
+ka(abstains(run_agent_supply_chain(_abm(3, steps=1), NO_ARG, "2025-06-30")), True,
+   "A5.7: a single point in time is not a run over time and is refused", "A5.7", "domain")
 
 # ---- A6.3 Environmental Compliance Rate. A pass-through of an audited rate; the whole contract
 #      is the pass-through, the domain refusal and the band, so that is what is asserted.
@@ -1107,20 +1220,27 @@ _INCLUSIVE_ON_CALM = {  # edge value reads BETTER
                                          NO_ARG, "2025-06-30")["status_color"] == "Green",
     "A4.10": run_spec_conflict_density({"docRiskScore": 0.30, "rfiCount": 4},
                                        NO_ARG, "2025-06-30")["status_color"] == "Amber",
+    "A5.6": run_queueing_bottleneck(_queue(10, 2, 20.0, 40.0),
+                                    NO_ARG, "2025-06-30")["status_color"] == "Red",
 }
 _EXCLUSIVE_ON_CALM = {  # edge value reads WORSE
-    "A5.6": run_queueing_bottleneck({"activitiesPlanned": 100, "activitiesConstrained": 15},
-                                    NO_ARG, "2025-06-30")["status_color"] == "Yellow",
-    "A5.7": run_agent_supply_chain({"longLeadItemsTotal": 100, "longLeadAtRisk": 10},
-                                   NO_ARG, "2025-06-30")["status_color"] == "Yellow",
+    # RUN 10B RESTATEMENT, ORIGINAL FINDING PRESERVED. Run 8 recorded the queueing measure and
+    # the supply chain measure as exclusive on the calmer side of their edge, and read that edge
+    # off the look-ahead share and the procurement share. Run 10B requires each module's
+    # canonical structure, so the same edges are read off the queue and the agents instead. The
+    # queueing measure now has one boundary rather than a ladder, and that boundary is
+    # definitional and inclusive on the UNSTABLE side, so it belongs with the inclusive
+    # convention and is recorded there rather than here.
+    "A5.7": run_agent_supply_chain(_abm(2), NO_ARG, "2025-06-30")["status_color"] == "Yellow",
     "A4.4": run_ncr_rate({"ncrIssued": 1, "ncrClosed": 0, "ncrOpen": 6, "totalFindings": 40},
                          NO_ARG, "2025-06-30")["status_color"] == "Yellow",
 }
 ka(sorted(k for k, v in _INCLUSIVE_ON_CALM.items() if v),
-   ["A2.9", "A4.10", "A6.2", "A6.3"],
-   "four of the 27 are inclusive on the calmer side of their edge", "", "boundary")
-ka(sorted(k for k, v in _EXCLUSIVE_ON_CALM.items() if v), ["A4.4", "A5.6", "A5.7"],
-   "three of the 27 are exclusive on the calmer side of the same kind of edge", "", "boundary")
+   ["A2.9", "A4.10", "A5.6", "A6.2", "A6.3"],
+   "five of the 27 are inclusive at the edge, counting the queueing measure whose single "
+   "boundary is inclusive on the unstable side", "", "boundary")
+ka(sorted(k for k, v in _EXCLUSIVE_ON_CALM.items() if v), ["A4.4", "A5.7"],
+   "two of the 27 are exclusive on the calmer side of the same kind of edge", "", "boundary")
 
 
 # =================================================================================================
@@ -1166,6 +1286,20 @@ for mid in ("A3.1", "A5.1"):
     check(_abst[mid].get("activation_state") == "ADVISORY_ONLY",
           f"{mid}: the production row records the activation state",
           str(_abst[mid].get("activation_state")))
+# RUN 10B RESTATEMENT, ORIGINAL FINDING PRESERVED. Run 8 joined the direct cases to the
+# production path for the queueing measure and the supply chain measure and found them agreeing,
+# which is what a fixture built by a route the application does not take would have broken. Run
+# 10B requires each module's canonical structure, and the production document path does not carry
+# a queue or a set of agents, so both now abstain on that path and say which structure is absent.
+# That is the canonical-structure rule doing exactly what it exists to do, on the real route.
+for _mid in ("A5.6", "A5.7"):
+    ka(_mid in _abst, True,
+       f"{_mid}: on the real production path it abstains, because the documents carry no queue "
+       f"and no agents", _mid, "production_path")
+    ka(_abst[_mid].get("abstention_reason_code"), "canonical_structure_absent",
+       f"{_mid}: and the stored row names the absent canonical structure", _mid,
+       "production_path")
+
 # None of the 27 votes, and none may be made voting by this run.
 _voting = sorted(m for m in UNRESOLVED_27 if _by_id.get(m, {}).get("votes"))
 ka(_voting, [], "not one of the 27 carries a vote on the stored row", "", "production_path")
@@ -1179,8 +1313,6 @@ for mid, key, expected, why in (
     ("A2.9", "load_ratio", 1.05, "1050/1000"),
     ("A2.5", "float_stress", 1.0, "0.40 consumed at 40 per cent complete"),
     ("A4.4", "open_ratio", 0.15, "6 of an audited cohort of 40"),
-    ("A5.6", "constraint_ratio", 0.19, "37 of 200"),
-    ("A5.7", "at_risk_ratio", 0.15, "3 of 20"),
     ("A6.1", "quality_score", 92, "(100 - 8)/100"),
     ("A6.3", "compliance_rate", 97, "the audited rate passed through"),
     ("A6.4", "min_rating", 3.2, "min(4.2, 3.9, 4.0, 3.2)"),

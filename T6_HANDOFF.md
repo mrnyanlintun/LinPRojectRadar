@@ -6610,3 +6610,88 @@ Files: `server/app/simulation/models.py`, `models_doc.py`, `models_evm.py`, `mod
 `run10_bucket2_mutation_proof.csv`, `run10_mc_eac_statistical_acceptance.csv`,
 `run10_neighbour_sweep.csv`, `run10_harness_failure_proof.csv` (new),
 `REPORT_2026-08-12_run10-production-remediation-and-synthetic-integration.md` (new), this entry.
+
+---
+
+## Run 10B — critical voter fix and canonical-structure integration (2026-08-12)
+
+**Starting commit c5d7101. Ending commit: the merge recorded at the foot of this entry.**
+Simulation version **sim-2026.08-v4 to sim-2026.08-v5**; every earlier stamp preserved in the
+freeze record. Synthetic package **OG-SYNTH-0.3**, unchanged and not regenerated.
+
+**Handoff audit.** Every session since the last recorded handoff is represented, the simulation
+version history and the synthetic package history are both complete, nothing needed
+reconstructing, and no earlier entry was altered.
+
+**Production scope, exactly.** `server/app/simulation/canonical.py` (new), `models.py`,
+`models_doc.py`, `models_evm.py`, `models_fuzzy.py`. No browser asset, no served page, no
+migration, no production Postgres access.
+
+**Gate 1, the one that mattered most.** A1.7, one of the two voting modules, accepted input
+outside the domain its quantities can occupy and read Green. Reproducer: an actual cost reported
+below zero enlarges the denominator past the budget itself. Two further faces found
+independently: an earned value above the budget, and a budget at or below zero. All four domain
+rules are definitional; the module now **refuses** rather than clamping, reports no ratio, and
+**no sourced boundary moved**. Status evidence: with the other voter silent the baseline fused a
+whole project to Green from a negative actual cost and now fuses nothing at all; where the other
+voter read Red the status is Red before and after; over 300 randomised in-domain projects the
+status is identical before and after.
+
+**Gates 3 and 4.** Six Bucket-3 modules now require their defining structure and abstain without
+it: line of balance, critical chain with a sized buffer, audited nonconformance cohort, queue,
+agents with rules and a state history over time, audited permit compliance. Five keep their band
+unchanged on the same kind of quantity; the queueing measure has **one definitional boundary and
+two levels**, because no source was found for a second and none was invented. Both Bucket-4
+modules integrate through versioned decision objects with the locked holdout refused outright,
+unversioned material refused, unsplit material refused and self-comparison refused. **On the real
+document corpus all six abstain**, which is the canonical-structure rule working.
+
+**Gate 2, and it must not be reopened.** Disposition **A**: the production Monte Carlo EAC
+Forecast keeps its own verified fixture family and does NOT consume the bottom-up cost register.
+The bottom-up triangular cost-risk method remains a separate validated synthetic and future
+analytical family, documented and unregistered. **The two must never share one module identity.**
+
+**Voting and activation unchanged: exactly A1.7 and A1.8 vote.** A3.1 and A5.1 still abstain
+unconditionally; the eight concept-only modules are still refused before their formula is
+reached; no integrated module became voting; the same project with and without every new
+structure fuses to the same status.
+
+**Participant surface.** No redesign, no relabelling, no status change, no decision card,
+recommendation or course-of-action change. `tests.html` 51 of 51; `tests_render.html` 286 of 287,
+the one non-pass being check 264's requirement for a signed-in session token. **The one real
+participant-visible effect: four advisory Signal Ledger rows now read as abstentions with a
+sentence naming the missing structure, instead of proxy findings.**
+
+**Test totals: 71 suites, 5627 of 5627, all green**, each against its own freshly migrated
+database. Pre-change baseline was 69 suites and 5310 checks. Two suites new
+(`test_run10b_a1_7_domain.py`, `test_run10b_canonical_integration.py`); six restated with their
+original findings preserved as the reason, never deleted and never loosened. Fifteen mutations
+plus two real code injections, every one red, each confirmed to have altered what it claimed to
+alter.
+
+**Unresolved.** The seven remaining neighbour defects stand, reproduced and recorded in
+`code_audit/run10b_neighbour_findings.csv`: A1.9, A2.6, A3.9 (two patterns), A5.2, A5.3, B3.2.
+All are non-voting and cannot move project status; all are visible on the ledger. Also still
+open: the dead control-chart penalty in the forecast module; the registry canonical name reading
+"Monte Carlo EAC" against the programme's "Monte Carlo EAC Forecast"; and the audit artefacts
+rewritten by their own suites on each run.
+
+**Owner decisions outstanding.** Whether to register the bottom-up cost-risk family as its own
+module; whether the seven neighbour defects are authorised; whether the queueing measure's single
+boundary is acceptable; whether a corpus-gap note should appear on the ledger beside the four new
+abstentions, which would be a participant-surface change.
+
+**Next session, exactly.** Run the complete suite first and record **71 and 5627** as the
+baseline. Then the seven neighbour defects if authorised, each with a baseline reproducer, an
+independently derived domain and a mutation proof. Then the three carried-forward items above.
+**Do not reopen A1.7, the six canonical integrations or the two reference-object integrations
+unless a regression test proves one is broken.**
+
+Files: `server/app/simulation/canonical.py` (new), `models.py`, `models_doc.py`, `models_evm.py`,
+`models_fuzzy.py`, `server/tests/synthetic_fixtures/importers/production_structures.py` (new),
+`server/tools/test_run10b_a1_7_domain.py`, `test_run10b_canonical_integration.py` (new),
+`server/tools/test_run4_validate_seven.py`, `test_run6_known_answer.py`,
+`test_run7_fix_now_defects.py`, `test_run8_retest_classify_27.py`,
+`test_run10_state_protection.py` (restated), `code_audit/run10b_bucket3_integration.csv`,
+`run10b_bucket4_integration.csv`, `run10b_neighbour_findings.csv` (new),
+`REPORT_2026-08-12_run10b-critical-voter-and-bucket34-integration.md` (new), this entry.

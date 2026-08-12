@@ -31,11 +31,20 @@ from __future__ import annotations
 import math
 from typing import Any, Callable
 
-from .models import (
-    ABSTAIN_INVALID_DENOMINATOR, ABSTAIN_MALFORMED_INPUT, ABSTAIN_MISSING_INPUT,
-    ABSTAIN_NO_EXPOSURE, check_inputs, eligible, insufficient, refuse,
+from .canonical import (
+    StructureAbsent,
+    agent_supply_chain as canonical_agent_supply_chain,
+    queue_bottleneck as canonical_queue,
+    require_reference_object,
+    require_structure,
+    scenario_decision,
 )
-from .models_ext import _derived, _js_str
+from .models import (
+    ABSTAIN_DECISION_STRUCTURE_ABSENT, ABSTAIN_INVALID_DENOMINATOR, ABSTAIN_MALFORMED_INPUT,
+    ABSTAIN_MISSING_INPUT, ABSTAIN_NO_EXPOSURE, ABSTAIN_STRUCTURE_ABSENT, check_inputs, eligible,
+    insufficient, refuse,
+)
+from .models_ext import _derived, _js_str, _money
 from .rng import js_round, num, round1, round2
 
 _RANK = {"Green": 0, "Yellow": 1, "Amber": 2, "Red": 3}
@@ -220,6 +229,29 @@ def run_ncr_rate(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str
     computation abstains on the rest until the corpus lands (remediation_decisions_answered.md
     2.3). That is the expected outcome of this fix, not a shortfall in it.
     """
+    # RUN 10B. The canonical structure this measure needs is the audited nonconformance cohort,
+    # and the fifteen-defects run already required it, so nothing about what this module computes
+    # changes here. What is added is the structured form of the same cohort: where an audited
+    # cohort arrives as a structure of audits and nonconformance events rather than as three
+    # extracted figures, the counts are taken from it at the same meaning. This is not a
+    # fallback to a different quantity; it is the same quantity from a fuller record, and when
+    # neither form is present the module abstains exactly as it did before.
+    cohort_structure = si.get("auditedNonconformanceCohort")
+    if isinstance(cohort_structure, dict):
+        si = dict(si)
+        audits = cohort_structure.get("audits")
+        events = cohort_structure.get("open_nonconformances")
+        if not isinstance(audits, list) or not audits:
+            return insufficient(
+                "NCR_Rate",
+                "Awaiting an audited nonconformance cohort: the record provided carries no "
+                "completed audit for this period, so there is no cohort for a backlog to be a "
+                "share of.",
+                ABSTAIN_STRUCTURE_ABSENT)
+        si["totalFindings"] = sum(num(a.get("total_findings"), 0) or 0 for a in audits)
+        si["ncrOpen"] = len(events) if isinstance(events, list) else num(events, 0)
+        si.setdefault("ncrIssued", 0)
+        si.setdefault("ncrClosed", 0)
     if not check_inputs(si, ("ncrIssued", "ncrClosed", "ncrOpen")):
         return insufficient("NCR_Rate")
     issued = num(si.get("ncrIssued"), 0)
@@ -682,6 +714,57 @@ def run_scenario_modeling(si: dict, rand: Callable[[], float], period_cutoff) ->
     None of these is a project condition. Each is an input pair that cannot be reconciled, and
     each abstains and says which one it was.
     """
+    # RUN 10B, GATE 4. The canonical structure of this method is an actions-by-scenarios payoff
+    # with stated probabilities, and Run 8 recorded that three deterministic forecasts under
+    # three divisors is not that. Where a decision problem is provided this now computes the
+    # method: the probability weighted expectation of each action, the action with the smallest
+    # expected cost, and that action's worst scenario, which is the quantity the ladder below
+    # has always read. The version, the split and the self-comparison guards are applied before
+    # any of it, and a locked holdout is refused outright.
+    #
+    # The three-divisor forecast is KEPT as the behaviour when no decision problem is provided,
+    # because it is a guarded earned-value forecast in its own right and removing it is not this
+    # run's authorisation. It is reported as what it is, and it is not called a scenario model.
+    decision = si.get("scenarioDecisionStructure")
+    if decision is not None:
+        if not check_inputs(si, ("bac",)) or num(si.get("bac"), 0) <= 0:
+            return insufficient(
+                "Scenario_Modeling",
+                "No positive budget at completion is recorded to place the decision outcomes "
+                "against")
+        try:
+            obj = require_reference_object(si, "A5.4")
+            reading = scenario_decision(obj)
+        except StructureAbsent as absent:
+            return insufficient("Scenario_Modeling", absent.sentence,
+                                ABSTAIN_DECISION_STRUCTURE_ABSENT)
+        bac = num(si["bac"], 0.0)
+        pessimistic = bac + reading["worst_case_cost_delta"]
+        expected = bac + reading["expected_cost_delta"]
+        color = ("Green" if pessimistic <= bac * 1.05
+                 else "Yellow" if pessimistic <= bac * 1.10
+                 else "Amber" if pessimistic <= bac * 1.20 else "Red")
+        return {
+            "method_class": "Scenario_Modeling",
+            "status_color": color,
+            "recommended_action": reading["recommended_action"],
+            "expected_eac": int(js_round(expected)),
+            "pessimistic_eac": int(js_round(pessimistic)),
+            "scenario_range_pct": round1(
+                (reading["worst_case_cost_delta"] - reading["expected_cost_delta"]) / bac * 100),
+            "actions_considered": reading["actions"],
+            "scenarios_considered": reading["scenarios"],
+            "reference_object": str(obj.get("decision_object_id") or ""),
+            "reference_asset_version": str(obj.get("asset_version") or ""),
+            "reference_split": str(obj.get("split") or "").upper(),
+            "canonical_structure": "action_scenario_payoff",
+            "evidence_metric": (
+                f"Across {_js_str(reading['actions'])} courses of action under "
+                f"{_js_str(reading['scenarios'])} scenarios, the lowest expected cost is "
+                f"{_money(expected)}, and that choice costs {_money(pessimistic)} in its worst "
+                f"scenario"
+            ),
+        }
     if not check_inputs(si, ("bac", "ev", "ac", "cpi", "spi")):
         return insufficient("Scenario_Modeling")
     if si["cpi"] <= 0 or si["spi"] <= 0:
@@ -776,47 +859,48 @@ def run_rework_feedback(si: dict, rand: Callable[[], float], period_cutoff) -> d
 
 def run_queueing_bottleneck(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    RUN 7. `max(planned, 1)` invented a denominator of one activity for a project that planned
-    none, so an empty look-ahead window produced a queue ratio of zero and read Green. This is
-    the same fabricated denominator the fifteen-defects run removed from the look-ahead measure
-    and the procurement measure, still standing in a module that reads the identical two fields.
-    The known-answer run put it plainly: two modules read the same window and one abstained on it
-    while the other read Green. They now agree, through the shared eligibility layer.
+    Server utilisation of the busiest queue, measured on a queue rather than on a look-ahead share.
 
-    A constrained count above the planned count is malformed rather than missing, and refused on
-    the same footing the look-ahead measure refuses it.
+    RUN 7 removed a fabricated denominator that let an empty look-ahead window read Green, and
+    said plainly what remained: a queueing model needs arrival rates, service rates, capacity and
+    a queue discipline, none of which were in the corpus, and that run did not invent them.
 
-    The module remains what its qualifier says it is. A queueing model needs arrival rates,
-    service rates, capacity and a queue discipline, none of which are in the corpus, and this run
-    does not invent them.
+    RUN 10B REQUIRES THE QUEUE. A share of constrained activities in a look-ahead window is not a
+    queueing model however carefully it is guarded, so the defining structure is now required:
+    the entities that arrived, the service they received, the servers available to them and the
+    window they were observed over. Where it is absent this ABSTAINS. It does not fall back to
+    the look-ahead counts.
+
+    ONE BOUNDARY, AND IT IS DEFINITIONAL. At a utilisation of one or more the servers cannot keep
+    up with arrivals, the queue has no steady state and waiting grows without bound. No source
+    was found that specifies a utilisation at which a project queue becomes a warning rather than
+    a fact, so no second boundary is invented and this reports two levels rather than four. The
+    measured waits are carried on the finding so a reader sees the queue and not only a colour.
     """
-    if not check_inputs(si, ("activitiesPlanned", "activitiesConstrained")):
-        return insufficient("Queueing_Bottleneck",
-                            "Insufficient data: the planned and constrained activity counts are "
-                            "needed, and at least one of them has not been reported for this "
-                            "period.",
-                            ABSTAIN_MISSING_INPUT)
-    verdict = eligible(si, positive=(("activitiesPlanned", "the count of planned activities"),))
-    if verdict:
-        return refuse("Queueing_Bottleneck", verdict)
-    planned = num(si.get("activitiesPlanned"), 0)
-    constrained = num(si.get("activitiesConstrained"), 0)
-    if constrained < 0 or constrained > planned:
-        return insufficient("Queueing_Bottleneck",
-                            "Insufficient data: the number of constrained activities reported "
-                            "is negative or larger than the number planned, so the two figures "
-                            "do not describe the same window.",
-                            ABSTAIN_MALFORMED_INPUT)
-    ratio = constrained / planned
-    color = ("Green" if ratio < 0.15 else "Yellow" if ratio < 0.25
-             else "Amber" if ratio < 0.40 else "Red")
+    try:
+        structure = require_structure(si, "A5.6")
+        reading = canonical_queue(structure)
+    except StructureAbsent as absent:
+        return insufficient("Queueing_Bottleneck", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+
+    worst = reading["bottleneck"]
+    rho = worst["utilisation"]
+    color = "Red" if rho >= 1.0 else "Green"
     return {
         "method_class": "Queueing_Bottleneck",
         "status_color": color,
-        "constraint_ratio": round2(ratio),
+        "utilisation": round2(rho),
+        "arrival_rate_per_day": round2(worst["arrival_rate_per_day"]),
+        "mean_wait_days": round1(worst["mean_wait_days"]),
+        "p90_wait_days": round1(worst["p90_wait_days"]),
+        "servers": worst["servers"],
+        "queues_observed": len(reading["queues"]),
+        "canonical_structure": "queue",
         "evidence_metric": (
-            f"{_js_str(constrained)} of {_js_str(planned)} planned activities constrained "
-            f"(queue ratio {_js_str(round2(ratio))})"
+            f"The busiest queue is running at {_js_str(round2(rho))} of the service its "
+            f"{_js_str(worst['servers'])} servers can give, with a mean wait of "
+            f"{_js_str(round1(worst['mean_wait_days']))} days and nine in ten waits inside "
+            f"{_js_str(round1(worst['p90_wait_days']))} days"
         ),
     }
 
@@ -826,45 +910,39 @@ def run_queueing_bottleneck(si: dict, rand: Callable[[], float], period_cutoff) 
 
 def run_agent_supply_chain(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    RUN 7. `max(total, 1)` invented one long-lead item for a project whose long-lead log is
-    empty, so an at-risk share of zero was reported and read Green. An empty log is not evidence
-    that nothing is at risk; it is the absence of the population the share is a share OF. The
-    module abstains on no exposure, and a count of items at risk exceeding the total is refused
-    as malformed.
+    The share of supply chain agents in a disrupted state at the last time step observed.
 
-    Agents, states, rules and interactions are not in the corpus. The module is a share of a
-    procurement log and this run does not turn it into anything else.
+    RUN 7 removed a fabricated denominator that let an empty procurement log read Green, and said
+    plainly what remained: agents, states, rules and interactions were not in the corpus, and a
+    share of a procurement log is not an agent-based model.
+
+    RUN 10B REQUIRES THE AGENTS. The defining structure is now required: agents each carrying a
+    decision rule and an interaction group, and a state history across more than one time step.
+    Where it is absent this ABSTAINS and does not fall back to the procurement counts. The band
+    is unchanged and reads the same quantity it always read, a share of the supply chain at risk,
+    now taken from the agents rather than from a log.
     """
-    if not check_inputs(si, ("longLeadItemsTotal", "longLeadAtRisk")):
-        return insufficient("Agent_Supply_Chain",
-                            "Insufficient data: the total and at-risk long-lead item counts are "
-                            "needed, and at least one of them has not been reported for this "
-                            "period.",
-                            ABSTAIN_MISSING_INPUT)
-    total = num(si.get("longLeadItemsTotal"), 0)
-    at_risk = num(si.get("longLeadAtRisk"), 0)
-    if total <= 0:
-        return insufficient("Agent_Supply_Chain",
-                            "No long-lead items are recorded for this project, so there is no "
-                            "set of items for a share of them to be at risk. No share is "
-                            "reported in place of one.",
-                            ABSTAIN_NO_EXPOSURE)
-    if at_risk < 0 or at_risk > total:
-        return insufficient("Agent_Supply_Chain",
-                            "Insufficient data: the number of long-lead items reported at risk "
-                            "is negative or larger than the number recorded, so the two figures "
-                            "do not describe the same log.",
-                            ABSTAIN_MALFORMED_INPUT)
-    ratio = at_risk / total
+    try:
+        structure = require_structure(si, "A5.7")
+        reading = canonical_agent_supply_chain(structure)
+    except StructureAbsent as absent:
+        return insufficient("Agent_Supply_Chain", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+
+    ratio = reading["at_risk_ratio"]
     color = ("Green" if ratio < 0.10 else "Yellow" if ratio < 0.20
              else "Amber" if ratio < 0.35 else "Red")
     return {
         "method_class": "Agent_Supply_Chain",
         "status_color": color,
         "at_risk_ratio": round2(ratio),
+        "agents": reading["agents"],
+        "time_steps": reading["time_steps"],
+        "disrupted_agents": reading["disrupted_agents"],
+        "canonical_structure": "agent_based_model",
         "evidence_metric": (
-            f"{_js_str(at_risk)} of {_js_str(total)} long-lead items at risk "
-            f"(at-risk share {_js_str(round2(ratio))})"
+            f"{_js_str(reading['disrupted_agents'])} of {_js_str(reading['agents'])} supply "
+            f"chain agents are disrupted at the last of {_js_str(reading['time_steps'])} time "
+            f"steps simulated, an at-risk share of {_js_str(round2(ratio))}"
         ),
     }
 
@@ -1107,6 +1185,27 @@ def run_environmental_compliance(si: dict, rand: Callable[[], float],
     computation abstains on the rest until the corpus lands (remediation_decisions_answered.md
     2.3). That is the expected outcome of this fix.
     """
+    # RUN 10B. The canonical structure is audited permit condition compliance, which the
+    # fifteen-defects run already required, so what this module computes does not change. Added
+    # here is the structured form of the same audit: where the assessed permit conditions arrive
+    # as records rather than as one extracted percentage, the rate is formed as the share of
+    # applicable conditions assessed compliant, which is the definition the extracted figure
+    # carries. With neither form present the module abstains exactly as it did before.
+    audit = si.get("auditedPermitCompliance")
+    if isinstance(audit, dict):
+        si = dict(si)
+        assessments = audit.get("assessments")
+        if not isinstance(assessments, list) or not assessments:
+            return insufficient(
+                "Environmental_Compliance",
+                "Awaiting audited permit compliance data: the record provided carries no "
+                "assessed permit condition for this period.",
+                ABSTAIN_STRUCTURE_ABSENT)
+        compliant = sum(1 for a in assessments
+                        if str(a.get("result") or "").upper() == "COMPLIANT")
+        si["environmentalComplianceRate"] = compliant / len(assessments) * 100.0
+        si.setdefault("environmentalIssuesDiscussed", 0)
+        si.setdefault("environmentalViolations", audit.get("violations") or 0)
     if not check_inputs(si, ("environmentalIssuesDiscussed",)):
         return insufficient("Environmental_Compliance")
     rate = si.get("environmentalComplianceRate")
