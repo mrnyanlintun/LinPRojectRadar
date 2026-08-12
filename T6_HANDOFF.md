@@ -6615,7 +6615,7 @@ Files: `server/app/simulation/models.py`, `models_doc.py`, `models_evm.py`, `mod
 
 ## Run 10B — critical voter fix and canonical-structure integration (2026-08-12)
 
-**Starting commit c5d7101. Ending commit: the merge recorded at the foot of this entry.**
+**Starting commit c5d7101. Ending commit 4161162, on the merge commit 4c85727.**
 Simulation version **sim-2026.08-v4 to sim-2026.08-v5**; every earlier stamp preserved in the
 freeze record. Synthetic package **OG-SYNTH-0.3**, unchanged and not regenerated.
 
