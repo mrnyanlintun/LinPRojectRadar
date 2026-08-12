@@ -1,6 +1,6 @@
 Run 14 - Targeted Remediation, Anomaly Validation and Disabled-Method Functional Tests
 Starting commit: ed762bf
-Ending commit: PENDING_MERGE
+Ending commit: 2fe3bb0, merged as 9a7ec3d
 Previous simulation version: sim-2026.08-v7
 New simulation version: sim-2026.08-v8
 Synthetic package: OG-SYNTH-0.3, unchanged and not reingested

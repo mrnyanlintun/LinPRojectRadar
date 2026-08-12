@@ -6952,7 +6952,7 @@ changed.**
 
 ## 2026-08-12 — Run 14: targeted remediation, anomaly validation and disabled-method functional tests
 
-**Starting commit `ed762bf`. Ending commit PENDING_MERGE.** Simulation version moved from
+**Starting commit `ed762bf`. Ending commit `2fe3bb0`, merged as `9a7ec3d`.** Simulation version moved from
 `sim-2026.08-v7` to **`sim-2026.08-v8`**. Synthetic package OG-SYNTH-0.3 unchanged and not
 reingested; participant package og-participant-2026.08-v1 unchanged.
 
