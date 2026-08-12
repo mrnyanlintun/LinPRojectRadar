@@ -1,0 +1,7 @@
+project_id,agents,time_steps,service_level,average_lead_time_steps,disruption_events,data_origin,programme_version,package_version,generator_version,random_seed,not_for_empirical_validation,record_hash
+PRJ-AIR,8,12,0.972741,3.75,12,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.3,A-0.3,build_opus_synthetic_programme_v0_3.py@0.3,20260812,True,efb155fd984e3df69e4c15ca23d5aa80f02c8fff76714881559c8b331432126c
+PRJ-HWY,8,12,0.972966,3.8125,15,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.3,A-0.3,build_opus_synthetic_programme_v0_3.py@0.3,20260812,True,91cd14ed6c36ecf6b321fab628baf9ef74d4794e913586bb65ed65dd77dfc1b1
+PRJ-HSP,8,12,0.954189,3.9375,21,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.3,A-0.3,build_opus_synthetic_programme_v0_3.py@0.3,20260812,True,8a43b2950966faaa233786a170c69af830ecece6a1153b9191fb8d8e2bab9b19
+PRJ-WTR,8,12,0.952885,3.958333,22,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.3,A-0.3,build_opus_synthetic_programme_v0_3.py@0.3,20260812,True,dbd4bdc7cb4b9871c602ddec5cc42dd261157007b4df8fd7435ab321951b248c
+PRJ-RAL,8,12,0.943048,3.958333,22,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.3,A-0.3,build_opus_synthetic_programme_v0_3.py@0.3,20260812,True,a2232b9e193666cf529d7aaa5d0d8c4d671785d93af89b6809d388221b397e4e
+PRJ-DCT,8,12,0.967627,3.770833,13,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.3,A-0.3,build_opus_synthetic_programme_v0_3.py@0.3,20260812,True,928a27cf080f5d497643f00455b7fef61a3ab1dc9cfbaeb4ec054030050a3c53

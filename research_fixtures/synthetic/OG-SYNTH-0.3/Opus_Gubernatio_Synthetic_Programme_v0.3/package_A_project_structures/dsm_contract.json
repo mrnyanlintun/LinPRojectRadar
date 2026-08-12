@@ -1,0 +1,24 @@
+{
+  "counts": {
+    "material_impacted_node_count_excluding_seed": "nodes other than the seed whose propagated impact exceeds the threshold",
+    "material_state_node_count_including_seed": "nodes whose cumulative state exceeds the threshold, seed included",
+    "positive_impacted_node_count_excluding_seed": "nodes other than the seed whose propagated impact is above zero",
+    "positive_state_node_count_including_seed": "nodes whose cumulative state is above zero, seed included"
+  },
+  "cumulative": "cumulative_state_vector = seed_impact_vector + propagated_impact_vector",
+  "cycle_handling": "The dependency graphs contain a cycle. Propagation is truncated at propagation_steps rather than iterated to convergence, so the stored state is a partial sum of the series and not its limit.",
+  "data_origin": "SYNTHETIC_RESEARCH_FIXTURE",
+  "first_order": "first_order_impact_vector = matrix @ seed_impact_vector",
+  "materiality_threshold": 0.05,
+  "matrix_orientation": "matrix[target, source] = dependency_strength of edge source to target",
+  "module": {
+    "module_name": "DSM Rework Propagation",
+    "repository_module_id": "A5.1",
+    "synthetic_module_id": "5.1"
+  },
+  "not_for_empirical_validation": true,
+  "programme_version": "OG-SYNTH-0.3",
+  "propagated": "propagated_impact_vector = sum of step vectors, seed excluded",
+  "seed": "seed_impact_vector carries seed_magnitude at seed_node_id and zero elsewhere",
+  "step_rule": "step_k = matrix @ step_(k-1), for k = 1 to propagation_steps"
+}

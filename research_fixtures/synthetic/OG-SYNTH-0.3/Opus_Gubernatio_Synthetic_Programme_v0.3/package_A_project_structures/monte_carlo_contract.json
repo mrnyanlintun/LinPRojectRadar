@@ -1,0 +1,48 @@
+{
+  "acceptance_rule": {
+    "alpha_two_sided": 0.001,
+    "justification": "alpha 0.001 is 0.05 Bonferroni corrected across fifty mean checks in this package. The rule is fixed before any result is computed.",
+    "statistic": "abs(simulated_mean - analytic_mean)",
+    "threshold": "z * simulated_sd / sqrt(iterations)",
+    "z": 3.290526731491896
+  },
+  "convergence_sample_counts": [
+    1000,
+    5000,
+    20000
+  ],
+  "cost_element_distribution": {
+    "dependence": "Gaussian copula over cost_correlations.csv",
+    "expectation": "(low + most_likely + high) / 3",
+    "parameters": [
+      "low_cost_usd",
+      "most_likely_cost_usd",
+      "high_cost_usd"
+    ],
+    "type": "TRIANGULAR",
+    "variance": "(a^2 + m^2 + b^2 - am - ab - mb) / 18"
+  },
+  "data_origin": "SYNTHETIC_RESEARCH_FIXTURE",
+  "iterations": 5000,
+  "module": {
+    "module_name": "Monte Carlo EAC",
+    "repository_module_id": "A1.1",
+    "synthetic_module_id": "1.1"
+  },
+  "not_for_empirical_validation": true,
+  "not_the_production_model": "The repository module A1.1 forecasts a completion cost from earned value indices through a Beta-PERT. This package models a bottom-up triangular cost build-up with discrete risk events. They are different models and this fixture family is not an oracle for the production module.",
+  "programme_version": "OG-SYNTH-0.3",
+  "risk_event_model": {
+    "dependence": "independent across events and of the cost elements",
+    "expected_contribution": "probability * impact expectation",
+    "impact_distribution": {
+      "expectation": "(low + most_likely + high) / 3",
+      "type": "TRIANGULAR"
+    },
+    "occurrence": "BERNOULLI"
+  },
+  "rng": {
+    "implementation": "numpy.random.Generator(PCG64)",
+    "seed_derivation": "sha256(programme_version|project_id|purpose|programme_seed)[:4]"
+  }
+}

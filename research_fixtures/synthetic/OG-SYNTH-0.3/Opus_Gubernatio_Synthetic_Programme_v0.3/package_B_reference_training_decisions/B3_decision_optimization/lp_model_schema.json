@@ -1,0 +1,18 @@
+{
+  "coefficient_order": "matches variables array",
+  "constraint_senses": [
+    "LE",
+    "EQ",
+    "GE"
+  ],
+  "required_fields": [
+    "decision_problem_id",
+    "model_class",
+    "objective",
+    "variables",
+    "constraints",
+    "solver_reference",
+    "ground_truth"
+  ],
+  "schema_version": "LP-MODEL-0.2"
+}
