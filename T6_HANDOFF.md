@@ -6574,7 +6574,7 @@ project's name.
 are still disabled, and A3.1 and A5.1 still abstain unconditionally.** No participant-visible
 change; no browser asset and no served page touched; production Postgres not accessed.
 
-**Test totals: 70 suites, 5315 of 5315, all green**, each against its own freshly migrated
+**Test totals: 69 suites, 5310 of 5310, all green**, each against its own freshly migrated
 database. Pre-change baseline was 66 suites and 4851 checks. Twenty-four mutations were injected
 and every one produced a red; two survived the first pass, were treated as suite defects and
 closed. The strict harness was reproved against all four failure modes plus a green control.
@@ -6591,7 +6591,7 @@ canonical name is "Monte Carlo EAC" while the programme prose says "Monte Carlo 
 and two prior-run audit artefacts are rewritten by their own suites on every execution, which
 overwrites a prior run's recorded digest.
 
-**Next session, exactly.** Run the complete suite first and record 70 and 5315 as the baseline.
+**Next session, exactly.** Run the complete suite first and record 69 and 5310 as the baseline.
 Then Gate 3 for A1.1, A2.2, A2.3, A4.4, A5.6, A5.7 and A6.3, and Gate 4 for A5.4 and B2.19, to
 the owner's Run 10 prompt, which stands unchanged for those two gates.
 **Before writing any A1.1 importer, resolve this: A1.1's Bucket-3 canonical structure is the

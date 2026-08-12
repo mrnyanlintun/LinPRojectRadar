@@ -1,6 +1,6 @@
 Run 10 — Production Remediation and Synthetic Integration
 Starting commit: e93a2393f6b48eb94c5273f760fcae98a9731154
-Ending commit: PENDING_MERGE
+Ending commit: 677f536b538dbbaa94a83337ca62aa0e4dc7317a (merge commit; the correction to the suite totals is committed on top of it)
 Previous simulation version: sim-2026.08-v3
 New simulation version: sim-2026.08-v4
 Synthetic package version: OG-SYNTH-0.3
@@ -15,7 +15,7 @@ Activation set changed unexpectedly: no
 Synthetic/operational separation: PASS
 Known-answer tests: PASS
 Abstention tests: PASS
-Full suite: 5315/5315
+Full suite: 5310/5310
 Participant-visible change: no
 Production Postgres accessed: no
 
@@ -321,7 +321,7 @@ generator. No dependency changed; lxml remains out of the interpreter.
 ## 18. Complete suite results
 
 Pre-change baseline: 66 suites, 4851 of 4851. After Gate 2: 68 suites, 5230 of 5230. Final,
-including the state-protection suite: **70 suites, 5315 of 5315, all green**, each suite against
+including the state-protection suite: **69 suites, 5310 of 5310, all green**, each suite against
 its own freshly migrated database. The strict harness was proved still effective against all four
 failure modes plus a green control; results in `code_audit/run10_harness_failure_proof.csv`.
 
@@ -370,7 +370,7 @@ attempted.
 ## 21. Exact next-session requirements
 
 1. Branch from `origin/main` at this run's merge commit. Run the complete suite first and record
-   70 suites and 5315 checks as the baseline.
+   69 suites and 5310 checks as the baseline.
 2. **Gate 3, the seven Bucket-3 modules**, derived from the classification CSV and asserted at
    seven: A1.1, A2.2, A2.3, A4.4, A5.6, A5.7, A6.3. For each: name the canonical structure from
    `code_audit/run8_required_project_corpus_specs.csv`; name the v0.3 asset from
