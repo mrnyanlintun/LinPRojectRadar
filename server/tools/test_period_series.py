@@ -187,7 +187,14 @@ snap1 = r1.get("portfolio_snapshot") or {}
 check("cat8_3_trajectory_classifier" not in (snap1.get("results") or {}),
       "the trajectory classifier abstains at period 1: one snapshot is not a trend",
       str(sorted((snap1.get("results") or {}).keys())))
-check(snap1.get("ok") is True and "cat8_1_isolation_forest" in (snap1.get("results") or {}),
+# RESTATED BY RUN 15. D1.1 used to compute here on a two-project portfolio, because a distance
+# from a centroid is defined even when the population is one other point. It is now a real
+# isolation forest, which needs at least two OTHER projects to grow trees on, so it abstains by
+# absence alongside the trajectory classifier. The point of the check is unchanged: the
+# abstention is specific and the rest of the snapshot still computed.
+check(snap1.get("ok") is True
+      and "cat8_1_isolation_forest" not in (snap1.get("results") or {})
+      and "cat8_2_portfolio_outlier" in (snap1.get("results") or {}),
       "and the rest of the portfolio snapshot still computed, so the abstention is specific",
       str(snap1)[:120])
 

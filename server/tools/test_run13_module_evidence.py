@@ -81,6 +81,7 @@ check(len([r for r in inv if r["disabled"] == "NO"]) == 93, "93 non-disabled mod
 # the analytical layer moved again: the inventory is a record of what the platform did under
 # sim-2026.08-v7 and it is not reproduced under a later stamp. Run 14 corrected eight modules and
 # moved the stamp to sim-2026.08-v8 without re-running the hundred-and-one module classification,
+# and Run 15 moved it to sim-2026.08-v9 for the same reason and equally did not re-run it,
 # so the assertion is that the file is internally consistent at ITS OWN version, and that that
 # version is one the layer has actually carried rather than an arbitrary string.
 RUN13_INVENTORY_VERSION = "sim-2026.08-v7"

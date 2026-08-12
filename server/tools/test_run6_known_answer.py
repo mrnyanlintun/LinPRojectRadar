@@ -297,8 +297,19 @@ RUN14_SCOPED_FILES = {
     "server/app/simulation/models_fuzzy.py",
 }
 
+# RUN 15 replaced the standardised-distance proxy at D1.1 with a real isolation forest, which
+# is a new algorithm file and a rewrite of the portfolio module's D1.1 block, and corrected the
+# browser method description that still called the module a distance proxy.
+RUN15_SCOPED_FILES = {
+    "server/app/simulation/portfolio.py",
+    "server/app/simulation/isolation_forest.py",
+    "server/app/simulation/models.py",
+    "assets/js/knowledge.js",
+}
+
 _unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES
-                   - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES - RUN14_SCOPED_FILES)
+                   - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES - RUN14_SCOPED_FILES
+                   - RUN15_SCOPED_FILES)
 check(not _unscoped,
       "no production file outside the authorised scope of Run 7, Run 10, Run 10B, Run 11, "
       "Run 12 or Run 14 differs from the pinned baseline",
@@ -308,13 +319,15 @@ _assets = sorted(p for p in _prod if p.startswith("assets/"))
 # differs at all". Run 11 Gate 1 is authorised to change exactly the browser files that carried
 # the dormant client arithmetic, so the assertion narrows to those and keeps its force over
 # every other participant surface.
-check(not (set(_assets) - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES),
+check(not (set(_assets) - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES
+           - RUN15_SCOPED_FILES),
       "every participant surface outside Run 11's authorised browser scope is byte-identical "
-      "to the freeze", str(sorted(set(_assets) - RUN11_SCOPED_FILES)))
+      "to the freeze", str(sorted(set(_assets) - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES
+                 - RUN15_SCOPED_FILES)))
 check(_prod, "the guard is live: it does see the files this run did change", str(_prod))
 # RESTATED BY RUN 10B, with the original reason preserved: this check has tracked the current
 # stamp since Run 6, and it read sim-2026.08-v4 while Run 10 was current.
-check(registry.SIMULATION_VERSION == "sim-2026.08-v8",
+check(registry.SIMULATION_VERSION == "sim-2026.08-v9",
       "the analytical layer is stamped at Run 10B's version, and sim-2026.08-v2, "
       "sim-2026.08-v3 and sim-2026.08-v4 all remain historical audit baselines for results "
       "already collected under them",
@@ -1234,11 +1247,17 @@ _pfid = [{"id": "a", "cpi": 1.00, "spi": 1.00, "docRiskScore": 0.10, "actualPctC
          {"id": "b", "cpi": 1.00, "spi": 1.00, "docRiskScore": 0.10, "actualPctComplete": 50},
          {"id": "c", "cpi": 1.00, "spi": 1.00, "docRiskScore": 0.10, "actualPctComplete": 50}]
 _out = compute_portfolio(_pfid, "a", None, "2025-06-30")["results"]
-# Every vector is the centroid, so every distance is zero and the current project is not an
-# anomaly however the threshold is computed.
-ka((_out["cat8_1_isolation_forest"]["distance"],
-    _out["cat8_1_isolation_forest"]["is_anomaly"]), (0, False),
-   "isolation forest: an identical portfolio puts every project at the centroid")
+# RUN 15. D1.1 is a real isolation forest and this case is now a KNOWN ANSWER OF THE PUBLISHED
+# ALGORITHM rather than of a distance. With two identical reference projects no attribute admits
+# a split, so every tree is a single external node holding both points and the path length is
+# 0 + c(2) = 1 exactly. The normaliser is c(2) = 1, so the score is 2 ** (-1/1) = 0.5 exactly,
+# which is the value Liu, Ting and Zhou state means the sample holds no distinct anomaly.
+ka((_out["cat8_1_isolation_forest"]["anomaly_score"],
+    _out["cat8_1_isolation_forest"]["mean_path_length"],
+    _out["cat8_1_isolation_forest"]["normaliser"],
+    _out["cat8_1_isolation_forest"]["is_anomaly"]), (0.5, 1.0, 1.0, False),
+   "isolation forest: a portfolio of identical projects scores exactly one half, the paper's "
+   "own no-distinct-anomaly value")
 ka(band(_out["cat8_1_isolation_forest"]), "Green", "isolation forest: band")
 # Cross-project pattern: the other two projects are at distance zero, so both match, and their
 # mean cost index is 1.00, which is at or above 1.00, so Green rather than a distress pattern.
@@ -1512,10 +1531,13 @@ section("6. METAMORPHIC CASES")
 # =================================================================================================
 
 print("\n-- Rescaling document risk from a zero-to-one scale to a zero-to-one-hundred scale --")
-# The audit's own proof, reproduced: the Mahalanobis distance is normalised per dimension and so
-# is invariant to a linear rescale of one dimension, but the THRESHOLD adds the raw standard
-# deviations together, which is not. Rescaling document risk therefore moves the classification
-# while leaving the distance unchanged.
+# RESTATED BY RUN 15, ORIGINAL FINDING PRESERVED. Until Run 15 this recorded a real defect of
+# the standardised-distance proxy: the distance was invariant to a linear rescale of one
+# dimension but the threshold added the raw per-axis spreads together, so rescaling document
+# risk moved the classification while leaving the distance unchanged. D1.1 is now a real
+# isolation forest, whose split points are drawn uniformly across each attribute's own observed
+# range, so a positive linear rescale of one attribute maps the partitioning onto itself. Both
+# the score AND the classification are now invariant, which is what the proxy could not manage.
 _pfa = [{"id": "a", "cpi": 0.80, "spi": 0.80, "docRiskScore": 0.90, "actualPctComplete": 50},
         {"id": "b", "cpi": 1.00, "spi": 1.00, "docRiskScore": 0.10, "actualPctComplete": 50},
         {"id": "c", "cpi": 1.02, "spi": 1.01, "docRiskScore": 0.12, "actualPctComplete": 50},
@@ -1523,12 +1545,12 @@ _pfa = [{"id": "a", "cpi": 0.80, "spi": 0.80, "docRiskScore": 0.90, "actualPctCo
 _pfb = [dict(p, docRiskScore=p["docRiskScore"] * 100) for p in _pfa]
 _ia = compute_portfolio(_pfa, "a", None, "2025-06-30")["results"]["cat8_1_isolation_forest"]
 _ib = compute_portfolio(_pfb, "a", None, "2025-06-30")["results"]["cat8_1_isolation_forest"]
-check(_ia["distance"] == _ib["distance"],
-      "isolation forest: the distance IS invariant to rescaling document risk",
-      f"{_ia['distance']} vs {_ib['distance']}")
-check(_ia["status_color"] != _ib["status_color"] or _ia["threshold"] != _ib["threshold"],
-      "isolation forest: the THRESHOLD is not invariant, so an equivalent rescaling of one input "
-      "moves the classification while the distance is unchanged",
+check(_ia["anomaly_score"] == _ib["anomaly_score"],
+      "isolation forest: the anomaly score is invariant to rescaling document risk",
+      f"{_ia['anomaly_score']} vs {_ib['anomaly_score']}")
+check(_ia["status_color"] == _ib["status_color"] and _ia["threshold"] == _ib["threshold"],
+      "isolation forest: and so is the classification, because the threshold is a threshold on "
+      "the score itself and no longer a sum of raw per-axis spreads",
       f"{_ia['status_color']}/{_ia['threshold']} vs {_ib['status_color']}/{_ib['threshold']}")
 
 print("\n-- Scaling a project's duration should not change a compression RATIO --")

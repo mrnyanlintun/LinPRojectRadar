@@ -1,0 +1,55 @@
+record_type,module_id,canonical_name,item,value,source_or_basis
+METHOD,A1.2,CUSUM Anomaly Monitor,canonical definition,"two-sided tabular CUSUM: C+_t = max(0, C+_(t-1) + (x_t - mu0) - K); C-_t = max(0, C-_(t-1) + (mu0 - x_t) - K); alarm when either exceeds H = h*sigma, with K = k*sigma","Montgomery, Introduction to Statistical Quality Control, tabular CUSUM; corroborated by NIST/SEMATECH e-Handbook 6.3.2.3 and Minitab CUSUM methods and formulas"
+METHOD,A1.2,CUSUM Anomaly Monitor,"published operating characteristic at k=0.5, h=5",ARL0 465.44; ARL1 10.38 at a one-sigma shift; ARL1 4.01 at a two-sigma shift,"Montgomery tabular CUSUM ARL table, reproduced by JMP and SigmaXL"
+OBJECTIVE,A1.2,CUSUM Anomaly Monitor,O1 declared before tuning,ARL0 at least 100 periods,"a project runs 12 to 36 reporting periods, so this is well under one false alarm per project life"
+OBJECTIVE,A1.2,CUSUM Anomaly Monitor,O2 declared before tuning,"detection rate at least 0.90 for a persistent shift of one sigma or more, within the series horizon",the monitored change type
+OBJECTIVE,A1.2,CUSUM Anomaly Monitor,"O3 AS FIRST DECLARED, AND WRONG",median detection delay at most 5 periods at one sigma,"MIS-DECLARED: unreachable at k=0.5 by published theory, whose ARL1 at one sigma is 10.38. Recorded rather than deleted."
+OBJECTIVE,A1.2,CUSUM Anomaly Monitor,O3 re-anchored,median detection delay at most 12 periods at one sigma and at most 6 at two sigma,"the published ARL1 values of 10.38 and 4.01 plus finite-horizon slack; re-anchored from the citation, not from the grid"
+OBJECTIVE,A1.2,CUSUM Anomaly Monitor,O4 declared before tuning,positive and negative detection rates within 0.10 at equal shift magnitude,two-sided correctness
+OBJECTIVE,A1.2,CUSUM Anomaly Monitor,O5 declared before tuning,an isolated one-period spike is OUT OF SCOPE for this detector by design and must not be traded against O1 to O3,a cumulative sum is designed for sustained small shifts; a single-period excursion is a point outlier and is the province of a Shewhart chart
+OBJECTIVE,A1.2,CUSUM Anomaly Monitor,selection rule declared before the finalists were re-run,"among designs meeting every objective AND realisable on the data the platform holds, take the largest ARL0",the standard CUSUM design criterion: maximise the in-control run length subject to the required out-of-control performance
+KNOWN_ANSWER,A1.2,CUSUM Anomaly Monitor,fixture,mu0 1.0; sigma 0.10 held fixed; k 0.5; h 5; K 0.05; H 0.50; eleven observations,constructed from the formal recurrence
+KNOWN_ANSWER,A1.2,CUSUM Anomaly Monitor,independently derived C- sequence,"0, 0, 0, 0, 0, 0.10, 0.19, 0.30, 0.38, 0.48, 0.57","hand derivation, before production was run"
+KNOWN_ANSWER,A1.2,CUSUM Anomaly Monitor,independently derived first crossing,"the eleventh observation, index 10",0.48 is below H and 0.57 is above it
+KNOWN_ANSWER,A1.2,CUSUM Anomaly Monitor,negative arm result,PASS: every term and the crossing index match exactly,server/tools/test_run15_cusum_calibration.py
+KNOWN_ANSWER,A1.2,CUSUM Anomaly Monitor,positive arm result,"PASS: the reflected series gives the mirror image term for term, and the same crossing index",server/tools/test_run15_cusum_calibration.py
+GRID,A1.2,CUSUM Anomaly Monitor,candidate grid,"k in 0.25, 0.5, 1.0 sigma; h in 4, 5, 6 sigma; scale in whole_series, frozen_true, reference_sd, reference_mr; reference window 8, 12, 16, 24 periods","72 combinations, 400 replicates per family"
+GRID,A1.2,CUSUM Anomaly Monitor,combinations meeting every objective,19 of 72,tools/run15_cusum_calibration.py
+SCALE,A1.2,CUSUM Anomaly Monitor,"whole-series scale, as shipped","ARL0 321.1; one-sigma detection 0.94 both directions; median delay 9; two-sigma detection 1.00, delay 5",calibration set
+SCALE,A1.2,CUSUM Anomaly Monitor,frozen true in-control scale,ARL0 325.8; one-sigma delay 7; isolated-spike detection 0.307 against 0.065,"NOT REALISABLE IN PRODUCTION: it requires knowing the in-control sigma, which no project record holds"
+SCALE,A1.2,CUSUM Anomaly Monitor,reference-window sample standard deviation,"fails the detection objective at every window of 8 periods; becomes viable only at a window of 12 periods or more, and even then reaches at best ARL0 270.8 against the shipped 321.1",a reference window of 12 or more periods is more history than a typical project has before the detector must report
+SCALE,A1.2,CUSUM Anomaly Monitor,reference-window moving-range estimator MRbar/1.128,fails the detection objective at every window of 8 or 12 periods; best qualifying point ARL0 159.1,same structural limit
+SCALE,A1.2,CUSUM Anomaly Monitor,DECISION,"the whole-series estimate is RETAINED, not because it is the methodologically preferred Phase I estimator (it is not) but because every Phase I alternative needs a designated in-control window this platform cannot supply, and each one measured strictly worse on the declared objectives","recorded as a limitation, not as a preference"
+SELECTED,A1.2,CUSUM Anomaly Monitor,k,0.5 sigma (unchanged from shipped),"the grid winner is the shipped parameterisation, so no production parameter was moved"
+SELECTED,A1.2,CUSUM Anomaly Monitor,h,5 sigma (unchanged from shipped),same
+SELECTED,A1.2,CUSUM Anomaly Monitor,scale treatment,estimated from the monitored series (unchanged from shipped),same
+SELECTED,A1.2,CUSUM Anomaly Monitor,rejected alternatives,k=0.25 at any h: ARL0 collapses to 37 to 165. k=1.0 at any h: one-sigma detection falls to 0.13 to 0.60. h=4: ARL0 157.7. h=6: one-sigma median delay reaches 11. All four reference-window treatments: see above.,calibration set
+SELECTED,A1.2,CUSUM Anomaly Monitor,tradeoff,h=6 buys ARL0 422.7 at a median one-sigma delay of 11; h=4 buys a delay of 7 at ARL0 157.7. h=5 is the interior point and is also the published design.,calibration set
+HOLDOUT,A1.2,CUSUM Anomaly Monitor,ARL0,302.3,"separate seed stream, evaluated once"
+HOLDOUT_FAMILY,A1.2,CUSUM Anomaly Monitor,stable_low,detection 0.000; false alarm 0.060; median delay None; correct arm n/a,"holdout verification set, 400 replicates"
+HOLDOUT_FAMILY,A1.2,CUSUM Anomaly Monitor,stable_moderate,detection 0.000; false alarm 0.050; median delay None; correct arm n/a,"holdout verification set, 400 replicates"
+HOLDOUT_FAMILY,A1.2,CUSUM Anomaly Monitor,stable_high,detection 0.000; false alarm 0.065; median delay None; correct arm n/a,"holdout verification set, 400 replicates"
+HOLDOUT_FAMILY,A1.2,CUSUM Anomaly Monitor,alternating_noise,detection 0.000; false alarm 0.035; median delay None; correct arm n/a,"holdout verification set, 400 replicates"
+HOLDOUT_FAMILY,A1.2,CUSUM Anomaly Monitor,shift_pos_0.5,detection 0.427; false alarm 0.013; median delay 14; correct arm 1.000,"holdout verification set, 400 replicates"
+HOLDOUT_FAMILY,A1.2,CUSUM Anomaly Monitor,shift_pos_1.0,detection 0.940; false alarm 0.007; median delay 9.0; correct arm 1.000,"holdout verification set, 400 replicates"
+HOLDOUT_FAMILY,A1.2,CUSUM Anomaly Monitor,shift_pos_2.0,detection 1.000; false alarm 0.000; median delay 4.0; correct arm 1.000,"holdout verification set, 400 replicates"
+HOLDOUT_FAMILY,A1.2,CUSUM Anomaly Monitor,shift_neg_0.5,detection 0.398; false alarm 0.007; median delay 14; correct arm 0.994,"holdout verification set, 400 replicates"
+HOLDOUT_FAMILY,A1.2,CUSUM Anomaly Monitor,shift_neg_1.0,detection 0.940; false alarm 0.003; median delay 9.0; correct arm 1.000,"holdout verification set, 400 replicates"
+HOLDOUT_FAMILY,A1.2,CUSUM Anomaly Monitor,shift_neg_2.0,detection 1.000; false alarm 0.000; median delay 4.0; correct arm 1.000,"holdout verification set, 400 replicates"
+HOLDOUT_FAMILY,A1.2,CUSUM Anomaly Monitor,drift_pos,detection 1.000; false alarm 0.000; median delay 15.0; correct arm 1.000,"holdout verification set, 400 replicates"
+HOLDOUT_FAMILY,A1.2,CUSUM Anomaly Monitor,drift_neg,detection 0.998; false alarm 0.003; median delay 15; correct arm 1.000,"holdout verification set, 400 replicates"
+HOLDOUT_FAMILY,A1.2,CUSUM Anomaly Monitor,isolated_spike,detection 0.070; false alarm 0.000; median delay 2.5; correct arm 1.000,"holdout verification set, 400 replicates"
+HOLDOUT_FAMILY,A1.2,CUSUM Anomaly Monitor,two_period_excursion,detection 0.128; false alarm 0.007; median delay 2; correct arm 1.000,"holdout verification set, 400 replicates"
+HOLDOUT_FAMILY,A1.2,CUSUM Anomaly Monitor,return_to_baseline,detection 0.930; false alarm 0.000; median delay 3.0; correct arm 1.000,"holdout verification set, 400 replicates"
+HOLDOUT_FAMILY,A1.2,CUSUM Anomaly Monitor,boundary_near_shift,detection 0.128; false alarm 0.007; median delay 16; correct arm 0.980,"holdout verification set, 400 replicates"
+HOLDOUT,A1.2,CUSUM Anomaly Monitor,verdict,meets every objective as re-anchored; median delays of 9 and 4 periods sit either side of the published ARL1 of 10.38 and 4.01,independent corroboration that the implementation is a genuine tabular CUSUM
+SPIKE,A1.2,CUSUM Anomaly Monitor,"isolated one-period spike, holdout",detected in 0.070 of 400 runs,"OUT OF SCOPE BY DESIGN (O5). Holding the scale at its true in-control value raises this to 0.307, confirming Run 14: the whole-series scale suppresses it further, but a cumulative sum would not reliably detect it in any case."
+SPIKE,A1.2,CUSUM Anomaly Monitor,disposition,CUSUM was NOT altered to catch point outliers,doing so would corrupt the method; if the platform needs point-outlier detection that is a separate detector and an owner decision
+STATE,A1.2,CUSUM Anomaly Monitor,METHOD_FIDELITY,VERIFIED,
+STATE,A1.2,CUSUM Anomaly Monitor,CANONICAL_KNOWN_ANSWER,PASS,both arms
+STATE,A1.2,CUSUM Anomaly Monitor,DETECTION_FUNCTION,VERIFIED,
+STATE,A1.2,CUSUM Anomaly Monitor,CALIBRATION,CONTROLLED_CALIBRATION_VERIFIED,synthetic seeded fixture only
+STATE,A1.2,CUSUM Anomaly Monitor,FIELD_EMPIRICAL_VALIDATION,NOT_CLAIMED,no project data was used at any point
+LIMITATION,A1.2,CUSUM Anomaly Monitor,amber band,the amber reading at six tenths of the decision interval remains unsourced and was NOT moved,moving it is a status-band change unrelated to detector calibration
+LIMITATION,A1.2,CUSUM Anomaly Monitor,target value,the reference value is fixed at 1.0 rather than estimated from an in-control period,unchanged this run
+LIMITATION,A1.2,CUSUM Anomaly Monitor,scale floor,the documented floor of 0.05 on a flat or very short series is unsourced,unchanged this run

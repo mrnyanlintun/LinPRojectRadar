@@ -237,13 +237,24 @@ RUN14_SCOPED_FILES = {
     "server/app/simulation/models_fuzzy.py",
 }
 
+# RUN 15 replaced the standardised-distance proxy at D1.1 with a real isolation forest: a new
+# algorithm file, a rewritten D1.1 block in the portfolio layer, the version stamp, and the
+# browser method description that still called the module a distance proxy.
+RUN15_SCOPED_FILES = {
+    "server/app/simulation/portfolio.py",
+    "server/app/simulation/isolation_forest.py",
+    "server/app/simulation/models.py",
+    "assets/js/knowledge.js",
+}
+
 _diff = subprocess.run(["git", "diff", "--name-only", GUARD_BASELINE_REV, "--"],
                        cwd=str(ROOT), capture_output=True, text=True).stdout.split()
 _prod = [p for p in _diff
          if (p.startswith("server/app/") or p.startswith("assets/"))
          and p not in RUN8_SCOPED_FILES and p not in RUN10_SCOPED_FILES
          and p not in RUN10B_SCOPED_FILES and p not in RUN11_SCOPED_FILES
-         and p not in RUN12_SCOPED_FILES and p not in RUN14_SCOPED_FILES]
+         and p not in RUN12_SCOPED_FILES and p not in RUN14_SCOPED_FILES
+         and p not in RUN15_SCOPED_FILES]
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
 # RESTATED BY RUN 11, original finding preserved. This read "nothing under assets/ differs"
@@ -251,7 +262,8 @@ check(not _prod, "no production file under server/app/ or assets/ differs from t
 # dormant client arithmetic. It keeps its full force over every other participant surface.
 _unscoped_assets = sorted(p for p in _diff
                           if p.startswith("assets/") and p not in RUN11_SCOPED_FILES
-                          and p not in RUN12_SCOPED_FILES)
+                          and p not in RUN12_SCOPED_FILES
+                          and p not in RUN15_SCOPED_FILES)
 check(not _unscoped_assets,
       "nothing under assets/ outside Run 11's authorised browser scope differs from the pinned "
       "baseline", " ".join(_unscoped_assets))

@@ -2337,11 +2337,11 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
   const PH_MODULES = [
     { n: "D1.1", name: "Isolation Forest", mc: "Isolation_Forest",
       purpose: "Detects a project whose overall combination of signals is unusual relative to the rest of the portfolio, even when no individual module has crossed its own Red threshold.",
-      formula: "Server-side (portfolioanalyze): computes the Mahalanobis distance from a project's signal vector (CPI, SPI, document risk, and related derived fields) to the portfolio centroid; high distance indicates an unusual combination of signals relative to the whole program.",
-      abstain: "the portfolio has fewer than 3 projects (insufficient population for a meaningful centroid/covariance estimate).",
+      formula: "Server-side (portfolioanalyze): grows an ensemble of one hundred isolation trees on the other projects in the portfolio, each tree splitting a randomly chosen signal at a randomly chosen value until a project is isolated, and scores the project as two raised to the power of minus its mean path length divided by the expected path length for a population of that size. A project isolated in few splits scores high.",
+      abstain: "fewer than two other projects carry signal data, so there is no population to grow the trees on.",
       sources: "Aggregates the already-computed signal vectors of every active project in the portfolio; not driven by a single project's documents.",
       interp: "A project can show moderate CPI and moderate SPI individually (nothing Red on its own project page) yet still register high here if that particular combination, together with elevated document risk, is unlike any other project in the program, worth a second look even on an otherwise Green project.",
-      ground: "Isolation Forest (Liu, Ting &amp; Zhou, 2008) is an anomaly-detection method that isolates outliers by how few random partitions are needed to separate them from the rest of the data; Mahalanobis distance to the portfolio centroid is used here as the isolation-forest-style distance proxy." },
+      ground: "Isolation Forest (Liu, Ting and Zhou, 2008) isolates outliers by how few random partitions are needed to separate them from the rest of the data. That is the algorithm implemented here, with the paper's own path length normalisation and score. The anomaly threshold was set on a controlled synthetic population, not on field data." },
     { n: "D1.2", name: "Portfolio Outlier Detection", mc: "Portfolio_Outlier",
       purpose: "Ranks the project's CPI and SPI by percentile within the current portfolio, a relative rather than an absolute read of standing.",
       formula: "Server-side (portfolioanalyze): computes the project's percentile rank on CPI and on SPI against every other active project in the portfolio.",
@@ -2849,7 +2849,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
 
   const CAT8_TOPICS = {
     "stage2:isolation": { id: "stage2:isolation", title: "Isolation Forest",
-      body: "Measures how far a project's signal combination sits from the portfolio centroid using Mahalanobis distance. A large distance means an unusual combination of signals. A project with moderate cost and schedule performance but very high document risk may look merely amber on individual modules while standing out against the full portfolio." },
+      body: "Measures how easily a project is separated from the rest of the portfolio by repeated random splits of its signals. A project that separates in very few splits is unusual. A project with moderate cost and schedule performance but very high document risk may look merely amber on individual modules while still separating quickly from the full portfolio." },
     "stage2:portfolio": { id: "stage2:portfolio", title: "Portfolio Outlier Detection",
       body: "Ranks the project by cost and schedule performance percentile within the portfolio. A project near the bottom on both dimensions is a portfolio-level outlier, regardless of whether individual thresholds are breached." },
     "stage2:trajectory": { id: "stage2:trajectory", title: "Signal Trajectory Classifier",

@@ -150,10 +150,16 @@ RUN11_PAGE_SCOPE = {"research/deepdive.html", "index.html"}
 # judgment card was removed at the lock and never restored, so the second reporting period could
 # not be started at all.
 RUN12_BROWSER_SCOPE = {"assets/js/decision-ui.js"}
+# RESTATED BY RUN 15, ORIGINAL FINDING PRESERVED. Run 15 adds ONE browser asset and names it
+# rather than widening the rule: the methods knowledge base, whose entry for the portfolio
+# anomaly module still described it as a distance proxy after that module became a real
+# isolation forest. Leaving it would have had the client describe an algorithm the server no
+# longer runs.
+RUN15_BROWSER_SCOPE = {"assets/js/knowledge.js"}
 check("this run touched no participant-facing browser asset outside Run 11's authorised scope",
       not [d for d in diff_names
            if d.startswith("assets/") and d not in RUN11_BROWSER_SCOPE
-           and d not in RUN12_BROWSER_SCOPE])
+           and d not in RUN12_BROWSER_SCOPE and d not in RUN15_BROWSER_SCOPE])
 check("this run touched no page the participant is served",
       not [d for d in diff_names if d.endswith(".html") and not d.startswith("tests")
            and d not in RUN11_PAGE_SCOPE])
@@ -184,7 +190,7 @@ check("this run changed only the analytical layer under the application, plus th
 # below still proves every earlier stamp is preserved rather than overwritten.
 check("the analytical layer is stamped at this run's version, and Run 10's sim-2026.08-v4 is "
       "kept as a historical audit baseline rather than being overwritten",
-      SIMULATION_VERSION == "sim-2026.08-v8")
+      SIMULATION_VERSION == "sim-2026.08-v9")
 history = (ROOT / "server" / "app" / "simulation" / "models.py").read_text(encoding="utf-8")
 # RESTATED BY RUN 12, every earlier entry preserved: v5 and v6 join the list rather than
 # replacing it, so each run's freeze record is asserted present for as long as the file exists.

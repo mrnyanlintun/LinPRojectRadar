@@ -1,0 +1,11 @@
+module_id,canonical_name,run14_state,run15_workstream,live_enabled,voting,production_change_authorized,owner_decision_required
+A1.2,CUSUM Anomaly Monitor,method_fidelity VERIFIED; ANOMALY_DETECTION_FUNCTION VERIFIED,A_CUSUM_CALIBRATION,YES,NO,YES,whether the selected controlled calibration is adopted as the shipped parameterisation
+D1.1,Isolation Forest,method_fidelity MISMATCH; ANOMALY_DETECTION_FUNCTION VERIFIED FOR THE IMPLEMENTED METHOD; METHOD_FIDELITY MISMATCH AGAINST THE REGISTERED NAME,B_REAL_ISOLATION_FOREST,YES,NO,YES,whether the registered name and the implemented method are now to stay bound
+A3.8,Parametric Cost Index,PROXY_ONLY / MISMATCH,C_ROOT_CAUSE,NO,NO,NO,YES
+B2.20,Hypersoft Sets,PARTIAL_IMPLEMENTATION / PARTIAL,C_ROOT_CAUSE,NO,NO,NO,YES
+B2.7,Plithogenic Sets,PARTIAL_IMPLEMENTATION / PARTIAL,C_ROOT_CAUSE,NO,NO,NO,YES
+B2.9,Quantum Probability,PROXY_ONLY / MISMATCH,C_ROOT_CAUSE,NO,NO,NO,YES
+B4.1,Multi-Objective Optimization,PROXY_ONLY / MISMATCH,C_ROOT_CAUSE,NO,NO,NO,YES
+B4.2,Linear Programming,PROXY_ONLY / MISMATCH,C_ROOT_CAUSE,NO,NO,NO,YES
+B4.5,Decision Sensitivity Matrix,PROXY_ONLY / MISMATCH,C_ROOT_CAUSE,NO,NO,NO,YES
+B4.6,Pareto Frontier Analysis,PROXY_ONLY / MISMATCH,C_ROOT_CAUSE,NO,NO,NO,YES
