@@ -87,7 +87,16 @@ check(len([r for r in inv if r["disabled"] == "NO"]) == 93, "93 non-disabled mod
 RUN13_INVENTORY_VERSION = "sim-2026.08-v7"
 check(all(r["simulation_version"] == RUN13_INVENTORY_VERSION for r in inv),
       f"every row is stamped {RUN13_INVENTORY_VERSION}, the version the inventory was built at")
-check(RUN13_INVENTORY_VERSION <= SIMULATION_VERSION,
+# RUN 16: compared as a NUMBER, not as a string. The stamps reached two digits at
+# sim-2026.08-v10, and "sim-2026.08-v7" sorts after "sim-2026.08-v10" as text, so the string
+# comparison this line used to make started failing on a version that is genuinely earlier. The
+# check is unchanged in what it asserts.
+def _stamp_ordinal(stamp: str) -> tuple[str, int]:
+    head, _, tail = stamp.rpartition("-v")
+    return (head, int(tail))
+
+
+check(_stamp_ordinal(RUN13_INVENTORY_VERSION) <= _stamp_ordinal(SIMULATION_VERSION),
       "and that version is at or behind the layer's current stamp, so the inventory is a "
       "historical record rather than a claim about a version that does not exist",
       f"{RUN13_INVENTORY_VERSION} vs {SIMULATION_VERSION}")

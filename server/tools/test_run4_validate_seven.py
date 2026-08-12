@@ -601,9 +601,24 @@ for mid, name in SEVEN.items():
               f"{str(comp[mid].get('evidence_metric'))[:62]}")
     else:
         print(f"    {name}: abstained -- {str(abst.get(mid, {}).get('reason'))[:62]}")
-check(all(mid in comp for mid in SEVEN),
-      "all seven produce a finding on the real path, so nothing below is vacuous for want of "
-      "a computed module", str(sorted(set(SEVEN) - set(comp))))
+# RESTATED BY RUN 16, ORIGINAL FINDING PRESERVED. Run 4 required all seven CORE modules to
+# produce a finding on the real path, so that nothing below could pass vacuously for want of a
+# computed module, and that record stands for the six that still execute. Run 16 disabled
+# Material Cost Variance from operational execution for an evidence and context reason, not an
+# algorithmic one, so it now abstains by refusal rather than computing. It is named here rather
+# than the rule being relaxed, and it is required to abstain WITH the recorded reason, so this
+# allowance cannot cover a module that has merely gone silent.
+RUN16_DISABLED = {"A3.4"}
+check(all(mid in comp for mid in SEVEN if mid not in RUN16_DISABLED),
+      "the six CORE modules that still execute produce a finding on the real path, so nothing "
+      "below is vacuous for want of a computed module",
+      str(sorted(set(SEVEN) - set(comp) - RUN16_DISABLED)))
+for _mid in sorted(RUN16_DISABLED):
+    check(_mid not in comp,
+          f"{SEVEN[_mid]}: disabled by Run 16, so it computes nothing at all")
+    check("under review" in str(abst.get(_mid, {}).get("reason") or "").lower(),
+          f"{SEVEN[_mid]}: and says on the stored row that its evidence requirement is under "
+          f"review", str(abst.get(_mid, {}).get("reason"))[:90])
 
 for mid in sorted(VOTING_AFTER_RUN4):
     check(comp.get(mid, {}).get("votes") is True,
@@ -612,7 +627,7 @@ for mid in sorted(VOTING_AFTER_RUN4):
           f"{SEVEN[mid]}: and carries its citation into the API response")
     check(bool(comp.get(mid, {}).get("band_source_limit")),
           f"{SEVEN[mid]}: and the sentence stating what the citation does not establish")
-for mid in sorted(set(SEVEN) - VOTING_AFTER_RUN4):
+for mid in sorted(set(SEVEN) - VOTING_AFTER_RUN4 - RUN16_DISABLED):
     check(comp.get(mid, {}).get("votes") is False,
           f"{SEVEN[mid]}: does not vote, on the stored row")
     check(bool(comp.get(mid, {}).get("held_non_voting_reason")),

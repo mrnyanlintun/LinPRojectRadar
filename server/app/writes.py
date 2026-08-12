@@ -398,8 +398,47 @@ def w_resetsignals(session: Session, payload: dict) -> dict[str, Any]:
     # `_append_event`. It carries what was cleared BY SHAPE — how many signalInputs fields, which
     # signal blocks, how many simulation modules — and not by value: the point of the action is to
     # remove those values, so writing them into an event that `get` returns would defeat it.
+    # RUN 16, WORKSTREAM A7. CLEARING THE SOURCE EVIDENCE MUST INVALIDATE WHAT WAS DERIVED FROM
+    # IT, AND MUST DO SO HERE RATHER THAN IN THE BROWSER.
+    #
+    # Until this run, the reset emptied `signals`, `signalInputs` and `simulationSignals` on the
+    # project document and left `computed_results` alone. The stored row is where every surface
+    # actually reads from -- the ledger, the portfolio list's status, the category rollup and the
+    # Signal Flow diagram all resolve through it -- so a project whose evidence had just been
+    # cleared went on serving a full set of module results, category statuses and a project
+    # status, through the API, in the same session, AND after a reload. That is not a
+    # presentation fault: the server was answering with derived values whose inputs no longer
+    # existed. Reproduced in a real browser BEFORE the change; see
+    # code_audit/run16_final_flow_browser_facts.csv, state C-cleared-server.
+    #
+    # THE ROW IS NOT DELETED AND NOT EDITED. `computed_results` is append-only, and a submitted
+    # decision that references a row must still resolve years from now. Marking it superseded is
+    # the ONE update the database permits on a referenced row (migration 0009), and it is the
+    # same mechanism a recompute uses. `superseded_by` carries a fresh identifier that no row
+    # bears, because nothing REPLACED this result: the evidence behind it was withdrawn. The row
+    # itself stays readable by `result_id` forever, which is what preserves the audit lineage,
+    # and `_live_result`, `live_statuses` and the export all filter on `superseded_by IS NULL`,
+    # so one write moves every surface at once.
+    #
+    # EVERY live period is invalidated, not just the latest: the reset clears the project's
+    # evidence entirely, so no period's derived result survives it. The rows are invalidated
+    # BEFORE the event is appended so the event can record how many there were, by shape, on the
+    # same footing as the rest of that record.
+    from .research_models import ComputedResult, new_ulid
+    live_rows = session.scalars(
+        select(ComputedResult).where(
+            ComputedResult.project_id == project.id,
+            ComputedResult.superseded_by.is_(None),
+        )
+    ).all()
+    invalidated = [{"result_id": r.result_id, "period": r.period} for r in live_rows]
+    for _row in live_rows:
+        _row.superseded_by = new_ulid()
+
     fresh = _touch(_append_event(
         fresh, "signals_reset",
+        invalidated_derived_results=len(invalidated),
+        invalidated_periods=sorted({r["period"] for r in invalidated}),
         cleared_signal_input_fields=len(prior_inputs),
         cleared_signal_input_names=sorted(prior_inputs.keys()),
         cleared_signal_blocks=prior_signal_keys,
@@ -415,7 +454,21 @@ def w_resetsignals(session: Session, payload: dict) -> dict[str, Any]:
     saved = _project(session, pid)
     if saved is None or saved.doc.get("signals") != {}:
         return err(f"Reset could not be verified for {pid}: signals are not empty after commit")
-    return {"ok": True, "id": pid, "reset": True}
+    # RUN 16. The verified-write rule applied to the invalidation as well as to the document.
+    # A reset that reported success while a derived result was still live is exactly the failure
+    # this run found, so the absence of a live row is CONFIRMED here rather than assumed.
+    still_live = session.scalars(
+        select(ComputedResult).where(
+            ComputedResult.project_id == project.id,
+            ComputedResult.superseded_by.is_(None),
+        )
+    ).all()
+    if still_live:
+        return err(
+            f"Reset could not be verified for {pid}: {len(still_live)} derived result(s) are "
+            f"still live after the reset"
+        )
+    return {"ok": True, "id": pid, "reset": True, "invalidated_results": invalidated}
 
 
 def w_overwritesignal(session: Session, payload: dict) -> dict[str, Any]:

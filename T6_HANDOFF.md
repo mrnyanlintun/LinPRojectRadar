@@ -7166,3 +7166,121 @@ Files: `code_audit/run15_scope.csv`, `run15_cusum_calibration.csv`,
 `assets/js/knowledge.js`, `assets/js/ds_defensibility_data.js`; the three new suites and the two
 evidence scripts; six existing suites;
 `REPORT_2026-08-12_run15-cusum-isolationforest-disabled-root-cause.md` (new); this entry.
+
+## 2026-08-12 — Run 16: low-hanging instrument cleanup, empty-project truthfulness, and Material Cost Variance disabled
+
+**Branch `claude/run16-instrument-cleanup` from `origin/main` at `9b55824`, the Run 15 push.
+Merged at `RUN16_MERGE_COMMIT`.** Report:
+`REPORT_2026-08-12_run16-low-hanging-instrument-cleanup.md`, which is controlling. Simulation
+version **sim-2026.08-v9 to sim-2026.08-v10**. Synthetic package OG-SYNTH-0.3 and the participant
+package are unchanged, and the participant decision sequence is untouched.
+
+**Exactly three authorised changes, all three closed, and the 100-module literature audit was NOT
+begun.**
+
+**The FINAL FLOW problem had three causes, and only one of them was presentation.** The Signal
+Flow column headers built `27 DOCUMENTS`, `96 MODULES` and `11 CATEGORIES` from the platform's own
+registry, so a project with nothing uploaded announced twenty-seven documents and ninety-six
+modules; and all 229 connections animated whatever the project's state, so configured architecture
+read as traffic. **The third cause was genuine stale SERVER state: `w_resetsignals` emptied the
+project document and never touched `computed_results`, so after the supported clear-all workflow
+the server went on serving 42 module results, ten category statuses and a project status of Amber,
+in the same session AND after a reload, from a row whose inputs no longer existed.** The portfolio
+list read the same row. Reproduced in a real browser before any edit and recorded in
+`code_audit/run16_final_flow_before.csv`.
+
+**The headers now carry the registry count on one line, labelled as what it is, and the project's
+own figure on the second, plus a summary strip that says the same thing in prose.** An edge
+animates only when data currently travels it. The rollup node says `Not estimable` instead of
+printing the internal word `None`. Every figure is a tally over statuses the server produced;
+Gate 5 holds and no browser-side analytics were reintroduced. **The clear-all now supersedes every
+live derived row at the write path**, which is the one update the database permits on a referenced
+row and the same mechanism a recompute uses; the row is not deleted and stays resolvable by its own
+id forever; the write is verified and the reset event records what it invalidated.
+
+**A second stale-state fault, in the browser, was found by the served page after the server fix
+landed**: the tab still held the row it had primed, so the cleared project still drew 41 modules
+with a current result and a rollup of Amber. The cache is dropped in the same action. **That is
+the fourth consecutive run in which the served page carried a defect the harnesses did not.**
+
+**The one-document control is what proves the fix did not suppress the visualization**: one
+recognised document gives 1 uploaded, 35 modules with a current result, 9 estimable categories and
+71 active paths, between the populated project's 24, 41, 10 and 100 and the empty project's zeros.
+
+**WORKSTREAM B FOUND NOTHING TO REMOVE AND NOTHING WAS INVENTED.** The served desktop Project
+Detail route carries no collapse or hide control, at any state, before or after this run: the
+browser scan covers every button, link and button-role element for triangle and chevron glyphs, for
+an accessible name or title containing collapse or hide, and for any rail-toggle class name,
+keeping only elements with a non-zero rendered box, and returns empty every time. The rail has been
+a permanently slim numbered rail since 2026-08-10. What this run adds is the regression that keeps
+it that way. **If the owner is seeing a control, it is not on this route in this baseline, and a
+screenshot would settle it in one step.**
+
+**Material Cost Variance is DISABLED from operational execution, not removed and not redesigned,
+and no claim is made about its arithmetic.** The reason is application validity and it is recorded
+verbatim in `registry.EVIDENCE_UNDER_REVIEW_REASON`: a construction project can hold thousands of
+distinct materials and interpreting a material variance needs a contractual material baseline,
+approved rates and quantities, procurement data and timing, sourcing location, supplier conditions,
+regional availability, freight, currency, duty, substitutions, escalation provisions and trade
+disruption, which differ by region and date and cannot be inferred from generic project inputs.
+**It has its own disabled set and its own activation state, `DISABLED_EVIDENCE_UNDER_REVIEW`,
+deliberately NOT the `DISABLED_UNSAFE` the eight concept-only modules carry.** The registry refuses
+it before its formula function is reached (proved with a tripwire on four input shapes), the export
+mirrors it, the evidence-state dimension counts it as refused rather than silent, and the browser
+presents it as unavailable through the same taxonomy flag the eight carry. **It was already
+non-voting, so nothing in the voting set or the governed status semantics moved**, which is what
+the carried-forward note required. Its registry row, name and held-non-voting record all stay. The
+Run 14 domain fix in that module is untouched and unreached. **The owner decision, retain behind a
+purpose-built material baseline and procurement evidence design or remove, is DEFERRED.**
+
+**Production files changed:** `assets/js/neural_flow.js`, `assets/js/detail.js`,
+`assets/js/taxonomy.js`, `server/app/writes.py`, `server/app/research_export.py`,
+`server/app/simulation/registry.py`, `server/app/simulation/qualification.py`,
+`server/app/simulation/models.py`. Each is named in the scope lists of the four freeze guards
+rather than the guards being widened.
+
+**Browser tests:** `server/tools/drive_run16_final_flow.py`, run twice against identical fixtures,
+once with the fixes stashed and once with them applied, over states A, B, C and D plus a
+one-document control. Evidence: `code_audit/run16_final_flow_before.csv`,
+`code_audit/run16_final_flow_after.csv` and the screenshots beside them. **CONTAINER FACT worth not
+rediscovering: no way of reloading the served page returns in reasonable time here** (reload,
+repeat goto, scheduled `location.reload`, second page, second browser), because the page holds
+aborted and refused requests open and every Playwright navigation primitive waits on them. The
+harness records that as a limitation and reads the server directly for the reload states.
+
+**Tests added:** `test_run16_clear_all_invalidation.py` (21), `test_run16_final_flow_and_rail.py`
+(78), `test_run16_material_cost_variance_disabled.py` (78). **Each was proved to fail on the defect
+it guards, with the byte change confirmed before the red was believed.** Six existing suites were
+updated: four for the version stamp, and `test_run2_fifteen_defects.py`,
+`test_run6_known_answer.py`, `test_run8_retest_classify_27.py`, `test_run10_state_protection.py`
+and `test_run4_validate_seven.py` for the named-scope pattern. `test_run13_module_evidence.py` had
+a real latent bug corrected: it compared version stamps as strings, which breaks at two digits, so
+`sim-2026.08-v7` sorted after `sim-2026.08-v10`.
+
+**Test totals: 87 suites, 6957 of 6957, all green**, each against its own freshly migrated
+database, confirmed on merged main before the push.
+
+**Voting state: exactly 2, TCPI and Variance at Completion, unchanged. Activation state: the eight
+concept-only modules still disabled, each re-checked individually, none reclassified into this
+run's reason; Material Cost Variance added as a ninth refusal under its own reason.** The registry
+still declares 101 modules, 96 project-level and 5 portfolio-level. No production Postgres, no
+production migration, no production deployment, no real participant data. Migrations 0020 through
+0025 remain unapplied.
+
+**EXACT NEXT-SESSION REQUIREMENT: FULL LITERATURE-BACKED SCIENTIFIC VERIFICATION OF THE REMAINING
+100 MODULES, beginning from the merged baseline commit above and no other point.** The candidate
+population is 100: the 101 registered modules minus Material Cost Variance, which is retained for
+audit lineage and removed from the candidate list only. **The eight academic methods disabled since
+Run 1 are IN that 100**, with their Run 15 root causes as the starting evidence; currently disabled
+operationally is not excluded from scientific review.
+
+**Unresolved.** The collapse control the owner described is not on this route in this baseline and
+a screenshot would settle it. The Material Cost Variance disposition is owed. The Signal Flow
+diagram still marks three document rows not applicable from a hardcoded editorial list, because no
+per-document-type applicability signal exists to derive it from; that predates this run. All
+decisions outstanding from Runs 10B, 11, 12, 14 and 15 remain open.
+
+Files: `code_audit/run16_final_flow_before.csv`, `run16_final_flow_after.csv` and the run16
+screenshots (all new); `server/tools/drive_run16_final_flow.py` and the three new suites; the eight
+production files above; six existing suites;
+`REPORT_2026-08-12_run16-low-hanging-instrument-cleanup.md` (new); this entry.

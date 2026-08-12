@@ -75,7 +75,12 @@ window.LIN_CATEGORIES = [
       { id: 'a3_1', num: 'A3.1', name: 'Reference Class Forecasting', method_class: 'Reference_Class_Forecasting', active: true, required: ['bac','cpi'] },
       { id: 'a3_2', num: 'A3.2', name: 'Contingency Burn Rate', method_class: 'Contingency_Burn_Rate', active: true, required: ['originalContingency','remainingContingency','actualPctComplete'] },
       { id: 'a3_3', num: 'A3.3', name: 'Labor Productivity Index', method_class: 'Labor_Productivity', active: true, required: ['plannedLaborHours','actualLaborHours','actualPctComplete'] },
-      { id: 'a3_4', num: 'A3.4', name: 'Material Cost Variance', method_class: 'Material_Cost_Variance', active: true, required: ['materialCostBaseline','materialCostCurrent'] },
+      /* RUN 16. Disabled from operational execution pending an evidence and context
+         requirement decision, NOT because its arithmetic is in question. The server
+         refuses it (registry.DISABLED_EVIDENCE_UNDER_REVIEW) and this flag is what keeps
+         the browser from presenting it as available; the row stays, reading as not
+         available for production use, exactly as the eight concept-only rows do. */
+      { id: 'a3_4', num: 'A3.4', name: 'Material Cost Variance', method_class: 'Material_Cost_Variance', active: true, disabled: true, required: ['materialCostBaseline','materialCostCurrent'] },
       { id: 'a3_5', num: 'A3.5', name: 'Overhead Absorption Rate', method_class: 'Overhead_Absorption', active: true, required: ['indirectCostPlan','indirectCostActual'] },
       { id: 'a3_6', num: 'A3.6', name: 'Cost Risk Analysis P80', method_class: 'Cost_Risk_Analysis', active: true, required: ['bac','cpi','ac','ev'] },
       { id: 'a3_7', num: 'A3.7', name: 'Analogous Estimating Ratio', method_class: 'Analogous_Estimating', active: true, required: ['analogousOverrunPct','bac'] },
@@ -266,6 +271,11 @@ window.isModuleSectorNA = function (methodClass, project) {
    the analytical structure its name claims. Non-executable in production, non-voting, excluded
    from every fusion input. Marked `disabled: true` on their taxonomy entries above.
 
+   Run 16 adds a ninth entry carrying the same flag for a different reason: Material Cost
+   Variance is disabled pending an evidence and context requirement decision. Nothing here says
+   its arithmetic is wrong. The flag is deliberately shared, because what the browser has to do
+   about it is identical in both cases and a second flag would be a second thing to forget.
+
    Reuses the EXISTING not-relevant state (blue, distinct from grey no-data) rather than
    inventing a sixth verdict -- the same state a sector-excluded module already carries. The row
    stays: it reads as not available for production use, it does not disappear. See
@@ -282,8 +292,10 @@ function disabledModuleMap() {
   });
   return LIN_DISABLED_MODULES;
 }
-/* True for one of the eight disabled concept-only modules, unconditionally -- not a sector
-   question, so it does not depend on the project. */
+/* True for any module the platform has disabled, unconditionally -- not a sector question, so
+   it does not depend on the project. Two disjoint reasons put a module here and the taxonomy
+   flag is the same for both: the eight concept-only modules (Run 1) and Material Cost Variance,
+   whose evidence and context requirement is under review (Run 16). The server refuses both. */
 window.isModuleDisabled = function (methodClass) {
   return !!disabledModuleMap()[methodClass];
 };

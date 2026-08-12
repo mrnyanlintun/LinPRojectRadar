@@ -247,6 +247,22 @@ RUN15_SCOPED_FILES = {
     "assets/js/knowledge.js",
 }
 
+# RUN 16 corrected the Signal Flow diagram, which reported registry counts as project activity
+# and animated every connection on a project with no evidence; made the clear-all workflow
+# invalidate the results derived from the evidence it clears; and disabled Material Cost Variance
+# from operational execution, which the registry enforces, the export mirrors and the browser
+# taxonomy presents.
+RUN16_SCOPED_FILES = {
+    "assets/js/neural_flow.js",
+    "assets/js/detail.js",
+    "assets/js/taxonomy.js",
+    "server/app/writes.py",
+    "server/app/research_export.py",
+    "server/app/simulation/registry.py",
+    "server/app/simulation/qualification.py",
+    "server/app/simulation/models.py",
+}
+
 _diff = subprocess.run(["git", "diff", "--name-only", GUARD_BASELINE_REV, "--"],
                        cwd=str(ROOT), capture_output=True, text=True).stdout.split()
 _prod = [p for p in _diff
@@ -254,7 +270,7 @@ _prod = [p for p in _diff
          and p not in RUN8_SCOPED_FILES and p not in RUN10_SCOPED_FILES
          and p not in RUN10B_SCOPED_FILES and p not in RUN11_SCOPED_FILES
          and p not in RUN12_SCOPED_FILES and p not in RUN14_SCOPED_FILES
-         and p not in RUN15_SCOPED_FILES]
+         and p not in RUN15_SCOPED_FILES and p not in RUN16_SCOPED_FILES]
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
 # RESTATED BY RUN 11, original finding preserved. This read "nothing under assets/ differs"
@@ -263,7 +279,8 @@ check(not _prod, "no production file under server/app/ or assets/ differs from t
 _unscoped_assets = sorted(p for p in _diff
                           if p.startswith("assets/") and p not in RUN11_SCOPED_FILES
                           and p not in RUN12_SCOPED_FILES
-                          and p not in RUN15_SCOPED_FILES)
+                          and p not in RUN15_SCOPED_FILES
+                          and p not in RUN16_SCOPED_FILES)
 check(not _unscoped_assets,
       "nothing under assets/ outside Run 11's authorised browser scope differs from the pinned "
       "baseline", " ".join(_unscoped_assets))

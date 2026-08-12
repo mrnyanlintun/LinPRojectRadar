@@ -307,6 +307,10 @@
       // glyph fill, so labels stay legible where connection lines pass beneath
       // them. Applied to every label class (module, category, doc, headers).
       '.lnf-halo{paint-order:stroke;stroke:var(--surface,#0b0e17);stroke-width:3px;stroke-linejoin:round;stroke-linecap:round}',
+      // RUN 16. A configured-but-idle edge. It carries no animation class at all; this rule
+      // exists so the state is nameable in the DOM and cannot be reintroduced by a stray class
+      // landing on one of the animated selectors above.
+      '.lnf-static{animation:none!important}',
       '.lnf-nd{cursor:pointer}',
       '#lnf-tt{position:fixed;background:#0c1422;border:1px solid #2a3a5c;border-radius:4px;',
       '  padding:6px 10px;font-size:11px;color:#c8d4e8;pointer-events:none;z-index:9999;',
@@ -349,6 +353,33 @@
     }
     function isUploaded(name) { return !!uploadedNorm[normKey(name)]; }
 
+    // RUN 16, WORKSTREAM A4. HOW MANY DOCUMENTS THIS PROJECT HAS ACTUALLY UPLOADED.
+    // Counted from the project's own extraction events, the same record the Documents panel
+    // counts, unioned with the surviving `signalInputs.sources` so a partially cleared event
+    // log does not undercount. It is NOT the number of document types the platform supports,
+    // which is what the old column header was reporting.
+    var uploadedDocCount = 0;
+    (function () {
+      var evs = (project && Array.isArray(project.events)) ? project.events : [];
+      var seen = {};
+      evs.forEach(function (e) {
+        var ty = (e && (e.type || e.event || e.kind)) || '';
+        if (ty !== 'signals_extracted') return;
+        uploadedDocCount++;
+        if (e.docType) seen[normKey(e.docType)] = true;
+      });
+      if (project && project.signalInputs && project.signalInputs.sources) {
+        Object.values(project.signalInputs.sources).forEach(function (src) {
+          if (!src || !src.docType) return;
+          var k = normKey(src.docType);
+          if (seen[k]) return;
+          seen[k] = true;
+          uploadedDocCount++;
+        });
+      }
+    })();
+    var uploadedTypeCount = Object.keys(uploadedNorm).length;
+
     // ── 2. Canonical categories/modules + status resolution ──────────────────
     var model = buildModel();
     var CATS = model.CATS, MODULES = model.MODULES, catModIdxs = model.catModIdxs, catIds = model.catIds;
@@ -367,7 +398,15 @@
       // Prefer the app's shared resolver (handles computed/derived modules too)
       var st = null;
       try { if (window.getModuleStatus) st = window.getModuleStatus(m.mc, project); } catch (e) {}
-      if (st === 'NA') return { status: 'NotRelevant', na: true, color: COL.NotRelevant, metric: null };
+      // RUN 16. `NA` covers two different absences and the counts below have to tell them
+      // apart: a module excluded by this project's sector, and a module disabled platform-wide.
+      // isModuleDisabled reads the taxonomy's own `disabled` flag; it is not guessed here.
+      var isDis = false;
+      try { isDis = !!(window.isModuleDisabled && window.isModuleDisabled(m.mc)); } catch (e) {}
+      if (st === 'NA') {
+        return { status: 'NotRelevant', na: true, disabled: isDis,
+                 color: COL.NotRelevant, metric: null };
+      }
       if (st) {
         var s = statusFromSig({ status_color: st });
         return { status: s, color: colFor(s), metric: metric };
@@ -376,13 +415,29 @@
       return { status: s2, color: colFor(s2), metric: metric };
     }
 
-    // Staggered start offsets so the streaming dashes don't march in lockstep.
-    // Negative delays start every line mid-cycle.
+    // RUN 16, WORKSTREAM A3. AN EDGE ANIMATES ONLY WHEN DATA CURRENTLY TRAVELS IT.
+    //
+    // Every connection used to stream its dashes unconditionally, so a project with no
+    // documents, no signals and no stored result rendered the same moving topology as a fully
+    // computed one. A configured dependency is not a flow. `active` is decided by the caller
+    // from the CURRENT stored state and nothing else (see isEstimable below); an inactive edge
+    // keeps its geometry, loses its motion, and is marked `.lnf-static` so it reads as
+    // configured architecture rather than as traffic.
+    //
+    // Staggered start offsets so the streaming dashes don't march in lockstep. Negative delays
+    // start every line mid-cycle.
     var flowIdx = 0;
-    function flowAnim(el, cls) {
+    function flowAnim(el, cls, active) {
+      if (!active) { el.classList.add('lnf-static'); return; }
+      el.classList.add('lnf-active');
       el.classList.add(cls);
       el.style.animationDelay = (-((flowIdx++ % 16) * 0.37)).toFixed(2) + 's';
     }
+    // The five verdicts a module, a category or the project rollup can carry. Anything else --
+    // 'None' (no current result) and 'NotRelevant' (sector exclusion or a disabled module) --
+    // is an absence of a result, not a result, and must not light a path.
+    var ESTIMABLE = { Green:1, Yellow:1, Amber:1, Red:1, Complete:1 };
+    function isEstimable(s) { return !!ESTIMABLE[s]; }
 
     // ── 3. Pre-compute all statuses ───────────────────────────────────────────
     var modInfos = MODULES.map(function(m) { return modInfo(m); });
@@ -410,6 +465,27 @@
     } catch (e) {}
     if (!prjStatus) prjStatus = worstStatus(catStatuses);
     var prjColor = colFor(prjStatus);
+    // RUN 16, GATE 5. NOTHING IS COMPUTED HERE. Every figure below is a tally over statuses the
+    // SERVER produced and the browser read (getModuleStatus / getCategoryStatus /
+    // getProjectFusion all read the stored row). No arithmetic, no inference, no defaults.
+    var modWithResult = 0, modDisabled = 0, modNotRelevant = 0;
+    modInfos.forEach(function (i) {
+      if (i.disabled) { modDisabled++; return; }
+      if (i.na) { modNotRelevant++; return; }
+      if (isEstimable(i.status)) modWithResult++;
+    });
+    var modSilent = MODULES.length - modWithResult - modDisabled - modNotRelevant;
+    var catEstimable = catStatuses.filter(isEstimable).length;
+    var prjEstimable = isEstimable(prjStatus);
+    // The governed project-level label, read from the stored row when the server supplied one.
+    // Never invented: a project with no stored result keeps the generic column heading.
+    var governedLabel = null;
+    try {
+      if (window.getProjectFusion) {
+        var gf = window.getProjectFusion(project);
+        if (gf && gf.statusLabel) governedLabel = String(gf.statusLabel);
+      }
+    } catch (e) {}
 
     // ── 4. Layout geometry ────────────────────────────────────────────────────
     // Row pitch sized to the 11.5px module labels (13px pitch avoids collisions);
@@ -465,13 +541,37 @@
     var mfb = se('marker', { id:'lnf-arr-fb', markerWidth:'5', markerHeight:'5', refX:'4', refY:'2.5', orient:'auto' }, defs);
     se('polygon', { points:'4,0 4,5 0,2.5', fill:COL.Red, opacity:'0.85' }, mfb);
 
-    // Column headers — 12px mono, tracking kept
-    [[DOC_KEYS.length+' DOCUMENTS',CX.doc],[MODULES.length+' MODULES',CX.mod],
-     [CATS.length+' CATEGORIES',CX.cat],['PROJECT STATUS',CX.prj]].forEach(function(pair) {
-      var t = se('text', { x:pair[1], y:20, 'text-anchor':'middle', fill:'var(--muted, #4a5a7a)',
-        'font-size':'12', 'font-weight':'700', 'letter-spacing':'0.10em', 'font-family':'monospace',
-        class:'lnf-halo' }, svg);
-      t.textContent = pair[0];
+    // ── Column headers ────────────────────────────────────────────────────────
+    // RUN 16, WORKSTREAMS A2, A4 AND A5. ARCHITECTURE ON THE TOP LINE, CURRENT ACTIVITY ON THE
+    // SECOND, NEVER THE ONE STANDING IN FOR THE OTHER.
+    //
+    // These headers used to read "27 DOCUMENTS", "96 MODULES" and "11 CATEGORIES". Every one of
+    // those numbers is a property of the platform's registry, not of the project on screen: 27
+    // is the number of document types the extraction layer recognises, 96 the number of
+    // project-level modules the registry declares, and 11 the number of registered categories.
+    // A project with nothing uploaded and nothing computed therefore announced twenty-seven
+    // documents and ninety-six modules. The counts are unchanged and still derived from the
+    // registry rather than typed in; what changed is that they are now labelled as what they
+    // are, and the project's own figures sit beneath them.
+    var HEADERS = [
+      [CX.doc, DOC_KEYS.length + ' SUPPORTED DOCUMENT TYPES',
+               uploadedDocCount + ' UPLOADED ON THIS PROJECT'],
+      [CX.mod, MODULES.length + ' REGISTERED PROJECT MODULES',
+               modWithResult + ' WITH A CURRENT RESULT'],
+      [CX.cat, CATS.length + ' REGISTERED CATEGORIES',
+               catEstimable + ' ESTIMABLE NOW'],
+      [CX.prj, (governedLabel || 'PROJECT STATUS').toUpperCase(),
+               prjEstimable ? 'CURRENT' : 'NOT ESTIMABLE'],
+    ];
+    HEADERS.forEach(function(row) {
+      var t1 = se('text', { x:row[0], y:16, 'text-anchor':'middle', fill:'var(--faint, #4a5a7a)',
+        'font-size':'11', 'font-weight':'700', 'letter-spacing':'0.08em',
+        'font-family':'monospace', class:'lnf-halo lnf-hdr-arch' }, svg);
+      t1.textContent = row[1];
+      var t2 = se('text', { x:row[0], y:30, 'text-anchor':'middle', fill:'var(--muted, #5a7898)',
+        'font-size':'11', 'font-weight':'700', 'letter-spacing':'0.08em',
+        'font-family':'monospace', class:'lnf-halo lnf-hdr-activity' }, svg);
+      t2.textContent = row[2];
     });
 
     // ── 6. Connection layers ──────────────────────────────────────────────────
@@ -484,7 +584,10 @@
       var p = se('path', { d:'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2,
         fill:'none', stroke:colFor(cs), 'stroke-width':'1.5', opacity:'0.35', 'stroke-linecap':'round',
         'marker-end':'url(#lnf-arr-'+cs+')' }, lineG);
-      flowAnim(p, 'lnf-flow-b');
+      // A category rollup path carries traffic only when the category has a current estimable
+      // result. Otherwise the relationship is configured and idle.
+      if (!isEstimable(cs)) p.setAttribute('opacity', '0.14');
+      flowAnim(p, 'lnf-flow-b', isEstimable(cs));
       return p;
     });
 
@@ -496,7 +599,12 @@
       var ci=m.catI, x1=CX.mod+4, y1=modY[mi], x2=CX.cat-9, y2=catCY[ci], mx=(x1+x2)/2;
       var p = se('path', { d:'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2,
         fill:'none', stroke:modInfos[mi].color, 'stroke-width':'0.8', opacity:MODCAT_OP, 'stroke-linecap':'round' }, lineG);
-      flowAnim(p, 'lnf-flow-b');
+      // Same rule one level down: a module path is live only when that module has a current
+      // result. A disabled, abstaining, sector-excluded or never-computed module contributes
+      // nothing, and its line must not move as though it did.
+      var modLive = isEstimable(modInfos[mi].status);
+      if (!modLive) p.setAttribute('opacity', '0.14');
+      flowAnim(p, 'lnf-flow-b', modLive);
       return p;
     });
 
@@ -521,7 +629,9 @@
             'stroke-width':w, opacity:baseOp, 'stroke-linecap':'round' }, lineG);
           var dash = se('path', { d:d, class:'lnf-a-line', fill:'none',
             'stroke-width':w, opacity:dashOp, 'stroke-linecap':'round' }, lineG);
-          flowAnim(dash, 'lnf-flow-a');
+          // An evidence path is live only when this project has actually uploaded that
+          // document type. The unlit rows were already faint; now they are also still.
+          flowAnim(dash, 'lnf-flow-a', up);
           docLineMap[di].push({ base:base, dash:dash, modI:mi });
         });
       });
@@ -566,7 +676,8 @@
           fill:'none', stroke:colFor(cs), 'stroke-width':'1', opacity:'0.45',
           'stroke-dasharray':'6 4', 'marker-end':'url(#lnf-arr-'+cs+')'
         }, interG);
-        flowAnim(line, 'lnf-flow-c');
+        if (!isEstimable(cs)) line.setAttribute('opacity', '0.16');
+        flowAnim(line, 'lnf-flow-c', isEstimable(cs));
         interCatEls.push({ el:line, srcI:srcI, dstI:feed.dst });
       });
     });
@@ -578,7 +689,10 @@
       fill:'none', stroke:COL.Red, 'stroke-width':'1.5', opacity:'0.30',
       'stroke-dasharray':'5 4', 'marker-end':'url(#lnf-arr-fb)'
     }, interG);
-    flowAnim(fbEl, 'lnf-flow-fb');
+    // The governance loop is a configured relationship. It carries something only once the
+    // governed rollup has a current estimable value to feed back.
+    if (!prjEstimable) fbEl.setAttribute('opacity', '0.14');
+    flowAnim(fbEl, 'lnf-flow-fb', prjEstimable);
     var fbLabelEl = se('text', {
       x:fbSX+70, y:(fbSY+fbDY)/2,
       fill:COL.Red, 'font-size':'10', 'font-family':'monospace',
@@ -716,9 +830,19 @@
     });
     var prjStatusText = se('text', { x:CX.prj, y:PRJ_Y+38, fill:prjColor, 'font-size':'12', 'font-weight':'700',
       'text-anchor':'middle', 'font-family':'monospace', class:'lnf-halo' }, prjG);
-    prjStatusText.textContent = prjStatus;
+    // RUN 16, WORKSTREAM A8. The node used to print the internal word "None" at a project with
+    // no stored result, which reads as a verdict rather than as an absence of one. The governed
+    // vocabulary is unchanged and no new status is invented: this renders the existing
+    // no-data state in words a reader can act on.
+    prjStatusText.textContent = prjEstimable ? prjStatus : 'Not estimable';
+    var prjNodeLabel = governedLabel || 'Project Status';
     prjG.addEventListener('mouseenter', function(evt) {
-      showTT(evt,'<div class="n">Project Status</div><div class="sub" style="color:'+prjColor+'">'+prjStatus+'</div><div class="sub">DST fusion of '+CATS.length+' categories + Portfolio Health</div>');
+      var line = prjEstimable
+        ? '<div class="sub" style="color:'+prjColor+'">'+escH(prjStatus)+'</div>' +
+          '<div class="sub">Fused from the categories that carry a current result</div>'
+        : '<div class="sub" style="color:'+prjColor+'">Not estimable</div>' +
+          '<div class="sub">No current stored result for this project</div>';
+      showTT(evt,'<div class="n">'+escH(prjNodeLabel)+'</div>'+line);
     });
     prjG.addEventListener('mousemove', moveTT);
     prjG.addEventListener('mouseleave', hideTT);
@@ -727,10 +851,13 @@
     fbEl.style.cursor = 'default';
     fbEl.addEventListener('mouseenter', function(evt) {
       fbEl.setAttribute('opacity','0.80'); fbLabelEl.setAttribute('opacity','0.90');
-      showTT(evt,'<div class="n">Governance Feedback</div><div class="sub" style="color:'+COL.Red+'">Cat 8 loop</div><div class="sub">Governance decisions feed back into Cat 8 compliance monitoring</div>');
+      showTT(evt,'<div class="n">Governance Feedback</div>' +
+        '<div class="sub">Governance decisions feed back into compliance monitoring</div>' +
+        '<div class="sub">' + (prjEstimable ? 'Carrying a current result'
+          : 'Configured relationship, nothing flowing now') + '</div>');
     });
     fbEl.addEventListener('mousemove', moveTT);
-    fbEl.addEventListener('mouseleave', function() { hideTT(); fbEl.setAttribute('opacity','0.30'); fbLabelEl.setAttribute('opacity','0.70'); });
+    fbEl.addEventListener('mouseleave', function() { hideTT(); fbEl.setAttribute('opacity', prjEstimable ? '0.30' : '0.14'); fbLabelEl.setAttribute('opacity','0.70'); });
 
     // Document nodes (rendered last = on top)
     DOC_KEYS.forEach(function(key, di) {
@@ -769,7 +896,39 @@
       })(di, uploaded));
     });
 
-    // ── 8. Legend strip ───────────────────────────────────────────────────────
+    // ── 8. Architecture-versus-activity summary ───────────────────────────────
+    // RUN 16, WORKSTREAM A2. The diagram draws the platform's whole registered architecture on
+    // every project, which is what makes it useful and also what made it misleading. This strip
+    // says in words which of the shapes on screen are capability and which are this project's
+    // current activity, so the distinction does not depend on a reader noticing that a line has
+    // stopped moving. Every figure is read from the stored result; none is computed here.
+    var sum = document.createElement('div');
+    sum.className = 'lnf-summary';
+    sum.style.cssText = 'padding:8px 12px 2px;font-size:11px;line-height:1.6;' +
+      'color:var(--muted, #4a5a7a);font-family:monospace;background:var(--surface, #0b0e17);';
+    var archSentence = 'This diagram shows the platform\u2019s registered architecture: ' +
+      DOC_KEYS.length + ' supported document types, ' + MODULES.length +
+      ' registered project modules and ' + CATS.length + ' registered categories. ' +
+      'It is what the platform can do, not what this project has done.';
+    var actSentence;
+    if (uploadedDocCount === 0 && modWithResult === 0 && catEstimable === 0) {
+      actSentence = 'This project has no uploaded documents and no current results, so nothing ' +
+        'on the diagram is active and the ' + (governedLabel || 'project status') +
+        ' is not estimable.';
+    } else {
+      actSentence = 'This project currently has ' + uploadedDocCount + ' uploaded document' +
+        (uploadedDocCount === 1 ? '' : 's') + ' across ' + uploadedTypeCount + ' type' +
+        (uploadedTypeCount === 1 ? '' : 's') + ', ' + modWithResult +
+        ' module' + (modWithResult === 1 ? '' : 's') + ' with a current result, ' +
+        modSilent + ' with no current result, ' + modNotRelevant +
+        ' not applicable to this project and ' + modDisabled +
+        ' disabled, and ' + catEstimable + ' estimable categor' +
+        (catEstimable === 1 ? 'y' : 'ies') + '.';
+    }
+    sum.textContent = archSentence + ' ' + actSentence;
+    container.appendChild(sum);
+
+    // ── 9. Legend strip ───────────────────────────────────────────────────────
     var leg = document.createElement('div');
     leg.style.cssText = 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 12px 6px;' +
       'font-size:10.5px;color:var(--muted, #4a5a7a);font-family:monospace;' +
@@ -816,7 +975,8 @@
     [['Input (doc→model)', legLine('var(--flow-accent, #35d6e8)', false, false)],
      ['Rollup (model→category→status)', legLine(COL.Green, false, true)],
      ['Derived (category→category)', legLine(COL.Amber, true, true)],
-     ['Governance feedback', legLine(COL.Red, true, true)]].forEach(function(t) {
+     ['Governance feedback', legLine(COL.Red, true, true)],
+     ['Configured relationship, not carrying current data', legLine('var(--faint, #4a5a7a)', true, false)]].forEach(function(t) {
       var s = document.createElement('span');
       s.innerHTML = t[1] + t[0];
       leg.appendChild(s);

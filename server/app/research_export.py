@@ -234,6 +234,16 @@ _RUN1_DISABLED: dict[str, str] = {
     "B4.6": "Pareto Frontier Analysis",
 }
 
+# RUN 16, WORKSTREAM C. Mirrored from registry.DISABLED_EVIDENCE_UNDER_REVIEW, which stays the
+# source of truth, on the same mirror-do-not-import footing as the set above. Kept SEPARATE from
+# _RUN1_DISABLED because the finding is different: this module is not called concept-only and no
+# claim is made about its arithmetic. Its registry row and its audit lineage are retained; only
+# its execution is withdrawn, pending an owner decision on a purpose-built material baseline and
+# procurement evidence design.
+_RUN16_DISABLED_EVIDENCE: dict[str, str] = {
+    "A3.4": "Material Cost Variance",
+}
+
 # Run 4 (validate the seven) narrowed the voting set to the two whose band boundaries a source
 # actually specifies. Mirrored from registry.CORE_VOTING_MODULES, which stays the source of
 # truth. The other five compute and show exactly as before and are advisory.
@@ -355,6 +365,8 @@ _SIGNAL_QUALIFICATION = ("unqualified: no eligibility gate qualifies a signal pa
 def _run1_activation_state(new_id: str) -> str:
     if new_id in _RUN1_DISABLED:
         return "DISABLED_UNSAFE"
+    if new_id in _RUN16_DISABLED_EVIDENCE:
+        return "DISABLED_EVIDENCE_UNDER_REVIEW"
     if new_id in _RUN1_CORE_VOTING:
         return "ENABLED_QUALIFIED"
     return "ADVISORY_ONLY"
@@ -366,6 +378,11 @@ def _run1_label(new_id: str, canonical_name: str) -> str:
     if new_id in _RUN1_DISABLED:
         return (f"{canonical_name} (disabled: concept-only, no production implementation of "
                 "the analytical structure its name claims. Not executed, non-voting.)")
+    if new_id in _RUN16_DISABLED_EVIDENCE:
+        return (f"{canonical_name} (disabled: evidence and context requirement under review. "
+                "Interpreting this quantity needs contract material baseline and current "
+                "procurement evidence the platform does not collect. Not executed, non-voting. "
+                "Registry entry retained.)")
     qualifier = _RUN1_PROXY_QUALIFIERS.get(new_id)
     if qualifier is not None:
         return f"{canonical_name} (proxy: {qualifier}. Advisory, non-voting.)"

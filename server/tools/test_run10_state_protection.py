@@ -156,10 +156,17 @@ RUN12_BROWSER_SCOPE = {"assets/js/decision-ui.js"}
 # isolation forest. Leaving it would have had the client describe an algorithm the server no
 # longer runs.
 RUN15_BROWSER_SCOPE = {"assets/js/knowledge.js"}
+# RESTATED BY RUN 16, ORIGINAL FINDING PRESERVED. Run 16 adds ONE browser asset and names it
+# rather than widening the rule: the Signal Flow diagram, whose column headers reported the
+# platform's registry counts as though they were the project's own activity, and whose every
+# connection animated on a project with no evidence and no stored result. Both are presentation
+# faults on a participant-visible surface and neither could be corrected anywhere else.
+RUN16_BROWSER_SCOPE = {"assets/js/neural_flow.js"}
 check("this run touched no participant-facing browser asset outside Run 11's authorised scope",
       not [d for d in diff_names
            if d.startswith("assets/") and d not in RUN11_BROWSER_SCOPE
-           and d not in RUN12_BROWSER_SCOPE and d not in RUN15_BROWSER_SCOPE])
+           and d not in RUN12_BROWSER_SCOPE and d not in RUN15_BROWSER_SCOPE
+           and d not in RUN16_BROWSER_SCOPE])
 check("this run touched no page the participant is served",
       not [d for d in diff_names if d.endswith(".html") and not d.startswith("tests")
            and d not in RUN11_PAGE_SCOPE])
@@ -177,10 +184,17 @@ RUN11_NON_ANALYTICAL_SCOPE = {"server/app/documents.py"}
 # surface is touched by this run.
 RUN14_NON_ANALYTICAL_SCOPE = {"server/app/field_registry.py",
                               "server/app/extraction_merge.py"}
+# RESTATED BY RUN 16, ORIGINAL FINDING PRESERVED. Run 16 touches two files outside the
+# analytical layer and names them rather than widening the rule. The write path is where the
+# clear-all workflow lives, and the defect this run fixed was that clearing a project's evidence
+# left every result derived from it live and readable, which is a storage-lifecycle fault and
+# cannot be corrected inside the simulation package. The export mirrors the registry's disabled
+# sets by long-standing design, so a new disablement has to be mirrored there too.
+RUN16_NON_ANALYTICAL_SCOPE = {"server/app/writes.py", "server/app/research_export.py"}
 check("this run changed only the analytical layer under the application, plus the read path "
       "Run 11 Gate 6 names",
       all(d.startswith("server/app/simulation/") or d in RUN11_NON_ANALYTICAL_SCOPE
-          or d in RUN14_NON_ANALYTICAL_SCOPE
+          or d in RUN14_NON_ANALYTICAL_SCOPE or d in RUN16_NON_ANALYTICAL_SCOPE
           for d in diff_names if d.startswith("server/app/")))
 
 # ---------------------------------------------------------------- GATE 10: versioning
@@ -190,12 +204,12 @@ check("this run changed only the analytical layer under the application, plus th
 # below still proves every earlier stamp is preserved rather than overwritten.
 check("the analytical layer is stamped at this run's version, and Run 10's sim-2026.08-v4 is "
       "kept as a historical audit baseline rather than being overwritten",
-      SIMULATION_VERSION == "sim-2026.08-v9")
+      SIMULATION_VERSION == "sim-2026.08-v10")
 history = (ROOT / "server" / "app" / "simulation" / "models.py").read_text(encoding="utf-8")
 # RESTATED BY RUN 12, every earlier entry preserved: v5 and v6 join the list rather than
 # replacing it, so each run's freeze record is asserted present for as long as the file exists.
 for old in ("sim-2026.08-v2", "sim-2026.08-v3", "sim-2026.08-v4", "sim-2026.08-v5",
-            "sim-2026.08-v6"):
+            "sim-2026.08-v6", "sim-2026.08-v9"):
     check(f"the freeze record for {old} is preserved rather than overwritten", old in history)
 check("the synthetic package version in use is the corrected one",
       (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.3").is_dir())

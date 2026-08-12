@@ -57,6 +57,52 @@ DISABLED_CONCEPT_ONLY: dict[str, str] = {
     "B4.6": "Pareto Frontier Analysis",
 }
 
+#: RUN 16, WORKSTREAM C. TEMPORARILY DISABLED PENDING AN EVIDENCE-DESIGN DECISION, WHICH IS A
+#: DIFFERENT THING FROM THE EIGHT ABOVE AND IS KEPT IN ITS OWN SET SO THE TWO CANNOT BE CONFUSED.
+#:
+#: Material Cost Variance is NOT classified as algorithmically invalid and no claim is made here
+#: about its arithmetic. The reason is application validity: a construction project can contain
+#: thousands of distinct materials, and interpreting a material variance requires evidence this
+#: platform does not collect -- a contractual material baseline, the schedule of values or
+#: approved contract rates, material specifications, planned quantities, approved and current
+#: procurement data, procurement timing, sourcing location, supplier conditions, regional
+#: availability, freight and logistics, currency, tariff and duty, approved substitutions,
+#: escalation provisions, and trade disruption where it applies. Those conditions differ by
+#: region and by date: a material readily available in one market can be scarce or
+#: import-dependent in another. The current implementation cannot infer that context from
+#: generic project inputs, so it cannot be treated as a universally interpretable automatic
+#: material-market detector.
+#:
+#: THE MODULE REMAINS REGISTERED. It keeps its registry entry, its identity and its audit
+#: lineage; only its execution is withdrawn. It was already non-voting (see
+#: HELD_NON_VOTING_UNSOURCED_BANDS below, whose entry stays, because the band it lacks is still
+#: the band it lacks), so nothing about the voting set changes.
+#:
+#: The owner has NOT decided whether the module is ultimately retained behind a purpose-built
+#: contract material baseline and current procurement report evidence design, or removed because
+#: the external market-research burden outweighs its value. That decision is deferred.
+DISABLED_EVIDENCE_UNDER_REVIEW: dict[str, str] = {
+    "A3.4": "Material Cost Variance",
+}
+
+#: The one reason string for the set above, in the repository's own governed vocabulary. It is
+#: deliberately NOT the concept-only wording: nothing here says the module's structure is absent
+#: or its arithmetic wrong.
+EVIDENCE_UNDER_REVIEW_REASON = (
+    "Material Cost Variance is disabled pending an evidence and context requirement under "
+    "review. Interpreting a material variance needs a contractual material baseline, approved "
+    "contract rates and quantities, and current procurement and market context, which this "
+    "platform does not collect and cannot infer from generic project inputs. Not executed, not "
+    "voting, excluded from every fusion input and rollup. Its registry entry and audit lineage "
+    "are retained."
+)
+
+#: Every module this server refuses to execute, whatever the reason. This is the set the
+#: enforcement points read, so a new disablement reason cannot be added without every gate
+#: picking it up. The two component sets stay separate above because they mean different things
+#: and because the eight remain, individually, part of the scientific review population.
+DISABLED_MODULES: dict[str, str] = {**DISABLED_CONCEPT_ONLY, **DISABLED_EVIDENCE_UNDER_REVIEW}
+
 #: The seven CORE modules the audit approves to vote on project status, on an interim basis,
 #: until Run 4 validates them and Run 4's acceptance criterion restores voting on a durable
 #: footing (remediation_decisions_answered.md 1.1, Option C; 4.3). Every other live module keeps
@@ -201,6 +247,9 @@ def activation_state(new_id: str) -> str:
     """
     if new_id in DISABLED_CONCEPT_ONLY:
         return "DISABLED_UNSAFE"
+    # RUN 16. Its own state, not DISABLED_UNSAFE: this module is not being called unsafe.
+    if new_id in DISABLED_EVIDENCE_UNDER_REVIEW:
+        return "DISABLED_EVIDENCE_UNDER_REVIEW"
     if new_id in CORE_VOTING_MODULES:
         return "ENABLED_QUALIFIED"
     return "ADVISORY_ONLY"
@@ -262,9 +311,11 @@ def run_module(new_id: str, si: dict, rand: Callable[[], float],
     projects, so a single-project path reaching one is a routing mistake, not missing data, and
     reporting it as "insufficient data" would hide the mistake.
 
-    A concept-only module in DISABLED_CONCEPT_ONLY is short-circuited HERE, before its formula
-    function is ever called: it is genuinely non-executable in production, not merely
-    non-voting. No arithmetic in the module itself is touched or reached.
+    A module in DISABLED_MODULES is short-circuited HERE, before its formula function is ever
+    called: it is genuinely non-executable in production, not merely non-voting. No arithmetic in
+    the module itself is touched or reached. Two disjoint reasons feed that set and each keeps
+    its own activation state and its own sentence -- concept-only (Run 1) and evidence and
+    context requirement under review (Run 16) -- because they are not the same finding.
     """
     index = registry_index()
     if new_id not in index:
@@ -284,6 +335,16 @@ def run_module(new_id: str, si: dict, rand: Callable[[], float],
                 "no production implementation of the analytical structure its name claims. Not "
                 "executed, not voting, excluded from every fusion input and rollup."
             ),
+        }
+    # RUN 16, WORKSTREAM C. Short-circuited on the same footing and in the same place, before
+    # its formula function is reached, so it cannot execute in a production analytical run. Its
+    # arithmetic is untouched and unreached.
+    if new_id in DISABLED_EVIDENCE_UNDER_REVIEW:
+        return {
+            "status_color": None,
+            "insufficient_data": True,
+            "activation_state": "DISABLED_EVIDENCE_UNDER_REVIEW",
+            "evidence_metric": EVIDENCE_UNDER_REVIEW_REASON,
         }
     if new_id not in VALIDATED:
         raise MissingModuleError(
@@ -336,7 +397,7 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
             reason = out.get("evidence_metric")
             # A module disabled as concept-only already states why it is silent, and the
             # adapter is not part of that answer: it is refused before its input is consulted.
-            if new_id in DISABLED_CONCEPT_ONLY:
+            if new_id in DISABLED_MODULES:
                 adapted = None
             if adapted is not None:
                 reason = f"{reason} {adapted}" if reason else adapted
