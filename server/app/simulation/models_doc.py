@@ -625,8 +625,33 @@ def run_spec_conflict_density(si: dict, rand: Callable[[], float],
 
 def run_sensitivity_analysis(si: dict, rand: Callable[[], float],
                              period_cutoff) -> dict[str, Any]:
-    if not check_inputs(si, ("bac", "ev", "ac", "pv", "cpi", "spi")):
+    """
+    RUN 11, NEIGHBOUR DEFECT 5 OF 7. MISSINGNESS IMPROVING THE READING.
+
+    The reproducer from the Run 10B sweep: removing the document risk score turned Red into
+    Yellow. Document risk is one of the three drivers this module ranks, and an absent score was
+    read as a sensitivity of exactly zero. Zero is not "unknown": it is the strongest possible
+    claim that this driver does not move the estimate, and it sends the driver to the bottom of
+    the ranking. When document risk was the top driver, withholding it demoted it and the band
+    was taken from a quieter driver instead.
+
+    The driver is required now, on the same footing as the other two. It is neither defaulted to
+    zero nor dropped from the ranking, because dropping it would be the same bargain in a
+    different shape: a module that ranks three drivers cannot rank them from two and call the
+    answer the top driver.
+    """
+    if not check_inputs(si, ("bac", "ev", "ac", "pv", "cpi", "spi", "docRiskScore")):
         return insufficient("Sensitivity_Analysis")
+    _doc = num(si.get("docRiskScore"), None)
+    if _doc is None or _doc < 0 or _doc > 1:
+        # Same domain as every other reader of this field: it is a share and lives in nought to
+        # one. Outside it the driver cannot be ranked against the other two.
+        return insufficient(
+            "Sensitivity_Analysis",
+            "The document risk score falls outside the range a share can occupy, so it cannot "
+            "be ranked against the cost and schedule drivers. No substitute figure is used in "
+            "its place.",
+            ABSTAIN_MALFORMED_INPUT)
     cpi = si["cpi"]
     if cpi == 0 or cpi == 0.05 or cpi == -0.05:
         # JS: division by zero at these exact values → Infinity/NaN fallthrough. Refused.
@@ -636,7 +661,7 @@ def run_sensitivity_analysis(si: dict, rand: Callable[[], float],
         return insufficient("Sensitivity_Analysis")  # bac=0: JS NaN fallthrough, refused
     cpi_sens = abs(si["bac"] / (cpi - 0.05) - si["bac"] / (cpi + 0.05)) / eac_base
     spi_sens = abs(si["spi"] - 1.0) * 0.5
-    doc_sens = si.get("docRiskScore") or 0
+    doc_sens = si["docRiskScore"]
     drivers = sorted(
         [
             {"name": "CPI", "sensitivity": cpi_sens},
@@ -665,9 +690,46 @@ def run_sensitivity_analysis(si: dict, rand: Callable[[], float],
 
 
 def run_tornado_diagram(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 11, NEIGHBOUR DEFECT 6 OF 7. OUT-OF-DOMAIN BANDING.
+
+    The reproducer from the Run 10B sweep: a document risk score of -30 turned Red into Green.
+    The score is multiplied by one hundred to form an impact, and the impacts are averaged into
+    the composite the band reads. A negative score therefore drags the composite down without
+    limit, and the band's calm end is one-sided, so the module reports the quietest reading it
+    has on the most extreme input it can be given.
+
+    THE DOMAINS. The document risk score is a share in nought to one, which is the domain the
+    conflict-density module already enforces on the same field. The cost and schedule performance
+    indices are ratios of value to cost and cannot be at or below zero, which is the domain the
+    variance-at-completion module already enforces on the same field. The two progress figures
+    are shares of the work. No band moved and no boundary was introduced.
+    """
     if not check_inputs(si, ("cpi", "spi", "docRiskScore",
                              "actualPctComplete", "plannedPctComplete")):
         return insufficient("Tornado_Diagram")
+    _domains = (
+        (si["docRiskScore"], lambda v: 0 <= v <= 1,
+         "the document risk score falls outside the range a share can occupy"),
+        (si["cpi"], lambda v: v > 0,
+         "the cost performance index is reported at or below zero, and it is a ratio of earned "
+         "value to actual cost"),
+        (si["spi"], lambda v: v > 0,
+         "the schedule performance index is reported at or below zero, and it is a ratio of "
+         "earned value to planned value"),
+        (si["actualPctComplete"], lambda v: 0 <= v <= 100,
+         "the reported progress falls outside nought to one hundred per cent"),
+        (si["plannedPctComplete"], lambda v: 0 <= v <= 100,
+         "the planned progress falls outside nought to one hundred per cent"),
+    )
+    for _raw, _ok, _words in _domains:
+        _v = num(_raw, None)
+        if _v is None or not _ok(_v):
+            return insufficient(
+                "Tornado_Diagram",
+                f"No risk ranking is measurable: {_words}. No substitute figure is used in its "
+                f"place.",
+                ABSTAIN_MALFORMED_INPUT)
     risks = sorted(
         [
             {"name": "Cost Performance", "impact": abs(1 - si["cpi"]) * 100},

@@ -1,0 +1,21 @@
+surface_or_step,what_was_driven,result,finding,evidence
+preliminary decision step,dc-prejudgment card present in the served page,PASS,stage card present and positioned before reveal,browser drive section B
+preliminary lock,the lock is the transition out of the prejudgment stage; its gating is asserted by the server suites,PARTIAL,"not driven end to end in the browser: needs a consented, profiled, assigned participant and a research package, which this run did not build",server suites test_pre_lock_guard.py 20/20
+AI reveal,dc-reveal card present and dc-reveal-btn is a control the participant presses,PASS,"reveal is participant-initiated, not timed",browser drive section B
+final decision step,dc-decide card present and positioned after reveal,PASS,stage card present in order,browser drive section B
+Signal Ledger,rendered on the participant route for a real computed project,PASS,43 rows state an abstention reason; no row disappears silently,browser drive section B
+canonical-structure abstention rows,"present, each stating what structure is missing",PASS,the Run 10B behaviour is what a participant sees; no proxy finding is shown in its place,browser drive section B
+no fabricated proxy finding,the string '(proxy:' does not appear on the ledger or the decision card,PASS,swept as text on the rendered page,browser drive section B
+abstention reason accuracy,each abstaining row's sentence names the missing input or structure,PASS,asserted on the served result and on the page,browser drive sections A and B
+remediation language absent,"'remediation', 'defect', 'corrected', 'fixed in', 'was wrong', 'previously reported' all absent",PASS,six words swept on the rendered ledger,browser drive section B
+non-voting status not misrepresented,'votes on the governed status' does not appear beside an abstaining row,PASS,swept on the rendered ledger,browser drive section B
+recommendation text,not altered by this run; no qualifier-like or overclaiming string reaches it,PASS,"'validated', 'calibrated', 'field-proven', 'Advisory, non-voting', 'concept-only' all absent from the decision card",browser drive section B
+courses of action,unchanged by this run,PASS,no course-of-action code path touched; decision card text swept,browser drive section B
+decision card,"rendered, free of em dashes and of overclaiming strings",PASS,swept as text,browser drive section B
+final lock,server-side transition; not driven in the browser,PARTIAL,same fixture gap as the preliminary lock,server suites
+transition to next period,dc-advance card present in the served page and last in order,PASS,stage card present and ordered,browser drive section B
+governed status label,served as Cost Recovery Status,PASS,read off the participant's own projectresults response,browser drive section A
+conflict banner,reads 'Conflict: not estimable from one voting lineage',PASS,THIS GATE CAUGHT A REAL DEFECT: the banner first rendered 'Mixed early warning' because the slim list projection carries no conflict state and getProjectFusion did not fall back to the primed row. Corrected in taxonomy.js and re-driven.,browser drive section B
+client analytics absent,"sim.js, simulations.js, categories.js and deepdive.js are not loaded; LinSim and LinSimulations are undefined in the participant's browser",PASS,"read off window in the real page, which tests_render.html cannot do",browser drive section B
+defensibility evidence served,the generated evidence object is loaded and states platform-wide that nothing is calibrated,PASS,read off window,browser drive section B
+uncaught page errors,none,PASS,pageerror listener attached for the whole session,browser drive section B

@@ -1248,14 +1248,32 @@
       root.innerHTML = awaitingHtml(p, "Signal ledger");
       return;
     }
-    const conflict = classifyConflict(p);
-
-    // "Signal breakdown not available" is an honest abstention, not a finding, and must not
-    // read as an alert next to the four real conflict findings.
-    const conflictClass =
-      conflict === "Agreement: low risk" ? "conflict-calm"
-      : conflict === "Signal breakdown not available" ? "conflict-unknown"
-      : "conflict-alert";
+    // RUN 11, GATE 6. THE STORED CONFLICT STATE COMES FIRST.
+    //
+    // classifyConflict below is the legacy signal-class classification, and it reads the legacy
+    // per-signal blob, not the evidence that votes. Two modules vote on the governed status and
+    // both are cost lineage, so the Dempster conflict coefficient has nothing independent to
+    // combine against and the server no longer reports a number for it. Printing "Agreement:
+    // low risk" beside that would tell a reader the evidence agrees, when what actually
+    // happened is that there was only one body of evidence and agreement was never tested.
+    //
+    // So when the stored row carries the server's conflict state, that sentence is shown. The
+    // legacy classification is kept for rows that predate Run 11 and carry no such state, which
+    // is the only case where it is still the best available answer.
+    let conflict = classifyConflict(p);
+    let conflictClass;
+    const _f = window.getProjectFusion ? window.getProjectFusion(p) : null;
+    if (_f && _f.conflictSentence) {
+      conflict = _f.conflictSentence;
+      conflictClass = "conflict-unknown";
+    } else {
+      // "Signal breakdown not available" is an honest abstention, not a finding, and must not
+      // read as an alert next to the four real conflict findings.
+      conflictClass =
+        conflict === "Agreement: low risk" ? "conflict-calm"
+        : conflict === "Signal breakdown not available" ? "conflict-unknown"
+        : "conflict-alert";
+    }
 
     root.innerHTML =
       `<div class="ledger-head">

@@ -160,3 +160,80 @@ def dst_fuse(statuses) -> dict[str, Any] | None:
         if result[b] > result[status]:
             status = b
     return {"mass": {s: result[s] for s in STATES}, "status": status, "conflict": last_k}
+
+
+# ---------------------------------------------------------------------------- RUN 11, GATES 5, 6
+#
+# WHY THIS LIVES HERE. fusion.py is the one place the status vocabulary is recognised, and both
+# of these are statements ABOUT a fusion: what the fused rollup may be called, and whether its
+# conflict coefficient means anything. Putting them anywhere else would create a second place
+# that has an opinion about what a fused status is.
+#
+# WHY IT IS A PURE FUNCTION OVER THE STORED CATEGORY STATUSES. Migrations 0020 through 0025 are
+# unapplied in production, so nothing here may add a column. Both statements are DERIVED at read
+# time from `category_statuses`, which every stored result already carries, so a row computed
+# before this run gets the same answer as one computed after it without being rewritten.
+
+#: The registry categories whose lineage is cost. A1 is Cost and EVM Performance, which is where
+#: both voting modules live.
+COST_LINEAGE_CATEGORIES = frozenset({"A1"})
+
+NOT_ESTIMABLE_SINGLE_LINEAGE = "NOT_ESTIMABLE_SINGLE_LINEAGE"
+CONFLICT_ESTIMATED = "ESTIMATED"
+SINGLE_LINEAGE_SENTENCE = "Conflict: not estimable from one voting lineage"
+
+
+def governed_status_semantics(category_statuses, raw_conflict=0.0) -> dict:
+    """
+    What the governed rollup may be called, and whether its conflict number means anything.
+
+    BOTH ANSWERS ARE DERIVED FROM THE VOTING SET AS IT STANDS. If a second lineage ever votes,
+    the label widens and the conflict coefficient becomes reportable, by themselves, with no
+    wording to remember and no constant to change.
+
+    CONFLICT. Dempster's K measures how far two INDEPENDENT bodies of evidence disagree. With one
+    lineage the combine loop never performs a genuine combination and K comes back as 0.0 — which
+    is also the value it takes when independent sources agree completely. A reader cannot tell
+    those apart, and the second reading is the strongest claim the measure can make. So with one
+    lineage the number is withheld and the state is named. No score is manufactured.
+
+    LABEL. Two modules vote and both are cost lineage, so the rollup says whether the remaining
+    budget can still carry the remaining work. It does not speak for schedule, evidence quality,
+    procurement, safety or governance. Calling it overall project health would claim a breadth of
+    evidence that has not voted. This is a DISPLAY string: no code constant is renamed by it, and
+    it says nothing about Group A, which is a group of 53 modules and not this rollup.
+    """
+    cats = category_statuses or {}
+    lineages = sorted(
+        cat for cat, c in cats.items()
+        if isinstance(c, dict) and c.get("status") and c.get("contributes_to_project_status")
+    )
+    if len(lineages) >= 2:
+        conflict_state = CONFLICT_ESTIMATED
+        conflict_value = raw_conflict
+        conflict_sentence = None
+        label = "Governed Project Status"
+        scope = "Fused from the categories that vote: " + ", ".join(lineages) + "."
+    else:
+        conflict_state = NOT_ESTIMABLE_SINGLE_LINEAGE
+        conflict_value = None
+        conflict_sentence = SINGLE_LINEAGE_SENTENCE
+        if len(lineages) == 1 and set(lineages) <= COST_LINEAGE_CATEGORIES:
+            label = "Cost Recovery Status"
+            scope = ("Fused from the cost lineage only: the to-complete cost efficiency and the "
+                     "variance at completion. No schedule, evidence-quality, procurement or "
+                     "governance measure votes on it.")
+        elif len(lineages) == 1:
+            label = "Governed Project Status"
+            scope = "Fused from one voting lineage: " + lineages[0] + "."
+        else:
+            label = "Governed Project Status"
+            scope = "No category voted, so no governed status was fused."
+    return {
+        "project_status_label": label,
+        "project_status_scope": scope,
+        "project_conflict": conflict_value,
+        "project_conflict_state": conflict_state,
+        "project_conflict_sentence": conflict_sentence,
+        "voting_lineages": lineages,
+    }

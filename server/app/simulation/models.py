@@ -65,7 +65,13 @@ from .rng import as_percent, clamp, num, pctile, round1, round2
 # status and could therefore turn an out-of-domain reading into a favourable project status, and
 # it required the defining structure of six canonical methods before they compute. Both change
 # what this layer emits, so the stamp moves with them.
-SIMULATION_VERSION = "sim-2026.08-v5"
+# RUN 11 (BROWSER, PARTICIPANT AND GOVERNANCE CLEANUP) moves it again, to sim-2026.08-v6. Every
+# earlier stamp remains the historical audit baseline for the results already collected under it;
+# none is overwritten. Run 11 corrected the seven remaining neighbour defects the Run 10B sweep
+# reproduced and left standing: five modules banded a reading from an input outside the domain
+# the quantity can occupy, and two rewarded a withheld input with a calmer band. All seven are
+# non-voting and none became voting. This changes what this layer emits, so the stamp moves.
+SIMULATION_VERSION = "sim-2026.08-v6"
 
 
 # -------------------------------------------------------------------------------------------

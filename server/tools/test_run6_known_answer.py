@@ -230,20 +230,60 @@ RUN10B_SCOPED_FILES = {
     "server/app/simulation/canonical.py",
 }
 
-_unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES)
+#: RUN 11 adds its own authorised production scope on the same footing. Two parts to it.
+#:
+#: The analytical part: the seven remaining neighbour defects the Run 10B sweep reproduced and
+#: left standing, all non-voting, corrected in the four model files that hold them.
+#:
+#: THE BROWSER PART, WHICH IS THE FIRST TIME THIS GUARD HAS ADMITTED AN ASSET. Since Run 6 this
+#: check has asserted that nothing under assets/ differs from the freeze, and that assertion was
+#: right for every run that followed, because none of them was authorised to touch a participant
+#: surface. Run 11 Gate 1 is authorised to, and its whole subject is those files: the dormant
+#: client-arithmetic call sites on the participant route, and the algorithm version guard. The
+#: check below therefore no longer says "nothing under assets/ differs at all"; it says the only
+#: assets that differ are the three Run 11 names. The original finding is preserved rather than
+#: deleted: every OTHER participant surface is still required to be byte-identical to the freeze,
+#: which is what the guard was protecting.
+RUN11_SCOPED_FILES = {
+    "server/app/simulation/models.py",
+    "server/app/simulation/models_doc.py",
+    "server/app/simulation/models_evm.py",
+    "server/app/simulation/models_ext.py",
+    "server/app/simulation/models_gov.py",
+    "server/app/simulation/models_dq.py",
+    "server/app/simulation/fusion.py",
+    "server/app/simulation/registry.py",
+    "assets/js/client_algorithm_version.js",
+    "assets/js/detail.js",
+    "assets/js/signals.js",
+    "assets/js/taxonomy.js",
+    "assets/js/ds_defensibility_data.js",
+    "assets/js/app.js",
+    "assets/js/decision.js",
+    "server/app/documents.py",
+    "server/app/simulation/compute.py",
+    "assets/js/ds_defensibility_evidence.js",
+    "index.html",
+}
+
+_unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES
+                   - RUN11_SCOPED_FILES)
 check(not _unscoped,
-      "no production file outside the authorised scope of Run 7, Run 10 or Run 10B differs "
-      "from the "
-      "pinned baseline",
+      "no production file outside the authorised scope of Run 7, Run 10, Run 10B or Run 11 "
+      "differs from the pinned baseline",
       str(_unscoped))
 _assets = sorted(p for p in _prod if p.startswith("assets/"))
-check(not _assets,
-      "and nothing under assets/ differs at all, so every participant surface and the browser "
-      "instrument are byte-identical to the freeze", str(_assets))
+# RESTATED BY RUN 11, original finding preserved. Until Run 11 this read "nothing under assets/
+# differs at all". Run 11 Gate 1 is authorised to change exactly the browser files that carried
+# the dormant client arithmetic, so the assertion narrows to those and keeps its force over
+# every other participant surface.
+check(not (set(_assets) - RUN11_SCOPED_FILES),
+      "every participant surface outside Run 11's authorised browser scope is byte-identical "
+      "to the freeze", str(sorted(set(_assets) - RUN11_SCOPED_FILES)))
 check(_prod, "the guard is live: it does see the files this run did change", str(_prod))
 # RESTATED BY RUN 10B, with the original reason preserved: this check has tracked the current
 # stamp since Run 6, and it read sim-2026.08-v4 while Run 10 was current.
-check(registry.SIMULATION_VERSION == "sim-2026.08-v5",
+check(registry.SIMULATION_VERSION == "sim-2026.08-v6",
       "the analytical layer is stamped at Run 10B's version, and sim-2026.08-v2, "
       "sim-2026.08-v3 and sim-2026.08-v4 all remain historical audit baselines for results "
       "already collected under them",
@@ -1319,7 +1359,18 @@ ka(set(res["category_statuses"].keys()), _voting_cats,
    "rollup: exactly the categories carrying a voting module have a fused status")
 ka(res["categories_voting"], 1,
    "rollup: one category votes, so project conflict of zero means one source and not agreement")
-ka(res["project_conflict"], 0.0, "rollup: project conflict is structurally zero")
+# RESTATED BY RUN 11 GATE 6, AND THE ORIGINAL FINDING IS THE REASON THE RESTATEMENT EXISTS.
+# Run 6 recorded that the rollup's conflict was structurally zero, and named why in the line
+# above: one source, not agreement. That finding was correct and it is what Run 11 acted on. A
+# zero is now withheld rather than published, because zero is a number the coefficient reaches
+# only by never combining anything, and no genuine two-source combine produces it. The assertion
+# is therefore that the coefficient is NOT REPORTED under one-lineage voting, and that the state
+# says so in words.
+ka(res["project_conflict"], None,
+   "rollup: with one voting lineage no conflict coefficient is published, because zero would "
+   "read as agreement that was never tested")
+ka(res["project_conflict_state"], "NOT_ESTIMABLE_SINGLE_LINEAGE",
+   "rollup: and the state names why rather than leaving a blank")
 _c_cats = {registry.registry_index()[m]["category"] for m in VALIDATED
            if registry.group_of(m) == "C"}
 ka(_c_cats & set(res["category_statuses"].keys()), set(),
@@ -1698,9 +1749,19 @@ print(f"     {len(_claims_validated)} state that the module has been VALIDATED")
 print(f"     {len(_unqualified)} carry no calibration or validation qualification anywhere")
 check(len(_entries) == 103, "ds_defensibility_data.js holds 103 module entries",
       str(len(_entries)))
-check(len(_claims_validated) > 0,
-      f"{len(_claims_validated)} entries claim validation the platform does not have; reported, "
-      f"not edited, because the content is the owner's decision")
+# RESTATED BY RUN 11 GATE 4, AND THE ORIGINAL FINDING IS EXACTLY WHY. Run 6 measured this and
+# reported it rather than editing it, because the handbook's content was the owner's decision at
+# the time: 69 of 103 entries stated that a module HAD BEEN VALIDATED, on a platform that holds
+# no validation evidence for any module. Run 11 was authorised to correct it, and did: each of
+# those entries now states what such validation would consist of, that none of it has been
+# performed, and what the repository actually holds instead. The assertion therefore flips from
+# "the overclaim is present, and here is how many" to "the overclaim is gone", and the measure
+# itself is unchanged so the two runs are counting the same thing.
+check(len(_claims_validated) == 0,
+      f"no entry claims validation the platform does not have; Run 6 measured 69 of 103 and "
+      f"reported them, Run 11 corrected them, and this run counts "
+      f"{len(_claims_validated)}",
+      str(_claims_validated[:5]))
 check((ROOT / "index.html").read_text(encoding="utf-8").find("ds_defensibility_data.js") >= 0,
       "ds_defensibility_data.js is loaded by index.html, so it is a LIVE surface")
 

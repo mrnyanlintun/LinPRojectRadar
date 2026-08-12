@@ -162,6 +162,12 @@
     // Evidence methods need EVM-derived signals — at least one of these must
     // exist or every run() will return a "no data" stub.
     if (!s.evm && !s.mc && !s.cusum && !s.doc) return;
+    // RUN 11, GATE 1. This backfill computed nine evidence-combination modules in the browser
+    // and grafted them onto the snapshot the spider web renders, which is a second arithmetic
+    // source for rows the server also computes and stores. It is refused on the application
+    // route. An axis with no stored result stays on the no-data ring, which is the truthful
+    // rendering of a module that did not compute.
+    if (!window.LIN_ALLOW_CLIENT_ANALYTICS) return;
     if (!window.LinSimulations) return;
     const results = snapshot.module_results;
     const runners = [

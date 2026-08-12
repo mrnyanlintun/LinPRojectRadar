@@ -389,8 +389,42 @@ def run_vac(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
 
 
 def run_budget_execution(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 11, NEIGHBOUR DEFECT 1 OF 7. OUT-OF-DOMAIN BANDING.
+
+    The reproducer from the Run 10B sweep: actual cost of -700,000 against a budget at completion
+    of 1,000,000 turned Red into Green. The ratio is actual cost over the budget scaled by
+    reported progress, and the band is one-sided — everything at or below 1.05 is Green — so any
+    negative ratio lands in the calmest band the module has. A project that has spent nothing is
+    not the same claim as a project whose ledger says it was paid back, and neither is a healthy
+    execution rate.
+
+    THE DOMAINS, DERIVED FROM WHAT EACH QUANTITY IS, NOT FROM THE BAND. Actual cost is money
+    spent and cannot be below zero. The budget at completion is an authorised amount and cannot
+    be below zero. Reported physical progress is a percentage of the work and lives in nought to
+    one hundred; above one hundred it is not a share of anything. No band moved and no boundary
+    was introduced: the module abstains outside its domain instead of reporting a reading.
+    """
     if not check_inputs(si, ("ac", "bac", "actualPctComplete")):
         return insufficient("Budget_Execution_Rate")
+    _domains = (
+        (si["ac"], lambda v: v >= 0,
+         "the actual cost is reported below zero, and money spent cannot be negative"),
+        (si["bac"], lambda v: v >= 0,
+         "the budget at completion is reported below zero, and an authorised budget cannot be "
+         "negative"),
+        (si["actualPctComplete"], lambda v: 0 <= v <= 100,
+         "the reported progress falls outside nought to one hundred per cent, so it is not a "
+         "share of the work"),
+    )
+    for _raw, _ok, _words in _domains:
+        _v = num(_raw, None)
+        if _v is None or not _ok(_v):
+            return insufficient(
+                "Budget_Execution_Rate",
+                f"No budget execution rate is measurable: {_words}. No substitute figure is "
+                f"used in its place.",
+                ABSTAIN_MALFORMED_INPUT)
     expected = si["bac"] * (si["actualPctComplete"] / 100)
     if not expected > 0:
         return insufficient("Budget_Execution_Rate")

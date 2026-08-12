@@ -38,7 +38,9 @@ import math
 from typing import Any, Callable
 
 from .fusion import dst_combine, normalise_status
-from .models import ABSTAIN_DECISION_STRUCTURE_ABSENT, check_inputs, insufficient
+from .models import (
+    ABSTAIN_DECISION_STRUCTURE_ABSENT, ABSTAIN_MALFORMED_INPUT, check_inputs, insufficient,
+)
 from .models_ext import _derived, _js_str
 from .rng import js_round, round1, round2
 
@@ -306,10 +308,37 @@ def run_worst_n_of_m(si: dict, rand: Callable[[], float], period_cutoff) -> dict
 
 
 def run_far_threshold(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 11, NEIGHBOUR DEFECT 7 OF 7. OUT-OF-DOMAIN BANDING.
+
+    The reproducer from the Run 10B sweep: a cost performance index of -0.857 turned Amber into
+    Green. The forecast at completion is the budget divided by the index, so a negative index
+    produces a negative forecast, hence a negative overrun, hence the calmest band and a printed
+    headroom against the reporting threshold that the project does not have. The zero case was
+    already refused for the division; the negative half of the same domain was left open.
+
+    THE DOMAIN. The cost performance index is earned value over actual cost and is a ratio of two
+    quantities that cannot be negative, so it cannot be at or below zero. The budget at
+    completion is an authorised amount and cannot be below zero. This is the same domain the
+    variance-at-completion module states for the same field. The threshold, the band and the
+    reporting rule are untouched.
+    """
     if not check_inputs(si, ("bac", "cpi", "ev", "ac")):
         return insufficient("FAR_Threshold")
-    if si["cpi"] == 0 or si["bac"] == 0:
-        return insufficient("FAR_Threshold")  # JS Infinity/NaN fallthrough; refused
+    if si["cpi"] <= 0:
+        return insufficient(
+            "FAR_Threshold",
+            "No overrun against the reporting threshold is measurable: the cost performance "
+            "index is reported at or below zero, and the forecast at completion is the budget "
+            "divided by that index. No substitute figure is used in its place.",
+            ABSTAIN_MALFORMED_INPUT)
+    if si["bac"] <= 0:
+        return insufficient(
+            "FAR_Threshold",
+            "No overrun against the reporting threshold is measurable: the budget at completion "
+            "is reported at or below zero, and the overrun is expressed as a share of it. No "
+            "substitute figure is used in its place.",
+            ABSTAIN_MALFORMED_INPUT)
     eac = si["bac"] / si["cpi"]
     overrun = ((eac - si["bac"]) / si["bac"]) * 100
     threshold = 25
