@@ -1,7 +1,7 @@
 Run 11 — Browser, Participant, Governance Cleanup
 
 Starting commit: 68fe615
-Ending commit: (recorded at the merge, below)
+Ending commit: recorded below at the merge
 Previous simulation version: sim-2026.08-v5
 New simulation version: sim-2026.08-v6
 Synthetic package version: v0.3 (unchanged, not re-ingested)
@@ -17,7 +17,7 @@ Bucket-5 disabled: 2/2
 Participant decision sequence changed: no
 Participant-visible wording changed: yes
 Production Postgres accessed: no
-Full suite: 5980/5980 over 75 suites
+Full suite: 5981/5981 over 75 suites, confirmed on merged main
 
 GATES COMPLETED: start gate, 1, 2, 3, 4, 5, 6, 8 (verification only), 9, 10, 11.
 GATE NOT COMPLETED: 7 (Category-9 qualification) is audited and its gaps are reported, but no
@@ -321,8 +321,10 @@ is unchanged and still green.
 ## 15. Complete-suite results
 
   - Pre-change baseline: 71 suites, **5627 of 5627**
-  - Final: 75 suites, **5980 of 5980**, ALL SUITES GREEN, each against its own freshly migrated
-    database
+  - Final, on MERGED MAIN: 75 suites, **5981 of 5981**, ALL SUITES GREEN, each against its own
+    freshly migrated database
+  - `tests.html` **51 of 51**; `tests_render.html` **286 of 287**, the one non-pass being check
+    264's requirement for a signed-in session token, which is the same non-pass Run 10B recorded
   - Four new suites: `test_run11_browser_server_authority.py` (61),
     `test_run11_neighbour_defects.py` (121), `test_run11_status_and_conflict.py` (39),
     `test_run11_defensibility_claims.py` (128)
@@ -369,7 +371,7 @@ not built.
 
 ## 18. Exact final-refreeze requirements
 
-  1. Run the complete suite first and record **75 suites and 5980 checks** as the baseline.
+  1. Run the complete suite first and record **75 suites and 5981 checks** as the baseline.
   2. Re-run `drive_run11_participant_route.py` and require 52 of 52.
   3. Close Gate 7 or record the qualification gap as an accepted stated limit.
   4. Build the full decision-sequence browser fixture, or record that gap as accepted.

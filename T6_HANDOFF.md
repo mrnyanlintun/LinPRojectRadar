@@ -6758,11 +6758,12 @@ integrated module became voting. No participant sequence change.
 banner sentence, the governed status label, the qualified defensibility claims, and the seven
 corrected modules' abstention sentences.
 
-**Test totals: 75 suites, 5980 of 5980, all green**, each against its own freshly migrated
-database. Four new suites; five earlier ones restated with every original finding preserved as the
+**Test totals: 75 suites, 5981 of 5981, all green on merged main**, each against its own freshly migrated
+database. `tests.html` 51 of 51; `tests_render.html` 286 of 287, the same one non-pass Run 10B
+recorded (check 264 needs a signed-in session token). Four new suites; five earlier ones restated with every original finding preserved as the
 reason, none deleted and none loosened. `run_all_suites.sh` untouched and still strict.
 
-**Next session, exactly.** Run the complete suite first and record **75 and 5980** as the baseline,
+**Next session, exactly.** Run the complete suite first and record **75 and 5981** as the baseline,
 and re-run `drive_run11_participant_route.py` expecting 52 of 52. Then either close Gate 7 or
 record the qualification gap as an accepted stated limit; then build the full
 preliminary-lock-reveal-decide-lock browser fixture or record that gap as accepted. Re-run
