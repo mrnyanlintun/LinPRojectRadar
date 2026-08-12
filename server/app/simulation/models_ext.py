@@ -530,7 +530,12 @@ def run_critical_path_index(si: dict, rand: Callable[[], float], period_cutoff) 
                             "planned and reported percent complete are needed, and at least one "
                             "of them has not been reported for this period.",
                             ABSTAIN_MISSING_INPUT)
-    verdict = eligible(si, positive=(("plannedPctComplete", "the planned percent complete"),))
+    # RUN 14. The reported percent complete is DECLARED to the preflight, not merely read, so
+    # the shared layer applies the upper end of its domain to it. Run 13 read a reported
+    # progress of ten thousand per cent as Green here.
+    verdict = eligible(si,
+                       required=(("actualPctComplete", "the reported percent complete"),),
+                       positive=(("plannedPctComplete", "the planned percent complete"),))
     if verdict:
         return refuse("Critical_Path_Index", verdict)
     # RUN 10, BUCKET 2. Run 7 guarded the denominator and left the schedule index domain open,
@@ -560,6 +565,12 @@ def run_critical_path_index(si: dict, rand: Callable[[], float], period_cutoff) 
 def run_contingency_burn(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     if not check_inputs(si, ("originalContingency", "remainingContingency", "actualPctComplete")):
         return insufficient("Contingency_Burn_Rate")
+    # RUN 14. Progress is the second denominator of the stress ratio, and an impossible progress
+    # figure makes the ratio small, which is the calm end of the band. Declared to the preflight
+    # so the shared layer refuses it.
+    verdict = eligible(si, required=(("actualPctComplete", "the reported percent complete"),))
+    if verdict:
+        return refuse("Contingency_Burn_Rate", verdict)
     burned = si["originalContingency"] - si["remainingContingency"]
     if not si["originalContingency"] > 0:
         return insufficient(
@@ -620,6 +631,12 @@ def run_contingency_burn(si: dict, rand: Callable[[], float], period_cutoff) -> 
 def run_labor_productivity(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     if not check_inputs(si, ("plannedLaborHours", "actualLaborHours", "actualPctComplete")):
         return insufficient("Labor_Productivity")
+    # RUN 14. The earned-hours rate is linear and increasing in reported progress, so an
+    # impossible progress figure reads as the best possible productivity. Declared to the
+    # preflight so the shared layer refuses it.
+    verdict = eligible(si, required=(("actualPctComplete", "the reported percent complete"),))
+    if verdict:
+        return refuse("Labor_Productivity", verdict)
     planned = num(si.get("plannedLaborHours"), 0)
     actual = num(si.get("actualLaborHours"), 0)
     pct = num(si.get("actualPctComplete"), 0)
@@ -659,6 +676,16 @@ def run_material_cost_variance(si: dict, rand: Callable[[], float],
             "Awaiting reported progress: material cost to date is compared against the share of "
             "the material baseline the work completed has earned, and that share is not known",
         )
+    # RUN 14, FOUND BY THE DEPENDENT SWEEP RATHER THAN BY RUN 13. Run 13 drove this field to ten
+    # thousand and this module did not band better, so it was recorded as a match. The Run 14
+    # sweep drove every bounded field to every value just outside its own bound as well, and a
+    # reported progress a fraction above a hundred per cent DOES read calmer here: it inflates
+    # the expected material cost, which is the denominator of the variance. It is the same
+    # defect as the five, on a module the earlier sample missed, and it is corrected the same
+    # way rather than left standing because it was not on the list.
+    verdict = eligible(si, required=(("actualPctComplete", "the reported percent complete"),))
+    if verdict:
+        return refuse("Material_Cost_Variance", verdict)
     pct = si["actualPctComplete"] / 100
     expected = si["materialCostBaseline"] * pct
     if not expected > 0:
@@ -713,8 +740,21 @@ def run_overhead_absorption(si: dict, rand: Callable[[], float], period_cutoff) 
                             "are needed, and at least one of them has not been reported for "
                             "this period.",
                             ABSTAIN_MISSING_INPUT)
-    pct = si["actualPctComplete"] / 100 if si.get("actualPctComplete") is not None else None
-    planned = si["indirectCostPlan"] * pct if pct is not None else si["indirectCostPlan"]
+    # RUN 14. TWO OF RUN 13'S NINE DEFECT OCCURRENCES MEET IN THIS MODULE, and they are the same
+    # line. The absorption ratio is actual indirect cost over a plan SCALED BY PROGRESS, and
+    # progress was optional: absent, the plan was used UNSCALED, which is the largest denominator
+    # the module can form, so the ratio fell and the band improved. Deleting the progress figure
+    # from a project running hot moved it off Red. That is missing evidence buying a better
+    # reading, and the unscaled plan is a substituted default in every sense that matters even
+    # though no literal is written. Progress is a required input of the quantity this module
+    # names, so it is required, and it carries the upper domain the preflight now applies, which
+    # closes the second occurrence: an impossible progress figure inflated the denominator in
+    # exactly the same direction and read Green.
+    verdict = eligible(si, required=(("actualPctComplete", "the reported percent complete"),))
+    if verdict:
+        return refuse("Overhead_Absorption", verdict)
+    pct = si["actualPctComplete"] / 100
+    planned = si["indirectCostPlan"] * pct
     if not (planned > 0):
         return insufficient("Overhead_Absorption",
                             "Insufficient data: the planned indirect cost at this project's "

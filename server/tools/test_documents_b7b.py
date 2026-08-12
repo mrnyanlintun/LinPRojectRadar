@@ -425,8 +425,16 @@ check(json.loads(body)["result"]["recommendation"] is None,
       "no recommendation package on a project that has none")
 check("recommendation_withheld" not in json.loads(body)["result"],
       "and the read is NOT reported as withheld: nothing is being kept from this PM")
+# RUN 14, MARKER NARROWED TO THE FIELD IT IS LOOKING FOR, WITH THE REASON RECORDED. This loop
+# looks for a researcher-authored recommendation package leaking into an operational read. Four
+# of the five markers are unique strings that can only come from such a package. The fifth was
+# the bare word "alternatives", and that word is ordinary English that the analytical layer is
+# entitled to use: Run 14 made the decision-matrix module abstain in words when no set of
+# alternatives has been provided, and the sentence a reader sees contains the word. Matching the
+# JSON FIELD instead of the word keeps the guard pointed at the package field it was written for
+# and removes a false alarm on a reader sentence. The other four are unchanged.
 for marker in ("ZQMARK", "package_hash", "package_id",
-               "alternatives", "detected_condition"):
+               '"alternatives":', "detected_condition"):
     present = marker in body
     if present:
         i = body.index(marker)

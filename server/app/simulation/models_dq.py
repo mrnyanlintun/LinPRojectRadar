@@ -220,6 +220,12 @@ def run_info_completeness(si: dict, rand: Callable[[], float], period_cutoff) ->
 
 # ------------------------------------------------------------ C1.6 Cross-document Consistency
 
+#: The cross-document agreements this method is defined over: cost performance against earned
+#: value and actual cost, schedule performance against earned value and planned value, and
+#: reported progress against earned value and the budget at completion. Three, declared here so
+#: the score's denominator is the method's, and so adding a fourth check is one visible edit.
+DECLARED_CONSISTENCY_CHECKS = 3
+
 
 def run_cross_doc_consistency(si: dict, rand: Callable[[], float],
                               period_cutoff) -> dict[str, Any]:
@@ -247,18 +253,35 @@ def run_cross_doc_consistency(si: dict, rand: Callable[[], float],
         checks += 1
     if checks == 0:
         return insufficient("Cross_Doc_Consistency")
-    score = (checks - inconsistencies) / checks
+    # RUN 14. THE DENOMINATOR IS THE THREE CHECKS THIS METHOD IS DEFINED OVER, NOT THE SUBSET
+    # THE CORPUS HAPPENED TO SUPPORT. Run 13 removed the reported percent complete from a
+    # project whose progress disagreed with its earned value, and the reading went from Amber to
+    # Green: the failing check left the numerator AND the denominator together, and the score
+    # renormalised over the survivors. Deleting the document that carried the disagreement made
+    # the documents agree. The quantity this module reports is how much cross-document
+    # consistency has been DEMONSTRATED, so a check that could not be run is not consistent, and
+    # it is not counted as inconsistent either: the sentence says how many could not be run, and
+    # the reader is told which figure is missing rather than shown a score built on its absence.
+    # The four band boundaries are untouched.
+    consistent = checks - inconsistencies
+    score = consistent / DECLARED_CONSISTENCY_CHECKS
     color = ("Green" if score >= 1.0 else "Yellow" if score >= 0.67
              else "Amber" if score >= 0.33 else "Red")
     pct = int(js_round(score * 100))
+    not_performed = DECLARED_CONSISTENCY_CHECKS - checks
     return {
         "method_class": "Cross_Doc_Consistency",
         "status_color": color,
         "consistency_score": pct,
         "inconsistencies": inconsistencies,
         "checks_performed": checks,
+        "checks_declared": DECLARED_CONSISTENCY_CHECKS,
+        "checks_not_performed": not_performed,
         "evidence_metric": (
-            f"{checks - inconsistencies} of {checks} cross-document checks consistent ({pct}%)"
+            f"{consistent} of {DECLARED_CONSISTENCY_CHECKS} cross-document checks consistent "
+            f"({pct}%)"
+            + (f"; {not_performed} could not be run because the figures they compare have not "
+               f"all been reported" if not_performed > 0 else "")
             + ("; verify figures across uploaded documents" if inconsistencies > 0 else "")
         ),
     }

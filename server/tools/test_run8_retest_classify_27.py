@@ -222,13 +222,28 @@ RUN12_SCOPED_FILES = {
     "server/app/documents.py",
 }
 
+#: RUN 14 adds its own authorised production scope on the same footing, and it is the two files
+#: that hold the numeric contract plus the model files carrying the eight corrections Run 13's
+#: evidence required. The upper end of a field's domain is a property of the field, so it is
+#: declared in the registry and enforced by the validator that already runs at every entry
+#: point, rather than being added to each module that reads the field.
+RUN14_SCOPED_FILES = {
+    "server/app/field_registry.py",
+    "server/app/extraction_merge.py",
+    "server/app/simulation/models.py",
+    "server/app/simulation/models_ext.py",
+    "server/app/simulation/models_doc.py",
+    "server/app/simulation/models_dq.py",
+    "server/app/simulation/models_fuzzy.py",
+}
+
 _diff = subprocess.run(["git", "diff", "--name-only", GUARD_BASELINE_REV, "--"],
                        cwd=str(ROOT), capture_output=True, text=True).stdout.split()
 _prod = [p for p in _diff
          if (p.startswith("server/app/") or p.startswith("assets/"))
          and p not in RUN8_SCOPED_FILES and p not in RUN10_SCOPED_FILES
          and p not in RUN10B_SCOPED_FILES and p not in RUN11_SCOPED_FILES
-         and p not in RUN12_SCOPED_FILES]
+         and p not in RUN12_SCOPED_FILES and p not in RUN14_SCOPED_FILES]
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
 # RESTATED BY RUN 11, original finding preserved. This read "nothing under assets/ differs"
@@ -1144,64 +1159,64 @@ ka(abstains(run_environmental_compliance({"environmentalIssuesDiscussed": 2,
 section("9. THE TWO BUCKET 4 MODULES: THE ARITHMETIC PASSES, THE METHOD IS NOT PRESENT")
 # =================================================================================================
 
-# ---- A5.4 Scenario Modeling. Three deterministic forecasts, no scenario definitions anywhere.
-#      bac 1,000,000, ev 400,000, ac 440,000, cpi 0.909, spi 0.889:
-#      remaining    = 1,000,000 - 400,000 = 600,000
-#      optimistic   = 440,000 + 600,000 * 1.00 = 1,040,000
-#      realistic    = 440,000 + 600,000 / 0.909 = 440,000 + 660,066.007 = 1,100,066.007
-#      pessimistic  = 440,000 + 600,000 / min(0.909, 0.889) = 440,000 + 674,915.636 = 1,114,915.6
-#      range        = (1,114,915.6 - 1,040,000)/1,000,000 * 100 = 7.5 per cent
-#      the Amber arm is pessimistic <= bac * 1.20 = 1,200,000, and the Yellow arm is
-#      <= 1,100,000, which 1,114,915.6 exceeds, so Amber.
-_sm = run_scenario_modeling({"bac": 1000000, "ev": 400000, "ac": 440000,
-                             "cpi": 0.909, "spi": 0.889}, NO_ARG, "2025-06-30")
-ka(_sm["optimistic_eac"], 1040000, "A5.4: the optimistic forecast is 1,040,000 by hand",
-   "A5.4", "known_answer", "440,000 + 600,000")
-ka(_sm["realistic_eac"], 1100066, "A5.4: the likely forecast is 1,100,066 by hand", "A5.4",
-   "known_answer", "440,000 + 600,000/0.909")
-ka(_sm["pessimistic_eac"], 1114916, "A5.4: the worst forecast is 1,114,916 by hand", "A5.4",
-   "known_answer", "440,000 + 600,000/0.889")
-ka(_sm["scenario_range_pct"], 7.5, "A5.4: the range is 7.5 per cent of the budget", "A5.4",
-   "known_answer", "(1,114,915.6 - 1,040,000)/1,000,000 * 100")
-ka(_sm["status_color"], "Amber", "A5.4: and the reading is Amber", "A5.4", "boundary")
-#      Monetary scale equivariance, exhausted: the three forecasts scale with the money and the
-#      range percentage does not move, which is what a scenario range being a percentage means.
-_sm_fail = []
-for scale in (1, 2, 10, 100):
-    r = run_scenario_modeling({"bac": 1000000 * scale, "ev": 400000 * scale,
-                               "ac": 440000 * scale, "cpi": 0.909, "spi": 0.889},
-                              NO_ARG, "2025-06-30")
-    if r["scenario_range_pct"] != _sm["scenario_range_pct"]:
-        _sm_fail.append(scale)
-ka(_sm_fail, [], "A5.4: the scenario range is invariant under monetary scaling", "A5.4",
-   "property")
-ka(abstains(run_scenario_modeling({"bac": 1000000, "ev": 400000, "ac": 440000,
-                                   "cpi": -0.9, "spi": 0.889}, NO_ARG, "2025-06-30")), True,
-   "A5.4: a negative cost index is refused, as the fifteen-defects run installed", "A5.4",
-   "abstention")
+# RUN 14 REWROTE THIS SECTION, AND THE HEADING ABOVE IS WHY IT HAD TO BE REWRITTEN.
+#
+# Run 8 recorded both modules as arithmetic that passes while the named method is not present,
+# and this section then asserted the passing arithmetic literal by literal: the three
+# deterministic forecasts A5.4 returned when no scenario definitions were in the corpus, and the
+# closeness coefficient B2.19 computed from one project's own three criteria when no matrix of
+# alternatives was in the corpus. Run 13 tested what a reader receives and recorded both as
+# mismatches, because each returned a band under the name of a method the platform was not
+# running, and Run 14 removed both fallbacks. The old expected values are kept in the comments
+# below as the historical record of what the platform used to do; they are no longer asserted,
+# because asserting them would be this suite holding a defect in place.
+#
+# ---- A5.4 Scenario Modeling. What it used to do with bac 1,000,000, ev 400,000, ac 440,000,
+#      cpi 0.909, spi 0.889: optimistic 1,040,000, likely 1,100,066, worst 1,114,916, a range of
+#      7.5 per cent of the budget, and a reading of Amber. None of it was a scenario model: a
+#      scenario model is a set of courses of action costed under stated scenarios with their
+#      probabilities, and no such structure was involved in any of those five numbers.
+_sm_plain = run_scenario_modeling({"bac": 1000000, "ev": 400000, "ac": 440000,
+                                   "cpi": 0.909, "spi": 0.889}, NO_ARG, "2025-06-30")
+ka(abstains(_sm_plain), True,
+   "A5.4: with no decision problem in the corpus the module abstains rather than reporting an "
+   "earned value forecast under the name of a scenario model", "A5.4", "canonical_structure")
+ka(_sm_plain.get("abstention_reason_code"), "canonical_decision_structure_absent",
+   "A5.4: and the abstention names the absent decision structure", "A5.4", "canonical_structure")
+ka([k for k in ("optimistic_eac", "realistic_eac", "pessimistic_eac", "scenario_range_pct",
+                "status_color") if _sm_plain.get(k) is not None], [],
+   "A5.4: none of the five figures this section used to assert is returned any more", "A5.4",
+   "canonical_structure")
+speakable(_sm_plain, "A5.4 with no decision problem")
+#      The abstention does not depend on the earned value figures being consistent: it is the
+#      absent structure that decides, so an inconsistent position abstains for the same reason
+#      rather than for a different one.
+ka(run_scenario_modeling({"bac": 1000000, "ev": 400000, "ac": 440000,
+                          "cpi": -0.9, "spi": 0.889}, NO_ARG,
+                         "2025-06-30").get("abstention_reason_code"),
+   "canonical_decision_structure_absent",
+   "A5.4: a negative cost index abstains on the absent structure, which is decided first",
+   "A5.4", "abstention")
 
-# ---- B2.19 CRITIC-TOPSIS. The arithmetic is coherent and all four bands are reachable, which
-#      is what separates it from the ranking module above. What is absent is the alternatives
-#      matrix a CRITIC weighting is computed ACROSS; here the weights come from one project's
-#      own three criteria, so a criterion sitting at the mean of the other two is weighted at
-#      zero and drops out of its own decision.
-#      cpi 0.90, spi 0.90, risk value 1 - 0.10 = 0.90: all three equal, so the standard
-#      deviation is zero and the module's own fallback gives each criterion a weight of a third.
+# ---- B2.19 CRITIC-TOPSIS. What it used to do with cpi 0.90, spi 0.90 and a risk value of 0.90:
+#      all three criteria equal, so the standard deviation across them was zero, the module's own
+#      fallback gave each a weight of one third, and it returned a distance to the ideal of
+#      0.135, a distance to the anti-ideal of 0.356, a closeness coefficient of 0.724 and a
+#      reading of Green. The weighting in this method is computed ACROSS ALTERNATIVES, and one
+#      project is not a set of alternatives: Run 8 recorded that a criterion sitting at the mean
+#      of the other two carried a weight of exactly zero and dropped out of its own decision.
 _ct_flat = run_critic_topsis({"cpi": 0.90, "spi": 0.90, "docRiskScore": 0.10},
                              NO_ARG, "2025-06-30")
-#      d_ideal = sqrt(1/3 * (0.90-1.05)^2 + 1/3 * (0.90-1.05)^2 + 1/3 * (0.90-1.00)^2)
-#              = sqrt(1/3 * (0.0225 + 0.0225 + 0.01)) = sqrt(0.0183333) = 0.135401 -> 0.135
-#      d_anti  = sqrt(1/3 * (0.10^2 + 0.10^2 + 0.60^2)) = sqrt(1/3 * 0.38) = sqrt(0.126667)
-#              = 0.355903 -> 0.356
-#      topsis  = 0.355903 / (0.135401 + 0.355903 + 0.0001) = 0.355903/0.491404 = 0.724271 -> 0.724
-ka(_ct_flat["distance_ideal"], 0.135, "B2.19: the distance to the ideal is 0.135 by hand",
-   "B2.19", "known_answer", "sqrt(one third of 0.055)")
-ka(_ct_flat["distance_anti"], 0.356, "B2.19: the distance to the anti-ideal is 0.356 by hand",
-   "B2.19", "known_answer", "sqrt(one third of 0.38)")
-ka(_ct_flat["topsis_score"], 0.724, "B2.19: the closeness coefficient is 0.724 by hand",
-   "B2.19", "known_answer", "0.355903 / (0.135401 + 0.355903 + 0.0001)")
-ka(_ct_flat["status_color"], "Green", "B2.19: 0.724 lands Green", "B2.19", "boundary")
-#      All four bands are reachable, exhausted over the same grid the ranking module failed.
+ka(abstains(_ct_flat), True,
+   "B2.19: with no matrix of alternatives in the corpus the module abstains rather than "
+   "weighting one project's own criteria against each other", "B2.19", "canonical_structure")
+ka(_ct_flat.get("abstention_reason_code"), "canonical_decision_structure_absent",
+   "B2.19: and the abstention names the absent decision structure", "B2.19",
+   "canonical_structure")
+speakable(_ct_flat, "B2.19 with no decision matrix")
+#      Exhausted rather than sampled: over the same grid this section used to sweep for band
+#      reachability, there is now no band at all, because no input to a single project can supply
+#      the structure the method is defined over.
 _ct_bands = set()
 for cpi_i in range(50, 161, 4):
     for spi_i in range(50, 161, 4):
@@ -1209,18 +1224,17 @@ for cpi_i in range(50, 161, 4):
             _ct_bands.add(run_critic_topsis({"cpi": cpi_i / 100, "spi": spi_i / 100,
                                              "docRiskScore": doc_i / 100},
                                             NO_ARG, "2025-06-30")["status_color"])
-ka(sorted(_ct_bands), ["Amber", "Green", "Red", "Yellow"],
-   "B2.19: all four bands are reachable, unlike the ranking module beside it", "B2.19",
+ka(sorted(_ct_bands, key=str), [None],
+   "B2.19: no band is reachable from any single-project input across the whole grid", "B2.19",
    "property")
-#      The degenerate weighting, demonstrated rather than described: the middle criterion of
-#      three carries a weight of zero whenever it equals their mean.
+#      The degenerate weighting Run 8 found is still demonstrated, in arithmetic held here rather
+#      than in production, so the reason the fallback was removed stays visible after its removal.
 _crit = [0.80, 0.90, 1.00]
 _mean = sum(_crit) / 3
 _sd = math.sqrt(sum((v - _mean) ** 2 for v in _crit) / 3)
 _w = [abs(v - _mean) / _sd for v in _crit]
 ka(_w[1], 0.0, "B2.19: a criterion equal to the mean of the three carries no weight at all",
    "B2.19", "known_answer", "abs(0.90 - 0.90) divided by the standard deviation")
-
 
 # =================================================================================================
 section("10. THE TWO BUCKET 5 MODULES: THE UNCONDITIONAL ABSTENTION CONTRACT")

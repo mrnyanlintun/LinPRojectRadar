@@ -78,7 +78,17 @@ from .rng import as_percent, clamp, num, pctile, round1, round2
 # something it did not emit before. NOTHING ARITHMETICAL CHANGED WITH IT: no band, no boundary,
 # no module, no vote and no status. The stamp moves because the emitted object changed, which is
 # the rule this file has followed since Run 4, not because a number did.
-SIMULATION_VERSION = "sim-2026.08-v7"
+# RUN 14 (TARGETED REMEDIATION, ANOMALY VALIDATION AND DISABLED-METHOD FUNCTIONAL TESTS) moves
+# it again, to sim-2026.08-v8. Every earlier stamp remains the historical audit baseline for the
+# results already collected under it; none is overwritten. Run 14 corrected the eight modules
+# Run 13's evidence recorded as mismatches: five banded an impossible reported progress as
+# health, two returned a calmer band when required evidence was withheld, and two returned a
+# band under a canonical method's name computed from a construction that is not that method and
+# now abstain when their defining structure is absent. The numeric contract also gained the
+# upper end of the domain for the fields whose definition supplies one. All eight are
+# non-voting, none became voting, and no band boundary moved. This changes what the layer
+# emits, so the stamp moves with it.
+SIMULATION_VERSION = "sim-2026.08-v8"
 
 
 # -------------------------------------------------------------------------------------------
@@ -201,6 +211,23 @@ def eligible(si: dict, required: tuple[tuple[str, str], ...] = (),
             return (ABSTAIN_INVALID_DENOMINATOR,
                     f"Insufficient data: {words} is zero or below, and a rate cannot be formed "
                     f"on it. No substitute figure is used in its place.")
+    # RUN 14. The upper end of the domain, for the declared inputs that have one. The numeric
+    # contract now refuses an impossible figure at every entry point, so in a corpus ingested
+    # after this run nothing here can fire; it fires on a figure stored BEFORE the contract
+    # gained its upper bound, and on any future path that reaches a module without passing the
+    # boundary. Run 13 found five modules banding an impossible percentage as health, and a
+    # module that abstains on it needs no knowledge of where the figure came from.
+    from ..field_registry import BOUNDED_MAX_SI_FIELDS
+    for key, words in tuple(required) + tuple(positive):
+        upper = BOUNDED_MAX_SI_FIELDS.get(key)
+        if upper is None:
+            continue
+        value = num(si.get(key), None)
+        if value is not None and value > upper:
+            return (ABSTAIN_MALFORMED_INPUT,
+                    f"Insufficient data: {words} was reported as a figure this quantity cannot "
+                    f"take, so it is not read as evidence of anything. No substitute figure is "
+                    f"used in its place.")
     return None
 
 

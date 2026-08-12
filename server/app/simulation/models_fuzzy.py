@@ -388,34 +388,22 @@ def run_critic_topsis(si: dict, rand: Callable[[], float], period_cutoff) -> dic
                 f"achievable option scores {_js_str(score)}"
             ),
         }
-    if not check_inputs(si, ("cpi", "spi", "docRiskScore")):
-        return insufficient("CRITIC_TOPSIS")
-    criteria = [si["cpi"], si["spi"], 1 - (si.get("docRiskScore") or 0)]
-    mean = sum(criteria) / len(criteria)
-    stddev = math.sqrt(sum((v - mean) ** 2 for v in criteria) / len(criteria))
-    weights = [abs(v - mean) / stddev if stddev > 0 else 1 / 3 for v in criteria]
-    w_sum = sum(weights)
-    weights = [w / w_sum for w in weights]
-    ideal = [1.05, 1.05, 1.00]
-    anti = [0.80, 0.80, 0.30]
-    d_ideal = math.sqrt(sum(weights[i] * (criteria[i] - ideal[i]) ** 2
-                            for i in range(len(criteria))))
-    d_anti = math.sqrt(sum(weights[i] * (criteria[i] - anti[i]) ** 2
-                           for i in range(len(criteria))))
-    topsis = _round3(d_anti / (d_ideal + d_anti + 0.0001))
-    color = ("Green" if topsis >= 0.65 else "Yellow" if topsis >= 0.50
-             else "Amber" if topsis >= 0.35 else "Red")
-    return {
-        "method_class": "CRITIC_TOPSIS",
-        "status_color": color,
-        "topsis_score": topsis,
-        "distance_ideal": _round3(d_ideal),
-        "distance_anti": _round3(d_anti),
-        "evidence_metric": (
-            f"CRITIC-TOPSIS: {_js_str(topsis)} (d+ {_js_str(_round3(d_ideal))}, "
-            f"d- {_js_str(_round3(d_anti))})"
-        ),
-    }
+    # RUN 14. THE SINGLE-PROJECT FALLBACK IS GONE. This method weights criteria by how much the
+    # ALTERNATIVES differ on them and then measures each alternative's closeness to the best
+    # achievable option. With one project there are no alternatives: Run 10B recorded that the
+    # weighting degenerated to the spread of one project's own three criteria and that a
+    # criterion equal to their mean carried a weight of exactly zero, and Run 13 recorded what a
+    # reader receives, which was a band under this method's name computed from a construction
+    # that is not this method. Where no decision matrix is provided the module abstains and says
+    # so. Nothing is renamed and no proxy is substituted.
+    return insufficient(
+        "CRITIC_TOPSIS",
+        "No set of alternatives scored against criteria has been provided for this project, and "
+        "this method ranks alternatives by how far each stands from the best and the worst "
+        "achievable option. A single project is not a set of alternatives, and no substitute "
+        "score is reported in its place.",
+        ABSTAIN_DECISION_STRUCTURE_ABSENT)
+
 
 
 # ------------------------------------------------------------ B2.20 Hypersoft Sets
