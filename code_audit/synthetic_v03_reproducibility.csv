@@ -1,0 +1,15 @@
+item,value,note
+python_version,3.11.15,generator environment
+networkx,3.6.1,pinned in requirements-lock.txt inside the package
+numpy,2.3.5,pinned in requirements-lock.txt inside the package
+openpyxl,3.1.5,pinned in requirements-lock.txt inside the package
+pandas,2.2.3,pinned in requirements-lock.txt inside the package
+scipy,1.17.0,pinned in requirements-lock.txt inside the package
+lxml,absent,not installed in the generator environment or the test interpreter
+rng_implementation,numpy.random.Generator(PCG64),seeded per project and per case
+programme_seed,20260812,sha256 derived per simulation
+builder_sha256,4687a7609e8bf235addbc5673d1517a2a287b25112c502d3105403498f714241,
+validator_sha256,3b3802a4236b122bea11281ef5677a8c915927f0f1295873dd1541a8aa67a608,
+combined_zip_sha256,b478a2cb21d8acda89767abb6582913f39b64f3b20afd9ef2cdf0095cd5d93a6,identical on a second build in an isolated virtual environment
+tree_diff,none,diff -rq between the first and second builds is empty
+variable_metadata,none,timestamps are fixed and archive entries are normalised

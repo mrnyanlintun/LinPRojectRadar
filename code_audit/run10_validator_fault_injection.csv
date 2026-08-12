@@ -1,0 +1,17 @@
+injection,file,bytes_changed,validator_exit,named_failures
+1 Monte Carlo wrong alias,module_id_aliases.csv,yes,1,identity:alias_present:A1.1
+2 wrong distribution type,package_A_project_structures/cost_elements.csv,yes,1,local_checksum_verify:package_A_project_structures; mc:element_distribution_declared
+3 altered analytic mean,package_A_project_structures/cost_risk_ground_truth.csv,yes,1,local_checksum_verify:package_A_project_structures; mc:analytic_total:PRJ-AIR; mc:ground_truth_hash:PRJ-AIR
+4 altered simulation mean,package_A_project_structures/cost_risk_ground_truth.csv,yes,1,local_checksum_verify:package_A_project_structures; mc:ground_truth_hash:PRJ-HWY; mc:mean_check_recorded:PRJ-HWY
+5 altered seed,package_A_project_structures/cost_risk_ground_truth.csv,yes,1,local_checksum_verify:package_A_project_structures; mc:ground_truth_hash:PRJ-HSP
+6 invalid low mode high,package_A_project_structures/cost_elements.csv,yes,1,local_checksum_verify:package_A_project_structures; mc:element_ordering
+7 invalid probability,package_A_project_structures/cost_risk_events.csv,yes,1,local_checksum_verify:package_A_project_structures; mc:probability_domain
+8 iteration count changed without regenerating,package_A_project_structures/cost_risk_ground_truth.csv,yes,1,local_checksum_verify:package_A_project_structures; mc:acceptance_threshold_recomputed:PRJ-WTR; mc:ground_truth_hash:PRJ-WTR
+9 biased mean beyond tolerance,package_A_project_structures/cost_risk_ground_truth.csv,yes,1,local_checksum_verify:package_A_project_structures; mc:ground_truth_hash:PRJ-RAL; mc:mean_check_recorded:PRJ-RAL
+10 wrong DSM seed,package_A_project_structures/dsm_ground_truth.csv,yes,1,dsm:cumulative:programme:PRJ-AIR:P01; dsm:first_order:programme:PRJ-AIR:P01; dsm:ground_truth_hash:programme:PRJ-AIR:P01
+11 changed edge strength,package_A_project_structures/dsm_edges.csv,yes,1,dsm:cumulative:programme:PRJ-AIR:P01; dsm:cumulative:programme:PRJ-AIR:P05; dsm:first_order:programme:PRJ-AIR:P01
+12 wrong first-order impact,package_A_project_structures/dsm_ground_truth.csv,yes,1,dsm:total_first_order:programme:PRJ-AIR:P02; local_checksum_verify:package_A_project_structures
+13 wrong cumulative value,package_A_project_structures/dsm_ground_truth.csv,yes,1,dsm:total_state:programme:PRJ-AIR:P03; local_checksum_verify:package_A_project_structures
+14 wrong positive node count,package_A_project_structures/dsm_ground_truth.csv,yes,1,dsm:positive_including_seed:programme:PRJ-AIR:P04; local_checksum_verify:package_A_project_structures
+15 wrong material count,package_A_project_structures/dsm_ground_truth.csv,yes,1,dsm:material_including_seed:programme:PRJ-AIR:P05; local_checksum_verify:package_A_project_structures
+16 threshold changed without regenerating,package_A_project_structures/dsm_ground_truth.csv,yes,1,dsm:material_excluding_seed:programme:PRJ-AIR:P06; dsm:material_including_seed:programme:PRJ-AIR:P06; dsm:threshold_matches_contract:programme:PRJ-AIR:P06

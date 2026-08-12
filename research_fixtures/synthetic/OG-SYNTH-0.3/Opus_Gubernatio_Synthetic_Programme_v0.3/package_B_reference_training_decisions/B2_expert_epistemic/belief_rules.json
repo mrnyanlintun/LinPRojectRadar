@@ -1,0 +1,309 @@
+{
+  "consequent_states": [
+    "GREEN",
+    "AMBER",
+    "RED"
+  ],
+  "data_origin": "SYNTHETIC_RESEARCH_FIXTURE",
+  "programme_version": "OG-SYNTH-0.3",
+  "rule_base_id": "SYNTHETIC_BRB_001",
+  "rules": [
+    {
+      "belief_amber": 0.042086,
+      "belief_green": 0.957865,
+      "belief_red": 4.9e-05,
+      "belief_sum": 1.0,
+      "cost_state": "GREEN",
+      "document_state": "GREEN",
+      "rule_id": "BR-001",
+      "rule_weight": 1.0,
+      "schedule_state": "GREEN"
+    },
+    {
+      "belief_amber": 0.808114,
+      "belief_green": 0.152633,
+      "belief_red": 0.039252,
+      "belief_sum": 1.0,
+      "cost_state": "GREEN",
+      "document_state": "AMBER",
+      "rule_id": "BR-002",
+      "rule_weight": 1.0,
+      "schedule_state": "GREEN"
+    },
+    {
+      "belief_amber": 0.530185,
+      "belief_green": 0.00241,
+      "belief_red": 0.467405,
+      "belief_sum": 1.0,
+      "cost_state": "GREEN",
+      "document_state": "RED",
+      "rule_id": "BR-003",
+      "rule_weight": 1.0,
+      "schedule_state": "GREEN"
+    },
+    {
+      "belief_amber": 0.808114,
+      "belief_green": 0.152633,
+      "belief_red": 0.039252,
+      "belief_sum": 1.0,
+      "cost_state": "GREEN",
+      "document_state": "GREEN",
+      "rule_id": "BR-004",
+      "rule_weight": 1.0,
+      "schedule_state": "AMBER"
+    },
+    {
+      "belief_amber": 0.849805,
+      "belief_green": 0.077414,
+      "belief_red": 0.07278,
+      "belief_sum": 1.0,
+      "cost_state": "GREEN",
+      "document_state": "AMBER",
+      "rule_id": "BR-005",
+      "rule_weight": 1.0,
+      "schedule_state": "AMBER"
+    },
+    {
+      "belief_amber": 0.391143,
+      "belief_green": 0.000858,
+      "belief_red": 0.607999,
+      "belief_sum": 1.0,
+      "cost_state": "GREEN",
+      "document_state": "RED",
+      "rule_id": "BR-006",
+      "rule_weight": 1.0,
+      "schedule_state": "AMBER"
+    },
+    {
+      "belief_amber": 0.530185,
+      "belief_green": 0.00241,
+      "belief_red": 0.467405,
+      "belief_sum": 1.0,
+      "cost_state": "GREEN",
+      "document_state": "GREEN",
+      "rule_id": "BR-007",
+      "rule_weight": 1.0,
+      "schedule_state": "RED"
+    },
+    {
+      "belief_amber": 0.391143,
+      "belief_green": 0.000858,
+      "belief_red": 0.607999,
+      "belief_sum": 1.0,
+      "cost_state": "GREEN",
+      "document_state": "AMBER",
+      "rule_id": "BR-008",
+      "rule_weight": 1.0,
+      "schedule_state": "RED"
+    },
+    {
+      "belief_amber": 0.292615,
+      "belief_green": 0.000364,
+      "belief_red": 0.707021,
+      "belief_sum": 1.0,
+      "cost_state": "GREEN",
+      "document_state": "RED",
+      "rule_id": "BR-009",
+      "rule_weight": 1.0,
+      "schedule_state": "RED"
+    },
+    {
+      "belief_amber": 0.808114,
+      "belief_green": 0.152633,
+      "belief_red": 0.039252,
+      "belief_sum": 1.0,
+      "cost_state": "AMBER",
+      "document_state": "GREEN",
+      "rule_id": "BR-010",
+      "rule_weight": 1.0,
+      "schedule_state": "GREEN"
+    },
+    {
+      "belief_amber": 0.849805,
+      "belief_green": 0.077414,
+      "belief_red": 0.07278,
+      "belief_sum": 1.0,
+      "cost_state": "AMBER",
+      "document_state": "AMBER",
+      "rule_id": "BR-011",
+      "rule_weight": 1.0,
+      "schedule_state": "GREEN"
+    },
+    {
+      "belief_amber": 0.391143,
+      "belief_green": 0.000858,
+      "belief_red": 0.607999,
+      "belief_sum": 1.0,
+      "cost_state": "AMBER",
+      "document_state": "RED",
+      "rule_id": "BR-012",
+      "rule_weight": 1.0,
+      "schedule_state": "GREEN"
+    },
+    {
+      "belief_amber": 0.849805,
+      "belief_green": 0.077414,
+      "belief_red": 0.07278,
+      "belief_sum": 1.0,
+      "cost_state": "AMBER",
+      "document_state": "GREEN",
+      "rule_id": "BR-013",
+      "rule_weight": 1.0,
+      "schedule_state": "AMBER"
+    },
+    {
+      "belief_amber": 0.83686,
+      "belief_green": 0.036769,
+      "belief_red": 0.126371,
+      "belief_sum": 1.0,
+      "cost_state": "AMBER",
+      "document_state": "AMBER",
+      "rule_id": "BR-014",
+      "rule_weight": 1.0,
+      "schedule_state": "AMBER"
+    },
+    {
+      "belief_amber": 0.267251,
+      "belief_green": 0.000283,
+      "belief_red": 0.732467,
+      "belief_sum": 1.0,
+      "cost_state": "AMBER",
+      "document_state": "RED",
+      "rule_id": "BR-015",
+      "rule_weight": 1.0,
+      "schedule_state": "AMBER"
+    },
+    {
+      "belief_amber": 0.391143,
+      "belief_green": 0.000858,
+      "belief_red": 0.607999,
+      "belief_sum": 1.0,
+      "cost_state": "AMBER",
+      "document_state": "GREEN",
+      "rule_id": "BR-016",
+      "rule_weight": 1.0,
+      "schedule_state": "RED"
+    },
+    {
+      "belief_amber": 0.267251,
+      "belief_green": 0.000283,
+      "belief_red": 0.732467,
+      "belief_sum": 1.0,
+      "cost_state": "AMBER",
+      "document_state": "AMBER",
+      "rule_id": "BR-017",
+      "rule_weight": 1.0,
+      "schedule_state": "RED"
+    },
+    {
+      "belief_amber": 0.190083,
+      "belief_green": 0.000114,
+      "belief_red": 0.809803,
+      "belief_sum": 1.0,
+      "cost_state": "AMBER",
+      "document_state": "RED",
+      "rule_id": "BR-018",
+      "rule_weight": 1.0,
+      "schedule_state": "RED"
+    },
+    {
+      "belief_amber": 0.530185,
+      "belief_green": 0.00241,
+      "belief_red": 0.467405,
+      "belief_sum": 1.0,
+      "cost_state": "RED",
+      "document_state": "GREEN",
+      "rule_id": "BR-019",
+      "rule_weight": 1.0,
+      "schedule_state": "GREEN"
+    },
+    {
+      "belief_amber": 0.391143,
+      "belief_green": 0.000858,
+      "belief_red": 0.607999,
+      "belief_sum": 1.0,
+      "cost_state": "RED",
+      "document_state": "AMBER",
+      "rule_id": "BR-020",
+      "rule_weight": 1.0,
+      "schedule_state": "GREEN"
+    },
+    {
+      "belief_amber": 0.292615,
+      "belief_green": 0.000364,
+      "belief_red": 0.707021,
+      "belief_sum": 1.0,
+      "cost_state": "RED",
+      "document_state": "RED",
+      "rule_id": "BR-021",
+      "rule_weight": 1.0,
+      "schedule_state": "GREEN"
+    },
+    {
+      "belief_amber": 0.391143,
+      "belief_green": 0.000858,
+      "belief_red": 0.607999,
+      "belief_sum": 1.0,
+      "cost_state": "RED",
+      "document_state": "GREEN",
+      "rule_id": "BR-022",
+      "rule_weight": 1.0,
+      "schedule_state": "AMBER"
+    },
+    {
+      "belief_amber": 0.267251,
+      "belief_green": 0.000283,
+      "belief_red": 0.732467,
+      "belief_sum": 1.0,
+      "cost_state": "RED",
+      "document_state": "AMBER",
+      "rule_id": "BR-023",
+      "rule_weight": 1.0,
+      "schedule_state": "AMBER"
+    },
+    {
+      "belief_amber": 0.190083,
+      "belief_green": 0.000114,
+      "belief_red": 0.809803,
+      "belief_sum": 1.0,
+      "cost_state": "RED",
+      "document_state": "RED",
+      "rule_id": "BR-024",
+      "rule_weight": 1.0,
+      "schedule_state": "AMBER"
+    },
+    {
+      "belief_amber": 0.292615,
+      "belief_green": 0.000364,
+      "belief_red": 0.707021,
+      "belief_sum": 1.0,
+      "cost_state": "RED",
+      "document_state": "GREEN",
+      "rule_id": "BR-025",
+      "rule_weight": 1.0,
+      "schedule_state": "RED"
+    },
+    {
+      "belief_amber": 0.190083,
+      "belief_green": 0.000114,
+      "belief_red": 0.809803,
+      "belief_sum": 1.0,
+      "cost_state": "RED",
+      "document_state": "AMBER",
+      "rule_id": "BR-026",
+      "rule_weight": 1.0,
+      "schedule_state": "RED"
+    },
+    {
+      "belief_amber": 0.131189,
+      "belief_green": 4.5e-05,
+      "belief_red": 0.868766,
+      "belief_sum": 1.0,
+      "cost_state": "RED",
+      "document_state": "RED",
+      "rule_id": "BR-027",
+      "rule_weight": 1.0,
+      "schedule_state": "RED"
+    }
+  ]
+}

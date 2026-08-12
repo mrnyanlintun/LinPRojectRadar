@@ -1,0 +1,9 @@
+case_id,description,hand_calculation,stored,agrees
+DSMKA-01,One seed with one outgoing edge,"(0.5, 0.5, 1.5, 1, 2, 1, 2)","(0.5, 0.5, 1.5, 1, 2, 1, 2)",True
+DSMKA-02,One seed with two outgoing edges,"(1.5, 1.5, 3.5, 2, 3, 2, 3)","(1.5, 1.5, 3.5, 2, 3, 2, 3)",True
+DSMKA-03,Disconnected node never receives impact,"(0.4, 0.4, 1.4, 1, 2, 1, 2)","(0.4, 0.4, 1.4, 1, 2, 1, 2)",True
+DSMKA-04,Two step chain,"(0.5, 0.7, 1.7, 2, 3, 2, 3)","(0.5, 0.7, 1.7, 2, 3, 2, 3)",True
+DSMKA-05,Branching then converging paths,"(0.75, 0.95, 1.95, 3, 4, 3, 4)","(0.75, 0.95, 1.95, 3, 4, 3, 4)",True
+DSMKA-06,Zero strength edge carries nothing,"(0.0, 0.0, 1.0, 0, 1, 0, 1)","(0.0, 0.0, 1.0, 0, 1, 0, 1)",True
+DSMKA-07,Threshold boundary: one node lands exactly on the threshold,"(0.11, 0.11, 1.11, 2, 3, 1, 2)","(0.11, 0.11, 1.11, 2, 3, 1, 2)",True
+DSMKA-08,Two node cycle truncated at three steps,"(0.5, 0.875, 1.875, 1, 2, 1, 2)","(0.5, 0.875, 1.875, 1, 2, 1, 2)",True

@@ -1,0 +1,11 @@
+{
+  "data_origin": "SYNTHETIC_RESEARCH_FIXTURE",
+  "intended_use": "Implementation and classical-versus-contextual model comparison only",
+  "model_id": "SYNTHETIC_ORDER_EFFECT_001",
+  "p_a_yes_given_b_no": 0.42,
+  "p_a_yes_given_b_yes": 0.54,
+  "p_a_yes_when_first": 0.62,
+  "p_b_yes_given_a_no": 0.36,
+  "p_b_yes_given_a_yes": 0.7,
+  "p_b_yes_when_first": 0.57
+}
