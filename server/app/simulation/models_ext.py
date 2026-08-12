@@ -211,6 +211,16 @@ def run_float_consumption(si: dict, rand: Callable[[], float], period_cutoff) ->
     """
     if not check_inputs(si, ("totalFloat", "consumedFloat")):
         return insufficient("Float_Consumption")
+    # RUN 10, BUCKET 2. A negative consumed float ADDED float to the project: the consumption
+    # rate went below zero, the stress ratio followed it, and the band read Green on a reading
+    # that says the schedule handed float back. Float consumed is a quantity that cannot be
+    # negative, so a negative reading is malformed rather than favourable.
+    if num(si.get("consumedFloat"), None) is None or si["consumedFloat"] < 0:
+        return insufficient(
+            "Float_Consumption",
+            "Consumed float is reported as a negative figure, which is not a quantity of float "
+            "that can have been consumed",
+            ABSTAIN_MALFORMED_INPUT)
     float_remaining = si["totalFloat"] - si["consumedFloat"]
     if not si["totalFloat"] > 0:
         return insufficient(
@@ -393,6 +403,15 @@ def run_resource_loading(si: dict, rand: Callable[[], float], period_cutoff) -> 
     actual = num(si.get("actualLaborHours"), 0)
     if planned <= 0:
         return insufficient("Resource_Loading", "Planned labor hours not available")
+    # RUN 10, BUCKET 2. Negative actual hours are not a measurement. Left alone they produced a
+    # negative load ratio, which fell off the bottom of the ladder and read Red: the right colour
+    # for the wrong reason, with a ratio beside it that is not a quantity of work.
+    if num(si.get("actualLaborHours"), None) is None or actual < 0:
+        return insufficient(
+            "Resource_Loading",
+            "Actual labor hours are reported as a negative figure, which is not a quantity of "
+            "work that can have been performed",
+            ABSTAIN_MALFORMED_INPUT)
     ratio = actual / planned
     if 0.90 <= ratio <= 1.10:
         color = "Green"
@@ -426,6 +445,24 @@ def run_schedule_risk(si: dict, rand: Callable[[], float], period_cutoff) -> dic
     total_days = (end_ms - start_ms) / 86400000
     if total_days <= 0:
         return insufficient("Schedule_Risk_Analysis")
+    # RUN 10, BUCKET 2. Three faults from one open domain. A schedule index of exactly zero
+    # raised inside the division and lost the whole project's result to an exception rather than
+    # to this module's abstention. A negative index turned the remaining duration negative and
+    # reported a delay of fewer than zero days, which banded Green. And a reported completion
+    # outside nought to one hundred produced a remaining duration that is not a duration.
+    if not si["spi"] > 0:
+        return insufficient(
+            "Schedule_Risk_Analysis",
+            "Schedule performance is recorded as zero or below, which no remaining duration can "
+            "be divided by",
+            ABSTAIN_INVALID_DENOMINATOR)
+    pct = num(si.get("actualPctComplete"), None)
+    if pct is None or pct < 0 or pct > 100:
+        return insufficient(
+            "Schedule_Risk_Analysis",
+            "The reported completion percentage falls outside the range a percentage can "
+            "occupy, so no remaining duration is measurable from it",
+            ABSTAIN_MALFORMED_INPUT)
     remaining_days = total_days * (100 - si["actualPctComplete"]) / 100
     p50_days = remaining_days / si["spi"]
     uncertainty = max(0.05, 1 - si["spi"]) * 0.5
@@ -464,6 +501,14 @@ def run_critical_path_index(si: dict, rand: Callable[[], float], period_cutoff) 
     verdict = eligible(si, positive=(("plannedPctComplete", "the planned percent complete"),))
     if verdict:
         return refuse("Critical_Path_Index", verdict)
+    # RUN 10, BUCKET 2. Run 7 guarded the denominator and left the schedule index domain open,
+    # so an index of zero or below was averaged into the composite as though it were performance.
+    if not si["spi"] > 0:
+        return insufficient(
+            "Critical_Path_Index",
+            "Schedule performance is recorded as zero or below, which is not a performance "
+            "reading this index can average",
+            ABSTAIN_MALFORMED_INPUT)
     progress_ratio = si["actualPctComplete"] / si["plannedPctComplete"]
     cpi_schedule = si["spi"]
     index = _round3((progress_ratio + cpi_schedule) / 2)
@@ -704,7 +749,11 @@ def run_cost_risk(si: dict, rand: Callable[[], float], period_cutoff) -> dict[st
         "p80_eac": int(js_round(p80_eac)),
         "p80_delta_pct": round1(p80_delta_pct),
         "evidence_metric": (
-            f"CRA P80 EAC: {_money(p80_eac)} (+{_js_str(round1(p80_delta_pct))}% BAC)"
+            # RUN 10, BUCKET 2. The leading plus was hard-coded, so a forecast BELOW budget
+            # printed as a positive overrun with a minus sign inside it: the sentence a reader
+            # saw said the opposite of the figure. The sign now comes from the figure.
+            f"CRA P80 EAC: {_money(p80_eac)} "
+            f"({'+' if p80_delta_pct >= 0 else ''}{_js_str(round1(p80_delta_pct))}% BAC)"
         ),
     }
 

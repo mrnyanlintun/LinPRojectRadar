@@ -226,8 +226,23 @@ for mid, (name, new_fn, old_fn, old_band) in sorted(_G2.items()):
 # The three that read the schedule index: a valid case still computes, and the arithmetic is
 # byte-identical to the shipped code's on the same input, because only the refusal changed.
 print("\n-- the three index-reading modules still compute, unchanged, on a real index --")
-for mid, fn, old_fn in (("A2.1", run_pert, old_models.run_pert),
-                        ("A2.2", run_lob, old_models.run_lob),
+# RUN 10 SUPERSEDES ONE ROW OF THIS BLOCK, AND THE ROW IS MOVED RATHER THAN DELETED so the Run 7
+# record stays legible. Run 8 established that a healthy reading was structurally unreachable in
+# the criticality module, because the band divides an eightieth percentile of a sum of skewed
+# durations by a baseline built from the modes of the same durations. Run 10's correction is that
+# the module abstains on the absent activity network rather than reporting a criticality index
+# from this file's own stand-in durations, so it no longer computes on a schedule index alone.
+# Run 7's finding about it is unchanged and still holds: an empty input abstains, which the block
+# above still proves. What changed is that a reported index is no longer sufficient.
+_r10_pert = run_pert({"spi": 0.92, "actualPctComplete": 40.0}, NOOP, CUTOFF)
+check(abstains(_r10_pert),
+      "A2.1: Run 10 abstains on the absent activity network even with an index reported",
+      str(band(_r10_pert)))
+check(_r10_pert.get("abstention_reason_code") == "canonical_structure_absent",
+      "A2.1: and names the absent canonical structure as the reason",
+      str(_r10_pert.get("abstention_reason_code")))
+
+for mid, fn, old_fn in (("A2.2", run_lob, old_models.run_lob),
                         ("A2.3", run_ccpm, old_models.run_ccpm)):
     si = {"spi": 0.92, "actualPctComplete": 40.0}
     a = fn(dict(si), NOOP, CUTOFF)
@@ -658,10 +673,15 @@ _abst = {a.get("module_id"): a for a in (served.get("abstained") or [])
 # A project that reports its indices and its progress SHOULD still get the three index-reading
 # modules, and this run would be a regression if it did not: the correction was to refuse where
 # nothing was reported, not to stop computing where something was.
-check({"A2.1", "A2.2", "A2.3"} <= _computed_ids,
-      "the three modules that read the schedule index still compute on a project that reports "
-      "one, so the correction removed a refusal case and no more",
-      str(sorted({"A2.1", "A2.2", "A2.3"} - _computed_ids)))
+# RUN 10: the criticality module leaves this set, for the reason recorded above. The other two
+# still compute, which is the part of Run 7's guarantee that survives unchanged.
+check({"A2.2", "A2.3"} <= _computed_ids,
+      "the two remaining modules that read the schedule index still compute on a project that "
+      "reports one, so the correction removed a refusal case and no more",
+      str(sorted({"A2.2", "A2.3"} - _computed_ids)))
+check("A2.1" not in _computed_ids and "A2.1" in _abst,
+      "and the criticality module is absent from the stored rows and present in the abstention "
+      "list, on a real project computed through the real route")
 # And the three whose defining structure is absent do not, whatever the project reports.
 for mid in sorted(GROUP_1_REGRET | {"A3.1", "A5.1"}):
     check(mid not in _computed_ids and mid in _abst,
@@ -822,8 +842,13 @@ for _mid in sorted(VALIDATED):
         _moved.append(_mid)
 check(_compared > 80,
       "the comparison covers the implemented set rather than a handful of it", str(_compared))
-check(set(_moved) <= FIX_NOW,
-      "every module whose result moved on a fully reported project is in the fix-now list",
+# RUN 10 corrects sixteen further modules, so its own authorised list joins Run 7's here rather
+# than replacing it. The two sets stay separate so each run's authorisation remains readable.
+RUN10_CORRECTED = {"A1.5", "A1.6", "A1.11", "A2.1", "A2.5", "A2.9", "A2.10", "A2.11", "A3.6",
+                   "A4.10", "A5.5", "A5.8", "A6.1", "A6.2", "A6.4", "B2.18"}
+check(set(_moved) <= (FIX_NOW | RUN10_CORRECTED),
+      "every module whose result moved on a fully reported project is in the fix-now list or "
+      "Run 10's corrected list",
       str(sorted(set(_moved) - FIX_NOW)))
 check(_moved, "and the comparison is live: some modules DID move", str(sorted(_moved)))
 

@@ -286,15 +286,39 @@ def run_marcos(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, 
         {"value": 1 - (si.get("docRiskScore") or 0), "ideal": 1.00, "anti": 0.30,
          "weight": 0.25},
     ]
-    utility_ideal = 0.0
+    # RUN 10, BUCKET 2. The module set the anti-ideal utility to one minus the ideal utility, so
+    # the two summed to one by construction, the score collapsed to an expression symmetric about
+    # a half and bounded above by a third, and a perfect project divided by zero and scored
+    # nothing. No input could produce a healthy reading and the ladder's top two rungs were
+    # unreachable. That is not a threshold problem and no threshold is moved here: the band
+    # boundaries below are exactly the ones the module already carried.
+    #
+    # The correction restores the method's own structure. In the published ranking method the two
+    # utility degrees are the alternative's weighted sum measured against the ideal and against
+    # the anti-ideal SEPARATELY, so they are two independent ratios rather than a number and its
+    # complement. Each criterion is normalised against its own ideal, the weighted sum is formed
+    # once for the project, once for the ideal reference and once for the anti-ideal reference,
+    # and the utility functions and the score follow from those three sums.
+    s_project = 0.0
+    s_anti = 0.0
     for c in criteria:
-        rng = c["ideal"] - c["anti"]
-        norm = (c["value"] - c["anti"]) / rng if rng > 0 else 0.5
-        utility_ideal += _clamp01(norm) * c["weight"]
-    utility_anti = 1 - utility_ideal
-    f_ideal = utility_ideal / (utility_ideal + utility_anti)
-    f_anti = utility_anti / (utility_ideal + utility_anti)
-    score = _jsdiv((f_ideal + f_anti),
+        ideal = c["ideal"]
+        if not ideal > 0:
+            return insufficient("MARCOS")
+        s_project += _clamp01(c["value"] / ideal) * c["weight"]
+        s_anti += _clamp01(c["anti"] / ideal) * c["weight"]
+    s_ideal = sum(c["weight"] for c in criteria)
+    if not (s_ideal > 0 and s_anti > 0):
+        return insufficient("MARCOS")
+    k_ideal = s_project / s_ideal
+    k_anti = s_project / s_anti
+    denom_k = k_ideal + k_anti
+    if not denom_k > 0:
+        return insufficient("MARCOS")
+    f_ideal = k_anti / denom_k
+    f_anti = k_ideal / denom_k
+    utility_ideal = k_ideal
+    score = _jsdiv(denom_k,
                    1 + _jsdiv(1 - f_ideal, f_ideal) + _jsdiv(1 - f_anti, f_anti))
     score = _round3(score)
     color = ("Green" if score >= 0.65 else "Yellow" if score >= 0.50

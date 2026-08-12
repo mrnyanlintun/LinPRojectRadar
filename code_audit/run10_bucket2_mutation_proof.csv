@@ -1,0 +1,20 @@
+mutation,kind,exit_code,result_line,verdict
+A1.5 history guard removed,production defect reintroduced,1,RESULT: 124/127 checks passed,RED
+A1.6 completion guard removed,production defect reintroduced,1,RESULT: 122/127 checks passed,RED
+A1.11 negative-index guard reverted,production defect reintroduced,1,RESULT: 123/127 checks passed,RED
+A2.1 abstention removed,production defect reintroduced,1,RESULT: 114/127 checks passed,RED
+A2.5 negative-float guard removed,production defect reintroduced,1,RESULT: 123/127 checks passed,RED
+A2.9 negative-hours guard removed,production defect reintroduced,1,RESULT: 123/127 checks passed,RED
+A2.10 zero-index guard removed,production defect reintroduced,1,<no result line>,RED
+A2.11 index guard removed,production defect reintroduced,1,<no result line>,RED
+A3.6 hard-coded plus restored,production defect reintroduced,1,RESULT: 126/127 checks passed,RED
+A4.10 doc-risk guard removed,production defect reintroduced,1,RESULT: 124/127 checks passed,RED
+A5.5 absent counts scored as nought,production defect reintroduced,0,RESULT: 127/127 checks passed,SURVIVED
+A5.8 index guard removed,production defect reintroduced,1,RESULT: 125/127 checks passed,RED
+A6.1 audit-score guard removed,production defect reintroduced,1,RESULT: 121/127 checks passed,RED
+A6.2 meeting silence banded again,production defect reintroduced,1,RESULT: 123/127 checks passed,RED
+A6.4 rating-scale guard removed,production defect reintroduced,1,RESULT: 119/127 checks passed,RED
+B2.18 complement utility restored,production defect reintroduced,0,RESULT: 127/127 checks passed,SURVIVED
+expected worst rating perturbed,expected value perturbed,1,RESULT: 126/127 checks passed,RED
+expected earned schedule index perturbed,expected value perturbed,1,RESULT: 126/127 checks passed,RED
+expected subset count perturbed,expected value perturbed,1,RESULT: 126/127 checks passed,RED

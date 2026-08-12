@@ -97,25 +97,42 @@ print()
 print("=" * 78)
 print("GUARANTEE 3: PERT seeding is per (scenario_id, period)")
 print("=" * 78)
-p1a = compute_project(HEALTHY, "sc-1", "P1", CUTOFF)
-p1b = compute_project(HEALTHY, "sc-1", "P1", CUTOFF)
-p2 = compute_project(HEALTHY, "sc-1", "P2", CUTOFF)
-other = compute_project(HEALTHY, "sc-2", "P1", CUTOFF)
+# The DISTRESSED project is used for the seeding guarantee, because the forecast module's
+# spread is driven by the two indices: a project at or above plan on both has an optimistic and
+# a pessimistic bound that coincide, so its forecast collapses deterministically to the mode and
+# carries no sampling variation for two seeds to differ over. That collapse is the module's
+# documented behaviour, not a defect, and it is asserted separately below.
+p1a = compute_project(DISTRESSED, "sc-1", "P1", CUTOFF)
+p1b = compute_project(DISTRESSED, "sc-1", "P1", CUTOFF)
+p2 = compute_project(DISTRESSED, "sc-1", "P2", CUTOFF)
+other = compute_project(DISTRESSED, "sc-2", "P1", CUTOFF)
 
 
-def pert(run):
-    return next(m for m in run["modules"] if m["module_id"] == "A2.1")
+# RUN 10. This guarantee used to be read off the criticality module. That module now abstains
+# on the absent activity network, so it publishes no sampled figure to compare. The guarantee is
+# unchanged and is read off the forecast module instead, which is seeded from the same
+# (scenario_id, period) pair through the same holder and is the other stochastic module in the
+# registry. Nothing about the seeding rule is relaxed here; only which module demonstrates it.
+def mc(run):
+    return next(m for m in run["modules"] if m["module_id"] == "A1.1")
 
 
-check(pert(p1a)["p80_duration_days"] == pert(p1b)["p80_duration_days"],
-      "same scenario+period -> same P80", str(pert(p1a)["p80_duration_days"]))
-check(pert(p1a)["p80_duration_days"] != pert(p2)["p80_duration_days"],
+check(mc(p1a)["p80_eac"] == mc(p1b)["p80_eac"],
+      "same scenario+period -> same P80", str(mc(p1a)["p80_eac"]))
+check(mc(p1a)["p80_eac"] != mc(p2)["p80_eac"],
       "different period -> different P80",
-      f"P1={pert(p1a)['p80_duration_days']} P2={pert(p2)['p80_duration_days']}")
-check(pert(p1a)["p80_duration_days"] != pert(other)["p80_duration_days"],
+      f"P1={mc(p1a)['p80_eac']} P2={mc(p2)['p80_eac']}")
+check(mc(p1a)["p80_eac"] != mc(other)["p80_eac"],
       "different scenario -> different P80")
-check(pert(p1a)["seed"] == p1a["seed"], "seed recorded on the stochastic module result")
+check(mc(p1a)["seed"] == p1a["seed"], "seed recorded on the stochastic module result")
 check(seed_from("sc-1", "P1") == p1a["seed"], "seed derives from (scenario_id, period) only")
+check(all(m["module_id"] != "A2.1" for m in p1a["modules"]),
+      "the criticality module publishes no stored row without an activity network")
+_h = compute_project(HEALTHY, "sc-1", "P1", CUTOFF)
+_h2 = compute_project(HEALTHY, "sc-1", "P2", CUTOFF)
+check(mc(_h)["p80_eac"] == mc(_h2)["p80_eac"],
+      "a project at or above plan on both indices collapses to one deterministic forecast",
+      str(mc(_h)["p80_eac"]))
 
 print()
 print("=" * 78)

@@ -208,9 +208,23 @@ RUN7_SCOPED_FILES = {
 _diff = subprocess.run(["git", "diff", "--name-only", GUARD_BASELINE_REV, "--"],
                        cwd=str(ROOT), capture_output=True, text=True).stdout.split()
 _prod = [p for p in _diff if p.startswith("server/app/") or p.startswith("assets/")]
-_unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES)
+#: RUN 10 adds its own authorised production scope rather than widening Run 7's, so the Run 7
+#: record stays exactly as Run 7 left it and each run's authorisation is readable on its own.
+#: Run 10 corrects the sixteen modules Run 8 placed in the fix-with-current-data bucket and
+#: builds the dedicated forecast fixture family, which touches these files and no others.
+RUN10_SCOPED_FILES = {
+    "server/app/simulation/models.py",
+    "server/app/simulation/models_doc.py",
+    "server/app/simulation/models_evm.py",
+    "server/app/simulation/models_ext.py",
+    "server/app/simulation/models_fuzzy.py",
+    "server/app/simulation/models_sim.py",
+}
+
+_unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES)
 check(not _unscoped,
-      "no production file outside Run 7's authorised scope differs from the pinned baseline",
+      "no production file outside the authorised scope of Run 7 or Run 10 differs from the "
+      "pinned baseline",
       str(_unscoped))
 _assets = sorted(p for p in _prod if p.startswith("assets/"))
 check(not _assets,

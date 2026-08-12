@@ -564,6 +564,16 @@ def run_spec_conflict_density(si: dict, rand: Callable[[], float],
                             "there is no request volume for a conflict density to be measured "
                             "over. The document risk score is not reported in its place.",
                             ABSTAIN_NO_EXPOSURE)
+    # RUN 10, BUCKET 2. Run 7 removed the substitution and left the document risk domain open.
+    # That score is a share and lives in nought to one; a value outside it was multiplied through
+    # and the result landed inside the band ladder as though it were a density.
+    doc = num(si.get("docRiskScore"), None)
+    if doc is None or doc < 0 or doc > 1:
+        return insufficient(
+            "Spec_Conflict_Density",
+            "The document risk score falls outside the range a share can occupy, so no conflict "
+            "density is measurable from it",
+            ABSTAIN_MALFORMED_INPUT)
     density = (si["docRiskScore"] * si["rfiCount"]) / math.sqrt(si["rfiCount"])
     density = min(1, round2(density))
     color = ("Green" if density <= 0.15 else "Yellow" if density <= 0.35
@@ -719,10 +729,34 @@ def run_scenario_modeling(si: dict, rand: Callable[[], float], period_cutoff) ->
 
 
 def run_rework_feedback(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    if not check_inputs(si, ("cpi",)):
-        return insufficient("Rework_Feedback")
-    rfi_c = min(si["rfiCount"] / 30, 1) * 0.3 if si.get("rfiCount") else 0
-    co_c = min(si["changeOrderCount"] / 15, 1) * 0.3 if si.get("changeOrderCount") else 0
+    # RUN 10, BUCKET 2. This is Run 6 finding 1.4 standing in the module beside the one Run 7
+    # corrected. The index is a weighted sum of three terms and an ABSENT term contributed
+    # exactly zero, which is the same contribution a perfect term makes. So a project that had
+    # uploaded no request log and no change order log scored better than one that had uploaded
+    # both and reported a handful of each, and the improvement came from the missing evidence.
+    #
+    # Renormalising over the present terms is refused as the fix: it would rescale the remaining
+    # terms so that missing the two highest-risk sources still leaves the index reading on the
+    # strength of the cost index alone. Both counts are required instead, and the module abstains
+    # when either is absent. This holds over EVERY strict subset of the required evidence, which
+    # the suite exhausts rather than samples.
+    if not check_inputs(si, ("cpi", "rfiCount", "changeOrderCount")):
+        return insufficient(
+            "Rework_Feedback",
+            "Insufficient data: this index reads the cost performance index, the count of "
+            "requests for information and the count of change orders together, and at least one "
+            "of them has not been reported for this period. An absent count is not a count of "
+            "nought.",
+            ABSTAIN_MISSING_INPUT)
+    for key in ("rfiCount", "changeOrderCount"):
+        v = num(si.get(key), None)
+        if v is None or v < 0:
+            return insufficient(
+                "Rework_Feedback",
+                "A reported count is negative, which is not a count.",
+                ABSTAIN_MALFORMED_INPUT)
+    rfi_c = min(si["rfiCount"] / 30, 1) * 0.3
+    co_c = min(si["changeOrderCount"] / 15, 1) * 0.3
     cpi_c = max(0, 1 - si["cpi"]) * 0.4
     index = round2(rfi_c + co_c + cpi_c)
     color = ("Green" if index <= 0.10 else "Yellow" if index <= 0.25
@@ -858,6 +892,14 @@ def run_discrete_event_sim(si: dict, rand: Callable[[], float], period_cutoff) -
     verdict = eligible(si, positive=(("plannedPctComplete", "the planned percent complete"),))
     if verdict:
         return refuse("Discrete_Event_Sim", verdict)
+    # RUN 10, BUCKET 2. The same residue as the critical path module: Run 7 guarded the
+    # denominator and left the schedule index domain open.
+    if not si["spi"] > 0:
+        return insufficient(
+            "Discrete_Event_Sim",
+            "Schedule performance is recorded as zero or below, which is not a performance "
+            "reading this throughput index can be computed from",
+            ABSTAIN_MALFORMED_INPUT)
     progress_ratio = si["actualPctComplete"] / si["plannedPctComplete"]
     interruption = max(0, 1 - progress_ratio) + max(0, 1 - si["spi"]) * 0.5
     throughput = js_round((1 / (1 + interruption)) * 1000) / 1000
@@ -925,6 +967,17 @@ def run_quality_compliance(si: dict, rand: Callable[[], float], period_cutoff) -
                 "Quality_Compliance",
                 "A negative number of failed items is not a measurable inspection result")
         pass_rate = (inspected - failed) / inspected
+    # RUN 10, BUCKET 2. The fifteen-defects run guarded the inspected and failed pair and left
+    # the audited score itself ungoverned. A score of one hundred and forty, or of minus ten,
+    # went straight into the band ladder and out again as a quality figure out of a hundred.
+    if audit is not None:
+        audit_v = num(audit, None)
+        if audit_v is None or audit_v < 0 or audit_v > 100:
+            return insufficient(
+                "Quality_Compliance",
+                "The audited quality score falls outside the range a score out of a hundred can "
+                "occupy, so it is not a quality figure",
+                ABSTAIN_MALFORMED_INPUT)
     if audit is None:
         if pass_rate is None:
             return insufficient(
@@ -978,6 +1031,27 @@ def run_safety_performance(si: dict, rand: Callable[[], float], period_cutoff) -
                             "period.",
                             ABSTAIN_MISSING_INPUT)
     is_derived = _derived(si, "safetyIncidentsDiscussed")
+    # RUN 10, BUCKET 2. Absence of evidence was producing the best safety reading in the module.
+    # `safetyIncidentsDiscussed` is DERIVED from how many times safety came up in meeting
+    # records when no safety report was uploaded. A meeting that never mentioned safety derived
+    # a count of nought, that count became a rate of nought, the rate of nought took the module's
+    # own cap of two, and the project read Green with the best safety index the module can
+    # produce. Nothing had measured safety on that project at all.
+    #
+    # Four dispositions are now distinguished rather than collapsed:
+    #   - a rate or an incident count read from an uploaded safety record, including a recorded
+    #     zero over a valid exposure: a measurement, and it bands;
+    #   - a derived count of nought, which is meeting SILENCE: not a measurement, and it abstains;
+    #   - no safety field at all: missing evidence, and it abstains, as it already did;
+    #   - a negative rate: malformed, and it abstains, as it already did.
+    if is_derived and si.get("oshaIncidentRate") is None \
+            and not si["safetyIncidentsDiscussed"] > 0:
+        return insufficient(
+            "Safety_Performance",
+            "No safety record has been uploaded for this project and the meeting records do not "
+            "mention safety. Silence in a meeting is not a measurement of safety performance, "
+            "and it is not reported here as a record of no incidents.",
+            ABSTAIN_MISSING_INPUT)
     rate = (si.get("oshaIncidentRate") if si.get("oshaIncidentRate") is not None
             else si["safetyIncidentsDiscussed"] * 10)
     if num(rate, None) is None or rate < 0:
@@ -1087,6 +1161,17 @@ def run_contractor_performance(si: dict, rand: Callable[[], float],
     sched = num(si.get("scheduleRating"), 0)
     cost = num(si.get("costRating"), 0)
     quality = num(si.get("qualityRating"), None)
+    # RUN 10, BUCKET 2. The rating scale was ungoverned. An out-of-scale HIGH rating cannot lower
+    # the minimum and so was harmless; an out-of-scale LOW one sets it, and a rating of minus two
+    # on a five-point evaluation drove the band to Red on a figure that is not a rating.
+    for name, v in (("overall", overall), ("schedule", sched), ("cost", cost),
+                    ("quality", quality)):
+        if v is not None and (v < 0 or v > 5):
+            return insufficient(
+                "Contractor_Performance",
+                "A performance rating falls outside the five-point scale the evaluation uses, "
+                "so it is not a rating this score can be taken from",
+                ABSTAIN_MALFORMED_INPUT)
     rated = [overall, sched, cost] + ([quality] if quality is not None else [])
     worst = min(rated)
     color = ("Green" if worst >= 4.0 else "Yellow" if worst >= 3.5
