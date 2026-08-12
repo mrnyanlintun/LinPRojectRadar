@@ -1,6 +1,6 @@
 Run 13 — 101-Module Independent Test Evidence
 Starting commit: 7e8648b
-Ending audit commit: (recorded at the end of this report)
+Ending audit commit: 515a972, merged as 46a3f8f
 Simulation version under test: sim-2026.08-v7
 Synthetic package: OG-SYNTH-0.3
 Participant package: og-participant-2026.08-v1
