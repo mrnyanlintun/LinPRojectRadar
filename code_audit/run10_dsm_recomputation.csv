@@ -1,0 +1,485 @@
+check,key,period,quantity,recomputed,stored,agrees
+dsm_programme,PRJ-AIR,P01,total_first_order_impact,0.540515,0.540515,True
+dsm_programme,PRJ-AIR,P01,total_propagated_impact_excluding_seed,0.749271,0.749271,True
+dsm_programme,PRJ-AIR,P01,total_state_including_seed,1.899271,1.899271,True
+dsm_programme,PRJ-AIR,P01,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-AIR,P01,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-AIR,P01,material_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-AIR,P01,material_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-AIR,P01,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P01,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P01,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P01,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P02,total_first_order_impact,0.385369,0.385369,True
+dsm_programme,PRJ-AIR,P02,total_propagated_impact_excluding_seed,0.614585,0.614585,True
+dsm_programme,PRJ-AIR,P02,total_state_including_seed,1.914585,1.914585,True
+dsm_programme,PRJ-AIR,P02,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-AIR,P02,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-AIR,P02,material_impacted_node_count_excluding_seed,3.0,3,True
+dsm_programme,PRJ-AIR,P02,material_state_node_count_including_seed,4.0,4,True
+dsm_programme,PRJ-AIR,P02,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P02,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P02,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P02,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P03,total_first_order_impact,0.399797,0.399797,True
+dsm_programme,PRJ-AIR,P03,total_propagated_impact_excluding_seed,0.535701,0.535701,True
+dsm_programme,PRJ-AIR,P03,total_state_including_seed,1.985701,1.985701,True
+dsm_programme,PRJ-AIR,P03,positive_impacted_node_count_excluding_seed,3.0,3,True
+dsm_programme,PRJ-AIR,P03,positive_state_node_count_including_seed,4.0,4,True
+dsm_programme,PRJ-AIR,P03,material_impacted_node_count_excluding_seed,2.0,2,True
+dsm_programme,PRJ-AIR,P03,material_state_node_count_including_seed,3.0,3,True
+dsm_programme,PRJ-AIR,P03,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P03,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P03,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P03,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P04,total_first_order_impact,0.378269,0.378269,True
+dsm_programme,PRJ-AIR,P04,total_propagated_impact_excluding_seed,0.603261,0.603261,True
+dsm_programme,PRJ-AIR,P04,total_state_including_seed,2.203261,2.203261,True
+dsm_programme,PRJ-AIR,P04,positive_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-AIR,P04,positive_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-AIR,P04,material_impacted_node_count_excluding_seed,3.0,3,True
+dsm_programme,PRJ-AIR,P04,material_state_node_count_including_seed,4.0,4,True
+dsm_programme,PRJ-AIR,P04,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P04,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P04,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P04,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P05,total_first_order_impact,0.822523,0.822523,True
+dsm_programme,PRJ-AIR,P05,total_propagated_impact_excluding_seed,1.140195,1.140195,True
+dsm_programme,PRJ-AIR,P05,total_state_including_seed,2.890195,2.890195,True
+dsm_programme,PRJ-AIR,P05,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-AIR,P05,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-AIR,P05,material_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-AIR,P05,material_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-AIR,P05,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P05,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P05,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P05,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P06,total_first_order_impact,0.563232,0.563232,True
+dsm_programme,PRJ-AIR,P06,total_propagated_impact_excluding_seed,0.89824,0.89824,True
+dsm_programme,PRJ-AIR,P06,total_state_including_seed,2.79824,2.79824,True
+dsm_programme,PRJ-AIR,P06,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-AIR,P06,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-AIR,P06,material_impacted_node_count_excluding_seed,3.0,3,True
+dsm_programme,PRJ-AIR,P06,material_state_node_count_including_seed,4.0,4,True
+dsm_programme,PRJ-AIR,P06,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P06,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P06,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-AIR,P06,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P01,total_first_order_impact,0.549661,0.549661,True
+dsm_programme,PRJ-HWY,P01,total_propagated_impact_excluding_seed,0.759358,0.759358,True
+dsm_programme,PRJ-HWY,P01,total_state_including_seed,1.909358,1.909358,True
+dsm_programme,PRJ-HWY,P01,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-HWY,P01,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-HWY,P01,material_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-HWY,P01,material_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-HWY,P01,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P01,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P01,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P01,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P02,total_first_order_impact,0.366774,0.366774,True
+dsm_programme,PRJ-HWY,P02,total_propagated_impact_excluding_seed,0.613269,0.613269,True
+dsm_programme,PRJ-HWY,P02,total_state_including_seed,1.913269,1.913269,True
+dsm_programme,PRJ-HWY,P02,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-HWY,P02,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-HWY,P02,material_impacted_node_count_excluding_seed,3.0,3,True
+dsm_programme,PRJ-HWY,P02,material_state_node_count_including_seed,4.0,4,True
+dsm_programme,PRJ-HWY,P02,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P02,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P02,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P02,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P03,total_first_order_impact,0.371607,0.371607,True
+dsm_programme,PRJ-HWY,P03,total_propagated_impact_excluding_seed,0.516063,0.516063,True
+dsm_programme,PRJ-HWY,P03,total_state_including_seed,1.966063,1.966063,True
+dsm_programme,PRJ-HWY,P03,positive_impacted_node_count_excluding_seed,3.0,3,True
+dsm_programme,PRJ-HWY,P03,positive_state_node_count_including_seed,4.0,4,True
+dsm_programme,PRJ-HWY,P03,material_impacted_node_count_excluding_seed,2.0,2,True
+dsm_programme,PRJ-HWY,P03,material_state_node_count_including_seed,3.0,3,True
+dsm_programme,PRJ-HWY,P03,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P03,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P03,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P03,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P04,total_first_order_impact,0.418061,0.418061,True
+dsm_programme,PRJ-HWY,P04,total_propagated_impact_excluding_seed,0.699023,0.699023,True
+dsm_programme,PRJ-HWY,P04,total_state_including_seed,2.299023,2.299023,True
+dsm_programme,PRJ-HWY,P04,positive_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-HWY,P04,positive_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-HWY,P04,material_impacted_node_count_excluding_seed,3.0,3,True
+dsm_programme,PRJ-HWY,P04,material_state_node_count_including_seed,4.0,4,True
+dsm_programme,PRJ-HWY,P04,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P04,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P04,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P04,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P05,total_first_order_impact,0.83644,0.83644,True
+dsm_programme,PRJ-HWY,P05,total_propagated_impact_excluding_seed,1.155545,1.155545,True
+dsm_programme,PRJ-HWY,P05,total_state_including_seed,2.905545,2.905545,True
+dsm_programme,PRJ-HWY,P05,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-HWY,P05,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-HWY,P05,material_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-HWY,P05,material_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-HWY,P05,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P05,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P05,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P05,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P06,total_first_order_impact,0.536055,0.536055,True
+dsm_programme,PRJ-HWY,P06,total_propagated_impact_excluding_seed,0.896316,0.896316,True
+dsm_programme,PRJ-HWY,P06,total_state_including_seed,2.796316,2.796316,True
+dsm_programme,PRJ-HWY,P06,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-HWY,P06,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-HWY,P06,material_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-HWY,P06,material_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-HWY,P06,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P06,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P06,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HWY,P06,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P01,total_first_order_impact,0.47932,0.47932,True
+dsm_programme,PRJ-HSP,P01,total_propagated_impact_excluding_seed,0.68314,0.68314,True
+dsm_programme,PRJ-HSP,P01,total_state_including_seed,1.83314,1.83314,True
+dsm_programme,PRJ-HSP,P01,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-HSP,P01,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-HSP,P01,material_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-HSP,P01,material_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-HSP,P01,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P01,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P01,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P01,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P02,total_first_order_impact,0.446455,0.446455,True
+dsm_programme,PRJ-HSP,P02,total_propagated_impact_excluding_seed,0.742905,0.742905,True
+dsm_programme,PRJ-HSP,P02,total_state_including_seed,2.042905,2.042905,True
+dsm_programme,PRJ-HSP,P02,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-HSP,P02,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-HSP,P02,material_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-HSP,P02,material_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-HSP,P02,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P02,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P02,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P02,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P03,total_first_order_impact,0.382352,0.382352,True
+dsm_programme,PRJ-HSP,P03,total_propagated_impact_excluding_seed,0.541471,0.541471,True
+dsm_programme,PRJ-HSP,P03,total_state_including_seed,1.991471,1.991471,True
+dsm_programme,PRJ-HSP,P03,positive_impacted_node_count_excluding_seed,3.0,3,True
+dsm_programme,PRJ-HSP,P03,positive_state_node_count_including_seed,4.0,4,True
+dsm_programme,PRJ-HSP,P03,material_impacted_node_count_excluding_seed,2.0,2,True
+dsm_programme,PRJ-HSP,P03,material_state_node_count_including_seed,3.0,3,True
+dsm_programme,PRJ-HSP,P03,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P03,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P03,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P03,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P04,total_first_order_impact,0.445509,0.445509,True
+dsm_programme,PRJ-HSP,P04,total_propagated_impact_excluding_seed,0.74133,0.74133,True
+dsm_programme,PRJ-HSP,P04,total_state_including_seed,2.34133,2.34133,True
+dsm_programme,PRJ-HSP,P04,positive_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-HSP,P04,positive_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-HSP,P04,material_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-HSP,P04,material_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-HSP,P04,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P04,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P04,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P04,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P05,total_first_order_impact,0.7294,0.7294,True
+dsm_programme,PRJ-HSP,P05,total_propagated_impact_excluding_seed,1.039561,1.039561,True
+dsm_programme,PRJ-HSP,P05,total_state_including_seed,2.789561,2.789561,True
+dsm_programme,PRJ-HSP,P05,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-HSP,P05,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-HSP,P05,material_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-HSP,P05,material_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-HSP,P05,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P05,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P05,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P05,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P06,total_first_order_impact,0.652511,0.652511,True
+dsm_programme,PRJ-HSP,P06,total_propagated_impact_excluding_seed,1.085784,1.085784,True
+dsm_programme,PRJ-HSP,P06,total_state_including_seed,2.985784,2.985784,True
+dsm_programme,PRJ-HSP,P06,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-HSP,P06,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-HSP,P06,material_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-HSP,P06,material_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-HSP,P06,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P06,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P06,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-HSP,P06,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P01,total_first_order_impact,0.4793,0.4793,True
+dsm_programme,PRJ-WTR,P01,total_propagated_impact_excluding_seed,0.648359,0.648359,True
+dsm_programme,PRJ-WTR,P01,total_state_including_seed,1.798359,1.798359,True
+dsm_programme,PRJ-WTR,P01,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-WTR,P01,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-WTR,P01,material_impacted_node_count_excluding_seed,3.0,3,True
+dsm_programme,PRJ-WTR,P01,material_state_node_count_including_seed,4.0,4,True
+dsm_programme,PRJ-WTR,P01,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P01,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P01,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P01,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P02,total_first_order_impact,0.400147,0.400147,True
+dsm_programme,PRJ-WTR,P02,total_propagated_impact_excluding_seed,0.630833,0.630833,True
+dsm_programme,PRJ-WTR,P02,total_state_including_seed,1.930833,1.930833,True
+dsm_programme,PRJ-WTR,P02,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-WTR,P02,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-WTR,P02,material_impacted_node_count_excluding_seed,2.0,2,True
+dsm_programme,PRJ-WTR,P02,material_state_node_count_including_seed,3.0,3,True
+dsm_programme,PRJ-WTR,P02,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P02,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P02,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P02,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P03,total_first_order_impact,0.301864,0.301864,True
+dsm_programme,PRJ-WTR,P03,total_propagated_impact_excluding_seed,0.410261,0.410261,True
+dsm_programme,PRJ-WTR,P03,total_state_including_seed,1.860261,1.860261,True
+dsm_programme,PRJ-WTR,P03,positive_impacted_node_count_excluding_seed,3.0,3,True
+dsm_programme,PRJ-WTR,P03,positive_state_node_count_including_seed,4.0,4,True
+dsm_programme,PRJ-WTR,P03,material_impacted_node_count_excluding_seed,2.0,2,True
+dsm_programme,PRJ-WTR,P03,material_state_node_count_including_seed,3.0,3,True
+dsm_programme,PRJ-WTR,P03,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P03,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P03,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P03,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P04,total_first_order_impact,0.402368,0.402368,True
+dsm_programme,PRJ-WTR,P04,total_propagated_impact_excluding_seed,0.634336,0.634336,True
+dsm_programme,PRJ-WTR,P04,total_state_including_seed,2.234336,2.234336,True
+dsm_programme,PRJ-WTR,P04,positive_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-WTR,P04,positive_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-WTR,P04,material_impacted_node_count_excluding_seed,2.0,2,True
+dsm_programme,PRJ-WTR,P04,material_state_node_count_including_seed,3.0,3,True
+dsm_programme,PRJ-WTR,P04,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P04,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P04,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P04,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P05,total_first_order_impact,0.72937,0.72937,True
+dsm_programme,PRJ-WTR,P05,total_propagated_impact_excluding_seed,0.986633,0.986633,True
+dsm_programme,PRJ-WTR,P05,total_state_including_seed,2.736633,2.736633,True
+dsm_programme,PRJ-WTR,P05,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-WTR,P05,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-WTR,P05,material_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-WTR,P05,material_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-WTR,P05,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P05,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P05,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P05,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P06,total_first_order_impact,0.58483,0.58483,True
+dsm_programme,PRJ-WTR,P06,total_propagated_impact_excluding_seed,0.921987,0.921987,True
+dsm_programme,PRJ-WTR,P06,total_state_including_seed,2.821987,2.821987,True
+dsm_programme,PRJ-WTR,P06,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-WTR,P06,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-WTR,P06,material_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-WTR,P06,material_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-WTR,P06,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P06,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P06,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-WTR,P06,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P01,total_first_order_impact,0.50001,0.50001,True
+dsm_programme,PRJ-RAL,P01,total_propagated_impact_excluding_seed,0.690281,0.690281,True
+dsm_programme,PRJ-RAL,P01,total_state_including_seed,1.840281,1.840281,True
+dsm_programme,PRJ-RAL,P01,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-RAL,P01,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-RAL,P01,material_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-RAL,P01,material_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-RAL,P01,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P01,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P01,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P01,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P02,total_first_order_impact,0.336574,0.336574,True
+dsm_programme,PRJ-RAL,P02,total_propagated_impact_excluding_seed,0.594763,0.594763,True
+dsm_programme,PRJ-RAL,P02,total_state_including_seed,1.894763,1.894763,True
+dsm_programme,PRJ-RAL,P02,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-RAL,P02,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-RAL,P02,material_impacted_node_count_excluding_seed,3.0,3,True
+dsm_programme,PRJ-RAL,P02,material_state_node_count_including_seed,4.0,4,True
+dsm_programme,PRJ-RAL,P02,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P02,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P02,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P02,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P03,total_first_order_impact,0.40975,0.40975,True
+dsm_programme,PRJ-RAL,P03,total_propagated_impact_excluding_seed,0.563697,0.563697,True
+dsm_programme,PRJ-RAL,P03,total_state_including_seed,2.013697,2.013697,True
+dsm_programme,PRJ-RAL,P03,positive_impacted_node_count_excluding_seed,3.0,3,True
+dsm_programme,PRJ-RAL,P03,positive_state_node_count_including_seed,4.0,4,True
+dsm_programme,PRJ-RAL,P03,material_impacted_node_count_excluding_seed,2.0,2,True
+dsm_programme,PRJ-RAL,P03,material_state_node_count_including_seed,3.0,3,True
+dsm_programme,PRJ-RAL,P03,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P03,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P03,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P03,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P04,total_first_order_impact,0.384814,0.384814,True
+dsm_programme,PRJ-RAL,P04,total_propagated_impact_excluding_seed,0.680009,0.680009,True
+dsm_programme,PRJ-RAL,P04,total_state_including_seed,2.280009,2.280009,True
+dsm_programme,PRJ-RAL,P04,positive_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-RAL,P04,positive_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-RAL,P04,material_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-RAL,P04,material_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-RAL,P04,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P04,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P04,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P04,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P05,total_first_order_impact,0.760884,0.760884,True
+dsm_programme,PRJ-RAL,P05,total_propagated_impact_excluding_seed,1.050428,1.050428,True
+dsm_programme,PRJ-RAL,P05,total_state_including_seed,2.800428,2.800428,True
+dsm_programme,PRJ-RAL,P05,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-RAL,P05,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-RAL,P05,material_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-RAL,P05,material_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-RAL,P05,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P05,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P05,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P05,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P06,total_first_order_impact,0.491916,0.491916,True
+dsm_programme,PRJ-RAL,P06,total_propagated_impact_excluding_seed,0.869269,0.869269,True
+dsm_programme,PRJ-RAL,P06,total_state_including_seed,2.769269,2.769269,True
+dsm_programme,PRJ-RAL,P06,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-RAL,P06,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-RAL,P06,material_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-RAL,P06,material_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-RAL,P06,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P06,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P06,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-RAL,P06,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P01,total_first_order_impact,0.516253,0.516253,True
+dsm_programme,PRJ-DCT,P01,total_propagated_impact_excluding_seed,0.725561,0.725561,True
+dsm_programme,PRJ-DCT,P01,total_state_including_seed,1.875561,1.875561,True
+dsm_programme,PRJ-DCT,P01,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-DCT,P01,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-DCT,P01,material_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-DCT,P01,material_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-DCT,P01,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P01,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P01,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P01,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P02,total_first_order_impact,0.401066,0.401066,True
+dsm_programme,PRJ-DCT,P02,total_propagated_impact_excluding_seed,0.643384,0.643384,True
+dsm_programme,PRJ-DCT,P02,total_state_including_seed,1.943384,1.943384,True
+dsm_programme,PRJ-DCT,P02,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-DCT,P02,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-DCT,P02,material_impacted_node_count_excluding_seed,3.0,3,True
+dsm_programme,PRJ-DCT,P02,material_state_node_count_including_seed,4.0,4,True
+dsm_programme,PRJ-DCT,P02,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P02,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P02,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P02,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P03,total_first_order_impact,0.417512,0.417512,True
+dsm_programme,PRJ-DCT,P03,total_propagated_impact_excluding_seed,0.583095,0.583095,True
+dsm_programme,PRJ-DCT,P03,total_state_including_seed,2.033095,2.033095,True
+dsm_programme,PRJ-DCT,P03,positive_impacted_node_count_excluding_seed,3.0,3,True
+dsm_programme,PRJ-DCT,P03,positive_state_node_count_including_seed,4.0,4,True
+dsm_programme,PRJ-DCT,P03,material_impacted_node_count_excluding_seed,2.0,2,True
+dsm_programme,PRJ-DCT,P03,material_state_node_count_including_seed,3.0,3,True
+dsm_programme,PRJ-DCT,P03,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P03,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P03,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P03,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P04,total_first_order_impact,0.44321,0.44321,True
+dsm_programme,PRJ-DCT,P04,total_propagated_impact_excluding_seed,0.71099,0.71099,True
+dsm_programme,PRJ-DCT,P04,total_state_including_seed,2.31099,2.31099,True
+dsm_programme,PRJ-DCT,P04,positive_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-DCT,P04,positive_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-DCT,P04,material_impacted_node_count_excluding_seed,3.0,3,True
+dsm_programme,PRJ-DCT,P04,material_state_node_count_including_seed,4.0,4,True
+dsm_programme,PRJ-DCT,P04,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P04,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P04,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P04,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P05,total_first_order_impact,0.785603,0.785603,True
+dsm_programme,PRJ-DCT,P05,total_propagated_impact_excluding_seed,1.104114,1.104114,True
+dsm_programme,PRJ-DCT,P05,total_state_including_seed,2.854114,2.854114,True
+dsm_programme,PRJ-DCT,P05,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-DCT,P05,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-DCT,P05,material_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-DCT,P05,material_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-DCT,P05,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P05,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P05,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P05,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P06,total_first_order_impact,0.586173,0.586173,True
+dsm_programme,PRJ-DCT,P06,total_propagated_impact_excluding_seed,0.94033,0.94033,True
+dsm_programme,PRJ-DCT,P06,total_state_including_seed,2.84033,2.84033,True
+dsm_programme,PRJ-DCT,P06,positive_impacted_node_count_excluding_seed,5.0,5,True
+dsm_programme,PRJ-DCT,P06,positive_state_node_count_including_seed,6.0,6,True
+dsm_programme,PRJ-DCT,P06,material_impacted_node_count_excluding_seed,4.0,4,True
+dsm_programme,PRJ-DCT,P06,material_state_node_count_including_seed,5.0,5,True
+dsm_programme,PRJ-DCT,P06,seed_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P06,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P06,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_programme,PRJ-DCT,P06,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-01,KNOWN_ANSWER,total_first_order_impact,0.5,0.5,True
+dsm_known_answer,DSMKA-01,KNOWN_ANSWER,total_propagated_impact_excluding_seed,0.5,0.5,True
+dsm_known_answer,DSMKA-01,KNOWN_ANSWER,total_state_including_seed,1.5,1.5,True
+dsm_known_answer,DSMKA-01,KNOWN_ANSWER,positive_impacted_node_count_excluding_seed,1.0,1,True
+dsm_known_answer,DSMKA-01,KNOWN_ANSWER,positive_state_node_count_including_seed,2.0,2,True
+dsm_known_answer,DSMKA-01,KNOWN_ANSWER,material_impacted_node_count_excluding_seed,1.0,1,True
+dsm_known_answer,DSMKA-01,KNOWN_ANSWER,material_state_node_count_including_seed,2.0,2,True
+dsm_known_answer,DSMKA-01,KNOWN_ANSWER,seed_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-01,KNOWN_ANSWER,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-01,KNOWN_ANSWER,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-01,KNOWN_ANSWER,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-02,KNOWN_ANSWER,total_first_order_impact,1.5,1.5,True
+dsm_known_answer,DSMKA-02,KNOWN_ANSWER,total_propagated_impact_excluding_seed,1.5,1.5,True
+dsm_known_answer,DSMKA-02,KNOWN_ANSWER,total_state_including_seed,3.5,3.5,True
+dsm_known_answer,DSMKA-02,KNOWN_ANSWER,positive_impacted_node_count_excluding_seed,2.0,2,True
+dsm_known_answer,DSMKA-02,KNOWN_ANSWER,positive_state_node_count_including_seed,3.0,3,True
+dsm_known_answer,DSMKA-02,KNOWN_ANSWER,material_impacted_node_count_excluding_seed,2.0,2,True
+dsm_known_answer,DSMKA-02,KNOWN_ANSWER,material_state_node_count_including_seed,3.0,3,True
+dsm_known_answer,DSMKA-02,KNOWN_ANSWER,seed_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-02,KNOWN_ANSWER,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-02,KNOWN_ANSWER,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-02,KNOWN_ANSWER,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-03,KNOWN_ANSWER,total_first_order_impact,0.4,0.4,True
+dsm_known_answer,DSMKA-03,KNOWN_ANSWER,total_propagated_impact_excluding_seed,0.4,0.4,True
+dsm_known_answer,DSMKA-03,KNOWN_ANSWER,total_state_including_seed,1.4,1.4,True
+dsm_known_answer,DSMKA-03,KNOWN_ANSWER,positive_impacted_node_count_excluding_seed,1.0,1,True
+dsm_known_answer,DSMKA-03,KNOWN_ANSWER,positive_state_node_count_including_seed,2.0,2,True
+dsm_known_answer,DSMKA-03,KNOWN_ANSWER,material_impacted_node_count_excluding_seed,1.0,1,True
+dsm_known_answer,DSMKA-03,KNOWN_ANSWER,material_state_node_count_including_seed,2.0,2,True
+dsm_known_answer,DSMKA-03,KNOWN_ANSWER,seed_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-03,KNOWN_ANSWER,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-03,KNOWN_ANSWER,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-03,KNOWN_ANSWER,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-04,KNOWN_ANSWER,total_first_order_impact,0.5,0.5,True
+dsm_known_answer,DSMKA-04,KNOWN_ANSWER,total_propagated_impact_excluding_seed,0.7,0.7,True
+dsm_known_answer,DSMKA-04,KNOWN_ANSWER,total_state_including_seed,1.7,1.7,True
+dsm_known_answer,DSMKA-04,KNOWN_ANSWER,positive_impacted_node_count_excluding_seed,2.0,2,True
+dsm_known_answer,DSMKA-04,KNOWN_ANSWER,positive_state_node_count_including_seed,3.0,3,True
+dsm_known_answer,DSMKA-04,KNOWN_ANSWER,material_impacted_node_count_excluding_seed,2.0,2,True
+dsm_known_answer,DSMKA-04,KNOWN_ANSWER,material_state_node_count_including_seed,3.0,3,True
+dsm_known_answer,DSMKA-04,KNOWN_ANSWER,seed_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-04,KNOWN_ANSWER,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-04,KNOWN_ANSWER,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-04,KNOWN_ANSWER,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-05,KNOWN_ANSWER,total_first_order_impact,0.75,0.75,True
+dsm_known_answer,DSMKA-05,KNOWN_ANSWER,total_propagated_impact_excluding_seed,0.95,0.95,True
+dsm_known_answer,DSMKA-05,KNOWN_ANSWER,total_state_including_seed,1.95,1.95,True
+dsm_known_answer,DSMKA-05,KNOWN_ANSWER,positive_impacted_node_count_excluding_seed,3.0,3,True
+dsm_known_answer,DSMKA-05,KNOWN_ANSWER,positive_state_node_count_including_seed,4.0,4,True
+dsm_known_answer,DSMKA-05,KNOWN_ANSWER,material_impacted_node_count_excluding_seed,3.0,3,True
+dsm_known_answer,DSMKA-05,KNOWN_ANSWER,material_state_node_count_including_seed,4.0,4,True
+dsm_known_answer,DSMKA-05,KNOWN_ANSWER,seed_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-05,KNOWN_ANSWER,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-05,KNOWN_ANSWER,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-05,KNOWN_ANSWER,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-06,KNOWN_ANSWER,total_first_order_impact,0.0,0.0,True
+dsm_known_answer,DSMKA-06,KNOWN_ANSWER,total_propagated_impact_excluding_seed,0.0,0.0,True
+dsm_known_answer,DSMKA-06,KNOWN_ANSWER,total_state_including_seed,1.0,1.0,True
+dsm_known_answer,DSMKA-06,KNOWN_ANSWER,positive_impacted_node_count_excluding_seed,0.0,0,True
+dsm_known_answer,DSMKA-06,KNOWN_ANSWER,positive_state_node_count_including_seed,1.0,1,True
+dsm_known_answer,DSMKA-06,KNOWN_ANSWER,material_impacted_node_count_excluding_seed,0.0,0,True
+dsm_known_answer,DSMKA-06,KNOWN_ANSWER,material_state_node_count_including_seed,1.0,1,True
+dsm_known_answer,DSMKA-06,KNOWN_ANSWER,seed_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-06,KNOWN_ANSWER,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-06,KNOWN_ANSWER,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-06,KNOWN_ANSWER,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-07,KNOWN_ANSWER,total_first_order_impact,0.11,0.11,True
+dsm_known_answer,DSMKA-07,KNOWN_ANSWER,total_propagated_impact_excluding_seed,0.11,0.11,True
+dsm_known_answer,DSMKA-07,KNOWN_ANSWER,total_state_including_seed,1.11,1.11,True
+dsm_known_answer,DSMKA-07,KNOWN_ANSWER,positive_impacted_node_count_excluding_seed,2.0,2,True
+dsm_known_answer,DSMKA-07,KNOWN_ANSWER,positive_state_node_count_including_seed,3.0,3,True
+dsm_known_answer,DSMKA-07,KNOWN_ANSWER,material_impacted_node_count_excluding_seed,1.0,1,True
+dsm_known_answer,DSMKA-07,KNOWN_ANSWER,material_state_node_count_including_seed,2.0,2,True
+dsm_known_answer,DSMKA-07,KNOWN_ANSWER,seed_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-07,KNOWN_ANSWER,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-07,KNOWN_ANSWER,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-07,KNOWN_ANSWER,cumulative_state_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-08,KNOWN_ANSWER,total_first_order_impact,0.5,0.5,True
+dsm_known_answer,DSMKA-08,KNOWN_ANSWER,total_propagated_impact_excluding_seed,0.875,0.875,True
+dsm_known_answer,DSMKA-08,KNOWN_ANSWER,total_state_including_seed,1.875,1.875,True
+dsm_known_answer,DSMKA-08,KNOWN_ANSWER,positive_impacted_node_count_excluding_seed,1.0,1,True
+dsm_known_answer,DSMKA-08,KNOWN_ANSWER,positive_state_node_count_including_seed,2.0,2,True
+dsm_known_answer,DSMKA-08,KNOWN_ANSWER,material_impacted_node_count_excluding_seed,1.0,1,True
+dsm_known_answer,DSMKA-08,KNOWN_ANSWER,material_state_node_count_including_seed,2.0,2,True
+dsm_known_answer,DSMKA-08,KNOWN_ANSWER,seed_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-08,KNOWN_ANSWER,first_order_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-08,KNOWN_ANSWER,propagated_impact_vector,recomputed vector,stored vector,True
+dsm_known_answer,DSMKA-08,KNOWN_ANSWER,cumulative_state_vector,recomputed vector,stored vector,True
