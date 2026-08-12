@@ -221,9 +221,19 @@ RUN10_SCOPED_FILES = {
     "server/app/simulation/models_sim.py",
 }
 
-_unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES)
+#: RUN 10B adds its own authorised production scope on the same footing, so each run's
+#: authorisation stays readable on its own. Run 10B corrects the open input domain in one of the
+#: two voting modules and requires the defining structure of six canonical methods and the
+#: reference objects of two more, which touches the files above and adds one new file: the
+#: canonical-structure layer itself.
+RUN10B_SCOPED_FILES = {
+    "server/app/simulation/canonical.py",
+}
+
+_unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES)
 check(not _unscoped,
-      "no production file outside the authorised scope of Run 7 or Run 10 differs from the "
+      "no production file outside the authorised scope of Run 7, Run 10 or Run 10B differs "
+      "from the "
       "pinned baseline",
       str(_unscoped))
 _assets = sorted(p for p in _prod if p.startswith("assets/"))

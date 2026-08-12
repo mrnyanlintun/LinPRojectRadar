@@ -175,11 +175,18 @@ RUN10_SCOPED_FILES = {
     "server/app/simulation/models_sim.py",
 }
 
+#: RUN 10B declares its own authorised set on the same footing, so Run 8's claim that it changed
+#: no production code and Run 10's own scope both remain readable exactly as written.
+RUN10B_SCOPED_FILES = {
+    "server/app/simulation/canonical.py",
+}
+
 _diff = subprocess.run(["git", "diff", "--name-only", GUARD_BASELINE_REV, "--"],
                        cwd=str(ROOT), capture_output=True, text=True).stdout.split()
 _prod = [p for p in _diff
          if (p.startswith("server/app/") or p.startswith("assets/"))
-         and p not in RUN8_SCOPED_FILES and p not in RUN10_SCOPED_FILES]
+         and p not in RUN8_SCOPED_FILES and p not in RUN10_SCOPED_FILES
+         and p not in RUN10B_SCOPED_FILES]
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
 check(not any(p.startswith("assets/") for p in _diff),

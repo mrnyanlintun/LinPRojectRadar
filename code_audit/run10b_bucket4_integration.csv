@@ -1,0 +1,3 @@
+module_id,module_name,category,reference_object,asset_version,split_used,leakage_guard,importer,absent_reference_behavior,test_result,voting_state,participant_effect
+A5.4,Scenario Modeling,4,scenarioDecisionStructure,OG-SYNTH-0.3,DEVELOPMENT and VALIDATION only,locked holdout refused; version required; self-comparison refused,tests.synthetic_fixtures.importers.production_structures,abstain,PASS,non-voting,advisory only
+B2.19,CRITIC-TOPSIS,4,decisionMatrix,OG-SYNTH-0.3,DEVELOPMENT and VALIDATION only,locked holdout refused; version required; self-comparison refused,tests.synthetic_fixtures.importers.production_structures,abstain,PASS,non-voting,advisory only

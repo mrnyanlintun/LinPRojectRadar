@@ -1,0 +1,8 @@
+module_id,module_name,category,canonical_structure,synthetic_asset,production_importer,production_adapter,structure_present,absent_structure_behavior,known_answer_result,voting_state,participant_effect
+A2.2,Line of Balance,3,lobStructure,OG-SYNTH-0.3,tests.synthetic_fixtures.importers.production_structures,app.simulation.canonical,yes,abstain,18 project periods agree,non-voting,advisory only
+A2.3,CCPM Buffer Health,3,ccpmStructure,OG-SYNTH-0.3,tests.synthetic_fixtures.importers.production_structures,app.simulation.canonical,yes,abstain,36 project periods agree,non-voting,advisory only
+A4.4,NCR Rate,3,auditedNonconformanceCohort,OG-SYNTH-0.3,tests.synthetic_fixtures.importers.production_structures,app.simulation.canonical,yes,abstain,35 project periods agree,non-voting,advisory only
+A5.6,Queueing Theory Bottleneck,3,queueStructure,OG-SYNTH-0.3,tests.synthetic_fixtures.importers.production_structures,app.simulation.canonical,yes,abstain,six projects agree,non-voting,advisory only
+A5.7,Agent-Based Supply Chain,3,abmStructure,OG-SYNTH-0.3,tests.synthetic_fixtures.importers.production_structures,app.simulation.canonical,yes,abstain,six projects agree,non-voting,advisory only
+A6.3,Environmental Compliance Rate,3,auditedPermitCompliance,OG-SYNTH-0.3,tests.synthetic_fixtures.importers.production_structures,app.simulation.canonical,yes,abstain,36 project periods agree,non-voting,advisory only
+A1.1,Monte Carlo EAC,3,bottom-up cost risk register,not consumed,none,none,no,not applicable: the production module has its own verified fixture family,"disposition A, recorded in the report",non-voting,none
