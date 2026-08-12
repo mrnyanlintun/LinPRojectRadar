@@ -1127,7 +1127,7 @@ try:
         # evidence which does not vote. Each is named here, and each is required to be present,
         # so the allowance cannot cover an unrelated edit.
         RUN11_WORDING_SCOPE = {
-            "assets/js/taxonomy.js": "conflictSentence: row.project_conflict_sentence",
+            "assets/js/taxonomy.js": "conflictSentence: pick(\"project_conflict_sentence\")",
             "assets/js/app.js": "_f.conflictSentence",
             # Gate 4: the generated evidence object, loaded so the handbook's qualifications sit
             # beside its claims.
