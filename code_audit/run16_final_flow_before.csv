@@ -1,0 +1,107 @@
+state,observation,value
+server:PRJ-R16-EMPTY,live_row,False
+server:PRJ-R16-FULL,live_row,True
+server:PRJ-R16-FULL,modules,42
+server:PRJ-R16-FULL,abstained,53
+server:PRJ-R16-FULL,categories,1
+server:PRJ-R16-FULL,project_status,Amber
+server:PRJ-R16-ONEDOC,live_row,True
+server:PRJ-R16-ONEDOC,modules,35
+server:PRJ-R16-ONEDOC,abstained,60
+server:PRJ-R16-ONEDOC,categories,1
+server:PRJ-R16-ONEDOC,project_status,Amber
+A-empty,flow_present,True
+A-empty,headers,27 DOCUMENTS | 96 MODULES | 11 CATEGORIES | PROJECT STATUS
+A-empty,node_fill_counts,"{""#1e2a3c"": 24, ""#5b3dd6"": 11, ""#9aa2ae"": 100}"
+A-empty,project_status_node,Project Status None
+A-empty,animated_paths,229
+A-empty,active_marked_paths,0
+A-empty,summary_strip,None
+A-empty,rail_visible,True
+A-empty,rail_buttons,10
+A-empty,collapse_suspects,[]
+A-empty-reload,flow_present,True
+A-empty-reload,headers,27 DOCUMENTS | 96 MODULES | 11 CATEGORIES | PROJECT STATUS
+A-empty-reload,node_fill_counts,"{""#1e2a3c"": 24, ""#5b3dd6"": 11, ""#9aa2ae"": 100}"
+A-empty-reload,project_status_node,Project Status None
+A-empty-reload,animated_paths,229
+A-empty-reload,active_marked_paths,0
+A-empty-reload,summary_strip,None
+A-empty-reload,rail_visible,True
+A-empty-reload,rail_buttons,10
+A-empty-reload,collapse_suspects,[]
+B-populated,flow_present,True
+B-populated,headers,27 DOCUMENTS | 96 MODULES | 11 CATEGORIES | PROJECT STATUS
+B-populated,node_fill_counts,"{""#12703a"": 31, ""#1e2a3c"": 18, ""#5b3dd6"": 11, ""#6f5200"": 7, ""#9a4700"": 9, ""#9aa2ae"": 47, ""#a0bcd8"": 6, ""#b81420"": 6}"
+B-populated,project_status_node,Project Status Amber
+B-populated,animated_paths,229
+B-populated,active_marked_paths,0
+B-populated,summary_strip,None
+B-populated,rail_visible,True
+B-populated,rail_buttons,10
+B-populated,collapse_suspects,[]
+onedoc,flow_present,True
+onedoc,headers,27 DOCUMENTS | 96 MODULES | 11 CATEGORIES | PROJECT STATUS
+onedoc,node_fill_counts,"{""#12703a"": 32, ""#1e2a3c"": 23, ""#5b3dd6"": 11, ""#6f5200"": 5, ""#9a4700"": 6, ""#9aa2ae"": 55, ""#a0bcd8"": 1, ""#b81420"": 2}"
+onedoc,project_status_node,Project Status Amber
+onedoc,animated_paths,229
+onedoc,active_marked_paths,0
+onedoc,summary_strip,None
+onedoc,rail_visible,True
+onedoc,rail_buttons,10
+onedoc,collapse_suspects,[]
+D-switch-1-populated,flow_present,True
+D-switch-1-populated,headers,27 DOCUMENTS | 96 MODULES | 11 CATEGORIES | PROJECT STATUS
+D-switch-1-populated,node_fill_counts,"{""#12703a"": 31, ""#1e2a3c"": 18, ""#5b3dd6"": 11, ""#6f5200"": 7, ""#9a4700"": 7, ""#9aa2ae"": 47, ""#a0bcd8"": 6, ""#b81420"": 8}"
+D-switch-1-populated,project_status_node,Project Status Red
+D-switch-1-populated,animated_paths,229
+D-switch-1-populated,active_marked_paths,0
+D-switch-1-populated,summary_strip,None
+D-switch-1-populated,rail_visible,True
+D-switch-1-populated,rail_buttons,10
+D-switch-1-populated,collapse_suspects,[]
+D-switch-2-empty,flow_present,True
+D-switch-2-empty,headers,27 DOCUMENTS | 96 MODULES | 11 CATEGORIES | PROJECT STATUS
+D-switch-2-empty,node_fill_counts,"{""#1e2a3c"": 24, ""#5b3dd6"": 11, ""#9aa2ae"": 100}"
+D-switch-2-empty,project_status_node,Project Status None
+D-switch-2-empty,animated_paths,229
+D-switch-2-empty,active_marked_paths,0
+D-switch-2-empty,summary_strip,None
+D-switch-2-empty,rail_visible,True
+D-switch-2-empty,rail_buttons,10
+D-switch-2-empty,collapse_suspects,[]
+D-switch-3-populated,flow_present,True
+D-switch-3-populated,headers,27 DOCUMENTS | 96 MODULES | 11 CATEGORIES | PROJECT STATUS
+D-switch-3-populated,node_fill_counts,"{""#12703a"": 31, ""#1e2a3c"": 18, ""#5b3dd6"": 11, ""#6f5200"": 7, ""#9a4700"": 7, ""#9aa2ae"": 47, ""#a0bcd8"": 6, ""#b81420"": 8}"
+D-switch-3-populated,project_status_node,Project Status Red
+D-switch-3-populated,animated_paths,229
+D-switch-3-populated,active_marked_paths,0
+D-switch-3-populated,summary_strip,None
+D-switch-3-populated,rail_visible,True
+D-switch-3-populated,rail_buttons,10
+D-switch-3-populated,collapse_suspects,[]
+C-cleared-same-session,flow_present,True
+C-cleared-same-session,headers,27 DOCUMENTS | 96 MODULES | 11 CATEGORIES | PROJECT STATUS
+C-cleared-same-session,node_fill_counts,"{""#12703a"": 31, ""#1e2a3c"": 24, ""#5b3dd6"": 11, ""#6f5200"": 7, ""#9a4700"": 9, ""#9aa2ae"": 47, ""#b81420"": 6}"
+C-cleared-same-session,project_status_node,Project Status Amber
+C-cleared-same-session,animated_paths,229
+C-cleared-same-session,active_marked_paths,0
+C-cleared-same-session,summary_strip,None
+C-cleared-same-session,rail_visible,True
+C-cleared-same-session,rail_buttons,10
+C-cleared-same-session,collapse_suspects,[]
+C-cleared-server,live_row,True
+C-cleared-server,modules,42
+C-cleared-server,categories,1
+C-cleared-server,project_status,Amber
+C-cleared-reloaded,flow_present,True
+C-cleared-reloaded,headers,27 DOCUMENTS | 96 MODULES | 11 CATEGORIES | PROJECT STATUS
+C-cleared-reloaded,node_fill_counts,"{""#12703a"": 31, ""#1e2a3c"": 18, ""#5b3dd6"": 11, ""#6f5200"": 7, ""#9a4700"": 7, ""#9aa2ae"": 47, ""#a0bcd8"": 6, ""#b81420"": 8}"
+C-cleared-reloaded,project_status_node,Project Status Red
+C-cleared-reloaded,animated_paths,229
+C-cleared-reloaded,active_marked_paths,0
+C-cleared-reloaded,summary_strip,None
+C-cleared-reloaded,rail_visible,True
+C-cleared-reloaded,rail_buttons,10
+C-cleared-reloaded,collapse_suspects,[]
+browser,page_errors,[]
