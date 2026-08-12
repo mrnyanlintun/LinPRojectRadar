@@ -165,7 +165,10 @@ tax_js = (ROOT / "assets" / "js" / "taxonomy.js").read_text(encoding="utf-8")
 check("the ledger banner reads the stored conflict sentence",
       "_f.conflictSentence" in app_js, "")
 check("and taxonomy.js exposes it from the stored row without deriving it",
-      "conflictSentence: row.project_conflict_sentence" in tax_js, "")
+      'conflictSentence: pick("project_conflict_sentence")' in tax_js, "")
+check("and it falls back to the primed row when the slim list projection cannot answer, "
+      "which is what the browser drive caught",
+      "function pick(field)" in tax_js and "ROWS[keyOf(project)]" in tax_js, "")
 check("and nothing in the browser computes a conflict coefficient",
       "project_conflict_state" not in app_js or "compute" not in app_js.split(
           "project_conflict_state")[0][-200:], "")

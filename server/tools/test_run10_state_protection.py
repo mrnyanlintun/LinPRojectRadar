@@ -139,8 +139,11 @@ RUN11_BROWSER_SCOPE = {
     "assets/js/ds_defensibility_data.js",
     "assets/js/app.js",
     "assets/js/decision.js",
+    "assets/js/ds_defensibility_evidence.js",
 }
-RUN11_PAGE_SCOPE = {"research/deepdive.html"}
+# index.html gains one script tag: the GENERATED defensibility evidence object, which the
+# handbook on that page reads. It is a load, not a surface change of its own.
+RUN11_PAGE_SCOPE = {"research/deepdive.html", "index.html"}
 check("this run touched no participant-facing browser asset outside Run 11's authorised scope",
       not [d for d in diff_names
            if d.startswith("assets/") and d not in RUN11_BROWSER_SCOPE])

@@ -1129,6 +1129,10 @@ try:
         RUN11_WORDING_SCOPE = {
             "assets/js/taxonomy.js": "conflictSentence: row.project_conflict_sentence",
             "assets/js/app.js": "_f.conflictSentence",
+            # Gate 4: the generated evidence object, loaded so the handbook's qualifications sit
+            # beside its claims.
+            "assets/js/ds_defensibility_data.js": "Validation for this method would consist of",
+            "index.html": "ds_defensibility_evidence.js",
         }
         if rel in RUN11_WORDING_SCOPE and live != base:
             marker = RUN11_WORDING_SCOPE[rel]

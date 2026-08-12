@@ -203,6 +203,8 @@ RUN11_SCOPED_FILES = {
     "assets/js/decision.js",
     "server/app/documents.py",
     "server/app/simulation/compute.py",
+    "assets/js/ds_defensibility_evidence.js",
+    "index.html",
 }
 
 _diff = subprocess.run(["git", "diff", "--name-only", GUARD_BASELINE_REV, "--"],

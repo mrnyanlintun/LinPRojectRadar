@@ -262,6 +262,8 @@ RUN11_SCOPED_FILES = {
     "assets/js/decision.js",
     "server/app/documents.py",
     "server/app/simulation/compute.py",
+    "assets/js/ds_defensibility_evidence.js",
+    "index.html",
 }
 
 _unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES

@@ -529,6 +529,19 @@ window.projectLevelCategories = function () {
   window.getProjectFusion = function (project) {
     var row = rowFor(project);
     if (!row) return null;
+    /* RUN 11, GATES 5 AND 6, AND THE REASON IT IS SPELT OUT.
+       rowFor prefers the list projection, which is the slim row the portfolio list can afford
+       to carry. That projection has never carried the governed status label or the conflict
+       state, so asking it for them returned nothing and the ledger fell back to the legacy
+       signal-class classification: the browser drive found the banner still reading "Mixed
+       early warning" on a project whose server result says the conflict is not estimable.
+       Same shape as the module_results case documented above: take the projection when it can
+       answer, and the primed row when it cannot. Neither is recomputed here. */
+    var full = (project && keyOf(project) && ROWS[keyOf(project)]) || null;
+    function pick(field) {
+      if (row[field] != null) return row[field];
+      return full && full[field] != null ? full[field] : null;
+    }
     return {
       status: row.project_status || null,
       redReview: !!row.red_review,
@@ -537,11 +550,11 @@ window.projectLevelCategories = function () {
          coefficient can be estimated at all; this file does the reading and nothing else.
          A row computed before Run 11 carries neither field, so both come back null and the
          callers fall back to what they showed before rather than inventing a label. */
-      statusLabel: row.project_status_label || null,
-      statusScope: row.project_status_scope || null,
-      conflict: row.project_conflict != null ? row.project_conflict : null,
-      conflictState: row.project_conflict_state || null,
-      conflictSentence: row.project_conflict_sentence || null,
+      statusLabel: pick("project_status_label"),
+      statusScope: pick("project_status_scope"),
+      conflict: pick("project_conflict"),
+      conflictState: pick("project_conflict_state"),
+      conflictSentence: pick("project_conflict_sentence"),
       /* Kept so a caller can tell a stored answer from a missing one without reaching for
          LinResults directly. */
       stored: true
