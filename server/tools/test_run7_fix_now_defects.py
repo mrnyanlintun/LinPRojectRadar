@@ -173,7 +173,7 @@ check(old_models.SIMULATION_VERSION == "sim-2026.08-v2",
 # RESTATED BY RUN 10B, original reason preserved: Run 7 shipped sim-2026.08-v3 and Run 10
 # shipped sim-2026.08-v4, and both records are preserved in the version history rather than
 # overwritten. This branch is Run 10B's.
-check(SIMULATION_VERSION == "sim-2026.08-v9",
+check(SIMULATION_VERSION == "sim-2026.08-v10",
       "and this branch is stamped at Run 10B's version, so results computed before and after "
       "each run are distinguishable in the data. Run 7 shipped sim-2026.08-v3 and Run 10 "
       "shipped sim-2026.08-v4, and both records are preserved in the version history rather "

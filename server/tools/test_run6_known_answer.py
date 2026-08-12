@@ -327,7 +327,7 @@ check(not (set(_assets) - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES
 check(_prod, "the guard is live: it does see the files this run did change", str(_prod))
 # RESTATED BY RUN 10B, with the original reason preserved: this check has tracked the current
 # stamp since Run 6, and it read sim-2026.08-v4 while Run 10 was current.
-check(registry.SIMULATION_VERSION == "sim-2026.08-v9",
+check(registry.SIMULATION_VERSION == "sim-2026.08-v10",
       "the analytical layer is stamped at Run 10B's version, and sim-2026.08-v2, "
       "sim-2026.08-v3 and sim-2026.08-v4 all remain historical audit baselines for results "
       "already collected under them",

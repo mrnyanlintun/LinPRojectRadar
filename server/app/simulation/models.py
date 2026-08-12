@@ -98,7 +98,14 @@ from .rng import as_percent, clamp, num, pctile, round1, round2
 # the design the calibration selected is the one already shipped, so no CUSUM parameter, band
 # or boundary moved. The eight disabled modules were investigated and none was activated or
 # altered. The stamp moves because the portfolio layer emits a different object.
-SIMULATION_VERSION = "sim-2026.08-v9"
+# RUN 16 (LOW-HANGING INSTRUMENT CLEANUP) moves it to sim-2026.08-v10. Material Cost Variance is
+# disabled from operational execution pending an evidence and context decision, so this layer no
+# longer emits a result for it and emits an abstention instead. That is a change in what a stored
+# row contains and it has to be distinguishable in already-collected data, which is what this
+# stamp exists for. Nothing is said here about that module's arithmetic, which is untouched and
+# unreached, and no other module's behaviour changed. Every earlier stamp remains the historical
+# audit baseline for the results computed under it.
+SIMULATION_VERSION = "sim-2026.08-v10"
 
 
 # -------------------------------------------------------------------------------------------

@@ -109,7 +109,7 @@ import oldsim10b.models_evm as old_evm  # noqa: E402
 
 check(old_models.SIMULATION_VERSION == "sim-2026.08-v4",
       "the pinned baseline is the version Run 10 shipped", old_models.SIMULATION_VERSION)
-check(SIMULATION_VERSION == "sim-2026.08-v9",
+check(SIMULATION_VERSION == "sim-2026.08-v10",
       "and this branch is stamped at this run's version, so a result computed before the "
       "correction and one computed after are distinguishable in already collected data",
       SIMULATION_VERSION)

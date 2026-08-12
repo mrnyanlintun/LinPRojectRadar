@@ -35,7 +35,7 @@ from __future__ import annotations
 from typing import Any
 
 from .canonical import CANONICAL_STRUCTURE_KEYS
-from .registry import DISABLED_CONCEPT_ONLY, registry_index
+from .registry import DISABLED_MODULES, registry_index
 
 #: Bumped when the SHAPE or the MEANING of a dimension changes, never for a wording change.
 QUALIFICATION_VERSION = "cat9-qual-v1"
@@ -89,7 +89,10 @@ def _required_inputs_dimension(abstained: dict[str, str]) -> tuple[str, list[str
     counted twice.
     """
     missing = sorted(mid for mid in abstained
-                     if mid not in DISABLED_CONCEPT_ONLY
+                     # RUN 16: every refused module, not only the concept-only eight. A module the
+                     # registry refuses to execute did not go silent for want of its inputs, so
+                     # counting it here would misreport the evidence state.
+                     if mid not in DISABLED_MODULES
                      and mid not in CANONICAL_STRUCTURE_KEYS)
     return (PASS if not missing else PARTIAL), missing
 
