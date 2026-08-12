@@ -1,7 +1,7 @@
 Run 11 — Browser, Participant, Governance Cleanup
 
 Starting commit: 68fe615
-Ending commit: recorded below at the merge
+Ending commit: 17cf57d
 Previous simulation version: sim-2026.08-v5
 New simulation version: sim-2026.08-v6
 Synthetic package version: v0.3 (unchanged, not re-ingested)

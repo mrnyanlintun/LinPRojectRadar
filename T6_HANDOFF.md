@@ -6699,7 +6699,7 @@ Files: `server/app/simulation/canonical.py` (new), `models.py`, `models_doc.py`,
 # Run 11 — browser, participant and governance cleanup (2026-08-12)
 
 **Branch `claude/run11-browser-participant-governance` from `origin/main` at `68fe615`, the Run
-10B merge. Report: `REPORT_2026-08-12_run11-browser-participant-governance-cleanup.md`, which is
+10B merge. Merged and pushed as `17cf57d`. Report: `REPORT_2026-08-12_run11-browser-participant-governance-cleanup.md`, which is
 controlling and self-contained.**
 
 **Simulation version sim-2026.08-v5 to sim-2026.08-v6. Synthetic package v0.3, unchanged and not
