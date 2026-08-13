@@ -68,14 +68,28 @@ RUN20_ARCHITECTURAL_CHANGES: dict[str, tuple[str, str, str]] = {
 #: PRODUCTION FILES CREATED BY RUN 20. A new file cannot differ from a freeze taken before it
 #: existed, so the byte comparison can never see one. Declaring them here is what stops a whole
 #: new production module being added without any declaration at all.
-RUN20_NEW_PRODUCTION_FILES: dict[str, tuple[str, str]] = {
+#:
+#: RUN 20 CYCLE 4 WIDENED THIS ENTRY FROM ONE CYCLE TO THE TUPLE OF CYCLES THAT HAVE TOUCHED THE
+#: FILE, and the reason is a gap cycle 4's own sweep found in cycle 3's guard. Cycle 4 changes
+#: only lineage.py, which is a NEW production file and therefore has no baseline row to differ
+#: from. The manifest's cycle-set check reads the cycles off the baseline-file declarations, so
+#: a cycle that touches nothing but a new file declared itself NOWHERE and the check that exists
+#: to catch exactly that would have stayed green. The cycles are read off this list too now.
+#:
+#: relative path -> (the cycles that have changed it, in order, what the file is)
+RUN20_NEW_PRODUCTION_FILES: dict[str, tuple[tuple[str, ...], str]] = {
     "server/app/simulation/qualification_gate.py": (
-        "3 P0D", "the Category-9 operational qualification gate: the preflight over a project "
-                 "evidence package, the qualified signal whose band and value cannot be read "
-                 "around its verdict, and the converter that refuses a raw bypass"),
+        ("3 P0D",), "the Category-9 operational qualification gate: the preflight over a project "
+                    "evidence package, the qualified signal whose band and value cannot be read "
+                    "around its verdict, and the converter that refuses a raw bypass"),
     "server/app/simulation/lineage.py": (
-        "3 P0D", "the framework-level evidence lineage vocabulary, records and partition, read "
-                 "by the combination rule and by the qualification gate"),
+        ("3 P0D", "4 P0D"),
+        "the framework-level evidence lineage vocabulary, records and partition, read by the "
+        "combination rule and by the qualification gate. Cycle 4 added the declared lineages of "
+        "the two advisory duplicate pairs, Change Order Frequency with Contract Modification "
+        "Frequency and Sensitivity Analysis with Tornado Risk Ranking, and the contract change "
+        "record as a body of evidence in its own right. DECLARATION ONLY: no band, boundary, "
+        "threshold or arithmetic result of any module changed"),
 }
 
 

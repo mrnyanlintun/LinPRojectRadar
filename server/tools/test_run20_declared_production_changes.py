@@ -146,9 +146,12 @@ check("an architectural entry may not name a file the module manifest already de
 
 # NEW production files, the direction the byte comparison structurally cannot reach: a file that
 # did not exist when the freeze was taken has no baseline row to differ from.
-for rel, (cycle, why) in sorted(RUN20_NEW_PRODUCTION_FILES.items()):
+for rel, (cycles, why) in sorted(RUN20_NEW_PRODUCTION_FILES.items()):
     check(f"the declared new production file {rel} exists and names a cycle and a reason",
-          (ROOT / rel).is_file() and bool(cycle) and bool(why))
+          (ROOT / rel).is_file() and bool(cycles) and bool(why))
+    check(f"and {rel} declares its cycles as a tuple rather than one string, so a later cycle "
+          f"that changes it has somewhere to say so",
+          isinstance(cycles, tuple) and all(isinstance(c, str) for c in cycles), repr(cycles))
     check(f"and {rel} is genuinely new rather than a baseline file smuggled onto the new list",
           rel not in baseline)
 _undeclared_new = sorted(
@@ -160,11 +163,17 @@ check("and no OTHER file has appeared in the simulation package undeclared, whic
       not _undeclared_new, str(_undeclared_new))
 
 # The cycles so far, so a fourth cycle that forgets to declare itself is visible here.
-check("the manifest records exactly the three Run-20 cycles that have changed production",
-      {e[0] for e in RUN20_PRODUCTION_CHANGES.values()}
-      | {e[0] for e in RUN20_ARCHITECTURAL_CHANGES.values()} == {"1 P0B", "2 P0C", "3 P0D"},
-      str(sorted({e[0] for e in RUN20_PRODUCTION_CHANGES.values()}
-                 | {e[0] for e in RUN20_ARCHITECTURAL_CHANGES.values()})))
+# THE CYCLE SET, AND THE GAP CYCLE 4 FOUND IN IT. This read the cycles off the baseline-file
+# declarations only. Cycle 4 changes nothing but lineage.py, a file created by cycle 3, which has
+# no baseline row to differ from and so appears in neither of the first two dictionaries: the
+# cycle would have declared itself nowhere and this check, which exists precisely to catch a
+# cycle that forgets to declare itself, would have stayed green while it did. The new-file
+# declarations are read too now.
+_declared_cycles = ({e[0] for e in RUN20_PRODUCTION_CHANGES.values()}
+                    | {e[0] for e in RUN20_ARCHITECTURAL_CHANGES.values()}
+                    | {c for e in RUN20_NEW_PRODUCTION_FILES.values() for c in e[0]})
+check("the manifest records exactly the four Run-20 cycles that have changed production",
+      _declared_cycles == {"1 P0B", "2 P0C", "3 P0D", "4 P0D"}, str(sorted(_declared_cycles)))
 
 if _fail:
     print(f"\n{len(_fail)} check(s) did not hold:")

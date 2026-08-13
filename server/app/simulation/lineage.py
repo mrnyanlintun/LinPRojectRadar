@@ -207,6 +207,10 @@ def group_labels(records: list[dict], groups: list[list[int]]) -> list[str]:
 EARNED_VALUE_BODY = "EARNED_VALUE_MEASUREMENT"
 DOCUMENT_BODY = "DOCUMENT_EVIDENCE"
 REPORTING_HISTORY_BODY = "REPORTING_HISTORY"
+#: The change order log and the two contract sums read from it. Run 20 cycle 4. It is its own
+#: body and shares nothing with the earned-value measurement, which is why the two advisory
+#: duplicate pairs must NOT collapse into one body between them.
+CONTRACT_CHANGE_BODY = "CONTRACT_CHANGE_RECORD"
 
 MODULE_LINEAGE: dict[str, dict[str, Any]] = {
     # ---- the two voting modules, which are the reason this file exists
@@ -261,6 +265,58 @@ MODULE_LINEAGE: dict[str, dict[str, Any]] = {
         evidence_relationship=DERIVED,
         derivation_chain=("bac,ev,ac", "cost model", "one-at-a-time sensitivity sweep",
                           "ranked swing of each driver")),
+    # ---- RUN 20 CYCLE 4. The two advisory duplicate pairs Run 19 recorded as lineage findings
+    #      and cycle 3 left undeclared. DECLARATION ONLY: no band, boundary, threshold or
+    #      arithmetic result of any of these four modules is changed by their appearing here.
+    #
+    #      The first pair. Change Order Frequency and Contract Modification Frequency read the
+    #      SAME three governed fields, compute the SAME scope-growth expression from the same two
+    #      contract sums, and report the same change count. They differ only in the thresholds
+    #      they band it with, which is why on one and the same project they can and do return
+    #      different colours: two readings of one body of evidence, not two bodies.
+    "A4.6": lineage_record(  # Change Order Frequency
+        "A4.6",
+        source_fact_ids=("baseline_contract_sum", "change_order_count", "revised_contract_sum"),
+        lineage_group_ids=(CONTRACT_CHANGE_BODY,),
+        evidence_relationship=SAME_SOURCE_TRANSFORM,
+        derivation_chain=("change order log", "count of change orders",
+                          "scope growth = (revised contract sum - baseline contract sum) "
+                          "/ baseline contract sum")),
+    "B3.5": lineage_record(  # Contract Modification Frequency
+        "B3.5",
+        source_fact_ids=("baseline_contract_sum", "change_order_count", "revised_contract_sum"),
+        lineage_group_ids=(CONTRACT_CHANGE_BODY,),
+        evidence_relationship=SAME_SOURCE_TRANSFORM,
+        derivation_chain=("change order log", "count of contract modifications",
+                          "scope growth = (revised contract sum - baseline contract sum) "
+                          "/ baseline contract sum")),
+    #      The second pair. Sensitivity Analysis perturbs the cost index and ranks three drivers;
+    #      Tornado Risk Ranking ranks four present-state deviations built from the same indices
+    #      and the same document risk score, plus the two progress figures. The overlap is most
+    #      of the body, so it is CORRELATED rather than a transform of the other's output: it is
+    #      not computed FROM the sensitivity signal, it recomputes over the same evidence. The
+    #      partition does not depend on that distinction -- the shared facts settle it -- and the
+    #      label is recorded because a label is a claim, and a claim is not evidence.
+    "A5.2": lineage_record(  # Sensitivity Analysis
+        "A5.2", source_fact_ids=("ac", "bac", "doc_risk_score", "ev", "pv"),
+        lineage_group_ids=(EARNED_VALUE_BODY, DOCUMENT_BODY),
+        evidence_relationship=SAME_SOURCE_TRANSFORM,
+        derivation_chain=("bac,ev,ac,pv and the document risk score",
+                          "cost performance index = ev / ac",
+                          "estimate at completion = bac / cost performance index",
+                          "one-at-a-time perturbation of the cost index by plus and minus 0.05",
+                          "ranked driver swings")),
+    "A5.3": lineage_record(  # Tornado Risk Ranking
+        "A5.3", source_fact_ids=("ac", "actual_pct_complete", "doc_risk_score", "ev",
+                                 "planned_pct_complete", "pv"),
+        lineage_group_ids=(EARNED_VALUE_BODY, DOCUMENT_BODY),
+        evidence_relationship=CORRELATED,
+        derivation_chain=("bac,ev,ac,pv, the document risk score and the two progress figures",
+                          "cost performance index = ev / ac",
+                          "schedule performance index = ev / pv",
+                          "absolute deviation of each index from one",
+                          "absolute progress shortfall",
+                          "ranked present-state deviations")),
     # ---- the synthesis, which may never corroborate anything it was built from
     "PH.5": lineage_record(
         "PH.5", source_fact_ids=(),

@@ -7929,3 +7929,81 @@ a non-voting lineage finding at 4.6 and 5.3. Do not launch Run 21.
 **Files.** Two new production files and two changed; three new suites; three corrected suites; the
 declared manifest extended with an architectural list and a new-production-file list; five
 `code_audit/run20_*` evidence files updated; the cycle-3 report; this entry.
+
+## 2026-08-13 — Run 20 cycle 4 (P0D): two advisory modules that rest on another module's evidence now say so
+
+**Commits.** This entry's commit. Branch `main`, continuing from the merged cycle 3 at `ee2e683`.
+Simulation version unchanged.
+
+**Regression.** 103 suites, 8929 checks, all green, through the strict runner. 102 suites and 8722
+checks before the cycle. One new suite, no suite deleted.
+
+**What was open.** Run 19 recorded Change Order Frequency as a duplicate of Contract Modification
+Frequency and Tornado Risk Ranking as a duplicate of Sensitivity Analysis evidence. Cycle 3 built
+the framework to express exactly that and used it only on the path that votes, so all four modules
+declared nothing at all.
+
+**What was built, and what deliberately was not.** All four now declare a whole lineage record with
+its derivation chain, and the contract change record is a body of evidence in its own right. THIS
+CYCLE REBANDS NOTHING. No threshold, boundary, band or arithmetic result of any module changed, and
+the module outputs are pinned on a hand-written fixture and asserted after the declaration so a
+later cycle cannot quietly turn a disclosure into a repair. The method-label mismatches these four
+carry are untouched and stay open at P1.
+
+**Numbers.** For each pair, duplicated Green 0.9722 before and 0.8000 after; Yellow 0.9267 before
+and 0.7000 after; Amber 0.9273 before and 0.7000 after; Red 0.9787 before and 0.8340 after. The
+conflict of 0.4414 each pair reported against itself is no longer estimated. The positive control
+holds: an independent Amber body still corroborates either finding to 0.9273 in two bodies of
+evidence with an estimable conflict, and adding the duplicate to an already corroborated pair
+changes the mass by nothing at all.
+
+**A disagreement worth recording.** The two change-order modules return DIFFERENT colours on one
+and the same project, Yellow and Amber from six modifications and eight per cent growth. That is
+one body read two ways, and it now resolves to the more adverse reading in both orders rather than
+being scored as conflict between independent sources.
+
+**The oracle needed correcting, and that is recorded.** A single-armed abstention oracle called a
+TRUE declaration false on three checks, because Tornado Risk Ranking is handed the two indices as
+fields and never the earned value while resting on it, which is exactly what the model means by a
+source fact. The oracle is two-armed now and the finding is recorded rather than quietly relaxed.
+
+**Mutations.** Eight, M22 to M29, each byte-confirmed, each caught by a named check, each restored
+green. M26 and M27 are a deliberate pair proving neither of the partition's two rules is dead code:
+removing either alone leaves the partition standing on the other, and removing both restores the
+defect exactly.
+
+**Neighbour sweep, and it is the largest finding of the cycle.** Grouping every module MECHANICALLY
+by the exact field set its own preflight requires, six clusters rest on an identical required-input
+set and only the pair this cycle declares is declared. The largest is ten modules on the two indices
+and the document risk score. Opened as register row ARCH.3 at P1, NOT remediated: all of them are
+non-voting and advisory, several are disabled outright, and the combination rule does not assume
+independence for an undeclared signal, so none can reach a governed status.
+
+**A structural gap in cycle 3's own guard, fixed.** The manifest's cycle-set check read the cycles
+off the baseline-file declarations only, so cycle 4, which changes nothing but a file cycle 3
+created, would have declared itself nowhere and the check written to catch exactly that would have
+stayed green. New production files now declare the tuple of cycles that changed them, and M29 turns
+it red.
+
+**Run-17 results table brought up to date, including cycle 3's omission.** Cycles 1 and 2 updated
+`server/tools/run17/`; cycle 3 did not, so the two voting modules still read RAW_UNQUALIFIED_INPUT
+and SHARED_EVM_INPUT_VECTOR after the gate and the lineage model were built. Both columns are
+corrected for 1.7 and 1.8, and the lineage columns for 4.6, 5.2, 5.3 and 8.5 record this cycle.
+
+**Stop conditions.** None hit. Voting exactly two, concept-only activation zero, Material Cost
+Variance still disabled, Category-9 raw bypasses zero, all reverified after the cycle.
+
+**EXACT NEXT REQUIREMENTS. RUN 20 IS INCOMPLETE. FOUR OF TWELVE CYCLES ARE DONE.**
+COMPLETE: cycle 1 P0B; cycle 2 P0C; cycle 3 P0D architecture, ARCH.1 and ARCH.2 CLOSED and P0A
+CLOSED at the fusion layer; cycle 4 P0D the advisory lineage disclosure of 4.6 and 5.3.
+P0D NOW CARRIES NO OPEN ROW. The register's P0D group is ARCH.1, ARCH.2 and B2.1; the first two are
+closed and B2.1 is the one remaining P0D row, non-voting and advisory.
+THEN, by the register's own priority ordering: B2.1 at P0D; then P1, which now includes 4.6 and 5.3
+demoted from P0D with their method-label work, the new ARCH.3, and 8.3's dead Yellow arm; then P2;
+then P3; then the mandatory complete 100-module re-audit, which must not run over a half-remediated
+instrument. Resume by filtering `code_audit/run20_master_remediation_register.csv` to
+`status == OPEN`, now 86 rows across 104. Do not launch Run 21.
+
+**Files.** One production file changed, `server/app/simulation/lineage.py`, declaration only; one
+new suite; the manifest and its guard widened; six `code_audit/run20_*` evidence files updated; the
+Run-17 results table; the cycle-4 report; this entry.
