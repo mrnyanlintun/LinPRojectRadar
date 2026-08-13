@@ -25,6 +25,20 @@ RUN20_PRODUCTION_CHANGES: dict[str, tuple[str, str, str]] = {
     "9.7": ("1 P0B", "server/app/simulation/models_dq.py",
             "the gap from the last report to the period cutoff is measured on the module's own "
             "existing ladder, so cessation is visible"),
+    "8.2": ("2 P0C", "server/app/simulation/models_gov.py",
+            "the twenty-five per cent review level no longer carries the name and part number "
+            "of a regulation that states no such threshold, and no reporting obligation is "
+            "asserted from a cost ratio"),
+    "8.3": ("2 P0C", "server/app/simulation/models_gov.py",
+            "MANDATORY REPORTING TRIGGERED is removed: the two conditions remain as internal "
+            "observations and no obligation under the circular is concluded from them"),
+    "8.4": ("2 P0C", "server/app/simulation/models_gov.py",
+            "performance indices below an internal review level are no longer reported as "
+            "reporting-threshold breaches, and the result states that reporting compliance is "
+            "not assessed"),
+    "10.3": ("2 P0C", "server/app/simulation/models_gov.py",
+             "the rule named FAR threshold is renamed for the forecast-overrun comparison it "
+             "actually is, since no provision states it"),
 }
 
 

@@ -76,9 +76,9 @@ module_id,module_name,category,assessed_in,scientific_disposition,operational_ac
 7.19,CRITIC-TOPSIS,7,Run 19,CORRECT_ABSTENTION,ADVISORY_ONLY,non-voting
 7.20,Hypersoft Sets,7,Run 19,FUTURE_RESEARCH_ONLY,DISABLED_UNSAFE,non-voting
 8.1,ABM Governance Layer,8,Run 19,METHOD_LABEL_MISMATCH,ADVISORY_ONLY,non-voting
-8.2,FAR Threshold Monitor,8,Run 19,REGULATORY_VERSION_BLOCKED,ADVISORY_ONLY,non-voting
-8.3,OMB A-11 Check,8,Run 19,REGULATORY_VERSION_BLOCKED,ADVISORY_ONLY,non-voting
-8.4,EVM Reporting Threshold,8,Run 19,REGULATORY_VERSION_BLOCKED,ADVISORY_ONLY,non-voting
+8.2,FAR Threshold Monitor,8,Run 19,MISSING_CANONICAL_DATA_STRUCTURE,ADVISORY_ONLY,non-voting
+8.3,OMB A-11 Check,8,Run 19,MISSING_CANONICAL_DATA_STRUCTURE,ADVISORY_ONLY,non-voting
+8.4,EVM Reporting Threshold,8,Run 19,MISSING_CANONICAL_DATA_STRUCTURE,ADVISORY_ONLY,non-voting
 8.5,Contract Modification Frequency,8,Run 19,CORRECT_PROXY_ONLY,ADVISORY_ONLY,non-voting
 10.1,Multi-Objective Optimization,10,Run 19,METHOD_LABEL_MISMATCH,DISABLED_UNSAFE,non-voting
 10.2,Linear Programming,10,Run 19,MISSING_CANONICAL_DATA_STRUCTURE,DISABLED_UNSAFE,non-voting

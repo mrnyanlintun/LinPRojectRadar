@@ -322,6 +322,33 @@ def run_far_threshold(si: dict, rand: Callable[[], float], period_cutoff) -> dic
     completion is an authorised amount and cannot be below zero. This is the same domain the
     variance-at-completion module states for the same field. The threshold, the band and the
     reporting rule are untouched.
+
+    RUN 20 CYCLE 2, P0C GOVERNANCE AND REGULATORY OVERCLAIM.
+
+    The reader was shown "FAR Part 34: 17.6% overrun, threshold 25% (REPORTING REQUIRED)". Two
+    separate overclaims sat in that one sentence.
+
+    First, the twenty-five. FAR 34.201 establishes earned value management POLICY and
+    applicability: an earned value management system is required for major acquisitions for
+    development in accordance with OMB Circular A-11, agencies may require one for other
+    acquisitions under agency procedures, and contracting officers shall as a minimum require
+    monthly reports on contracts to which it applies. It states no numeric cost-overrun
+    threshold of any kind, and none was cited anywhere in this module. The number is an internal
+    review level. It is now named as one, with its provenance stated on the result, and the
+    regulation's name and part number are gone from the sentence. The number itself is NOT
+    changed and no substitute regulatory threshold is introduced, because none exists to
+    introduce.
+
+    Second, "REPORTING REQUIRED". A reporting obligation follows from applicability, which this
+    module does not determine and has none of the evidence for: no acquisition designation, no
+    agency, no agency procedure, no contract clause, no award date, no rule version. Asserting
+    the obligation from a cost ratio is the governance overclaim specification section 17
+    prohibits in terms. The result now records regulatory_determination NOT_MADE and says so.
+
+    The arithmetic, the domain guards and the band are untouched. Authority basis is the
+    committed REGULATORY_SNAPSHOT_2026-08-12, corroborated on the text of 34.201 by web search;
+    the official acquisition.gov and eCFR hosts are refused by this container's egress proxy, so
+    no primary document is claimed to have been read. Nothing here is described as current law.
     """
     if not check_inputs(si, ("bac", "cpi", "ev", "ac")):
         return insufficient("FAR_Threshold")
@@ -349,18 +376,49 @@ def run_far_threshold(si: dict, rand: Callable[[], float], period_cutoff) -> dic
         "method_class": "FAR_Threshold",
         "status_color": color,
         "overrun_pct": round1(overrun),
-        "far34_threshold_pct": threshold,
+        "review_threshold_pct": threshold,
+        "threshold_provenance": "UNCITED_INTERNAL_REVIEW_LEVEL",
         "distance_to_threshold": round1(headroom),
-        "far_reporting_required": overrun >= threshold,
+        "exceeds_review_threshold": overrun >= threshold,
+        "regulatory_determination": "NOT_MADE",
         "evidence_metric": (
-            f"FAR Part 34: {_js_str(round1(overrun))}% overrun, threshold {threshold}% ("
-            + ("REPORTING REQUIRED" if overrun >= threshold
-               else f"{_js_str(round1(headroom))}% headroom") + ")"
+            f"{_js_str(round1(overrun))}% forecast overrun against an internal review level of "
+            f"{threshold}%, which no regulation states ("
+            + ("above the review level" if overrun >= threshold
+               else f"{_js_str(round1(headroom))}% headroom") + "). "
+            "Whether earned value management applies, and whether any report is due, is not "
+            "determined here."
         ),
     }
 
 
 def run_omb_a11_check(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 20 CYCLE 2, P0C GOVERNANCE AND REGULATORY OVERCLAIM.
+
+    The reader was shown "OMB A-11: CPI 0.85: MANDATORY REPORTING TRIGGERED" whenever the cost
+    index fell below 0.90 on a budget of ten million or more. That sentence asserts a legal
+    obligation under a named federal circular on the strength of two uncited literals.
+
+    Specification section 17, 8.3, states in terms that OMB Circular A-11 must NOT be reduced to
+    budget, cost-index and progress thresholds, and that is precisely what the check is. Nothing
+    the circular requires is represented here: no rule identifier, no section or appendix, no
+    applicability, no required evidence, no result per requirement, no reviewer, and no edition.
+    A check that evaluates none of a circular's requirements cannot conclude that the circular
+    obliges anything.
+
+    What is removed is the conclusion, not the observation. The two conditions are real
+    observations about the project and remain, renamed for what they are: a cost index below an
+    internal review level, and a budget at or above an internal size level. The result records
+    regulatory_determination NOT_MADE and the sentence states that no requirement of the
+    circular was evaluated. The conjunction, the boundaries and the band are untouched, and no
+    substitute regulatory threshold is introduced.
+
+    Representing the circular's configured requirements properly, with sections, applicability,
+    required evidence and the edition dated 2025-08-29 that the committed snapshot carries, is
+    the P2 work the register records for this module. It is not attempted here, and the module
+    does not pretend to have done it.
+    """
     if not check_inputs(si, ("bac", "cpi", "actualPctComplete")):
         return insufficient("OMB_A11_Check")
     if si["cpi"] == 0:
@@ -376,19 +434,49 @@ def run_omb_a11_check(si: dict, rand: Callable[[], float], period_cutoff) -> dic
         "method_class": "OMB_A11_Check",
         "status_color": color,
         "cpi_below_90": cpi_below,
-        "major_program": major,
-        "reporting_triggered": triggered,
+        "large_budget": major,
+        "review_condition_met": triggered,
+        "threshold_provenance": "UNCITED_INTERNAL_REVIEW_LEVEL",
+        "regulatory_determination": "NOT_MADE",
         "projected_overrun": int(js_round(overrun)),
         "evidence_metric": (
-            f"OMB A-11: CPI {_js_str(si['cpi'])}"
-            + (": MANDATORY REPORTING TRIGGERED" if triggered
-               else ": below threshold, monitor" if cpi_below else ": within threshold")
+            f"Cost index {_js_str(si['cpi'])}"
+            + (", below the internal review level of 0.90 on a budget of ten million or more, "
+               "which is an internal review condition and not a reporting obligation"
+               if triggered
+               else ", below the internal review level of 0.90" if cpi_below
+               else ", at or above the internal review level of 0.90")
+            + ". No requirement of the circular is evaluated here, so no conformance finding is "
+              "made."
         ),
     }
 
 
 def run_evm_reporting_threshold(si: dict, rand: Callable[[], float],
                                 period_cutoff) -> dict[str, Any]:
+    """
+    RUN 20 CYCLE 2, P0C GOVERNANCE AND REGULATORY OVERCLAIM.
+
+    This module is registered as a reporting threshold and measures cost and schedule
+    performance. Specification section 17, 8.4, states in terms that cost and schedule
+    performance bands do not establish reporting compliance, and Run 19 verified the consequence
+    directly: a contractor submitting every required monthly report on time on a struggling
+    project was reported as having BREACHED a reporting threshold, and one submitting nothing at
+    all on a healthy project was reported as within it. The word "BREACHED" beside a
+    reporting-compliance name is the overclaim.
+
+    Reporting compliance is made of applicability, the contract clause, the required cadence or
+    data item, the due date and the received date. Under the committed snapshot FAR 34.201(c)
+    requires as a minimum monthly reports on contracts to which earned value management applies,
+    and FAR 52.234-4 requires the reports the contract calls for. Not one of those inputs exists
+    in this module, so reporting compliance is not assessed, and the result now says so on its
+    face through reporting_compliance_assessed and through the sentence.
+
+    The three flags are renamed from breach to what they measure, a performance index below an
+    internal review level of 0.90. The arithmetic, the guards, the conjunction and the band are
+    untouched, and no regulatory threshold is introduced. Carrying cadence, due date and
+    received date is the P2 work the register records for this module.
+    """
     if not check_inputs(si, ("bac", "cpi", "spi")):
         return insufficient("EVM_Reporting_Threshold")
     if si["cpi"] == 0 or si["bac"] == 0:
@@ -409,13 +497,18 @@ def run_evm_reporting_threshold(si: dict, rand: Callable[[], float],
     return {
         "method_class": "EVM_Reporting_Threshold",
         "status_color": color,
-        "cpi_breached": cpi_b,
-        "spi_breached": spi_b,
-        "both_breached": both,
+        "cpi_below_review_level": cpi_b,
+        "spi_below_review_level": spi_b,
+        "both_below_review_level": both,
+        "threshold_provenance": "UNCITED_INTERNAL_REVIEW_LEVEL",
+        "reporting_compliance_assessed": False,
         "eac_delta_pct": round1(delta),
         "evidence_metric": (
-            f"EVM threshold: CPI {'BREACHED' if cpi_b else 'ok'}, "
-            f"SPI {'BREACHED' if spi_b else 'ok'}, EAC +{_js_str(round1(delta))}%"
+            f"Cost index {'below' if cpi_b else 'at or above'} the internal review level of "
+            f"0.90, schedule index {'below' if spi_b else 'at or above'} it, forecast at "
+            f"completion {_js_str(round1(delta))}% over budget. No reporting cadence, due date "
+            f"or received date is held, so whether required reports were submitted is not "
+            f"assessed here."
         ),
     }
 
@@ -530,7 +623,14 @@ def run_constraint_satisfaction(si: dict, rand: Callable[[], float],
         {"name": "Cost constraint (CPI ≥ 0.90)", "satisfied": si["cpi"] >= 0.90},
         {"name": "Schedule constraint (SPI ≥ 0.90)", "satisfied": si["spi"] >= 0.90},
         {"name": "Document risk (score < 0.70)", "satisfied": doc < 0.70},
-        {"name": "FAR threshold (overrun < 25%)", "satisfied": si["cpi"] > 0.80},
+        # RUN 20 CYCLE 2. This rule was presented to the reader as "FAR threshold
+        # (overrun < 25%)". FAR 34.201 states earned value management policy and applicability
+        # and states no numeric overrun threshold of any kind, so the regulation's name and part
+        # number were attached to an uncited internal level. The comparison itself is coherent
+        # and unchanged: a forecast at completion of budget over cost index overruns by less
+        # than a quarter exactly when the cost index exceeds 0.80. Only the false attribution
+        # is removed.
+        {"name": "Forecast overrun below 25% (CPI > 0.80)", "satisfied": si["cpi"] > 0.80},
     ]
     satisfied = sum(1 for c in constraints if c["satisfied"])
     violated = [c["name"] for c in constraints if not c["satisfied"]]

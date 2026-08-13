@@ -1,0 +1,137 @@
+"""
+RUN 20 CYCLE 2. The declared-production-change manifest, checked against production BYTES.
+
+WHY THIS FILE EXISTS. Cycle 1 built `run20_production_changes.py` as the one declared list of
+modules Run 20 changed in production, and had both the category suites and the consolidator
+check every result row against it. Cycle 2's mutation campaign tried to break that guard by
+removing a module from the manifest, and the guard did not notice.
+
+It could not have noticed. The category suites WRITE `production_change_made` by calling
+`expected_flag(mid)`, and the consolidator then READS that column and compares it to
+`expected_flag(mid)`. Both sides of the comparison come from the same function, so the two can
+never disagree whatever the manifest says. It is the failure mode this programme has already
+found nine times in other forms: a check asserted against a hand-maintained copy of the thing it
+is supposed to be checking. It passes forever and proves nothing.
+
+WHAT THIS FILE CHECKS INSTEAD. The manifest is compared to `code_audit/run20_production_freeze.sha256`,
+production as it stood at the Run-20 starting commit. The set of production files whose bytes now
+differ from that baseline must equal exactly the set of files the manifest names. Neither side is
+derived from the other: one is a hash of the bytes on disk, the other is a hand-written
+declaration. An undeclared production edit and a declared file that was never touched both make
+this red.
+
+WHAT IT DOES NOT CHECK, STATED PLAINLY. File-level hashes cannot show that a particular MODULE
+inside a shared file changed. Three of cycle 2's four modules live in the same file. That
+direction is covered three ways instead: the manifest's module ids are checked against the
+hundred scientific targets and against a Run-20 note in the category suite that assesses each
+one, the category suites assert each module's corrected behaviour by name, and the mutation
+campaign proves each of those assertions can fail. What remains genuinely uncovered is a
+manifest entry that names a REAL target in an ALREADY-DECLARED file and changes nothing; that
+one is caught by the category suite for that module, not here.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import pathlib
+import sys
+
+HERE = pathlib.Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
+sys.path.insert(0, str(HERE / "run17"))
+
+from run20_production_changes import RUN20_PRODUCTION_CHANGES  # noqa: E402
+from population import population  # noqa: E402
+
+ROOT = HERE.parent.parent
+#: The IMMOVABLE reference: production as it stood at the Run-20 starting commit, before any
+#: cycle changed anything. It is a copy of run20_production_baseline.sha256 as that file read at
+#: commit 54e8591, taken because cycle 1 REGENERATED the baseline after making its fix. A
+#: baseline that is rewritten every time production changes agrees with production by
+#: construction and can never catch an undeclared edit, which is the same circularity this file
+#: was written to remove. This copy is never regenerated during Run 20.
+BASELINE = ROOT / "code_audit" / "run20_production_freeze.sha256"
+
+_passed = 0
+_total = 0
+_fail: list[str] = []
+
+
+def check(name: str, cond: bool, detail: str = "") -> None:
+    global _passed, _total
+    _total += 1
+    if cond:
+        _passed += 1
+    else:
+        _fail.append(f"{name}" + (f" -- {detail}" if detail else ""))
+
+
+def sha(path: pathlib.Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+baseline: dict[str, str] = {}
+for line in BASELINE.read_text(encoding="utf-8").splitlines():
+    line = line.strip()
+    if not line:
+        continue
+    digest, _, rel = line.partition("  ")
+    baseline[rel] = digest
+
+check("the frozen Run-20 starting-state production manifest is present and covers the whole "
+      "file list", len(baseline) == 143, f"{len(baseline)} rows")
+check("the freeze is genuinely frozen: it still records the pre-cycle-1 bytes of the file cycle "
+      "1 changed, so it has not been regenerated against current production",
+      baseline.get("server/app/simulation/models_ext.py")
+      == "8911c9d86fc73fd913907cb9b489a5649d2b400cfaa7cc26dcdf9c66e65bb5d3")
+
+missing = [rel for rel in baseline if not (ROOT / rel).is_file()]
+check("every file the baseline names still exists", not missing, str(missing))
+
+differing = {rel for rel, digest in baseline.items()
+             if (ROOT / rel).is_file() and sha(ROOT / rel) != digest}
+declared = {entry[1] for entry in RUN20_PRODUCTION_CHANGES.values()}
+
+check("every production file that differs from the Run-20 freeze is declared in the Run-20 "
+      "manifest, so an undeclared production edit cannot pass",
+      differing <= declared, f"undeclared: {sorted(differing - declared)}")
+check("every production file the Run-20 manifest declares actually differs from the Run-20 "
+      "freeze, so a declared fix that was never delivered cannot pass",
+      declared <= differing, f"declared but unchanged: {sorted(declared - differing)}")
+check("and the two sets are therefore exactly equal, which is the whole guard",
+      differing == declared, f"{sorted(differing)} vs {sorted(declared)}")
+
+check("no file outside the baseline's own list is treated as production by this check, so the "
+      "guard cannot be widened by adding a file to the manifest",
+      declared <= set(baseline), f"not in baseline: {sorted(declared - set(baseline))}")
+
+for mid, (cycle, path, why) in sorted(RUN20_PRODUCTION_CHANGES.items()):
+    check(f"the manifest entry for {mid} names a cycle, a real file and a reason",
+          bool(cycle) and bool(why) and (ROOT / path).is_file(), f"{cycle!r} {path!r}")
+
+# MODULE-LEVEL, the direction file hashes cannot reach. A manifest entry naming something that
+# is not one of the hundred scientific targets is a fabricated declaration, and a target the
+# manifest names must have a Run-20 note against it in the category suite that assesses it, so
+# a module cannot be declared changed with nothing anywhere demonstrating the change.
+_targets = {t["module_id"] for t in population()}
+for mid in sorted(RUN20_PRODUCTION_CHANGES):
+    check(f"the manifest entry {mid} is one of the hundred scientific targets",
+          mid in _targets)
+    cat = mid.split(".")[0]
+    suite = HERE / f"test_run19_category_{cat}.py"
+    body = suite.read_text(encoding="utf-8") if suite.is_file() else ""
+    check(f"the category suite that assesses {mid} carries a Run-20 note recording the change",
+          "RUN 20 CYCLE" in body, f"{suite.name} exists={suite.is_file()}")
+
+# The two cycles so far, so a third cycle that forgets to declare itself is visible here.
+check("the manifest records exactly the two Run-20 cycles that have changed production",
+      {e[0] for e in RUN20_PRODUCTION_CHANGES.values()} == {"1 P0B", "2 P0C"},
+      str(sorted({e[0] for e in RUN20_PRODUCTION_CHANGES.values()})))
+
+if _fail:
+    print(f"\n{len(_fail)} check(s) did not hold:")
+    for f in _fail:
+        print(f"  - {f}")
+print(f"RESULT: {_passed}/{_total} checks passed")
+sys.exit(0 if _passed == _total else 1)
