@@ -69,6 +69,10 @@ RUN20_ARCHITECTURAL_CHANGES: dict[str, tuple[str, str, str]] = {
 #: existed, so the byte comparison can never see one. Declaring them here is what stops a whole
 #: new production module being added without any declaration at all.
 RUN20_NEW_PRODUCTION_FILES: dict[str, tuple[str, str]] = {
+    "server/app/simulation/qualification_gate.py": (
+        "3 P0D", "the Category-9 operational qualification gate: the preflight over a project "
+                 "evidence package, the qualified signal whose band and value cannot be read "
+                 "around its verdict, and the converter that refuses a raw bypass"),
     "server/app/simulation/lineage.py": (
         "3 P0D", "the framework-level evidence lineage vocabulary, records and partition, read "
                  "by the combination rule and by the qualification gate"),
