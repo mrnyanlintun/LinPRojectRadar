@@ -7841,8 +7841,26 @@ disposition script; the declared manifest; a new frozen production manifest; six
 ## 2026-08-13 — Run 20 cycle 3 (P0D): evidence lineage in the combination rule, and the Category-9 operational gate
 
 **Commits.** `0a2786d` commit A the lineage model; `bd7f290` commit B the dependence-aware voting
-path; `eb9b0e5` commit C the Category-9 gate; commit D this record. Branch
+path; `eb9b0e5` commit C the Category-9 gate; `ce4e85f` commit D the voting-path requalification and
+the P0A determination; `8eb7613` commit E the B2.1 register row. Branch
 `claude/run20-p0d-lineage-cat9` from `f59a38e`. Simulation version unchanged.
+
+**MERGED TO MAIN AT `ee2e683`.** The cycle boundary is preserved: the merge is a five-commit
+non-fast-forward merge, not a squash. Every verification below was rerun on merged main from live
+execution and from the artifacts, not read off the branch report, and MERGED MAIN AGREES WITH THE
+BRANCH IN EVERY RESPECT WITH NO DISCREPANCY. Full suite on merged main 102 suites 8722/8722 green.
+Voting exactly two, A1.7 and A1.8, read from `registry.CORE_VOTING_MODULES`. Concept-only
+activation zero, from evaluating `registry.activation_state` over all 95 available modules: 84
+ADVISORY_ONLY, 2 ENABLED_QUALIFIED, 8 DISABLED_UNSAFE, 1 DISABLED_EVIDENCE_UNDER_REVIEW, and no
+module in a concept-only activation. Material Cost Variance A3.4 DISABLED_EVIDENCE_UNDER_REVIEW.
+Same-lineage Amber 0.7000 to 0.7000, Green 0.8000 to 0.8000, Red 0.8340 to 0.8340, each measured
+live through `fusion.fuse_signals`. The positive control, two genuinely independent Amber bodies,
+still corroborates to 0.9273 in two lineage groups with an estimable conflict of 0.4414, so the
+correction suppresses duplication without suppressing real corroboration. Category-9 raw or
+unqualified bypasses accepted as fully qualified: zero, four object types driven live through
+`qualification_gate.fuse_qualified`, each refused by the gate's own named RawBypassError rather
+than by an incidental error. P0A CLOSED at the fusion layer, ARCH.1 CLOSED, ARCH.2 CLOSED. Working
+tree clean.
 
 **Regression.** 102 suites, 8722 checks, all green, through the strict runner. 99 suites and 8422
 checks before the cycle. Three new suites, three corrected suites, no suite deleted.
@@ -7902,8 +7920,11 @@ corrected here because rebanding an advisory module needs its own reproduction, 
 sweep.
 THEN: P1 27 modules including 8.3's dead Yellow arm; then P2 8 modules; then P3 44 modules; then
 the mandatory complete 100-module re-audit, which must not run over a half-remediated instrument.
-Resume by filtering `code_audit/run20_master_remediation_register.csv` to `status == OPEN`, now 84
-rows, ordering by `priority`, and starting at P0D. Do not launch Run 21.
+Resume by filtering `code_audit/run20_master_remediation_register.csv` to `status == OPEN`, now 85
+rows across 103, ordering by `priority`, and starting at P0D. B2.1 was recorded in the cycle-3
+neighbour sweep but no register row had ever been opened for it, so the continuation order could
+not see it; commit E opens that row at P0D, OPEN, which is the priority the register already gives
+a non-voting lineage finding at 4.6 and 5.3. Do not launch Run 21.
 
 **Files.** Two new production files and two changed; three new suites; three corrected suites; the
 declared manifest extended with an architectural list and a new-production-file list; five

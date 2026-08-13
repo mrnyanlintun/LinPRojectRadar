@@ -236,3 +236,45 @@ Remaining, and stated plainly rather than folded away:
   structures and calibration work, in the register's own order.
 
 Run 21 has not been launched.
+
+## Merged to main, and reverified there
+
+The cycle merged to `main` at **`ee2e683`**, a five-commit non-fast-forward merge that preserves the
+cycle boundary rather than squashing it: `0a2786d` A, `bd7f290` B, `eb9b0e5` C, `ce4e85f` D and
+`8eb7613` E, where E opens the register row for the B2.1 finding this cycle's neighbour sweep had
+recorded in the sweep artifact only.
+
+Every exit number was rerun on merged main from live execution and from the committed artifacts
+rather than read off this report, and merged main agrees with the branch in every respect. There is
+no discrepancy to explain.
+
+| verified on merged main | observed |
+|---|---|
+| full suite through the strict runner | 102 suites, 8722/8722, all green |
+| voting modules | exactly 2, A1.7 and A1.8, from `registry.CORE_VOTING_MODULES` |
+| concept-only activation | 0, from `registry.activation_state` over all 95 available modules |
+| Material Cost Variance | A3.4, DISABLED_EVIDENCE_UNDER_REVIEW |
+| same-lineage Amber | 0.7000 to 0.7000 |
+| same-lineage Green | 0.8000 to 0.8000 |
+| same-lineage Red | 0.8340 to 0.8340 |
+| positive control, two independent Amber bodies | 0.9273, two lineage groups, conflict 0.4414 estimable |
+| Category-9 raw or unqualified bypasses accepted | 0, four object types, each refused by RawBypassError |
+| P0A | CLOSED at the fusion layer |
+| ARCH.1 | CLOSED |
+| ARCH.2 | CLOSED |
+| working tree | clean |
+
+The activation figures in full, so the zero is a reading and not an assertion: 84 ADVISORY_ONLY,
+2 ENABLED_QUALIFIED, 8 DISABLED_UNSAFE and 1 DISABLED_EVIDENCE_UNDER_REVIEW. The bypass refusals
+were each checked to be the gate's own named refusal, because this cycle had already recorded one
+mutation that failed by an incidental error rather than by the gate, and an accident is not a
+refusal.
+
+**Two evidence gaps in this cycle's own artifacts, stated rather than folded away.** The nine
+cycle-3 mutations M13 to M21 are recorded in this report, in the register and in the transitions,
+but no rows for them were written into `code_audit/run20_fault_injection_results.csv`, which
+carries cycles 1 and 2 and stops there. And `server/tools/run17/` was updated by cycles 1 and 2 and
+not by cycle 3, so the `cat9_qualification_status` and `lineage_status` columns for the two voting
+modules still read the pre-cycle values. Neither gap is repaired by transcription, because the
+fault-injection table records per-injection check counts that only a rerun can produce and a
+scientific results table may not be edited without the evidence in hand. Both are carried as work.
