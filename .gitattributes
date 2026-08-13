@@ -4,3 +4,4 @@
 # The interpreter pin must never be CRLF: Render reads it on Linux and a trailing
 # carriage return would make the version string unparseable.
 server/.python-version text eol=lf
+research/methodology/PCEIF_100_MODULE_SUPERVISORY_METHOD_SPECIFICATION_v1.md -text

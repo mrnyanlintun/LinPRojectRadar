@@ -1,0 +1,6 @@
+failure_mode,runner_exit_code,runner_rejected_it,expected,harness_behaved_correctly,runner_verdict_line
+false prose with no canonical RESULT line,1,yes,reject,yes,"FAIL  tools/test_zz_harness_probe.py  (no canonical RESULT: line, exit 0 — see below)"
+a reported failed count,1,yes,reject,yes,FAIL  tools/test_zz_harness_probe.py  3/5
+a green RESULT line followed by a nonzero exit,1,yes,reject,yes,FAIL  tools/test_zz_harness_probe.py  5/5 but exit 3
+a silent crash before any RESULT line,1,yes,reject,yes,"FAIL  tools/test_zz_harness_probe.py  (no canonical RESULT: line, exit 1 — see below)"
+"CONTROL, a genuinely green suite",0,no,accept,yes,ALL SUITES GREEN

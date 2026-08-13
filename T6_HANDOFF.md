@@ -7517,3 +7517,114 @@ Files: `assets/js/neural_flow.js` (the one production change);
 evidence files and screenshots (new);
 `REPORT_2026-08-13_run18-instrument-completion-and-100-module-scientific-audit.md` (new); this
 entry.
+
+---
+
+## 2026-08-13 — Run 19, complete 100-module scientific audit
+
+**Branch commit:** see below. **Merge commit:** PENDING. **Starting commit:** `d0af5a3`.
+**Simulation version:** `sim-2026.08-v10`, unchanged. **Synthetic packages:** OG-SYNTH-0.1, 0.2
+and 0.3, unchanged.
+
+**Scope.** The blocker Run 18 hit is cleared. The controlling supervisory method specification,
+which had existed only inside a prompt, is committed verbatim as
+`research/methodology/PCEIF_100_MODULE_SUPERVISORY_METHOD_SPECIFICATION_v1.md` with a metadata
+record beside it. Source attachment SHA-256 and committed file SHA-256 are **identical**,
+`328b50133f1d2a8d710d3cca787c24c22e2cdad0b09fe92ae2c7b7a55b8d299e`, so the content is preserved
+byte for byte rather than line-ending-transformed; a `.gitattributes -text` rule holds the CRLF
+terminators and the round trip through the index was verified. With that in place the remaining
+79 modules were scientifically assessed and the table consolidated to 100 complete rows.
+
+**100-module count proof.** 101 registry rows, 96 project-level, 5 portfolio, minus Material Cost
+Variance, gives 95 plus 5 equals **100 targets, 100 unique identifiers**, derived mechanically
+and asserted by module name against the specification's own list. `old_id` was not used for
+identity. Identifiers are text: 1.1/1.10, 2.1/2.10, 4.1/4.10, 7.1/7.10 and 7.2/7.20 were each
+proved distinct in the final table.
+
+**3.4 exclusion.** Material Cost Variance remains registered, named,
+`DISABLED_EVIDENCE_UNDER_REVIEW`, non-voting, refused before its arithmetic on every input shape
+tested, and excluded from the 100 rows. Its state is distinct from the concept-only state and was
+checked as distinct.
+
+**Production files changed: NONE.** `git diff d0af5a3 -- server/app assets index.html tests.html`
+is empty. `server/app` digest `f70787ee33d1d0b146adec920a937b2edfd7c1cfbaf97c9e6ff10d77375f7fe4`,
+assets digest `333a7ef1d060fc63b1fa187d840eb8484dba5e8a5be596ac937067c9bb42440e`. A separate
+file-by-file digest taken at the start and end of the run is byte-identical.
+
+**Test and audit files changed:** the committed specification and its metadata; shared harnesses
+`server/tools/run17/audit_harness.py` and `fault_harness.py`; eight independent oracles
+`run17/oracle/oracles_cat_{2,3,4,5,7,8,9,10}.py`; eight suites
+`server/tools/test_run19_category_{2,3,4,5,7,8,9,10}.py`; eight category result files and eight
+fault files under `run17/categories/`; the rebuilt `run17/scientific_results.csv`; audit scripts
+`run19_prior_21_consistency.py`, `run19_consolidate.py`, `run19_remediation_queue.py`,
+`run19_harness_integrity.py`; `code_audit/run19_*.csv`; the report; this entry.
+
+**Voting state: exactly 2, TCPI and Variance at Completion, unchanged**, asserted in all eight
+new suites. **Activation state: 0 concept-only activations.** All eight remain `DISABLED_UNSAFE`
+and each was proved short-circuited before its formula function on a complete input.
+
+**Test counts: 96 suites, 8298 of 8298, all green**, each against its own freshly migrated
+database. The prior baseline was 88 suites and 7207 checks, so this run adds 8 suites and 1,091
+checks and changes no prior count. Strict-harness integrity was re-proved on five planted
+suites including a control that must be accepted.
+
+**Prior 21 against the committed specification: 21/21 CONSISTENT, 0 contradictions.**
+`code_audit/run19_prior_21_spec_consistency.csv`.
+
+**Scientific disposition counts over the final 100 rows:** METHOD_LABEL_MISMATCH 23;
+CORRECT_PROXY_ONLY 17; PARAMETER_PROVENANCE_BLOCKED 11; IMPLEMENTATION_DEFECT 10;
+METHOD_PASS_CALIBRATION_PENDING 8; MISSING_CANONICAL_DATA_STRUCTURE 7; CORRECT_ABSTENTION 6;
+THRESHOLD_CALIBRATION_BLOCKED 6; REGULATORY_VERSION_BLOCKED 4; OWNER_DECISION_REQUIRED 3;
+FUTURE_RESEARCH_ONLY 3; SCIENTIFIC_PASS 2. **NOT_REACHED 0, NOT_ASSESSED 0, blank 0.**
+
+**Canonical-structure gaps (7):** 1.10, 3.9, 4.1, 7.18, 8.9, 9.4, 10.2.
+**Parameter and calibration gaps:** provenance blocked on 11, ten of them Category 7, where every
+formalism derives its degrees from one earned-value input vector by unsourced literals;
+`calibration_status` NOT_CALIBRATED on 92 of 100.
+**Empirical-validation gaps:** NOT_DONE on **all 100**. Nothing is described as validated.
+**Regulatory snapshot:** `REGULATORY_SNAPSHOT_2026-08-12`. No web retrieval; no claim of current
+law. Category 8 assessed for the first time and NOT cleared: three overclaims (8.2, 8.3, 8.4),
+one evidence defect (8.7), two blocked on permit and record identity (8.8, 8.9).
+
+**Fault-injection results:** 59 injections, all reached, all leaving the suite running, all
+turning a **named** check red, none touching the real tree.
+`code_audit/run19_fault_injection_results.csv`. Seven further attempts failed to qualify and are
+recorded rather than hidden: five crashed instead of failing, one was absorbed by defence in
+depth, and three changed nothing at all, which produced the finding that the Pythagorean,
+spherical and Fermatean admissibility guards are unreachable dead code. One injection exposed a
+coverage gap in this run's own suite, a missing P80-against-point-forecast invariant, which was
+then added.
+
+**Owner decisions:** 2.4 compression metric definition; 5.4 category placement and whether 5.4,
+10.4 and 10.7 should share one governed decision object; 7.18 and 7.19 placement with stable
+identifiers; 9.5 field versus evidence-component coverage; PH.4 pattern definition; PH.5
+composite weights; 6.4 aggregation; which thresholds become declared owner policy; proxy naming
+across 17 modules. Everything outstanding from Runs 10B, 11, 12, 14, 15, 16 and 17 remains open.
+
+**Exact next-session requirements.** `code_audit/run19_next_remediation_queue.csv`, 94 items,
+**not executed in this run**. P0A **0**, and that is a result rather than an omission: the rule
+was applied and both voting modules reach SCIENTIFIC_PASS. P0B 4 (3.7 negative overrun and
+negative budget both band; 8.7 meeting minutes become an incident rate; 9.2 a future-dated
+document is maximally fresh; 9.7 cessation is invisible). P0C 4 (8.2 uncited FAR threshold and
+asserted reporting obligation; 8.3 circular reduced to two thresholds with mandatory reporting
+asserted; 8.4 performance bands under a reporting-compliance name; 10.3 a rule labelled a FAR
+threshold). P0D 4 (ARCH.1 the Category 9 gate does not exist; ARCH.2 one body of evidence
+combined twice sharpens belief 0.70 to 0.93, latent while one lineage votes; 5.3 duplicate
+tornado evidence; 4.6 duplicated with 8.5). P1 27, P2 8, P3 44, FUTURE 3.
+**Do not execute Run-20 fixes without the owner's word.**
+
+**Deviations.** The owner's Gate 5 authorises parallel category workers. No subagent-spawning
+tool was available in this session, so the categories were executed serially by the integrating
+agent; every other Gate 5 rule was followed, including per-category files, validation before
+consolidation and the no-production-change rule. Recorded as a deviation in method, not in scope:
+all 79 modules were assessed.
+
+**Unresolved observation.** `code_audit/run9_no_operational_effect.csv` and
+`run10_no_operational_effect.csv` are rewritten by pre-existing suites on every run, because
+those suites recompute and store an assets tree digest. They were restored to their committed
+state. This is a pre-existing side effect Run 19 did not create and did not repair.
+
+Files: no production file changed; the specification and metadata, two harnesses, eight oracles,
+eight suites, sixteen category evidence files, the rebuilt results table, four audit scripts, the
+`code_audit/run19_*` evidence files,
+`REPORT_2026-08-13_run19-complete-100-module-scientific-audit.md` (new); this entry.
