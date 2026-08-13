@@ -1,0 +1,23 @@
+{
+  "document_title": "Literature-Grounded Scientific Method Audit: 100-Module Canonical / Defensibility Verification Supervisory Method Specification",
+  "version": "v1",
+  "source_attachment_name": "23580217-Pasted20text28229.txt",
+  "source_attachment_sha256": "328b50133f1d2a8d710d3cca787c24c22e2cdad0b09fe92ae2c7b7a55b8d299e",
+  "committed_file": "research/methodology/PCEIF_100_MODULE_SUPERVISORY_METHOD_SPECIFICATION_v1.md",
+  "committed_file_sha256": "328b50133f1d2a8d710d3cca787c24c22e2cdad0b09fe92ae2c7b7a55b8d299e",
+  "byte_identical_to_source": true,
+  "line_ending_or_encoding_transformation": "none; the file is committed verbatim, UTF-8 with CRLF line terminators preserved, guarded by a .gitattributes -text rule so no checkout filter can alter it",
+  "line_count": 3600,
+  "byte_count": 102006,
+  "sections_present": "0 through 37 inclusive, ending with the Definition of Done and the final reporting language",
+  "date_committed": "2026-08-13",
+  "committed_by_run": "Run 19",
+  "regulatory_snapshot_date": "2026-08-12",
+  "controlling_status": "CONTROLLING. This document is the authoritative theoretical and methodological specification for the 100-module scientific audit and for every subsequent audit or remediation run. Repository source code is the object under test and is never a source of theory. Where this document and the implementation disagree, this document governs the question of what the method ought to be, and the implementation governs only the question of what the software currently does.",
+  "supersession_rule": "This version is superseded only by a later numbered supervisory specification issued by the research and supervisory review and committed under the same convention with its own checksum and metadata record. No run may amend, summarise, paraphrase or reconstruct this document in place. A superseding document must state explicitly which sections it replaces; sections it does not replace remain in force under this version.",
+  "prohibited_uses": [
+    "reconstructing the specification from production code",
+    "using GROUP_A through GROUP_D exports as theory",
+    "using production output as an oracle for any module defined here"
+  ]
+}
