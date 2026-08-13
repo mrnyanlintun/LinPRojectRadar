@@ -7742,3 +7742,96 @@ audit scripts; the rebuilt results table and three category evidence files; elev
 **Run 20 commit record.** Starting commit `772ad8f`; commit 1 `54e8591`; cycle 1 `11c4cd8`; the
 merge to main and this closing entry are the final commits of the run. A commit cannot contain its
 own hash, so the final hash is whatever `git log -1 main` reports at the tip of this run.
+
+---
+
+## 2026-08-13 — RUN 20 CONTINUATION, CYCLES 2 AND 3-STEP-ONE
+
+**Date.** 2026-08-13. **Run.** Run 20 supervised scientific remediation loop, continuation
+session. **Resumed from.** `e9cd05d`, verified mechanically before any new work: clean tree, 97
+suites and 8353/8353 green, voting `{A1.7, A1.8}` read from `registry.CORE_VOTING_MODULES`,
+`A3.4` `DISABLED_EVIDENCE_UNDER_REVIEW` and all eight concept-only modules `DISABLED_UNSAFE` read
+from `registry.activation_state`. **Branch.** `claude/run20-continuation`. **Branch commits.**
+`7494bc1` cycle 2; `d2cba6b` cycle 3 step one. **RUN 20 REMAINS INCOMPLETE.**
+
+**Scope.** Cycle 2, the P0C class, four governance and regulatory overclaims: 8.2, 8.3, 8.4 and
+10.3. Then cycle 3's reproduction step only. The committed register controlled the order and was
+followed; the previous handoff had listed 8.8 in P0C where the register records it as P2, and the
+register won.
+
+**Production files changed.** One: `server/app/simulation/models_gov.py`. **NO THRESHOLD,
+BOUNDARY, BAND OR ARITHMETIC RESULT CHANGED.** Every correction removes an unsupported claim and
+none introduces a regulatory threshold. 8.2 the twenty-five per cent level is named an internal
+review level with its provenance carried and no reporting obligation is asserted; 8.3 MANDATORY
+REPORTING TRIGGERED is removed; 8.4 the three flags are renamed from breach to a performance index
+below an internal review level and the result states that reporting compliance is not assessed;
+10.3 the rule named for a regulation is renamed for the comparison it makes.
+
+**Regulatory retrieval attempted and FAILED.** acquisition.gov, the eCFR, whitehouse.gov and two
+mirrors are all refused at this container's egress proxy. No primary document is claimed to have
+been read. A general web search corroborated the snapshot's text of FAR 34.201 on every point this
+cycle depends on and is recorded as corroboration only. `REGULATORY_SNAPSHOT_2026-08-12` was the
+authority and is sufficient, because the corrections remove claims. **No module was left
+REGULATORY_VERSION_BLOCKED because live retrieval failed**; 8.2, 8.3 and 8.4 take
+MISSING_CANONICAL_DATA_STRUCTURE for the structures they still cannot represent.
+
+**Voting effect.** None. **Activation effect.** None. **Participant effect.** None: no
+participant route loads these modules.
+
+**Tests and checks.** 99 suites, **8422/8422** green on the branch tip, from 97 and 8353. Two new
+suites, `test_run20_declared_production_changes.py` and `test_run20_lineage_reproduction.py`. Six
+fault injections, each confirmed to change bytes, each producing a named red and restored green.
+
+**Deviations and things that did not work.** M11 did not qualify on its first attempt and the
+reason is recorded in the fault table rather than hidden. Cycle 3 was started and STOPPED after
+the reproduction, deliberately, because its remediation changes the fusion path the two voting
+modules run through and there was no capacity to finish the mutation proof, the neighbour sweep
+and the full regression in this session; leaving the voting path half-changed was refused.
+
+**Unresolved findings, three new from the neighbour sweep.** Two more suites had fossilized the
+superseded readings, and `test_run6_known_answer.py` CRASHED with a KeyError rather than failing.
+The programme count of suites found encoding a defect or a superseded reading as expected
+behaviour goes from nine to **eleven**. 8.3's Yellow band arm is unreachable, requiring a cost
+index simultaneously below 0.90 and at or above 0.92, so a four-value scheme bands on three;
+carried as P1, not fixed. **And cycle 1's own declared-manifest guard could not fail**: both sides
+of its comparison came from `expected_flag(mid)`. It is replaced by a byte comparison against
+`code_audit/run20_production_freeze.sha256`, a copy of production at the Run-20 starting commit
+that is never regenerated, and two injections now turn it red.
+
+**Lineage numbers, pinned before any fix.** Single Amber source mass 0.7000; the same source
+counted twice 0.9273; three times 0.9861. Single Green 0.8000 becomes 0.9722 and single Red 0.8340
+becomes 0.9787, so duplication manufactures reassurance as readily as alarm. Conflict between a
+source and its own copy 0.4414 against 0.0000 for the single source. **The defect is in the live
+voting path**: A1.7 and A1.8 are transforms of one body of earned-value evidence and are fused as
+two independent votes. **There is no after column, because the control is not built.**
+
+**Category 9.** Unchanged and still failing. Raw-input bypass attempts tested this session 0. The
+operational gate ARCH.1 is not started.
+
+**Owner decisions.** Four, unchanged: 2.4, 5.4, PH.4 and 3.7's naming. None raised or closed.
+
+**Stop conditions.** None hit scientifically. The run stopped for session capacity.
+
+**EXACT NEXT REQUIREMENTS. RUN 20 IS INCOMPLETE. TWO OF TWELVE CYCLES ARE DONE.**
+COMPLETE: cycle 1 P0B; cycle 2 P0C.
+STARTED, REPRODUCTION ONLY: cycle 3 P0D lineage. Resume at the CONTROL, not the measurement:
+build the eight dependence classes INDEPENDENT, DERIVED, CORRELATED, SAME_SOURCE_TRANSFORM,
+SYNTHESIZED, QUALITY_METADATA, GOVERNANCE_OUTPUT and DECISION_OUTPUT at framework level; group
+same-lineage evidence to one mass before Dempster's rule rather than solving it inside
+Dempster-Shafer alone; exclude quality, governance and decision outputs from project evidence
+entirely; and re-measure against the pinned numbers in
+`server/tools/test_run20_lineage_reproduction.py`, which must be rewritten to the corrected
+contract with the superseded numbers recorded beside each. Expect the project status of the two
+voting modules to change, since they are one lineage, and treat that as P0A work with the full
+mutation, sweep and regression discipline.
+THEN: cycle 3's other half, the Category-9 OPERATIONAL gate ARCH.1, which must reject or
+explicitly degrade a downstream consumer of raw unqualified evidence rather than merely labelling
+it; then 4.6 and 5.3 lineage disclosure; then P1 27 modules including 8.3's dead Yellow arm; then
+P2 8 modules; then P3 44 modules; then the mandatory complete 100-module re-audit, which must not
+run over a half-remediated instrument.
+Resume by filtering `code_audit/run20_master_remediation_register.csv` to `status == OPEN`, 86
+rows, ordering by `priority`, and starting at P0D. Do not launch Run 21.
+
+**Files.** One production file; two new suites; two corrected suites; two category suites; the
+disposition script; the declared manifest; a new frozen production manifest; six
+`code_audit/run20_*` evidence files; the report Part Two; this entry.

@@ -320,3 +320,185 @@ starting instrument qualification over a half-remediated instrument.
 `status == OPEN`, order by `priority`, and begin with P0C. Everything a cycle needs is in the
 register row, the Run-19 queue row it derives from, and the category suite proposition that
 records the defect.
+
+---
+
+# PART TWO — CONTINUATION SESSION, CYCLE 2 AND CYCLE 3 STEP ONE
+
+This part was written in a later session that resumed Run 20 from `e9cd05d`. It does not rewrite
+Part One. Cycle 1 is historical completed evidence and was not rerun for ceremony; it was rerun
+only as part of the complete suite, where it stayed green.
+
+## 21. State reconstructed at resumption
+
+`origin/main` at `e9cd05d`, clean tree. Complete suite through the strict runner: 97 suites,
+**8353/8353**, matching the recorded baseline exactly. Voting read directly from
+`registry.CORE_VOTING_MODULES`: `{A1.7, A1.8}`, exactly two. `registry.activation_state` read
+directly: Material Cost Variance `A3.4` is `DISABLED_EVIDENCE_UNDER_REVIEW`, and all eight
+concept-only modules are `DISABLED_UNSAFE`. Concept-only activation zero.
+
+**The committed register said the next cycle was P0C.** The handoff listed P0C as
+`8.2, 8.3, 8.4, 8.8, 10.3`; the register, which controls, records `8.8` as **P2** and P0C as
+exactly `8.2, 8.3, 8.4, 10.3`. The register was followed and the discrepancy is recorded here
+rather than resolved silently.
+
+## 22. Cycle 2 — a rule check is not a legal determination
+
+**Root cause, three named forms.** `REGULATORY_ATTRIBUTION_DEFECT`: a regulation's name and part
+number attached to a level no cited provision states. `ASSERTED_OBLIGATION_WITHOUT_APPLICABILITY`:
+a legal obligation concluded from a cost ratio by a module that determines no applicability.
+`PERFORMANCE_BAND_UNDER_A_COMPLIANCE_NAME`: cost and schedule indices reported as a reporting
+breach.
+
+**Oracle.** `run17/oracle/oracles_cat_8.py`, self-proving at import against the specification's
+own worked answers: the four applicability states, the four rule results with absent evidence
+resolving to Insufficient Evidence and never Satisfied, the four reporting-compliance results, and
+`says_prohibited` over the category's forbidden claim forms. No production formula was copied into
+any test.
+
+**What changed.** Nothing numeric. No threshold, boundary, band or arithmetic result moved in any
+of the four modules, and every correction removes a claim rather than adding one. That direction
+matters: it is why the corrections did not need a retrieved provision to justify them.
+
+| Module | Superseded reading | After |
+|---|---|---|
+| 8.2 | `FAR Part 34: 17.6% overrun, threshold 25% (REPORTING REQUIRED)` | the level is named an internal review level, its provenance is carried, `regulatory_determination` is `NOT_MADE` |
+| 8.3 | `OMB A-11: CPI 0.85: MANDATORY REPORTING TRIGGERED` | two internal observations, no obligation, and the sentence states that no requirement of the circular was evaluated |
+| 8.4 | `EVM threshold: CPI BREACHED, SPI ok, EAC +17.6%` | a performance index below an internal review level, and `reporting_compliance_assessed` is false on the face of the result |
+| 10.3 | rule named `FAR threshold (overrun < 25%)` | `Forecast overrun below 25% (CPI > 0.80)`, same comparison |
+
+**Mutation proof.** Six injections, each confirmed to change bytes, each producing a named red and
+each restored and reproved green. M7 the FAR attribution restored; M8 `MANDATORY REPORTING
+TRIGGERED` restored; M9 the breach language restored; M10 the FAR rule name restored; M11 a
+delivered fix undeclared in the manifest; M12 an undeclared production edit. **M11 did not qualify
+on its first attempt**, and that is recorded in the fault table rather than hidden — see section 24.
+
+## 23. The Category-8 regulatory outcome, and what could actually be retrieved
+
+**No official source could be retrieved.** `acquisition.gov`, `ecfr.gov`, `whitehouse.gov` and two
+mirror hosts are all refused at this container's egress proxy. **No primary document is claimed to
+have been read.** A general web search returned the substance of FAR 34.201 and it agrees with the
+committed snapshot on every point this cycle depends on, including that the section establishes
+policy and applicability and states no numeric cost-overrun threshold of any kind; that is
+recorded as corroboration only.
+
+The committed `REGULATORY_SNAPSHOT_2026-08-12` was the authority, and it is a sufficient one here
+precisely because all four corrections **remove** unsupported claims. **No module was left
+`REGULATORY_VERSION_BLOCKED` merely because live retrieval failed.** That disposition is reserved
+for a module whose applicable versioned authority cannot be established even from the snapshot,
+and for 8.2, 8.3 and 8.4 it can be: what the established authority shows is that these modules'
+thresholds are not regulatory ones. They take `MISSING_CANONICAL_DATA_STRUCTURE` for the
+applicability, requirement and reporting structures they still cannot represent.
+
+## 24. Neighbour sweep, cycle 2 — five sweeps, three new findings
+
+**Two more fossilized suites, bringing the programme count from nine to eleven.**
+`test_run6_known_answer.py` **CRASHED** with a `KeyError` rather than failing, the same
+crash-not-fail pattern as three of cycle 1's four. `test_run7_fix_now_defects.py` failed cleanly
+on its authorised-changed-module list. Both were corrected to the post-remediation contract with
+the superseded reading recorded beside each assertion.
+
+**8.3's Yellow band arm is unreachable.** It requires a cost index simultaneously below 0.90 and
+at or above 0.92, so a four-value scheme bands on three. Found only because the sweep evaluated
+the whole index domain from 0.50 to 1.30 rather than sample points. **Not fixed in cycle 2**: it is
+an implementation defect rather than a governance overclaim, and it is carried in the register as
+P1. It is asserted as a stated fact about current code, never as expected behaviour.
+
+**Cycle 1's own declared-manifest guard could not fail.** The category suites *wrote*
+`production_change_made` by calling `expected_flag(mid)`, and the consolidator *read* that column
+and compared it to `expected_flag(mid)`. Both sides came from one function and could never
+disagree whatever the manifest said. It is the circularity the anti-fossilization register exists
+to catch, sitting inside the mechanism built to prevent it, and it passed silently through cycle 1
+and through this cycle's first mutation attempt.
+
+`server/tools/test_run20_declared_production_changes.py` replaces it. The manifest is compared to
+production **bytes** against `code_audit/run20_production_freeze.sha256`, a copy of production as
+it stood at the Run-20 starting commit which is never regenerated — cycle 1 had regenerated
+`run20_production_baseline.sha256` after making its fix, which is why that file agrees with
+production by construction. The manifest's module ids are additionally checked against the hundred
+scientific targets and against a Run-20 note in the category suite that assesses each one. Both
+injections now turn it red. What remains genuinely uncovered is stated in the file: a manifest
+entry naming a real target in an already-declared file that changes nothing.
+
+## 25. Cycle 3 step one — the lineage numbers, before
+
+Cycle 3 was started and **stopped after the reproduction**. The measurements are pinned in
+`server/tools/test_run20_lineage_reproduction.py` and `code_audit/run20_lineage_results.csv`.
+
+| Case | Mass on the band | Conflict K |
+|---|---|---|
+| single Amber source | **0.7000** | 0.0000 |
+| the same source counted twice | **0.9273** | 0.4414 |
+| the same source counted three times | 0.9861 | 0.3224 |
+| single Green | 0.8000 | 0.0000 |
+| the same Green twice | 0.9722 | 0.3088 |
+| single Red | 0.8340 | 0.0000 |
+| the same Red twice | 0.9787 | 0.3176 |
+
+Duplication manufactures unwarranted **reassurance** as readily as unwarranted alarm. The conflict
+coefficient between a source and a copy of itself is 0.4414 where a single source reports 0.0000;
+one body of evidence cannot disagree with itself, so that number is itself proof that Dempster's
+rule is being applied to evidence whose independence assumption does not hold.
+
+**The defect is in the live voting path.** A1.7 declares `bac`, `ev`, `ac`; A1.8 declares `bac`
+and `cpi`, and `cpi` is earned value over actual cost. Both are transforms of one body of
+earned-value evidence, and `compute.py` fuses them as two independent votes on project status.
+None of the eight dependence classes exists in production; `dst_fuse` accepts only status strings,
+so lineage cannot be supplied to it even by a caller that knows it.
+
+**The after column is empty because there is no after.** The control is not built.
+
+## 26. Category 9 — the gate still does not close
+
+**Unchanged from Run 19, and not improved by this session.** `qualification.py` states in its own
+docstring that provenance, timeliness and revision resolution "never gate, they never subtract".
+Raw-input bypass attempts tested this session: **0**. Bypasses accepted: **not measured**. The
+operational gate ARCH.1 is not started, and a metadata field saying unqualified while downstream
+code ignores it is exactly the failing state the supervisory clarification names.
+
+## 27. Failed Run-19 fault injections
+
+**Not investigated this session.** The seven recorded injections that did not qualify, including
+the three exposing unreachable fuzzy admissibility guards, remain open. One new instance of the
+same class was found and is recorded above: 8.3's unreachable Yellow arm is dead code in the same
+sense, discovered by sweeping a whole domain rather than sampling it.
+
+## 28. Before and after disposition table, both cycles
+
+| Disposition | Run 19 | After cycle 1 | After cycle 2 |
+|---|---|---|---|
+| METHOD_LABEL_MISMATCH | 23 | 23 | 23 |
+| CORRECT_PROXY_ONLY | 17 | 18 | 18 |
+| PARAMETER_PROVENANCE_BLOCKED | 11 | 11 | 11 |
+| IMPLEMENTATION_DEFECT | 10 | 6 | 6 |
+| METHOD_PASS_CALIBRATION_PENDING | 8 | 8 | 8 |
+| MISSING_CANONICAL_DATA_STRUCTURE | 7 | 10 | **13** |
+| CORRECT_ABSTENTION | 6 | 6 | 6 |
+| THRESHOLD_CALIBRATION_BLOCKED | 6 | 6 | 6 |
+| REGULATORY_VERSION_BLOCKED | 4 | 4 | **1** |
+| OWNER_DECISION_REQUIRED | 3 | 3 | 3 |
+| FUTURE_RESEARCH_ONLY | 3 | 3 | 3 |
+| SCIENTIFIC_PASS | 2 | 2 | 2 |
+| **Total** | **100** | **100** | **100** |
+
+Three modules moved in cycle 2, all from `REGULATORY_VERSION_BLOCKED` to
+`MISSING_CANONICAL_DATA_STRUCTURE`, and 10.3 stayed `CORRECT_PROXY_ONLY` while a governance
+overclaim inside it was removed. **None moved to SCIENTIFIC_PASS, and that is the honest result.**
+
+## 29. Owner decisions
+
+Four, unchanged, in `code_audit/run20_owner_decisions_required.csv`: 2.4 Schedule Compression
+Index, 5.4 Scenario Modeling, PH.4 Cross-Project Pattern Detector, and 3.7's naming. **None was
+raised or closed by cycle 2.** The safe default under every option remains the current non-voting
+advisory state.
+
+## 30. Honest state of the loop
+
+**Two of twelve cycles complete. Cycle 3 is one step into a many-step cycle.**
+
+- COMPLETE: cycle 1 P0B, cycle 2 P0C.
+- STARTED, REPRODUCTION ONLY: cycle 3 P0D lineage. The control is not built.
+- NOT STARTED: cycle 3 P0D Category-9 operational gate ARCH.1; 4.6 and 5.3 lineage disclosure;
+  P1 27 modules, now including 8.3's dead Yellow arm; P2 8 modules; P3 44 modules; and the
+  mandatory complete 100-module re-audit, which must not run over a half-remediated instrument.
+- Complete suite on the branch tip: **99 suites, 8422/8422**.
