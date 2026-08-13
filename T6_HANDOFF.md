@@ -7291,7 +7291,7 @@ production files above; six existing suites;
 ## 2026-08-12 — Run 17: literature-grounded scientific method audit of 100 modules
 
 **Branch `claude/run17-scientific-method-audit` from `origin/main` at `71150dd`, the Run 16
-merge. Merged at `RUN17_MERGE_COMMIT_PENDING`.** Report:
+merge. Merged at `4bc29fc`.** Report:
 `REPORT_2026-08-12_run17-scientific-method-audit.md`, which is controlling. Simulation version
 **sim-2026.08-v10, UNCHANGED**. Synthetic package OG-SYNTH-0.3 unchanged. **TEST AND AUDIT ONLY:
 no production algorithm, no participant asset, no voting and no activation was changed, and the

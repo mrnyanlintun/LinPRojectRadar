@@ -50,6 +50,7 @@ set, and no participant-visible behaviour was altered by this run.
 |---|---|
 | Branch point | `71150dd`, `Merge branch 'claude/run16-instrument-cleanup'` |
 | Branch | `claude/run17-scientific-method-audit` |
+| Merge commit | `4bc29fc` |
 | Registry live modules | 101 |
 | Simulation version at baseline | `sim-2026.08-v10`, unchanged by this run |
 | Voting set at baseline and at end | exactly `A1.7` TCPI and `A1.8` Variance at Completion |
@@ -671,7 +672,7 @@ exit even beside a green line.
 |---|---|
 | `test_run17_scientific_methods.py` (new) | 250 of 250 |
 | Full server suite on the branch | 88 suites, 7207 of 7207 |
-| Full server suite on merged main | MERGED_MAIN_PLACEHOLDER |
+| Full server suite on merged main at `4bc29fc` | 88 suites, 7207 of 7207, exit zero |
 
 Oracle self-test: 22 propositions from the specification's worked answers, zero failures.
 
