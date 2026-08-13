@@ -1,0 +1,14 @@
+module_id,module_name,declared_source_facts_before,actual_facts_consumed,verdict,error_direction,action
+A1.1,Monte Carlo EAC,"ac;bac;doc_risk_score;ev;pv","bac;cpi;spi;docRiskScore -> ac;bac;doc_risk_score;ev;pv",correct,none,unchanged
+A1.2,CUSUM,"ev;pv;reporting_history","spi;spiHistory -> ev;pv;reporting_history",correct,none,unchanged
+A1.3,Bayesian EAC,"ev;pv;reporting_history","bac;cpi -> ac;bac;ev",WRONG,both,"corrected: no reporting history and no planned value; it is a same-source transform of the earned-value cost body"
+A1.4,Kalman Filter,"ev;pv;reporting_history","spi;spiHistory -> ev;pv;reporting_history",correct,none,unchanged
+A1.5,ARIMA Forecast,"ev;pv;reporting_history","cpi;cpiHistory -> ac;ev;reporting_history",WRONG,both,"corrected: the series is the COST index, so actual cost is in and planned value is out"
+A1.7,TCPI,"ac;bac;ev","ac;bac;ev",correct,none,unchanged
+A1.8,Variance at Completion,"ac;bac;ev","bac;cpi -> ac;bac;ev",correct,none,unchanged
+A3.5,Overhead Absorption Rate,"actual_pct_complete;indirect_cost_actual;indirect_cost_plan",same,correct,none,"unchanged; corrected in cycle 5"
+A4.6,Change Order Frequency,"baseline_contract_sum;change_order_count;revised_contract_sum",same,correct,none,unchanged
+A5.2,Sensitivity Analysis,"ac;bac;doc_risk_score;ev;pv","bac;cpi;spi;docRiskScore -> ac;bac;doc_risk_score;ev;pv",correct,none,unchanged
+A5.3,Tornado Risk Ranking,"ac;actual_pct_complete;doc_risk_score;ev;planned_pct_complete;pv",same,correct,none,"fact list correct; derivation prose named a budget it never reads and is corrected"
+B3.5,Contract Modification Frequency,"baseline_contract_sum;change_order_count;revised_contract_sum",same,correct,none,unchanged
+PH.5/D1.5,Anomaly Score,"none; dependencies A1.7 and A1.8","dependencies D1.2 outlier distance and rank plus an optional cost trend term",WRONG,over,"re-keyed from the audit target id PH.5 to the registry id D1.5 and redeclared against its real constituents; as keyed it was unreachable by any consumer"

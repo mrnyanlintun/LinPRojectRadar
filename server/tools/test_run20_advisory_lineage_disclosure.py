@@ -41,6 +41,18 @@ sys.path.insert(0, str(HERE.parent))
 
 from app.simulation import fusion, lineage, registry  # noqa: E402
 
+
+# RUN 20 CYCLE 6 UPDATED THIS SUITE AND DID NOT DELETE IT. The owner decision that followed
+# cycle 5 overturned the transitive-closure treatment this file was written against: dependence
+# is NOT transitive, and `lineage.partition` is gone. The cycle's findings stand and are kept as
+# historical evidence; the call sites are moved onto the non-transitive separation and any claim
+# the decision overturned is corrected IN PLACE with the correction stated, rather than quietly
+# dropped. A deleted check is a check nobody can see was wrong.
+def _parts(recs):
+    """The bodies of evidence, as module-id index lists, under the non-transitive model."""
+    return lineage.evidence_bodies(recs)["bodies"]
+
+
 _passed = 0
 _total = 0
 _fail: list[str] = []
@@ -310,23 +322,23 @@ for m in FOUR:
 print("== the partition places each duplicate pair in one body of evidence ==")
 
 for a, b in PAIRS:
-    parts = lineage.partition([r for r in (lineage.lineage_for(a), lineage.lineage_for(b)) if r])
+    parts = _parts([r for r in (lineage.lineage_for(a), lineage.lineage_for(b)) if r])
     check(f"{a} and {b} partition into ONE body of evidence", len(parts) == 1,
           f"got {len(parts)} parts: {parts!r}")
 
 # Order must not matter, and a third reading of the same body must not create a second body.
 for a, b in PAIRS:
-    parts = lineage.partition([r for r in (lineage.lineage_for(b), lineage.lineage_for(a)) if r])
+    parts = _parts([r for r in (lineage.lineage_for(b), lineage.lineage_for(a)) if r])
     check(f"{b} and {a} partition into ONE body in the reverse order too", len(parts) == 1)
 
 check("all four together are TWO bodies and not one and not four",
-      len(lineage.partition([r for r in (lineage.lineage_for(m) for m in FOUR) if r])) == 2,
-      str(lineage.partition([r for r in (lineage.lineage_for(m) for m in FOUR) if r])))
+      len(_parts([r for r in (lineage.lineage_for(m) for m in FOUR) if r])) == 2,
+      str(_parts([r for r in (lineage.lineage_for(m) for m in FOUR) if r])))
 
 # The contract change record and the earned-value and document facts share nothing, so the two
 # pairs must NOT collapse into one body. A partition that merges everything is as wrong as one
 # that merges nothing.
-_cross = lineage.partition(
+_cross = _parts(
     [r for r in (lineage.lineage_for("A4.6"), lineage.lineage_for("A5.2")) if r])
 check("Change Order Frequency and Sensitivity Analysis rest on DIFFERENT bodies",
       len(_cross) == 2, str(_cross))

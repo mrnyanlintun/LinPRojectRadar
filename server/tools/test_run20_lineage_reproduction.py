@@ -143,7 +143,11 @@ for cls in ("INDEPENDENT", "DERIVED", "CORRELATED", "SAME_SOURCE_TRANSFORM", "SY
 
 check("and the fusion now groups dependent evidence rather than combining it, so there is a "
       "control where step one found none",
-      callable(getattr(_lin, "partition", None)) and callable(getattr(fusion, "worst_band", None)))
+      callable(getattr(_lin, "evidence_bodies", None))
+      and callable(getattr(fusion, "worst_band", None)))
+# RUN 20 CYCLE 6. The named function moved from `partition` to `evidence_bodies` when the owner
+# decision removed the transitive closure. The property this check states is unchanged: dependent
+# evidence is grouped and read once, rather than combined against itself.
 
 # THE AFTER NUMBERS, BESIDE THE FROZEN BEFORE NUMBERS. Same three bands, same duplication, the
 # difference being that the duplicate now declares the lineage it always had.

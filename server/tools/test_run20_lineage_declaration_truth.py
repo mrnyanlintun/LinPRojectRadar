@@ -53,6 +53,18 @@ sys.path.insert(0, str(HERE.parent))
 
 from app.simulation import fusion, lineage, registry  # noqa: E402
 
+
+# RUN 20 CYCLE 6 UPDATED THIS SUITE AND DID NOT DELETE IT. The owner decision that followed
+# cycle 5 overturned the transitive-closure treatment this file was written against: dependence
+# is NOT transitive, and `lineage.partition` is gone. The cycle's findings stand and are kept as
+# historical evidence; the call sites are moved onto the non-transitive separation and any claim
+# the decision overturned is corrected IN PLACE with the correction stated, rather than quietly
+# dropped. A deleted check is a check nobody can see was wrong.
+def _parts(recs):
+    """The bodies of evidence, as module-id index lists, under the non-transitive model."""
+    return lineage.evidence_bodies(recs)["bodies"]
+
+
 _passed = 0
 _total = 0
 _fail: list[str] = []
@@ -99,10 +111,16 @@ print("== every declared lineage names a module that exists ==")
 
 _declared = sorted(lineage.MODULE_LINEAGE)
 _available = set(registry.available_modules())
+# RUN 20 CYCLE 6. The skip used to be keyed on the prefix "PH.", which is how the false entry
+# hid: an id outside the registry namespace was excused from the existence check by the very
+# rule that should have caught it. Existence is now checked against the REGISTRY, which every
+# module has an entry in, and the narrower question of whether a module runs on a single project
+# is asked separately, because Group D is portfolio-level and legitimately absent from that set.
+_registry_ids = set(registry.registry_index())
 for mid in _declared:
-    if mid.startswith("PH."):
-        continue  # portfolio health is not a project module and has no registry entry
-    check(f"{mid} is a module this platform actually runs", mid in _available)
+    check(f"{mid} is a module in this platform's registry", mid in _registry_ids)
+    check(f"{mid} runs either on a single project or across the portfolio",
+          mid in _available or registry.registry_index()[mid]["group"] == "D")
 
 
 # ============================================================ 2. THE THREE CORRECTIONS
@@ -269,7 +287,7 @@ for mid in _declared:
 
 print("== the declared table still contains genuinely independent bodies ==")
 
-_bodies = lineage.partition([lineage.MODULE_LINEAGE[m] for m in _declared])
+_bodies = _parts([lineage.MODULE_LINEAGE[m] for m in _declared])
 check("the declared table partitions into MORE THAN ONE body of evidence, so it has not "
       "collapsed everything into one", len(_bodies) > 1, f"{len(_bodies)} bodies: {_bodies!r}")
 # THE TRANSITIVE BRIDGE, STATED RATHER THAN ENGINEERED AWAY. Over the WHOLE table the overhead
@@ -279,21 +297,29 @@ check("the declared table partitions into MORE THAN ONE body of evidence, so it 
 # have no fact in common and are two bodies whenever no bridging signal is present, which is what
 # the measurement in section 3 shows and what actually governs any fusion the platform performs.
 #
-# WHETHER TRANSITIVE CLOSURE THROUGH A BRIDGING SIGNAL IS THE RIGHT TREATMENT IS A REAL
-# METHODOLOGICAL QUESTION AND IT IS NOT SETTLED HERE. Loosening the closure to make this check
-# read better would be moving a rule to satisfy an example, which this programme does not do. It
-# is recorded as an open question in the register and in the owner decisions, and what is asserted
-# below is what is true.
+# THAT OPEN METHODOLOGICAL QUESTION IS NOW CLOSED, BY THE OWNER AND NOT BY THIS SUITE. Cycle 5
+# raised it here rather than engineering it away: over the whole table the overhead absorption
+# reading landed in the same part as the earned-value readings, not through any shared fact but
+# because Tornado Risk Ranking shares the progress figure with one and the earned-value facts
+# with the other, and the closure was transitive by design. The owner decision that followed
+# ruled the closure wrong: dependence is not transitive and a bridging signal must not collapse
+# otherwise independent evidence bodies. Cycle 6 replaced it. What the comment below described as
+# unsettled is settled, and the checks that measured the old behaviour are reversed in place.
 check("the overhead absorption reading shares NO governed fact with the to-complete index",
       not (set(rec_of("A3.5")["source_fact_ids"]) & set(rec_of("A1.7")["source_fact_ids"])),
       f"{rec_of('A3.5')['source_fact_ids']} vs {rec_of('A1.7')['source_fact_ids']}")
 check("and they are two bodies of evidence whenever no bridging signal is present, which is the "
       "case that governs the fusion",
-      len(lineage.partition([rec_of("A3.5"), rec_of("A1.7")])) == 2)
-check("the bridge is the progress figure and nothing else: remove Tornado Risk Ranking from the "
-      "table's partition and the two separate again",
-      len(lineage.partition([lineage.MODULE_LINEAGE[m] for m in _declared if m != "A5.3"])) > len(_bodies),
-      str(_bodies))
+      len(_parts([rec_of("A3.5"), rec_of("A1.7")])) == 2)
+# RUN 20 CYCLE 6 REVERSED THIS CHECK, WHICH IS THE POINT. It read "the bridge is the progress
+# figure and nothing else: remove Tornado Risk Ranking from the table's partition and the two
+# separate again", and it was TRUE, because the closure let one bridging signal marry two
+# disjoint bodies. The owner decision names that behaviour as the defect. The separation is now
+# non-transitive, so removing the bridge changes NOTHING: the two bodies were never merged.
+check("removing the bridging signal from the table changes the body count not at all, because "
+      "a bridge no longer marries the two bodies it draws from",
+      len(_parts([lineage.MODULE_LINEAGE[m] for m in _declared if m != "A5.3"]))
+      == len(_bodies), str(_bodies))
 
 # Named, so a future collapse is a named red and not a count that quietly drifts.
 _groups = {}

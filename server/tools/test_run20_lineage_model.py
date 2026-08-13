@@ -90,7 +90,9 @@ for mid, rec in sorted(lineage.MODULE_LINEAGE.items()):
 # evidence there is anything to declare. This suite CRASHED with a KeyError when the entry was
 # removed, rather than failing, which is the failure mode this programme has now recorded twelve
 # times; the lookup goes through .get and a missing declaration is a named red.
-for mid in ("A1.7", "A1.8", "A1.1", "A3.5", "PH.5"):
+# RUN 20 CYCLE 6: "PH.5" is an audit target id, not a registry module id, and the entry keyed
+# by it was unreachable. It is re-keyed to D1.5, the portfolio Anomaly Score it meant.
+for mid in ("A1.7", "A1.8", "A1.1", "A3.5", "D1.5"):
     rec = lineage.MODULE_LINEAGE.get(mid)
     check(f"{mid} is declared at all", rec is not None)
     check(f"{mid} retains its derivation chain rather than only its module id",
@@ -153,16 +155,28 @@ PARTITION_CASES = [
                              evidence_relationship=lineage.SAME_SOURCE_TRANSFORM,
                              derivation_chain=("pv,ev", "earned schedule"))],
      [{"A1.7", "ES"}]),
-    ("the portfolio-health synthesis shares NO raw fact with its constituents and is still "
-     "joined to them, by the dependency ids rule, which is why that rule exists",
-     [lineage.MODULE_LINEAGE["A1.7"], lineage.MODULE_LINEAGE["PH.5"]], [{"A1.7", "PH.5"}]),
+    # RUN 20 CYCLE 6. This case was driven from a table entry keyed "PH.5", which is an AUDIT
+    # target id and not a registry module id, so no consumer could ever have looked it up. The
+    # entry is re-keyed to D1.5, the portfolio Anomaly Score it actually meant. The PROPERTY the
+    # case measures is unchanged and is the reason the dependency-ids rule exists.
+    ("the portfolio synthesis shares NO raw fact with its constituent and is still joined to "
+     "it, by the dependency ids rule, which is why that rule exists",
+     [lineage.MODULE_LINEAGE["D1.5"],
+      lineage.lineage_record("D1.2", source_fact_ids=("cpi_cohort",))],
+     [{"D1.5", "D1.2"}]),
     ("a document-evidence signal is a body of its own beside the earned-value body",
      [lineage.MODULE_LINEAGE["A1.7"], DOCS], [{"A1.7"}, {"DOC1"}]),
-    ("dependence is transitive: two signals with no shared fact are one body when a third "
-     "shares a fact with each",
+    # RUN 20 CYCLE 6 REVERSED THIS CASE, AND IT IS KEPT REVERSED RATHER THAN DELETED BECAUSE
+    # THE OLD EXPECTATION IS THE DEFECT. It read "dependence is transitive: two signals with no
+    # shared fact are one body when a third shares a fact with each", and expected {T1,T2,T3}.
+    # Dependence is not transitive. T1 and T2 share nothing and are two bodies; T3 bridges them
+    # and is absorbed into one, becoming neither a third body nor a marriage of the other two.
+    ("dependence is NOT transitive: two signals with no shared fact stay TWO bodies when a "
+     "third shares a fact with each, and the bridge is absorbed into one of them",
      [lineage.lineage_record("T1", source_fact_ids=("f1",)),
       lineage.lineage_record("T2", source_fact_ids=("f2",)),
-      lineage.lineage_record("T3", source_fact_ids=("f1", "f2"))], [{"T1", "T2", "T3"}]),
+      lineage.lineage_record("T3", source_fact_ids=("f1", "f2"))],
+     [{"T1", "T3"}, {"T2"}]),
     ("a signal that DECLARES itself independent while resting on the same governed facts is "
      "grouped anyway, because a claim is not evidence",
      [lineage.lineage_record("HONEST", source_fact_ids=("ev", "ac"),
@@ -176,8 +190,11 @@ PARTITION_CASES = [
       lineage.lineage_record("G2", lineage_group_ids=("BODY",))], [{"G1", "G2"}]),
 ]
 
+# RUN 20 CYCLE 6. `lineage.partition` no longer exists: the owner decision that followed cycle 5
+# removed the transitive closure it applied. The cases below are unchanged except where the
+# decision reversed the expected answer, which is marked at the case itself.
 for name, recs, expected in PARTITION_CASES:
-    got = [{recs[i]["module_id"] for i in g} for g in lineage.partition(recs)]
+    got = [{recs[i]["module_id"] for i in g} for g in lineage.evidence_bodies(recs)["bodies"]]
     check("partition: " + name,
           sorted(map(sorted, got)) == sorted(map(sorted, expected)),
           f"got {got}, hand-worked expectation {expected}")

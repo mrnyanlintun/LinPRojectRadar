@@ -20,7 +20,7 @@ from .lineage import (
     NON_PROJECT_EVIDENCE,
     group_labels,
     lineage_record,
-    partition,
+    evidence_bodies,
 )
 
 STATES = ("Green", "Yellow", "Amber", "Red", "Unknown")
@@ -163,8 +163,13 @@ def fuse_signals(signals) -> dict[str, Any] | None:
     longer path. Every drop is reported in `excluded_non_evidential`, because an exclusion that
     nobody can see is indistinguishable from a signal that was never produced.
 
-    STEP TWO, PARTITION. What remains is partitioned into bodies of evidence by `lineage.partition`.
-    Two transforms of one body of earned-value evidence land in ONE part.
+    STEP TWO, SEPARATION INTO INDEPENDENT BODIES. What remains is separated by
+    `lineage.evidence_bodies`, which selects a maximum set of PAIRWISE-INDEPENDENT signals and
+    absorbs every other signal into exactly one body it depends on. Two transforms of one body of
+    earned-value evidence land in ONE body. A signal that bridges two disjoint bodies is absorbed
+    into one of them: it neither becomes a third body nor merges the two it bridges. That last
+    clause is the correction to the connected-component treatment this step used to apply, which
+    made dependence transitive and let a bridge destroy real corroboration.
 
     STEP THREE, TWO DIFFERENT OPERATORS FOR TWO DIFFERENT QUESTIONS.
 
@@ -215,7 +220,8 @@ def fuse_signals(signals) -> dict[str, Any] | None:
     if not admitted_bands:
         return None
 
-    groups = partition(admitted_recs)
+    separation = evidence_bodies(admitted_recs)
+    groups = separation["bodies"]
     labels = group_labels(admitted_recs, groups)
     bodies = []
     for g, label in zip(groups, labels):
@@ -224,8 +230,11 @@ def fuse_signals(signals) -> dict[str, Any] | None:
         bodies.append({
             "lineage_group": label,
             "band": rep,
+            # The selected pairwise-independent signal is first; the rest were absorbed into it.
+            "representative_module_id": admitted_recs[g[0]]["module_id"],
             "member_module_ids": [admitted_recs[i]["module_id"] for i in g],
             "member_bands": bands_in,
+            "primitive_source_ids": sorted(separation["primitive_sources"][g[0]]),
             "disagreement": len(set(bands_in)) > 1,
         })
 
@@ -256,6 +265,7 @@ def fuse_signals(signals) -> dict[str, Any] | None:
         "conflict_estimable": len(bodies) >= 2,
         "excluded_non_evidential": excluded,
         "lineage_declared": undeclared == 0,
+        "body_selection_exact": separation["selection_exact"],
         "signals_admitted": len(admitted_bands),
     }
 
