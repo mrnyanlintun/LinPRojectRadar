@@ -9,7 +9,15 @@ from __future__ import annotations
 
 from typing import Any
 
-from .fusion import dst_fuse, governed_status_semantics
+from .fusion import fuse_signals, governed_status_semantics
+from .lineage import lineage_for, lineage_record
+from .qualification_gate import (
+    GATE_VERSION,
+    QualifiedSignal,
+    fuse_qualified,
+    preflight,
+    qualify,
+)
 from .models import SIMULATION_VERSION
 from .qualification import build_qualification
 from .registry import CORE_VOTING_MODULES, registry_index, run_all
@@ -48,28 +56,94 @@ def compute_project(si: dict, scenario_id: str, period: str,
     # generated recommendation text, and the decision card -- all three read this same
     # category_statuses / project_status result. Ledger visibility is untouched: this loop is the
     # ONLY thing that changed, nothing upstream of `run["computed"]` did.
-    by_category: dict[str, list[str]] = {}
+    # ------------------------------------------------------------------- RUN 20 CYCLE 3, P0D
+    # THE VOTES NOW CARRY THEIR LINEAGE INTO THE COMBINATION. Both voting modules are transforms
+    # of one body of earned-value evidence: the to-complete performance index reaches the earned
+    # value directly, the variance at completion reaches it through the cost performance index
+    # and the estimate at completion. Fused as two independent sources they manufactured
+    # corroboration that one body of evidence does not warrant, and in the one disagreement the
+    # old rule did not resolve conservatively -- a Green and a Yellow reading -- they produced a
+    # GREEN cost recovery status out of evidence one of whose two readings was not green.
+    #
+    # Nothing about a module's own band, boundary or arithmetic changed. What changed is that the
+    # combination is told what it is combining. A module with no declared lineage is NOT assumed
+    # independent: it gets a record of its own and the fusion reports `lineage_declared` false,
+    # which the qualification gate reads.
+    # --------------------------------------------------- RUN 20 CYCLE 3, THE CATEGORY-9 GATE
+    # PROJECT EVIDENCE -> CATEGORY-9 PREFLIGHT -> ANALYTICAL MODULE -> CATEGORY-9 SIGNAL
+    # QUALIFICATION -> the combination. Every vote is now a QualifiedSignal, and the combination
+    # is reached through `fuse_qualified`, which refuses anything that did not come through the
+    # gate. A signal the gate rejects or degrades has no band to offer and therefore casts no
+    # vote: the verdict changes what executes rather than annotating what executed anyway.
+    #
+    # On the evidence packages this platform produces today the preflight assesses exactly one
+    # of its conditions, the presence of what a module requires, because those packages declare
+    # no as-of dates, no document identities, no audit record and no domains. That is the honest
+    # position and it is stated in the gate itself: what is not declared is not assessed, and it
+    # is certainly not assumed clean. The remaining conditions become live for any package that
+    # carries the declarations, without this call site changing.
+    # WHERE THE REQUIRED-EVIDENCE CONDITION IS DECIDED, and why it is not decided here. ONE place
+    # decides what a module requires, and it is the module: `check_inputs` inside the module's own
+    # function. Restating those field lists at this call site would be a hand-maintained copy of
+    # production logic checked against production logic, which is the failure this programme has
+    # already found nine times. So a voting module that could not run appears in `run["abstained"]`
+    # and reaches the gate as an ABSTAINED signal, rather than the gate re-deriving the answer the
+    # module has already given. The preflight's own required-evidence rule stays live for any
+    # caller that supplies a package and a field list, and the gate suite exercises it directly.
+    _abstained_voters = {r["module_id"] for r in run["abstained"]
+                         if r["module_id"] in CORE_VOTING_MODULES}
+    by_category: dict[str, list[QualifiedSignal]] = {}
+    gate_reports: list[dict[str, Any]] = []
     for row in run["computed"]:
         if row["module_id"] not in CORE_VOTING_MODULES:
             continue
-        by_category.setdefault(row["category"], []).append(row["status_color"])
+        pre = preflight(si, (), period_cutoff)
+        qs = qualify(row["module_id"], row["status_color"], row.get("evidence_metric"),
+                     pre, lineage=lineage_for(row["module_id"]),
+                     module_abstained=row["module_id"] in _abstained_voters)
+        gate_reports.append(qs.report())
+        by_category.setdefault(row["category"], []).append(qs)
+    for r in run["abstained"]:
+        if r["module_id"] not in CORE_VOTING_MODULES:
+            continue
+        gate_reports.append(qualify(r["module_id"], None, None,
+                                    preflight(si, (), period_cutoff),
+                                    lineage=lineage_for(r["module_id"]),
+                                    module_abstained=True).report())
 
     category_statuses: dict[str, dict[str, Any]] = {}
-    for cat, statuses in sorted(by_category.items()):
-        fused = dst_fuse(statuses)
+    category_bodies: dict[str, tuple[str, ...]] = {}
+    for cat, signals in sorted(by_category.items()):
+        fused = fuse_signals(fuse_qualified(signals))
         group = index[next(k for k, v in index.items() if v["category"] == cat)]["group"] \
             if any(v["category"] == cat for v in index.values()) else ""
+        bodies = tuple(b["lineage_group"] for b in fused["lineage_bodies"]) if fused else ()
+        category_bodies[cat] = bodies
         category_statuses[cat] = {
             "status": fused["status"] if fused else None,
             "conflict": fused["conflict"] if fused else 0.0,
             "group": group,
-            "module_count": len(statuses),
+            "module_count": len(signals),
             "contributes_to_project_status": contributes_to_project_status(group),
+            # The audit trail of the combination, so a reader of a stored row can see how many
+            # bodies of evidence stood behind a band and whether they disagreed, rather than
+            # having to infer it from a module count that says nothing about dependence.
+            "lineage_bodies": list(bodies),
+            "lineage_body_count": len(bodies),
+            "lineage_declared": bool(fused and fused["lineage_declared"]),
+            "within_lineage_disagreement": bool(
+                fused and any(b["disagreement"] for b in fused["lineage_bodies"])),
         }
 
-    voting = [c["status"] for c in category_statuses.values()
+    # A category's fused status INHERITS the bodies of evidence behind it, so two categories that
+    # rest on one body cannot corroborate each other at the project level either. With one voting
+    # category today this changes nothing; it is written now because the alternative is a second
+    # place that has its own opinion about dependence, which is what this cycle exists to remove.
+    voting = [{"status": c["status"], "module_id": cat,
+               "lineage": lineage_record(cat, lineage_group_ids=category_bodies.get(cat, ()))}
+              for cat, c in category_statuses.items()
               if c["status"] and c["contributes_to_project_status"]]
-    project = dst_fuse(voting)
+    project = fuse_signals(voting)
 
     # ------------------------------------------------------------------ RUN 11, GATES 5 AND 6
     # Derived, not asserted, and derived by the same pure function the read path uses, so a
@@ -97,6 +171,10 @@ def compute_project(si: dict, scenario_id: str, period: str,
         # zero it would have read as independent agreement.
         **semantics,
         "voting_module_ids": voting_module_ids,
+        # The Category-9 gate's verdict on every vote, so a reader of a stored row can see what
+        # was allowed, degraded, abstained or rejected and why, rather than only what survived.
+        "signal_qualification": gate_reports,
+        "signal_qualification_version": GATE_VERSION,
         "categories_voting": len(voting),
     }
 

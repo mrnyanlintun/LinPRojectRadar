@@ -42,6 +42,43 @@ RUN20_PRODUCTION_CHANGES: dict[str, tuple[str, str, str]] = {
 }
 
 
+#: THE ARCHITECTURAL CHANGES, DECLARED SEPARATELY AND FOR A REASON. The manifest above is keyed
+#: by scientific module id, and the guard that reads it requires every key to be one of the
+#: hundred targets. Cycle 3 changes the COMBINATION RULE, which is not a module and has no module
+#: id, so declaring it above would have meant either inventing a module id for it or widening the
+#: guard's module check until it no longer checked anything. It is declared here instead, under
+#: the register's own architectural row ids, and the byte comparison covers both dictionaries.
+#:
+#: architectural id -> (cycle, production file, one line on what changed)
+#: The key is the register row id followed by the file's own short name, because one
+#: architectural row can reach more than one production file and a dictionary cannot hold the
+#: same key twice. The guard splits on the space and checks the row id against the register.
+RUN20_ARCHITECTURAL_CHANGES: dict[str, tuple[str, str, str]] = {
+    "ARCH.2 compute": ("3 P0D", "server/app/simulation/compute.py",
+                       "the live voting path supplies each vote's declared lineage to the "
+                       "combination, and each category's fused status inherits the bodies of "
+                       "evidence behind it so two categories resting on one body cannot "
+                       "corroborate each other either"),
+    "ARCH.2 fusion": ("3 P0D", "server/app/simulation/fusion.py",
+               "the combination rule partitions its signals into bodies of evidence before "
+               "combining them, so two transforms of one body no longer corroborate each other, "
+               "and a quality, governance or decision output is refused as project evidence"),
+}
+
+#: PRODUCTION FILES CREATED BY RUN 20. A new file cannot differ from a freeze taken before it
+#: existed, so the byte comparison can never see one. Declaring them here is what stops a whole
+#: new production module being added without any declaration at all.
+RUN20_NEW_PRODUCTION_FILES: dict[str, tuple[str, str]] = {
+    "server/app/simulation/qualification_gate.py": (
+        "3 P0D", "the Category-9 operational qualification gate: the preflight over a project "
+                 "evidence package, the qualified signal whose band and value cannot be read "
+                 "around its verdict, and the converter that refuses a raw bypass"),
+    "server/app/simulation/lineage.py": (
+        "3 P0D", "the framework-level evidence lineage vocabulary, records and partition, read "
+                 "by the combination rule and by the qualification gate"),
+}
+
+
 def changed(module_id: str) -> bool:
     return module_id in RUN20_PRODUCTION_CHANGES
 

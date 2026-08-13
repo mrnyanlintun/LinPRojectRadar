@@ -41,7 +41,11 @@ sys.path.insert(0, str(HERE))
 
 sys.path.insert(0, str(HERE / "run17"))
 
-from run20_production_changes import RUN20_PRODUCTION_CHANGES  # noqa: E402
+from run20_production_changes import (  # noqa: E402
+    RUN20_ARCHITECTURAL_CHANGES,
+    RUN20_NEW_PRODUCTION_FILES,
+    RUN20_PRODUCTION_CHANGES,
+)
 from population import population  # noqa: E402
 
 ROOT = HERE.parent.parent
@@ -91,7 +95,8 @@ check("every file the baseline names still exists", not missing, str(missing))
 
 differing = {rel for rel, digest in baseline.items()
              if (ROOT / rel).is_file() and sha(ROOT / rel) != digest}
-declared = {entry[1] for entry in RUN20_PRODUCTION_CHANGES.values()}
+declared = ({entry[1] for entry in RUN20_PRODUCTION_CHANGES.values()}
+            | {entry[1] for entry in RUN20_ARCHITECTURAL_CHANGES.values()})
 
 check("every production file that differs from the Run-20 freeze is declared in the Run-20 "
       "manifest, so an undeclared production edit cannot pass",
@@ -124,10 +129,42 @@ for mid in sorted(RUN20_PRODUCTION_CHANGES):
     check(f"the category suite that assesses {mid} carries a Run-20 note recording the change",
           "RUN 20 CYCLE" in body, f"{suite.name} exists={suite.is_file()}")
 
-# The two cycles so far, so a third cycle that forgets to declare itself is visible here.
-check("the manifest records exactly the two Run-20 cycles that have changed production",
-      {e[0] for e in RUN20_PRODUCTION_CHANGES.values()} == {"1 P0B", "2 P0C"},
-      str(sorted({e[0] for e in RUN20_PRODUCTION_CHANGES.values()})))
+# THE ARCHITECTURAL DECLARATIONS, checked the same three ways the module ones are: a cycle, a
+# real file, a reason, and an id that is a real architectural row of the Run-20 register rather
+# than a name invented to make a change declarable.
+_register = (ROOT / "code_audit" / "run20_master_remediation_register.csv").read_text(
+    encoding="utf-8")
+for aid, (cycle, path, why) in sorted(RUN20_ARCHITECTURAL_CHANGES.items()):
+    check(f"the architectural manifest entry for {aid} names a cycle, a real file and a reason",
+          bool(cycle) and bool(why) and (ROOT / path).is_file(), f"{cycle!r} {path!r}")
+    check(f"and {aid} is an architectural row the Run-20 register actually carries",
+          f"\n{aid.split(chr(32))[0]}," in _register)
+check("an architectural entry may not name a file the module manifest already declares, so one "
+      "change cannot be counted as two declarations",
+      not ({e[1] for e in RUN20_ARCHITECTURAL_CHANGES.values()}
+           & {e[1] for e in RUN20_PRODUCTION_CHANGES.values()}))
+
+# NEW production files, the direction the byte comparison structurally cannot reach: a file that
+# did not exist when the freeze was taken has no baseline row to differ from.
+for rel, (cycle, why) in sorted(RUN20_NEW_PRODUCTION_FILES.items()):
+    check(f"the declared new production file {rel} exists and names a cycle and a reason",
+          (ROOT / rel).is_file() and bool(cycle) and bool(why))
+    check(f"and {rel} is genuinely new rather than a baseline file smuggled onto the new list",
+          rel not in baseline)
+_undeclared_new = sorted(
+    str(p.relative_to(ROOT)) for p in (ROOT / "server" / "app" / "simulation").glob("*.py")
+    if str(p.relative_to(ROOT)) not in baseline
+    and str(p.relative_to(ROOT)) not in RUN20_NEW_PRODUCTION_FILES)
+check("and no OTHER file has appeared in the simulation package undeclared, which is the check "
+      "that makes the new-file list mean something",
+      not _undeclared_new, str(_undeclared_new))
+
+# The cycles so far, so a fourth cycle that forgets to declare itself is visible here.
+check("the manifest records exactly the three Run-20 cycles that have changed production",
+      {e[0] for e in RUN20_PRODUCTION_CHANGES.values()}
+      | {e[0] for e in RUN20_ARCHITECTURAL_CHANGES.values()} == {"1 P0B", "2 P0C", "3 P0D"},
+      str(sorted({e[0] for e in RUN20_PRODUCTION_CHANGES.values()}
+                 | {e[0] for e in RUN20_ARCHITECTURAL_CHANGES.values()})))
 
 if _fail:
     print(f"\n{len(_fail)} check(s) did not hold:")

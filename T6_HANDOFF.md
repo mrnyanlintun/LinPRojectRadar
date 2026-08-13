@@ -7835,3 +7835,76 @@ rows, ordering by `priority`, and starting at P0D. Do not launch Run 21.
 **Files.** One production file; two new suites; two corrected suites; two category suites; the
 disposition script; the declared manifest; a new frozen production manifest; six
 `code_audit/run20_*` evidence files; the report Part Two; this entry.
+
+---
+
+## 2026-08-13 — Run 20 cycle 3 (P0D): evidence lineage in the combination rule, and the Category-9 operational gate
+
+**Commits.** `0a2786d` commit A the lineage model; `bd7f290` commit B the dependence-aware voting
+path; `eb9b0e5` commit C the Category-9 gate; commit D this record. Branch
+`claude/run20-p0d-lineage-cat9` from `f59a38e`. Simulation version unchanged.
+
+**Regression.** 102 suites, 8722 checks, all green, through the strict runner. 99 suites and 8422
+checks before the cycle. Three new suites, three corrected suites, no suite deleted.
+
+**What was found.** The pre-fix rule treated the two voting modules as independent corroborating
+evidence, and the proof is arithmetic rather than inferred from the module count: it applied
+Dempster's rule and reported a conflict coefficient of 0.4414 between two readings of one body of
+evidence. Sweeping all sixteen band combinations rather than sampling found more than confidence
+inflation: in two of the sixteen, shared lineage MOVED Cost Recovery Status, and in the reassuring
+direction, a Green reading of the evidence overriding a Yellow reading of the same evidence. The
+governed label was therefore not a deterministic conservative case comparison.
+
+**What was built.** A framework-level lineage model in `server/app/simulation/lineage.py`: nine
+evidence relationships, a seven-field record retaining the derivation chain rather than only the
+final module id, and a partition over declared groups, named dependencies and intersecting source
+facts, closed transitively. `fusion.fuse_signals` partitions before combining; within a body the
+most adverse reading is taken, which is idempotent; across bodies Dempster's rule is unchanged and
+its independence assumption is true by construction. A Category-9 operational gate in
+`server/app/simulation/qualification_gate.py` stands between project evidence and the categories
+that consume it, and enforces structurally rather than by annotation: a qualified signal's band and
+value are unreadable when the verdict refuses, and the converter into the combination refuses a raw
+bypass with an exception. NO BOUNDARY, BAND OR MODULE ARITHMETIC MOVED.
+
+**Numbers.** single Amber 0.7000, duplicated same lineage 0.9273 before and 0.7000 after; Green
+0.8000, 0.9722 before, 0.8000 after; Red 0.8340, 0.9787 before, 0.8340 after; the conflict a body
+reported against its own copy, 0.4414, is no longer estimated. Two genuinely independent bodies
+still corroborate to 0.9273, which is the positive control.
+
+**Mutations.** Nine, M13 to M21, each byte-confirmed, each caught by a named check, each restored
+green. Two honesty notes recorded rather than hidden: M20 first failed only by an incidental
+AttributeError rather than by the gate's own refusal, so the test was hardened and the mutation
+rerun; and one restore appeared red because of stale bytecode.
+
+**Category 9.** ARCH.1 CLOSED. Nine conditions, each tested twice, once on the verdict and once on
+the execution. Raw-input bypass attempts tested this session: five, accepted as fully qualified:
+zero. Anti-feedback enforced in two places, the gate and the combination.
+
+**P0A.** REOPENED at the fusion layer and now CLOSED there. Module method validity was never in
+question and is re-proved at both sourced boundaries of both voters against hand oracles. Evidence
+lineage is established as SAME_SOURCE_TRANSFORM over one earned-value body and is declared and
+carried. Governed fusion validity is proved. Voting remains exactly two modules.
+
+**Owner decisions.** Five now. One raised: ARCH.2, a RATIFICATION of the within-body operator. The
+scientific requirement is met by any idempotent operator; the choice among them is policy. It does
+not block the closure.
+
+**Stop conditions.** None hit scientifically. The run stopped at the cycle-3 boundary.
+
+**EXACT NEXT REQUIREMENTS. RUN 20 IS INCOMPLETE. THREE OF TWELVE CYCLES ARE DONE.**
+COMPLETE: cycle 1 P0B; cycle 2 P0C; cycle 3 P0D architecture, ARCH.1 and ARCH.2 both CLOSED.
+STILL OPEN INSIDE P0D, and this is the resume point: 4.6 and 5.3 lineage disclosure, neither
+module's own lineage record declared, both non-voting and advisory. Then the neighbour-sweep
+finding carried forward from this cycle: B2.1 DST Evidence Combination combines four arms of which
+three are transforms or extrapolations of one earned-value body, so it carries the same
+uncontrolled reinforcement the voting path carried; it is non-voting and advisory and was not
+corrected here because rebanding an advisory module needs its own reproduction, mutation proof and
+sweep.
+THEN: P1 27 modules including 8.3's dead Yellow arm; then P2 8 modules; then P3 44 modules; then
+the mandatory complete 100-module re-audit, which must not run over a half-remediated instrument.
+Resume by filtering `code_audit/run20_master_remediation_register.csv` to `status == OPEN`, now 84
+rows, ordering by `priority`, and starting at P0D. Do not launch Run 21.
+
+**Files.** Two new production files and two changed; three new suites; three corrected suites; the
+declared manifest extended with an architectural list and a new-production-file list; five
+`code_audit/run20_*` evidence files updated; the cycle-3 report; this entry.
