@@ -1,7 +1,9 @@
 Run 19 — Complete 100-Module Scientific Audit
 Starting commit: d0af5a3
 Run-18 merge commit: d0af5a3
-Ending merge commit: 5d958fd
+Ending merge commit: d22e430
+Final pushed main: recorded in T6_HANDOFF.md, which is updated with the pushed hash
+  in the last commit of this run
 Supervisory specification committed: YES
 Specification repository path: research/methodology/PCEIF_100_MODULE_SUPERVISORY_METHOD_SPECIFICATION_v1.md
 Source attachment SHA-256: 328b50133f1d2a8d710d3cca787c24c22e2cdad0b09fe92ae2c7b7a55b8d299e
@@ -653,5 +655,18 @@ readiness.
 **Nothing in this report should be read as "all 100 algorithms are validated."** Two modules
 reach SCIENTIFIC_PASS, both are standardised identities, and even for those the claim is that no
 material scientific deficiency was found, not that they predict anything.
+
+## Commit record
+
+| | |
+|---|---|
+| starting commit | `d0af5a3` |
+| branch | `claude/run19-complete-100-module-audit`, final branch commit `ee74190` |
+| merge commit | `d22e430` |
+| after the merge | three corrections made directly on main and verified there: `d93ea30` the activation column derived from the registry, `5d958fd` the explicit duplicated-lineage injection, and the commit recording this table |
+| final pushed main | recorded in `T6_HANDOFF.md` in the last commit of this run, since a commit cannot contain its own hash |
+
+The merged-main suite was run twice: once immediately after the merge, and again after the
+activation correction. Both gave 96 suites and 8298 of 8298, all green.
 
 See `T6_HANDOFF.md` for the chronological record.

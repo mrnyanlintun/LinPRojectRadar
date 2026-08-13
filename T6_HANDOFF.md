@@ -7522,7 +7522,7 @@ entry.
 
 ## 2026-08-13 — Run 19, complete 100-module scientific audit
 
-**Branch commit:** `ee74190`. **Merge commit:** `5d958fd`. **Starting commit:** `d0af5a3`.
+**Branch commit:** `ee74190`. **Merge commit:** `d22e430`. **Final pushed main:** recorded in the closing line of this entry. **Starting commit:** `d0af5a3`. Three corrections were made directly on main after the merge and verified there: `d93ea30` the activation column derived from the registry rather than asserted, `5d958fd` the explicit duplicated-lineage injection, and the commit recording the merged-main suite result. The merged-main suite was run twice, before and after the activation correction, and gave 96 suites and 8298 of 8298 both times.
 **Simulation version:** `sim-2026.08-v10`, unchanged. **Synthetic packages:** OG-SYNTH-0.1, 0.2
 and 0.3, unchanged.
 
