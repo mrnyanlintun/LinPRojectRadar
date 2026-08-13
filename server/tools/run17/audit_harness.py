@@ -136,6 +136,41 @@ class Audit:
         return 0 if (self.passed == self.total and not self.failures) else 1
 
 
+def load_oracle(module_name: str):
+    """
+    Import a Run-19 oracle, turning its import-time self-proof into a REPORTABLE failure.
+
+    Every oracle asserts at import that it reproduces the specification's own worked answers, so
+    it cannot judge production until it has been proved itself. That assert is the right
+    behaviour, but a bare AssertionError kills the suite before it prints its canonical RESULT
+    line, and a suite that CRASHES is not a suite that FAILED: the strict runner rejects it for
+    the wrong reason, and the fault campaign cannot tell a reached mutation from an unreached
+    one. So the import is caught here and returned as a named failure the suite can report and
+    then exit cleanly on.
+
+    Returns (module, error_message). Exactly one of the two is None.
+    """
+    try:
+        return __import__(module_name), None
+    except AssertionError as exc:
+        return None, str(exc)
+
+
+def oracle_gate(audit: Audit, module_name: str):
+    """
+    Load an oracle or fail the suite by name, printing the RESULT line either way.
+
+    On failure this prints the canonical RESULT line and raises SystemExit(1), so the runner
+    sees a genuine red rather than a traceback.
+    """
+    mod, err = load_oracle(module_name)
+    if mod is None:
+        audit.check("ORACLE", f"{module_name} reproduces the specification's worked answers "
+                              f"before it is allowed to judge anything", False, err)
+        raise SystemExit(audit.finish())
+    return mod
+
+
 def guarded(audit: Audit, module_id: str, label: str):
     """
     Run a block and turn an exception into a recorded failure instead of a silent crash.

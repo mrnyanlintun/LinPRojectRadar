@@ -24,8 +24,8 @@ sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE / "run17"))
 sys.path.insert(0, str(HERE / "run17" / "oracle"))
 
-import oracles_cat_2 as O                                        # noqa: E402
-from audit_harness import Audit, RESULT_HEADER, write_results    # noqa: E402
+from audit_harness import (Audit, RESULT_HEADER, write_results,  # noqa: E402
+                           oracle_gate)
 from population import population                                # noqa: E402
 from app.simulation import registry as REG                       # noqa: E402
 
@@ -50,6 +50,11 @@ KNOWN_DEFECTS = {
 }
 
 A = Audit("category 2", KNOWN_DEFECTS)
+
+#: Loaded through the gate so the oracle's own import-time self-proof becomes a
+#: named red with a canonical RESULT line, rather than a traceback that the strict
+#: runner would reject for the wrong reason.
+O = oracle_gate(A, "oracles_cat_2")
 
 
 def run(code_id: str, si: dict) -> dict:
