@@ -9,7 +9,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from .fusion import dst_fuse, governed_status_semantics
+from .fusion import fuse_signals, governed_status_semantics
+from .lineage import lineage_for, lineage_record
 from .models import SIMULATION_VERSION
 from .qualification import build_qualification
 from .registry import CORE_VOTING_MODULES, registry_index, run_all
@@ -48,28 +49,62 @@ def compute_project(si: dict, scenario_id: str, period: str,
     # generated recommendation text, and the decision card -- all three read this same
     # category_statuses / project_status result. Ledger visibility is untouched: this loop is the
     # ONLY thing that changed, nothing upstream of `run["computed"]` did.
-    by_category: dict[str, list[str]] = {}
+    # ------------------------------------------------------------------- RUN 20 CYCLE 3, P0D
+    # THE VOTES NOW CARRY THEIR LINEAGE INTO THE COMBINATION. Both voting modules are transforms
+    # of one body of earned-value evidence: the to-complete performance index reaches the earned
+    # value directly, the variance at completion reaches it through the cost performance index
+    # and the estimate at completion. Fused as two independent sources they manufactured
+    # corroboration that one body of evidence does not warrant, and in the one disagreement the
+    # old rule did not resolve conservatively -- a Green and a Yellow reading -- they produced a
+    # GREEN cost recovery status out of evidence one of whose two readings was not green.
+    #
+    # Nothing about a module's own band, boundary or arithmetic changed. What changed is that the
+    # combination is told what it is combining. A module with no declared lineage is NOT assumed
+    # independent: it gets a record of its own and the fusion reports `lineage_declared` false,
+    # which the qualification gate reads.
+    by_category: dict[str, list[dict[str, Any]]] = {}
     for row in run["computed"]:
         if row["module_id"] not in CORE_VOTING_MODULES:
             continue
-        by_category.setdefault(row["category"], []).append(row["status_color"])
+        by_category.setdefault(row["category"], []).append({
+            "status": row["status_color"],
+            "module_id": row["module_id"],
+            "lineage": lineage_for(row["module_id"]),
+        })
 
     category_statuses: dict[str, dict[str, Any]] = {}
-    for cat, statuses in sorted(by_category.items()):
-        fused = dst_fuse(statuses)
+    category_bodies: dict[str, tuple[str, ...]] = {}
+    for cat, signals in sorted(by_category.items()):
+        fused = fuse_signals(signals)
         group = index[next(k for k, v in index.items() if v["category"] == cat)]["group"] \
             if any(v["category"] == cat for v in index.values()) else ""
+        bodies = tuple(b["lineage_group"] for b in fused["lineage_bodies"]) if fused else ()
+        category_bodies[cat] = bodies
         category_statuses[cat] = {
             "status": fused["status"] if fused else None,
             "conflict": fused["conflict"] if fused else 0.0,
             "group": group,
-            "module_count": len(statuses),
+            "module_count": len(signals),
             "contributes_to_project_status": contributes_to_project_status(group),
+            # The audit trail of the combination, so a reader of a stored row can see how many
+            # bodies of evidence stood behind a band and whether they disagreed, rather than
+            # having to infer it from a module count that says nothing about dependence.
+            "lineage_bodies": list(bodies),
+            "lineage_body_count": len(bodies),
+            "lineage_declared": bool(fused and fused["lineage_declared"]),
+            "within_lineage_disagreement": bool(
+                fused and any(b["disagreement"] for b in fused["lineage_bodies"])),
         }
 
-    voting = [c["status"] for c in category_statuses.values()
+    # A category's fused status INHERITS the bodies of evidence behind it, so two categories that
+    # rest on one body cannot corroborate each other at the project level either. With one voting
+    # category today this changes nothing; it is written now because the alternative is a second
+    # place that has its own opinion about dependence, which is what this cycle exists to remove.
+    voting = [{"status": c["status"], "module_id": cat,
+               "lineage": lineage_record(cat, lineage_group_ids=category_bodies.get(cat, ()))}
+              for cat, c in category_statuses.items()
               if c["status"] and c["contributes_to_project_status"]]
-    project = dst_fuse(voting)
+    project = fuse_signals(voting)
 
     # ------------------------------------------------------------------ RUN 11, GATES 5 AND 6
     # Derived, not asserted, and derived by the same pure function the read path uses, so a

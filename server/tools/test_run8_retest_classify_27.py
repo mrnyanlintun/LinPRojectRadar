@@ -263,6 +263,14 @@ RUN16_SCOPED_FILES = {
     "server/app/simulation/models.py",
 }
 
+# RUN 20 CYCLE 3 (P0D) added the framework-level evidence lineage model: one file carrying the
+# nine evidence relationships, the lineage record and the partition that decides which signals
+# are one body of evidence. It is a new file rather than an edit; the combination rule and the
+# compute entry point that read it are already inside earlier runs' authorised scope.
+RUN20_SCOPED_FILES = {
+    "server/app/simulation/lineage.py",
+}
+
 _diff = subprocess.run(["git", "diff", "--name-only", GUARD_BASELINE_REV, "--"],
                        cwd=str(ROOT), capture_output=True, text=True).stdout.split()
 _prod = [p for p in _diff
@@ -270,7 +278,8 @@ _prod = [p for p in _diff
          and p not in RUN8_SCOPED_FILES and p not in RUN10_SCOPED_FILES
          and p not in RUN10B_SCOPED_FILES and p not in RUN11_SCOPED_FILES
          and p not in RUN12_SCOPED_FILES and p not in RUN14_SCOPED_FILES
-         and p not in RUN15_SCOPED_FILES and p not in RUN16_SCOPED_FILES]
+         and p not in RUN15_SCOPED_FILES and p not in RUN16_SCOPED_FILES
+         and p not in RUN20_SCOPED_FILES]
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
 # RESTATED BY RUN 11, original finding preserved. This read "nothing under assets/ differs"

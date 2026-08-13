@@ -50,8 +50,16 @@ RUN20_PRODUCTION_CHANGES: dict[str, tuple[str, str, str]] = {
 #: the register's own architectural row ids, and the byte comparison covers both dictionaries.
 #:
 #: architectural id -> (cycle, production file, one line on what changed)
+#: The key is the register row id followed by the file's own short name, because one
+#: architectural row can reach more than one production file and a dictionary cannot hold the
+#: same key twice. The guard splits on the space and checks the row id against the register.
 RUN20_ARCHITECTURAL_CHANGES: dict[str, tuple[str, str, str]] = {
-    "ARCH.2": ("3 P0D", "server/app/simulation/fusion.py",
+    "ARCH.2 compute": ("3 P0D", "server/app/simulation/compute.py",
+                       "the live voting path supplies each vote's declared lineage to the "
+                       "combination, and each category's fused status inherits the bodies of "
+                       "evidence behind it so two categories resting on one body cannot "
+                       "corroborate each other either"),
+    "ARCH.2 fusion": ("3 P0D", "server/app/simulation/fusion.py",
                "the combination rule partitions its signals into bodies of evidence before "
                "combining them, so two transforms of one body no longer corroborate each other, "
                "and a quality, governance or decision output is refused as project evidence"),

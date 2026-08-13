@@ -323,12 +323,21 @@ RUN16_SCOPED_FILES = {
     "server/app/simulation/models.py",
 }
 
+# RUN 20 CYCLE 3 (P0D) added the framework-level evidence lineage model: one file carrying the
+# nine evidence relationships, the lineage record and the partition that decides which signals
+# are one body of evidence. It is a new file rather than an edit; the combination rule and the
+# compute entry point that read it are already inside earlier runs' authorised scope.
+RUN20_SCOPED_FILES = {
+    "server/app/simulation/lineage.py",
+}
+
 _unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES
                    - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES - RUN14_SCOPED_FILES
-                   - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES)
+                   - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES
+                   - RUN20_SCOPED_FILES)
 check(not _unscoped,
       "no production file outside the authorised scope of Run 7, Run 10, Run 10B, Run 11, "
-      "Run 12 or Run 14 differs from the pinned baseline",
+      "Run 12, Run 14 or Run 20 differs from the pinned baseline",
       str(_unscoped))
 _assets = sorted(p for p in _prod if p.startswith("assets/"))
 # RESTATED BY RUN 11, original finding preserved. Until Run 11 this read "nothing under assets/

@@ -138,7 +138,7 @@ for aid, (cycle, path, why) in sorted(RUN20_ARCHITECTURAL_CHANGES.items()):
     check(f"the architectural manifest entry for {aid} names a cycle, a real file and a reason",
           bool(cycle) and bool(why) and (ROOT / path).is_file(), f"{cycle!r} {path!r}")
     check(f"and {aid} is an architectural row the Run-20 register actually carries",
-          f"\n{aid}," in _register)
+          f"\n{aid.split(chr(32))[0]}," in _register)
 check("an architectural entry may not name a file the module manifest already declares, so one "
       "change cannot be counted as two declarations",
       not ({e[1] for e in RUN20_ARCHITECTURAL_CHANGES.values()}

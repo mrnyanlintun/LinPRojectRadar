@@ -950,9 +950,30 @@ try:
           f"conflict in {conflict_moves} of 4.")
     print(f"   MEASURED: category status changed {cat_status_moves} times; category conflict "
           f"{cat_conflict_moves} times.")
-    check(conflict_moves + cat_conflict_moves > 0,
-          "the fix DOES move the rollup: conflict falls wherever a source carried ignorance, "
-          "which is every source, and that is measured rather than asserted",
+    # RUN 20 CYCLE 3 P0D, AND WHY THIS PROPOSITION MOVED RATHER THAN BEING DELETED. Until cycle 3
+    # the two voting modules were fused as two independent sources, so the rollup carried a
+    # conflict coefficient and the Run-2 fix could be measured on it. Cycle 3 established that
+    # they are two transforms of ONE body of earned-value evidence, and one body of evidence
+    # cannot disagree with itself, so the rollup now estimates no conflict at all and this
+    # vehicle can no longer reach the thing Run 2 proved. The finding is NOT weakened: it is
+    # measured where it actually lives, on dst_combine itself, using the audit's own worked
+    # example -- two sources each Green 0.8 with 0.2 of mass left on ignorance. The old rule
+    # counted the two Green-against-ignorance cross terms as disagreement and reported K = 0.32;
+    # the corrected rule intersects ignorance with every state and reports K = 0. Both numbers
+    # are the audit's, hand-calculable, and neither is read from the function under test.
+    _g = {"Green": 0.8, "Yellow": 0.0, "Amber": 0.0, "Red": 0.0, "Unknown": 0.2}
+    _k_old = round(old_fusion.dst_combine(dict(_g), dict(_g)).get("conflict", 0.0), 6)
+    _k_new = round(fusion.dst_combine(dict(_g), dict(_g)).get("conflict", 0.0), 6)
+    print(f"   MEASURED on dst_combine itself, the audit's worked example: K {_k_old} -> {_k_new}")
+    check(_k_old == 0.32 and _k_new == 0.0,
+          "the fix DOES move the conflict coefficient: on the audit's own two-Green example the "
+          "old rule counted ignorance as disagreement and reported 0.32, and the corrected rule "
+          "reports none, which is measured rather than asserted",
+          f"old {_k_old}, new {_k_new}")
+    check(conflict_moves == 0 and cat_conflict_moves == 0,
+          "and the rollup itself no longer moves, because after the lineage correction the one "
+          "voting category is one body of evidence and no conflict coefficient is estimated for "
+          "it at all, in either the old rule or the new",
           f"{conflict_moves} project, {cat_conflict_moves} category")
     check(all(a["project_status"] in ("Green", "Yellow", "Amber", "Red", None)
               for _, _, a, _ in rows),
