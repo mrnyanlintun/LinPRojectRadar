@@ -29,6 +29,7 @@ import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+sys.path.insert(0, str(HERE.parent))          # server/, for the registry
 sys.path.insert(0, str(HERE / "run17"))
 
 from audit_harness import ALLOWED_DISPOSITIONS, RESULT_HEADER  # noqa: E402
@@ -51,12 +52,7 @@ def read(path: pathlib.Path) -> list[dict]:
 
 def main() -> int:
     prior = read(RESULTS)
-    prior_assessed = {r["module_id"]: r for r in prior
-                      if r["scientific_disposition"] != NOT_REACHED}
-    prior_unreached = {r["module_id"] for r in prior
-                       if r["scientific_disposition"] == NOT_REACHED}
-    print(f"prior table: {len(prior)} rows, {len(prior_assessed)} assessed, "
-          f"{len(prior_unreached)} not reached")
+    print(f"prior table: {len(prior)} rows")
 
     # ---------------------------------------------------------------- validate each category
     newly: dict[str, dict] = {}
@@ -83,6 +79,29 @@ def main() -> int:
         per_file[path.name] = [r["module_id"] for r in rows]
         print(f"  validated {path.name}: {len(rows)} rows")
 
+    # ---------------------------------------------------------------- activation, from the code
+    #
+    # The activation column is a FACT ABOUT THE REGISTRY and must not be typed by hand into a
+    # category file. An earlier version of this run did type it by hand and recorded four
+    # concept-only modules as advisory when the registry has them disabled, in the very table
+    # whose purpose includes proving that concept-only activation is zero. It is now checked
+    # against the registry and consolidation refuses on any disagreement.
+    from app.simulation import registry as REG  # noqa: E402
+    code_id = {t["module_id"]: t["code_id"] for t in population()}
+    mismatched = []
+    for mid, r in newly.items():
+        actual = REG.activation_state(code_id[mid])
+        stated = r["operational_activation"]
+        if actual == "DISABLED_UNSAFE" and stated != "DISABLED_UNSAFE":
+            mismatched.append(f"{mid}: the registry has it {actual} and the row says {stated}")
+        if actual != "DISABLED_UNSAFE" and stated == "DISABLED_UNSAFE":
+            mismatched.append(f"{mid}: the row says DISABLED_UNSAFE and the registry has it "
+                              f"{actual}")
+    if mismatched:
+        fail("a result row's activation state disagrees with the registry:\n  "
+             + "\n  ".join(mismatched))
+    print(f"  activation column agrees with the registry on all {len(newly)} new rows")
+
     # ---------------------------------------------------------------- reconcile the population
     rec = reconciliation()
     if rec["total_targets"] != 100 or rec["unique_module_ids"] != 100:
@@ -90,13 +109,24 @@ def main() -> int:
     targets = [t["module_id"] for t in population()]
     target_set = set(targets)
 
-    if set(newly) != prior_unreached:
-        missing = sorted(prior_unreached - set(newly))
-        extra = sorted(set(newly) - prior_unreached)
-        fail(f"the newly assessed set is not exactly the previously unreached set. "
-             f"Still unassessed: {missing}. Assessed but not previously unreached: {extra}")
-    if not set(prior_assessed) | set(newly) == target_set:
-        fail("the union of prior and new does not equal the hundred targets")
+    # The prior-assessed set is whatever the category files do NOT cover. Deriving it this way
+    # rather than from the not-reached marker makes a re-run idempotent: consolidating twice
+    # gives the same table instead of refusing because the marker is already gone.
+    prior_assessed = {r["module_id"]: r for r in prior if r["module_id"] not in newly}
+    if len(prior_assessed) != 21:
+        fail(f"{len(prior_assessed)} prior-assessed rows, expected 21")
+    still_unreached = [r["module_id"] for r in prior_assessed.values()
+                       if r["scientific_disposition"] in (NOT_REACHED, "NOT_ASSESSED", "")]
+    if still_unreached:
+        fail(f"these prior rows are still unassessed and no category file covers them: "
+             f"{sorted(still_unreached)}")
+    if set(prior_assessed) | set(newly) != target_set:
+        missing = sorted(target_set - (set(prior_assessed) | set(newly)))
+        extra = sorted((set(prior_assessed) | set(newly)) - target_set)
+        fail(f"the union of prior and new does not equal the hundred targets. "
+             f"Missing: {missing}. Unexpected: {extra}")
+    print(f"  {len(prior_assessed)} prior-assessed rows carried forward, "
+          f"{len(newly)} newly assessed")
 
     # ---------------------------------------------------------------- build the hundred rows
     final: list[dict] = []

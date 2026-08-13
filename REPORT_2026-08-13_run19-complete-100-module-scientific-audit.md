@@ -480,6 +480,15 @@ deliberately scored at 0.35.
 
 **A laboratory result is not permission to activate, and none of these was activated.**
 
+One correction to record. An earlier version of this run's category files typed the activation
+column by hand and recorded four of these eight, 3.8, 7.7, 7.9 and 7.20, as advisory when the
+registry has them disabled. That was a factual misstatement in the very table whose purpose
+includes proving concept-only activation is zero. The activation column is a fact about the
+registry, so the consolidation step now reads `registry.activation_state` for every module and
+**refuses to consolidate** on any disagreement. All eight rows now read DISABLED_UNSAFE and agree
+with the code. The error is recorded here rather than quietly corrected, and the guard means this
+class of error cannot recur.
+
 ## 22. Fault-injection proof
 
 59 injections, recorded in `code_audit/run19_fault_injection_results.csv`. Every one changed

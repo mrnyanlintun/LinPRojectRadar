@@ -658,7 +658,8 @@ ROWS = lambda: [  # noqa: E731
          "including refusal of a nonconforming design matrix.",
          "Remains disabled and non-voting. A laboratory result is not permission to activate. If "
          "the module is ever wanted, it must be rebuilt around measurable drivers and calibrated "
-         "coefficients, not renamed."),
+         "coefficients, not renamed.",
+         activation="DISABLED_UNSAFE"),
     _row("3.9", "Inflation Adjustment Index", "B. ESTABLISHED_CANONICAL_METHOD",
          "Specification 12 section 3.9",
          "yes", "no", "no", "NOT_SOURCED", "NOT_CALIBRATED", "HEURISTIC_UNCALIBRATED",

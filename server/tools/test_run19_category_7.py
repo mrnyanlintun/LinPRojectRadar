@@ -1202,7 +1202,8 @@ ROWS = lambda: [  # noqa: E731
          "checked, which is the contrast. Even were the algebra correct, the specification holds "
          "this module at future research only until incremental value is established.",
          "Remains disabled and non-voting. Select and cite a published plithogenic operator "
-         "before any further work, and establish incremental value separately."),
+         "before any further work, and establish incremental value separately.",
+         activation="DISABLED_UNSAFE"),
     _row("7.8", "Belief Rule Base", "B. ESTABLISHED_CANONICAL_METHOD", "yes", "partial", "yes",
          "PARAMETER_PROVENANCE_BLOCKED",
          "The specification's own oracle passes against production: with exactly one rule matched "
@@ -1231,7 +1232,8 @@ ROWS = lambda: [  # noqa: E731
          "construction does not guarantee a distribution. The specification holds this at future "
          "research only until a real project-manager context or order-effect construct exists.",
          "Remains disabled and non-voting. A context or order-effect model would have to exist "
-         "before the formalism could mean anything here."),
+         "before the formalism could mean anything here.",
+         activation="DISABLED_UNSAFE"),
     _row("7.10", "Pythagorean Fuzzy Sets", "B. ESTABLISHED_CANONICAL_METHOD", "yes", "yes", "no",
          "IMPLEMENTATION_DEFECT",
          "The admissibility constraint itself is correct and enforced by renormalisation, and it "
@@ -1384,7 +1386,8 @@ ROWS = lambda: [  # noqa: E731
          "latent rather than operating.",
          "Remains disabled and non-voting. Enumerate the full Cartesian product and abstain on "
          "any missing tuple before any further work, and establish incremental value "
-         "separately."),
+         "separately.",
+         activation="DISABLED_UNSAFE"),
 ]
 
 

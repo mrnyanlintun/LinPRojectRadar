@@ -7619,6 +7619,13 @@ agent; every other Gate 5 rule was followed, including per-category files, valid
 consolidation and the no-production-change rule. Recorded as a deviation in method, not in scope:
 all 79 modules were assessed.
 
+**One self-correction recorded.** An earlier version of this run's category files typed the
+activation column by hand and recorded four concept-only modules, 3.8, 7.7, 7.9 and 7.20, as
+advisory when the registry has them disabled. The consolidation step now reads
+`registry.activation_state` for every module and refuses to consolidate on any disagreement, so
+the column is derived from the code rather than asserted. All eight concept-only rows read
+DISABLED_UNSAFE and agree with the registry.
+
 **Unresolved observation.** `code_audit/run9_no_operational_effect.csv` and
 `run10_no_operational_effect.csv` are rewritten by pre-existing suites on every run, because
 those suites recompute and store an assets tree digest. They were restored to their committed
