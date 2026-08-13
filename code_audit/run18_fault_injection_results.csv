@@ -1,0 +1,11 @@
+fault,mutation_applied,check_turned_red,restored,returned_green,run18_status,detail
+wrong Earned Schedule interpolation,True,True,True,True,re-executed in Run 18 within test_run17_scientific_methods.py (250/250),
+Dempster-Shafer ignorance converted to conflict,True,True,True,True,re-executed in Run 18 within test_run17_scientific_methods.py (250/250),"canonical Green 0.8, mutated 0.6"
+Pareto dominated point admitted,True,True,True,True,re-executed in Run 18 within test_run17_scientific_methods.py (250/250),"canonical frontier [(8, 8), (10, 5), (12, 4)]"
+M/M/1 denominator operator error,True,True,True,True,re-executed in Run 18 within test_run17_scientific_methods.py (250/250),"canonical L=2, mutated 0.4000"
+Isolation Forest score exponent sign,True,True,True,True,re-executed in Run 18 within test_run17_scientific_methods.py (250/250),mutated score 1.5476 leaves the unit interval
+Pythagorean admissibility violation,True,True,True,True,re-executed in Run 18 within test_run17_scientific_methods.py (250/250),
+Linear Programming wrong optimum,True,True,True,True,re-executed in Run 18 within test_run17_scientific_methods.py (250/250),"vertex enumeration gives (2, 6) with objective 36"
+regulatory rule-version mismatch,True,True,True,True,re-executed in Run 18 within test_run17_scientific_methods.py (250/250),
+Category-9 raw bypass,True,True,True,True,re-executed in Run 18 within test_run17_scientific_methods.py (250/250),"the ensemble returns the same answer with and without a qualification marker, so qualification is not enforced at the boundary"
+random-seed perturbation,True,True,True,True,re-executed in Run 18 within test_run17_scientific_methods.py (250/250),
