@@ -28,7 +28,7 @@ from __future__ import annotations
 import math
 from typing import Any, Callable
 
-from .models import check_inputs, insufficient
+from .models import ABSTAIN_MALFORMED_INPUT, check_inputs, insufficient
 from .models_ext import _js_date_ms, _js_str
 from .rng import js_round, round2
 
@@ -72,6 +72,19 @@ def run_data_timeliness(si: dict, rand: Callable[[], float], period_cutoff) -> d
     if doc_ms is None or now_ms is None:
         return insufficient("Data_Timeliness_Score")
     days = math.floor((now_ms - doc_ms) / 86400000)
+    # RUN 20, P0B. There was no lower guard on the age at all. A document dated a year after the
+    # period cutoff reported an age of minus three hundred and sixty five days, banded Green,
+    # which is the freshest reading the module can give, and told the reader the document was
+    # "minus 365 days ago". A mistyped or forward-dated document therefore bought the best
+    # possible evidence-quality reading. Specification 9.2 requires future-dated records to
+    # receive explicit invalid or review handling, so they are refused rather than banded.
+    if days < 0:
+        return insufficient(
+            "Data_Timeliness_Score",
+            "The most recent document is dated after the end of this reporting period. A record "
+            "cannot be newer than the period it is reported in, so its age is not read as "
+            "evidence of freshness. Check the document date.",
+            ABSTAIN_MALFORMED_INPUT)
     color = ("Green" if days <= 30 else "Yellow" if days <= 60
              else "Amber" if days <= 90 else "Red")
     return {
@@ -306,19 +319,44 @@ def run_reporting_frequency(si: dict, rand: Callable[[], float],
     dates = sorted(raw_dates)
     intervals = [(dates[i] - dates[i - 1]) / 86400000 for i in range(1, len(dates))]
     avg = sum(intervals) / len(intervals)
-    color = ("Green" if avg <= 14 else "Yellow" if avg <= 30
-             else "Amber" if avg <= 60 else "Red")
-    word = ("high frequency reporting" if avg <= 14
-            else "monthly reporting cycle" if avg <= 30
-            else "infrequent updates" if avg <= 60 else "reporting gap, data may be stale")
+    # RUN 20, P0B. Only the intervals BETWEEN observed reports were measured, so the period
+    # cutoff was never compared to the last report and cessation was invisible. A project that
+    # uploaded twice ten days apart in January of last year and then stopped reported a ten day
+    # average interval and banded Green, the best cadence reading available, on evidence that
+    # had stopped seventeen months earlier.
+    #
+    # The gap from the last report to the end of the period is an observed interval too, and it
+    # is the one the reader is standing in: it is a lower bound on the interval currently
+    # running, because that interval cannot end before the period does. It is measured on the
+    # module's own existing ladder rather than a new one, and the band is taken from whichever of
+    # the two readings is worse, so a cadence that has stopped cannot be reported by the cadence
+    # it once kept. No new threshold is introduced. What the module still cannot do is compare
+    # either figure to a GOVERNED expected cadence, which is a separate structural finding.
+    now_ms = _js_date_ms(str(period_cutoff))
+    if now_ms is None:
+        return insufficient("Reporting_Frequency_Index")
+    gap = max(0.0, (now_ms - dates[-1]) / 86400000)
+    worst = max(avg, gap)
+
+    def band(days: float) -> str:
+        return ("Green" if days <= 14 else "Yellow" if days <= 30
+                else "Amber" if days <= 60 else "Red")
+
+    color = band(worst)
+    word = ("high frequency reporting" if worst <= 14
+            else "monthly reporting cycle" if worst <= 30
+            else "infrequent updates" if worst <= 60 else "reporting gap, data may be stale")
+    metric = f"{int(js_round(avg))} day avg interval between document uploads, {word}"
+    if gap > avg:
+        metric = (f"{int(js_round(avg))} day avg interval between document uploads, but nothing "
+                  f"has been uploaded for {int(js_round(gap))} days, {word}")
     return {
         "method_class": "Reporting_Frequency_Index",
         "status_color": color,
         "avg_interval_days": int(js_round(avg)),
+        "gap_since_last_report_days": int(js_round(gap)),
         "uploads": len(extracts),
-        "evidence_metric": (
-            f"{int(js_round(avg))} day avg interval between document uploads, {word}"
-        ),
+        "evidence_metric": metric,
     }
 
 

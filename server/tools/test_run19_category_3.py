@@ -23,6 +23,7 @@ sys.path.insert(0, str(HERE / "run17" / "oracle"))
 
 from audit_harness import (Audit, RESULT_HEADER, write_results,  # noqa: E402
                            oracle_gate)
+from run20_production_changes import expected_flag       # noqa: E402
 from population import population                                # noqa: E402
 from app.simulation import registry as REG                       # noqa: E402
 
@@ -33,8 +34,7 @@ KNOWN_DEFECTS = {
     "3.3/earned-output": "CORRECT_PROXY_ONLY",
     "3.5/allocation-base": "CORRECT_PROXY_ONLY",
     "3.6/simulated-distribution": "METHOD_LABEL_MISMATCH",
-    "3.7/analog-provenance": "IMPLEMENTATION_DEFECT",
-    "3.7/domain-guarded": "IMPLEMENTATION_DEFECT",
+    "3.7/analog-provenance": "CORRECT_PROXY_ONLY",
     "3.8/design-matrix": "METHOD_LABEL_MISMATCH",
     "3.9/external-index": "MISSING_CANONICAL_DATA_STRUCTURE",
     "3.9/deflation-visible": "MISSING_CANONICAL_DATA_STRUCTURE",
@@ -397,9 +397,17 @@ def m_3_7() -> None:
     neg_bac = run("A3.7", {"analogousOverrunPct": 5, "bac": -1000})
     A.proposition(
         "3.7", "3.7/domain-guarded",
-        "an overrun percent or a budget outside the domain each quantity can occupy is refused "
-        "rather than producing a banded result",
-        abstained(neg) and abstained(neg_bac),
+        # RUN 20 amended this proposition rather than deleting it. Run 19 required BOTH a
+        # negative overrun and a negative budget to be refused. The budget half was a real
+        # invalid-evidence hole and is closed. The overrun half conflicted with
+        # field_registry.SIGNED_SI_FIELDS, which names analogousOverrunPct as one of four fields
+        # where a negative value is a real project condition because a reference project can
+        # underrun. That contract was followed, and what the proposition now requires of the
+        # negative case is the part that was genuinely wrong: no negative quantity of money at
+        # risk may be reported.
+        "a budget outside the domain it can occupy is refused rather than producing a banded "
+        "result, and no result reports a negative quantity of money at risk",
+        abstained(neg_bac) and (neg.get("bac_exposure") or 0) >= 0,
         f"an overrun percent of minus fifty bands "
         f"{neg.get('status_color')!r} and reports an exposure of "
         f"{neg.get('bac_exposure')!r}, a negative quantity of money at risk. A budget at "
@@ -538,7 +546,10 @@ def _row(mid, name, basis, source, sreq, spres, impl, param, calib, thresh, line
         "calibration_status": calib, "threshold_status": thresh,
         "empirical_validation_status": "NOT_DONE", "regulatory_snapshot": "n/a",
         "cat9_qualification_status": "RAW_UNQUALIFIED_INPUT", "lineage_status": lineage,
-        "scientific_disposition": disp, "production_change_made": "no",
+        "scientific_disposition": disp,
+        # RUN 20. Derived from the module id rather than fixed at "no", so a module
+        # this run changed in production cannot report that nothing was changed.
+        "production_change_made": expected_flag(mid),
         "finding_summary": finding, "required_next_action": nxt,
         "test_names": "; ".join(A.coverage.get(mid, []))[:1800],
         "evidence_paths": ("server/tools/test_run19_category_3.py; "
@@ -627,20 +638,9 @@ ROWS = lambda: [  # noqa: E731
     _row("3.7", "Analogous Estimating Ratio", "C. LITERATURE_SUPPORTED_ADAPTATION",
          "Specification 12 section 3.7",
          "yes", "no", "no", "NOT_SOURCED", "NOT_CALIBRATED", "HEURISTIC_UNCALIBRATED",
-         "UNTRACEABLE_SCALAR_INPUT", "IMPLEMENTATION_DEFECT",
-         "Two findings, and the domain hole is the reason this is a defect rather than only a "
-         "proxy. First, an overrun percent of minus fifty produces a Green band and an exposure "
-         "of minus five hundred, a negative quantity of money at risk, and a budget at "
-         "completion of minus one thousand reaches a Yellow band. Neither input is guarded at "
-         "all: the band reads the percent alone, so an invalid budget still reaches a coloured "
-         "result. This is exactly the out-of-domain banding pattern the programme has already "
-         "corrected in eleven other modules and it remains open here. Second, a single preloaded "
-         "overrun percent arrives with no analog selection, no comparability criteria, no "
-         "normalisation and no adaptation factors, so its provenance cannot be established at "
-         "all; specification 3.7 states this is only a proxy.",
-         "P0B. Close the domain on both inputs so an invalid budget or a negative overrun cannot "
-         "reach a band. Then P3, either carry identified analogs with adaptation factors or "
-         "rename the module."),
+         "UNTRACEABLE_SCALAR_INPUT", "CORRECT_PROXY_ONLY",
+         "RUN 20 CYCLE 1. The invalid-evidence hole is closed: a budget at completion of zero or below now goes through the shared positive preflight and abstains on the invalid denominator instead of reaching a Yellow band, and no result reports a negative quantity of money at risk. Run 19's further instruction to refuse a NEGATIVE overrun percent was not adopted, and the reason is recorded rather than waived: field_registry.SIGNED_SI_FIELDS names analogousOverrunPct one of four fields where a negative value is a real project condition, because a reference project can underrun. The underrun is now reported as an underrun with no exposure carried, rather than as a negative exposure. What remains is the proxy finding the specification itself states: a single preloaded overrun percent with no analog selection, comparability criteria, normalisation or adaptation factors is only a proxy for analogous estimating.",
+         'P2 and P3. Carry identified analogs with comparability criteria and adaptation factors, or rename the module to the transparent indicator it is.'),
     _row("3.8", "Parametric Cost Index", "B. ESTABLISHED_CANONICAL_METHOD",
          "Specification 12 section 3.8",
          "yes", "no", "no", "NOT_SOURCED", "NOT_CALIBRATED", "HEURISTIC_UNCALIBRATED",
@@ -688,8 +688,15 @@ def main() -> int:
     write_results(HERE / "run17" / "categories" / "category_3_results.csv", RESULT_HEADER, rows)
     A.check("ROWS", "eight Category 3 result rows were written, with 3.4 excluded",
             len(rows) == 8 and "3.4" not in {r["module_id"] for r in rows})
-    A.check("ROWS", "no production change is recorded on any row",
-            all(r["production_change_made"] == "no" for r in rows))
+    # RUN 20. Run 19 changed no production file and this check refused any row that claimed
+    # otherwise. Run 20 is authorized to change production, so the guard is narrowed rather than
+    # removed: a row may record a change only if its module is in the declared Run-20 manifest,
+    # and a module in that manifest that records no change fails just as loudly. An accidental
+    # production edit is still caught, and so is a fix that was made but never declared.
+    A.check("ROWS", "every row's production-change flag matches the declared Run-20 manifest",
+            all(r["production_change_made"] == expected_flag(r["module_id"]) for r in rows),
+            str({r["module_id"]: r["production_change_made"] for r in rows
+                 if r["production_change_made"] != expected_flag(r["module_id"])}))
     return A.finish()
 
 

@@ -835,20 +835,63 @@ def run_cost_risk(si: dict, rand: Callable[[], float], period_cutoff) -> dict[st
 
 def run_analogous_estimating(si: dict, rand: Callable[[], float],
                              period_cutoff) -> dict[str, Any]:
+    """
+    RUN 20, P0B. Neither input was guarded at all, and the band read the overrun percent alone.
+
+    Two consequences, and the two have DIFFERENT causes, which is the finding of this cycle.
+
+    The first is invalid evidence reaching a band. A budget at completion of minus one thousand
+    still reached a Yellow band, because the budget only scaled a displayed figure and never
+    gated the band at all. That is the hole the shared positive preflight closes, the same one
+    that closed this pattern in eleven other modules, and it is closed here.
+
+    The second is NOT an invalid input, and Run 19's remediation instruction to refuse a negative
+    overrun was not adopted. `field_registry.SIGNED_SI_FIELDS` names `analogousOverrunPct` as one
+    of exactly four fields where a negative value is a real project condition, with its reason
+    stated: a reference project that UNDERRAN is a negative overrun. Refusing it would throw away
+    a legitimate analog, and the supervisory specification's Category 3 authority requires
+    analogs be selected and adapted, not filtered by the sign of their outcome. Two committed
+    artifacts disagreed and the field contract, which is explicit and reasoned about this exact
+    field, was followed.
+
+    What was genuinely wrong in that case is what the module SAID. It reported minus five hundred
+    as a BAC exposure, which reads as a negative quantity of money at risk, and no such quantity
+    exists: an analog that underran implies no cost exposure at all. The exposure is therefore
+    reported as nothing at risk, the signed comparison is kept beside it under its own name so no
+    information is lost, and the sentence says which of the two the reader is looking at. The
+    Green band on an underrunning analog is truthful and is left standing.
+
+    The proxy itself is unchanged and still carries no analog selection, comparability criteria
+    or adaptation factors. That is a separate structural finding and is not addressed here.
+    """
     if not check_inputs(si, ("analogousOverrunPct", "bac")):
         return insufficient("Analogous_Estimating")
+    verdict = eligible(si, required=(("analogousOverrunPct",
+                                      "the analogous overrun percent"),),
+                       positive=(("bac", "the budget at completion"),))
+    if verdict is not None:
+        return refuse("Analogous_Estimating", verdict)
     pct = num(si.get("analogousOverrunPct"), 0)
     bac = num(si.get("bac"), 0)
-    exposure = bac * pct / 100
+    variance = bac * pct / 100
+    # An underrunning analog puts no money at risk, so the exposure is nought rather than a
+    # negative sum of money. The signed comparison is kept beside it, under a name that says
+    # what it is.
+    exposure = variance if variance > 0 else 0
     color = ("Green" if pct < 3 else "Yellow" if pct < 7 else "Amber" if pct < 12 else "Red")
+    if variance >= 0:
+        sentence = (f"Analogous overrun {_js_str(round1(pct))}% → {_money(exposure)} "
+                    f"BAC exposure")
+    else:
+        sentence = (f"Analogous comparison {_js_str(round1(pct))}%: the reference project "
+                    f"underran by {_money(-variance)}, so no exposure is carried")
     return {
         "method_class": "Analogous_Estimating",
         "status_color": color,
         "analogous_overrun_pct": round1(pct),
         "bac_exposure": int(js_round(exposure)),
-        "evidence_metric": (
-            f"Analogous overrun {_js_str(round1(pct))}% → {_money(exposure)} BAC exposure"
-        ),
+        "analogous_variance": int(js_round(variance)),
+        "evidence_metric": sentence,
     }
 
 

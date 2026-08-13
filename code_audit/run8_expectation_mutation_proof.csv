@@ -83,11 +83,11 @@ A3.6,A3.6: a cost index of 5.0 gives a delta of -28.8 per cent,known_answer,-28.
 A3.6,A3.6: the in-domain case is 18.2 per cent by hand,known_answer,18.2,37.4,18.2,yes,yes,1000/0.9 * 1.064 = 1182.22; (1182.22 - 1000)/1000 * 100
 A3.6,A3.6: 18.2 per cent lands Amber,boundary,'Amber','Amber (perturbed)','Amber',yes,yes,
 A6.2,A6.2: safety never mentioned in a meeting is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
-A6.2,A6.2: a zero read from a safety record still takes the module's own cap,known_answer,2,5,2,yes,yes,"the cap of 2, the disposition Run 7 settled"
-A6.2,A6.2: and a documented zero over a valid exposure still reads Green,enumerated,'Green','Green (perturbed)','Green',yes,yes,
-A6.2,A6.2: one mention becomes an incident rate of ten,domain,10.0,21.0,10.0,yes,yes,1 mention times the literal 10
-A6.2,A6.2: one mention reads Amber,domain,'Amber','Amber (perturbed)','Amber',yes,yes,
-A6.2,A6.2: two mentions read Red,domain,'Red','Red (perturbed)','Red',yes,yes,
+A6.2,A6.2: a count of zero with no reported rate is now refused rather than banded,abstention,True,False,True,yes,yes,Run 10 correction
+A6.2,"A6.2: one incident counted with no reported rate, previously a rate of ten banding Amber is now refused rather than banded",abstention,True,False,True,yes,yes,Run 10 correction
+A6.2,"A6.2: two incidents counted with no reported rate, previously a rate of twenty banding Red is now refused rather than banded",abstention,True,False,True,yes,yes,Run 10 correction
+A6.2,A6.2: a REPORTED rate of zero still takes the module's own cap,known_answer,2,5,2,yes,yes,"the cap of 2, the disposition Run 7 settled"
+A6.2,A6.2: and a documented zero rate still reads Green,enumerated,'Green','Green (perturbed)','Green',yes,yes,
 A6.2,"A6.2: exactly the benchmark rate is Green, inclusive",boundary,'Green','Green (perturbed)','Green',yes,yes,
 A6.2,A6.2: just above the benchmark is Yellow,boundary,'Yellow','Yellow (perturbed)','Yellow',yes,yes,
 A6.2,"A6.2: exactly twice the benchmark is Yellow, inclusive",boundary,'Yellow','Yellow (perturbed)','Yellow',yes,yes,

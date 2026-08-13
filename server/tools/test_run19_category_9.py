@@ -27,6 +27,7 @@ sys.path.insert(0, str(HERE / "run17" / "oracle"))
 
 from audit_harness import (Audit, RESULT_HEADER, write_results,  # noqa: E402
                            oracle_gate)
+from run20_production_changes import expected_flag       # noqa: E402
 from population import population                                # noqa: E402
 from app.simulation import registry as REG                       # noqa: E402
 from app.simulation import fusion as FUSION                      # noqa: E402
@@ -37,16 +38,14 @@ RAND = lambda: 0.5  # noqa: E731
 
 KNOWN_DEFECTS = {
     "9.1/applicability-determined": "CORRECT_PROXY_ONLY",
-    "9.2/future-dated-handled": "IMPLEMENTATION_DEFECT",
-    "9.2/source-class-freshness": "IMPLEMENTATION_DEFECT",
+    "9.2/source-class-freshness": "MISSING_CANONICAL_DATA_STRUCTURE",
     "9.3/weight-provenance": "PARAMETER_PROVENANCE_BLOCKED",
     "9.3/unknown-source-not-favoured": "PARAMETER_PROVENANCE_BLOCKED",
     "9.4/critical-fields-are-audit-fields": "MISSING_CANONICAL_DATA_STRUCTURE",
     "9.4/chronology-checked": "MISSING_CANONICAL_DATA_STRUCTURE",
     "9.5/distinct-from-9.1": "CORRECT_PROXY_ONLY",
     "9.6/real-source-records": "METHOD_LABEL_MISMATCH",
-    "9.7/cessation-detected": "IMPLEMENTATION_DEFECT",
-    "9.7/governed-cadence": "IMPLEMENTATION_DEFECT",
+    "9.7/governed-cadence": "MISSING_CANONICAL_DATA_STRUCTURE",
     "ARCH/raw-bypass": "MISSING_CANONICAL_DATA_STRUCTURE",
     "ARCH/lineage-double-count": "MISSING_CANONICAL_DATA_STRUCTURE",
 }
@@ -610,7 +609,7 @@ def _row(mid, name, basis, source, sreq, spres, impl, param, calib, thresh, line
         "calibration_status": calib, "threshold_status": thresh,
         "empirical_validation_status": "NOT_DONE", "regulatory_snapshot": "n/a",
         "cat9_qualification_status": "IS_THE_QUALIFICATION_LAYER", "lineage_status": lineage,
-        "scientific_disposition": disp, "production_change_made": "no",
+        "scientific_disposition": disp, "production_change_made": expected_flag(mid),
         "finding_summary": finding, "required_next_action": nxt,
         "test_names": "; ".join(A.coverage.get(mid, []))[:1800],
         "evidence_paths": ("server/tools/test_run19_category_9.py; "
@@ -638,21 +637,9 @@ ROWS = lambda: [  # noqa: E731
     _row("9.2", "Data Timeliness Score", "D. PCEIF_CUSTOM_TRANSPARENT_INDICATOR",
          "Specification 18 section 9.2",
          "yes", "no", "no", "NOT_SOURCED", "NOT_CALIBRATED", "HEURISTIC_UNCALIBRATED",
-         "OWN_DOCUMENT_DATE", "IMPLEMENTATION_DEFECT",
-         "The one genuinely good property here is that the reference date is the period cutoff "
-         "rather than the wall clock, so the same documents give the same answer on any day, and "
-         "the age arithmetic is exact and monotone. The defect is that there is no lower guard "
-         "on the age at all. A document dated a year AFTER the period cutoff reports an age of "
-         "minus 365 days, bands Green, which is the freshest reading the module has, and tells "
-         "the reader the document is 'minus 365 days ago'. Specification 9.2 requires "
-         "future-dated records to receive explicit invalid or review handling. A mistyped or "
-         "forward-dated document therefore buys the best possible evidence-quality reading. "
-         "Separately, one ladder of thirty, sixty and ninety days is applied to every document "
-         "class, where the specification requires a governed source-class freshness requirement, "
-         "and the boundaries have no source.",
-         "P0B. Guard the lower bound so a future-dated document is invalid or referred for "
-         "review rather than maximally fresh. Then P3, carry per-source-class freshness "
-         "requirements."),
+         "OWN_DOCUMENT_DATE", "MISSING_CANONICAL_DATA_STRUCTURE",
+         'RUN 20 CYCLE 1. The future-dating hole is closed. A document dated a full year after the period cutoff reported an age of minus three hundred and sixty five days and banded Green, the freshest reading the module has, so a mistyped or forward-dated document bought the best possible evidence-quality reading. There was no lower guard on the age at all. Specification 9.2 requires future-dated records to receive explicit invalid or review handling, and they now abstain as malformed. What remains is structural: one ladder of thirty, sixty and ninety days is applied to every document class, and specification 9.2 states that a governed source-class freshness requirement is needed and that one universal age is not it.',
+         'P2. Carry a governed freshness allowance per source class. P3. Source the thirty, sixty and ninety day boundaries or retire them.'),
     _row("9.3", "Source Reliability Weighting", "C. LITERATURE_SUPPORTED_ADAPTATION",
          "Specification 18 section 9.3; Wang and Strong (1996)",
          "yes", "partial", "yes", "NOT_SOURCED", "NOT_CALIBRATED", "HEURISTIC_UNCALIBRATED",
@@ -728,22 +715,9 @@ ROWS = lambda: [  # noqa: E731
     _row("9.7", "Reporting Frequency Index", "D. PCEIF_CUSTOM_TRANSPARENT_INDICATOR",
          "Specification 18 section 9.7",
          "yes", "no", "no", "NOT_SOURCED", "NOT_CALIBRATED", "HEURISTIC_UNCALIBRATED",
-         "EVENT_LOG_ONLY", "IMPLEMENTATION_DEFECT",
-         "A single upload correctly abstains because one point establishes no interval, an "
-         "absent log abstains, a malformed timestamp abstains, and the mean interval is exact "
-         "and invariant to the order events arrive in. The defect is cessation. A project whose "
-         "last upload was seventeen months before the period cutoff reports a ten day average "
-         "interval, bands Green, and tells the reader it has 'high frequency reporting'. The "
-         "period cutoff is never compared to the last event, so only the intervals BETWEEN "
-         "observed reports are measured and the gap since the last one is invisible. The "
-         "independent oracle detects exactly this case, which is how it was found. That is a "
-         "favourable evidence-quality reading produced from evidence that stopped over a year "
-         "ago. Separately, no governed expected cadence exists, so none of the seven cases "
-         "specification 9.7 requires, missed, duplicate, late, approved extension, changed "
-         "cadence, cessation and multiple report classes, is representable, and the fourteen, "
-         "thirty and sixty day ladder has no source.",
-         "P0B. Compare the last report to the period cutoff so cessation is visible. Then P2, "
-         "carry a governed expected cadence per report class."),
+         "EVENT_LOG_ONLY", "MISSING_CANONICAL_DATA_STRUCTURE",
+         "RUN 20 CYCLE 1. Cessation is visible. Only the intervals BETWEEN observed reports were measured, so the period cutoff was never compared to the last report and a project that uploaded twice ten days apart and then stopped for seventeen months reported a ten day average interval and banded Green. The gap from the last report to the end of the period is now measured on the module's own existing ladder, with no new threshold introduced, and the band is taken from whichever of the two readings is worse; the mean interval the project once kept is still reported truthfully beside it. What remains is structural: no GOVERNED expected cadence exists, so a missed report, a duplicate, a late report, an approved extension, a changed cadence and multiple report classes are still not distinguishable.",
+         'P2. Carry a governed expected cadence per report class so the seven cases specification 9.7 names can each be tested. P3. Source the fourteen, thirty and sixty day ladder or retire it.'),
 ]
 
 
@@ -754,8 +728,15 @@ def main() -> int:
     rows = ROWS()
     write_results(HERE / "run17" / "categories" / "category_9_results.csv", RESULT_HEADER, rows)
     A.check("ROWS", "seven Category 9 result rows were written", len(rows) == 7)
-    A.check("ROWS", "no production change is recorded on any row",
-            all(r["production_change_made"] == "no" for r in rows))
+    # RUN 20. Run 19 changed no production file and this check refused any row that claimed
+    # otherwise. Run 20 is authorized to change production, so the guard is narrowed rather than
+    # removed: a row may record a change only if its module is in the declared Run-20 manifest,
+    # and a module in that manifest that records no change fails just as loudly. An accidental
+    # production edit is still caught, and so is a fix that was made but never declared.
+    A.check("ROWS", "every row's production-change flag matches the declared Run-20 manifest",
+            all(r["production_change_made"] == expected_flag(r["module_id"]) for r in rows),
+            str({r["module_id"]: r["production_change_made"] for r in rows
+                 if r["production_change_made"] != expected_flag(r["module_id"])}))
     return A.finish()
 
 

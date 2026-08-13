@@ -7637,3 +7637,108 @@ eight suites, sixteen category evidence files, the rebuilt results table, four a
 `REPORT_2026-08-13_run19-complete-100-module-scientific-audit.md` (new); this entry.
 
 **Run 19 commit record.** Starting commit `d0af5a3`; branch final commit `ee74190`; merge commit `d22e430`; post-merge corrections `d93ea30`, `5d958fd`, `fddc38f` and `bc73360`, each verified on merged main; and this closing entry, which is the final commit of the run. A commit cannot contain its own hash, so the final hash is whatever `git log -1 main` reports at the tip of this run.
+
+## 2026-08-13 — Run 20, supervised scientific remediation loop (working entry)
+
+**Date.** 2026-08-13. **Run/session.** Run 20, supervised scientific remediation loop.
+**Starting commit.** `772ad8f`, the pushed tip of Run 19. **Branch.**
+`claude/run20-supervised-remediation-loop`, cut from `origin/main` at that commit.
+**Simulation version.** `sim-2026.08-v10`. **Synthetic package.** OG-SYNTH-0.3.
+**Participant package.** unchanged from Run 12.
+
+**Scope.** Remediate the scientifically remediable deficiencies Run 19 recorded, one defect
+class per commit, each through the full loop: theory, independent oracle, reproduction, minimal
+fix, targeted verification, mutation proof, neighbour sweep, Category 9 and lineage check, full
+regression. This entry is updated after every cycle and is the resumption point if the run does
+not reach the end of the queue.
+
+**Hard precondition, verified mechanically.** `server/tools/run17/scientific_results.csv` has
+100 rows and 100 unique canonical ids; NOT_REACHED 0; NOT_ASSESSED 0. Run 19 therefore completed
+and Run 20 may proceed. The complete suite was rerun on this branch before any change:
+96 suites, **8298/8298 checks, all green**. The production tree was hashed into
+`code_audit/run20_production_baseline.sha256` over exactly the file list Run 18 froze, and it is
+**byte-identical to `code_audit/run18_production_baseline.sha256`**: no production file has moved
+since that baseline.
+
+**Master remediation register.** `code_audit/run20_master_remediation_register.csv`, built by
+`server/tools/build_run20_register.py` and derived entirely from the committed Run-19 results
+table and remediation queue rather than typed by hand, so it cannot drift from the audit it
+summarises. 102 rows: the 100 scientific targets plus the two architectural targets, the
+Category 9 qualification gate and the lineage control, which have no scientific row of their own.
+The authorized-versus-blocked split is **71 authorized, 31 blocked**. Blocked means the
+correction needs something this run cannot lawfully obtain: owner judgement, real field outcomes
+or an external authority. The blocked set is the eleven provenance-blocked modules, the six
+threshold-calibration-blocked, the eight calibration-pending, the three owner decisions and the
+three future-research modules.
+
+**Voting effect.** None. **Activation effect.** None. **Production files changed.** None yet.
+**Deviations.** No subagent-spawning tool is available, so all cycles run serially.
+**Defects fixed.** None yet. **Owner decisions.** Carried forward from Run 19, unchanged.
+**Stop conditions.** None hit.
+
+**Cycle 1, P0B, COMPLETE.** Commit `11c4cd8`. Four modules corrected in production, one defect
+class, one commit: 3.7 Analogous Estimating Ratio, 8.7 Safety Performance Index, 9.2 Data
+Timeliness Score, 9.7 Reporting Frequency Index. Production files changed: exactly three, and the
+production hash confirms it, `server/app/simulation/models_doc.py`, `models_dq.py` and
+`models_ext.py`. Synthetic, test and audit files changed: one new suite
+`server/tools/test_run20_p0b_evidence_domain.py`, 47 checks; the three Run-19 category suites; four
+older suites corrected for fossilized expectations; the consolidator; a new declared production
+change manifest; two new audit scripts; eleven `code_audit/run20_*` evidence files.
+
+**Voting effect.** None; the set is read directly from the registry and is exactly `{A1.7, A1.8}`
+before and after. **Activation effect.** None; the eight concept-only methods and Material Cost
+Variance are all still disabled, read directly from `registry.activation_state`.
+**Tests and checks.** Complete suite on the branch tip, 97 suites, **8353/8353**, all green.
+Six fault injections, each confirmed to change bytes, each producing a named red, each restored
+and reproved green.
+
+**Defects fixed.** Four P0B, all invalid or missing evidence producing a coloured result. Four
+Run-19 IMPLEMENTATION_DEFECT rows moved: 3.7 to CORRECT_PROXY_ONLY, and 8.7, 9.2 and 9.7 to
+MISSING_CANONICAL_DATA_STRUCTURE. **None moved to SCIENTIFIC_PASS**, because in each case a
+structural gap the specification names remains after the arithmetic defect is closed.
+
+**One Run-19 instruction was not adopted, and it is recorded rather than waived.** Run 19 required
+3.7 to refuse a negative overrun percent. `field_registry.SIGNED_SI_FIELDS` names
+`analogousOverrunPct` one of four fields where a negative value is a real project condition,
+because a reference project can underrun. The field contract was followed and the proposition was
+amended in place to require the part that was genuinely wrong, that no negative quantity of money
+at risk is reported. The conflict is in the production comment, the test comment, the transition
+log and the report.
+
+**Unresolved findings.** The neighbour sweep found four suites asserting the superseded behaviour
+as their expected answer, three of which CRASHED rather than failing. All four were rewritten to
+the corrected contract with the superseded reading stated where it changed. This brings the
+programme's count of suites found encoding a defect as expected behaviour from five to nine, and
+it is a standing reason to distrust any suite not exercised by a mutation.
+
+**Owner decisions.** Four, in `code_audit/run20_owner_decisions_required.csv`: the three carried
+from Run 19 (2.4, 5.4, PH.4) plus 3.7's naming. None blocked cycle 1. The safe default under every
+option is the current NON-VOTING and ADVISORY state.
+
+**Stop conditions.** None hit. The run stopped for session capacity, not for a scientific or
+governance obstacle.
+
+**Deviations.** No subagent-spawning tool is available, so all cycles ran serially.
+
+**EXACT NEXT REQUIREMENTS. RUN 20 IS INCOMPLETE.** One of twelve cycles is done.
+COMPLETE: cycle 1, P0B, invalid and missing evidence.
+REMAINING, in order: P0C governance and regulatory overclaim (8.2, 8.3, 8.4, 8.8, 10.3); P0D the
+Category 9 qualification gate and the lineage control (ARCH.1, ARCH.2, 4.6, 5.3); P1 canonical
+implementation defects, 27 modules; P2 canonical structures, 8 modules; P3 calibration, provenance
+and label cleanup, 44 modules of which 28 are blocked; and finally the MANDATORY complete
+100-module re-audit of section 19, which was NOT performed and must not be performed until the
+cycles above are done.
+Resume by filtering `code_audit/run20_master_remediation_register.csv` to `status == OPEN`,
+ordering by `priority`, and starting at P0C. Everything a cycle needs is in the register row, the
+Run-19 queue row it derives from, and the category suite proposition that records the defect.
+Do not launch Run 21: its queue in `code_audit/run20_run21_instrument_queue.csv` states at the top
+that two of its five items are unfinished Run-20 work.
+
+Files: three production files; one new suite and seven corrected suites; the consolidator; three
+audit scripts; the rebuilt results table and three category evidence files; eleven
+`code_audit/run20_*` files;
+`REPORT_2026-08-13_run20-supervised-scientific-remediation-loop.md` (new); this entry.
+
+**Run 20 commit record.** Starting commit `772ad8f`; commit 1 `54e8591`; cycle 1 `11c4cd8`; the
+merge to main and this closing entry are the final commits of the run. A commit cannot contain its
+own hash, so the final hash is whatever `git log -1 main` reports at the tip of this run.

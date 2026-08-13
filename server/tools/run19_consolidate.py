@@ -8,7 +8,8 @@ INPUTS
 VALIDATION BEFORE CONSOLIDATION, which the owner's Gate 5 requires of the integrating agent:
   every category file has exactly the 29-column contract;
   every disposition is in the allowed vocabulary;
-  no row records a production change;
+  a row records a production change only if its module is in the declared Run-20
+    manifest, and every module in that manifest records one;
   no module id appears in two category files;
   the union of prior-assessed and newly-assessed ids is exactly the hundred targets;
   no id is lost or gained, and no id collides under float coercion.
@@ -32,6 +33,7 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE.parent))          # server/, for the registry
 sys.path.insert(0, str(HERE / "run17"))
 
+from run20_production_changes import expected_flag  # noqa: E402
 from audit_harness import ALLOWED_DISPOSITIONS, RESULT_HEADER  # noqa: E402
 from population import population, reconciliation              # noqa: E402
 
@@ -69,8 +71,14 @@ def main() -> int:
             if r["scientific_disposition"] not in ALLOWED_DISPOSITIONS:
                 fail(f"{path.name} row {mid} carries disposition "
                      f"{r['scientific_disposition']!r}, which is not in the allowed vocabulary")
-            if r["production_change_made"] != "no":
-                fail(f"{path.name} row {mid} records a production change")
+            # RUN 20. Run 19 changed no production file and this refused any row claiming
+            # otherwise. Run 20 is authorized to change production, so the guard is narrowed to
+            # the declared manifest rather than removed: an undeclared production change and an
+            # undelivered declared fix both still fail here.
+            if r["production_change_made"] != expected_flag(mid):
+                fail(f"{path.name} row {mid} records production_change_made="
+                     f"{r['production_change_made']!r} but the declared Run-20 manifest expects "
+                     f"{expected_flag(mid)!r}")
             if not r["finding_summary"].strip():
                 fail(f"{path.name} row {mid} has an empty finding summary")
             if mid in newly:
