@@ -7422,3 +7422,98 @@ Files: `server/tools/test_run17_scientific_methods.py`, the whole of `server/too
 two `code_audit/run17_*` evidence files (all new);
 `REPORT_2026-08-12_run17-scientific-method-audit.md` (new); this entry and the Run-16 hash repair
 above.
+
+---
+
+## Run 18 — Instrument completion and 100-module scientific audit (2026-08-13)
+
+**Branch `claude/run18-instrument-completion-and-audit`, from `1c07fed`. Merged at RUN18_MERGE.**
+
+**HISTORY CORRECTION.** Run 16 stands as PARTIAL: its substantive work was correct and Run 18
+re-proved it from the served page, but it could not prove the post-clear-all reloaded state and
+recorded that honestly as a container fact. **That container fact was wrong.** Run 16's driver
+says "no reload primitive returns in this container". Run 18 isolated the variable and measured a
+reload returning in **0.6 seconds** with a pre-reload `window` sentinel gone, which no
+same-document operation can produce. The cause was a wait condition: `page.reload()` defaults to
+waiting for `load`, which never fires here because the aborted sign-in script and the
+CONNECT-refused tile host hold requests open for the life of the document. Run 16's own initial
+`goto` already avoided this; only its reload path did not. **Residual limitation, stated
+exactly:** on a page already driven through the application routes and the WebGL panels the
+reloaded document does not settle, so Run 18 proves the state in a brand-new page instead, which
+holds no in-memory application state and is a stronger test of the same property. Run 17 stands
+as CLOSED AS AN HONEST PARTIAL: 21/100 assessed, 79/100 not reached, production algorithms
+unchanged, all three re-verified here. No Run 17B exists.
+
+**TWO HARNESS FACTS, do not rediscover.** `page.add_init_script` re-runs on the reloaded document
+and was observed to stall the reload navigation here. And two browser drivers must not share a
+port: the second uvicorn silently fails to bind, every request then lands on the first driver's
+server and database, and the symptom presents as an authentication failure during seeding, which
+is a badly misleading place to start debugging.
+
+**THE ONE PRODUCTION CHANGE, and the defect that earned it.** Driving a FRESH DOCUMENT at a
+cleared project showed it reporting **24 uploaded documents and 24 active evidence paths**, while
+correctly reporting zero modules with a result and a status of not estimable. Run 16 had
+deliberately stopped the reset from deleting the event log, because deleting it destroyed audit
+history and took Audit Trail Completeness from 100 per cent to zero on a project whose trail was
+intact; it appends a `signals_reset` entry instead. **Nothing in the Signal Flow diagram was
+taught to notice that entry.** It was invisible in the clearing session only because `detail.js`
+zeroes the in-memory `events` copy, which is a browser-side mask over a record the server still
+serves. `assets/js/neural_flow.js` now reads the log from the last `signals_reset` onward, for
+both the uploaded count and the uploaded document types. No event is hidden or deleted and Audit
+Trail Completeness is untouched. **That is the only production file changed in Run 18**; the
+other 142 covered files are byte-identical to `1c07fed`.
+
+**THE SIGNAL RAIL NEEDED NO CHANGE, again.** The obsolete grey collapse control is not on this
+route in this baseline. Run 18 re-proved it with a **stricter** reader than Run 16's, which
+filtered to elements with a non-zero rendered box: Run 18's applies **no visibility filter at
+all**, so an opacity-zero control with a live hitbox would be reported. Nothing was found in any
+of six states at widths 1280, 1440, 1680 and 1920, and every numbered rail link resolves to a
+real section target.
+
+**THE SCIENTIFIC AUDIT DID NOT ADVANCE, AND THE REASON IS AN ARTIFACT GAP, NOT A JUDGEMENT.**
+**0 of the 79 were assessed. The count stands at 21/100 with 79 outstanding.** Gate 7's
+controlling authority is "the complete committed Run-17 supervisory specification". **It is not
+in this repository.** Run 17's source ledger records it as S1, `SUPPLIED_IN_PROMPT`; it was not
+supplied to Run 18; and the 79 entries in `method_cards.json` are empty stubs with no method, no
+primary source, no formal definition and no oracle. This is proved mechanically by
+`run18_build_artifacts.py`: **0 of 79 carry any committed theory.** The only in-repository
+descriptions are `code_audit/GROUP_A..D_*.md`, which are **regenerated exports embedding the
+production function bodies verbatim**, so using them would reconstruct the theory from the code
+under audit and would reproduce exactly the fossilisation failure that put five suites into the
+anti-fossilisation register. Owner stop condition applied: a method lacks an independently
+defensible theoretical contract. **The 79 stay at NOT_REACHED_IN_THIS_RUN rather than being
+rounded into a disposition.** Category 8, Category 10 and the seven Category-9 modules remain
+UNASSESSED rather than cleared, and absence of a finding is not a clean bill.
+
+**EXACT NEXT-SESSION REQUIREMENT. THE SINGLE HIGHEST-VALUE ACTION IS TO COMMIT THE SUPERVISORY
+METHOD SPECIFICATION TO THE REPOSITORY**, or to supply an independently defensible per-module
+theoretical contract. It blocks 79 of 100 modules and no scientific assessment of them is
+defensible without it. Once present, the work resumes cleanly: `server/tools/run17/findings.py`
+is keyed by module identifier, every unreached row is already stubbed, and
+`build_artifacts.py` regenerates the matrix. Everything else in the Run-19 queue is unchanged
+from Run 17 and is in `code_audit/run18_run19_queue.csv`: P0A none; P0B the absorbed single Red,
+the benign dilution and the portfolio availability re-weighting; P0C none found and Category 8
+unassessed; P0D the Category-9 raw bypass and the absent lineage identifier; P3 the calibration
+and provenance list; P4 the four naming items; FUTURE the eight concept-only methods. **Do not
+execute Run-19 fixes without the owner's word.** One item is added from this run: a headless
+regression for the event-log reset boundary, currently held only by the browser driver, which is
+outside the `test_*.py` glob because it needs Chromium.
+
+**Test totals: 88 suites, 7207 of 7207, all green** with the production change in place, each
+against its own freshly migrated database, confirmed on merged main before the push. Browser
+drive 87/87. Scope reconciliation 17/17. Material Cost Variance 78/78. Production hashes and
+registry invariants 11/11. **Voting state: exactly 2, TCPI and Variance at Completion,
+unchanged. The eight concept-only methods remain `DISABLED_UNSAFE`; Material Cost Variance
+remains `DISABLED_EVIDENCE_UNDER_REVIEW`, registered, non-voting, excluded from the 100 rows and
+NOT described as mathematically disproved.** No production Postgres, no production migration, no
+deployment, no real participant data. Migrations 0020 through 0025 remain unapplied.
+
+**Unresolved.** Every decision outstanding from Runs 10B, 11, 12, 14, 15, 16 and 17 remains open,
+including the Material Cost Variance evidence disposition.
+
+Files: `assets/js/neural_flow.js` (the one production change);
+`server/tools/drive_run18_final_flow.py`, `run18_scope_reconciliation.py`,
+`run18_production_hashes.py`, `run18_build_artifacts.py` (new); the `code_audit/run18_*`
+evidence files and screenshots (new);
+`REPORT_2026-08-13_run18-instrument-completion-and-100-module-scientific-audit.md` (new); this
+entry.
