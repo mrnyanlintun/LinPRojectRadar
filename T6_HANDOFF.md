@@ -7522,7 +7522,7 @@ entry.
 
 ## 2026-08-13 — Run 19, complete 100-module scientific audit
 
-**Branch commit:** see below. **Merge commit:** PENDING. **Starting commit:** `d0af5a3`.
+**Branch commit:** `ee74190`. **Merge commit:** `5d958fd`. **Starting commit:** `d0af5a3`.
 **Simulation version:** `sim-2026.08-v10`, unchanged. **Synthetic packages:** OG-SYNTH-0.1, 0.2
 and 0.3, unchanged.
 

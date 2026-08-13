@@ -1,7 +1,7 @@
 Run 19 — Complete 100-Module Scientific Audit
 Starting commit: d0af5a3
 Run-18 merge commit: d0af5a3
-Ending merge commit: PENDING
+Ending merge commit: 5d958fd
 Supervisory specification committed: YES
 Specification repository path: research/methodology/PCEIF_100_MODULE_SUPERVISORY_METHOD_SPECIFICATION_v1.md
 Source attachment SHA-256: 328b50133f1d2a8d710d3cca787c24c22e2cdad0b09fe92ae2c7b7a55b8d299e
@@ -572,7 +572,8 @@ and this is recorded as a pre-existing side effect Run 19 did not create and did
 
 ## 25. Complete suite
 
-8298 of 8298 checks across 96 suites, all green, on the branch before merge. The prior baseline
+8298 of 8298 checks across 96 suites, all green, confirmed on MERGED MAIN and not only on the
+branch. The prior baseline
 was 7207 of 7207 across 88 suites, so this run adds 8 suites and 1,091 checks and changes no
 prior count. The eight new category suites are picked up automatically by the
 strict runner and each prints one anchored canonical RESULT line.
