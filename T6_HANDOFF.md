@@ -8082,3 +8082,47 @@ controls continuation order. 105 rows, 86 OPEN. Do not launch Run 21.
 new suite; one corrected suite; the manifest cycle tuple extended; six `code_audit/run20_*` evidence
 files updated including a new owner decision; the Run-17 results table; the cycle-5 report; this
 entry.
+
+---
+
+## Run 20 cycle 6 closed on main: the primitive-source lineage model, verified after the merge
+
+**Merged-main commit `4311754`** (`Merge Run 20 cycle 6: the primitive-source lineage model, and
+dependence that is not transitive`), merging the four cycle-6 commits `83684e4`, `61c0f9b`,
+`e63216f`, `d989718` with `--no-ff`. The cycle boundary is preserved and nothing was squashed.
+
+**THE MERGE WAS NOT TRUSTED, IT WAS REVERIFIED.** Every claim the branch made was measured again on
+merged main rather than carried over. Observed values, all fourteen:
+
+1. Full suite rerun on merged main: **105 suites, 9207/9207, ALL SUITES GREEN, exit 0.**
+2. 105 suites and every check green, identical to the branch figures.
+3. Voting is exactly two: the core voting set reads `['A1.7', 'A1.8']`, count 2.
+4. No concept-only or disabled module was activated. Read directly from the registry's own
+   activation state: ENABLED_QUALIFIED 2, ADVISORY_ONLY 90, DISABLED_UNSAFE 8
+   (A3.8, B2.7, B2.9, B2.20, B4.1, B4.2, B4.5, B4.6), DISABLED_EVIDENCE_UNDER_REVIEW 1 (A3.4).
+   Each of the nine was additionally executed on complete inputs and each returned no status colour
+   with insufficient data set, so the states are not merely labels.
+5. Material Cost Variance remains DISABLED_EVIDENCE_UNDER_REVIEW and returns no status colour.
+6. The three same-lineage suppression controls, driven from the two production voting declarations:
+   Amber one body 0.7000, Green one body 0.8000, Red one body 0.8340, conflict not estimable in all
+   three, exactly the frozen figures.
+7. The genuinely independent-pair positive control, the to-complete index against the overhead
+   absorption rate: two bodies, 0.9273.
+8. And their conflict coefficient is estimable at 0.4414, while the dependent pairs produce no such
+   reinforcement: the two voting modules stay at one body and 0.7000 with conflict 0.0000 and not
+   estimable, and so do the change-order and contract-modification pair.
+9. Both lineage acceptance counters are zero: false reinforcement 0, false suppression 0.
+10. The three corrected declarations remain correct. A1.3 reads the budget, earned value and actual
+    cost with no planned value and no reporting history; A1.5 reads the actual cost and does not
+    read the planned value; the false `PH.5` key is gone and D1.5 is declared in its place.
+11. **The guard that once excused the defect now catches it.** All 13 declared lineage keys resolve
+    in the registry, with zero unresolvable. Reinjecting a `PH.5` key is reported as unresolvable
+    rather than skipped, so the prefix excuse is gone in fact and not only in prose.
+12. The pairwise non-transitive dependence oracle holds in all six orderings of the A={X}, B={X,Y},
+    C={Y} bridge case: two bodies, 0.9273, conflict 0.4414 in every ordering, with A+B one body,
+    B+C one body and A+C two bodies.
+13. No production or test divergence: the merged-main tree is byte-identical to the verified branch
+    and the suite figures match exactly.
+14. Nothing differed, so nothing had to be stopped for.
+
+**Cycle 6 is CLOSED. SIX OF TWELVE CYCLES ARE DONE.** Continuation is to B2.1, the last OPEN P0D row.
