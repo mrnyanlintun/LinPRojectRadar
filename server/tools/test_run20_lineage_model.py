@@ -83,10 +83,22 @@ for mid, rec in sorted(lineage.MODULE_LINEAGE.items()):
 
 # THE DERIVATION CHAIN, NOT ONLY THE FINAL MODULE ID. A derived or transformed signal whose chain
 # is a single step has not retained a chain at all.
-for mid in ("A1.7", "A1.8", "A1.1", "A2.1", "A3.5", "PH.5"):
-    rec = lineage.MODULE_LINEAGE[mid]
+# RUN 20 CYCLE 5 CORRECTED THIS LIST, AND THE SUPERSEDED READING IS RECORDED WHERE IT CHANGED.
+# A2.1 was in this list. It is no longer declared at all: cycle 5 established that A2.1 is PERT
+# Network Criticality, not earned schedule, and that it abstains with the reason code
+# canonical_structure_absent on every project this platform holds, so it emits no signal whose
+# evidence there is anything to declare. This suite CRASHED with a KeyError when the entry was
+# removed, rather than failing, which is the failure mode this programme has now recorded twelve
+# times; the lookup goes through .get and a missing declaration is a named red.
+for mid in ("A1.7", "A1.8", "A1.1", "A3.5", "PH.5"):
+    rec = lineage.MODULE_LINEAGE.get(mid)
+    check(f"{mid} is declared at all", rec is not None)
     check(f"{mid} retains its derivation chain rather than only its module id",
-          len(rec["derivation_chain"]) >= 2, str(rec["derivation_chain"]))
+          rec is not None and len(rec["derivation_chain"]) >= 2,
+          str(rec["derivation_chain"]) if rec else "no declaration")
+check("A2.1 is NOT declared, because it abstains on an absent canonical structure on every "
+      "project and so emits no signal whose evidence there is anything to declare",
+      "A2.1" not in lineage.MODULE_LINEAGE)
 
 # The two voters specifically, hand-read against specification 1.7 and 1.8. The to-complete index
 # reaches the earned value directly; the variance at completion reaches it through the cost
@@ -121,11 +133,26 @@ PARTITION_CASES = [
      [IND_1, IND_2], [{"IND1"}, {"IND2"}]),
     ("the two voting modules share all three earned-value facts and are ONE body",
      [lineage.MODULE_LINEAGE["A1.7"], lineage.MODULE_LINEAGE["A1.8"]], [{"A1.7", "A1.8"}]),
-    ("the cost performance index joins them, because its two facts are a subset of theirs",
+    # RUN 20 CYCLE 5. SUPERSEDED READINGS RECORDED WHERE THEY CHANGED. This case read "the cost
+    # performance index joins them, because its two facts are a subset of theirs". A1.1 is NOT
+    # the cost performance index: it is Monte Carlo EAC, and it joins the same body for a
+    # different and larger reason, that it forecasts the estimate at completion from the same
+    # earned-value facts. The grouping is unchanged; only the false description of it is.
+    ("Monte Carlo EAC joins the two voters, because it forecasts the same earned-value body",
      [lineage.MODULE_LINEAGE["A1.7"], lineage.MODULE_LINEAGE["A1.8"],
       lineage.MODULE_LINEAGE["A1.1"]], [{"A1.7", "A1.8", "A1.1"}]),
-    ("the earned schedule shares the earned value and joins the same body",
-     [lineage.MODULE_LINEAGE["A1.7"], lineage.MODULE_LINEAGE["A2.1"]], [{"A1.7", "A2.1"}]),
+    # And this case read "the earned schedule shares the earned value and joins the same body",
+    # driven from A2.1, which is PERT Network Criticality and not earned schedule, and which
+    # cycle 5 removed from the table because it emits no signal on any project. The PROPERTY the
+    # case was measuring is real and is kept, driven from a hand-written record rather than from
+    # a module id that never carried the method: a signal sharing one earned-value fact joins the
+    # body. Deleting the case would have lost the property with the misdescription.
+    ("a signal sharing the earned value joins the earned-value body",
+     [lineage.MODULE_LINEAGE["A1.7"],
+      lineage.lineage_record("ES", source_fact_ids=("ev", "pv"),
+                             evidence_relationship=lineage.SAME_SOURCE_TRANSFORM,
+                             derivation_chain=("pv,ev", "earned schedule"))],
+     [{"A1.7", "ES"}]),
     ("the portfolio-health synthesis shares NO raw fact with its constituents and is still "
      "joined to them, by the dependency ids rule, which is why that rule exists",
      [lineage.MODULE_LINEAGE["A1.7"], lineage.MODULE_LINEAGE["PH.5"]], [{"A1.7", "PH.5"}]),

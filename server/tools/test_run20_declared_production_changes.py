@@ -172,8 +172,9 @@ check("and no OTHER file has appeared in the simulation package undeclared, whic
 _declared_cycles = ({e[0] for e in RUN20_PRODUCTION_CHANGES.values()}
                     | {e[0] for e in RUN20_ARCHITECTURAL_CHANGES.values()}
                     | {c for e in RUN20_NEW_PRODUCTION_FILES.values() for c in e[0]})
-check("the manifest records exactly the four Run-20 cycles that have changed production",
-      _declared_cycles == {"1 P0B", "2 P0C", "3 P0D", "4 P0D"}, str(sorted(_declared_cycles)))
+check("the manifest records exactly the five Run-20 cycles that have changed production",
+      _declared_cycles == {"1 P0B", "2 P0C", "3 P0D", "4 P0D", "5 P0D"},
+      str(sorted(_declared_cycles)))
 
 if _fail:
     print(f"\n{len(_fail)} check(s) did not hold:")

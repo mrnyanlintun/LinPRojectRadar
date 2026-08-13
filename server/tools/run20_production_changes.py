@@ -83,13 +83,18 @@ RUN20_NEW_PRODUCTION_FILES: dict[str, tuple[tuple[str, ...], str]] = {
                     "evidence package, the qualified signal whose band and value cannot be read "
                     "around its verdict, and the converter that refuses a raw bypass"),
     "server/app/simulation/lineage.py": (
-        ("3 P0D", "4 P0D"),
+        ("3 P0D", "4 P0D", "5 P0D"),
         "the framework-level evidence lineage vocabulary, records and partition, read by the "
         "combination rule and by the qualification gate. Cycle 4 added the declared lineages of "
         "the two advisory duplicate pairs, Change Order Frequency with Contract Modification "
         "Frequency and Sensitivity Analysis with Tornado Risk Ranking, and the contract change "
         "record as a body of evidence in its own right. DECLARATION ONLY: no band, boundary, "
-        "threshold or arithmetic result of any module changed"),
+        "threshold or arithmetic result of any module changed. Cycle 5 corrected three declarations "
+        "that named the wrong module: A1.1 was declared the cost performance index and is Monte "
+        "Carlo EAC, A3.5 was declared a sensitivity sweep inside the earned-value body and is "
+        "Overhead Absorption Rate resting on the indirect cost ledger, and the A2.1 entry was "
+        "removed because that module abstains on an absent canonical structure on every project "
+        "and so emits no signal whose evidence there is anything to declare"),
 }
 
 

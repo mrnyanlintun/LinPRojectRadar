@@ -211,6 +211,9 @@ REPORTING_HISTORY_BODY = "REPORTING_HISTORY"
 #: body and shares nothing with the earned-value measurement, which is why the two advisory
 #: duplicate pairs must NOT collapse into one body between them.
 CONTRACT_CHANGE_BODY = "CONTRACT_CHANGE_RECORD"
+#: The indirect cost ledger. Run 20 cycle 5. Its own body, sharing nothing with the earned-value
+#: measurement, which is exactly what the entry corrected in that cycle had denied.
+INDIRECT_COST_BODY = "INDIRECT_COST_LEDGER"
 
 MODULE_LINEAGE: dict[str, dict[str, Any]] = {
     # ---- the two voting modules, which are the reason this file exists
@@ -229,10 +232,23 @@ MODULE_LINEAGE: dict[str, dict[str, Any]] = {
                           "estimate at completion = bac / cost performance index",
                           "variance at completion = bac - estimate at completion")),
     # ---- the other lineages the supervisory clarification names by example
-    "A1.1": lineage_record(  # cost performance index
-        "A1.1", source_fact_ids=("ac", "ev"), lineage_group_ids=(EARNED_VALUE_BODY,),
-        evidence_relationship=SAME_SOURCE_TRANSFORM,
-        derivation_chain=("ev,ac", "cost performance index = ev / ac")),
+    # RUN 20 CYCLE 5. This entry declared A1.1 to be the cost performance index. A1.1 IS MONTE
+    # CARLO EAC: it forecasts the estimate at completion by sampling, scaled by both indices and
+    # spread by the document risk score, and it refuses a budget of zero and either index at or
+    # below zero. It is CORRELATED and not a same-source transform, because the sampling is not a
+    # deterministic transformation of the facts and because its body is not identical to the
+    # voters' -- it reaches the document evidence as well.
+    "A1.1": lineage_record(  # Monte Carlo estimate at completion
+        "A1.1", source_fact_ids=("ac", "bac", "doc_risk_score", "ev", "pv"),
+        lineage_group_ids=(EARNED_VALUE_BODY, DOCUMENT_BODY),
+        evidence_relationship=CORRELATED,
+        derivation_chain=("bac,ev,ac,pv and the document risk score",
+                          "cost performance index = ev / ac",
+                          "schedule performance index = ev / pv",
+                          "estimate at completion scaled by the two indices",
+                          "stochastic sampling of the estimate at completion, spread by the "
+                          "document risk score",
+                          "eightieth-percentile overrun against the budget")),
     "A1.2": lineage_record(  # two-sided CUSUM over reporting history
         "A1.2", source_fact_ids=("ev", "pv", "reporting_history"),
         lineage_group_ids=(EARNED_VALUE_BODY, REPORTING_HISTORY_BODY),
@@ -255,16 +271,35 @@ MODULE_LINEAGE: dict[str, dict[str, Any]] = {
         lineage_group_ids=(EARNED_VALUE_BODY, REPORTING_HISTORY_BODY),
         evidence_relationship=CORRELATED,
         derivation_chain=("reporting history", "autoregressive extrapolation")),
-    "A2.1": lineage_record(  # earned schedule
-        "A2.1", source_fact_ids=("ev", "pv"), lineage_group_ids=(EARNED_VALUE_BODY,),
-        evidence_relationship=SAME_SOURCE_TRANSFORM,
-        derivation_chain=("pv,ev", "earned schedule by interpolation of ev on the pv curve",
-                          "schedule performance index (time) = earned schedule / actual time")),
-    "A3.5": lineage_record(  # tornado / sensitivity
-        "A3.5", source_fact_ids=("ac", "bac", "ev"), lineage_group_ids=(EARNED_VALUE_BODY,),
-        evidence_relationship=DERIVED,
-        derivation_chain=("bac,ev,ac", "cost model", "one-at-a-time sensitivity sweep",
-                          "ranked swing of each driver")),
+    # RUN 20 CYCLE 5. THE A2.1 ENTRY IS REMOVED AND NOT CORRECTED. It declared A2.1 to be earned
+    # schedule over the earned-value body. A2.1 IS PERT NETWORK CRITICALITY, and it abstains with
+    # the reason code canonical_structure_absent on every project this platform holds, because
+    # the corpus carries no activity network with logic and three-point durations. A lineage
+    # record is a statement about a SIGNAL'S evidence. A module that emits no signal on any
+    # project has no signal whose evidence there is anything to declare, and declaring one
+    # asserts the existence of evidence that was never produced. If the corpus ever carries an
+    # activity network, the record is written then, against the reading the module then makes.
+    # RUN 20 CYCLE 5, AND THIS IS THE ONE THAT DID HARM. This entry declared A3.5 to be a
+    # tornado sensitivity sweep resting on the earned-value body. A3.5 IS OVERHEAD ABSORPTION
+    # RATE: actual indirect cost over an indirect plan scaled by progress. It shares NO fact with
+    # the earned-value measurement, so an INDEPENDENT second body of evidence had been declared
+    # inside the first and could no longer corroborate it. Measured before the correction, an
+    # Amber to-complete index and an Amber overhead absorption fused to 0.7000 in ONE body; they
+    # are two bodies and 0.9273. A wrong dependence declaration is not merely over-cautious: it
+    # destroys corroboration that was really there, which is the failure mode the positive
+    # control exists to catch and which a control built from a synthetic body cannot see.
+    #
+    # The progress figure is declared even though declaring it creates a dependence on the other
+    # readers of progress. It scales the denominator, so the reading genuinely rests on it, and a
+    # fact is not omitted because its consequences are inconvenient.
+    "A3.5": lineage_record(  # Overhead Absorption Rate
+        "A3.5",
+        source_fact_ids=("actual_pct_complete", "indirect_cost_actual", "indirect_cost_plan"),
+        lineage_group_ids=(INDIRECT_COST_BODY,),
+        evidence_relationship=INDEPENDENT,
+        derivation_chain=("the planned and actual indirect cost and the reported progress",
+                          "indirect plan scaled by progress",
+                          "absorption ratio = actual indirect cost / the scaled plan")),
     # ---- RUN 20 CYCLE 4. The two advisory duplicate pairs Run 19 recorded as lineage findings
     #      and cycle 3 left undeclared. DECLARATION ONLY: no band, boundary, threshold or
     #      arithmetic result of any of these four modules is changed by their appearing here.

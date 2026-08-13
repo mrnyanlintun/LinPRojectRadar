@@ -8007,3 +8007,78 @@ instrument. Resume by filtering `code_audit/run20_master_remediation_register.cs
 **Files.** One production file changed, `server/app/simulation/lineage.py`, declaration only; one
 new suite; the manifest and its guard widened; six `code_audit/run20_*` evidence files updated; the
 Run-17 results table; the cycle-4 report; this entry.
+
+## 2026-08-13 — Run 20 cycle 5 (P0D): three lineage declarations named the wrong module, and one of them destroyed real corroboration
+
+**Commits.** This entry's commit, on `main`, continuing from cycle 4. Simulation version unchanged.
+
+**Regression.** 104 suites, 9089 checks, all green, through the strict runner. 103 suites and 8929
+checks before the cycle. One new suite, one corrected suite, no suite deleted.
+
+**What was found.** Cycle 4's sweep, read back against the declared lineage table, showed three of
+cycle 3's worked-example declarations describing methods those module ids do not carry. A1.1 was
+declared the cost performance index and is Monte Carlo EAC. A2.1 was declared earned schedule and
+is PERT Network Criticality. A3.5 was declared a tornado sensitivity sweep over the earned-value
+body and is Overhead Absorption Rate over the indirect cost ledger. The other ten declarations
+hold. The error was not random: all three are illustrative entries no consumer ever executed.
+
+**Why one of them mattered most.** Overhead Absorption Rate shares NO fact with the earned-value
+measurement, and it had been declared inside that body, so a genuine second body of evidence was
+absorbed into the first and could no longer corroborate it. Measured: an Amber to-complete index
+and an Amber overhead absorption fused to 0.7000 in ONE body, where they are two bodies and 0.9273.
+This is the direction the programme instruction names, that a fix which also suppresses real
+corroboration is not a fix. CYCLE 3'S POSITIVE CONTROL COULD NOT SEE IT, because it was built from
+a SYNTHETIC independent body written inside the test: it proved the RULE could corroborate while
+saying nothing about whether the DECLARATIONS had left anything to corroborate with. The control is
+driven from the declared table now, and that is the durable lesson of this cycle.
+
+**What was built.** The two corrections, a new indirect cost ledger body, and the REMOVAL of the
+A2.1 entry, because that module abstains with the reason code canonical_structure_absent on every
+project this platform holds and so emits no signal whose evidence there is anything to declare. And
+a whole-table guard: every declared id must prove itself against the method class the module reports
+at runtime and against its own machine-readable abstention reason, so this class cannot repeat
+silently. NO BAND, BOUNDARY, THRESHOLD OR ARITHMETIC RESULT CHANGED.
+
+**An open methodological question, raised rather than engineered away.** Over the whole table the
+overhead absorption reading still joins the earned-value part, not by sharing a fact with it but
+through the progress figure it shares with Tornado Risk Ranking, which shares the earned-value
+facts, because the partition closes transitively by design. The two share no fact and are two bodies
+whenever no bridging signal is present, which is the case that governs any fusion this platform
+performs. Whether transitive closure through a bridging signal is right is a real question, and
+loosening the closure to make a check read better would be moving a rule to satisfy an example. It
+is raised as an owner decision with the current transitive behaviour recommended, because it is the
+option that can never manufacture reassurance.
+
+**Mutations.** Five, M30 to M33 plus M32b, each byte-confirmed, each restored green. M32 DID NOT
+QUALIFY ON ITS FIRST ATTEMPT and that is recorded: the check accepted the word percentile as
+evidence of the stochastic step, so removing the sampling step left it green. A percentile is read
+off a distribution and is not the step that produces one. The check was hardened and the mutation
+rerun. This is the second mutation in Run 20 to be hardened rather than abandoned.
+
+**THE TWELFTH FOSSILIZED SUITE, AND IT CRASHED.** `test_run20_lineage_model.py`, written by cycle 3,
+indexed the lineage table directly and crashed with a KeyError rather than failing when a
+declaration was removed, caught only because the strict runner refuses a missing RESULT line. It
+also carried two partition cases describing A1.1 and A2.1 as methods they are not. Both cases keep
+the property they measured and lose only the false description; neither was deleted.
+
+**Stop conditions.** None hit. Voting exactly two, concept-only activation zero, Material Cost
+Variance disabled, Category-9 raw bypasses zero, the same-lineage suppression and the independent
+positive control all reverified after the cycle.
+
+**EXACT NEXT REQUIREMENTS. RUN 20 IS INCOMPLETE. FIVE OF TWELVE CYCLES ARE DONE.**
+COMPLETE: cycle 1 P0B; cycle 2 P0C; cycle 3 P0D architecture with ARCH.1, ARCH.2 and P0A closed;
+cycle 4 P0D the advisory lineage disclosure; cycle 5 P0D the lineage declaration truth, ARCH.4
+closed.
+NEXT, and the register controls this: B2.1 DST Evidence Combination, the last OPEN P0D row, whose
+four arms include three transforms or extrapolations of one earned-value body. Then P1, which now
+holds ARCH.3 (five undeclared shared-evidence clusters), 4.6 and 5.3 demoted from P0D with their
+method-label work, 8.3's dead Yellow arm and the rest; then P2; then P3; then the mandatory
+complete 100-module re-audit, which must not run over a half-remediated instrument.
+THE REGISTER WAS RE-SORTED into (priority, module_id) order in this cycle, because cycle 4's
+demotion of 4.6 and 5.3 from P0D to P1 left them ahead of the P0D group and the register is what
+controls continuation order. 105 rows, 86 OPEN. Do not launch Run 21.
+
+**Files.** One production file changed, `server/app/simulation/lineage.py`, declaration only; one
+new suite; one corrected suite; the manifest cycle tuple extended; six `code_audit/run20_*` evidence
+files updated including a new owner decision; the Run-17 results table; the cycle-5 report; this
+entry.
