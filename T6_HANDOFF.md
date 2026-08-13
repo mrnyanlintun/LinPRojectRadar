@@ -7586,7 +7586,7 @@ formalism derives its degrees from one earned-value input vector by unsourced li
 law. Category 8 assessed for the first time and NOT cleared: three overclaims (8.2, 8.3, 8.4),
 one evidence defect (8.7), two blocked on permit and record identity (8.8, 8.9).
 
-**Fault-injection results:** 59 injections, all reached, all leaving the suite running, all
+**Fault-injection results:** 60 injections, all reached, all leaving the suite running, all
 turning a **named** check red, none touching the real tree.
 `code_audit/run19_fault_injection_results.csv`. Seven further attempts failed to qualify and are
 recorded rather than hidden: five crashed instead of failing, one was absorbed by defence in

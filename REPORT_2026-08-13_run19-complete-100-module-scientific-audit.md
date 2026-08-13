@@ -491,7 +491,7 @@ class of error cannot recur.
 
 ## 22. Fault-injection proof
 
-59 injections, recorded in `code_audit/run19_fault_injection_results.csv`. Every one changed
+60 injections, recorded in `code_audit/run19_fault_injection_results.csv`. Every one changed
 bytes in a scratch copy, was reached, left the suite running so it printed its canonical RESULT
 line, and turned a **named** check red. The real tree was never written to, which is proved by
 hashing it before and after each campaign.
@@ -509,7 +509,7 @@ The specification's required minimum list is covered:
 | fuzzy admissibility violation | 7.16 and 7.13 | yes |
 | regulatory rule-version mismatch | 8.3, committed A-11 edition replaced by a superseded one | yes |
 | Category-9 raw-input bypass | signal package qualification marker flipped | yes |
-| duplicated lineage accepted as independent | 5.3 and the combination rule | yes |
+| duplicated lineage accepted as independent | the single-lineage conflict guard removed, plus 5.3 | yes |
 
 **Seven injections were attempted, failed to qualify, and were replaced. All seven are recorded
 rather than hidden**, because a fault that does not qualify is itself evidence:

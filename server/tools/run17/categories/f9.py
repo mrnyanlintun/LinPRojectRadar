@@ -45,6 +45,17 @@ FAULTS = [
    "old": 'avg = sum(intervals) / len(intervals)',
    "new": 'avg = sum(intervals) / len(dates)',
    "expect_red_contains": "9.7"},
+  # Specification 30 requires "duplicated lineage accepted as independent evidence" among the
+  # injections. This removes the guard that withholds the conflict coefficient when only one
+  # lineage votes, so a single lineage would publish a conflict of exactly zero, which a reader
+  # cannot tell from two independent sources agreeing completely. That is duplicated lineage
+  # being presented as independent evidence.
+  {"module_id": "ARCH",
+   "fault": "duplicated lineage accepted as independent evidence: the single-lineage guard removed, so one voting lineage publishes a conflict coefficient of zero that reads as independent agreement",
+   "file": "app/simulation/fusion.py",
+   "old": "    if len(lineages) >= 2:",
+   "new": "    if len(lineages) >= 1:",
+   "expect_red_contains": "ARCH"},
   {"module_id": "ARCH",
    "fault": "the Category 9 raw-input bypass marker flipped to claim the signal package is qualified when no gate exists",
    "file": "app/simulation/signal_package.py",
