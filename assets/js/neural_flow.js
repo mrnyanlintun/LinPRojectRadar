@@ -340,9 +340,39 @@
     function moveTT(evt) { tt.style.left = (evt.clientX + 14) + 'px'; tt.style.top = (evt.clientY - 10) + 'px'; }
     function hideTT() { tt.style.display = 'none'; }
 
+    // RUN 18, GATE 2. THE EVENT LOG IS AN APPEND-ONLY AUDIT RECORD, SO IT MUST BE READ FROM THE
+    // LAST RESET, NOT FROM THE BEGINNING.
+    //
+    // THE DEFECT THIS FIXES, found by driving a FRESH DOCUMENT at the cleared project rather
+    // than only the session that performed the clear-all. Run 16 deliberately stopped the reset
+    // from deleting the event log, for good reasons recorded in writes.py: deleting it destroyed
+    // audit history and took Audit Trail Completeness from 100% to 0% on a project whose trail
+    // was intact. The reset instead APPENDS a `signals_reset` entry. Nothing here was taught to
+    // notice it. So a cleared project still carried every `signals_extracted` entry it had ever
+    // recorded, and this diagram read them as current: a project with its evidence cleared drew
+    // "24 UPLOADED ON THIS PROJECT" and lit twenty-four document-to-module evidence paths, while
+    // correctly reporting zero modules with a result and a status of not estimable.
+    //
+    // It was invisible in the session that performed the clear-all only because detail.js
+    // forcibly zeroes `p.events` on the in-memory copy afterwards. That is a browser-side mask
+    // over a record the server still serves, which is the thing the owner's clear-all
+    // requirement specifically prohibits. The mask is left in place because it is harmless once
+    // this reads correctly; the truthfulness no longer depends on it.
+    //
+    // The boundary is the index of the LAST `signals_reset` entry. Events are appended in order
+    // by _append_event, so everything after that index is evidence supplied since the reset and
+    // everything before it is history. No event is hidden or deleted: the audit panel and the
+    // Uploaded Documents table still read the whole log.
+    var evAll = (project && Array.isArray(project.events)) ? project.events : [];
+    var sinceReset = evAll;
+    for (var ri = evAll.length - 1; ri >= 0; ri--) {
+      var rev = evAll[ri] && (evAll[ri].event || evAll[ri].type || evAll[ri].kind);
+      if (rev === 'signals_reset') { sinceReset = evAll.slice(ri + 1); break; }
+    }
+
     // ── 1. Determine uploaded doc types from project events ───────────────────
     var uploadedNorm = {};
-    (project.events || []).forEach(function(e) {
+    sinceReset.forEach(function(e) {
       if (e.event === 'signals_extracted' && e.docType) uploadedNorm[normKey(e.docType)] = true;
     });
     // Union with signalInputs.sources (events may be partially cleared by resets)
@@ -360,7 +390,8 @@
     // which is what the old column header was reporting.
     var uploadedDocCount = 0;
     (function () {
-      var evs = (project && Array.isArray(project.events)) ? project.events : [];
+      // RUN 18, GATE 2. Counted from the last reset onward, for the reason recorded above.
+      var evs = sinceReset;
       var seen = {};
       evs.forEach(function (e) {
         var ty = (e && (e.type || e.event || e.kind)) || '';

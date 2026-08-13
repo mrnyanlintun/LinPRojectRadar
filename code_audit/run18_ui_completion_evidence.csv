@@ -1,0 +1,126 @@
+state,observation,value
+A-empty,flow_present,True
+A-empty,headers,27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE
+A-empty,project_status_node,Project Status Not estimable
+A-empty,animated_paths,0
+A-empty,active_marked_paths,0
+A-empty,summary_strip,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no uploaded documents and no current results, so nothing on the diagram is active and the project status is not estimable."
+A-empty,rail_present_in_dom,True
+A-empty,rail_visible,True
+A-empty,rail_buttons,10
+A-empty,rail_targets_resolve,True of 10
+A-empty,collapse_suspects_strict,[]
+B-populated,flow_present,True
+B-populated,headers,27 SUPPORTED DOCUMENT TYPES | 24 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 41 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 10 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT
+B-populated,project_status_node,Project Status Amber
+B-populated,animated_paths,100
+B-populated,active_marked_paths,100
+B-populated,summary_strip,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project currently has 24 uploaded documents across 6 types, 41 modules with a current result, 46 with no current result, 0 not applicable to this project and 9 disabled, and 10 estimable categories."
+B-populated,rail_present_in_dom,True
+B-populated,rail_visible,True
+B-populated,rail_buttons,10
+B-populated,rail_targets_resolve,True of 10
+B-populated,collapse_suspects_strict,[]
+F-onedoc,flow_present,True
+F-onedoc,headers,27 SUPPORTED DOCUMENT TYPES | 1 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 35 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 9 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT
+F-onedoc,project_status_node,Project Status Amber
+F-onedoc,animated_paths,71
+F-onedoc,active_marked_paths,71
+F-onedoc,summary_strip,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project currently has 1 uploaded document across 1 type, 35 modules with a current result, 52 with no current result, 0 not applicable to this project and 9 disabled, and 9 estimable categories."
+F-onedoc,rail_present_in_dom,True
+F-onedoc,rail_visible,True
+F-onedoc,rail_buttons,10
+F-onedoc,rail_targets_resolve,True of 10
+F-onedoc,collapse_suspects_strict,[]
+F-onedoc,animated_vs_populated,71 of 100
+E-switch-1-populated,flow_present,True
+E-switch-1-populated,headers,27 SUPPORTED DOCUMENT TYPES | 24 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 41 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 10 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT
+E-switch-1-populated,project_status_node,Project Status Red
+E-switch-1-populated,animated_paths,100
+E-switch-1-populated,active_marked_paths,100
+E-switch-1-populated,summary_strip,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project currently has 24 uploaded documents across 6 types, 41 modules with a current result, 46 with no current result, 0 not applicable to this project and 9 disabled, and 10 estimable categories."
+E-switch-1-populated,rail_present_in_dom,True
+E-switch-1-populated,rail_visible,True
+E-switch-1-populated,rail_buttons,10
+E-switch-1-populated,rail_targets_resolve,True of 10
+E-switch-1-populated,collapse_suspects_strict,[]
+E-switch-2-empty,flow_present,True
+E-switch-2-empty,headers,27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE
+E-switch-2-empty,project_status_node,Project Status Not estimable
+E-switch-2-empty,animated_paths,0
+E-switch-2-empty,active_marked_paths,0
+E-switch-2-empty,summary_strip,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no uploaded documents and no current results, so nothing on the diagram is active and the project status is not estimable."
+E-switch-2-empty,rail_present_in_dom,True
+E-switch-2-empty,rail_visible,True
+E-switch-2-empty,rail_buttons,10
+E-switch-2-empty,rail_targets_resolve,True of 10
+E-switch-2-empty,collapse_suspects_strict,[]
+E-switch-3-populated,flow_present,True
+E-switch-3-populated,headers,27 SUPPORTED DOCUMENT TYPES | 24 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 41 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 10 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT
+E-switch-3-populated,project_status_node,Project Status Red
+E-switch-3-populated,animated_paths,100
+E-switch-3-populated,active_marked_paths,100
+E-switch-3-populated,summary_strip,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project currently has 24 uploaded documents across 6 types, 41 modules with a current result, 46 with no current result, 0 not applicable to this project and 9 disabled, and 10 estimable categories."
+E-switch-3-populated,rail_present_in_dom,True
+E-switch-3-populated,rail_visible,True
+E-switch-3-populated,rail_buttons,10
+E-switch-3-populated,rail_targets_resolve,True of 10
+E-switch-3-populated,collapse_suspects_strict,[]
+C-before,server_live_row,True
+C-clear,button_click,clicked
+C-clear,window_confirm_calls_during_clear_all,0
+C-clear,window_confirm_records,[]
+C-clear,native_dialogs_raised,[]
+C-clear,confirm_suppressed_total,0
+C-clear,server_live_row_after,False
+C-cleared-same-session,flow_present,True
+C-cleared-same-session,headers,27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE
+C-cleared-same-session,project_status_node,Project Status Not estimable
+C-cleared-same-session,animated_paths,0
+C-cleared-same-session,active_marked_paths,0
+C-cleared-same-session,summary_strip,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no uploaded documents and no current results, so nothing on the diagram is active and the project status is not estimable."
+C-cleared-same-session,rail_present_in_dom,True
+C-cleared-same-session,rail_visible,True
+C-cleared-same-session,rail_buttons,10
+C-cleared-same-session,rail_targets_resolve,True of 10
+C-cleared-same-session,collapse_suspects_strict,[]
+D-reload,sentinel_before,sentinel
+D-reload,reload_error,"Page.reload: Timeout 45000ms exceeded.
+Call log:
+waiting for navigation until ""commit""
+"
+D-reload,reload_returned,no
+D-reload,poll_timeout_last_error,"Page.evaluate: Execution context was destroyed, most likely because of a navigat"
+D-reload,sentinel_after,POLL_TIMED_OUT
+D-reload,reload_primitive_settled,no
+D-reload,harness_limitation,the reloaded document does not settle on a fully driven page; a fresh document is used instead and is a stronger test of the same property
+D-cleared-fresh-document,flow_present,True
+D-cleared-fresh-document,headers,27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE
+D-cleared-fresh-document,project_status_node,Project Status Not estimable
+D-cleared-fresh-document,animated_paths,0
+D-cleared-fresh-document,active_marked_paths,0
+D-cleared-fresh-document,summary_strip,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no uploaded documents and no current results, so nothing on the diagram is active and the project status is not estimable."
+D-cleared-fresh-document,rail_present_in_dom,True
+D-cleared-fresh-document,rail_visible,True
+D-cleared-fresh-document,rail_buttons,10
+D-cleared-fresh-document,rail_targets_resolve,True of 10
+D-cleared-fresh-document,collapse_suspects_strict,[]
+D-cleared-fresh-document,server_live_row,False
+W-1280,rail_visible,True
+W-1280,rail_buttons,10
+W-1280,collapse_suspects_strict,[]
+W-1280,geometry,"{""scrollable"": true, ""navRight"": 48, ""navWidth"": 36, ""bodyOverflowX"": false}"
+W-1440,rail_visible,True
+W-1440,rail_buttons,10
+W-1440,collapse_suspects_strict,[]
+W-1440,geometry,"{""scrollable"": true, ""navRight"": 48, ""navWidth"": 36, ""bodyOverflowX"": false}"
+W-1680,rail_visible,True
+W-1680,rail_buttons,10
+W-1680,collapse_suspects_strict,[]
+W-1680,geometry,"{""scrollable"": true, ""navRight"": 48, ""navWidth"": 36, ""bodyOverflowX"": false}"
+W-1920,rail_visible,True
+W-1920,rail_buttons,10
+W-1920,collapse_suspects_strict,[]
+W-1920,geometry,"{""scrollable"": true, ""navRight"": 48, ""navWidth"": 36, ""bodyOverflowX"": false}"
+browser,page_errors,[]
+browser,native_dialogs_total,[]
