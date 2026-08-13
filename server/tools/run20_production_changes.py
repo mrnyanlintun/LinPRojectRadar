@@ -42,6 +42,31 @@ RUN20_PRODUCTION_CHANGES: dict[str, tuple[str, str, str]] = {
 }
 
 
+#: THE ARCHITECTURAL CHANGES, DECLARED SEPARATELY AND FOR A REASON. The manifest above is keyed
+#: by scientific module id, and the guard that reads it requires every key to be one of the
+#: hundred targets. Cycle 3 changes the COMBINATION RULE, which is not a module and has no module
+#: id, so declaring it above would have meant either inventing a module id for it or widening the
+#: guard's module check until it no longer checked anything. It is declared here instead, under
+#: the register's own architectural row ids, and the byte comparison covers both dictionaries.
+#:
+#: architectural id -> (cycle, production file, one line on what changed)
+RUN20_ARCHITECTURAL_CHANGES: dict[str, tuple[str, str, str]] = {
+    "ARCH.2": ("3 P0D", "server/app/simulation/fusion.py",
+               "the combination rule partitions its signals into bodies of evidence before "
+               "combining them, so two transforms of one body no longer corroborate each other, "
+               "and a quality, governance or decision output is refused as project evidence"),
+}
+
+#: PRODUCTION FILES CREATED BY RUN 20. A new file cannot differ from a freeze taken before it
+#: existed, so the byte comparison can never see one. Declaring them here is what stops a whole
+#: new production module being added without any declaration at all.
+RUN20_NEW_PRODUCTION_FILES: dict[str, tuple[str, str]] = {
+    "server/app/simulation/lineage.py": (
+        "3 P0D", "the framework-level evidence lineage vocabulary, records and partition, read "
+                 "by the combination rule and by the qualification gate"),
+}
+
+
 def changed(module_id: str) -> bool:
     return module_id in RUN20_PRODUCTION_CHANGES
 

@@ -120,23 +120,48 @@ check("PRE-FIX FINDING: the two voting modules share the budget at completion, a
       "bac" in _tcpi and "bac" in _vac
       and {"ev", "ac"} <= _tcpi and "cpi" in _vac,
       f"tcpi={sorted(_tcpi)} vac={sorted(_vac)}")
-check("PRE-FIX DEFECT: the fusion the live path performs over those two votes carries no record "
-      "anywhere that they share a lineage",
-      "lineage" not in str(fusion.dst_fuse.__doc__ or "").lower())
+check("the fusion now records a lineage for the votes it performs, where before it recorded none",
+      "lineage" in str(fusion.fuse_signals.__doc__ or "").lower())
 
-# ------------------------------------------------------------------- the absence being recorded
-check("PRE-FIX DEFECT: dst_fuse accepts only status strings, so no lineage can be supplied to it "
-      "even by a caller that knows the lineage",
+# ----------------------------------------------------- THE ABSENCE THAT WAS RECORDED, NOW FILLED
+#
+# These five checks were written in step one as statements that the dependence vocabulary DID NOT
+# EXIST. They are kept, inverted, rather than deleted, so the file remains the one place a reader
+# can see both the measurement and its repair. The frozen pre-fix literals above are untouched:
+# they still describe what the rule does with sources whose lineage is UNDECLARED, which after
+# the correction is the honest reading of a bare list of status strings.
+from app.simulation import lineage as _lin  # noqa: E402
+
+check("dst_fuse still accepts a bare list of status strings, so no caller was broken",
       fusion.dst_fuse.__code__.co_varnames[:1] == ("statuses",))
+check("and there is now a lineage-bearing entry point beside it, which there was not",
+      callable(getattr(fusion, "fuse_signals", None)))
 for cls in ("INDEPENDENT", "DERIVED", "CORRELATED", "SAME_SOURCE_TRANSFORM", "SYNTHESIZED",
             "QUALITY_METADATA", "GOVERNANCE_OUTPUT", "DECISION_OUTPUT"):
-    check(f"PRE-FIX DEFECT: the dependence class {cls} does not exist anywhere in production",
-          not hasattr(fusion, cls))
+    check(f"the dependence class {cls} now exists in production, where step one found none",
+          getattr(_lin, cls, None) == cls)
 
-check("PRE-FIX DEFECT: nothing in the fusion module groups, discounts or refuses dependent "
-      "evidence, so there is no control to weaken and none to strengthen",
-      not any(hasattr(fusion, n) for n in
-              ("dst_fuse_grouped", "group_by_lineage", "LINEAGE_CLASSES", "dependence_class")))
+check("and the fusion now groups dependent evidence rather than combining it, so there is a "
+      "control where step one found none",
+      callable(getattr(_lin, "partition", None)) and callable(getattr(fusion, "worst_band", None)))
+
+# THE AFTER NUMBERS, BESIDE THE FROZEN BEFORE NUMBERS. Same three bands, same duplication, the
+# difference being that the duplicate now declares the lineage it always had.
+_a17 = _lin.MODULE_LINEAGE["A1.7"]
+_a18 = _lin.MODULE_LINEAGE["A1.8"]
+for band, before_single, before_dup in (("Amber", 0.7000, 0.9273),
+                                        ("Green", 0.8000, 0.9722),
+                                        ("Red", 0.8340, 0.9787)):
+    after_dup = fusion.fuse_signals([{"status": band, "lineage": _a17},
+                                     {"status": band, "lineage": _a18}])
+    near(f"AFTER: a same-lineage {band} pair carries {before_single}, not the frozen pre-fix "
+         f"{before_dup}", after_dup["mass"][band], before_single)
+    check(f"AFTER: and the {band} pair is one body of evidence rather than two",
+          after_dup["lineage_groups"] == 1)
+near("AFTER: and the conflict a body of evidence reported against its own copy, frozen at "
+     "0.4414, is no longer estimated at all",
+     fusion.fuse_signals([{"status": "Amber", "lineage": _a17},
+                          {"status": "Amber", "lineage": _a18}])["conflict"], 0.0)
 
 if _fail:
     print(f"\n{len(_fail)} check(s) did not hold:")

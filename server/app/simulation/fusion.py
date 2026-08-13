@@ -15,6 +15,14 @@ from __future__ import annotations
 
 from typing import Any
 
+from .lineage import (
+    INDEPENDENT,
+    NON_PROJECT_EVIDENCE,
+    group_labels,
+    lineage_record,
+    partition,
+)
+
 STATES = ("Green", "Yellow", "Amber", "Red", "Unknown")
 
 STATUS_MASS: dict[str, dict[str, float]] = {
@@ -124,42 +132,151 @@ def dst_discount(m: dict[str, float], alpha: float) -> dict[str, float]:
     return out
 
 
-def dst_fuse(statuses) -> dict[str, Any] | None:
-    """
-    Fuse status strings into one belief distribution.
+#: Severity order over the four bands, worst last. There is nothing to calibrate here: it is the
+#: order the platform already displays them in, written down so the conservative comparison below
+#: does not have to be reinvented by each reader.
+BAND_SEVERITY: dict[str, int] = {"Green": 0, "Yellow": 1, "Amber": 2, "Red": 3}
 
-    A Red-dominant source is applied at 1.5x (full once, then a half-strength discounted
-    re-combination) so a single Red cannot silently sink a set of greens while genuine Red evidence
-    still dominates. The conflict K recorded is the last genuine combine, not the Red re-combine,
-    which is a weighting artefact and would inflate it.
+
+def worst_band(bands) -> str | None:
+    """The most adverse of a set of bands, or None when the set is empty."""
+    present = [b for b in bands if b in BAND_SEVERITY]
+    return max(present, key=lambda b: BAND_SEVERITY[b]) if present else None
+
+
+def fuse_signals(signals) -> dict[str, Any] | None:
     """
-    sources = []
-    for st in statuses or []:
-        m = status_to_mass(st)
-        if m:
-            sources.append({"mass": m, "red": m is STATUS_MASS["Red"]})
-    if not sources:
+    Fuse LINEAGE-BEARING signals into one belief distribution.
+
+    This is the lineage-aware combination, and `dst_fuse` below is now a thin caller of it. Each
+    signal is a mapping carrying at least `status`, optionally `module_id` and optionally
+    `lineage`, a record built by `lineage.lineage_record`.
+
+    THE THREE STEPS, AND THE REASON FOR EACH.
+
+    STEP ONE, ADMISSION. A signal whose evidence relationship is QUALITY_METADATA,
+    GOVERNANCE_OUTPUT or DECISION_OUTPUT is not project-condition evidence and is DROPPED, not
+    grouped. Grouping would still let it vote inside whichever body it landed in. Specification
+    18 states the Category 9 half of this directly: a data-quality result is a statement about
+    the evidence and never another independent risk vote. The other two are computed from signals
+    that have already been counted, so admitting them would count that evidence twice through a
+    longer path. Every drop is reported in `excluded_non_evidential`, because an exclusion that
+    nobody can see is indistinguishable from a signal that was never produced.
+
+    STEP TWO, PARTITION. What remains is partitioned into bodies of evidence by `lineage.partition`.
+    Two transforms of one body of earned-value evidence land in ONE part.
+
+    STEP THREE, TWO DIFFERENT OPERATORS FOR TWO DIFFERENT QUESTIONS.
+
+      WITHIN a body of evidence the question is not "do these agree" -- one body cannot agree
+      with itself, and Dempster's rule applied here is what manufactured 0.9273 out of a single
+      0.7000 source. The question is what this one body of evidence says when it is read in more
+      than one way, and the answer taken is the most adverse of those readings. That operator is
+      IDEMPOTENT, which is precisely the property the supervisory clarification requires: adding
+      a copy, an algebraic transform or a derived metric of a signal already present changes
+      nothing at all. It is also, deliberately, a governance choice and not a scientific constant
+      -- an OWNER_POLICY provenance, carrying no weight, no correlation estimate and no tuned
+      parameter, because there is no defensible empirical basis in this repository for any of
+      those and inventing one would be worse than being conservative. Disagreement between two
+      readings of one body is RECORDED (`disagreement`) rather than scored.
+
+      ACROSS bodies of evidence the independence Dempster's rule assumes is now true by
+      construction, so the existing rule applies unchanged, including the Red emphasis, which is
+      applied once per BODY rather than once per signal so that duplicating a Red signal cannot
+      apply it twice.
+
+    THE CONFLICT COEFFICIENT. K is only computed across bodies. With one body there is nothing
+    for it to measure and it is not manufactured: `conflict` stays 0.0 for the callers that have
+    always read it, and `conflict_estimable` says whether that zero means anything.
+    """
+    admitted_bands: list[str] = []
+    admitted_recs: list[dict] = []
+    excluded: list[dict] = []
+    undeclared = 0
+
+    for i, sig in enumerate(signals or []):
+        rec = sig.get("lineage")
+        mid = sig.get("module_id") or (rec or {}).get("module_id") or f"__unnamed_{i}"
+        rel = rec["evidence_relationship"] if rec else INDEPENDENT
+        band = normalise_status(sig.get("status"))
+        if rel in NON_PROJECT_EVIDENCE:
+            excluded.append({"module_id": mid, "evidence_relationship": rel, "band": band})
+            continue
+        if band is None:
+            # An abstention contributes no mass at all. It is not a neutral value, and it is
+            # visible to the caller through the run's own abstention list.
+            continue
+        if rec is None:
+            undeclared += 1
+            rec = lineage_record(mid)
+        admitted_bands.append(band)
+        admitted_recs.append(rec)
+
+    if not admitted_bands:
         return None
+
+    groups = partition(admitted_recs)
+    labels = group_labels(admitted_recs, groups)
+    bodies = []
+    for g, label in zip(groups, labels):
+        bands_in = [admitted_bands[i] for i in g]
+        rep = worst_band(bands_in)
+        bodies.append({
+            "lineage_group": label,
+            "band": rep,
+            "member_module_ids": [admitted_recs[i]["module_id"] for i in g],
+            "member_bands": bands_in,
+            "disagreement": len(set(bands_in)) > 1,
+        })
 
     result = None
     last_k = 0.0
-    for src in sources:
+    for body in bodies:
+        mass = STATUS_MASS[body["band"]]
         if result:
-            c = dst_combine(result, src["mass"])
+            c = dst_combine(result, mass)
             last_k = c.get("conflict", 0.0)
             result = c
         else:
-            result = {s: src["mass"][s] for s in STATES}
+            result = {s: mass[s] for s in STATES}
             result["conflict"] = 0.0
-        if src["red"]:
-            result = dst_combine(result, dst_discount(src["mass"], 0.5))
+        if body["band"] == "Red":
+            result = dst_combine(result, dst_discount(mass, 0.5))
 
-    bands = ("Green", "Yellow", "Amber", "Red")
-    status = bands[0]
-    for b in bands[1:]:
+    status = BANDS[0]
+    for b in BANDS[1:]:
         if result[b] > result[status]:
             status = b
-    return {"mass": {s: result[s] for s in STATES}, "status": status, "conflict": last_k}
+    return {
+        "mass": {s: result[s] for s in STATES},
+        "status": status,
+        "conflict": last_k,
+        "lineage_groups": len(bodies),
+        "lineage_bodies": bodies,
+        "conflict_estimable": len(bodies) >= 2,
+        "excluded_non_evidential": excluded,
+        "lineage_declared": undeclared == 0,
+        "signals_admitted": len(admitted_bands),
+    }
+
+
+def dst_fuse(statuses) -> dict[str, Any] | None:
+    """
+    Fuse bare status strings into one belief distribution.
+
+    KEPT, AND KEPT WITH ITS ORIGINAL ARITHMETIC, for every caller that genuinely has independent
+    sources and nothing else to say about them. Each status is given its own body of evidence,
+    which is what this function has always assumed; the difference is that the assumption is now
+    STATED in the returned object (`lineage_declared` is False) instead of being invisible. A
+    consumer that must not fuse on an undeclared lineage -- the voting path is one -- can now
+    detect that it was handed one, which it previously could not.
+
+    A Red-dominant source is applied at 1.5x (full once, then a half-strength discounted
+    re-combination) so a single Red cannot silently sink a set of greens while genuine Red
+    evidence still dominates. The conflict K recorded is the last genuine combine, not the Red
+    re-combine, which is a weighting artefact and would inflate it.
+    """
+    return fuse_signals([{"status": st} for st in (statuses or [])])
 
 
 # ---------------------------------------------------------------------------- RUN 11, GATES 5, 6
