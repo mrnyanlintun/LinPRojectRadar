@@ -1,0 +1,424 @@
+"""
+RUN 20 CYCLE 6: DEPENDENCE IS NOT TRANSITIVE, AND THE CLOSURE THAT SAID IT WAS IS REPLACED.
+
+WHAT WAS WRONG. Cycles 3 to 5 separated signals into bodies of evidence by taking the CONNECTED
+COMPONENTS of the dependence relation. That is a transitive closure, and it asserts that if A
+depends on B and B depends on C then A depends on C. Dependence is not transitive. For A resting
+on primitive source {X}, B on {X,Y} and C on {Y}, A and C share nothing at all.
+
+THIS WAS NOT A THOUGHT EXPERIMENT ON THIS PLATFORM. The three signals exist in the shipped
+declarations. A is the to-complete performance index on the earned-value measurement; C is the
+overhead absorption rate on the indirect cost ledger, which cycle 5 had only just rescued from a
+false dependence; B is the tornado risk ranking, which reads the earned-value indices AND the
+progress figure that scales C's denominator. Measured on the closure, A and C alone were two
+bodies worth 0.9273 and adding B collapsed all three into one body worth 0.7000. The bridging
+signal destroyed real corroboration purely by existing, which is the same defect cycle 5 found in
+a wrong declaration, arriving this time through the framework instead.
+
+WHAT REPLACES IT. Bodies are a MAXIMUM SET OF PAIRWISE-INDEPENDENT signals; every other signal is
+absorbed into exactly one body it depends on. Independence is decided on RESOLVED PRIMITIVE
+SOURCE SETS, with derived, synthesized, quality, governance and decision outputs inheriting their
+parents' primitives and creating none of their own.
+
+THE VACUOUS-GUARD LESSON, APPLIED AGAIN. Every expected separation below is written by hand as an
+explicit list of module-id sets. None is obtained by calling `evidence_bodies`, `dependent`,
+`resolve_primitive_sources` or anything else in the file under test. Every frozen number is a
+literal. And the controls run in BOTH directions: the suite fails if a false reinforcement
+survives AND it fails if a genuine corroboration is suppressed, because a fix that flattens
+everything to inert is not a fix.
+
+THE PRODUCTION-DECLARATION LESSON, APPLIED AGAIN. Cycle 3's positive control was built from a
+SYNTHETIC independent body written inside the test, so it proved the RULE could corroborate while
+saying nothing about whether the shipped declarations had left anything to corroborate with.
+Cycle 5 was the bill for that. Every control here that makes a claim about PRODUCTION behaviour
+is driven from `lineage.MODULE_LINEAGE`. Synthetic records appear only where the claim is about
+the RULE itself, and are named as such.
+"""
+
+from __future__ import annotations
+
+import pathlib
+import sys
+
+HERE = pathlib.Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent))
+
+from app.simulation import fusion, lineage  # noqa: E402
+
+_passed = 0
+_total = 0
+_fail: list[str] = []
+
+
+def check(name: str, cond: bool, detail: str = "") -> None:
+    global _passed, _total
+    _total += 1
+    if cond:
+        _passed += 1
+    else:
+        _fail.append(name + (f" -- {detail}" if detail else ""))
+
+
+def near(name: str, got, want, tol=5e-5) -> None:
+    check(name, got is not None and abs(float(got) - float(want)) <= tol,
+          f"got {got!r}, expected {want!r}")
+
+
+def sig(rec, status):
+    return {"status": status, "lineage": rec, "module_id": rec["module_id"]}
+
+
+def fuse(pairs):
+    """pairs is a list of (lineage record, band)."""
+    return fusion.fuse_signals([sig(r, b) for r, b in pairs])
+
+
+def body_sets(result):
+    """The separation as a set of frozensets of module ids, for comparison with a HAND-WRITTEN
+    expectation. Reading the result object is not the same as asking the code under test what
+    the answer should be."""
+    return {frozenset(b["member_module_ids"]) for b in result["lineage_bodies"]}
+
+
+def belief(result, band):
+    return result["mass"][band]
+
+
+PROD = lineage.MODULE_LINEAGE
+
+# =========================================================== 0. THE FIELDS THE MODEL MUST CARRY
+#
+# The owner decision names the fields by name. A record missing one of them cannot express the
+# distinction the rest of this suite tests, so their presence is checked before anything else.
+REQUIRED_FIELDS = ("primitive_source_ids", "source_fact_ids", "source_document_ids",
+                   "dependency_ids", "parent_signal_ids", "lineage_group_ids",
+                   "evidence_relationship", "derivation_chain")
+probe = lineage.lineage_record("PROBE", source_fact_ids=("x",))
+for f in REQUIRED_FIELDS:
+    check(f"the lineage record carries {f}", f in probe, str(sorted(probe)))
+check("a record that declares no primitive sources separately takes its governed facts and "
+      "documents as its primitive sources, rather than an empty set that would intersect "
+      "nothing and read as independent of everything",
+      probe["primitive_source_ids"] == ("x",), str(probe["primitive_source_ids"]))
+for rel in ("INDEPENDENT", "SAME_SOURCE", "DERIVED", "SAME_SOURCE_TRANSFORM", "CORRELATED",
+            "SYNTHESIZED", "QUALITY_METADATA", "GOVERNANCE_OUTPUT", "DECISION_OUTPUT"):
+    check(f"the evidence relationship {rel} is in the vocabulary",
+          rel in lineage.EVIDENCE_RELATIONSHIPS)
+
+# ============================================ 1. THE CANONICAL A={X}, B={X,Y}, C={Y} ORACLE
+#
+# INDEPENDENT OF THE IMPLEMENTATION. These three records are built here, from first principles,
+# with primitive sources stated directly. Nothing about them is read out of the production table
+# or out of the code under test. The five results the owner decision requires are asserted as
+# hand-written expectations.
+A = lineage.lineage_record("ORACLE_A", primitive_source_ids=("X",),
+                           evidence_relationship=lineage.INDEPENDENT)
+B = lineage.lineage_record("ORACLE_B", primitive_source_ids=("X", "Y"),
+                           evidence_relationship=lineage.CORRELATED)
+C = lineage.lineage_record("ORACLE_C", primitive_source_ids=("Y",),
+                           evidence_relationship=lineage.INDEPENDENT)
+
+# The two-signal baselines, so the oracle's five claims are read against a measured single body
+# and a measured genuine pair rather than against nothing.
+ONE_BODY_AMBER = 0.7000       # what one body of Amber evidence carries, frozen
+TWO_BODY_AMBER = 0.9273       # what two independent Amber bodies corroborate to, frozen
+TWO_BODY_CONFLICT = 0.4414    # and the conflict coefficient across them, frozen
+
+r_a = fuse([(A, "Amber")])
+near("baseline: one body of Amber evidence carries 0.7000", belief(r_a, "Amber"), ONE_BODY_AMBER)
+
+# ---- ORACLE CLAIM 1. A + B does not create independent corroboration.
+r_ab = fuse([(A, "Amber"), (B, "Amber")])
+check("ORACLE 1: A and B, whose primitive sources overlap on X, are ONE body and not two",
+      body_sets(r_ab) == {frozenset({"ORACLE_A", "ORACLE_B"})}, str(body_sets(r_ab)))
+near("ORACLE 1: and B therefore cannot independently corroborate A -- the belief stays at the "
+     "single-body 0.7000 and does not reach the two-body 0.9273",
+     belief(r_ab, "Amber"), ONE_BODY_AMBER)
+check("ORACLE 1: with one body there is nothing for the conflict coefficient to measure and "
+      "none is manufactured", r_ab["conflict_estimable"] is False and r_ab["conflict"] == 0.0)
+
+# ---- ORACLE CLAIM 2. B + C does not create independent corroboration.
+r_bc = fuse([(B, "Amber"), (C, "Amber")])
+check("ORACLE 2: B and C, whose primitive sources overlap on Y, are ONE body and not two",
+      body_sets(r_bc) == {frozenset({"ORACLE_B", "ORACLE_C"})}, str(body_sets(r_bc)))
+near("ORACLE 2: and B therefore cannot independently corroborate C either",
+     belief(r_bc, "Amber"), ONE_BODY_AMBER)
+
+# ---- ORACLE CLAIM 3. A + C CAN create genuine corroboration. THE POSITIVE DIRECTION.
+r_ac = fuse([(A, "Amber"), (C, "Amber")])
+check("ORACLE 3: A and C hold DISJOINT primitive sources {X} and {Y} and are TWO bodies",
+      body_sets(r_ac) == {frozenset({"ORACLE_A"}), frozenset({"ORACLE_C"})}, str(body_sets(r_ac)))
+near("ORACLE 3: and they genuinely corroborate, reaching 0.9273 from 0.7000. A model that "
+     "suppressed this would pass every negative check above and still be wrong",
+     belief(r_ac, "Amber"), TWO_BODY_AMBER)
+near("ORACLE 3: and the conflict coefficient across two real bodies is estimable at 0.4414",
+     r_ac["conflict"], TWO_BODY_CONFLICT)
+check("ORACLE 3: and it is reported as estimable", r_ac["conflict_estimable"] is True)
+
+# ---- ORACLE CLAIM 4. A + B + C is not three independent bodies.
+r_abc = fuse([(A, "Amber"), (B, "Amber"), (C, "Amber")])
+check("ORACLE 4: A, B and C are TWO bodies and never three -- B is absorbed, not counted",
+      len(r_abc["lineage_bodies"]) == 2, str(body_sets(r_abc)))
+check("ORACLE 4: and the two bodies are A's and C's, with B absorbed into one of them and "
+      "NOT merging them, which is exactly what the transitive closure got wrong",
+      body_sets(r_abc) in ({frozenset({"ORACLE_A", "ORACLE_B"}), frozenset({"ORACLE_C"})},
+                           {frozenset({"ORACLE_A"}), frozenset({"ORACLE_B", "ORACLE_C"})}),
+      str(body_sets(r_abc)))
+
+# ---- ORACLE CLAIM 5. Adding B to A + C cannot strengthen the result merely by bridging them.
+near("ORACLE 5: adding the bridging signal B to A and C leaves the belief exactly where A and "
+     "C put it, at 0.9273. It adds no strength by bridging",
+     belief(r_abc, "Amber"), belief(r_ac, "Amber"))
+near("ORACLE 5: and it leaves the conflict coefficient exactly where A and C put it",
+     r_abc["conflict"], r_ac["conflict"])
+check("ORACLE 5: nor does B weaken them -- the count of bodies is unchanged at two",
+      len(r_abc["lineage_bodies"]) == len(r_ac["lineage_bodies"]))
+
+# THE ORDER-INDEPENDENCE OF ALL FIVE. A separation that depended on the order the signals were
+# handed over would be an artefact, and a greedy pass has exactly that fault: presented with B
+# first it can select B and reject both A and C, collapsing two genuine bodies into one.
+for order in ((B, A, C), (C, B, A), (B, C, A), (C, A, B), (A, C, B)):
+    ro = fuse([(rec, "Amber") for rec in order])
+    check("the separation does not depend on the order the signals arrive in: "
+          + ",".join(r["module_id"] for r in order),
+          len(ro["lineage_bodies"]) == 2 and abs(belief(ro, "Amber") - TWO_BODY_AMBER) < 5e-5,
+          f'{len(ro["lineage_bodies"])} bodies, {belief(ro, "Amber")}')
+
+# ============================== 2. THE SAME THREE SIGNALS, FROM THE SHIPPED PRODUCTION TABLE
+#
+# THE CONTROL THAT CYCLE 3 DID NOT HAVE. Everything above is synthetic and proves the RULE. This
+# block proves the PRODUCTION BEHAVIOUR, using no record this file authored:
+#   A = A1.7 to-complete performance index, on the earned-value measurement
+#   B = A5.3 tornado risk ranking, which reads the earned-value indices AND the progress figure
+#   C = A3.5 overhead absorption rate, on the indirect cost ledger
+# A and C share NO primitive source. B touches both. On the connected-component treatment this
+# measured 1 body and 0.7000; the numbers below are the frozen correct answers.
+P_A, P_B, P_C = PROD["A1.7"], PROD["A5.3"], PROD["A3.5"]
+check("production precondition: the to-complete index and the overhead absorption rate share "
+      "no governed fact, so this is genuinely the A, C of the oracle and not a rigged pair",
+      not (set(P_A["source_fact_ids"]) & set(P_C["source_fact_ids"])),
+      f'{P_A["source_fact_ids"]} vs {P_C["source_fact_ids"]}')
+check("production precondition: the tornado ranking shares a fact with EACH of them, so it is "
+      "genuinely the bridging B",
+      bool(set(P_B["source_fact_ids"]) & set(P_A["source_fact_ids"]))
+      and bool(set(P_B["source_fact_ids"]) & set(P_C["source_fact_ids"])),
+      str(P_B["source_fact_ids"]))
+
+pr_ac = fuse([(P_A, "Amber"), (P_C, "Amber")])
+near("THE AMBER POSITIVE CONTROL, UNCHANGED: an Amber to-complete index and an Amber overhead "
+     "absorption are two bodies and corroborate to 0.9273",
+     belief(pr_ac, "Amber"), TWO_BODY_AMBER)
+near("and their conflict coefficient is estimable at 0.4414", pr_ac["conflict"], TWO_BODY_CONFLICT)
+
+pr_abc = fuse([(P_A, "Amber"), (P_B, "Amber"), (P_C, "Amber")])
+check("THE PRODUCTION BRIDGING DEFECT IS GONE: adding the tornado ranking leaves two bodies, "
+      "where the connected-component treatment left one",
+      len(pr_abc["lineage_bodies"]) == 2, str(body_sets(pr_abc)))
+near("and the belief stays at 0.9273 rather than collapsing to the measured pre-fix 0.7000",
+     belief(pr_abc, "Amber"), TWO_BODY_AMBER)
+near("and the conflict coefficient stays estimable at 0.4414 rather than falling to the "
+     "measured pre-fix 0.0000", pr_abc["conflict"], TWO_BODY_CONFLICT)
+
+# ============================================ 3. THE TEN ACCEPTANCE CONTROLS
+#
+# Each names what it is controlling for and is scored on TWO counts, both of which must be zero:
+#   false reinforcement -- a body appeared, or belief rose, where the evidence was not new
+#   false suppression   -- a body was lost, or belief fell, where the evidence genuinely was new
+# The two counts are accumulated and asserted to be zero at the end, as the acceptance test the
+# owner decision names, rather than being left implicit in a pile of individual checks.
+false_reinforcement = 0
+false_suppression = 0
+control_rows: list[tuple[str, int, int]] = []
+
+
+def control(name, records, expect_bodies, expect_belief, band="Amber"):
+    """Run one acceptance control and score it on both directions."""
+    global false_reinforcement, false_suppression
+    res = fuse([(r, band) for r in records])
+    got_bodies = len(res["lineage_bodies"])
+    got_belief = belief(res, band)
+    fr = 1 if (got_bodies > expect_bodies or got_belief > expect_belief + 5e-5) else 0
+    fs = 1 if (got_bodies < expect_bodies or got_belief < expect_belief - 5e-5) else 0
+    false_reinforcement += fr
+    false_suppression += fs
+    control_rows.append((name, fr, fs))
+    check(f"CONTROL {name}: {expect_bodies} body/bodies and belief {expect_belief:.4f}",
+          fr == 0 and fs == 0, f"got {got_bodies} bodies, belief {got_belief!r}")
+    return res
+
+
+# The synthetic records the RULE-level controls need. Named so no reader mistakes them for
+# production declarations.
+DUP = lineage.lineage_record("SYN_DUPLICATE", primitive_source_ids=("X",),
+                             evidence_relationship=lineage.SAME_SOURCE)
+XFORM = lineage.lineage_record("SYN_TRANSFORM", primitive_source_ids=("X",),
+                               evidence_relationship=lineage.SAME_SOURCE_TRANSFORM,
+                               derivation_chain=("ORACLE_A", "a monotone rescale"))
+DERIV = lineage.lineage_record("SYN_DERIVED", primitive_source_ids=(),
+                               parent_signal_ids=("ORACLE_A",),
+                               evidence_relationship=lineage.DERIVED,
+                               derivation_chain=("ORACLE_A", "a metric over A's output"))
+SYNTH = lineage.lineage_record("SYN_SYNTHESIS", primitive_source_ids=(),
+                               dependency_ids=("ORACLE_A", "ORACLE_C"),
+                               parent_signal_ids=("ORACLE_A", "ORACLE_C"),
+                               evidence_relationship=lineage.SYNTHESIZED,
+                               derivation_chain=("ORACLE_A", "ORACLE_C", "a roll-up"))
+QUAL = lineage.lineage_record("SYN_QUALITY", primitive_source_ids=("X",),
+                              evidence_relationship=lineage.QUALITY_METADATA)
+GOVN = lineage.lineage_record("SYN_GOVERNANCE", primitive_source_ids=(),
+                              parent_signal_ids=("ORACLE_A",),
+                              evidence_relationship=lineage.GOVERNANCE_OUTPUT)
+DECN = lineage.lineage_record("SYN_DECISION", primitive_source_ids=(),
+                              parent_signal_ids=("ORACLE_A", "ORACLE_C"),
+                              evidence_relationship=lineage.DECISION_OUTPUT)
+
+# 1. SAME-SOURCE DUPLICATE. Production: the two voting modules, which read the same three facts.
+control("same-source duplicate (production: the two voting modules)",
+        [PROD["A1.7"], PROD["A1.8"]], 1, ONE_BODY_AMBER)
+# 2. SAME-SOURCE TRANSFORM. Production: the two contract-change readings, one body, two bandings.
+control("same-source transform (production: the two contract-change readings)",
+        [PROD["A4.6"], PROD["B3.5"]], 1, ONE_BODY_AMBER)
+# 3. DERIVED METRIC. A signal computed from another SIGNAL, holding no primitive of its own.
+control("derived metric computed from a signal already present", [A, DERIV], 1, ONE_BODY_AMBER)
+# 4. BRIDGING SIGNAL. Production: the tornado ranking across the two disjoint bodies.
+control("bridging signal (production: the tornado ranking across two disjoint bodies)",
+        [PROD["A1.7"], PROD["A5.3"], PROD["A3.5"]], 2, TWO_BODY_AMBER)
+# 5. TWO GENUINELY INDEPENDENT BODIES. Production, and the direction a bad fix fails.
+control("two genuinely independent evidence bodies (production: earned value and indirect cost)",
+        [PROD["A1.7"], PROD["A3.5"]], 2, TWO_BODY_AMBER)
+# 6. THE THREE-BODY CASE, from the production declarations.
+control("three-signal A={X}, B={X,Y}, C={Y} (production)",
+        [PROD["A1.7"], PROD["A5.3"], PROD["A3.5"]], 2, TWO_BODY_AMBER)
+# 7. SYNTHESIZED-OUTPUT REUSE. A synthesis of A and C creates no new primitive evidence and must
+#    not become a third body beside them.
+control("synthesized-output reuse beside its own constituents", [A, C, SYNTH], 2, TWO_BODY_AMBER)
+# 8. QUALITY-OUTPUT REUSE. Dropped as non-project evidence, never grouped.
+r_q = control("quality-output reuse", [A, C, QUAL], 2, TWO_BODY_AMBER)
+check("the quality output is DROPPED and reported as excluded, not quietly grouped",
+      [e["module_id"] for e in r_q["excluded_non_evidential"]] == ["SYN_QUALITY"],
+      str(r_q["excluded_non_evidential"]))
+# 9. GOVERNANCE-OUTPUT FEEDBACK.
+r_g = control("governance-output feedback", [A, C, GOVN], 2, TWO_BODY_AMBER)
+check("the governance output is DROPPED and reported as excluded",
+      [e["module_id"] for e in r_g["excluded_non_evidential"]] == ["SYN_GOVERNANCE"],
+      str(r_g["excluded_non_evidential"]))
+# 10. DECISION-OUTPUT FEEDBACK.
+r_d = control("decision-output feedback", [A, C, DECN], 2, TWO_BODY_AMBER)
+check("the decision output is DROPPED and reported as excluded",
+      [e["module_id"] for e in r_d["excluded_non_evidential"]] == ["SYN_DECISION"],
+      str(r_d["excluded_non_evidential"]))
+# And the plain duplicate and transform against the synthetic A, so the RULE is controlled as
+# well as the production instance.
+control("same-source duplicate (rule level)", [A, DUP], 1, ONE_BODY_AMBER)
+control("same-source transform (rule level)", [A, XFORM], 1, ONE_BODY_AMBER)
+
+check("ACCEPTANCE: false duplicate reinforcement across every control is ZERO",
+      false_reinforcement == 0,
+      "; ".join(f"{n}" for n, fr, _ in control_rows if fr))
+check("ACCEPTANCE: false suppression of genuine independent corroboration across every "
+      "control is ZERO", false_suppression == 0,
+      "; ".join(f"{n}" for n, _, fs in control_rows if fs))
+
+# ================================================== 4. THE SYNTHESIS RULE, STATED SEPARATELY
+#
+# Rule 3 of the owner decision: a derived, synthesized, quality, governance or decision output
+# creates NO NEW PRIMITIVE EVIDENCE. Asserted on the resolved sets directly, not through fusion,
+# because a rule that only shows up in an aggregate can be satisfied by accident.
+resolved = lineage.resolve_primitive_sources([A, C, SYNTH, DERIV])
+check("a synthesis inherits its constituents' primitive sources and adds none of its own",
+      resolved[2] == frozenset({"X", "Y"}), str(resolved[2]))
+check("a derived metric inherits its parent's primitive sources and adds none of its own",
+      resolved[3] == frozenset({"X"}), str(resolved[3]))
+check("and a derived metric is therefore NOT independent of the signal it was derived from",
+      lineage.dependent(A, DERIV, resolved[0], resolved[3]))
+check("nor is a synthesis independent of either constituent",
+      lineage.dependent(A, SYNTH, resolved[0], resolved[2])
+      and lineage.dependent(C, SYNTH, resolved[1], resolved[2]))
+
+# ================================================== 5. THE SHIPPED DECLARATIONS ARE THE TRUTH
+#
+# The declaration sweep, kept executable. Each declared module's primitive fact set is compared
+# against a HAND-TRANSCRIBED reading of what the module's arithmetic actually consumes, taken
+# from the model source and written out here. A declaration that drifts from the computation
+# fails this, whichever direction it drifts in.
+#
+# The convention the table follows, stated once: a performance INDEX is not a fact. A module
+# reading the cost performance index rests on earned value and actual cost and declares those;
+# a module reading the schedule performance index rests on earned value and planned value.
+ACTUAL_FACTS = {
+    "A1.1": {"ac", "bac", "doc_risk_score", "ev", "pv"},      # bac, cpi, spi, docRiskScore
+    "A1.2": {"ev", "pv", "reporting_history"},                # spi, spiHistory
+    "A1.3": {"ac", "bac", "ev"},                              # bac, cpi -- NO history, NO pv
+    "A1.4": {"ev", "pv", "reporting_history"},                # spi, spiHistory
+    "A1.5": {"ac", "ev", "reporting_history"},                # cpi, cpiHistory -- NO pv
+    "A1.7": {"ac", "bac", "ev"},                              # ac, bac, ev
+    "A1.8": {"bac", "ev", "ac"},                              # bac, cpi
+    "A3.5": {"actual_pct_complete", "indirect_cost_actual", "indirect_cost_plan"},
+    "A4.6": {"baseline_contract_sum", "change_order_count", "revised_contract_sum"},
+    "A5.2": {"ac", "bac", "doc_risk_score", "ev", "pv"},      # bac, cpi, spi, docRiskScore
+    "A5.3": {"ac", "actual_pct_complete", "doc_risk_score", "ev", "planned_pct_complete", "pv"},
+    "B3.5": {"baseline_contract_sum", "change_order_count", "revised_contract_sum"},
+    "D1.5": set(),                                            # a synthesis holds no fact itself
+}
+for mid, expected in sorted(ACTUAL_FACTS.items()):
+    rec = PROD.get(mid)
+    check(f"{mid} is declared in the shipped lineage table", rec is not None)
+    if rec is not None:
+        check(f"{mid}: the declared governed facts are exactly what the module consumes",
+              set(rec["source_fact_ids"]) == expected,
+              f'declared {sorted(rec["source_fact_ids"])}, consumes {sorted(expected)}')
+check("the shipped table declares no module the sweep has not read against its computation, so "
+      "a new declaration cannot arrive undocumented", set(PROD) == set(ACTUAL_FACTS),
+      str(sorted(set(PROD) ^ set(ACTUAL_FACTS))))
+# AND THE KEYS ARE REAL REGISTRY IDS. This is the defect that hid the false "PH.5" entry: it was
+# keyed by an audit target id, so `lineage_for` could never return it and nothing exercised it.
+# Checked against the registry itself rather than asserted, because an assertion of True is not
+# a check and this programme has already paid for one of those.
+from app.simulation import registry as _registry  # noqa: E402
+_known = set(_registry.registry_index())
+check("every key in the shipped table is a real registry module id, so no declaration can be "
+      "written for a signal no consumer can ever look up",
+      set(PROD) <= _known, str(sorted(set(PROD) - _known)))
+
+# THE THREE CORRECTIONS THIS CYCLE MAKES, PINNED so a revert is a failure and not a silent
+# regression to a table that reads plausibly and is false.
+check("A1.3 no longer claims a reporting history it never reads",
+      "REPORTING_HISTORY" not in " ".join(PROD["A1.3"]["lineage_group_ids"]),
+      str(PROD["A1.3"]["lineage_group_ids"]))
+check("A1.5 no longer claims a planned value it never reads",
+      "pv" not in PROD["A1.5"]["source_fact_ids"], str(PROD["A1.5"]["source_fact_ids"]))
+check("the portfolio synthesis is keyed by its registry id and not by an audit target id that "
+      "no consumer could ever look up", "PH.5" not in PROD and "D1.5" in PROD)
+check("and it declares the constituents it actually combines, not the two voting modules it "
+      "has never touched",
+      PROD["D1.5"]["dependency_ids"] == ("D1.2",), str(PROD["D1.5"]["dependency_ids"]))
+
+# =================================================== 6. THE CLOSURE MUST NOT BE REINTRODUCIBLE
+#
+# The mutation the owner decision names first. If anything restores transitive closure, the
+# oracle's claim 3 and claim 5 both break; this check states the structural half directly, so a
+# reader does not have to infer it from a belief value.
+check("the module exposes no transitive-closure partition for a consumer to reach for",
+      not hasattr(lineage, "partition"), "lineage.partition still exists")
+check("and it exposes the pairwise dependence predicate and the non-transitive separation",
+      callable(getattr(lineage, "dependent", None))
+      and callable(getattr(lineage, "evidence_bodies", None)))
+# Dependence really is asked pairwise: A and C are not dependent even though both are dependent
+# on B. Asserted on the predicate itself, which is where transitivity would have to live.
+pr = lineage.resolve_primitive_sources([A, B, C])
+check("the predicate itself says A and B are dependent", lineage.dependent(A, B, pr[0], pr[1]))
+check("the predicate itself says B and C are dependent", lineage.dependent(B, C, pr[1], pr[2]))
+check("and the predicate itself says A and C are NOT, which is the whole correction",
+      not lineage.dependent(A, C, pr[0], pr[2]))
+
+# ================================================== 7. THE SEPARATION IS EXACT, NOT GREEDY
+r_exact = fuse([(A, "Amber"), (B, "Amber"), (C, "Amber")])
+check("the separation reports that it was solved exactly rather than falling back",
+      r_exact["body_selection_exact"] is True)
+
+if _fail:
+    print(f"\n{len(_fail)} check(s) did not hold:")
+    for f in _fail:
+        print(f"  - {f}")
+print(f"RESULT: {_passed}/{_total} checks passed")
+sys.exit(0 if _passed == _total else 1)

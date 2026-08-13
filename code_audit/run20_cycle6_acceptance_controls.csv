@@ -1,0 +1,13 @@
+control,driven_from,expected_bodies,expected_belief,false_reinforcement,false_suppression
+same-source duplicate,"production A1.7 and A1.8",1,0.7000,0,0
+same-source transform,"production A4.6 and B3.5",1,0.7000,0,0
+derived metric,"rule level: a metric over a signal already present",1,0.7000,0,0
+bridging signal,"production A1.7 A5.3 A3.5",2,0.9273,0,0
+two genuinely independent bodies,"production A1.7 and A3.5",2,0.9273,0,0
+three-body A={X} B={X;Y} C={Y},"production A1.7 A5.3 A3.5",2,0.9273,0,0
+synthesized-output reuse,"rule level beside its own constituents",2,0.9273,0,0
+quality-output reuse,"rule level; dropped as non-project evidence",2,0.9273,0,0
+governance-output feedback,"rule level; dropped as non-project evidence",2,0.9273,0,0
+decision-output feedback,"rule level; dropped as non-project evidence",2,0.9273,0,0
+same-source duplicate (rule level),"synthetic A and its copy",1,0.7000,0,0
+same-source transform (rule level),"synthetic A and a monotone rescale",1,0.7000,0,0
