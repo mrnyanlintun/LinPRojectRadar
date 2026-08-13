@@ -329,6 +329,7 @@ RUN16_SCOPED_FILES = {
 # compute entry point that read it are already inside earlier runs' authorised scope.
 RUN20_SCOPED_FILES = {
     "server/app/simulation/lineage.py",
+    "server/app/simulation/qualification_gate.py",
 }
 
 _unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES
