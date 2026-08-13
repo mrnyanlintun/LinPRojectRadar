@@ -7427,7 +7427,7 @@ above.
 
 ## Run 18 — Instrument completion and 100-module scientific audit (2026-08-13)
 
-**Branch `claude/run18-instrument-completion-and-audit`, from `1c07fed`. Merged at RUN18_MERGE.**
+**Branch `claude/run18-instrument-completion-and-audit`, from `1c07fed`. Merged at `83ce8c2`. Corrected UI baseline `8baaee2`.**
 
 **HISTORY CORRECTION.** Run 16 stands as PARTIAL: its substantive work was correct and Run 18
 re-proved it from the served page, but it could not prove the post-clear-all reloaded state and

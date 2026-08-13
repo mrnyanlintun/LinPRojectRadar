@@ -1,8 +1,8 @@
 Run 18 — Instrument Completion and 100-Module Scientific Audit
 Starting commit: 1c07fed
 Run-17 merge commit: 1c07fed
-Corrected UI baseline commit: SEE SECTION 8
-Ending merge commit: SEE SECTION 8
+Corrected UI baseline commit: 8baaee2
+Ending merge commit: 83ce8c2
 Run-16 handoff corrected: YES
 Run-17 handoff corrected: YES
 FINAL FLOW empty-project truthfulness: PASS
@@ -407,3 +407,17 @@ in the instrument that has a calibration at all rests on synthetic data.
 
 **Run 18 did not meet its own definition of done.** The instrument half is complete; the
 scientific half is not, and section 10 says exactly why rather than rounding the gap away.
+
+
+## 8. Corrected baseline commit
+
+**Corrected UI baseline: `8baaee2`.** It carries the one authorized production change,
+`assets/js/neural_flow.js`, together with the browser driver, the evidence files and the
+re-frozen production hash manifest. From that commit onward no further production change was
+authorized in Run 18, and none was made: `run18_production_hashes.py` re-verifies the frozen
+bytes on merged main and reports no file added, removed or changed, at 11 of 11 checks including
+the voting and activation invariants.
+
+Commit `ccc01bf` carries the handoff entry and the history correction. **Merge commit: `83ce8c2`.**
+The complete suite was re-run on merged main and reports 88 suites and 7207 of 7207 checks, all
+green.
