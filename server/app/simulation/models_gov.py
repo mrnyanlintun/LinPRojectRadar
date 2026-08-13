@@ -37,7 +37,11 @@ from __future__ import annotations
 import math
 from typing import Any, Callable
 
-from .fusion import dst_combine, normalise_status
+from .fusion import BAND_SEVERITY, dst_combine, normalise_status
+from .lineage import (
+    CORRELATED, DOCUMENT_BODY, EARNED_VALUE_BODY, INDEPENDENT, REPORTING_HISTORY_BODY,
+    SAME_SOURCE_TRANSFORM, evidence_bodies, lineage_record,
+)
 from .models import (
     ABSTAIN_DECISION_STRUCTURE_ABSENT, ABSTAIN_MALFORMED_INPUT, check_inputs, insufficient,
 )
@@ -57,11 +61,106 @@ def _jsdiv(a: float, b: float) -> float:
 
 
 # ================================================================ B2.1 Dempster-Shafer
+#
+# RUN 20 CYCLE 7. THE FOUR ARMS ARE TWO BODIES OF EVIDENCE, AND UNTIL NOW THEY WERE COMBINED AS
+# FOUR. Dempster's rule normalises by a conflict coefficient defined only for INDEPENDENT bodies,
+# so combining several readings of one body is not a stronger reading of that body: it is the
+# same evidence counted again. Measured on the shipped module, three adverse readings of the ONE
+# earned-value body drove Red belief from 0.3974 to 0.9646. Nothing was learned in between.
+#
+# WHICH ARMS ARE WHICH, ESTABLISHED FROM WHAT EACH ARM ACTUALLY READS AND WHAT MATERIALLY MOVES
+# IT -- never from module id proximity, category membership, shared field names or schema
+# similarity, all four of which are refused by the owner's rule for this work:
+#
+#   the index arm      reads the cost and schedule indices, which are the earned value over the
+#                      actual cost and over the planned value. EARNED-VALUE MEASUREMENT.
+#   the forecast arm   reads A1.1's eightieth-percentile overrun, which is a Beta-PERT forecast
+#                      off the budget, BOTH indices AND the document risk score, the last of
+#                      which genuinely widens its spread. EARNED-VALUE MEASUREMENT AND DOCUMENT
+#                      EVIDENCE BOTH: this arm is the bridge.
+#   the trend arm      reads A1.2's breach flag over the schedule index history, and that history
+#                      ENDS WITH THIS PERIOD's index, so it shares this period's earned value and
+#                      planned value with the index arm and not merely older ones. EARNED-VALUE
+#                      MEASUREMENT AND REPORTING HISTORY.
+#   the document arm   reads the document risk score. DOCUMENT EVIDENCE.
+#
+# So the index arm and the document arm SHARE NOTHING, and the forecast arm bridges them. This is
+# the A={X}, B={X,Y}, C={Y} case in shipped production code and not in a thought experiment, and
+# it is why the separation must be the pairwise, non-transitive one: a closure would let the
+# forecast arm marry the two bodies and destroy corroboration that is really there.
+#
+# AND THE VACUOUS ARM WAS EVIDENCE, WHICH IS THIS MODULE'S OWN D1 LESSON LEFT HALF-APPLIED. An
+# absent arm used to contribute {0.25 x 4}. That is not ignorance -- ignorance is all mass on the
+# frame -- it is an assertion that the four states are equally likely, and Dempster's rule is not
+# neutral to it: the same evidence gave a different answer according to how many arms happened to
+# be MISSING. The comment below already states the principle for the all-absent case ("the honest
+# representation of no evidence is no combination"). It now holds for the partial case too: an
+# absent arm contributes no body and no mass, and the all-absent refusal is unchanged.
+#
+# NO BAND, BOUNDARY, THRESHOLD OR ARM MASS IS CHANGED BY ANY OF THIS. What changed is which
+# masses are combined against each other.
+
+#: The arms' declared lineage. Each names the PRIMITIVE facts the arm's reading ultimately rests
+#: on, not the immediate argument it is handed: the cost index is not a fact, it is a step.
+ARM_LINEAGE_EVM = lineage_record(
+    "B2.1.evm", source_fact_ids=("ac", "ev", "pv"),
+    lineage_group_ids=(EARNED_VALUE_BODY,),
+    evidence_relationship=SAME_SOURCE_TRANSFORM,
+    derivation_chain=("ev,ac,pv", "cost performance index = ev / ac",
+                      "schedule performance index = ev / pv", "the lesser of the two indices"))
+# THE BUDGET IS DELIBERATELY ABSENT HERE, AND THIS CYCLE'S OWN FIRST DRAFT DECLARED IT. A1.1
+# reads the budget and its absolute forecast figures rest on it, so A1.1's own record names it
+# correctly. THIS ARM READS ONLY THE EIGHTIETH-PERCENTILE OVERRUN AS A PERCENTAGE OF THE BUDGET,
+# and that ratio is scale-invariant in the budget: doubling the budget does not move it by a
+# rounding step. A fact that cannot move an arm's reading is not that arm's evidence, whatever
+# the producing module rests on, and the material-influence probe is what caught the
+# over-declaration rather than any amount of reading the producer's declaration.
+ARM_LINEAGE_MC = lineage_record(
+    "B2.1.mc", source_fact_ids=("ac", "doc_risk_score", "ev", "pv"),
+    lineage_group_ids=(EARNED_VALUE_BODY, DOCUMENT_BODY),
+    evidence_relationship=CORRELATED,
+    derivation_chain=("A1.1", "cost performance index = ev / ac",
+                      "schedule performance index = ev / pv",
+                      "estimate at completion scaled by the two indices",
+                      "stochastic sampling spread by the document risk score",
+                      "eightieth-percentile overrun against the budget"))
+ARM_LINEAGE_CUSUM = lineage_record(
+    "B2.1.cusum", source_fact_ids=("ev", "pv", "reporting_history"),
+    lineage_group_ids=(EARNED_VALUE_BODY, REPORTING_HISTORY_BODY),
+    evidence_relationship=CORRELATED,
+    derivation_chain=("A1.2", "schedule index history ending with this period",
+                      "two-sided cumulative sum of the index deviations",
+                      "whether the decision interval was breached"))
+ARM_LINEAGE_DOC = lineage_record(
+    "B2.1.doc", source_fact_ids=("doc_risk_score",),
+    lineage_group_ids=(DOCUMENT_BODY,),
+    evidence_relationship=INDEPENDENT,
+    derivation_chain=("the document risk score",))
+
+
+def _arm_band(mass: dict) -> str:
+    """The band an arm's mass asserts, which is the state carrying most of it.
+
+    Read off the mass rather than recorded beside it deliberately: an oracle and an
+    implementation that both derive the expected condition from the same expression prove
+    nothing, so the arm's band is not stored at the branch that chose the mass and then compared
+    against itself. Ties keep the more adverse state, matching the module's own reduce below.
+    """
+    best = "Green"
+    for b in ("Amber", "Red"):
+        if mass.get(b, 0.0) >= mass.get(best, 0.0):
+            best = b
+    return best
 
 
 def run_dst(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     ex = si
     sources: list[dict] = []
+    # One lineage record per PRESENT arm, in the module's own evaluation order. The records carry
+    # the primitive facts established above; the framework in lineage.py, which knows nothing
+    # about this module, does the separating.
+    arm_records: list[dict] = []
+    arm_masses: list[dict] = []
 
     # Presence checks are `is not None`, not Python truthiness: a JS empty object {} is truthy,
     # so an empty mc/cusum/doc still takes the signal-present branch there.
@@ -78,48 +177,87 @@ def run_dst(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
             and ex.get("doc") is None:
         return insufficient("DST_Evidence_Combination")
 
+    def arm(record: dict, mass: dict) -> None:
+        arm_records.append(record)
+        arm_masses.append(mass)
+
     if cpi and spi:
         evm_min = min(cpi, spi)
         if evm_min >= 0.95:
-            sources.append({"Green": 0.80, "Amber": 0.10, "Red": 0.05, "Unknown": 0.05})
+            m = {"Green": 0.80, "Amber": 0.10, "Red": 0.05, "Unknown": 0.05}
         elif evm_min >= 0.90:
-            sources.append({"Green": 0.10, "Amber": 0.70, "Red": 0.15, "Unknown": 0.05})
+            m = {"Green": 0.10, "Amber": 0.70, "Red": 0.15, "Unknown": 0.05}
         else:
-            sources.append({"Green": 0.05, "Amber": 0.15, "Red": 0.75, "Unknown": 0.05})
-    else:
-        sources.append({"Green": 0.25, "Amber": 0.25, "Red": 0.25, "Unknown": 0.25})
+            m = {"Green": 0.05, "Amber": 0.15, "Red": 0.75, "Unknown": 0.05}
+        arm(ARM_LINEAGE_EVM, m)
 
     mc = ex.get("mc")
     if mc is not None:
         p80 = mc.get("p80DeltaPct") or 0
         if p80 <= 5:
-            sources.append({"Green": 0.75, "Amber": 0.15, "Red": 0.05, "Unknown": 0.05})
+            m = {"Green": 0.75, "Amber": 0.15, "Red": 0.05, "Unknown": 0.05}
         elif p80 <= 10:
-            sources.append({"Green": 0.10, "Amber": 0.65, "Red": 0.20, "Unknown": 0.05})
+            m = {"Green": 0.10, "Amber": 0.65, "Red": 0.20, "Unknown": 0.05}
         else:
-            sources.append({"Green": 0.05, "Amber": 0.10, "Red": 0.80, "Unknown": 0.05})
-    else:
-        sources.append({"Green": 0.25, "Amber": 0.25, "Red": 0.25, "Unknown": 0.25})
+            m = {"Green": 0.05, "Amber": 0.10, "Red": 0.80, "Unknown": 0.05}
+        arm(ARM_LINEAGE_MC, m)
 
     cusum = ex.get("cusum")
     if cusum is not None:
         if not cusum.get("breached"):
-            sources.append({"Green": 0.75, "Amber": 0.15, "Red": 0.05, "Unknown": 0.05})
+            m = {"Green": 0.75, "Amber": 0.15, "Red": 0.05, "Unknown": 0.05}
         else:
-            sources.append({"Green": 0.05, "Amber": 0.15, "Red": 0.75, "Unknown": 0.05})
-    else:
-        sources.append({"Green": 0.25, "Amber": 0.25, "Red": 0.25, "Unknown": 0.25})
+            m = {"Green": 0.05, "Amber": 0.15, "Red": 0.75, "Unknown": 0.05}
+        arm(ARM_LINEAGE_CUSUM, m)
 
     doc = ex.get("doc")
     # JS: `doc ? doc.score : 0` — a present doc with an undefined score makes both comparisons
     # below false and lands in the Red branch. Absent doc -> 0 -> Green.
+    #
+    # RUN 20 CYCLE 7. The absent-doc branch is kept exactly as it was: an absent document arm
+    # still reads as score 0 and still contributes the Green evidence mass. That is a QUIRK OF
+    # THIS MODULE, validated against the instrument and reproduced deliberately, and it is not
+    # this cycle's defect to correct. It is called out here so no reader mistakes it for the
+    # vacuous-arm treatment above, which is a different thing and was.
     doc_score = (doc.get("score") if doc is not None else 0)
     if doc_score is not None and doc_score < 0.30:
-        sources.append({"Green": 0.75, "Amber": 0.15, "Red": 0.05, "Unknown": 0.05})
+        m = {"Green": 0.75, "Amber": 0.15, "Red": 0.05, "Unknown": 0.05}
     elif doc_score is not None and doc_score < 0.70:
-        sources.append({"Green": 0.10, "Amber": 0.70, "Red": 0.15, "Unknown": 0.05})
+        m = {"Green": 0.10, "Amber": 0.70, "Red": 0.15, "Unknown": 0.05}
     else:
-        sources.append({"Green": 0.05, "Amber": 0.15, "Red": 0.75, "Unknown": 0.05})
+        m = {"Green": 0.05, "Amber": 0.15, "Red": 0.75, "Unknown": 0.05}
+    arm(ARM_LINEAGE_DOC, m)
+
+    # ---- THE SEPARATION, AND THE TWO OPERATORS.
+    #
+    # ACROSS bodies Dempster's rule applies unchanged, because the independence it assumes is now
+    # true by construction. WITHIN a body the question is not whether the readings agree -- one
+    # body cannot agree with itself -- but what that body says when it is read in more than one
+    # way, and the answer taken is the MOST ADVERSE of those readings. That operator is
+    # IDEMPOTENT, which is the property the defect required: a second and a third reading of one
+    # body change nothing at all. It is a governance choice and carries no weight, no correlation
+    # estimate and no tuned parameter, and it is the same operator fusion.fuse_signals already
+    # applies for the same reason.
+    #
+    # Ties within a body keep the EARLIEST arm in the module's own evaluation order. That is
+    # declared, deterministic, and deliberately NOT a choice between readings by which of them
+    # gives the more or less adverse fused answer: choosing by the answer is the
+    # boundary-moved-to-fit-an-example failure this programme refuses.
+    separation = evidence_bodies(arm_records)
+    body_summary = []
+    for group in separation["bodies"]:
+        members = sorted(group)                 # the module's own evaluation order
+        worst = max(BAND_SEVERITY.get(_arm_band(arm_masses[i]), -1) for i in members)
+        pick = next(i for i in members
+                    if BAND_SEVERITY.get(_arm_band(arm_masses[i]), -1) == worst)
+        sources.append(arm_masses[pick])
+        body_summary.append({
+            "representative_module_id": arm_records[pick]["module_id"],
+            "member_module_ids": [arm_records[i]["module_id"] for i in members],
+            "member_bands": [_arm_band(arm_masses[i]) for i in members],
+            "primitive_source_ids": sorted(separation["primitive_sources"][pick]),
+            "disagreement": len({_arm_band(arm_masses[i]) for i in members}) > 1,
+        })
 
     result = dict(sources[0])
     for s in sources[1:]:
@@ -138,8 +276,20 @@ def run_dst(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
     conflict_level = "High" if conflict > 0.3 else ("Moderate" if conflict > 0.1 else "Low")
     status = "Red" if max_state == "Red" else ("Amber" if max_state == "Amber" else "Green")
 
+    # RUN 20 CYCLE 7. WITH ONE BODY THERE IS NOTHING FOR THE CONFLICT COEFFICIENT TO MEASURE, and
+    # a zero is not manufactured into a claim. The number is still reported for every caller that
+    # has always read it; what is added is whether it means anything, which nobody could tell
+    # before.
+    conflict_estimable = len(sources) >= 2
+    if not conflict_estimable:
+        conflict_level = None
+
     return {
         "method_class": "DST_Evidence_Combination",
+        "evidence_bodies": len(sources),
+        "conflict_estimable": conflict_estimable,
+        "lineage_bodies": body_summary,
+        "body_selection_exact": separation["selection_exact"],
         "status_color": status,
         "belief_green": round2(result["Green"]),
         "belief_amber": round2(result["Amber"]),
@@ -153,7 +303,8 @@ def run_dst(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
             f"Belief: Green {int(js_round(result['Green'] * 100))}% · "
             f"Amber {int(js_round(result['Amber'] * 100))}% · "
             f"Red {int(js_round(result['Red'] * 100))}% · "
-            f"Conflict mass {int(js_round(conflict * 100))}%"
+            + (f"Conflict mass {int(js_round(conflict * 100))}%" if conflict_estimable
+               else "Conflict: not estimable from one body of evidence")
         ),
     }
 

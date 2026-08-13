@@ -8126,3 +8126,72 @@ merged main rather than carried over. Observed values, all fourteen:
 14. Nothing differed, so nothing had to be stopped for.
 
 **Cycle 6 is CLOSED. SIX OF TWELVE CYCLES ARE DONE.** Continuation is to B2.1, the last OPEN P0D row.
+
+---
+
+## Run 20 cycle 7: B2.1 evidence combination, the last open P0D row
+
+**The full suite is 106 suites and 9278/9278, all green.** One new suite,
+`server/tools/test_run20_b21_dst_lineage.py`, 69 checks.
+
+**B2.1 IS THE A={X}, B={X,Y}, C={Y} CASE IN SHIPPED PRODUCTION CODE.** Its index arm rests on the
+earned value, the actual cost and the planned value; its document arm on the document risk score.
+They share nothing. Its cost forecast arm touches both, because the document risk score genuinely
+widens the sampling spread. Its trend arm rests on the schedule index history, whose last point is
+this period's own index, so it shares this period's earned value and planned value with the index
+arm and not merely older ones. Four arms, two bodies.
+
+**EVERYTHING ABOVE WAS ESTABLISHED BY EXECUTION AND NOT BY READING A DECLARATION**, by moving one
+fact at a time and observing whether the arm's reading moved. Two things came out of that which
+inspection would not have given. The cost forecast arm does NOT rest on the budget, though the
+module producing its number does: the arm reads a PERCENTAGE of the budget and that ratio is
+scale-invariant in it. This cycle's own first-draft arm record named the budget and the probe
+caught it. A producer's declaration is not a safe substitute for asking what the consumer reads.
+
+**PINNED BEFORE THE FIX.** Adding a second and a third reading of the one earned-value body drove
+Red belief 0.3974 to 0.9526 to 0.9646. After: 0.3974 throughout. The known-answer case moved from
+Red 1.00 with conflict 0.21 to Red 0.93 with conflict 0.31. THE BAND NEVER CHANGED; the certainty
+attached to it was manufactured. No band, boundary, threshold or arm mass changed.
+
+**THE BAYESIAN EAC NEGATIVE CONTROL IS EXECUTED AND IS IN THE SUITE.** Its preflight requires four
+fields and its arithmetic reads two: the earned value and the actual cost move anywhere at all,
+including to values contradicting the index beside them, and the posterior does not move by a
+rounding step, while the index moves it immediately. A SECOND negative control came out of the
+sweep: `monte_carlo_eac` accepts three trend inputs and responds to them, and its only caller
+never supplies them, so a schema reading would call the forecast arm derived from the trend arm.
+It is not.
+
+**A FRAMEWORK DEFECT WAS FOUND AND REMEDIATED INSIDE THE CYCLE, registered as LINEAGE.1.** Cycle 6
+absorbed a non-selected signal into the FIRST body it depended on, by module-id order. With B2.1's
+index arm absent, the bridging forecast arm landed in the DOCUMENT body by name order and made it
+read Red on no document evidence, driving Red belief 0.3974 to 0.9526. False reinforcement through
+the absorption step rather than the separation step. A bridge is now absorbed into the body it
+shares the most primitive evidence with. EVERY CYCLE 6 FIGURE WAS REMEASURED AND NONE MOVED:
+suppression 0.7000, 0.8000, 0.8340; the independent pair 0.9273 with conflict 0.4414; both
+acceptance counters zero; the non-transitive oracle in all six orderings.
+
+**TWELVE MUTATIONS, TWO SURVIVORS ON THE FIRST PASS, CLOSED WITH NAMED CHECKS AND NOT EXPLAINED
+AWAY** (the vacuous mass for an absent arm, and the conflict coefficient reported as estimable
+from one body). Zero survivors on the rerun.
+
+**NEIGHBOUR SWEEP.** B2.1 was the LAST raw combination site in production. No new fossilized suite:
+`test_run6_known_answer.py` caught the change immediately and by name, and its hand-worked
+derivation was kept and its expectation NEGATED rather than the check being deleted. One new P1
+row, ARCH.5: B2.2, B2.3, B2.4, B2.5, B2.6 and B2.8 read the same four arms and aggregate them with
+equal weight per arm. They are not Dempster combinations, so B2.1's precondition does not transfer
+to them unaltered and each needs its own determination; all are non-voting and advisory. One new
+P3 row, B2.1.a, recording the unreachable trend inputs so they cannot be mistaken for evidence.
+
+**REGISTER: 109 rows, 87 OPEN. P0A, P0B, P0C AND P0D ARE ALL ZERO OPEN.** B2.1 was the last one.
+
+**EXACT NEXT REQUIREMENTS. RUN 20 IS INCOMPLETE. SEVEN OF TWELVE CYCLES ARE DONE.**
+NEXT is ARCH.3, per the register's priority ordering, and it may now start because B2.1 is closed
+and committed. ARCH.3 carries its own warning from cycle 6 and now from cycle 7 as well: do NOT
+declare a cluster dependent because required-input FIELD NAMES match. Cycle 7 adds the converse
+warning, which is new: do not declare an arm dependent on a fact its PRODUCER rests on without
+checking whether the arm's own reading moves when that fact moves. Then P1's remainder, P2, P3,
+and the mandatory complete 100-module re-audit last. Do not launch Run 21.
+
+**The two open evidence gaps are unchanged and are not silently closed.** Cycle 3's M13 to M21
+fault-injection rows still exist only in prose, and no anti-fossilization register file exists
+under any name; the neighbour-sweep artifact continues to carry the function.

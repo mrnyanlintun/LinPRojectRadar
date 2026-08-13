@@ -1009,14 +1009,41 @@ print("\n-- B2.1 Dempster-Shafer evidence combination --")
 #   U .05*.05                     = .0025      sum .715, so K = .285
 # Combining that with the third gives K = .2297 and Red = .98752; combining with the fourth gives
 # K = .20747 and Red = .99704. Rounded: Green 0, Amber 0, Red 1.0, conflict 0.21.
+#
+# RUN 20 CYCLE 7. THAT HAND WORKING IS KEPT ABOVE, AND IT IS NOW THE WORKING OF THE DEFECT. The
+# arithmetic in it is right and its premise is wrong: it combines FOUR sources as though they
+# were four independent bodies of evidence, and they are not. The index pair, the forecast
+# overrun and the trend breach are three readings of ONE earned-value measurement, and Dempster's
+# rule normalises by a conflict coefficient defined only between INDEPENDENT bodies. Reading one
+# body three times is not three sources agreeing; it is one source quoted three times, and the
+# 1.00 above is what that manufactures.
+#
+# The corrected working, from the two bodies the evidence actually holds:
+#   earned-value body, most adverse of its three readings: G .05  A .15  R .75  U .05
+#   document body, risk 0.80, not below 0.70            : G .05  A .15  R .75  U .05
+#   G .05*.05 + .05*.05 + .05*.05 = .0075
+#   A .15*.15 + .15*.05 + .05*.15 = .0375
+#   R .75*.75 + .75*.05 + .05*.75 = .6375
+#   U .05*.05                     = .0025      sum .685, so K = .315
+#   Red = .6375 / .685 = .930657. Rounded: Green .01, Amber .05, Red .93, conflict .31.
+#
+# THE CHECK IS NOT DELETED AND ITS EXPECTATION IS NOW THE NEGATION OF WHAT IT ASSERTED, because a
+# deleted check is a check nobody can see was wrong. The band is unchanged at Red: the evidence
+# always did say Red, and what was wrong was the certainty attached to it.
 r = registry.run_module("B2.1", _PKG, NOOP, "2025-06-30")
 ka(band(r), "Red", "dempster-shafer: band")
-ka((r["belief_green"], r["belief_amber"], r["belief_red"]), (0.0, 0.0, 1.0),
-   "dempster-shafer: belief concentrates on Red when four sources agree")
-ka(r["conflict_mass"], 0.21, "dempster-shafer: conflict mass 0.21 after three combinations")
+ka((r["belief_green"], r["belief_amber"], r["belief_red"]), (0.01, 0.05, 0.93),
+   "dempster-shafer: belief on Red when TWO bodies of evidence agree, and NOT the 1.0 that "
+   "counting one body three times used to produce")
+ka(r["conflict_mass"], 0.31, "dempster-shafer: conflict mass 0.31 across the two bodies, and "
+   "not the 0.21 that a fourth combination of already-counted evidence used to give")
 ka(r["evidence_metric"],
-   "Belief: Green 0% · Amber 0% · Red 100% · Conflict mass 21%",
+   "Belief: Green 1% · Amber 5% · Red 93% · Conflict mass 31%",
    "dempster-shafer: finding")
+ka(r["evidence_bodies"], 2, "dempster-shafer: the module reports two bodies of evidence, not "
+   "the four arms it read them through")
+ka(r["conflict_estimable"], True, "dempster-shafer: and that its conflict coefficient is "
+   "estimable, because there are two independent bodies for it to be estimated across")
 
 print("\n-- B2.2 Rough Sets --")
 # HAND: all four signals classify Red, so the Red count is 4 of 4. 4/4 = 1.0 > 0.75, so the lower

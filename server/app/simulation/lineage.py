@@ -365,10 +365,26 @@ def evidence_bodies(records: list[dict]) -> dict[str, Any]:
     for i in range(n):
         if i in selected:
             continue
-        for slot, rep in enumerate(selected):
-            if dep[i][rep]:
-                bodies[slot].append(i)
-                break
+        # RUN 20 CYCLE 7. WHICH BODY ABSORBS A BRIDGE IS AN EVIDENCE QUESTION, AND IT USED TO BE
+        # ANSWERED BY WHICHEVER BODY CAME FIRST ALPHABETICALLY. B2.1 is where that showed. Its
+        # cost forecast arm rests overwhelmingly on the earned-value measurement and touches the
+        # document evidence only through the spread of its sampling. Absorbed by module-id order
+        # into the DOCUMENT body, its adverse earned-value reading became the document body's
+        # band: a document body read Red on no document evidence, and combining that against the
+        # earned-value body raised Red belief from 0.3974 to 0.9526. That is false reinforcement
+        # arriving through the absorption step rather than through the separation step, and the
+        # first-in-order rule could not have got it right except by luck.
+        #
+        # The bridge is now absorbed into the body it SHARES THE MOST PRIMITIVE EVIDENCE WITH,
+        # which is a set comparison over the same identifiers the separation already uses and not
+        # a weight, a threshold or a correlation estimate. Ties fall back to body order, which
+        # stays declared and deterministic. It is deliberately NOT resolved by which assignment
+        # gives the more or less adverse fused answer: choosing by the answer is the
+        # boundary-moved-to-fit-an-example failure this programme refuses.
+        overlaps = [(len(prim[i] & prim[selected[slot]]), -slot)
+                    for slot in range(len(selected)) if dep[i][selected[slot]]]
+        if overlaps:
+            bodies[-max(overlaps)[1]].append(i)
         else:
             # Unreachable while the set is maximal; kept as a loud invariant rather than a
             # silent drop, because a dropped signal is evidence that vanished.
