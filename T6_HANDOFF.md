@@ -7635,3 +7635,5 @@ Files: no production file changed; the specification and metadata, two harnesses
 eight suites, sixteen category evidence files, the rebuilt results table, four audit scripts, the
 `code_audit/run19_*` evidence files,
 `REPORT_2026-08-13_run19-complete-100-module-scientific-audit.md` (new); this entry.
+
+**Run 19 commit record.** Starting commit `d0af5a3`; branch final commit `ee74190`; merge commit `d22e430`; post-merge corrections `d93ea30`, `5d958fd`, `fddc38f` and `bc73360`, each verified on merged main; and this closing entry, which is the final commit of the run. A commit cannot contain its own hash, so the final hash is whatever `git log -1 main` reports at the tip of this run.
