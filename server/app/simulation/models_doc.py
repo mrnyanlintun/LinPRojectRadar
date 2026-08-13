@@ -1164,16 +1164,48 @@ def run_safety_performance(si: dict, rand: Callable[[], float], period_cutoff) -
     #   - a derived count of nought, which is meeting SILENCE: not a measurement, and it abstains;
     #   - no safety field at all: missing evidence, and it abstains, as it already did;
     #   - a negative rate: malformed, and it abstains, as it already did.
-    if is_derived and si.get("oshaIncidentRate") is None \
-            and not si["safetyIncidentsDiscussed"] > 0:
+    #
+    # RUN 20, P0B. The zero case above was closed by Run 10 and the NON-ZERO case was left open,
+    # which is where the remaining defect lived. Two mentions of safety in meeting minutes were
+    # multiplied by ten into an incident rate of 20.0 and the project banded Red on it. That
+    # multiplier has no source anywhere, and specification 8.7 forbids using incidents discussed
+    # in meeting minutes as an OSHA incidence-rate substitute in those exact terms. Disclosing in
+    # the sentence that the figure was estimated did not make the fabricated rate any less of a
+    # rate once it reached the band.
+    #
+    # So the derived count no longer becomes a rate in EITHER direction. Meeting minutes are a
+    # record of what was discussed; the OSHA incidence rate is recordable cases times two hundred
+    # thousand over employee hours worked, and neither term of that identity is present in a set
+    # of minutes. With no uploaded rate the module abstains and says which document would carry
+    # one. An uploaded rate, including a recorded zero, is unaffected and still bands.
+    if is_derived and si.get("oshaIncidentRate") is None:
+        if not si["safetyIncidentsDiscussed"] > 0:
+            return insufficient(
+                "Safety_Performance",
+                "No safety record has been uploaded for this project and the meeting records do "
+                "not mention safety. Silence in a meeting is not a measurement of safety "
+                "performance, and it is not reported here as a record of no incidents.",
+                ABSTAIN_MISSING_INPUT)
         return insufficient(
             "Safety_Performance",
-            "No safety record has been uploaded for this project and the meeting records do not "
-            "mention safety. Silence in a meeting is not a measurement of safety performance, "
-            "and it is not reported here as a record of no incidents.",
+            "Safety was raised in the meeting records but no safety report has been uploaded. "
+            "How often a subject is discussed is not an incident rate, and no rate is estimated "
+            "from it here. Upload a Safety Report to report an incidence rate.",
             ABSTAIN_MISSING_INPUT)
-    rate = (si.get("oshaIncidentRate") if si.get("oshaIncidentRate") is not None
-            else si["safetyIncidentsDiscussed"] * 10)
+    # RUN 20, P0B, ROOT CAUSE. The multiplication by ten is removed outright rather than fenced
+    # off in the derived case only. A count of times safety was mentioned is not a rate whatever
+    # document it was counted in, the multiplier has no source in the specification or anywhere
+    # else, and the OSHA identity needs an exposure denominator this module does not carry. Only
+    # a reported incidence rate produces a rate now.
+    if si.get("oshaIncidentRate") is None:
+        return insufficient(
+            "Safety_Performance",
+            "Safety incidents have been recorded for this project but no incidence rate has "
+            "been reported. A count of incidents is not a rate without the hours worked behind "
+            "it, and none is estimated here. Upload a Safety Report carrying the OSHA incidence "
+            "rate.",
+            ABSTAIN_MISSING_INPUT)
+    rate = si.get("oshaIncidentRate")
     if num(rate, None) is None or rate < 0:
         return insufficient("Safety_Performance",
                             "Insufficient data: the safety incident rate was reported as a "

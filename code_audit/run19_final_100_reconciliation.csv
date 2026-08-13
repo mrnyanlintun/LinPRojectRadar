@@ -26,7 +26,7 @@ module_id,module_name,category,assessed_in,scientific_disposition,operational_ac
 3.3,Labor Productivity Index,3,Run 19,CORRECT_PROXY_ONLY,ADVISORY_ONLY,non-voting
 3.5,Overhead Absorption Rate,3,Run 19,CORRECT_PROXY_ONLY,ADVISORY_ONLY,non-voting
 3.6,Cost Risk Analysis P80,3,Run 19,METHOD_LABEL_MISMATCH,ADVISORY_ONLY,non-voting
-3.7,Analogous Estimating Ratio,3,Run 19,IMPLEMENTATION_DEFECT,ADVISORY_ONLY,non-voting
+3.7,Analogous Estimating Ratio,3,Run 19,CORRECT_PROXY_ONLY,ADVISORY_ONLY,non-voting
 3.8,Parametric Cost Index,3,Run 19,METHOD_LABEL_MISMATCH,DISABLED_UNSAFE,non-voting
 3.9,Inflation Adjustment Index,3,Run 19,MISSING_CANONICAL_DATA_STRUCTURE,ADVISORY_ONLY,non-voting
 4.1,Document Risk Score,4,Run 19,MISSING_CANONICAL_DATA_STRUCTURE,ADVISORY_ONLY,non-voting
@@ -48,7 +48,7 @@ module_id,module_name,category,assessed_in,scientific_disposition,operational_ac
 5.7,Agent-Based Supply Chain,5,Run 19,CORRECT_PROXY_ONLY,ADVISORY_ONLY,non-voting
 5.8,Discrete Event Simulation,5,Run 19,METHOD_LABEL_MISMATCH,ADVISORY_ONLY,non-voting
 8.6,Quality Compliance Index,8,Run 19,CORRECT_PROXY_ONLY,ADVISORY_ONLY,non-voting
-8.7,Safety Performance Index,8,Run 19,IMPLEMENTATION_DEFECT,ADVISORY_ONLY,non-voting
+8.7,Safety Performance Index,8,Run 19,MISSING_CANONICAL_DATA_STRUCTURE,ADVISORY_ONLY,non-voting
 8.8,Environmental Compliance Rate,8,Run 19,REGULATORY_VERSION_BLOCKED,ADVISORY_ONLY,non-voting
 8.9,Contractor Performance Score,8,Run 19,MISSING_CANONICAL_DATA_STRUCTURE,ADVISORY_ONLY,non-voting
 6.1,Conservative Dominance,6,Run 17,IMPLEMENTATION_DEFECT,ADVISORY_ONLY,non-voting
@@ -88,12 +88,12 @@ module_id,module_name,category,assessed_in,scientific_disposition,operational_ac
 10.6,Pareto Frontier Analysis,10,Run 19,METHOD_LABEL_MISMATCH,DISABLED_UNSAFE,non-voting
 10.7,Regret Minimization Index,10,Run 19,CORRECT_ABSTENTION,ADVISORY_ONLY,non-voting
 9.1,Missing Data Index,9,Run 19,CORRECT_PROXY_ONLY,ADVISORY_ONLY,non-voting
-9.2,Data Timeliness Score,9,Run 19,IMPLEMENTATION_DEFECT,ADVISORY_ONLY,non-voting
+9.2,Data Timeliness Score,9,Run 19,MISSING_CANONICAL_DATA_STRUCTURE,ADVISORY_ONLY,non-voting
 9.3,Source Reliability Weighting,9,Run 19,PARAMETER_PROVENANCE_BLOCKED,ADVISORY_ONLY,non-voting
 9.4,Audit Trail Completeness,9,Run 19,MISSING_CANONICAL_DATA_STRUCTURE,ADVISORY_ONLY,non-voting
 9.5,Information Completeness Ratio,9,Run 19,CORRECT_PROXY_ONLY,ADVISORY_ONLY,non-voting
 9.6,Cross-document Consistency Score,9,Run 19,METHOD_LABEL_MISMATCH,ADVISORY_ONLY,non-voting
-9.7,Reporting Frequency Index,9,Run 19,IMPLEMENTATION_DEFECT,ADVISORY_ONLY,non-voting
+9.7,Reporting Frequency Index,9,Run 19,MISSING_CANONICAL_DATA_STRUCTURE,ADVISORY_ONLY,non-voting
 PH.1,Isolation Forest,PH,Run 17,METHOD_PASS_CALIBRATION_PENDING,ADVISORY_ONLY,non-voting
 PH.2,Portfolio Outlier Detection,PH,Run 17,CORRECT_PROXY_ONLY,ADVISORY_ONLY,non-voting
 PH.3,Signal Trajectory Classifier,PH,Run 17,CORRECT_PROXY_ONLY,ADVISORY_ONLY,non-voting

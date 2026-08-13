@@ -217,7 +217,16 @@ check("A6.2 refuses a negative rate",
       abstained(run_safety_performance({"safetyIncidentsDiscussed": 1,
                                         "oshaIncidentRate": -2.0}, None, None)))
 mentioned = run_safety_performance(dict({"safetyIncidentsDiscussed": 2}, **DERIVED_SRC), None, None)
-check("A6.2 still bands a derived count above nought", banded(mentioned))
+# RUN 20, P0B. This check previously asserted that a derived count ABOVE nought still bands, and
+# in doing so it fixed the defect in place as expected behaviour: two mentions of safety in
+# meeting minutes were multiplied by ten into an incident rate of 20.0 and the project banded Red
+# on it. Run 10 closed the zero case and read the non-zero case as the counterpart that should
+# keep computing. Specification 8.7 forbids using incidents discussed in meeting minutes as an
+# OSHA incidence-rate substitute in those terms, so the assertion was wrong rather than the fix,
+# and it is inverted here rather than deleted, so the defect it protected cannot come back
+# unnoticed.
+check("A6.2 does not turn a derived count above nought into an incidence rate either",
+      abstained(mentioned) and "safety_index" not in mentioned)
 check("A6.2 never gives the best index to an absent record",
       run_safety_performance({}, None, None).get("safety_index") is None
       and silence.get("safety_index") is None)

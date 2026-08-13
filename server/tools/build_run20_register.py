@@ -14,6 +14,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 RESULTS = os.path.join(ROOT, "server", "tools", "run17", "scientific_results.csv")
 QUEUE = os.path.join(ROOT, "code_audit", "run19_next_remediation_queue.csv")
+TRANSITIONS = os.path.join(ROOT, "code_audit", "run20_disposition_transitions.csv")
+#: The Run-19 dispositions, frozen from the results table as it stood at commit 772ad8f before
+#: Run 20 changed anything. The register reports where each module STARTED, and the live results
+#: table reports where it stands now, so a fix can never quietly rewrite its own baseline.
+BASELINE = os.path.join(ROOT, "code_audit", "run20_run19_baseline_dispositions.csv")
+CYCLES = os.path.join(ROOT, "code_audit", "run20_defect_class_cycles.csv")
 OUT = os.path.join(ROOT, "code_audit", "run20_master_remediation_register.csv")
 
 COLUMNS = [
@@ -59,9 +65,23 @@ def yn(flag: bool) -> str:
     return "yes" if flag else "no"
 
 
+def load_progress() -> dict[str, dict]:
+    """
+    Run-20 progress, read from the transition log rather than typed into the register. A module
+    is CLOSED_RUN20 only if a transition was actually applied to the results table, so the
+    register cannot claim a fix that did not happen.
+    """
+    if not os.path.exists(TRANSITIONS):
+        return {}
+    return {r["module_id"]: r for r in csv.DictReader(open(TRANSITIONS, encoding="utf-8"))}
+
+
 def main() -> None:
     results = list(csv.DictReader(open(RESULTS, encoding="utf-8")))
     queue = {r["module_id"]: r for r in csv.DictReader(open(QUEUE, encoding="utf-8"))}
+    progress = load_progress()
+    baseline = {r["module_id"]: r["run19_disposition"]
+                for r in csv.DictReader(open(BASELINE, encoding="utf-8"))}
     assert len(results) == 100, f"expected 100 scientific rows, found {len(results)}"
     assert len({r["module_id"] for r in results}) == 100, "module ids are not unique"
 
@@ -69,7 +89,9 @@ def main() -> None:
     for r in results:
         mid = r["module_id"]
         q = queue.get(mid)
-        disp = r["scientific_disposition"]
+        disp = baseline.get(mid, r["scientific_disposition"])
+        now = r["scientific_disposition"]
+        done = progress.get(mid)
         priority = q["priority"] if q else "NONE"
         # Architectural targets ARCH.1/ARCH.2 live only in the queue, never in the 100 rows.
         blocked = BLOCKED_BY.get(disp, "")
@@ -96,10 +118,10 @@ def main() -> None:
             "owner_decision_needed": yn(disp == "OWNER_DECISION_REQUIRED"),
             "remediation_authorized": authorized,
             "priority": priority,
-            "cycle_number": "",
-            "status": "OPEN" if q else "CLOSED_RUN19",
-            "fix_commit": "",
-            "post_fix_disposition": "" if q else disp,
+            "cycle_number": done["cycle"] if done else "",
+            "status": ("CLOSED_RUN20" if done else "OPEN" if q else "CLOSED_RUN19"),
+            "fix_commit": "see code_audit/run20_defect_class_cycles.csv" if done else "",
+            "post_fix_disposition": now if (done or not q) else "",
             "tests": r["test_names"],
             "mutation_proof": "",
             "neighbour_sweep": "",

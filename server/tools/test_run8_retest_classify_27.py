@@ -877,15 +877,25 @@ _sf0_derived = run_safety_performance(
      "sources": {"safetyIncidentsDiscussed": {"docType": "derived"}}}, NO_ARG, "2025-06-30")
 superseded(_sf0_derived, "A6.2", "safety never mentioned in a meeting", "safety_index",
            "incident_rate")
-ka(_sf0["safety_index"], 2,
-   "A6.2: a zero read from a safety record still takes the module's own cap", "A6.2",
+# RUN 20, P0B. The fallback this block called "STILL STANDING" is now gone. The multiplication
+# by ten had no source anywhere and specification 8.7 defines the incidence rate as recordable
+# cases times two hundred thousand over employee hours worked, a denominator this module does
+# not carry, so no count becomes a rate in any case. The three checks that asserted the
+# fabricated rates are rewritten to the corrected contract and the superseded readings are
+# stated here, so the defect they described cannot come back unnoticed.
+superseded(_sf0, "A6.2", "a count of zero with no reported rate", "safety_index",
+           "incident_rate")
+superseded(_sf1, "A6.2", "one incident counted with no reported rate, previously a rate of ten "
+                         "banding Amber", "safety_index", "incident_rate")
+superseded(_sf2, "A6.2", "two incidents counted with no reported rate, previously a rate of "
+                         "twenty banding Red", "safety_index", "incident_rate")
+_sf0_reported = run_safety_performance({"safetyIncidentsDiscussed": 0, "oshaIncidentRate": 0.0},
+                                       NO_ARG, "2025-06-30")
+ka(_sf0_reported["safety_index"], 2,
+   "A6.2: a REPORTED rate of zero still takes the module's own cap", "A6.2",
    "known_answer", "the cap of 2, the disposition Run 7 settled")
-ka(_sf0["status_color"], "Green",
-   "A6.2: and a documented zero over a valid exposure still reads Green", "A6.2", "enumerated")
-ka(_sf1["incident_rate"], 10.0, "A6.2: one mention becomes an incident rate of ten", "A6.2",
-   "domain", "1 mention times the literal 10")
-ka(_sf1["status_color"], "Amber", "A6.2: one mention reads Amber", "A6.2", "domain")
-ka(_sf2["status_color"], "Red", "A6.2: two mentions read Red", "A6.2", "domain")
+ka(_sf0_reported["status_color"], "Green",
+   "A6.2: and a documented zero rate still reads Green", "A6.2", "enumerated")
 #      With a REPORTED rate the module is a transparent ratio and its bands are the benchmark,
 #      twice the benchmark and five times it. Asserted at, below and above every edge.
 ka(run_safety_performance({"safetyIncidentsDiscussed": 0, "oshaIncidentRate": 3.0},

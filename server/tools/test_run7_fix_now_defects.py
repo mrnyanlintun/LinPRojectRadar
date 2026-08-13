@@ -419,16 +419,28 @@ print("\n-- safety performance: the ninth, which is a TRUE ZERO and keeps its ba
 # module's own min(2, ...); at a rate of zero the ratio is unbounded and the module's own answer
 # to an unbounded ratio is its cap. The shipped code substituted the literal 1, which the formula
 # never produces at a zero rate and which reads as performance exactly at benchmark.
+# RUN 20, P0B. The expectation below was built on a multiplication by ten that turned an
+# incident COUNT into an incidence RATE. That multiplier had no source anywhere, and
+# specification 8.7 defines the rate as recordable cases times two hundred thousand over
+# employee hours worked, a denominator this module does not carry. The multiplier is gone,
+# so a count with no reported rate beside it abstains. The checks are rewritten to the
+# corrected contract rather than deleted, and the superseded expectation is stated here so
+# the reason they changed is readable at the point they changed.
 _was = old_doc.run_safety_performance({"safetyIncidentsDiscussed": 0}, NOOP, CUTOFF)
-_now = run_safety_performance({"safetyIncidentsDiscussed": 0}, NOOP, CUTOFF)
+_now = run_safety_performance({"safetyIncidentsDiscussed": 0, "oshaIncidentRate": 0.0},
+                              NOOP, CUTOFF)
 check(_was["safety_index"] == 1, "the shipped code reported a safety index of 1 at a zero rate",
       str(_was["safety_index"]))
 check(_now["safety_index"] == 2,
       "this branch reports the module's own cap of 2, which is what its formula gives at a rate "
       "of zero", str(_now["safety_index"]))
 check(band(_now) == "Green" and band(_was) == "Green",
-      "and the band is unchanged, because a reported zero is a finding rather than a fabrication",
-      f"{band(_now)} vs {band(_was)}")
+      "and the band is unchanged, because a reported zero rate is a finding rather than a "
+      "fabrication", f"{band(_now)} vs {band(_was)}")
+check(run_safety_performance({"safetyIncidentsDiscussed": 0}, NOOP,
+                             CUTOFF).get("status_color") is None,
+      "while the same count with NO reported rate beside it abstains, since a count of incidents "
+      "is not a rate without the hours worked behind it")
 # HAND: an OSHA rate of 6.0 against a benchmark of 3.0 gives an index of 0.5, and 6.0 is above
 # the benchmark and at or below twice it, so Yellow.
 _r6 = run_safety_performance({"safetyIncidentsDiscussed": 2, "oshaIncidentRate": 6.0},
@@ -952,7 +964,8 @@ inject(live_doc, "run_dispute_escalation",
 
 # The fourth is the other direction, and it is the one worth doing by hand: perturb the EXPECTED
 # value of a corrected number and prove the comparison binds rather than passing vacuously.
-_probe = run_safety_performance({"safetyIncidentsDiscussed": 0}, NOOP, CUTOFF)
+_probe = run_safety_performance({"safetyIncidentsDiscussed": 0, "oshaIncidentRate": 0.0},
+                                NOOP, CUTOFF)
 check(_probe["safety_index"] != 1,
       "perturbation: the corrected safety index does not equal the literal it replaced")
 check(_probe["safety_index"] != 3,

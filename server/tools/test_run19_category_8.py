@@ -33,6 +33,7 @@ sys.path.insert(0, str(HERE / "run17" / "oracle"))
 
 from audit_harness import (Audit, RESULT_HEADER, write_results,  # noqa: E402
                            oracle_gate)
+from run20_production_changes import expected_flag       # noqa: E402
 from population import population                                # noqa: E402
 from app.simulation import registry as REG                       # noqa: E402
 
@@ -48,9 +49,8 @@ KNOWN_DEFECTS = {
     "8.4/reporting-evidence": "REGULATORY_VERSION_BLOCKED",
     "8.5/authority-evidence": "CORRECT_PROXY_ONLY",
     "8.6/requirement-conformance": "CORRECT_PROXY_ONLY",
-    "8.7/incidence-rate-identity": "IMPLEMENTATION_DEFECT",
-    "8.7/no-meeting-minute-substitute": "IMPLEMENTATION_DEFECT",
-    "8.7/leading-indicators": "IMPLEMENTATION_DEFECT",
+    "8.7/incidence-rate-identity": "MISSING_CANONICAL_DATA_STRUCTURE",
+    "8.7/leading-indicators": "MISSING_CANONICAL_DATA_STRUCTURE",
     "8.8/permit-identified": "REGULATORY_VERSION_BLOCKED",
     "8.9/official-source": "MISSING_CANONICAL_DATA_STRUCTURE",
 }
@@ -692,7 +692,7 @@ def _row(mid, name, basis, source, sreq, spres, impl, thresh, disp, finding, nxt
         "empirical_validation_status": "NOT_DONE", "regulatory_snapshot": SNAPSHOT,
         "cat9_qualification_status": "RAW_UNQUALIFIED_INPUT",
         "lineage_status": "SEE_FINDING", "scientific_disposition": disp,
-        "production_change_made": "no", "finding_summary": finding, "required_next_action": nxt,
+        "production_change_made": expected_flag(mid), "finding_summary": finding, "required_next_action": nxt,
         "test_names": "; ".join(A.coverage.get(mid, []))[:1800],
         "evidence_paths": ("server/tools/test_run19_category_8.py; "
                            "server/tools/run17/oracle/oracles_cat_8.py; "
@@ -806,24 +806,9 @@ ROWS = lambda: [  # noqa: E731
     _row("8.7", "Safety Performance Index", "F. VERSIONED_REGULATORY_CONFORMANCE_RULE",
          "Specification 17 section 8.7; OSHA incidence-rate formula and leading-indicator "
          "guidance at the committed snapshot",
-         "yes", "no", "no", "UNSUPPORTED", "IMPLEMENTATION_DEFECT",
-         "One good property holds: meeting records that never mention safety abstain, because "
-         "silence in a meeting is not a record of no incidents, and a negative rate is refused. "
-         "But the zero case was closed and the NON-ZERO case was left open, and that is the "
-         "defect. Two mentions of safety in meeting minutes become an incident rate of 20.0 "
-         "through a multiplication by ten that has no source, and the project bands Red on it. "
-         "Specification 8.7 forbids using incidents discussed in meeting minutes as an OSHA "
-         "incidence-rate substitute in exactly these terms. The sentence discloses that the "
-         "figure is estimated, which is honest, but a fabricated rate still reaches the band. "
-         "Separately, employee hours worked is not an input at all, so the incidence-rate "
-         "identity cannot be evaluated: the rate is taken on trust or invented. A reported rate "
-         "of zero with no exposure behind it takes the module's own cap and bands Green, the "
-         "best safety reading available. No leading preventive indicator is representable, so "
-         "the distinction the specification requires cannot be made. The benchmark of 3.0 is "
-         "uncited.",
-         "P0B. Stop deriving an incident rate from meeting mentions in the non-zero case, as "
-         "the zero case already does. Then P2, carry employee hours worked so the identity can "
-         "be computed, and carry leading indicators separately."),
+         "yes", "no", "no", "UNSUPPORTED", "MISSING_CANONICAL_DATA_STRUCTURE",
+         'RUN 20 CYCLE 1. The fabricated rate is gone. Two mentions of safety in meeting minutes became an incident rate of 20.0 through an uncited multiplication by ten and banded the project Red; specification 8.7 forbids using incidents discussed in meeting minutes as an OSHA incidence-rate substitute in those terms. The multiplier was removed at the root rather than fenced off in the derived case, so no incident COUNT from any document becomes a rate: only a reported incidence rate does. What remains is structural and is not a defect in the arithmetic. Employee hours worked is not an input, so the OSHA identity of recordable cases times two hundred thousand over hours worked cannot be evaluated, and no leading preventive indicator is representable, so the lagging and leading distinction OSHA guidance supports cannot be made. The benchmark of 3.0 remains uncited.',
+         'P2. Carry recordable cases and employee hours worked so the incidence-rate identity can be computed, and carry leading preventive indicators separately. P3. Source or retire the benchmark of 3.0.'),
     _row("8.8", "Environmental Compliance Rate", "F. VERSIONED_REGULATORY_CONFORMANCE_RULE",
          "Specification 17 section 8.8; EPA NPDES construction stormwater and the applicable "
          "permit at the committed snapshot",
@@ -870,8 +855,15 @@ def main() -> int:
     A.check("ROWS", "nine Category 8 result rows were written", len(rows) == 9)
     A.check("ROWS", "every row is tied to the dated regulatory snapshot rather than to current law",
             all(r["regulatory_snapshot"] == SNAPSHOT for r in rows))
-    A.check("ROWS", "no production change is recorded on any row",
-            all(r["production_change_made"] == "no" for r in rows))
+    # RUN 20. Run 19 changed no production file and this check refused any row that claimed
+    # otherwise. Run 20 is authorized to change production, so the guard is narrowed rather than
+    # removed: a row may record a change only if its module is in the declared Run-20 manifest,
+    # and a module in that manifest that records no change fails just as loudly. An accidental
+    # production edit is still caught, and so is a fix that was made but never declared.
+    A.check("ROWS", "every row's production-change flag matches the declared Run-20 manifest",
+            all(r["production_change_made"] == expected_flag(r["module_id"]) for r in rows),
+            str({r["module_id"]: r["production_change_made"] for r in rows
+                 if r["production_change_made"] != expected_flag(r["module_id"])}))
     return A.finish()
 
 

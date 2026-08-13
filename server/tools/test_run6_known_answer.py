@@ -1180,15 +1180,26 @@ ka((r["checks_performed"], r["inconsistencies"], r["consistency_score"]), (3, 1,
 ka(band(r), "Amber", "cross-document consistency: band, because 0.6667 is below the 0.67 edge")
 
 # C1.7 Reporting Frequency. HAND: two extraction events twenty days apart give an average interval
-# of twenty days, which is above 14 and at or below 30, so Yellow.
+# of twenty days, which is above 14 and at or below 30.
+#
+# RUN 20, P0B. The band is no longer read from that mean alone. Nothing has been uploaded since
+# 2025-01-21 and the period cutoff is 2025-06-30, so the gap since the last report is 160 days:
+# 10 remaining in January, then 28 + 31 + 30 + 31 + 30 = 150 through to the end of June. The gap
+# is an observed interval too, and it is the one currently running, so the band is the worse of
+# the two readings and 160 days is Red. The expectation was Yellow, which reported this project
+# by the cadence it once kept rather than the cadence it now has, and it is corrected rather
+# than deleted. The mean interval itself is unchanged and still asserted.
 _ev2 = [{"event": "signals_extracted", "at": "2025-01-01"},
         {"event": "signals_extracted", "at": "2025-01-21"}]
 r = registry.run_module("C1.7", {"events": _ev2}, NOOP, "2025-06-30")
 ka((r["avg_interval_days"], r["uploads"]), (20, 2), "reporting frequency: twenty-day interval")
-ka(band(r), "Yellow", "reporting frequency: band")
+ka(r["gap_since_last_report_days"], 160,
+   "reporting frequency: and 160 days have passed since the last one")
+ka(band(r), "Red", "reporting frequency: band, taken from the gap since the last report")
 ka(r["evidence_metric"],
-   "20 day avg interval between document uploads, monthly reporting cycle",
-   "reporting frequency: finding")
+   "20 day avg interval between document uploads, but nothing has been uploaded for 160 days, "
+   "reporting gap, data may be stale",
+   "reporting frequency: finding, which now names the gap as well as the mean")
 
 print("\n-- The governance thresholds (B3.2, B3.3, B3.4) and the regret module (B4.7) --")
 # B3.2 FAR. HAND: forecast 10,000,000/0.85 = 11,764,705.88, an overrun of 17.647 per cent, which
@@ -1756,16 +1767,24 @@ domain(run_discrete_event_sim, {"spi": 0.9, "cpi": 0.9, "plannedPctComplete": 0,
 # the module's own min(2, ...). At a rate of zero the ratio is unbounded and the module's own
 # answer to an unbounded ratio is its cap, which is 2. The shipped code substituted 1, a value
 # the formula never produces at a zero rate and which reads as performance exactly at benchmark.
+# RUN 20, P0B. The expectation below was built on a multiplication by ten that turned an
+# incident COUNT into an incidence RATE. That multiplier had no source anywhere, and
+# specification 8.7 defines the rate as recordable cases times two hundred thousand over
+# employee hours worked, a denominator this module does not carry. The multiplier is gone,
+# so a count with no reported rate beside it abstains. The checks are rewritten to the
+# corrected contract rather than deleted, and the superseded expectation is stated here so
+# the reason they changed is readable at the point they changed.
 domain(run_safety_performance, {"safetyIncidentsDiscussed": 0},
-       "safety performance, a reported zero incidents", False)
-_sp0 = run_safety_performance({"safetyIncidentsDiscussed": 0}, NOOP, "2025-06-30")
+       "safety performance, an incident count with no reported rate", True)
+_sp0 = run_safety_performance({"safetyIncidentsDiscussed": 0, "oshaIncidentRate": 0.0},
+                              NOOP, "2025-06-30")
 ka(_sp0["safety_index"], 2,
-   "safety performance: at a rate of zero the index is the module's own cap of 2, not the "
-   "literal 1 the shipped code substituted")
+   "safety performance: at a REPORTED rate of zero the index is the module's own cap of 2, not "
+   "the literal 1 the shipped code substituted")
 ka(_sp0["incident_rate"], 0.0, "safety performance: and the rate itself is the reported zero")
 ka(band(_sp0), "Green",
-   "safety performance: the band stands on a reported zero, which is a measurement rather than "
-   "an absence")
+   "safety performance: the band stands on a reported zero rate, which is a measurement rather "
+   "than an absence")
 domain(run_safety_performance, {"oshaIncidentRate": -4, "safetyIncidentsDiscussed": 1},
        "safety performance, a negative incident rate", True)
 domain(run_spec_conflict_density, {"docRiskScore": 0.2, "rfiCount": 0},

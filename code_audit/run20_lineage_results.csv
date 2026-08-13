@@ -1,0 +1,3 @@
+cycle,requirement,test,result,detail
+1,"no change to lineage classes",inspection of the three changed production files,NO_CHANGE,"None of the four corrected modules is a combination rule, and none feeds another module as evidence. 3.7, 8.7, 9.2 and 9.7 are all leaf indicators reading project inputs or the event log directly."
+1,"duplicate-transform neutrality",carried forward from Run 19,OPEN,"ARCH.2 remains open. Run 19 recorded one body of evidence combined twice sharpening belief from 0.70 to 0.93. Cycle 1 did not touch the combination rule."
