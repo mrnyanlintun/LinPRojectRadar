@@ -62,6 +62,31 @@ cycles ago all depended on a single production symbol, and none of them would ha
 informatively if that symbol had merely changed MEANING rather than disappearing. Nothing in them
 asserted the property independently of the function that computed it.
 
+## THE FULL-SUITE STATUS IS PARTIAL AND IS REPORTED AS PARTIAL
+
+This is stated plainly rather than rounded up. The full 105-suite run was NOT carried to completion
+in this session, and no green total for it is claimed.
+
+What IS established:
+
+* Every suite that touches the lineage model was run individually and is green after every change
+  in this cycle: `test_run20_primitive_lineage.py` 104/104, `test_run20_lineage_model.py` 128/128,
+  `test_run20_lineage_declaration_truth.py` 170/170,
+  `test_run20_advisory_lineage_disclosure.py` 201/201, `test_run20_voting_lineage.py` 100/100,
+  `test_run20_lineage_reproduction.py` 32/32.
+* The twenty-mutation battery was run to completion with zero survivors after the final code state.
+* A first full run reached 100 of 105 suites with two failures, `test_run13_module_evidence.py` and
+  `test_run14_mismatch_remediation.py`. BOTH are explained and neither is a real red: the run was
+  in flight while `server/app/simulation/lineage.py` was being rewritten, so those two executed
+  against a half-written file. Both pass on their own, 189/189 and 112/112, against the committed
+  code.
+* A clean re-run was started after the last code change and reached 39 of 105 suites before the
+  session ended. No failure appeared in those 39.
+
+WHAT THE NEXT SESSION MUST DO FIRST, BEFORE ANY NEW WORK: run `server/run_all_suites.sh` to
+completion against this commit and record the total. Until that exists, treat the suite total for
+this cycle as UNVERIFIED. Do not carry forward the previous 9089/9089 as though it covered cycle 6.
+
 ## A caution for whoever runs the suites next
 
 Cycle 6 lost a full-suite run by editing `server/app/simulation/lineage.py` while
