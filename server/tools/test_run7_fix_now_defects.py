@@ -905,7 +905,14 @@ RUN10_CORRECTED = {"A1.5", "A1.6", "A1.11", "A2.1", "A2.5", "A2.9", "A2.10", "A2
 # without their defining structure and the one whose consistency score now counts the checks the
 # method is defined over rather than the subset the corpus supported.
 RUN14_CORRECTED = {"A2.11", "A3.2", "A3.3", "A3.5", "A5.4", "A5.8", "B2.19", "C1.6"}
-check(set(_moved) <= (FIX_NOW | RUN10_CORRECTED | RUN14_CORRECTED),
+# RUN 20 CYCLE 2, P0C GOVERNANCE AND REGULATORY OVERCLAIM. Three governance modules stopped
+# presenting uncited internal levels as regulatory thresholds and stopped asserting reporting
+# obligations from cost and schedule ratios. Every band, boundary and arithmetic result is
+# unchanged in all three; what moved is the set of RESULT FIELD NAMES and the sentence shown to
+# the reader, which this comparison is field-exact over and therefore correctly reports as a
+# move. The authorisation joins the three above rather than replacing any of them.
+RUN20_CORRECTED = {"B3.2", "B3.3", "B3.4"}
+check(set(_moved) <= (FIX_NOW | RUN10_CORRECTED | RUN14_CORRECTED | RUN20_CORRECTED),
       "every module whose result moved on a fully reported project is in the fix-now list or "
       "Run 10's corrected list",
       str(sorted(set(_moved) - FIX_NOW)))

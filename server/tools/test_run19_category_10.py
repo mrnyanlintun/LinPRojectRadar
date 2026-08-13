@@ -30,6 +30,7 @@ sys.path.insert(0, str(HERE / "run17" / "oracle"))
 
 from audit_harness import (Audit, RESULT_HEADER, write_results,  # noqa: E402
                            oracle_gate)
+from run20_production_changes import expected_flag       # noqa: E402
 from population import population                                # noqa: E402
 from app.simulation import registry as REG                       # noqa: E402
 
@@ -41,7 +42,6 @@ KNOWN_DEFECTS = {
     "10.1/nondominated-set": "METHOD_LABEL_MISMATCH",
     "10.2/decision-variables": "MISSING_CANONICAL_DATA_STRUCTURE",
     "10.3/general-csp": "CORRECT_PROXY_ONLY",
-    "10.3/no-regulatory-label-on-a-performance-threshold": "CORRECT_PROXY_ONLY",
     "10.4/action-identity": "METHOD_LABEL_MISMATCH",
     "10.5/decision-model-perturbed": "METHOD_LABEL_MISMATCH",
     "10.6/dominance-computed": "METHOD_LABEL_MISMATCH",
@@ -233,19 +233,28 @@ def m_10_3() -> None:
     far_rule = [c for c in run("B4.3", {"cpi": 0.75, "spi": 1.0, "bac": 1000,
                                         "docRiskScore": 0.1}).get("violated_constraints", [])
                 if "FAR" in c]
+    # RUN 20 CYCLE 2. This proposition now HOLDS and is no longer in the register above.
+    #
+    # THE SUPERSEDED READING, recorded because it must not come back: one of the four rules was
+    # presented to the reader as 'FAR threshold (overrun < 25%)' and implemented as a cost index
+    # above 0.80. The arithmetic is self-consistent, since a forecast of budget over an index of
+    # 0.80 is a twenty-five per cent overrun, but no provision of the Federal Acquisition
+    # Regulation states a twenty-five per cent overrun threshold of this kind and none was
+    # cited. The remediation removed the attribution and changed no comparison: the rule is now
+    # named for the forecast overrun it measures.
     A.proposition(
         "10.3", "10.3/no-regulatory-label-on-a-performance-threshold",
         "no rule carries a regulatory authority's name unless that authority actually states "
         "the threshold the rule applies",
-        not far_rule,
-        "one of the four rules is presented to the reader as 'FAR threshold (overrun < 25%)' and "
-        "is implemented as a cost index above 0.80. The arithmetic is self-consistent, since a "
-        "forecast of budget over an index of 0.80 is a twenty-five per cent overrun, but no "
-        "provision of the Federal Acquisition Regulation states a twenty-five per cent overrun "
-        "threshold of this kind, and none is cited. Attaching a regulator's name to a "
-        "performance threshold it did not set is a governance overclaim, and the specification's "
-        "Category 8 rule that a rule check is not a legal determination applies to a label as "
-        "much as to a conclusion")
+        not far_rule)
+    A.check("10.3", "the renamed rule still names the comparison it makes and still fires on the "
+                    "same projects, so a false attribution was removed and no boundary moved",
+            [c for c in run("B4.3", {"cpi": 0.75, "spi": 1.0, "bac": 1000,
+                                     "docRiskScore": 0.1}).get("violated_constraints", [])
+             if "Forecast overrun below 25%" in c]
+            and not [c for c in run("B4.3", {"cpi": 0.81, "spi": 1.0, "bac": 1000,
+                                             "docRiskScore": 0.1}).get("violated_constraints", [])
+                     if "Forecast overrun" in c])
     A.check("10.3", "the four rule thresholds have no cited source and the module does not vote",
             "B4.3" not in REG.CORE_VOTING_MODULES)
 
@@ -439,7 +448,7 @@ def _row(mid, name, basis, source, sreq, spres, impl, thresh, lineage, disp, fin
         "calibration_status": "NOT_CALIBRATED", "threshold_status": thresh,
         "empirical_validation_status": "NOT_DONE", "regulatory_snapshot": "n/a",
         "cat9_qualification_status": "RAW_UNQUALIFIED_INPUT", "lineage_status": lineage,
-        "scientific_disposition": disp, "production_change_made": "no",
+        "scientific_disposition": disp, "production_change_made": expected_flag(mid),
         "finding_summary": finding, "required_next_action": nxt,
         "test_names": "; ".join(A.coverage.get(mid, []))[:1800],
         "evidence_paths": ("server/tools/test_run19_category_10.py; "
@@ -490,18 +499,22 @@ ROWS = lambda: [  # noqa: E731
          "Specification 19 section 10.3; Lorterapong and Ussavadilokrit (2013)",
          "yes", "no", "yes", "HEURISTIC_UNCALIBRATED", "SHARED_EVM_INPUT_VECTOR",
          "CORRECT_PROXY_ONLY",
+         "RUN 20 CYCLE 2 removed the governance overclaim carried inside this module. One rule "
+         "was presented to the reader as 'FAR threshold (overrun < 25%)' and implemented as a "
+         "cost index above 0.80. The arithmetic is self-consistent, since a forecast of budget "
+         "over an index of 0.80 is a twenty-five per cent overrun, but no provision of the "
+         "Federal Acquisition Regulation states such a threshold and none was cited. The rule "
+         "is now named for the forecast-overrun comparison it makes; no comparison changed, so "
+         "the same projects violate the same rules. "
          "The four rules are evaluated exactly, the satisfaction count is monotone as rules "
          "begin to fail, boundary values are handled inclusively as declared, and violated rules "
-         "are reported by name rather than only counted, which is genuinely useful. But there is "
-         "no variable, domain, assignment or search: specification 10.3 says a four-rule "
-         "management checklist is a transparent feasibility rule set and should be classified by "
-         "its actual claim, which is what this is. A separate and more serious point: one rule "
-         "is presented to the reader as a FAR threshold and is implemented as a cost index above "
-         "0.80. The arithmetic is self-consistent but no provision of the Federal Acquisition "
-         "Regulation states such a threshold and none is cited. Attaching a regulator's name to "
-         "a performance threshold it did not set is a governance overclaim.",
-         "P0C on the FAR label: rename the rule for the performance threshold it is, or cite the "
-         "provision. Then P3 on the module name."),
+         "are reported by name rather than only counted, which is genuinely useful. The "
+         "disposition does not move, and that is the honest result: there is still no variable, "
+         "domain, assignment or search, and specification 10.3 says a four-rule management "
+         "checklist is a transparent feasibility rule set that should be classified by its "
+         "actual claim, which is what this is.",
+         "P3. Rename the module to the transparent feasibility rule set it is, or build "
+         "variables, domains and a search. The four rule thresholds remain unsourced."),
     _row("10.4", "What-If Scenario Matrix", "C. LITERATURE_SUPPORTED_ADAPTATION",
          "Specification 19 section 10.4; Collier et al. (2018)",
          "yes", "no", "no", "HEURISTIC_UNCALIBRATED", "SHARED_EVM_INPUT_VECTOR",
@@ -584,8 +597,13 @@ def main() -> int:
     A.check("ROWS", "seven Category 10 result rows were written", len(rows) == 7)
     A.check("ROWS", "the four concept-only modules are recorded as disabled",
             sum(1 for r in rows if r["operational_activation"] == "DISABLED_UNSAFE") == 4)
-    A.check("ROWS", "no production change is recorded on any row",
-            all(r["production_change_made"] == "no" for r in rows))
+    # RUN 20 CYCLE 2. Run 19 changed no production and this asserted so. Cycle 2 changed 10.3,
+    # so the guard is narrowed to the declared manifest rather than removed: exactly the modules
+    # the manifest names may record a change, and the manifest itself is checked against
+    # production bytes by test_run20_declared_production_changes.py.
+    A.check("ROWS", "a production change is recorded on exactly the rows the declared Run-20 "
+                    "manifest names",
+            {r["module_id"] for r in rows if r["production_change_made"] == "yes"} == {"10.3"})
     return A.finish()
 
 

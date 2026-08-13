@@ -13,9 +13,21 @@ code returns a result. Every module here returns a result; that is the starting 
 assessment, not the end of it.
 
 REGULATORY BASIS. Everything is evaluated against the dated snapshot the committed specification
-carries, REGULATORY_SNAPSHOT_2026-08-12. No web retrieval was performed for this run, so nothing
-here is described as current law and no superseding source is asserted. Where a module would
-need an authority the snapshot does not supply, that is recorded as a gap rather than filled.
+carries, REGULATORY_SNAPSHOT_2026-08-12. Nothing here is described as current law and no
+superseding source is asserted. Where a module would need an authority the snapshot does not
+supply, that is recorded as a gap rather than filled.
+
+RUN 20 CYCLE 2 attempted live retrieval of the primary sources for 8.2, 8.3 and 8.4 and could
+not obtain any of them: acquisition.gov, the eCFR, whitehouse.gov and two mirror hosts are all
+refused at the egress proxy in this container. A general web search returned the substance of
+FAR 34.201 and it agrees with the snapshot on every point this category depends on, including
+that the section states no numeric cost-overrun threshold, but a search engine summary is not a
+primary document and none is claimed to have been read. The snapshot is the authority, and it is
+a sufficient one: the four corrections made in cycle 2 all REMOVE unsupported regulatory claims
+and none of them introduces a threshold, so no retrieved provision is needed to justify any of
+them. A module is therefore no longer recorded REGULATORY_VERSION_BLOCKED merely because live
+retrieval failed. That disposition is reserved for a module whose applicable versioned authority
+cannot be established even from the snapshot.
 
 Oracles come from run17/oracle/oracles_cat_8.py, self proved at import.
 """
@@ -42,11 +54,10 @@ RAND = lambda: 0.5  # noqa: E731
 
 KNOWN_DEFECTS = {
     "8.1/agents-exist": "METHOD_LABEL_MISMATCH",
-    "8.2/applicability-evidence": "REGULATORY_VERSION_BLOCKED",
-    "8.2/threshold-is-regulatory": "REGULATORY_VERSION_BLOCKED",
-    "8.3/configured-requirements": "REGULATORY_VERSION_BLOCKED",
-    "8.3/edition-recorded": "REGULATORY_VERSION_BLOCKED",
-    "8.4/reporting-evidence": "REGULATORY_VERSION_BLOCKED",
+    "8.2/applicability-evidence": "MISSING_CANONICAL_DATA_STRUCTURE",
+    "8.3/configured-requirements": "MISSING_CANONICAL_DATA_STRUCTURE",
+    "8.3/edition-recorded": "MISSING_CANONICAL_DATA_STRUCTURE",
+    "8.4/reporting-evidence": "MISSING_CANONICAL_DATA_STRUCTURE",
     "8.5/authority-evidence": "CORRECT_PROXY_ONLY",
     "8.6/requirement-conformance": "CORRECT_PROXY_ONLY",
     "8.7/incidence-rate-identity": "MISSING_CANONICAL_DATA_STRUCTURE",
@@ -220,18 +231,35 @@ def m_8_2() -> None:
         "compares it to a fixed twenty-five per cent. Specification 8.2 states in terms that "
         "applicability cannot be inferred from the budget at completion alone, and this module "
         "does not attempt to determine applicability at all: it assumes it, on every project")
+    # RUN 20 CYCLE 2. This proposition now HOLDS and is no longer in the register above. What
+    # it asked was never "is twenty-five the right number" but "does anything present that
+    # number as a regulation's threshold". Nothing does any more.
+    #
+    # THE SUPERSEDED READING, recorded because it must not come back: the module reported the
+    # field far34_threshold_pct as 25 and the reader was shown
+    #   "FAR Part 34: 17.6% overrun, threshold 25% (REPORTING REQUIRED)".
+    # FAR 34.201 sets earned value management policy and applicability and states no numeric
+    # cost-overrun threshold of any kind. The remediation removed the attribution and the
+    # asserted obligation and left the arithmetic and the band exactly as they were.
     A.proposition(
         "8.2", "8.2/threshold-is-regulatory",
-        "the twenty-five per cent threshold presented to the reader as a FAR Part 34 threshold "
-        "is stated by FAR 34.201 or by another cited provision",
-        "far" not in sentence(out).lower(),
-        f"the module reports the field far34_threshold_pct as 25 and the reader is shown "
-        f"'{sentence(out)}'. FAR 34.201 sets earned value management POLICY and applicability; "
-        f"it states no numeric cost-overrun threshold of any kind, and none is cited anywhere in "
-        f"the module. Attaching a regulation's name and part number to an uncited performance "
-        f"threshold is a governance overclaim, and the boolean field far_reporting_required "
-        f"asserts a reporting obligation that no applicability determination supports. The rule "
-        f"version is not recorded either, so the reading cannot be tied to an edition")
+        "no regulation's name or part number is attached to the twenty-five per cent level, "
+        "which no cited provision states",
+        "far" not in sentence(out).lower()
+        and "far34_threshold_pct" not in out and "far_reporting_required" not in out)
+    A.check("8.2", "the review level is named as an internal one and its provenance is carried "
+                   "on the result, so a reader cannot mistake it for a sourced figure",
+            out.get("review_threshold_pct") == 25
+            and out.get("threshold_provenance") == "UNCITED_INTERNAL_REVIEW_LEVEL")
+    A.check("8.2", "no reporting obligation is asserted: the flag says the internal level was "
+                   "exceeded and the result records that no regulatory determination was made",
+            out.get("regulatory_determination") == "NOT_MADE"
+            and run("B3.2", {**FAR_IN, "cpi": 0.5}).get("exceeds_review_threshold") is True
+            and out.get("exceeds_review_threshold") is False)
+    A.check("8.2", "the level itself is unchanged, so the remediation removed a false "
+                   "attribution and did not move a boundary to suit an example",
+            [run("B3.2", {**FAR_IN, "cpi": c}).get("status_color")
+             for c in (1.0, 0.92, 0.85, 0.70)] == ["Green", "Yellow", "Amber", "Red"])
 
 
 # =============================================================================================
@@ -258,12 +286,46 @@ def m_8_3() -> None:
     base = {"bac": 20000000, "cpi": 0.85, "actualPctComplete": 40}
     out = run("B3.3", base)
     no_prohibited_claim("8.3", out)
-    A.check("8.3", "structure: the module reports whether it considers reporting triggered",
-            "reporting_triggered" in out)
-    A.check("8.3", "invariant: the trigger requires both of its two conditions, so either alone "
-                   "does not fire it",
-            run("B3.3", {**base, "bac": 100000}).get("reporting_triggered") is False
-            and run("B3.3", {**base, "cpi": 1.0}).get("reporting_triggered") is False)
+    # RUN 20 CYCLE 2. THE SUPERSEDED READING, recorded so it cannot come back: whenever the cost
+    # index fell below 0.90 on a budget of ten million or more, the reader was shown
+    #   "OMB A-11: CPI 0.85: MANDATORY REPORTING TRIGGERED",
+    # a legal obligation asserted under a named federal circular on the strength of two uncited
+    # literals, by a check that evaluates none of the circular's requirements. The conclusion is
+    # removed. The two observations remain, renamed for what they are, and the conjunction, the
+    # boundaries and the band are unchanged.
+    A.check("8.3", "structure: the module reports the two conditions it observed, under names "
+                   "that do not assert an obligation",
+            "review_condition_met" in out
+            and "reporting_triggered" not in out and "major_program" not in out)
+    A.check("8.3", "no reporting obligation is asserted anywhere: the result records that no "
+                   "regulatory determination was made and the sentence says the circular's "
+                   "requirements were not evaluated",
+            out.get("regulatory_determination") == "NOT_MADE"
+            and "mandatory" not in sentence(out).lower()
+            and "no requirement of the circular is evaluated" in sentence(out).lower())
+    A.check("8.3", "invariant: the condition requires both of its two parts, so either alone "
+                   "does not meet it",
+            run("B3.3", {**base, "bac": 100000}).get("review_condition_met") is False
+            and run("B3.3", {**base, "cpi": 1.0}).get("review_condition_met") is False)
+    A.check("8.3", "the boundaries are unchanged, so the remediation removed a conclusion and "
+                   "did not move a level to suit an example",
+            run("B3.3", {**base, "bac": 10000000}).get("review_condition_met") is True
+            and run("B3.3", {**base, "bac": 9999999}).get("review_condition_met") is False
+            and [run("B3.3", {**base, "cpi": c}).get("status_color")
+                 for c in (0.95, 0.89, 0.85)] == ["Green", "Amber", "Red"])
+    # NEW FINDING, RUN 20 CYCLE 2 NEIGHBOUR SWEEP. Not a P0C governance overclaim and not
+    # touched by this cycle, recorded here because the sweep found it and it must not be lost.
+    # The band reads: Green if the index is NOT below 0.90, else Yellow if it is at or above
+    # 0.92, else Amber if at or above 0.88, else Red. The Yellow arm requires an index that is
+    # simultaneously below 0.90 and at or above 0.92, so it can never be taken. This module has
+    # a three-valued band presented as a four-valued one. It is registered as an unrecorded
+    # defect rather than asserted as expected behaviour: the check below states the DEAD arm as
+    # a fact about the current code and the register carries it forward.
+    A.check("8.3", "sweep finding carried forward: the Yellow arm is unreachable, because it "
+                   "requires a cost index both below 0.90 and at or above 0.92, so the module "
+                   "bands on three values under a four-value scheme",
+            "Yellow" not in {run("B3.3", {**base, "cpi": c / 100}).get("status_color")
+                             for c in range(50, 131)})
     A.check("8.3", "boundary: a cost index of exactly zero is refused rather than producing an "
                    "infinite forecast", abstained(run("B3.3", {**base, "cpi": 0})))
     A.check("8.3", "missingness: the budget, cost index and progress are required",
@@ -319,12 +381,32 @@ def m_8_4() -> None:
     base = {"bac": 1000, "cpi": 0.85, "spi": 0.85}
     out = run("B3.4", base)
     no_prohibited_claim("8.4", out)
-    A.check("8.4", "structure: the two breach flags are reported separately as well as together",
-            all(k in out for k in ("cpi_breached", "spi_breached", "both_breached")))
-    A.check("8.4", "invariant: the combined flag is the conjunction of the two",
-            all(run("B3.4", {**base, "cpi": c, "spi": s}).get("both_breached")
+    # RUN 20 CYCLE 2. THE SUPERSEDED READING, recorded so it cannot come back: the reader was
+    # shown "EVM threshold: CPI BREACHED, SPI ok, EAC +17.6%" under a module registered as a
+    # reporting threshold. Run 19 verified the consequence: a contractor submitting every
+    # required monthly report on time on a struggling project was reported as having breached a
+    # reporting threshold, and one submitting nothing at all on a healthy project as within it.
+    # The three flags now name the performance comparison they actually make, and the result
+    # states on its face that reporting compliance is not assessed here.
+    A.check("8.4", "structure: the two flags are reported separately as well as together, under "
+                   "names that describe a performance comparison and not a reporting breach",
+            all(k in out for k in ("cpi_below_review_level", "spi_below_review_level",
+                                   "both_below_review_level"))
+            and not any(k in out for k in ("cpi_breached", "spi_breached", "both_breached")))
+    A.check("8.4", "no reporting compliance is claimed: the result says it was not assessed and "
+                   "the sentence uses no breach language",
+            out.get("reporting_compliance_assessed") is False
+            and "breach" not in sentence(out).lower()
+            and "not" in sentence(out).lower() and "assessed here" in sentence(out).lower())
+    A.check("8.4", "invariant: the combined flag is the conjunction of the two, unchanged",
+            all(run("B3.4", {**base, "cpi": c, "spi": s}).get("both_below_review_level")
                 == (c < 0.90 and s < 0.90)
                 for c in (0.85, 0.95) for s in (0.85, 0.95)))
+    A.check("8.4", "the bands are unchanged, so the remediation renamed a reading and did not "
+                   "move a level to suit an example",
+            [run("B3.4", {**base, "cpi": c, "spi": s}).get("status_color")
+             for c, s in ((0.95, 0.95), (0.85, 0.95), (0.89, 0.89), (0.50, 0.50))]
+            == ["Green", "Yellow", "Amber", "Red"])
     A.check("8.4", "boundary: a cost index or budget of exactly zero is refused",
             abstained(run("B3.4", {**base, "cpi": 0}))
             and abstained(run("B3.4", {**base, "bac": 0})))
@@ -720,7 +802,23 @@ ROWS = lambda: [  # noqa: E731
          "logic needs no change. Consider whether the fairness gate should be built or removed."),
     _row("8.2", "FAR Threshold Monitor", "F. VERSIONED_REGULATORY_CONFORMANCE_RULE",
          "Specification 17 section 8.2; FAR 34.201 and FAR 52.234-4 at the committed snapshot",
-         "yes", "no", "no", "UNSUPPORTED", "REGULATORY_VERSION_BLOCKED",
+         "yes", "no", "yes", "UNCITED_INTERNAL_REVIEW_LEVEL", "MISSING_CANONICAL_DATA_STRUCTURE",
+         "RUN 20 CYCLE 2 closed the governance overclaim. The reader was shown 'FAR Part 34: "
+         "17.6% overrun, threshold 25% (REPORTING REQUIRED)'. FAR 34.201 establishes earned "
+         "value management policy and applicability and states no numeric cost-overrun "
+         "threshold of any kind, so a regulation's name and part number had been attached to an "
+         "uncited internal level, and a reporting obligation had been asserted from a cost "
+         "ratio by a module that determines no applicability. Both are gone. The level is now "
+         "named an internal review level, its provenance is carried on the result, and the "
+         "result records that no regulatory determination was made. The number itself was NOT "
+         "moved and no substitute regulatory threshold was introduced, because none exists to "
+         "introduce. The disposition is no longer REGULATORY_VERSION_BLOCKED: the applicable "
+         "authority IS established from the committed snapshot, and what that authority "
+         "establishes is that this module's threshold is not a regulatory one. What remains is "
+         "structural. The module still does not determine whether earned value management "
+         "applies, and none of the deciding evidence, the acquisition designation, the agency, "
+         "the agency procedure, the contract clauses, the award date or the rule version, is an "
+         "input, so none of the four applicability states can be reported. "
          "The domain guards are sound: a negative cost index no longer produces a negative "
          "forecast, a negative overrun, the calmest band and a printed headroom the project does "
          "not have, and a non-positive budget is refused. The overrun arithmetic is exact and "
@@ -734,12 +832,25 @@ ROWS = lambda: [  # noqa: E731
          "asserting that reporting is required rests on no applicability determination. The "
          "independent oracle reaches all four applicability states from the deciding evidence, "
          "showing what the check requires.",
-         "P0C. Remove or cite the FAR label on the twenty-five per cent threshold and stop "
-         "asserting a reporting obligation. Then P2, carry the applicability evidence and report "
-         "the four states."),
+         "P2. Carry the applicability evidence, the acquisition designation, the agency, the "
+         "agency procedure, the contract clauses, the award date and the rule version, and "
+         "report the four applicability states. P3. Rename the module, which is registered "
+         "under a regulation whose threshold it does not apply."),
     _row("8.3", "OMB A-11 Check", "F. VERSIONED_REGULATORY_CONFORMANCE_RULE",
          "Specification 17 section 8.3; OMB Circular A-11 edition 2025-08-29 at the committed "
-         "snapshot", "yes", "no", "no", "UNSUPPORTED", "REGULATORY_VERSION_BLOCKED",
+         "snapshot", "yes", "no", "yes", "UNCITED_INTERNAL_REVIEW_LEVEL",
+         "MISSING_CANONICAL_DATA_STRUCTURE",
+         "RUN 20 CYCLE 2 removed the asserted obligation. Whenever the cost index fell below "
+         "0.90 on a budget of ten million or more the reader was told MANDATORY REPORTING "
+         "TRIGGERED, a legal obligation asserted under a named federal circular on the strength "
+         "of two uncited literals, by a check that evaluates none of the circular's "
+         "requirements. The conclusion is gone; the two observations remain, renamed for what "
+         "they are, and the conjunction, the boundaries and the band are unchanged. The result "
+         "records that no regulatory determination was made and the sentence states that no "
+         "requirement of the circular was evaluated. What remains is structural, and it is why "
+         "this is no longer REGULATORY_VERSION_BLOCKED: the applicable authority is established "
+         "from the committed snapshot, and the module cannot represent what that authority "
+         "requires. "
          "A cost index of exactly zero is refused rather than producing an infinite forecast, "
          "and the two trigger conditions are correctly conjunctive. That is the whole of what "
          "holds. The entire check is whether the cost index is below 0.90 and the budget is at "
@@ -752,11 +863,23 @@ ROWS = lambda: [  # noqa: E731
          "legal obligation the module has no basis to assert. The oracle demonstrates the four "
          "rule results including that absent evidence is Insufficient Evidence and never "
          "Satisfied.",
-         "P0C. Stop asserting mandatory reporting. Then P2, represent configured requirements "
-         "with sections, applicability, required evidence and the circular edition."),
+         "P2. Represent each configured requirement with a rule identifier, its section or "
+         "appendix, its applicability, the evidence it requires, its result and its reviewer, "
+         "and record the circular edition dated 2025-08-29 on the result. P3. Rename the "
+         "module, which is registered as a check against a circular it does not evaluate."),
     _row("8.4", "EVM Reporting Threshold", "F. VERSIONED_REGULATORY_CONFORMANCE_RULE",
          "Specification 17 section 8.4; FAR 34.201(c) and FAR 52.234-4 at the committed snapshot",
-         "yes", "no", "no", "UNSUPPORTED", "REGULATORY_VERSION_BLOCKED",
+         "yes", "no", "yes", "UNCITED_INTERNAL_REVIEW_LEVEL",
+         "MISSING_CANONICAL_DATA_STRUCTURE",
+         "RUN 20 CYCLE 2 stopped the performance reading presenting itself as a reporting "
+         "breach. The three flags now name the comparison they make, a performance index below "
+         "an internal review level of 0.90, the sentence uses no breach language, and the "
+         "result states on its face that reporting compliance is not assessed here. The "
+         "arithmetic, the guards, the conjunction and the bands are untouched. The disposition "
+         "is no longer REGULATORY_VERSION_BLOCKED because the authority IS established from the "
+         "committed snapshot: FAR 34.201(c) requires as a minimum monthly reports on contracts "
+         "to which earned value management applies, and what the module cannot do is represent "
+         "any of it. "
          "The two breach flags are reported separately as well as together, the combined flag is "
          "correctly the conjunction, and zero denominators are refused. But not one element of "
          "reporting compliance is represented: no applicability, no contract clause, no required "
@@ -768,8 +891,10 @@ ROWS = lambda: [  # noqa: E731
          "a reporting threshold, and one submitting nothing at all on a healthy project is "
          "reported as within it. The 0.90 boundaries are uncited performance thresholds "
          "presented under a reporting-compliance name.",
-         "P0C. The module measures performance and is named for reporting compliance; one or the "
-         "other must change. Then P2, carry cadence, due date and received date."),
+         "P2. Carry applicability, the contract clause, the required reporting cadence or data "
+         "item, the due date and the received date, so the four reporting-compliance results "
+         "the oracle already demonstrates can be reached. P3. Rename the module, which measures "
+         "performance under a reporting-compliance name."),
     _row("8.5", "Contract Modification Frequency", "D. PCEIF_CUSTOM_TRANSPARENT_INDICATOR",
          "Specification 17 section 8.5; FAR Part 43 and FAR 43.102 at the committed snapshot",
          "yes", "no", "yes", "HEURISTIC_UNCALIBRATED", "CORRECT_PROXY_ONLY",

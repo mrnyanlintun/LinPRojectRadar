@@ -1207,29 +1207,57 @@ print("\n-- The governance thresholds (B3.2, B3.3, B3.4) and the regret module (
 # 25 - 17.647 = 7.353, rounding to 7.4.
 r = registry.run_module("B3.2", {"bac": 10000000, "cpi": 0.85, "ev": 4000000, "ac": 4700000},
                         NOOP, "2025-06-30")
-ka((r["overrun_pct"], r["distance_to_threshold"], r["far_reporting_required"]),
-   (17.6, 7.4, False), "far threshold: overrun, headroom and the reporting flag")
-ka(band(r), "Amber", "far threshold: band")
+# RUN 20 CYCLE 2 CORRECTED THIS BLOCK, WHICH HAD FOSSILIZED THREE GOVERNANCE OVERCLAIMS AS ITS
+# EXPECTED ANSWERS AND CRASHED WITH A KeyError RATHER THAN FAILING WHEN THEY WERE REMOVED.
+#
+# The hand arithmetic below is unchanged and still correct, because cycle 2 moved no boundary
+# and changed no calculation. What it asserted alongside the arithmetic was the defect: the
+# field far_reporting_required, which asserted a reporting obligation from a cost ratio; the
+# field reporting_triggered under a name taken from OMB Circular A-11; and three fields named
+# for a reporting BREACH that measure cost and schedule performance. Each is now asserted under
+# the name it carries after the remediation, with the superseded reading stated beside it.
+ka((r["overrun_pct"], r["distance_to_threshold"], r["exceeds_review_threshold"]),
+   (17.6, 7.4, False),
+   "far threshold: overrun, headroom and the internal review level flag, which was "
+   "far_reporting_required and asserted a reporting obligation")
+ka(band(r), "Amber", "far threshold: band, unchanged by the remediation")
+ka((r["review_threshold_pct"], r["threshold_provenance"], r["regulatory_determination"]),
+   (25, "UNCITED_INTERNAL_REVIEW_LEVEL", "NOT_MADE"),
+   "far threshold: the level is named an internal one, its provenance is carried, and no "
+   "regulatory determination is claimed")
+ka("far" in r["evidence_metric"].lower(), False,
+   "far threshold: the sentence no longer attaches a regulation's name and part number to the "
+   "twenty-five, which FAR 34.201 does not state")
 
 # B3.3 OMB A-11. HAND: an index of 0.85 is below 0.90 and the budget is at or above ten million,
-# so reporting is triggered; 0.85 is below 0.88, so Red.
+# so the internal review condition is met; 0.85 is below 0.88, so Red.
 r = registry.run_module("B3.3", {"bac": 10000000, "cpi": 0.85, "actualPctComplete": 40},
                         NOOP, "2025-06-30")
-ka((r["cpi_below_90"], r["major_program"], r["reporting_triggered"]), (True, True, True),
-   "omb a-11: both conditions and the trigger")
-ka(band(r), "Red", "omb a-11: band")
-# The boundary the module names: a budget one unit below ten million is not a major programme.
+ka((r["cpi_below_90"], r["large_budget"], r["review_condition_met"]), (True, True, True),
+   "omb a-11: both conditions and the internal review condition, which was reporting_triggered "
+   "and told the reader MANDATORY REPORTING TRIGGERED")
+ka(band(r), "Red", "omb a-11: band, unchanged by the remediation")
+ka(("mandatory" in r["evidence_metric"].lower(), r["regulatory_determination"]),
+   (False, "NOT_MADE"),
+   "omb a-11: no obligation is asserted and no determination under the circular is claimed")
+# The boundary the module names: a budget one unit below ten million is not a large budget.
 r = registry.run_module("B3.3", {"bac": 9999999, "cpi": 0.85, "actualPctComplete": 40},
                         NOOP, "2025-06-30")
-ka(r["reporting_triggered"], False,
-   "omb a-11: the ten-million boundary is inclusive, so one unit below does not trigger")
+ka(r["review_condition_met"], False,
+   "omb a-11: the ten-million boundary is inclusive, so one unit below does not meet it")
 
-# B3.4 EVM Reporting Threshold. HAND: cost 0.85 is below 0.90 and schedule 0.95 is not, so exactly
-# one is breached, which is the Yellow arm whatever the forecast delta.
+# B3.4 EVM Reporting Threshold. HAND: cost 0.85 is below the internal review level of 0.90 and
+# schedule 0.95 is not, so exactly one is below, which is the Yellow arm whatever the delta.
 r = registry.run_module("B3.4", {"bac": 10000000, "cpi": 0.85, "spi": 0.95}, NOOP, "2025-06-30")
-ka((r["cpi_breached"], r["spi_breached"], r["both_breached"]), (True, False, False),
-   "evm reporting threshold: one of the two indices breached")
-ka(band(r), "Yellow", "evm reporting threshold: band")
+ka((r["cpi_below_review_level"], r["spi_below_review_level"], r["both_below_review_level"]),
+   (True, False, False),
+   "evm reporting threshold: one of the two indices is below the internal review level, where "
+   "the three fields were named for a reporting BREACH")
+ka(band(r), "Yellow", "evm reporting threshold: band, unchanged by the remediation")
+ka((r["reporting_compliance_assessed"], "breach" in r["evidence_metric"].lower()),
+   (False, False),
+   "evm reporting threshold: the result states that reporting compliance is not assessed here "
+   "and the sentence uses no breach language")
 
 # B4.7 Regret Minimization. RUN 6 FOUND THAT GREEN WAS UNREACHABLE; RUN 7 REMOVED THE MODULE'S
 # OUTPUT ENTIRELY, AND THIS BLOCK NOW ASSERTS THE SECOND FACT OVER THE SAME EXHAUSTED DOMAIN.
