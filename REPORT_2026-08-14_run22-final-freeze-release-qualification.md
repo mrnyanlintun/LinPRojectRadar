@@ -34,7 +34,7 @@ Final suites: 121
 Final checks: 10411/10411
 
 Freeze identifier: OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN22
-Freeze manifest SHA-256: FREEZE_SHA_PLACEHOLDER
+Freeze manifest SHA-256: c102f701eac837a026dddb57b9373f5dc07acf72578d91623bdc8b42f708c5ce
 
 FINAL RELEASE STATUS:
 
@@ -414,7 +414,7 @@ per-file digests) and `code_audit/run22_production_inventory.csv`.
 | authority tree manifest | `91f1856cbd3750947c16ebd81d69fee46e71d1eb7912d359c6996f850fae64e7` |
 | supervisory specification | `328b50133f1d2a8d710d3cca787c24c22e2cdad0b09fe92ae2c7b7a55b8d299e` |
 | final scientific results (Run-20 re-audit) | `9d5757c703cbca35eca2902fa7015b14e07fe4480100ab97543bdda760e8ebad` |
-| freeze manifest (stage 1) | `FREEZE_SHA_PLACEHOLDER` |
+| freeze manifest (stage 1) | `c102f701eac837a026dddb57b9373f5dc07acf72578d91623bdc8b42f708c5ce` |
 
 **The self-reference is handled honestly rather than by an impossible guarantee.** A file cannot
 contain its own digest, and a manifest cannot contain the hash of the commit that introduces it.
