@@ -123,14 +123,33 @@ check(sem.get("project_conflict_state") == "NOT_ESTIMABLE_SINGLE_LINEAGE",
 check(sem.get("project_conflict") is None, "and no conflict coefficient is published")
 
 # The generated defensibility evidence must still be byte-identical to what the registry says.
+#
+# RUN 22 FIXED A REAL SIDE EFFECT HERE, FOUND BY THE NEW FREEZE GUARD. This check used to invoke
+# the generator in its DEFAULT mode, which WRITES assets/js/ds_defensibility_evidence.js -- a
+# served production file -- and then compared the file to what it had been before. When the two
+# agree, as they do on a healthy tree, the write is invisible and the check looks harmless. When
+# they DISAGREE the suite reports the disagreement correctly and then LEAVES PRODUCTION
+# OVERWRITTEN, because nothing restores it.
+#
+# Run 22's guard-mutation campaign hit exactly that. A deliberate mutation of the registry was
+# reverted, but this suite had already rewritten the generated asset from the mutated registry,
+# so the mutation survived in a file the campaign never touched. The new production-tree guard
+# caught it -- which is the most convincing non-vacuity evidence in this run, because it caught a
+# real unintended mutation rather than a staged one.
+#
+# The generator has always supported --stdout, and test_run11_defensibility_claims.py already
+# uses it that way. The check is IDENTICAL in meaning -- regenerating from the registry must
+# reproduce the committed file byte for byte -- and now has no side effect on the production tree.
+# A test suite must not be able to modify the thing the freeze is protecting.
 EVIDENCE_JS = "assets/js/ds_defensibility_evidence.js"
-before = (ROOT / EVIDENCE_JS).read_text(encoding="utf-8")
-gen = subprocess.run([sys.executable, "tools/build_run11_defensibility_evidence.py"],
+committed = (ROOT / EVIDENCE_JS).read_text(encoding="utf-8")
+gen = subprocess.run([sys.executable, "tools/build_run11_defensibility_evidence.py", "--stdout"],
                      cwd=str(ROOT), capture_output=True, text=True)
-after = (ROOT / EVIDENCE_JS).read_text(encoding="utf-8")
 check(gen.returncode == 0, "the defensibility evidence generator runs", gen.stderr[-160:])
-check(after == before,
+check(gen.stdout == committed,
       "and regenerating it from the registry reproduces the committed file byte for byte")
+check((ROOT / EVIDENCE_JS).read_text(encoding="utf-8") == committed,
+      "and this check did not itself rewrite the production file it is checking")
 
 # Nothing anywhere may claim a module has been validated.
 banned = re.compile(r"has been validated|is validated|fully validated|empirically calibrated",

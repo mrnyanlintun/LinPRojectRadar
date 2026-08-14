@@ -32,6 +32,7 @@ only the algorithm. Nothing is left mutated: section 6 re-runs the clean compari
 from __future__ import annotations
 
 import hashlib
+import json
 import pathlib
 import shutil
 import sys
@@ -206,6 +207,60 @@ with tempfile.TemporaryDirectory(prefix="run22-tree-") as _td:
         _raised = True
     check("MISSING ROOT: a production root that has vanished raises rather than being skipped",
           _raised)
+
+# ------------------------------- 4b. THE SCIENTIFIC AUTHORITY, PINNED EXECUTABLY AT LAST
+
+# THE GAP RUN 22 FOUND. The supervisory specification's SHA-256 appears in four reports, in
+# T6_HANDOFF.md and in its own metadata file, and NOTHING EXECUTABLE CHECKED ANY OF THEM. A hash
+# that lives only in prose cannot fail. It is checked three ways here: against the literal below,
+# against the metadata file's own claim, and through the walked authority manifest.
+_SPEC = "research/methodology/PCEIF_100_MODULE_SUPERVISORY_METHOD_SPECIFICATION_v1.md"
+_SPEC_SHA = "328b50133f1d2a8d710d3cca787c24c22e2cdad0b09fe92ae2c7b7a55b8d299e"
+check("the controlling supervisory specification is present", (ROOT / _SPEC).is_file())
+check("its SHA-256 is the one Run 19 committed and every report since has quoted",
+      hashlib.sha256((ROOT / _SPEC).read_bytes()).hexdigest() == _SPEC_SHA,
+      hashlib.sha256((ROOT / _SPEC).read_bytes()).hexdigest())
+
+_meta = json.loads((ROOT / _SPEC.replace(".md", ".metadata.json")).read_text(encoding="utf-8"))
+check("the specification's own metadata record claims that same digest, so the two independent "
+      "records agree", _meta["committed_file_sha256"] == _SPEC_SHA,
+      _meta["committed_file_sha256"])
+check("and the metadata still records the specification as CONTROLLING, which is what makes the "
+      "implementation the object under test rather than a source of theory",
+      _meta["controlling_status"].startswith("CONTROLLING"))
+check("the .gitattributes rule that stops a checkout filter rewriting the specification's line "
+      "endings is still present -- without it the bytes can change without the document being "
+      "edited",
+      f"{_SPEC} -text" in (ROOT / ".gitattributes").read_text(encoding="utf-8"))
+
+_auth_clean = pt.compare(None, None, pt.AUTHORITY_ROOTS, pt.PINNED_AUTHORITY)
+check("the walked authority tree matches its pinned manifest",
+      not (_auth_clean["added"] or _auth_clean["removed"] or _auth_clean["changed"]),
+      str(_auth_clean))
+
+# NON-VACUITY for the authority guard, in a sandbox, exactly as for production above.
+with tempfile.TemporaryDirectory(prefix="run22-auth-") as _td:
+    _sb = pathlib.Path(_td) / "repo"
+    _sb.mkdir()
+    for _r, _rec, _why in pt.AUTHORITY_ROOTS:
+        _src, _dst = ROOT / _r, _sb / _r
+        _dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(_src, _dst) if _src.is_dir() else shutil.copy2(_src, _dst)
+    _apin = pt.manifest_text(_sb, pt.AUTHORITY_ROOTS)
+    check("the copied authority tree reproduces its manifest",
+          not any(pt.compare(_sb, _apin, pt.AUTHORITY_ROOTS)[k]
+                  for k in ("added", "removed", "changed")))
+    _spec_copy = _sb / _SPEC
+    _orig_spec = _spec_copy.read_bytes()
+    _spec_copy.write_bytes(_orig_spec + b"\nappended by the Run-22 non-vacuity campaign\n")
+    _d = pt.compare(_sb, _apin, pt.AUTHORITY_ROOTS)
+    check("SUPERVISORY-SPEC MUTATION: an edit to the controlling specification is reported "
+          "CHANGED -- the first executable guard this document has ever had",
+          _d["changed"] == [_SPEC], str(_d))
+    _spec_copy.write_bytes(_orig_spec)
+    check("SUPERVISORY-SPEC restored",
+          not any(pt.compare(_sb, _apin, pt.AUTHORITY_ROOTS)[k]
+                  for k in ("added", "removed", "changed")))
 
 # ---------------------------------------------------------------- 5. clean afterwards
 

@@ -89,6 +89,24 @@ PRODUCTION_ROOTS: tuple[tuple[str, bool, str], ...] = (
      "identity. It is frozen because it is read, not because it is authoritative"),
 )
 
+#: THE SCIENTIFIC AUTHORITY, WALKED THE SAME WAY AND FOR THE SAME REASON. The supervisory
+#: specification is the controlling theory: its own metadata says the repository source code is
+#: the object under test and never a source of theory. Its SHA-256 is quoted in four reports, in
+#: T6_HANDOFF.md and in its own metadata file -- and until Run 22 NOTHING EXECUTABLE CHECKED IT.
+#: A hash that appears only in prose is a claim, not a guard. These roots are walked and pinned
+#: exactly as the production roots are, so a silent edit to the controlling specification, or a
+#: new methodology document nobody declared, is detected rather than described.
+AUTHORITY_ROOTS: tuple[tuple[str, bool, str], ...] = (
+    ("research/methodology", True,
+     "the controlling supervisory method specification and its metadata record. CONTROLLING "
+     "status: where this and the implementation disagree, this governs what the method ought "
+     "to be"),
+    (".gitattributes", False,
+     "carries the `-text` rule that stops any checkout filter rewriting the specification's line "
+     "endings. If this file changes, the specification's bytes can change without the "
+     "specification being edited, so it is authority-critical in its own right"),
+)
+
 #: (glob suffix or directory name, why). Applied to the walk. Each exclusion must name a reason
 #: that is about the FILE not being production, never about the file being inconvenient.
 EXCLUSIONS: tuple[tuple[str, str], ...] = (
@@ -128,7 +146,9 @@ def sha256_file(path: pathlib.Path) -> str:
     return h.hexdigest()
 
 
-def walk_production(root: pathlib.Path | None = None) -> list[tuple[str, str, int, bool]]:
+def walk_production(root: pathlib.Path | None = None,
+                    roots: tuple[tuple[str, bool, str], ...] | None = None
+                    ) -> list[tuple[str, str, int, bool]]:
     """
     Discovers the production surface FROM THE FILESYSTEM.
 
@@ -149,7 +169,7 @@ def walk_production(root: pathlib.Path | None = None) -> list[tuple[str, str, in
     root = ROOT if root is None else root
     tracked = _tracked_paths() if root == ROOT else set()
     found: dict[str, pathlib.Path] = {}
-    for rel, recursive, _why in PRODUCTION_ROOTS:
+    for rel, recursive, _why in (PRODUCTION_ROOTS if roots is None else roots):
         base = root / rel
         if not base.exists():
             raise FileNotFoundError(
@@ -173,27 +193,30 @@ def walk_production(root: pathlib.Path | None = None) -> list[tuple[str, str, in
             for r in sorted(found)]
 
 
-def manifest_lines(root: pathlib.Path | None = None) -> list[str]:
+def manifest_lines(root: pathlib.Path | None = None, roots=None) -> list[str]:
     """The canonical manifest text: one `sha256  path` line per file, byte-sorted by path."""
-    return [f"{digest}  {rel}" for rel, digest, _size, _tracked in walk_production(root)]
+    return [f"{digest}  {rel}" for rel, digest, _size, _tracked in walk_production(root, roots)]
 
 
-def manifest_text(root: pathlib.Path | None = None) -> str:
-    return "\n".join(manifest_lines(root)) + "\n"
+def manifest_text(root: pathlib.Path | None = None, roots=None) -> str:
+    return "\n".join(manifest_lines(root, roots)) + "\n"
 
 
-def manifest_sha256(root: pathlib.Path | None = None) -> str:
+def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
     """The hash OF THE MANIFEST, so the list of files is itself pinned, not only its contents."""
-    return hashlib.sha256(manifest_text(root).encode("utf-8")).hexdigest()
+    return hashlib.sha256(manifest_text(root, roots).encode("utf-8")).hexdigest()
 
 
 #: Where the pinned expected manifest lives. It is the RECORD of what the walk found when the
 #: freeze was taken. It is never the source of the file names.
 PINNED = ROOT / "code_audit" / "run22_production_tree.sha256"
+#: The same, for the scientific authority tree.
+PINNED_AUTHORITY = ROOT / "code_audit" / "run22_authority_tree.sha256"
 
 
 def compare(root: pathlib.Path | None = None,
-            pinned_text: str | None = None) -> dict[str, list[str]]:
+            pinned_text: str | None = None,
+            roots=None, pinned_path: pathlib.Path | None = None) -> dict[str, list[str]]:
     """
     The four ways production can differ from the freeze, kept apart so the guard can say WHICH.
 
@@ -203,9 +226,10 @@ def compare(root: pathlib.Path | None = None,
     A rename shows up as one `added` and one `removed`; `renamed` pairs those whose CONTENT
     hash matches, so a moved file is reported as a move rather than as an unrelated pair.
     """
-    now = {rel: digest for rel, digest, _s, _t in walk_production(root)}
+    now = {rel: digest for rel, digest, _s, _t in walk_production(root, roots)}
     pinned: dict[str, str] = {}
-    text = PINNED.read_text(encoding="utf-8") if pinned_text is None else pinned_text
+    _pin_file = PINNED if pinned_path is None else pinned_path
+    text = _pin_file.read_text(encoding="utf-8") if pinned_text is None else pinned_text
     for line in text.splitlines():
         line = line.strip()
         if not line:
@@ -223,14 +247,21 @@ def compare(root: pathlib.Path | None = None,
 if __name__ == "__main__":
     import sys
 
+    _groups = (("production", None, PINNED), ("authority", AUTHORITY_ROOTS, PINNED_AUTHORITY))
     if "--write" in sys.argv:
-        PINNED.write_text(manifest_text(), encoding="utf-8")
-        print(f"wrote {PINNED.relative_to(ROOT)}: {len(manifest_lines())} files")
-        print(f"manifest sha256: {manifest_sha256()}")
+        for label, roots, pin in _groups:
+            pin.write_text(manifest_text(None, roots), encoding="utf-8")
+            print(f"wrote {pin.relative_to(ROOT)}: {len(manifest_lines(None, roots))} files "
+                  f"({label})")
+            print(f"  manifest sha256: {manifest_sha256(None, roots)}")
     else:
-        d = compare()
-        for k in ("added", "removed", "changed", "renamed"):
-            for v in d[k]:
-                print(f"{k.upper():8} {v}")
-        print(f"files: {len(manifest_lines())}  manifest sha256: {manifest_sha256()}")
-        sys.exit(1 if any(d[k] for k in ("added", "removed", "changed")) else 0)
+        bad = False
+        for label, roots, pin in _groups:
+            d = compare(None, None, roots, pin)
+            for k in ("added", "removed", "changed", "renamed"):
+                for v in d[k]:
+                    print(f"{label} {k.upper():8} {v}")
+            bad = bad or any(d[k] for k in ("added", "removed", "changed"))
+            print(f"{label}: {len(manifest_lines(None, roots))} files  "
+                  f"manifest sha256: {manifest_sha256(None, roots)}")
+        sys.exit(1 if bad else 0)
