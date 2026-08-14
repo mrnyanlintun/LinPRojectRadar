@@ -344,6 +344,9 @@ RUN20_SCOPED_FILES = {
     # the absent canonical structure in plain words, and the disposition. No band, boundary or
     # constant that any computation reads is in it.
     "server/app/simulation/method_labels.py",
+    # RUN 20 CYCLE 11, PARAM.1. Also a new file and also carrying no arithmetic: the class and
+    # the provenance of every tunable value in the registry, and the reason nothing is calibrated.
+    "server/app/simulation/parameters.py",
     "server/app/simulation/models_evc.py",
     "server/app/simulation/models_fuzzy.py",
     "server/app/simulation/models_doc.py",

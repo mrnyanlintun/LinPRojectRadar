@@ -110,6 +110,11 @@ RUN20_ARCHITECTURAL_CHANGES: dict[str, tuple[str, str, str]] = {
                "reading. Interval Fuzzy Sets keeps the more adverse of the two index readings, "
                "which are one body. The Belief Rule Base stops conditioning on the trend breach "
                "as a separate antecedent from the index state"),
+    "PARAM.1 registry": ("11 P3", "server/app/simulation/registry.py",
+               "every module's published record now carries the provenance of every tunable "
+               "value it reads, as a LIST because a module can carry values of more than one "
+               "class, together with the sentence stating why nothing here is calibrated. NEW "
+               "KEYS ONLY: no arithmetic, band, boundary or constant is touched"),
     "LABEL.1 registry": ("10 P2", "server/app/simulation/registry.py",
                "every module whose registered NAME claims a method the code does not perform, "
                "and every module whose reported claim rests on a canonical structure this "
@@ -152,6 +157,14 @@ RUN20_NEW_PRODUCTION_FILES: dict[str, tuple[tuple[str, ...], str]] = {
         "established by execution and are moved here byte for byte; the separation resolves them "
         "against the project's own evidence first, using cycle 8's derived-index resolver, so "
         "the schedule index's two ancestries are the project's property and not the module's"),
+    "server/app/simulation/parameters.py": (
+        ("11 P3",),
+        "PARAM.1. The parameter provenance register: for every module carrying a tunable value, "
+        "the class of that value and the provenance of the class, plus the one sentence stating "
+        "why no calibration was performed and what a calibration would have required. It "
+        "introduces no number that any computation reads and moves no boundary. It refuses at "
+        "construction both a class outside the permitted vocabulary and a claim of published, "
+        "theoretical, regulatory, contractual or calibrated provenance with no source named"),
     "server/app/simulation/method_labels.py": (
         ("10 P2",),
         "LABEL.1. The truthful method label table: for each module whose registered name claims "
