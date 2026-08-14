@@ -73,7 +73,10 @@ rechecked after every fault.
 **THE REPORT FOR THIS RUN IS QUOTED IN FULL BELOW.** The session harness that ran this task
 refused to write a report file into the repository (it requires a subagent's findings to be
 returned as text), so the report is reproduced here verbatim, as the Run-24 precedent did,
-and the freeze record names the intended path with `report_present_in_tree: false`. A later
+and the freeze record names the intended path with `report_present_in_tree: false`. RESOLVED
+in the supervising session, which landed `REPORT_2026-08-14_rail-and-empty-diagram.md` from
+this text with no edit to the body; the freeze record is left unchanged because its field was
+true when written and rewriting it would invalidate the recorded digest. A later
 run that can write it should land it at `REPORT_2026-08-14_rail-and-empty-diagram.md`
 verbatim.
 
