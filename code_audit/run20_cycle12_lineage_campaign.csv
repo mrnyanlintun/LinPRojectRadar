@@ -1,0 +1,15 @@
+property,expected,observed,result
+duplicate identical evidence confers no additional confidence,the same band and no gain in belief,"bands Red then Red, belief 0.0000 then 0.0000",HOLDS
+two transforms of one body of evidence are separated into one body,one independent body and no gain in belief,"1 bodies, belief 0.0000 then 0.0000",HOLDS
+a bridging signal is dependent on both bodies it draws from,dependent on both,as expected,HOLDS
+"dependence is not closed transitively, in all six orderings of the triangle",A and C independent in all six,failed in none,HOLDS
+a same-lineage reading does not suppress the more adverse one,the adverse band Red is kept,got Red,HOLDS
+genuinely independent evidence is separated into two bodies and may corroborate,two independent bodies,2 bodies,HOLDS
+"the Bayesian estimate at completion is not independent corroboration of the earned value modules, and the control can still find independence elsewhere","dependent on earned value, independent of the permit record","dependent True, independent-elsewhere True",HOLDS
+the portfolio canonical identifier guard admits PH.5 and rejects a deliberate invalid PH reference,"PH.5 admitted, PH.9 rejected","admitted True, rejected True",HOLDS
+the four production evidence-combination arms are separated and every arm is placed in exactly one body,each of the four arms in exactly one body,"2 bodies over indices [0, 1, 2, 3]",HOLDS
+the portfolio clusters compute on the production path over three projects,a populated result mapping,ok=True,HOLDS
+sibling modules of the earned value family are dependent on one another,every pair dependent,"3 pairs over ['A1.1', 'A1.7', 'A1.8']",HOLDS
+the derived index resolver takes the union with no evidence and never widens beyond it with evidence,"union with no evidence, a subset with evidence","union ['actual_pct_complete', 'ev', 'planned_pct_complete', 'pv'], resolved ['ev', 'pv']",HOLDS
+"an undeclared signal is kept, named, never assumed independent, and adding a second one changes nothing","the adverse band kept, the signal named, and idempotent under duplication","band Red, reported True, idempotent True",HOLDS
+every declared lineage record names the module it belongs to,no identity defects,0 defects: [],HOLDS

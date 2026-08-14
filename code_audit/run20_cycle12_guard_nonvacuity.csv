@@ -1,0 +1,12 @@
+guard,protects,violation_landed,detected,guard_failure
+manifest integrity,coverage of every module carrying a tunable value,removed the provenance entry for A1.1 from the live register,yes,manifest integrity reported the violation
+registry identity,a registered name against its truthful label,renamed A1.5 at the source the registry index is built from,yes,registry identity reported the violation
+PH.* existence,the existence of every portfolio identifier,"removed D1.5, the portfolio anomaly score, at the registry source",yes,PH.* existence reported the violation
+Category-9 qualification,the canonical structure requirement of a gated module,removed the line of balance canonical structure requirement,yes,Category-9 qualification reported the violation
+lineage declaration,the identity of every declared lineage record,pointed A1.7's lineage record at a module that is not itself,yes,lineage declaration reported the violation
+voting,exactly two voting modules,expanded the voting set from two modules to three,yes,voting reported the violation
+activation,the disabled state of every concept-only module,removed Plithogenic Sets from the concept-only disabled set,yes,activation reported the violation
+disabled state,the disabled state of Material Cost Variance,removed Material Cost Variance from the evidence-under-review disabled set,yes,disabled state reported the violation
+mutation and fault control,the refusal of an undeclared evidence relationship,admitted an undeclared evidence relationship into the accepted vocabulary,yes,mutation and fault control reported the violation
+the derived index resolver,the conservative union with no evidence in hand,narrowed the schedule index union ancestry to the planned value ancestry alone,yes,the derived index resolver reported the violation
+the unresolved signal default,the refusal to assume independence nobody declared,"made every fusion assume independence, which is the default cycle 9 removed",yes,the unresolved signal default reported the violation

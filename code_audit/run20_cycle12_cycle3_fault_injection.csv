@@ -1,0 +1,10 @@
+cycle,injection_id,target_file,mutation,bytes_changed_confirmed,expected_effect,observed_effect,named_check_that_went_red,restored_and_green
+3,M13,lineage.py,the declared-lineage-group rule erased from the partition,yes,the declared-shared-group partition case,143 to 142 of 143 checks,the declared-shared-group partition case,yes
+3,M14,lineage.py,one of the two voters relabelled INDEPENDENT,yes,the same-source-transform declaration checks,143 to 142 of 143 checks,the same-source-transform declaration checks,yes
+3,M15,lineage.py,QUALITY_METADATA removed from the anti-feedback set,yes,the anti-feedback cases in both directions,143 to 137 of 143 checks,the anti-feedback cases in both directions,yes
+3,M16,fusion.py,the within-body reading inverted from the most adverse to the most favourable,yes,the within-body conservative comparison and the sweep rows,143 to 142 of 143 checks,the within-body conservative comparison and the sweep rows,yes
+3,M17,qualification_gate.py,"the live path stops supplying lineage, a raw bypass in all but name",yes,the check that the live path never fuses on an undeclared lineage,61 to 60 of 61 checks,the check that the live path never fuses on an undeclared lineage,yes
+3,M18,qualification_gate.py,the band property stops honouring the verdict,yes,the execution checks on the qualified band,61 to 50 of 61 checks,the execution checks on the qualified band,yes
+3,M19,qualification_gate.py,DEGRADED admitted to the voting set,yes,the two may-not-vote checks,61 to 59 of 61 checks,the two may-not-vote checks,yes
+3,M20,qualification_gate.py,the raw-bypass guard removed,yes,the bypass checks,61 to 57 of 61 checks,the bypass checks,yes
+3,M21,qualification_gate.py,the anti-feedback rejection removed from the gate,yes,the anti-feedback checks,61 to 55 of 61 checks,the anti-feedback checks,yes
