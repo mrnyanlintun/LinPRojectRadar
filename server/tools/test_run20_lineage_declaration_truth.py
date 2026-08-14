@@ -234,6 +234,11 @@ FIELD_OF = {
     "revised_contract_sum": "revisedContractSum",
     "indirect_cost_plan": "indirectCostPlan",
     "indirect_cost_actual": "indirectCostActual",
+    # RUN 20 CYCLE 8. The material cost pair, added when the Inflation Adjustment Index was
+    # declared. The vocabulary is EXTENDED, not relaxed: both names resolve to a real signal
+    # input field and the check below still requires the module's reading to move for each.
+    "material_cost_baseline": "materialCostBaseline",
+    "material_cost_current": "materialCostCurrent",
     "reporting_history": None,          # no single field carries it
 }
 
