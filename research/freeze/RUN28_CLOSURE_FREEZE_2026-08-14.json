@@ -32,8 +32,8 @@
   "manifest_sha256": null,
   "final_commit": null,
   "starting_commit": "0e0dfbd",
-  "stage1_parent_commit": "0e0dfbdf8e5af46c731a47b1296ab76213f068c6",
-  "stage1_repository_tree_hash": "83692db7996f7cb2d2678f5a997b6d6fbffde77a",
+  "stage1_parent_commit": "e09bc9503cb6578f4d311f3ba8495d85980ee320",
+  "stage1_repository_tree_hash": "85010e13613d3067f9f711aaa9cc398d95dd2919",
   "production_files_changed": [
     {
       "path": "assets/js/categories.js",
@@ -1529,9 +1529,9 @@
   },
   "closure_evidence": {
     "supply_path_closure": "code_audit/run28_supply_path_closure.csv",
-    "supply_path_closure_sha256": "02441186beefe461f4c74106200a8e107ac25c30bd8c4e9b0574f9f7aa3a68ee",
+    "supply_path_closure_sha256": "6ec251285de169951255488c469cc2289830d97ddd6ec844628128e7334927b7",
     "operational_closure_28": "code_audit/run28_operational_closure_28.csv",
-    "operational_closure_28_sha256": "bda1d3fec70f26c7552c747a29e06ece0e1180f40cf817929d4baa957d1aeea4",
+    "operational_closure_28_sha256": "95cf3d59165dc51f8c386c8e82ed3be62d8a379cc1633b156697dde8e2668a13",
     "guard_suite": "server/tools/test_run28_closure.py",
     "non_vacuity_campaign": "code_audit/run28_closure_fault_injection.csv",
     "intake_path": "server/app/writes.py::w_saveprojectdata -> server/app/project_data.py -> server/app/documents.py::run_and_store",
