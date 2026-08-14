@@ -324,3 +324,27 @@ no B2.9, no calibration.
   candidate and it does not need the exception: the interface exists and is reachable. What it
   lacks is data that originates outside the platform entirely, and that is recorded in its row
   rather than being dressed up as an implemented corpus supply.
+
+---
+
+## Final verification, on the exact final head
+
+Defect 1 is that Run 28's verification and its final head were different commits. That is not
+repeated here. The sequence actually followed:
+
+1. all corrections made on `run28-closure`;
+2. merged into `main` with `--no-ff`;
+3. the closure freeze finalised on the merged head (stage-1 commit
+   `65be2dbcb51c96c1bc47ad48825c8cb9c1dd8ce8`, manifest sha256
+   `5e8c8ede73adf2171b48c1d43e1294299cee97ac1bdaedeebfc629133b25e159`);
+4. this section committed, which is the LAST commit — no commit follows it;
+5. **the complete suite run on that exact commit**, with a fresh migrated SQLite database per
+   suite file, `PYTHONIOENCODING=utf-8`, `PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers`, and the
+   runner's anchored `^RESULT: N/M( checks passed)?$` requirement;
+6. `origin/main` confirmed equal to that commit after the push.
+
+**The complete suite is 128 suites and 10811 checks, all green.** Run 28 finished at 127 suites
+and 10730 checks; the closure adds `server/tools/test_run28_closure.py` (65 checks) and sixteen
+further checks inside existing suites. The exact commit hash and the confirmation that
+`origin/main` equals it are recorded in the run's handover message and are reproducible with
+`git rev-parse HEAD` and `git rev-parse origin/main` on this branch.
