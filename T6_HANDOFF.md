@@ -9,6 +9,94 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-14 — Categories 1 to 3 canonical remediation, and the new analytical line (Run 28)
+
+**Branch `run28-cat1-3-canonical-v3` from `origin/main` at `316c841`.
+THIS RUN CHANGED ANALYTICAL PRODUCTION CODE** — the first run to do so since the instrument was
+frozen, on the owner's explicit supervisory instruction. Full report:
+`REPORT_2026-08-14_run28-cat1-3-canonical-remediation-v3.md`.
+
+Freeze: **`OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN28-CANONICAL-CAT1-3-V11-1`**,
+superseding `...-RUN26-COUNTS-WIRING-EMPTY-1`, which is preserved unchanged. Manifest
+`research/freeze/RUN28_CANONICAL_CAT1_3_FREEZE_2026-08-14.json`, digest
+`383318621e97cb9ebb302a54d371cd5fe65789f8320a1f3d6fedc655e339e5bc`.
+
+## FOUR THINGS FROM THIS RUN THAT MUST NOT BE LOST
+
+**1. THE VERSION-STAMP PREMISE IN OWNER PROMPTS IS STALE, AND HAS BEEN SINCE RUN 22.** Prompts
+since Run 22 say the platform is "frozen at sim-2026.08-v2". It is not, and it was not.
+`server/app/simulation/models.py` recorded `sim-2026.08-v10` at the start of Run 28, and
+**`sim-2026.08-v3` has existed since Run 7** — the comment block at lines 46 to 107 records every
+move. Run 28 was told to create "v3"; creating one would have collided with Run 7's stamp and
+read as a REGRESSION from v10, making results already collected under v10 ambiguous. The owner's
+INTENT was honoured with the next unused identifier: **the line is now `sim-2026.08-v11`**, and
+`SIMULATION_VERSION_HISTORY` records every stamp the layer has ever carried so a future run that
+overwrites one instead of appending is detectable. **Run 29 and later: read that tuple, not the
+prompt.**
+
+**2. TWENTY OF THE TWENTY-EIGHT MODULES NOW ABSTAIN ON THE REAL CORPUS, AND THAT IS THE CORRECT
+OUTCOME.** The methods are canonical and mostly **not yet fed**. What each one lacks is listed
+module by module in the report's section 6. **Two were wired from evidence the platform already
+holds and compute on real documents today:** A2.7 Milestone Trend Analysis, from the baseline
+finish dates already extracted per activity, and A3.6 Cost Risk Analysis P80, from the risk
+register — closing a deferral `documents.py` has carried in a comment since the risk-register run.
+
+**3. THE CALIBRATION-PENDING CONTRACT EXISTS AND SHOULD BE REUSED.** `models.calibration_pending`
+returns a result with a real figure, `status_color` None, `band_asserted` False and
+`calibration_pending` True. `registry.record()` routes it to `computed`, not `abstained`: the
+method ran and only the colour is withheld. It cannot reach status fusion, which reads only the
+two voting modules. **Any later run that finds an uncalibrated band should use this rather than
+invent a threshold.** Two uncited ladders were removed under it, both recorded as owner-directed
+changes.
+
+**4. THE FROZEN-FILE GUARD WAS REBASELINED, NOT LOOSENED.** It was turned red first and observed
+— it named five undeclared paths and one new file — and only then was
+`server/tools/run28_production_changes.py` written as the sixth manifest. The union of all six
+must still equal the differing set EXACTLY and no path may appear in two, and two checks were
+ADDED: the freeze may only widen, and every file whose bytes moved must be declared somewhere.
+The production-tree pin is now `code_audit/run28_production_tree.sha256`.
+
+## What Run 28 did NOT touch, deliberately
+
+`PKG-ORPHANFIELDS` (Categories 4–5, **Run 29**); Category 7 methods; Category 8 regulatory work;
+**the Category-9 qualification gate, which is Run 31 and whose findings are NOT closed here**;
+Category 10 optimization; Portfolio Health; B2.9 Quantum Probability (Run 30); A3.4 Material Cost
+Variance, still registered and disabled; **A5.8, which shares primitives with A2.11 and is Run
+29's**. Voting is exactly two. Participant protocol unchanged.
+`assets/js/taxonomy.js` was NOT renamed: it is the participant ledger's own name source and is
+inside the frozen participant package, so a participant still reads "Regression to Mean CPI" and
+"ICE Ratio". That is the Run-20 boundary and it was not crossed.
+
+## Approved names carried forward, NOT applied in Run 28
+
+Applied here: **Regression to Mean CPI → CPI Shrinkage Forecast** (A1.10) and
+**ICE Ratio → Independent EAC Reconciliation Index** (A1.11), in
+`p0-baseline/module_renumbering_map.csv`. Awaiting their own runs:
+
+* ABM Governance Layer → Agent-Based Governance Model
+* FAR Threshold Monitor → FAR/Agency EVMS Applicability Monitor
+* OMB A-11 Check → Versioned A-11 Capital Programming Conformance Check
+* EVM Reporting Threshold → EVMS Reporting Compliance Monitor
+* Contract Modification Frequency → Contract Modification Governance Check
+* Contractor Performance Score → Contractor Performance Assessment Signal
+* Regret Minimization Index → Minimax Regret Decision Rule
+
+## A1.1 name drift, resolved
+
+`NAMING_AUTHORITY.md` makes the registry map the source of truth. It records **`Monte Carlo
+EAC`**, and that stands. The drift was a prose taxonomy heading against the generated registry,
+not two authorities disagreeing; the supplied contract heads its section "Monte Carlo EAC
+Forecast" but supplies no rename, and only two Category 1–3 renames are authorised. Renaming on
+the strength of a heading would have been an unauthorised third rename.
+
+## Evidence artefacts
+
+* `code_audit/run28_cat1_3_scope.csv` — 28 remediation rows (9 + 11 + 8), reconciled mechanically
+* `code_audit/run28_fault_injection.csv` — six faults, **6/6 proven non-vacuous**
+* `code_audit/run28_production_tree.sha256` — 227 production files
+* `server/tools/run28_production_changes.py`, `build_run28_scope.py`, `build_run28_freeze.py`,
+  `run28_fault_campaign.py`
+
 # 2026-08-14 — Sitewide counts, Signal Flow wiring, and empty-project rendering (Run 26)
 
 **Branch `claude/run26-counts-wiring-empty` from `origin/main` at `e0f3f9c`, merged at
