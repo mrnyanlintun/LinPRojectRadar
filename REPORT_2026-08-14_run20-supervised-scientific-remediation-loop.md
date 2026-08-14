@@ -134,8 +134,11 @@ cites, and **no N exists in any of them**: PARAMETER_PROVENANCE_BLOCKED. **PH.5*
 weights over whichever components happen to be present, so the same project scores differently
 according to how much evidence it supplied. Governing them means fixing them, and no calibration
 evidence here can choose the values: THRESHOLD_CALIBRATION_BLOCKED. Both are advisory and
-non-voting. **These are the two reasons the IMPLEMENTATION_DEFECT exit target is not met, and the
-only way to have met it was to invent two constants.**
+non-voting. **Neither is an implementation defect: both carry `implementation_correct = yes` in the
+committed re-audit and `implementation_defect = no` in the committed register, and what remains
+unresolved in each is parameter or threshold AUTHORITY.** The only way to have closed either was to
+invent a constant, and neither was. IMPLEMENTATION_DEFECT is 0; these two rows are blocked, which
+is a different and honestly recorded thing. (Wording corrected by Run 21 section 3A.)
 
 **P2, the structural outcomes and every label correction.** Thirty-one modules carried a name
 asserting a structure this repository does not hold. The canonical route was tested FIRST for
@@ -363,7 +366,7 @@ it.
 | portfolio 5 | **MET** | PH.1 to PH.5 |
 | NOT_REACHED 0 | **MET** | the one module absent from the complete run is declared UNPORTED by that run, which is a truthful refusal and is distinguished from a gap rather than collapsed into one |
 | NOT_ASSESSED 0 | **MET** | every row carries a disposition from the closed vocabulary |
-| **IMPLEMENTATION_DEFECT 0** | **NOT MET, AND KNOWN IN ADVANCE** | B1.4 is PARAMETER_PROVENANCE_BLOCKED and PH.5 is THRESHOLD_CALIBRATION_BLOCKED. **Both could only have been closed by inventing a constant** -- a fixed N for the worst N of M rule, which exists in no source, and fixed weights for the anomaly components, which no calibration evidence here can choose. Reclassifying them honestly is the correct final state. |
+| **IMPLEMENTATION_DEFECT 0** | **MET** | Corrected by Run 21 section 3A from the committed rows, not from narrative. `code_audit/run20_cycle12_100_reaudit.csv` carries a disposition for all 100 rows and **none of them is IMPLEMENTATION_DEFECT**. B1.4 and PH.5 are the two rows this line previously cited: both carry `implementation_correct = yes` in that file and `implementation_defect = no` in `code_audit/run20_master_remediation_register.csv`, and both hold a BLOCKED disposition -- PARAMETER_PROVENANCE_BLOCKED and THRESHOLD_CALIBRATION_BLOCKED -- because a fixed N for the worst N of M rule exists in no source, and no calibration evidence here can choose fixed weights for the anomaly components. **What blocks them is parameter and threshold authority, not a defective implementation**, so they do not count against this target. They remain scientifically blocked, advisory and non-voting, and **neither was closed by inventing a number**. One further row, 4.1, carries `implementation_correct = no`; its `execution_outcome` is NOT_PORTED, a truthful refusal by the complete analytical run rather than a defective computation, and its disposition is EMPIRICAL_VALIDATION_BLOCKED. **No scientific behaviour was changed to reach this reconciliation; only the contradictory wording was corrected.** |
 | METHOD_LABEL_MISMATCH 0 | **MET** | 23 at Run-19 start, 0 now |
 | P0A to P0D 0 | **MET** | all four closed on main |
 | Category 9 enforced | **MET** | gate, raw-bypass refusal and anti-feedback rejection each proved by deliberate violation |

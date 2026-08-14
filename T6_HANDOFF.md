@@ -8336,7 +8336,10 @@ reported a hesitancy belonging to a pair it discards. B2.15 did not normalise it
 distribution and computed necessity as the possibility less an invented 0.30. Seven mutations,
 zero survivors.
 
-**TWO ROWS EXAMINED AND DELIBERATELY NOT CLOSED, WHICH IS WHY IMPLEMENTATION_DEFECT IS NOT ZERO.**
+**TWO ROWS EXAMINED AND DELIBERATELY NOT CLOSED. THEY ARE BLOCKED, NOT DEFECTIVE.** (Run 21
+section 3A: both carry `implementation_correct = yes` in `code_audit/run20_cycle12_100_reaudit.csv`
+and `implementation_defect = no` in `code_audit/run20_master_remediation_register.csv`, so
+IMPLEMENTATION_DEFECT is ZERO and these two are blocked on parameter and threshold authority.)
 B1.4 Worst-N-of-M triggers on a FRACTION of the total, so every benign arrival can raise the count
 needed and switch an existing Red set off; repairing it means CHOOSING a fixed k, and there is no
 k in the specification, none in this repository and none in any cited source. PH.5's anomaly
@@ -8428,8 +8431,11 @@ Cycle 10 removed the percentile claim; as a multiplier it has no source at all.
 FRACTION of the total and no count exists in the specification, this repository or any source it
 cites: PARAMETER_PROVENANCE_BLOCKED. The anomaly score's weights move with data availability:
 THRESHOLD_CALIBRATION_BLOCKED. Both advisory and non-voting. **THE RUN-20 EXIT TARGET OF
-IMPLEMENTATION_DEFECT EQUAL TO ZERO IS NOT MET, and the reason is that meeting it required
-inventing two constants.**
+IMPLEMENTATION_DEFECT EQUAL TO ZERO IS MET: neither row is an implementation defect.** Both carry
+`implementation_correct = yes` in the committed re-audit and `implementation_defect = no` in the
+committed register; what is unresolved in each is parameter or threshold AUTHORITY, and closing
+either would have required inventing a constant, which was not done. (Run 21 section 3A, derived
+from the committed rows.)
 
 **THE QUEUED TREND-INPUT CASE IS DETERMINED BY EXECUTION.** Supplying all three trend inputs to
 the production caller changes NOTHING published; supplying them to the underlying function DOES
@@ -8474,10 +8480,16 @@ SCIENTIFIC_PASS, 2 OWNER_DECISION_REQUIRED, and one each of EMPIRICAL_VALIDATION
 REGULATORY_VERSION_BLOCKED, PARAMETER_PROVENANCE_BLOCKED and THRESHOLD_CALIBRATION_BLOCKED.
 **METHOD_LABEL_MISMATCH is nought and MISSING_CANONICAL_DATA_STRUCTURE is nought.**
 
-**THE ONE EXIT TARGET NOT MET IS IMPLEMENTATION_DEFECT EQUAL TO NOUGHT, AND IT WAS KNOWN NOT TO
-BE MET BEFORE THE CYCLE BEGAN.** B1.4 and PH.5 could only have been closed by inventing a
-constant that exists in no source this repository holds or cites. They are reclassified honestly
-and remain advisory and non-voting. **It was not forced closed.**
+**IMPLEMENTATION_DEFECT IS NOUGHT, AND EVERY RUN-20 EXIT TARGET IS MET.** B1.4 and PH.5, the two
+rows earlier text counted against this target, could only have been CLOSED by inventing a constant
+that exists in no source this repository holds or cites, and neither was. But neither is an
+implementation defect: both carry `implementation_correct = yes` in the committed re-audit and
+`implementation_defect = no` in the committed register, and both hold a BLOCKED disposition on
+parameter or threshold AUTHORITY. They are reclassified honestly and remain advisory and
+non-voting. **Nothing was forced closed, and no scientific behaviour changed to reconcile this
+wording.** One row, 4.1, carries `implementation_correct = no` with `execution_outcome =
+NOT_PORTED` -- a truthful refusal by the complete analytical run rather than a defective
+computation -- and its disposition is EMPIRICAL_VALIDATION_BLOCKED. (Run 21 section 3A.)
 
 **FALSE REINFORCEMENT NOUGHT, FALSE SUPPRESSION NOUGHT, LINEAGE DECLARATION IDENTITY DEFECTS
 NOUGHT,** over fourteen properties including the triangle in all six orderings. Transitive
