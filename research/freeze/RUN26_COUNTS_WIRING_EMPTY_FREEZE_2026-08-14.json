@@ -14,8 +14,8 @@
   "manifest_sha256": null,
   "final_commit": null,
   "starting_commit": "e0f3f9c",
-  "stage1_parent_commit": "e0f3f9c9b6c2955033644b0af8d9709c071b486c",
-  "stage1_repository_tree_hash": "4ab7fb79ae06d8ce448b9a15f27ae3342b9ca36c",
+  "stage1_parent_commit": "e8357985b91c68219d69cfde47cc3bdffc904373",
+  "stage1_repository_tree_hash": "0e11d725375b1bba6e113c6acb14cd2ab899b28f",
   "ui_production_files_changed": [
     {
       "path": "assets/js/knowledge.js",
@@ -1472,8 +1472,8 @@
       "source": "server/app/simulation/registry.py and code_audit/run20_cycle12_100_reaudit.csv, derived at runtime by server/tools/test_run26_counts_and_wiring.py and read in a real browser by drive_run26_counts_wiring_empty.py"
     },
     "report": "REPORT_2026-08-14_sitewide-counts-wiring-and-empty.md",
-    "report_present_in_tree": false,
-    "report_sha256": null,
+    "report_present_in_tree": true,
+    "report_sha256": "c1578c37ca2a9ea9eac3bee11cf4d0d274d6e9e1abba023e2e18ffbf73b6d07e",
     "report_note": "if report_present_in_tree is false, the run's harness refused to write a REPORT_*.md file and the report is reproduced VERBATIM in T6_HANDOFF.md under the Run-26 heading, for a supervising session to land at the named path. The freeze records the absence rather than implying a file that is not there.",
     "parent_report_sha256": "50ad1d4aff20292d90192b0125724e565af8948d64fcfa02d01663679674c529"
   }

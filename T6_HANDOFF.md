@@ -35,8 +35,8 @@ unequal and names both modules, so a later edit cannot collapse them into one nu
 decided by two hand-written arrays of category INDICES (`DOC_TO_CATS`, `INTER_CAT`) written
 against the retired gapless Cat 1-10 order. `CATS` has been built from the eleven-category
 taxonomy since `taxonomy.js` replaced `categories.js`, and that list is in a different order.
-**Every document row the array sent to "Cat 8" was rendering landing on Evidence Combination** —
-a category the architecture master explicitly says must reject raw unqualified evidence — and all
+**Every document row the array sent to "Cat 8" was rendering landing on Evidence Combination**,
+a category the architecture master explicitly says must reject raw unqualified evidence, and all
 27 inter-category feeds pointed at the wrong node. The document lines themselves were drawn to
 `catModIdxs[ci].slice(0, 2)`, the first two modules of a category by REGISTRY ORDER. **The guard
 that existed compared only the LENGTHS of the two arrays**, so a parallel array of the right
