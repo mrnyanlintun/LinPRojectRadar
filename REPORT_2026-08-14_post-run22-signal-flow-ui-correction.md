@@ -253,3 +253,36 @@ Merge commit on `main`: see the final line of this report.
 - Voting: exactly **2** — `A1.7`, `A1.8`, read from the registry.
 - Concept-only activation: **0** (8 concept-only modules remain disabled).
 - Material Cost Variance `A3.4`: **disabled**.
+
+Complete repository suite on merged main: **122 suites, 10462/10462 checks, ALL SUITES GREEN.**
+
+## 16. Superseding freeze
+
+| | |
+|---|---|
+| new freeze identifier | `OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-POSTRUN22-UI-1` |
+| parent (preserved, not rewritten) | `OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN22` |
+| freeze record | `research/freeze/POST_RUN22_UI_CORRECTION_FREEZE_2026-08-14.json` |
+| manifest SHA-256 (stage 2) | `3e27ae0b27569d383ae2bb4dfce1f3eefeda4ed02b4b7438f38ced51e2884d05` |
+| companion file | `research/freeze/POST_RUN22_UI_CORRECTION_FREEZE_2026-08-14.sha256` |
+| production inventory | 226 files, `code_audit/run23_production_tree.sha256` |
+| production manifest SHA-256 | `879ff5e56f22beb1492be656329395f7caa4a5bef141be28dffa39e8a3c322cf` |
+| parent production manifest | `code_audit/run22_production_tree.sha256`, unchanged |
+| reason | Signal Flow empty-state truthfulness + Signals navigation correction |
+
+The two-stage construction is Run 22's, for its reason: a manifest cannot contain its own digest,
+so `manifest_sha256` and `final_commit` are null in the stage-1 file and its digest is recorded in
+the companion `.sha256`, verifiable with `sha256sum -c`.
+
+## Deviations, limits and what was NOT done
+
+- The amber → red period-selection instability in section 10 is REPORTED, not fixed. It is
+  outside the two named defects and touches period selection, which this correction was told not
+  to redesign.
+- The swiftshader reload could not be driven inside a 180 s navigation budget, so state E is
+  driven in a second browser with WebGL disabled. That is a stronger reload (no shared memory or
+  cache), and the GL attribution is Run 22's measured, carried-forward fact.
+- Both Run-9/Run-10 self-rewriting manifests were restored to their recorded bytes rather than
+  committed with this tree's digest.
+- Tavily and live web were unavailable; nothing here depended on an external fact.
+- No production Postgres, credential or secret was touched. Throwaway SQLite only.
