@@ -8687,7 +8687,7 @@ claims no validated performance.**
 now green, so sessions may begin. If anything a participant reads is to be renamed, before the
 first session is the only clean moment — after it, a rename is a protocol change.
 
-**RUN 22 FINAL MERGED-MAIN HASH: FINAL_COMMIT_PLACEHOLDER.** 121 suites, 10411 of 10411 checks,
+**RUN 22 FINAL MERGED-MAIN HASH: ab7271b.** 121 suites, 10411 of 10411 checks,
 ALL SUITES GREEN, verified on merged main and from a clean checkout. Both real-browser drivers
 re-run: instrument 78/78, participant 77/77.
 Freeze: `research/freeze/FINAL_RESEARCH_INSTRUMENT_FREEZE_2026-08-14.json`.

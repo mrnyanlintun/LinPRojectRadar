@@ -1,7 +1,9 @@
 # Run 22 — Final Freeze / Release Qualification
 
 Actual starting commit: ba5bfaf0e1c7d517abd0563119c9aa36c072f251
-Final merged-main commit: FINAL_COMMIT_PLACEHOLDER
+Verified merged-main commit: ab7271bd3775bba797e866f3ff131f9d4c509b1c
+  (121 suites / 10411 checks green, clean-checkout reproducibility green, freeze digest verified AT THIS COMMIT)
+Final pushed commit: the hash-stamp commit whose only content is this line and the same line in T6_HANDOFF.md
 
 Inherited Run-22 queue: 9
 Closed: 5 — items 5, 6, 7, 8 and 9

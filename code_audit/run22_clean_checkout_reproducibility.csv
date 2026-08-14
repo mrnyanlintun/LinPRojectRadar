@@ -1,0 +1,8 @@
+step,command,observed,verdict
+"clean isolated checkout","git worktree add --detach <tmp> HEAD","ab7271bd3775bba797e866f3ff131f9d4c509b1c","PASS"
+"the checkout contains only committed content","git status --porcelain -uall","0 entries","PASS"
+"interpreter, from PATH and not from a developer virtualenv","command -v python3","/usr/local/bin/python3","PASS"
+"production tree manifest verifies in the clean checkout","production_tree.compare()","MATCHES 226 files bff7b4fc2460580494efb1eac4fba350b1ba39d8b2cb08f095bbdbe109f47a92","PASS"
+"scientific authority manifest verifies in the clean checkout","production_tree.compare(AUTHORITY_ROOTS)","MATCHES 91f1856cbd3750947c16ebd81d69fee46e71d1eb7912d359c6996f850fae64e7","PASS"
+"freeze manifest digest matches its committed companion","sha256 of the freeze json","c102f701eac837a026dddb57b9373f5dc07acf72578d91623bdc8b42f708c5ce vs c102f701eac837a026dddb57b9373f5dc07acf72578d91623bdc8b42f708c5ce","PASS"
+"complete suite in the clean checkout","server/run_all_suites.sh","Suites run: 121   Total checks: 10411/10411 (exit 0)","PASS"
