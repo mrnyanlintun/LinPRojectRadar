@@ -46,6 +46,7 @@ from run20_production_changes import (  # noqa: E402
     RUN20_NEW_PRODUCTION_FILES,
     RUN20_PRODUCTION_CHANGES,
 )
+from run21_production_changes import RUN21_PRODUCTION_CHANGES  # noqa: E402
 from population import population  # noqa: E402
 
 ROOT = HERE.parent.parent
@@ -95,15 +96,30 @@ check("every file the baseline names still exists", not missing, str(missing))
 
 differing = {rel for rel, digest in baseline.items()
              if (ROOT / rel).is_file() and sha(ROOT / rel) != digest}
-declared = ({entry[1] for entry in RUN20_PRODUCTION_CHANGES.values()}
-            | {entry[1] for entry in RUN20_ARCHITECTURAL_CHANGES.values()})
+run20_declared = ({entry[1] for entry in RUN20_PRODUCTION_CHANGES.values()}
+                  | {entry[1] for entry in RUN20_ARCHITECTURAL_CHANGES.values()})
+# RUN 21. Runs after Run 20 declare their own production changes in their own manifest. The
+# Run-20 freeze stays IMMOVABLE and the Run-20 manifest stays the record of what RUN 20 changed;
+# folding a later run's edits into it would falsify that record. The guard's property is
+# unchanged: the differing set must equal the UNION exactly, so an undeclared edit is still red
+# and a declared-but-untouched file is still red. Section "later-run manifests" below proves
+# this addition did not turn the guard into one that accepts anything.
+run21_declared = {entry[1] for entry in RUN21_PRODUCTION_CHANGES.values()}
+declared = run20_declared | run21_declared
 
 check("every production file that differs from the Run-20 freeze is declared in the Run-20 "
-      "manifest, so an undeclared production edit cannot pass",
+      "manifest or a later run's manifest, so an undeclared production edit cannot pass",
       differing <= declared, f"undeclared: {sorted(differing - declared)}")
-check("every production file the Run-20 manifest declares actually differs from the Run-20 "
+check("every production file a manifest declares actually differs from the Run-20 "
       "freeze, so a declared fix that was never delivered cannot pass",
       declared <= differing, f"declared but unchanged: {sorted(declared - differing)}")
+check("the Run-20 manifest still declares only files RUN 20 changed: no Run-21 path was folded "
+      "into it, which would falsify Run 20's own record",
+      not (run20_declared & run21_declared),
+      f"in both manifests: {sorted(run20_declared & run21_declared)}")
+for mid, (why_item, path, why) in sorted(RUN21_PRODUCTION_CHANGES.items()):
+    check(f"the Run-21 manifest entry for {mid} names an authority, a real file and a reason",
+          bool(why_item) and bool(why) and (ROOT / path).is_file(), f"{why_item!r} {path!r}")
 check("and the two sets are therefore exactly equal, which is the whole guard",
       differing == declared, f"{sorted(differing)} vs {sorted(declared)}")
 

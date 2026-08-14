@@ -1,0 +1,5 @@
+state,property,server_evidence,browser_evidence,result
+A-empty,registry vs activity,registered-labelled badges present and no unlabelled 96,"[""11 registered"", ""96 registered"", ""96 registered""]",PASS
+B-onedoc,counts reconcile,server modules=35,27 SUPPORTED DOCUMENT TYPES | 1 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 35 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 9 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT,PASS
+C-multidoc,counts reconcile,server modules=41 categories=1,27 SUPPORTED DOCUMENT TYPES | 24 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 41 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 10 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT,PASS
+D-reset-after-reload,reset boundary disclosed,server upload events=24,"27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED SINCE THE RESET, 24 RETAINED | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE",PASS

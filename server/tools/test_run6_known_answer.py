@@ -353,24 +353,75 @@ RUN20_SCOPED_FILES = {
     "server/app/simulation/models_decision.py",
 }
 
+# RUN 21, QUEUE ITEM 3. The one production file this run changes. `assets/js/simulations.js`
+# computes fourteen models in the browser and went on publishing the four regulatory claims Run
+# 20 cycle 2 withdrew from the server. It is loaded by `research/deepdive.html` and `tests.html`
+# and by NO participant route, so what it misled was the researcher-facing deep-dive page, not a
+# participant. Withdrawn to match the server exactly; no band, boundary, threshold or arithmetic
+# result changed. See server/tools/run21_production_changes.py and the executed JavaScript-
+# against-server parity in server/tools/test_run21_governance_instrument_parity.py.
+# RUN 21, section 5 STATE D. `assets/js/neural_flow.js` is the second and last: after the
+# supported reset the diagram told the reader the project had no documents while the server
+# still held them and was about to read them again. Words only; no count changed.
+RUN21_SCOPED_FILES = {
+    "assets/js/simulations.js",
+    "assets/js/neural_flow.js",
+}
+
 _unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES
                    - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES - RUN14_SCOPED_FILES
                    - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES
-                   - RUN20_SCOPED_FILES)
+                   - RUN20_SCOPED_FILES - RUN21_SCOPED_FILES)
 check(not _unscoped,
       "no production file outside the authorised scope of Run 7, Run 10, Run 10B, Run 11, "
-      "Run 12, Run 14 or Run 20 differs from the pinned baseline",
+      "Run 12, Run 14, Run 20 or Run 21 differs from the pinned baseline",
       str(_unscoped))
 _assets = sorted(p for p in _prod if p.startswith("assets/"))
 # RESTATED BY RUN 11, original finding preserved. Until Run 11 this read "nothing under assets/
 # differs at all". Run 11 Gate 1 is authorised to change exactly the browser files that carried
 # the dormant client arithmetic, so the assertion narrows to those and keeps its force over
 # every other participant surface.
+# RUN 21 RESTATES THIS ONE AND RECORDS WHAT IT ACTUALLY MEASURES, because the two are not the
+# same and a later reader should not be misled by the label. The check's WORDS say "participant
+# surface"; its SET is every file under assets/. simulations.js is under assets/ but is loaded
+# only by research/deepdive.html and tests.html and by no participant route, so admitting it
+# here does NOT widen the guard over any participant surface. The narrower property -- that no
+# file a participant route loads changed -- is asserted separately below, where it can fail on
+# its own.
 check(not (set(_assets) - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES
-           - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES),
-      "every participant surface outside Run 11's authorised browser scope is byte-identical "
-      "to the freeze", str(sorted(set(_assets) - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES
-                 - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES)))
+           - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES - RUN21_SCOPED_FILES),
+      "every browser surface outside the authorised browser scope of Runs 11, 12, 15, 16 and 21 "
+      "is byte-identical to the freeze",
+      str(sorted(set(_assets) - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES
+                 - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES - RUN21_SCOPED_FILES)))
+# THE NARROWER PROPERTIES, STATED SO EACH CAN FAIL ON ITS OWN, and stated ACCURATELY. The first
+# version of this check asserted that no file Run 21 changed is loaded by index.html. That was
+# FALSE and the guard said so: simulations.js is not on the participant route, but neural_flow.js
+# is, and Run 21 corrected a display-truthfulness defect in it. The property that actually
+# matters is not "no participant file changed" -- Run 21 is authorised to fix frontend rendering
+# -- but that the PARTICIPANT EXPERIMENTAL PROTOCOL is untouched. Both are asserted below, from
+# index.html itself rather than from a hand-kept list.
+_index_scripts = set(re.findall(
+    r'<script[^>]+src="([^"]+)"', (ROOT / "index.html").read_text(encoding="utf-8")))
+_index_assets = {s.lstrip("./") for s in _index_scripts}
+check("assets/js/detail.js" in _index_assets and "assets/js/neural_flow.js" in _index_assets,
+      "the participant-route script list was actually read, so the checks below are not vacuous",
+      str(sorted(_index_assets)[:6]))
+check("assets/js/simulations.js" not in _index_assets,
+      "simulations.js, whose withdrawn regulatory claims Run 21 removed, is NOT on the "
+      "participant route: what it misled was the researcher deep-dive page",
+      str(sorted(_index_assets)))
+# THE PROTOCOL SURFACE. decision-ui.js is the only shipped browser file that calls the
+# preliminary, reveal and final routes, so it is the file the experimental treatment lives in.
+# Run 21 must not have touched it.
+_protocol = {"assets/js/decision-ui.js"}
+check(not (RUN21_SCOPED_FILES & _protocol),
+      "Run 21 changed no participant PROTOCOL surface: the preliminary/reveal/final browser "
+      "file is untouched", str(sorted(RUN21_SCOPED_FILES & _protocol)))
+_decision_ui = (ROOT / "assets" / "js" / "decision-ui.js").read_text(encoding="utf-8")
+check(all(k in _decision_ui for k in
+          ("researchprejudgment", "researchreveal", "researchdecision")),
+      "and that file really is the protocol surface, so the check above is not vacuous")
 check(_prod, "the guard is live: it does see the files this run did change", str(_prod))
 # RESTATED BY RUN 10B, with the original reason preserved: this check has tracked the current
 # stamp since Run 6, and it read sim-2026.08-v4 while Run 10 was current.

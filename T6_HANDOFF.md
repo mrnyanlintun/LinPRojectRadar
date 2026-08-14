@@ -8336,7 +8336,10 @@ reported a hesitancy belonging to a pair it discards. B2.15 did not normalise it
 distribution and computed necessity as the possibility less an invented 0.30. Seven mutations,
 zero survivors.
 
-**TWO ROWS EXAMINED AND DELIBERATELY NOT CLOSED, WHICH IS WHY IMPLEMENTATION_DEFECT IS NOT ZERO.**
+**TWO ROWS EXAMINED AND DELIBERATELY NOT CLOSED. THEY ARE BLOCKED, NOT DEFECTIVE.** (Run 21
+section 3A: both carry `implementation_correct = yes` in `code_audit/run20_cycle12_100_reaudit.csv`
+and `implementation_defect = no` in `code_audit/run20_master_remediation_register.csv`, so
+IMPLEMENTATION_DEFECT is ZERO and these two are blocked on parameter and threshold authority.)
 B1.4 Worst-N-of-M triggers on a FRACTION of the total, so every benign arrival can raise the count
 needed and switch an existing Red set off; repairing it means CHOOSING a fixed k, and there is no
 k in the specification, none in this repository and none in any cited source. PH.5's anomaly
@@ -8428,8 +8431,11 @@ Cycle 10 removed the percentile claim; as a multiplier it has no source at all.
 FRACTION of the total and no count exists in the specification, this repository or any source it
 cites: PARAMETER_PROVENANCE_BLOCKED. The anomaly score's weights move with data availability:
 THRESHOLD_CALIBRATION_BLOCKED. Both advisory and non-voting. **THE RUN-20 EXIT TARGET OF
-IMPLEMENTATION_DEFECT EQUAL TO ZERO IS NOT MET, and the reason is that meeting it required
-inventing two constants.**
+IMPLEMENTATION_DEFECT EQUAL TO ZERO IS MET: neither row is an implementation defect.** Both carry
+`implementation_correct = yes` in the committed re-audit and `implementation_defect = no` in the
+committed register; what is unresolved in each is parameter or threshold AUTHORITY, and closing
+either would have required inventing a constant, which was not done. (Run 21 section 3A, derived
+from the committed rows.)
 
 **THE QUEUED TREND-INPUT CASE IS DETERMINED BY EXECUTION.** Supplying all three trend inputs to
 the production caller changes NOTHING published; supplying them to the underlying function DOES
@@ -8474,10 +8480,16 @@ SCIENTIFIC_PASS, 2 OWNER_DECISION_REQUIRED, and one each of EMPIRICAL_VALIDATION
 REGULATORY_VERSION_BLOCKED, PARAMETER_PROVENANCE_BLOCKED and THRESHOLD_CALIBRATION_BLOCKED.
 **METHOD_LABEL_MISMATCH is nought and MISSING_CANONICAL_DATA_STRUCTURE is nought.**
 
-**THE ONE EXIT TARGET NOT MET IS IMPLEMENTATION_DEFECT EQUAL TO NOUGHT, AND IT WAS KNOWN NOT TO
-BE MET BEFORE THE CYCLE BEGAN.** B1.4 and PH.5 could only have been closed by inventing a
-constant that exists in no source this repository holds or cites. They are reclassified honestly
-and remain advisory and non-voting. **It was not forced closed.**
+**IMPLEMENTATION_DEFECT IS NOUGHT, AND EVERY RUN-20 EXIT TARGET IS MET.** B1.4 and PH.5, the two
+rows earlier text counted against this target, could only have been CLOSED by inventing a constant
+that exists in no source this repository holds or cites, and neither was. But neither is an
+implementation defect: both carry `implementation_correct = yes` in the committed re-audit and
+`implementation_defect = no` in the committed register, and both hold a BLOCKED disposition on
+parameter or threshold AUTHORITY. They are reclassified honestly and remain advisory and
+non-voting. **Nothing was forced closed, and no scientific behaviour changed to reconcile this
+wording.** One row, 4.1, carries `implementation_correct = no` with `execution_outcome =
+NOT_PORTED` -- a truthful refusal by the complete analytical run rather than a defective
+computation -- and its disposition is EMPIRICAL_VALIDATION_BLOCKED. (Run 21 section 3A.)
 
 **FALSE REINFORCEMENT NOUGHT, FALSE SUPPRESSION NOUGHT, LINEAGE DECLARATION IDENTITY DEFECTS
 NOUGHT,** over fourteen properties including the triangle in all six orderings. Transitive
@@ -8499,3 +8511,91 @@ deliberately NOT renamed because the served package is frozen and the study is m
 **DO NOT LAUNCH RUN 21 FROM THIS HANDOFF WITHOUT READING ITS QUEUE.** The Run-21 instrument and
 browser qualification queue is the last section of the final report. Nothing in Run 20 drove a
 browser: every finding is a computation-layer finding.
+
+# RUN 21 — FINAL RESEARCH INSTRUMENT / WEBSITE QUALIFICATION
+
+**Starting commit e73f3c9. Run 21 asked one question: DOES THE WEBSITE TRUTHFULLY AND
+REPRODUCIBLY PRESENT THE SCIENTIFICALLY QUALIFIED SYSTEM THAT RUN 20 ESTABLISHED?** It is not a
+scientific-remediation run. No method, formula, threshold, band, boundary or lineage policy was
+changed, and none was changed to make the interface easier to qualify.
+
+**NOTHING IN RUN 20 DROVE A BROWSER. RUN 21 DID.** Two drivers, real Chromium, real server, real
+participant routes: `server/tools/drive_run21_instrument.py` for the project/state matrix and
+`server/tools/drive_run21_participant.py` for the participant sequence. Both live outside the
+`test_*.py` glob deliberately, because `run_all_suites.sh` must not depend on a browser.
+
+## The Run-20 closure reconciliation, done first and committed separately
+
+**IMPLEMENTATION_DEFECT IS 0 AND THAT TARGET IS MET.** The Run-20 report stated the count as 0 in
+its distribution table and NOT MET in its exit-criteria table. Derived from the committed rows
+rather than from narrative: `run20_cycle12_100_reaudit.csv` carries a disposition for all 100
+rows and none is IMPLEMENTATION_DEFECT; B1.4 and PH.5 both carry `implementation_correct = yes`
+there and `implementation_defect = no` in the master register. What is unresolved in each is
+parameter and threshold AUTHORITY, not a defective implementation. Both remain BLOCKED, advisory
+and non-voting, and **neither was closed and no number was invented.** Row 4.1 carries
+`implementation_correct = no` with `execution_outcome = NOT_PORTED`, a truthful refusal rather
+than a defective computation.
+
+**THE STALE ARCH.2 ROW IS REWRITTEN.** It described the transitive closure as current behaviour;
+it has not been since cycle 6, which replaced it with the pairwise, never-closed primitive-source
+model. **Current lineage behaviour is unchanged by that edit.**
+
+## What Run 21 changed in production, and it is only two files
+
+1. **`assets/js/simulations.js`** — the browser instrument went on publishing the four regulatory
+   claims Run 20 cycle 2 WITHDREW from the server, for the whole of Run 20. It is loaded by
+   `research/deepdive.html` and by NO participant route, so what it misled was the researcher.
+   All four withdrawn. **No band, boundary, threshold or arithmetic result changed.**
+
+2. **`assets/js/neural_flow.js`** — **THE ONE PRODUCT DEFECT RUN 21 FOUND ITSELF.** After the
+   supported reset the diagram read "0 UPLOADED ON THIS PROJECT" and "This project has no
+   uploaded documents", while the server still held every document and the next recompute read
+   them all. Measured in a real browser on a RELOADED document, so not a cache artefact:
+   twenty-five events served, zero uploads reported, then forty-one modules computed from the
+   retained documents. **Same class as the "96 modules" defect Run 16 fixed: a correct number
+   under a false label.** The words now say what the number counts and the retained documents are
+   disclosed. **No count changed**, and the pre-reset wording and the empty-project sentence are
+   byte-identical for a project that has not been reset.
+
+Both are declared in `server/tools/run21_production_changes.py`. **The Run-20 freeze stays
+immovable and the Run-20 manifest was not touched**, because folding a later run's edits into it
+would falsify Run 20's own record.
+
+## The reset contract, measured, because it was assumed wrong first
+
+**THE RESET CLEARS STORED SIGNALS. IT DOES NOT DELETE DOCUMENTS.** The control says so itself.
+Measured at the server: all twenty-four upload events survive it, and regenerating signals
+correctly returns to forty-one modules against thirty-five for a control project that only ever
+held one document. **Re-reading retained documents after a reset is designed behaviour**, and an
+earlier version of the Run-21 driver asserted the opposite from an assumption. That invented
+requirement was removed rather than weakened into something that passes.
+
+## Six of the seven defects this run found were in RUN 21's OWN INSTRUMENTS
+
+All seven are in the anti-fossilization register. The six harness defects: an over-broad literal
+scan that flagged the corrected file because the corrections' commentary quotes the withdrawn
+sentences; an over-broad suspect reader that called three decorative legend separators an
+obsolete collapse control; a wait-condition fault that reported a working reload as broken; an
+invented STATE-E requirement; a driver that stayed on the old project after a transition and
+reported the resulting correct behaviour as an AI leak; and an "attack" that resolved to the
+CURRENT period and so submitted the new period's preliminary instead of attacking the previous
+one, then reported its own three consequences as defects. **In every case the product was
+correct and the instrument was wrong.**
+
+**THE BROWSER RELOAD TAKES ABOUT 195 SECONDS IN THIS CONTAINER.** Measured, not inferred: the
+reload completes, the sentinel is destroyed and the application becomes ready, with readyState
+"interactive", while Playwright's `reload()` times out at 45s even at `wait_until="commit"`.
+**Run 21 did NOT determine whether that is a container artefact or a real served-page cost a
+participant would meet, and says so.** It is item 7 on the Run-22 queue and it is marked
+blocking-if-real.
+
+## Safety, unchanged
+
+Voting is exactly two (A1.7, A1.8), read from the registry and not from memory. Concept-only
+activation is nought. Material Cost Variance is still disabled. **The participant experimental
+treatment, sequence, randomization and protocol are untouched**, and the participant-surface
+rename was deliberately NOT applied: it is an owner decision and it carries to Run 22 unchanged.
+No production Postgres, credential or secret was used at any point.
+
+**DO NOT LAUNCH RUN 22 WITHOUT READING `code_audit/run21_run22_freeze_queue.csv`.** Three of its
+nine items are marked blocking for a freeze, and one of those is the reload cost above.

@@ -1,0 +1,13 @@
+guard,protected_invariant,how_the_violation_was_introduced,observed,result,why_it_matters
+voting count,voting is exactly 2,a third module added to CORE_VOTING_MODULES in the module production reads,count became 3,RED as required,a count check that could not see a widened set would license silent expansion
+voting count,voting is exactly 2,restored and re-read,"2 (A1.7, A1.8)",GREEN,
+concept-only activation,activation count is 0,activation_state read for every concept-only module id,"8 modules, all DISABLED_UNSAFE",GREEN,
+concept-only activation,activation count is 0,"A3.8 removed from DISABLED_CONCEPT_ONLY, checked against the PINNED id list",A3.8 reported ADVISORY_ONLY,RED as required,iterating the mapping the violation emptied would have found nothing to check
+Material Cost Variance,disabled and non-voting,activation_state and the voting set read from the registry,"activation_state=DISABLED_EVIDENCE_UNDER_REVIEW, in voting set = False",GREEN,
+Material Cost Variance,disabled,A3.4 removed from both disabled mappings,activation_state moved DISABLED_EVIDENCE_UNDER_REVIEW -> ADVISORY_ONLY,RED as required,a state that did not move would mean the guard reads something else entirely
+Category-9 raw bypass,a raw signal cannot reach the combination,a hand-built dict with the right shape passed to fuse_qualified,RawBypassError raised,GREEN,
+Category-9 raw bypass,a qualified signal still passes,a signal built with qualify() passed to fuse_qualified,1 signal admitted,GREEN,without this the refusal would be indistinguishable from a function that always raises
+anti-feedback rejection,quality/governance/decision outputs are not project evidence,qualify() called with each non-project relationship,"3 relationships, all REJECTED",GREEN,
+anti-feedback rejection,an ordinary project signal is still admitted,qualify() called with INDEPENDENT,verdict=ALLOWED,GREEN,without this the rejection would be indistinguishable from rejecting all signals
+abstention contract,"an abstention carries no band, no vote and no mass","qualify() with module_abstained=True, then to_fusion_signal()",verdict=ABSTAINED band=None may_vote=False status=None,GREEN,
+abstention contract,a non-abstaining module is unaffected,qualify() with module_abstained=False,band=Amber may_vote=True,GREEN,
