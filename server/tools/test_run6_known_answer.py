@@ -327,9 +327,19 @@ RUN16_SCOPED_FILES = {
 # nine evidence relationships, the lineage record and the partition that decides which signals
 # are one body of evidence. It is a new file rather than an edit; the combination rule and the
 # compute entry point that read it are already inside earlier runs' authorised scope.
+# RUN 20 CYCLE 9 adds two more, both ARCH.5. arm_lineage.py is a new file: the four assembled
+# arm declarations, moved out of models_gov.py unchanged because seven more registered modules
+# read the same four arms, together with the weight-free deduplication that gives each
+# independent body of evidence exactly one reading. models_evc.py is an EDIT, and it is the one
+# file in this list whose module RESULTS move: the six advisory evidence-combination siblings
+# aggregated four arms with equal weight per arm when three of those arms are readings of one
+# earned-value measurement. Every figure that moved is hand-reworked in this file beside the
+# working it replaces, and no band moved on the fixture.
 RUN20_SCOPED_FILES = {
     "server/app/simulation/lineage.py",
     "server/app/simulation/qualification_gate.py",
+    "server/app/simulation/arm_lineage.py",
+    "server/app/simulation/models_evc.py",
 }
 
 _unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES
@@ -1046,23 +1056,52 @@ ka(r["conflict_estimable"], True, "dempster-shafer: and that its conflict coeffi
    "estimable, because there are two independent bodies for it to be estimated across")
 
 print("\n-- B2.2 Rough Sets --")
-# HAND: all four signals classify Red, so the Red count is 4 of 4. 4/4 = 1.0 > 0.75, so the lower
-# approximation is exactly {Red}, the boundary region is empty and the classification is definite.
+# HAND: all four ARMS classify Red.
+#
+# RUN 20 CYCLE 9, ARCH.5. THE HAND WORKING IS KEPT AND ITS PREMISE IS NOW RECORDED AS WRONG, the
+# same way cycle 7 kept B2.1's. It counted FOUR classes because there are four arms. There are
+# not four bodies of evidence: the index arm, the forecast overrun and the trend breach are three
+# readings of ONE earned-value measurement, established by execution in cycle 7. The ratio below
+# is a count of classes against the class TOTAL, so those three readings occupied three quarters
+# of it on their own. On the cycle 7 fixture that is exactly 0.75, which is the boundary this
+# module's lower-approximation test sits on: the duplication was not a rounding effect, it
+# decided which side of the boundary the module landed on.
+#
+# The corrected working, over the two bodies the evidence actually holds: the earned-value body
+# reads Red (the most adverse of its three readings, all Red here) and the document body reads
+# Red at a risk score of 0.80. Red is 2 of 2, which is 1.0 and still above 0.75, so the lower
+# approximation is still exactly {Red} and the classification is still definite. THE BAND AND THE
+# CLASSIFICATION ARE UNCHANGED; what changed is the count the module reports, which now says two
+# bodies of evidence rather than four quotations of two.
 r = registry.run_module("B2.2", _PKG, NOOP, "2025-06-30")
 ka((r["lower_approximation"], r["boundary_region"], r["classification"]),
    (["Red"], [], "Definite Red"), "rough sets: a definite lower approximation")
-ka(r["evidence_metric"], "Definite Red (Green 0, Amber 0, Red 4 of 4 signals)",
-   "rough sets: finding")
+ka(r["evidence_metric"], "Definite Red (Green 0, Amber 0, Red 2 of 2 signals)",
+   "rough sets: finding, counted over BODIES of evidence and not over arms")
+ka((r["arms_present"], r["bodies_of_evidence"], r["arms_suppressed_as_duplicate"]), (4, 2, 2),
+   "rough sets: four arms, two bodies, two arms suppressed as further readings of one body")
 
 print("\n-- B2.3 Neutrosophic Logic --")
-# HAND: the four components are (.75,.15,.10), (.75,.15,.10), (.90,.05,.05), (.75,.15,.10).
-# Truth combines disjunctively: 1 - (.25 * .25 * .10 * .25) = 1 - .0015625 = .9984375.
-# Indeterminacy multiplies: .15*.15*.05*.15 = .00016875. Falsity multiplies: .10*.10*.05*.10
-# = .00005. The three are then divided by their sum .99865625, giving 1.0, 0.0 and 0.0 to two
-# places. Four Red components is at least two, so the status is Red, and an indeterminacy of 0 is
-# not above 0.15, so the level is Low.
+# HAND, AND ITS PREMISE IS NOW RECORDED AS WRONG. The old working combined FOUR components --
+# (.75,.15,.10) for the index arm, (.75,.15,.10) for the forecast, (.90,.05,.05) for the trend
+# and (.75,.15,.10) for the document -- and truth combines DISJUNCTIVELY, so three readings of
+# one earned-value measurement drove T to 1.0 on the evidence of one measurement.
+#
+# The corrected working, over the two bodies: the earned-value body contributes the most adverse
+# of its three readings, which is the trend arm at (.90,.05,.05) -- all three are Red, so the tie
+# keeps the earliest, the index arm at (.75,.15,.10) -- and the document body contributes
+# (.75,.15,.10).
+#   T = 1 - (.25 * .25)     = .9375
+#   I = .15 * .15           = .0225
+#   F = .10 * .10           = .01
+#   sum = .97, so T = .9375/.97 = .96649 -> 0.97, I = .0225/.97 = .02320 -> 0.02,
+#   F = .01/.97 = .010309 -> 0.01.
+# Red is 2 of 2 components, a share of 1.0, which is at least one half, so the status is Red. An
+# indeterminacy of 0.02 is not above 0.15, so the level is Low. THE BAND IS UNCHANGED.
 r = registry.run_module("B2.3", _PKG, NOOP, "2025-06-30")
-ka((r["T"], r["I"], r["F"]), (1.0, 0.0, 0.0), "neutrosophic: truth, indeterminacy and falsity")
+ka((r["T"], r["I"], r["F"]), (0.97, 0.02, 0.01),
+   "neutrosophic: truth, indeterminacy and falsity over TWO bodies, and not the 1.0 that "
+   "combining one body three times disjunctively used to produce")
 ka((band(r), r["indeterminacy_level"]), ("Red", "Low"), "neutrosophic: band and level")
 
 print("\n-- B2.4 Interval Fuzzy Sets --")
@@ -1076,36 +1115,70 @@ print("\n-- B2.4 Interval Fuzzy Sets --")
 # The width is (1-0.71429) + (0.42857-0) = 0.71429, which is above 0.3, so High.
 r = registry.run_module("B2.4", _PKG, NOOP, "2025-06-30")
 ka(band(r), "Red", "interval fuzzy: band")
-ka((r["uncertainty_width"], r["uncertainty_level"]), (0.71, "High"),
-   "interval fuzzy: aggregated interval width")
-ka(r["evidence_metric"], "Green [0, 0] Amber [0, 0.43] Red [0.71, 1]",
+ka((r["uncertainty_width"], r["uncertainty_level"]), (0.86, "High"),
+   "interval fuzzy: the width of the ONE index reading kept, not the span of two readings of "
+   "one measurement")
+ka(r["evidence_metric"], "Green [0, 0] Amber [0, 0.43] Red [0.57, 1]",
    "interval fuzzy: finding")
+ka((r["index_readings_present"], r["index_reading_used"],
+    r["index_readings_suppressed_as_same_body"]),
+   (2, "cost index", ["schedule index"]),
+   "interval fuzzy: two index readings present, one kept, one suppressed as the same body")
 
 print("\n-- B2.5 Z-numbers --")
-# HAND: all four restrictions are Red, carrying reliabilities 0.85 (indices), 0.90 (trend),
-# 0.65 (document risk) and 0.88 (forecast). The red total is 3.28, the amber and green totals are
-# zero, and the average reliability is 3.28/4 = 0.82.
+# HAND, AND ITS PREMISE IS NOW RECORDED AS WRONG. All four restrictions are Red, carrying
+# reliabilities 0.85 (indices), 0.90 (trend), 0.65 (document risk) and 0.88 (forecast), and the
+# old working SUMMED them to 3.28. A sum of reliabilities is a vote by count: three readings of
+# one earned-value measurement summed three reliabilities against the document score's one, so
+# that measurement won on how many times it was quoted rather than on evidence.
+#
+# The corrected working, over the two bodies: the earned-value body contributes one reading, the
+# most adverse of its three, all Red, so the tie keeps the earliest -- the index arm at
+# reliability 0.85 -- and the document body contributes 0.65. The red total is 1.50, the amber
+# and green totals are zero, and the average reliability is 1.50/2 = 0.75. NO RELIABILITY IS
+# COMBINED, DISCOUNTED OR INVENTED: the kept reading brings its own, unchanged. The band is
+# unchanged at Red.
 r = registry.run_module("B2.5", _PKG, NOOP, "2025-06-30")
-ka((r["weighted_red"], r["weighted_amber"], r["weighted_green"]), (3.28, 0, 0),
-   "z-numbers: reliability-weighted totals")
-ka((r["avg_reliability"], band(r)), (0.82, "Red"), "z-numbers: average reliability and band")
+ka((r["weighted_red"], r["weighted_amber"], r["weighted_green"]), (1.5, 0, 0),
+   "z-numbers: reliability totals over the two bodies, not the 3.28 that summing one body's "
+   "three readings used to produce")
+ka((r["avg_reliability"], band(r)), (0.75, "Red"), "z-numbers: average reliability and band")
 
 print("\n-- B2.6 PLTS --")
-# HAND: the four sources contribute (.02,.08,.90) for an index minimum below 0.87, (.02,.13,.85)
-# for a breached trend, (.03,.17,.80) for document risk at or above 0.70 and (.03,.17,.80) for an
-# overrun above 10. The means are .025, .1375 and .8375, which report as 3, 14 and 84 per cent
-# after rounding half up.
+# HAND, AND ITS PREMISE IS NOW RECORDED AS WRONG. The four arms contribute (.02,.08,.90) for an
+# index minimum below 0.87, (.02,.13,.85) for a breached trend, (.03,.17,.80) for document risk
+# at or above 0.70 and (.03,.17,.80) for an overrun above 10, and the old working took the MEAN
+# over all four. A mean is a weight: three readings of one earned-value measurement pulled it
+# three times as hard as the document score.
+#
+# The corrected working, over the two bodies: the earned-value body contributes the most adverse
+# of its three readings, all Red, so the tie keeps the earliest, the index arm at (.02,.08,.90);
+# the document body contributes (.03,.17,.80). The means are .025, .125 and .85, which report as
+# 3, 13 and 85 per cent after rounding half up. The band is unchanged at Red.
 r = registry.run_module("B2.6", _PKG, NOOP, "2025-06-30")
-ka((r["p_green"], r["p_amber"], r["p_red"]), (3, 14, 84), "plts: aggregated probabilities")
+ka((r["p_green"], r["p_amber"], r["p_red"]), (3, 13, 85),
+   "plts: probabilities averaged over the two bodies, not over four quotations of two")
 ka(band(r), "Red", "plts: band")
 
 print("\n-- B2.8 Belief Rule Base --")
-# HAND: the index minimum is 0.85, so the index state is Red, and the trend has breached, so
-# exactly one rule activates: EVM Red plus trend breach, whose belief is (.02, .08, .90) at a
-# weight of 1.00. With one rule the weighted mean is that belief unchanged.
+# HAND, AND ITS PREMISE IS NOW RECORDED AS WRONG. The index minimum is 0.85, so the index state
+# is Red, and the trend has breached, so the old working activated R1 -- "EVM Red PLUS trend
+# breach" -- whose belief is (.02, .08, .90) at weight 1.00. That rule conditions on the index
+# state AND the breach as two facts. They are two readings of one earned-value measurement, so
+# the rule base was counting one measurement twice at the point where it decides which rule fires
+# at all, and the rule that fires because of the second count is the most extreme in the base.
+#
+# The corrected working: the earned-value body reads ONE band, the more adverse of the index
+# state (Red) and the trend reading (Red, breached), which is Red. The breach stops acting as a
+# separate antecedent, so R2 activates -- earned-value body Red -- whose belief is (.05, .25, .70)
+# at weight 0.85. With one rule the weighted mean is that belief unchanged: 5, 25 and 70 per
+# cent. The band is unchanged at Red, on a belief that no longer counts one measurement twice.
 r = registry.run_module("B2.8", _PKG, NOOP, "2025-06-30")
-ka((r["belief_green"], r["belief_amber"], r["belief_red"]), (2, 8, 90),
-   "belief rule base: the single activated rule's belief, unchanged")
+ka((r["belief_green"], r["belief_amber"], r["belief_red"]), (5, 25, 70),
+   "belief rule base: the single activated rule's belief, on the earned-value BODY's band and "
+   "not on the index state conjoined with a second reading of the same measurement")
+ka(r["earned_value_body_state"], "Red",
+   "belief rule base: the earned-value body reads Red, the more adverse of its two readings")
 ka((r["rules_matched"], band(r)), (1, "Red"), "belief rule base: one rule activated")
 
 print("\n-- B1.2, B1.3 and B1.4, the three voting ensembles --")

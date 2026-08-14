@@ -22,8 +22,67 @@ from __future__ import annotations
 import math
 from typing import Any, Callable
 
+from .arm_lineage import ARM_LINEAGE_BY_KEY, one_reading_per_body
+from .fusion import BAND_SEVERITY
+
+
+def _band(g: float, a: float, r: float) -> str:
+    """The band a Green/Amber/Red distribution asserts: the state carrying most of it.
+
+    Read off the distribution rather than recorded beside it at the branch that chose it, so an
+    oracle and an implementation cannot both derive the expected band from one expression. Ties
+    keep the more adverse state, matching the aggregations' own comparisons.
+    """
+    return "Red" if r >= a and r >= g else "Amber" if a >= g else "Green"
 from .models import insufficient
 from .rng import js_round, round2
+
+
+# ------------------------------------------------------------------- RUN 20 CYCLE 9, ARCH.5
+#
+# EVERY MODULE IN THIS FILE READS THE SAME FOUR ASSEMBLED ARMS AND AGGREGATED THEM WITH EQUAL
+# WEIGHT PER ARM. Three of those four arms are readings of ONE earned-value measurement, which
+# cycle 7 established by execution and arm_lineage.py records. Equal weight per arm therefore
+# gave one measurement three quarters of the vote.
+#
+# The correction introduces NO WEIGHT. The present arms are separated into independent bodies by
+# the existing lineage contract and each body contributes ONE reading, the most adverse of its
+# members, which is idempotent. Each module then runs ITS OWN arithmetic, unchanged, over the
+# surviving readings. No band, membership, reliability, rule weight or boundary in this file is
+# altered by any of it: what changed is which readings are aggregated against each other.
+#
+# THE SILENT REWEIGHTING IS DISCLOSED AT THE SAME TIME. Every aggregator here divides by the
+# number of arms it happens to have, so an absent arm silently redistributes its share over the
+# remainder and the same evidence gives a different answer according to how many arms exist. The
+# division is kept -- a mean over the bodies actually in hand is the honest reading, and the
+# alternative is a fabricated neutral for an absent arm, which this programme refuses -- but the
+# counts are now REPORTED on every result, so a reader can see how many bodies stood behind the
+# figure rather than inferring it from an arm count that says nothing about dependence.
+
+
+def _dedupe(si, entries):
+    """
+    Reduce a module's present arms to one reading per independent body of evidence.
+
+    `entries` is a list of (assembled-signal-key, band, payload) in the module's own evaluation
+    order. Returns the surviving payloads in that same order, plus the audit trail. Order in,
+    order out: the aggregations below are all sums, products or maxima and are therefore
+    permutation invariant, and this function does not become the one place that is not.
+    """
+    records = [ARM_LINEAGE_BY_KEY[k] for k, _band, _p in entries]
+    bands = [b for _k, b, _p in entries]
+    sep = one_reading_per_body(records, bands, si)
+    return [entries[i][2] for i in sep["kept"]], sep
+
+
+def _lineage_fields(sep):
+    """The audit trail every module in this file now carries."""
+    return {
+        "arms_present": sep["arms_present"],
+        "bodies_of_evidence": sep["bodies_of_evidence"],
+        "arms_suppressed_as_duplicate": sep["arms_suppressed_as_duplicate"],
+        "evidence_bodies": sep["bodies"],
+    }
 
 
 def _evm(si):
@@ -38,22 +97,32 @@ def _evm(si):
 
 def run_rough_sets(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     states = ["Green", "Amber", "Red"]
-    classes: list[str] = []
+    entries: list[tuple[str, str, str]] = []
     cpi, spi = _evm(si)
     if cpi and spi:
         evm_min = min(cpi, spi)
-        classes.append("Green" if evm_min >= 0.95 else "Amber" if evm_min >= 0.90 else "Red")
+        b = "Green" if evm_min >= 0.95 else "Amber" if evm_min >= 0.90 else "Red"
+        entries.append(("evm", b, b))
     mc = si.get("mc")
     if mc is not None:
         p80 = mc.get("p80DeltaPct") or 0
-        classes.append("Green" if p80 <= 5 else "Amber" if p80 <= 10 else "Red")
+        b = "Green" if p80 <= 5 else "Amber" if p80 <= 10 else "Red"
+        entries.append(("mc", b, b))
     cusum = si.get("cusum")
     if cusum is not None:
-        classes.append("Red" if cusum.get("breached") else "Green")
+        b = "Red" if cusum.get("breached") else "Green"
+        entries.append(("cusum", b, b))
     doc = si.get("doc")
     if doc is not None:
         score = doc.get("score") or 0
-        classes.append("Green" if score < 0.30 else "Amber" if score < 0.70 else "Red")
+        b = "Green" if score < 0.30 else "Amber" if score < 0.70 else "Red"
+        entries.append(("doc", b, b))
+
+    # ARCH.5. The ratio below is a count of classes against the class TOTAL, so an earned-value
+    # measurement read three ways occupied three quarters of it. On the cycle 7 fixture that is
+    # exactly 0.75, the boundary the lower-approximation test sits on: the duplication decided
+    # the band. One class per body of evidence now, and the denominator is the number of bodies.
+    classes, _sep = _dedupe(si, entries)
 
     if not classes:
         # D1. The `or 1` that used to stand in for the denominator here made every ratio 0/1,
@@ -89,6 +158,7 @@ def run_rough_sets(si: dict, rand: Callable[[], float], period_cutoff) -> dict[s
         "classification": classification,
         "signal_votes": counts,
         "total_signals": total,
+        **_lineage_fields(_sep),
         "evidence_metric": (
             f"{classification} (Green {counts['Green']}, Amber {counts['Amber']}, "
             f"Red {counts['Red']} of {total} signals)"
@@ -100,48 +170,53 @@ def run_rough_sets(si: dict, rand: Callable[[], float], period_cutoff) -> dict[s
 
 
 def run_neutrosophic(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    components: list[dict] = []
+    entries: list[tuple[str, str, dict]] = []
     cpi, spi = _evm(si)
     if cpi and spi:
         evm_min = min(cpi, spi)
         if evm_min >= 0.95:
-            components.append({"T": 0.85, "I": 0.10, "F": 0.05, "source": "EVM", "state": "Green"})
+            entries.append(("evm", "Green", {"T": 0.85, "I": 0.10, "F": 0.05, "source": "EVM", "state": "Green"}))
         elif evm_min >= 0.90:
-            components.append({"T": 0.70, "I": 0.20, "F": 0.10, "source": "EVM", "state": "Amber"})
+            entries.append(("evm", "Amber", {"T": 0.70, "I": 0.20, "F": 0.10, "source": "EVM", "state": "Amber"}))
         else:
-            components.append({"T": 0.75, "I": 0.15, "F": 0.10, "source": "EVM", "state": "Red"})
+            entries.append(("evm", "Red", {"T": 0.75, "I": 0.15, "F": 0.10, "source": "EVM", "state": "Red"}))
     mc = si.get("mc")
     if mc is not None:
         p80 = mc.get("p80DeltaPct") or 0
         if p80 <= 5:
-            components.append({"T": 0.80, "I": 0.10, "F": 0.10,
-                               "source": "Forecast", "state": "Green"})
+            entries.append(("mc", "Green", {"T": 0.80, "I": 0.10, "F": 0.10,
+                        "source": "Forecast", "state": "Green"}))
         elif p80 <= 10:
-            components.append({"T": 0.65, "I": 0.25, "F": 0.10,
-                               "source": "Forecast", "state": "Amber"})
+            entries.append(("mc", "Amber", {"T": 0.65, "I": 0.25, "F": 0.10,
+                        "source": "Forecast", "state": "Amber"}))
         else:
-            components.append({"T": 0.75, "I": 0.15, "F": 0.10,
-                               "source": "Forecast", "state": "Red"})
+            entries.append(("mc", "Red", {"T": 0.75, "I": 0.15, "F": 0.10,
+                        "source": "Forecast", "state": "Red"}))
     cusum = si.get("cusum")
     if cusum is not None:
         if cusum.get("breached"):
-            components.append({"T": 0.90, "I": 0.05, "F": 0.05,
-                               "source": "CUSUM", "state": "Red"})
+            entries.append(("cusum", "Red", {"T": 0.90, "I": 0.05, "F": 0.05,
+                        "source": "CUSUM", "state": "Red"}))
         else:
-            components.append({"T": 0.80, "I": 0.10, "F": 0.10,
-                               "source": "CUSUM", "state": "Green"})
+            entries.append(("cusum", "Green", {"T": 0.80, "I": 0.10, "F": 0.10,
+                        "source": "CUSUM", "state": "Green"}))
     doc = si.get("doc")
     if doc is not None:
         s = doc.get("score") or 0
         if s < 0.30:
-            components.append({"T": 0.85, "I": 0.10, "F": 0.05,
-                               "source": "DocRisk", "state": "Green"})
+            entries.append(("doc", "Green", {"T": 0.85, "I": 0.10, "F": 0.05,
+                        "source": "DocRisk", "state": "Green"}))
         elif s < 0.70:
-            components.append({"T": 0.65, "I": 0.25, "F": 0.10,
-                               "source": "DocRisk", "state": "Amber"})
+            entries.append(("doc", "Amber", {"T": 0.65, "I": 0.25, "F": 0.10,
+                        "source": "DocRisk", "state": "Amber"}))
         else:
-            components.append({"T": 0.75, "I": 0.15, "F": 0.10,
-                               "source": "DocRisk", "state": "Red"})
+            entries.append(("doc", "Red", {"T": 0.75, "I": 0.15, "F": 0.10,
+                        "source": "DocRisk", "state": "Red"}))
+
+    # ARCH.5. The three earned-value readings each contributed a T, an I and an F of their own,
+    # and the T aggregation is a probabilistic OR: three readings of one measurement drove T
+    # toward 1 on evidence of one measurement. One component per body of evidence now.
+    components, _sep = _dedupe(si, entries)
 
     if not components:
         return insufficient("Neutrosophic_Logic")
@@ -162,7 +237,19 @@ def run_neutrosophic(si: dict, rand: Callable[[], float], period_cutoff) -> dict
 
     red_count = sum(1 for c in components if c["state"] == "Red")
     amber_count = sum(1 for c in components if c["state"] == "Amber")
-    status = "Red" if red_count >= 2 else "Amber" if amber_count >= 2 else "Green"
+    # RUN 20 CYCLE 9, ARCH.5, AND THIS IS A CORRECTION OF THE SILENT REWEIGHTING, NOT A NEW
+    # THRESHOLD. The rule was `>= 2`, an ABSOLUTE count written when four arms were counted, so
+    # it meant two of four: one half. Left as an absolute count it would mean two of two --
+    # unanimity -- once the three earned-value readings became one body, and a project reading
+    # Red on its earned value with a clean document score would have reported GREEN. That is
+    # false suppression, and it is the failure this cycle is least willing to introduce. The
+    # threshold is therefore expressed as the SHARE IT ALWAYS WAS, one half of the components
+    # counted, which reproduces `>= 2` exactly on four components and is stable under any other
+    # number. It also repairs the pre-existing reweighting: with three arms present the old
+    # absolute count silently demanded two thirds, and with two it demanded unanimity.
+    n_components = len(components)
+    status = ("Red" if red_count / n_components >= 0.5
+              else "Amber" if amber_count / n_components >= 0.5 else "Green")
     if i > 0.30:
         status = "Amber" if status == "Green" else status
     level = "High" if i > 0.30 else "Moderate" if i > 0.15 else "Low"
@@ -173,6 +260,7 @@ def run_neutrosophic(si: dict, rand: Callable[[], float], period_cutoff) -> dict
         "T": t, "I": i, "F": f,
         "indeterminacy_level": level,
         "signal_components": components,
+        **_lineage_fields(_sep),
         "evidence_metric": (
             f"T={_num_str(t)} I={_num_str(i)} F={_num_str(f)}, Indeterminacy: {level}"
         ),
@@ -213,18 +301,44 @@ def _mem_interval(fn, lo, hi):
 
 def run_interval_fuzzy(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     ev_unc, ac_unc = 0.02, 0.01
-    intervals = []
+    # RUN 20 CYCLE 9, ARCH.5, AND THIS MODULE'S DUPLICATION IS INSIDE A SINGLE ARM. It reads no
+    # forecast, trend or document arm at all: it reads the cost index and the schedule index, and
+    # those are TWO READINGS OF ONE EARNED-VALUE MEASUREMENT, sharing the earned value outright.
+    # The aggregation below is a per-band MAX over the intervals, so the two readings could
+    # contribute to DIFFERENT bands and produce an aggregate membership profile that neither
+    # index asserts on its own -- a fabricated third reading of one measurement.
+    #
+    # The idempotent operator applies here without needing the body separation, because there is
+    # only ever one body: the MORE ADVERSE of the two index readings is kept and the other is
+    # suppressed. A tie keeps the cost index, which is the module's own evaluation order. No
+    # membership function, no boundary and no uncertainty band is altered.
+    candidates = []
     cpi, spi = _evm(si)
     if cpi:
-        lo, hi = cpi - ev_unc - ac_unc, cpi + ev_unc + ac_unc
-        intervals.append({"green": _mem_interval(_mem_green, lo, hi),
-                          "amber": _mem_interval(_mem_amber, lo, hi),
-                          "red": _mem_interval(_mem_red, lo, hi)})
+        candidates.append(("cost index", cpi, cpi - ev_unc - ac_unc, cpi + ev_unc + ac_unc))
     if spi:
-        lo, hi = spi - ev_unc, spi + ev_unc
+        candidates.append(("schedule index", spi, spi - ev_unc, spi + ev_unc))
+    # The band an index reading asserts, read off the same membership functions the aggregation
+    # uses rather than recorded beside them, so an oracle cannot be compared against itself.
+    def _index_band(lo, hi):
+        g = sum(_mem_interval(_mem_green, lo, hi)) / 2
+        a = sum(_mem_interval(_mem_amber, lo, hi)) / 2
+        r = sum(_mem_interval(_mem_red, lo, hi)) / 2
+        return "Red" if r >= a and r >= g else "Amber" if a >= g else "Green"
+
+    intervals = []
+    suppressed = []
+    if candidates:
+        ranked = [(BAND_SEVERITY[_index_band(lo, hi)], k, name, lo, hi)
+                  for k, (name, _v, lo, hi) in enumerate(candidates)]
+        worst = max(r[0] for r in ranked)
+        keep = next(r for r in ranked if r[0] == worst)
+        suppressed = [r[2] for r in ranked if r is not keep]
+        _sev, _k, _name, lo, hi = keep
         intervals.append({"green": _mem_interval(_mem_green, lo, hi),
                           "amber": _mem_interval(_mem_amber, lo, hi),
-                          "red": _mem_interval(_mem_red, lo, hi)})
+                          "red": _mem_interval(_mem_red, lo, hi),
+                          "source": _name})
 
     if not intervals:
         return insufficient("Interval_Fuzzy_Sets")
@@ -260,6 +374,14 @@ def run_interval_fuzzy(si: dict, rand: Callable[[], float], period_cutoff) -> di
         "uncertainty_width": width,
         "uncertainty_level": ("High" if width > 0.3 else
                               "Moderate" if width > 0.15 else "Low"),
+        # ARCH.5 audit trail. Both indices are ONE body of evidence, so the module reports which
+        # reading it kept and which it suppressed rather than presenting an aggregate profile as
+        # though two sources had spoken.
+        "arms_present": 1,
+        "bodies_of_evidence": 1,
+        "index_readings_present": len(candidates),
+        "index_reading_used": intervals[0]["source"],
+        "index_readings_suppressed_as_same_body": suppressed,
         "evidence_metric": (
             f"Green [{fmt(agg_green)}] Amber [{fmt(agg_amber)}] Red [{fmt(agg_red)}]"
         ),
@@ -276,27 +398,37 @@ def _num_str(n) -> str:
 
 
 def run_z_numbers(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    signals = []
+    entries: list[tuple[str, str, dict]] = []
     cpi, spi = _evm(si)
     if cpi and spi:
         evm_min = min(cpi, spi)
         restriction = "Green" if evm_min >= 0.95 else "Amber" if evm_min >= 0.90 else "Red"
-        signals.append({"source": "EVM", "restriction": restriction, "reliability": 0.85})
+        entries.append(("evm", restriction,
+                        {"source": "EVM", "restriction": restriction, "reliability": 0.85}))
     cusum = si.get("cusum")
     if cusum is not None:
-        signals.append({"source": "CUSUM",
-                        "restriction": "Red" if cusum.get("breached") else "Green",
-                        "reliability": 0.90})
+        restriction = "Red" if cusum.get("breached") else "Green"
+        entries.append(("cusum", restriction,
+                        {"source": "CUSUM", "restriction": restriction, "reliability": 0.90}))
     doc = si.get("doc")
     if doc is not None:
         score = doc.get("score") or 0
         restriction = "Red" if score >= 0.70 else "Amber" if score >= 0.30 else "Green"
-        signals.append({"source": "DocRisk", "restriction": restriction, "reliability": 0.65})
+        entries.append(("doc", restriction,
+                        {"source": "DocRisk", "restriction": restriction, "reliability": 0.65}))
     mc = si.get("mc")
     if mc is not None:
         p80 = mc.get("p80DeltaPct") or 0
         restriction = "Red" if p80 > 10 else "Amber" if p80 > 5 else "Green"
-        signals.append({"source": "MonteCarlo", "restriction": restriction, "reliability": 0.88})
+        entries.append(("mc", restriction,
+                        {"source": "MonteCarlo", "restriction": restriction,
+                         "reliability": 0.88}))
+
+    # ARCH.5. The comparison below is a SUM of reliabilities per band, so three readings of one
+    # earned-value measurement summed three reliabilities against the document score's one and
+    # the measurement won on count rather than on evidence. One reading per body now; the kept
+    # reading brings its own reliability and no reliability is combined, discounted or invented.
+    signals, _sep = _dedupe(si, entries)
 
     if not signals:
         return insufficient("Z_Numbers")
@@ -318,6 +450,7 @@ def run_z_numbers(si: dict, rand: Callable[[], float], period_cutoff) -> dict[st
         "avg_reliability": round2(avg_rel),
         "signal_count": len(signals),
         "signals": signals,
+        **_lineage_fields(_sep),
         "evidence_metric": (
             f"Reliability-weighted: Red {_num_str(round2(total_red))} · "
             f"Amber {_num_str(round2(total_amber))} · "
@@ -331,7 +464,7 @@ def run_z_numbers(si: dict, rand: Callable[[], float], period_cutoff) -> dict[st
 
 
 def run_plts(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    plts = []
+    entries: list[tuple[str, str, dict]] = []
     cpi, spi = _evm(si)
     if cpi and spi:
         evm_min = min(cpi, spi)
@@ -347,31 +480,45 @@ def run_plts(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
             g, a, r = 0.02, 0.28, 0.70
         else:
             g, a, r = 0.02, 0.08, 0.90
-        plts.append({"source": "EVM", "Green": g, "Amber": a, "Red": r})
+        entries.append(("evm", _band(g, a, r),
+                        {"source": "EVM", "Green": g, "Amber": a, "Red": r}))
     cusum = si.get("cusum")
     if cusum is not None:
         if cusum.get("breached"):
-            plts.append({"source": "CUSUM", "Green": 0.02, "Amber": 0.13, "Red": 0.85})
+            entries.append(("cusum", _band(0.02, 0.13, 0.85),
+                        {"source": "CUSUM", "Green": 0.02, "Amber": 0.13, "Red": 0.85}))
         else:
-            plts.append({"source": "CUSUM", "Green": 0.80, "Amber": 0.15, "Red": 0.05})
+            entries.append(("cusum", _band(0.80, 0.15, 0.05),
+                        {"source": "CUSUM", "Green": 0.80, "Amber": 0.15, "Red": 0.05}))
     doc = si.get("doc")
     if doc is not None:
         s = doc.get("score") or 0
         if s < 0.30:
-            plts.append({"source": "DocRisk", "Green": 0.85, "Amber": 0.12, "Red": 0.03})
+            entries.append(("doc", _band(0.85, 0.12, 0.03),
+                        {"source": "DocRisk", "Green": 0.85, "Amber": 0.12, "Red": 0.03}))
         elif s < 0.70:
-            plts.append({"source": "DocRisk", "Green": 0.10, "Amber": 0.70, "Red": 0.20})
+            entries.append(("doc", _band(0.10, 0.70, 0.20),
+                        {"source": "DocRisk", "Green": 0.10, "Amber": 0.70, "Red": 0.20}))
         else:
-            plts.append({"source": "DocRisk", "Green": 0.03, "Amber": 0.17, "Red": 0.80})
+            entries.append(("doc", _band(0.03, 0.17, 0.80),
+                        {"source": "DocRisk", "Green": 0.03, "Amber": 0.17, "Red": 0.80}))
     mc = si.get("mc")
     if mc is not None:
         p80 = mc.get("p80DeltaPct") or 0
         if p80 <= 5:
-            plts.append({"source": "MC", "Green": 0.80, "Amber": 0.15, "Red": 0.05})
+            entries.append(("mc", _band(0.80, 0.15, 0.05),
+                        {"source": "MC", "Green": 0.80, "Amber": 0.15, "Red": 0.05}))
         elif p80 <= 10:
-            plts.append({"source": "MC", "Green": 0.08, "Amber": 0.67, "Red": 0.25})
+            entries.append(("mc", _band(0.08, 0.67, 0.25),
+                        {"source": "MC", "Green": 0.08, "Amber": 0.67, "Red": 0.25}))
         else:
-            plts.append({"source": "MC", "Green": 0.03, "Amber": 0.17, "Red": 0.80})
+            entries.append(("mc", _band(0.03, 0.17, 0.80),
+                        {"source": "MC", "Green": 0.03, "Amber": 0.17, "Red": 0.80}))
+
+    # ARCH.5. The aggregation below is a MEAN over the sources, so three distributions derived
+    # from one earned-value measurement pulled the mean three times as hard as the document
+    # score. One distribution per body of evidence now, and the mean is over the bodies.
+    plts, _sep = _dedupe(si, entries)
 
     if not plts:
         return insufficient("PLTS")
@@ -389,6 +536,7 @@ def run_plts(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
         "p_amber": int(js_round(agg_a * 100)),
         "p_red": int(js_round(agg_r * 100)),
         "sources": plts,
+        **_lineage_fields(_sep),
         "evidence_metric": (
             f"P(Green)={int(js_round(agg_g * 100))}% · "
             f"P(Amber)={int(js_round(agg_a * 100))}% · "
@@ -483,29 +631,62 @@ def run_brb(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
     doc_state = "Red" if doc_score >= 0.70 else "Amber" if doc_score >= 0.30 else "Green"
     mc_state = "Red" if p80 > 10 else "Amber" if p80 > 5 else "Green"
 
+    # ---------------------------------------------------------- RUN 20 CYCLE 9, ARCH.5
+    #
+    # THIS MODULE'S DUPLICATION IS BUILT INTO THE RULE ANTECEDENTS THEMSELVES, WHICH IS WHY IT
+    # NEEDS ITS OWN DETERMINATION AND NOT THE SHARED HELPER. Four rules -- R1, R3 and R6 -- fire
+    # on an EVM state CONJOINED WITH a cumulative-sum breach, and R2, R5, R7 and R8 on the same
+    # state conjoined with the ABSENCE of one. The breach is treated as a second, corroborating
+    # fact. It is not: cycle 7 established by execution that the cumulative sum runs over the
+    # SCHEDULE INDEX HISTORY whose last point is this period's index, so the breach flag and the
+    # EVM state are two readings of one earned-value measurement. A rule base that conditions on
+    # both is counting one measurement twice, and it is doing so at the point where it decides
+    # which rule fires at all.
+    #
+    # THE WEIGHT-FREE REPAIR IS THE SAME IDEMPOTENT OPERATOR, APPLIED TO THE ANTECEDENT RATHER
+    # THAN TO THE AGGREGATION. The earned-value body reads ONE band: the more adverse of the EVM
+    # state and the trend reading. That band is what the rules condition on, and the breach stops
+    # acting as a separate antecedent. No rule, belief mass or rule weight is edited: R1, R3 and
+    # R6 simply stop being reachable while an EVM state exists, which is every case in which any
+    # rule fires at all, because every rule in the base conditions on an EVM state.
+    #
+    # NO EVIDENCE IS LOST BY THIS. A breach with a Green index no longer selects R6's "Green plus
+    # breach" mass; it makes the earned-value body read RED and selects R2, which is MORE adverse
+    # rather than less. The direction matters: this cycle will not introduce a repair that lets a
+    # module read greener than its evidence.
+    trend_state = "Red" if breached else "Green"
+    body_state = evm_state
+    if evm_state is not None:
+        body_state = ("Red" if "Red" in (evm_state, trend_state)
+                      else "Amber" if "Amber" in (evm_state, trend_state) else "Green")
+    evm_state, breached = body_state, False
+
     rules = [
-        {"id": "R1", "desc": "EVM Red + CUSUM breach",
+        {"id": "R1", "desc": "Earned-value body Red, with a trend breach as a separate antecedent "
+                 "(unreachable since Run 20 cycle 9: the breach is a reading of that same body)",
          "condition": evm_state == "Red" and breached,
          "belief": {"Green": 0.02, "Amber": 0.08, "Red": 0.90}, "weight": 1.00},
-        {"id": "R2", "desc": "EVM Red, no breach",
+        {"id": "R2", "desc": "Earned-value body Red",
          "condition": evm_state == "Red" and not breached,
          "belief": {"Green": 0.05, "Amber": 0.25, "Red": 0.70}, "weight": 0.85},
-        {"id": "R3", "desc": "EVM Amber + CUSUM breach",
+        {"id": "R3", "desc": "Earned-value body Amber, with a trend breach as a separate antecedent "
+                 "(unreachable since Run 20 cycle 9)",
          "condition": evm_state == "Amber" and breached,
          "belief": {"Green": 0.05, "Amber": 0.30, "Red": 0.65}, "weight": 0.90},
-        {"id": "R4", "desc": "EVM Amber, doc Red",
+        {"id": "R4", "desc": "Earned-value body Amber, document evidence Red",
          "condition": evm_state == "Amber" and not breached and doc_state == "Red",
          "belief": {"Green": 0.08, "Amber": 0.42, "Red": 0.50}, "weight": 0.80},
-        {"id": "R5", "desc": "EVM Amber, doc not Red",
+        {"id": "R5", "desc": "Earned-value body Amber, document evidence not Red",
          "condition": evm_state == "Amber" and not breached and doc_state != "Red",
          "belief": {"Green": 0.10, "Amber": 0.70, "Red": 0.20}, "weight": 0.75},
-        {"id": "R6", "desc": "EVM Green + CUSUM breach",
+        {"id": "R6", "desc": "Earned-value body Green, with a trend breach as a separate antecedent "
+                 "(unreachable since Run 20 cycle 9)",
          "condition": evm_state == "Green" and breached,
          "belief": {"Green": 0.15, "Amber": 0.55, "Red": 0.30}, "weight": 0.85},
-        {"id": "R7", "desc": "EVM Green, no breach, doc Green",
+        {"id": "R7", "desc": "Earned-value body Green, document evidence Green",
          "condition": evm_state == "Green" and not breached and doc_state == "Green",
          "belief": {"Green": 0.85, "Amber": 0.12, "Red": 0.03}, "weight": 0.90},
-        {"id": "R8", "desc": "EVM Green, no breach, doc not Green",
+        {"id": "R8", "desc": "Earned-value body Green, document evidence not Green",
          "condition": evm_state == "Green" and not breached and doc_state != "Green",
          "belief": {"Green": 0.50, "Amber": 0.40, "Red": 0.10}, "weight": 0.70},
     ]
@@ -533,6 +714,13 @@ def run_brb(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
         "matched_rules": [{"id": m["id"], "desc": m["desc"], "weight": m["weight"]}
                           for m in matched],
         "mc_state": mc_state,
+        # ARCH.5 audit trail. The trend arm is a reading of the earned-value body, never a
+        # second body, so the rule base sees two bodies at most: earned value and document.
+        "arms_present": 4 - sum(1 for x in (si.get("mc"), si.get("cusum"), si.get("doc"))
+                                if x is None),
+        "bodies_of_evidence": 2 if si.get("doc") is not None else 1,
+        "earned_value_body_state": body_state,
+        "trend_reading_folded_into_earned_value_body": trend_state,
         "evidence_metric": (
             f"BRB belief: Green {int(js_round(agg_g * 100))}% · "
             f"Amber {int(js_round(agg_a * 100))}% · Red {int(js_round(agg_r * 100))}% · "

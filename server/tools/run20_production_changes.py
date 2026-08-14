@@ -63,6 +63,27 @@ RUN20_ARCHITECTURAL_CHANGES: dict[str, tuple[str, str, str]] = {
                "the combination rule partitions its signals into bodies of evidence before "
                "combining them, so two transforms of one body no longer corroborate each other, "
                "and a quality, governance or decision output is refused as project evidence"),
+    "FUSION.1 fusion": ("9 P1", "server/app/simulation/fusion.py",
+               "an undeclared signal is no longer treated as INDEPENDENT by default. Silence "
+               "produced an empty primitive set, which intersects nothing, so an undeclared "
+               "signal was selected as its own body of evidence and corroborated everything. It "
+               "is now an EXPLICIT UNRESOLVED reading: kept, folded in with the idempotent "
+               "worst-band operator so it can never add certainty, never combined by Dempster's "
+               "rule, and reported by name. Independence must now be ASSERTED by the caller, "
+               "which dst_fuse does and only dst_fuse does"),
+    "ARCH.5 evc": ("9 P1", "server/app/simulation/models_evc.py",
+               "the six advisory evidence-combination siblings aggregated the same four "
+               "assembled arms with equal weight per arm, and three of those four arms are "
+               "readings of ONE earned-value measurement, so that measurement held three "
+               "quarters of every vote. The arms are now separated into independent bodies by "
+               "the existing lineage contract and each body contributes one reading, the most "
+               "adverse of its members. NO WEIGHT, correlation coefficient or reliability "
+               "discount is introduced. Neutrosophic Logic's absolute count threshold is "
+               "expressed as the share it always was, one half, because left absolute it would "
+               "have demanded unanimity over two bodies and suppressed a Red earned-value "
+               "reading. Interval Fuzzy Sets keeps the more adverse of the two index readings, "
+               "which are one body. The Belief Rule Base stops conditioning on the trend breach "
+               "as a separate antecedent from the index state"),
 }
 
 #: PRODUCTION FILES CREATED BY RUN 20. A new file cannot differ from a freeze taken before it
@@ -95,6 +116,14 @@ RUN20_NEW_PRODUCTION_FILES: dict[str, tuple[tuple[str, ...], str]] = {
         "Overhead Absorption Rate resting on the indirect cost ledger, and the A2.1 entry was "
         "removed because that module abstains on an absent canonical structure on every project "
         "and so emits no signal whose evidence there is anything to declare"),
+    "server/app/simulation/arm_lineage.py": (
+        ("9 P1",),
+        "ARCH.5. The four assembled signal arms declared ONCE for every module that reads them, "
+        "and the weight-free deduplication that gives each independent body of evidence exactly "
+        "one reading, the most adverse of its members. The declarations are the ones cycle 7 "
+        "established by execution and are moved here byte for byte; the separation resolves them "
+        "against the project's own evidence first, using cycle 8's derived-index resolver, so "
+        "the schedule index's two ancestries are the project's property and not the module's"),
 }
 
 
