@@ -275,6 +275,9 @@ RUN20_SCOPED_FILES = {
     "server/app/simulation/qualification_gate.py",
     "server/app/simulation/arm_lineage.py",
     "server/app/simulation/models_evc.py",
+    "server/app/simulation/models_fuzzy.py",
+    "server/app/simulation/models_doc.py",
+    "server/app/simulation/models_decision.py",
 }
 
 _diff = subprocess.run(["git", "diff", "--name-only", GUARD_BASELINE_REV, "--"],

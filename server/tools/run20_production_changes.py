@@ -39,6 +39,32 @@ RUN20_PRODUCTION_CHANGES: dict[str, tuple[str, str, str]] = {
     "10.3": ("2 P0C", "server/app/simulation/models_gov.py",
              "the rule named FAR threshold is renamed for the forecast-overrun comparison it "
              "actually is, since no provision states it"),
+    "5.2": ("9 P1", "server/app/simulation/models_doc.py",
+            "Sensitivity Analysis ranked three quantities of which only ONE was a sensitivity. "
+            "The cost-index driver perturbs the index and recomputes the estimate at completion; "
+            "the other two were the schedule index's distance from one, halved, and the raw "
+            "document risk score, and the estimate at completion is not a function of either. It "
+            "now reports the one driver it perturbs, and reports the other two under their own "
+            "names as levels that are not ranked and cannot set the band"),
+    "6.1": ("9 P1", "server/app/simulation/models_decision.py",
+            "Conservative Dominance applied a COUNTING rule, not a dominance rule: a lone Red "
+            "signal read Amber and selected routine early warning. It now reports the most "
+            "adverse band any present signal reads, which introduces no threshold, weight or "
+            "constant. Absent or unrecognised evidence still cannot reach the calmest band, "
+            "which is the pre-existing requirement kept unchanged. The governance projection's "
+            "decision-layer state is untouched and is reported beside the dominance state"),
+    "7.10": ("9 P1", "server/app/simulation/models_fuzzy.py",
+             "Pythagorean Fuzzy Sets took the hesitancy from the RAW membership pair and then "
+             "adjusted the pair, so the three numbers a reader is shown did not satisfy the "
+             "identity that defines the set. The constraint is now enforced on the adjusted pair "
+             "and the hesitancy taken from it, which is what the spherical module in the same "
+             "file already did"),
+    "7.15": ("9 P1", "server/app/simulation/models_fuzzy.py",
+             "Possibility Theory did not normalise its possibility distribution, so on some "
+             "projects nothing was fully possible, and its necessity was the possibility less an "
+             "invented 0.30. The distribution is normalised by its own supremum, a monotone "
+             "rescaling that cannot move the dominant band, and the necessity is the dual, one "
+             "less the possibility of the complement"),
 }
 
 
@@ -89,13 +115,6 @@ RUN20_ARCHITECTURAL_CHANGES: dict[str, tuple[str, str, str]] = {
 #: PRODUCTION FILES CREATED BY RUN 20. A new file cannot differ from a freeze taken before it
 #: existed, so the byte comparison can never see one. Declaring them here is what stops a whole
 #: new production module being added without any declaration at all.
-#:
-#: RUN 20 CYCLE 4 WIDENED THIS ENTRY FROM ONE CYCLE TO THE TUPLE OF CYCLES THAT HAVE TOUCHED THE
-#: FILE, and the reason is a gap cycle 4's own sweep found in cycle 3's guard. Cycle 4 changes
-#: only lineage.py, which is a NEW production file and therefore has no baseline row to differ
-#: from. The manifest's cycle-set check reads the cycles off the baseline-file declarations, so
-#: a cycle that touches nothing but a new file declared itself NOWHERE and the check that exists
-#: to catch exactly that would have stayed green. The cycles are read off this list too now.
 #:
 #: relative path -> (the cycles that have changed it, in order, what the file is)
 RUN20_NEW_PRODUCTION_FILES: dict[str, tuple[tuple[str, ...], str]] = {

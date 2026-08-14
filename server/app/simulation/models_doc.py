@@ -659,17 +659,49 @@ def run_sensitivity_analysis(si: dict, rand: Callable[[], float],
     eac_base = si["bac"] / cpi
     if eac_base == 0:
         return insufficient("Sensitivity_Analysis")  # bac=0: JS NaN fallthrough, refused
+    # ---------------------------------------------------------- RUN 20 CYCLE 9, THE P1 DEFECT
+    #
+    # ONLY ONE OF THE THREE "SENSITIVITIES" WAS A SENSITIVITY, AND THE OTHER TWO WERE RANKED
+    # AGAINST IT AS THOUGH THEY WERE.
+    #
+    # A sensitivity is a response: the output is recomputed with an input moved and the movement
+    # of the output is what is reported. Exactly one of the three below did that. The cost
+    # performance index driver moves the index by 0.05 either way, RECOMPUTES the estimate at
+    # completion at each end, and reports the spread as a share of the base estimate. That is a
+    # genuine one-at-a-time sensitivity of a stated output to a stated input.
+    #
+    # The other two never recomputed anything. `abs(spi - 1.0) * 0.5` is the schedule index's
+    # DISTANCE FROM ONE, halved -- a level reading of how late the project is, not a response of
+    # anything to anything. `docRiskScore` is the document risk score ITSELF, passed through
+    # unchanged. Neither quantity is a derivative, neither is in the units of the first, and the
+    # estimate at completion is `bac / cpi`, which is not a function of the schedule index or the
+    # document risk score at all: THERE IS NO PERTURBATION OF EITHER THAT COULD MOVE IT. So the
+    # ranking was a comparison of an elasticity against two raw levels that happened to be
+    # numbers between nought and one, and `top_driver` and the band were taken from whichever
+    # number won that comparison.
+    #
+    # THE CORRECTION IS THE ONE THE FINDING ITSELF OFFERS: REPORT ONLY THE DRIVER THAT IS
+    # PERTURBED. Nothing is invented to fill the gap. No perturbation size is chosen for the
+    # other two inputs, no elasticity is manufactured for a model that does not contain them, and
+    # no weight relates a level to a response. The two level readings are still reported, because
+    # withholding them would lose information a reader may want, but they are reported UNDER
+    # THEIR OWN NAMES as levels and they are not ranked, not called sensitivities and not
+    # eligible to be the top driver or to set the band.
+    #
+    # The band, its four boundaries and the perturbation of 0.05 are all exactly as they were.
+    # What changed is which number the band is read from.
     cpi_sens = abs(si["bac"] / (cpi - 0.05) - si["bac"] / (cpi + 0.05)) / eac_base
-    spi_sens = abs(si["spi"] - 1.0) * 0.5
-    doc_sens = si["docRiskScore"]
-    drivers = sorted(
-        [
-            {"name": "CPI", "sensitivity": cpi_sens},
-            {"name": "SPI", "sensitivity": spi_sens},
-            {"name": "DocRisk", "sensitivity": doc_sens},
-        ],
-        key=lambda d: -d["sensitivity"],
-    )
+    drivers = [{"name": "CPI", "sensitivity": cpi_sens,
+                "method": "the estimate at completion recomputed with the cost performance "
+                          "index moved 0.05 either way, as a share of the base estimate"}]
+    levels = [
+        {"name": "SPI", "level": abs(si["spi"] - 1.0) * 0.5,
+         "method": "the schedule index's distance from one, halved. A LEVEL, not a response: "
+                   "the estimate at completion is not a function of the schedule index"},
+        {"name": "DocRisk", "level": si["docRiskScore"],
+         "method": "the document risk score itself. A LEVEL, not a response: the estimate at "
+                   "completion is not a function of the document risk score"},
+    ]
     top = drivers[0]
     mx = top["sensitivity"]
     color = ("Green" if mx <= 0.10 else "Yellow" if mx <= 0.20
@@ -680,8 +712,13 @@ def run_sensitivity_analysis(si: dict, rand: Callable[[], float],
         "top_driver": top["name"],
         "top_sensitivity": int(js_round(mx * 100)),
         "drivers": drivers,
+        "levels_not_perturbed": levels,
+        "inputs_perturbed": 1,
+        "inputs_reported_as_levels": 2,
         "evidence_metric": (
-            f"Top risk driver: {top['name']} (sensitivity: {int(js_round(mx * 100))}%)"
+            f"Sensitivity of the estimate at completion to the cost performance index: "
+            f"{int(js_round(mx * 100))}%. It is the only input the estimate is a function of, "
+            f"so it is the only one perturbed."
         ),
     }
 

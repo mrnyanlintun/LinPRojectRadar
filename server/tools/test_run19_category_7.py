@@ -49,12 +49,17 @@ KNOWN_DEFECTS = {
     "7.7/contradiction-endpoints": "FUTURE_RESEARCH_ONLY",
     "7.8/rule-base-provenance": "PARAMETER_PROVENANCE_BLOCKED",
     "7.9/hilbert-space": "FUTURE_RESEARCH_ONLY",
-    "7.10/hesitancy-matches-reported-pair": "IMPLEMENTATION_DEFECT",
+    # RUN 20 CYCLE 9 REPAIRED THIS ONE. The constraint is now enforced on the ADJUSTED pair and
+    # the hesitancy taken from it, so the reported triple satisfies the identity that defines a
+    # Pythagorean fuzzy set. Removed rather than left to go stale.
     "7.11/membership-provenance": "PARAMETER_PROVENANCE_BLOCKED",
     "7.12/declared-score": "PARAMETER_PROVENANCE_BLOCKED",
     "7.13/type-reduction": "CORRECT_PROXY_ONLY",
     "7.14/maximum-entropy-inference": "METHOD_LABEL_MISMATCH",
-    "7.15/normalised-supremum": "IMPLEMENTATION_DEFECT",
+    # RUN 20 CYCLE 9 REPAIRED THIS ONE, and the necessity with it. The distribution is normalised
+    # by its own supremum, which is a monotone rescaling and so cannot move the dominant band, and
+    # the necessity is the dual 1 - Pi(complement) rather than the possibility less an invented
+    # 0.30. Removed rather than left to go stale.
     "7.16/membership-provenance": "PARAMETER_PROVENANCE_BLOCKED",
     "7.17/membership-provenance": "PARAMETER_PROVENANCE_BLOCKED",
     "7.18/real-alternatives": "MISSING_CANONICAL_DATA_STRUCTURE",

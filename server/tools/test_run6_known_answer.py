@@ -340,6 +340,9 @@ RUN20_SCOPED_FILES = {
     "server/app/simulation/qualification_gate.py",
     "server/app/simulation/arm_lineage.py",
     "server/app/simulation/models_evc.py",
+    "server/app/simulation/models_fuzzy.py",
+    "server/app/simulation/models_doc.py",
+    "server/app/simulation/models_decision.py",
 }
 
 _unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES
@@ -879,11 +882,28 @@ ka(r["entropy"], 0.87, "maximum entropy: normalised entropy 0.87")
 # B2.15 Possibility. HAND: Green min(1, max(0,(0.92-0.85)/0.10) * (1-0.1)) = 0.7*0.9 = 0.63;
 # Amber min(1, max(0, 1-(0.92-0.88)/0.10) * (1+0.06)) = 0.6*1.06 = 0.636;
 # Red min(1, max(0,(0.92-0.92)/0.10) + 0.08) = 0.08. The largest is Amber.
+#
+# RUN 20 CYCLE 9. THE HAND WORKING ABOVE IS KEPT AND IS NOW THE WORKING OF THE UNNORMALISED
+# MAPS. A possibility distribution is normalised -- at least one element is fully possible -- and
+# this one was not: its supremum was 0.636, so on this project NOTHING was fully possible, which
+# is not a statement possibility theory can make. Dividing through by the supremum is a monotone
+# rescaling, so the DOMINANT BAND CANNOT MOVE and does not: Amber before, Amber after.
+#   Green 0.63/0.636 = 0.990566 -> 0.99;  Amber 0.636/0.636 = 1.0;  Red 0.08/0.636 = 0.125786
+#   -> 0.13.
+# THE NECESSITY WAS NOT A NECESSITY EITHER. It was the possibility less 0.30, a constant with no
+# provenance. Necessity is the dual, N(A) = 1 - Pi(not A), and over this three-element frame the
+# complement of Amber is {Green, Red}, so N(Amber) = 1 - max(0.990566, 0.125786) = 0.009434,
+# which rounds to 0.01. The unnormalised maps are still reported beside the normalised ones so a
+# reader can see exactly what was rescaled.
 r = run_possibility_theory(_FZ, NOOP, "x")
-ka(r["possibility"], {"Green": 0.63, "Amber": 0.64, "Red": 0.08},
-   "possibility theory: fixed mappings from the raw indices")
-ka(band(r), "Amber", "possibility theory: band")
-ka(r["necessity"]["Amber"], 0.34, "possibility theory: necessity is possibility minus 0.3")
+ka(r["possibility_unnormalised"], {"Green": 0.63, "Amber": 0.64, "Red": 0.08},
+   "possibility theory: the fixed mappings from the raw indices, unchanged")
+ka(r["possibility"], {"Green": 0.99, "Amber": 1.0, "Red": 0.13},
+   "possibility theory: and the distribution normalised so its supremum is one")
+ka(band(r), "Amber", "possibility theory: band, which a monotone rescaling cannot move")
+ka(r["necessity"]["Amber"], 0.01,
+   "possibility theory: necessity is the dual, one less the possibility of the complement, and "
+   "not the possibility less an invented 0.3")
 
 # B2.16 Spherical. HAND: mu (0.92-0.82)/0.18 = 0.555556; nu (0.98-0.92)/0.18 = 0.333333, scaled by
 # (1 + 0.2*0.5) to 0.366667. mu^2 + nu^2 = 0.44309 <= 1, so no rescale; pi = sqrt(0.55691)
@@ -993,13 +1013,24 @@ ka(_abs, {}, "adapter: with all four signals present nothing is recorded absent"
 _PKG = package(_FLAT_RED, _MC_RED, _CU_RED)
 
 print("\n-- B1.1 Conservative Dominance and B3.1 ABM Governance --")
-# HAND: all four assembled signals normalise to Red, so the red count is four. Four is at least
-# two, so the health state is Red-review and the conflict class is Multi-signal red-review. A
-# Red-review escalates, so the action and authority are the escalation pair.
+# HAND: all four assembled signals normalise to Red, so the most adverse band any of them reads
+# is Red, and under a dominance rule that is the answer. The conflict class is still the decision
+# layer's, Multi-signal red-review, and the decision layer's own state is still Red-review, which
+# escalates, so B3.1's action and authority are the escalation pair.
+#
+# RUN 20 CYCLE 9. THE EXPECTED STATE WAS "Red-review" BECAUSE THE MODULE RETURNED THE DECISION
+# LAYER'S COUNTING STATE RATHER THAN A DOMINANCE STATE. That is what the P1 finding was: two or
+# more Reds escalated and a LONE Red did not, so adverse evidence was outvoted by the count of
+# the signals with nothing adverse to say. On this fixture all four are Red, so both rules agree
+# that the answer is adverse and only the NAME of the state changes -- which is exactly why the
+# fixture that separates them is the lone-Red one, checked in the cycle 9 suite. Both states are
+# now reported, so nothing is hidden by the change.
 r = registry.run_module("B1.1", _PKG, NOOP, "2025-06-30")
-ka((r["state"], r["conflict"]), ("Red-review", "Multi-signal red-review"),
-   "conservative dominance: four red signals give a red review")
-ka(r["evidence_metric"], "Red-review: Multi-signal red-review", "conservative dominance: finding")
+ka((r["state"], r["conflict"]), ("Red", "Multi-signal red-review"),
+   "conservative dominance: four red signals dominate to Red")
+ka(r["decision_layer_state"], "Red-review",
+   "conservative dominance: and the decision layer's own state is still reported beside it")
+ka(r["evidence_metric"], "Red: Multi-signal red-review", "conservative dominance: finding")
 r = registry.run_module("B3.1", _PKG, NOOP, "2025-06-30")
 ka((r["action"], r["authority"]),
    ("Recovery-plan review and management escalation", "Program director / PMO lead"),

@@ -61,7 +61,12 @@ DEFECTS: list[dict] = []
 #: goes red, saying so, because the Run-17 disposition has become stale and must be revised.
 #: Neither a new defect nor a repaired one can pass silently.
 KNOWN_DEFECTS: dict[str, str] = {
-    "6.1/single-red-dominance": "IMPLEMENTATION_DEFECT",
+    # RUN 20 CYCLE 9 REPAIRED THIS ONE, so it is removed from the register rather than left to
+    # go stale. Conservative Dominance returned the shared decision layer's COUNTING state --
+    # two or more Reds, or a breach with a Red forecast -- so a lone Red read Amber and selected
+    # routine early warning. It now applies the dominance rule its name asserts: the most adverse
+    # band any present signal reads. Absent or unrecognised evidence still cannot reach the
+    # calmest band, which is the pre-existing all-present-and-Green requirement, kept.
     "6.4/benign-dilution": "IMPLEMENTATION_DEFECT",
     "PH.5/availability-reweighting": "IMPLEMENTATION_DEFECT",
     "PH.1/degenerate-cohort-resolution": "METHOD_PASS_CALIBRATION_PENDING",
@@ -480,9 +485,16 @@ def cat6() -> None:
     out = run("B1.1", all_green)
     check(mid, "positive: agreement at low risk reads Green", out.get("status_color") == "Green")
     two_red = _pkg("Red", "Red", "Green", "Green")
+    # RUN 20 CYCLE 9. The expected value here was "Red-review", the decision layer's own state
+    # name, because that is what the counting rule produced. A dominance rule reports a BAND, and
+    # the band two Reds dominate to is Red. The oracle already said Red and production now agrees
+    # with it; the check is aligned to the oracle rather than to the state name the defect
+    # happened to emit. The decision layer's state is still reported on the result, under its own
+    # name, so nothing is hidden.
     check(mid, "positive: two red signals escalate",
           O.conservative_dominance(["Red", "Red", "Green", "Green"]) == "Red"
-          and run("B1.1", two_red).get("status_color") == "Red-review")
+          and FUSION.normalise_status(run("B1.1", two_red).get("status_color")) == "Red"
+          and run("B1.1", two_red).get("decision_layer_state") == "Red-review")
     # THE DEFINING TEST. Conservative dominance is the worst credible qualified signal. One Red
     # among Greens is Red under the canonical rule. Compare production against the oracle.
     one_red = _pkg("Green", "Green", "Green", "Red")

@@ -123,11 +123,24 @@ _targets = {t["module_id"] for t in population()}
 for mid in sorted(RUN20_PRODUCTION_CHANGES):
     check(f"the manifest entry {mid} is one of the hundred scientific targets",
           mid in _targets)
+    # RUN 20 CYCLE 9 FOUND A GAP IN THIS GUARD AND IT IS FIXED HERE RATHER THAN WORKED AROUND.
+    # The guard assumed every one of the hundred targets is assessed by a suite named
+    # test_run19_category_N. Categories 1 and 6 have no such file: their targets are assessed in
+    # test_run17_scientific_methods.py, which carries the Run-17 canonical propositions for them.
+    # So a change to a category 1 or category 6 module could be declared in the manifest with
+    # NOTHING anywhere demonstrating it, and this check -- which exists precisely to prevent that
+    # -- would have failed for the wrong reason (a missing file) rather than passing for the
+    # right one. The suite that actually assesses the target is looked up now, and the note is
+    # required in whichever file that is. A target assessed by NO suite at all is still a failure.
     cat = mid.split(".")[0]
-    suite = HERE / f"test_run19_category_{cat}.py"
-    body = suite.read_text(encoding="utf-8") if suite.is_file() else ""
-    check(f"the category suite that assesses {mid} carries a Run-20 note recording the change",
-          "RUN 20 CYCLE" in body, f"{suite.name} exists={suite.is_file()}")
+    _candidates = [HERE / f"test_run19_category_{cat}.py",
+                   HERE / "test_run17_scientific_methods.py"]
+    suite = next((c for c in _candidates
+                  if c.is_file() and f'"{mid}"' in c.read_text(encoding="utf-8")), None)
+    body = suite.read_text(encoding="utf-8") if suite is not None else ""
+    check(f"the suite that assesses {mid} carries a Run-20 note recording the change",
+          "RUN 20 CYCLE" in body,
+          f"assessed by {suite.name if suite else 'NO SUITE'}")
 
 # THE ARCHITECTURAL DECLARATIONS, checked the same three ways the module ones are: a cycle, a
 # real file, a reason, and an id that is a real architectural row of the Run-20 register rather

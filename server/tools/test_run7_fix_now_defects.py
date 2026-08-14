@@ -912,7 +912,17 @@ RUN14_CORRECTED = {"A2.11", "A3.2", "A3.3", "A3.5", "A5.4", "A5.8", "B2.19", "C1
 # the reader, which this comparison is field-exact over and therefore correctly reports as a
 # move. The authorisation joins the three above rather than replacing any of them.
 RUN20_CORRECTED = {"B3.2", "B3.3", "B3.4"}
-check(set(_moved) <= (FIX_NOW | RUN10_CORRECTED | RUN14_CORRECTED | RUN20_CORRECTED),
+# RUN 20 CYCLE 9, THE P1 IMPLEMENTATION DEFECTS. Three modules whose arithmetic, not merely
+# whose field names, was corrected. A5.2 ranked three quantities of which only one was a
+# sensitivity and now reports the one driver it perturbs. B2.10 took its hesitancy from a
+# membership pair it does not report, so the triple a reader is shown did not satisfy the
+# identity that defines a Pythagorean fuzzy set. B2.15 did not normalise its possibility
+# distribution and computed necessity as the possibility less an invented 0.30 rather than as
+# the dual of the possibility of the complement. The authorisation joins the four above rather
+# than replacing any of them.
+RUN20_CYCLE9_CORRECTED = {"A5.2", "B2.10", "B2.15"}
+check(set(_moved) <= (FIX_NOW | RUN10_CORRECTED | RUN14_CORRECTED | RUN20_CORRECTED
+                      | RUN20_CYCLE9_CORRECTED),
       "every module whose result moved on a fully reported project is in the fix-now list or "
       "Run 10's corrected list",
       str(sorted(set(_moved) - FIX_NOW)))
