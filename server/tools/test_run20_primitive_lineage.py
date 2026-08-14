@@ -359,7 +359,50 @@ ACTUAL_FACTS = {
     "A5.3": {"ac", "actual_pct_complete", "doc_risk_score", "ev", "planned_pct_complete", "pv"},
     "B3.5": {"baseline_contract_sum", "change_order_count", "revised_contract_sum"},
     "D1.5": set(),                                            # a synthesis holds no fact itself
+    # RUN 20 CYCLE 8, THE ARCH.3 CLUSTERS. These records name their DIRECT facts here and reach
+    # the rest through `derived_index_reads`, so the hand-transcribed set below is the direct
+    # facts only and the index reads are transcribed separately in ACTUAL_INDEX_READS. Three of
+    # them are the cycle's negative controls and are transcribed from what the arithmetic USES
+    # and not from what the preflight demands: B3.2, B3.4 and B4.3 all demand the budget and
+    # none of them reads it, because each reports a percentage OF the budget.
+    "A1.11": {"ac", "bac", "ev"},          # bac, cpi, ev, ac -- the parametric arm reads ev, ac
+    "A3.6": {"bac"},                       # bac and the cost index
+    "B3.2": set(),                         # the cost index alone; the budget scales out
+    "B3.4": set(),                         # the two indices; the budget scales out
+    "B4.3": set(),                         # the two indices; the budget scales out
+    "B2.10": {"doc_risk_score"},
+    "B2.11": {"doc_risk_score"},
+    "B2.14": {"doc_risk_score"},           # the schedule index and the risk score; NOT the cost index
+    "B2.15": {"doc_risk_score"},
+    "B2.16": {"doc_risk_score"},
+    "B2.18": {"doc_risk_score"},
+    "B2.12": set(),
+    "B2.13": set(),
+    "B2.17": set(),
+    "A3.9": {"actual_pct_complete", "material_cost_baseline", "material_cost_current"},
 }
+
+#: The derived indices each record reads, hand-transcribed from the module's arithmetic. A record
+#: naming an index it does not read would declare a dependence that is not there; one omitting an
+#: index it does read would declare an independence that is not there. Both fail here.
+ACTUAL_INDEX_READS = {
+    "A1.11": {"cost_index"}, "A3.6": {"cost_index"}, "B3.2": {"cost_index"},
+    "B3.4": {"cost_index", "schedule_index"}, "B4.3": {"cost_index", "schedule_index"},
+    "B2.10": {"cost_index", "schedule_index"}, "B2.11": {"cost_index", "schedule_index"},
+    "B2.14": {"schedule_index"},
+    "B2.15": {"cost_index", "schedule_index"}, "B2.16": {"cost_index", "schedule_index"},
+    "B2.18": {"cost_index", "schedule_index"}, "B2.12": {"cost_index", "schedule_index"},
+    "B2.13": {"cost_index", "schedule_index"}, "B2.17": {"cost_index", "schedule_index"},
+}
+for mid, expected_reads in sorted(ACTUAL_INDEX_READS.items()):
+    rec = PROD.get(mid)
+    check(f"{mid}: the declared derived-index reads are exactly what the module consumes",
+          rec is not None and set(rec.get("derived_index_reads") or ()) == expected_reads,
+          f'declared {sorted((rec or {}).get("derived_index_reads") or ())}')
+check("no record declares a derived index the sweep has not transcribed",
+      {m for m, r in PROD.items() if r.get("derived_index_reads")} == set(ACTUAL_INDEX_READS),
+      str(sorted({m for m, r in PROD.items() if r.get("derived_index_reads")}
+                 ^ set(ACTUAL_INDEX_READS))))
 for mid, expected in sorted(ACTUAL_FACTS.items()):
     rec = PROD.get(mid)
     check(f"{mid} is declared in the shipped lineage table", rec is not None)

@@ -125,7 +125,8 @@ def lineage_record(module_id: str,
                    evidence_relationship: str = INDEPENDENT,
                    derivation_chain: Iterable[str] = (),
                    primitive_source_ids: Iterable[str] | None = None,
-                   parent_signal_ids: Iterable[str] = ()) -> dict[str, Any]:
+                   parent_signal_ids: Iterable[str] = (),
+                   derived_index_reads: Iterable[str] = ()) -> dict[str, Any]:
     """
     Build one lineage record. Plain dicts rather than a class, because these are serialised into
     the stored compute result and read back by code that has no import of this module.
@@ -143,11 +144,26 @@ def lineage_record(module_id: str,
     # A signal that does not declare its primitive sources separately HAS its governed facts and
     # documents as its primitive sources. It is not given an empty set, because an empty
     # primitive set intersects nothing and would read as independent of everything.
-    prim = (tuple(sorted(set(primitive_source_ids))) if primitive_source_ids is not None
-            else tuple(sorted(set(facts) | set(docs))))
+    #
+    # RUN 20 CYCLE 8. A record that names a DERIVED INDEX gets that index's ancestry folded into
+    # its primitive set here, at build time, using the UNION for the schedule index. Folding it
+    # in at build time rather than at read time means that every existing consumer -- including
+    # the ones written before this field existed and never updated -- sees the dependence
+    # without changing a line, and the narrowing by evidence is an improvement a consumer opts
+    # into, never a correctness fix it has to remember to apply.
+    reads = tuple(derived_index_reads)
+    for name in reads:
+        index_ancestry(name)  # raises on an index this model does not know, never a silent skip
+    ancestry: set[str] = set()
+    for name in reads:
+        ancestry |= set(index_ancestry(name))
+    prim = (tuple(sorted(set(primitive_source_ids) | ancestry))
+            if primitive_source_ids is not None
+            else tuple(sorted(set(facts) | set(docs) | ancestry)))
     return {
         "module_id": module_id,
         "primitive_source_ids": prim,
+        "derived_index_reads": tuple(reads),
         "source_fact_ids": facts,
         "source_document_ids": docs,
         "dependency_ids": tuple(sorted(set(dependency_ids))),
@@ -156,6 +172,103 @@ def lineage_record(module_id: str,
         "evidence_relationship": evidence_relationship,
         "derivation_chain": tuple(derivation_chain),
     }
+
+
+# ------------------------------------------------------ RUN 20 CYCLE 8. THE DERIVED-INDEX ANCESTRY
+#
+# WHY THIS EXISTS AND WHY A STATIC DECLARATION CANNOT REPLACE IT. `extraction_merge` derives the
+# two indices every advisory cluster reads:
+#
+#     cost index     = earned value / actual cost
+#     schedule index = earned value / planned value
+#                      OR, WHEN NO PLANNED VALUE IS PRESENT,
+#                      actual progress / planned progress
+#
+# THE SCHEDULE INDEX THEREFORE HAS TWO POSSIBLE ANCESTRIES, AND WHICH ONE APPLIES IS A PROPERTY
+# OF THE PROJECT'S EVIDENCE AND NOT OF THE MODULE. Measured in cycle 8 by execution: with a
+# planned value present, Maximum Entropy rests on the earned value; with the planned value
+# absent, the same module on the same code rests on the two progress figures and does not touch
+# the earned value at all. A lineage record keyed only by module id is therefore WRONG ON ONE OF
+# THE TWO REGIMES no matter which ancestry it names -- falsely dependent on the progress readers
+# in the first, or falsely independent of the earned-value readers in the second. Cycle 5 proved
+# the first error destroys real corroboration and cycle 3 proved the second manufactures it.
+#
+# SO THE DECLARATION CARRIES THE UNION AND THE EVIDENCE NARROWS IT. A module that reads the
+# schedule index declares `derived_index_reads` and gets the UNION of both ancestries, which is
+# the conservative direction for a consumer that has no project evidence to hand: it can only
+# refuse corroboration, never manufacture it. A consumer that HAS the evidence -- and every
+# production consumer does -- calls `resolve_for_evidence` and gets the exact ancestry. The two
+# are not two opinions about dependence: the union is the honest statement of what is known
+# without the evidence, and the narrowing is what the evidence adds.
+
+#: The ancestry of the cost index. It has only one.
+COST_INDEX_ANCESTRY: tuple[str, ...] = ("ac", "ev")
+#: The schedule index when a planned value is present.
+SCHEDULE_INDEX_ANCESTRY_PV: tuple[str, ...] = ("ev", "pv")
+#: The schedule index when it is not, which is the fallback `extraction_merge` applies.
+SCHEDULE_INDEX_ANCESTRY_PROGRESS: tuple[str, ...] = ("actual_pct_complete",
+                                                    "planned_pct_complete")
+#: What a record declares before any project evidence narrows it.
+SCHEDULE_INDEX_ANCESTRY_UNION: tuple[str, ...] = tuple(sorted(
+    set(SCHEDULE_INDEX_ANCESTRY_PV) | set(SCHEDULE_INDEX_ANCESTRY_PROGRESS)))
+
+#: The two tokens a record may name in `derived_index_reads`.
+COST_INDEX = "cost_index"
+SCHEDULE_INDEX = "schedule_index"
+
+
+def index_ancestry(index_name: str, si: dict | None = None) -> tuple[str, ...]:
+    """The primitive facts one derived index rests on, narrowed by evidence when evidence is given.
+
+    With `si` omitted the schedule index returns the UNION of its two ancestries, which is the
+    only honest answer without the project's evidence in hand.
+
+    The branch reproduces `extraction_merge`'s own condition and the suite asserts the two still
+    agree, by deriving both from the same fact dictionaries rather than by reading this comment.
+    """
+    if index_name == COST_INDEX:
+        return COST_INDEX_ANCESTRY
+    if index_name != SCHEDULE_INDEX:
+        raise LineageError(f"{index_name!r} is not a derived index this model knows")
+    if si is None:
+        return SCHEDULE_INDEX_ANCESTRY_UNION
+    ev, pv = si.get("ev"), si.get("pv")
+    if ev is not None and pv not in (None, 0):
+        return SCHEDULE_INDEX_ANCESTRY_PV
+    apc, ppc = si.get("actualPctComplete"), si.get("plannedPctComplete")
+    if apc is not None and ppc not in (None, 0):
+        return SCHEDULE_INDEX_ANCESTRY_PROGRESS
+    # Neither ancestry is available, so the index does not exist on this project and rests on
+    # nothing. An empty tuple here is NOT an independence claim: a module whose index is absent
+    # emits no reading at all, so there is no signal for anything to corroborate.
+    return ()
+
+
+def resolve_for_evidence(record: dict, si: dict | None) -> dict:
+    """Narrow one record's derived-index ancestry against the project's actual evidence.
+
+    A record that declares no derived index is returned unchanged. Nothing is ever ADDED here:
+    the resolution can only replace the declared union with the branch the evidence selects, so
+    a resolved record's primitive set is always a subset of its declared one.
+    """
+    reads = tuple(record.get("derived_index_reads") or ())
+    if not reads:
+        return dict(record)
+    out = dict(record)
+    # THE BASE IS THE RECORD'S DIRECT FACTS, NOT ITS DECLARED PRIMITIVE SET. Subtracting an
+    # ancestry out of the primitive set would delete a fact the module reads DIRECTLY whenever
+    # that fact also happens to sit under an index it reads, which is a silent loss of real
+    # evidence. Rebuilding from the direct facts cannot do that.
+    resolved = set(record["source_fact_ids"]) | set(record["source_document_ids"])
+    for name in reads:
+        resolved |= set(index_ancestry(name, si))
+    out["primitive_source_ids"] = tuple(sorted(resolved))
+    return out
+
+
+def resolve_records_for_evidence(records: list[dict], si: dict | None) -> list[dict]:
+    """`resolve_for_evidence` over a list, for a consumer that partitions a whole signal set."""
+    return [resolve_for_evidence(r, si) for r in records]
 
 
 def resolve_primitive_sources(records: list[dict]) -> list[frozenset[str]]:
@@ -435,6 +548,9 @@ CONTRACT_CHANGE_BODY = "CONTRACT_CHANGE_RECORD"
 #: The indirect cost ledger. Run 20 cycle 5. Its own body, sharing nothing with the earned-value
 #: measurement, which is exactly what the entry corrected in that cycle had denied.
 INDIRECT_COST_BODY = "INDIRECT_COST_LEDGER"
+#: The material cost baseline and the current material cost. Run 20 cycle 8. Its own body: the
+#: cluster it was found in has only one executable member, so it is a body of one and not a pair.
+MATERIAL_COST_BODY = "MATERIAL_COST_RECORD"
 
 MODULE_LINEAGE: dict[str, dict[str, Any]] = {
     # ---- the two voting modules, which are the reason this file exists
@@ -593,6 +709,171 @@ MODULE_LINEAGE: dict[str, dict[str, Any]] = {
                           "absolute deviation of each index from one",
                           "absolute progress shortfall",
                           "ranked present-state deviations")),
+    # ---- RUN 20 CYCLE 8. THE ARCH.3 CLUSTERS.
+    #
+    # WHAT WAS ACTUALLY ESTABLISHED, AND HOW. ARCH.3 was found by grouping modules by the exact
+    # set of field names their preflight demands. Every declaration below was instead settled by
+    # EXECUTION: each primitive fact was moved through the real production derivation, one at a
+    # time, over four multipliers, and the module's WHOLE emitted result compared. A fact that
+    # can be moved anywhere without moving the result is not that module's evidence, whatever
+    # the preflight demands of it. The probe is `tools/run20_cycle8_probe.py` and its output is
+    # `code_audit/run20_cycle8_material_influence.csv`.
+    #
+    # THE FIELD SET AND THE EVIDENCE DISAGREE ON THREE OF THESE MODULES, IN PRODUCTION. All
+    # three demand the budget and none of them uses it, because each reports a PERCENTAGE of the
+    # budget and the ratio is scale-invariant in it:
+    #
+    #     B3.2  demands bac, ev, ac and the cost index; its result does not move when the budget
+    #           is tripled, and does not move when the earned value and the actual cost move
+    #           together with the index held. It reads the COST INDEX AND NOTHING ELSE.
+    #     B3.4, B4.3  demand the budget and the two indices; the budget is immaterial to both.
+    #     B2.14 demands the cost index, the schedule index and the document risk score; its
+    #           result does not move for the cost index at all. It reads the SCHEDULE index.
+    #
+    # A method that inferred common evidence from the required-input set would have declared all
+    # three on the earned value AND the budget. Two of those three claims would have been false.
+    # They are still dependent on the earned-value readers, but through the cost index being
+    # earned value over actual cost, which is the honest route and the only one taken here.
+    #
+    # AND ONE CLUSTER IS NOT A CLUSTER. A3.4 and A3.9 were grouped on the two material cost
+    # figures. A3.4 is disabled and emits no signal on any project, so there is no pair: A3.9
+    # stands alone on its own body. This is the A2.1 precedent from cycle 5 unchanged -- a module
+    # that emits nothing has no evidence to declare, and declaring some asserts evidence that
+    # was never produced. Six of this row's twenty-four modules are disabled and none is
+    # declared: B4.2, B2.20, B4.1, B4.5, B4.6 and A3.4.
+    #
+    # WHY THE SCHEDULE-INDEX READERS NAME NO EARNED-VALUE GROUP. `derived_index_reads` carries
+    # the dependence, and it carries it CORRECTLY IN BOTH EVIDENCE REGIMES. Declaring the
+    # earned-value group as well would assert dependence on the earned value even on a project
+    # with no planned value, where the schedule index is built from the two progress figures and
+    # the module does not touch the earned value at all. A cost-index reader is a different case
+    # and does name the group, because the cost index has exactly one ancestry.
+
+    "A1.11": lineage_record(  # ICE Ratio: index EAC against a parametric EAC
+        "A1.11", source_fact_ids=("ac", "bac", "ev"),
+        derived_index_reads=(COST_INDEX,),
+        lineage_group_ids=(EARNED_VALUE_BODY,),
+        evidence_relationship=SAME_SOURCE_TRANSFORM,
+        derivation_chain=("bac,ev,ac", "cost performance index = ev / ac",
+                          "index estimate at completion = bac / the cost index",
+                          "parametric estimate at completion = ac + (bac - ev)",
+                          "ratio of the two")),
+    "A3.6": lineage_record(  # Cost Risk Analysis P80, a deterministic inflation of the index
+        "A3.6", source_fact_ids=("bac",),
+        derived_index_reads=(COST_INDEX,),
+        lineage_group_ids=(EARNED_VALUE_BODY,),
+        evidence_relationship=SAME_SOURCE_TRANSFORM,
+        derivation_chain=("bac and the cost performance index",
+                          "cost performance index = ev / ac",
+                          "estimate at completion = bac / the cost index",
+                          "deterministic eightieth-percentile inflation of that estimate",
+                          "overrun against the budget as a percentage")),
+    "B3.2": lineage_record(  # FAR Threshold Monitor. The budget is demanded and is immaterial.
+        "B3.2", source_fact_ids=(),
+        derived_index_reads=(COST_INDEX,),
+        lineage_group_ids=(EARNED_VALUE_BODY,),
+        evidence_relationship=SAME_SOURCE_TRANSFORM,
+        derivation_chain=("the cost performance index",
+                          "cost performance index = ev / ac",
+                          "forecast overrun as a percentage of the budget, which is "
+                          "scale-invariant in the budget",
+                          "comparison against an internal review level")),
+    "B3.4": lineage_record(  # EVM Reporting Threshold
+        "B3.4", source_fact_ids=(),
+        derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
+        lineage_group_ids=(EARNED_VALUE_BODY,),
+        evidence_relationship=CORRELATED,
+        derivation_chain=("the cost and schedule performance indices",
+                          "deviation of each index from one",
+                          "comparison against an internal reporting level")),
+    "B4.3": lineage_record(  # Constraint Satisfaction Analysis
+        "B4.3", source_fact_ids=(),
+        derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
+        lineage_group_ids=(EARNED_VALUE_BODY,),
+        evidence_relationship=CORRELATED,
+        derivation_chain=("the cost and schedule performance indices",
+                          "satisfaction of each index constraint",
+                          "count of constraints met")),
+    #      The fuzzy and ranking family. Ten modules were grouped here by field name; four are
+    #      disabled and are not declared, one reads only the schedule index, and the remaining
+    #      five read both indices and the document risk score.
+    "B2.10": lineage_record(  # Pythagorean Fuzzy Sets
+        "B2.10", source_fact_ids=("doc_risk_score",),
+        derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
+        lineage_group_ids=(EARNED_VALUE_BODY, DOCUMENT_BODY),
+        evidence_relationship=CORRELATED,
+        derivation_chain=("the two indices and the document risk score",
+                          "membership and non-membership degrees",
+                          "Pythagorean aggregation to a band")),
+    "B2.11": lineage_record(  # Picture Fuzzy Sets
+        "B2.11", source_fact_ids=("doc_risk_score",),
+        derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
+        lineage_group_ids=(EARNED_VALUE_BODY, DOCUMENT_BODY),
+        evidence_relationship=CORRELATED,
+        derivation_chain=("the two indices and the document risk score",
+                          "positive, neutral and negative membership degrees",
+                          "picture aggregation to a band")),
+    "B2.14": lineage_record(  # Maximum Entropy. Demands the cost index and does not read it.
+        "B2.14", source_fact_ids=("doc_risk_score",),
+        derived_index_reads=(SCHEDULE_INDEX,),
+        lineage_group_ids=(DOCUMENT_BODY,),
+        evidence_relationship=CORRELATED,
+        derivation_chain=("the schedule performance index and the document risk score",
+                          "maximum-entropy distribution over the four bands",
+                          "the modal band and its entropy")),
+    "B2.15": lineage_record(  # Possibility Theory
+        "B2.15", source_fact_ids=("doc_risk_score",),
+        derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
+        lineage_group_ids=(EARNED_VALUE_BODY, DOCUMENT_BODY),
+        evidence_relationship=CORRELATED,
+        derivation_chain=("the two indices and the document risk score",
+                          "possibility and necessity measures over the bands")),
+    "B2.16": lineage_record(  # Spherical Fuzzy Sets
+        "B2.16", source_fact_ids=("doc_risk_score",),
+        derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
+        lineage_group_ids=(EARNED_VALUE_BODY, DOCUMENT_BODY),
+        evidence_relationship=CORRELATED,
+        derivation_chain=("the two indices and the document risk score",
+                          "spherical membership triple",
+                          "spherical aggregation to a band")),
+    "B2.18": lineage_record(  # MARCOS Ranking
+        "B2.18", source_fact_ids=("doc_risk_score",),
+        derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
+        lineage_group_ids=(EARNED_VALUE_BODY, DOCUMENT_BODY),
+        evidence_relationship=CORRELATED,
+        derivation_chain=("the two indices and the document risk score",
+                          "ideal and anti-ideal reference points",
+                          "utility ratios and the MARCOS composite")),
+    "B2.12": lineage_record(  # Hesitant Fuzzy Sets
+        "B2.12", source_fact_ids=(),
+        derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
+        lineage_group_ids=(EARNED_VALUE_BODY,),
+        evidence_relationship=CORRELATED,
+        derivation_chain=("the two indices", "hesitant membership set", "aggregation to a band")),
+    "B2.13": lineage_record(  # Type-2 Fuzzy Sets
+        "B2.13", source_fact_ids=(),
+        derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
+        lineage_group_ids=(EARNED_VALUE_BODY,),
+        evidence_relationship=CORRELATED,
+        derivation_chain=("the two indices", "upper and lower membership functions",
+                          "type reduction to a band")),
+    "B2.17": lineage_record(  # Fermatean Fuzzy Sets
+        "B2.17", source_fact_ids=(),
+        derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
+        lineage_group_ids=(EARNED_VALUE_BODY,),
+        evidence_relationship=CORRELATED,
+        derivation_chain=("the two indices", "Fermatean membership and non-membership degrees",
+                          "aggregation to a band")),
+    #      The cluster that dissolved. Its other member is disabled, so this is not a pair.
+    "A3.9": lineage_record(  # Inflation Adjustment Index
+        "A3.9",
+        source_fact_ids=("actual_pct_complete", "material_cost_baseline",
+                         "material_cost_current"),
+        lineage_group_ids=(MATERIAL_COST_BODY,),
+        evidence_relationship=INDEPENDENT,
+        derivation_chain=("the baseline and current material cost and the reported progress",
+                          "baseline scaled by progress",
+                          "escalation against the progress-adjusted baseline")),
     # ---- the synthesis, which may never corroborate anything it was built from
     #
     # RUN 20 CYCLE 6. THIS ENTRY WAS KEYED "PH.5" AND DECLARED DEPENDENCIES ON A1.7 AND A1.8.
