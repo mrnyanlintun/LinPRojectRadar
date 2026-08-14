@@ -202,7 +202,7 @@ responsive-390,rail_display,none
 responsive-390,rail_buttons,10
 responsive-390,collapse_suspects,[]
 rail-nav,click_result,"{""ok"": true, ""target"": ""d-periods"", ""before"": 0, ""sectionExists"": true, ""bareIdExists"": false}"
-rail-nav,after,"{""y"": 207, ""active"": [""1""]}"
+rail-nav,after,"{""y"": 664, ""active"": [""3""]}"
 errors,unknown_project_response,"{""ok"": false, ""error"": ""Project not found: PRJ-R21-DOES-NOT-EXIST""}"
 errors,bad_session_response,"{""ok"": false, ""error"": ""missing or malformed session token""}"
 browser,page_errors_total,0

@@ -7,4 +7,4 @@ responsive-1280,1280,10,[],[],PASS
 responsive-1024,1024,10,[],[],PASS
 responsive-820,820,10,[],[],PASS
 responsive-390,390,10,[],[],PASS
-rail-navigation,1680,"{""ok"": true, ""target"": ""d-periods"", ""before"": 0, ""sectionExists"": true, ""bareIdExists"": false}","{""y"": 207, ""active"": [""1""]}",,PASS
+rail-navigation,1680,"{""ok"": true, ""target"": ""d-periods"", ""before"": 0, ""sectionExists"": true, ""bareIdExists"": false}","{""y"": 664, ""active"": [""3""]}",,PASS

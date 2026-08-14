@@ -4,8 +4,8 @@ G-populated-reload,reload_primitive_error,"Page.reload: Timeout 45000ms exceeded
 Call log:
 waiting for navigation until ""commit""
 ",
-G-populated-reload,reload_primitive_returned,no,45.02s
-G-populated-reload,sentinel_after_reload,None,"waited 359s, 1 successful reads, 1 evaluate errors while the document was navigating"
+G-populated-reload,reload_primitive_returned,no,45.00s
+G-populated-reload,sentinel_after_reload,None,"waited 212s, 1 successful reads, 1 evaluate errors while the document was navigating"
 G-populated-reload,application_reloaded_from_server,yes,
 G-populated-reload,reload_primitive_vs_application,primitive_returned=no application_reloaded=yes,"a primitive timeout with a destroyed document is a harness wait-condition fault, not an application reload defect"
 G-populated-reload,headers_before,27 SUPPORTED DOCUMENT TYPES | 24 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 41 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 10 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT,
@@ -19,7 +19,7 @@ Call log:
 waiting for navigation until ""commit""
 ",
 D-reset-reload,reload_primitive_returned,no,45.00s
-D-reset-reload,sentinel_after_reload,None,"waited 324s, 1 successful reads, 1 evaluate errors while the document was navigating"
+D-reset-reload,sentinel_after_reload,None,"waited 252s, 1 successful reads, 1 evaluate errors while the document was navigating"
 D-reset-reload,application_reloaded_from_server,yes,
 D-reset-reload,reload_primitive_vs_application,primitive_returned=no application_reloaded=yes,"a primitive timeout with a destroyed document is a harness wait-condition fault, not an application reload defect"
 D-reset-reload,headers_after_reload,"27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED SINCE THE RESET, 24 RETAINED | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE",
@@ -36,7 +36,7 @@ Call log:
 waiting for navigation until ""commit""
 ",
 E-post-reset-reload,reload_primitive_returned,no,45.00s
-E-post-reset-reload,sentinel_after_reload,None,"waited 390s, 1 successful reads, 1 evaluate errors while the document was navigating"
+E-post-reset-reload,sentinel_after_reload,None,"waited 441s, 1 successful reads, 1 evaluate errors while the document was navigating"
 E-post-reset-reload,application_reloaded_from_server,yes,
 E-post-reset-reload,reload_primitive_vs_application,primitive_returned=no application_reloaded=yes,"a primitive timeout with a destroyed document is a harness wait-condition fault, not an application reload defect"
 E-post-reset,headers_after_reload,"27 SUPPORTED DOCUMENT TYPES | 1 UPLOADED SINCE THE RESET, 24 RETAINED | 96 REGISTERED PROJECT MODULES | 41 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 10 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT",
@@ -46,6 +46,6 @@ Call log:
 waiting for navigation until ""commit""
 ",
 authority-reload,reload_primitive_returned,no,45.00s
-authority-reload,sentinel_after_reload,None,"waited 201s, 1 successful reads, 1 evaluate errors while the document was navigating"
+authority-reload,sentinel_after_reload,None,"waited 200s, 1 successful reads, 1 evaluate errors while the document was navigating"
 authority-reload,application_reloaded_from_server,yes,
 authority-reload,reload_primitive_vs_application,primitive_returned=no application_reloaded=yes,"a primitive timeout with a destroyed document is a harness wait-condition fault, not an application reload defect"
