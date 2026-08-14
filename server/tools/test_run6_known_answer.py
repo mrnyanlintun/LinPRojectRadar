@@ -368,10 +368,24 @@ RUN21_SCOPED_FILES = {
     "assets/js/neural_flow.js",
 }
 
+# POST-RUN-22 UI CORRECTION. Its production scope, named on the same footing and no wider: the
+# Signal Flow diagram, which lit nine platform-DISABLED module dots and three not-applicable
+# document rows at the ACTIVE opacity tier on a project with nothing uploaded and nothing
+# computed; the detail page's numbered Signal rail, whose SELECTION was spelt with the Signal
+# Flow's word for analytical ACTIVITY, was set only by a scroll observer, and whose reset
+# blanked the browser copy of the append-only event log; and the stylesheet, where the rail sat
+# dimmed until hovered and vanished entirely below 700px. No band, boundary, threshold or
+# arithmetic result changed in any of them.
+RUN23_SCOPED_FILES = {
+    "assets/js/neural_flow.js",
+    "assets/js/detail.js",
+    "assets/css/radar.css",
+}
+
 _unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES
                    - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES - RUN14_SCOPED_FILES
                    - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES
-                   - RUN20_SCOPED_FILES - RUN21_SCOPED_FILES)
+                   - RUN20_SCOPED_FILES - RUN21_SCOPED_FILES - RUN23_SCOPED_FILES)
 check(not _unscoped,
       "no production file outside the authorised scope of Run 7, Run 10, Run 10B, Run 11, "
       "Run 12, Run 14, Run 20 or Run 21 differs from the pinned baseline",
@@ -389,11 +403,13 @@ _assets = sorted(p for p in _prod if p.startswith("assets/"))
 # file a participant route loads changed -- is asserted separately below, where it can fail on
 # its own.
 check(not (set(_assets) - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES
-           - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES - RUN21_SCOPED_FILES),
+           - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES - RUN21_SCOPED_FILES
+           - RUN23_SCOPED_FILES),
       "every browser surface outside the authorised browser scope of Runs 11, 12, 15, 16 and 21 "
       "is byte-identical to the freeze",
       str(sorted(set(_assets) - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES
-                 - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES - RUN21_SCOPED_FILES)))
+                 - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES - RUN21_SCOPED_FILES
+                 - RUN23_SCOPED_FILES)))
 # THE NARROWER PROPERTIES, STATED SO EACH CAN FAIL ON ITS OWN, and stated ACCURATELY. The first
 # version of this check asserted that no file Run 21 changed is loaded by index.html. That was
 # FALSE and the guard said so: simulations.js is not on the participant route, but neural_flow.js

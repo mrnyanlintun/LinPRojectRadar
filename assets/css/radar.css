@@ -4637,10 +4637,11 @@ body[data-theme="plain"] .admin-pill-off { background: #fbdcdb; color: #8a0e16; 
   background: color-mix(in srgb, var(--surface) 86%, transparent);
   border: 1px solid var(--line); box-shadow: var(--shadow);
   backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-  opacity: .7; transition: opacity .3s ease;
+  /* POST-RUN-22: the rail used to sit at .7 opacity until hovered, which made ten numbered
+     controls read as decoration rather than as usable navigation. It is opaque now. */
+  opacity: 1;
   max-height: 70vh; overflow-y: auto;
 }
-.detail-secnav:hover, .detail-secnav:focus-within { opacity: 1; }
 .detail-secnav[hidden] { display: none; }
 .detail-secnav-item { position: relative; }
 .detail-secnav-btn {
@@ -4653,8 +4654,13 @@ body[data-theme="plain"] .admin-pill-off { background: #fbdcdb; color: #8a0e16; 
 }
 .detail-secnav-btn:hover { color: var(--phosphor); border-color: var(--phosphor); }
 .detail-secnav-btn:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
-.detail-secnav-btn.active { color: #fff; background: var(--phosphor); border-color: var(--phosphor); }
-body[data-theme="newyork"] .detail-secnav-btn.active { background: transparent; color: var(--nyc-gold); border-color: var(--nyc-gold); }
+/* SELECTED — a navigation state, never an analytical one. The Signal Flow's activity marker is
+   `data-active` and is never set on a rail control; these rules deliberately key on `selected`
+   / `aria-current` only, so the two can never be styled by the same selector by accident. */
+.detail-secnav-btn.selected,
+.detail-secnav-btn[aria-current="true"] { color: #fff; background: var(--phosphor); border-color: var(--phosphor); }
+body[data-theme="newyork"] .detail-secnav-btn.selected,
+body[data-theme="newyork"] .detail-secnav-btn[aria-current="true"] { background: transparent; color: var(--nyc-gold); border-color: var(--nyc-gold); }
 
 .detail-secnav-label {
   position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%);
@@ -4667,9 +4673,24 @@ body[data-theme="newyork"] .detail-secnav-btn.active { background: transparent; 
 .detail-secnav-btn:hover + .detail-secnav-label,
 .detail-secnav-btn:focus-visible + .detail-secnav-label { opacity: 1; }
 
-/* Mobile: collapses/hides rather than taking width. The dock itself repositions
-   at this breakpoint (see .icon-dock's 700px rule above); the section navigator
-   has no compact form worth keeping on a phone viewport, so it simply hides. */
+/* Mobile: POST-RUN-22 the rail no longer disappears. It used to be `display: none` below
+   700px, so every numbered control was unreachable on a phone viewport — the navigation was
+   simply absent rather than adapted. It now lays out as a single horizontal row pinned to the
+   bottom of the viewport, which fits the numbered dots across a 360px screen without
+   scrolling and keeps all of them hit-testable. */
 @media (max-width: 700px) {
-  .detail-secnav { display: none; }
+  .detail-secnav {
+    flex-direction: row; top: auto; left: 50%;
+    transform: translateX(-50%); max-width: calc(100vw - 16px);
+    max-height: none; gap: 5px; padding: 6px 8px; overflow-y: visible;
+    /* MEASURED, NOT GUESSED. At bottom:10px the rail landed inside the mobile .icon-dock's
+       own band (the dock repositions to bottom:12px and measures ~60px tall at this
+       breakpoint) and the browser delivered every one of the ten controls' clicks to the dock
+       or to the emblem image instead — elementFromPoint returned IMG / .icon-dock at all ten
+       centres at 390x1000. 152px clears the dock band (12-72px) and the Ask Lin launcher above
+       it (88-140px, itself raised to clear the dock for the same reason), so the rail owns its
+       own hits. Re-measured at 390px: ten of ten controls hit themselves. */
+    bottom: 152px;
+  }
+  .detail-secnav-label { left: 50%; top: auto; bottom: calc(100% + 8px); transform: translateX(-50%); }
 }

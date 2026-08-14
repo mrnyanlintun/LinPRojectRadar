@@ -1171,7 +1171,20 @@ try:
             # RESTATED BY RUN 16. Until Run 16 the freeze removed nothing from this file and
             # that record stands; Run 16 rewords three section badges in place, so the earlier
             # wording of each leaves. Named by content below rather than tolerated.
+            # RESTATED BY THE POST-RUN-22 UI CORRECTION, EARLIER FINDINGS PRESERVED. Three
+            # more lines leave this file and each is named rather than tolerated: the scroll-spy
+            # comment and the `classList.toggle("active", ...)` line, because the rail's
+            # SELECTION may not be spelt with the Signal Flow's word for analytical ACTIVITY;
+            # and `p.history = []; p.events = [];`, because blanking the browser copy of the
+            # append-only event log made the live page deny retained documents that the same
+            # page, reloaded from the same server, correctly disclosed (`p.history = []` stays,
+            # on its own line).
+            def _postrun22_removed(line):
+                return (line == '// Scroll-spy: highlight whichever section is currently most in view.'
+                        or line == 'b.classList.toggle("active", b.getAttribute("data-secnav-target") === secId);'
+                        or line == 'p.history = []; p.events = [];')
             check(all('" modules")' in ln or '" categories")' in ln or "modules`)" in ln
+                  or _postrun22_removed(ln)
                   for ln in removed),
                   f"{rel}: the freeze removed nothing from this file beyond the three section "
                   f"badges Run 16 reworded", str(removed)[:200])
@@ -1196,8 +1209,26 @@ try:
                 return ('totalModulesForBadge} registered' in line
                         or 'totalModulesForBadge + " registered"' in line
                         or 'totalCats + " registered"' in line)
-            check(all(ln.startswith("//") or "abstained" in ln or ln == "}"
+            # RESTATED BY THE POST-RUN-22 UI CORRECTION. Its additions to this file are the
+            # rail's selection state (`selected` + `aria-current`, set by the click itself and
+            # held while the smooth scroll runs) and the removal of the event-log mask. Each is
+            # named by content, so an unexplained addition is still red.
+            POSTRUN22_LINES = {
+                "'aria-current=\"false\" ' +",
+                "const setSelected = (secId) => {",
+                'const on = b.getAttribute("data-secnav-target") === secId;',
+                'b.classList.toggle("selected", on);',
+                'b.setAttribute("aria-current", on ? "true" : "false");',
+                "let selectionPinnedUntil = 0;",
+                "setSelected(secId);",
+                "selectionPinnedUntil = Date.now() + 1200;",
+                "if (Date.now() < selectionPinnedUntil) return;",
+                "p.history = [];",
+            }
+            check(all(ln.startswith("//") or ln.startswith("/*") or ln.startswith("*")
+                      or "abstained" in ln or ln == "}"
                       or ln == RUN11_GATE_1_LINE or ln in RUN16_LINES or _run16_badge(ln)
+                      or ln in POSTRUN22_LINES
                       for ln in added),
                   f"{rel}: and everything it added is the abstention-reason graft, Run 11's "
                   f"client-analytics gate, Run 16's registry-count wording and cache drop, or "

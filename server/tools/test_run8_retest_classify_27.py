@@ -299,6 +299,22 @@ RUN21_SCOPED_FILES = {
     "assets/js/neural_flow.js",
 }
 
+# POST-RUN-22 UI CORRECTION. Three browser files, named rather than admitted by widening the
+# rule. neural_flow.js: on an EMPTY project nine platform-disabled module dots and three
+# not-applicable document rows rendered at the ACTIVE opacity tier with a glow filter, because
+# illumination was keyed on `status !== 'None'` and a registry fact is not a current result.
+# detail.js: the numbered Signal rail spelt its SELECTION with the Signal Flow's word for
+# analytical ACTIVITY, set it only from a scroll observer, and blanked the browser copy of the
+# append-only event log at the reset, which made the live page deny retained documents the same
+# page correctly disclosed after a reload. radar.css: the rail was dimmed until hovered and was
+# `display: none` below 700px, so no numbered control was reachable on a phone. NO BAND,
+# BOUNDARY, THRESHOLD OR ARITHMETIC RESULT CHANGED IN ANY OF THEM.
+RUN23_SCOPED_FILES = {
+    "assets/js/neural_flow.js",
+    "assets/js/detail.js",
+    "assets/css/radar.css",
+}
+
 _diff = subprocess.run(["git", "diff", "--name-only", GUARD_BASELINE_REV, "--"],
                        cwd=str(ROOT), capture_output=True, text=True).stdout.split()
 _prod = [p for p in _diff
@@ -307,7 +323,8 @@ _prod = [p for p in _diff
          and p not in RUN10B_SCOPED_FILES and p not in RUN11_SCOPED_FILES
          and p not in RUN12_SCOPED_FILES and p not in RUN14_SCOPED_FILES
          and p not in RUN15_SCOPED_FILES and p not in RUN16_SCOPED_FILES
-         and p not in RUN20_SCOPED_FILES and p not in RUN21_SCOPED_FILES]
+         and p not in RUN20_SCOPED_FILES and p not in RUN21_SCOPED_FILES
+         and p not in RUN23_SCOPED_FILES]
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
 # RESTATED BY RUN 11, original finding preserved. This read "nothing under assets/ differs"
@@ -318,7 +335,8 @@ _unscoped_assets = sorted(p for p in _diff
                           and p not in RUN12_SCOPED_FILES
                           and p not in RUN15_SCOPED_FILES
                           and p not in RUN16_SCOPED_FILES
-                          and p not in RUN21_SCOPED_FILES)
+                          and p not in RUN21_SCOPED_FILES
+                          and p not in RUN23_SCOPED_FILES)
 check(not _unscoped_assets,
       "nothing under assets/ outside Run 11's authorised browser scope differs from the pinned "
       "baseline", " ".join(_unscoped_assets))

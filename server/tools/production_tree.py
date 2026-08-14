@@ -209,7 +209,17 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 
 #: Where the pinned expected manifest lives. It is the RECORD of what the walk found when the
 #: freeze was taken. It is never the source of the file names.
-PINNED = ROOT / "code_audit" / "run22_production_tree.sha256"
+#:
+#: POST-RUN-22 UI CORRECTION. This moved from run22_production_tree.sha256 to the run23 file
+#: because three production UI files changed after the Run-22 freeze was taken. The Run-22
+#: manifest is NOT rewritten: it stays exactly as Run 22 wrote it, as that release's historical
+#: record, and the superseding freeze names it as its parent and carries its digest. Repointing
+#: rather than editing is the whole distinction the freeze rests on -- a baseline regenerated in
+#: place agrees with production by construction and can never catch an undeclared edit.
+PINNED = ROOT / "code_audit" / "run23_production_tree.sha256"
+#: The Run-22 manifest, kept addressable so a guard can prove the supersession is a real change
+#: and not a silent rewrite.
+PINNED_RUN22 = ROOT / "code_audit" / "run22_production_tree.sha256"
 #: The same, for the scientific authority tree.
 PINNED_AUTHORITY = ROOT / "code_audit" / "run22_authority_tree.sha256"
 

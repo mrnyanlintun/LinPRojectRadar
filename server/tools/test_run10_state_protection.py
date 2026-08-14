@@ -174,11 +174,27 @@ RUN16_BROWSER_SCOPE = {"assets/js/neural_flow.js"}
 # told the reader the project had no uploaded documents while the server still held them and was
 # about to read them again. NO BAND, BOUNDARY, THRESHOLD OR ARITHMETIC RESULT CHANGED IN EITHER.
 RUN21_BROWSER_SCOPE = {"assets/js/simulations.js", "assets/js/neural_flow.js"}
+# RESTATED BY THE POST-RUN-22 UI CORRECTION, ORIGINAL FINDINGS PRESERVED. It adds TWO browser
+# assets and names them rather than widening the rule. detail.js: the numbered Signal rail
+# marked its chosen entry with `active`, the Signal Flow's own word for a category carrying
+# current evidence, so a navigation SELECTION and an analytical ACTIVATION were the same state
+# in the code; it published no aria-current; a click on a section already in view selected
+# nothing; and the reset blanked the browser copy of the append-only event log, which made the
+# live page deny retained documents that the SAME page, reloaded, correctly disclosed.
+# radar.css: the rail sat at .7 opacity until hovered and was `display: none` below 700px, so
+# on a phone every numbered control was unreachable. neural_flow.js is already named by Run 16
+# and Run 21 above and this correction corrects it again: on an EMPTY project nine module dots
+# and three document rows rendered at the ACTIVE opacity tier with a glow filter, because
+# illumination was keyed on `status !== \'None\'` and a platform-disabled module is not None.
+# NO BAND, BOUNDARY, THRESHOLD OR ARITHMETIC RESULT CHANGED IN ANY OF THEM.
+RUN23_BROWSER_SCOPE = {"assets/js/detail.js", "assets/css/radar.css",
+                       "assets/js/neural_flow.js"}
 check("this run touched no participant-facing browser asset outside Run 11's authorised scope",
       not [d for d in diff_names
            if d.startswith("assets/") and d not in RUN11_BROWSER_SCOPE
            and d not in RUN12_BROWSER_SCOPE and d not in RUN15_BROWSER_SCOPE
-           and d not in RUN16_BROWSER_SCOPE and d not in RUN21_BROWSER_SCOPE])
+           and d not in RUN16_BROWSER_SCOPE and d not in RUN21_BROWSER_SCOPE
+           and d not in RUN23_BROWSER_SCOPE])
 check("this run touched no page the participant is served",
       not [d for d in diff_names if d.endswith(".html") and not d.startswith("tests")
            and d not in RUN11_PAGE_SCOPE])
