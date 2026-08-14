@@ -777,6 +777,7 @@ def run_cost_risk(si: dict, rand: Callable[[], float], period_cutoff) -> dict[st
         base_cost=reading["base_cost"],
         risk_event_count=reading["risk_event_count"],
         trials=reading["trials"],
+        dependence_policy=reading["dependence_policy"],
         quantile_convention="right-continuous empirical inverse",
         canonical_structure="cost_risk_model",
     )

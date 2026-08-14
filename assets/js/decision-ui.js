@@ -71,7 +71,7 @@
     "A1.1": "Monte Carlo EAC", "A1.2": "CUSUM Anomaly Monitor", "A1.3": "Bayesian EAC",
     "A1.4": "Kalman Filter SPI Smoother", "A1.5": "ARIMA CPI Forecast",
     "A1.6": "Earned Schedule", "A1.7": "TCPI", "A1.8": "Variance at Completion",
-    "A1.9": "Budget Execution Rate", "A1.10": "Regression to Mean CPI", "A1.11": "ICE Ratio",
+    "A1.9": "Budget Execution Rate", "A1.10": "CPI Shrinkage Forecast", "A1.11": "Independent EAC Reconciliation Index",
     "A2.1": "PERT Network Criticality", "A2.2": "Line of Balance",
     "A2.3": "CCPM Buffer Health", "A2.4": "Schedule Compression Index",
     "A2.5": "Float Consumption Rate", "A2.6": "S-Curve Deviation",

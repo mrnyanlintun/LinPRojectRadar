@@ -336,8 +336,16 @@ check(_es.get("error") != "Unknown POST action: extractsignals",
 check("Unknown POST action" in post({"action": "definitelynotreal"}).get("error", ""),
       "unknown action wording distinct from deferred")
 ping = get({"action": "ping"})
-check(len(ping.get("postActionsRegistered", [])) == 10,
-      "ping advertises exactly the 10 implemented write actions",
+# RUN 28 CLOSURE. ELEVEN, because `saveprojectdata` is the eleventh: the intake path for the
+# governed canonical structures the twenty abstaining Category 1 to 3 modules are defined on.
+# The count is still a LITERAL and still fails on an action added without a note here, which is
+# the property this check has; and the action is named below so a rename cannot pass silently.
+check(len(ping.get("postActionsRegistered", [])) == 11,
+      "ping advertises exactly the 11 implemented write actions",
+      str(ping.get("postActionsRegistered")))
+check("saveprojectdata" in ping.get("postActionsRegistered", []),
+      "and the governed project data intake is one of them, so the supply path the abstaining "
+      "modules rest on is reachable from the API rather than described in a report",
       str(ping.get("postActionsRegistered")))
 check(ping.get("portfolioanalyzeRegistered") is False, "portfolioanalyze not advertised")
 

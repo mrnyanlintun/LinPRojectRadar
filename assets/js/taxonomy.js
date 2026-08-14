@@ -34,7 +34,7 @@ window.LIN_CATEGORIES = [
     color: '#4ea0ff',
     description: 'Cost and schedule performance indices derived from verified pay applications and schedules.',
     modules: [
-      { id: 'a1_1', num: 'A1.1', name: 'Monte Carlo EAC Forecast', method_class: 'Monte_Carlo', active: true, required: ['bac','cpi','spi'] },
+      { id: 'a1_1', num: 'A1.1', name: 'Monte Carlo EAC', method_class: 'Monte_Carlo', active: true, required: ['bac','cpi','spi'] },
       { id: 'a1_2', num: 'A1.2', name: 'CUSUM Anomaly Monitor', method_class: 'CUSUM', active: true, required: ['spi'] },
       { id: 'a1_3', num: 'A1.3', name: 'Bayesian EAC', method_class: 'Bayesian_EAC', active: true, required: ['bac','ev','ac','cpi'] },
       { id: 'a1_4', num: 'A1.4', name: 'Kalman Filter SPI Smoother', method_class: 'Kalman_Filter', active: true, required: ['spi','spiHistory'] },
@@ -43,8 +43,8 @@ window.LIN_CATEGORIES = [
       { id: 'a1_7', num: 'A1.7', name: 'TCPI', method_class: 'TCPI', active: true, required: ['bac','ev','ac'] },
       { id: 'a1_8', num: 'A1.8', name: 'Variance at Completion', method_class: 'VAC', active: true, required: ['bac','cpi'] },
       { id: 'a1_9', num: 'A1.9', name: 'Budget Execution Rate', method_class: 'Budget_Execution_Rate', active: true, required: ['ac','bac','actualPctComplete'] },
-      { id: 'a1_10', num: 'A1.10', name: 'Regression to Mean CPI', method_class: 'Regression_To_Mean', active: true, required: ['cpi','cpiHistory'] },
-      { id: 'a1_11', num: 'A1.11', name: 'ICE Ratio', method_class: 'ICE_Ratio', active: true, required: ['bac','cpi','ev','ac'] }
+      { id: 'a1_10', num: 'A1.10', name: 'CPI Shrinkage Forecast', method_class: 'Regression_To_Mean', active: true, required: ['cpi','cpiHistory'] },
+      { id: 'a1_11', num: 'A1.11', name: 'Independent EAC Reconciliation Index', method_class: 'ICE_Ratio', active: true, required: ['bac','cpi','ev','ac'] }
     ]
   },
   {

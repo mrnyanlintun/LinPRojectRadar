@@ -335,8 +335,48 @@ RUN28_SCOPED_FILES = {
     "assets/js/ds_defensibility_evidence.js",
 }
 
+# RUN 28 CLOSURE. Named on the same footing as every scope above it and no wider: the two
+# approved renames propagated to every current browser surface, the A1.1 drift closed to the
+# name the designated authority records, the supply-path intake the twenty abstentions rest on,
+# and A3.6's declared dependence policy. See the fuller note in test_run6_known_answer.py.
+RUN28_CLOSURE_SCOPED_FILES = {
+    "server/app/project_data.py",
+    "server/app/writes.py",
+    "server/app/documents.py",
+    "server/app/simulation/canonical_v3.py",
+    "server/app/simulation/models_ext.py",
+    "assets/js/categories.js",
+    "assets/js/taxonomy.js",
+    "assets/js/knowledge.js",
+    "assets/js/deepdive.js",
+    "assets/js/charts3d.js",
+    "assets/js/decision-ui.js",
+    "assets/js/workspace.js",
+    "assets/js/ds_defensibility_data.js",
+    "assets/js/neural_flow.js",
+}
+
+# RUN 28 CLOSURE, ITEM 4: THE UNTRACKED-FILE BLIND SPOT, CLOSED WHERE IT WAS FOUND.
+#
+# `git diff --name-only` enumerates TRACKED paths only. A production file that has never been
+# added to the index does not appear in it at all, so this guard -- whose whole purpose is to
+# report production files that moved outside an authorised scope -- was structurally blind to a
+# NEW production file. Run 28 created `server/app/simulation/canonical_v3.py`, two thousand lines
+# of analytical production code, and this check stayed green while it was untracked.
+#
+# The fix does not replace the diff; it adds the direction the diff cannot reach. `git status
+# --porcelain --untracked-files=all` lists untracked paths individually rather than collapsing a
+# new directory to its name, so a file dropped anywhere under a production root is enumerated
+# whether or not anything is tracking it. The whole protected filesystem is enumerated
+# independently of git in test_run22_production_tree_completeness.py, which walks the tree; this
+# is the same property asserted at the point where the blind spot actually was.
+_untracked = [line[3:].strip().strip('"') for line in subprocess.run(
+    ["git", "status", "--porcelain", "--untracked-files=all"],
+    cwd=str(ROOT), capture_output=True, text=True).stdout.splitlines()
+    if line.startswith("?? ")]
+
 _diff = subprocess.run(["git", "diff", "--name-only", GUARD_BASELINE_REV, "--"],
-                       cwd=str(ROOT), capture_output=True, text=True).stdout.split()
+                       cwd=str(ROOT), capture_output=True, text=True).stdout.split() + _untracked
 _prod = [p for p in _diff
          if (p.startswith("server/app/") or p.startswith("assets/"))
          and p not in RUN8_SCOPED_FILES and p not in RUN10_SCOPED_FILES
@@ -344,7 +384,8 @@ _prod = [p for p in _diff
          and p not in RUN12_SCOPED_FILES and p not in RUN14_SCOPED_FILES
          and p not in RUN15_SCOPED_FILES and p not in RUN16_SCOPED_FILES
          and p not in RUN20_SCOPED_FILES and p not in RUN21_SCOPED_FILES
-         and p not in RUN23_SCOPED_FILES and p not in RUN28_SCOPED_FILES]
+         and p not in RUN23_SCOPED_FILES and p not in RUN28_SCOPED_FILES
+         and p not in RUN28_CLOSURE_SCOPED_FILES]
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
 # RESTATED BY RUN 11, original finding preserved. This read "nothing under assets/ differs"
@@ -356,7 +397,8 @@ _unscoped_assets = sorted(p for p in _diff
                           and p not in RUN15_SCOPED_FILES
                           and p not in RUN16_SCOPED_FILES
                           and p not in RUN21_SCOPED_FILES
-                          and p not in RUN23_SCOPED_FILES)
+                          and p not in RUN23_SCOPED_FILES
+                          and p not in RUN28_CLOSURE_SCOPED_FILES)
 check(not _unscoped_assets,
       "nothing under assets/ outside Run 11's authorised browser scope differs from the pinned "
       "baseline", " ".join(_unscoped_assets))

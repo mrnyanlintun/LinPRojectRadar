@@ -68,7 +68,7 @@
     [0,'Kalman Filter','Kalman_Filter'],      [0,'ARIMA Forecast','ARIMA_Forecast'],
     [0,'Earned Schedule','Earned_Schedule'],  [0,'TCPI Monitor','TCPI_Monitor'],
     [0,'VAC Trend','VAC_Trend'],              [0,'Budget Exec Rate','Budget_Exec_Rate'],
-    [0,'Regression to Mean','Regression_to_Mean'], [0,'ICE Ratio','ICE_Ratio'],
+    [0,'CPI Shrinkage Forecast','Regression_to_Mean'], [0,'Independent EAC Reconciliation Index','ICE_Ratio'],
     // Cat 2 — Schedule Simulation (11)
     [1,'PERT Network','PERT_Network'],        [1,'Line of Balance','Line_of_Balance'],
     [1,'CCPM Buffer','CCPM_Buffer'],          [1,'Schedule Compress.','Schedule_Compression'],

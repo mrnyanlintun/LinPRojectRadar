@@ -407,11 +407,46 @@ RUN28_SCOPED_FILES = {
     "assets/js/ds_defensibility_evidence.js",
 }
 
+# RUN 28 CLOSURE, on the owner's instruction to close Run 28's own defects before Run 29. Named
+# on the same footing as every scope above it and no wider. What is in scope and why:
+#
+#   the two approved Category-1 renames, propagated to every CURRENT surface rather than the
+#   registry alone, because Run 28 left the instrument in a mixed state where the registry said
+#   "CPI Shrinkage Forecast" and nine browser files still said "Regression to Mean CPI";
+#
+#   the A1.1 naming drift, closed the other way: the current surfaces are aligned to the name the
+#   designated authority records ("Monte Carlo EAC"), and the authority itself is NOT edited;
+#
+#   the supply path the twenty abstentions rest on: project_data.py, which is NEW, the
+#   `saveprojectdata` action in writes.py, and the one merge point in documents.py;
+#
+#   A3.6's dependence policy, which the supplied contract requires to be DECLARED where material
+#   and which Run 28 assumed silently.
+#
+# No band, boundary, threshold or arithmetic result changes in any of them, and the participant
+# decision sequence is untouched.
+RUN28_CLOSURE_SCOPED_FILES = {
+    "server/app/project_data.py",
+    "server/app/writes.py",
+    "server/app/documents.py",
+    "server/app/simulation/canonical_v3.py",
+    "server/app/simulation/models_ext.py",
+    "assets/js/categories.js",
+    "assets/js/taxonomy.js",
+    "assets/js/knowledge.js",
+    "assets/js/deepdive.js",
+    "assets/js/charts3d.js",
+    "assets/js/decision-ui.js",
+    "assets/js/workspace.js",
+    "assets/js/ds_defensibility_data.js",
+    "assets/js/neural_flow.js",
+}
+
 _unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES
                    - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES - RUN14_SCOPED_FILES
                    - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES
                    - RUN20_SCOPED_FILES - RUN21_SCOPED_FILES - RUN23_SCOPED_FILES
-                   - RUN28_SCOPED_FILES)
+                   - RUN28_SCOPED_FILES - RUN28_CLOSURE_SCOPED_FILES)
 check(not _unscoped,
       "no production file outside the authorised scope of Run 7, Run 10, Run 10B, Run 11, "
       "Run 12, Run 14, Run 20 or Run 21 differs from the pinned baseline",
@@ -430,7 +465,7 @@ _assets = sorted(p for p in _prod if p.startswith("assets/"))
 # its own.
 check(not (set(_assets) - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES
            - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES - RUN21_SCOPED_FILES
-           - RUN23_SCOPED_FILES),
+           - RUN23_SCOPED_FILES - RUN28_CLOSURE_SCOPED_FILES),
       "every browser surface outside the authorised browser scope of Runs 11, 12, 15, 16 and 21 "
       "is byte-identical to the freeze",
       str(sorted(set(_assets) - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES

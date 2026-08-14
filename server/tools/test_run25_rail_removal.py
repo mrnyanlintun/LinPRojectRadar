@@ -137,8 +137,13 @@ check(pt.PINNED_RUN25.name == "run25_production_tree.sha256"
 # rather than a UI file. The chain of accepted pins is EXTENDED, not opened: the guard still
 # requires the pin to be one of the named manifests in the chain, so a pin at an unnamed or
 # invented file is still red.
+# THE RUN-28 CLOSURE extends the chain once more, for the same reason and by the same rule: the
+# owner's closure instruction moved fourteen production files and created one, so the pin moves
+# to the closure manifest and the Run-28 manifest is kept addressable as its parent rather than
+# rewritten. The chain is EXTENDED, not opened; a pin at an unnamed file is still red.
 check(pt.PINNED.name in ("run25_production_tree.sha256", "run26_production_tree.sha256",
-                        "run28_production_tree.sha256"),
+                        "run28_production_tree.sha256",
+                        "run28_closure_production_tree.sha256"),
       "the freeze guard's pinned manifest is the Run-25 one or one of the manifests that "
       "supersede it "
       "it", pt.PINNED.name)
@@ -188,6 +193,41 @@ if pt.PINNED.name != "run25_production_tree.sha256":
               "and every file whose bytes moved between the two is declared by Run 28 or was "
               "already declared against the Run-20 freeze by an earlier run",
               str(sorted(set(_moved) - (_declared_28 | _already))))
+    # RUN 26 -> RUN 28 CLOSURE. The pin is now two links further on, so the Run-26 comparison
+    # above is made against the RUN-28 manifest itself rather than against the moving pin, and
+    # the closure link is asserted on its own terms: widened not narrowed, one new file, and
+    # every file whose bytes moved declared by the Run-28 manifest or already declared against
+    # the Run-20 freeze by an earlier run.
+    if pt.PINNED.name == "run28_closure_production_tree.sha256":
+        from run28_production_changes import (  # noqa: E402,F811
+            RUN28_NEW_PRODUCTION_FILES, RUN28_PRODUCTION_CHANGES,
+        )
+        _p28 = {ln.split("  ", 1)[1]: ln.split("  ", 1)[0]
+                for ln in pt.PINNED_RUN28.read_text(encoding="utf-8").splitlines() if ln.strip()}
+        check(pt.PINNED_RUN28.is_file() and set(_p26) <= set(_p28),
+              "the Run-28 manifest is still present and addressable after being superseded, and "
+              "still covers everything the Run-26 one did",
+              str(sorted(set(_p26) - set(_p28))))
+        check(set(_p28) <= set(_now),
+              "the closure manifest covers everything the Run-28 one did, so the freeze was "
+              "widened rather than narrowed", str(sorted(set(_p28) - set(_now))))
+        check(sorted(set(_now) - set(_p28)) == ["server/app/project_data.py"],
+              "and the only file it adds is the governed project data intake, which is the "
+              "supply path the twenty abstaining modules rest on",
+              str(sorted(set(_now) - set(_p28))))
+        _moved28 = sorted(k for k in _p28 if k in _now and _p28[k] != _now[k])
+        _declared_28 = {e[1] for e in RUN28_PRODUCTION_CHANGES.values()}
+        _already = {"server/app/simulation/models_ext.py",
+                    "server/app/simulation/registry.py",
+                    "server/app/simulation/method_labels.py",
+                    "server/app/simulation/lineage.py",
+                    "server/app/simulation/parameters.py",
+                    "assets/js/knowledge.js", "assets/js/neural_flow.js"}
+        check(set(_moved28) <= (_declared_28 | _already),
+              "and every file whose bytes moved across the closure is declared by the Run-28 "
+              "manifest or was already declared by an earlier run",
+              str(sorted(set(_moved28) - (_declared_28 | _already))))
+
 check(pt.PINNED_RUN24.name == "run24_production_tree.sha256",
       "and the Run-24 manifest is kept addressable, so the supersession is provable")
 

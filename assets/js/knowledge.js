@@ -639,7 +639,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
        advise the PM" and the per-category articles. */
     {
       id: "module01",
-      title: "Monte Carlo EAC Forecast",
+      title: "Monte Carlo EAC",
       eyebrow: "Cost and EVM Performance",
       build: () => `
         <p class="kn-lead">EVM integrates scope, schedule, and cost on a single measurement plane. On U.S. public capital programs it is required under OMB Circular A-11 and FAR Part 34 for major investments; under most agency policies a CPI shortfall sustained over multiple reporting periods is itself a reporting trigger.</p>
@@ -1544,7 +1544,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
 
   /* ---------- Cost and EVM Performance, Quantitative EVM (1.1-1.12) ---------- */
   const CAT1_MODULES = [
-    { n: "A1.1", name: "Monte Carlo EAC Forecast", mc: "Monte_Carlo",
+    { n: "A1.1", name: "Monte Carlo EAC", mc: "Monte_Carlo",
       purpose: "Replaces a single-point EAC with a probabilistic range so contingency and escalation decisions are made against an explicit confidence level rather than false precision.",
       formula: "5,000-iteration simulation: CPI is sampled per-iteration from a Beta-PERT(a, m, b) distribution derived from the project's current CPI/SPI; EAC_i = BAC / CPI_i. P50 and P80 are read from the sorted simulated array; P(delay) = share of iterations where EAC_i &gt; BAC × 1.10.",
       bands: [["green","Green","P80 EAC within +5% of BAC"], ["amber","Amber","P80 EAC +5% to +10% of BAC"], ["red","Red","P80 EAC &gt; +10% of BAC"]],
@@ -1620,7 +1620,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       sources: "Pay Application, Cost Report.",
       interp: "A rate above 1.0 means the project is spending faster than its stated percent complete would imply, either front-loaded billing or unreported progress lag, both worth reconciling before certifying the next pay app.",
       ground: "Spend-pacing checks against the S-curve baseline are a standard cost-control practice; comparing AC against percent-complete-implied spend (rather than EV) isolates billing-pace anomalies independent of earned-value definitions." },
-    { n: "A1.10", name: "Regression to Mean CPI", mc: "Regression_To_Mean",
+    { n: "A1.10", name: "CPI Shrinkage Forecast", mc: "Regression_To_Mean",
       purpose: "Tempers a single extreme CPI reading by partially reverting it toward the project's own historical average, guarding against over-reacting to one noisy period.",
       formula: "mean = average(cpiHistory); deviation = current − mean; regressedCPI = mean + deviation × 0.5 (50% reversion toward the mean).",
       bands: [["green","Green","regressed CPI ≥ 0.95"], ["yellow","Yellow","0.92-0.94"], ["amber","Amber","0.88-0.91"], ["red","Red","&lt; 0.88"]],
@@ -1628,7 +1628,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       sources: "Pay Application, Cost Report, CPI history.",
       interp: "When the regressed CPI and the raw current CPI disagree sharply, the raw reading may be an outlier period (e.g., a one-time billing timing effect) rather than a real shift in performance, worth a document check before escalating on the raw number alone.",
       ground: "Regression to the mean is a well-established statistical phenomenon (Galton, 1886) applied here as a simple 50%-reversion smoother, a deliberately conservative counterweight to single-period Monte Carlo/ARIMA readings that could otherwise be dominated by one noisy observation." },
-    { n: "A1.11", name: "ICE Ratio", mc: "ICE_Ratio",
+    { n: "A1.11", name: "Independent EAC Reconciliation Index", mc: "ICE_Ratio",
       purpose: "Cross-checks the CPI-based EAC against an independent parametric EAC (AC-to-date plus remaining work at budget rate); large divergence between the two means the forecasting method choice itself matters.",
       formula: "eacCPI = BAC/CPI; eacParametric = AC + (BAC − EV); iceRatio = eacCPI / eacParametric.",
       bands: [["green","Green","|ratio−1| ≤ 0.05"], ["yellow","Yellow","0.05-0.10"], ["amber","Amber","0.10-0.20"], ["red","Red","&gt; 0.20"]],
@@ -1789,13 +1789,13 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       interp: "The dollar exposure figure is what makes this module actionable: it converts an abstract percentage into the specific contingency amount a reviewer should expect to hold in reserve, based on how a genuinely comparable project actually performed.",
       ground: "Analogous estimating, using an actual prior project's documented result as the basis for a percentage adjustment, is one of PMI's three standard estimating techniques (Project Management Institute, 2019), alongside parametric and bottom-up estimating." },
     { n: "A3.8", name: "Parametric Cost Index", mc: "Parametric_Cost",
-      purpose: "Cross-checks the CPI-based EAC against an independent parametric EAC formula, similar to ICE Ratio's ICE Ratio but with tighter bands appropriate to cost-category-level review.",
+      purpose: "Cross-checks the CPI-based EAC against an independent parametric EAC formula, similar to Independent EAC Reconciliation Index's Independent EAC Reconciliation Index but with tighter bands appropriate to cost-category-level review.",
       formula: "eacCPI = BAC/CPI; eacParametric = AC + (BAC − EV); parametricIndex = eacCPI / eacParametric.",
       bands: [["green","Green","|index−1| ≤ 3%"], ["yellow","Yellow","3-8%"], ["amber","Amber","8-15%"], ["red","Red","&gt; 15%"]],
       abstain: "bac, ev, ac or actualPctComplete missing, or eacParametric ≤ 0.",
       sources: "Pay Application, Schedule of Values, Cost Report.",
-      interp: "Because this module uses tighter tolerance bands than the closely related ICE Ratio ICE Ratio, it can flag divergence between forecasting methods earlier, treat a Parametric Cost Index Amber/Red alongside a still-Green ICE Ratio as an early warning to reconcile forecasting assumptions before it becomes a larger gap.",
-      ground: "Parametric estimating (deriving cost from a statistical relationship between historical data and project parameters) is a standard PMI estimating technique (Project Management Institute, 2019); comparing it against the CPI-based EAC applies the same independent-cross-check logic as ICE Ratio." },
+      interp: "Because this module uses tighter tolerance bands than the closely related Independent EAC Reconciliation Index Independent EAC Reconciliation Index, it can flag divergence between forecasting methods earlier, treat a Parametric Cost Index Amber/Red alongside a still-Green Independent EAC Reconciliation Index as an early warning to reconcile forecasting assumptions before it becomes a larger gap.",
+      ground: "Parametric estimating (deriving cost from a statistical relationship between historical data and project parameters) is a standard PMI estimating technique (Project Management Institute, 2019); comparing it against the CPI-based EAC applies the same independent-cross-check logic as Independent EAC Reconciliation Index." },
     { n: "A3.9", name: "Inflation Adjustment Index", mc: "Inflation_Adjustment",
       purpose: "Isolates the portion of material cost overrun attributable to price escalation above the expected baseline rate, distinct from quantity or scope-driven cost variance.",
       formula: "expected = materialCostBaseline × (actualPctComplete/100); escalation = max(0, (materialCostCurrent − expected) / expected).",
@@ -2285,7 +2285,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       bands: [["green","Green","requiredCPI ≤ 1.00 (achievable at current performance)"], ["yellow","Yellow","≤ 1.05"], ["amber","Amber","≤ 1.15"], ["red","Red","&gt; 1.15, or budget exhausted"]],
       abstain: "bac, ev, ac or cpi missing.",
       sources: "Pay Application, Schedule of Values, Cost Report.",
-      interp: "requiredCPI is the credibility test: if the project has never sustained that efficiency level in its own history (compare against ARIMA CPI Forecast ARIMA or Regression to Mean CPI Regression to Mean), budget completion is not a realistic assumption without a scope, schedule, or funding change.",
+      interp: "requiredCPI is the credibility test: if the project has never sustained that efficiency level in its own history (compare against ARIMA CPI Forecast ARIMA or CPI Shrinkage Forecast), budget completion is not a realistic assumption without a scope, schedule, or funding change.",
       ground: "Linear programming (Dantzig, 1963) is the standard framework for feasibility analysis under linear constraints; this module applies its core feasibility-test logic (is a solution within the given budget constraint even possible) in closed form rather than a full LP solve." },
     { n: "B4.3", name: "Constraint Satisfaction Analysis", mc: "Constraint_Satisfaction",
       purpose: "Checks the project against four fixed governance constraints (cost, schedule, document risk, FAR-adjacent overrun threshold) simultaneously and reports which specific ones are violated.",

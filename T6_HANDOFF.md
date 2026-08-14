@@ -9955,3 +9955,56 @@ production to make itself accurate.
 
 Runs 28 to 33 are assigned in the matrix with zero orphan rows. Read
 `REPORT_2026-08-14_run27-98-module-remediation-matrix.md` and the two CSVs before starting one.
+
+# Run 28 CLOSURE (2026-08-14) — the five defects, closed before Run 29
+
+Report: `REPORT_2026-08-14_run28-closure.md`. This continues Run 28. It is not Run 28B and it does
+not begin Run 29.
+
+**1. Final-head suite mismatch — was present.** Run 28 verified at `a74efe2` and pushed `0e0dfbd`.
+Re-verified on the exact final merged head; commit, origin ref and suite total are recorded
+together in the report. Nothing inherited.
+
+**2. Approved renames — were not propagated.** Nine current browser surfaces still spoke
+`Regression to Mean CPI` and `ICE Ratio` while the registry carried the approved names. All nine
+are propagated. Display strings only; no method-class constant, band, boundary, number or
+experimental step moved. `assets/js/taxonomy.js` IS now renamed, reversing Run 28's decision on the
+owner's explicit instruction, with a successor participant package record and the predecessor
+preserved.
+
+**3. A2.7 — the defect was NOT present.** The canonical method refuses fewer than two forecasts per
+milestone and the corpus assembler drops a milestone seen in one period only. The corpus DOES hold
+repeated forecasts for a stable identity: three milestones followed across two reporting periods,
+D200 moving 14 Aug → 28 Aug. Two faults prove both guards can fail.
+
+**4. Untracked-file blind spot — was present, closed at both homes.** `walk_production` already
+reported tracked state and nothing asserted it;
+`test_run22_production_tree_completeness.py` now does, and
+`test_run8_retest_classify_27.py` enumerates untracked paths alongside `git diff`. Proved on the
+real tree: probe file created → 44/44 → RED 40/44 naming the path → deleted → 44/44.
+
+**5. Supply paths — the substantive defect, and it was present.** Twenty-one of twenty-three v3
+structure keys were written by NO production code. `server/app/project_data.py` (new), the
+`saveprojectdata` action and one merge point in `documents.run_and_store` are the intake. It is
+append-only, period-effective, its vocabulary is read from the analytical layer, and it supplies
+and validates nothing. A2.2 and A2.3 were found in the same condition and given the same intake.
+
+## Open, and handed on rather than closed quietly
+
+* **A1.1 naming conflict is an OWNER DECISION.** The authority
+  (`p0-baseline/module_renumbering_map.csv` line 2) records `Monte Carlo EAC`; the owner's prose
+  asserts `Monte Carlo EAC Forecast`. Current surfaces were aligned TO the authority and the
+  authority was NOT edited. Current active conflicts for A1.1 = 0. Changing it is a one-line
+  supervisory rename plus a re-propagation.
+* **Run 27's R estimator from repeated readings of one period is still not implemented.** A1.4
+  abstains and stays calibration-pending for Run 33. Q is not invented.
+
+## Records
+
+Freeze `OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN28-CLOSURE-V11-2`, manifest
+`research/freeze/RUN28_CLOSURE_FREEZE_2026-08-14.json`, production surface 228 files pinned at
+`code_audit/run28_closure_production_tree.sha256`, participant package `og-participant-2026.08-v2`.
+Analytical line stays `sim-2026.08-v11`: no arithmetic moved, so moving the stamp would have told a
+reader the numbers had changed. Tables: `code_audit/run28_supply_path_closure.csv` (20 rows),
+`code_audit/run28_operational_closure_28.csv` (28 rows),
+`code_audit/run28_closure_fault_injection.csv` (8 faults, 8 proven).

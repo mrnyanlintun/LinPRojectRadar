@@ -227,7 +227,18 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: observed, then repointed. The run26 manifest is NOT rewritten: it stays exactly as Run 26
 #: wrote it, as that release's historical record, and the superseding freeze names it as its
 #: parent and carries its digest.
-PINNED = ROOT / "code_audit" / "run28_production_tree.sha256"
+#: RUN 28 CLOSURE. Repointed once more, and NOT by regenerating the Run-28 file. The owner's
+#: closure instruction requires Run 28's own defects closed: the two approved renames propagated
+#: to every current surface, the A1.1 drift closed to the name the authority records, and a real
+#: intake path built for the twenty abstaining modules. Fourteen production files moved and one
+#: was created. The run28 manifest is NOT rewritten: it stays exactly as Run 28 wrote it, as that
+#: release's historical record, and this successor names it as its parent and carries its digest
+#: in research/freeze/RUN28_CLOSURE_FREEZE_2026-08-14.json. Repointing rather than editing is the
+#: whole distinction the freeze rests on.
+PINNED = ROOT / "code_audit" / "run28_closure_production_tree.sha256"
+#: The Run-28 manifest, the immediate parent of the current one, kept addressable so a guard can
+#: prove the supersession is a real change and not a silent rewrite.
+PINNED_RUN28 = ROOT / "code_audit" / "run28_production_tree.sha256"
 #: The Run-22 manifest, kept addressable so a guard can prove the supersession is a real change
 #: and not a silent rewrite.
 PINNED_RUN22 = ROOT / "code_audit" / "run22_production_tree.sha256"

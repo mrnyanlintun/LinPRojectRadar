@@ -134,7 +134,7 @@ const DS_DEFENSIBILITY = {
    },
    {
     "id_display": "A1.11",
-    "currentName": "ICE Ratio",
+    "currentName": "Independent EAC Reconciliation Index",
     "finding": "Both compared EACs are derived from the same project inputs; the second estimate is not organizationally independent. Rename this as an EAC divergence ratio unless an independently produced estimate is ingested.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
@@ -292,7 +292,7 @@ const DS_DEFENSIBILITY = {
    "count": 12,
    "modules": [
     {
-     "name": "Monte Carlo EAC Forecast",
+     "name": "Monte Carlo EAC",
      "methodClass": "Monte Carlo",
      "defenseTier": "Tier 1 - Statistical / stochastic model",
      "asCodedTier": "Tier 1 - Statistical / stochastic model",
@@ -310,7 +310,7 @@ const DS_DEFENSIBILITY = {
      "accreditationBasis": "Traceable to standard risk-analysis practice (AACE RP 41R-08 / NASA cost-risk guidance). Validation for this method would consist of convergence checks (stability of percentiles across iteration counts) and sensitivity of outputs to input-distribution choices. None of that has been performed on this platform. What the repository holds is known-answer testing of the stated formula and, for many modules, a domain and boundary enumeration. That supports the claim that the arithmetic is independently verified for the stated formula. It does not establish empirical validation or calibration.",
      "validationRequired": "Verify equations and code; test deterministic seeds; perform convergence or residual diagnostics; use seeded known-pattern cases; conduct sensitivity analysis; compare with a trusted reference implementation; document calibration and holdout performance where data permit.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP and MEASURE, with MANAGE for response; NIST TEVV for validity, reliability, uncertainty, benchmark, robustness, and monitoring evidence; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 25059 quality characteristics.",
-     "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Monte Carlo EAC Forecast method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
+     "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Monte Carlo EAC method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
      "governanceRole": "Enters the signal package with provenance, method version, input completeness, uncertainty/confidence, status, evidence metric, and abstention state; cannot authorize action without human judgment.",
      "defenseQuestions": [
       {
@@ -629,7 +629,7 @@ const DS_DEFENSIBILITY = {
      ]
     },
     {
-     "name": "Regression to Mean CPI",
+     "name": "CPI Shrinkage Forecast",
      "methodClass": "Regression To Mean",
      "defenseTier": "Tier 1 - Statistical / stochastic model",
      "asCodedTier": "Tier 1 - Statistical / stochastic model",
@@ -647,7 +647,7 @@ const DS_DEFENSIBILITY = {
      "accreditationBasis": "Standard estimation theory (Kalman 1960; Box-Jenkins). Validation for this method would consist of one-step-ahead holdout error on seeded histories. None of that has been performed on this platform. What the repository holds is known-answer testing of the stated formula and, for many modules, a domain and boundary enumeration. That supports the claim that the arithmetic is independently verified for the stated formula. It does not establish empirical validation or calibration.",
      "validationRequired": "Verify equations and code; test deterministic seeds; perform convergence or residual diagnostics; use seeded known-pattern cases; conduct sensitivity analysis; compare with a trusted reference implementation; document calibration and holdout performance where data permit.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP and MEASURE, with MANAGE for response; NIST TEVV for validity, reliability, uncertainty, benchmark, robustness, and monitoring evidence; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 25059 quality characteristics.",
-     "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Regression to Mean CPI method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
+     "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the CPI Shrinkage Forecast method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
      "governanceRole": "Enters the signal package with provenance, method version, input completeness, uncertainty/confidence, status, evidence metric, and abstention state; cannot authorize action without human judgment.",
      "defenseQuestions": [
       {
@@ -661,8 +661,8 @@ const DS_DEFENSIBILITY = {
      ]
     },
     {
-     "name": "ICE Ratio",
-     "methodClass": "ICE Ratio",
+     "name": "Independent EAC Reconciliation Index",
+     "methodClass": "Independent EAC Reconciliation Index",
      "defenseTier": "Tier 2 - Deterministic or calibrated indicator",
      "asCodedTier": "Tier 2 - Deterministic or calibrated indicator",
      "assuranceClass": "C",
@@ -679,7 +679,7 @@ const DS_DEFENSIBILITY = {
      "accreditationBasis": "Ratios and thresholds trace to DoD EVMIG / PMI Practice Standard for EVM; the 0.95/0.92/0.88 bands align with published EVM variance-tolerance conventions. Validation for this method would consist of the tests.html band harness (~30 edge cases from code constants) and calibrated synthetic document sets that hit each target band. None of that has been performed on this platform. What the repository holds is known-answer testing of the stated formula and, for many modules, a domain and boundary enumeration. That supports the claim that the arithmetic is independently verified for the stated formula. It does not establish empirical validation or calibration.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 7-10; ISO/IEC 23894 risk analysis/evaluation; W3C PROV-O for traceability where source records drive the indicator.",
-     "permittedProhibitedClaims": "Allowed: \"The current module is an exploratory proxy inspired by ICE Ratio.\" Prohibited: \"The code implements the canonical ICE Ratio method\" until the label/code mismatch is resolved.",
+     "permittedProhibitedClaims": "Allowed: \"The current module is an exploratory proxy inspired by Independent EAC Reconciliation Index.\" Prohibited: \"The code implements the canonical Independent EAC Reconciliation Index method\" until the label/code mismatch is resolved.",
      "governanceRole": "Enters the signal package with provenance, method version, input completeness, uncertainty/confidence, status, evidence metric, and abstention state; cannot authorize action without human judgment.",
      "defenseQuestions": [
       {
