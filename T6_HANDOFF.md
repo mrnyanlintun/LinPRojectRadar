@@ -8277,3 +8277,89 @@ a rerun that emits them will close it.
 ARCH.5 first and then the remaining P1, and it must use the cycle-8 resolver rather than a static
 record: a B2.x arm reading the schedule index has two possible ancestries. Then cycle 10's P2,
 cycle 11's P3, and the mandatory complete 100-module re-audit last. Do not launch Run 21.
+
+---
+
+## Run 20 cycle 9 closed on main: silence is not independence, and one measurement is not three votes
+
+**Merged-main commit `001c710`** (`Merge Run 20 cycle 9: silence is not independence, one
+measurement is not three votes, and four methods now perform the method they name`), merging
+`e41697e` with `--no-ff`. Pushed. **NINE OF TWELVE CYCLES ARE DONE. CYCLES 10, 11 AND 12 REMAIN
+AND HAVE NOT BEEN STARTED.**
+
+**THE MERGE WAS REVERIFIED, NOT TRUSTED.** Full suite rerun on merged main: **110 suites,
+9882/9882, ALL SUITES GREEN.** Voting reads `['A1.7', 'A1.8']`, count 2. Activation states read
+from the registry itself: ENABLED_QUALIFIED 2, ADVISORY_ONLY 90, DISABLED_UNSAFE 8,
+DISABLED_EVIDENCE_UNDER_REVIEW 1. No concept-only module is activated. Material Cost Variance
+remains DISABLED_EVIDENCE_UNDER_REVIEW. Every key in the shipped lineage table resolves in the
+registry, zero unresolvable.
+
+**FUSION.1 CLOSED. THE SAFE DEFAULT IS EXPLICIT UNRESOLVED, AND THE OTHER TWO CANDIDATES ARE
+REJECTED WITH REASONS RATHER THAN PREFERENCES.** An undeclared signal received
+`lineage_record(mid)`, whose primitive set is EMPTY; an empty set intersects nothing; so silence
+was read as a positive assertion of independence and the signal became its own body of evidence.
+REFUSAL was rejected because it discards a largely declared fusion and the adverse evidence in
+it. ABSTENTION was rejected because an undeclared RED signal would then make the fusion read
+GREENER than the evidence in hand, which is the false suppression cycle 5 exists to prevent.
+EXPLICIT UNRESOLVED keeps the signal and its most adverse reading and refuses only the certainty
+corroboration confers: all undeclared signals form ONE unresolved body, folded in with the
+IDEMPOTENT worst-band operator and never combined by Dempster's rule. Reported by name in
+`unresolved_module_ids`. Independence must now be ASSERTED, `fuse_signals(assume_independent=
+True)`, which `dst_fuse` passes and only `dst_fuse` passes. MEASURED: three undeclared Amber
+signals were 0.9861 and are 0.7000; two were 0.9273 and are 0.7000; the declared voting pair is
+unchanged at 0.7000 and real corroboration is unchanged. Seven mutations, zero survivors.
+
+**ARCH.5 CLOSED. DUPLICATED INFLUENCE IN ALL SIX, SILENT REWEIGHTING IN ALL SIX, NO ORDERING
+EFFECT ANYWHERE.** The six are B2.2, B2.3, B2.4, B2.5, B2.6 and B2.8; B2.7 and B2.9 read the same
+arms, are DISABLED_UNSAFE, emit no signal and are left undeclared on the A2.1 precedent. Three of
+the four arms are readings of ONE earned-value measurement, re-established here BY EXECUTION in
+BOTH schedule-index regimes using cycle 8's resolver, so equal weight per arm gave that
+measurement three quarters of every vote. B2.4's duplication is INSIDE A SINGLE ARM: the cost and
+schedule indices are two readings of one measurement and its per-band maximum assembled a profile
+neither index asserts. B2.8's is INSIDE THE RULE ANTECEDENTS: R1, R3 and R6 conjoin the index
+state with a cumulative sum computed over that same index. Every aggregator divides by the arms
+it happens to have; the division is kept because a fabricated neutral for an absent arm is worse,
+but the counts are now reported and B2.3's ABSOLUTE count of two is expressed as the share it
+always was, one half, because left absolute it would have demanded unanimity over two bodies and
+read a Red earned-value body as GREEN. Ordering measured over all 24 orderings of the arms and
+both directions of module execution: no effect, and no module mutates the package. **NO WEIGHT,
+correlation coefficient, reliability discount or tuned multiplier was introduced, and no band
+moved on the Run 6 fixture for any of the six.** Eight mutations, zero survivors. The six
+known-answer derivations were reworked BY HAND beside the workings they replace, never deleted.
+
+**FOUR P1 IMPLEMENTATION DEFECTS CLOSED.** A5.2 ranked three quantities of which one was a
+sensitivity, and now reports the one driver it perturbs with the other two under their own names
+as levels that are not ranked. B1.1 applied a counting rule under the name of a dominance rule,
+so a lone Red read Amber and selected routine early warning; it now reports the most adverse band
+any present signal reads, and incomplete evidence still cannot reach the calmest band. B2.10
+reported a hesitancy belonging to a pair it discards. B2.15 did not normalise its possibility
+distribution and computed necessity as the possibility less an invented 0.30. Seven mutations,
+zero survivors.
+
+**TWO ROWS EXAMINED AND DELIBERATELY NOT CLOSED, WHICH IS WHY IMPLEMENTATION_DEFECT IS NOT ZERO.**
+B1.4 Worst-N-of-M triggers on a FRACTION of the total, so every benign arrival can raise the count
+needed and switch an existing Red set off; repairing it means CHOOSING a fixed k, and there is no
+k in the specification, none in this repository and none in any cited source. PH.5's anomaly
+weights move with data availability and governing them means choosing values with no calibration
+evidence to choose them from. Both are carried forward, advisory and non-voting. A count is not
+worth a fabricated constant.
+
+**THREE GUARDS FIRED CORRECTLY BEFORE ANYTHING WAS TRANSCRIBED, AND A FOURTH WAS FOUND VACUOUS
+AND FIXED.** The Run-20 production manifest guard named both undeclared production files by name;
+the Run-6 and Run-8 pinned-baseline guards named the changed file; and the Run-17 and Run-19
+canonical proposition registers refused to let a repaired finding pass silently, saying in terms
+that the disposition must be revised and not the test. **THE VACUOUS ONE:** the manifest guard's
+module-level check looked for a note in `test_run19_category_N.py`, and categories 1 and 6 have no
+such file, so a change to a category 1 or 6 module could have been declared with nothing anywhere
+demonstrating it. The check now looks up the suite that actually assesses the target.
+
+**REGISTER: 110 rows, 81 OPEN.** FUSION.1, ARCH.5, 5.2, 6.1, 7.10 and 7.15 all CLOSED_RUN20.
+
+**EXACT NEXT REQUIREMENTS. RUN 20 IS INCOMPLETE. NINE OF TWELVE CYCLES ARE DONE.** Cycle 10 is
+P2, the missing canonical structures and the label mismatches, and it has not been started. Then
+cycle 11's P3 parameters, thresholds, calibration and provenance, and then the mandatory complete
+100-target re-audit as cycle 12. Do not launch Run 21.
+
+**THE TWO EVIDENCE GAPS ARE UNCHANGED AND NEITHER WAS SILENTLY CLOSED.** The anti-fossilization
+register exists and is still not back-transcribed for cycles 1 to 7. Cycle 3's M13 to M21
+fault-injection rows still exist only in prose, and only a rerun that emits them will close it.
