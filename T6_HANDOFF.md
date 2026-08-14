@@ -339,6 +339,12 @@ committed.
    repository. The report is therefore reproduced here verbatim, the freeze record names the
    intended path and records `report_present_in_tree: false`, and a later run should land the file
    at that path from this text.
+   **RESOLVED in the supervising session**, which is not a subagent and could write the path.
+   `REPORT_2026-08-14_empty-project-diagram.md` now exists in the tree, copied from this text
+   with no edit to the body. The freeze record is deliberately left unchanged: it is historical
+   evidence of the state at stage 2, its `report_present_in_tree: false` was true when written,
+   and rewriting it would invalidate the manifest digest recorded in section 9 for a reason that
+   has nothing to do with the production surface. Read that field as of the freeze, not as of now.
 2. **Items 2, 3 and 4 were already satisfied before this run started** and no credit is claimed.
 3. **The empty-state gate builds the diagram and then hides it.** It does not skip the work. That
    is deliberate: the emptiness decision is a product of the draw, so building and hiding is what
