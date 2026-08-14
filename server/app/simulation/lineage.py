@@ -551,6 +551,59 @@ INDIRECT_COST_BODY = "INDIRECT_COST_LEDGER"
 #: The material cost baseline and the current material cost. Run 20 cycle 8. Its own body: the
 #: cluster it was found in has only one executable member, so it is a body of one and not a pair.
 MATERIAL_COST_BODY = "MATERIAL_COST_RECORD"
+# ---------------------------------------------------------------------------------------------
+# RUN 28. SIX DECLARATIONS BELOW WERE REWRITTEN, BECAUSE THE FACTS THEY NAMED ARE NO LONGER THE
+# FACTS THOSE MODULES READ. The owner's supplied Run-28 contract replaced each of the six
+# computations with the canonical method it is named for, defined on a governed structure that
+# arrives on the signal inputs. Leaving the old declarations would assert dependence on evidence
+# the module no longer touches -- which is exactly the error Run 20 cycle 5 recorded as the one
+# that DID HARM, in the other direction: a wrong dependence declaration destroys corroboration
+# that is really there, and a wrong INDEPENDENCE declaration manufactures corroboration that is
+# not. Each new body below is a body because its evidence is separately prepared and separately
+# sourced, and each record's derivation chain names the actual steps.
+#
+# THIS IS NOT A CATEGORY-9 CLOSURE. Run 31 implements the qualification gate. What Run 28 does
+# here is keep the provenance that gate will need TRUE, which is the precondition for it.
+
+#: The Bayesian model record: a prior with a stated source and an observation model with a stated
+#: variance basis. Its own body, because a prior elicited or fitted outside this platform is not
+#: the earned-value measurement and does not share a fact with it.
+BAYESIAN_MODEL_BODY = "BAYESIAN_MODEL_RECORD"
+#: The state-space model record: a starting estimate, its uncertainty, and process and
+#: measurement variances that state where they came from, alongside the readings filtered.
+STATE_SPACE_MODEL_BODY = "STATE_SPACE_MODEL_RECORD"
+#: The approved time-phased expenditure baseline, with its version and approval source.
+EXPENDITURE_BASELINE_BODY = "APPROVED_EXPENDITURE_BASELINE"
+#: The governed reference population of comparable completed projects and their outcomes.
+REFERENCE_CLASS_BODY = "REFERENCE_CLASS_POPULATION"
+#: The INDEPENDENT estimate at completion: prepared by a different party, by a different method,
+#: against the same scope. A body of its own is the whole point of the module that reads it, and
+#: the module refuses unless the method AND the responsible party genuinely differ.
+INDEPENDENT_ESTIMATE_BODY = "INDEPENDENT_COST_ESTIMATE"
+#: The activity network: identities, logic and durations, with its schedule version and status
+#: basis. One body serving five Category-2 methods, which is why those five must never be fused
+#: as though they were five independent readings.
+SCHEDULE_NETWORK_BODY = "SCHEDULE_NETWORK"
+#: The cumulative time-phased planned value curve and the matching actual series.
+TIME_PHASED_BASELINE_BODY = "TIME_PHASED_BASELINE"
+#: Each milestone's committed date and the run of forecasts made for it.
+MILESTONE_FORECAST_BODY = "MILESTONE_FORECAST_HISTORY"
+#: The look-ahead window's activity and constraint inventory.
+LOOK_AHEAD_BODY = "LOOK_AHEAD_CONSTRAINT_INVENTORY"
+#: Time-phased resource demand against available capacity.
+RESOURCE_PROFILE_BODY = "TIME_PHASED_RESOURCE_PROFILE"
+#: Installed and planned production quantities with the labour hours each took.
+PRODUCTION_OUTPUT_BODY = "PRODUCTION_OUTPUT_RECORD"
+#: The overhead allocation base: the driver amounts the overhead is absorbed over.
+ALLOCATION_BASE_BODY = "OVERHEAD_ALLOCATION_BASE"
+#: The risk register's events, their probabilities and their impacts.
+RISK_REGISTER_BODY = "RISK_REGISTER"
+#: The identified analogous project, its cost and the factors adapting it.
+ANALOG_ESTIMATE_BODY = "ANALOGOUS_PROJECT_RECORD"
+#: A named external price index with its authority, geography, base period and vintage. It is
+#: external to the project entirely, which is the property the module exists to have.
+EXTERNAL_INDEX_BODY = "EXTERNAL_PRICE_INDEX"
+# ---------------------------------------------------------------------------------------------
 
 MODULE_LINEAGE: dict[str, dict[str, Any]] = {
     # ---- the two voting modules, which are the reason this file exists
@@ -602,20 +655,32 @@ MODULE_LINEAGE: dict[str, dict[str, Any]] = {
     # where it was falsely dependent on the trend, filter and forecast modules and could not
     # corroborate them; and it named a planned value it never reads, which is a dependence on
     # every schedule reader that does not exist. Both directions of error in one record.
-    "A1.3": lineage_record(  # Bayesian EAC, normal-normal update on the cost index
-        "A1.3", source_fact_ids=("ac", "bac", "ev"),
-        lineage_group_ids=(EARNED_VALUE_BODY,),
-        evidence_relationship=SAME_SOURCE_TRANSFORM,
-        derivation_chain=("bac,ev,ac", "cost performance index = ev / ac",
-                          "prior centred on the budget, likelihood centred on the budget over "
-                          "the cost performance index",
-                          "normal-normal posterior estimate at completion",
-                          "posterior overrun against the budget")),
-    "A1.4": lineage_record(  # scalar Kalman recursion
-        "A1.4", source_fact_ids=("ev", "pv", "reporting_history"),
-        lineage_group_ids=(EARNED_VALUE_BODY, REPORTING_HISTORY_BODY),
-        evidence_relationship=CORRELATED,
-        derivation_chain=("reporting history", "scalar Kalman recursion")),
+    # RUN 28. The old record declared the earned-value vector, because the v10 module derived
+    # both of its designed variances from the budget and the cost index. v3 reads a GOVERNED
+    # MODEL RECORD instead: a prior with its stated source and an observation model with its
+    # stated variance basis, neither of which is the earned-value measurement.
+    "A1.3": lineage_record(  # Bayesian EAC, a governed normal-normal update
+        "A1.3", source_fact_ids=("bayesian_prior", "bayesian_observation"),
+        lineage_group_ids=(BAYESIAN_MODEL_BODY,),
+        evidence_relationship=INDEPENDENT,
+        derivation_chain=("the stated prior and its source",
+                          "the stated observation and the variance basis it was estimated from",
+                          "normal-normal posterior by precision weighting",
+                          "posterior mean and its credible interval")),
+    # RUN 28. The old record declared the earned value and the planned value, because the v10
+    # module filtered the schedule index series with two literal variances. v3 reads a GOVERNED
+    # STATE-SPACE RECORD: the readings and the two variances arrive together, with the source of
+    # each variance stated, and the module abstains without them.
+    "A1.4": lineage_record(  # scalar Kalman recursion on a governed state-space model
+        "A1.4", source_fact_ids=("state_space_observations", "process_variance",
+                                 "measurement_variance"),
+        lineage_group_ids=(STATE_SPACE_MODEL_BODY,),
+        evidence_relationship=INDEPENDENT,
+        derivation_chain=("the state space model's readings and its two variances",
+                          "predict: the state is carried forward and its variance grows by the "
+                          "process variance",
+                          "update: the Kalman gain weights the reading against the prediction",
+                          "the filtered state and its posterior variance")),
     # RUN 20 CYCLE 6. This entry declared the planned value. A1.5 extrapolates the COST
     # performance history, which is earned value over ACTUAL COST. It never reads a planned
     # value. Declaring one asserted a dependence on every schedule reader that is not there,
@@ -649,14 +714,21 @@ MODULE_LINEAGE: dict[str, dict[str, Any]] = {
     # The progress figure is declared even though declaring it creates a dependence on the other
     # readers of progress. It scales the denominator, so the reading genuinely rests on it, and a
     # fact is not omitted because its consequences are inconvenient.
-    "A3.5": lineage_record(  # Overhead Absorption Rate
+    # RUN 28. The progress figure is GONE from this record, and its going is the correction.
+    # Run 20 cycle 5 declared it because the v10 module scaled the indirect plan by progress, and
+    # said in terms that a fact is not omitted because its consequences are inconvenient. v3
+    # absorbs overhead over an explicit ALLOCATION BASE and never touches progress, so declaring
+    # it would now assert a dependence on every other reader of progress that is not there.
+    "A3.5": lineage_record(  # Overhead Absorption Rate, over an explicit allocation base
         "A3.5",
-        source_fact_ids=("actual_pct_complete", "indirect_cost_actual", "indirect_cost_plan"),
-        lineage_group_ids=(INDIRECT_COST_BODY,),
+        source_fact_ids=("indirect_cost_actual", "indirect_cost_plan", "allocation_base_driver"),
+        lineage_group_ids=(INDIRECT_COST_BODY, ALLOCATION_BASE_BODY),
         evidence_relationship=INDEPENDENT,
-        derivation_chain=("the planned and actual indirect cost and the reported progress",
-                          "indirect plan scaled by progress",
-                          "absorption ratio = actual indirect cost / the scaled plan")),
+        derivation_chain=("the planned and actual overhead",
+                          "the planned and actual amount of the allocation base",
+                          "planned rate = planned overhead / planned driver",
+                          "actual rate = actual overhead / actual driver",
+                          "the variance between the two rates")),
     # ---- RUN 20 CYCLE 4. The two advisory duplicate pairs Run 19 recorded as lineage findings
     #      and cycle 3 left undeclared. DECLARATION ONLY: no band, boundary, threshold or
     #      arithmetic result of any of these four modules is changed by their appearing here.
@@ -749,25 +821,38 @@ MODULE_LINEAGE: dict[str, dict[str, Any]] = {
     # the module does not touch the earned value at all. A cost-index reader is a different case
     # and does name the group, because the cost index has exactly one ancestry.
 
-    "A1.11": lineage_record(  # ICE Ratio: index EAC against a parametric EAC
-        "A1.11", source_fact_ids=("ac", "bac", "ev"),
-        derived_index_reads=(COST_INDEX,),
-        lineage_group_ids=(EARNED_VALUE_BODY,),
-        evidence_relationship=SAME_SOURCE_TRANSFORM,
-        derivation_chain=("bac,ev,ac", "cost performance index = ev / ac",
-                          "index estimate at completion = bac / the cost index",
-                          "parametric estimate at completion = ac + (bac - ev)",
-                          "ratio of the two")),
-    "A3.6": lineage_record(  # Cost Risk Analysis P80, a deterministic inflation of the index
-        "A3.6", source_fact_ids=("bac",),
-        derived_index_reads=(COST_INDEX,),
-        lineage_group_ids=(EARNED_VALUE_BODY,),
-        evidence_relationship=SAME_SOURCE_TRANSFORM,
-        derivation_chain=("bac and the cost performance index",
-                          "cost performance index = ev / ac",
-                          "estimate at completion = bac / the cost index",
-                          "deterministic eightieth-percentile inflation of that estimate",
-                          "overrun against the budget as a percentage")),
+    # RUN 28. THE OLD RECORD WAS TRUE OF v10 AND IS THE FINDING RUN 28 CLOSED. Both "forecasts"
+    # were transforms of one reported vector, so the record correctly declared them
+    # SAME_SOURCE_TRANSFORM over the earned-value body -- which is another way of saying no
+    # independent estimate existed. v3 requires two provenance-distinct estimates and CHECKS the
+    # distinction, so the management forecast and the independent one are two bodies, and the
+    # record says so. The relationship is INDEPENDENT because that is now a property the module
+    # enforces at run time rather than a claim this table makes.
+    "A1.11": lineage_record(  # Independent EAC Reconciliation Index
+        "A1.11", source_fact_ids=("management_eac", "independent_eac"),
+        lineage_group_ids=(INDEPENDENT_ESTIMATE_BODY,),
+        evidence_relationship=INDEPENDENT,
+        derivation_chain=("the management forecast, with its source, method, assumptions, model "
+                          "version and responsible party",
+                          "the independent forecast, with the same five, differing on the "
+                          "method and on the responsible party",
+                          "the ratio of the independent forecast to the management one",
+                          "and their divergence as a share of the management forecast")),
+    # RUN 28. The old record declared the budget and the cost index, because v10 inflated an
+    # index-based forecast. v3 simulates a total cost over the risk register's own events. The
+    # budget REMAINS declared and remains in the earned-value body: production assembles the base
+    # cost from the project's budget at completion, so the reading genuinely rests on it and a
+    # fact is not omitted because its consequences are inconvenient. The cost index is gone,
+    # because nothing in the module reads it any more.
+    "A3.6": lineage_record(  # Cost Risk Analysis P80, a simulated total-cost distribution
+        "A3.6", source_fact_ids=("bac", "risk_events"),
+        lineage_group_ids=(EARNED_VALUE_BODY, RISK_REGISTER_BODY),
+        evidence_relationship=CORRELATED,
+        derivation_chain=("the budget at completion as the base cost",
+                          "the register's risk events, each with its own probability and its "
+                          "own cost impact",
+                          "Monte Carlo realisation of the events over the base cost",
+                          "the empirical eightieth percentile of the simulated total")),
     "B3.2": lineage_record(  # FAR Threshold Monitor. The budget is demanded and is immaterial.
         "B3.2", source_fact_ids=(),
         derived_index_reads=(COST_INDEX,),
@@ -865,15 +950,22 @@ MODULE_LINEAGE: dict[str, dict[str, Any]] = {
         derivation_chain=("the two indices", "Fermatean membership and non-membership degrees",
                           "aggregation to a band")),
     #      The cluster that dissolved. Its other member is disabled, so this is not a pair.
-    "A3.9": lineage_record(  # Inflation Adjustment Index
+    # RUN 28. The cluster that dissolved has dissolved further, and correctly. Run 20 cycle 8
+    # declared this module on the project's own two material cost figures and its progress,
+    # because that is what v10 read. The supplied contract states in terms that a
+    # baseline-to-current project material price ratio is NOT an external inflation index; v3
+    # reads a NAMED EXTERNAL SERIES with its authority, geography, base period and vintage. The
+    # index is external to the project entirely, which is the property the module exists to have,
+    # so it shares no fact with any other module on the platform and its body is its own.
+    "A3.9": lineage_record(  # Inflation Adjustment Index, from a named external series
         "A3.9",
-        source_fact_ids=("actual_pct_complete", "material_cost_baseline",
-                         "material_cost_current"),
-        lineage_group_ids=(MATERIAL_COST_BODY,),
+        source_fact_ids=("external_price_index", "cost_exposure"),
+        lineage_group_ids=(EXTERNAL_INDEX_BODY,),
         evidence_relationship=INDEPENDENT,
-        derivation_chain=("the baseline and current material cost and the reported progress",
-                          "baseline scaled by progress",
-                          "escalation against the progress-adjusted baseline")),
+        derivation_chain=("the named external price index at its base period and at the period "
+                          "being adjusted to, with its authority, geography, scope and vintage",
+                          "escalation factor = the current index level / the base index level",
+                          "the adjusted cost exposure")),
     # ---- the synthesis, which may never corroborate anything it was built from
     #
     # RUN 20 CYCLE 6. THIS ENTRY WAS KEYED "PH.5" AND DECLARED DEPENDENCIES ON A1.7 AND A1.8.

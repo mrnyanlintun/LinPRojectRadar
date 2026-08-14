@@ -51,6 +51,26 @@ def line_of_balance(project_id: str, period_id: str) -> dict:
                 _f(w, "actual_production_rate_locations_per_day"),
             "start_day": _f(w, "actual_start_day"),
         } for w in packages],
+        # RUN 28. The supplied Category-2 contract requires BOTH the planned and the actual
+        # production rate, so the deterioration of the actual slope against plan is visible
+        # rather than being folded invisibly into the separation between two lines. The v0.3
+        # package already carries both rates and both start days per work package; the finish
+        # day of a location is its line's start plus its sequence divided by that line's rate,
+        # which is the same rate = change in units / change in time the contract states, read in
+        # the other direction. Nothing is invented here: every figure below is a column of
+        # lob_work_packages.csv or arithmetic on two of them.
+        "unit_progress": [{
+            "activity_id": w["work_type_id"],
+            "location_sequence": int(_f(w, "location_sequence")),
+            "quantity": _f(w, "quantity"),
+            "crew_id": w["crew_id"],
+            "planned_finish_day": (
+                _f(w, "planned_start_day")
+                + int(_f(w, "location_sequence")) / _f(w, "planned_production_rate_locations_per_day")),
+            "actual_finish_day": (
+                _f(w, "actual_start_day")
+                + int(_f(w, "location_sequence")) / _f(w, "actual_production_rate_locations_per_day")),
+        } for w in packages],
     }
 
 

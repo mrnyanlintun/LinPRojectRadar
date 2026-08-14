@@ -44,6 +44,8 @@ database trigger (migration 0009), because an application-only guarantee is one 
 """
 from __future__ import annotations
 
+import datetime as _dt
+
 import base64
 import binascii
 import hashlib
@@ -893,6 +895,73 @@ def _milestone_history(session: Session, project: Project,
     return out
 
 
+def _milestone_forecast_history(snapshots: list[dict]) -> dict | None:
+    """
+    RUN 28. `milestoneForecastHistory`: the structure the canonical Milestone Trend Analysis is
+    defined on, assembled from the schedule snapshots this platform already stores.
+
+    WHY THIS EXISTS. The supplied Run-28 contract measures milestone variance against the
+    COMMITTED BASELINE DATE -- MV = ForecastDate - BaselineDate -- and separately measures the
+    drift between successive forecasts. The v10 module computed only the drift, because the
+    baseline date was never assembled into anything a module could read. It IS in the corpus:
+    `schedule_activities.py` extracts each activity's baseline finish and the schedule store
+    keeps it per period, so this is a wiring gap rather than an absent fact, and closing it is
+    exactly the supply path Run 28 exists to build.
+
+    WHAT IS AND IS NOT INVENTED. The original commitment is the baseline finish recorded in the
+    EARLIEST period the milestone appears in, and the current approved baseline is the one
+    recorded in the LATEST. Where an activity carries no parseable baseline finish it is left
+    out entirely rather than given a substitute, because a variance measured against a date
+    nobody committed to is the fabrication this run is forbidden to make. Dates become day
+    numbers on a fixed epoch so the arithmetic is in days; nothing about a project reaches the
+    epoch, and no clock is read.
+
+    Fewer than two forecasts for every milestone leaves the structure absent and the module
+    abstains on its own guard, which is what the contract requires of a trend claim.
+    """
+    epoch = _dt.date(2000, 1, 1)
+
+    def day(value) -> float | None:
+        text = str(value or "")[:10]
+        try:
+            return float((_dt.date.fromisoformat(text) - epoch).days)
+        except (TypeError, ValueError):
+            return None
+
+    baselines: dict[str, list[tuple[int, float]]] = {}
+    forecasts: dict[str, list[tuple[int, float]]] = {}
+    for snap in snapshots:
+        p = int(snap.get("period") or 0)
+        for m in snap.get("milestones") or []:
+            key = str(m.get("name") or "")
+            if not key:
+                continue
+            b = day(m.get("baseline_finish"))
+            f = day(m.get("forecast"))
+            if b is not None:
+                baselines.setdefault(key, []).append((p, b))
+            if f is not None:
+                forecasts.setdefault(key, []).append((p, f))
+
+    rows = []
+    for key in sorted(set(baselines) & set(forecasts)):
+        series = sorted(forecasts[key])
+        if len(series) < 2:
+            continue
+        committed = sorted(baselines[key])
+        rows.append({
+            "milestone_id": key,
+            "original_baseline_day": committed[0][1],
+            "approved_baseline_day": committed[-1][1],
+            "forecasts": [{"report_index": p, "forecast_day": d} for p, d in series],
+        })
+    if not rows:
+        return None
+    return {"schedule_version": f"schedule store, periods "
+                               f"{snapshots[0].get('period')} to {snapshots[-1].get('period')}",
+            "milestones": rows}
+
+
 def _live_result(session: Session, project: Project, period: int) -> ComputedResult | None:
     return session.scalars(
         select(ComputedResult).where(
@@ -1221,6 +1290,13 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
     milestone_history = _milestone_history(session, project, period)
     if len(milestone_history) >= 2:
         si["milestoneHistory"] = milestone_history
+        # RUN 28. The same snapshots, in the shape the canonical method is defined on: each
+        # milestone's committed baseline date alongside the run of forecasts made for it. The
+        # older key stays because the stored row records what the modules were given and other
+        # readers already consume it; the new key is what A2.7 reads.
+        forecast_history = _milestone_forecast_history(milestone_history)
+        if forecast_history is not None:
+            si["milestoneForecastHistory"] = forecast_history
 
     # 0024. THE REGISTER'S EXPOSURE, SERVED TO THE MODULES THAT WOULD NEED IT.
     #
@@ -1243,6 +1319,36 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
     exposure = register_exposure(_period_risks(session, project, period))
     if exposure["usable_count"]:
         si["registerExposure"] = exposure
+        # RUN 28. THE CHANGE THE COMMENT ABOVE SAID WAS "LEFT TO BE AUTHORISED" IS AUTHORISED
+        # AND MADE. Cost Risk Analysis P80's arithmetic was a deterministic uplift on the cost
+        # index with no slot for a list of probability and impact pairs, and the register was
+        # therefore served to a module that could not read it. The owner's Run-28 supplied
+        # contract replaces that arithmetic with a simulated total-cost distribution over
+        # exactly such a list, so the register is now assembled into the shape the canonical
+        # method is defined on and the module consumes it.
+        #
+        # WHAT IS AND IS NOT INVENTED. Each usable register row becomes one risk event with the
+        # probability and the cost impact the register itself states, and nothing else: a row
+        # the register could not give both figures for is REFUSED by register_exposure above and
+        # never reaches here, rather than being given a substituted probability. The base cost
+        # is the project's own budget at completion. No distribution shape is invented for an
+        # impact: a register states one impact figure, so the event's impact is that figure and
+        # the declared family is POINT, which says so rather than implying a spread nobody
+        # elicited. Where the budget is absent or not positive the key is omitted entirely and
+        # the module abstains on its own guard.
+        _bac = si.get("bac")
+        if isinstance(_bac, (int, float)) and _bac > 0 and exposure.get("contributors"):
+            si["costRiskModel"] = {
+                "model_version": f"risk register, period {period}",
+                "estimate_source": "the project's reported budget at completion and the risk "
+                                   "register rows carrying both a probability and a cost impact",
+                "cost_components": [{"component_id": "BUDGET_AT_COMPLETION",
+                                     "base_amount": float(_bac)}],
+                "risk_events": [
+                    {"risk_id": c["risk_key"], "probability": c["probability"],
+                     "impact_distribution": "POINT", "impact": c["cost_impact"]}
+                    for c in exposure["contributors"]],
+            }
 
     run = compute_project(si, project.legacy_id, f"P{period}", cutoff)
 

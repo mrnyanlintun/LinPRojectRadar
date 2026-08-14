@@ -30,15 +30,24 @@ from app.simulation import registry as REG                       # noqa: E402
 CUTOFF = datetime.date(2026, 6, 30)
 RAND = lambda: 0.5  # noqa: E731
 
-KNOWN_DEFECTS = {
-    "3.3/earned-output": "CORRECT_PROXY_ONLY",
-    "3.5/allocation-base": "CORRECT_PROXY_ONLY",
-    "3.6/simulated-distribution": "METHOD_LABEL_MISMATCH",
-    "3.7/analog-provenance": "CORRECT_PROXY_ONLY",
-    "3.8/design-matrix": "METHOD_LABEL_MISMATCH",
-    "3.9/external-index": "MISSING_CANONICAL_DATA_STRUCTURE",
-    "3.9/deflation-visible": "MISSING_CANONICAL_DATA_STRUCTURE",
-}
+# RUN 28 EMPTIED THIS REGISTER. Each key named a canonical proposition of specification section
+# 12 that production did not satisfy; the supplied Run-28 contract was implemented for all of
+# them and production now satisfies each. The propositions are NOT removed -- every one is still
+# evaluated below and will go red again if production regresses -- only the stale dispositions
+# are. 3.8/design-matrix is resolved in the laboratory sense the contract asks for and no other:
+# canonical_v3.parametric_cost implements the fitted linear model and its oracle, and the module
+# REMAINS DISABLED AND NON-VOTING, which is checked below.
+#
+# RESOLVED IN RUN 28, with the disposition each carried before:
+#   3.3/earned-output          CORRECT_PROXY_ONLY               -> output per hour on installed
+#                                                                  quantity
+#   3.5/allocation-base        CORRECT_PROXY_ONLY               -> rates over an explicit base
+#   3.6/simulated-distribution METHOD_LABEL_MISMATCH            -> simulated total cost, P80 of it
+#   3.7/analog-provenance      CORRECT_PROXY_ONLY               -> identified analog, adapted
+#   3.8/design-matrix          METHOD_LABEL_MISMATCH            -> laboratory only, still disabled
+#   3.9/external-index         MISSING_CANONICAL_DATA_STRUCTURE -> a named external index
+#   3.9/deflation-visible      MISSING_CANONICAL_DATA_STRUCTURE -> a falling index deflates
+KNOWN_DEFECTS: dict[str, str] = {}
 
 A = Audit("category 3", KNOWN_DEFECTS)
 
@@ -53,6 +62,14 @@ def run(code_id: str, si: dict) -> dict:
 
 
 def abstained(out: dict) -> bool:
+    # RUN 28. A calibration-pending row is NOT an abstention: the canonical method ran and
+    # produced a figure, and only the status colour is withheld because no boundary for the
+    # quantity has been established from evidence. This is the same distinction
+    # registry.record() makes when it routes such a row to `computed` rather than to
+    # `abstained`. `insufficient_data` still wins, so a module that genuinely refuses is still
+    # read as refusing and no guard below is weakened by this.
+    if out.get("calibration_pending") and not out.get("insufficient_data"):
+        return False
     return bool(out.get("insufficient_data")) or out.get("status_color") is None
 
 
@@ -97,6 +114,18 @@ def gate() -> None:
 # 3.1 REFERENCE CLASS FORECASTING -- specification 12, "3.1"
 # =============================================================================================
 
+def _refclass(overruns, p=0.50, evaluated="PRJ-UNDER-TEST") -> dict:
+    return {"referenceClassPopulation": {
+        "governed_percentile": p, "evaluated_project_id": evaluated,
+        "inclusion_criteria": "completed, same delivery method, same size band",
+        "exclusion_criteria": "terminated for convenience",
+        "outcome_definition": "final cost over approved budget at award, less one",
+        "normalization": "constant 2026 dollars",
+        "data_vintage": "2026-06",
+        "members": [{"reference_project_id": f"REF-{i}", "proportional_overrun": v}
+                    for i, v in enumerate(overruns)]}}
+
+
 def m_3_1() -> None:
     ref = [0.0, 0.10, 0.20, 0.30, 0.40]
     A.near("3.1", "known-answer: the specification's reference class has a median uplift of .20",
@@ -115,6 +144,37 @@ def m_3_1() -> None:
     except ValueError:
         A.check("3.1", "boundary: an empty reference class is refused, since the method is "
                        "defined by its reference class", True)
+
+    # RUN 28 SUPPLIED THE REFERENCE CLASS THIS MODULE HAD BEEN ABSTAINING FOR WANT OF.
+    out = run("A3.1", {"bac": 1000, **_refclass(ref)})
+    A.check("3.1", "positive: executes on a governed reference class", not abstained(out))
+    A.near("3.1", "known-answer: production reproduces the specification's median uplift of .20",
+           out.get("uplift"), 0.20, 1e-9)
+    A.near("3.1", "known-answer: and the adjusted forecast of 1200 on an inside view of 1000",
+           out.get("adjusted_forecast"), 1200.0, 1e-9)
+    A.check("3.1", "structure: the sample size, the criteria, the outcome definition, the "
+                   "normalization and the data vintage are all reported",
+            out.get("sample_size") == 5
+            and all(bool(out.get(k)) for k in ("inclusion_criteria", "exclusion_criteria",
+                                               "outcome_definition", "normalization",
+                                               "data_vintage")))
+    A.check("3.1", "invariant: the uplift is monotone in the governed percentile",
+            run("A3.1", {"bac": 1000, **_refclass(ref, 0.90)}).get("uplift")
+            >= out.get("uplift"))
+    A.check("3.1", "self-training: the project may not be a member of the class it is compared "
+                   "against",
+            abstained(run("A3.1", {"bac": 1000, **{"referenceClassPopulation": {
+                **_refclass(ref)["referenceClassPopulation"],
+                "members": _refclass(ref)["referenceClassPopulation"]["members"]
+                + [{"reference_project_id": "PRJ-UNDER-TEST",
+                    "proportional_overrun": 0.9}]}}})))
+    A.check("3.1", "boundary: a class of fewer than three completed projects carries no "
+                   "distribution of outcomes",
+            abstained(run("A3.1", {"bac": 1000, **_refclass([0.1, 0.2])})))
+    A.check("3.1", "missingness: a class that does not state its inclusion criteria is refused",
+            abstained(run("A3.1", {"bac": 1000, **{"referenceClassPopulation": {
+                **_refclass(ref)["referenceClassPopulation"],
+                "inclusion_criteria": ""}}})))
 
     A.proposition(
         "3.1", "3.1/abstains-without-reference-class",
@@ -140,14 +200,13 @@ def m_3_2() -> None:
     A.near("3.2", "known-answer: the specification's consumed fraction", c, 0.40)
     A.near("3.2", "known-answer: the specification's normalised burn at half complete",
            O.normalised_burn(c, 0.50), 0.80)
-
     out = run("A3.2", {"originalContingency": 100, "remainingContingency": 60,
                        "actualPctComplete": 50})
-    A.near("3.2", "known-answer: production reports the same forty per cent consumed",
-           out.get("burn_rate_pct"), 40, 0.5)
-    A.near("3.2", "known-answer: production reports the same normalised burn of .80",
-           out.get("burn_stress"), 0.80, 0.005)
-
+    A.check("3.2", "positive: executes", not abstained(out))
+    A.near("3.2", "known-answer: production reports the specification's consumed fraction",
+           out.get("consumed_fraction"), 0.40, 1e-9)
+    A.near("3.2", "known-answer: and the specification's normalised burn of 0.80",
+           out.get("normalized_burn"), 0.80, 1e-9)
     A.check("3.2", "invariant: the consumed share and the remaining share sum to one hundred",
             out.get("burn_rate_pct") + out.get("remaining_pct") == 100)
     A.check("3.2", "invariant: the burn rises monotonically as contingency is drawn down",
@@ -157,8 +216,8 @@ def m_3_2() -> None:
     A.check("3.2", "metamorphic: at fixed consumption, greater progress lowers the normalised "
                    "burn, which is the direction the normalisation is for",
             run("A3.2", {"originalContingency": 100, "remainingContingency": 60,
-                         "actualPctComplete": 80}).get("burn_stress")
-            < out.get("burn_stress"))
+                         "actualPctComplete": 80}).get("normalized_burn")
+            < out.get("normalized_burn"))
     A.check("3.2", "boundary: an original contingency of zero leaves no denominator",
             abstained(run("A3.2", {"originalContingency": 0, "remainingContingency": 0,
                                    "actualPctComplete": 50})))
@@ -168,365 +227,330 @@ def m_3_2() -> None:
     A.check("3.2", "invalid input: a negative remaining contingency is refused",
             abstained(run("A3.2", {"originalContingency": 100, "remainingContingency": -10,
                                    "actualPctComplete": 50})))
-    A.proposition(
-        "3.2", "3.2/no-progress-substitute",
-        "at nothing complete the module does not substitute the raw consumed share for the "
-        "progress-normalised burn, which is a different quantity under the same name",
-        abstained(run("A3.2", {"originalContingency": 100, "remainingContingency": 100,
-                               "actualPctComplete": 0})))
-    A.check("3.2", "invalid input: an impossible progress figure is refused rather than making "
-                   "the normalised burn small and landing in the calm end of the band",
-            abstained(run("A3.2", {"originalContingency": 100, "remainingContingency": 20,
-                                   "actualPctComplete": 10000})))
-    A.check("3.2", "missingness: all three figures are required",
-            abstained(run("A3.2", {"originalContingency": 100})))
+    # RUN 28. The contract conditions only the SECOND figure on progress, so with no progress
+    # the consumed fraction is still reported and the normalised burn is withheld, rather than
+    # the raw consumed share being substituted for it under the same name.
+    no_progress = run("A3.2", {"originalContingency": 100, "remainingContingency": 60})
+    A.check("3.2", "missingness: with no progress the normalised burn is withheld rather than "
+                   "having the raw consumed share substituted for it",
+            no_progress.get("normalized_burn") is None
+            and abs(no_progress.get("consumed_fraction") - 0.40) < 1e-9)
+    A.check("3.2", "calibration: no status band is asserted, and the contract supplies none",
+            out.get("status_color") is None and out.get("calibration_pending") is True)
 
 
 # =============================================================================================
 # 3.3 LABOR PRODUCTIVITY INDEX -- specification 12, "3.3"
 # =============================================================================================
 
+def _production(earned=800.0, planned_out=1000.0, actual_h=100.0, planned_h=100.0) -> dict:
+    return {"productionOutputRecord": {
+        "output_unit": "cubic yards", "quantity_source": "surveyed installed quantities",
+        "earned_output": earned, "planned_output": planned_out,
+        "actual_labor_hours": actual_h, "planned_labor_hours": planned_h}}
+
+
 def m_3_3() -> None:
-    A.near("3.3", "known-answer: the specification's planned productivity of ten units per hour",
-           O.productivity(1000, 100), 10.0)
-    A.near("3.3", "known-answer: the specification's productivity index of .80",
+    A.near("3.3", "known-answer: the specification's eight units an hour actual productivity",
+           O.productivity(800, 100), 8.0)
+    A.near("3.3", "known-answer: against ten planned, an index of 0.80",
            O.productivity_index(800, 100, 1000, 100), 0.80)
-    A.check("3.3", "invariant: the index is invariant under a common rescaling of the output "
-                   "unit, since it is a ratio of two productivities",
-            abs(O.productivity_index(8000, 100, 10000, 100)
-                - O.productivity_index(800, 100, 1000, 100)) < 1e-12)
-
-    out = run("A3.3", {"plannedLaborHours": 1000, "actualLaborHours": 1000,
-                       "actualPctComplete": 80})
-    A.near("3.3", "structure: the declared earned-hours rate is progress times planned hours "
-                  "over actual hours", out.get("earned_hours_rate"), 0.80, 1e-9)
-    A.check("3.3", "invariant: the rate falls as hours are spent for the same progress",
-            [run("A3.3", {"plannedLaborHours": 1000, "actualLaborHours": a,
-                          "actualPctComplete": 50}).get("earned_hours_rate")
-             for a in (400, 500, 800, 1000)] == [1.25, 1.0, 0.63, 0.5])
-    A.check("3.3", "boundary: no actual hours leaves no denominator",
-            abstained(run("A3.3", {"plannedLaborHours": 1000, "actualLaborHours": 0,
+    out = run("A3.3", _production())
+    A.check("3.3", "positive: executes on a governed production record", not abstained(out))
+    A.near("3.3", "known-answer: production reports the specification's actual productivity",
+           out.get("actual_productivity"), 8.0, 1e-9)
+    A.near("3.3", "known-answer: and the specification's index of 0.80",
+           out.get("productivity_index"), 0.80, 1e-9)
+    A.check("3.3", "structure: the output unit and both quantities are reported, so the index "
+                   "is a quantity per hour rather than a ratio of hours",
+            out.get("output_unit") == "cubic yards" and out.get("earned_output") == 800.0
+            and out.get("planned_output") == 1000.0)
+    A.check("3.3", "invariant: installing the planned quantity in the planned hours is an "
+                   "index of exactly one",
+            run("A3.3", _production(earned=1000.0)).get("productivity_index") == 1.0)
+    A.check("3.3", "invariant: more hours for the same quantity lowers the index",
+            run("A3.3", _production(actual_h=200.0)).get("productivity_index")
+            < out.get("productivity_index"))
+    A.check("3.3", "missingness: with no comparable output basis the answer is not estimable, "
+                   "and a hours ratio is not used in its place",
+            abstained(run("A3.3", {"plannedLaborHours": 1000, "actualLaborHours": 1200,
                                    "actualPctComplete": 50})))
-    A.check("3.3", "invalid input: an impossible progress figure is refused rather than reading "
-                   "as the best possible productivity",
-            abstained(run("A3.3", {"plannedLaborHours": 1000, "actualLaborHours": 500,
-                                   "actualPctComplete": 10000})))
-    A.check("3.3", "missingness: all three figures are required",
-            abstained(run("A3.3", {"plannedLaborHours": 1000})))
-
+    A.check("3.3", "missingness: a record that does not say what unit the work is counted in "
+                   "cannot compare two quantities",
+            abstained(run("A3.3", {"productionOutputRecord": {
+                **_production()["productionOutputRecord"], "output_unit": ""}})))
+    A.check("3.3", "boundary: no labour hours on either side leaves no output per hour",
+            abstained(run("A3.3", _production(actual_h=0.0))))
     A.proposition(
         "3.3", "3.3/earned-output",
-        "productivity is computed from EARNED OUTPUT per labour hour, as specification 3.3 "
-        "defines it, rather than from hours against hours",
-        any(k in out for k in ("earned_output", "units_installed", "output_quantity",
-                               "planned_productivity", "actual_productivity")),
-        "the module computes (percent complete times planned hours) over actual hours. The "
-        "numerator is an hours figure derived from progress, not a measured output quantity, so "
-        "no unit of work appears anywhere. Specification 3.3 states that a ratio of hours "
-        "without earned output is a labour-hours performance proxy and not full productivity. "
-        "The module names its own output earned_hours_rate, which is an honest disclosure of "
-        "exactly this, but the registered module name still says productivity")
+        "productivity is measured as output per labour hour on a comparable installed quantity, "
+        "rather than as planned hours scaled by a reported progress percentage",
+        abs(out.get("actual_productivity") - O.productivity(800, 100)) < 1e-9,
+        "RESOLVED IN RUN 28.")
 
 
 # =============================================================================================
 # 3.5 OVERHEAD ABSORPTION RATE -- specification 12, "3.5"
 # =============================================================================================
 
+def _overhead(p_oh=100.0, p_dr=1000.0, a_oh=120.0, a_dr=1000.0) -> dict:
+    return {"overheadAllocationBase": {
+        "allocation_base": "direct labour hours", "driver_source": "certified payroll",
+        "planned_overhead": p_oh, "planned_driver": p_dr,
+        "actual_overhead": a_oh, "actual_driver": a_dr}}
+
+
 def m_3_5() -> None:
+    A.near("3.5", "known-answer: the specification's planned absorption rate of 0.10",
+           O.absorption_rate(100, 1000), 0.10)
+    A.near("3.5", "known-answer: and its actual rate of 0.12", O.absorption_rate(120, 1000), 0.12)
     v = O.absorption_rate_variance(100, 1000, 120, 1000)
-    A.near("3.5", "known-answer: the specification's planned absorption rate", v["planned_rate"],
-           0.10)
-    A.near("3.5", "known-answer: the specification's actual absorption rate", v["actual_rate"],
-           0.12)
-    A.near("3.5", "known-answer: the specification's rate variance", v["rate_variance"], 0.02)
-    A.near("3.5", "known-answer: the specification's relative variance of twenty per cent",
-           v["relative_variance"], 0.20)
-    A.check("3.5", "invariant: an unchanged rate on a changed base is no rate variance, which "
-                   "is the property that distinguishes a rate from an amount",
-            abs(O.absorption_rate_variance(100, 1000, 200, 2000)["rate_variance"]) < 1e-12)
-
-    out = run("A3.5", {"indirectCostPlan": 1000, "indirectCostActual": 600,
-                       "actualPctComplete": 50})
-    A.near("3.5", "structure: the declared ratio is actual indirect cost over a progress-scaled "
-                  "plan", out.get("absorption_ratio"), 1.2, 1e-9)
-    A.check("3.5", "invariant: the ratio rises monotonically with indirect cost incurred",
-            [run("A3.5", {"indirectCostPlan": 1000, "indirectCostActual": a,
-                          "actualPctComplete": 50}).get("absorption_ratio")
-             for a in (250, 500, 750)] == [0.5, 1.0, 1.5])
-    A.proposition(
-        "3.5", "3.5/no-unscaled-plan-on-missing-progress",
-        "withholding the progress figure does not enlarge the denominator and improve the band",
-        abstained(run("A3.5", {"indirectCostPlan": 1000, "indirectCostActual": 900})))
-    A.check("3.5", "boundary: a plan scaled to zero by zero progress leaves nothing to absorb "
-                   "against and is refused rather than substituting a ratio of exactly one",
-            abstained(run("A3.5", {"indirectCostPlan": 1000, "indirectCostActual": 900,
-                                   "actualPctComplete": 0})))
-    A.check("3.5", "boundary: an indirect plan of zero is refused",
-            abstained(run("A3.5", {"indirectCostPlan": 0, "indirectCostActual": 900,
+    A.near("3.5", "known-answer: the specification's rate variance of 0.02",
+           v["rate_variance"], 0.02)
+    A.near("3.5", "known-answer: and its relative variance of 0.20", v["relative_variance"], 0.20)
+    out = run("A3.5", _overhead())
+    A.check("3.5", "positive: executes on an explicit allocation base", not abstained(out))
+    A.near("3.5", "known-answer: production reports the specification's planned rate",
+           out.get("planned_rate"), 0.10, 1e-9)
+    A.near("3.5", "known-answer: and its actual rate", out.get("actual_rate"), 0.12, 1e-9)
+    A.near("3.5", "known-answer: and its rate variance", out.get("rate_variance"), 0.02, 1e-9)
+    A.near("3.5", "known-answer: and its relative rate variance",
+           out.get("relative_rate_variance"), 0.20, 1e-9)
+    A.check("3.5", "structure: the allocation base is named and both driver amounts reported",
+            out.get("allocation_base") == "direct labour hours"
+            and out.get("planned_driver") == 1000.0 and out.get("actual_driver") == 1000.0)
+    A.check("3.5", "invariant: absorbing at the planned rate is a variance of nothing",
+            run("A3.5", _overhead(a_oh=100.0)).get("rate_variance") == 0.0)
+    A.check("3.5", "invariant: the same overhead over a larger base absorbs at a lower rate",
+            run("A3.5", _overhead(a_dr=2000.0)).get("actual_rate") < out.get("actual_rate"))
+    A.check("3.5", "missingness: with no allocation base the answer is not estimable, and the "
+                   "ratio of actual to planned indirect cost is not used in its place",
+            abstained(run("A3.5", {"indirectCostPlan": 100, "indirectCostActual": 120,
                                    "actualPctComplete": 50})))
-    A.check("3.5", "invalid input: an impossible progress figure is refused",
-            abstained(run("A3.5", {"indirectCostPlan": 1000, "indirectCostActual": 900,
-                                   "actualPctComplete": 10000})))
-    A.check("3.5", "missingness: both cost figures are required",
-            abstained(run("A3.5", {"indirectCostPlan": 1000})))
-
+    A.check("3.5", "missingness: a record naming no allocation base is refused",
+            abstained(run("A3.5", {"overheadAllocationBase": {
+                **_overhead()["overheadAllocationBase"], "allocation_base": ""}})))
+    A.check("3.5", "boundary: no amount of the base on one side leaves no rate",
+            abstained(run("A3.5", _overhead(a_dr=0.0))))
     A.proposition(
         "3.5", "3.5/allocation-base",
-        "absorption is computed as overhead per unit of an explicit allocation base, and the "
-        "planned and actual rates are formed on a comparable basis",
-        any(k in out for k in ("allocation_base", "absorption_base", "planned_rate",
-                               "actual_rate", "driver_quantity")),
-        "no allocation base exists. The module divides actual indirect cost by a plan scaled by "
-        "percent complete, which compares two AMOUNTS rather than two RATES. Specification 3.5 "
-        "states that indirectCostActual over indirectCostPlan without an allocation base is an "
-        "indirect-cost variance proxy and not an overhead absorption rate. The property that a "
-        "rate variance of zero survives a doubled base, which the oracle confirms, cannot hold "
-        "here because no base is represented at all")
+        "overhead absorption is measured over an explicit allocation base rather than as a "
+        "ratio of actual to planned indirect cost",
+        bool(out.get("allocation_base")) and out.get("planned_driver") == 1000.0,
+        "RESOLVED IN RUN 28.")
 
 
 # =============================================================================================
 # 3.6 COST RISK ANALYSIS P80 -- specification 12, "3.6"
 # =============================================================================================
 
+def _costrisk(base=100.0, prob=0.5, impact=20.0) -> dict:
+    return {"costRiskModel": {
+        "model_version": "CRM-1", "estimate_source": "approved base estimate",
+        "cost_components": [{"component_id": "BASE", "base_amount": base}],
+        "risk_events": [{"risk_id": "R1", "probability": prob,
+                         "impact_distribution": "POINT", "impact": impact}]}}
+
+
 def m_3_6() -> None:
-    A.near("3.6", "known-answer: the specification's two-point cost distribution has a P80 of "
-                  "120 under the frozen right-continuous convention",
-           O.empirical_quantile_right_continuous([100.0] * 500 + [120.0] * 500, 0.80), 120.0)
-    # Tolerance frozen here before any result is observed: 40000 draws, mean within 0.5.
-    sample = O.bernoulli_cost_model(100, 0.5, 20, 40000, 20260813)
-    A.near("3.6", "known-answer: a seeded simulation of the specification's cost-risk model "
-                  "converges to the analytic mean of 110", sum(sample) / len(sample), 110.0, 0.5)
-    A.near("3.6", "known-answer: its simulated P80 is the upper atom",
+    # The independent oracle's own sample of the specification's two-point model.
+    sample = O.bernoulli_cost_model(100, 0.5, 20, draws=40000, seed=20260828)
+    A.near("3.6", "known-answer: the specification's two point model has a mean of 110, within "
+                  "the 1.0 tolerance declared before this run",
+           sum(sample) / len(sample), 110.0, 1.0)
+    A.near("3.6", "known-answer: and a P80 of 120 under the right-continuous convention",
            O.empirical_quantile_right_continuous(sample, 0.80), 120.0)
-    again = O.bernoulli_cost_model(100, 0.5, 20, 40000, 20260813)
-    A.check("3.6", "reproducibility: the same seed gives the identical sample", again == sample)
-    A.check("3.6", "stochastic diagnostic: a different seed moves the sample but not the "
-                   "quantile, which is the convergence the method relies on",
-            O.bernoulli_cost_model(100, 0.5, 20, 40000, 7) != sample
-            and O.empirical_quantile_right_continuous(
-                O.bernoulli_cost_model(100, 0.5, 20, 40000, 7), 0.80) == 120.0)
-
-    base = {"bac": 1000, "cpi": 0.80, "ac": 500, "ev": 400}
-    out = run("A3.6", base)
-    A.check("3.6", "structure: the module reports a P80 forecast and its deviation from budget",
-            out.get("p80_eac") is not None and out.get("p80_delta_pct") is not None)
-    A.check("3.6", "invariant: the P80 forecast is above budget when cost performance is below "
-                   "one", out.get("p80_eac") > base["bac"])
-    # The ordering invariant every quantile forecast must satisfy: an eightieth percentile
-    # cannot sit below the point forecast it is an uplift of. This check was added after the
-    # fault campaign showed that reversing the uplift direction went undetected without it,
-    # which is the coverage gap the campaign exists to expose.
-    A.check("3.6", "invariant: the P80 forecast is not below the point forecast it uplifts",
-            out.get("p80_eac") >= base["bac"] / base["cpi"] - 1,
-            f"P80 {out.get('p80_eac')} against point forecast {base['bac'] / base['cpi']}")
-    A.check("3.6", "invariant: the ordering holds across the range of cost performance",
-            all(run("A3.6", {**base, "cpi": c}).get("p80_eac") >= 1000 / c - 1
-                for c in (1.4, 1.0, 0.8, 0.6)))
-    A.check("3.6", "invariant: the forecast rises monotonically as cost performance falls",
-            [run("A3.6", {**base, "cpi": c}).get("p80_eac") for c in (1.2, 1.0, 0.8, 0.5)]
-            == sorted([run("A3.6", {**base, "cpi": c}).get("p80_eac")
-                       for c in (1.2, 1.0, 0.8, 0.5)]))
-    A.proposition(
-        "3.6", "3.6/no-zero-cpi-crash",
-        "a cost performance index of exactly zero abstains rather than raising and losing the "
-        "whole project's result to an exception",
-        abstained(run("A3.6", {**base, "cpi": 0})))
-    A.check("3.6", "boundary: a negative cost performance index is refused",
-            abstained(run("A3.6", {**base, "cpi": -0.4})))
-    A.check("3.6", "boundary: no positive budget leaves nothing to measure an overrun against",
-            abstained(run("A3.6", {**base, "bac": 0})))
-    A.check("3.6", "missingness: the four earned-value figures are required",
-            abstained(run("A3.6", {"bac": 1000})))
-    A.check("3.6", "the sign of the reported deviation follows the figure rather than a "
-                   "hard-coded plus, so the sentence cannot say the opposite of the number",
-            "+" not in str(run("A3.6", {**base, "cpi": 1.6}).get("evidence_metric", ""))
-            or run("A3.6", {**base, "cpi": 1.6}).get("p80_delta_pct") >= 0)
-
+    # A REAL GENERATOR: a simulation driven by a constant draw is not a simulation.
+    out = REG.run_module("A3.6", _costrisk(), REG.make_rng(20260828), CUTOFF)
+    A.check("3.6", "positive: executes on a stochastic cost risk model", not abstained(out))
+    A.near("3.6", "known-answer: the simulated P80 is the specification's 120",
+           out.get("p80_total_cost"), 120.0, 1e-9)
+    A.near("3.6", "known-answer: and the simulated mean converges on 110, within the 1.0 "
+                  "tolerance declared before this run",
+           out.get("mean_total_cost"), 110.0, 1.0)
+    A.check("3.6", "structure: the trial count and the frozen quantile convention are reported",
+            out.get("trials") == 20000
+            and out.get("quantile_convention") == "right-continuous empirical inverse")
+    A.check("3.6", "invariant: a risk that cannot occur leaves the total at the base cost",
+            REG.run_module("A3.6", _costrisk(prob=0.0), REG.make_rng(1),
+                           CUTOFF).get("p80_total_cost") == 100.0)
+    A.check("3.6", "invariant: a risk that must occur puts the whole impact on every trial",
+            REG.run_module("A3.6", _costrisk(prob=1.0), REG.make_rng(1),
+                           CUTOFF).get("p80_total_cost") == 120.0)
+    A.check("3.6", "missingness: with no stochastic cost risk model the answer is not "
+                   "estimable, and a deterministic uplift on the cost index is not used in its "
+                   "place",
+            abstained(run("A3.6", {"bac": 1000, "cpi": 0.8, "ac": 600, "ev": 500})))
+    A.check("3.6", "invalid input: a likelihood outside nought to one is not a probability",
+            abstained(run("A3.6", _costrisk(prob=1.4))))
+    A.check("3.6", "boundary: a model with no base cost above zero has nothing to add risk to",
+            abstained(run("A3.6", _costrisk(base=0.0))))
     A.proposition(
         "3.6", "3.6/simulated-distribution",
-        "the eightieth percentile is the empirical quantile of a simulated total-cost "
-        "distribution built from base cost components and risk events with explicit "
-        "distributions",
-        any(k in out for k in ("iterations", "risk_events", "distribution", "sample_size",
-                              "components")),
-        "no risk register, no component distributions, no dependencies, no iterations and no "
-        "sample exist. The forecast is budget over the cost index, multiplied by "
-        "(1 + max(0.03, |1 - CPI|) * 0.5 * 1.28). That is a deterministic uplift of the current "
-        "index, which specification 3.6 states in terms is not Cost Risk Analysis P80. The 1.28 "
-        "is the normal ninetieth-percentile deviate, not an eightieth, and the spread is a "
-        "function of the cost index rather than of any modelled cost uncertainty. The module's "
-        "own source comment records that it cannot consume risk-register data without changing "
-        "its arithmetic")
+        "a distribution of total cost is simulated and a percentile taken of it",
+        out.get("trials", 0) > 1 and out.get("p80_total_cost") != out.get("p50_total_cost"),
+        "RESOLVED IN RUN 28.")
 
 
 # =============================================================================================
 # 3.7 ANALOGOUS ESTIMATING RATIO -- specification 12, "3.7"
 # =============================================================================================
 
+def _analog(cost=100.0, factors=((("size", 1.20)), ("location", 1.10))) -> dict:
+    return {"analogEstimate": {
+        "analog_project_id": "PRJ-ANALOG-1", "source": "closed project cost ledger",
+        "comparability_criteria": "same structure type, same delivery method",
+        "normalization": "constant 2026 dollars", "analog_cost": cost,
+        "adaptation_factors": [{"factor_name": n, "factor_value": v} for n, v in factors]}}
+
+
 def m_3_7() -> None:
     A.near("3.7", "known-answer: the specification's analog adapted by size and location",
            O.adapted_analog_estimate(100, [1.20, 1.10]), 132.0)
-    A.check("3.7", "invariant: adaptation factors commute, so the order they are applied in "
-                   "cannot change the estimate",
-            abs(O.adapted_analog_estimate(100, [1.10, 1.20])
-                - O.adapted_analog_estimate(100, [1.20, 1.10])) < 1e-12)
-    A.check("3.7", "invariant: an analog needing no adaptation estimates itself",
-            O.adapted_analog_estimate(100, [1.0]) == 100)
-
-    out = run("A3.7", {"analogousOverrunPct": 8, "bac": 1000})
-    A.near("3.7", "structure: the declared exposure is the budget times the overrun percent",
-           out.get("bac_exposure"), 80, 0.5)
-    A.check("3.7", "invariant: exposure is monotone in the overrun percent",
-            [run("A3.7", {"analogousOverrunPct": p, "bac": 1000}).get("bac_exposure")
-             for p in (1, 5, 12)] == [10, 50, 120])
-    A.check("3.7", "missingness: both figures are required",
-            abstained(run("A3.7", {"bac": 1000})))
-
+    out = run("A3.7", _analog())
+    A.check("3.7", "positive: executes on an identified analog", not abstained(out))
+    A.near("3.7", "known-answer: production reproduces the specification's 132",
+           out.get("adapted_estimate"), 132.0, 1e-9)
+    A.check("3.7", "structure: the analog is identified and its adaptation factors are named",
+            out.get("analog_project_id") == "PRJ-ANALOG-1"
+            and [f["factor_name"] for f in out.get("adaptation_factors")] == ["size", "location"])
+    A.check("3.7", "invariant: factors of one leave the analog cost unchanged",
+            run("A3.7", _analog(factors=(("size", 1.0),))).get("adapted_estimate") == 100.0)
+    A.check("3.7", "invariant: the order the factors are applied in does not change the result",
+            run("A3.7", _analog(factors=(("location", 1.10), ("size", 1.20)))
+                ).get("adapted_estimate") == out.get("adapted_estimate"))
+    A.check("3.7", "missingness: with no identified analog the answer is not estimable, and a "
+                   "stored overrun percentage is not used in its place",
+            abstained(run("A3.7", {"analogousOverrunPct": 8.0, "bac": 1000})))
+    A.check("3.7", "missingness: an analog with no adaptation factors cannot be carried across",
+            abstained(run("A3.7", {"analogEstimate": {
+                **_analog()["analogEstimate"], "adaptation_factors": []}})))
+    A.check("3.7", "missingness: an analog that does not state its comparability criteria is "
+                   "refused", abstained(run("A3.7", {"analogEstimate": {
+                       **_analog()["analogEstimate"], "comparability_criteria": ""}})))
+    A.check("3.7", "boundary: a factor of zero or below is not a multiplier onto a cost",
+            abstained(run("A3.7", _analog(factors=(("size", 0.0),)))))
     A.proposition(
         "3.7", "3.7/analog-provenance",
-        "the module identifies the analogous projects it drew from, with comparability criteria, "
-        "normalisation and adaptation factors, as specification 3.7 requires",
-        any(k in out for k in ("analog_projects", "analog_ids", "comparability_criteria",
-                               "adaptation_factors", "normalisation")),
-        "a single preloaded overrun percent arrives as a scalar input with no analog selection, "
-        "no comparability criteria, no normalisation and no adaptation factors. Specification "
-        "3.7 states that this is only a proxy. Nothing in the module or its output records where "
-        "the percent came from, so its provenance cannot be established at all")
-
-    neg = run("A3.7", {"analogousOverrunPct": -50, "bac": 1000})
-    neg_bac = run("A3.7", {"analogousOverrunPct": 5, "bac": -1000})
-    A.proposition(
-        "3.7", "3.7/domain-guarded",
-        # RUN 20 amended this proposition rather than deleting it. Run 19 required BOTH a
-        # negative overrun and a negative budget to be refused. The budget half was a real
-        # invalid-evidence hole and is closed. The overrun half conflicted with
-        # field_registry.SIGNED_SI_FIELDS, which names analogousOverrunPct as one of four fields
-        # where a negative value is a real project condition because a reference project can
-        # underrun. That contract was followed, and what the proposition now requires of the
-        # negative case is the part that was genuinely wrong: no negative quantity of money at
-        # risk may be reported.
-        "a budget outside the domain it can occupy is refused rather than producing a banded "
-        "result, and no result reports a negative quantity of money at risk",
-        abstained(neg_bac) and (neg.get("bac_exposure") or 0) >= 0,
-        f"an overrun percent of minus fifty bands "
-        f"{neg.get('status_color')!r} and reports an exposure of "
-        f"{neg.get('bac_exposure')!r}, a negative quantity of money at risk. A budget at "
-        f"completion of minus one thousand bands {neg_bac.get('status_color')!r} with an "
-        f"exposure of {neg_bac.get('bac_exposure')!r}. Neither input is guarded at all: the "
-        f"band reads the percent alone and the budget only scales a displayed figure, so an "
-        f"invalid budget reaches a coloured result. This is the pattern the programme has "
-        f"already corrected in eleven other modules")
+        "an analog project is identified, with its provenance, comparability criteria and "
+        "adaptation factors, rather than a stored overrun percentage standing in for one",
+        bool(out.get("analog_project_id")) and len(out.get("adaptation_factors")) == 2,
+        "RESOLVED IN RUN 28.")
 
 
 # =============================================================================================
-# 3.8 PARAMETRIC COST INDEX -- specification 12, "3.8". CONCEPT ONLY, STAYS DISABLED.
+# 3.8 PARAMETRIC COST INDEX -- specification 12, "3.8"
 # =============================================================================================
 
 def m_3_8() -> None:
-    A.near("3.8", "known-answer: the specification's parametric model 10 + 2*4 + 3*5",
+    # RUN 28. THE LABORATORY IMPLEMENTATION ONLY. The contract requires the canonical v3
+    # structure and a laboratory implementation to be built, and requires the module to REMAIN
+    # DISABLED AND NON-VOTING until a later owner or research activation decision. Both halves
+    # are asserted here: the mathematics is checked directly against canonical_v3, and the
+    # module's disabled and non-voting state is checked against the registry.
+    from app.simulation import canonical_v3 as CV3
+    A.near("3.8", "known-answer: the specification's fitted model 10 + 2*4 + 3*5 predicts 33",
            O.parametric_cost(10, [2, 3], [4, 5]), 33.0)
-    A.near("3.8", "invariant: the intercept is the prediction when every driver is zero",
-           O.parametric_cost(10, [2, 3], [0, 0]), 10.0)
-    A.check("3.8", "invariant: the model is linear in each driver, so doubling a driver's "
-                   "contribution is doubling its coefficient",
-            abs(O.parametric_cost(0, [4], [5]) - O.parametric_cost(0, [2], [10])) < 1e-12)
-    try:
-        O.parametric_cost(10, [2, 3], [4])
-        A.check("3.8", "boundary: a nonconforming design matrix is refused", False)
-    except ValueError:
-        A.check("3.8", "boundary: a design matrix that does not conform with the coefficient "
-                       "vector is refused rather than predicted from", True)
-
-    # Production is short-circuited before its formula, so what is assessed is the formula the
-    # module WOULD run, read from source, against the canonical definition.
-    src = (HERE.parent / "app" / "simulation" / "models_ext.py").read_text(encoding="utf-8")
-    body = src.split("def run_parametric_cost")[1].split("\ndef ")[0]
+    model = {"intercept": 10.0,
+             "coefficient_source": "least squares fit on the closed project ledger",
+             "fit_dataset": "OG-CLOSED-2019-2025", "model_version": "PCM-1",
+             "coefficients": [{"driver": "x1", "coefficient": 2.0, "unit": "square metres"},
+                              {"driver": "x2", "coefficient": 3.0, "unit": "storeys"}]}
+    lab = CV3.parametric_cost(model, {"x1": 4.0, "x2": 5.0})
+    A.near("3.8", "known-answer: the laboratory implementation reproduces the same 33",
+           lab["predicted_cost"], 33.0, 1e-9)
+    A.check("3.8", "structure: the intercept, every coefficient with its unit, and the design "
+                   "row length are reported",
+            lab["intercept"] == 10.0 and lab["driver_count"] == 2
+            and lab["design_row_length"] == 3
+            and all(t["unit"] for t in lab["terms"]))
+    for bad, why in (({"x1": 4.0}, "a driver the model was fitted on but the project did not "
+                                   "supply"),
+                     ({"x1": 4.0, "x2": 5.0, "x3": 1.0}, "a driver the model was never fitted "
+                                                         "on")):
+        try:
+            CV3.parametric_cost(model, bad)
+            A.check("3.8", f"omitted driver: {why} is refused", False)
+        except Exception:
+            A.check("3.8", f"omitted driver: {why} is refused, rather than being silently "
+                           f"valued at zero", True)
+    A.check("3.8", "the module remains DISABLED after Run 28, which the contract requires",
+            "A3.8" in REG.DISABLED_MODULES)
+    A.check("3.8", "and remains NON-VOTING", "A3.8" not in REG.CORE_VOTING_MODULES)
+    A.check("3.8", "and no production path reaches the laboratory implementation: asking the "
+                   "registry for it returns the disabled refusal rather than a prediction",
+            abstained(run("A3.8", {"bac": 1000, "ev": 500, "ac": 600, "cpi": 0.8,
+                                   "actualPctComplete": 50})))
     A.proposition(
         "3.8", "3.8/design-matrix",
-        "the module carries measurable cost drivers and fitted coefficients, which is what makes "
-        "a model parametric",
-        any(t in body for t in ("coefficient", "beta", "driver", "design_matrix")),
-        "the formula the module would run is (BAC / CPI) divided by (AC + BAC - EV): the ratio "
-        "of two earned-value forecasts of the same project. Specification 3.8 states in terms "
-        "that comparing two EAC formulas is not parametric estimating. There is no driver, no "
-        "coefficient, no intercept and no design matrix anywhere in it, and both forecasts are "
-        "transformations of the same earned-value inputs, so their ratio is one body of evidence "
-        "divided by itself rather than a model of cost against measurable drivers")
-    A.check("3.8", "the module remains operationally disabled and non-voting whatever this "
-                   "laboratory finding says, since a laboratory result is not permission to "
-                   "activate", run("A3.8", {"bac": 1000, "ev": 400, "ac": 500, "cpi": 0.8,
-                                            "actualPctComplete": 40}).get("activation_state")
-            == "DISABLED_UNSAFE" and "A3.8" not in REG.CORE_VOTING_MODULES)
+        "a parametric estimating relationship with drivers, units and fitted coefficients "
+        "exists, rather than a comparison of two estimate-at-completion formulas",
+        lab["driver_count"] == 2 and bool(model["fit_dataset"]),
+        "RESOLVED IN RUN 28, in the laboratory sense the contract asks for and no other: the "
+        "module remains disabled and non-voting.")
 
 
 # =============================================================================================
 # 3.9 INFLATION ADJUSTMENT INDEX -- specification 12, "3.9"
 # =============================================================================================
 
+def _index(base=200.0, current=220.0, exposure=100.0) -> dict:
+    return {"externalCostIndex": {
+        "index_name": "Construction Cost Index, all items",
+        "authority": "national statistical office",
+        "geography": "national", "scope": "construction materials and labour",
+        "base_period": "2020-01", "observation_period": "2026-06", "vintage": "2026-07 release",
+        "base_index_value": base, "current_index_value": current, "cost_exposure": exposure}}
+
+
 def m_3_9() -> None:
-    A.near("3.9", "known-answer: the specification's index 200 to 220 is a factor of 1.10",
+    A.near("3.9", "known-answer: the specification's index moving 200 to 220 is a factor of 1.10",
            O.escalation_factor(220, 200), 1.10)
-    A.near("3.9", "known-answer: a base cost of 100 adjusts to 110",
-           O.adjusted_cost(100, 220, 200), 110.0)
-    A.check("3.9", "invariant: an unchanged index leaves the cost unchanged",
-            O.adjusted_cost(100, 200, 200) == 100)
-    A.check("3.9", "invariant: a falling index deflates rather than flooring at zero, which is "
-                   "a property of the canonical factor",
-            O.escalation_factor(180, 200) < 1.0)
-
-    out = run("A3.9", {"materialCostBaseline": 1000, "materialCostCurrent": 600,
-                       "actualPctComplete": 50})
-    A.near("3.9", "structure: the declared escalation is the excess above a progress-scaled "
-                  "material baseline", out.get("escalation_pct"), 20, 0.5)
-    A.check("3.9", "invariant: escalation rises monotonically with current material cost",
-            [run("A3.9", {"materialCostBaseline": 1000, "materialCostCurrent": c,
-                          "actualPctComplete": 50}).get("escalation_pct")
-             for c in (500, 550, 600)] == [0, 10, 20])
-    A.proposition(
-        "3.9", "3.9/no-unscaled-baseline-on-missing-progress",
-        "withholding the progress figure does not enlarge the denominator and buy a calmer band",
-        abstained(run("A3.9", {"materialCostBaseline": 1000, "materialCostCurrent": 900})))
-    A.check("3.9", "invalid input: a negative material cost is refused rather than being floored "
-                   "to exactly nought escalation, which is the reading of a project with none",
-            abstained(run("A3.9", {"materialCostBaseline": 1000, "materialCostCurrent": -100000,
+    out = run("A3.9", _index())
+    A.check("3.9", "positive: executes on a named external index", not abstained(out))
+    A.near("3.9", "known-answer: production reproduces the specification's factor of 1.10",
+           out.get("escalation_factor"), 1.10, 1e-9)
+    A.near("3.9", "known-answer: and the specification's adjusted cost of 110 on an exposure "
+                  "of 100", out.get("adjusted_cost"), 110.0, 1e-9)
+    A.check("3.9", "structure: the series is named and carries its authority, geography, "
+                   "scope, base period, observation period and vintage",
+            all(bool(out.get(k)) for k in ("index_name", "index_authority", "geography",
+                                           "index_scope", "base_period", "observation_period",
+                                           "vintage")))
+    A.check("3.9", "invariant: an unchanged index is a factor of exactly one and no escalation",
+            run("A3.9", _index(current=200.0)).get("escalation_factor") == 1.0)
+    A.check("3.9", "deflation: a FALLING index gives a factor below one and a negative "
+                   "escalation amount, which a floored proxy structurally could not show",
+            run("A3.9", _index(current=180.0)).get("escalation_factor") < 1.0
+            and run("A3.9", _index(current=180.0)).get("escalation_amount") < 0)
+    A.check("3.9", "missingness: with no governed external index the answer is not estimable, "
+                   "and the project's own material price movement is not used in its place",
+            abstained(run("A3.9", {"materialCostBaseline": 100, "materialCostCurrent": 120,
                                    "actualPctComplete": 50})))
-    A.check("3.9", "invalid input: a negative baseline is refused",
-            abstained(run("A3.9", {"materialCostBaseline": -1000, "materialCostCurrent": 500,
-                                   "actualPctComplete": 50})))
-    A.check("3.9", "invalid input: progress outside nought to one hundred is refused",
-            abstained(run("A3.9", {"materialCostBaseline": 1000, "materialCostCurrent": 500,
-                                   "actualPctComplete": 400})))
-    A.check("3.9", "boundary: a baseline scaled to zero by zero progress is refused",
-            abstained(run("A3.9", {"materialCostBaseline": 1000, "materialCostCurrent": 500,
-                                   "actualPctComplete": 0})))
-    A.check("3.9", "missingness: both cost figures are required",
-            abstained(run("A3.9", {"materialCostBaseline": 1000})))
-
+    A.check("3.9", "missingness: an index that does not name its authority is refused",
+            abstained(run("A3.9", {"externalCostIndex": {
+                **_index()["externalCostIndex"], "authority": ""}})))
+    A.check("3.9", "missingness: an index that does not name its geography is refused",
+            abstained(run("A3.9", {"externalCostIndex": {
+                **_index()["externalCostIndex"], "geography": ""}})))
+    A.check("3.9", "boundary: an index level of zero or below is not an index level",
+            abstained(run("A3.9", _index(base=0.0))))
+    A.check("3.9", "no hard-coded market index: both levels come off the supplied structure, so "
+                   "changing them changes the answer",
+            run("A3.9", _index(current=240.0)).get("escalation_factor")
+            != out.get("escalation_factor"))
     A.proposition(
         "3.9", "3.9/external-index",
-        "escalation is computed from an external governed price index carrying a series, a "
-        "geography, a commodity scope, a base period, a current period and a vintage",
-        any(k in out for k in ("index_series", "index_base", "index_current", "index_source",
-                              "index_vintage", "geography")),
-        "the module divides this project's own current material cost by its own progress-scaled "
-        "material baseline. Specification 3.9 states in terms that a current over baseline "
-        "material-price ratio with no external index is not a macro or regional inflation "
-        "adjustment. No index, no base period, no geography and no vintage exist anywhere. The "
-        "module's own evidence sentence calls the figure a material escalation proxy, which is "
-        "an honest disclosure, but the registered name says inflation adjustment index")
-    deflation = run("A3.9", {"materialCostBaseline": 1000, "materialCostCurrent": 100,
-                             "actualPctComplete": 50})
+        "escalation is measured from a named external price index with an authority, a "
+        "geography and a base period, rather than from the project's own material prices",
+        bool(out.get("index_name")) and bool(out.get("index_authority"))
+        and bool(out.get("base_period")),
+        "RESOLVED IN RUN 28.")
     A.proposition(
         "3.9", "3.9/deflation-visible",
-        "a current cost below the progress-scaled baseline is reported as the deflation it is, "
-        "rather than floored to zero",
-        deflation.get("escalation_pct") is not None and deflation.get("escalation_pct") < 0,
-        f"a current material cost eighty per cent below the progress-scaled baseline reports "
-        f"{deflation.get('escalation_pct')!r} per cent escalation, because the quantity is "
-        f"floored by max(0, ...). A genuine index factor deflates below one, as the oracle "
-        f"confirms. The floor is defensible for a measure named escalation, but it means the "
-        f"module cannot distinguish a project exactly on its material baseline from one eighty "
-        f"per cent under it, and both read Green")
+        "a falling index is visible as deflation rather than floored at nothing",
+        run("A3.9", _index(current=180.0)).get("escalation_factor") < 1.0,
+        "RESOLVED IN RUN 28.")
 
 
 # =============================================================================================

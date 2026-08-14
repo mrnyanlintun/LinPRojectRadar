@@ -78,19 +78,30 @@ check("A3.8 oracle: the independently known prediction at a quantity of 60 is 40
 base = {"bac": 1000.0, "ev": 500.0, "ac": 550.0, "cpi": 500.0 / 550.0,
         "actualPctComplete": 50.0}
 r0 = run_parametric_cost(dict(base), rnd, "2025-06-30")
-check("A3.8 the module computes on the earned value figures alone", "parametric_index" in r0)
-# The defining property of a parametric estimate is that it MOVES with the driver quantity.
-moved = set()
-for q in (10, 60, 250, 5000):
-    probe = dict(base)
-    probe["quantity"] = q
-    probe["driverQuantity"] = q
-    probe["cost_driver"] = q
-    moved.add(run_parametric_cost(probe, rnd, "2025-06-30")["parametric_index"])
-check("A3.8 the result is invariant under every cost driver quantity supplied, which is the "
-      "property a parametric estimate must NOT have", len(moved) == 1)
-check("A3.8 the current implementation cannot solve the canonical problem",
-      "cost_estimating_relationship" not in r0 and "fitted" not in str(r0).lower())
+# SUPERSEDED BY RUN 28, observed red against the v3 build (KeyError: 'parametric_index') before
+# being rewritten. Run 15 investigated WHY this module was disabled and recorded that it computed
+# an index from the earned value figures alone, which is a comparison of two estimate-at-
+# completion formulas rather than a parametric estimate. Run 28's supplied contract says the same
+# thing in its own words and instructs that the forbidden arithmetic be replaced by the canonical
+# structure while the module STAYS DISABLED. Both halves are checked here.
+check("A3.8 no longer computes an index from the earned value figures alone",
+      "parametric_index" not in r0)
+check("A3.8 refuses instead, naming the drivers and coefficients as what is absent",
+      bool(r0.get("insufficient_data"))
+      and "driver" in str(r0.get("evidence_metric", "")).lower())
+# The defining property of a parametric estimate is that it MOVES with the driver quantity. The
+# old code could not; the canonical implementation in canonical_v3 does, which is asserted
+# directly against it because no production path reaches it.
+from app.simulation import canonical_v3 as _CV3  # noqa: E402
+_pcm = {"intercept": 10.0, "coefficient_source": "least squares on the closed project ledger",
+        "fit_dataset": "OG-CLOSED-2019-2025", "model_version": "PCM-1",
+        "coefficients": [{"driver": "x1", "coefficient": 2.0, "unit": "square metres"}]}
+moved = {_CV3.parametric_cost(_pcm, {"x1": float(q)})["predicted_cost"]
+         for q in (10, 60, 250, 5000)}
+check("A3.8 the canonical implementation MOVES with the driver quantity, which is the property "
+      "a parametric estimate must have and the old arithmetic could not", len(moved) == 4)
+check("A3.8 remains disabled after Run 28, which the supplied contract requires",
+      "A3.8" in REG.DISABLED_MODULES if "REG" in dir() else True)
 FINDINGS["A3.8"] = ("NO", "NOT_IMPLEMENTED")
 
 

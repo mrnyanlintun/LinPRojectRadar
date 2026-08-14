@@ -198,24 +198,17 @@ BAND_SOURCE_LIMIT: str = (
 #: documentation. It is NEVER shown on the participant ledger or decision-card surface, which
 #: read a module's canonical name from the frontend taxonomy and its finding from
 #: evidence_metric, neither of which this run touches.
+# RUN 28. ELEVEN ENTRIES ARE GONE FROM THIS DICTIONARY, and they are gone because the proxy is
+# gone. A1.3, A1.4, A1.9, A1.10, A2.4, A2.6, A2.7, A3.3, A3.5, A3.7 and A3.9 now carry out the
+# canonical method their registered name claims, from a governed structure, and abstain when that
+# structure is absent. A qualifier saying "not a governed Bayesian model" or "a labour-hours
+# ratio, not an earned-output productivity model" would now be false in the opposite direction:
+# it would advertise a weakness the code no longer has. A1.2 keeps its entry, because the CUSUM
+# design is frozen and the supplied contract forbids retuning it in Run 28, so what that
+# qualifier says about the calibration of k, H and the sigma floor remains true.
 PROXY_QUALIFIERS: dict[str, str] = {
     "A1.2": "hard-coded transformations of two-sided CUSUM on real SPI history; k, H, sigma "
             "floor and Amber band uncalibrated",
-    "A1.3": "Normal-normal updating with designed constant variances, not a governed Bayesian "
-            "model",
-    "A1.4": "Scalar Kalman recursion with fixed Q and R, short history, no calibrated filtering "
-            "claim",
-    "A1.9": "an expenditure-versus-progress control ratio, not a standardised statistical test",
-    "A1.10": "fixed 50 per cent shrinkage toward historical mean; coefficient not estimated",
-    "A2.4": "a custom compression ratio; no network-based crashing model or calibrated bands",
-    "A2.6": "a single planned versus actual snapshot, not a longitudinal S-curve analysis",
-    "A2.7": "a simplified shift summary on real milestone history, bands uncalibrated",
-    "A3.3": "a labour-hours ratio, not an earned-output productivity model",
-    "A3.5": "a transparent ratio; validity depends on whether the indirect plan is total or "
-            "period-to-date",
-    "A3.7": "an analogous-cost ratio; project selection, normalisation and adaptation "
-            "ungoverned",
-    "A3.9": "a material-escalation ratio with no external price index, time base or geography",
     # REVISED BY THE FIFTEEN-DEFECTS RUN, and revised deliberately rather than left standing.
     # The previous run's label named "fallback behaviour" as part of what this computation does.
     # Defect 12 removed the fallbacks, so the label had stopped describing the module: it now
@@ -423,7 +416,18 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
         so a module of the fourteen that still abstains says WHY, rather than being silent and
         indistinguishable from the wiring failure this adapter fixed.
         """
-        if out.get("insufficient_data") or out.get("status_color") is None:
+        # RUN 28. A calibration-pending row is a COMPUTED row with no band asserted, not an
+        # abstention: the canonical method ran and produced a figure, and only the colour is
+        # withheld because no boundary for the quantity has been established from evidence. It
+        # is routed to `computed` so the figure reaches the ledger, the interface and the
+        # export, and it cannot reach status fusion because fusion reads only the two voting
+        # modules. Without this arm the old `status_color is None` test would file every
+        # canonical Category 1 to 3 result as though the module had nothing to say, which is
+        # the opposite of what happened. `insufficient_data` still wins: a module that abstains
+        # AND sets this flag is an abstention, so the flag cannot be used to smuggle a row past
+        # a genuine refusal.
+        _pending = bool(out.get("calibration_pending")) and not out.get("insufficient_data")
+        if not _pending and (out.get("insufficient_data") or out.get("status_color") is None):
             # Retain the module's own abstention message (evidence_metric), when it gave one, so
             # the ledger can say why a module is silent instead of showing only its bare id. A
             # module that produced no message is recorded with reason=None; nothing is invented.

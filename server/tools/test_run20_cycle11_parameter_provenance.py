@@ -290,10 +290,20 @@ check("no default is silently standing in for missing trend evidence, which is t
 
 print("\n=== 7. GUARD NON-VACUITY: EACH GUARD CATCHES WHAT IT PROTECTS ===")
 # 7a. Coverage: remove an entry and the sweep must name the module.
-_saved = PARAMS.PARAMETER_PROVENANCE_BY_MODULE.pop("A2.9")
-_fired = bool([m for m in TUNABLE if not PARAMS.provenance(m)])
-PARAMS.PARAMETER_PROVENANCE_BY_MODULE["A2.9"] = _saved
-check("the coverage guard FIRES when a classification is deliberately removed", _fired)
+# RUN 28. A2.9 no longer carries a tunable value -- its band ladder is gone with the supplied
+# contract, which supplies no bands for a time-phased load ratio -- so removing its entry can no
+# longer make the sweep name it, and using it here would have been a vacuous injection. The
+# module the injection uses is CHOSEN FROM THE SWEEP'S OWN OUTPUT rather than named in advance,
+# so a future run that removes another module's constants cannot make this control silently
+# vacuous the way it just would have.
+_victim = sorted(TUNABLE)[0]
+_saved = PARAMS.PARAMETER_PROVENANCE_BY_MODULE.pop(_victim)
+_fired = _victim in [m for m in TUNABLE if not PARAMS.provenance(m)]
+PARAMS.PARAMETER_PROVENANCE_BY_MODULE[_victim] = _saved
+check(f"the coverage guard FIRES when {_victim}'s classification is deliberately removed",
+      _fired)
+check("and goes green again once it is restored, for that module specifically",
+      bool(PARAMS.provenance(_victim)))
 check("and goes green again once it is restored",
       not [m for m in TUNABLE if not PARAMS.provenance(m)])
 
@@ -332,9 +342,20 @@ check("the definitional values really do occur inside real modules, so subtracti
       "have hidden genuine boundaries", len(_swallowed) >= 3, str(sorted(_swallowed)))
 check("and the sweep subtracts NOTHING, so those modules are covered rather than excused",
       all(PARAMS.provenance(m) for m in TUNABLE))
-check("the line of balance separation boundary is visible to the sweep, which it was not before",
-      3.0 in TUNABLE.get("A2.2", set()) or 1.5 in TUNABLE.get("A2.2", set()),
-      str(sorted(TUNABLE.get("A2.2", set()))))
+# RUN 28 REMOVED THE LINE OF BALANCE BOUNDARY ALTOGETHER, which is a stronger outcome than the
+# one this check was written to protect. The boundary at three days of crew separation was
+# uncited, cycle 11's first sweep was subtracting it from view, and this check was added to prove
+# it was visible again. The owner's supplied Run-28 contract settles it: the module reports the
+# separation and the production slopes and asserts NO colour, so there is no boundary left to be
+# visible. The check is restated on a boundary that DOES still exist and was in the same
+# swallowed set -- the change order module's three orders and five per cent of growth -- so the
+# property that the sweep subtracts nothing is still proved by a real case.
+check("A2.2 carries no separation boundary at all any more, because the module asserts no band",
+      not ({1.5, 3.0} & TUNABLE.get("A2.2", set())), str(sorted(TUNABLE.get("A2.2", set()))))
+check("and a boundary from the same swallowed set is still visible to the sweep, so the "
+      "subtraction really is gone rather than merely untested",
+      3 in TUNABLE.get("A4.6", set()) or 3.0 in TUNABLE.get("A4.6", set()),
+      str(sorted(TUNABLE.get("A4.6", set()))))
 
 # 7e. The trend probe must be capable of showing a difference, or section 6 is vacuous.
 check("the trend probe is not vacuous: the underlying function's two results really do differ, "

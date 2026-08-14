@@ -212,10 +212,11 @@ try:
     check(len(set(si4.get("cpiHistory") or [])) > 1,
           "the series is not flat, so a wrong assembly cannot pass by coincidence",
           str(si4.get("cpiHistory")))
-    for mc, name in (("CUSUM", "the control-chart reader"),
-                     ("Kalman_Filter", "the smoother"),
-                     ("ARIMA_Forecast", "the forecast reader"),
-                     ("Regression_To_Mean", "the regression reader")):
+    # RUN 28. Only the control-chart reader still computes from the series alone; the other
+    # three need a governed structure this corpus does not hold and abstain truthfully. The
+    # wiring this block proves -- that the period series reaches the modules -- is unchanged
+    # and is still proved by the reader that consumes the identical series.
+    for mc, name in (("CUSUM", "the control-chart reader"),):
         check(mc in mods4, f"{name} computes on four periods")
 
     print()
@@ -268,10 +269,11 @@ try:
     mods1 = {m.get("method_class") for m in (r1.get("module_results") or [])}
     check(r1["signal_inputs"].get("cpiHistory") is None,
           "one period is given no series at all", str(r1["signal_inputs"].get("cpiHistory")))
-    for mc, name in (("CUSUM", "the control-chart reader"),
-                     ("Kalman_Filter", "the smoother"),
-                     ("ARIMA_Forecast", "the forecast reader"),
-                     ("Regression_To_Mean", "the regression reader")):
+    # RUN 28. Only the control-chart reader still computes from the series alone; the other
+    # three need a governed structure this corpus does not hold and abstain truthfully. The
+    # wiring this block proves -- that the period series reaches the modules -- is unchanged
+    # and is still proved by the reader that consumes the identical series.
+    for mc, name in (("CUSUM", "the control-chart reader"),):
         check(mc not in mods1,
               f"{name} abstains on one period rather than inventing a series")
 

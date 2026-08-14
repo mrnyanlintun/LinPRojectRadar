@@ -71,53 +71,73 @@ def events(*dates: str) -> dict:
 # =============================================================================================
 
 def m_3_7() -> None:
-    ok = run("A3.7", {"analogousOverrunPct": 8, "bac": 1000})
-    check("3.7", "canonical positive: a valid overrun over a valid budget still bands and still "
-                 "reports the exposure the two figures imply",
-          ok.get("status_color") == "Amber" and ok.get("bac_exposure") == 80,
-          f"got {ok.get('status_color')!r} and {ok.get('bac_exposure')!r}")
+    # RUN 28 REPLACED THIS MODULE'S COMPUTATION, on the owner's explicit authority, and every
+    # check below was observed red against the v3 build before being rewritten. Run 20's P0B
+    # finding was exact and the run's own note recorded what it did NOT close: the proxy read a
+    # single scalar, analogousOverrunPct, and carried "no analog selection, comparability
+    # criteria or adaptation factors", which the note called a separate structural finding out of
+    # that run's scope. The owner's supplied Run-28 contract closes it: an identified analog with
+    # its provenance, comparability criteria, normalization and adaptation factors, or NOT
+    # ESTIMABLE. So the scalar is gone and with it every domain question about its sign.
+    #
+    # WHAT THIS BLOCK ASSERTS NOW, IN BOTH DIRECTIONS. The historical defects must remain
+    # unreachable -- and they are unreachable in the strongest available sense, because the
+    # inputs that produced them reach no arithmetic at all -- and the canonical method must
+    # produce the supplied contract's own hand-checked answer on a governed analog.
+    def _analog(cost=100.0, factors=(("size", 1.20), ("location", 1.10)), **over):
+        rec = {"analog_project_id": "PRJ-ANALOG-1", "source": "closed project cost ledger",
+               "comparability_criteria": "same structure type, same delivery method",
+               "normalization": "constant 2026 dollars", "analog_cost": cost,
+               "adaptation_factors": [{"factor_name": n, "factor_value": v} for n, v in factors]}
+        rec.update(over)
+        return {"analogEstimate": rec}
 
-    neg = run("A3.7", {"analogousOverrunPct": -50, "bac": 1000})
-    check("3.7", "HISTORICAL DEFECT, must not return: an overrun percent of minus fifty "
-                 "reported an exposure of minus five hundred, a negative quantity of money at "
-                 "risk. No such quantity exists, and the exposure is now nought",
-          neg.get("bac_exposure") == 0,
-          f"exposure {neg.get('bac_exposure')!r}")
-    check("3.7", "and the signed comparison is kept beside it rather than discarded, so the "
-                 "underrun the analog actually showed is still readable",
-          neg.get("analogous_variance") == -500, repr(neg.get("analogous_variance")))
-    check("3.7", "and the sentence names the underrun rather than calling it an exposure",
-          "underran by" in (neg.get("evidence_metric") or ""), repr(neg.get("evidence_metric")))
-    check("3.7", "a negative overrun is NOT refused: field_registry.SIGNED_SI_FIELDS declares "
-                 "analogousOverrunPct one of four fields where a negative value is a real "
-                 "project condition, and an underrunning analog carries no cost exposure, so "
-                 "the favourable band on it is truthful",
-          neg.get("status_color") == "Green", repr(neg.get("status_color")))
+    ok = run("A3.7", _analog())
+    check("3.7", "canonical positive: an identified analog adapted by its stated factors gives "
+                 "the specification's own 100 * 1.20 * 1.10 = 132",
+          abs((ok.get("adapted_estimate") or 0) - 132.0) < 1e-9,
+          f"got {ok.get('adapted_estimate')!r}")
+    check("3.7", "and the analog is identified by name, with its factors named beside it, which "
+                 "is precisely what Run 20 recorded the proxy as carrying none of",
+          ok.get("analog_project_id") == "PRJ-ANALOG-1"
+          and [f["factor_name"] for f in (ok.get("adaptation_factors") or [])]
+          == ["size", "location"], repr(ok.get("adaptation_factors")))
+    check("3.7", "and no colour is asserted on it, because no boundary for an adapted analogous "
+                 "estimate has been established from evidence",
+          ok.get("status_color") is None and ok.get("calibration_pending") is True,
+          repr(ok.get("status_color")))
 
-    neg_bac = run("A3.7", {"analogousOverrunPct": 5, "bac": -1000})
-    check("3.7", "HISTORICAL DEFECT, must not return: a budget at completion of minus one "
-                 "thousand reached a Yellow band because the budget never gated the band. It "
-                 "now abstains on the invalid denominator",
-          abstained(neg_bac) and reason(neg_bac) == "invalid_denominator",
-          f"banded {neg_bac.get('status_color')!r}, reason {reason(neg_bac)!r}")
+    for _pct, _bac, _why in ((-50, 1000, "an overrun percent of minus fifty, which reported an "
+                                         "exposure of minus five hundred"),
+                             (5, -1000, "a budget at completion of minus one thousand, which "
+                                        "reached a Yellow band because the budget never gated "
+                                        "the band"),
+                             (8, 1000, "the in-domain case the proxy banded Amber"),
+                             (0, 1000, "an overrun of exactly zero"),
+                             ("very high", 1000, "an overrun reported as text")):
+        _out = run("A3.7", {"analogousOverrunPct": _pct, "bac": _bac})
+        check("3.7", f"HISTORICAL DEFECT, unreachable: {_why} now reaches no reading at all, "
+                     f"because the scalar it rested on is not an input this module has",
+              abstained(_out) and reason(_out) == "canonical_structure_absent",
+              f"banded {_out.get('status_color')!r}, reason {reason(_out)!r}")
+    check("3.7", "invariant: no result the module now returns carries a negative exposure, "
+                 "because it returns no exposure at all and an adapted estimate is a cost",
+          all((run("A3.7", _analog(cost=c)).get("adapted_estimate") or 0) > 0
+              for c in (1.0, 100.0, 10_000.0)))
 
-    check("3.7", "boundary: an overrun of exactly zero is inside the domain and still bands, "
-                 "since no overrun is a reading and not an invalid one",
-          run("A3.7", {"analogousOverrunPct": 0, "bac": 1000}).get("status_color") == "Green")
-    check("3.7", "boundary: a budget of exactly zero is refused, since no exposure can be "
-                 "formed on it",
-          abstained(run("A3.7", {"analogousOverrunPct": 5, "bac": 0})))
-    check("3.7", "invalid input: an overrun reported as text abstains rather than defaulting",
-          abstained(run("A3.7", {"analogousOverrunPct": "very high", "bac": 1000})))
-    check("3.7", "missingness: the budget alone abstains",
-          abstained(run("A3.7", {"bac": 1000})))
-    check("3.7", "invariant: over the domain that survives, the exposure is still monotone in "
-                 "the overrun percent",
-          [run("A3.7", {"analogousOverrunPct": p, "bac": 1000}).get("bac_exposure")
-           for p in (0, 1, 5, 12)] == [0, 10, 50, 120])
-    check("3.7", "invariant: no result the module now returns carries a negative exposure",
-          all((run("A3.7", {"analogousOverrunPct": p, "bac": b}).get("bac_exposure") or 0) >= 0
-              for p in (-100, -1, 0, 1, 50) for b in (-1000, 0, 1000)))
+    check("3.7", "missingness: an analog with no identity is refused",
+          abstained(run("A3.7", _analog(analog_project_id=""))))
+    check("3.7", "missingness: an analog that does not state its comparability criteria is "
+                 "refused", abstained(run("A3.7", _analog(comparability_criteria=""))))
+    check("3.7", "missingness: an analog with no adaptation factors cannot be carried across",
+          abstained(run("A3.7", _analog(adaptation_factors=[]))))
+    check("3.7", "boundary: an analog cost of zero has nothing to adapt",
+          abstained(run("A3.7", _analog(cost=0.0))))
+    check("3.7", "boundary: an adaptation factor of zero or below is not a multiplier onto a "
+                 "cost", abstained(run("A3.7", _analog(factors=(("size", 0.0),)))))
+    check("3.7", "invariant: the adapted estimate is monotone in the analog's own cost",
+          [round(run("A3.7", _analog(cost=c)).get("adapted_estimate"), 6)
+           for c in (100.0, 200.0, 400.0)] == [132.0, 264.0, 528.0])
 
 
 # =============================================================================================

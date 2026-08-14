@@ -119,11 +119,28 @@ check("SCIENTIFIC_PASS targets accidentally included = 0",
       not (set(matrix_ids) & pass_ids), str(sorted(set(matrix_ids) & pass_ids)))
 check("no matrix row is outside the registry",
       all(i in registry for i in matrix_ids), str(sorted(set(matrix_ids) - set(registry))))
-check("every registered name in the matrix is the registry's own name for that id",
+# RUN 28 RENAMED TWO MODULES ON THE OWNER'S AUTHORITY, and the Run-27 matrix records the name
+# each module carried WHEN RUN 27 WROTE IT. That is what an audit artefact is for: rewriting it
+# to match a later rename would destroy the record of what was audited. So the two renamed ids
+# are checked against the names Run 27 recorded and against the registry's current names
+# separately, and both must hold, which is a stronger statement than the single comparison it
+# replaces -- it pins the rename itself rather than letting either side drift unnoticed.
+RUN28_RENAMES = {"A1.10": ("Regression to Mean CPI", "CPI Shrinkage Forecast"),
+                 "A1.11": ("ICE Ratio", "Independent EAC Reconciliation Index")}
+check("every registered name in the matrix is the registry's own name for that id, except the "
+      "two Run 28 renamed on the owner's authority",
       all(r["current_registered_name"] == registry[r["canonical_id"]]["module_name"]
-          for r in matrix),
+          for r in matrix if r["canonical_id"] not in RUN28_RENAMES),
       str([r["canonical_id"] for r in matrix
-           if r["current_registered_name"] != registry[r["canonical_id"]]["module_name"]]))
+           if r["canonical_id"] not in RUN28_RENAMES
+           and r["current_registered_name"] != registry[r["canonical_id"]]["module_name"]]))
+for _mid, (_was, _now) in sorted(RUN28_RENAMES.items()):
+    _row = next((r for r in matrix if r["canonical_id"] == _mid), None)
+    check(f"the matrix still records the name {_mid} carried when Run 27 audited it",
+          _row is not None and _row["current_registered_name"] == _was,
+          str(_row and _row["current_registered_name"]))
+    check(f"and the registry now carries the name Run 28 was authorised to give {_mid}",
+          registry[_mid]["module_name"] == _now, registry[_mid]["module_name"])
 check("every category in the matrix is the registry's own category for that id",
       all(r["category"] == registry[r["canonical_id"]]["category"] for r in matrix))
 

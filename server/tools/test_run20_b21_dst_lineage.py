@@ -388,34 +388,55 @@ print("\n=== 7. THE BAYESIAN EAC NEGATIVE CONTROL FOR SCHEMA-BASED INFERENCE ===
 # A1.3's preflight requires bac, ev, ac AND cpi. Its arithmetic reads bac and cpi. Move the two
 # it does not read, across a wide range, and nothing whatever happens to its answer.
 
-BAY = {"bac": 1000.0, "ev": 800.0, "ac": 900.0, "cpi": 0.90}
+# RUN 28 REWROTE THIS CONTROL, observed red against the v3 build before the rewrite. Cycle 7's
+# point was that a REQUIRED-INPUT SCHEMA is not proof of common evidence lineage: A1.3's preflight
+# demanded bac, ev, ac and cpi while its arithmetic read only bac and cpi. The owner's supplied
+# Run-28 contract replaced that computation with a governed normal-normal update over a stated
+# prior and a stated observation model, so the four earned-value fields are not inputs the module
+# has at all -- which makes cycle 7's point in its strongest possible form. The control is
+# rebuilt on the v3 contract: the earned-value vector can be moved anywhere and nothing happens,
+# while the prior and the observation, which the module does read, move it immediately.
+BAY_MODEL = {"parameter": "cost at completion",
+             "prior": {"mean": 1000.0, "variance": 22500.0,
+                       "source": "approved budget baseline"},
+             "likelihood": {"observation": 1111.0, "variance": 62500.0,
+                            "source": "reported cost at completion",
+                            "variance_basis": "residual spread of reported forecasts"}}
+BAY = {"bac": 1000.0, "ev": 800.0, "ac": 900.0, "cpi": 0.90, "bayesianEacModel": BAY_MODEL}
 bay_base = run_bayesian_eac(dict(BAY), lambda: 0.5, None)
 check("Bayesian EAC returns a result on the base fixture, so the control is not vacuous",
       bay_base.get("posterior_eac") is not None, str(bay_base))
 moved = 0
 for ev, ac in ((1.0, 2.0), (500.0, 10.0), (999999.0, 3.0), (0.001, 999999.0)):
     alt = run_bayesian_eac(dict(BAY, ev=ev, ac=ac), lambda: 0.5, None)
-    if (alt.get("posterior_eac"), alt.get("delta_pct"), alt.get("status_color")) != \
-            (bay_base.get("posterior_eac"), bay_base.get("delta_pct"),
+    if (alt.get("posterior_eac"), alt.get("posterior_variance"), alt.get("status_color")) != \
+            (bay_base.get("posterior_eac"), bay_base.get("posterior_variance"),
              bay_base.get("status_color")):
         moved += 1
 check("THE NEGATIVE CONTROL: the earned value and the actual cost can be moved anywhere at all, "
       "including to values that contradict the cost index beside them, and Bayesian EAC's "
-      "posterior, its variance from budget and its band do not move by a rounding step. Its "
-      "PREFLIGHT REQUIRES FOUR FIELDS AND ITS ARITHMETIC READS TWO",
+      "posterior and its variance do not move by a rounding step. In v3 they are not inputs it "
+      "has: the posterior rests on the stated prior and the stated observation model",
       moved == 0, f"{moved} of four probes moved the answer")
-alt = run_bayesian_eac(dict(BAY, cpi=0.70), lambda: 0.5, None)
-check("while the cost index, which it does read, moves it immediately -- so the probe is "
-      "sensitive and the null result above means something",
+_cpi_moved = run_bayesian_eac(dict(BAY, cpi=0.70), lambda: 0.5, None)
+check("and the COST INDEX cannot move it either, which is the v3 correction: the designed "
+      "variance derived from the index is gone",
+      _cpi_moved.get("posterior_eac") == bay_base.get("posterior_eac"))
+alt = run_bayesian_eac({**BAY, "bayesianEacModel": {
+    **BAY_MODEL, "likelihood": {**BAY_MODEL["likelihood"], "observation": 1300.0}}},
+    lambda: 0.5, None)
+check("while the stated observation, which it does read, moves it immediately -- so the probe "
+      "is sensitive and the null result above means something",
       alt.get("posterior_eac") != bay_base.get("posterior_eac"))
-check("SO A DECLARED OR REQUIRED INPUT SCHEMA IS NOT PROOF OF COMMON EVIDENCE LINEAGE. Anything "
-      "that grouped modules by their required field sets would call this module a reader of the "
-      "earned value in its own right. It reaches the earned-value body honestly, through the "
-      "cost index being earned value over actual cost, and the primitive resolution is what "
-      "establishes that -- never the field list",
-      set(lineage.MODULE_LINEAGE["A1.3"]["lineage_group_ids"]) == {lineage.EARNED_VALUE_BODY}
-      and "pv" not in lineage.MODULE_LINEAGE["A1.3"]["source_fact_ids"]
-      and "reporting_history" not in lineage.MODULE_LINEAGE["A1.3"]["source_fact_ids"],
+check("SO A DECLARED OR REQUIRED INPUT SCHEMA IS NOT PROOF OF COMMON EVIDENCE LINEAGE. Cycle 7 "
+      "made this point against a module whose preflight demanded four fields and whose "
+      "arithmetic read two. Run 28 makes it in the strongest form available: the module's "
+      "declared lineage now names the prior and the observation it actually reads, and names no "
+      "earned-value fact at all, because it touches none",
+      set(lineage.MODULE_LINEAGE["A1.3"]["lineage_group_ids"])
+      == {lineage.BAYESIAN_MODEL_BODY}
+      and not ({"bac", "ev", "ac", "pv", "reporting_history"}
+               & set(lineage.MODULE_LINEAGE["A1.3"]["source_fact_ids"])),
       str(lineage.MODULE_LINEAGE["A1.3"]))
 
 print("\n=== 8. THE SECOND NEGATIVE CONTROL, FOUND BY THIS CYCLE'S SWEEP ===")

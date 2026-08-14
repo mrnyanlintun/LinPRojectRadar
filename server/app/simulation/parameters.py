@@ -323,6 +323,12 @@ _LADDER_ONLY = (
     "A3.2", "A3.3", "A3.4", "A3.5", "A3.8", "A3.9", "A4.3", "A4.4", "A4.9", "A4.10", "A5.2",
     "A5.4", "A5.7", "A5.8", "A6.1", "A6.4", "B4.1", "B4.2", "B4.4", "B4.5", "B4.6",
     "A1.1", "A2.3", "A2.6", "A3.7", "A5.6", "A6.2", "B1.3",
+    # RUN 28. A2.1 and A3.1 abstained unconditionally from Run 7 and Run 10B until Run 28 gave
+    # them the structures they were waiting for, so neither carried a tunable value and neither
+    # needed an entry. Both now do: the criticality index and the reference class forecast each
+    # carry a simulation trial count and a governed percentile, and neither number is calibrated
+    # against anything in this repository. They join the sweep rather than being excused from it.
+    "A2.1", "A3.1",
     "C1.1", "C1.2", "C1.4", "C1.5", "C1.6", "C1.7",
     "D1.1", "D1.2", "D1.3", "D1.4",
 )

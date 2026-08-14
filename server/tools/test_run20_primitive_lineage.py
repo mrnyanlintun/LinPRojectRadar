@@ -198,8 +198,35 @@ check("production precondition: the to-complete index and the overhead absorptio
       "no governed fact, so this is genuinely the A, C of the oracle and not a rigged pair",
       not (set(P_A["source_fact_ids"]) & set(P_C["source_fact_ids"])),
       f'{P_A["source_fact_ids"]} vs {P_C["source_fact_ids"]}')
-check("production precondition: the tornado ranking shares a fact with EACH of them, so it is "
-      "genuinely the bridging B",
+# RUN 28 REMOVED THE PRODUCTION BRIDGE, AND THAT IS RECORDED HERE RATHER THAN WORKED AROUND.
+# The tornado ranking bridged the earned-value body and the indirect-cost ledger because BOTH it
+# and the overhead absorption rate read the reported progress figure. The owner's supplied
+# Run-28 contract replaced overhead absorption with rates over an explicit allocation base, and
+# progress is not an input it has any more, so the tornado ranking no longer shares a fact with
+# it. Sweeping the whole table confirms NO record now bridges these two bodies.
+#
+# WHAT THAT MEANS FOR THIS CONTROL, STATED PLAINLY. The bridging defect this section exists to
+# prove is gone cannot be driven from a production record any more, because production contains
+# no bridge to drive it with. The two bodies A and C are still production records and are still
+# genuinely disjoint, which is the half that matters and is asserted directly. The bridge is
+# constructed, and it is constructed FROM THE TWO BODIES' OWN FACTS rather than from invented
+# ones: it declares exactly one fact from each side, which is the minimum that makes something a
+# bridge, so the control tests the partition rule and not a fiction about the corpus.
+_bridges = sorted(m for m, r in PROD.items()
+                  if m not in ("A1.7", "A3.5")
+                  and set(r["source_fact_ids"]) & set(P_A["source_fact_ids"])
+                  and set(r["source_fact_ids"]) & set(P_C["source_fact_ids"]))
+check("production precondition: NO record in the shipped table now bridges the earned-value "
+      "body and the indirect-cost ledger, because the overhead absorption rate no longer reads "
+      "the progress figure the bridge ran through", not _bridges, str(_bridges))
+P_B = lineage.lineage_record(
+    "SYNTHETIC.BRIDGE",
+    source_fact_ids=(sorted(P_A["source_fact_ids"])[0], sorted(P_C["source_fact_ids"])[0]),
+    lineage_group_ids=("SYNTHETIC_BRIDGE",),
+    evidence_relationship=lineage.CORRELATED,
+    derivation_chain=("one fact from each of the two production bodies",))
+check("the constructed bridge shares a fact with EACH of the two production bodies, so it is "
+      "genuinely a bridge and not a third body",
       bool(set(P_B["source_fact_ids"]) & set(P_A["source_fact_ids"]))
       and bool(set(P_B["source_fact_ids"]) & set(P_C["source_fact_ids"])),
       str(P_B["source_fact_ids"]))
@@ -211,7 +238,7 @@ near("THE AMBER POSITIVE CONTROL, UNCHANGED: an Amber to-complete index and an A
 near("and their conflict coefficient is estimable at 0.4414", pr_ac["conflict"], TWO_BODY_CONFLICT)
 
 pr_abc = fuse([(P_A, "Amber"), (P_B, "Amber"), (P_C, "Amber")])
-check("THE PRODUCTION BRIDGING DEFECT IS GONE: adding the tornado ranking leaves two bodies, "
+check("THE BRIDGING DEFECT IS GONE: adding the bridge leaves two bodies, "
       "where the connected-component treatment left one",
       len(pr_abc["lineage_bodies"]) == 2, str(body_sets(pr_abc)))
 near("and the belief stays at 0.9273 rather than collapsing to the measured pre-fix 0.7000",
@@ -348,12 +375,17 @@ check("nor is a synthesis independent of either constituent",
 ACTUAL_FACTS = {
     "A1.1": {"ac", "bac", "doc_risk_score", "ev", "pv"},      # bac, cpi, spi, docRiskScore
     "A1.2": {"ev", "pv", "reporting_history"},                # spi, spiHistory
-    "A1.3": {"ac", "bac", "ev"},                              # bac, cpi -- NO history, NO pv
-    "A1.4": {"ev", "pv", "reporting_history"},                # spi, spiHistory
+    # RUN 28. Re-transcribed from the v3 arithmetic. A1.3 updates a stated prior against a
+    # stated observation and touches no earned-value field; A1.4 filters the readings the
+    # governed state-space model carries, with the two variances that model states.
+    "A1.3": {"bayesian_observation", "bayesian_prior"},
+    "A1.4": {"measurement_variance", "process_variance", "state_space_observations"},
     "A1.5": {"ac", "ev", "reporting_history"},                # cpi, cpiHistory -- NO pv
     "A1.7": {"ac", "bac", "ev"},                              # ac, bac, ev
     "A1.8": {"bac", "ev", "ac"},                              # bac, cpi
-    "A3.5": {"actual_pct_complete", "indirect_cost_actual", "indirect_cost_plan"},
+    # RUN 28. The progress figure is gone: overhead is absorbed over an explicit allocation
+    # base and nothing is scaled by progress any more.
+    "A3.5": {"allocation_base_driver", "indirect_cost_actual", "indirect_cost_plan"},
     "A4.6": {"baseline_contract_sum", "change_order_count", "revised_contract_sum"},
     "A5.2": {"ac", "bac", "doc_risk_score", "ev", "pv"},      # bac, cpi, spi, docRiskScore
     "A5.3": {"ac", "actual_pct_complete", "doc_risk_score", "ev", "planned_pct_complete", "pv"},
@@ -365,8 +397,11 @@ ACTUAL_FACTS = {
     # them are the cycle's negative controls and are transcribed from what the arithmetic USES
     # and not from what the preflight demands: B3.2, B3.4 and B4.3 all demand the budget and
     # none of them reads it, because each reports a percentage OF the budget.
-    "A1.11": {"ac", "bac", "ev"},          # bac, cpi, ev, ac -- the parametric arm reads ev, ac
-    "A3.6": {"bac"},                       # bac and the cost index
+    # RUN 28. Re-transcribed from the v3 arithmetic. A1.11 reads two provenance-distinct
+    # estimates and no earned-value field; A3.6 reads the budget as its base cost and the
+    # register's own risk events, and no cost index.
+    "A1.11": {"independent_eac", "management_eac"},
+    "A3.6": {"bac", "risk_events"},
     "B3.2": set(),                         # the cost index alone; the budget scales out
     "B3.4": set(),                         # the two indices; the budget scales out
     "B4.3": set(),                         # the two indices; the budget scales out
@@ -379,14 +414,19 @@ ACTUAL_FACTS = {
     "B2.12": set(),
     "B2.13": set(),
     "B2.17": set(),
-    "A3.9": {"actual_pct_complete", "material_cost_baseline", "material_cost_current"},
+    # RUN 28. Re-transcribed: a named external price index and the cost exposure it applies to.
+    "A3.9": {"cost_exposure", "external_price_index"},
 }
 
 #: The derived indices each record reads, hand-transcribed from the module's arithmetic. A record
 #: naming an index it does not read would declare a dependence that is not there; one omitting an
 #: index it does read would declare an independence that is not there. Both fail here.
+# RUN 28. A1.11 and A3.6 are GONE from this table, because neither reads a derived index any
+# more: the reconciliation index reads two separately prepared estimates and the cost risk
+# analysis reads the register's events over the budget. A record naming an index it does not read
+# would declare a dependence that is not there, which is what removing them prevents.
 ACTUAL_INDEX_READS = {
-    "A1.11": {"cost_index"}, "A3.6": {"cost_index"}, "B3.2": {"cost_index"},
+    "B3.2": {"cost_index"},
     "B3.4": {"cost_index", "schedule_index"}, "B4.3": {"cost_index", "schedule_index"},
     "B2.10": {"cost_index", "schedule_index"}, "B2.11": {"cost_index", "schedule_index"},
     "B2.14": {"schedule_index"},

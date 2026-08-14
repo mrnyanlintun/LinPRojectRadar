@@ -66,15 +66,35 @@ MISMATCH_23 = [
 #: The eight Run-19 P2 structural rows, by code id.
 STRUCTURAL_8 = ["A1.10", "A3.9", "A4.1", "A6.3", "A6.4", "B2.18", "B4.2", "C1.4"]
 
+#: RUN 28 RESOLVED NINE OF THESE ROWS BY IMPLEMENTING THE CANONICAL METHOD, which is the FIRST
+#: of the two resolutions method_labels.py permits and the one it prefers. A truthful label
+#: exists to say that the code does something weaker than its name; once the code performs the
+#: named method the label becomes a false claim in the opposite direction, so it is removed with
+#: the proxy. Eight of the nine are mismatch rows and one, A1.10, is a structural row.
+#: A3.8 is NOT among them: it remains disabled and non-voting, and keeps its label.
+RESOLVED_BY_RUN_28 = ["A1.5", "A1.6", "A1.10", "A1.11", "A2.7", "A2.10", "A2.11", "A3.6",
+                      "A3.9"]
+MISMATCH_23_STILL_LABELLED = [m for m in MISMATCH_23 if m not in RESOLVED_BY_RUN_28]
+STRUCTURAL_8_STILL_LABELLED = [m for m in STRUCTURAL_8 if m not in RESOLVED_BY_RUN_28]
+
 
 print("=== 1. EVERY LABEL MISMATCH IS RESOLVED, AND RESOLVED BY NAME ===")
-check("all twenty-three mismatch rows carry a truthful method label",
-      all(ML.method_label(m) is not None for m in MISMATCH_23),
-      str([m for m in MISMATCH_23 if ML.method_label(m) is None]))
+check("every mismatch row Run 28 did not remediate still carries a truthful method label",
+      all(ML.method_label(m) is not None for m in MISMATCH_23_STILL_LABELLED),
+      str([m for m in MISMATCH_23_STILL_LABELLED if ML.method_label(m) is None]))
+check("and every row Run 28 DID remediate has had its label removed, because the code now "
+      "performs the method its registered name claims and a stale weakness claim would be a "
+      "false statement in the other direction",
+      all(ML.method_label(m) is None for m in RESOLVED_BY_RUN_28),
+      str([m for m in RESOLVED_BY_RUN_28 if ML.method_label(m) is not None]))
+check("A3.8 kept its label, because it is still disabled and still implements no parametric "
+      "estimating relationship in production",
+      ML.method_label("A3.8") is not None)
 check("and no truthful name repeats the registered name it replaces, which would leave the "
       "claim exactly where Run 19 found it",
       all(ML.method_label(m).truthful.strip().lower()
-          != ML.method_label(m).registered.strip().lower() for m in MISMATCH_23))
+          != ML.method_label(m).registered.strip().lower()
+          for m in MISMATCH_23_STILL_LABELLED))
 check("every registered name in the label table matches the registry itself, so a registry "
       "rename cannot leave a stale claim standing here",
       all(IDX[m]["module_name"] == ML.method_label(m).registered
@@ -105,8 +125,8 @@ check("and none uses an ampersand in prose",
 check("all eight structural rows are disposed of, by a truthful label or by a stated claim "
       "limit, and none is left out",
       all(ML.method_label(m) is not None or ML.claim_limit(m) is not None
-          for m in STRUCTURAL_8),
-      str([m for m in STRUCTURAL_8
+          for m in STRUCTURAL_8_STILL_LABELLED),
+      str([m for m in STRUCTURAL_8_STILL_LABELLED
            if ML.method_label(m) is None and ML.claim_limit(m) is None]))
 
 
@@ -297,11 +317,11 @@ check("and REFUSES a disposition outside the permitted vocabulary", _refused)
 
 # 7d. The coverage check must catch a label removed from the table.
 _saved = ML.TRUTHFUL_METHOD_LABELS.pop("A5.8")
-_fired = not all(ML.method_label(m) is not None for m in MISMATCH_23)
+_fired = not all(ML.method_label(m) is not None for m in MISMATCH_23_STILL_LABELLED)
 ML.TRUTHFUL_METHOD_LABELS["A5.8"] = _saved
 check("the coverage guard FIRES when a label is deliberately removed from the table", _fired)
 check("and goes green again once it is restored",
-      all(ML.method_label(m) is not None for m in MISMATCH_23))
+      all(ML.method_label(m) is not None for m in MISMATCH_23_STILL_LABELLED))
 
 # 7e. The participant-leak check must catch a truthful name written into a ledger key.
 _probe = dict(_by_id["A5.8"])

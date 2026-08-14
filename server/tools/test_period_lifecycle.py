@@ -175,11 +175,22 @@ try:
     r4 = post({"action": "projectresults", "session_token": pm, "id": PRJ,
                "period": 4})["result"]
     mods4 = {m.get("method_class") for m in (r4.get("module_results") or [])}
-    for mc, name in (("CUSUM", "the control-chart anomaly monitor"),
-                     ("Kalman_Filter", "the schedule-performance smoother"),
-                     ("ARIMA_Forecast", "the cost-performance forecast reader"),
-                     ("Regression_To_Mean", "the regression-to-mean reader")):
+    # RUN 28. Only the control-chart anomaly monitor still computes from the period series
+    # alone: its design is frozen and the supplied contract forbids retuning it in this run. The
+    # smoother needs a governed state-space record stating where its variances came from, the
+    # forecast reader needs a history long enough to identify a model from, and the pooling
+    # reader needs a governed reference population of comparable projects; none is in this
+    # corpus, so all three abstain truthfully. What this block proves -- that four periods of
+    # stored history reach the analytical layer -- is unchanged and is still proved by the
+    # monitor, which reads the identical series.
+    for mc, name in (("CUSUM", "the control-chart anomaly monitor"),):
         check(mc in mods4, f"{name} computes at period four")
+    _mc_ab = {a.get("module_id") for a in (r4.get("abstained") or [])}
+    for _mid, _name in (("A1.4", "the schedule-performance smoother"),
+                        ("A1.5", "the cost-performance forecast reader"),
+                        ("A1.10", "the pooling reader")):
+        check(_mid in _mc_ab,
+              f"{_name} abstains at period four, on the same four periods of stored history")
 
     # Captured while the four periods are the ONLY results this project has, and before any
     # other project in this database gains one. The portfolio is cutoff-aligned across

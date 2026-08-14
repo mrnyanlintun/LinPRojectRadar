@@ -39,7 +39,7 @@ from app.simulation.registry import (  # noqa: E402
 from tools.build_run13_evidence import CUTOFF, NOOP, STRUCTURED, band_of  # noqa: E402
 from tests.synthetic_fixtures.importers import production_structures as PS  # noqa: E402
 from tools.build_run13_mutation_proof import (  # noqa: E402
-    FlipCompare, NegateGuard, mutated_callable,
+    FlipCompare, NegateGuard, mutated_callable, mutated_via_helper,
 )
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -192,7 +192,27 @@ check(BASE["scenarioDecisionStructure"]["data_origin"] == "SYNTHETIC_RESEARCH_FI
       and BASE["scenarioDecisionStructure"]["not_for_empirical_validation"] is True,
       "and that decision problem is a synthetic research fixture, marked as not constituting "
       "empirical validation")
-for mid in BANDING:
+# RUN 28. Four of the five banding modules no longer read the reported progress figure at all:
+# the owner's supplied contract replaced their computations with canonical methods defined on
+# governed structures, and progress is not an input any of them has. Run 13's reproducer -- an
+# impossible progress figure reading as health -- is therefore unreachable in the strongest
+# sense, and it is asserted as unreachable rather than as refused, because a refusal implies an
+# input that got as far as a guard. A3.2 still reads progress and still refuses it, so it keeps
+# the original form of the check.
+# A5.8 is Category 5 and is NOT in Run 28's scope: it still reads the progress figure and still
+# refuses an impossible one, so it keeps the original form of the check alongside A3.2.
+RUN28_PROGRESS_NOT_AN_INPUT = {"A2.11", "A3.3", "A3.5"} & set(BANDING)
+for mid in sorted(RUN28_PROGRESS_NOT_AN_INPUT):
+    _base_out = run(mid, dict(BASE))
+    _impossible = run(mid, dict(BASE, actualPctComplete=10_000))
+    check(_impossible.get("status_color") is None,
+          f"{mid}: an impossible reported progress reads no colour, because progress reaches no "
+          f"arithmetic in this module", str(_impossible.get("status_color")))
+    check(_impossible.get("evidence_metric") == _base_out.get("evidence_metric"),
+          f"{mid}: and the reading is IDENTICAL with and without it, which is a stronger "
+          f"statement than a refusal: the figure cannot influence the module at all",
+          str(_impossible.get("evidence_metric"))[:70])
+for mid in [m for m in BANDING if m not in RUN28_PROGRESS_NOT_AN_INPUT]:
     nominal = band_of(run(mid, dict(BASE)))
     si = dict(BASE)
     si["actualPctComplete"] = 10_000
@@ -249,13 +269,28 @@ section("4. THE TWO MISSINGNESS OCCURRENCES: REMOVING EVIDENCE MUST NOT IMPROVE 
 # reading than the full evidence does.
 import itertools  # noqa: E402
 
+# RUN 28. A3.5's evidence is the overhead allocation base now, not two indirect scalars scaled
+# by progress, so the subset sweep is run over THAT structure's own fields. The property is
+# unchanged and is the one that matters: removing any part of the module's evidence must never
+# produce a calmer reading than the full evidence does.
 SUBSET_FIELDS = {
-    "A3.5": ("indirectCostPlan", "indirectCostActual", "actualPctComplete"),
+    "A3.5": ("overheadAllocationBase",),
     "C1.6": ("ev", "ac", "cpi", "spi", "pv", "bac", "actualPctComplete"),
+}
+# RUN 28. A3.5's evidence arrives as a structure, so its sweep runs against a base that carries
+# one. Every other module's base is unchanged.
+SUBSET_BASE = {
+    "A3.5": dict(BASE, overheadAllocationBase={
+        "allocation_base": "direct labour hours", "driver_source": "certified payroll",
+        "planned_overhead": 100.0, "planned_driver": 1000.0,
+        "actual_overhead": 120.0, "actual_driver": 1000.0}),
 }
 for mid in MISSINGNESS:
     fields = SUBSET_FIELDS[mid]
-    full = band_of(run(mid, dict(BASE)))
+    BASE_FOR = SUBSET_BASE.get(mid, BASE)
+    full = band_of(run(mid, dict(BASE_FOR))) or (
+        run(mid, dict(BASE_FOR)).get("relative_rate_variance")
+        if not run(mid, dict(BASE_FOR)).get("insufficient_data") else None)
     check(full is not None, f"{mid}: the full evidence produces a reading to compare against",
           str(full))
     worse_or_equal = True
@@ -263,7 +298,7 @@ for mid in MISSINGNESS:
     _subsets = 0
     for size in range(1, len(fields) + 1):
         for combo in itertools.combinations(fields, size):
-            si = {k: v for k, v in BASE.items() if k not in combo}
+            si = {k: v for k, v in BASE_FOR.items() if k not in combo}
             got = band_of(run(mid, si))
             _subsets += 1
             if improved(full, got):
@@ -278,14 +313,26 @@ for mid in MISSINGNESS:
 
 # The two Run 13 cases named exactly, so the specific defect is asserted and not only the
 # property that covers it.
-_a35_nominal = band_of(run("A3.5", dict(BASE)))
-_a35_dropped = run("A3.5", {k: v for k, v in BASE.items() if k != "actualPctComplete"})
-check(_a35_dropped.get("insufficient_data") is True,
-      "A3.5: with no reported progress the module abstains, where Run 13 recorded it moving from "
-      "Red to Yellow", str(_a35_dropped.get("status_color")))
-check(_a35_dropped.get("abstention_reason_code") == "missing_required_input",
-      "A3.5: and it abstains because a required input is absent, not for some other reason",
+# RUN 28. Run 13's A3.5 case was that DELETING the progress figure moved the reading from Red to
+# Yellow, because the plan was then used unscaled. That defect is now unreachable in the
+# strongest sense available: progress is not an input the module has, so deleting it changes
+# nothing whatever. Asserted as identity rather than as a refusal.
+_a35_base = SUBSET_BASE["A3.5"]
+_a35_full = run("A3.5", dict(_a35_base))
+_a35_dropped = run("A3.5", {k: v for k, v in _a35_base.items() if k != "actualPctComplete"})
+check(_a35_dropped.get("evidence_metric") == _a35_full.get("evidence_metric"),
+      "A3.5: deleting the reported progress changes the reading not at all, where Run 13 "
+      "recorded it moving from Red to Yellow", str(_a35_dropped.get("evidence_metric"))[:70])
+check(_a35_dropped.get("insufficient_data") is None
+      and _a35_dropped.get("calibration_pending") is True,
+      "A3.5: and it does not abstain at all with its allocation base present, because the "
+      "progress figure was never part of its evidence",
       str(_a35_dropped.get("abstention_reason_code")))
+check(run("A3.5", {k: v for k, v in _a35_base.items()
+                   if k != "overheadAllocationBase"}).get("abstention_reason_code")
+      == "canonical_structure_absent",
+      "A3.5: and removing what IS its evidence, the allocation base, makes it refuse and name "
+      "that structure as what is missing")
 for _drop in ("actualPctComplete", "bac"):
     _c16 = band_of(run("C1.6", {k: v for k, v in BASE.items() if k != _drop}))
     check(not improved(band_of(run("C1.6", dict(BASE))), _c16),
@@ -365,7 +412,7 @@ check(not (set(CORE_VOTING_MODULES) & set(MISMATCH)),
 check(sorted(DISABLED_CONCEPT_ONLY) == DISABLED,
       "the eight disabled modules are the eight Run 13 recorded, and this run activated none "
       "of them", str(sorted(DISABLED_CONCEPT_ONLY)))
-check(SIMULATION_VERSION == "sim-2026.08-v10",
+check(SIMULATION_VERSION == "sim-2026.08-v11",
       "the analytical layer is stamped at this run's version, and every earlier stamp remains "
       "the historical baseline for results collected under it", SIMULATION_VERSION)
 
@@ -380,10 +427,27 @@ section("7. MUTATION PROOF: EVERY ASSERTION ABOVE COULD HAVE FAILED")
 # thing this programme has been bitten by repeatedly.
 MUTATION_CASE = {
     # module: (the input that must abstain after the fix, the field removed if any)
-    "A2.11": ({"actualPctComplete": 10_000}, None),
+    # RUN 28. Three of these modules now refuse through the shared canonical-structure layer
+    # rather than through a guard in their own body, so an input that makes them abstain gives
+    # the mutation nothing of THEIRS to invert -- the fault would land in an imported function
+    # and the check would report NO MUTATION BOUND while proving nothing. Each is driven with
+    # its governed structure PRESENT instead, so the module's own arithmetic runs and a fault in
+    # it has something to change.
+    "A2.11": ({"scheduleNetwork": {
+        "schedule_version": "SCH-1", "status_basis": "2026-06-30 data date",
+        "activities": [{"activity_id": "A", "predecessors": [], "current_duration": 3},
+                       {"activity_id": "B", "predecessors": [], "current_duration": 4},
+                       {"activity_id": "C", "predecessors": ["A", "B"],
+                        "current_duration": 2}]}}, None),
     "A3.2": ({"actualPctComplete": 10_000}, None),
-    "A3.3": ({"actualPctComplete": 10_000}, None),
-    "A3.5": ({"actualPctComplete": 10_000}, None),
+    "A3.3": ({"productionOutputRecord": {
+        "output_unit": "cubic yards", "quantity_source": "surveyed installed quantities",
+        "earned_output": 800.0, "planned_output": 1000.0,
+        "actual_labor_hours": 100.0, "planned_labor_hours": 100.0}}, None),
+    "A3.5": ({"overheadAllocationBase": {
+        "allocation_base": "direct labour hours", "driver_source": "certified payroll",
+        "planned_overhead": 100.0, "planned_driver": 1000.0,
+        "actual_overhead": 120.0, "actual_driver": 1000.0}}, None),
     "A5.8": ({"actualPctComplete": 10_000}, None),
     "C1.6": ({}, "actualPctComplete"),
     "A5.4": ({}, "scenarioDecisionStructure"),
@@ -399,6 +463,15 @@ for mid in MISMATCH:
     for transformer, name in ((NegateGuard, "every branch guard inverted"),
                               (FlipCompare, "every ordering comparison reversed")):
         mutant, count = mutated_callable(fn, transformer)
+        if mutant is None or count == 0:
+            # RUN 28. A module whose arithmetic moved into the shared canonical layer is a THIN
+            # WRAPPER: it reads its structure, calls the canonical function and formats the
+            # result, so there is no guard of its own left to invert and a same-function
+            # mutation reports nothing while proving nothing. The fault is injected into the
+            # helper it delegates to instead, compiled in an isolated namespace with the
+            # UNMUTATED wrapper, exactly as build_run13_mutation_proof already does for the two
+            # sim.js wrappers. Production is untouched either way.
+            mutant, count = mutated_via_helper(fn, transformer)
         if mutant is None or count == 0:
             continue
         try:
@@ -427,10 +500,29 @@ try:
         _nom = band_of(run(mid, dict(BASE)))
         _si = dict(BASE)
         _si["actualPctComplete"] = 10_000
-        if improved(_nom, band_of(run(mid, _si))):
+        _got = run(mid, _si)
+        # THE OCCURRENCE RETURNS IN EITHER OF TWO FORMS, and both are counted, because Run 28
+        # left one of these modules reporting a figure with no band. For a banded module the
+        # occurrence is a CALMER BAND, exactly as Run 14 recorded it. For A3.2, which now
+        # reports a consumed fraction and a progress-normalised burn and asserts no colour, the
+        # occurrence is that an impossible progress figure REACHES A READING at all where the
+        # guard had it refuse. Counting only the first form would have let this module pass
+        # while proving nothing about it, which is the vacuity this section exists to prevent.
+        if improved(_nom, band_of(_got)) or (
+                _got.get("insufficient_data") is None
+                and run(mid, _si) is not None
+                and _got.get("normalized_burn") is not None):
             _returned.append(mid)
-    check(sorted(_returned) == BANDING,
-          "with the bounded-field table emptied all five banding occurrences return, so the "
+    # RUN 28. Only the banding modules that STILL READ the progress figure can have their
+    # occurrence brought back by emptying the bounded-field table: for the three whose
+    # computation the supplied contract replaced, progress reaches no arithmetic, so no guard is
+    # what is holding them and emptying the table cannot resurrect anything. The expected set is
+    # therefore the modules that still read it, computed from the same split used in section 3
+    # rather than restated, so the two cannot drift apart.
+    _still_reads_progress = sorted(set(BANDING) - RUN28_PROGRESS_NOT_AN_INPUT)
+    check(sorted(_returned) == _still_reads_progress,
+          "with the bounded-field table emptied every banding occurrence that still reads the "
+          "progress figure returns, so the "
           "sweep above is passing because of the guard", str(_returned))
 finally:
     _fr.BOUNDED_MAX_SI_FIELDS.update(_saved)

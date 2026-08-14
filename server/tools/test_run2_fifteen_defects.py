@@ -403,15 +403,42 @@ try:
     new_c2 = run_cost_risk(C, None, None)
     check(abstains(new_c2), "and abstains now", str(new_c2))
     reason_is_speakable(new_c2, "cost risk")
-    live = run_cost_risk({"bac": 1_000_000, "cpi": 0.9, "ac": 500_000, "ev": 400_000}, None, None)
-    check(not abstains(live) and live.get("p80_eac") is not None,
-          "a positive index still computes: the method is untouched, only the domain is guarded",
+    # RUN 28 REPLACED THE ARITHMETIC THIS PAIR WAS PROVING UNTOUCHED, on the owner's explicit
+    # authority, so the pair is rewritten rather than left asserting a sameness that is no longer
+    # true. Defect 5 was a CRASH: `bac / cpi` had no guard, a cost index of exactly zero raised
+    # inside the computation, and the whole project's result was lost to an exception rather than
+    # to one module's abstention. That property is what this block exists to protect and it still
+    # holds in the strongest form: the retired inputs reach no arithmetic at all, so no input can
+    # raise inside this module. What is no longer asserted is that the figure is identical to the
+    # old one, because the supplied contract replaced a deterministic index uplift with a
+    # simulated total-cost distribution over the risk register's own events.
+    from app.simulation.rng import make_rng as _mk
+    _crm = {"costRiskModel": {
+        "model_version": "CRM-1", "estimate_source": "approved base estimate",
+        "cost_components": [{"component_id": "BASE", "base_amount": 100.0}],
+        "risk_events": [{"risk_id": "R1", "probability": 0.5, "impact_distribution": "POINT",
+                         "impact": 20.0}]}}
+    live = run_cost_risk(_crm, _mk(20260828), None)
+    check(not abstains(live) and live.get("p80_total_cost") is not None,
+          "the method computes on a governed cost risk model: what the domain guard removed was "
+          "a crash, and nothing has been silenced",
           str(live.get("evidence_metric")))
+    check(abs(live["p80_total_cost"] - 120.0) < 1e-9,
+          "and reproduces the supplied contract's own eightieth percentile of 120 on its own "
+          "worked two-point model", str(live.get("p80_total_cost")))
+    _raised_new = False
+    try:
+        run_cost_risk({"bac": 1_000_000, "cpi": 0.0, "ac": 500_000, "ev": 400_000}, None, None)
+    except ZeroDivisionError:
+        _raised_new = True
+    check(not _raised_new,
+          "and defect 5's own property holds a fortiori: a cost index of zero cannot raise "
+          "inside this module, because the cost index reaches no arithmetic in it at all")
     old_live = old_ext.run_cost_risk(
         {"bac": 1_000_000, "cpi": 0.9, "ac": 500_000, "ev": 400_000}, None, None)
-    check(old_live.get("p80_eac") == live.get("p80_eac")
-          and old_live.get("p80_delta_pct") == live.get("p80_delta_pct"),
-          "and produces the identical figure it always did, which is the proof the arithmetic "
+    check(old_live.get("p80_eac") is not None and live.get("p80_eac") is None,
+          "and the pinned pre-fix code still computes its index uplift, so the comparison is "
+          "live and the difference between the two lines is a measured fact"
           "was not rebuilt", f"{old_live.get('p80_eac')} vs {live.get('p80_eac')}")
 
     # ---- defects 6, 7, 8: the portfolio three
@@ -489,9 +516,19 @@ try:
     new_f = run_float_consumption(F, None, None)
     check(abstains(new_f), "and abstains without a reported completion", str(new_f))
     reason_is_speakable(new_f, "float consumption")
-    with_pct = run_float_consumption(dict(F, actualPctComplete=75), None, None)
-    check(not abstains(with_pct) and with_pct.get("float_stress") == 1.0,
-          "and with a real completion it computes: 75 per cent of float at 75 per cent complete "
+    # RUN 28. Float is now taken from the network's own forward and backward passes rather than
+    # from two reported scalars normalised by progress, so the completion figure cannot restore
+    # this module: the network can. Defect 10's property -- that no invented completion stands in
+    # for a reported one -- holds a fortiori, because completion is not an input it has.
+    _fc_net = {"scheduleNetwork": {
+        "schedule_version": "SCH-1", "status_basis": "2026-06-30 data date",
+        "activities": [{"activity_id": "A", "predecessors": [], "current_duration": 3,
+                        "baseline_total_float": 5},
+                       {"activity_id": "B", "predecessors": [], "current_duration": 4},
+                       {"activity_id": "C", "predecessors": ["A", "B"], "current_duration": 2}]}}
+    with_pct = run_float_consumption(_fc_net, None, None)
+    check(not abstains(with_pct) and with_pct.get("float_consumed_days") == 4.0,
+          "and with a real network it computes: A began with five days of float and the passes "
           "is a stress of exactly 1.0", str(with_pct.get("float_stress")))
 
     # ---- defect 11, NCR rate
@@ -819,7 +856,21 @@ try:
           "Scenario Modeling abstains on the real path where no decision problem is in the "
           "corpus, rather than reporting a forecast under its name",
           str(abst.get("A5.4", {}).get("reason"))[:120])
-    for mid in ("A4.9", "A6.1", "A6.4", "A1.1", "A3.6", "B1.1", "B2.1"):
+    # RUN 28, EXPECTATION CORRECTED WITH ITS REASON, on the same footing as the Run-14 note
+    # above. A3.6 is no longer in this list. Until Run 28 it produced a finding on every project
+    # because it inflated the cost index by a fixed multiple of the standard normal eightieth
+    # percentile; the owner's supplied contract replaces that with a simulated total cost over a
+    # stochastic cost-risk model. On a project whose register carries no row with BOTH a
+    # probability and a cost impact there is no model to simulate, and the correct behaviour is
+    # an abstention naming the absent structure. It is asserted as such rather than dropped.
+    check("A3.6" not in comp and "A3.6" in abst,
+          "Cost Risk Analysis P80 abstains on the real path where the register supports no "
+          "stochastic model, rather than reporting a deterministic uplift under its name",
+          str(abst.get("A3.6", {}).get("reason"))[:120])
+    check(abst.get("A3.6", {}).get("abstention_reason_code") == "canonical_structure_absent",
+          "and names the absent cost risk model as the reason",
+          str(abst.get("A3.6", {}).get("abstention_reason_code")))
+    for mid in ("A4.9", "A6.1", "A6.4", "A1.1", "B1.1", "B2.1"):
         check(mid in comp, f"{FIFTEEN[mid]} produces a finding on the real path",
               str(abst.get(mid, {}).get("reason"))[:90])
     # These three refuse for want of data the fix now requires, and each states which data.
@@ -837,9 +888,14 @@ try:
     # generic reason stands. Asserted as what it is rather than claimed as the new reason.
     fc = str(abst.get("A2.5", {}).get("reason") or "")
     check("A2.5" in abst, "Float Consumption Rate abstains on the real path, correctly", fc[:90])
-    check("Insufficient data" in fc,
-          "and does so at the required-inputs gate, because no document in this corpus carries "
-          "schedule float at all: its own completion guard is never reached here", fc[:110])
+    # RUN 28. The reason moved from the required-inputs gate to the structural one, and the move
+    # is more specific rather than less: the corpus carries no ACTIVITY NETWORK, which is what
+    # float is derived from, and saying so names the thing that is missing instead of naming two
+    # scalars nobody would have known where to find.
+    check(abst.get("A2.5", {}).get("abstention_reason_code") == "canonical_structure_absent",
+          "and does so at the canonical-structure gate, because no document in this corpus "
+          "carries an activity network at all: float is derived from one, and there is none",
+          str(abst.get("A2.5", {}).get("abstention_reason_code")))
 
     check(comp.get("A4.9", {}).get("risk_ratio") == 0.65,
           "and the procurement ratio the ledger will render is the corrected 0.65, from the "

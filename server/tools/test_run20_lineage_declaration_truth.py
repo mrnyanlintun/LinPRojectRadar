@@ -183,9 +183,22 @@ check("A3.5 rests on the planned indirect cost",
       "indirect_cost_plan" in _a35.get("source_fact_ids", ()), str(_a35.get("source_fact_ids")))
 check("A3.5 rests on the actual indirect cost",
       "indirect_cost_actual" in _a35.get("source_fact_ids", ()), str(_a35.get("source_fact_ids")))
-check("A3.5 rests on the progress figure, which scales the plan and which it must not omit "
-      "merely because declaring it creates a dependence",
-      "actual_pct_complete" in _a35.get("source_fact_ids", ()), str(_a35.get("source_fact_ids")))
+# RUN 28 REVERSED THIS CHECK, and the reversal is the correction rather than a relaxation. Run 20
+# cycle 5 required the progress figure to be declared BECAUSE the v10 module scaled the indirect
+# plan by it, and said in terms that a fact is not omitted because its consequences are
+# inconvenient. The owner's supplied Run-28 contract replaced that computation with absorption
+# over an EXPLICIT ALLOCATION BASE, and progress is not an input the module has any more, so
+# declaring it would now assert a dependence on every other reader of progress that does not
+# exist. The same rule produces the opposite answer because the module changed. The check is
+# inverted rather than deleted, so a regression that reintroduced the progress scaling would turn
+# it red.
+check("A3.5 no longer rests on the progress figure, because it no longer scales anything by it: "
+      "overhead is absorbed over an explicit allocation base",
+      "actual_pct_complete" not in _a35.get("source_fact_ids", ()),
+      str(_a35.get("source_fact_ids")))
+check("A3.5 rests on the amount of the allocation base, which is what the rate is formed over",
+      "allocation_base_driver" in _a35.get("source_fact_ids", ()),
+      str(_a35.get("source_fact_ids")))
 
 
 # ============================================================ 3. THE HARM, MEASURED AND UNDONE
@@ -239,6 +252,23 @@ FIELD_OF = {
     # input field and the check below still requires the module's reading to move for each.
     "material_cost_baseline": "materialCostBaseline",
     "material_cost_current": "materialCostCurrent",
+    # RUN 28. The governed STRUCTURES the canonical Category 1 to 3 methods are defined on, added
+    # when those six declarations were rewritten. The vocabulary is EXTENDED, not relaxed: every
+    # name below resolves to a real signal-inputs key the module actually reads, and the material
+    # influence check below still requires the module's reading to move when the structure moves.
+    # A structure key is a fact in exactly the sense this table means -- something the project
+    # supplied that the module's reading rests on -- and it is not a ratio.
+    "bayesian_prior": "bayesianEacModel",
+    "bayesian_observation": "bayesianEacModel",
+    "state_space_observations": "kalmanStateSpaceModel",
+    "process_variance": "kalmanStateSpaceModel",
+    "measurement_variance": "kalmanStateSpaceModel",
+    "management_eac": "independentEacPair",
+    "independent_eac": "independentEacPair",
+    "allocation_base_driver": "overheadAllocationBase",
+    "external_price_index": "externalCostIndex",
+    "cost_exposure": "externalCostIndex",
+    "risk_events": "costRiskModel",
     "reporting_history": None,          # no single field carries it
 }
 
@@ -272,7 +302,52 @@ _full = {"bac": 1000000.0, "ev": 500000.0, "ac": 550000.0, "pv": 520000.0,
          "cpi": 500000.0 / 550000.0, "spi": 500000.0 / 520000.0, "docRiskScore": 0.42,
          "actualPctComplete": 50.0, "plannedPctComplete": 52.0, "changeOrderCount": 6,
          "baselineContractSum": 1000000.0, "revisedContractSum": 1080000.0,
-         "indirectCostPlan": 200000.0, "indirectCostActual": 230000.0}
+         "indirectCostPlan": 200000.0, "indirectCostActual": 230000.0,
+         # RUN 28. The governed structures the canonical Category 1 to 3 methods are defined on.
+         # A module that abstains for want of one on THIS fixture is not in the A2.1 case the
+         # check below exists to catch: the corpus can hold these objects, and two of them --
+         # the milestone forecast history and the cost risk model -- are assembled from real
+         # documents by documents.py today. Supplying them here is what makes the check test what
+         # it means, which is whether a declaring module can emit a signal on SOME project.
+         "bayesianEacModel": {
+             "parameter": "cost at completion",
+             "prior": {"mean": 1000000.0, "variance": 22500000000.0,
+                       "source": "approved budget baseline"},
+             "likelihood": {"observation": 1100000.0, "variance": 62500000000.0,
+                            "source": "reported cost at completion",
+                            "variance_basis": "residual spread of reported forecasts"}},
+         "kalmanStateSpaceModel": {
+             "initial_state": 0.96, "initial_variance": 1.0, "process_variance": 0.01,
+             "measurement_variance": 0.1, "observations": [0.96, 0.94],
+             "process_variance_source": "declared random walk",
+             "measurement_variance_source": "repeated readings of one period"},
+         "independentEacPair": {
+             "management_eac": {"eac": 1100000.0, "source": "controls report",
+                                "method": "index extrapolation",
+                                "assumptions": "performance continues",
+                                "model_version": "PC-1",
+                                "responsible_party": "project management team"},
+             "independent_eac": {"eac": 1200000.0, "source": "review board",
+                                 "method": "bottom up re-estimate",
+                                 "assumptions": "scope re-priced",
+                                 "model_version": "IRB-1",
+                                 "responsible_party": "independent review board"}},
+         "overheadAllocationBase": {
+             "allocation_base": "direct labour hours", "driver_source": "certified payroll",
+             "planned_overhead": 200000.0, "planned_driver": 20000.0,
+             "actual_overhead": 230000.0, "actual_driver": 20000.0},
+         "costRiskModel": {
+             "model_version": "CRM-1", "estimate_source": "approved base estimate",
+             "cost_components": [{"component_id": "BASE", "base_amount": 1000000.0}],
+             "risk_events": [{"risk_id": "R1", "probability": 0.5,
+                              "impact_distribution": "POINT", "impact": 200000.0}]},
+         "externalCostIndex": {
+             "index_name": "Construction Cost Index, all items",
+             "authority": "national statistical office", "geography": "national",
+             "scope": "construction materials and labour", "base_period": "2020-01",
+             "observation_period": "2026-06", "vintage": "2026-07 release",
+             "base_index_value": 200.0, "current_index_value": 220.0,
+             "cost_exposure": 500000.0}}
 for mid in _declared:
     if mid.startswith("PH.") or mid not in _available:
         continue
@@ -333,8 +408,25 @@ for part in _bodies:
         _groups[_declared[i]] = tuple(sorted(part))
 check("the change-order pair is NOT in the same body as the to-complete index",
       _groups.get("A4.6") != _groups.get("A1.7"), str(_groups.get("A4.6")))
-check("Monte Carlo EAC IS in the same body as the to-complete index, because it forecasts it",
-      _groups.get("A1.1") == _groups.get("A1.7"), str(_groups.get("A1.1")))
+# RUN 28 RESTATED THIS CHECK ON THE PROPERTY IT MEANS, and the restatement is stronger. It
+# asserted that A1.1 and A1.7 land in the SAME PART, which is an assignment produced by the
+# maximum-independent-set search and is therefore sensitive to every other record in the table:
+# Run 28's rewrite of the A3.6 declaration changed which maximum set the search selects, without
+# changing anything about the relationship between A1.1 and A1.7. What must hold, and what the
+# check was written to protect, is that the two are DEPENDENT and can never both be counted as
+# independent bodies corroborating each other. That is asserted directly against the dependence
+# relation, and additionally against the selection, so the false-corroboration failure this whole
+# file exists to prevent is still caught.
+_reps = {p[0] for p in _parts([lineage.MODULE_LINEAGE[m] for m in _declared])}
+_a11_rec, _a17_rec = rec_of("A1.1"), rec_of("A1.7")
+check("Monte Carlo EAC and the to-complete index share the earned-value measurement, so they "
+      "are dependent and neither can corroborate the other",
+      bool(set(_a11_rec["source_fact_ids"]) & set(_a17_rec["source_fact_ids"])),
+      f"{_a11_rec['source_fact_ids']} vs {_a17_rec['source_fact_ids']}")
+check("and the partition never selects both of them as independent bodies, which is the "
+      "manufactured corroboration this file exists to prevent",
+      not ({_declared.index("A1.1"), _declared.index("A1.7")} <= _reps),
+      str(sorted(_reps)))
 check("the two voters are in one body", _groups.get("A1.7") == _groups.get("A1.8"))
 
 
@@ -345,10 +437,24 @@ print("== no module's reading moved ==")
 # Pinned from the run of this fixture taken BEFORE any declaration was corrected. The casing is
 # pinned as the module emits it, lower-case included, because normalising it here would hide a
 # change in what the module actually returns.
-for mid, want in (("A1.1", "red"), ("A3.5", "Red"), ("A1.7", "Red"), ("A1.8", "Amber")):
+for mid, want in (("A1.1", "red"), ("A1.7", "Red"), ("A1.8", "Amber")):
     out = registry.run_module(mid, _full, lambda: 0.5, None)
     check(f"{mid} still bands {want} on the fixture", out.get("status_color") == want,
           f"got {out.get('status_color')!r}")
+# RUN 28. A3.5 no longer bands at all: the owner's supplied contract replaced its progress-scaled
+# indirect ratio with absorption over an explicit allocation base, and supplies no bands for the
+# rate variance. What is pinned instead is the figure, computed by hand from the fixture's own
+# allocation base: 230,000 of overhead over 20,000 hours is 11.50 an hour against 200,000 over
+# 20,000 which is 10.00, a rate variance of 1.50 and a relative variance of 0.15.
+_a35_out = registry.run_module("A3.5", _full, lambda: 0.5, None)
+check("A3.5 asserts no band, because the rate variance has no established boundary",
+      _a35_out.get("status_color") is None
+      and _a35_out.get("calibration_pending") is True, str(_a35_out.get("status_color")))
+check("A3.5 reports the hand-derived actual absorption rate of 11.50 an hour",
+      abs(_a35_out.get("actual_rate") - 11.5) < 1e-9, str(_a35_out.get("actual_rate")))
+check("and the hand-derived relative rate variance of 0.15",
+      abs(_a35_out.get("relative_rate_variance") - 0.15) < 1e-9,
+      str(_a35_out.get("relative_rate_variance")))
 check("the voting set is still exactly the two earned-value transforms",
       set(registry.CORE_VOTING_MODULES) == {"A1.7", "A1.8"},
       str(sorted(registry.CORE_VOTING_MODULES)))

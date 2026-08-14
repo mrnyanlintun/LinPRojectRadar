@@ -414,53 +414,78 @@ try:
     check(a27 is not None,
           "MILESTONE TREND ANALYSIS COMPUTES at period 2, for the first time on this platform",
           str(sorted(mods2)))
-    # D100 actual, unmoved: 0. D200 14 August -> 28 August: +14. D300 30 Sep -> 7 Oct: +7.
-    # Mean over the three matched activities is 7.0.
-    check((a27 or {}).get("matched_count") == 3,
-          "exactly THREE activities matched: D400 refused in both periods, D600 is absent "
+    # RUN 28 REWROTE THIS BLOCK, observed red against the v3 build before the rewrite. The
+    # supplied contract measures milestone variance against the COMMITTED BASELINE DATE, which
+    # v10 never computed, and reports the drift between successive forecasts separately. The
+    # baseline finish was already extracted per activity and stored per period; Run 28 wired it
+    # into `milestoneForecastHistory`, so the numbers below now come off the same real corpus
+    # rows as before AND carry the commitment they are measured against.
+    #
+    # D100 actual, unmoved: forecast equals its baseline in both periods, so no variance and no
+    # drift. D200 14 August -> 28 August: a fourteen day drift and, since its baseline is the
+    # 14 August date, a fourteen day variance against the commitment. D300 30 Sep -> 7 Oct:
+    # seven days of each. D400 is refused in both periods, D600 is absent from period 2 and
+    # D700 from period 1, so three milestones are followed.
+    check((a27 or {}).get("milestone_count") == 3,
+          "exactly THREE milestones are followed: D400 refused in both periods, D600 is absent "
           "from period 2 and D700 is absent from period 1",
-          str((a27 or {}).get("matched_count")))
-    check((a27 or {}).get("worst_milestone") == "D200"
-          and (a27 or {}).get("worst_slip_days") == 14,
-          "the worst slip is D200's fourteen days, named", str(a27))
-    check(abs(((a27 or {}).get("mean_slip_days") or 0) - 7.0) < 1e-9,
-          "and the mean slip over the matched activities is 7.0 days",
-          str((a27 or {}).get("mean_slip_days")))
-    check("D600" not in json.dumps(a27 or {}) and "D700" not in json.dumps(a27 or {}),
-          "A MILESTONE ABSENT FROM THE OTHER PERIOD IS NOT REPORTED AS MOVEMENT: neither the "
-          "vanished D600 nor the new D700 appears anywhere in the result", str(a27))
+          str((a27 or {}).get("milestone_count")))
+    _ms = {m["milestone_id"]: m for m in ((a27 or {}).get("milestones") or [])}
+    check((a27 or {}).get("worst_variance_days") == 14
+          and _ms.get("D200", {}).get("current_variance_days") == 14,
+          "the largest variance against the original commitment is D200's fourteen days",
+          str((a27 or {}).get("worst_variance_days")))
+    check(_ms.get("D200", {}).get("period_drift_days") == [14.0],
+          "and its drift between the two successive forecasts is the same fourteen days",
+          str(_ms.get("D200", {}).get("period_drift_days")))
+    check(_ms.get("D300", {}).get("current_variance_days") == 7,
+          "D300 carries seven days against its commitment", str(_ms.get("D300")))
+    check(_ms.get("D100", {}).get("current_variance_days") == 0
+          and _ms.get("D100", {}).get("direction") == "stable",
+          "and D100, which has not moved, carries none and is reported stable",
+          str(_ms.get("D100")))
+    check((a27 or {}).get("deteriorating_count") == 2,
+          "two of the three moved further out this period", str(a27))
+    check(_ms.get("D200", {}).get("original_baseline_day") is not None
+          and _ms.get("D200", {}).get("approved_baseline_day") is not None,
+          "and every milestone retains BOTH its original commitment and the current approved "
+          "baseline, so a rebaseline cannot erase the commitment history", str(_ms.get("D200")))
+    check((a27 or {}).get("status_color") is None
+          and (a27 or {}).get("calibration_pending") is True,
+          "with no status band asserted, because the slip boundaries are uncalibrated and "
+          "Run 33 owns them", str((a27 or {}).get("status_color")))
 
-    print()
-    print("-" * 78)
-    print("4b. The same absence property, asserted directly against the module")
-    print("-" * 78)
+    # THE DIRECT CASES, on the structure rather than on the snapshots. A milestone that appears
+    # in only one reporting period has one forecast, which is not a run of forecasts, so the
+    # contract's answer for a trend claim is Not Estimable rather than a slip.
+    def _mfh(rows):
+        return {"milestoneForecastHistory": {"schedule_version": "SCH-1", "milestones": rows}}
 
-    # Two snapshots, one milestone in both and one only in the earlier. If absence were read as
-    # movement, matched_count would be 2 and the vanished milestone could be named the worst.
-    direct = run_milestone_trend({"milestoneHistory": [
-        {"at": "2026-03-31", "milestones": [{"name": "M1", "forecast": "2026-06-01"},
-                                            {"name": "GONE", "forecast": "2026-07-01"}]},
-        {"at": "2026-04-30", "milestones": [{"name": "M1", "forecast": "2026-06-11"}]},
-    ]}, lambda: 0.5, date(2026, 4, 30))
-    check(direct.get("matched_count") == 1 and direct.get("worst_milestone") == "M1",
-          "a milestone present in the earlier period and absent from the later one contributes "
-          "NOTHING: one match, and the vanished one is not the worst", str(direct))
-    check(abs((direct.get("mean_slip_days") or 0) - 10.0) < 1e-9,
-          "and the mean is the surviving milestone's own ten-day slip, undiluted by a zero for "
-          "the missing row", str(direct.get("mean_slip_days")))
-    arriving = run_milestone_trend({"milestoneHistory": [
-        {"at": "2026-03-31", "milestones": [{"name": "M1", "forecast": "2026-06-01"}]},
-        {"at": "2026-04-30", "milestones": [{"name": "M1", "forecast": "2026-06-11"},
-                                            {"name": "NEW", "forecast": "2026-09-01"}]},
-    ]}, lambda: 0.5, date(2026, 4, 30))
-    check(arriving.get("matched_count") == 1,
-          "and a milestone that ARRIVES in the later period is not movement either",
-          str(arriving))
+    direct = run_milestone_trend(_mfh([
+        {"milestone_id": "M1", "original_baseline_day": 100,
+         "forecasts": [{"report_index": 0, "forecast_day": 100},
+                       {"report_index": 1, "forecast_day": 110}]}]),
+        lambda: 0.5, date(2026, 4, 30))
+    _d = direct["milestones"][0]
+    check(direct.get("milestone_count") == 1 and _d["current_variance_days"] == 10,
+          "a milestone followed across two periods carries its own ten day variance against the "
+          "commitment, undiluted by any other row", str(direct))
+    vanished = run_milestone_trend(_mfh([
+        {"milestone_id": "M1", "original_baseline_day": 100,
+         "forecasts": [{"report_index": 0, "forecast_day": 100},
+                       {"report_index": 1, "forecast_day": 110}]},
+        {"milestone_id": "GONE", "original_baseline_day": 100,
+         "forecasts": [{"report_index": 0, "forecast_day": 180}]}]),
+        lambda: 0.5, date(2026, 4, 30))
+    check(vanished.get("insufficient_data") is True,
+          "and a milestone forecast only once makes no trend claim available at all, rather "
+          "than contributing a fabricated zero to one", str(vanished))
     single = run_milestone_trend({"milestoneHistory": [
         {"at": "2026-03-31", "milestones": [{"name": "M1", "forecast": "2026-06-01"}]},
     ]}, lambda: 0.5, date(2026, 3, 31))
     check(single.get("insufficient_data") is True,
-          "and one snapshot abstains at the module's own guard", str(single))
+          "and the retired snapshot contract produces no reading at all now, so the drift-only "
+          "measure cannot be reached by supplying it", str(single))
 
     print()
     print("=" * 78)

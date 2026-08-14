@@ -252,17 +252,31 @@ check(cu_breach.get("breached") is True and cu.get("breached") is False,
       "CUSUM's breach verdict follows the supplied series, in both directions",
       f"steady={cu.get('breached')} collapsing={cu_breach.get('breached')}")
 
-# A1.4/A1.5/A1.10 read the same two series through `_history`.
-kal = run("A1.4", FULL)
-kal2 = run("A1.4", {**FULL, "spiHistory": [0.70, 0.68, 0.66, 0.60]})
-check(kal.get("smoothed_spi") != kal2.get("smoothed_spi"),
-      "Kalman's smoothed SPI follows the supplied spiHistory",
-      f"{kal.get('smoothed_spi')} vs {kal2.get('smoothed_spi')}")
-ari = run("A1.5", FULL)
-ari2 = run("A1.5", {**FULL, "cpiHistory": [0.80, 0.78, 0.75, 0.70]})
+# RUN 28. A1.5 still reads the cost performance series and its forecast still follows it; what
+# changed is that an identified model needs a longer history than v10's three points, so the
+# probe supplies one. A1.4 and A1.10 no longer read a bare series at all: the supplied contract
+# requires a governed state-space record whose process and measurement variances state where
+# they came from, and a governed reference population, and neither is in this corpus. Both
+# therefore abstain, which is the contract's own answer and is asserted here rather than being
+# left as a silent gap.
+_LONG_CPI = [0.99, 0.97, 0.96, 0.94, 0.93, 0.91, 0.90, 0.88, 0.87, 0.86]
+ari = run("A1.5", {**FULL, "cpiHistory": _LONG_CPI})
+ari2 = run("A1.5", {**FULL, "cpiHistory": [round(v - 0.10, 4) for v in _LONG_CPI]})
 check(ari.get("forecast_cpi") != ari2.get("forecast_cpi"),
       "ARIMA's CPI forecast follows the supplied cpiHistory",
       f"{ari.get('forecast_cpi')} vs {ari2.get('forecast_cpi')}")
+check(run("A1.5", FULL).get("insufficient_data") is True,
+      "and a history shorter than the identification minimum is not estimable rather than "
+      "being forced through a fixed order model",
+      str(run("A1.5", FULL).get("evidence_metric"))[:80])
+for _mid, _what in (("A1.4", "a state space model whose process and measurement variances state "
+                             "where they came from"),
+                    ("A1.10", "a governed reference population of comparable projects")):
+    _r = run(_mid, FULL)
+    check(_r.get("insufficient_data") is True
+          and _r.get("abstention_reason_code") == "canonical_structure_absent",
+          f"{_mid} abstains on the series alone, because it needs {_what} and this corpus "
+          f"holds none", str(_r.get("abstention_reason_code")))
 
 # C1.4 counts what is in the log; C1.7 measures the interval between extraction events.
 at = run("C1.4", FULL)
@@ -442,8 +456,16 @@ check(si3.get("spiHistory") == [si1["spi"], si2["spi"], si3["spi"]],
 
 # The three history readers now compute rather than abstain, on real data.
 mods3 = {m["module_id"]: m for m in stored[3]["module_results"]}
-check("A1.4" in mods3, "Kalman computes at period 3, on the project's real SPI series")
-check("A1.5" in mods3, "ARIMA computes at period 3, on the project's real CPI series")
+# RUN 28. Of the three history readers, CUSUM still computes on the real series -- its design is
+# frozen and the supplied contract forbids retuning it -- while Kalman needs a governed
+# state-space record and ARIMA needs a longer history than three periods to identify a model
+# from. Both abstain truthfully rather than reporting a fixed-parameter reading.
+_ab3 = {a["module_id"]: a for a in stored[3].get("abstained") or []}
+check("A1.4" not in mods3 and "A1.4" in _ab3,
+      "Kalman abstains at period 3: the project's real SPI series is there, but no state space "
+      "model stating where its variances came from is")
+check("A1.5" not in mods3 and "A1.5" in _ab3,
+      "ARIMA abstains at period 3: three observations are fewer than an identified model needs")
 check("A1.2" in mods3, "CUSUM computes at period 3, on the project's real SPI series")
 check(mods3.get("A1.2", {}).get("periods") == 3,
       "and CUSUM's chart is drawn over 3 real observations, not 12 invented ones",

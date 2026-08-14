@@ -214,9 +214,24 @@ check(si3.get("spiHistory") == [si1["spi"], si2["spi"], si3["spi"]],
       "spiHistory likewise", str(si3.get("spiHistory")))
 
 mods3 = {m["module_id"]: m for m in r3["module_results"]}
-for mid, name in (("A1.2", "CUSUM"), ("A1.4", "Kalman"), ("A1.5", "ARIMA"),
-                  ("A1.10", "Regression to Mean")):
-    check(mid in mods3, f"{name} computes at period 3 on the project's own stored series")
+# RUN 28. Of the four history readers, only CUSUM still computes from the series alone: its
+# design is frozen and the supplied contract forbids retuning it in this run. The smoother
+# needs a governed state-space record stating where its process and measurement variances
+# came from, the forecast reader needs a history long enough to identify a model from, and
+# the pooling reader needs a governed reference population of comparable projects. None of
+# the three is in this corpus, so all three abstain truthfully. The wiring this block exists
+# to prove -- that the period series reaches the modules -- is unchanged and is still proved
+# by CUSUM, which reads the identical series.
+_ab3 = {a["module_id"] for a in r3.get("abstained") or []}
+check("A1.2" in mods3, "CUSUM computes at period 3 on the project's own stored series")
+for mid, name, why in (("A1.4", "Kalman", "no state space model states where its variances came "
+                                          "from"),
+                       ("A1.5", "ARIMA", "three observations are fewer than an identified model "
+                                         "needs"),
+                       ("A1.10", "the pooling reader", "no governed reference population of "
+                                                       "comparable projects is held")):
+    check(mid not in mods3 and mid in _ab3,
+          f"{name} abstains at period 3 on the same stored series, because {why}")
 check(mods3.get("A1.2", {}).get("periods") == 3,
       "CUSUM's control chart is drawn over 3 real observations",
       str(mods3.get("A1.2", {}).get("periods")))
