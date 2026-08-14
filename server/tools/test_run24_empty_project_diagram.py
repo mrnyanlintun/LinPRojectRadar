@@ -214,8 +214,17 @@ for label, text in (("neural_flow.js", FLOW), ("detail.js", DETAIL), ("radar.css
     hits = [p for p in PAGER_PATTERNS if re.search(p, text)]
     check(not hits, f"no paging-control class or id shape in {label}", ", ".join(hits))
 
-check("detail-secnav-btn" in DETAIL and "aria-current" in DETAIL,
-      "the section navigator itself is untouched and still publishes its selection")
+# RUN 25, OWNER-DIRECTED CONTRACT CHANGE, 2026-08-14. This guard used to assert the section
+# navigator was untouched ("detail-secnav-btn" and "aria-current" in detail.js). The owner
+# then ordered the rail removed entirely, reversing the earlier instruction that it stays, so
+# the assertion is inverted: the rail's builder must be GONE from the served sources. Recorded
+# in run20_anti_fossilization_register.csv; the browser-level absence proof at five widths is
+# drive_run25_rail_removal.py.
+INDEX = (ROOT / "index.html").read_text(encoding="utf-8")
+check("detail-secnav" not in DETAIL and "buildSectionNav" not in DETAIL
+      and "detail-secnav" not in INDEX and "detail-secnav" not in CSS,
+      "the section navigator rail is removed from every served source, per the owner's "
+      "2026-08-14 instruction")
 
 # ============================================================================ non-vacuity
 

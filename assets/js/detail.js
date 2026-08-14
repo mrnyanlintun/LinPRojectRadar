@@ -1205,7 +1205,6 @@
       if (body && body.style.display !== "none") runLazyInit(secId);
     });
 
-    buildSectionNav(root);
 
     // T13. Fetch the full stored result (module_results + signal_inputs) and graft it onto
     // the project so every surface on this page reads from the same computed row.
@@ -1236,104 +1235,9 @@
     if (secId) runLazyInit(secId);
   });
 
-  /* ---------- section navigator (second, left-side menu bar) ----------
-     Lists every collapsible section on the detail page, in page order, derived
-     from the actual rendered .collapse-section elements rather than a
-     hand-maintained duplicate list — so it can never drift out of sync with
-     the sections render() actually built, whatever order they end up in.
-     Labelled by each section's own title text (NAMING_AUTHORITY.md: purpose
-     only, no module ids or numbers — the titles passed to collapsibleSection
-     already satisfy that, so this reads them verbatim rather than inventing
-     its own wording). */
-  let secNavObserver = null;
-  function buildSectionNav(root) {
-    const nav = document.getElementById("detail-secnav");
-    if (!nav) return;
-    if (secNavObserver) { try { secNavObserver.disconnect(); } catch (e) {} secNavObserver = null; }
-    const sections = Array.prototype.slice.call(root.querySelectorAll(".collapse-section"));
-    if (!sections.length) { nav.hidden = true; nav.innerHTML = ""; return; }
-    nav.hidden = false;
-    nav.innerHTML = sections.map((sec, i) => {
-      const secId = String(sec.id || "").replace(/^section-/, "");
-      const titleEl = sec.querySelector(".collapse-title");
-      const label = titleEl ? titleEl.textContent : secId;
-      return '<div class="detail-secnav-item">' +
-        '<button type="button" class="detail-secnav-btn" data-secnav-target="' + esc(secId) + '" ' +
-          'aria-current="false" ' +
-          'aria-label="' + esc(label) + '">' + (i + 1) + '</button>' +
-        '<span class="detail-secnav-label">' + esc(label) + '</span>' +
-      '</div>';
-    }).join("");
-
-    // POST-RUN-22 UI CORRECTION. SELECTED IS NOT ACTIVE.
-    // The rail marks the section the reader has SELECTED. That is a navigation state and it
-    // has nothing to do with whether a category carries current project evidence, which is
-    // what the Signal Flow's own `data-active` records. The two were previously spelled with
-    // the same word — the rail's chosen entry carried `.active` — so the code offered no way
-    // to tell a selection apart from an analytical activation, and nothing stopped a future
-    // stylesheet from making them look the same. The rail now uses `selected` plus the
-    // platform-standard `aria-current`, which also gives assistive technology the state it
-    // was missing. `data-active` is deliberately never set on a rail control.
-    const setSelected = (secId) => {
-      nav.querySelectorAll(".detail-secnav-btn").forEach((b) => {
-        const on = b.getAttribute("data-secnav-target") === secId;
-        b.classList.toggle("selected", on);
-        b.setAttribute("aria-current", on ? "true" : "false");
-      });
-    };
-    // THE CLICK OWNS THE SELECTION WHILE THE SMOOTH SCROLL IS STILL RUNNING. MEASURED: clicking
-    // the fourth control left the fourth control UNSELECTED and some other entry selected,
-    // because scrollIntoView({behavior:"smooth"}) animates and the IntersectionObserver fires
-    // repeatedly on the way, each time re-selecting whatever is most in view mid-flight. The
-    // reader's own action was overwritten by the scroll it had just started. The observer is
-    // suppressed until the scroll settles; after that it resumes as the scroll-spy it is.
-    let selectionPinnedUntil = 0;
-
-    nav.querySelectorAll("[data-secnav-target]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const secId = btn.getAttribute("data-secnav-target");
-        const sec = document.getElementById("section-" + secId);
-        if (!sec) return;
-        // Expand it first (if folded) so the scroll lands on real content, not a
-        // collapsed header that then pushes past the viewport as it opens.
-        if (!sec.classList.contains("open") && typeof window.toggleSection === "function") {
-          window.toggleSection(secId);
-        }
-        // Mark the selection from the click itself. It used to be left entirely to the
-        // scroll-spy observer, so a click on a section already in view — or one whose smooth
-        // scroll had not yet moved the page — selected nothing, and the reader had no
-        // confirmation that the control had done anything at all.
-        setSelected(secId);
-        selectionPinnedUntil = Date.now() + 1200;
-        sec.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-    });
-
-    // Scroll-spy: select whichever section is currently most in view, unless a click has just
-    // pinned the selection and its scroll has not finished.
-    const setActive = (secId) => {
-      if (Date.now() < selectionPinnedUntil) return;
-      setSelected(secId);
-    };
-    if (typeof IntersectionObserver === "function") {
-      const visible = {};
-      secNavObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          const id = entry.target.id.replace(/^section-/, "");
-          visible[id] = entry.isIntersecting ? entry.intersectionRatio : 0;
-        });
-        let bestId = null, bestRatio = 0;
-        Object.keys(visible).forEach((id) => {
-          if (visible[id] > bestRatio) { bestRatio = visible[id]; bestId = id; }
-        });
-        if (bestId) setActive(bestId);
-      }, { root: null, rootMargin: "-15% 0px -60% 0px", threshold: [0, .25, .5, .75, 1] });
-      sections.forEach((sec) => secNavObserver.observe(sec));
-    }
-    // Seed with the first section active until the observer reports in.
-    const first = sections[0];
-    if (first) setActive(String(first.id || "").replace(/^section-/, ""));
-  }
+  // RUN 25, OWNER-DIRECTED, 2026-08-14. The section navigator rail builder and its
+  // scroll-spy observer were removed entirely with the rail they built. Sections are
+  // reached by their own headers; nothing else consumed the rail.
 
   /* ---------- fetch full stored result and refresh open sections ----------
      Called at the end of render(). Fetches projectresults (which includes

@@ -1,0 +1,43 @@
+state,observation,value
+registry,allModules,101
+registry,projCats,11
+registry,projModules,96
+PRJ-R25-EMPTY@1680,rail_read,"{""byClsCount"": 0, ""byIdPresent"": false, ""numberedRails"": []}"
+PRJ-R25-EMPTY@1680,pager_read,"{""count"": 0, ""hits"": []}"
+PRJ-R25-EMPTY@1280,rail_read,"{""byClsCount"": 0, ""byIdPresent"": false, ""numberedRails"": []}"
+PRJ-R25-EMPTY@1280,pager_read,"{""count"": 0, ""hits"": []}"
+PRJ-R25-EMPTY@1024,rail_read,"{""byClsCount"": 0, ""byIdPresent"": false, ""numberedRails"": []}"
+PRJ-R25-EMPTY@1024,pager_read,"{""count"": 0, ""hits"": []}"
+PRJ-R25-EMPTY@700,rail_read,"{""byClsCount"": 0, ""byIdPresent"": false, ""numberedRails"": []}"
+PRJ-R25-EMPTY@700,pager_read,"{""count"": 0, ""hits"": []}"
+PRJ-R25-EMPTY@390,rail_read,"{""byClsCount"": 0, ""byIdPresent"": false, ""numberedRails"": []}"
+PRJ-R25-EMPTY@390,pager_read,"{""count"": 0, ""hits"": []}"
+PRJ-R25-FULL@1680,rail_read,"{""byClsCount"": 0, ""byIdPresent"": false, ""numberedRails"": []}"
+PRJ-R25-FULL@1680,pager_read,"{""count"": 0, ""hits"": []}"
+PRJ-R25-FULL@1280,rail_read,"{""byClsCount"": 0, ""byIdPresent"": false, ""numberedRails"": []}"
+PRJ-R25-FULL@1280,pager_read,"{""count"": 0, ""hits"": []}"
+PRJ-R25-FULL@1024,rail_read,"{""byClsCount"": 0, ""byIdPresent"": false, ""numberedRails"": []}"
+PRJ-R25-FULL@1024,pager_read,"{""count"": 0, ""hits"": []}"
+PRJ-R25-FULL@700,rail_read,"{""byClsCount"": 0, ""byIdPresent"": false, ""numberedRails"": []}"
+PRJ-R25-FULL@700,pager_read,"{""count"": 0, ""hits"": []}"
+PRJ-R25-FULL@390,rail_read,"{""byClsCount"": 0, ""byIdPresent"": false, ""numberedRails"": []}"
+PRJ-R25-FULL@390,pager_read,"{""count"": 0, ""hits"": []}"
+A-empty,emptyPanel,True
+A-empty,svgShown,False
+A-empty,drawnShapes,0
+A-empty,drawnPaths,0
+A-empty,activeNodes,0
+A-empty,animated,0
+A-empty,reveal,"{""text"": ""Show the registered architecture"", ""expanded"": ""false""}"
+A2-empty-revealed,svgShown,True
+A2-empty-revealed,drawnShapes,144
+A2-empty-revealed,drawnPaths,323
+A2-empty-revealed,activeNodes,0
+A2-empty-revealed,animated,0
+C-computed,emptyPanel,False
+C-computed,svgShown,True
+C-computed,drawnShapes,144
+C-computed,drawnPaths,323
+C-computed,activeNodes,116
+C-computed,animated,100
+C-computed,headers,27 SUPPORTED DOCUMENT TYPES | 24 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 41 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 10 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT
