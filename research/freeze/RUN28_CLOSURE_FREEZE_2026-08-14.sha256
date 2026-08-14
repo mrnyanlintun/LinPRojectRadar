@@ -1,0 +1,5 @@
+5e8c8ede73adf2171b48c1d43e1294299cee97ac1bdaedeebfc629133b25e159  research/freeze/RUN28_CLOSURE_FREEZE_2026-08-14.json
+# freeze identifier: OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN28-CLOSURE-V11-2
+# supersedes:        OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN28-CANONICAL-CAT1-3-V11-1
+# stage-1 commit:    65be2dbcb51c96c1bc47ad48825c8cb9c1dd8ce8
+# verify:            sha256sum -c research/freeze/RUN28_CLOSURE_FREEZE_2026-08-14.sha256
