@@ -12,7 +12,7 @@
 # 2026-08-14 — Sitewide counts, Signal Flow wiring, and empty-project rendering (Run 26)
 
 **Branch `claude/run26-counts-wiring-empty` from `origin/main` at `e0f3f9c`, merged at
-`__MERGE__`. DISPLAY AND TEXT ONLY.** Nothing under `server/app/simulation/` changed; the
+`978b0b6`. DISPLAY AND TEXT ONLY.** Nothing under `server/app/simulation/` changed; the
 authority tree is byte-identical. No method, threshold, band, voting rule, participant protocol
 or lineage semantic changed. No module activated.
 
@@ -412,8 +412,8 @@ targets 100; assessed 100; voting exactly 2; concept-only activation 0, all eigh
 and none is in the voting set; Material Cost Variance remains registered and disabled; participant
 protocol unchanged; `server/app/simulation/` byte-identical.
 
-**Complete repository suite on merged main: __SUITES__ suites, __CHECKS__, ALL SUITES GREEN.**
-**Merged-main commit: `__MERGE__`.**
+**Complete repository suite on merged main: 125 suites, 10610/10610 checks, ALL SUITES GREEN.**
+**Merged-main commit: `978b0b6`.**
 
 ### 14. The freeze
 
@@ -424,7 +424,7 @@ record of its release and this one carries its parent's digest.
 
 - Stage-1 manifest: `research/freeze/RUN26_COUNTS_WIRING_EMPTY_FREEZE_2026-08-14.json`
 - Stage-2 companion: `research/freeze/RUN26_COUNTS_WIRING_EMPTY_FREEZE_2026-08-14.sha256`
-- **Stage-2 manifest sha256: `__STAGE2__`**
+- **Stage-2 manifest sha256: `5b6218e5b14142b6369704cb0fc6ffb81e3234ba693fd7e1b7c397950ac155cd`**
 - Production surface: **226 files**, walked from the deployed roots, not enumerated
 - Production-tree manifest `code_audit/run26_production_tree.sha256`, manifest hash
   **`1627bb4c8bc48fe272de95fc103696243fdd490d7ab0341643cfd574cd41a173`**
@@ -442,7 +442,27 @@ no-double-declaration check.
 
 ### 15. What is not done
 
-__NOTDONE__
+Nothing from the owner's instruction is outstanding. Stated positively, and with the
+qualifications that matter:
+
+- The harness refused to write `REPORT_2026-08-14_sitewide-counts-wiring-and-empty.md`
+  ("Subagents should return findings as text, not write report files"). The report is reproduced
+  above verbatim for a supervising session to land at that path, and the freeze record carries
+  `report_present_in_tree: false` with a `report_note` saying why, so it does not assert a file
+  that is not there. Once that file is landed, `report_sha256` in the stage-1 manifest should be
+  regenerated and the stage-2 companion re-taken.
+- The Category-9 qualification gate is NOT implemented and this run did not implement it. It is
+  production's own recorded disclosure and closing it is a simulation-package change, which a
+  display-and-text run must not make.
+- The three document types that feed no registered module, the alias duplicates in
+  `run19_final_100_reconciliation.csv`, and the A1.1 naming drift are reported findings, not
+  repairs. Each is listed under "Open, none blocking" below.
+- The first browser non-vacuity campaign (22/26) is void and was re-run in full; only the 31/31
+  result is evidence. The first source-level campaign's `test_run23` baseline was void for an
+  environmental reason and was likewise re-run.
+
+No production credential was used, `DATABASE_URL` never pointed anywhere but a throwaway SQLite
+file, and nothing outside this repository was touched.
 
 ## New instruments this run leaves behind
 
