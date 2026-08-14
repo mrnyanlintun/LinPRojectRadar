@@ -339,6 +339,11 @@ RUN20_SCOPED_FILES = {
     "server/app/simulation/lineage.py",
     "server/app/simulation/qualification_gate.py",
     "server/app/simulation/arm_lineage.py",
+    # RUN 20 CYCLE 10, LABEL.1. A new file, and it carries no arithmetic: the truthful
+    # method label for every registered name that claims a method the code does not perform,
+    # the absent canonical structure in plain words, and the disposition. No band, boundary or
+    # constant that any computation reads is in it.
+    "server/app/simulation/method_labels.py",
     "server/app/simulation/models_evc.py",
     "server/app/simulation/models_fuzzy.py",
     "server/app/simulation/models_doc.py",
