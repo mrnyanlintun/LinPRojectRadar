@@ -187,9 +187,15 @@ check("a module with no naming fault but an unmet claim carries the claim limit 
 
 _u: dict = {}
 _attach_method_label(_u, "A1.7")
-check("a module with neither a naming fault nor a claim limit is untouched, so the layer is not "
-      "silently annotating the whole registry",
-      _u == {})
+# CYCLE 11 NOTE. This module now receives a parameter provenance record, which every module
+# carrying a tunable value does. The check is about the LABEL layer and is narrowed to it rather
+# than relaxed: a module with no naming fault and no claim limit must acquire no label key.
+_LABEL_KEYS = ("registered_name", "truthful_method_name", "performs",
+               "absent_canonical_structure", "label_disposition", "participant_surface",
+               "claim_limit", "claim_limit_disposition")
+check("a module with neither a naming fault nor a claim limit acquires no label key, so the "
+      "label layer is not silently annotating the whole registry",
+      not [k for k in _LABEL_KEYS if k in _u], str(sorted(_u)))
 
 
 print("\n=== 4. THE LABEL SURVIVES A REAL RUN OF THE PRODUCTION REGISTRY ===")
@@ -311,8 +317,9 @@ check("and the real record does not trip it",
 # 7f. The attachment itself must be capable of NOT firing, or section 3's last check is vacuous.
 _v: dict = {}
 _attach_method_label(_v, "A1.8")
-check("the attachment guard is not vacuous: an unlabelled module really is left untouched while "
-      "a labelled one really is annotated", _v == {} and _e != {})
+check("the attachment guard is not vacuous: an unlabelled module really acquires no label key "
+      "while a labelled one really is annotated",
+      not [k for k in _LABEL_KEYS if k in _v] and _e.get("truthful_method_name"))
 
 
 print("\n=== 8. WHAT IS NOT RESOLVED, RECORDED RATHER THAN OMITTED ===")

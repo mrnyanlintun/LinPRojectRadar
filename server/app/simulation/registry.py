@@ -16,6 +16,9 @@ import csv
 import pathlib
 from typing import Any, Callable
 
+from .parameters import (  # noqa: F401
+    NO_CALIBRATION_SET, PARAMETER_PROVENANCE_BY_MODULE, provenance as parameter_provenance,
+)
 from .method_labels import (  # noqa: F401
     PARTICIPANT_SURFACE_OWNER_DECISION, STRUCTURAL_CLAIM_LIMITS, TRUTHFUL_METHOD_LABELS,
     claim_limit, method_label,
@@ -276,6 +279,13 @@ def _attach_method_label(entry: dict, new_id: str) -> None:
     if limit is not None:
         entry["claim_limit_disposition"] = limit[0]
         entry["claim_limit"] = limit[1]
+    # RUN 20 CYCLE 11. The provenance of every tunable value the module reads, and the sentence
+    # stating why no calibration was performed. A module can carry values of more than one
+    # class, so this is a LIST: collapsing it to one class would have hidden the isolation
+    # forest, whose published defaults sit underneath an invented band ladder.
+    params = parameter_provenance(new_id)
+    if params:
+        entry["parameter_provenance"] = [p.as_dict() for p in params]
 
 
 def proxy_label(new_id: str, canonical_name: str) -> str | None:
