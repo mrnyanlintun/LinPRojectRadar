@@ -229,3 +229,27 @@ broke and had to declare):
 Every one of those is a guard doing its job. None was loosened. Each run's scope list was
 extended by NAMING the new files and the exact lines, in the convention the repository already
 uses, and the tree manifest was SUPERSEDED rather than regenerated in place (see section 16).
+
+Run 2, after the scopes were named: **10461/10462**, one remaining failure in
+`test_run2_fifteen_defects.py` because two block comments this correction added to `detail.js`
+produced continuation lines the participant-surface freeze cannot classify. The comments were
+rewritten in the file's prevailing `//` style rather than the guard being loosened.
+
+Run 3, pre-commit, on the corrected tree: **122 suites, 10462/10462, ALL SUITES GREEN.**
+
+## 15. Merged-main verification
+
+Merge commit on `main`: see the final line of this report.
+
+- Targeted Signal Flow + navigation browser suite, re-run on merged main:
+  **34/34** (`code_audit/run23_browser_facts_merged.csv`) — empty, one document, multi-document,
+  reset, hard reload, project switch, navigation selection and five widths, with the
+  non-vacuity mutation proved red and restored green again on the merged tree.
+- Complete repository suite on merged main: recorded below.
+- Production-tree freeze guard: `test_run22_production_tree_completeness.py` 42/42 against the
+  SUPERSEDING manifest, and `test_run23_signal_flow_truthfulness.py` additionally proves the
+  Run-22 manifest is byte-identical to its state at the starting commit and that the only files
+  whose bytes moved are the three declared UI files.
+- Voting: exactly **2** — `A1.7`, `A1.8`, read from the registry.
+- Concept-only activation: **0** (8 concept-only modules remain disabled).
+- Material Cost Variance `A3.4`: **disabled**.

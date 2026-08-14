@@ -8691,3 +8691,56 @@ first session is the only clean moment — after it, a rename is a protocol chan
 ALL SUITES GREEN, verified on merged main and from a clean checkout. Both real-browser drivers
 re-run: instrument 78/78, participant 77/77.
 Freeze: `research/freeze/FINAL_RESEARCH_INSTRUMENT_FREEZE_2026-08-14.json`.
+
+# POST-RUN-22 UI CORRECTION — SIGNAL FLOW EMPTY-STATE TRUTHFULNESS + SIGNALS NAVIGATION
+
+## The Run-21/22 "FINAL FLOW: PASS" was true about the words and silent about the pixels
+
+The owner saw an empty project light up, and it did. Nine module dots and three DOCUMENT rows
+rendered at the ACTIVE opacity tier with a glow filter on a project with nothing uploaded and
+nothing computed, because illumination was keyed on `status !== 'None'` and `'NotRelevant'` — a
+platform-disabled module, a sector-excluded module, a document type absent from the corpus — is
+not `'None'`. Those are REGISTRY facts. The earlier drivers asserted the headers and the summary
+sentence and merely RECORDED a node-fill histogram as an unasserted fact; a recorded fact cannot
+fail. **A histogram in a CSV is not a guard.**
+
+## Activity is now one predicate, and it is the same one the edges already used
+
+`isEstimable(status)` — a current stored verdict — decides every node's active state, and every
+node carries `data-active` so the decision is readable in the DOM instead of inferred from an
+opacity. Registered architecture stays fully drawn and uniformly neutral, and the legend says so.
+
+## SELECTED is not ACTIVE, and the rail existed only on desktop
+
+The numbered Signal rail marked its chosen entry `active`, the Signal Flow's own word for a
+category carrying evidence; it published no `aria-current`; a click on a section already in view
+selected nothing because only the scroll-spy observer ever set the state; and below 700px the
+rail was `display: none`, so on a phone every numbered control was unreachable. Selection is now
+`selected` + `aria-current`, set by the click itself, and the rail lays out as a horizontal
+bottom row at phone width. No collapse control exists and its absence is guarded in three files.
+
+## A period-selection instability was found and is NOT fixed here
+
+On a populated project the diagram can read the period-1 row (which `detail.js` primes) or the
+list projection (which carries the LATEST period). The seeded project is Amber at periods 1-3 and
+Red at period 4, so two module dots and the rollup move amber → red across a project-switch round
+trip. Both values are server rows for different periods: it is not cross-project leakage and not
+false activity. It is recorded in the report as an OPEN finding rather than fixed, because
+period selection is outside this correction's scope.
+
+## Safety, unchanged
+
+Voting is exactly two (**A1.7, A1.8**), derived from the registry. Concept-only activation is
+nought. **Material Cost Variance (`A3.4`) remains disabled.** No scientific method, threshold,
+band or voting rule was touched; the whole correction is three browser files. No production
+Postgres, credential or secret was used.
+
+## The freeze is SUPERSEDED, not rewritten
+
+`code_audit/run22_production_tree.sha256` is untouched and a guard proves it is byte-identical
+to its state at the starting commit. `production_tree.PINNED` now points at
+`code_audit/run23_production_tree.sha256`, whose only differences are the three declared UI
+files. New freeze record:
+`research/freeze/POST_RUN22_UI_CORRECTION_FREEZE_2026-08-14.json`, identifier
+**OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-POSTRUN22-UI-1**, parent
+OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN22.

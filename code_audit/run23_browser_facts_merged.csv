@@ -1,0 +1,134 @@
+state,observation,value
+server:PRJ-R23-EMPTY,live_row,False
+server:PRJ-R23-FULL,live_row,True
+server:PRJ-R23-FULL,modules,41
+server:PRJ-R23-FULL,categories,1
+server:PRJ-R23-FULL,project_status,Amber
+server:PRJ-R23-ONEDOC,live_row,True
+server:PRJ-R23-ONEDOC,modules,35
+server:PRJ-R23-ONEDOC,categories,1
+server:PRJ-R23-ONEDOC,project_status,Amber
+A-empty,flow_present,True
+A-empty,headers,27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE
+A-empty,doc_glow_nodes,0
+A-empty,verdict_glow_nodes,0
+A-empty,bright_nodes,0
+A-empty,pulse_nodes,0
+A-empty,active_class_edges,0
+A-empty,animated_edges,0
+A-empty,static_edges,229
+A-empty,node_fills,"{""#1e2a3c"": 24, ""#5b3dd6"": 12, ""#9aa2ae"": 99}"
+A-empty,project_status_node,Project Status Not estimable
+A-empty,summary_strip,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no uploaded documents and no current results, so nothing on the diagram is active and the project status is not estimable."
+A-empty,bright_list,[]
+B-onedoc,flow_present,True
+B-onedoc,headers,27 SUPPORTED DOCUMENT TYPES | 1 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 35 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 9 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT
+B-onedoc,doc_glow_nodes,1
+B-onedoc,verdict_glow_nodes,45
+B-onedoc,bright_nodes,46
+B-onedoc,pulse_nodes,2
+B-onedoc,active_class_edges,71
+B-onedoc,animated_edges,71
+B-onedoc,static_edges,158
+B-onedoc,node_fills,"{""#12703a"": 32, ""#1e2a3c"": 23, ""#5b3dd6"": 12, ""#6f5200"": 5, ""#9a4700"": 6, ""#9aa2ae"": 54, ""#a0bcd8"": 1, ""#b81420"": 2}"
+B-onedoc,project_status_node,Project Status Amber
+B-onedoc,summary_strip,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project currently has 1 uploaded document across 1 type, 35 modules with a current result, 52 with no current result, 0 not applicable to this project and 9 disabled, and 9 estimable categories."
+B-onedoc,bright_list,"[""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""polygon:#9a4700:0.85"", ""polygon:#9a4700:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""polygon:#6f5200:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""polygon:#6f5200:0.85"", ""polygon:#9a4700:0.85"", ""circle:#12703a:0.85"", ""polygon:#6f5200:0.85"", ""rect:#b81420:0.85"", ""polygon:#9a4700:0.85"", ""circle:#12703a:0.85"", ""polygon:#9a4700:0.88"", ""circle:#12703a:0.88"", ""circle:#12703a:0.88"", ""circle:#12703a:0.88"", ""polygon:#6f5200:0.88""]"
+C-multi,flow_present,True
+C-multi,headers,27 SUPPORTED DOCUMENT TYPES | 24 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 41 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 10 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT
+C-multi,doc_glow_nodes,6
+C-multi,verdict_glow_nodes,52
+C-multi,bright_nodes,58
+C-multi,pulse_nodes,5
+C-multi,active_class_edges,100
+C-multi,animated_edges,100
+C-multi,static_edges,129
+C-multi,node_fills,"{""#12703a"": 31, ""#1e2a3c"": 18, ""#5b3dd6"": 12, ""#6f5200"": 7, ""#9a4700"": 9, ""#9aa2ae"": 47, ""#a0bcd8"": 6, ""#b81420"": 5}"
+C-multi,project_status_node,Project Status Amber
+C-multi,summary_strip,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project currently has 24 uploaded documents across 6 types, 41 modules with a current result, 46 with no current result, 0 not applicable to this project and 9 disabled, and 10 estimable categories."
+C-multi,bright_list,"[""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""polygon:#9a4700:0.85"", ""polygon:#9a4700:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""polygon:#6f5200:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""rect:#b81420:0.85"", ""circle:#12703a:0.85"", ""rect:#b81420:0.85"", ""polygon:#9a4700:0.85"", ""polygon:#6f5200:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""polygon:#6f5200:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""polygon:#6f5200:0.85"", ""polygon:#9a4700:0.85"", ""circle:#12703a:0.85"", ""polygon:#9a4700:0.85"", ""rect:#b81420:0.85"", ""polygon:#9a4700:0.85""]"
+F-switch-empty,flow_present,True
+F-switch-empty,headers,27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE
+F-switch-empty,doc_glow_nodes,0
+F-switch-empty,verdict_glow_nodes,0
+F-switch-empty,bright_nodes,0
+F-switch-empty,pulse_nodes,0
+F-switch-empty,active_class_edges,0
+F-switch-empty,animated_edges,0
+F-switch-empty,static_edges,229
+F-switch-empty,node_fills,"{""#1e2a3c"": 24, ""#5b3dd6"": 12, ""#9aa2ae"": 99}"
+F-switch-empty,project_status_node,Project Status Not estimable
+F-switch-empty,summary_strip,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no uploaded documents and no current results, so nothing on the diagram is active and the project status is not estimable."
+F-switch-empty,bright_list,[]
+F-switch-back-populated,flow_present,True
+F-switch-back-populated,headers,27 SUPPORTED DOCUMENT TYPES | 24 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 41 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 10 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT
+F-switch-back-populated,doc_glow_nodes,6
+F-switch-back-populated,verdict_glow_nodes,52
+F-switch-back-populated,bright_nodes,58
+F-switch-back-populated,pulse_nodes,7
+F-switch-back-populated,active_class_edges,100
+F-switch-back-populated,animated_edges,100
+F-switch-back-populated,static_edges,129
+F-switch-back-populated,node_fills,"{""#12703a"": 31, ""#1e2a3c"": 18, ""#5b3dd6"": 12, ""#6f5200"": 7, ""#9a4700"": 7, ""#9aa2ae"": 47, ""#a0bcd8"": 6, ""#b81420"": 7}"
+F-switch-back-populated,project_status_node,Project Status Red
+F-switch-back-populated,summary_strip,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project currently has 24 uploaded documents across 6 types, 41 modules with a current result, 46 with no current result, 0 not applicable to this project and 9 disabled, and 10 estimable categories."
+F-switch-back-populated,bright_list,"[""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""polygon:#9a4700:0.85"", ""polygon:#9a4700:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""polygon:#6f5200:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""rect:#b81420:0.85"", ""circle:#12703a:0.85"", ""rect:#b81420:0.85"", ""polygon:#9a4700:0.85"", ""polygon:#6f5200:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""polygon:#6f5200:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""polygon:#6f5200:0.85"", ""polygon:#9a4700:0.85"", ""circle:#12703a:0.85"", ""polygon:#9a4700:0.85"", ""rect:#b81420:0.85"", ""polygon:#9a4700:0.85""]"
+F-switch-back-populated,fill_histogram_before,"{""#12703a"": 31, ""#1e2a3c"": 18, ""#5b3dd6"": 12, ""#6f5200"": 7, ""#9a4700"": 9, ""#9aa2ae"": 47, ""#a0bcd8"": 6, ""#b81420"": 5}"
+F-switch-back-populated,fill_histogram_after,"{""#12703a"": 31, ""#1e2a3c"": 18, ""#5b3dd6"": 12, ""#6f5200"": 7, ""#9a4700"": 7, ""#9aa2ae"": 47, ""#a0bcd8"": 6, ""#b81420"": 7}"
+D-reset-same-session,flow_present,True
+D-reset-same-session,headers,"27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED SINCE THE RESET, 24 RETAINED | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE"
+D-reset-same-session,doc_glow_nodes,0
+D-reset-same-session,verdict_glow_nodes,0
+D-reset-same-session,bright_nodes,0
+D-reset-same-session,pulse_nodes,0
+D-reset-same-session,active_class_edges,0
+D-reset-same-session,animated_edges,0
+D-reset-same-session,static_edges,229
+D-reset-same-session,node_fills,"{""#1e2a3c"": 24, ""#5b3dd6"": 12, ""#9aa2ae"": 99}"
+D-reset-same-session,project_status_node,Project Status Not estimable
+D-reset-same-session,summary_strip,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no documents uploaded since its stored signals were cleared and no current results, so nothing on the diagram is active and the project status is not estimable. 24 documents uploaded before the reset are retained and will be read again when signals are regenerated."
+D-reset-same-session,bright_list,[]
+E-reset-reloaded,reload_seconds,10.0
+E-reset-reloaded,flow_present,True
+E-reset-reloaded,headers,"27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED SINCE THE RESET, 24 RETAINED | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE"
+E-reset-reloaded,doc_glow_nodes,0
+E-reset-reloaded,verdict_glow_nodes,0
+E-reset-reloaded,bright_nodes,0
+E-reset-reloaded,pulse_nodes,0
+E-reset-reloaded,active_class_edges,0
+E-reset-reloaded,animated_edges,0
+E-reset-reloaded,static_edges,229
+E-reset-reloaded,node_fills,"{""#1e2a3c"": 24, ""#5b3dd6"": 12, ""#9aa2ae"": 99}"
+E-reset-reloaded,project_status_node,Project Status Not estimable
+E-reset-reloaded,summary_strip,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no documents uploaded since its stored signals were cleared and no current results, so nothing on the diagram is active and the project status is not estimable. 24 documents uploaded before the reset are retained and will be read again when signals are regenerated."
+E-reset-reloaded,bright_list,[]
+non-vacuity,guard_red_detail,"verdictGlowNodes=1, brightNodes=1"
+nav,count,10
+nav,labels,"[""Location"", ""Project Signal Network"", ""Signal Flow"", ""Executive Brief"", ""Governance Decision"", ""Signal Web"", ""Signal Inputs"", ""Documents & Extracted Signals"", ""Ensemble Analysis"", ""Period Comparison""]"
+nav,opacity,1
+nav,duplicates,1
+nav,suspects,[]
+nav,hit,"[{""label"": ""1"", ""w"": 22, ""h"": 22, ""top"": 554, ""bottom"": 576, ""hit"": true, ""owner"": ""detail-secnav-btn selected""}, {""label"": ""2"", ""w"": 22, ""h"": 22, ""top"": 584, ""bottom"": 606, ""hit"": true, ""owner"": ""detail-secnav-btn""}, {""label"": ""3"", ""w"": 22, ""h"": 22, ""top"": 614, ""bottom"": 636, ""hit"": true, ""owner"": ""detail-secnav-btn""}, {""label"": ""4"", ""w"": 22, ""h"": 22, ""top"": 644, ""bottom"": 666, ""hit"": true, ""owner"": ""detail-secnav-btn""}, {""label"": ""5"", ""w"": 22, ""h"": 22, ""top"": 674, ""bottom"": 696, ""hit"": true, ""owner"": ""detail-secnav-btn""}, {""label"": ""6"", ""w"": 22, ""h"": 22, ""top"": 704, ""bottom"": 726, ""hit"": true, ""owner"": ""detail-secnav-btn""}, {""label"": ""7"", ""w"": 22, ""h"": 22, ""top"": 734, ""bottom"": 756, ""hit"": true, ""owner"": ""detail-secnav-btn""}, {""label"": ""8"", ""w"": 22, ""h"": 22, ""top"": 764, ""bottom"": 786, ""hit"": true, ""owner"": ""detail-secnav-btn""}, {""label"": ""9"", ""w"": 22, ""h"": 22, ""top"": 794, ""bottom"": 816, ""hit"": true, ""owner"": ""detail-secnav-btn""}, {""label"": ""10"", ""w"": 22, ""h"": 22, ""top"": 824, ""bottom"": 846, ""hit"": true, ""owner"": ""detail-secnav-btn""}]"
+nav,immediately_after_click,"{""selectedAttr"": ""true"", ""selectedCls"": true}"
+nav,after_click,"{""selectedAttr"": ""true"", ""selectedCls"": true, ""activeCls"": false, ""sectionOpen"": true, ""selectedCount"": 1}"
+nav-wide-desktop,count,10
+nav-wide-desktop,display,flex
+nav-wide-desktop,reachable_hits,10
+nav-wide-desktop,suspects,[]
+nav-normal-desktop,count,10
+nav-normal-desktop,display,flex
+nav-normal-desktop,reachable_hits,10
+nav-normal-desktop,suspects,[]
+nav-tablet,count,10
+nav-tablet,display,flex
+nav-tablet,reachable_hits,10
+nav-tablet,suspects,[]
+nav-narrow,count,10
+nav-narrow,display,flex
+nav-narrow,reachable_hits,10
+nav-narrow,suspects,[]
+nav-mobile,count,10
+nav-mobile,display,flex
+nav-mobile,reachable_hits,10
+nav-mobile,suspects,[]
+browser,page_errors,[]
