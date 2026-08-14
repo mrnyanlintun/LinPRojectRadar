@@ -1,0 +1,59 @@
+state,observation,value,note
+G-populated-reload,sentinel_before_reload,before,
+G-populated-reload,reload_primitive_error,"Page.reload: Timeout 45000ms exceeded.
+Call log:
+waiting for navigation until ""commit""
+",
+G-populated-reload,reload_primitive_returned,no,45.00s
+G-populated-reload,sentinel_after_reload,None,"waited 149s, 2 successful reads, 1 evaluate errors while the document was navigating"
+G-populated-reload,application_reloaded_from_server,yes,
+G-populated-reload,reload_primitive_vs_application,primitive_returned=no application_reloaded=yes,"a primitive timeout with a destroyed document is a harness wait-condition fault, not an application reload defect"
+G-populated-reload,third_party_subresources_aborted_by_this_driver,accounts.google.com apis.google.com gstatic.com tiles.openfreemap.org maps.googleapis.com,
+G-populated-reload,seconds_until_application_usable,149.38,"measured by polling; Run-22 probes measured the same interval from the browser's own navigation timeline, which is the authority"
+G-populated-reload,headers_before,27 SUPPORTED DOCUMENT TYPES | 24 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 41 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 10 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT,
+G-populated-reload,headers_after,27 SUPPORTED DOCUMENT TYPES | 24 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 41 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 10 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT,
+D-reset,confirm_calls,"{""calls"": 0, ""accepted"": 0}",
+D-reset,server_live_row_after_reset,False,
+D-reset,server_modules_after_reset,None,
+D-reset-reload,sentinel_before_reload,before,
+D-reset-reload,reload_primitive_error,"Page.reload: Timeout 45000ms exceeded.
+Call log:
+waiting for navigation until ""commit""
+",
+D-reset-reload,reload_primitive_returned,no,45.00s
+D-reset-reload,sentinel_after_reload,None,"waited 173s, 2 successful reads, 1 evaluate errors while the document was navigating"
+D-reset-reload,application_reloaded_from_server,yes,
+D-reset-reload,reload_primitive_vs_application,primitive_returned=no application_reloaded=yes,"a primitive timeout with a destroyed document is a harness wait-condition fault, not an application reload defect"
+D-reset-reload,third_party_subresources_aborted_by_this_driver,accounts.google.com apis.google.com gstatic.com tiles.openfreemap.org maps.googleapis.com,
+D-reset-reload,seconds_until_application_usable,173.39,"measured by polling; Run-22 probes measured the same interval from the browser's own navigation timeline, which is the authority"
+D-reset-reload,headers_after_reload,"27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED SINCE THE RESET, 24 RETAINED | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE",
+D-reset-reload,server_upload_events_still_held,24,
+D-reset-reload,summary_after_reload,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no documents uploaded since its stored signals were cleared and no current results, so nothing on the diagram is active and the project status is not estimable. 24 documen",
+D-reset-navigate,headers_after_navigation,"27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED SINCE THE RESET, 24 RETAINED | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE",
+H-fresh-context,headers_in_fresh_browser,"27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED SINCE THE RESET, 24 RETAINED | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE",
+E-post-reset,server_modules_after_new_evidence,41,
+E-post-reset,pre_reset_modules,41,
+E-post-reset,reset_contract,"the reset clears stored SIGNALS and supersedes derived rows; it does NOT delete documents, by the control's own stated contract",so re-reading retained documents after a reset is designed behaviour
+E-post-reset-reload,sentinel_before_reload,before,
+E-post-reset-reload,reload_primitive_error,"Page.reload: Timeout 45000ms exceeded.
+Call log:
+waiting for navigation until ""commit""
+",
+E-post-reset-reload,reload_primitive_returned,no,45.00s
+E-post-reset-reload,sentinel_after_reload,None,"waited 405s, 2 successful reads, 1 evaluate errors while the document was navigating"
+E-post-reset-reload,application_reloaded_from_server,yes,
+E-post-reset-reload,reload_primitive_vs_application,primitive_returned=no application_reloaded=yes,"a primitive timeout with a destroyed document is a harness wait-condition fault, not an application reload defect"
+E-post-reset-reload,third_party_subresources_aborted_by_this_driver,accounts.google.com apis.google.com gstatic.com tiles.openfreemap.org maps.googleapis.com,
+E-post-reset-reload,seconds_until_application_usable,404.91,"measured by polling; Run-22 probes measured the same interval from the browser's own navigation timeline, which is the authority"
+E-post-reset,headers_after_reload,"27 SUPPORTED DOCUMENT TYPES | 1 UPLOADED SINCE THE RESET, 24 RETAINED | 96 REGISTERED PROJECT MODULES | 41 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 10 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT",
+authority-reload,sentinel_before_reload,before,
+authority-reload,reload_primitive_error,"Page.reload: Timeout 45000ms exceeded.
+Call log:
+waiting for navigation until ""commit""
+",
+authority-reload,reload_primitive_returned,no,45.00s
+authority-reload,sentinel_after_reload,None,"waited 333s, 2 successful reads, 1 evaluate errors while the document was navigating"
+authority-reload,application_reloaded_from_server,yes,
+authority-reload,reload_primitive_vs_application,primitive_returned=no application_reloaded=yes,"a primitive timeout with a destroyed document is a harness wait-condition fault, not an application reload defect"
+authority-reload,third_party_subresources_aborted_by_this_driver,accounts.google.com apis.google.com gstatic.com tiles.openfreemap.org maps.googleapis.com,
+authority-reload,seconds_until_application_usable,333.44,"measured by polling; Run-22 probes measured the same interval from the browser's own navigation timeline, which is the authority"

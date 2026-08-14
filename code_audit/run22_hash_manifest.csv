@@ -1,0 +1,20 @@
+artifact,path,sha256,note
+supervisory specification (CONTROLLING),research/methodology/PCEIF_100_MODULE_SUPERVISORY_METHOD_SPECIFICATION_v1.md,328b50133f1d2a8d710d3cca787c24c22e2cdad0b09fe92ae2c7b7a55b8d299e,
+supervisory specification metadata,research/methodology/PCEIF_100_MODULE_SUPERVISORY_METHOD_SPECIFICATION_v1.metadata.json,5f9508561d7d730b302badbb3d81cf109359419c463427995619e43b124e4e06,
+"final scientific results (Run-20 100-row re-audit, AUTHORITATIVE)",code_audit/run20_cycle12_100_reaudit.csv,9d5757c703cbca35eca2902fa7015b14e07fe4480100ab97543bdda760e8ebad,
+"scientific results (Run-17, SUPERSEDED historical record)",server/tools/run17/scientific_results.csv,10a09283ea6ff82239db4d09516a128d6426624f184e74880be1b63c56e23a65,
+module registry,server/app/simulation/registry.py,58df55052decbf2772b863ad9a14e965f6bb62cb46653146b1763024f9606f43,
+lineage layer,server/app/simulation/lineage.py,88a5171a5f95e721ceffe92a878e8a9e677300528db529e45735aa8d27d48974,
+qualification gate,server/app/simulation/qualification_gate.py,997e810cd3312b95e2bd7421201bf7790e7ed56aea816ab87e989b7fd4a7fff6,
+compute engine,server/app/simulation/compute.py,e41b2e445e8146a1c2123d5c4ee42eefcd289e496d8683690dd014e2ac2e459f,
+Run-20 report,REPORT_2026-08-14_run20-supervised-scientific-remediation-loop.md,4f98fd03bafa2273c9cc87c6ab8c92cf25d8beb415ea33a480d1dc1880c1edfd,
+Run-21 report,REPORT_2026-08-14_run21-final-instrument-qualification.md,b2830445ab20d4d1b280c9cf469d1ddd460cd81e25cd707e16b7d48bf240d8b9,
+Run-21 -> Run-22 freeze queue,code_audit/run21_run22_freeze_queue.csv,6b34492d6d351ef87db13ce9a67a4aaa0271e452e3f7b33f893e061c4efe24c8,
+production tree manifest,code_audit/run22_production_tree.sha256,bff7b4fc2460580494efb1eac4fba350b1ba39d8b2cb08f095bbdbe109f47a92,
+authority tree manifest,code_audit/run22_authority_tree.sha256,91f1856cbd3750947c16ebd81d69fee46e71d1eb7912d359c6996f850fae64e7,
+freeze manifest (stage 1),research/freeze/FINAL_RESEARCH_INSTRUMENT_FREEZE_2026-08-14.json,c102f701eac837a026dddb57b9373f5dc07acf72578d91623bdc8b42f708c5ce,
+participant provisioning record,code_audit/run12_participant_provisioning.csv,3990b7655440c5baa4acfab734c2cd676a6581243bb61c08d311cb1b5814bd73,
+anti-fossilization register,code_audit/run20_anti_fossilization_register.csv,77ca5c92541a3d13c69250c4d6b3b6ccabcc2c549d20434d407f67df9f0ca65f,
+"production tree manifest, hash OF THE MANIFEST",(computed),bff7b4fc2460580494efb1eac4fba350b1ba39d8b2cb08f095bbdbe109f47a92,"pins the LIST of 226 files, not only their contents"
+"authority tree manifest, hash OF THE MANIFEST",(computed),91f1856cbd3750947c16ebd81d69fee46e71d1eb7912d359c6996f850fae64e7,pins the list of 3 authority files
+freeze manifest own digest,research/freeze/FINAL_..._2026-08-14.sha256,recorded by the finalisation commit,STAGE 2. A file cannot contain its own digest; see build_run22_freeze.py

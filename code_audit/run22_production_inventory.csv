@@ -1,0 +1,227 @@
+path,sha256,bytes,git_tracked,root,root_recursive,in_run20_143_file_freeze,newly_protected_by_run22
+assets/css/radar.css,d3dbb126867c48294a8fe7ac3d1cd46481c112e19d222ad3ff3c589c1dabea8f,253556,yes,assets,yes,yes,no
+assets/js/admin-ops.js,d6d6b2d7ef569bbc371eeb6c30a7a48c5f68cae4d151ca2d8226961bc0e2b4e3,28093,yes,assets,yes,yes,no
+assets/js/admin.js,3a7b401893ffc537430dd73f2cc5be70a009dc35fa7814a6e77ffecae8ee803e,20652,yes,assets,yes,yes,no
+assets/js/app.js,aba29d78a430211a2b5b33e7bf1c66d33b9bdb9fdd309066ef04b2faaf979e41,155019,yes,assets,yes,yes,no
+assets/js/assistant.js,603a080ab2fd52789005591235b8a63d7dc50ae6b03e1001243c003e6828ae29,39059,yes,assets,yes,yes,no
+assets/js/auditor.js,4a44c6cf6e02a8a79f9594bd1122ee460378a25a731a058179b772a7601e26d3,32297,yes,assets,yes,yes,no
+assets/js/auth.js,9d37481b6f138d90f181b42c7e48e8ea929019b5ae48909e52efa5676c53b832,14430,yes,assets,yes,yes,no
+assets/js/categories.js,d6e811710185e55fc7f98081171bbcdcdbb1668722f2bfe8d500cb410e1ccca9,34725,yes,assets,yes,yes,no
+assets/js/charts3d.js,ae2632638a1ddb77c9027ce19200953928be4215cc73565fa2de7f28af80be06,160068,yes,assets,yes,yes,no
+assets/js/client_algorithm_version.js,870647d8db80109a0a9ec43c7975e3cb7987ebbdd5919b3e0414384a0a9fde25,3993,yes,assets,yes,yes,no
+assets/js/config.js,ba183d1cdd857a977c78d59f6f4f34d45af17e26d6faabf36bf12eeef6bbebd1,10247,yes,assets,yes,yes,no
+assets/js/data.js,110c279b4523659a0a9a5fa36178b7ba9f2888010e89f1bf2466db1be742d6ca,1404,yes,assets,yes,yes,no
+assets/js/decision-ui.js,0bafb5b1257140eac4bb66d707f02afb0b8b4f2b5f970fa60a60ba6f0c65acf3,34681,yes,assets,yes,yes,no
+assets/js/decision.js,fc44259d6a2ffa0b595cc72532c961be8ce574a317dc2b5c36598aed799a1bdb,24490,yes,assets,yes,yes,no
+assets/js/deepdive.js,76f91f9ec7f97be1478bc8c9e8d5336ee0e9f6ecb0ee741f4d645eeeb06b1b9e,176966,yes,assets,yes,yes,no
+assets/js/detail.js,92750bf550305f3d3073086528f3a4819b8be4cafe9fe819caf0c830f13240af,143991,yes,assets,yes,yes,no
+assets/js/disclaimers.js,34e1b7f123e10f9979fbaa26dbe18697052f63cb067a1bbe81aced19286ac6d5,6517,yes,assets,yes,yes,no
+assets/js/ds_defensibility_data.js,79ed79b2d4a912df8c28eac429fcc3fbe3bf6512e6018afe6b9ac336c417a483,422084,yes,assets,yes,yes,no
+assets/js/ds_defensibility_evidence.js,abec9aeedc190206f56bcaa5836e78fe6ce4ed6ebda160cf61f73e4769f31549,72049,yes,assets,yes,yes,no
+assets/js/export.js,061b3079656dfa43d0637677e907974167d7c56b405a6945a1dc4eeea2f57826,8445,yes,assets,yes,yes,no
+assets/js/features.js,5f6ce1da1b527a42955fc9d6717464665b91d9b9d035c8c6d1292b2cdf4c7233,3320,yes,assets,yes,yes,no
+assets/js/files.js,62e1c8f581dad95fd825b90e11bb0017f6e3705afef9d17af4a26f48c963343a,16873,yes,assets,yes,yes,no
+assets/js/globe.js,b6262686b1d86e6cda74a0090035fd29e5b25943246606ed88f9643d09dd9e1d,30825,yes,assets,yes,yes,no
+assets/js/gmap.js,d42f6f6ceb649ac9dc785be8e60417f5206908d2aa722e7dd14cf980a5afe498,5001,yes,assets,yes,yes,no
+assets/js/ingest.js,957718c6a3dfdbfc00d695a7389bbcf7990cc8d2d059d6f1d41d98dad9b050c6,37397,yes,assets,yes,yes,no
+assets/js/knowledge.js,09403fb31133a96a1731af99983648f480c2d87b36e2dae7e10a584b59f36342,327222,yes,assets,yes,yes,no
+assets/js/module_charts.js,6b287872c57a801c1d9ba590dcf62bade48d436d07c6e8d30bb6cbdf793a5002,9319,yes,assets,yes,yes,no
+assets/js/neural_flow.js,e172e6975284fd95fe4c34dd6bfaaaa4a692f5b46c5f10c826831f3dffc174a0,62998,yes,assets,yes,yes,no
+assets/js/projectnet2d.js,bdadb0742546de55d57fa38888e7dadf1725b2f19aaced199a5f824f10a233b9,26006,yes,assets,yes,yes,no
+assets/js/questionnaires.js,cd022ac427b4c39b28bf5ed54885fa0ba168122f1eec9d4c9d617a278519b5dc,10013,yes,assets,yes,yes,no
+assets/js/recommendation_options.js,ac163495d35b39331e699fb7751c9942d75a218a6bae9260331721f2968e22d3,26849,yes,assets,yes,yes,no
+assets/js/signals.js,931ebed362c3dfbddd93f91cc3a5758f55306d3a58bdc9b0dd546079d07ea7f3,101355,yes,assets,yes,yes,no
+assets/js/sim.js,2910f84ebd5d1ae592ff1f467cd47a84b1756eb3c5df9463019447a826e1307f,10485,yes,assets,yes,yes,no
+assets/js/simulations.js,e552be89478cc648de4b6a764a15507261a2d403a2980785de34b91437878946,158952,yes,assets,yes,yes,no
+assets/js/store.js,73cf90214e09e208f902dc9e88ecc0a8aa8c1b4425aaf72f786a49034a798505,36566,yes,assets,yes,yes,no
+assets/js/taxonomy.js,2efb5705fdb30d7df6c63de0b8c4c2b6c7fad4d7d44b4c07da998bbf04301c03,43159,yes,assets,yes,yes,no
+assets/js/training.js,a2c8afd9d6edbfcc41c14ae396ebe4cc1cbfec2eb581a6b1ecab417e04bfb25c,26341,yes,assets,yes,yes,no
+assets/js/tz.js,eceecf01bfb5ec92c5662d85ad0d747d166d2b32256b791c24539eee30b6c7a9,2556,yes,assets,yes,yes,no
+assets/js/workingrobot.js,8cd3fe7e89333dba23abdbaab82abfef3bd73ba1cdc58a95471e0fa94d3df539,8529,yes,assets,yes,yes,no
+assets/js/workspace.js,cfe9086425458b12cabf85aae95bc9c33ac7482b8d07fe20ca1b84eb953a3d42,51333,yes,assets,yes,yes,no
+assets/questionnaires/debrief.json,8064c60b004706c37dfb88ae6de1f55f56e97014979940baf1645a257ee5b3d8,2341,yes,assets,yes,yes,no
+assets/questionnaires/intake.json,400195fb47d8f8d68ab4defda6a1aff7ea6abb714b25d1f9a4040d2b216078b6,5382,yes,assets,yes,yes,no
+assets/vendor/ASSETS.md,d6a807659a01c67372d765a74a1fba6d915bd9cbe0c007b6362c84d45f62a557,5598,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/earth-blue-marble-clouds.jpg,e88adfc1b3d08b68a1624d8f4b600a2ec69816cccf56c7e297f67ce54b6b0b6c,541449,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/fonts.css,b2f7f3257d3d90e636863ab1550294279376f53c0cf527e37cbcd35459ba255a,7442,yes,assets,yes,yes,no
+assets/vendor/fonts/archivo-500-latin-ext.woff2,ff4f17d21930e36d6d93baba663e624cb767afc3feebf7adaebd82242638de05,32608,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/fonts/archivo-500-latin.woff2,8f704806dbedeaaeca334b11ec348bc3ac3a439d6431544b3afb54f534ee4967,34928,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/fonts/archivo-700-latin-ext.woff2,ff4f17d21930e36d6d93baba663e624cb767afc3feebf7adaebd82242638de05,32608,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/fonts/archivo-700-latin.woff2,8f704806dbedeaaeca334b11ec348bc3ac3a439d6431544b3afb54f534ee4967,34928,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/fonts/archivo-800-latin-ext.woff2,ff4f17d21930e36d6d93baba663e624cb767afc3feebf7adaebd82242638de05,32608,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/fonts/archivo-800-latin.woff2,8f704806dbedeaaeca334b11ec348bc3ac3a439d6431544b3afb54f534ee4967,34928,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/fonts/ibm-plex-mono-400-latin-ext.woff2,6bc0f226a5b7884a8170e3f62c63d7675609d4631bdc5931b5cdab81821f00eb,13348,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/fonts/ibm-plex-mono-400-latin.woff2,08949f728dc52d528e69b1667d15c89a5686a4ee9a296ff90983985f99c380f7,14708,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/fonts/ibm-plex-mono-500-latin-ext.woff2,6bb06407c97584b0867a959e05e8874693bfeb8c317de190811c51598f2d99ea,13432,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/fonts/ibm-plex-mono-500-latin.woff2,01d285447409c8a588692162439a038b8cbd7871309ee20267b0d2d91c6e8e22,14888,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/fonts/ibm-plex-mono-600-latin-ext.woff2,32057cf50dd14bdb21a2c93766c4a2c43e4abe688ea3922df3203cac7751a98b,14328,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/fonts/ibm-plex-mono-600-latin.woff2,0d1f0b8d0722224e32e9f28261bdc86c79115be73444ae5eceb73976a1bcdf83,15620,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/fonts/inter-400-latin-ext.woff2,34b9c504cab7a73e37b746343a449132e56cf7b5481af2cb81dc74dcff25c956,85068,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/fonts/inter-400-latin.woff2,3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62,48256,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/fonts/inter-500-latin-ext.woff2,34b9c504cab7a73e37b746343a449132e56cf7b5481af2cb81dc74dcff25c956,85068,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/fonts/inter-500-latin.woff2,3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62,48256,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/fonts/inter-600-latin-ext.woff2,34b9c504cab7a73e37b746343a449132e56cf7b5481af2cb81dc74dcff25c956,85068,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/fonts/inter-600-latin.woff2,3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62,48256,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/globe.gl.min.js,46c6a2a9d1faa6097144647c0b1da87df2539570bdb89e05faa5b43a5544c3a3,1477745,yes,assets,yes,yes,no
+assets/vendor/ne_110m_admin_0_countries.geojson,7f149a0eda5cb163b29beadc1c287943ccd9dc8a61803fbfbd3ea83aaa0e07a8,245754,yes,assets,yes,NO,YES -- invisible to every freeze before Run 22
+assets/vendor/pdf.min.js,5b5799e6f8c680663207ac5b42ee14eed2a406fa7af48f50c154f0c0b1566946,320004,yes,assets,yes,yes,no
+assets/vendor/pdf.worker.min.js,feabdf309770ed24bba31a5467836cdc8cf639c705af27d52b585b041bb8527b,1087212,yes,assets,yes,yes,no
+assets/vendor/xlsx.full.min.js,c9506197caf809a075b6dee1da0d36fb19da7158ffe8a88e7b0c96c5d8623c99,881727,yes,assets,yes,yes,no
+assets/visualizations/pceif_neural_signal_flow.html,6a902e934ad1bcd9015a6118f1b15f9c99f5b77fa1d1f2e06674db2144768405,27558,yes,assets,yes,yes,no
+index.html,e32e16350b946bb297358f3c38b12ecdd2e2b414859de7f3186695cc2849a180,93293,yes,index.html,no,yes,no
+logo.png,24f9808f966c71e7e852e490bd27d59d0b7e9dddf5eb26721413183bdf7828da,3790446,yes,logo.png,no,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/MODULE_TAXONOMY.md,92ae0613f120d2c0593396efafc405a8514539a5e460f620a930b1409bfe8fda,4864,yes,p0-baseline/MODULE_TAXONOMY.md,no,yes,no
+p0-baseline/contracts/INVENTORY_FINDINGS.md,da99138df6a6cd3f4bfe2775eda4bc3cfdf1965e53c714f6066d2110a1fe664f,7486,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/action-inventory.csv,06b83894370910812776e4e680b80e6300f41360a5728fcd4fd1a984e38e2a28,3042,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/get/get.headers.txt,e110d16e70d81ea3c4336fd515002e8def12d7da57a79982d5806ca6a81fbf42,2811,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/get.json,35a7961db8c8894ae9ee59d937d0877cb57cd9291b6b0fa812041c5195b2862b,248858,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/get/get.sha256.txt,2e56840ebdcec12eee4431ff9b71234e0834c0c2c6886d9dbadcc82225446502,75,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/gethistory.headers.txt,36f46ad0cdb7b0b77334026c1bb9702c7f75c2493b1e1ccfc2396403b40929d0,2788,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/gethistory.json,0d3b763c173d89bed6cfe46187ce315867f4aab416e3dd138dd5f10315a507e0,24,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/get/gethistory.sha256.txt,e26968170bf1d06f3c175767f3380510fa9a805b0ccefb70fcc1749a9f9f8040,82,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/getportfoliohealth.headers.txt,39d0388f57d5a9a64a39bfd4a9f97c91fe3e8d8c962cb99d90bdb3b79d8f42ef,2806,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/getportfoliohealth.json,cbd7d4b3cefe67f47dc7dc727e93fdcc687513b9346c0a9d6abd40810a6eb167,61,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/get/getportfoliohealth.sha256.txt,6f6aeb48459345dd182261f7d01979234236f5cf0bcf2ebf4bd9daadf7e9d798,90,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/health.headers.txt,bb0927bf888c02267d488611aa0c61cc91257664ba802df618d1f1a896cbf03a,2811,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/health.json,66c214e54ae6c36696b63acda399ccc2fb93498525dbc913f776345664d774af,757,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/get/health.sha256.txt,0f15b0af54a7fa062b1e43f0ae9ccf2bf767a378e271d28110dcf01c255d6f6d,78,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/list.headers.txt,b92f3d9cc54e59250534d63e18c6b7c063af217b4615e06f6e22d8f7e1bf6b96,2786,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/list.json,9eb012fcdc5639a2a99d66d2dcf49e11c767c2f5390c2be9fef13049e0c11278,3951507,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/get/list.sha256.txt,e32a1ac289942c3adee814aa6487eb87d2b9f46e1c712ce4fdd9121b82eb1d92,76,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/listarchived.headers.txt,92eb427086c0511e87d55b55b5c7bbbb5be67db3f86122e0926fc2e78b4f4c72,2798,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/listarchived.json,d7e0986e877787eb6ec6eaacb77553f957900edf99bbd0aed0a016a3e935ca33,3284,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/get/listarchived.sha256.txt,c83dc6dd95077f20f3674fcab78d9fbf4a7f2f188831976d53eadd0bf500f7d4,84,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/listauditresults.headers.txt,0c82d6f94ec448fa0f59e6f8987ed1253673d44b700d567bf4d4953f6a7ec23e,2783,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/listauditresults.json,f73ffc7a1e50e13c861cef3a8eb1594dfb945ffe0ffa72e0cd263dc4af9dcf0d,768,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/get/listauditresults.sha256.txt,90e58a49a499b79d40bfb1bb4f9f379a35a68b6c2ef4a232a6fb08522b0593c7,88,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/listcorpus.headers.txt,1cdad37557eecfae1790185df8c5f8751d2b23f1717c7bd1a31f7160ea7762c0,2794,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/listcorpus.json,984413feaca81d8e3032e0ab7d436990ba737545205a80fbeaeb82d60f2d13f8,548,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/get/listcorpus.sha256.txt,a53a03b2570492bf3d273bfeed2431b870919d5468cbb852b2a19afbb0e6649f,82,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/listslim.headers.txt,d71bad7061d823338f149aefe91cd195b5f4cd23e44c6630d1f890ee78e2372a,2804,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/listslim.json,d9833980a28ed582e552f77d77c2afe7101eb54445004421b9001213e4417e7b,3513,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/get/listslim.sha256.txt,201382e183ea7840ec1f013a5e35ebd96b1643b2f9a66c7062838d3245f4e90e,80,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/ping.headers.txt,21262d15db194aab908cf13b6b7ab66e3b06d8d4c5e8d1e3006ac92153a89992,2794,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/ping.json,3d2af3ff0d36b6bb5e18b3d9090022f7e83725e6ad0b39282264147488fce599,521,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/get/ping.sha256.txt,c1058c1e49318ed9cb2601d8289c2397845c27242e89342a83bb138ca9e5a8b2,76,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/version.headers.txt,c807d7acc233bf0489146bc7aad48d8f4314bfb14c63f2b28563502af9ea0398,2788,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/get/version.json,e20bc62df7fb9adebf06ecea7e8de5c6291ad76609bf5c8fd5f537a95d29cb10,521,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/get/version.sha256.txt,fe633b600f95d83a4765429a946e59dbb1ad6f1ee8493d86c63073b27dfe0a1f,79,yes,p0-baseline/contracts,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/contracts/response-schemas/get.schema.json,1977c79e620197551ba0afeaf5be7d26c5b0c1b89960ae83cd8295840b1125ef,292388,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/response-schemas/gethistory.schema.json,23651a8545c9245bb4d692bd040deb49a3e8b7346d98200a9c8fcfa1aef1f529,284,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/response-schemas/getportfoliohealth.schema.json,b55be7624463850f15a6f28b71e0a9fe0bd26959820b7cb92333b57eaa9ce434,203,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/response-schemas/health.schema.json,8b74fa29e65b3ee6eb6ca3433fdd351e6886d3741976b3f5a4a757e60073c1df,756,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/response-schemas/list.schema.json,90f3110394fefa6ee48a6eff00375030572399bfbcec1c743560203118cb3237,350622,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/response-schemas/listarchived.schema.json,3faef6e75c08622aaa6869828df12e5ec826375cb9888bd80f1545693b6d85cf,10258,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/response-schemas/listauditresults.schema.json,5dcf434f56030a058f2836a1d4124414afc01290b16659bf7e0c3c258378ffd8,538,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/response-schemas/listcorpus.schema.json,cf4095eab0f7ae432c1449fe76761f9632bfa204685a5d653527529520e501fc,675,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/response-schemas/listslim.schema.json,9a69872b4e48fa5f3f4ec8c72ae85b6b3c8bbcc6306a092d6b18e1927c88b159,1181,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/response-schemas/ping.schema.json,55357689e8572868e01edd566d08847ceba43bc46dec8817036b67a6949791e9,663,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/contracts/response-schemas/version.schema.json,1dba6170de575a1f8264da4bb6590a4bf6f3ee66eef72d8156f55844b3a4775c,666,yes,p0-baseline/contracts,yes,yes,no
+p0-baseline/live/20260730T213156Z/ping.headers.txt,265a69ce7aed0791348acc098ea79b70ac74c50c3db971571d351432693806fd,3714,yes,p0-baseline/live,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/live/20260730T213156Z/ping.json,d7ca7342297b41645728e93180459e021aef7e4f05a85d4cb97ac052a48dce82,521,yes,p0-baseline/live,yes,yes,no
+p0-baseline/live/20260730T213156Z/ping.sha256.txt,4f29f41d9f3e65e43c2f19d181bae1b4b42efd141944441403b2ba877537ec3c,366,yes,p0-baseline/live,yes,NO,YES -- invisible to every freeze before Run 22
+p0-baseline/module_renumbering_map.csv,f1f98151c17706b0eae06059fd5efcb34e99abd09ec83ee7f6c30aaf71a2a912,9616,yes,p0-baseline/module_renumbering_map.csv,no,yes,no
+p0-baseline/reconciliation/README.md,db15768cd6cdafbdcde94245fb0685d5c9624567f2b75d2c430adeb58cc325d8,568,yes,p0-baseline/reconciliation,yes,yes,no
+render.yaml,85502d0c98110a19514b5ac92ec20bada85f30628fe1ea6077d90c842954add2,1651,yes,render.yaml,no,NO,YES -- invisible to every freeze before Run 22
+research/deepdive.html,becee9828de7e0068467cb6033be0d7d63f0aede4cb7095552363cdf7125e51d,5293,yes,research/deepdive.html,no,NO,YES -- invisible to every freeze before Run 22
+server/alembic.ini,50e5f7c8ad8d6fcc77d67f93b9d65becc1839529c05e35b0e491a613e208f16b,756,yes,server/alembic.ini,no,NO,YES -- invisible to every freeze before Run 22
+server/alembic/env.py,80c0224ca47d1f4f229c594757642fc8b31148cb7ef54c8d200bd91f358c5efb,2083,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/script.py.mako,dfa626e0ab391be2470f0c87b432cb45e5bdb5a3f91c019eeec11e15b60185be,504,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0001_facade_schema.py,5e3ff69fb462b9bc4ca21847912036a2a11fa480afeaf7ec51c2a63bda7e3ac0,3155,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0002_snapshot_project_nullable.py,eb7e02152f999a3d32afed1d2fe20ae5c562e773d8d0b1dc4800eee6b99f9bae,1607,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0003_research_schema.py,8fb0840a2f61df841eaf16efb694cc856f9fa5d94005f7fb2e9129dc7134f640,15640,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0004_condition_sequences.py,c91733d00a70c1a45b274e1a31916e8957b0e787927b72a3d2bf4d3553fb94d4,2638,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0005_transition_rules.py,3898cb138b99e4967179adb945619a3ddae80493883643543084f19fdc95cb70,3631,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0006_project_membership.py,e8dfcdad657a5396629d5bfc501bad13c1942ebfe30cf3d5f9ef2b9f0b6d84d0,4663,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0007_feature_flags.py,483517d609422c615b2cbda15e33437520c3708a6c52e3803fda609caf90d4bb,2161,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0008_account_admin.py,4fdf102cbaf02a91ac93d61503be20ede7391db0bd6bd93b67754f98e6d01ed0,3029,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0009_documents_and_results.py,aa81abad45fd135f2a486bd3fa5753d2a6583055d8c656aeade97e457ab625cd,13914,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0010_questionnaire_responses.py,3f06bf58f08ad561c1c8819ca44e73f525cf161940bfc65b2ce5bc15cd670896,3577,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0011_decision_capture_fields.py,a496590b1c240ead74101aefffeec47676475bfa4c41272648df8e054d7089cd,4243,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0012_expert_reference_lock.py,af8c5a12be34debe340206a1c3ae7ca6ef2e006d854a6f31a137ed51579fabe9,8198,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0013_document_versioning.py,8995f343b12d627201bd156a8a5347320b1e6023ca18ae8f46f5a8a3933e3f0e,5796,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0014_observations.py,8d40c6adda2d5dba2c6f87587ee89bd0f792d89ace820903d652921c7d7405d8,5312,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0015_export_kind.py,c2b59da9a7661557e8a386031e546462cdafaf3db8e73400be9c65e5690714a5,1359,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0016_document_filing.py,6f67911f55c65c025ddabf9fb06d600d1a9b7dd8e5afafd0ca3650cc50bf1e59,3943,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0017_participant_theme.py,e4d67b056475230a57b4ccf56aff40ebc31a5c74439953f5c9160c346eed0f55,2539,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0018_project_training.py,9dcf0a17ff4002164eeb7027ecfbe3fd0cd59432e7021c53137e6f3b85688782,2823,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0019_training_runs.py,eda32c5fe2459a781a9f0dc0e8026a9170dd6582519169ab3586f739d8c7806f,2978,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0020_abstained_modules.py,2547c96de5eed9da53a406107fc278f8cffbd507c291e493aa7adfd924c75275,1674,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0021_schedule_activities.py,02b07d07fe698ef72c0a36b5450b94662db03902e4d9ea0241d98e478d0874fc,4844,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0022_upload_attempts.py,c26117ff8aad9929651ab52aea9f38ce9053266ff8111cd95a00bf3a8b69fdad,4737,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0023_upload_period_end.py,0ee0bd0e7477879761bc015b8366982f4e32025145299c5e0dfc8f1539e8f072,2670,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0024_project_risks.py,e18d7fab32f0f49eacddcf999a1440eeab19dc206f4e8b7977d802c912f45d20,6304,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/alembic/versions/0025_project_notices.py,6ce6c325a3d6deae5eee61dc63726f46bb0ac4942420780c365a4e9b147b39f9,4672,yes,server/alembic,yes,NO,YES -- invisible to every freeze before Run 22
+server/app/__init__.py,e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855,0,yes,server/app,yes,yes,no
+server/app/contract_notices.py,deacf463f289159be9722202cefd2e73f248cf76ad88b3f5fb859e6b72ac423d,12902,yes,server/app,yes,yes,no
+server/app/db.py,51d98afe3c85c21687b8760be69150fa429b681406c5ac4c2da843440e57bbc4,6253,yes,server/app,yes,yes,no
+server/app/document_evidence.py,5f056d7690ba428924da54bdde61250a44a07a7c42ce7d2327d617d71071cc77,19706,yes,server/app,yes,yes,no
+server/app/documents.py,e01509cdd6e449d2f69d7d98520c12ab09d7b33168540fb698a0fa1a33332b1f,138367,yes,server/app,yes,yes,no
+server/app/docx_text.py,0625c8e6af3be4a8b2ddd5646e4002f9e7afb24128758235dd741045dffc3b4f,12620,yes,server/app,yes,yes,no
+server/app/drive_adapter.py,6e3faf2b447cedf889d3dfe475c2655b54db1f2e40c3b3023b0b4b39f69edcd9,10005,yes,server/app,yes,yes,no
+server/app/extraction_client.py,eb4667b3b440f12d35cff137b72d062e958f5fca433e1ee0a074c25a2d4afaea,33655,yes,server/app,yes,yes,no
+server/app/extraction_fields.py,bf7075aef02c019ad113eda9c642e6e2e178fb2008282aeff181000fab38e015,23236,yes,server/app,yes,yes,no
+server/app/extraction_merge.py,9773a7093da3368ba35d5bd9f2c29c62893a6eedfffe57c12f9727f5a3efc141,53579,yes,server/app,yes,yes,no
+server/app/facade.py,acf48066b00e60524e6898ee2df7f3c9e12e195dccfb9b22d362096c7485fb29,24625,yes,server/app,yes,yes,no
+server/app/features.py,71470185a5d59d5b531dd8a720d67b8d671e50cb9f4edab4d74bbf563b9afc47,22196,yes,server/app,yes,yes,no
+server/app/field_registry.py,43127984e4cbf03fe630445f2b29a8a2887f229d339fc1207f956affd59afb85,15188,yes,server/app,yes,yes,no
+server/app/files.py,7cb460ea3ce4e4c80eb654ad90a7bc3e78229e4612815fc246071db419fa856d,13584,yes,server/app,yes,yes,no
+server/app/geocode.py,8cba53dc79b47f52b388217e279579c1e4e4c83c3026a006ec33381305bdeba7,17789,yes,server/app,yes,yes,no
+server/app/jdrive_tree.py,912a98e418c90fc414d35ccd75c497cbf1a3faa90000b6e6c5c82f3e55ed8ff0,33221,yes,server/app,yes,yes,no
+server/app/logging_config.py,e8b26caa6e2d9d755d4e25c2866b9af9f76c895c9a0736d16f06eada3be36a5e,2726,yes,server/app,yes,yes,no
+server/app/main.py,c6e0762e7e4737c4751e44b8fb06e39569bf772be2ae6e8b4d6610023db6b75f,21515,yes,server/app,yes,yes,no
+server/app/map_config.py,09a7899317389d7fdf1e801781605ba87d9449bbbe6956a0c039a3e2f5e62b95,2891,yes,server/app,yes,yes,no
+server/app/models.py,3b69ae3524a8a918a789e932533c9d7566c8f74a41064d39f258a65f198fad51,5866,yes,server/app,yes,yes,no
+server/app/questionnaires.py,e4edaa60c4b7e7c94ab57d6acefa3b6ef9e8ae3b539b463b13c9b7c0b9cdf237,10463,yes,server/app,yes,yes,no
+server/app/recommendation_basis.py,390cbdf42472fcca8940fdd4b78098b6276fa35bdef1540dd4fe8a4516ca4448,7133,yes,server/app,yes,yes,no
+server/app/research_assignment.py,751e990fc27e7a432a6b5447eedc7872218fb74a8b541362691283afd5481320,26078,yes,server/app,yes,yes,no
+server/app/research_audit.py,9409042ec7633121fa6e521f6f58dfa990fdb3ef31f81454eecabbaa5bdcdb7b,5785,yes,server/app,yes,yes,no
+server/app/research_consent.py,3311e11816bd5384ee685c762e5bd0e90b651b079ade293b7b17e8072089f852,6191,yes,server/app,yes,yes,no
+server/app/research_decision.py,728bd925b9fecea218819b0a8c48fc860353a8edcd30b9307014175a28c8654b,36738,yes,server/app,yes,yes,no
+server/app/research_expert.py,fe1bf3518d5e9cd26bd39686b1ee9a83506d5998fd04e898eae8f073d683fe87,19245,yes,server/app,yes,yes,no
+server/app/research_export.py,ecdbae59df7c350a71936b751d9ae5c866adda03b9214b8b9769ef55baddd9c9,66301,yes,server/app,yes,yes,no
+server/app/research_identity.py,73ab427a15af7feade17d87ee2c0cac2e1d1f9d89cd7874d02fc8bc80e92782a,46436,yes,server/app,yes,yes,no
+server/app/research_membership.py,144a751f27e13f8693fc8c3d576c3fb899ca250f42ffdef33b37aa2c0a21c27b,40457,yes,server/app,yes,yes,no
+server/app/research_models.py,4f1369afb53b3a7fabf22c4a2718f7abc38cf585f95a175908500b6f82e6fec7,56300,yes,server/app,yes,yes,no
+server/app/research_transitions.py,b35d575685589fcd8ab51c8b6ef6fee9b6883a1ad995ff86c514d2b7402716ef,18915,yes,server/app,yes,yes,no
+server/app/risk_exposure.py,35a5c8d6197f9c88fb2f18b920ec94ee8b1e4d0260195c034487b5a0c0534151,4132,yes,server/app,yes,yes,no
+server/app/risk_register.py,aa2149977aa7334ba941bc793fdddaf94237f7c1bb5bc867deacbda0dfb16da6,17354,yes,server/app,yes,yes,no
+server/app/risk_values.py,3ca7839e419e05cf4789300db86976b15f42277f36323c1799c59752e0ff0800,13119,yes,server/app,yes,yes,no
+server/app/schedule_activities.py,da80209a930cfd1d99e226f7a7c1b239a6ad4c6da10d444ed93ed3e9c9e8a1f6,16543,yes,server/app,yes,yes,no
+server/app/schedule_dates.py,06b17f588e0948a64717a4627b5d9b3b582e66eb21cb87da1bea60da17024379,7727,yes,server/app,yes,yes,no
+server/app/schedule_table.py,19e95f6867139d04a31985aaf2e16f54317f98cbcde90120b3eae6fb23aab6e6,8639,yes,server/app,yes,yes,no
+server/app/settings.py,34de6c32ac28561a128e57991d810c37b6e0b088eaf3953ea88bea2b64084d76,5118,yes,server/app,yes,yes,no
+server/app/simulation/VALIDATION.md,8bfefe36b469c2f2a23013c55ef6353c2706fcbdcb9fe07f638bc9210e5440ec,31793,yes,server/app,yes,NO,YES -- invisible to every freeze before Run 22
+server/app/simulation/__init__.py,adf0f4b6161004541fc30eaa4363592751fd430b0ede34ab9a3bafbd44485abf,491,yes,server/app,yes,yes,no
+server/app/simulation/arm_lineage.py,234286f778bebf624fb99590e961c8b5696f98ff08744faa955359209695f5ae,9236,yes,server/app,yes,NO,YES -- invisible to every freeze before Run 22
+server/app/simulation/canonical.py,da369920bda67bcf36a2265b6190fca72a5c0601f53cfe50468ccc2ba120900f,30857,yes,server/app,yes,yes,no
+server/app/simulation/compute.py,e41b2e445e8146a1c2123d5c4ee42eefcd289e496d8683690dd014e2ac2e459f,11520,yes,server/app,yes,yes,no
+server/app/simulation/fusion.py,da9ba933590c1000064bd51cff51493d80d80f73b8c59a122d6016a1148a84ff,22269,yes,server/app,yes,yes,no
+server/app/simulation/isolation_forest.py,8c2b1815c2080352adb0ae42360b8e74e9e718eef6f3de030a047b7f9048cde1,6582,yes,server/app,yes,yes,no
+server/app/simulation/lineage.py,88a5171a5f95e721ceffe92a878e8a9e677300528db529e45735aa8d27d48974,54333,yes,server/app,yes,NO,YES -- invisible to every freeze before Run 22
+server/app/simulation/method_labels.py,aa6f872afae0ad2a2375971bc56a1b8121eb1d98e00d00f69b6c7cf06d2ab3a0,24117,yes,server/app,yes,NO,YES -- invisible to every freeze before Run 22
+server/app/simulation/models.py,e7405ff94a011c7962f58b1e8010d384367d5585a3134965ca24ee5ca25ef71f,28964,yes,server/app,yes,yes,no
+server/app/simulation/models_decision.py,0faafc653ccfe5f90e01976b0f072e85aad0de8ed212f1b8dd121356ad2a24ec,13048,yes,server/app,yes,yes,no
+server/app/simulation/models_doc.py,c47eee9e4405787bcc3d80f6a1780e743ad36f66f93584496c8afa6eeb7e2d9f,77683,yes,server/app,yes,yes,no
+server/app/simulation/models_dq.py,9dcab8ce8040467b97f45045afaba2b4d8388dcddff8de901495666c9b47e8e8,17067,yes,server/app,yes,yes,no
+server/app/simulation/models_evc.py,86714c54cc19f4c71db733b9f87541672874a5fc6a0276e10e6f6a4b7dc3ea54,37285,yes,server/app,yes,yes,no
+server/app/simulation/models_evm.py,531be53ac8ba3e06688978182942a3d9204b63a4cb13815543ef9ecec126a793,26367,yes,server/app,yes,yes,no
+server/app/simulation/models_ext.py,ea5cdc16522286e92ea0416980c0ce47933018c480b7551a2130533c89ae1877,53317,yes,server/app,yes,yes,no
+server/app/simulation/models_fuzzy.py,03ba7c3817c207d571c53bc34f372f21f8a0cecfc1e40ad3ad090a50f4db1bf4,23612,yes,server/app,yes,yes,no
+server/app/simulation/models_gov.py,b417e5ab059e51655957cc7aeb4d800a49ab5bd3b61ab1e04e157a71632f9e15,47630,yes,server/app,yes,yes,no
+server/app/simulation/models_sim.py,cbb03a21d284492f6779226208fb79b1e4753ccc5e47ee145b5282152cee8280,10408,yes,server/app,yes,yes,no
+server/app/simulation/parameters.py,6d84b65751f70208d75d9af68e1aa99196117b7b61191a626cd62e766bb90c6d,24142,yes,server/app,yes,NO,YES -- invisible to every freeze before Run 22
+server/app/simulation/portfolio.py,ba37e8ce8d2a7cb54fbefa6e2a0ed932d9f6cb71b273b2260af00ec369f74ea7,15378,yes,server/app,yes,yes,no
+server/app/simulation/qualification.py,ab8d1b97b7689323cf9b31b986b147edd9dac255b15a5a983e3ca9b3f787a868,12631,yes,server/app,yes,yes,no
+server/app/simulation/qualification_gate.py,997e810cd3312b95e2bd7421201bf7790e7ed56aea816ab87e989b7fd4a7fff6,16927,yes,server/app,yes,NO,YES -- invisible to every freeze before Run 22
+server/app/simulation/registry.py,58df55052decbf2772b863ad9a14e965f6bb62cb46653146b1763024f9606f43,32329,yes,server/app,yes,yes,no
+server/app/simulation/rng.py,8e30d9f1aba79e5694be70090b4e7d132b29c3983e818a98d3edf83771d16b35,3301,yes,server/app,yes,yes,no
+server/app/simulation/signal_package.py,2f2b5e17c27d4b0ef4aa46dbe016244e4b15372078683b860f0032ea1c60fea0,13026,yes,server/app,yes,yes,no
+server/app/theme.py,8e883c842d968d58bcb5a93620ac69effe78393a2f18d2d05db082ca39877b3f,9536,yes,server/app,yes,yes,no
+server/app/training.py,3f9cc0c3e9e23280990ec2fcf67db4fbade4a0d6a5ba34a35e1812bda0ec4e27,20089,yes,server/app,yes,yes,no
+server/app/training_debrief.py,2a3aad71953a712faf7ca4c2329f88fe07c410cde5929c24a865e2a25146db92,8746,yes,server/app,yes,yes,no
+server/app/training_engine.py,3d41ad600d531fc472f90897ea51ad4f2f0f2b9157092189b367dd0b939802f7,111312,yes,server/app,yes,yes,no
+server/app/training_narration.py,c0275335dcfe52c16c5628c89e6d14fb6b11729fa894ad678b1b3efa833cb0c9,4378,yes,server/app,yes,yes,no
+server/app/workspace.py,7998d22a2c4e44756aac2f7f7bd32e6e1de9bd096970798bef95a8766348f17f,10727,yes,server/app,yes,yes,no
+server/app/writes.py,49bc229f549c5f2276453579e444d5374f8851fbf5c760ae79aa987e578b8a4c,31070,yes,server/app,yes,yes,no
+server/requirements.txt,c8b8c3b1a02b59caa9856791f0333275521fcd3c87fe8fe64dd0ef0c716b6223,375,yes,server/requirements.txt,no,NO,YES -- invisible to every freeze before Run 22

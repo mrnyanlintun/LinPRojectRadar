@@ -8603,3 +8603,91 @@ nine items are marked blocking for a freeze, and one of those is the reload cost
 **RUN 21 FINAL MERGED-MAIN HASH: dc02fe8.** 119 suites, 10335 of 10335 checks, ALL SUITES GREEN,
 verified on merged main before the push. Both real-browser drivers re-run on merged main:
 `drive_run21_instrument.py` 78/78 and `drive_run21_participant.py` 78/78, zero failures.
+
+---
+
+# RUN 22 — FINAL FREEZE / RELEASE QUALIFICATION. THE HANDOFF IS CLOSED.
+
+**RELEASE_QUALIFIED.** This was the final planned run. No Run 23 is launched.
+
+**Run-22 starting commit: `ba5bfaf`.** The three commit references in the Run-21 narrative were
+never inconsistent: `dc02fe8` carried the final report, `ba5bfaf` is the follow-up that stamps
+`dc02fe8`'s hash into it, and `a1c5509` is the Run-20 closure reconciliation. All are ancestors of
+main. **No git repair was needed and no history was rewritten.**
+
+## The freeze could not see 83 of its own production files, and that is now fixed
+
+Every freeze this programme ever took was a list of **143 named paths**. Walking the deployed
+roots and subtracting them leaves 83 real production files — including **`lineage.py` (907
+lines), `arm_lineage.py`, `method_labels.py`, `parameters.py` and `qualification_gate.py`: the
+whole Category-9 lineage layer and the qualification gate, about 2,240 lines of the backend Run 20
+spent twelve cycles qualifying** — plus all 25 alembic migrations, `requirements.txt`,
+`render.yaml`, `logo.png` and `research/deepdive.html`.
+
+`server/tools/production_tree.py` holds roots and exclusions and **walks the filesystem**, because
+`app.main` mounts `assets/` wholesale and an untracked file dropped there is served like any
+other. **226 files, manifest `bff7b4fc…`, a strict superset of all 143.** Proved red on the real
+tree by an added, a changed, a deleted and a renamed file and by a vanished root.
+
+## The 195-second reload is the container's missing GPU, not the instrument
+
+Measured from browser events and the document's own performance timeline, not from harness wait
+semantics. The server answers in **12 ms**. Third parties account for 5 s of 54. `goto` costs the
+same as `reload`. A CPU profile puts **99.4% of the interval in `(program)` — native code, not
+JavaScript**. Three GL configurations settle it: swiftshader **61,111 ms**, browser default
+**62,726 ms** (no GPU here either), **WebGL disabled 288 ms**. A reload with no 3D surface open is
+usable in 0.78 s, and an *empty* project costs as much as a populated one, so the cost does not
+scale with data.
+
+**The instrument's own cost to become usable is 288 ms.** No timeout was widened; the poll
+interval was narrowed from 2 s to 0.25 s, which cannot make a slow page look fast.
+
+**Residual risk, not dismissed:** a participant machine that falls back to software WebGL would
+meet the same cost, bounded to the 3D surfaces on the detail view. **Screen participant machines
+for hardware graphics acceleration.**
+
+## A test suite was writing a production file
+
+`test_run12_final_verification.py` ran the defensibility generator in WRITE mode against
+`assets/js/ds_defensibility_evidence.js` — a served production file — and compared it to its
+previous contents. When the two disagree it reports correctly and **leaves production
+overwritten**. The new tree guard caught a real, unstaged instance of exactly that. Fixed by using
+the generator's existing `--stdout` mode. **A test suite must not be able to modify what the
+freeze protects.**
+
+## The supervisory specification had no executable guard
+
+Its SHA-256 `328b5013…` is quoted in four reports, in this handoff and in its own metadata, and
+**nothing ever checked it**. `research/methodology` and `.gitattributes` are now walked and pinned
+like production, and an edit to the specification is proved red.
+
+## Two periods per assignment is the design, and no third was invented
+
+`period_count` is per-scenario data; the provisioning record freezes it at 2 and the locked design
+describes an opening period and one follow-up. Raising it is an **open advisor question**, not an
+engineering gap. `test_run22_period_generalization.py` proves the machinery generalises to three
+(P1→P2→P3, 33/33) so a later decision does not meet untested code.
+
+## Safety, unchanged
+
+Voting is exactly two (**A1.7, A1.8**), derived from the registry. Concept-only activation is
+nought. **Material Cost Variance — canonically `A3.4`, not "3.4"; its `old_id` is 3.5 — remains
+disabled.** The participant treatment, sequence, randomization and protocol are untouched. The
+participant-surface rename was again NOT applied: it is the owner's decision. **No production
+Postgres, credential or secret was used at any point.**
+
+## Four items remain open, none blocking
+
+1 (participant-surface rename, OWNER), 2 (B1.4 `N` has no source), 3 (PH.5 weights uncalibrated),
+4 (empirical validation as a research programme). Items 2 and 3 are safe by enforced,
+registry-derived non-voting advisory state. **No module is empirically validated and this release
+claims no validated performance.**
+
+**THE ONE THING TO DECIDE BEFORE THE FIRST PARTICIPANT SESSION: item 1.** The instrument gates are
+now green, so sessions may begin. If anything a participant reads is to be renamed, before the
+first session is the only clean moment — after it, a rename is a protocol change.
+
+**RUN 22 FINAL MERGED-MAIN HASH: FINAL_COMMIT_PLACEHOLDER.** 121 suites, 10411 of 10411 checks,
+ALL SUITES GREEN, verified on merged main and from a clean checkout. Both real-browser drivers
+re-run: instrument 78/78, participant 77/77.
+Freeze: `research/freeze/FINAL_RESEARCH_INSTRUMENT_FREEZE_2026-08-14.json`.
