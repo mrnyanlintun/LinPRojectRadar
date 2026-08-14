@@ -993,7 +993,7 @@ def main_drive() -> None:
         }""")
         page.wait_for_timeout(1500)
         after = page.evaluate("() => ({ y: window.scrollY, active: Array.from("
-                              "document.querySelectorAll('.detail-secnav-btn.active'))"
+                              "document.querySelectorAll('.detail-secnav-btn.selected'))"
                               ".map(b => b.textContent.trim()) })")
         obs("rail-nav", "click_result", json.dumps(nav_result))
         obs("rail-nav", "after", json.dumps(after))

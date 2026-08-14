@@ -1259,10 +1259,35 @@
       const label = titleEl ? titleEl.textContent : secId;
       return '<div class="detail-secnav-item">' +
         '<button type="button" class="detail-secnav-btn" data-secnav-target="' + esc(secId) + '" ' +
+          'aria-current="false" ' +
           'aria-label="' + esc(label) + '">' + (i + 1) + '</button>' +
         '<span class="detail-secnav-label">' + esc(label) + '</span>' +
       '</div>';
     }).join("");
+
+    // POST-RUN-22 UI CORRECTION. SELECTED IS NOT ACTIVE.
+    // The rail marks the section the reader has SELECTED. That is a navigation state and it
+    // has nothing to do with whether a category carries current project evidence, which is
+    // what the Signal Flow's own `data-active` records. The two were previously spelled with
+    // the same word — the rail's chosen entry carried `.active` — so the code offered no way
+    // to tell a selection apart from an analytical activation, and nothing stopped a future
+    // stylesheet from making them look the same. The rail now uses `selected` plus the
+    // platform-standard `aria-current`, which also gives assistive technology the state it
+    // was missing. `data-active` is deliberately never set on a rail control.
+    const setSelected = (secId) => {
+      nav.querySelectorAll(".detail-secnav-btn").forEach((b) => {
+        const on = b.getAttribute("data-secnav-target") === secId;
+        b.classList.toggle("selected", on);
+        b.setAttribute("aria-current", on ? "true" : "false");
+      });
+    };
+    // THE CLICK OWNS THE SELECTION WHILE THE SMOOTH SCROLL IS STILL RUNNING. MEASURED: clicking
+    // the fourth control left the fourth control UNSELECTED and some other entry selected,
+    // because scrollIntoView({behavior:"smooth"}) animates and the IntersectionObserver fires
+    // repeatedly on the way, each time re-selecting whatever is most in view mid-flight. The
+    // reader's own action was overwritten by the scroll it had just started. The observer is
+    // suppressed until the scroll settles; after that it resumes as the scroll-spy it is.
+    let selectionPinnedUntil = 0;
 
     nav.querySelectorAll("[data-secnav-target]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -1274,15 +1299,21 @@
         if (!sec.classList.contains("open") && typeof window.toggleSection === "function") {
           window.toggleSection(secId);
         }
+        // Mark the selection from the click itself. It used to be left entirely to the
+        // scroll-spy observer, so a click on a section already in view — or one whose smooth
+        // scroll had not yet moved the page — selected nothing, and the reader had no
+        // confirmation that the control had done anything at all.
+        setSelected(secId);
+        selectionPinnedUntil = Date.now() + 1200;
         sec.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     });
 
-    // Scroll-spy: highlight whichever section is currently most in view.
+    // Scroll-spy: select whichever section is currently most in view, unless a click has just
+    // pinned the selection and its scroll has not finished.
     const setActive = (secId) => {
-      nav.querySelectorAll(".detail-secnav-btn").forEach((b) => {
-        b.classList.toggle("active", b.getAttribute("data-secnav-target") === secId);
-      });
+      if (Date.now() < selectionPinnedUntil) return;
+      setSelected(secId);
     };
     if (typeof IntersectionObserver === "function") {
       const visible = {};
@@ -2240,7 +2271,17 @@
         const p = LinStore.getCached(id);
         if (p) {
           p.signals = null; p.signalInputs = null; p.simulationSignals = null;
-          p.history = []; p.events = [];
+          // POST-RUN-22. `p.events = []` USED TO BE HERE AND IT MADE THE SAME-SESSION PAGE SAY
+          // THE THING RUN 21 PROVED FALSE. The event log is the append-only audit record; the
+          // reset deliberately does not delete it, and the diagram reads it bounded by the last
+          // `signals_reset` entry (Run 18), so blanking it client-side changes NO activity
+          // figure — it only erases the evidence that documents were RETAINED. Measured in this
+          // correction: the same-session page reported "0 UPLOADED ON THIS PROJECT" and "This
+          // project has no uploaded documents", while the SAME project, reloaded from the same
+          // server seconds later, correctly reported "0 UPLOADED SINCE THE RESET, 24 RETAINED".
+          // The mask was making the live page less truthful than the reloaded one. History is
+          // still cleared (it feeds CUSUM and the server clears it).
+          p.history = [];
           ["documents", "uploadedDocuments", "docs"].forEach((k) => {
             if (Array.isArray(p[k])) p[k] = [];
           });

@@ -784,11 +784,30 @@
     // names stay available in the hover tooltip)
     var modNodeEls = MODULES.map(function(m, mi) {
       var info = modInfos[mi];
-      var glow = info.status !== 'None' ? 'url(#lnf-glow-'+info.status+')' : null;
-      var g = se('g', { class:'lnf-nd' }, nodeG);
+      // POST-RUN-22 UI CORRECTION. ACTIVE MEANS A CURRENT RESULT, NOT A REGISTRY FACT.
+      //
+      // THE DEFECT THIS FIXES, reproduced in a real browser on a brand-new EMPTY project
+      // (code_audit/run16_final_flow_run23_signal_flow_ui.csv, state A-empty, before the fix):
+      // nine module dots rendered at the ACTIVE opacity tier (0.85) in the not-relevant
+      // colour AND carried a glow filter, and three document rows rendered as lit squares at
+      // 0.75, on a project with zero documents and zero results. The illumination was keyed on
+      // `status !== 'None'`, and 'NotRelevant' — a module disabled platform-wide or excluded by
+      // this project's sector — is not 'None'. That is a property of the REGISTRY, not of this
+      // project's current evidence, so the diagram was lighting capability as activity. (The
+      // glow filter it asked for, `lnf-glow-NotRelevant`, is not even defined in defs, which is
+      // its own proof that this branch was never meant to light.)
+      //
+      // The rule is now the same one the edges already used: only an ESTIMABLE status — a
+      // current stored verdict — reaches the active tier. Everything else keeps its geometry,
+      // its shape and its colour hint, and stays visually neutral. `data-active` records the
+      // decision in the DOM so it is nameable rather than inferred from an opacity.
+      var live = isEstimable(info.status);
+      var glow = live ? 'url(#lnf-glow-'+info.status+')' : null;
+      var g = se('g', { class:'lnf-nd', 'data-active':live ? 'true' : 'false' }, nodeG);
 
       var circleAttrs = {
-        fill:info.color, opacity:info.status==='None'?'0.20':'0.85', stroke:'none' };
+        fill:info.color, opacity:live ? '0.85' : (info.status === 'None' ? '0.20' : '0.34'),
+        stroke:'none', 'data-active':live ? 'true' : 'false' };
       if (glow) circleAttrs.filter = glow;
       var dotShape = window.linStatusShape ? linStatusShape(info.status) : 'circle';
       var circle = seShape(dotShape, CX.mod, modY[mi], 4, circleAttrs, g);
@@ -796,11 +815,11 @@
 
       var lbl = se('text', {
         x:CX.mod+8, y:modY[mi],
-        fill:info.status==='None'?'var(--faint, #1e2c44)':'var(--muted, #5a7898)',
+        fill:live ? 'var(--muted, #5a7898)' : 'var(--faint, #1e2c44)',
         'font-size':'11.5', 'font-family':'monospace',
         'dominant-baseline':'middle', 'pointer-events':'none', class:'lnf-halo'
       }, g);
-      if (info.status==='None') lbl.setAttribute('opacity','0.55');
+      if (!live) lbl.setAttribute('opacity','0.55');
       lbl.textContent = trunc(m.name, 26);
 
       circle.style.transformOrigin = CX.mod + 'px ' + modY[mi] + 'px';
@@ -844,10 +863,15 @@
     };
     var catNodeEls = CATS.map(function(cat, ci) {
       var cs=catStatuses[ci], color=colFor(cs);
-      var glow = cs !== 'None' ? 'url(#lnf-glow-'+cs+')' : null;
+      // Same rule as the module dots: a REGISTERED category is not an ACTIVE one. A category
+      // reaches the active tier only when the app's own fusion returns a current estimable
+      // verdict for it; a registered-but-silent category stays neutral.
+      var catLive = isEstimable(cs);
+      var glow = catLive ? 'url(#lnf-glow-'+cs+')' : null;
       var x=CX.cat, y=catCY[ci];
-      var g = se('g', { class:'lnf-nd' }, nodeG);
-      var cAttrs = { fill:color, opacity:cs==='None'?'0.28':'0.88', stroke:'none' };
+      var g = se('g', { class:'lnf-nd', 'data-active':catLive ? 'true' : 'false' }, nodeG);
+      var cAttrs = { fill:color, opacity:catLive ? '0.88' : '0.28', stroke:'none',
+                     'data-active':catLive ? 'true' : 'false' };
       if (glow) cAttrs.filter = glow;
       var catShape = window.linStatusShape ? linStatusShape(cs) : 'circle';
       var circle = seShape(catShape, x, y, 9, cAttrs, g);
@@ -883,9 +907,14 @@
     });
 
     // Project Status node
-    var prjGlow = prjStatus !== 'None' ? 'url(#lnf-glow-'+prjStatus+')' : null;
-    var prjG = se('g', { class:'lnf-nd', id:'lnf-prj' }, nodeG);
-    var pcAttrs = { cx:CX.prj, cy:PRJ_Y, r:'22', fill:prjColor, opacity:'0.92', stroke:'none' };
+    // The governed decision node is derived: it must not read as illuminated while the rollup
+    // it displays is not estimable. Before this correction it rendered at 0.92 on every
+    // project, empty ones included.
+    var prjGlow = prjEstimable ? 'url(#lnf-glow-'+prjStatus+')' : null;
+    var prjG = se('g', { class:'lnf-nd', id:'lnf-prj', 'data-active':prjEstimable ? 'true' : 'false' }, nodeG);
+    var pcAttrs = { cx:CX.prj, cy:PRJ_Y, r:'22', fill:prjColor,
+                    opacity:prjEstimable ? '0.92' : '0.26', stroke:'none',
+                    'data-active':prjEstimable ? 'true' : 'false' };
     if (prjGlow) pcAttrs.filter = prjGlow;
     var prjCircle = se('circle', pcAttrs, prjG);
     if (prjStatus==='Red') prjCircle.classList.add('lnf-red-pulse');
@@ -937,14 +966,20 @@
       var color = uploaded ? COL.DocOn : (notApplicable ? COL.NotRelevant : COL.DocOff);
       var glow  = uploaded ? 'url(#lnf-glow-DocOn)' : null;
       var x=CX.doc, y=docY(di);
-      var g = se('g', { class:'lnf-nd' }, nodeG);
-      var dAttrs = { fill:color, opacity:uploaded?'0.88':(notApplicable?'0.75':'0.30'), stroke:'none' };
+      var g = se('g', { class:'lnf-nd', 'data-active':uploaded ? 'true' : 'false' }, nodeG);
+      // A document row is ACTIVE only when this project has actually uploaded that type since
+      // the reset boundary. "Not applicable to this corpus" is an editorial registry fact and
+      // was being drawn at 0.75 — brighter than every other unlit row and read by the owner as
+      // a lit document on an empty project. It keeps its own colour and square shape so the
+      // distinction from a plain "not uploaded" row survives, at the inactive opacity tier.
+      var dAttrs = { fill:color, opacity:uploaded?'0.88':(notApplicable?'0.34':'0.30'),
+                     stroke:'none', 'data-active':uploaded ? 'true' : 'false' };
       if (glow) dAttrs.filter = glow;
       seShape(notApplicable ? 'square' : 'circle', x, y, 5, dAttrs, g);
       var t = se('text', { x:x-10, y:y,
         fill:uploaded?'var(--muted, #7a9ac0)':(notApplicable?COL.NotRelevant:'var(--faint, #253045)'),
         'font-size':'13', 'font-family':'monospace', 'text-anchor':'end', 'dominant-baseline':'middle', class:'lnf-halo' }, g);
-      if (!uploaded && !notApplicable) t.setAttribute('opacity','0.55');
+      if (!uploaded) t.setAttribute('opacity','0.55');
       t.textContent = name;
 
       g.addEventListener('mouseenter', (function(name, di, uploaded, notApplicable, color) {
@@ -1029,6 +1064,15 @@
     (function() {
       var s = document.createElement('span');
       s.innerHTML = legSquare(COL.NotRelevant) + 'Not relevant';
+      leg.appendChild(s);
+    })();
+    // POST-RUN-22. The distinction the diagram now draws, said in words as well as in
+    // brightness: a dim node is registered architecture, a lit one is current activity.
+    (function() {
+      var s = document.createElement('span');
+      s.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;' +
+        'background:' + COL.None + ';opacity:0.3;vertical-align:middle;margin-right:3px"></span>' +
+        'Registered, not active on this project';
       leg.appendChild(s);
     })();
     var sep = document.createElement('span');
