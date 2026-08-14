@@ -539,6 +539,69 @@ def w_overwritesignal(session: Session, payload: dict) -> dict[str, Any]:
     }
 
 
+def w_saveprojectdata(session: Session, payload: dict) -> dict[str, Any]:
+    """
+    RUN 28 CLOSURE. THE INTAKE PATH FOR THE CANONICAL v3 STRUCTURES.
+
+    Run 28 made twenty of the twenty-eight Category 1 to 3 modules abstain because the structure
+    their canonical method is defined on is not in the corpus. That is only defensible if the
+    platform can actually RECEIVE the structure. Before this action it could not: twenty-one of
+    the twenty-three v3 structure keys were written by no production code at all and appeared
+    only in test fixtures, so the abstention had no supply path behind it.
+
+    This is that path, and it is the ordinary write path: same `/exec` surface, same session
+    authorisation, same verified-write rule, same append-only discipline. It stores a structured
+    record against a project under one of the structure keys the analytical layer actually reads,
+    with the reporting period it takes effect from and the provenance of its figures, and
+    `documents.run_and_store` merges what is in force onto the signal inputs before computation.
+
+    IT SUPPLIES NOTHING AND VALIDATES NOTHING FOR PLAUSIBILITY. A record that does not satisfy
+    the canonical contract still makes the module abstain, because `canonical_v3` decides that,
+    not this handler. What this handler refuses is a structure key no computation reads, a record
+    that is not an object, a period that is not a whole number at or above one, and a record with
+    no stated supplier or source.
+    """
+    from .project_data import ProjectDataError, add_revision, governed_structure_keys
+
+    pid = payload.get("id")
+    structure = str(payload.get("structure") or "")
+    if not pid or not structure:
+        return err("id and structure are required")
+
+    project = _project(session, pid)
+    if project is None:
+        return err(f"Project not found: {pid}")
+
+    try:
+        fresh = add_revision(
+            dict(project.doc or {}), structure, payload.get("record"),
+            effective_period=payload.get("effectivePeriod", payload.get("effective_period")),
+            supplied_by=payload.get("suppliedBy", payload.get("supplied_by")),
+            source=payload.get("source"),
+            at=_server_now(),
+        )
+    except ProjectDataError as exc:
+        return err(str(exc))
+
+    fresh = _touch(_append_event(fresh, "project_data_supplied", structure=structure))
+    project.doc = fresh
+    project.record_version = project.record_version + 1
+    session.commit()
+
+    session.expire_all()
+    saved = _project(session, pid)
+    stored = ((saved.doc or {}).get("projectData") or {}).get(structure) if saved else None
+    if not stored:
+        return err(f"Project data could not be verified for {pid}: {structure} did not persist")
+    return {
+        "ok": True, "id": pid, "structure": structure,
+        "revision": stored[-1].get("revision"),
+        "effectivePeriod": stored[-1].get("effective_period"),
+        "revisions": len(stored),
+        "knownStructures": sorted(governed_structure_keys()),
+    }
+
+
 def w_savehistory(session: Session, payload: dict) -> dict[str, Any]:
     pid = payload.get("id")
     if not pid:
@@ -636,6 +699,7 @@ POST_ACTIONS: dict[str, Callable[[Session, dict], dict]] = {
     "setprojectnumber": w_setprojectnumber,
     "resetsignals": w_resetsignals,
     "overwritesignal": w_overwritesignal,
+    "saveprojectdata": w_saveprojectdata,
     "savehistory": w_savehistory,
     "saveauditresult": w_saveauditresult,
     "saveportfoliohealth": w_saveportfoliohealth,

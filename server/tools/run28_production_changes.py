@@ -140,7 +140,15 @@ RUN28_PRODUCTION_CHANGES: dict[str, tuple[str, str, str]] = {
         "hand. `assets/js/taxonomy.js` is NOT changed: it is the participant ledger's own name "
         "source, it is inside the frozen and checksummed participant package, and the study is "
         "mid-sequence, so renaming what a participant reads would change the treatment. That is "
-        "the same boundary method_labels.py has drawn since Run 20 and it is not crossed here.",
+        "the same boundary method_labels.py has drawn since Run 20 and it is not crossed here. "
+        "RUN 28 CLOSURE ADDENDUM, recorded rather than rewritten: the owner\'s closure "
+        "instruction REVERSES the taxonomy.js decision above. It requires the current v11 "
+        "surface to be consistent, explicitly permits a successor package and freeze record if "
+        "the checksum changes, and requires the predecessor to be preserved. taxonomy.js is "
+        "therefore renamed in R28.7 below, the predecessor package checksums are untouched, and "
+        "the successor freeze record names the predecessor as its parent. The experimental "
+        "sequence and every band, boundary and arithmetic result are unchanged: only display "
+        "strings moved.",
     ),
     "R28.6 the published defensibility evidence": (
         _OWNER,
@@ -153,6 +161,76 @@ RUN28_PRODUCTION_CHANGES: dict[str, tuple[str, str, str]] = {
         "name may reach -- the interface response, the export and the methods documentation -- "
         "and it is not a participant ledger surface.",
     ),
+    # ---------------------------------------------------------------- RUN 28 CLOSURE
+    #
+    # The owner's closure instruction requires Run 28's own defects closed before Run 29. Three
+    # of them change production: the approved renames were declared in the registry and never
+    # propagated to the surfaces a reader actually sees; the A1.1 naming drift was recorded and
+    # left open; and the twenty abstentions had no intake path behind them. Each file below is
+    # named individually with what changed in it and why, on the same footing as every entry
+    # above and no wider.
+    "R28.7 the approved renames on every current surface": (
+        _OWNER,
+        "assets/js/taxonomy.js",
+        "THE MIXED STATE CLOSED. Run 28 renamed A1.10 and A1.11 in the registry and deliberately "
+        "did not touch this file, leaving the instrument saying two different things about the "
+        "same module at the same time: the registry and the generated defensibility evidence "
+        "carried the approved names while the taxonomy a reader is shown carried the old ones. "
+        "The owner's closure instruction requires the current v11 surface to be consistent and "
+        "explicitly permits a successor package, version and freeze record where the checksum "
+        "changes, with the predecessor preserved. This file also carries the A1.1 drift, which "
+        "is closed IN THE OTHER DIRECTION: the surface is aligned to `Monte Carlo EAC`, the name "
+        "p0-baseline/module_renumbering_map.csv records, and the authority itself is NOT edited. "
+        "DISPLAY STRINGS ONLY. Every `method_class` constant, every `required` key list, every "
+        "id and every number in the file is byte-identical, so no module's inputs, routing or "
+        "arithmetic changed and no step of the participant decision sequence moved.",
+    ),
+    "R28.7a the registry the taxonomy is generated from": (
+        _OWNER, "assets/js/categories.js",
+        "The same three display names, in the file MODULE_TAXONOMY.md states is generated from "
+        "the renumbering map. It disagreed with its own source on all three. Names only.",
+    ),
+    "R28.7c the researcher deep dive": (
+        _OWNER, "assets/js/deepdive.js",
+        "Panel headings and one metric label. Names only.",
+    ),
+    "R28.7d the module charts": (
+        _OWNER, "assets/js/charts3d.js",
+        "Two chart section headings and one drawn caption. Names only; no scale, series or "
+        "value changed.",
+    ),
+    "R28.7e the decision card labels": (
+        _OWNER, "assets/js/decision-ui.js",
+        "The module id to display name table a decision card reads. Names only.",
+    ),
+    "R28.7f the workspace labels": (
+        _OWNER, "assets/js/workspace.js",
+        "The same table on the workspace surface. Names only.",
+    ),
+    "R28.7g the defensibility data": (
+        _OWNER, "assets/js/ds_defensibility_data.js",
+        "The module names and the permitted-claim sentences that quote them, so a claim limit "
+        "cannot name a module that no longer exists under that name. Names only.",
+    ),
+    "R28.8 the supply path the abstentions rest on": (
+        _OWNER,
+        "server/app/writes.py",
+        "THE `saveprojectdata` ACTION. Run 28 made twenty of the twenty-eight Category 1 to 3 "
+        "modules abstain because the structure their canonical method is defined on is absent "
+        "from the corpus, which is only defensible if the platform can RECEIVE that structure. "
+        "It could not: twenty-one of the twenty-three v3 structure keys were written by no "
+        "production code and appeared only in test fixtures. This is the intake, on the ordinary "
+        "/exec write path with the ordinary session authorisation, verified-write and "
+        "append-only rules. It SUPPLIES NOTHING: a record that does not satisfy the canonical "
+        "contract still makes the module abstain, because canonical_v3 decides that. No existing "
+        "handler, no existing action and no existing response shape changed.",
+    ),
+    # NOT DECLARED HERE, AND THAT IS THE GUARD WORKING RATHER THAN A GAP. Three files this
+    # closure changed are already declared by an EARLIER manifest and no path may appear in two:
+    # `assets/js/knowledge.js` and `assets/js/neural_flow.js` (Run 21 and the post-Run-22 UI
+    # correction) carry the same two node and title renames, and
+    # `server/app/simulation/models_ext.py` (Run 20) carries A3.6's declared dependence policy on
+    # the result. One change is never counted twice.
 }
 
 #: Production files Run 28 CREATED. The byte comparison structurally cannot reach these: a file
@@ -162,4 +240,15 @@ RUN28_PRODUCTION_CHANGES: dict[str, tuple[str, str, str]] = {
 RUN28_NEW_PRODUCTION_FILES: dict[str, str] = {
     "server/app/simulation/canonical_v3.py":
         "The v3 canonical method layer for Categories 1 to 3. See R28.2 above.",
+    "server/app/project_data.py":
+        "RUN 28 CLOSURE, R28.8. The governed project data object: the INTAKE PATH for the "
+        "canonical v3 structures. Run 28 left twenty of the twenty-eight Category 1 to 3 modules "
+        "abstaining because their defining structure is absent from the corpus, and the closure "
+        "audit found that twenty-one of the twenty-three structure keys were written by NO "
+        "production code at all -- they existed in test fixtures and nowhere else. An abstention "
+        "whose supply path only a test can exercise is a description of a supply path, not one. "
+        "This module is the store: append-only, period-effective so an earlier period recomputes "
+        "byte-identically, vocabulary read from canonical_v3 rather than restated, and it "
+        "validates nothing for plausibility because canonical_v3\'s own guards decide whether a "
+        "structure satisfies its contract. Reached from the API by `saveprojectdata`.",
 }

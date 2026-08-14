@@ -127,6 +127,36 @@ check("and the pinned manifest's own hash matches the tree, so the LIST of files
       f"pinned={hashlib.sha256(pt.PINNED.read_bytes()).hexdigest()} "
       f"walked={pt.manifest_sha256()}")
 
+# ------------------------------- 3b. RUN 28 CLOSURE, ITEM 4: THE UNTRACKED-FILE BLIND SPOT
+#
+# THE DEFECT, AS RUN 28 RECORDED IT AND LEFT IT OPEN. The suite stayed green while
+# `server/app/simulation/canonical_v3.py` -- two thousand lines of analytical production code --
+# was not tracked by git at all. Every guard that reasons about production change through
+# `git diff` is structurally blind to that: `git diff` enumerates TRACKED paths and nothing else.
+# The walk above is not blind to it, because it discovers names from the filesystem, and it
+# already reports each file's tracked state as an attribute. NOTHING ASSERTED ANYTHING ABOUT
+# THAT ATTRIBUTE, so the information was collected and thrown away.
+#
+# It is asserted here, and it is a different property from the three the manifest comparison
+# covers. Added, removed and changed are about the FILESYSTEM disagreeing with the freeze. This
+# one is about the filesystem agreeing with the freeze while the REPOSITORY does not carry the
+# file: a protected file that is present, pinned, hashed and green, and that would not exist at
+# all in the deployed checkout, because nothing ever added it to the index.
+#
+# NON-VACUITY IS PROVED ON THE REAL TREE, not in the sandbox, because the sandbox has no git
+# repository to be tracked by: `code_audit/run28_closure_fault_injection.csv` records a harmless
+# untracked file created inside `server/app/simulation/`, this check observed RED naming that
+# exact path, the file deleted, and this check observed GREEN again.
+_untracked_production = sorted(rel for rel, _d, _s, tracked in _inventory if not tracked)
+check("every file in the protected production surface is TRACKED BY GIT, so a production file "
+      "that exists on this disk, hashes green against the freeze and would be absent from the "
+      "deployed checkout cannot pass -- the blind spot Run 28 left open, closed",
+      not _untracked_production, f"untracked production files: {_untracked_production}")
+check("and the walk reports tracked state for every file it finds, so the check above is "
+      "asserted over the whole surface rather than over a sample",
+      len(_inventory) == len([1 for _r, _d, _s, t in _inventory if t in (True, False)]),
+      str(len(_inventory)))
+
 # ------------------------------------------- 4. NON-VACUITY, on a real copy of the real tree
 
 # A real copy, really mutated. Not a stub, not a fabricated manifest: the same walk over the same

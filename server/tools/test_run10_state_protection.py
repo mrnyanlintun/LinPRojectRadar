@@ -189,12 +189,27 @@ RUN21_BROWSER_SCOPE = {"assets/js/simulations.js", "assets/js/neural_flow.js"}
 # NO BAND, BOUNDARY, THRESHOLD OR ARITHMETIC RESULT CHANGED IN ANY OF THEM.
 RUN23_BROWSER_SCOPE = {"assets/js/detail.js", "assets/css/radar.css",
                        "assets/js/neural_flow.js"}
+# RESTATED BY THE RUN-28 CLOSURE, ORIGINAL FINDINGS PRESERVED. It adds the browser assets that
+# carry a MODULE NAME and names each of them rather than widening the rule. Run 28 renamed two
+# Category-1 modules in the registry the owner designates as the source of truth and did NOT
+# propagate the change, leaving the instrument in a mixed state: the registry said "CPI Shrinkage
+# Forecast" and nine browser files still said "Regression to Mean CPI". The owner's closure
+# instruction requires the current surface to be consistent. The same pass closes the A1.1 drift
+# in the other direction, aligning the surfaces to the name the authority actually records.
+# ONLY DISPLAY STRINGS CHANGED. No method class constant, no band, boundary, threshold or
+# arithmetic result, and no step of the participant decision sequence.
+RUN28_CLOSURE_BROWSER_SCOPE = {
+    "assets/js/categories.js", "assets/js/taxonomy.js", "assets/js/knowledge.js",
+    "assets/js/deepdive.js", "assets/js/charts3d.js", "assets/js/decision-ui.js",
+    "assets/js/workspace.js", "assets/js/ds_defensibility_data.js",
+    "assets/js/neural_flow.js",
+}
 check("this run touched no participant-facing browser asset outside Run 11's authorised scope",
       not [d for d in diff_names
            if d.startswith("assets/") and d not in RUN11_BROWSER_SCOPE
            and d not in RUN12_BROWSER_SCOPE and d not in RUN15_BROWSER_SCOPE
            and d not in RUN16_BROWSER_SCOPE and d not in RUN21_BROWSER_SCOPE
-           and d not in RUN23_BROWSER_SCOPE])
+           and d not in RUN23_BROWSER_SCOPE and d not in RUN28_CLOSURE_BROWSER_SCOPE])
 check("this run touched no page the participant is served",
       not [d for d in diff_names if d.endswith(".html") and not d.startswith("tests")
            and d not in RUN11_PAGE_SCOPE])
@@ -219,10 +234,21 @@ RUN14_NON_ANALYTICAL_SCOPE = {"server/app/field_registry.py",
 # cannot be corrected inside the simulation package. The export mirrors the registry's disabled
 # sets by long-standing design, so a new disablement has to be mirrored there too.
 RUN16_NON_ANALYTICAL_SCOPE = {"server/app/writes.py", "server/app/research_export.py"}
+# RESTATED BY THE RUN-28 CLOSURE, ORIGINAL FINDINGS PRESERVED. It touches ONE further file
+# outside the simulation package and names it rather than widening the rule to "server/app/".
+# `project_data.py` is the intake path for the canonical structures Run 28's twenty abstaining
+# modules are defined on: before it, twenty-one of the twenty-three v3 structure keys were
+# written by no production code and appeared only in test fixtures, so the abstentions rested on
+# a supply path that had been described and not built. It is a STORE, not a computation: it
+# supplies no value, validates nothing for plausibility, and leaves every abstention exactly
+# where canonical_v3's own guards put it. `writes.py` (the `saveprojectdata` action that reaches
+# it) is already named by Run 16 above, and `documents.py` (the one merge point) by Run 11.
+RUN28_CLOSURE_NON_ANALYTICAL_SCOPE = {"server/app/project_data.py"}
 check("this run changed only the analytical layer under the application, plus the read path "
       "Run 11 Gate 6 names",
       all(d.startswith("server/app/simulation/") or d in RUN11_NON_ANALYTICAL_SCOPE
           or d in RUN14_NON_ANALYTICAL_SCOPE or d in RUN16_NON_ANALYTICAL_SCOPE
+          or d in RUN28_CLOSURE_NON_ANALYTICAL_SCOPE
           for d in diff_names if d.startswith("server/app/")))
 
 # ---------------------------------------------------------------- GATE 10: versioning

@@ -572,7 +572,7 @@
     ctx.fillStyle='#4ea0ff';ctx.fillText('── Actual',10,26);
   }
 
-  /* ---------- 1.11 Regression to Mean CPI — 3D line + convergence ---------- */
+  /* ---------- 1.11 CPI Shrinkage Forecast — 3D line + convergence ---------- */
   function render_rtm3d(ctx, W, H, m, rx, ry) {
     var d=m.data;
     var cx=W/2,cy=H/2,fov=Math.min(W,H)*0.85;
@@ -613,7 +613,7 @@
     }
   }
 
-  /* ---------- 1.12 ICE Ratio — 3D arc rings ---------- */
+  /* ---------- 1.12 Independent EAC Reconciliation Index — 3D arc rings ---------- */
   function render_ice3d(ctx, W, H, m, rx, ry) {
     var d=m.data;
     var cx=W/2,cy=H/2+8;
@@ -679,7 +679,7 @@
     }
     ctx.textAlign='center';
     ctx.font='bold 10px SFMono-Regular,monospace';ctx.fillStyle='#e0556b';
-    ctx.fillText('ICE Ratio',cx,cy-4);
+    ctx.fillText('Independent EAC Reconciliation Index',cx,cy-4);
     ctx.font='9px SFMono-Regular,monospace';ctx.fillStyle='#e2b13c';
     ctx.fillText(iceRatio.toFixed(3)+'  Gap +$'+((d.iceEac-d.contractorEac)/1e6).toFixed(1)+'M',cx,cy+10);
     ctx.textAlign='left';

@@ -220,7 +220,7 @@ def empirical_quantile(values: Sequence[float], p: float) -> float:
 # CATEGORY 1
 # =================================================================================================
 
-# ------------------------------------------------------------ 1.1 Monte Carlo EAC Forecast
+# ------------------------------------------------------------ 1.1 Monte Carlo EAC
 
 
 def beta_pert_moments(a: float, m: float, b: float, lam: float = 4.0) -> dict[str, float]:
@@ -1862,6 +1862,24 @@ def cost_risk_simulation(structure: dict, rand: Callable[[], float],
                 "A risk event in the cost risk model provided states an impact distribution "
                 "this measure does not hold, so no distribution is formed from it.")
         parsed.append((prob, impact))
+    # RUN 28 CLOSURE. THE DEPENDENCE POLICY, DECLARED WHERE IT IS MATERIAL RATHER THAN ASSUMED.
+    #
+    # The supplied contract requires "a declared dependence policy where material". The loop
+    # below draws every event from its own uniform, which IS a dependence policy -- mutual
+    # independence -- and Run 28 applied it silently. Silently assuming independence across
+    # correlated risks understates the upper tail, which is exactly the quantity A3.6 reports,
+    # so the assumption must be stated by the SOURCE of the model rather than by this file.
+    #
+    # It is material only with more than one event: a single Bernoulli has nothing to be
+    # dependent with. With two or more, a model that does not say how they relate is refused.
+    dependence = str(structure.get("dependence_policy") or "").strip()
+    if len(parsed) > 1 and not dependence:
+        raise StructureAbsent(
+            "The cost risk model provided carries more than one risk event but does not say "
+            "whether those events are related to one another, and how far the total cost can "
+            "run depends on that, so no percentile is reported.")
+    if not dependence:
+        dependence = "not material: a single risk event has nothing to be dependent with"
     if trials < 1:
         raise ValueError("a cost risk analysis needs at least one trial")
     totals = []
@@ -1873,6 +1891,7 @@ def cost_risk_simulation(structure: dict, rand: Callable[[], float],
                           else _triangular_draw(impact[0], impact[1], impact[2], rand))
         totals.append(total)
     return {"base_cost": base, "risk_event_count": len(parsed), "trials": trials,
+            "dependence_policy": dependence,
             "p_quantile": p, "p80_total_cost": empirical_quantile(totals, p),
             "p50_total_cost": empirical_quantile(totals, 0.50),
             "mean_total_cost": sum(totals) / len(totals)}

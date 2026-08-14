@@ -359,6 +359,16 @@ def main() -> None:
     heavier["costRiskModel"]["risk_events"] = [
         {"risk_id": f"R-{i:03d}", "probability": 0.35, "impact_distribution": "POINT",
          "impact": 450000.0} for i in range(20)]
+    # RUN 28 CLOSURE. With more than one event a dependence policy is MATERIAL and the canonical
+    # layer now refuses a model that does not state one, because independence across correlated
+    # risks understates exactly the upper tail A3.6 reports. This is the policy documents.py
+    # declares on the real route, quoted from the register's own structure.
+    check(run_cost_risk(heavier, make_rng(1), date(2026, 4, 30)).get("insufficient_data") is True,
+          "twenty risk events with NO stated dependence policy abstain, because how far the "
+          "total can run depends on whether the events are related and the model does not say",
+          str(run_cost_risk(heavier, make_rng(1), date(2026, 4, 30)).get("evidence_metric"))[:80])
+    heavier["costRiskModel"]["dependence_policy"] = (
+        "INDEPENDENT. The register records no relationship between rows.")
     again = run_cost_risk(heavier, make_rng(20260828), date(2026, 4, 30))
     check(again["p80_total_cost"] > cra["p80_total_cost"],
           "serving twenty register rows instead of one CHANGES its answer, where the shipped "

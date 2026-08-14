@@ -10,7 +10,7 @@
    no governance rules are duplicated here.
 
    Display module numbering (final / 2026 reorder):
-     01  Monte Carlo EAC Forecast               — Signal generator
+     01  Monte Carlo EAC               — Signal generator
      02  CUSUM Anomaly Monitor                  — Signal generator
      03  Document Risk Extraction               — Signal generator
      04  PERT Network Criticality               — Signal generator
@@ -632,7 +632,7 @@
     ] : [
       `CPI ${cpi.toFixed(3)} is near or above the long-run mean ${longRunMean.toFixed(3)}: regression to mean does not indicate a downside risk in the near term.`
     ];
-    return panel("1.11", "Regression to Mean CPI", st,
+    return panel("1.11", "CPI Shrinkage Forecast", st,
       note("Statistical regression predicting CPI convergence toward the long-run project mean. Red line = historical CPI, blue dashed = predicted convergence path, green dashed = long-run mean. Drag to view the convergence trajectory.") +
       `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="rtm3d"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · drag=rotate</p></div>` +
       `<div class="dd-grid">${
@@ -668,13 +668,13 @@
     ] : [
       `ICE ratio ${iceRatio.toFixed(3)}: contractor EAC and independent estimate are within 5%, meeting the acceptable convergence standard.`
     ];
-    return panel("1.12", "ICE Ratio", st,
+    return panel("1.12", "Independent EAC Reconciliation Index", st,
       note("Independent Cost Estimate ratio: contractor EAC ÷ ICE. A ratio < 0.90 triggers formal reconciliation under OMB Circular A-11. Arc rings show BAC (inner blue), contractor EAC (amber middle), and ICE range (outer red arc). White dot = ICE point estimate. Drag to rotate.") +
       `<div class="dd-canvas-wrap"><canvas class="dd-chart-canvas" data-chart="ice3d" data-nodrag="1"></canvas><p class="dd-canvas-hint">scroll=zoom · shift+drag=pan · 2D view</p></div>` +
       `<div class="dd-grid">${
         metricBox("ICE EAC", "$" + (iceEAC/1e6).toFixed(1) + "M", ratioS) +
         metricBox("Contractor EAC", "$" + (contractorEAC/1e6).toFixed(1) + "M", cpi<0.90?"red":cpi<0.95?"amber":"green") +
-        metricBox("ICE Ratio", iceRatio.toFixed(3), ratioS) +
+        metricBox("Independent EAC Reconciliation Index", iceRatio.toFixed(3), ratioS) +
         metricBox("Gap", "+$" + (gap/1e6).toFixed(1) + "M", ratioS) +
         metricBox("BAC", "$" + (bac/1e6).toFixed(1) + "M", "green") +
         metricBox("Reconciliation", iceRatio<0.90?"REQUIRED":"Not required", iceRatio<0.90?"red":"green")

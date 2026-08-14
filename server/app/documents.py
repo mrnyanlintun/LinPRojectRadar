@@ -69,6 +69,7 @@ from .jdrive_tree import (
 )
 from .facade import err, now_iso
 from .models import Project
+from .project_data import apply_to_signal_inputs
 from .simulation.fusion import governed_status_semantics
 from .simulation.qualification import qualification_for_stored_result
 from .research_identity import audit, resolve_caller
@@ -1272,6 +1273,26 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
     si.update(_period_history(session, project, period, si))
     history = _period_snapshots(session, project, period, si)
 
+    # RUN 28 CLOSURE. THE GOVERNED PROJECT DATA OBJECTS, MERGED HERE AND NOWHERE ELSE.
+    #
+    # Run 28 left twenty of the twenty-eight Category 1 to 3 modules abstaining because the
+    # structure their canonical method is defined on is absent from the corpus. Twenty-one of the
+    # twenty-three v3 structure keys were, at that point, written by NO production code: they
+    # existed in test fixtures only, so the abstention rested on a supply path that had been
+    # described rather than built. `project_data.py` is that path and this is the one place it
+    # reaches a computation.
+    #
+    # AFTER the document merge and the cross-period series, and never overwriting either: a key
+    # the period's own documents produced always wins, so a typed-in structure cannot displace
+    # evidence read from the project's documents. PERIOD-EFFECTIVE, so a structure supplied for a
+    # later period is invisible to this one and recomputing an earlier period stays byte
+    # identical, which is the same acceptance condition the schedule snapshots are held to.
+    # THE KEY IS ABSENT WHERE NOTHING WAS SUPPLIED, so a project with no governed data object
+    # stores exactly the record it stored before this existed and no module sees a new empty key.
+    _supplied = apply_to_signal_inputs(si, project.doc, period)
+    if _supplied:
+        si["projectDataStructures"] = _supplied
+
     # `milestoneHistory`, served for the first time. Milestone Trend Analysis has never
     # computed: its input was declared UNSERVABLE and was, correctly, because the extraction
     # returned the source table's own headings and its dates parsed with nothing. Both gaps are
@@ -1342,6 +1363,19 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
                 "model_version": f"risk register, period {period}",
                 "estimate_source": "the project's reported budget at completion and the risk "
                                    "register rows carrying both a probability and a cost impact",
+                # RUN 28 CLOSURE. THE DEPENDENCE POLICY, STATED BY THE SOURCE RATHER THAN
+                # ASSUMED BY THE SIMULATOR. The register records one probability and one cost
+                # impact per row and NO relationship between rows: it has no correlation column,
+                # no common-cause grouping and no joint distribution anywhere in it. Independence
+                # is therefore what the source supports, and saying so is a declaration about the
+                # register rather than an assumption smuggled into the arithmetic. Where a
+                # project later supplies a governed cost risk model of its own through
+                # `saveprojectdata`, that model states its own policy and this one is not used.
+                "dependence_policy":
+                    "INDEPENDENT. The risk register states a probability and a cost impact per "
+                    "row and records no relationship between rows, so the events are simulated "
+                    "independently; no correlation was elicited and none is assumed beyond what "
+                    "the register itself supports.",
                 "cost_components": [{"component_id": "BUDGET_AT_COMPLETION",
                                      "base_amount": float(_bac)}],
                 "risk_events": [
