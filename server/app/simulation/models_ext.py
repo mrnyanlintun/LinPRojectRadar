@@ -27,10 +27,18 @@ import math
 import re
 from typing import Any, Callable
 
+from .canonical import StructureAbsent
+from .canonical_v3 import (
+    analogous_estimate, contingency_burn, cost_risk_simulation, critical_path_status,
+    inflation_adjustment, labor_productivity, look_ahead_ready_fraction, milestone_trend,
+    network_float_consumption, overhead_absorption, parse_schedule_network, resource_loading,
+    require_v3_structure, s_curve_deviation, schedule_compression_index, schedule_risk_p80,
+    time_phased_baseline,
+)
 from .models import (
     ABSTAIN_INVALID_DENOMINATOR, ABSTAIN_MALFORMED_INPUT, ABSTAIN_MISSING_INPUT,
-    ABSTAIN_NOT_APPLICABLE,
-    check_inputs, eligible, insufficient, refuse,
+    ABSTAIN_NOT_APPLICABLE, ABSTAIN_STRUCTURE_ABSENT,
+    calibration_pending, check_inputs, eligible, insufficient, refuse,
 )
 from .rng import clamp, js_round, num, round1, round2
 
@@ -121,70 +129,48 @@ def _derived(si: dict, *fields: str) -> bool:
 
 def run_schedule_compression(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    RUN 7. Three substitutions, all removed.
+    RUN 28, v3. REMAINING-DURATION DEMAND ACROSS RECONCILED ACTIVITIES.
 
-    1. The schedule index came through `_or_default(..., 1.0)`, JavaScript truthiness, so an
-       index of exactly zero and an index never reported both became an index of one, the value
-       of a project running exactly to plan. It is now required and must be above zero: at zero
-       there is no rate of progress for remaining work to be delivered at, so no compression
-       ratio exists.
-    2. The available days were floored at one day, `max(available_days, 1)`. That floor is why
-       the same index gave a different ratio on a long baseline and a short one, which the
-       known-answer run recorded as a failure of scale invariance: a year-long baseline at an
-       index of 0.50 read 2.0 and Red, a two-day baseline at the SAME index read 1.0 and Green.
-       With the floor removed the ratio is required over available, which is one over the index,
-       and it is invariant under scaling the duration, as the stated ratio always should have
-       been. This is an arithmetic correction to the stated proxy, not a new method.
-    3. A project with no remaining work returned a ratio of one, which banded Green. There is no
-       compression to measure when there is nothing left to compress: that is not applicable
-       rather than comfortable, and it abstains.
+    THE SUPPLIED CONTRACT, which is the PCEIF transparent remaining-duration-demand contract and
+    is explicitly NOT claimed to be a universal industry statistical index: SCI is the sum of
+    baseline remaining activity durations over the sum of current remaining activity durations,
+    for reconciled comparable activities at the same governed status basis. One means equal
+    demand, below one means greater current demand and rising compression pressure, above one
+    means a more relaxed demand. Baseline and current activity identities, both sets of remaining
+    durations and a common status basis are required, and where the two cannot be reconciled the
+    answer is NOT ESTIMABLE.
+
+    WHAT v2 DID. It took the baseline start and finish dates, scaled the span by one minus the
+    reported percent complete to get a remaining duration, then divided that by the same figure
+    multiplied by the schedule performance index. Algebraically the whole thing collapses to one
+    over the schedule index: no activity was ever consulted, nothing was reconciled between two
+    schedules, and the "compression" reported was the reciprocal of a single reported ratio.
+
+    v3 REQUIRES THE SCHEDULE NETWORK, and reads from it only the activities that carry BOTH a
+    baseline duration and a current remaining duration, so reconciliation is a property of the
+    data rather than an assumption. Where no activity reconciles the module ABSTAINS. No band is
+    asserted; the contract names compression bands as calibration dependent.
     """
-    if not check_inputs(si, ("baselineEnd", "baselineStart", "actualPctComplete")):
-        return insufficient("Schedule_Compression",
-                            "Insufficient data: the baseline dates and the reported percent "
-                            "complete are needed to measure compression, and at least one of "
-                            "them has not been reported for this period.",
-                            ABSTAIN_MISSING_INPUT)
-    verdict = eligible(si, positive=(("spi", "the schedule performance index"),))
-    if verdict:
-        return refuse("Schedule_Compression", verdict)
-    end_ms = _js_date_ms(si.get("baselineEnd"))
-    start_ms = _js_date_ms(si.get("baselineStart"))
-    if end_ms is None or start_ms is None:
-        return insufficient("Schedule_Compression",
-                            "Insufficient data: a baseline date was reported in a form that is "
-                            "not a date.",
-                            ABSTAIN_MALFORMED_INPUT)
-    total_days = (end_ms - start_ms) / 86400000
-    if total_days <= 0:
-        return insufficient("Schedule_Compression",
-                            "Insufficient data: the baseline finish is not after the baseline "
-                            "start, so the baseline has no duration to compress.",
-                            ABSTAIN_MALFORMED_INPUT)
-    remaining_pct = (100 - si["actualPctComplete"]) / 100
-    remaining_days = total_days * remaining_pct
-    if remaining_days <= 0:
-        return insufficient("Schedule_Compression",
-                            "No remaining work is reported for this project, so there is no "
-                            "remaining duration to compress and no ratio to report.",
-                            ABSTAIN_NOT_APPLICABLE)
-    spi = num(si.get("spi"), None)
-    required_days = remaining_days
-    available_days = remaining_days * spi
-    ratio = required_days / available_days
-    ratio = round2(ratio)
-    color = ("Green" if ratio <= 1.05 else "Yellow" if ratio <= 1.15
-             else "Amber" if ratio <= 1.30 else "Red")
-    return {
-        "method_class": "Schedule_Compression",
-        "status_color": color,
-        "compression_ratio": ratio,
-        "remaining_days": int(js_round(remaining_days)),
-        "evidence_metric": (
-            f"Schedule compression: {_js_str(ratio)}x, "
-            f"{int(js_round(remaining_days))} days of work remaining"
-        ),
-    }
+    try:
+        structure = require_v3_structure(si, "A2.4")
+        network = parse_schedule_network(structure)
+        reading = schedule_compression_index(network)
+    except StructureAbsent as absent:
+        return insufficient("Schedule_Compression", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
+        "Schedule_Compression",
+        f"Across {reading['reconciled_activities']} reconciled activities the baseline planned "
+        f"{_js_str(round2(reading['baseline_remaining_total']))} days of remaining work against "
+        f"{_js_str(round2(reading['current_remaining_total']))} now, a remaining duration demand "
+        f"ratio of {_js_str(round2(reading['schedule_compression_index']))}",
+        schedule_compression_index=round2(reading["schedule_compression_index"]),
+        baseline_remaining_total=reading["baseline_remaining_total"],
+        current_remaining_total=reading["current_remaining_total"],
+        reconciled_activities=reading["reconciled_activities"],
+        status_basis=reading["status_basis"],
+        schedule_version=network["schedule_version"],
+        canonical_structure="schedule_network",
+    )
 
 
 # ------------------------------------------------------------ A2.5 Float Consumption Rate
@@ -192,62 +178,49 @@ def run_schedule_compression(si: dict, rand: Callable[[], float], period_cutoff)
 
 def run_float_consumption(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    THE FIFTEEN DEFECTS, defect 10, and it is one of the permanent abstentions.
+    RUN 28, v3. FLOAT FROM THE NETWORK'S OWN FORWARD AND BACKWARD PASS.
 
-    The whole computation is a comparison of float consumed against work completed: consuming
-    forty per cent of the float by forty per cent completion is on plan, and consuming it by ten
-    per cent completion is not. When completion was absent, `_or_default(..., 50)` supplied FIFTY
-    PER CENT, so the comparison was made against a completion figure nobody had reported. Every
-    project without a pay application or a monthly report was measured against an invented
-    halfway point, and the stress ratio, which is the only thing this computation outputs and the
-    only thing its bands read, was that invention divided into a real number.
+    THE SUPPLIED CONTRACT. Float must be CPM/network derived: TF = LS - ES = LF - EF. Float
+    consumed is FC = TF_baseline - TF_current, the consumption fraction is FCR = FC /
+    TF_baseline, and a depletion velocity is available where a history exists. Zero baseline
+    float requires explicit already-critical handling rather than a division by zero, and float
+    must not be fabricated from percent complete.
 
-    The fallback is removed and completion is required. Note what that means honestly: this
-    computation reads total and consumed float from a schedule update, which is float derived
-    from an activity network with logic and durations. The document corpus does not carry one,
-    and the programme's deferred list records building one as a second corpus programme rather
-    than a fix. So this computation is expected to abstain on the real corpus for the
-    foreseeable future, and abstaining is the correct outcome, not a failure of this run.
+    WHAT v2 DID. It read two reported scalars, totalFloat and consumedFloat, neither of which any
+    document in this corpus carries, and divided their ratio by the reported percent complete to
+    make a "float stress" figure. That last step is the forbidden one twice over: it is not float
+    consumption, and it makes the reading a function of a progress percentage.
+
+    v3 REQUIRES THE SCHEDULE NETWORK and runs the passes itself: current total float is computed
+    from the logic and durations, and is compared against the float each activity carried at
+    baseline, which the network states. Where the network is absent, or no activity carries its
+    baseline float, the module ABSTAINS. An activity that began at zero float is reported as
+    already critical with no fraction rather than divided by nothing. No band is asserted.
     """
-    if not check_inputs(si, ("totalFloat", "consumedFloat")):
-        return insufficient("Float_Consumption")
-    # RUN 10, BUCKET 2. A negative consumed float ADDED float to the project: the consumption
-    # rate went below zero, the stress ratio followed it, and the band read Green on a reading
-    # that says the schedule handed float back. Float consumed is a quantity that cannot be
-    # negative, so a negative reading is malformed rather than favourable.
-    if num(si.get("consumedFloat"), None) is None or si["consumedFloat"] < 0:
-        return insufficient(
-            "Float_Consumption",
-            "Consumed float is reported as a negative figure, which is not a quantity of float "
-            "that can have been consumed",
-            ABSTAIN_MALFORMED_INPUT)
-    float_remaining = si["totalFloat"] - si["consumedFloat"]
-    if not si["totalFloat"] > 0:
-        return insufficient(
-            "Float_Consumption",
-            "No positive total float is recorded, so no consumption rate is measurable")
-    consumption_rate = si["consumedFloat"] / si["totalFloat"]
-    pct_complete = num(si.get("actualPctComplete"), None)
-    if pct_complete is None or not pct_complete > 0:
-        return insufficient(
-            "Float_Consumption",
-            "Awaiting a reported completion percentage: float consumption is only meaningful "
-            "against the work actually completed")
-    expected = pct_complete / 100
-    stress = round2(consumption_rate / max(expected, 0.01))
-    color = ("Green" if stress <= 1.0 else "Yellow" if stress <= 1.3
-             else "Amber" if stress <= 1.6 else "Red")
-    return {
-        "method_class": "Float_Consumption",
-        "status_color": color,
-        "float_remaining_days": int(js_round(float_remaining)),
-        "consumption_rate": int(js_round(consumption_rate * 100)),
-        "float_stress": stress,
-        "evidence_metric": (
-            f"Float: {int(js_round(float_remaining))} days remaining, "
-            f"{int(js_round(consumption_rate * 100))}% consumed"
-        ),
-    }
+    try:
+        structure = require_v3_structure(si, "A2.5")
+        network = parse_schedule_network(structure)
+        reading = network_float_consumption(network)
+    except StructureAbsent as absent:
+        return insufficient("Float_Consumption", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    ratio = reading["float_consumption_ratio"]
+    ratio_words = ("no share is reported because none of the activities began with float"
+                   if ratio is None
+                   else f"{int(js_round(ratio * 100))} per cent of the float they began with")
+    return calibration_pending(
+        "Float_Consumption",
+        f"Across {reading['activity_count']} activities the network has consumed "
+        f"{_js_str(round2(reading['float_consumed_days']))} days of float, {ratio_words}",
+        float_consumed_days=reading["float_consumed_days"],
+        baseline_total_float=reading["baseline_total_float"],
+        float_consumption_ratio=(None if ratio is None else round2(ratio)),
+        activity_count=reading["activity_count"],
+        per_activity=reading["activities"],
+        project_finish=reading["project_finish"],
+        network_derived=True,
+        schedule_version=network["schedule_version"],
+        canonical_structure="schedule_network",
+    )
 
 
 # ------------------------------------------------------------ A2.6 S-Curve Deviation
@@ -255,260 +228,236 @@ def run_float_consumption(si: dict, rand: Callable[[], float], period_cutoff) ->
 
 def run_scurve_deviation(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    RUN 11, NEIGHBOUR DEFECT 2 OF 7. OUT-OF-DOMAIN BANDING.
+    RUN 28, v3. TWO CUMULATIVE SERIES ON ONE MEASUREMENT BASIS.
 
-    The reproducer from the Run 10B sweep: planned progress of -60 per cent turned Amber into
-    Green. The first half of the combined figure is actual progress minus planned progress, so a
-    negative planned figure is subtracted and inflates the deviation upward without bound. The
-    band is one-sided at the calm end, so it lands in Green.
+    THE SUPPLIED CONTRACT requires a time-indexed cumulative baseline and an actual/earned series
+    on the same measurement basis. SD_t = Actual_t - Planned_t, SDR_t = (Actual_t - Planned_t) /
+    Planned_t when Planned_t is above zero, and DeltaSD_t = SD_t - SD_(t-1). A single point may
+    produce a point deviation but MAY NOT be represented as a longitudinal S-curve trend.
 
-    THE DOMAIN. Both figures are percentages complete: shares of the work, in nought to one
-    hundred. Earned and planned value are cumulative values of work and cannot be below zero.
-    Nothing about the band changed; outside the domain the module reports no S-curve deviation.
+    WHAT v2 DID. It averaged two things measured in different units: the difference of two
+    reported percentages, and the percentage difference between earned and planned value. That
+    average is not a deviation of anything from anything, and it was a single snapshot presented
+    under a curve's name with no series behind it at all.
+
+    v3 REQUIRES THE TIME-PHASED BASELINE and the matching actual series. Where only one point
+    exists the point deviation is reported and `longitudinal` is False, with no trend field, so a
+    snapshot cannot be read as a trend. Where the baseline is absent the module ABSTAINS. No band
+    is asserted; the contract names S-curve bands as calibration dependent.
     """
-    if not check_inputs(si, ("actualPctComplete", "plannedPctComplete", "ev", "pv")):
-        return insufficient("SCurve_Deviation")
-    _domains = (
-        (si["actualPctComplete"], lambda v: 0 <= v <= 100,
-         "the reported progress falls outside nought to one hundred per cent"),
-        (si["plannedPctComplete"], lambda v: 0 <= v <= 100,
-         "the planned progress falls outside nought to one hundred per cent"),
-        (si["ev"], lambda v: v >= 0,
-         "the earned value is reported below zero, and the value of work performed cannot be "
-         "negative"),
-        (si["pv"], lambda v: v >= 0,
-         "the planned value is reported below zero, and the value of work scheduled cannot be "
-         "negative"),
+    try:
+        structure = require_v3_structure(si, "A2.6")
+        baseline = time_phased_baseline(structure)
+        actual = structure.get("cumulative_actual")
+        if not isinstance(actual, list) or not actual:
+            raise StructureAbsent(
+                "The time phased baseline provided carries no matching series of work actually "
+                "performed, so there is nothing to compare the planned curve against.")
+        reading = s_curve_deviation(baseline["curve"], actual)
+    except StructureAbsent as absent:
+        return insufficient("SCurve_Deviation", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    trend_words = ""
+    if reading["longitudinal"]:
+        trend_words = (f"; the gap is {reading['trend_direction']}, having moved "
+                       f"{_js_str(round2(reading['trend']))} since the period before")
+    return calibration_pending(
+        "SCurve_Deviation",
+        f"Work performed stands at {_js_str(round2(reading['actual']))} against "
+        f"{_js_str(round2(reading['planned']))} planned by this point, a deviation of "
+        f"{_js_str(round2(reading['deviation']))}{trend_words}",
+        deviation=round2(reading["deviation"]),
+        relative_deviation=(None if reading["relative_deviation"] is None
+                            else round2(reading["relative_deviation"])),
+        planned_cumulative=reading["planned"],
+        actual_cumulative=reading["actual"],
+        points=reading["points"],
+        longitudinal=reading["longitudinal"],
+        trend=(round2(reading["trend"]) if reading["longitudinal"] else None),
+        trend_direction=reading.get("trend_direction"),
+        baseline_version=baseline["baseline_version"],
+        canonical_structure="time_phased_baseline",
     )
-    for _raw, _ok, _words in _domains:
-        _v = num(_raw, None)
-        if _v is None or not _ok(_v):
-            return insufficient(
-                "SCurve_Deviation",
-                f"No deviation from the planned progress curve is measurable: {_words}. No "
-                f"substitute figure is used in its place.",
-                ABSTAIN_MALFORMED_INPUT)
-    pct_dev = si["actualPctComplete"] - si["plannedPctComplete"]
-    if not si["pv"] > 0:
-        return insufficient("SCurve_Deviation")
-    value_dev = ((si["ev"] - si["pv"]) / si["pv"]) * 100
-    combined = (pct_dev + value_dev) / 2
-    color = ("Green" if combined >= -2 else "Yellow" if combined >= -5
-             else "Amber" if combined >= -10 else "Red")
-    return {
-        "method_class": "SCurve_Deviation",
-        "status_color": color,
-        "pct_deviation": round1(pct_dev),
-        "value_deviation": round1(value_dev),
-        "evidence_metric": (
-            f"S-curve: {_js_str(round1(pct_dev))}% behind planned progress, "
-            f"{_js_str(round1(value_dev))}% EV vs PV deviation"
-        ),
-    }
 
 
 # ------------------------------------------------------------ A2.7 Milestone Trend Analysis
 
 
 def run_milestone_trend(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    mh = si.get("milestoneHistory")
-    if not isinstance(mh, list) or len(mh) < 2:
-        return insufficient("Milestone_Trend",
-                            "Awaiting a second schedule update (2 snapshots needed)")
-    latest, prev = mh[-1], mh[-2]
-    prev_by_name: dict[str, float] = {}
-    for m in (prev or {}).get("milestones") or []:
-        if m and m.get("name"):
-            ms = _js_date_ms(m.get("forecast"))
-            if ms is not None:
-                prev_by_name[m["name"]] = ms
-    matched = []
-    worst_slip = -math.inf
-    worst_name = None
-    sum_slip = 0.0
-    for m in (latest or {}).get("milestones") or []:
-        if not m or not m.get("name"):
-            continue
-        lf = _js_date_ms(m.get("forecast"))
-        pf = prev_by_name.get(m["name"])
-        if lf is None or pf is None:
-            continue
-        slip = int(js_round((lf - pf) / 86400000))
-        matched.append({"name": m["name"], "slip": slip})
-        sum_slip += slip
-        if slip > worst_slip:
-            worst_slip = slip
-            worst_name = m["name"]
-    if not matched:
-        return insufficient("Milestone_Trend", "Milestone names not comparable across periods")
-    mean_slip = sum_slip / len(matched)
-    color = ("Green" if mean_slip <= 0 else "Yellow" if mean_slip <= 7
-             else "Amber" if mean_slip <= 14 else "Red")
-    # One badly slipping milestone must not hide inside the average.
-    if worst_slip > 21 and color in ("Green", "Yellow"):
-        color = "Amber"
+    """
+    RUN 28, v3. VARIANCE AGAINST THE ORIGINAL COMMITMENT, AND DRIFT BETWEEN FORECASTS.
 
-    def slip_str(d: float) -> str:
-        d = round1(d)
-        return ("+" if d >= 0 else "") + _js_str(d) + "d"
+    THE SUPPLIED CONTRACT requires stable milestone identity across reporting periods, with each
+    milestone carrying its original baseline date, its current approved baseline date, the report
+    date, the forecast date, the schedule version and the actual date once achieved. MV is the
+    forecast date less the BASELINE date; MD is the forecast date less the previous forecast
+    date. Insufficient repeated forecasts is NOT ESTIMABLE for a trend claim, and the original
+    commitment history may not be erased after a rebaseline.
 
-    def period_of(s) -> str:
-        return str((s or {}).get("at") or "")[:7] or "?"
+    WHAT v2 DID. It compared the last two schedule snapshots and reported the mean slip between
+    them, matching milestones by NAME. That is the drift term alone: the variance against the
+    committed baseline, which is the measurement the method is named for, was never computed, and
+    a rebaseline was invisible because no original commitment was retained.
 
-    n = len(matched)
-    return {
-        "method_class": "Milestone_Trend",
-        "status_color": color,
-        "mean_slip_days": round1(mean_slip),
-        "worst_slip_days": int(worst_slip),
-        "worst_milestone": worst_name,
-        "matched_count": n,
-        "evidence_metric": (
-            f"{n} milestone{'' if n == 1 else 's'} matched "
-            f"{period_of(prev)}→{period_of(latest)}; mean slip {slip_str(mean_slip)}; "
-            f"worst '{worst_name}' {slip_str(worst_slip)}"
-        ),
-    }
+    v3 REQUIRES THE MILESTONE FORECAST HISTORY, keyed on a stable identity rather than a name,
+    and reports both variances so a rebaseline cannot hide a slip. A milestone forecast only once
+    ABSTAINS rather than being reported as a trend. No band is asserted.
+    """
+    try:
+        structure = require_v3_structure(si, "A2.7")
+        reading = milestone_trend(structure)
+    except StructureAbsent as absent:
+        return insufficient("Milestone_Trend", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    worst = max(reading["milestones"], key=lambda m: m["current_variance_days"])
+    return calibration_pending(
+        "Milestone_Trend",
+        f"{reading['milestone_count']} milestone"
+        f"{'' if reading['milestone_count'] == 1 else 's'} followed across their forecasts; the "
+        f"largest variance against the original commitment is "
+        f"{_js_str(round1(worst['current_variance_days']))} days, and "
+        f"{reading['deteriorating_count']} of them moved further out this period",
+        milestone_count=reading["milestone_count"],
+        worst_variance_days=reading["worst_variance_days"],
+        deteriorating_count=reading["deteriorating_count"],
+        milestones=reading["milestones"],
+        canonical_structure="milestone_forecast_history",
+    )
 
 
 # ------------------------------------------------------------ A2.8 Look-Ahead Schedule Health
 
 
 def run_lookahead_health(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    if not check_inputs(si, ("activitiesPlanned", "activitiesConstrained")):
-        return insufficient("Lookahead_Health")
-    planned = si["activitiesPlanned"]
-    constrained = si["activitiesConstrained"]
-    # THE ABSTENTION GUARDS. Run 4 (validate the seven). `planned` is the denominator, and a
-    # look-ahead window with no activities planned in it used to substitute a rate of zero,
-    # which is the best band this module has: a project reporting nothing to do was reported as
-    # having nothing constrained. A count of constrained activities larger than the count
-    # planned, or a negative count, is outside the domain of a ratio of one to the other and is
-    # a reading error in the document rather than a condition of the project.
-    if not planned > 0:
-        return insufficient(
-            "Lookahead_Health",
-            "Awaiting a look-ahead window with activities planned in it: a constraint rate has "
-            "no denominator without one",
-        )
-    if constrained < 0 or constrained > planned:
-        return insufficient(
-            "Lookahead_Health",
-            "Awaiting a constrained count that lies within the planned count: the figures read "
-            "from the look-ahead schedule cannot both be right",
-        )
-    rate = constrained / planned
-    is_derived = _derived(si, "activitiesPlanned")
-    # THE BAND, AND WHAT IT IS SOURCED TO: NOTHING. Run 4 (validate the seven) looked for a
-    # source that specifies these numbers for a constraint rate and did not find one. The lean
-    # construction literature does publish numeric benchmarks for plan reliability -- Ballard,
-    # H. G., "The Last Planner System of Production Control", PhD thesis, University of
-    # Birmingham, 2000, reports percent plan complete rising from around half to around seventy
-    # per cent -- but percent plan complete is the share of committed tasks actually finished,
-    # which is a different measurement from the share of look-ahead activities carrying an open
-    # constraint. Citing it here would attach a number to a quantity it was not measured on.
-    # The boundaries are therefore left exactly as they were, uncited, and this module DOES NOT
-    # VOTE on category or project status. See registry.CORE_VOTING_MODULES.
-    color = ("Green" if rate <= 0.10 else "Yellow" if rate <= 0.25
-             else "Amber" if rate <= 0.40 else "Red")
-    return {
-        "method_class": "Lookahead_Health",
-        "status_color": color,
-        "constraint_rate": int(js_round(rate * 100)),
-        "constrained": constrained,
-        "planned": planned,
-        "evidence_metric": (
-            f"{_js_str(constrained)} of {_js_str(planned)} planned activities constrained "
-            f"({int(js_round(rate * 100))}%)"
-            + (" (estimated; upload Look-Ahead Schedule for precise figures)" if is_derived else "")
-        ),
-    }
+    """
+    RUN 28, v3. READINESS GROUNDED IN A CONSTRAINT INVENTORY.
+
+    THE SUPPLIED CONTRACT. This is a PCEIF readiness indicator grounded in constraint removal and
+    Percent Plan Complete may not be substituted for it. ReadyFraction = (P - C) / P = 1 - C/P
+    over the planned and constrained activities, and a governed look-ahead horizon, activity
+    identity, constraint status and constraint category are required. No planned activities or an
+    unreliable constraint inventory is NOT ESTIMABLE. Bands remain policy and calibration.
+
+    WHAT v2 DID. It read two bare counts, activitiesPlanned and activitiesConstrained, and
+    reported the constraint rate C/P. The arithmetic was sound but there was no inventory behind
+    the counts: no activity identity, no constraint status per activity, no category and no
+    declared horizon, so nothing could be audited and a count could not be checked against
+    anything. The reported quantity was also the complement of the one the contract asks for.
+
+    v3 REQUIRES THE LOOK-AHEAD INVENTORY: the window, the status date, and one row per activity
+    carrying its identity, whether its constraints are cleared, and for an open constraint what
+    kind it is. The counts are derived from the inventory. Where the inventory is absent, an
+    activity appears twice, or a constraint status is not stated, the module ABSTAINS. The
+    reported figure is now the ready fraction the contract specifies. No band is asserted.
+    """
+    try:
+        structure = require_v3_structure(si, "A2.8")
+        reading = look_ahead_ready_fraction(structure)
+    except StructureAbsent as absent:
+        return insufficient("Lookahead_Health", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
+        "Lookahead_Health",
+        f"{reading['planned'] - reading['constrained']} of {reading['planned']} activities "
+        f"planned in the {reading['horizon']} look ahead window are free of open constraints, a "
+        f"ready fraction of {_js_str(round2(reading['ready_fraction']))}",
+        ready_fraction=round2(reading["ready_fraction"]),
+        planned=reading["planned"],
+        constrained=reading["constrained"],
+        constraint_categories=reading["constraint_categories"],
+        horizon=reading["horizon"],
+        canonical_structure="look_ahead_schedule",
+    )
 
 
 # ------------------------------------------------------------ A2.9 Resource Loading Index
 
 
 def run_resource_loading(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    if not check_inputs(si, ("plannedLaborHours", "actualLaborHours")):
-        return insufficient("Resource_Loading")
-    planned = num(si.get("plannedLaborHours"), 0)
-    actual = num(si.get("actualLaborHours"), 0)
-    if planned <= 0:
-        return insufficient("Resource_Loading", "Planned labor hours not available")
-    # RUN 10, BUCKET 2. Negative actual hours are not a measurement. Left alone they produced a
-    # negative load ratio, which fell off the bottom of the ladder and read Red: the right colour
-    # for the wrong reason, with a ratio beside it that is not a quantity of work.
-    if num(si.get("actualLaborHours"), None) is None or actual < 0:
-        return insufficient(
-            "Resource_Loading",
-            "Actual labor hours are reported as a negative figure, which is not a quantity of "
-            "work that can have been performed",
-            ABSTAIN_MALFORMED_INPUT)
-    ratio = actual / planned
-    if 0.90 <= ratio <= 1.10:
-        color = "Green"
-    elif 0.80 <= ratio < 0.90 or 1.10 < ratio <= 1.20:
-        color = "Yellow"
-    elif 0.70 <= ratio < 0.80 or 1.20 < ratio <= 1.35:
-        color = "Amber"
-    else:
-        color = "Red"
-    return {
-        "method_class": "Resource_Loading",
-        "status_color": color,
-        "load_ratio": round2(ratio),
-        "evidence_metric": (
-            f"Actual {_grouped(actual)}h vs planned {_grouped(planned)}h "
-            f"(ratio {_js_str(round2(ratio))})"
-        ),
-    }
+    """
+    RUN 28, v3. TIME-PHASED DEMAND AGAINST CAPACITY.
+
+    THE SUPPLIED CONTRACT. LoadRatio_t = Demand_t / AvailableCapacity_t for each time period,
+    requiring a time bucket, a resource type, the planned or required demand, the available
+    capacity, the amount deployed where used, and the resource constraints. It states in terms
+    that a project-total planned-versus-actual labour ratio is NOT the canonical Resource Loading
+    Index, and that with no time-phased resource and capacity structure the answer is NOT
+    ESTIMABLE.
+
+    WHAT v2 DID, exactly the thing the contract names as not canonical: actualLaborHours divided
+    by plannedLaborHours, one ratio for the whole project, with no time bucket, no resource type
+    and no capacity anywhere in it. Capacity is the denominator the index is defined on and the
+    platform held no figure for it at all.
+
+    v3 REQUIRES THE TIME-PHASED RESOURCE PROFILE. Every bucket carries its period, its resource
+    type, the demand and the capacity, and a load ratio is reported for each; the peak is
+    reported as the headline because a profile that is over capacity in one period is over
+    capacity. Where the profile is absent the module ABSTAINS. No band is asserted.
+    """
+    try:
+        structure = require_v3_structure(si, "A2.9")
+        reading = resource_loading(structure)
+    except StructureAbsent as absent:
+        return insufficient("Resource_Loading", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    peak = reading["peak"]
+    return calibration_pending(
+        "Resource_Loading",
+        f"The heaviest period is {peak['time_bucket']} for {peak['resource_type']}, demanding "
+        f"{_grouped(peak['demand'])} against {_grouped(peak['available_capacity'])} available, a "
+        f"load ratio of {_js_str(round2(peak['load_ratio']))}; "
+        f"{reading['over_capacity_buckets']} of {reading['bucket_count']} periods are above "
+        f"capacity",
+        peak_load_ratio=round2(reading["peak_load_ratio"]),
+        peak_time_bucket=peak["time_bucket"],
+        peak_resource_type=peak["resource_type"],
+        over_capacity_buckets=reading["over_capacity_buckets"],
+        bucket_count=reading["bucket_count"],
+        buckets=reading["buckets"],
+        canonical_structure="resource_profile",
+    )
 
 
 # ------------------------------------------------------------ A2.10 Schedule Risk Analysis P80
 
 
 def run_schedule_risk(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    if not check_inputs(si, ("spi", "baselineEnd", "baselineStart", "actualPctComplete")):
-        return insufficient("Schedule_Risk_Analysis")
-    end_ms = _js_date_ms(si.get("baselineEnd"))
-    start_ms = _js_date_ms(si.get("baselineStart"))
-    if end_ms is None or start_ms is None:
-        return insufficient("Schedule_Risk_Analysis")
-    total_days = (end_ms - start_ms) / 86400000
-    if total_days <= 0:
-        return insufficient("Schedule_Risk_Analysis")
-    # RUN 10, BUCKET 2. Three faults from one open domain. A schedule index of exactly zero
-    # raised inside the division and lost the whole project's result to an exception rather than
-    # to this module's abstention. A negative index turned the remaining duration negative and
-    # reported a delay of fewer than zero days, which banded Green. And a reported completion
-    # outside nought to one hundred produced a remaining duration that is not a duration.
-    if not si["spi"] > 0:
-        return insufficient(
-            "Schedule_Risk_Analysis",
-            "Schedule performance is recorded as zero or below, which no remaining duration can "
-            "be divided by",
-            ABSTAIN_INVALID_DENOMINATOR)
-    pct = num(si.get("actualPctComplete"), None)
-    if pct is None or pct < 0 or pct > 100:
-        return insufficient(
-            "Schedule_Risk_Analysis",
-            "The reported completion percentage falls outside the range a percentage can "
-            "occupy, so no remaining duration is measurable from it",
-            ABSTAIN_MALFORMED_INPUT)
-    remaining_days = total_days * (100 - si["actualPctComplete"]) / 100
-    p50_days = remaining_days / si["spi"]
-    uncertainty = max(0.05, 1 - si["spi"]) * 0.5
-    p80_days = p50_days * (1 + uncertainty * 1.28)
-    delay_days = int(js_round(p80_days - remaining_days))
-    color = ("Green" if delay_days <= 0 else "Yellow" if delay_days <= 14
-             else "Amber" if delay_days <= 30 else "Red")
-    return {
-        "method_class": "Schedule_Risk_Analysis",
-        "status_color": color,
-        "p50_delay_days": int(js_round(p50_days - remaining_days)),
-        "p80_delay_days": delay_days,
-        "evidence_metric": f"SRA P80 delay: {delay_days} days beyond baseline",
-    }
+    """
+    RUN 28, v3. THE NETWORK RECOMPUTED ON EVERY TRIAL.
+
+    THE SUPPLIED CONTRACT requires a stochastic network simulation: the activity network,
+    duration distributions, calendars, risk events where used, dependencies where material, and a
+    Monte Carlo RECOMPUTATION OF THE NETWORK FOR EVERY TRIAL. The reported figure is the 0.80
+    empirical quantile of the simulated completion times. A deterministic normal z-score uplift
+    is NOT Schedule Risk Analysis P80, and with no network or distributions the answer is NOT
+    ESTIMABLE.
+
+    WHAT v2 DID, exactly the forbidden thing. remaining_days / spi gave a P50, then
+    uncertainty = max(0.05, 1 - spi) * 0.5 and p80 = p50 * (1 + uncertainty * 1.28), where 1.28
+    is the standard normal 80th percentile. No network, no distribution, no trial and no
+    simulation: one closed-form multiplication of a reported ratio, published as a P80.
+
+    v3 REQUIRES THE SCHEDULE NETWORK with a three-point duration on every activity, redraws every
+    duration on every trial and recomputes the forward and backward passes each time. Where the
+    network or any distribution is absent the module ABSTAINS. No band is asserted.
+    """
+    try:
+        structure = require_v3_structure(si, "A2.10")
+        network = parse_schedule_network(structure)
+        reading = schedule_risk_p80(network, rand, trials=2000)
+    except StructureAbsent as absent:
+        return insufficient("Schedule_Risk_Analysis", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
+        "Schedule_Risk_Analysis",
+        f"Simulating the network {reading['trials']} times puts the eightieth percentile "
+        f"completion at {_js_str(round2(reading['p80_finish']))} days against the "
+        f"{_js_str(round2(reading['deterministic_finish']))} the durations give without "
+        f"variation",
+        p80_finish_days=round2(reading["p80_finish"]),
+        p50_finish_days=round2(reading["p50_finish"]),
+        deterministic_finish_days=round2(reading["deterministic_finish"]),
+        mean_finish_days=round2(reading["mean_finish"]),
+        trials=reading["trials"],
+        quantile_convention="right-continuous empirical inverse",
+        schedule_version=network["schedule_version"],
+        canonical_structure="schedule_network",
+    )
 
 
 # ------------------------------------------------------------ A2.11 Critical Path Index
@@ -516,144 +465,163 @@ def run_schedule_risk(si: dict, rand: Callable[[], float], period_cutoff) -> dic
 
 def run_critical_path_index(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    RUN 7. The index is the average of two things: progress against plan, and the schedule
-    index. Where no planned progress had been reported the first of the two was replaced by the
-    second, so the average became the schedule index averaged with itself and the module reported
-    a two-input measure it had one input for. On a project with no planned progress that produced
-    Amber. Planned progress is now required to be above zero, because it is the denominator of
-    the ratio, and the module abstains rather than quietly reporting a different measure under
-    the same name.
+    RUN 28, v3. THE FORWARD AND BACKWARD PASS, NOT A WEIGHTED AVERAGE OF TWO RATIOS.
+
+    THE SUPPLIED CONTRACT. The registered name is kept in Run 28. The underlying scientific
+    contract is actual CPM critical-path status and margin, requiring a forward and backward
+    pass, and it states in terms that a weighted SPI/progress calculation is not a critical-path
+    method and that with no valid network the answer is NOT ESTIMABLE.
+
+    WHAT v2 DID, exactly the forbidden thing: (actualPctComplete / plannedPctComplete + spi) / 2.
+    Run 27 proved this was a function of the schedule index and the progress ratio alone,
+    invariant across thirty-two perturbations of every other input, which is what one expects of
+    an average of two reported ratios published under a network method's name.
+
+    v3 REQUIRES THE SCHEDULE NETWORK and reports what the passes yield: the project finish, which
+    activities carry no float and are therefore critical, and the smallest margin among those
+    that are not. Where the network is absent the module ABSTAINS. No band is asserted; float
+    bands are named in the contract as calibration dependent.
     """
-    if not check_inputs(si, ("spi", "plannedPctComplete", "actualPctComplete")):
-        return insufficient("Critical_Path_Index",
-                            "Insufficient data: the schedule performance index and both the "
-                            "planned and reported percent complete are needed, and at least one "
-                            "of them has not been reported for this period.",
-                            ABSTAIN_MISSING_INPUT)
-    # RUN 14. The reported percent complete is DECLARED to the preflight, not merely read, so
-    # the shared layer applies the upper end of its domain to it. Run 13 read a reported
-    # progress of ten thousand per cent as Green here.
-    verdict = eligible(si,
-                       required=(("actualPctComplete", "the reported percent complete"),),
-                       positive=(("plannedPctComplete", "the planned percent complete"),))
-    if verdict:
-        return refuse("Critical_Path_Index", verdict)
-    # RUN 10, BUCKET 2. Run 7 guarded the denominator and left the schedule index domain open,
-    # so an index of zero or below was averaged into the composite as though it were performance.
-    if not si["spi"] > 0:
-        return insufficient(
-            "Critical_Path_Index",
-            "Schedule performance is recorded as zero or below, which is not a performance "
-            "reading this index can average",
-            ABSTAIN_MALFORMED_INPUT)
-    progress_ratio = si["actualPctComplete"] / si["plannedPctComplete"]
-    cpi_schedule = si["spi"]
-    index = _round3((progress_ratio + cpi_schedule) / 2)
-    color = ("Green" if index >= 0.95 else "Yellow" if index >= 0.92
-             else "Amber" if index >= 0.88 else "Red")
-    return {
-        "method_class": "Critical_Path_Index",
-        "status_color": color,
-        "critical_path_index": index,
-        "evidence_metric": f"Critical Path Index: {_js_str(index)}",
-    }
+    try:
+        structure = require_v3_structure(si, "A2.11")
+        network = parse_schedule_network(structure)
+        reading = critical_path_status(network)
+    except StructureAbsent as absent:
+        return insufficient("Critical_Path_Index", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    margin = reading["minimum_non_critical_float"]
+    margin_words = ("every activity is critical" if margin is None
+                    else f"the smallest margin off it is "
+                         f"{_js_str(round2(margin))} days")
+    return calibration_pending(
+        "Critical_Path_Index",
+        f"{reading['critical_count']} of {reading['activity_count']} activities lie on the "
+        f"critical path to a finish of {_js_str(round2(reading['project_finish']))} days, and "
+        f"{margin_words}",
+        project_finish=round2(reading["project_finish"]),
+        critical_activities=reading["critical_activities"],
+        critical_count=reading["critical_count"],
+        activity_count=reading["activity_count"],
+        critical_fraction=round2(reading["critical_fraction"]),
+        minimum_non_critical_float=(None if margin is None else round2(margin)),
+        total_float=reading["total_float"],
+        schedule_version=network["schedule_version"],
+        canonical_structure="schedule_network",
+    )
 
 
 # ------------------------------------------------------------ A3.2 Contingency Burn Rate
 
 
 def run_contingency_burn(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    if not check_inputs(si, ("originalContingency", "remainingContingency", "actualPctComplete")):
-        return insufficient("Contingency_Burn_Rate")
-    # RUN 14. Progress is the second denominator of the stress ratio, and an impossible progress
-    # figure makes the ratio small, which is the calm end of the band. Declared to the preflight
-    # so the shared layer refuses it.
-    verdict = eligible(si, required=(("actualPctComplete", "the reported percent complete"),))
-    if verdict:
-        return refuse("Contingency_Burn_Rate", verdict)
-    burned = si["originalContingency"] - si["remainingContingency"]
-    if not si["originalContingency"] > 0:
-        return insufficient(
-            "Contingency_Burn_Rate",
-            "Awaiting an original contingency amount above zero: the share consumed has no "
-            "denominator without one",
-        )
-    # THE ABSTENTION GUARDS. Run 4 (validate the seven). Two denominators and one domain.
-    # Percent complete is the second denominator, and at zero per cent complete the code
-    # substituted the raw burn share for the ratio of burn to progress, which is a different
-    # quantity reported under the same name and lands in the calmest band whenever nothing has
-    # been burned yet. A remaining contingency above the original, or below zero, is outside the
-    # domain: it makes the consumed share negative or greater than one.
-    if si["remainingContingency"] < 0 or si["remainingContingency"] > si["originalContingency"]:
-        return insufficient(
-            "Contingency_Burn_Rate",
-            "Awaiting a remaining contingency that lies between zero and the original amount: "
-            "the figures read from the pay application cannot both be right",
-        )
-    burn_rate = burned / si["originalContingency"]
-    expected = si["actualPctComplete"] / 100
-    if not expected > 0:
-        return insufficient(
-            "Contingency_Burn_Rate",
-            "Awaiting reported progress above zero: contingency consumption is compared against "
-            "how much of the work is complete, and there is nothing to compare it against yet",
-        )
-    stress = round2(burn_rate / expected)
-    # THE BAND, AND WHAT IT IS SOURCED TO: NOTHING. Run 4 looked and did not find a source
-    # specifying 1.0, 1.3 and 1.6 for contingency consumption against progress. AACE
-    # International's contingency recommended practices treat contingency as an amount
-    # determined by risk analysis, and the risk exposure a contingency covers is not spread
-    # evenly across a project's duration, so the premise the 1.0 boundary rests on -- that
-    # contingency should be consumed in proportion to progress -- is not only uncited, it is
-    # not what the literature describes. The boundaries are left as they were, uncited, and
-    # this module DOES NOT VOTE. See registry.CORE_VOTING_MODULES.
-    color = ("Green" if stress <= 1.0 else "Yellow" if stress <= 1.3
-             else "Amber" if stress <= 1.6 else "Red")
+    """
+    RUN 28, v3. THE CONSUMED FRACTION AND THE PROGRESS-NORMALIZED BURN, AND NO BANDS.
+
+    THE SUPPLIED CONTRACT. C = (OriginalContingency - RemainingContingency) /
+    OriginalContingency, and NormalizedBurn = C / ProgressFraction when the progress fraction is
+    above zero. It states in terms that NO universal traffic-light bands are supplied and that
+    threshold calibration belongs later.
+
+    WHAT v2 DID. The consumed fraction and the normalized burn were both computed correctly; what
+    was wrong was the four-band ladder over the normalized burn at 1.0, 1.3 and 1.6, which Run 4
+    already recorded as uncited and which Run 27 carried as CORRECT_ABSTENTION with a calibration
+    finding. The contract now settles it: the bands go, the figures stay.
+
+    v3 reports both figures and asserts NO colour. Where the original contingency is absent or
+    not above zero, or the remaining amount does not lie between nothing and it, the module
+    ABSTAINS as it did before. Where progress is absent the consumed fraction is still reported
+    and the normalized burn is not, rather than the whole reading being withheld: the contract
+    conditions only the second figure on progress.
+    """
+    if not check_inputs(si, ("originalContingency", "remainingContingency")):
+        return insufficient("Contingency_Burn_Rate",
+                            "Insufficient data: the original and remaining contingency amounts "
+                            "are needed, and at least one of them has not been reported for "
+                            "this period.", ABSTAIN_MISSING_INPUT)
+    # ABSENT AND IMPOSSIBLE ARE NOT THE SAME THING, and Run 14's finding is why they are kept
+    # apart here. A progress figure that was never reported means the progress-normalised burn
+    # cannot be formed, and the contract conditions only that second figure on progress, so the
+    # consumed fraction is still a real measurement and is reported. A progress figure that WAS
+    # reported and lies outside the range a percentage can occupy is a malformed reading, and
+    # Run 13 recorded that an impossible figure read as health here; the whole reading is refused
+    # in that case rather than the figure being quietly treated as absent, because treating a
+    # wrong number as a missing one is how a reading error becomes invisible.
+    progress = None
+    if si.get("actualPctComplete") is not None:
+        verdict = eligible(si, required=(("actualPctComplete",
+                                          "the reported percent complete"),))
+        if verdict:
+            return refuse("Contingency_Burn_Rate", verdict)
+        progress = num(si.get("actualPctComplete"), None)
+        progress = None if progress is None else progress / 100.0
+    try:
+        reading = contingency_burn(num(si.get("originalContingency"), None),
+                                   num(si.get("remainingContingency"), None), progress)
+    except StructureAbsent as absent:
+        return insufficient("Contingency_Burn_Rate", absent.sentence, ABSTAIN_INVALID_DENOMINATOR)
+    burn = reading["normalized_burn"]
+    burn_words = ("; no progress has been reported, so no burn against progress is offered"
+                  if burn is None
+                  else f" at {int(js_round(reading['progress_fraction'] * 100))} per cent "
+                       f"complete, a burn against progress of {_js_str(round2(burn))}")
     is_derived = _derived(si, "originalContingency", "remainingContingency")
-    return {
-        "method_class": "Contingency_Burn_Rate",
-        "status_color": color,
-        "burn_rate_pct": int(js_round(burn_rate * 100)),
-        "remaining_pct": int(js_round((1 - burn_rate) * 100)),
-        "burn_stress": stress,
-        "evidence_metric": (
-            f"Contingency: {int(js_round(burn_rate * 100))}% burned at "
-            f"{int(js_round(si['actualPctComplete']))}% complete"
-            + (" (estimated; upload Pay Application contingency detail for precise figures)"
-               if is_derived else "")
-        ),
-    }
+    return calibration_pending(
+        "Contingency_Burn_Rate",
+        f"Contingency is {int(js_round(reading['consumed_fraction'] * 100))} per cent "
+        f"consumed{burn_words}"
+        + (" (estimated; upload Pay Application contingency detail for precise figures)"
+           if is_derived else ""),
+        consumed_fraction=round2(reading["consumed_fraction"]),
+        burn_rate_pct=int(js_round(reading["consumed_fraction"] * 100)),
+        remaining_pct=int(js_round((1 - reading["consumed_fraction"]) * 100)),
+        normalized_burn=(None if burn is None else round2(burn)),
+        original_contingency=reading["original_contingency"],
+        remaining_contingency=reading["remaining_contingency"],
+    )
 
 
 # ------------------------------------------------------------ A3.3 Labor Productivity Index
 
 
 def run_labor_productivity(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    if not check_inputs(si, ("plannedLaborHours", "actualLaborHours", "actualPctComplete")):
-        return insufficient("Labor_Productivity")
-    # RUN 14. The earned-hours rate is linear and increasing in reported progress, so an
-    # impossible progress figure reads as the best possible productivity. Declared to the
-    # preflight so the shared layer refuses it.
-    verdict = eligible(si, required=(("actualPctComplete", "the reported percent complete"),))
-    if verdict:
-        return refuse("Labor_Productivity", verdict)
-    planned = num(si.get("plannedLaborHours"), 0)
-    actual = num(si.get("actualLaborHours"), 0)
-    pct = num(si.get("actualPctComplete"), 0)
-    if actual <= 0:
-        return insufficient("Labor_Productivity", "Actual labor hours not available")
-    rate = round2(((pct / 100) * planned) / actual)
-    color = ("Green" if rate >= 0.95 else "Yellow" if rate >= 0.85
-             else "Amber" if rate >= 0.75 else "Red")
-    return {
-        "method_class": "Labor_Productivity",
-        "status_color": color,
-        "earned_hours_rate": rate,
-        "evidence_metric": (
-            f"Earned-hours rate {_js_str(rate)} ({_js_str(round1(pct))}% × "
-            f"{_grouped(planned)}h planned ÷ {_grouped(actual)}h actual)"
-        ),
-    }
+    """
+    RUN 28, v3. OUTPUT PER LABOUR INPUT, ON A COMPARABLE INSTALLED QUANTITY.
+
+    THE SUPPLIED CONTRACT. Productivity means output per labour input: ActualProductivity =
+    EarnedOutput / ActualLaborHours, PlannedProductivity = PlannedOutput / PlannedLaborHours, and
+    the index is the ratio of the two. The output must be a comparable earned or installed
+    quantity, an earned labour-hours basis, or another explicitly equivalent production quantity.
+    It states in terms that planned hours over actual hours alone is NOT the canonical metric and
+    that with no comparable output basis the answer is NOT ESTIMABLE.
+
+    WHAT v2 DID, and it is the forbidden form with a percentage in front of it:
+    ((actualPctComplete / 100) * plannedLaborHours) / actualLaborHours. The numerator is not an
+    installed quantity, it is the planned hours scaled by a reported progress percentage, so the
+    "productivity" moved with whatever percentage was typed into a monthly report.
+
+    v3 REQUIRES THE PRODUCTION RECORD: the quantity installed, the quantity planned, the unit
+    both are counted in, the hours each took, and where the quantities came from. Where the
+    record is absent the module ABSTAINS. No band is asserted.
+    """
+    try:
+        structure = require_v3_structure(si, "A3.3")
+        reading = labor_productivity(structure)
+    except StructureAbsent as absent:
+        return insufficient("Labor_Productivity", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
+        "Labor_Productivity",
+        f"{_js_str(round2(reading['actual_productivity']))} {reading['output_unit']} an hour "
+        f"installed against {_js_str(round2(reading['planned_productivity']))} planned, a "
+        f"productivity index of {_js_str(round2(reading['productivity_index']))}",
+        productivity_index=round2(reading["productivity_index"]),
+        actual_productivity=reading["actual_productivity"],
+        planned_productivity=reading["planned_productivity"],
+        output_unit=reading["output_unit"],
+        earned_output=reading["earned_output"],
+        planned_output=reading["planned_output"],
+        actual_labor_hours=reading["actual_labor_hours"],
+        planned_labor_hours=reading["planned_labor_hours"],
+        canonical_structure="production_output_record",
+    )
 
 
 # ------------------------------------------------------------ A3.4 Material Cost Variance
@@ -726,58 +694,44 @@ def run_material_cost_variance(si: dict, rand: Callable[[], float],
 
 def run_overhead_absorption(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    RUN 7. An indirect plan of zero, or a plan scaled by a reported completion of zero, made the
-    denominator zero and the absorption ratio was substituted as exactly 1, which is the value of
-    a project absorbing overhead precisely as planned, and which banded Green. There is no
-    planned indirect cost to absorb against in that state, so no absorption ratio exists and the
-    module refuses. The proxy itself is unchanged: it remains a ratio of actual indirect cost to
-    a progress-scaled indirect plan, with the qualifier it already carries about whether the plan
-    is a total or a period figure.
+    RUN 28, v3. AN EXPLICIT ALLOCATION BASE, OR NOTHING.
+
+    THE SUPPLIED CONTRACT. PlannedRate = PlannedOverhead / PlannedDriver, ActualRate =
+    ActualOverhead / ActualDriver, and the variance is the difference between the two rates with
+    the relative variance as a share of the planned rate. It states in terms that
+    IndirectCostActual over IndirectCostPlan with no allocation base is NOT overhead absorption
+    and that with no allocation base the answer is NOT ESTIMABLE.
+
+    WHAT v2 DID, exactly the forbidden thing with a progress scaling on it: indirectCostActual
+    divided by (indirectCostPlan * actualPctComplete / 100). There is no driver anywhere in that
+    expression; overhead is absorbed over a base such as direct labour hours or direct cost, and
+    the platform held no figure for one.
+
+    v3 REQUIRES THE ALLOCATION BASE RECORD: the base named, the planned and actual overhead, the
+    planned and actual amount of the base, and where the driver figures came from. Where the
+    record is absent the module ABSTAINS. Both rates and both variances are reported. No band is
+    asserted.
     """
-    if not check_inputs(si, ("indirectCostPlan", "indirectCostActual")):
-        return insufficient("Overhead_Absorption",
-                            "Insufficient data: the planned and actual indirect cost figures "
-                            "are needed, and at least one of them has not been reported for "
-                            "this period.",
-                            ABSTAIN_MISSING_INPUT)
-    # RUN 14. TWO OF RUN 13'S NINE DEFECT OCCURRENCES MEET IN THIS MODULE, and they are the same
-    # line. The absorption ratio is actual indirect cost over a plan SCALED BY PROGRESS, and
-    # progress was optional: absent, the plan was used UNSCALED, which is the largest denominator
-    # the module can form, so the ratio fell and the band improved. Deleting the progress figure
-    # from a project running hot moved it off Red. That is missing evidence buying a better
-    # reading, and the unscaled plan is a substituted default in every sense that matters even
-    # though no literal is written. Progress is a required input of the quantity this module
-    # names, so it is required, and it carries the upper domain the preflight now applies, which
-    # closes the second occurrence: an impossible progress figure inflated the denominator in
-    # exactly the same direction and read Green.
-    verdict = eligible(si, required=(("actualPctComplete", "the reported percent complete"),))
-    if verdict:
-        return refuse("Overhead_Absorption", verdict)
-    pct = si["actualPctComplete"] / 100
-    planned = si["indirectCostPlan"] * pct
-    if not (planned > 0):
-        return insufficient("Overhead_Absorption",
-                            "Insufficient data: the planned indirect cost at this project's "
-                            "reported progress is zero or below, so there is nothing to absorb "
-                            "against and no absorption ratio can be formed. No substitute "
-                            "figure is used in its place.",
-                            ABSTAIN_INVALID_DENOMINATOR)
-    absorption = si["indirectCostActual"] / planned
-    absorption = _round3(absorption)
-    is_derived = _derived(si, "indirectCostPlan")
-    color = ("Green" if absorption <= 1.05 else "Yellow" if absorption <= 1.15
-             else "Amber" if absorption <= 1.30 else "Red")
-    return {
-        "method_class": "Overhead_Absorption",
-        "status_color": color,
-        "absorption_ratio": absorption,
-        "evidence_metric": (
-            f"Overhead absorption: {int(js_round(absorption * 100))}% of planned indirect cost "
-            f"at current progress"
-            + (" (estimated at 12% overhead; upload Cost Report for precise figures)"
-               if is_derived else "")
-        ),
-    }
+    try:
+        structure = require_v3_structure(si, "A3.5")
+        reading = overhead_absorption(structure)
+    except StructureAbsent as absent:
+        return insufficient("Overhead_Absorption", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
+        "Overhead_Absorption",
+        f"Overhead is being absorbed at {_js_str(round2(reading['actual_rate']))} for each unit "
+        f"of {reading['allocation_base']} against {_js_str(round2(reading['planned_rate']))} "
+        f"planned, a rate variance of "
+        f"{_js_str(round1(reading['relative_rate_variance'] * 100))} per cent",
+        planned_rate=reading["planned_rate"],
+        actual_rate=reading["actual_rate"],
+        rate_variance=reading["rate_variance"],
+        relative_rate_variance=reading["relative_rate_variance"],
+        allocation_base=reading["allocation_base"],
+        planned_driver=reading["planned_driver"],
+        actual_driver=reading["actual_driver"],
+        canonical_structure="overhead_allocation_base",
+    )
 
 
 # ------------------------------------------------------------ A3.6 Cost Risk Analysis P80
@@ -785,49 +739,47 @@ def run_overhead_absorption(si: dict, rand: Callable[[], float], period_cutoff) 
 
 def run_cost_risk(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    THE FIFTEEN DEFECTS, defect 5, and STRICTLY the domain crash.
+    RUN 28, v3. A SIMULATED TOTAL-COST DISTRIBUTION, NOT AN INFLATED COST INDEX.
 
-    `bac / cpi` had no guard at all, so a cost performance index of exactly zero raised inside
-    the computation rather than abstaining, and every project-level result of that run was lost
-    to an exception rather than to one module's stated abstention. A zero index abstains now,
-    as it already did in the four other computations that divide by it, and a zero or negative
-    budget abstains with it because the delta below is a percentage OF that budget.
+    THE SUPPLIED CONTRACT. TotalCost = BaseCostComponents + RealizedRiskEvents, requiring the
+    components, the risk events, their probabilities and impact distributions, dependence where
+    material, a simulation, and an empirical total-cost distribution whose 0.80 quantile is
+    reported under a frozen quantile convention. It states in terms that a deterministic CPI
+    uplift is NOT CRA P80 and that with no stochastic cost-risk model the answer is NOT
+    ESTIMABLE.
 
-    THE METHOD IS NOT REBUILT AND MUST NOT BE. The eightieth percentile here is a deterministic
-    inflation of the current index, not a cost risk analysis over a risk register, and the
-    owner's open items already record that this computation cannot consume register data without
-    changing its arithmetic. That is a different piece of work with a different owner. Fixing the
-    crash is in scope; making this a real analysis is not.
+    WHAT v2 DID, exactly the forbidden thing. eac = bac / cpi, then uncertainty = max(0.03,
+    abs(1 - cpi)) * 0.5 and p80_eac = eac * (1 + uncertainty * 1.28). One closed-form
+    multiplication of a reported cost index by the standard normal 80th percentile, with no
+    component, no risk event, no probability, no impact and no trial anywhere in it. The Run-7
+    comment in this file said as much and deferred the work; this is that work.
+
+    v3 REQUIRES THE COST RISK MODEL and simulates it: each event occurs with its stated
+    probability and, when it does, its impact is drawn from its stated distribution, and the
+    reported figure is the empirical eightieth percentile of the resulting total cost under the
+    convention frozen in canonical_v3.empirical_quantile. Where the model is absent the module
+    ABSTAINS. No band is asserted.
     """
-    if not check_inputs(si, ("bac", "cpi", "ac", "ev")):
-        return insufficient("Cost_Risk_Analysis")
-    if si["cpi"] <= 0:
-        return insufficient(
-            "Cost_Risk_Analysis",
-            "Cost performance is recorded as zero or below, which no forecast can be scaled by")
-    if si["bac"] <= 0:
-        return insufficient(
-            "Cost_Risk_Analysis",
-            "No positive budget at completion is recorded to measure an overrun against")
-    eac = si["bac"] / si["cpi"]
-    uncertainty = max(0.03, abs(1 - si["cpi"])) * 0.5
-    p80_eac = eac * (1 + uncertainty * 1.28)
-    p80_delta_pct = ((p80_eac - si["bac"]) / si["bac"]) * 100
-    color = ("Green" if p80_delta_pct <= 5 else "Yellow" if p80_delta_pct <= 10
-             else "Amber" if p80_delta_pct <= 20 else "Red")
-    return {
-        "method_class": "Cost_Risk_Analysis",
-        "status_color": color,
-        "p80_eac": int(js_round(p80_eac)),
-        "p80_delta_pct": round1(p80_delta_pct),
-        "evidence_metric": (
-            # RUN 10, BUCKET 2. The leading plus was hard-coded, so a forecast BELOW budget
-            # printed as a positive overrun with a minus sign inside it: the sentence a reader
-            # saw said the opposite of the figure. The sign now comes from the figure.
-            f"CRA P80 EAC: {_money(p80_eac)} "
-            f"({'+' if p80_delta_pct >= 0 else ''}{_js_str(round1(p80_delta_pct))}% BAC)"
-        ),
-    }
+    try:
+        structure = require_v3_structure(si, "A3.6")
+        reading = cost_risk_simulation(structure, rand, trials=20000)
+    except StructureAbsent as absent:
+        return insufficient("Cost_Risk_Analysis", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
+        "Cost_Risk_Analysis",
+        f"Simulating {reading['risk_event_count']} risk event"
+        f"{'' if reading['risk_event_count'] == 1 else 's'} against a base cost of "
+        f"{_money(reading['base_cost'])} over {reading['trials']} trials puts the eightieth "
+        f"percentile total cost at {_money(reading['p80_total_cost'])}",
+        p80_total_cost=reading["p80_total_cost"],
+        p50_total_cost=reading["p50_total_cost"],
+        mean_total_cost=reading["mean_total_cost"],
+        base_cost=reading["base_cost"],
+        risk_event_count=reading["risk_event_count"],
+        trials=reading["trials"],
+        quantile_convention="right-continuous empirical inverse",
+        canonical_structure="cost_risk_model",
+    )
 
 
 # ------------------------------------------------------------ A3.7 Analogous Estimating Ratio
@@ -836,92 +788,80 @@ def run_cost_risk(si: dict, rand: Callable[[], float], period_cutoff) -> dict[st
 def run_analogous_estimating(si: dict, rand: Callable[[], float],
                              period_cutoff) -> dict[str, Any]:
     """
-    RUN 20, P0B. Neither input was guarded at all, and the band read the overrun percent alone.
+    RUN 28, v3. AN IDENTIFIED ANALOG, ADAPTED BY STATED FACTORS.
 
-    Two consequences, and the two have DIFFERENT causes, which is the finding of this cycle.
+    THE SUPPLIED CONTRACT requires an identified analog project, its provenance, comparability
+    criteria, normalization and adaptation factors, with the adapted estimate the analog cost
+    multiplied through those factors. It states in terms that a preloaded analog overrun
+    percentage with NO identified analog is not canonical analogous estimating and that with no
+    governed analog the answer is NOT ESTIMABLE.
 
-    The first is invalid evidence reaching a band. A budget at completion of minus one thousand
-    still reached a Yellow band, because the budget only scaled a displayed figure and never
-    gated the band at all. That is the hole the shared positive preflight closes, the same one
-    that closed this pattern in eleven other modules, and it is closed here.
+    WHAT v2 DID, exactly the forbidden thing: it read a single scalar, analogousOverrunPct,
+    applied it to the budget and banded the percentage. Run 20 corrected what that reading SAID
+    about an underrunning analog and recorded plainly that the proxy still carried no analog
+    selection, no comparability criteria and no adaptation factors. This is that finding closed.
 
-    The second is NOT an invalid input, and Run 19's remediation instruction to refuse a negative
-    overrun was not adopted. `field_registry.SIGNED_SI_FIELDS` names `analogousOverrunPct` as one
-    of exactly four fields where a negative value is a real project condition, with its reason
-    stated: a reference project that UNDERRAN is a negative overrun. Refusing it would throw away
-    a legitimate analog, and the supervisory specification's Category 3 authority requires
-    analogs be selected and adapted, not filtered by the sign of their outcome. Two committed
-    artifacts disagreed and the field contract, which is explicit and reasoned about this exact
-    field, was followed.
-
-    What was genuinely wrong in that case is what the module SAID. It reported minus five hundred
-    as a BAC exposure, which reads as a negative quantity of money at risk, and no such quantity
-    exists: an analog that underran implies no cost exposure at all. The exposure is therefore
-    reported as nothing at risk, the signed comparison is kept beside it under its own name so no
-    information is lost, and the sentence says which of the two the reader is looking at. The
-    Green band on an underrunning analog is truthful and is left standing.
-
-    The proxy itself is unchanged and still carries no analog selection, comparability criteria
-    or adaptation factors. That is a separate structural finding and is not addressed here.
+    v3 REQUIRES THE ANALOG RECORD. Where it is absent, carries no identified project, no cost, or
+    no adaptation factors, the module ABSTAINS. No band is asserted.
     """
-    if not check_inputs(si, ("analogousOverrunPct", "bac")):
-        return insufficient("Analogous_Estimating")
-    verdict = eligible(si, required=(("analogousOverrunPct",
-                                      "the analogous overrun percent"),),
-                       positive=(("bac", "the budget at completion"),))
-    if verdict is not None:
-        return refuse("Analogous_Estimating", verdict)
-    pct = num(si.get("analogousOverrunPct"), 0)
-    bac = num(si.get("bac"), 0)
-    variance = bac * pct / 100
-    # An underrunning analog puts no money at risk, so the exposure is nought rather than a
-    # negative sum of money. The signed comparison is kept beside it, under a name that says
-    # what it is.
-    exposure = variance if variance > 0 else 0
-    color = ("Green" if pct < 3 else "Yellow" if pct < 7 else "Amber" if pct < 12 else "Red")
-    if variance >= 0:
-        sentence = (f"Analogous overrun {_js_str(round1(pct))}% → {_money(exposure)} "
-                    f"BAC exposure")
-    else:
-        sentence = (f"Analogous comparison {_js_str(round1(pct))}%: the reference project "
-                    f"underran by {_money(-variance)}, so no exposure is carried")
-    return {
-        "method_class": "Analogous_Estimating",
-        "status_color": color,
-        "analogous_overrun_pct": round1(pct),
-        "bac_exposure": int(js_round(exposure)),
-        "analogous_variance": int(js_round(variance)),
-        "evidence_metric": sentence,
-    }
+    try:
+        structure = require_v3_structure(si, "A3.7")
+        reading = analogous_estimate(structure)
+    except StructureAbsent as absent:
+        return insufficient("Analogous_Estimating", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    factor_words = ", ".join(
+        f"{f['factor_name']} {_js_str(round2(f['factor_value']))}"
+        for f in reading["adaptation_factors"])
+    return calibration_pending(
+        "Analogous_Estimating",
+        f"Adapting {reading['analog_project_id']} at {_money(reading['analog_cost'])} by "
+        f"{factor_words} gives an analogous estimate of "
+        f"{_money(reading['adapted_estimate'])}",
+        adapted_estimate=reading["adapted_estimate"],
+        analog_project_id=reading["analog_project_id"],
+        analog_cost=reading["analog_cost"],
+        adaptation_factors=reading["adaptation_factors"],
+        combined_factor=round2(reading["combined_factor"]),
+        canonical_structure="analog_estimate",
+    )
 
 
 # ------------------------------------------------------------ A3.8 Parametric Cost Index
 
 
 def run_parametric_cost(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    if not check_inputs(si, ("bac", "ev", "ac", "actualPctComplete")):
-        return insufficient("Parametric_Cost")
-    # The JavaScript divides by si.cpi without listing it as required: a missing cpi produces a
-    # NaN index, which its falsy-check then routes to insufficient. Reproduced explicitly.
-    cpi = num(si.get("cpi"), None)
-    if cpi is None or cpi == 0:
-        return insufficient("Parametric_Cost")
-    eac_cpi = si["bac"] / cpi
-    eac_parametric = si["ac"] + (si["bac"] - si["ev"])
-    if not eac_parametric > 0:
-        return insufficient("Parametric_Cost")
-    index = _round3(eac_cpi / eac_parametric)
-    if index == 0:
-        return insufficient("Parametric_Cost")
-    a = abs(index - 1)
-    color = ("Green" if a <= 0.03 else "Yellow" if a <= 0.08
-             else "Amber" if a <= 0.15 else "Red")
-    return {
-        "method_class": "Parametric_Cost",
-        "status_color": color,
-        "parametric_index": index,
-        "evidence_metric": f"Parametric index: {_js_str(index)} (CPI-EAC vs BAC-EAC divergence)",
-    }
+    """
+    RUN 28, v3. THE CANONICAL STRUCTURE EXISTS; THE MODULE STAYS DISABLED AND NON-VOTING.
+
+    THE SUPPLIED CONTRACT. Keep operationally disabled in Run 28. Build only the canonical v3
+    structure and the laboratory implementation: a parametric model requires measurable cost
+    drivers and fitted or calibrated coefficients, of the general form Cost = beta0 + beta1*x1 +
+    ... + betap*xp. It states in terms that comparing EAC formulas is not parametric estimating,
+    and that even if the laboratory implementation passes the module remains disabled and
+    non-voting until a later owner or research activation decision.
+
+    WHAT v2 DID, exactly the forbidden thing: (bac / cpi) divided by (ac + (bac - ev)), a
+    comparison of two estimate-at-completion formulas published as a parametric index. There was
+    no driver, no coefficient, no fit and no dataset in it.
+
+    WHERE THE CANONICAL IMPLEMENTATION LIVES. canonical_v3.parametric_cost, which requires the
+    drivers with their units, the fitted coefficients, the coefficient source, the fit dataset
+    and the model version, and which refuses when the drivers supplied do not match the drivers
+    the model was fitted on. It is exercised by the laboratory oracle in
+    server/tools/test_run28_canonical_oracles.py and is reached by NO production path.
+
+    THE PRODUCTION ARM REFUSES. This module sits in registry.DISABLED_CONCEPT_ONLY, so
+    run_module short-circuits before this function is called at all. The forbidden arithmetic is
+    nonetheless removed from it rather than left standing behind a gate, because a disabled
+    module is exactly where a stale claim survives unexamined.
+    """
+    return insufficient(
+        "Parametric_Cost",
+        "This measure is registered and is not operated. A parametric cost estimate needs "
+        "measurable cost drivers and coefficients fitted to a body of completed work, and "
+        "neither has been established for this platform, so no estimate is offered and no "
+        "substitute figure is used in its place.",
+        ABSTAIN_STRUCTURE_ABSENT)
 
 
 # ------------------------------------------------------------ A3.9 Inflation Adjustment Index
@@ -930,88 +870,61 @@ def run_parametric_cost(si: dict, rand: Callable[[], float], period_cutoff) -> d
 def run_inflation_adjustment(si: dict, rand: Callable[[], float],
                              period_cutoff) -> dict[str, Any]:
     """
-    RUN 7. A material baseline of zero, or a baseline scaled by a reported completion of zero,
-    made the denominator zero and the escalation was substituted as exactly 0, which is the value
-    of a project with no material escalation at all, and which banded Green. There is no
-    progress-adjusted baseline to measure escalation above in that state, so the module refuses.
-    The proxy is unchanged: still a ratio above a progress-adjusted baseline with no external
-    price index, time base or geography, exactly as its qualifier says.
+    RUN 28, v3. A NAMED EXTERNAL PRICE INDEX, OR NOTHING.
+
+    THE SUPPLIED CONTRACT requires a governed external cost or price index: the named series, its
+    authoritative source, geography, commodity or cost scope, base period, current or forecast
+    period, data vintage and the applicable cost exposure. EscalationFactor = Index_current /
+    Index_base and AdjustedCost = BaseCost * EscalationFactor. It states in terms that a
+    baseline-to-current project material price ratio is NOT an external inflation index, that
+    with no governed external index the answer is NOT ESTIMABLE, and that no external market
+    index may be fabricated or hard-coded.
+
+    WHAT v2 DID, exactly the forbidden thing: (materialCostCurrent - materialCostBaseline *
+    progress) / (materialCostBaseline * progress), floored at zero, published as a material
+    escalation. That is this project's own price movement against its own progress-scaled
+    baseline. It has no geography, no time base, no authority and no index; the module's own
+    qualifier said so.
+
+    v3 REQUIRES THE EXTERNAL INDEX RECORD, and every one of its seven provenance fields must be
+    stated or the structure is refused. No index level appears anywhere in this repository's
+    production code: both come off the supplied structure. Where the record is absent the module
+    ABSTAINS. No band is asserted.
     """
-    if not check_inputs(si, ("materialCostBaseline", "materialCostCurrent")):
-        return insufficient("Inflation_Adjustment",
-                            "Insufficient data: the baseline and current material cost figures "
-                            "are needed, and at least one of them has not been reported for "
-                            "this period.",
-                            ABSTAIN_MISSING_INPUT)
-    # RUN 11, NEIGHBOUR DEFECTS 3 AND 4 OF 7.
-    #
-    # DEFECT 3, OUT-OF-DOMAIN BANDING. Current material cost of -100,000 turned Red into Green.
-    # The escalation is floored at zero by max(), so any current cost below the progress-adjusted
-    # baseline reads as exactly nought escalation, which is the reading of a project with no
-    # material escalation at all. A negative material cost is not that project. Material costs
-    # are money and cannot be below zero.
-    #
-    # DEFECT 4, MISSINGNESS IMPROVING THE READING. Removing the reported progress turned Red into
-    # Amber. The line below used to scale the baseline by progress WHEN progress was present and
-    # silently use the full unscaled baseline when it was absent. The full baseline is the larger
-    # denominator, so withholding the progress figure always produced a smaller escalation and
-    # never a larger one: the module paid for missing evidence with a calmer band. Progress is
-    # required now. It is not defaulted, and no substitute is used.
-    _domains = (
-        (si["materialCostBaseline"], lambda v: v >= 0,
-         "the material cost baseline is reported below zero, and a cost cannot be negative"),
-        (si["materialCostCurrent"], lambda v: v >= 0,
-         "the current material cost is reported below zero, and a cost cannot be negative"),
+    try:
+        structure = require_v3_structure(si, "A3.9")
+        exposure = num(structure.get("cost_exposure"), None)
+        if exposure is None:
+            raise StructureAbsent(
+                "The price index provided does not say which cost exposure it is to be applied "
+                "to, so no adjusted cost is reported from it.")
+        reading = inflation_adjustment(structure, float(exposure))
+    except StructureAbsent as absent:
+        return insufficient("Inflation_Adjustment", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
+        "Inflation_Adjustment",
+        f"{reading['index_name']} for {reading['geography']} has moved from "
+        f"{_js_str(round2(reading['base_index_value']))} in {reading['base_period']} to "
+        f"{_js_str(round2(reading['current_index_value']))} in "
+        f"{reading['observation_period']}, a factor of "
+        f"{_js_str(round2(reading['escalation_factor']))} which puts "
+        f"{_money(reading['base_cost'])} of exposure at "
+        f"{_money(reading['adjusted_cost'])}",
+        escalation_factor=round2(reading["escalation_factor"]),
+        adjusted_cost=reading["adjusted_cost"],
+        escalation_amount=reading["escalation_amount"],
+        base_index_value=reading["base_index_value"],
+        current_index_value=reading["current_index_value"],
+        index_name=reading["index_name"],
+        index_authority=reading["authority"],
+        geography=reading["geography"],
+        index_scope=reading["scope"],
+        base_period=reading["base_period"],
+        observation_period=reading["observation_period"],
+        vintage=reading["vintage"],
+        cost_exposure=reading["base_cost"],
+        canonical_structure="external_cost_index",
     )
-    for _raw, _ok, _words in _domains:
-        _v = num(_raw, None)
-        if _v is None or not _ok(_v):
-            return insufficient(
-                "Inflation_Adjustment",
-                f"No material escalation is measurable: {_words}. No substitute figure is used "
-                f"in its place.",
-                ABSTAIN_MALFORMED_INPUT)
-    pct_raw = num(si.get("actualPctComplete"), None)
-    if pct_raw is None:
-        return insufficient(
-            "Inflation_Adjustment",
-            "Insufficient data: the reported progress is needed to scale the material cost "
-            "baseline to the work actually done, and it has not been reported for this period. "
-            "The unscaled baseline is not used in its place, because it would understate the "
-            "escalation rather than leave it unmeasured.",
-            ABSTAIN_MISSING_INPUT)
-    if not 0 <= pct_raw <= 100:
-        return insufficient(
-            "Inflation_Adjustment",
-            "No material escalation is measurable: the reported progress falls outside nought "
-            "to one hundred per cent, so it is not a share of the work. No substitute figure is "
-            "used in its place.",
-            ABSTAIN_MALFORMED_INPUT)
-    pct = pct_raw / 100
-    expected = si["materialCostBaseline"] * pct
-    if not (expected > 0):
-        return insufficient("Inflation_Adjustment",
-                            "Insufficient data: the material cost baseline at this project's "
-                            "reported progress is zero or below, so there is no baseline for "
-                            "current costs to have escalated above. No substitute figure is "
-                            "used in its place.",
-                            ABSTAIN_INVALID_DENOMINATOR)
-    escalation = max(0, (si["materialCostCurrent"] - expected) / expected)
-    escalation = _round3(escalation)
-    is_derived = _derived(si, "materialCostBaseline")
-    color = ("Green" if escalation <= 0.04 else "Yellow" if escalation <= 0.08
-             else "Amber" if escalation <= 0.15 else "Red")
-    return {
-        "method_class": "Inflation_Adjustment",
-        "status_color": color,
-        "escalation_pct": int(js_round(escalation * 100)),
-        "evidence_metric": (
-            f"Material escalation proxy: +{int(js_round(escalation * 100))}% above "
-            f"progress-adjusted baseline"
-            + (" (estimated; upload Cost Report / price index for precise figures)"
-               if is_derived else "")
-        ),
-    }
 
 
 A2_EXTENSIONS: dict[str, tuple[str, Callable]] = {

@@ -93,96 +93,24 @@ class MethodLabel:
 # them the canonical structure is absent from the corpus and inventing it is prohibited.
 # ---------------------------------------------------------------------------------------------
 
+# RUN 28. NINE ENTRIES ARE GONE FROM THIS DICTIONARY, and they are gone for the reason this file
+# says a label may go: the canonical method was implemented. A1.5, A1.6, A1.10, A1.11, A2.7,
+# A2.10, A2.11, A3.6 and A3.9 now carry out the method their registered name claims, from a
+# governed structure that arrives on the signal inputs, and they ABSTAIN when that structure is
+# absent. Each of the nine entries said, truthfully at the time, that the code did something
+# weaker than its name; leaving them would now be a false claim in the opposite direction. Two of
+# the nine were renamed in the same run on the owner's authority -- A1.10 to CPI Shrinkage
+# Forecast and A1.11 to Independent EAC Reconciliation Index -- and the registry map carries the
+# new names. A3.8's entry STAYS: that module remains disabled and non-voting, its canonical
+# structure exists only as a laboratory implementation, and a truthful label on a disabled module
+# is exactly where a stale claim would otherwise survive.
 TRUTHFUL_METHOD_LABELS: dict[str, MethodLabel] = {
 
     # ---------------------------------------------------------------- category 1, cost and EVM
-    "A1.5": MethodLabel(
-        registered="ARIMA CPI Forecast",
-        truthful="Fixed-order one-step cost index projection",
-        performs="fits a single autoregressive coefficient to the first differences of the "
-                 "reported cost performance history by the lag-one ratio, and projects one "
-                 "period ahead from the last reading",
-        absent="an identified model order, residual diagnostics, a stationarity test and a "
-               "prediction interval, none of which the computation performs or reports",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
-    "A1.6": MethodLabel(
-        registered="Earned Schedule",
-        truthful="Reported against planned progress ratio",
-        performs="divides the reported percent complete by the planned percent complete and "
-                 "bands the ratio, then converts it to a day count using the baseline duration "
-                 "where both baseline dates are reported",
-        absent="a time-phased planned value curve, which is what earned schedule is measured "
-               "against: the method locates the time at which the earned value would have been "
-               "planned, and no such curve exists in the corpus",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
-    "A1.11": MethodLabel(
-        registered="ICE Ratio",
-        truthful="Internal completion forecast divergence index",
-        performs="divides the budget-over-index completion forecast by the actual-cost-plus-"
-                 "remaining-work completion forecast, both computed here from the same reported "
-                 "figures, and bands the distance of the ratio from one",
-        absent="an independent cost estimate: an estimate prepared separately, by a different "
-               "party or method, against the same scope. Both forecasts compared here are this "
-               "platform's own arithmetic on one set of numbers",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
-    "A1.10": MethodLabel(
-        registered="Regression to Mean CPI",
-        truthful="Fixed shrinkage toward the project's own history",
-        performs="shrinks the current cost index halfway toward the mean of that same project's "
-                 "reported history",
-        absent="a governed reference population and an estimated shrinkage coefficient. "
-               "Regression to the mean is defined against a population mean, and the shrinkage "
-               "weight is estimated from the variance components; here the target is the "
-               "project's own history and the weight is a fixed one half",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
 
     # ---------------------------------------------------------------------- category 2, schedule
-    "A2.7": MethodLabel(
-        registered="Milestone Trend Analysis",
-        truthful="Period-on-period milestone forecast drift",
-        performs="matches milestones by name across the last two schedule snapshots and reports "
-                 "the mean and the worst movement of their forecast dates",
-        absent="the baseline milestone date to measure slip against, and the three or more "
-               "snapshots a trend claim requires. Two snapshots give one movement, and one "
-               "movement is a difference rather than a trend",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
-    "A2.10": MethodLabel(
-        registered="Schedule Risk Analysis P80",
-        truthful="Deterministic schedule uplift on the remaining duration",
-        performs="divides the remaining baseline duration by the schedule index and multiplies "
-                 "by a fixed uplift derived from the shortfall of that same index",
-        absent="a schedule network with activity duration distributions and a sampling run. "
-               "Nothing is sampled, no distribution is formed, and the reported figure is not a "
-               "percentile of anything",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
-    "A2.11": MethodLabel(
-        registered="Critical Path Index",
-        truthful="Mean of the progress ratio and the schedule index",
-        performs="averages the reported-over-planned progress ratio with the schedule "
-                 "performance index",
-        absent="a schedule network from which a critical path can be computed. The critical path "
-               "index of the literature is the share of simulation runs in which an activity "
-               "lies on the critical path, and neither a network nor a run exists here",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
 
     # -------------------------------------------------------------------------- category 3, cost
-    "A3.6": MethodLabel(
-        registered="Cost Risk Analysis P80",
-        truthful="Deterministic cost uplift on the index-based forecast",
-        performs="scales the budget-over-index completion forecast by a fixed uplift derived "
-                 "from the shortfall of that same index, and bands the result as a share of "
-                 "budget",
-        absent="a risk register with cost impact distributions and a sampling run. Nothing is "
-               "sampled and the reported figure is not a percentile",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
     "A3.8": MethodLabel(
         registered="Parametric Cost Index",
         truthful="Disabled: no parametric estimating relationship is implemented",
@@ -191,16 +119,6 @@ TRUTHFUL_METHOD_LABELS: dict[str, MethodLabel] = {
                "calibrated coefficients with their standard errors. A parametric estimate is the "
                "relationship; without it there is no method to name",
         disposition="FUTURE_RESEARCH_ONLY",
-    ),
-    "A3.9": MethodLabel(
-        registered="Inflation Adjustment Index",
-        truthful="Material cost ratio without an external price index",
-        performs="compares reported material cost against its reported baseline and bands the "
-                 "ratio",
-        absent="a governed external price index with a named publisher, a geography, a base "
-               "period and a vintage. An inflation adjustment is made against a published index, "
-               "and no index is read here",
-        disposition="CORRECT_PROXY_ONLY",
     ),
 
     # -------------------------------------------------------------- category 4, change and claims

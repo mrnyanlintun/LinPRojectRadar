@@ -26,7 +26,17 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from .models import ABSTAIN_MALFORMED_INPUT, check_inputs, insufficient
+from .canonical import StructureAbsent
+from .canonical_v3 import (
+    bayesian_eac_model, budget_execution, cpi_reference_class, cpi_shrinkage,
+    earned_schedule, expenditure_baseline_to_date, identify_arima,
+    independent_eac_reconciliation, kalman_state_space_model, require_v3_structure,
+    time_phased_baseline,
+)
+from .models import (
+    ABSTAIN_INSUFFICIENT_HISTORY, ABSTAIN_MALFORMED_INPUT, ABSTAIN_MISSING_INPUT,
+    ABSTAIN_STRUCTURE_ABSENT, calibration_pending, check_inputs, insufficient,
+)
 from .models_ext import _js_date_ms, _js_str, _money
 from .rng import clamp, js_round, num, round1
 
@@ -50,152 +60,220 @@ def _history(si: dict, key: str, scalar_key: str):
 
 
 def run_bayesian_eac(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    if not check_inputs(si, ("bac", "ev", "ac", "cpi")):
-        return insufficient("Bayesian_EAC")
-    cpi = si["cpi"]
-    if cpi == 1 or cpi == 0:
-        # JS: cpi=1 → zero likelihood variance → NaN posterior → a conjured Red;
-        # cpi=0 → Infinity arithmetic. Both refused here; see VALIDATION.md.
-        return insufficient("Bayesian_EAC")
-    bac = si["bac"]
-    prior_mean = bac
-    prior_var = (bac * 0.15) ** 2
-    if prior_var == 0:
-        return insufficient("Bayesian_EAC")  # bac=0: JS NaN fallthrough, refused likewise
-    likelihood_mean = bac / cpi
-    likelihood_var = (bac * (1 - cpi) / cpi) ** 2
-    posterior = ((prior_mean / prior_var + likelihood_mean / likelihood_var)
-                 / (1 / prior_var + 1 / likelihood_var))
-    delta_pct = ((posterior - bac) / bac) * 100
-    color = ("Green" if delta_pct <= 5 else "Yellow" if delta_pct <= 10
-             else "Amber" if delta_pct <= 20 else "Red")
-    return {
-        "method_class": "Bayesian_EAC",
-        "status_color": color,
-        "posterior_eac": int(js_round(posterior)),
-        "delta_pct": round1(delta_pct),
-        "evidence_metric": (
-            f"Bayesian EAC: {_money(posterior)} "
-            f"({'+' if delta_pct > 0 else ''}{_js_str(round1(delta_pct))}% BAC)"
-        ),
-    }
+    """
+    RUN 28, v3. THE GOVERNED BAYESIAN MODEL, OR NOTHING.
+
+    THE SUPPLIED CONTRACT. posterior is proportional to likelihood times prior, and production
+    must explicitly identify the parameter being estimated, the prior and its source, the
+    likelihood and its observation model, the provenance of the uncertainty, the posterior
+    estimate and a posterior interval.
+
+    WHAT v2 DID. Normal-normal updating whose prior variance was (bac * 0.15) squared and whose
+    likelihood variance was (bac * (1 - cpi) / cpi) squared. Both are designed constants: the
+    0.15 is a literal in this file and the likelihood variance is a transformation of the cost
+    index rather than an estimate of observation error. Nothing stated where either came from,
+    and the same two designed variances were used on every project the platform holds, so the
+    posterior was a property of this file's constants as much as of the project.
+
+    v3 REQUIRES THE MODEL RECORD. The prior, its source, the observation, the observation
+    variance and the basis that variance was estimated from all arrive on the signal inputs, and
+    the update is the conjugate normal-normal one. Where the record is absent the module ABSTAINS
+    rather than falling back to the designed constants. No band is asserted: the posterior of a
+    governed model is not the quantity the old ladder over a percentage of budget was drawn over,
+    and designed prior variances verify algebra rather than constituting field calibration.
+    """
+    try:
+        structure = require_v3_structure(si, "A1.3")
+        model = bayesian_eac_model(structure)
+    except StructureAbsent as absent:
+        return insufficient("Bayesian_EAC", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
+        "Bayesian_EAC",
+        f"Bayesian posterior for {model['parameter']}: {_money(model['posterior_mean'])}, "
+        f"with a 95 per cent credible interval from {_money(model['credible_low'])} to "
+        f"{_money(model['credible_high'])}",
+        posterior_eac=model["posterior_mean"],
+        posterior_variance=model["posterior_variance"],
+        credible_low=model["credible_low"],
+        credible_high=model["credible_high"],
+        credible_mass=model["credible_mass"],
+        prior_mean=model["prior_mean"],
+        prior_variance=model["prior_variance"],
+        prior_source=model["prior_source"],
+        observation=model["observation"],
+        observation_variance=model["observation_variance"],
+        observation_model=model["observation_model"],
+        variance_basis=model["variance_basis"],
+        canonical_structure="bayesian_eac_model",
+    )
 
 
 # ------------------------------------------------------------ A1.4 Kalman Filter SPI Smoother
 
 
 def run_kalman_filter(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    history = _history(si, "spiHistory", "spi")
-    if not history or len(history) < 2:
-        return insufficient("Kalman_Filter", "Awaiting history (2 periods needed)")
-    q, r = 0.01, 0.1
-    x, p = history[0], 1.0
-    for i in range(1, len(history)):
-        p = p + q
-        k = p / (p + r)
-        x = x + k * (history[i] - x)
-        p = (1 - k) * p
-    smoothed = _round3(x)
-    trend = (history[-1] - history[-3]) / 2 if len(history) >= 3 else 0
-    color = ("Green" if smoothed >= 0.95 else "Yellow" if smoothed >= 0.92
-             else "Amber" if smoothed >= 0.88 else "Red")
-    return {
-        "method_class": "Kalman_Filter",
-        "status_color": color,
-        "smoothed_spi": smoothed,
-        "trend": _round3(trend),
-        "evidence_metric": (
-            f"Kalman SPI: {_js_str(smoothed)} "
-            f"(trend: {'+' if trend >= 0 else ''}{_js_str(_round3(trend))}/period)"
-        ),
-    }
+    """
+    RUN 28, v3. A GENUINE STATE-SPACE RECURSION WITH Q AND R THAT SAY WHERE THEY CAME FROM.
+
+    THE SUPPLIED CONTRACT is the scalar random-walk recursion: x_pred = x_prev, P_pred = P_prev +
+    Q, K = P_pred / (P_pred + R), x_post = x_pred + K(z - x_pred), P_post = (1 - K)P_pred. Q and
+    R require provenance and calibration, and the filter may not be replaced by a moving average.
+
+    WHAT v2 DID. The recursion itself was right, and it is not the arithmetic that was wrong:
+    q = 0.01 and r = 0.1 were literals in this file with no stated origin, the starting state was
+    the first reading with a starting variance of 1.0 chosen the same way, and the reported trend
+    was a two-period difference divided by two, which is not part of a Kalman filter at all.
+
+    v3 REQUIRES THE STATE-SPACE MODEL RECORD: the starting estimate and its uncertainty, the
+    process and measurement variances, the source of each of the two variances, and the readings.
+    Run 27 established that the measurement variance IS estimable from evidence this platform
+    already holds -- repeated readings of one period do occur, because two document types report
+    the same period -- so this is a supply path, not an impossibility. Where the record is absent
+    the module ABSTAINS. The filtered state is reported with its final gain and variance and NO
+    band, because Q and R are calibration items handed to Run 33.
+    """
+    try:
+        structure = require_v3_structure(si, "A1.4")
+        run = kalman_state_space_model(structure)
+    except StructureAbsent as absent:
+        return insufficient("Kalman_Filter", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
+        "Kalman_Filter",
+        f"Filtered schedule index {_js_str(_round3(run['x_post']))} after "
+        f"{run['observations']} reading{'' if run['observations'] == 1 else 's'}, with a "
+        f"filter gain of {_js_str(_round3(run['gains'][-1]))} on the last of them",
+        smoothed_spi=_round3(run["x_post"]),
+        posterior_variance=run["p_post"],
+        final_gain=run["gains"][-1],
+        gains=[_round3(g) for g in run["gains"]],
+        filtered_path=[_round3(v) for v in run["path"]],
+        observations=run["observations"],
+        process_variance=run["process_variance"],
+        measurement_variance=run["measurement_variance"],
+        process_variance_source=run["process_variance_source"],
+        measurement_variance_source=run["measurement_variance_source"],
+        canonical_structure="kalman_state_space_model",
+    )
 
 
 # ------------------------------------------------------------ A1.5 ARIMA CPI Forecast
 
 
 def run_arima_forecast(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 28, v3. AN IDENTIFIED ARIMA WORKFLOW, NOT AN AR(1) ON FIRST DIFFERENCES.
+
+    THE SUPPLIED CONTRACT requires an explicit p, d and q, a differencing rule, AR and MA
+    coefficients, drift treatment, model identification and selection, estimation, stationarity
+    and invertibility handling, residual diagnostics, a short-horizon forecast and a prediction
+    interval, with selection parsimonious for short histories by AIC/AICc/BIC plus diagnostics.
+    It states in terms that ARIMA must not be hard-coded as an AR(1) on first differences, and
+    that a minimum-history failure is NOT ESTIMABLE.
+
+    WHAT v2 DID, exactly the forbidden thing. It differenced once unconditionally, regressed each
+    difference on the one before it to get a single phi, clamped that phi to plus or minus 0.9,
+    and forecast one step. There was no q, no selection, no intercept, no diagnostics and no
+    interval, and d was 1 by assumption rather than by a rule. Three observations were enough to
+    run it.
+
+    v3 identifies the model in canonical_v3.identify_arima: d by a stated stationarity rule,
+    (p, q) up to (2, 1) estimated by conditional least squares and selected by AICc, which is the
+    small-sample criterion and so favours parsimony on a short cost-index history by
+    construction; stationarity and invertibility are checked and a model failing either refuses;
+    the Ljung-Box statistic and the residual autocorrelation travel with the result. The minimum
+    history is eight readings, below which the module ABSTAINS. No band is asserted on the
+    forecast: the old ladder was drawn over the output of a different estimator.
+    """
     history = _history(si, "cpiHistory", "cpi")
-    if not history or len(history) < 3:
-        return insufficient("ARIMA_Forecast", "Awaiting history (3 periods needed)")
-    # RUN 10, BUCKET 2. The history domain was unguarded: a series carrying a zero or a negative
-    # entry was differenced and forecast as though those were performance readings. A cost
-    # performance index is earned value over actual cost and cannot be zero or below, so such a
-    # series is a malformed reading rather than a poor project, and it abstains.
-    if any(not (v > 0) for v in history):
-        return insufficient(
-            "ARIMA_Forecast",
-            "The cost performance history contains a reading of zero or below, which no cost "
-            "performance index can be, so the series is not forecastable",
-            ABSTAIN_MALFORMED_INPUT)
-    diffs = [history[i] - history[i - 1] for i in range(1, len(history))]
-    phi = 0.0
-    if len(diffs) >= 2:
-        acc_num = sum(diffs[j] * diffs[j - 1] for j in range(1, len(diffs)))
-        acc_den = sum(diffs[j - 1] * diffs[j - 1] for j in range(1, len(diffs)))
-        phi = clamp(acc_num / acc_den, -0.9, 0.9) if acc_den != 0 else 0.0
-    last_diff = diffs[-1] or 0
-    forecast_diff = phi * last_diff
-    forecast = _round3(history[-1] + forecast_diff)
-    color = ("Green" if forecast >= 0.95 else "Yellow" if forecast >= 0.92
-             else "Amber" if forecast >= 0.88 else "Red")
-    return {
-        "method_class": "ARIMA_Forecast",
-        "status_color": color,
-        "forecast_cpi": forecast,
-        "phi": js_round(phi * 100) / 100,
-        "evidence_metric": (
-            f"ARIMA CPI forecast: {_js_str(forecast)} "
-            f"({'recovering' if forecast_diff >= 0 else 'declining'})"
-        ),
-    }
+    if not history:
+        return insufficient("ARIMA_Forecast", "Awaiting a cost performance history",
+                            ABSTAIN_INSUFFICIENT_HISTORY)
+    try:
+        model = identify_arima(history)
+    except StructureAbsent as absent:
+        return insufficient("ARIMA_Forecast", absent.sentence, ABSTAIN_INSUFFICIENT_HISTORY)
+    order = f"({model['p']},{model['d']},{model['q']})"
+    interval = ""
+    if model.get("interval_low") is not None:
+        interval = (f", with a 95 per cent prediction interval from "
+                    f"{_js_str(_round3(model['interval_low']))} to "
+                    f"{_js_str(_round3(model['interval_high']))}")
+    return calibration_pending(
+        "ARIMA_Forecast",
+        f"Cost performance forecast {_js_str(_round3(model['forecast']))} one period ahead "
+        f"from an identified {order} model over {model['history']} readings{interval}",
+        forecast_cpi=_round3(model["forecast"]),
+        arima_p=model["p"], arima_d=model["d"], arima_q=model["q"],
+        ar_coefficients=[_round3(v) for v in model["phi"]],
+        ma_coefficients=[_round3(v) for v in model["theta"]],
+        intercept=_round3(model["c"]),
+        selection_criterion="AICc",
+        aicc=model["aicc"],
+        residual_autocorrelation=_round3(model["residual_acf1"]),
+        ljung_box_lag1=model["ljung_box_lag1"],
+        interval_low=model.get("interval_low"),
+        interval_high=model.get("interval_high"),
+        interval_mass=model.get("interval_mass"),
+        history_periods=model["history"],
+        constant_series=model["constant_series"],
+    )
 
 
 # ------------------------------------------------------------ A1.6 Earned Schedule
 
 
 def run_earned_schedule(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    # RUN 10, BUCKET 2. Two faults. First, earned value, planned value and budget were required
-    # and never read, so the module abstained on the absence of three figures its arithmetic does
-    # not use. They are dropped from the requirement, which is what the arithmetic actually needs.
-    # Second, the completion domain was unguarded: a percentage below zero or above one hundred
-    # was divided straight into a schedule index, so a reported completion outside the domain a
-    # percentage occupies produced a schedule index and a delay figure from a reading that is not
-    # a percentage.
-    if not check_inputs(si, ("actualPctComplete", "plannedPctComplete")):
-        return insufficient("Earned_Schedule")
-    for key in ("actualPctComplete", "plannedPctComplete"):
-        v = num(si.get(key), None)
-        if v is None or v < 0 or v > 100:
-            return insufficient(
-                "Earned_Schedule",
-                "A reported completion percentage falls outside the range a percentage can "
-                "occupy, so no schedule index is measurable from it",
-                ABSTAIN_MALFORMED_INPUT)
-    actual_pct = si["actualPctComplete"] / 100
-    planned_pct = si["plannedPctComplete"] / 100
-    spi_t = actual_pct / planned_pct if planned_pct > 0 else None
-    if not spi_t:  # JS !SPI_t: 0% actual progress abstains rather than reporting SPI(t)=0
-        return insufficient("Earned_Schedule")
-    baseline_days = None
-    if si.get("baselineStart") and si.get("baselineEnd"):
-        start_ms = _js_date_ms(si["baselineStart"])
-        end_ms = _js_date_ms(si["baselineEnd"])
-        if start_ms is not None and end_ms is not None:
-            baseline_days = (end_ms - start_ms) / 86400000
-    delay_days = int(js_round(baseline_days * (1 - spi_t))) if baseline_days else None
-    color = ("Green" if spi_t >= 0.95 else "Yellow" if spi_t >= 0.92
-             else "Amber" if spi_t >= 0.88 else "Red")
-    return {
-        "method_class": "Earned_Schedule",
-        "status_color": color,
-        "spi_time": _round3(spi_t),
-        "delay_days": delay_days,
-        "evidence_metric": (
-            f"ES SPI(t): {_js_str(_round3(spi_t))}"
-            + (f" ({delay_days} day delay implied)" if delay_days else "")
-        ),
-    }
+    """
+    RUN 28, v3. INTERPOLATION ON THE CUMULATIVE PLANNED VALUE CURVE, NOT A PERCENTAGE RATIO.
+
+    THE SUPPLIED CONTRACT. Find C such that PV_C <= EV < PV_(C+1), then ES = C + (EV - PV_C) /
+    (PV_(C+1) - PV_C), SV(t) = ES - AT and SPI(t) = ES / AT. It states in terms that actual
+    percent over planned percent is not Earned Schedule, and that an absent cumulative PV curve
+    is NOT ESTIMABLE.
+
+    WHAT v2 DID, exactly the forbidden thing: actualPctComplete divided by plannedPctComplete,
+    reported as "ES SPI(t)". There was no curve, no interpolation and no earned schedule at all;
+    the delay figure was that ratio applied to the baseline duration.
+
+    v3 REQUIRES THE TIME-PHASED BASELINE: the cumulative value of work planned complete at the
+    end of each period, with its baseline version and approval source. Earned value and the
+    actual time elapsed come with it. Where the curve is absent the module ABSTAINS. No band is
+    asserted: the old ladder read a ratio of two reported percentages, which is a different
+    quantity from a time-based schedule index taken off a planned value curve.
+    """
+    try:
+        structure = require_v3_structure(si, "A1.6")
+        baseline = time_phased_baseline(structure)
+        ev = num(si.get("ev"), None)
+        at = num(structure.get("actual_time_periods"), None)
+        if ev is None:
+            raise StructureAbsent(
+                "The value of work performed has not been reported for this period, so there is "
+                "nothing to place on the planned value curve and no schedule position is read.")
+        reading = earned_schedule(baseline["curve"], float(ev),
+                                  float(at) if at is not None else None)
+    except StructureAbsent as absent:
+        return insufficient("Earned_Schedule", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    except (TypeError, ValueError):
+        return insufficient(
+            "Earned_Schedule",
+            "The time phased baseline provided carries a figure that is not a number, so no "
+            "schedule position is read from it.", ABSTAIN_MALFORMED_INPUT)
+    return calibration_pending(
+        "Earned_Schedule",
+        f"Earned schedule {_js_str(_round3(reading['earned_schedule']))} periods against "
+        f"{_js_str(_round3(reading['actual_time']))} elapsed, a time based schedule index of "
+        f"{_js_str(_round3(reading['spi_time']))} and a schedule variance of "
+        f"{_js_str(_round3(reading['schedule_variance_time']))} periods",
+        earned_schedule=_round3(reading["earned_schedule"]),
+        spi_time=_round3(reading["spi_time"]),
+        schedule_variance_time=_round3(reading["schedule_variance_time"]),
+        actual_time=reading["actual_time"],
+        curve_periods=reading["periods"],
+        baseline_version=baseline["baseline_version"],
+        approval_source=baseline["approval_source"],
+        canonical_structure="time_phased_baseline",
+    )
 
 
 # ------------------------------------------------------------ A1.7 TCPI
@@ -390,119 +468,161 @@ def run_vac(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
 
 def run_budget_execution(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    RUN 11, NEIGHBOUR DEFECT 1 OF 7. OUT-OF-DOMAIN BANDING.
+    RUN 28, v3. THE APPROVED EXPENDITURE PROFILE, NOT BUDGET TIMES PERCENT COMPLETE.
 
-    The reproducer from the Run 10B sweep: actual cost of -700,000 against a budget at completion
-    of 1,000,000 turned Red into Green. The ratio is actual cost over the budget scaled by
-    reported progress, and the band is one-sided — everything at or below 1.05 is Green — so any
-    negative ratio lands in the calmest band the module has. A project that has spent nothing is
-    not the same claim as a project whose ledger says it was paid back, and neither is a healthy
-    execution rate.
+    THE SUPPLIED CONTRACT. This is a PCEIF transparent expenditure-control indicator and is not
+    claimed to be a universal standardised statistical method. ExecutionRatio(t) = AC(t) /
+    ExpectedSpend(t) and ExecutionDeviation(t) = ratio - 1, where ExpectedSpend comes from an
+    APPROVED time-phased expenditure baseline. The contract states that ExpectedSpend must not be
+    manufactured from BAC times a generic percent complete, and that with no approved profile the
+    answer is NOT ESTIMABLE. It supplies no status bands.
 
-    THE DOMAINS, DERIVED FROM WHAT EACH QUANTITY IS, NOT FROM THE BAND. Actual cost is money
-    spent and cannot be below zero. The budget at completion is an authorised amount and cannot
-    be below zero. Reported physical progress is a percentage of the work and lives in nought to
-    one hundred; above one hundred it is not a share of anything. No band moved and no boundary
-    was introduced: the module abstains outside its domain instead of reporting a reading.
+    WHAT v2 DID, exactly the forbidden thing: expected = bac * (actualPctComplete / 100). That
+    treats spending as planned to follow physical progress in a straight line, which no
+    expenditure baseline asserts, and it made the ratio a function of the progress figure rather
+    than of a plan anybody approved.
+
+    v3 REQUIRES THE EXPENDITURE BASELINE, read at the governed status period, with its version
+    and approval source. Where it is absent the module ABSTAINS. Both the ratio and its deviation
+    are reported. No band is asserted: the contract supplies none, and the boundaries v2 carried
+    were drawn over the progress-scaled figure rather than over this one.
     """
-    if not check_inputs(si, ("ac", "bac", "actualPctComplete")):
-        return insufficient("Budget_Execution_Rate")
-    _domains = (
-        (si["ac"], lambda v: v >= 0,
-         "the actual cost is reported below zero, and money spent cannot be negative"),
-        (si["bac"], lambda v: v >= 0,
-         "the budget at completion is reported below zero, and an authorised budget cannot be "
-         "negative"),
-        (si["actualPctComplete"], lambda v: 0 <= v <= 100,
-         "the reported progress falls outside nought to one hundred per cent, so it is not a "
-         "share of the work"),
+    if not check_inputs(si, ("ac",)):
+        return insufficient("Budget_Execution_Rate",
+                            "Insufficient data: the actual cost has not been reported for this "
+                            "period.", ABSTAIN_MISSING_INPUT)
+    try:
+        structure = require_v3_structure(si, "A1.9")
+        period_index = num(structure.get("status_period_index"), None)
+        if period_index is None:
+            raise StructureAbsent(
+                "The approved expenditure baseline provided does not say which period the "
+                "project is being reported at, so no planned amount can be read off it.")
+        profile = expenditure_baseline_to_date(structure, float(period_index))
+        reading = budget_execution(profile["expected_spend"], num(si.get("ac"), None))
+    except StructureAbsent as absent:
+        return insufficient("Budget_Execution_Rate", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
+        "Budget_Execution_Rate",
+        f"Spending is {_money(reading['actual_cost'])} against the "
+        f"{_money(reading['expected_spend'])} the approved expenditure baseline plans by this "
+        f"point, an execution ratio of {_js_str(_round3(reading['execution_ratio']))}",
+        execution_ratio=_round3(reading["execution_ratio"]),
+        execution_deviation=_round3(reading["execution_deviation"]),
+        expected_spend=reading["expected_spend"],
+        actual_cost=reading["actual_cost"],
+        baseline_version=profile["baseline_version"],
+        approval_source=profile["approval_source"],
+        canonical_structure="expenditure_baseline",
     )
-    for _raw, _ok, _words in _domains:
-        _v = num(_raw, None)
-        if _v is None or not _ok(_v):
-            return insufficient(
-                "Budget_Execution_Rate",
-                f"No budget execution rate is measurable: {_words}. No substitute figure is "
-                f"used in its place.",
-                ABSTAIN_MALFORMED_INPUT)
-    expected = si["bac"] * (si["actualPctComplete"] / 100)
-    if not expected > 0:
-        return insufficient("Budget_Execution_Rate")
-    rate = si["ac"] / expected
-    if not rate:  # JS !executionRate: ac=0 abstains rather than reporting a 0 rate
-        return insufficient("Budget_Execution_Rate")
-    rate = _round3(rate)
-    color = ("Green" if rate <= 1.05 else "Yellow" if rate <= 1.10
-             else "Amber" if rate <= 1.20 else "Red")
-    return {
-        "method_class": "Budget_Execution_Rate",
-        "status_color": color,
-        "execution_rate": rate,
-        "evidence_metric": (
-            f"Budget execution rate: {_js_str(rate)} (spending "
-            + (f"{int(js_round((rate - 1) * 100))}% faster" if rate > 1 else "on plan") + ")"
-        ),
-    }
 
 
-# ------------------------------------------------------------ A1.10 Regression to Mean CPI
+# ------------------------------------------------------------ A1.10 CPI Shrinkage Forecast
 
 
-def run_regression_to_mean(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    history = _history(si, "cpiHistory", "cpi")
-    if not history or len(history) < 2:
-        return insufficient("Regression_To_Mean", "Awaiting history (2 periods needed)")
-    mean = sum(history) / len(history)
-    current = history[-1]
-    regressed = _round3(mean + (current - mean) * 0.5)
-    color = ("Green" if regressed >= 0.95 else "Yellow" if regressed >= 0.92
-             else "Amber" if regressed >= 0.88 else "Red")
-    return {
-        "method_class": "Regression_To_Mean",
-        "status_color": color,
-        "regressed_cpi": regressed,
-        "historical_mean": _round3(mean),
-        "evidence_metric": (
-            f"Regressed CPI: {_js_str(regressed)} (mean: {_js_str(_round3(mean))})"
-        ),
-    }
+def run_cpi_shrinkage(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    RUN 28, v3. APPROVED RENAME: Regression to Mean CPI becomes CPI SHRINKAGE FORECAST.
+
+    THE SUPPLIED CONTRACT. Do not implement an assumption that cost performance inherently
+    regresses toward 1.0. Use statistical partial pooling toward a GOVERNED REFERENCE-CLASS
+    expectation: CPI_shrunk = w * CPI_project + (1 - w) * mu_reference with w between nought and
+    one. It requires a governed reference population, a reference mean or model, the estimation
+    and provenance of the shrinkage weight, and the project stage the estimator is used at, and
+    it states in terms that a hard-coded 0.5 weight is not acceptable as a calibrated
+    implementation and that with no reference class the answer is NOT ESTIMABLE.
+
+    WHAT v2 DID, and it did both forbidden things at once: mean + (current - mean) * 0.5, where
+    the weight was the literal 0.5 and the "mean" was the mean of THIS PROJECT'S OWN history.
+    Pooling a reading toward the mean of the same readings is not partial pooling toward an
+    outside expectation; it is a smoother, and it carries no reference population at all.
+
+    v3 REQUIRES THE REFERENCE CLASS: the comparable projects, the cost performance each achieved,
+    the basis of class membership, the method by which the weight was estimated, and the data
+    vintage. The project being assessed may not be a member of the class it is pooled toward, and
+    a weight declared as fixed or hard-coded is refused outright. Where the class is absent the
+    module ABSTAINS. No band is asserted; the final empirical weight calibration is Run 33.
+    """
+    try:
+        structure = require_v3_structure(si, "A1.10")
+        reference = cpi_reference_class(structure)
+        cpi = num(si.get("cpi"), None)
+        if cpi is None:
+            raise StructureAbsent(
+                "This project's own cost performance has not been reported for this period, so "
+                "there is nothing to pool toward the reference population.")
+        reading = cpi_shrinkage(float(cpi), reference["mu_reference"],
+                                reference["shrinkage_weight"])
+    except StructureAbsent as absent:
+        return insufficient("CPI_Shrinkage_Forecast", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
+        "CPI_Shrinkage_Forecast",
+        f"Pooled cost performance {_js_str(_round3(reading['cpi_shrunk']))}: this project's "
+        f"{_js_str(_round3(reading['cpi_project']))} carries a weight of "
+        f"{_js_str(_round3(reading['weight']))} against "
+        f"{_js_str(_round3(reading['mu_reference']))} across "
+        f"{reference['members']} comparable projects",
+        cpi_shrunk=_round3(reading["cpi_shrunk"]),
+        shrinkage_weight=reading["weight"],
+        cpi_project=_round3(reading["cpi_project"]),
+        mu_reference=_round3(reading["mu_reference"]),
+        reference_variance=reference["reference_variance"],
+        reference_members=reference["members"],
+        class_membership_basis=reference["class_membership_basis"],
+        weight_estimation_method=reference["weight_estimation_method"],
+        data_vintage=reference["data_vintage"],
+        project_stage=reference["project_stage"],
+        canonical_structure="cpi_reference_class",
+    )
 
 
-# ------------------------------------------------------------ A1.11 ICE Ratio
+# ------------------------------------------- A1.11 Independent EAC Reconciliation Index
 
 
-def run_ice_ratio(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    if not check_inputs(si, ("bac", "cpi", "ev", "ac")):
-        return insufficient("ICE_Ratio")
-    # RUN 10, BUCKET 2. A zero index was refused and a NEGATIVE one was not, so a negative index
-    # produced a negative completion forecast that the finding then printed as a currency figure.
-    # A cost performance index is earned value over actual cost and cannot be at or below zero.
-    if not si["cpi"] > 0:
-        return insufficient(
-            "ICE_Ratio",
-            "Cost performance is recorded as zero or below, which no completion forecast can "
-            "be scaled by",
-            ABSTAIN_MALFORMED_INPUT)
-    eac_cpi = si["bac"] / si["cpi"]
-    eac_parametric = si["ac"] + (si["bac"] - si["ev"])
-    ice = eac_cpi / eac_parametric if eac_parametric > 0 else None
-    if not ice:  # JS !iceRatio
-        return insufficient("ICE_Ratio")
-    ice = _round3(ice)
-    a = abs(ice - 1)
-    color = ("Green" if a <= 0.05 else "Yellow" if a <= 0.10
-             else "Amber" if a <= 0.20 else "Red")
-    return {
-        "method_class": "ICE_Ratio",
-        "status_color": color,
-        "ice_ratio": ice,
-        "eac_cpi": int(js_round(eac_cpi)),
-        "eac_parametric": int(js_round(eac_parametric)),
-        "evidence_metric": (
-            f"ICE ratio: {_js_str(ice)} (CPI-EAC {_money(eac_cpi)} "
-            f"vs parametric {_money(eac_parametric)})"
-        ),
-    }
+def run_independent_eac_reconciliation(si: dict, rand: Callable[[], float],
+                                       period_cutoff) -> dict[str, Any]:
+    """
+    RUN 28, v3. APPROVED RENAME: ICE Ratio becomes INDEPENDENT EAC RECONCILIATION INDEX.
+
+    THE SUPPLIED CONTRACT. Two genuinely provenance-distinct forecasts are required, a Management
+    EAC and an Independent EAC, and the module reports IER = Independent / Management and
+    Divergence = (Independent - Management) / Management. Each estimate must preserve its source,
+    method, assumptions, model version, responsible party and lineage, and the contract states in
+    terms that two transformations of the same BAC/CPI/EV/AC vector are NOT independent and that
+    with no genuinely distinct estimate the answer is NOT ESTIMABLE.
+
+    WHAT v2 DID, exactly the forbidden thing: (bac / cpi) divided by (ac + (bac - ev)). Both
+    sides are arithmetic on one vector of four reported figures, prepared by nobody, with no
+    method, assumptions or responsible party attached to either. The ratio was published as a
+    reconciliation between an independent estimate and a management one when no second estimate
+    existed anywhere.
+
+    v3 REQUIRES THE PAIR, and checks independence rather than asserting it: both sides must state
+    all five lineage fields, and the two must differ on the method AND on the responsible party.
+    Where the pair is absent, incomplete, or not genuinely distinct, the module ABSTAINS. No band
+    is asserted: reconciliation bands are named in the contract as calibration dependent.
+    """
+    try:
+        structure = require_v3_structure(si, "A1.11")
+        reading = independent_eac_reconciliation(structure.get("management_eac"),
+                                                 structure.get("independent_eac"))
+    except StructureAbsent as absent:
+        return insufficient("Independent_EAC_Reconciliation", absent.sentence,
+                            ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
+        "Independent_EAC_Reconciliation",
+        f"The independent forecast of {_money(reading['independent_eac'])} stands at "
+        f"{_js_str(_round3(reading['ier']))} times the management forecast of "
+        f"{_money(reading['management_eac'])}, a divergence of "
+        f"{_js_str(round1(reading['divergence'] * 100))} per cent",
+        ier=_round3(reading["ier"]),
+        divergence=_round3(reading["divergence"]),
+        management_eac=reading["management_eac"],
+        independent_eac=reading["independent_eac"],
+        management_lineage=reading["management_lineage"],
+        independent_lineage=reading["independent_lineage"],
+        canonical_structure="independent_eac_pair",
+    )
 
 
 A1_EXTENSIONS: dict[str, tuple[str, Callable]] = {
@@ -513,6 +633,7 @@ A1_EXTENSIONS: dict[str, tuple[str, Callable]] = {
     "A1.7": ("TCPI", run_tcpi),
     "A1.8": ("VAC", run_vac),
     "A1.9": ("Budget_Execution_Rate", run_budget_execution),
-    "A1.10": ("Regression_To_Mean", run_regression_to_mean),
-    "A1.11": ("ICE_Ratio", run_ice_ratio),
+    # RUN 28. The two approved Category 1 to 3 renames, and no others.
+    "A1.10": ("CPI_Shrinkage_Forecast", run_cpi_shrinkage),
+    "A1.11": ("Independent_EAC_Reconciliation", run_independent_eac_reconciliation),
 }

@@ -33,7 +33,12 @@ from .canonical import (
     queue_bottleneck as canonical_queue,
     require_structure,
 )
-from .rng import as_percent, clamp, num, pctile, round1, round2
+from .canonical_v3 import (
+    ccpm_buffer_consumption as canonical_buffer_consumption,
+    lob_production_rates as canonical_lob_rates,
+    parse_schedule_network, pert_criticality, reference_class_forecast, require_v3_structure,
+)
+from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 
 # Stamped on every result set, so a later change to this layer is detectable in already-collected
 # data rather than being invisible in the analysis.
@@ -105,7 +110,46 @@ from .rng import as_percent, clamp, num, pctile, round1, round2
 # stamp exists for. Nothing is said here about that module's arithmetic, which is untouched and
 # unreached, and no other module's behaviour changed. Every earlier stamp remains the historical
 # audit baseline for the results computed under it.
-SIMULATION_VERSION = "sim-2026.08-v10"
+# RUN 28 (CATEGORY 1 TO 3 CANONICAL REMEDIATION) moves it to sim-2026.08-v11, and this is the
+# new analytical line the owner's Run-28 instruction calls for. Every earlier stamp remains the
+# historical audit baseline for the results already collected under it; none is overwritten and
+# none is re-used. THE OWNER'S PROMPT SAYS "PRESERVE v2, BUILD v3". The prompt's premise about
+# the current stamp is not what this file records: sim-2026.08-v2 was superseded by Run 7 in
+# August 2026 and the line has moved eight times since, so the stamp standing at the start of
+# Run 28 was v10, not v2. Creating a second "v3" would collide with the line Run 7 established
+# and would read as a REGRESSION from v10, which would make results already collected under v10
+# ambiguous -- precisely the harm this stamp exists to prevent. The owner's INTENT is honoured
+# instead: the line that was frozen before this run becomes immutable historical evidence, and
+# Run 28's analytical changes belong to a NEW line, established with the next unused identifier
+# in the sequence Runs 7 through 16 built.
+#
+# WHAT RUN 28 CHANGED. The twenty-eight remaining Category 1 to 3 scientific targets were
+# implemented against the supervisory method contract supplied for this run. Twenty-one of them
+# now compute a canonical method from a governed structure that did not exist in this platform
+# before -- a time-phased planned value curve, an activity network, a milestone forecast history,
+# a look-ahead constraint inventory, a time-phased resource profile, a reference class, a cost
+# risk model, an analog record, an external price index, a state-space model and a Bayesian model
+# record -- and ABSTAIN when that structure is absent, rather than reporting the transparent
+# proxy each of them used to report in its place. Two approved renames are applied. Where the
+# quantity a module reports is no longer the quantity its old band was drawn over, the module
+# reports the number and asserts NO colour: the band is calibration pending and Run 33 owns it.
+# That is a change in what a stored row contains, in several directions at once, and it has to be
+# distinguishable in already-collected data, which is what this stamp exists for.
+SIMULATION_VERSION = "sim-2026.08-v11"
+
+#: THE LINE THAT RUN 28 FROZE, kept addressable so a reader of this file can see which stamp the
+#: historical audit baseline is without reading the comment above. Every stamp from
+#: sim-2026.07-v1 to this one remains valid for the results computed under it.
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v10"
+
+#: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
+#: nothing here is ever edited or removed, because each row is the audit baseline for results
+#: already collected under it.
+SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
+    "sim-2026.07-v1", "sim-2026.08-v2", "sim-2026.08-v3", "sim-2026.08-v4", "sim-2026.08-v5",
+    "sim-2026.08-v6", "sim-2026.08-v7", "sim-2026.08-v8", "sim-2026.08-v9", "sim-2026.08-v10",
+    "sim-2026.08-v11",
+)
 
 
 # -------------------------------------------------------------------------------------------
@@ -195,6 +239,51 @@ def insufficient(method_class: str, message: str | None = None,
     return out
 
 
+# -------------------------------------------------------------------------------------------
+# RUN 28: THE CALIBRATION-PENDING CONTRACT.
+#
+# WHY IT EXISTS. Run 28 replaces a proxy computation with the canonical method the module is
+# named for in twenty-one places. In most of them the QUANTITY CHANGES: a look-ahead module that
+# used to report the share of activities carrying a constraint now reports the share that are
+# ready; a critical-path module that used to average a schedule index with a progress ratio now
+# reports the float and the critical activities off a real forward and backward pass. The band
+# ladder each of those modules carried was drawn -- uncalibrated, and already recorded as such --
+# over the OLD quantity. Applying it to the new one would be inventing a threshold for a measure
+# nobody has calibrated, which the supervisory contract forbids in exactly those words.
+#
+# So the module reports the number and asserts NO colour. `status_color` is None, `band_asserted`
+# is False, and `calibration_pending` is True. This is NOT an abstention: the method ran, the
+# figure is real, and `insufficient_data` is absent. The registry keeps such a row in `computed`
+# rather than in `abstained`, and the row cannot reach status fusion because fusion reads only
+# the two voting modules, neither of which is in this run's scope.
+#
+# Run 33 owns the calibration campaign that may later attach bands to these quantities.
+# -------------------------------------------------------------------------------------------
+
+#: The one sentence carried on every calibration-pending row, stated once so it cannot drift.
+CALIBRATION_PENDING_NOTE: str = (
+    "The method this measure is named for has been carried out and the figure is reported. No "
+    "status colour is offered with it, because no boundary for this quantity has been "
+    "established from evidence, and a colour drawn from an unestablished boundary would read as "
+    "a judgement nobody has made."
+)
+
+
+def calibration_pending(method_class: str, message: str, **fields: Any) -> dict[str, Any]:
+    """A canonical result with no band asserted. See the block above for why this is not an
+    abstention and why the band is withheld rather than carried over from the proxy."""
+    out: dict[str, Any] = {
+        "method_class": method_class,
+        "status_color": None,
+        "calibration_pending": True,
+        "band_asserted": False,
+        "calibration_note": CALIBRATION_PENDING_NOTE,
+        "evidence_metric": message,
+    }
+    out.update(fields)
+    return out
+
+
 def check_inputs(si: dict, required: tuple[str, ...]) -> bool:
     return all(si.get(k) is not None for k in required)
 
@@ -267,48 +356,51 @@ def _sample_triangular(a: float, m: float, b: float, rand: Callable[[], float]) 
 
 def run_pert(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    PERT stochastic network criticality. A then (B parallel C); finish = A + max(B, C).
+    RUN 28, v3. STOCHASTIC CRITICALITY OVER A REAL ACTIVITY NETWORK.
 
-    The only stochastic model in the ported set. The caller seeds from (scenario_id, period), so
-    every participant on that scenario and period draws the identical sample path.
+    THE SUPPLIED CONTRACT requires a real activity network in which each activity carries an
+    identity, its predecessors and a duration distribution or three-point estimate. The classical
+    PERT moments are E[T] = (O + 4M + P)/6 and Var[T] = ((P-O)/6)^2, and the criticality index of
+    an activity is the share of simulation trials in which it is critical. Where no network
+    exists the answer is NOT ESTIMABLE, and SPI or BAC may not be used to reconstruct topology.
 
-    RUN 7. Handed an empty dictionary this read Green. The schedule index defaulted to 1.0, which
-    is the value of a project exactly on plan, so a project about which nothing had been reported
-    was modelled as a project performing to plan and banded accordingly. The index is now
-    required. The activity durations remain the module's own literals and this run does not
-    pretend otherwise: a project-specific activity network is not in the corpus, and building one
-    is out of scope. What is corrected is that the module no longer reports on a project it has
-    been told nothing about.
+    WHAT v2 AND v10 DID. The original computed a criticality index from three activity durations
+    that were literals in this file, identical on every project. Run 7 required the schedule
+    index, Run 10 established Green was structurally unreachable, and Run 10B removed the
+    arithmetic entirely and made the module abstain UNCONDITIONALLY, because no production path
+    supplied a network. That abstention was correct and is the disposition Run 27 recorded.
+
+    WHAT RUN 28 ADDS is the supply path the abstention was waiting for. The governed schedule
+    network is now a structure on the signal inputs, and when a project carries one the module
+    computes: every trial redraws every activity duration from its three-point estimate and
+    RECOMPUTES the forward and backward passes, so criticality is measured rather than ranked.
+    Where the network is absent the module still ABSTAINS, and nothing is reconstructed from an
+    index. No band is asserted: the old ladder was drawn over a ratio of an eightieth percentile
+    to a modal baseline, which is not this quantity.
     """
-    # RUN 10, BUCKET 2. Run 8 established that Green is structurally unreachable here: the band
-    # divides an eightieth percentile of a SUM of right-skewed activity durations by a baseline
-    # built from the MODES of the same activities, and that ratio sits above the Amber boundary
-    # whatever the schedule index does. The two sides of the ratio are not the same quantity.
-    #
-    # The correction is not a new boundary. Inventing one to make Green reachable would leave the
-    # deeper fault standing, which is that the three activities below are this FILE'S literals
-    # and not the project's network: the durations, the logic and the parallel branch are the
-    # same for every project the platform holds. A criticality index computed from literals is a
-    # statement about this file, published under the project's name.
-    #
-    # Canonical criticality needs an activity network with logic and three-point durations. The
-    # production corpus carries no such object: the schedule reader assembles a milestone and
-    # activity table with dates and percent complete, and no predecessor logic and no optimistic
-    # or pessimistic duration anywhere. So the module abstains on the absent structure, on the
-    # same footing as reference class forecasting and rework propagation, and the aggregate-index
-    # arithmetic is not retained under a canonical label. The sampling code below is reached only
-    # when a real network is supplied, and no production path supplies one today.
-    # No production path supplies such a network today, so this module abstains on every
-    # project the platform holds. The literal-driven sampling that used to stand here is removed
-    # rather than gated: leaving it reachable would keep aggregate arithmetic over three
-    # hard-coded activities running under a canonical criticality label, which is the fault
-    # itself and not merely its trigger.
-    return insufficient(
+    try:
+        structure = require_v3_structure(si, "A2.1")
+        network = parse_schedule_network(structure)
+        reading = pert_criticality(network, rand, trials=2000)
+    except StructureAbsent as absent:
+        return insufficient("PERT_Network_Criticality", absent.sentence,
+                            ABSTAIN_STRUCTURE_ABSENT)
+    index = reading["criticality_index"]
+    top = max(index, key=lambda a: (index[a], a))
+    return calibration_pending(
         "PERT_Network_Criticality",
-        "This method needs the project's activity network: the activities, the logic between "
-        "them and a three-point duration for each. No such network has been recorded for this "
-        "project, and a criticality index is not reported from stand-in durations.",
-        ABSTAIN_STRUCTURE_ABSENT)
+        f"Over {reading['trials']} simulated runs of the network, {top} lies on the critical "
+        f"path in {int(js_round(index[top] * 100))} per cent of them, the most of any activity",
+        criticality_index={a: round(index[a], 4) for a in sorted(index)},
+        most_critical_activity=top,
+        most_critical_share=round(index[top], 4),
+        trials=reading["trials"],
+        deterministic=reading["deterministic"],
+        project_finish_p80=reading.get("project_finish_p80"),
+        activity_moments={a: v for a, v in sorted(reading["activity_moments"].items())},
+        schedule_version=network["schedule_version"],
+        canonical_structure="schedule_network",
+    )
 
 
 # ---------------------------------------------------------------- A2.2 LOB
@@ -316,46 +408,55 @@ def run_pert(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
 
 def run_lob(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    Line of balance: the smallest time separation between a leading and a following line of work.
+    Line of balance on repetitive, location-based production.
 
-    RUN 7 removed a default that let an empty dictionary read Green, and left the unit count, the
-    two production rates and the buffer as literals in this file, because locations, crews and
-    production rates were not in the corpus.
+    RUN 10B required the line of balance itself: locations in sequence, the crews working them,
+    and a production rate and start for each line of work. Where it is absent this ABSTAINS and
+    falls back on nothing.
 
-    RUN 10B REQUIRES THE LINE OF BALANCE ITSELF. A line-of-balance measure computed from literals
-    and a schedule index describes this file, not the project, and a reader cannot tell the two
-    apart on the ledger. The canonical structure is now required: locations in sequence, the
-    crews working them, and a production rate and a start for each line of work. Where it is
-    absent this ABSTAINS. It does not fall back to the schedule index, and it does not fall back
-    to the literals it used to carry. The band is unchanged and is applied to the same quantity
-    it always read, the minimum separation in days, now taken from the real lines of work.
+    RUN 28, v3. THE SUPPLIED CONTRACT adds what v10 did not report: the method is for
+    repetitive/location-based production and requires the activity, the location or unit, the
+    quantity, the crew, the PLANNED production rate, the ACTUAL production rate and the sequence,
+    with rate = change in units / change in time, and it asks that the actual production slope be
+    shown against plan so deterioration is visible. v10 read only the actual rates, so a crew
+    running at half its planned rate and a crew running exactly to plan were indistinguishable
+    once the separation between two lines was formed. The planned rate is now required alongside
+    the actual one and the two slopes are reported per line of work.
+
+    The minimum separation between the leading and following lines is unchanged and is still the
+    quantity the module's boundaries were drawn over. No band is asserted on the NEW quantities:
+    a production rate ratio has no established boundary in this platform and Run 33 owns it.
     """
     try:
         structure = require_structure(si, "A2.2")
         reading = canonical_line_of_balance(structure)
+        rates = canonical_lob_rates(structure)
     except StructureAbsent as absent:
         return insufficient("Line_of_Balance_Velocity", absent.sentence,
                             ABSTAIN_STRUCTURE_ABSENT)
 
     min_buffer = reading["minimum_separation_days"]
-    color = "Red" if min_buffer <= 1.5 else ("Amber" if min_buffer <= 3.0 else "Green")
-    return {
-        "method_class": "Line_of_Balance_Velocity",
-        "status_color": color,
-        "minimum_buffer_days": round1(min_buffer),
-        "critical_unit_index": reading["critical_location_sequence"],
-        "grading_rate": round2(reading["leading_rate"]),
-        "paving_rate": round2(reading["following_rate"]),
-        "initial_buffer_days": round1(reading["first_separation_days"]),
-        "units": reading["locations"],
-        "canonical_structure": "line_of_balance",
-        "evidence_metric": (
-            f"Minimum crew separation {round1(min_buffer)} days across "
-            f"{reading['locations']} locations, with the following line advancing at "
-            f"{round2(reading['following_rate'])} against {round2(reading['leading_rate'])} "
-            f"locations per day"
-        ),
-    }
+    deteriorating = sorted(a for a, v in rates["by_activity"].items() if v["deteriorating"])
+    return calibration_pending(
+        "Line_of_Balance_Velocity",
+        f"Minimum crew separation {round1(min_buffer)} days across "
+        f"{reading['locations']} locations, with the following line advancing at "
+        f"{round2(reading['following_rate'])} against {round2(reading['leading_rate'])} "
+        f"locations per day; "
+        + (f"{len(deteriorating)} of {rates['activities']} lines of work are running slower "
+           f"than planned" if deteriorating
+           else f"all {rates['activities']} lines of work are at or above their planned rate"),
+        minimum_buffer_days=round1(min_buffer),
+        critical_unit_index=reading["critical_location_sequence"],
+        grading_rate=round2(reading["leading_rate"]),
+        paving_rate=round2(reading["following_rate"]),
+        initial_buffer_days=round1(reading["first_separation_days"]),
+        units=reading["locations"],
+        production_rates=rates["by_activity"],
+        deteriorating_lines=deteriorating,
+        line_count=rates["activities"],
+        canonical_structure="line_of_balance",
+    )
 
 
 # ---------------------------------------------------------------- A2.3 CCPM
@@ -363,20 +464,27 @@ def run_lob(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
 
 def run_ccpm(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    CCPM buffer-health fever chart: buffer consumption against chain completion.
+    CCPM buffer health, read off a sized critical-chain buffer.
 
-    RUN 7 required both figures and removed the defaults that placed an unreported project in the
-    warning zone. The buffer itself remained derived from the schedule performance index rather
-    than from a sized critical-chain buffer, and the qualifier said so.
+    RUN 10B REQUIRED THE CHAIN AND THE BUFFER: a buffer derived from a performance index is not a
+    sized buffer, and where the chain and buffer are absent this ABSTAINS rather than falling
+    back to the index or to CPM float.
 
-    RUN 10B REQUIRES THE CHAIN AND THE BUFFER. A buffer derived from a performance index is not a
-    sized buffer, and a fever chart drawn on one is not this method. The critical chain with its
-    activities and a sized project buffer is now required, and where it is absent this ABSTAINS
-    rather than falling back to the index. The fever-chart zones are unchanged.
+    RUN 28, v3. THE SUPPLIED CONTRACT states the two figures explicitly -- buffer consumed
+    BC = B0 - Bt, and the buffer consumption ratio BCR = (B0 - Bt) / B0 -- and states that the
+    fever-chart bands are calibration and policy rather than universal constants. v10 reported
+    the consumption as a percentage and drew a three-zone fever chart on it, where the amber line
+    is chain completion (a definitional forty-five degree line) and the red line adds a third of
+    the remaining chain, which is a policy constant nobody in this repository sourced. Both
+    figures are now reported in the contract's own terms, the zone boundaries are reported as the
+    POLICY LINES THEY ARE rather than as an established status, and no colour is asserted.
     """
     try:
         structure = require_structure(si, "A2.3")
         reading = canonical_ccpm(structure)
+        consumption = canonical_buffer_consumption(
+            reading["project_buffer_days"],
+            reading["project_buffer_days"] * (1.0 - reading["pct_buffer_consumed"] / 100.0))
     except StructureAbsent as absent:
         return insufficient("CCPM_Buffer_Health", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
 
@@ -384,20 +492,29 @@ def run_ccpm(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
     pct_buffer = reading["pct_buffer_consumed"]
     amber = pct_chain
     red = pct_chain + (100 - pct_chain) / 3
-    color = "Red" if pct_buffer >= red else ("Amber" if pct_buffer >= amber else "Green")
-
-    return {
-        "method_class": "CCPM_Buffer_Health",
-        "status_color": color,
-        "pct_chain_complete": round1(pct_chain),
-        "pct_buffer_consumed": round1(pct_buffer),
-        "zone": color,
-        "amber_threshold": round1(amber),
-        "red_threshold": round1(red),
-        "evidence_metric": (
-            f"Buffer {round1(pct_buffer)}% consumed at {round1(pct_chain)}% chain complete"
-        ),
-    }
+    zone = "beyond the red policy line" if pct_buffer >= red else (
+        "beyond the amber policy line" if pct_buffer >= amber else "inside both policy lines")
+    return calibration_pending(
+        "CCPM_Buffer_Health",
+        f"Buffer {round1(pct_buffer)}% consumed at {round1(pct_chain)}% chain complete, "
+        f"{round1(consumption['buffer_consumed_days'])} days of the "
+        f"{round1(consumption['original_buffer_days'])} day project buffer used, {zone}",
+        pct_chain_complete=round1(pct_chain),
+        pct_buffer_consumed=round1(pct_buffer),
+        buffer_consumed_days=consumption["buffer_consumed_days"],
+        buffer_consumption_ratio=consumption["buffer_consumption_ratio"],
+        original_buffer_days=consumption["original_buffer_days"],
+        remaining_buffer_days=consumption["remaining_buffer_days"],
+        feeding_buffer_count=reading["feeding_buffer_count"],
+        chain_activity_count=reading["chain_activity_count"],
+        amber_policy_line=round1(amber),
+        red_policy_line=round1(red),
+        policy_line_note=("the amber line is chain completion, which is definitional; the red "
+                          "line adds a third of the chain remaining, which is a policy choice "
+                          "no source in this repository establishes"),
+        zone_relative_to_policy_lines=zone,
+        canonical_structure="ccpm_buffer",
+    )
 
 
 # ---------------------------------------------------------------- A3.1 RCF
@@ -405,32 +522,64 @@ def run_ccpm(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
 
 def run_rcf(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    Reference class forecasting: empirical overrun multipliers as a cost prior.
+    RUN 28, v3. AN EMPIRICAL OUTSIDE VIEW OVER A GOVERNED REFERENCE CLASS.
 
-    RUN 7, AND THIS ONE ABSTAINS UNCONDITIONALLY.
+    THE SUPPLIED CONTRACT requires a real empirical outside-view reference class: completed
+    comparable projects with their identities, the inclusion and exclusion criteria, a comparable
+    outcome definition, normalization, the historical forecast errors or overruns, the sample
+    size and a governed percentile. U_p is the p quantile of the historical proportional
+    overruns, and AdjustedForecast = InsideViewForecast * (1 + U_p). Where no governed reference
+    class is retrieved the answer is NOT ESTIMABLE, and an embedded fixed multiplier may not be
+    used.
 
-    The method is defined by its reference class: a population of comparable completed projects
-    whose realised overruns give the distribution the forecast is drawn from. This platform holds
-    no such population. The nine multipliers below are literals, so the percentile, the debiasing
-    factor and therefore the band are the same numbers on every project and in every period, and
-    handed an empty dictionary the module read Red about a project nobody had reported anything
-    for. It read the budget only to scale a figure it displayed; nothing about a project could
-    move the band.
+    WHAT v2 AND v10 DID. Nine overrun multipliers were literals in this file, so the percentile,
+    the debiasing factor and the band were the same numbers on every project in every period.
+    Run 7 removed the arithmetic and made the module abstain UNCONDITIONALLY, which Run 27
+    recorded as CORRECT_ABSTENTION.
 
-    There is no input that would make it eligible, so there is no preflight to write: the missing
-    thing is the reference class itself. Building one is out of scope, and a proxy that keeps
-    emitting a constant band is the fault this run exists to remove. The module therefore refuses
-    and states that the reference class is absent. The arithmetic it used to perform is not kept
-    here as dead code: the suite reads it out of the pinned baseline commit, which is how every
-    remediation run on this repository has proved what the shipped code did.
+    WHAT RUN 28 ADDS is the supply path. A governed reference class is now a structure on the
+    signal inputs, carrying the members and every one of the criteria above, and the project
+    being assessed may not be a member of the class it is compared against. The quantile
+    convention is the one frozen for the whole v3 line in canonical_v3.empirical_quantile. Where
+    the class is absent the module still ABSTAINS. No band is asserted.
     """
-    return insufficient(
+    try:
+        structure = require_v3_structure(si, "A3.1")
+        inside = num(si.get("bac"), None)
+        if inside is None:
+            raise StructureAbsent(
+                "No inside view forecast of the cost at completion has been reported for this "
+                "project, so there is nothing for an outside view to adjust.")
+        percentile = num(structure.get("governed_percentile"), None)
+        if percentile is None:
+            raise StructureAbsent(
+                "The reference class provided does not say which percentile of the historical "
+                "outcomes governs the uplift, so no uplift is taken from it.")
+        reading = reference_class_forecast(structure, float(inside), float(percentile))
+    except StructureAbsent as absent:
+        return insufficient("Reference_Class_Forecasting", absent.sentence,
+                            ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
         "Reference_Class_Forecasting",
-        "Insufficient data: no reference class of comparable completed projects is held, so "
-        "there is no distribution of realised overruns to place this project against. No "
-        "forecast is offered in its place.",
-        ABSTAIN_STRUCTURE_ABSENT)
-
+        f"Across {reading['sample_size']} completed comparable projects the "
+        f"{int(js_round(reading['percentile'] * 100))}th percentile outcome overran by "
+        f"{int(js_round(reading['uplift'] * 100))} per cent, which puts this project's "
+        f"forecast at {int(js_round(reading['adjusted_forecast']))} against an inside view of "
+        f"{int(js_round(reading['inside_view']))}",
+        uplift=round(reading["uplift"], 4),
+        governed_percentile=reading["percentile"],
+        sample_size=reading["sample_size"],
+        inside_view=reading["inside_view"],
+        adjusted_forecast=reading["adjusted_forecast"],
+        min_overrun=reading["min_overrun"],
+        max_overrun=reading["max_overrun"],
+        inclusion_criteria=reading["inclusion_criteria"],
+        exclusion_criteria=reading["exclusion_criteria"],
+        outcome_definition=reading["outcome_definition"],
+        normalization=reading["normalization"],
+        data_vintage=reading["data_vintage"],
+        canonical_structure="reference_class",
+    )
 
 
 # ---------------------------------------------------------------- A5.1 DSM
