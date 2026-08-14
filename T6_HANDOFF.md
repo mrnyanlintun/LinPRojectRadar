@@ -8363,3 +8363,94 @@ cycle 11's P3 parameters, thresholds, calibration and provenance, and then the m
 **THE TWO EVIDENCE GAPS ARE UNCHANGED AND NEITHER WAS SILENTLY CLOSED.** The anti-fossilization
 register exists and is still not back-transcribed for cycles 1 to 7. Cycle 3's M13 to M21
 fault-injection rows still exist only in prose, and only a rerun that emits them will close it.
+
+---
+
+## Run 20 cycle 10 closed on main: a prestigious label no longer survives on a different computation
+
+**Merged-main commit `51ab3c1`.** Pushed. Full suite on merged main: **111 suites, 9936/9936,
+ALL SUITES GREEN.** Voting reads `['A1.7', 'A1.8']`, count 2. ENABLED_QUALIFIED 2, ADVISORY_ONLY
+90, DISABLED_UNSAFE 8, DISABLED_EVIDENCE_UNDER_REVIEW 1. No concept-only module activated.
+Material Cost Variance unchanged.
+
+**TWENTY-THREE NAMES CLAIMED A METHOD THE CODE DOES NOT PERFORM, AND EIGHT MORE MODULES RESTED A
+CLAIM ON A STRUCTURE THIS REPOSITORY DOES NOT HOLD.** The canonical route was tested FIRST for
+every one of the thirty-one and it fails on EVIDENCE, not on effort: no schedule network, no risk
+register with cost distributions, no event schedule, no stocks and flows, no information table of
+objects and attributes, no alternative set, no agents, no external price index, no time-phased
+planned value curve, no independent estimate and no per-field source records exists anywhere in
+the corpus, and none of them is even a declared canonical structure key. The six modules that DO
+have their canonical structure keep it and were given no naming override, which is checked,
+because a truthful label must never become a way of avoiding an implementation that is possible.
+
+Each of the thirty-one now carries, on the record the interface and the export publish, the
+truthful name of the computation, the absent structure in plain words, and a disposition:
+twenty-four CORRECT_PROXY_ONLY, five FUTURE_RESEARCH_ONLY and still disabled, two
+OWNER_DECISION_REQUIRED, one REGULATORY_VERSION_BLOCKED and one EMPIRICAL_VALIDATION_BLOCKED.
+
+**THE PARTICIPANT SURFACE IS NOT RENAMED, AND THAT IS A DETERMINATION.** The served package is
+frozen and checksummed and the study is mid-sequence, so the name a participant reads is part of
+the instrument. Renaming it is an owner decision about the experiment. The truthful name reaches
+the interface response, the export and the methods documentation only, by the mechanism Run 1
+used for the thirty proxy qualifiers, and the suite proves no truthful name reaches any of the
+three keys the ledger renders. **NOTHING WAS ACTIVATED BY BEING RENAMED.**
+
+**A GUARD WAS FOUND THAT COULD NOT SEE WHAT IT PROTECTS.** The Run 6 and Run 8 pinned-baseline
+guards enumerate production files through git, so a NEW production file that is not yet tracked
+is invisible to them. The cycle 10 declaration guard caught it separately, so the invariant was
+never actually unprotected, but a guard that only sees tracked files means less than it appears
+to. Recorded and the file scoped.
+
+## Run 20 cycle 11 closed on main: three numbers in the whole registry have a source
+
+**Merged-main commit `7ca128e`.** Full suite at the cycle boundary: **112 suites, 9982/9982, ALL
+SUITES GREEN.**
+
+**EIGHTY-NINE MODULES CARRY A TUNABLE VALUE. THREE CARRY PUBLISHED PROVENANCE AND ONE CARRIES A
+MATHEMATICAL CONSTANT. EVERYTHING ELSE IS UNSUPPORTED,** and that is the finding rather than a
+failure of it. The three are the two voting modules, cited to the Project Management Institute
+and to Christensen and Heise, and the isolation forest, whose tree count, subsample and average
+path length normaliser are the published defaults of the algorithm itself (Liu, Ting and Zhou,
+2008). The Euler-Mascheroni constant in its harmonic approximation is a mathematical constant.
+The register holds a LIST per module for exactly that reason: a published algorithm's defaults
+sit underneath an invented band ladder, and one class per module would have hidden it.
+
+**NOTHING IS CALIBRATED AND NOTHING CLAIMS TO BE.** No labelled corpus of project outcomes and no
+expert reference standard exist here, so the calibration set does not exist, and synthetic
+laboratory data is not empirical field validation. No value anywhere is claimed as a regulatory
+value or as an owner policy.
+
+**THE UPLIFT MULTIPLIER 1.28 IS THE NINETIETH PERCENTILE DEVIATE, NOT THE EIGHTIETH (0.8416),**
+so under the name those two modules used to carry the number was wrong as well as unsourced.
+Cycle 10 removed the percentile claim; as a multiplier it has no source at all.
+
+**THE TWO ROWS FROM CYCLE 9 ARE RECLASSIFIED, NOT CLOSED.** The worst-count rule triggers on a
+FRACTION of the total and no count exists in the specification, this repository or any source it
+cites: PARAMETER_PROVENANCE_BLOCKED. The anomaly score's weights move with data availability:
+THRESHOLD_CALIBRATION_BLOCKED. Both advisory and non-voting. **THE RUN-20 EXIT TARGET OF
+IMPLEMENTATION_DEFECT EQUAL TO ZERO IS NOT MET, and the reason is that meeting it required
+inventing two constants.**
+
+**THE QUEUED TREND-INPUT CASE IS DETERMINED BY EXECUTION.** Supplying all three trend inputs to
+the production caller changes NOTHING published; supplying them to the underlying function DOES
+change it. The parameter is DEAD ON THE PRODUCTION PATH, the caller is incomplete, no default
+substitutes for missing evidence, and nothing published depends on it.
+
+**TWO MORE VACUITIES WERE FOUND INSIDE THIS CYCLE'S OWN INSTRUMENT AND CORRECTED.** The sweep
+first subtracted a list of definitional values and was silently swallowing real boundaries,
+including the line of balance separation and the change order ladder. The collector then took
+only names bound directly to a constant, so both sourced voting boundaries were reported ABSENT
+while the sweep called itself complete. Nothing is subtracted now and expressions are resolved.
+
+**REGISTER: 112 rows, 3 OPEN,** and all three are concept-only disabled modules correctly held
+FUTURE_RESEARCH_ONLY.
+
+**EXACT NEXT REQUIREMENTS. RUN 20 IS INCOMPLETE. ELEVEN OF TWELVE CYCLES ARE DONE. CYCLE 12 HAS
+NOT BEEN STARTED.** Cycle 12 is the complete 100-target re-audit: 95 project targets plus PH.1 to
+PH.5, mechanically proved, dispositions RECOMPUTED rather than copied, plus the final lineage
+campaign, the remaining guard non-vacuity sweep, and the Run-20 final report. Do not launch
+Run 21.
+
+**THE TWO EVIDENCE GAPS ARE UNCHANGED AND NEITHER WAS SILENTLY CLOSED.** The anti-fossilization
+register is still not back-transcribed for cycles 1 to 7. Cycle 3's M13 to M21 fault-injection
+rows still exist only in prose, and only a rerun that emits them will close it.
