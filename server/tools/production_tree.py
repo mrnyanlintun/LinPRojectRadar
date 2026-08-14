@@ -210,16 +210,24 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: Where the pinned expected manifest lives. It is the RECORD of what the walk found when the
 #: freeze was taken. It is never the source of the file names.
 #:
+#: RUN 24. This moved again, from run23_production_tree.sha256 to the run24 file, because
+#: assets/js/neural_flow.js changed once more (the Signal Flow empty-state gate). The run22 and
+#: run23 manifests are BOTH kept exactly as they were written, as those releases' historical
+#: records; the Run-24 freeze names run23 as its parent and carries its digest.
+#:
 #: POST-RUN-22 UI CORRECTION. This moved from run22_production_tree.sha256 to the run23 file
 #: because three production UI files changed after the Run-22 freeze was taken. The Run-22
 #: manifest is NOT rewritten: it stays exactly as Run 22 wrote it, as that release's historical
 #: record, and the superseding freeze names it as its parent and carries its digest. Repointing
 #: rather than editing is the whole distinction the freeze rests on -- a baseline regenerated in
 #: place agrees with production by construction and can never catch an undeclared edit.
-PINNED = ROOT / "code_audit" / "run23_production_tree.sha256"
+PINNED = ROOT / "code_audit" / "run24_production_tree.sha256"
 #: The Run-22 manifest, kept addressable so a guard can prove the supersession is a real change
 #: and not a silent rewrite.
 PINNED_RUN22 = ROOT / "code_audit" / "run22_production_tree.sha256"
+#: The post-Run-22 manifest, the immediate parent of the current one, kept addressable for the
+#: same reason.
+PINNED_RUN23 = ROOT / "code_audit" / "run23_production_tree.sha256"
 #: The same, for the scientific authority tree.
 PINNED_AUTHORITY = ROOT / "code_audit" / "run22_authority_tree.sha256"
 
