@@ -1,0 +1,16 @@
+fault,guard,file_mutated,property_the_red_must_name,verdict_under_fault,verdict_after_restore,non_vacuity_proved
+baseline,test_document_rows.py,-,n/a,GREEN,GREEN,yes
+baseline,test_run23_signal_flow_truthfulness.py,-,n/a,GREEN,GREEN,yes
+baseline,test_run24_empty_project_diagram.py,-,n/a,GREEN,GREEN,yes
+baseline,test_run26_counts_and_wiring.py,-,n/a,GREEN,GREEN,yes
+F1 registry-project-count,test_run26_counts_and_wiring.py,p0-baseline/module_renumbering_map.csv,project level,RED,GREEN,yes
+F2 omit-one-portfolio-entry,test_run26_counts_and_wiring.py,p0-baseline/module_renumbering_map.csv,Portfolio Health,RED,GREEN,yes
+F3 scientific-targets-99,test_run26_counts_and_wiring.py,code_audit/run20_cycle12_100_reaudit.csv,scientific,RED,GREEN,yes
+F4 substitute-95-into-96-display,test_run24_empty_project_diagram.py,assets/js/taxonomy.js,96,RED,GREEN,yes
+F5 substitute-101-into-the-computed-display,test_run26_counts_and_wiring.py,index.html,computed count,RED,GREEN,yes
+F6 emission-block-drift,test_run26_counts_and_wiring.py,assets/js/neural_flow.js,byte-identical,RED,GREEN,yes
+F7 reinstate-positional-wiring,test_run26_counts_and_wiring.py,assets/js/neural_flow.js,positional category-index array,RED,GREEN,yes
+F8 resolve-an-architecture-silence-into-an-edge,test_run26_counts_and_wiring.py,code_audit/signal_flow_authoritative_edges.csv,SILENT row names an upstream node,RED,GREEN,yes
+F9 restore-the-purple-square-on-an-empty-project,test_document_rows.py,assets/js/neural_flow.js,empty project draws no purple square,RED,GREEN,yes
+F10 restore-the-red-governance-arc,test_run23_signal_flow_truthfulness.py,assets/js/neural_flow.js,pre-correction illumination rule,RED,GREEN,yes
+F11 material-cost-variance-deleted-to-make-numbers-match,test_run26_counts_and_wiring.py,p0-baseline/module_renumbering_map.csv,Material Cost Variance,RED,GREEN,yes

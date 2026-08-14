@@ -98,7 +98,17 @@ check("function flowAnim(el, cls, active)" in FLOW,
 check("if (!active) { el.classList.add('lnf-static'); return; }" in FLOW,
       "and an inactive edge is marked static and never animated")
 calls = re.findall(r"flowAnim\((\w+), '([\w-]+)'(.*?)\);", FLOW)
-check(len(calls) >= 5, "every connection class routes through it", str(len(calls)))
+# RUN 26. FOUR CONNECTION CLASSES, NOT FIVE. The fifth was the governance feedback arc, which
+# drew PROJECT STATUS -> CATEGORY -- not an edge kind the architecture has, pointed by a stale
+# index at Evidence Combination rather than at any governance category, and the only red stroke
+# on an empty project. It is removed, so requiring five calls here would require a fabricated
+# edge to exist. The property this check is for is unchanged: every class that IS drawn routes
+# its animation through the one activity-gated helper.
+check(len(calls) >= 4, "every connection class routes through it", str(len(calls)))
+check({c[1] for c in calls} == {"lnf-flow-a", "lnf-flow-b", "lnf-flow-c"},
+      "and the classes drawn are exactly the input, rollup and derived ones: the governance "
+      "feedback class is no longer emitted by any call site",
+      str(sorted({c[1] for c in calls})))
 for var, cls, rest in calls:
     check(rest.strip().startswith(","),
           f"the {cls} connection passes an activity argument rather than animating always",

@@ -1,0 +1,508 @@
+edge_type,upstream,downstream,in_authoritative_inventory
+CATEGORY -> CATEGORY,Data Integrity,Decision Optimization,yes
+CATEGORY -> CATEGORY,Data Integrity,Evidence Combination,yes
+CATEGORY -> CATEGORY,Data Integrity,Regulatory and Authority Thresholds,yes
+CATEGORY -> CATEGORY,Data Integrity,Signal Synthesis,yes
+CATEGORY -> PROJECT STATUS,Cost Risk,Project status,yes
+CATEGORY -> PROJECT STATUS,Cost and EVM Performance,Project status,yes
+CATEGORY -> PROJECT STATUS,Decision Optimization,Project status,yes
+CATEGORY -> PROJECT STATUS,Delivery Quality Performance,Project status,yes
+CATEGORY -> PROJECT STATUS,Document-Derived Condition Signals,Project status,yes
+CATEGORY -> PROJECT STATUS,Evidence Combination,Project status,yes
+CATEGORY -> PROJECT STATUS,Regulatory and Authority Thresholds,Project status,yes
+CATEGORY -> PROJECT STATUS,Schedule Performance,Project status,yes
+CATEGORY -> PROJECT STATUS,Signal Synthesis,Project status,yes
+CATEGORY -> PROJECT STATUS,System Dynamics and Complexity,Project status,yes
+DOCUMENT -> MODULE,change_order,Analogous Estimating Ratio,yes
+DOCUMENT -> MODULE,change_order,Audit Trail Completeness,yes
+DOCUMENT -> MODULE,change_order,Bayesian EAC,yes
+DOCUMENT -> MODULE,change_order,Budget Execution Rate,yes
+DOCUMENT -> MODULE,change_order,Change Order Frequency,yes
+DOCUMENT -> MODULE,change_order,Constraint Satisfaction Analysis,yes
+DOCUMENT -> MODULE,change_order,Contract Modification Frequency,yes
+DOCUMENT -> MODULE,change_order,Cost Risk Analysis P80,yes
+DOCUMENT -> MODULE,change_order,Dispute Escalation Index,yes
+DOCUMENT -> MODULE,change_order,EVM Reporting Threshold,yes
+DOCUMENT -> MODULE,change_order,Earned Schedule,yes
+DOCUMENT -> MODULE,change_order,FAR Threshold Monitor,yes
+DOCUMENT -> MODULE,change_order,ICE Ratio,yes
+DOCUMENT -> MODULE,change_order,Information Completeness Ratio,yes
+DOCUMENT -> MODULE,change_order,Linear Programming,yes
+DOCUMENT -> MODULE,change_order,Missing Data Index,yes
+DOCUMENT -> MODULE,change_order,Monte Carlo EAC Forecast,yes
+DOCUMENT -> MODULE,change_order,OMB A-11 Check,yes
+DOCUMENT -> MODULE,change_order,PERT Network Criticality,yes
+DOCUMENT -> MODULE,change_order,Parametric Cost Index,yes
+DOCUMENT -> MODULE,change_order,Reference Class Forecasting,yes
+DOCUMENT -> MODULE,change_order,Regret Minimization Index,yes
+DOCUMENT -> MODULE,change_order,Rework Feedback Loop,yes
+DOCUMENT -> MODULE,change_order,Scenario Modeling,yes
+DOCUMENT -> MODULE,change_order,Sensitivity Analysis,yes
+DOCUMENT -> MODULE,change_order,Source Reliability Weighting,yes
+DOCUMENT -> MODULE,change_order,TCPI,yes
+DOCUMENT -> MODULE,change_order,Variance at Completion,yes
+DOCUMENT -> MODULE,change_order,What-If Scenario Matrix,yes
+DOCUMENT -> MODULE,commissioning_report,ABM Governance Layer,yes
+DOCUMENT -> MODULE,commissioning_report,Belief Rule Base,yes
+DOCUMENT -> MODULE,commissioning_report,CRITIC-TOPSIS,yes
+DOCUMENT -> MODULE,commissioning_report,Conservative Dominance,yes
+DOCUMENT -> MODULE,commissioning_report,Decision Sensitivity Matrix,yes
+DOCUMENT -> MODULE,commissioning_report,Dempster-Shafer,yes
+DOCUMENT -> MODULE,commissioning_report,Dispute Escalation Index,yes
+DOCUMENT -> MODULE,commissioning_report,Document Risk Score,yes
+DOCUMENT -> MODULE,commissioning_report,Hypersoft Sets,yes
+DOCUMENT -> MODULE,commissioning_report,MARCOS Ranking,yes
+DOCUMENT -> MODULE,commissioning_report,Majority Rules,yes
+DOCUMENT -> MODULE,commissioning_report,Maximum Entropy,yes
+DOCUMENT -> MODULE,commissioning_report,Multi-Objective Optimization,yes
+DOCUMENT -> MODULE,commissioning_report,Neutrosophic Logic,yes
+DOCUMENT -> MODULE,commissioning_report,PLTS,yes
+DOCUMENT -> MODULE,commissioning_report,Pareto Frontier Analysis,yes
+DOCUMENT -> MODULE,commissioning_report,Picture Fuzzy Sets,yes
+DOCUMENT -> MODULE,commissioning_report,Plithogenic Sets,yes
+DOCUMENT -> MODULE,commissioning_report,Possibility Theory,yes
+DOCUMENT -> MODULE,commissioning_report,Pythagorean Fuzzy Sets,yes
+DOCUMENT -> MODULE,commissioning_report,Quantum Probability,yes
+DOCUMENT -> MODULE,commissioning_report,Rough Sets,yes
+DOCUMENT -> MODULE,commissioning_report,Specification Conflict Density,yes
+DOCUMENT -> MODULE,commissioning_report,Spherical Fuzzy Sets,yes
+DOCUMENT -> MODULE,commissioning_report,Tornado Risk Ranking,yes
+DOCUMENT -> MODULE,commissioning_report,Weighted Voting,yes
+DOCUMENT -> MODULE,commissioning_report,Worst-N-of-M,yes
+DOCUMENT -> MODULE,commissioning_report,Z-numbers,yes
+DOCUMENT -> MODULE,contract_value,Analogous Estimating Ratio,yes
+DOCUMENT -> MODULE,contract_value,Audit Trail Completeness,yes
+DOCUMENT -> MODULE,contract_value,Bayesian EAC,yes
+DOCUMENT -> MODULE,contract_value,Budget Execution Rate,yes
+DOCUMENT -> MODULE,contract_value,Change Order Frequency,yes
+DOCUMENT -> MODULE,contract_value,Constraint Satisfaction Analysis,yes
+DOCUMENT -> MODULE,contract_value,Contract Modification Frequency,yes
+DOCUMENT -> MODULE,contract_value,Cost Risk Analysis P80,yes
+DOCUMENT -> MODULE,contract_value,EVM Reporting Threshold,yes
+DOCUMENT -> MODULE,contract_value,Earned Schedule,yes
+DOCUMENT -> MODULE,contract_value,FAR Threshold Monitor,yes
+DOCUMENT -> MODULE,contract_value,ICE Ratio,yes
+DOCUMENT -> MODULE,contract_value,Information Completeness Ratio,yes
+DOCUMENT -> MODULE,contract_value,Linear Programming,yes
+DOCUMENT -> MODULE,contract_value,Missing Data Index,yes
+DOCUMENT -> MODULE,contract_value,Monte Carlo EAC Forecast,yes
+DOCUMENT -> MODULE,contract_value,OMB A-11 Check,yes
+DOCUMENT -> MODULE,contract_value,PERT Network Criticality,yes
+DOCUMENT -> MODULE,contract_value,Parametric Cost Index,yes
+DOCUMENT -> MODULE,contract_value,Reference Class Forecasting,yes
+DOCUMENT -> MODULE,contract_value,Regret Minimization Index,yes
+DOCUMENT -> MODULE,contract_value,Scenario Modeling,yes
+DOCUMENT -> MODULE,contract_value,Schedule Compression Index,yes
+DOCUMENT -> MODULE,contract_value,Schedule Risk Analysis P80,yes
+DOCUMENT -> MODULE,contract_value,Sensitivity Analysis,yes
+DOCUMENT -> MODULE,contract_value,Source Reliability Weighting,yes
+DOCUMENT -> MODULE,contract_value,TCPI,yes
+DOCUMENT -> MODULE,contract_value,Variance at Completion,yes
+DOCUMENT -> MODULE,contract_value,What-If Scenario Matrix,yes
+DOCUMENT -> MODULE,correspondence_notice,ABM Governance Layer,yes
+DOCUMENT -> MODULE,correspondence_notice,Belief Rule Base,yes
+DOCUMENT -> MODULE,correspondence_notice,CRITIC-TOPSIS,yes
+DOCUMENT -> MODULE,correspondence_notice,Conservative Dominance,yes
+DOCUMENT -> MODULE,correspondence_notice,Decision Sensitivity Matrix,yes
+DOCUMENT -> MODULE,correspondence_notice,Dempster-Shafer,yes
+DOCUMENT -> MODULE,correspondence_notice,Dispute Escalation Index,yes
+DOCUMENT -> MODULE,correspondence_notice,Document Risk Score,yes
+DOCUMENT -> MODULE,correspondence_notice,Hypersoft Sets,yes
+DOCUMENT -> MODULE,correspondence_notice,MARCOS Ranking,yes
+DOCUMENT -> MODULE,correspondence_notice,Majority Rules,yes
+DOCUMENT -> MODULE,correspondence_notice,Maximum Entropy,yes
+DOCUMENT -> MODULE,correspondence_notice,Multi-Objective Optimization,yes
+DOCUMENT -> MODULE,correspondence_notice,Neutrosophic Logic,yes
+DOCUMENT -> MODULE,correspondence_notice,PLTS,yes
+DOCUMENT -> MODULE,correspondence_notice,Pareto Frontier Analysis,yes
+DOCUMENT -> MODULE,correspondence_notice,Picture Fuzzy Sets,yes
+DOCUMENT -> MODULE,correspondence_notice,Plithogenic Sets,yes
+DOCUMENT -> MODULE,correspondence_notice,Possibility Theory,yes
+DOCUMENT -> MODULE,correspondence_notice,Pythagorean Fuzzy Sets,yes
+DOCUMENT -> MODULE,correspondence_notice,Quantum Probability,yes
+DOCUMENT -> MODULE,correspondence_notice,Rough Sets,yes
+DOCUMENT -> MODULE,correspondence_notice,Specification Conflict Density,yes
+DOCUMENT -> MODULE,correspondence_notice,Spherical Fuzzy Sets,yes
+DOCUMENT -> MODULE,correspondence_notice,Tornado Risk Ranking,yes
+DOCUMENT -> MODULE,correspondence_notice,Weighted Voting,yes
+DOCUMENT -> MODULE,correspondence_notice,Worst-N-of-M,yes
+DOCUMENT -> MODULE,correspondence_notice,Z-numbers,yes
+DOCUMENT -> MODULE,cost_report,Inflation Adjustment Index,yes
+DOCUMENT -> MODULE,cost_report,Material Cost Variance,yes
+DOCUMENT -> MODULE,cost_report,Overhead Absorption Rate,yes
+DOCUMENT -> MODULE,field_report,ABM Governance Layer,yes
+DOCUMENT -> MODULE,field_report,Belief Rule Base,yes
+DOCUMENT -> MODULE,field_report,CRITIC-TOPSIS,yes
+DOCUMENT -> MODULE,field_report,Conservative Dominance,yes
+DOCUMENT -> MODULE,field_report,Decision Sensitivity Matrix,yes
+DOCUMENT -> MODULE,field_report,Dempster-Shafer,yes
+DOCUMENT -> MODULE,field_report,Dispute Escalation Index,yes
+DOCUMENT -> MODULE,field_report,Document Risk Score,yes
+DOCUMENT -> MODULE,field_report,Hypersoft Sets,yes
+DOCUMENT -> MODULE,field_report,MARCOS Ranking,yes
+DOCUMENT -> MODULE,field_report,Majority Rules,yes
+DOCUMENT -> MODULE,field_report,Maximum Entropy,yes
+DOCUMENT -> MODULE,field_report,Multi-Objective Optimization,yes
+DOCUMENT -> MODULE,field_report,Neutrosophic Logic,yes
+DOCUMENT -> MODULE,field_report,PLTS,yes
+DOCUMENT -> MODULE,field_report,Pareto Frontier Analysis,yes
+DOCUMENT -> MODULE,field_report,Picture Fuzzy Sets,yes
+DOCUMENT -> MODULE,field_report,Plithogenic Sets,yes
+DOCUMENT -> MODULE,field_report,Possibility Theory,yes
+DOCUMENT -> MODULE,field_report,Pythagorean Fuzzy Sets,yes
+DOCUMENT -> MODULE,field_report,Quality Compliance Index,yes
+DOCUMENT -> MODULE,field_report,Quantum Probability,yes
+DOCUMENT -> MODULE,field_report,Rough Sets,yes
+DOCUMENT -> MODULE,field_report,Specification Conflict Density,yes
+DOCUMENT -> MODULE,field_report,Spherical Fuzzy Sets,yes
+DOCUMENT -> MODULE,field_report,Tornado Risk Ranking,yes
+DOCUMENT -> MODULE,field_report,Weather Day Impact,yes
+DOCUMENT -> MODULE,field_report,Weighted Voting,yes
+DOCUMENT -> MODULE,field_report,Worst-N-of-M,yes
+DOCUMENT -> MODULE,field_report,Z-numbers,yes
+DOCUMENT -> MODULE,historical_data,Analogous Estimating Ratio,yes
+DOCUMENT -> MODULE,inspection_report,ABM Governance Layer,yes
+DOCUMENT -> MODULE,inspection_report,Belief Rule Base,yes
+DOCUMENT -> MODULE,inspection_report,CRITIC-TOPSIS,yes
+DOCUMENT -> MODULE,inspection_report,Conservative Dominance,yes
+DOCUMENT -> MODULE,inspection_report,Decision Sensitivity Matrix,yes
+DOCUMENT -> MODULE,inspection_report,Dempster-Shafer,yes
+DOCUMENT -> MODULE,inspection_report,Dispute Escalation Index,yes
+DOCUMENT -> MODULE,inspection_report,Document Risk Score,yes
+DOCUMENT -> MODULE,inspection_report,Hypersoft Sets,yes
+DOCUMENT -> MODULE,inspection_report,MARCOS Ranking,yes
+DOCUMENT -> MODULE,inspection_report,Majority Rules,yes
+DOCUMENT -> MODULE,inspection_report,Maximum Entropy,yes
+DOCUMENT -> MODULE,inspection_report,Multi-Objective Optimization,yes
+DOCUMENT -> MODULE,inspection_report,Neutrosophic Logic,yes
+DOCUMENT -> MODULE,inspection_report,PLTS,yes
+DOCUMENT -> MODULE,inspection_report,Pareto Frontier Analysis,yes
+DOCUMENT -> MODULE,inspection_report,Picture Fuzzy Sets,yes
+DOCUMENT -> MODULE,inspection_report,Plithogenic Sets,yes
+DOCUMENT -> MODULE,inspection_report,Possibility Theory,yes
+DOCUMENT -> MODULE,inspection_report,Pythagorean Fuzzy Sets,yes
+DOCUMENT -> MODULE,inspection_report,Quality Compliance Index,yes
+DOCUMENT -> MODULE,inspection_report,Quantum Probability,yes
+DOCUMENT -> MODULE,inspection_report,Rough Sets,yes
+DOCUMENT -> MODULE,inspection_report,Specification Conflict Density,yes
+DOCUMENT -> MODULE,inspection_report,Spherical Fuzzy Sets,yes
+DOCUMENT -> MODULE,inspection_report,Tornado Risk Ranking,yes
+DOCUMENT -> MODULE,inspection_report,Weighted Voting,yes
+DOCUMENT -> MODULE,inspection_report,Worst-N-of-M,yes
+DOCUMENT -> MODULE,inspection_report,Z-numbers,yes
+DOCUMENT -> MODULE,lookahead_schedule,Look-Ahead Schedule Health,yes
+DOCUMENT -> MODULE,lookahead_schedule,Queueing Theory Bottleneck,yes
+DOCUMENT -> MODULE,monthly_report,Analogous Estimating Ratio,yes
+DOCUMENT -> MODULE,monthly_report,Audit Trail Completeness,yes
+DOCUMENT -> MODULE,monthly_report,Bayesian EAC,yes
+DOCUMENT -> MODULE,monthly_report,Budget Execution Rate,yes
+DOCUMENT -> MODULE,monthly_report,CCPM Buffer Health,yes
+DOCUMENT -> MODULE,monthly_report,Constraint Satisfaction Analysis,yes
+DOCUMENT -> MODULE,monthly_report,Contingency Burn Rate,yes
+DOCUMENT -> MODULE,monthly_report,Cost Risk Analysis P80,yes
+DOCUMENT -> MODULE,monthly_report,Critical Path Index,yes
+DOCUMENT -> MODULE,monthly_report,Cross-document Consistency Score,yes
+DOCUMENT -> MODULE,monthly_report,Discrete Event Simulation,yes
+DOCUMENT -> MODULE,monthly_report,EVM Reporting Threshold,yes
+DOCUMENT -> MODULE,monthly_report,Earned Schedule,yes
+DOCUMENT -> MODULE,monthly_report,FAR Threshold Monitor,yes
+DOCUMENT -> MODULE,monthly_report,ICE Ratio,yes
+DOCUMENT -> MODULE,monthly_report,Information Completeness Ratio,yes
+DOCUMENT -> MODULE,monthly_report,Labor Productivity Index,yes
+DOCUMENT -> MODULE,monthly_report,Line of Balance,yes
+DOCUMENT -> MODULE,monthly_report,Linear Programming,yes
+DOCUMENT -> MODULE,monthly_report,Missing Data Index,yes
+DOCUMENT -> MODULE,monthly_report,Monte Carlo EAC Forecast,yes
+DOCUMENT -> MODULE,monthly_report,OMB A-11 Check,yes
+DOCUMENT -> MODULE,monthly_report,PERT Network Criticality,yes
+DOCUMENT -> MODULE,monthly_report,Parametric Cost Index,yes
+DOCUMENT -> MODULE,monthly_report,Reference Class Forecasting,yes
+DOCUMENT -> MODULE,monthly_report,Regret Minimization Index,yes
+DOCUMENT -> MODULE,monthly_report,S-Curve Deviation,yes
+DOCUMENT -> MODULE,monthly_report,Scenario Modeling,yes
+DOCUMENT -> MODULE,monthly_report,Schedule Compression Index,yes
+DOCUMENT -> MODULE,monthly_report,Schedule Risk Analysis P80,yes
+DOCUMENT -> MODULE,monthly_report,Sensitivity Analysis,yes
+DOCUMENT -> MODULE,monthly_report,Source Reliability Weighting,yes
+DOCUMENT -> MODULE,monthly_report,TCPI,yes
+DOCUMENT -> MODULE,monthly_report,Tornado Risk Ranking,yes
+DOCUMENT -> MODULE,monthly_report,Variance at Completion,yes
+DOCUMENT -> MODULE,monthly_report,What-If Scenario Matrix,yes
+DOCUMENT -> MODULE,ncr_log,NCR Rate,yes
+DOCUMENT -> MODULE,oac_minutes,ABM Governance Layer,yes
+DOCUMENT -> MODULE,oac_minutes,Belief Rule Base,yes
+DOCUMENT -> MODULE,oac_minutes,CRITIC-TOPSIS,yes
+DOCUMENT -> MODULE,oac_minutes,Conservative Dominance,yes
+DOCUMENT -> MODULE,oac_minutes,Decision Sensitivity Matrix,yes
+DOCUMENT -> MODULE,oac_minutes,Dempster-Shafer,yes
+DOCUMENT -> MODULE,oac_minutes,Dispute Escalation Index,yes
+DOCUMENT -> MODULE,oac_minutes,Document Risk Score,yes
+DOCUMENT -> MODULE,oac_minutes,Environmental Compliance Rate,yes
+DOCUMENT -> MODULE,oac_minutes,Hypersoft Sets,yes
+DOCUMENT -> MODULE,oac_minutes,MARCOS Ranking,yes
+DOCUMENT -> MODULE,oac_minutes,Majority Rules,yes
+DOCUMENT -> MODULE,oac_minutes,Maximum Entropy,yes
+DOCUMENT -> MODULE,oac_minutes,Multi-Objective Optimization,yes
+DOCUMENT -> MODULE,oac_minutes,Neutrosophic Logic,yes
+DOCUMENT -> MODULE,oac_minutes,PLTS,yes
+DOCUMENT -> MODULE,oac_minutes,Pareto Frontier Analysis,yes
+DOCUMENT -> MODULE,oac_minutes,Picture Fuzzy Sets,yes
+DOCUMENT -> MODULE,oac_minutes,Plithogenic Sets,yes
+DOCUMENT -> MODULE,oac_minutes,Possibility Theory,yes
+DOCUMENT -> MODULE,oac_minutes,Pythagorean Fuzzy Sets,yes
+DOCUMENT -> MODULE,oac_minutes,Quantum Probability,yes
+DOCUMENT -> MODULE,oac_minutes,Rough Sets,yes
+DOCUMENT -> MODULE,oac_minutes,Safety Performance Index,yes
+DOCUMENT -> MODULE,oac_minutes,Specification Conflict Density,yes
+DOCUMENT -> MODULE,oac_minutes,Spherical Fuzzy Sets,yes
+DOCUMENT -> MODULE,oac_minutes,Tornado Risk Ranking,yes
+DOCUMENT -> MODULE,oac_minutes,Weighted Voting,yes
+DOCUMENT -> MODULE,oac_minutes,Worst-N-of-M,yes
+DOCUMENT -> MODULE,oac_minutes,Z-numbers,yes
+DOCUMENT -> MODULE,past_performance_report,Contractor Performance Score,yes
+DOCUMENT -> MODULE,pay_application,Analogous Estimating Ratio,yes
+DOCUMENT -> MODULE,pay_application,Audit Trail Completeness,yes
+DOCUMENT -> MODULE,pay_application,Bayesian EAC,yes
+DOCUMENT -> MODULE,pay_application,Budget Execution Rate,yes
+DOCUMENT -> MODULE,pay_application,CCPM Buffer Health,yes
+DOCUMENT -> MODULE,pay_application,Constraint Satisfaction Analysis,yes
+DOCUMENT -> MODULE,pay_application,Contingency Burn Rate,yes
+DOCUMENT -> MODULE,pay_application,Cost Risk Analysis P80,yes
+DOCUMENT -> MODULE,pay_application,Critical Path Index,yes
+DOCUMENT -> MODULE,pay_application,Cross-document Consistency Score,yes
+DOCUMENT -> MODULE,pay_application,Discrete Event Simulation,yes
+DOCUMENT -> MODULE,pay_application,EVM Reporting Threshold,yes
+DOCUMENT -> MODULE,pay_application,Earned Schedule,yes
+DOCUMENT -> MODULE,pay_application,FAR Threshold Monitor,yes
+DOCUMENT -> MODULE,pay_application,ICE Ratio,yes
+DOCUMENT -> MODULE,pay_application,Information Completeness Ratio,yes
+DOCUMENT -> MODULE,pay_application,Labor Productivity Index,yes
+DOCUMENT -> MODULE,pay_application,Line of Balance,yes
+DOCUMENT -> MODULE,pay_application,Linear Programming,yes
+DOCUMENT -> MODULE,pay_application,Missing Data Index,yes
+DOCUMENT -> MODULE,pay_application,Monte Carlo EAC Forecast,yes
+DOCUMENT -> MODULE,pay_application,OMB A-11 Check,yes
+DOCUMENT -> MODULE,pay_application,PERT Network Criticality,yes
+DOCUMENT -> MODULE,pay_application,Parametric Cost Index,yes
+DOCUMENT -> MODULE,pay_application,Reference Class Forecasting,yes
+DOCUMENT -> MODULE,pay_application,Regret Minimization Index,yes
+DOCUMENT -> MODULE,pay_application,S-Curve Deviation,yes
+DOCUMENT -> MODULE,pay_application,Scenario Modeling,yes
+DOCUMENT -> MODULE,pay_application,Schedule Compression Index,yes
+DOCUMENT -> MODULE,pay_application,Schedule Risk Analysis P80,yes
+DOCUMENT -> MODULE,pay_application,Sensitivity Analysis,yes
+DOCUMENT -> MODULE,pay_application,Source Reliability Weighting,yes
+DOCUMENT -> MODULE,pay_application,TCPI,yes
+DOCUMENT -> MODULE,pay_application,Tornado Risk Ranking,yes
+DOCUMENT -> MODULE,pay_application,Variance at Completion,yes
+DOCUMENT -> MODULE,pay_application,What-If Scenario Matrix,yes
+DOCUMENT -> MODULE,procurement_log,Agent-Based Supply Chain,yes
+DOCUMENT -> MODULE,procurement_log,Procurement Lead Time Monitor,yes
+DOCUMENT -> MODULE,resource_report,Labor Productivity Index,yes
+DOCUMENT -> MODULE,resource_report,Resource Loading Index,yes
+DOCUMENT -> MODULE,rfa_log,Submittal Rejection Rate,yes
+DOCUMENT -> MODULE,rfi_log,Dispute Escalation Index,yes
+DOCUMENT -> MODULE,rfi_log,RFI Velocity,yes
+DOCUMENT -> MODULE,rfi_log,Rework Feedback Loop,yes
+DOCUMENT -> MODULE,rfi_log,Specification Conflict Density,yes
+DOCUMENT -> MODULE,risk_register,ABM Governance Layer,yes
+DOCUMENT -> MODULE,risk_register,Belief Rule Base,yes
+DOCUMENT -> MODULE,risk_register,CRITIC-TOPSIS,yes
+DOCUMENT -> MODULE,risk_register,Conservative Dominance,yes
+DOCUMENT -> MODULE,risk_register,Decision Sensitivity Matrix,yes
+DOCUMENT -> MODULE,risk_register,Dempster-Shafer,yes
+DOCUMENT -> MODULE,risk_register,Dispute Escalation Index,yes
+DOCUMENT -> MODULE,risk_register,Document Risk Score,yes
+DOCUMENT -> MODULE,risk_register,Hypersoft Sets,yes
+DOCUMENT -> MODULE,risk_register,MARCOS Ranking,yes
+DOCUMENT -> MODULE,risk_register,Majority Rules,yes
+DOCUMENT -> MODULE,risk_register,Maximum Entropy,yes
+DOCUMENT -> MODULE,risk_register,Multi-Objective Optimization,yes
+DOCUMENT -> MODULE,risk_register,Neutrosophic Logic,yes
+DOCUMENT -> MODULE,risk_register,PLTS,yes
+DOCUMENT -> MODULE,risk_register,Pareto Frontier Analysis,yes
+DOCUMENT -> MODULE,risk_register,Picture Fuzzy Sets,yes
+DOCUMENT -> MODULE,risk_register,Plithogenic Sets,yes
+DOCUMENT -> MODULE,risk_register,Possibility Theory,yes
+DOCUMENT -> MODULE,risk_register,Pythagorean Fuzzy Sets,yes
+DOCUMENT -> MODULE,risk_register,Quantum Probability,yes
+DOCUMENT -> MODULE,risk_register,Rough Sets,yes
+DOCUMENT -> MODULE,risk_register,Specification Conflict Density,yes
+DOCUMENT -> MODULE,risk_register,Spherical Fuzzy Sets,yes
+DOCUMENT -> MODULE,risk_register,Tornado Risk Ranking,yes
+DOCUMENT -> MODULE,risk_register,Weighted Voting,yes
+DOCUMENT -> MODULE,risk_register,Worst-N-of-M,yes
+DOCUMENT -> MODULE,risk_register,Z-numbers,yes
+DOCUMENT -> MODULE,schedule_of_values,Analogous Estimating Ratio,yes
+DOCUMENT -> MODULE,schedule_of_values,Audit Trail Completeness,yes
+DOCUMENT -> MODULE,schedule_of_values,Bayesian EAC,yes
+DOCUMENT -> MODULE,schedule_of_values,Budget Execution Rate,yes
+DOCUMENT -> MODULE,schedule_of_values,Constraint Satisfaction Analysis,yes
+DOCUMENT -> MODULE,schedule_of_values,Cost Risk Analysis P80,yes
+DOCUMENT -> MODULE,schedule_of_values,Cross-document Consistency Score,yes
+DOCUMENT -> MODULE,schedule_of_values,EVM Reporting Threshold,yes
+DOCUMENT -> MODULE,schedule_of_values,Earned Schedule,yes
+DOCUMENT -> MODULE,schedule_of_values,FAR Threshold Monitor,yes
+DOCUMENT -> MODULE,schedule_of_values,ICE Ratio,yes
+DOCUMENT -> MODULE,schedule_of_values,Information Completeness Ratio,yes
+DOCUMENT -> MODULE,schedule_of_values,Linear Programming,yes
+DOCUMENT -> MODULE,schedule_of_values,Missing Data Index,yes
+DOCUMENT -> MODULE,schedule_of_values,Monte Carlo EAC Forecast,yes
+DOCUMENT -> MODULE,schedule_of_values,OMB A-11 Check,yes
+DOCUMENT -> MODULE,schedule_of_values,PERT Network Criticality,yes
+DOCUMENT -> MODULE,schedule_of_values,Parametric Cost Index,yes
+DOCUMENT -> MODULE,schedule_of_values,Reference Class Forecasting,yes
+DOCUMENT -> MODULE,schedule_of_values,Regret Minimization Index,yes
+DOCUMENT -> MODULE,schedule_of_values,S-Curve Deviation,yes
+DOCUMENT -> MODULE,schedule_of_values,Scenario Modeling,yes
+DOCUMENT -> MODULE,schedule_of_values,Sensitivity Analysis,yes
+DOCUMENT -> MODULE,schedule_of_values,Source Reliability Weighting,yes
+DOCUMENT -> MODULE,schedule_of_values,TCPI,yes
+DOCUMENT -> MODULE,schedule_of_values,Variance at Completion,yes
+DOCUMENT -> MODULE,schedule_of_values,What-If Scenario Matrix,yes
+DOCUMENT -> MODULE,schedule_update,CCPM Buffer Health,yes
+DOCUMENT -> MODULE,schedule_update,Critical Path Index,yes
+DOCUMENT -> MODULE,schedule_update,Discrete Event Simulation,yes
+DOCUMENT -> MODULE,schedule_update,Earned Schedule,yes
+DOCUMENT -> MODULE,schedule_update,Float Consumption Rate,yes
+DOCUMENT -> MODULE,schedule_update,Line of Balance,yes
+DOCUMENT -> MODULE,schedule_update,Look-Ahead Schedule Health,yes
+DOCUMENT -> MODULE,schedule_update,Queueing Theory Bottleneck,yes
+DOCUMENT -> MODULE,schedule_update,S-Curve Deviation,yes
+DOCUMENT -> MODULE,schedule_update,Sensitivity Analysis,yes
+DOCUMENT -> MODULE,schedule_update,Tornado Risk Ranking,yes
+DOCUMENT -> MODULE,subcontractor_report,Subcontractor Performance,yes
+DOCUMENT -> MODULE,submittal_register,ABM Governance Layer,yes
+DOCUMENT -> MODULE,submittal_register,Belief Rule Base,yes
+DOCUMENT -> MODULE,submittal_register,CRITIC-TOPSIS,yes
+DOCUMENT -> MODULE,submittal_register,Conservative Dominance,yes
+DOCUMENT -> MODULE,submittal_register,Decision Sensitivity Matrix,yes
+DOCUMENT -> MODULE,submittal_register,Dempster-Shafer,yes
+DOCUMENT -> MODULE,submittal_register,Dispute Escalation Index,yes
+DOCUMENT -> MODULE,submittal_register,Document Risk Score,yes
+DOCUMENT -> MODULE,submittal_register,Hypersoft Sets,yes
+DOCUMENT -> MODULE,submittal_register,MARCOS Ranking,yes
+DOCUMENT -> MODULE,submittal_register,Majority Rules,yes
+DOCUMENT -> MODULE,submittal_register,Maximum Entropy,yes
+DOCUMENT -> MODULE,submittal_register,Multi-Objective Optimization,yes
+DOCUMENT -> MODULE,submittal_register,Neutrosophic Logic,yes
+DOCUMENT -> MODULE,submittal_register,PLTS,yes
+DOCUMENT -> MODULE,submittal_register,Pareto Frontier Analysis,yes
+DOCUMENT -> MODULE,submittal_register,Picture Fuzzy Sets,yes
+DOCUMENT -> MODULE,submittal_register,Plithogenic Sets,yes
+DOCUMENT -> MODULE,submittal_register,Possibility Theory,yes
+DOCUMENT -> MODULE,submittal_register,Pythagorean Fuzzy Sets,yes
+DOCUMENT -> MODULE,submittal_register,Quantum Probability,yes
+DOCUMENT -> MODULE,submittal_register,Rough Sets,yes
+DOCUMENT -> MODULE,submittal_register,Specification Conflict Density,yes
+DOCUMENT -> MODULE,submittal_register,Spherical Fuzzy Sets,yes
+DOCUMENT -> MODULE,submittal_register,Submittal Rejection Rate,yes
+DOCUMENT -> MODULE,submittal_register,Tornado Risk Ranking,yes
+DOCUMENT -> MODULE,submittal_register,Weighted Voting,yes
+DOCUMENT -> MODULE,submittal_register,Worst-N-of-M,yes
+DOCUMENT -> MODULE,submittal_register,Z-numbers,yes
+DOCUMENT -> MODULE,time_phased_schedule,CCPM Buffer Health,yes
+DOCUMENT -> MODULE,time_phased_schedule,Critical Path Index,yes
+DOCUMENT -> MODULE,time_phased_schedule,Discrete Event Simulation,yes
+DOCUMENT -> MODULE,time_phased_schedule,Earned Schedule,yes
+DOCUMENT -> MODULE,time_phased_schedule,Float Consumption Rate,yes
+DOCUMENT -> MODULE,time_phased_schedule,Line of Balance,yes
+DOCUMENT -> MODULE,time_phased_schedule,S-Curve Deviation,yes
+DOCUMENT -> MODULE,time_phased_schedule,Sensitivity Analysis,yes
+DOCUMENT -> MODULE,time_phased_schedule,Tornado Risk Ranking,yes
+MODULE -> CATEGORY,ABM Governance Layer,Regulatory and Authority Thresholds,yes
+MODULE -> CATEGORY,ARIMA CPI Forecast,Cost and EVM Performance,yes
+MODULE -> CATEGORY,Agent-Based Supply Chain,System Dynamics and Complexity,yes
+MODULE -> CATEGORY,Analogous Estimating Ratio,Cost Risk,yes
+MODULE -> CATEGORY,Audit Trail Completeness,Data Integrity,yes
+MODULE -> CATEGORY,Bayesian EAC,Cost and EVM Performance,yes
+MODULE -> CATEGORY,Belief Rule Base,Evidence Combination,yes
+MODULE -> CATEGORY,Budget Execution Rate,Cost and EVM Performance,yes
+MODULE -> CATEGORY,CCPM Buffer Health,Schedule Performance,yes
+MODULE -> CATEGORY,CRITIC-TOPSIS,Evidence Combination,yes
+MODULE -> CATEGORY,CUSUM Anomaly Monitor,Cost and EVM Performance,yes
+MODULE -> CATEGORY,Change Order Frequency,Document-Derived Condition Signals,yes
+MODULE -> CATEGORY,Conservative Dominance,Signal Synthesis,yes
+MODULE -> CATEGORY,Constraint Satisfaction Analysis,Decision Optimization,yes
+MODULE -> CATEGORY,Contingency Burn Rate,Cost Risk,yes
+MODULE -> CATEGORY,Contract Modification Frequency,Regulatory and Authority Thresholds,yes
+MODULE -> CATEGORY,Contractor Performance Score,Delivery Quality Performance,yes
+MODULE -> CATEGORY,Cost Risk Analysis P80,Cost Risk,yes
+MODULE -> CATEGORY,Critical Path Index,Schedule Performance,yes
+MODULE -> CATEGORY,Cross-document Consistency Score,Data Integrity,yes
+MODULE -> CATEGORY,DSM Rework Propagation,System Dynamics and Complexity,yes
+MODULE -> CATEGORY,Data Timeliness Score,Data Integrity,yes
+MODULE -> CATEGORY,Decision Sensitivity Matrix,Decision Optimization,yes
+MODULE -> CATEGORY,Dempster-Shafer,Evidence Combination,yes
+MODULE -> CATEGORY,Discrete Event Simulation,System Dynamics and Complexity,yes
+MODULE -> CATEGORY,Dispute Escalation Index,Document-Derived Condition Signals,yes
+MODULE -> CATEGORY,Document Risk Score,Document-Derived Condition Signals,yes
+MODULE -> CATEGORY,EVM Reporting Threshold,Regulatory and Authority Thresholds,yes
+MODULE -> CATEGORY,Earned Schedule,Cost and EVM Performance,yes
+MODULE -> CATEGORY,Environmental Compliance Rate,Delivery Quality Performance,yes
+MODULE -> CATEGORY,FAR Threshold Monitor,Regulatory and Authority Thresholds,yes
+MODULE -> CATEGORY,Fermatean Fuzzy Sets,Evidence Combination,yes
+MODULE -> CATEGORY,Float Consumption Rate,Schedule Performance,yes
+MODULE -> CATEGORY,Hesitant Fuzzy Sets,Evidence Combination,yes
+MODULE -> CATEGORY,Hypersoft Sets,Evidence Combination,yes
+MODULE -> CATEGORY,ICE Ratio,Cost and EVM Performance,yes
+MODULE -> CATEGORY,Inflation Adjustment Index,Cost Risk,yes
+MODULE -> CATEGORY,Information Completeness Ratio,Data Integrity,yes
+MODULE -> CATEGORY,Interval Fuzzy Sets,Evidence Combination,yes
+MODULE -> CATEGORY,Kalman Filter SPI Smoother,Cost and EVM Performance,yes
+MODULE -> CATEGORY,Labor Productivity Index,Cost Risk,yes
+MODULE -> CATEGORY,Line of Balance,Schedule Performance,yes
+MODULE -> CATEGORY,Linear Programming,Decision Optimization,yes
+MODULE -> CATEGORY,Look-Ahead Schedule Health,Schedule Performance,yes
+MODULE -> CATEGORY,MARCOS Ranking,Evidence Combination,yes
+MODULE -> CATEGORY,Majority Rules,Signal Synthesis,yes
+MODULE -> CATEGORY,Material Cost Variance,Cost Risk,yes
+MODULE -> CATEGORY,Maximum Entropy,Evidence Combination,yes
+MODULE -> CATEGORY,Milestone Trend Analysis,Schedule Performance,yes
+MODULE -> CATEGORY,Missing Data Index,Data Integrity,yes
+MODULE -> CATEGORY,Monte Carlo EAC Forecast,Cost and EVM Performance,yes
+MODULE -> CATEGORY,Multi-Objective Optimization,Decision Optimization,yes
+MODULE -> CATEGORY,NCR Rate,Document-Derived Condition Signals,yes
+MODULE -> CATEGORY,Neutrosophic Logic,Evidence Combination,yes
+MODULE -> CATEGORY,OMB A-11 Check,Regulatory and Authority Thresholds,yes
+MODULE -> CATEGORY,Overhead Absorption Rate,Cost Risk,yes
+MODULE -> CATEGORY,PERT Network Criticality,Schedule Performance,yes
+MODULE -> CATEGORY,PLTS,Evidence Combination,yes
+MODULE -> CATEGORY,Parametric Cost Index,Cost Risk,yes
+MODULE -> CATEGORY,Pareto Frontier Analysis,Decision Optimization,yes
+MODULE -> CATEGORY,Picture Fuzzy Sets,Evidence Combination,yes
+MODULE -> CATEGORY,Plithogenic Sets,Evidence Combination,yes
+MODULE -> CATEGORY,Possibility Theory,Evidence Combination,yes
+MODULE -> CATEGORY,Procurement Lead Time Monitor,Document-Derived Condition Signals,yes
+MODULE -> CATEGORY,Pythagorean Fuzzy Sets,Evidence Combination,yes
+MODULE -> CATEGORY,Quality Compliance Index,Delivery Quality Performance,yes
+MODULE -> CATEGORY,Quantum Probability,Evidence Combination,yes
+MODULE -> CATEGORY,Queueing Theory Bottleneck,System Dynamics and Complexity,yes
+MODULE -> CATEGORY,RFI Velocity,Document-Derived Condition Signals,yes
+MODULE -> CATEGORY,Reference Class Forecasting,Cost Risk,yes
+MODULE -> CATEGORY,Regression to Mean CPI,Cost and EVM Performance,yes
+MODULE -> CATEGORY,Regret Minimization Index,Decision Optimization,yes
+MODULE -> CATEGORY,Reporting Frequency Index,Data Integrity,yes
+MODULE -> CATEGORY,Resource Loading Index,Schedule Performance,yes
+MODULE -> CATEGORY,Rework Feedback Loop,System Dynamics and Complexity,yes
+MODULE -> CATEGORY,Rough Sets,Evidence Combination,yes
+MODULE -> CATEGORY,S-Curve Deviation,Schedule Performance,yes
+MODULE -> CATEGORY,Safety Performance Index,Delivery Quality Performance,yes
+MODULE -> CATEGORY,Scenario Modeling,System Dynamics and Complexity,yes
+MODULE -> CATEGORY,Schedule Compression Index,Schedule Performance,yes
+MODULE -> CATEGORY,Schedule Risk Analysis P80,Schedule Performance,yes
+MODULE -> CATEGORY,Sensitivity Analysis,System Dynamics and Complexity,yes
+MODULE -> CATEGORY,Source Reliability Weighting,Data Integrity,yes
+MODULE -> CATEGORY,Specification Conflict Density,Document-Derived Condition Signals,yes
+MODULE -> CATEGORY,Spherical Fuzzy Sets,Evidence Combination,yes
+MODULE -> CATEGORY,Subcontractor Performance,Document-Derived Condition Signals,yes
+MODULE -> CATEGORY,Submittal Rejection Rate,Document-Derived Condition Signals,yes
+MODULE -> CATEGORY,TCPI,Cost and EVM Performance,yes
+MODULE -> CATEGORY,Tornado Risk Ranking,System Dynamics and Complexity,yes
+MODULE -> CATEGORY,Type-2 Fuzzy Sets,Evidence Combination,yes
+MODULE -> CATEGORY,Variance at Completion,Cost and EVM Performance,yes
+MODULE -> CATEGORY,Weather Day Impact,Document-Derived Condition Signals,yes
+MODULE -> CATEGORY,Weighted Voting,Signal Synthesis,yes
+MODULE -> CATEGORY,What-If Scenario Matrix,Decision Optimization,yes
+MODULE -> CATEGORY,Worst-N-of-M,Signal Synthesis,yes
+MODULE -> CATEGORY,Z-numbers,Evidence Combination,yes

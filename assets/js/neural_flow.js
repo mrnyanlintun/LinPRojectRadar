@@ -47,17 +47,18 @@
   // failure) — the canonical source (taxonomy.js) always carries the
   // authoritative group assignment.
   var FB_CATS = [
-    { id:1,  name:'Quantitative EVM',       group:'A', groupName:'Project Health',                  count:12 },
-    { id:2,  name:'Schedule Simulation',    group:'A', groupName:'Project Health',                  count:11 },
-    { id:3,  name:'Cost Simulation',        group:'A', groupName:'Project Health',                  count:10 },
-    { id:4,  name:'Document & Risk',        group:'A', groupName:'Project Health',                  count:10 },
-    { id:5,  name:'System Dynamics',        group:'A', groupName:'Project Health',                  count:8  },
-    { id:6,  name:'Signal Synthesis',       group:'B', groupName:'Recommendation and Governance',   count:4  },
-    { id:7,  name:'Evidence Combination',   group:'B', groupName:'Recommendation and Governance',   count:20 },
-    { id:8,  name:'Governance & Compliance',group:'B', groupName:'Recommendation and Governance',   count:9  },
-    { id:9,  name:'Data Integrity',         group:'C', groupName:'Data and Evidence Health',        count:6  },
-    { id:10, name:'Decision Optimization',  group:'B', groupName:'Recommendation and Governance',   count:8  },
+    { id:1,  taxId:'a1', name:'Quantitative EVM',       group:'A', groupName:'Project Health',                  count:12 },
+    { id:2,  taxId:'a2', name:'Schedule Simulation',    group:'A', groupName:'Project Health',                  count:11 },
+    { id:3,  taxId:'a3', name:'Cost Simulation',        group:'A', groupName:'Project Health',                  count:10 },
+    { id:4,  taxId:'a4', name:'Document & Risk',        group:'A', groupName:'Project Health',                  count:10 },
+    { id:5,  taxId:'a5', name:'System Dynamics',        group:'A', groupName:'Project Health',                  count:8  },
+    { id:6,  taxId:'b1', name:'Signal Synthesis',       group:'B', groupName:'Recommendation and Governance',   count:4  },
+    { id:7,  taxId:'b2', name:'Evidence Combination',   group:'B', groupName:'Recommendation and Governance',   count:20 },
+    { id:8,  taxId:'b3', name:'Governance & Compliance',group:'B', groupName:'Recommendation and Governance',   count:9  },
+    { id:9,  taxId:'c1', name:'Data Integrity',         group:'C', groupName:'Data and Evidence Health',        count:6  },
+    { id:10, taxId:'b4', name:'Decision Optimization',  group:'B', groupName:'Recommendation and Governance',   count:8  },
   ];
+
 
   // ─── Fallback module definitions: [catIdx, displayName, method_class] ───────
   var RAW_MODS = [
@@ -135,8 +136,8 @@
       var PLC = window.projectLevelCategories ? window.projectLevelCategories()
         : LC.filter(function(c) { return !(c && c.level === 'portfolio'); });
       var cats = PLC.map(function(c, ci) {
-        return { id: ci + 1, name: c.name, group: c.group, groupName: c.groupName,
-                 count: (c.modules || []).length };
+        return { id: ci + 1, taxId: c.id, name: c.name, group: c.group,
+                 groupName: c.groupName, count: (c.modules || []).length };
       });
       var mods = [];
       var idxs = PLC.map(function() { return []; });
@@ -144,7 +145,10 @@
       PLC.forEach(function(c, ci) {
         (c.modules || []).forEach(function(m) {
           idxs[ci].push(mods.length);
-          mods.push({ mc: m.method_class, name: m.name, num: m.num, catI: ci });
+          // `required` is the module's own declaration of the signal keys it consumes. It is
+          // what makes a DOCUMENT -> MODULE edge derivable instead of positional.
+          mods.push({ mc: m.method_class, name: m.name, num: m.num, catI: ci,
+                      required: (m.required || []).slice() });
         });
       });
       return { CATS: cats, MODULES: mods, catModIdxs: idxs, catIds: catIds };
@@ -158,45 +162,90 @@
     return { CATS: FB_CATS, MODULES: fbMods, catModIdxs: fbIdxs, catIds: null };
   }
 
-  // ─── Doc → category indices (0-based, gapless 1-10; Portfolio Health is
-  // portfolio-scale and not fed by individual document uploads) ────────────────
-  var DOC_TO_CATS = [
-    [0,2],      // Contract Value          → Cat1, Cat3
-    [0,1],      // Schedule of Values      → Cat1, Cat2
-    [0,2,7],    // Pay Application         → Cat1, Cat3, Cat8
-    [0,1],      // Time-Phased Schedule    → Cat1, Cat2
-    [1,4],      // Schedule Update         → Cat2, Cat5
-    [0,1,2],    // Monthly Report          → Cat1, Cat2, Cat3
-    [2,7],      // Change Order            → Cat3, Cat8
-    [3],        // Submittal Register      → Cat4
-    [3,7],      // OAC Minutes             → Cat4, Cat8
-    [3,1],      // Field Report            → Cat4, Cat2
-    [3],        // Inspection Report       → Cat4
-    [3,7],      // NCR Log                 → Cat4, Cat8
-    [3,7],      // Subcontractor Report    → Cat4, Cat8
-    [3,2],      // Procurement Log         → Cat4, Cat3
-    [1,4],      // Lookahead Schedule      → Cat2, Cat5
-    [2,4],      // Resource Report         → Cat3, Cat5
-    [2,0],      // Cost Report             → Cat3, Cat1
-    [2],        // Past Performance Report → Cat3
-    [7],        // Safety Report           → Cat8
-    [7,3],      // Quality Audit Report    → Cat8, Cat4
-    [7],        // Environmental Report    → Cat8
-    [2],        // Historical Data         → Cat3
-    [7,3],      // Commissioning Report    → Cat8, Cat4
-    [3],        // Correspondence / Notice → Cat4
-    [4,3],      // Risk Register           → Cat5, Cat4
-    [3],        // RFI Log (register)      → Cat4  (v10.27)
-    [3],        // RFA / Approval Log      → Cat4  (v10.27)
-  ];
+  /* ─── RUN 26. THE WIRING IS DERIVED FROM THE ARCHITECTURE, NOT FROM POSITION ──
+     WHAT WAS HERE, AND WHY IT WAS WRONG. Two hand-written arrays of category
+     INDICES, `DOC_TO_CATS` and `INTER_CAT`, written against the retired gapless
+     Cat 1-10 scheme. `CATS` has been built from `LIN_CATEGORIES` since the
+     taxonomy replaced categories.js, and that list is ELEVEN project categories
+     in a different order: A1, A2, A3, A4, A5, A6, B1, B2, B3, B4, C1. Index 7
+     used to mean Cat 8 Governance and now means Evidence Combination; index 5
+     used to mean Signal Synthesis and now means Delivery Quality Performance;
+     index 8 used to mean Data Integrity and now means Regulatory and Authority
+     Thresholds. Every document row the old array sent to "Cat 8" was rendered
+     landing on Evidence Combination, and every inter-category feed pointed at
+     the wrong node. Measured in a real browser at the Run-26 baseline.
 
-  // ─── Inter-category feeds (x-hubs between cat col and prj col) ───────────────
-  var INTER_CAT = [
-    { srcs:[0,1,2,3,4],             dst:5, xHub:860 },
-    { srcs:[0,1,2,3,4,5],           dst:6, xHub:875 },
-    { srcs:[0,1,2,3,4,5,6,7],       dst:8, xHub:905 },
-    { srcs:[0,1,2,3,4,5,6,7],       dst:9, xHub:920 },
-  ];
+     Correcting the indices would only have restored a wiring that was itself
+     never derived from an authority: the document lines were drawn to
+     `catModIdxs[ci].slice(0, 2)`, the first two modules of a category by
+     REGISTRY ORDER, which is one of the inferences Addition A forbids by name.
+
+     WHAT REPLACES IT. Every edge is derived from a committed authority:
+
+       DOCUMENT -> MODULE   the document contract crossed with the module's own
+                            declared required inputs. A document feeds a module
+                            when it emits a signal key that module requires, and
+                            not otherwise.
+       MODULE -> CATEGORY   registry category membership.
+       CATEGORY -> CATEGORY only what the architecture master states in words:
+                            "Project Evidence -> Category 9 assessment ->
+                            Qualified Evidence -> analytical/governance use"
+                            (section 18) and "downstream Cats 6/7/8/10 consume
+                            qualified governed objects" (section 22). That is
+                            Data Integrity into each of the four downstream
+                            categories, and nothing else. The master states NO
+                            ordering among those four, so none is drawn.
+       CATEGORY -> STATUS   every project-level Group A and Group B category.
+                            Group C is excluded: GROUP_ASSIGNMENT.md states that
+                            Data and Evidence Health does not contribute to
+                            project status, so the rollup edge must not exist.
+
+     The full inventory, with the authority for every row and every place the
+     architecture is SILENT, is code_audit/signal_flow_authoritative_edges.csv.
+     The diagram is the object under test; that file is the oracle. ──────────── */
+
+  // ---BEGIN GENERATED DOCUMENT EMISSIONS---
+  // GENERATED by server/tools/build_run26_authoritative_edges.py from
+  // server/app/extraction_merge.py. Do not edit by hand: the suite regenerates
+  // this block and fails if the bytes differ.
+  var DOC_EMISSIONS = {
+    'change_order': ['bac','baselineContractSum','changeOrderCount'],
+    'commissioning_report': ['docRiskScore'],
+    'contract_value': ['bac','baselineContractSum','baselineEnd','baselineStart'],
+    'correspondence_notice': ['docRiskScore'],
+    'cost_report': ['indirectCostActual','indirectCostPlan','materialCostBaseline','materialCostCurrent'],
+    'environmental_report': ['environmentalComplianceRate','environmentalViolations'],
+    'field_report': ['docRiskScore','floatRemaining','qualityDeficienciesNoted','weatherDaysLost'],
+    'historical_data': ['analogousBac','analogousFinalCost','analogousOverrunPct'],
+    'inspection_report': ['criticalDeficiencyCount','docRiskScore','itemsFailed','itemsInspected','qualityDeficienciesNoted'],
+    'lookahead_schedule': ['activitiesConstrained','activitiesPlanned','lookaheadWeeks'],
+    'monthly_report': ['ac','actualPctComplete','bac','ev','plannedPctComplete','pv'],
+    'ncr_log': ['ncrClosed','ncrIssued','ncrOpen'],
+    'oac_minutes': ['docRiskScore','environmentalIssuesDiscussed','outstandingActionItems','qualityIssuesDiscussed','safetyActionsOpen','safetyIncidentsDiscussed','subcontractorDisputes','subcontractorIssuesDiscussed','weatherDaysDiscussed'],
+    'past_performance_report': ['costRating','overallRating','qualityRating','scheduleRating'],
+    'pay_application': ['ac','actualPctComplete','bac','ev','originalContingency','remainingContingency','workPeriodFrom','workPeriodTo'],
+    'procurement_log': ['longLeadAtRisk','longLeadDelayed','longLeadItemsTotal'],
+    'quality_audit_report': ['criticalFindings','qualityAuditScore','totalFindings'],
+    'resource_report': ['actualLaborHours','plannedLaborHours'],
+    'rfa_log': ['rfaApproved','rfaAvgReviewDays','rfaOpen','rfaRejected','rfaResubmit','rfaTotal','submittalsRejected','submittalsTotal'],
+    'rfi_log': ['rfiAvgResponseDays','rfiCount','rfiOldestOpenDays','rfiOpen','rfiOverdue','rfiPeriodDays'],
+    'risk_register': ['docRiskScore'],
+    'safety_report': ['oshaIncidentRate','totalManhours'],
+    'schedule_of_values': ['bac','ev'],
+    'schedule_update': ['activitiesConstrained','activitiesPlanned','consumedFloat','lookaheadWeeks','plannedPctComplete','pv','totalFloat'],
+    'subcontractor_report': ['subcontractorComplianceScore'],
+    'submittal_register': ['docRiskScore','submittalsRejected','submittalsTotal'],
+    'time_phased_schedule': ['consumedFloat','plannedPctComplete','pv','totalFloat'],
+  };
+  // ---END GENERATED DOCUMENT EMISSIONS---
+
+  // The categories the architecture master names as consuming qualified governed
+  // objects rather than raw evidence, by taxonomy id. Verified against the master
+  // sections 15, 18 and 22, not taken from a brief.
+  var QUALIFIER_CAT = 'c1';
+  var DERIVED_CATS = ['b1', 'b2', 'b3', 'b4'];
+  // Group C measures evidence quality and does not roll up into project status.
+  var NO_STATUS_ROLLUP = ['c1'];
 
   // ─── Colors ──────────────────────────────────────────────────────────────────
   var SC = window.LIN_STATUS_COLORS;
@@ -540,6 +589,91 @@
     var modSilent = MODULES.length - modWithResult - modDisabled - modNotRelevant;
     var catEstimable = catStatuses.filter(isEstimable).length;
     var prjEstimable = isEstimable(prjStatus);
+
+    /* ─── RUN 26. THE ONE EMPTINESS PREDICATE, HOISTED ────────────────────────
+       Run 24 introduced this condition to decide whether the diagram is drawn
+       unasked; it now also decides whether ANY analytical colour may appear.
+       It is computed once, here, so the colour decision and the drawn/not-drawn
+       decision cannot disagree -- the same reason Run 24 gave for having one
+       predicate rather than two. */
+    var projectIsEmpty = (uploadedDocCount === 0 && modWithResult === 0 && catEstimable === 0);
+
+    /* ─── RUN 26. GREY, AND ONLY GREY, ON AN EMPTY PROJECT ────────────────────
+       THE OWNER'S RULE, AND THE CONTRACT IT REVERSES. Until this run, a module
+       or document row that is registered but NOT RELEVANT to this project drew
+       in its own purple, `--status-notrelevant-text` #5b3dd6, at opacity 0.34.
+       A previous owner instruction endorsed that as the correct not-relevant
+       state and Runs 23 and 24 guarded it. Measured in a real browser at the
+       Run-26 baseline, an empty project rendered TWELVE purple nodes -- nine
+       disabled modules and three not-applicable document rows -- plus nine
+       purple module-to-category strokes and one red governance arc.
+
+       THE 2026-08-14 INSTRUCTION REVERSES THAT CONTRACT for the empty case, in
+       these words: no purple document squares, no blue Not Relevant markers, no
+       other analytical colour anywhere on the diagram. REGISTERED is not ACTIVE
+       and NOT RELEVANT is not current evidence, so on a project with no evidence
+       neither may be drawn in a colour the legend explains as a verdict or as a
+       relevance judgement about THIS project. It applies to the revealed
+       architecture too: revealing it is an act of the reader, not evidence.
+
+       On a project that HAS evidence nothing here applies and the not-relevant
+       marker is drawn exactly as before: the distinction is still real there,
+       because there is a project state for it to be a distinction FROM.
+
+       The reversal is recorded in code_audit/run20_anti_fossilization_register.csv
+       as an owner-directed contract change, and the guards that asserted the old
+       contract were turned red against this build before being rewritten. */
+    function neutralOnEmpty(color, status) {
+      if (!projectIsEmpty) return color;
+      // An empty project has one vocabulary: no current result.
+      return COL.None;
+    }
+    //: The stroke an EDGE gets. Same rule, and it is the reason nine purple and one red
+    //: stroke left the empty diagram along with the nodes that fed them.
+    function edgeStroke(status, explicitColor) {
+      if (projectIsEmpty) return COL.None;
+      return explicitColor || colFor(status);
+    }
+    //: Category lookup by the taxonomy's own stable id, never by array position. Position is
+    //: what silently repointed every document line and every inter-category feed when the
+    //: eleven-category taxonomy replaced the gapless Cat 1-10 order.
+    function catIndexOf(taxId) {
+      for (var i = 0; i < CATS.length; i++) {
+        if (CATS[i] && CATS[i].taxId === taxId) return i;
+      }
+      return -1;
+    }
+    function rollsUpToStatus(ci) {
+      var id = CATS[ci] && CATS[ci].taxId;
+      return !id || NO_STATUS_ROLLUP.indexOf(id) < 0;
+    }
+    /* DOCUMENT -> MODULE, DERIVED. A document feeds a module when the document type emits a
+       signal key that module declares as a required input. Both halves are authorities: the
+       emissions are generated from server/app/extraction_merge.py into the block at the top of
+       this file, and `required` is the module's own taxonomy declaration. Nothing here reads
+       category membership, registry order or position. */
+    var docToMods = DOC_KEYS.map(function(key) {
+      var emits = DOC_EMISSIONS[key] || [];
+      if (!emits.length) return [];
+      var hits = [];
+      MODULES.forEach(function(m, mi) {
+        var req = m.required || [];
+        for (var i = 0; i < req.length; i++) {
+          if (emits.indexOf(req[i]) >= 0) { hits.push(mi); return; }
+        }
+      });
+      return hits;
+    });
+    //: The document types this document row's evidence actually reaches, by category, for the
+    //: hover tooltip. Derived from docToMods so the words and the lines cannot disagree.
+    var docToCatNames = docToMods.map(function(mis) {
+      var seen = {}, names = [];
+      mis.forEach(function(mi) {
+        var ci = MODULES[mi].catI;
+        if (!seen[ci]) { seen[ci] = 1; names.push(CATS[ci].name); }
+      });
+      return names;
+    });
     // The governed project-level label, read from the stored row when the server supplied one.
     // Never invented: a project with no stored result keeps the generic column heading.
     var governedLabel = null;
@@ -601,8 +735,8 @@
       var m = se('marker', { id:'lnf-arr-'+s, markerWidth:'5', markerHeight:'5', refX:'4', refY:'2.5', orient:'auto' }, defs);
       se('polygon', { points:'4,0 4,5 0,2.5', fill:colFor(s), opacity:'0.75' }, m);
     });
-    var mfb = se('marker', { id:'lnf-arr-fb', markerWidth:'5', markerHeight:'5', refX:'4', refY:'2.5', orient:'auto' }, defs);
-    se('polygon', { points:'4,0 4,5 0,2.5', fill:COL.Red, opacity:'0.85' }, mfb);
+    // RUN 26. The feedback arrowhead is gone with the arc it belonged to. It was a red marker
+    // polygon inside <defs>, and a red one, on every project including an empty one.
 
     // ── Column headers ────────────────────────────────────────────────────────
     // RUN 16, WORKSTREAMS A2, A4 AND A5. ARCHITECTURE ON THE TOP LINE, CURRENT ACTIVITY ON THE
@@ -648,12 +782,19 @@
     var lineG  = se('g', { id:'lnf-lines'  }, svg);
     var interG = se('g', { id:'lnf-intercat' }, svg);
 
-    // Class B (rollup): cat → project — streaming dashes, arrowhead at the status node edge
+    // Class B (rollup): cat → project — streaming dashes, arrowhead at the status node edge.
+    // RUN 26. NOT DRAWN FOR A CATEGORY THE AUTHORITY EXCLUDES FROM THE ROLLUP.
+    // GROUP_ASSIGNMENT.md states that Data and Evidence Health does not contribute to project
+    // status, and compute.py's rollup never sees it. The edge was being drawn anyway, which
+    // asserted a dependency the authority positively denies.
     var catPrjEls = catStatuses.map(function(cs, ci) {
+      if (!rollsUpToStatus(ci)) return null;
       var x1=CX.cat+9, y1=catCY[ci], x2=CX.prj-26, y2=PRJ_Y, mx=(x1+x2)/2;
       var p = se('path', { d:'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2,
-        fill:'none', stroke:colFor(cs), 'stroke-width':'1.5', opacity:'0.35', 'stroke-linecap':'round',
-        'marker-end':'url(#lnf-arr-'+cs+')' }, lineG);
+        fill:'none', stroke:edgeStroke(cs), 'stroke-width':'1.5', opacity:'0.35',
+        'stroke-linecap':'round', 'marker-end':'url(#lnf-arr-'+cs+')',
+        'data-edge-type':'CATEGORY -> PROJECT STATUS', 'data-edge-src':CATS[ci].name,
+        'data-edge-dst':'Project status' }, lineG);
       // A category rollup path carries traffic only when the category has a current estimable
       // result. Otherwise the relationship is configured and idle.
       if (!isEstimable(cs)) p.setAttribute('opacity', '0.14');
@@ -668,7 +809,10 @@
     var modCatEls = MODULES.map(function(m, mi) {
       var ci=m.catI, x1=CX.mod+4, y1=modY[mi], x2=CX.cat-9, y2=catCY[ci], mx=(x1+x2)/2;
       var p = se('path', { d:'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2,
-        fill:'none', stroke:modInfos[mi].color, 'stroke-width':'0.8', opacity:MODCAT_OP, 'stroke-linecap':'round' }, lineG);
+        fill:'none', stroke:edgeStroke(modInfos[mi].status, modInfos[mi].color),
+        'stroke-width':'0.8', opacity:MODCAT_OP, 'stroke-linecap':'round',
+        'data-edge-type':'MODULE -> CATEGORY', 'data-edge-src':m.name,
+        'data-edge-dst':CATS[ci].name }, lineG);
       // Same rule one level down: a module path is live only when that module has a current
       // result. A disabled, abstaining, sector-excluded or never-computed module contributes
       // nothing, and its line must not move as though it did.
@@ -691,19 +835,29 @@
     DOC_KEYS.forEach(function(key, di) {
       var up = isUploaded(key);
       var baseOp = up ? A_BASE.on : A_BASE.off, dashOp = up ? A_DASH.on : A_DASH.off, w = up ? A_W.on : A_W.off;
-      DOC_TO_CATS[di].forEach(function(ci) {
-        catModIdxs[ci].slice(0, 2).forEach(function(mi) {
-          var x1=CX.doc+5, y1=docY(di), x2=CX.mod-4, y2=modY[mi], mx=(x1+x2)/2;
-          var d = 'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2;
-          var base = se('path', { d:d, class:'lnf-a-line', fill:'none',
-            'stroke-width':w, opacity:baseOp, 'stroke-linecap':'round' }, lineG);
-          var dash = se('path', { d:d, class:'lnf-a-line', fill:'none',
-            'stroke-width':w, opacity:dashOp, 'stroke-linecap':'round' }, lineG);
-          // An evidence path is live only when this project has actually uploaded that
-          // document type. The unlit rows were already faint; now they are also still.
-          flowAnim(dash, 'lnf-flow-a', up);
-          docLineMap[di].push({ base:base, dash:dash, modI:mi });
-        });
+      // RUN 26. The modules this document actually feeds, by field consumption, not the first
+      // two modules of a category by registry order. `docToMods` is derived at build time from
+      // the generated document-emission map and each module's own declared required inputs.
+      docToMods[di].forEach(function(mi) {
+        var x1=CX.doc+5, y1=docY(di), x2=CX.mod-4, y2=modY[mi], mx=(x1+x2)/2;
+        var d = 'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2;
+        var edgeAttrs = { 'data-edge-type':'DOCUMENT -> MODULE', 'data-edge-src':key,
+                          'data-edge-dst':MODULES[mi].name };
+        var base = se('path', { d:d, class:'lnf-a-line', fill:'none',
+          'stroke-width':w, opacity:baseOp, 'stroke-linecap':'round',
+          'data-edge-type':edgeAttrs['data-edge-type'], 'data-edge-src':key,
+          'data-edge-dst':MODULES[mi].name }, lineG);
+        // The animated overlay is the SAME edge drawn a second time, so it carries the same
+        // identity. An edge that does not name itself cannot be reconciled against the
+        // inventory, and a silently unnamed path is exactly where a fabricated one would hide.
+        var dash = se('path', { d:d, class:'lnf-a-line lnf-a-dash', fill:'none',
+          'stroke-width':w, opacity:dashOp, 'stroke-linecap':'round',
+          'data-edge-type':edgeAttrs['data-edge-type'], 'data-edge-src':key,
+          'data-edge-dst':MODULES[mi].name }, lineG);
+        // An evidence path is live only when this project has actually uploaded that
+        // document type. The unlit rows were already faint; now they are also still.
+        flowAnim(dash, 'lnf-flow-a', up);
+        docLineMap[di].push({ base:base, dash:dash, modI:mi });
       });
     });
 
@@ -736,39 +890,44 @@
     }
 
     // inter-category dashed lines
+    // RUN 26. ONLY THE CATEGORY-TO-CATEGORY DEPENDENCIES THE ARCHITECTURE MASTER STATES.
+    // Section 18 states the target architecture "Project Evidence -> Category 9 assessment ->
+    // Qualified Evidence -> analytical/governance use", and section 22 that the downstream
+    // categories consume qualified governed objects. That gives Data Integrity into each of
+    // the four downstream categories. The master states NOTHING about which analytical
+    // categories supply the signal states those categories synthesize, and NOTHING about any
+    // ordering among the four; the previous twenty-seven feeds asserted both. Where the
+    // architecture is silent no edge is drawn, and the silence is reported instead.
     var interCatEls = [];
-    INTER_CAT.forEach(function(feed) {
-      feed.srcs.forEach(function(srcI) {
-        var cs = catStatuses[srcI];
-        var x1=CX.cat+9, y1=catCY[srcI], x2=CX.cat+9, y2=catCY[feed.dst], xh=feed.xHub;
+    var qualI = catIndexOf(QUALIFIER_CAT);
+    if (qualI >= 0) {
+      DERIVED_CATS.forEach(function(taxId, k) {
+        var dst = catIndexOf(taxId);
+        if (dst < 0) return;
+        var cs = catStatuses[qualI];
+        var x1=CX.cat+9, y1=catCY[qualI], x2=CX.cat+9, y2=catCY[dst], xh=860 + k * 20;
         var line = se('path', {
           d:'M'+x1+','+y1+' C'+xh+','+y1+' '+xh+','+y2+' '+x2+','+y2,
-          fill:'none', stroke:colFor(cs), 'stroke-width':'1', opacity:'0.45',
-          'stroke-dasharray':'6 4', 'marker-end':'url(#lnf-arr-'+cs+')'
+          fill:'none', stroke:edgeStroke(cs), 'stroke-width':'1', opacity:'0.45',
+          'stroke-dasharray':'6 4', 'marker-end':'url(#lnf-arr-'+cs+')',
+          'data-edge-type':'CATEGORY -> CATEGORY', 'data-edge-src':CATS[qualI].name,
+          'data-edge-dst':CATS[dst].name
         }, interG);
         if (!isEstimable(cs)) line.setAttribute('opacity', '0.16');
         flowAnim(line, 'lnf-flow-c', isEstimable(cs));
-        interCatEls.push({ el:line, srcI:srcI, dstI:feed.dst });
+        interCatEls.push({ el:line, srcI:qualI, dstI:dst });
       });
-    });
+    }
 
-    // Governance feedback arc: Project Status → Cat 8 (idx 7)
-    var fbSX=CX.prj+26, fbSY=PRJ_Y, fbDX=CX.cat+9, fbDY=catCY[7];
-    var fbEl = se('path', {
-      d:'M'+fbSX+','+fbSY+' C'+(fbSX+65)+','+fbSY+' '+(fbSX+65)+','+fbDY+' '+fbDX+','+fbDY,
-      fill:'none', stroke:COL.Red, 'stroke-width':'1.5', opacity:'0.30',
-      'stroke-dasharray':'5 4', 'marker-end':'url(#lnf-arr-fb)'
-    }, interG);
-    // The governance loop is a configured relationship. It carries something only once the
-    // governed rollup has a current estimable value to feed back.
-    if (!prjEstimable) fbEl.setAttribute('opacity', '0.14');
-    flowAnim(fbEl, 'lnf-flow-fb', prjEstimable);
-    var fbLabelEl = se('text', {
-      x:fbSX+70, y:(fbSY+fbDY)/2,
-      fill:COL.Red, 'font-size':'10', 'font-family':'monospace',
-      opacity:'0.70', 'writing-mode':'tb', 'text-anchor':'middle', class:'lnf-halo'
-    }, interG);
-    fbLabelEl.textContent = 'governance feedback';
+    // RUN 26. THE GOVERNANCE FEEDBACK ARC IS REMOVED.
+    // It drew PROJECT STATUS -> CATEGORY, which is not one of the architecture's edge kinds at
+    // all, and it targeted `catCY[7]` -- an index written for the retired Cat 1-10 scheme, so
+    // on the current eleven-category taxonomy it pointed at Evidence Combination rather than at
+    // any governance category. No committed authority states that project status feeds back
+    // into a category, and the master's governance flow (section 17) ends at a human decision
+    // rather than looping. It was also the only red stroke on an empty project. Drawn from
+    // nothing, it is not drawn.
+    var fbEl = null, fbLabelEl = null;
 
     // ── 7. Node layer ─────────────────────────────────────────────────────────
     var nodeG = se('g', { id:'lnf-nodes' }, svg);
@@ -809,9 +968,15 @@
       var glow = live ? 'url(#lnf-glow-'+info.status+')' : null;
       var g = se('g', { class:'lnf-nd', 'data-kind':'module', 'data-active':live ? 'true' : 'false' }, nodeG);
 
+      // RUN 26. On an EMPTY project a not-relevant or disabled module is drawn in the
+      // no-data colour like every other silent module. Nine purple dots were measured here on
+      // a project with no evidence; a platform-wide disablement and a sector exclusion are
+      // registry facts, and REGISTERED is not ACTIVE.
       var circleAttrs = {
-        fill:info.color, opacity:live ? '0.85' : (info.status === 'None' ? '0.20' : '0.34'),
-        stroke:'none', 'data-active':live ? 'true' : 'false' };
+        fill:neutralOnEmpty(info.color, info.status),
+        opacity:live ? '0.85' : (projectIsEmpty || info.status === 'None' ? '0.20' : '0.34'),
+        stroke:'none', 'data-active':live ? 'true' : 'false',
+        'data-status':projectIsEmpty ? 'None' : info.status };
       if (glow) circleAttrs.filter = glow;
       var dotShape = window.linStatusShape ? linStatusShape(info.status) : 'circle';
       var circle = seShape(dotShape, CX.mod, modY[mi], 4, circleAttrs, g);
@@ -874,8 +1039,9 @@
       var glow = catLive ? 'url(#lnf-glow-'+cs+')' : null;
       var x=CX.cat, y=catCY[ci];
       var g = se('g', { class:'lnf-nd', 'data-kind':'category', 'data-active':catLive ? 'true' : 'false' }, nodeG);
-      var cAttrs = { fill:color, opacity:catLive ? '0.88' : '0.28', stroke:'none',
-                     'data-active':catLive ? 'true' : 'false' };
+      var cAttrs = { fill:neutralOnEmpty(color, cs), opacity:catLive ? '0.88' : '0.28',
+                     stroke:'none', 'data-active':catLive ? 'true' : 'false',
+                     'data-status':projectIsEmpty ? 'None' : cs };
       if (glow) cAttrs.filter = glow;
       var catShape = window.linStatusShape ? linStatusShape(cs) : 'circle';
       var circle = seShape(catShape, x, y, 9, cAttrs, g);
@@ -946,17 +1112,7 @@
     prjG.addEventListener('mousemove', moveTT);
     prjG.addEventListener('mouseleave', hideTT);
 
-    // Feedback arc events
-    fbEl.style.cursor = 'default';
-    fbEl.addEventListener('mouseenter', function(evt) {
-      fbEl.setAttribute('opacity','0.80'); fbLabelEl.setAttribute('opacity','0.90');
-      showTT(evt,'<div class="n">Governance Feedback</div>' +
-        '<div class="sub">Governance decisions feed back into compliance monitoring</div>' +
-        '<div class="sub">' + (prjEstimable ? 'Carrying a current result'
-          : 'Configured relationship, nothing flowing now') + '</div>');
-    });
-    fbEl.addEventListener('mousemove', moveTT);
-    fbEl.addEventListener('mouseleave', function() { hideTT(); fbEl.setAttribute('opacity', prjEstimable ? '0.30' : '0.14'); fbLabelEl.setAttribute('opacity','0.70'); });
+    // (The governance feedback arc and its hover behaviour were removed: see above.)
 
     // Document nodes (rendered last = on top)
     DOC_KEYS.forEach(function(key, di) {
@@ -966,7 +1122,12 @@
       // platform's existing not-relevant state (blue, square) rather than as a
       // dark "no data" row implying a document is missing. Only applies while the
       // row is actually unlit — a document that WAS somehow uploaded still lights.
-      var notApplicable = !uploaded && !!DOC_NOT_APPLICABLE[key];
+      // RUN 26. On an EMPTY project the not-applicable distinction is suppressed entirely:
+      // the owner's 2026-08-14 rule forbids a purple square there, and a project with no
+      // evidence has no state for "not applicable to it" to be a distinction from. The row
+      // reads exactly like every other unlit row, and `data-state` says so rather than
+      // leaving it to be inferred from a shade.
+      var notApplicable = !uploaded && !projectIsEmpty && !!DOC_NOT_APPLICABLE[key];
       var color = uploaded ? COL.DocOn : (notApplicable ? COL.NotRelevant : COL.DocOff);
       var glow  = uploaded ? 'url(#lnf-glow-DocOn)' : null;
       var x=CX.doc, y=docY(di);
@@ -992,7 +1153,7 @@
 
       g.addEventListener('mouseenter', (function(name, di, uploaded, notApplicable, color) {
         return function(evt) {
-          var cats = DOC_TO_CATS[di].map(function(ci){return (CATS[ci] && CATS[ci].name) || '';}).join(', ');
+          var cats = docToCatNames[di].join(', ') || 'no registered module consumes this document type';
           var label = uploaded ? 'Uploaded' : (notApplicable ? 'Not applicable to this corpus' : 'Not uploaded');
           showTT(evt,'<div class="n">'+escH(name)+'</div><div class="sub" style="color:'+color+'">'+label+'</div><div class="sub">Feeds: '+cats+'</div>');
           // trace this document's feeds regardless of upload state
@@ -1024,7 +1185,9 @@
     // sentence; it is now also what decides whether the architecture is drawn unasked. Both
     // readings therefore cannot disagree, which is how "0 uploaded, 0 with a current result"
     // came to sit above a full picture in the first place.
-    var projectIsEmpty = (uploadedDocCount === 0 && modWithResult === 0 && catEstimable === 0);
+    // (RUN 26: `projectIsEmpty` is computed once, near the statuses, and used both here and by
+    // the colour rule. The second definition that stood here has gone: two copies of one
+    // predicate is how the caption and the picture came to disagree in the first place.)
     if (projectIsEmpty) {
       // RUN 21. The empty-project sentence is UNCHANGED and is still the one a project with
       // nothing uploaded reads. What changed is that a project whose signals were CLEARED no
@@ -1107,10 +1270,17 @@
     var sep2 = document.createElement('span');
     sep2.style.cssText = 'border-left:1px solid #1a2440;height:10px;';
     leg.appendChild(sep2);
+    // RUN 26. THE FLOW-CLASS KEY NO LONGER BORROWS VERDICT COLOURS.
+    // It drew its three connection classes in Green, Amber and Red -- colours the same legend
+    // strip explains, four entries earlier, as project verdicts. A rollup edge is never green
+    // because it is a rollup: it takes the colour of the category's own status. So the legend
+    // said one thing and the diagram rendered another, which is the defect the owner's rule 5
+    // names. The classes are distinguished by LINE STYLE, which is what actually distinguishes
+    // them on the diagram, and drawn in the neutral line colour. "Governance feedback" is gone
+    // with the arc it described.
     [['Input (doc→model)', legLine('var(--flow-accent, #35d6e8)', false, false)],
-     ['Rollup (model→category→status)', legLine(COL.Green, false, true)],
-     ['Derived (category→category)', legLine(COL.Amber, true, true)],
-     ['Governance feedback', legLine(COL.Red, true, true)],
+     ['Rollup (model→category→status)', legLine('var(--muted, #5a7898)', false, true)],
+     ['Derived (category→category)', legLine('var(--muted, #5a7898)', true, true)],
      ['Configured relationship, not carrying current data', legLine('var(--faint, #4a5a7a)', true, false)]].forEach(function(t) {
       var s = document.createElement('span');
       s.innerHTML = t[1] + t[0];
