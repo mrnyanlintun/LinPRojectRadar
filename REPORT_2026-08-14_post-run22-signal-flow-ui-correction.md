@@ -239,7 +239,7 @@ Run 3, pre-commit, on the corrected tree: **122 suites, 10462/10462, ALL SUITES 
 
 ## 15. Merged-main verification
 
-Merge commit on `main`: see the final line of this report.
+Merge commit on `main`: **92138e3**. Final pushed main: **7ad4df7**.
 
 - Targeted Signal Flow + navigation browser suite, re-run on merged main:
   **34/34** (`code_audit/run23_browser_facts_merged.csv`) — empty, one document, multi-document,
