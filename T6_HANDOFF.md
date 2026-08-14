@@ -8599,3 +8599,7 @@ No production Postgres, credential or secret was used at any point.
 
 **DO NOT LAUNCH RUN 22 WITHOUT READING `code_audit/run21_run22_freeze_queue.csv`.** Three of its
 nine items are marked blocking for a freeze, and one of those is the reload cost above.
+
+**RUN 21 FINAL MERGED-MAIN HASH: dc02fe8.** 119 suites, 10335 of 10335 checks, ALL SUITES GREEN,
+verified on merged main before the push. Both real-browser drivers re-run on merged main:
+`drive_run21_instrument.py` 78/78 and `drive_run21_participant.py` 78/78, zero failures.

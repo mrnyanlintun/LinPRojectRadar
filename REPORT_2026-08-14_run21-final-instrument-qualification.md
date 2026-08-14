@@ -36,7 +36,7 @@ Expected: NO
 
 Full merged-main suite: 10335/10335 across 119 suites, ALL SUITES GREEN
 Real-browser re-verification on merged main: instrument driver 78/78, participant driver 78/78
-Final merged-main commit: see section 26
+Final merged-main commit: dc02fe8
 
 **Only one qualification is not a clean PASS, and it is a fixture limit rather than a product
 defect.** Run 21 drove TWO complete participant periods end to end in a real browser plus the
