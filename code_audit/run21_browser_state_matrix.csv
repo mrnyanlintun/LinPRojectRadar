@@ -1,0 +1,209 @@
+state,observation,value
+server-pre,PRJ-R21-EMPTY.live_row,False
+server-pre,PRJ-R21-EMPTY.modules,None
+server-pre,PRJ-R21-EMPTY.project_status,None
+server-pre,PRJ-R21-ONEDOC.live_row,True
+server-pre,PRJ-R21-ONEDOC.modules,35
+server-pre,PRJ-R21-ONEDOC.project_status,Amber
+server-pre,PRJ-R21-FULL.live_row,True
+server-pre,PRJ-R21-FULL.modules,41
+server-pre,PRJ-R21-FULL.project_status,Amber
+A-empty,project,PRJ-R21-EMPTY
+A-empty,flow_present,True
+A-empty,flow_headers,27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE
+A-empty,flow_animated_paths,0
+A-empty,flow_project_status_node,Project Status Not estimable
+A-empty,flow_node_fills,"{""#1e2a3c"": 24, ""#5b3dd6"": 12, ""#9aa2ae"": 99}"
+A-empty,flow_summary,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no uploaded documents and no current results, so nothing on the diagram is active and the project status is not estimable."
+A-empty,rail_present,True
+A-empty,rail_buttons,10
+A-empty,rail_collapse_suspects,[]
+A-empty,badges_with_numbers,"[""11 registered"", ""96 registered"", ""Executive brief: Run 16 empty project"", ""Reporting period: 2026-08 \u00b7 grouped analysis across 11 signal categories"", ""96 registered"", ""0 docs \u00b7 0 fields"", ""Documents: 0 documents"", ""0 active \u00b7 0 est.""]"
+A-empty,registry_labelled_badges,"[""11 registered"", ""96 registered"", ""96 registered""]"
+A-empty,unlabelled_96_badges,[]
+B-onedoc,project,PRJ-R21-ONEDOC
+B-onedoc,flow_present,True
+B-onedoc,flow_headers,27 SUPPORTED DOCUMENT TYPES | 1 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 35 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 9 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT
+B-onedoc,flow_animated_paths,71
+B-onedoc,flow_project_status_node,Project Status Amber
+B-onedoc,flow_node_fills,"{""#12703a"": 32, ""#1e2a3c"": 23, ""#5b3dd6"": 12, ""#6f5200"": 5, ""#9a4700"": 6, ""#9aa2ae"": 54, ""#a0bcd8"": 1, ""#b81420"": 2}"
+B-onedoc,flow_summary,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project currently has 1 uploaded document across 1 type, 35 modules with a current result, 52 with no current result, 0 not applicable to this project and 9 disabled, and 9 estimable categories."
+B-onedoc,rail_present,True
+B-onedoc,rail_buttons,10
+B-onedoc,rail_collapse_suspects,[]
+B-onedoc,badges_with_numbers,"[""11 registered"", ""96 registered"", ""Executive brief: Run 16 one-document project"", ""Reporting period: 2026-08 \u00b7 grouped analysis across 11 signal categories"", ""96 registered"", ""Signal Sphere: August 2026"", ""96-module sphere \u00b7 35 active \u00b7 drag to rotate \u00b7 scroll to zoom"", ""96 modules \u00b7 1 Red \u00b7 4 Amber \u00b7 27 Green"", ""1 doc \u00b7 10 fields"", ""Documents: 1 document"", ""35 active \u00b7 1 est."", ""Ensemble Scatter \u00b7 35 active modules (96 total)"", ""96 modules in 3D \u00b7 X = category \u00b7 Y = status severity \u00b7 drag to rotate""]"
+B-onedoc,server_modules,35
+C-multidoc,project,PRJ-R21-FULL
+C-multidoc,flow_present,True
+C-multidoc,flow_headers,27 SUPPORTED DOCUMENT TYPES | 24 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 41 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 10 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT
+C-multidoc,flow_animated_paths,100
+C-multidoc,flow_project_status_node,Project Status Amber
+C-multidoc,flow_node_fills,"{""#12703a"": 31, ""#1e2a3c"": 18, ""#5b3dd6"": 12, ""#6f5200"": 7, ""#9a4700"": 9, ""#9aa2ae"": 47, ""#a0bcd8"": 6, ""#b81420"": 5}"
+C-multidoc,flow_summary,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project currently has 24 uploaded documents across 6 types, 41 modules with a current result, 46 with no current result, 0 not applicable to this project and 9 disabled, and 10 estimable categories."
+C-multidoc,rail_present,True
+C-multidoc,rail_buttons,10
+C-multidoc,rail_collapse_suspects,[]
+C-multidoc,badges_with_numbers,"[""11 registered"", ""96 registered"", ""Executive brief: Run 16 populated project"", ""Reporting period: 2026-08 \u00b7 grouped analysis across 11 signal categories"", ""96 registered"", ""Signal Sphere: August 2026"", ""96-module sphere \u00b7 41 active \u00b7 drag to rotate \u00b7 scroll to zoom"", ""96 modules \u00b7 3 Red \u00b7 6 Amber \u00b7 28 Green"", ""24 docs \u00b7 27 fields"", ""Documents: 24 documents"", ""41 active \u00b7 1 est."", ""Ensemble Scatter \u00b7 41 active modules (96 total)"", ""96 modules in 3D \u00b7 X = category \u00b7 Y = status severity \u00b7 drag to rotate""]"
+C-multidoc,server_abstained_count,54
+C-multidoc,page_text_length,6482
+voting,registry_voting_modules,"['A1.7', 'A1.8']"
+voting,server_project_status,Amber
+voting,browser_project_status_node,Project Status Amber
+G-populated-reload,application_reloaded_from_server,yes
+G-populated-after-reload,project,PRJ-R21-FULL
+G-populated-after-reload,flow_present,True
+G-populated-after-reload,flow_headers,27 SUPPORTED DOCUMENT TYPES | 24 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 41 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 10 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT
+G-populated-after-reload,flow_animated_paths,100
+G-populated-after-reload,flow_project_status_node,Project Status Amber
+G-populated-after-reload,flow_node_fills,"{""#12703a"": 31, ""#1e2a3c"": 18, ""#5b3dd6"": 12, ""#6f5200"": 7, ""#9a4700"": 9, ""#9aa2ae"": 47, ""#a0bcd8"": 6, ""#b81420"": 5}"
+G-populated-after-reload,flow_summary,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project currently has 24 uploaded documents across 6 types, 41 modules with a current result, 46 with no current result, 0 not applicable to this project and 9 disabled, and 10 estimable categories."
+G-populated-after-reload,rail_present,True
+G-populated-after-reload,rail_buttons,10
+G-populated-after-reload,rail_collapse_suspects,[]
+G-populated-after-reload,badges_with_numbers,"[""11 registered"", ""96 registered"", ""Executive brief: Run 16 populated project"", ""Reporting period: 2026-08 \u00b7 grouped analysis across 11 signal categories"", ""96 registered"", ""Signal Sphere: August 2026"", ""96-module sphere \u00b7 41 active \u00b7 drag to rotate \u00b7 scroll to zoom"", ""96 modules \u00b7 3 Red \u00b7 6 Amber \u00b7 28 Green"", ""24 docs \u00b7 27 fields"", ""Documents: 24 documents"", ""41 active \u00b7 1 est."", ""Ensemble Scatter \u00b7 41 active modules (96 total)"", ""96 modules in 3D \u00b7 X = category \u00b7 Y = status severity \u00b7 drag to rotate""]"
+D-reset-same-session,project,PRJ-R21-FULL
+D-reset-same-session,flow_present,True
+D-reset-same-session,flow_headers,27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE
+D-reset-same-session,flow_animated_paths,0
+D-reset-same-session,flow_project_status_node,Project Status Not estimable
+D-reset-same-session,flow_node_fills,"{""#1e2a3c"": 24, ""#5b3dd6"": 12, ""#9aa2ae"": 99}"
+D-reset-same-session,flow_summary,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no uploaded documents and no current results, so nothing on the diagram is active and the project status is not estimable."
+D-reset-same-session,rail_present,True
+D-reset-same-session,rail_buttons,10
+D-reset-same-session,rail_collapse_suspects,[]
+D-reset-same-session,badges_with_numbers,"[""11 registered"", ""96 registered"", ""Executive brief: Run 16 populated project"", ""grouped analysis across 11 signal categories"", ""96 registered"", ""0 docs \u00b7 0 fields"", ""Documents: 0 documents"", ""0 active \u00b7 0 est.""]"
+D-reset-reload,application_reloaded_from_server,yes
+D-reset-after-reload,project,PRJ-R21-FULL
+D-reset-after-reload,flow_present,True
+D-reset-after-reload,flow_headers,"27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED SINCE THE RESET, 24 RETAINED | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE"
+D-reset-after-reload,flow_animated_paths,0
+D-reset-after-reload,flow_project_status_node,Project Status Not estimable
+D-reset-after-reload,flow_node_fills,"{""#1e2a3c"": 24, ""#5b3dd6"": 12, ""#9aa2ae"": 99}"
+D-reset-after-reload,flow_summary,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no documents uploaded since its stored signals were cleared and no current results, so nothing on the diagram is active and the project status is not estimable. 24 documents uploaded before the reset are retained and will be read again when signals are regenerated."
+D-reset-after-reload,rail_present,True
+D-reset-after-reload,rail_buttons,10
+D-reset-after-reload,rail_collapse_suspects,[]
+D-reset-after-reload,badges_with_numbers,"[""11 registered"", ""96 registered"", ""Executive brief: Run 16 populated project"", ""Reporting period: 2026-08 \u00b7 grouped analysis across 11 signal categories"", ""96 registered"", ""24 docs \u00b7 0 fields"", ""Documents: 24 documents"", ""0 active \u00b7 0 est.""]"
+D-reset-after-reload,server_upload_events,24
+D-reset-after-reload,summary_strip,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no documents uploaded since its stored signals were cleared and no current results, so nothing on the diagram is active and the project status is not estimable. 24 documents uploaded before the reset are retained and will be read again when signals are regenerated."
+D-reset-after-navigation,project,PRJ-R21-FULL
+D-reset-after-navigation,flow_present,True
+D-reset-after-navigation,flow_headers,"27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED SINCE THE RESET, 24 RETAINED | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE"
+D-reset-after-navigation,flow_animated_paths,0
+D-reset-after-navigation,flow_project_status_node,Project Status Not estimable
+D-reset-after-navigation,flow_node_fills,"{""#1e2a3c"": 24, ""#5b3dd6"": 12, ""#9aa2ae"": 99}"
+D-reset-after-navigation,flow_summary,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no documents uploaded since its stored signals were cleared and no current results, so nothing on the diagram is active and the project status is not estimable. 24 documents uploaded before the reset are retained and will be read again when signals are regenerated."
+D-reset-after-navigation,rail_present,True
+D-reset-after-navigation,rail_buttons,10
+D-reset-after-navigation,rail_collapse_suspects,[]
+D-reset-after-navigation,badges_with_numbers,"[""11 registered"", ""96 registered"", ""Executive brief: Run 16 populated project"", ""Reporting period: 2026-08 \u00b7 grouped analysis across 11 signal categories"", ""96 registered"", ""24 docs \u00b7 0 fields"", ""Documents: 24 documents"", ""0 active \u00b7 0 est.""]"
+H-fresh-context,flow_headers,"27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED SINCE THE RESET, 24 RETAINED | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE"
+E-post-reset,upload_ok,True
+E-post-reset,server_modules,41
+E-post-reset,project,PRJ-R21-FULL
+E-post-reset,flow_present,True
+E-post-reset,flow_headers,"27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED SINCE THE RESET, 24 RETAINED | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE"
+E-post-reset,flow_animated_paths,0
+E-post-reset,flow_project_status_node,Project Status Not estimable
+E-post-reset,flow_node_fills,"{""#1e2a3c"": 24, ""#5b3dd6"": 12, ""#9aa2ae"": 99}"
+E-post-reset,flow_summary,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no documents uploaded since its stored signals were cleared and no current results, so nothing on the diagram is active and the project status is not estimable. 24 documents uploaded before the reset are retained and will be read again when signals are regenerated."
+E-post-reset,rail_present,True
+E-post-reset,rail_buttons,10
+E-post-reset,rail_collapse_suspects,[]
+E-post-reset,badges_with_numbers,"[""11 registered"", ""96 registered"", ""Executive brief: Run 16 populated project"", ""Reporting period: 2026-08 \u00b7 grouped analysis across 11 signal categories"", ""96 registered"", ""24 docs \u00b7 27 fields"", ""Documents: 24 documents"", ""41 active \u00b7 1 est.""]"
+E-post-reset-reload,application_reloaded_from_server,yes
+E-post-reset-after-reload,project,PRJ-R21-FULL
+E-post-reset-after-reload,flow_present,True
+E-post-reset-after-reload,flow_headers,"27 SUPPORTED DOCUMENT TYPES | 1 UPLOADED SINCE THE RESET, 24 RETAINED | 96 REGISTERED PROJECT MODULES | 41 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 10 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT"
+E-post-reset-after-reload,flow_animated_paths,82
+E-post-reset-after-reload,flow_project_status_node,Project Status Amber
+E-post-reset-after-reload,flow_node_fills,"{""#12703a"": 31, ""#1e2a3c"": 23, ""#5b3dd6"": 12, ""#6f5200"": 7, ""#9a4700"": 9, ""#9aa2ae"": 47, ""#a0bcd8"": 1, ""#b81420"": 5}"
+E-post-reset-after-reload,flow_summary,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project currently has 1 uploaded document across 1 type, 41 modules with a current result, 46 with no current result, 0 not applicable to this project and 9 disabled, and 10 estimable categories."
+E-post-reset-after-reload,rail_present,True
+E-post-reset-after-reload,rail_buttons,10
+E-post-reset-after-reload,rail_collapse_suspects,[]
+E-post-reset-after-reload,badges_with_numbers,"[""11 registered"", ""96 registered"", ""Executive brief: Run 16 populated project"", ""Reporting period: 2026-08 \u00b7 grouped analysis across 11 signal categories"", ""96 registered"", ""Signal Sphere: August 2026"", ""96-module sphere \u00b7 41 active \u00b7 drag to rotate \u00b7 scroll to zoom"", ""96 modules \u00b7 3 Red \u00b7 6 Amber \u00b7 28 Green"", ""25 docs \u00b7 27 fields"", ""Documents: 25 documents"", ""41 active \u00b7 1 est."", ""Ensemble Scatter \u00b7 41 active modules (96 total)"", ""96 modules in 3D \u00b7 X = category \u00b7 Y = status severity \u00b7 drag to rotate""]"
+F-switch-0-full,project,PRJ-R21-FULL
+F-switch-0-full,flow_present,True
+F-switch-0-full,flow_headers,"27 SUPPORTED DOCUMENT TYPES | 1 UPLOADED SINCE THE RESET, 24 RETAINED | 96 REGISTERED PROJECT MODULES | 41 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 10 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT"
+F-switch-0-full,flow_animated_paths,82
+F-switch-0-full,flow_project_status_node,Project Status Red
+F-switch-0-full,flow_node_fills,"{""#12703a"": 31, ""#1e2a3c"": 23, ""#5b3dd6"": 12, ""#6f5200"": 7, ""#9a4700"": 7, ""#9aa2ae"": 47, ""#a0bcd8"": 1, ""#b81420"": 7}"
+F-switch-0-full,flow_summary,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project currently has 1 uploaded document across 1 type, 41 modules with a current result, 46 with no current result, 0 not applicable to this project and 9 disabled, and 10 estimable categories."
+F-switch-0-full,rail_present,True
+F-switch-0-full,rail_buttons,10
+F-switch-0-full,rail_collapse_suspects,[]
+F-switch-0-full,badges_with_numbers,"[""11 registered"", ""96 registered"", ""Executive brief: Run 16 populated project"", ""Reporting period: 2026-08 \u00b7 grouped analysis across 11 signal categories"", ""96 registered"", ""Signal Sphere: August 2026"", ""96-module sphere \u00b7 41 active \u00b7 drag to rotate \u00b7 scroll to zoom"", ""96 modules \u00b7 3 Red \u00b7 6 Amber \u00b7 28 Green"", ""25 docs \u00b7 27 fields"", ""Documents: 25 documents"", ""41 active \u00b7 1 est."", ""Ensemble Scatter \u00b7 41 active modules (96 total)"", ""96 modules in 3D \u00b7 X = category \u00b7 Y = status severity \u00b7 drag to rotate""]"
+F-switch-0-empty,project,PRJ-R21-EMPTY
+F-switch-0-empty,flow_present,True
+F-switch-0-empty,flow_headers,27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE
+F-switch-0-empty,flow_animated_paths,0
+F-switch-0-empty,flow_project_status_node,Project Status Not estimable
+F-switch-0-empty,flow_node_fills,"{""#1e2a3c"": 24, ""#5b3dd6"": 12, ""#9aa2ae"": 99}"
+F-switch-0-empty,flow_summary,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no uploaded documents and no current results, so nothing on the diagram is active and the project status is not estimable."
+F-switch-0-empty,rail_present,True
+F-switch-0-empty,rail_buttons,10
+F-switch-0-empty,rail_collapse_suspects,[]
+F-switch-0-empty,badges_with_numbers,"[""11 registered"", ""96 registered"", ""Executive brief: Run 16 empty project"", ""Reporting period: 2026-08 \u00b7 grouped analysis across 11 signal categories"", ""96 registered"", ""0 docs \u00b7 0 fields"", ""Documents: 0 documents"", ""0 active \u00b7 0 est.""]"
+F-switch-1-full,project,PRJ-R21-FULL
+F-switch-1-full,flow_present,True
+F-switch-1-full,flow_headers,"27 SUPPORTED DOCUMENT TYPES | 1 UPLOADED SINCE THE RESET, 24 RETAINED | 96 REGISTERED PROJECT MODULES | 41 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 10 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT"
+F-switch-1-full,flow_animated_paths,82
+F-switch-1-full,flow_project_status_node,Project Status Red
+F-switch-1-full,flow_node_fills,"{""#12703a"": 31, ""#1e2a3c"": 23, ""#5b3dd6"": 12, ""#6f5200"": 7, ""#9a4700"": 7, ""#9aa2ae"": 47, ""#a0bcd8"": 1, ""#b81420"": 7}"
+F-switch-1-full,flow_summary,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project currently has 1 uploaded document across 1 type, 41 modules with a current result, 46 with no current result, 0 not applicable to this project and 9 disabled, and 10 estimable categories."
+F-switch-1-full,rail_present,True
+F-switch-1-full,rail_buttons,10
+F-switch-1-full,rail_collapse_suspects,[]
+F-switch-1-full,badges_with_numbers,"[""11 registered"", ""96 registered"", ""Executive brief: Run 16 populated project"", ""Reporting period: 2026-08 \u00b7 grouped analysis across 11 signal categories"", ""96 registered"", ""Signal Sphere: August 2026"", ""96-module sphere \u00b7 41 active \u00b7 drag to rotate \u00b7 scroll to zoom"", ""96 modules \u00b7 3 Red \u00b7 6 Amber \u00b7 28 Green"", ""25 docs \u00b7 27 fields"", ""Documents: 25 documents"", ""41 active \u00b7 1 est."", ""Ensemble Scatter \u00b7 41 active modules (96 total)"", ""96 modules in 3D \u00b7 X = category \u00b7 Y = status severity \u00b7 drag to rotate""]"
+F-switch-1-empty,project,PRJ-R21-EMPTY
+F-switch-1-empty,flow_present,True
+F-switch-1-empty,flow_headers,27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE
+F-switch-1-empty,flow_animated_paths,0
+F-switch-1-empty,flow_project_status_node,Project Status Not estimable
+F-switch-1-empty,flow_node_fills,"{""#1e2a3c"": 24, ""#5b3dd6"": 12, ""#9aa2ae"": 99}"
+F-switch-1-empty,flow_summary,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no uploaded documents and no current results, so nothing on the diagram is active and the project status is not estimable."
+F-switch-1-empty,rail_present,True
+F-switch-1-empty,rail_buttons,10
+F-switch-1-empty,rail_collapse_suspects,[]
+F-switch-1-empty,badges_with_numbers,"[""11 registered"", ""96 registered"", ""Executive brief: Run 16 empty project"", ""Reporting period: 2026-08 \u00b7 grouped analysis across 11 signal categories"", ""96 registered"", ""0 docs \u00b7 0 fields"", ""Documents: 0 documents"", ""0 active \u00b7 0 est.""]"
+authority,frontend_local_mutation,project-not-found-in-frontend-state
+authority-reload,application_reloaded_from_server,yes
+authority-after-reload,project,PRJ-R21-EMPTY
+authority-after-reload,flow_present,True
+authority-after-reload,flow_headers,27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE
+authority-after-reload,flow_animated_paths,0
+authority-after-reload,flow_project_status_node,Project Status Not estimable
+authority-after-reload,flow_node_fills,"{""#1e2a3c"": 24, ""#5b3dd6"": 12, ""#9aa2ae"": 99}"
+authority-after-reload,flow_summary,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no uploaded documents and no current results, so nothing on the diagram is active and the project status is not estimable."
+authority-after-reload,rail_present,True
+authority-after-reload,rail_buttons,10
+authority-after-reload,rail_collapse_suspects,[]
+authority-after-reload,badges_with_numbers,"[""11 registered"", ""96 registered"", ""Executive brief: Run 16 empty project"", ""Reporting period: 2026-08 \u00b7 grouped analysis across 11 signal categories"", ""96 registered"", ""0 docs \u00b7 0 fields"", ""Documents: 0 documents"", ""0 active \u00b7 0 est.""]"
+responsive-1920,rail_display,flex
+responsive-1920,rail_buttons,10
+responsive-1920,collapse_suspects,[]
+responsive-1680,rail_display,flex
+responsive-1680,rail_buttons,10
+responsive-1680,collapse_suspects,[]
+responsive-1440,rail_display,flex
+responsive-1440,rail_buttons,10
+responsive-1440,collapse_suspects,[]
+responsive-1280,rail_display,flex
+responsive-1280,rail_buttons,10
+responsive-1280,collapse_suspects,[]
+responsive-1024,rail_display,flex
+responsive-1024,rail_buttons,10
+responsive-1024,collapse_suspects,[]
+responsive-820,rail_display,flex
+responsive-820,rail_buttons,10
+responsive-820,collapse_suspects,[]
+responsive-390,rail_display,none
+responsive-390,rail_buttons,10
+responsive-390,collapse_suspects,[]
+rail-nav,click_result,"{""ok"": true, ""target"": ""d-periods"", ""before"": 0, ""sectionExists"": true, ""bareIdExists"": false}"
+rail-nav,after,"{""y"": 207, ""active"": [""1""]}"
+errors,unknown_project_response,"{""ok"": false, ""error"": ""Project not found: PRJ-R21-DOES-NOT-EXIST""}"
+errors,bad_session_response,"{""ok"": false, ""error"": ""missing or malformed session token""}"
+browser,page_errors_total,0
+browser,page_errors_sample,[]

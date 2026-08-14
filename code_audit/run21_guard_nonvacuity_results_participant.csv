@@ -1,0 +1,4 @@
+guard,property,how_proved,observed,result,why_it_matters
+lock attack recorder,a legitimate call is recorded as NOT REFUSED,researchsequencestate with a valid session,NOT REFUSED,PASS,"if this fails, every refusal recorded by this driver is vacuous"
+AI leak detector,detects the AI text when it IS present,"the same body-text scan, run immediately after each period's reveal",2 periods in which the recommendation was found present,PASS,"if this fails, every pre-lock 'AI absent' check is vacuous"
+AI leak detector,and the AI is absent again in a fresh period,the page after the participant rolled to the next assignment,ABSENT,PASS,a fresh period must not carry the previous period's revealed package

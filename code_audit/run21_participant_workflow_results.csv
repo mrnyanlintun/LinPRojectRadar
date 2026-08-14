@@ -1,0 +1,22 @@
+period,step,surface,evidence,result
+P1,start,researchsequencestate,stage=evidence period=P1,PASS
+PERIOD 1,1 fixed evidence review,served page,3770 characters of evidence rendered,PASS
+PERIOD 1,2-3 preliminary action and confidence,served controls,action=monitor confidence=60,PASS
+PERIOD 1 (confirm-gate probe),reachability of #dc-commit-btn,served DOM,"{""present"": true, ""w"": 201, ""h"": 31, ""x"": 75, ""y"": 2154, ""inViewport"": false, ""display"": ""inline-block"", ""visibility"": ""visible"", ""opacity"": ""1"", ""pointerEvents"": ""auto"", ""disabled"": false, ""topAtCentre"": null, ""topIsSelfOrChild"": false}",
+PERIOD 1,reachability of #dc-commit-btn,served DOM,"{""present"": true, ""w"": 201, ""h"": 31, ""x"": 75, ""y"": 1067, ""inViewport"": true, ""display"": ""inline-block"", ""visibility"": ""visible"", ""opacity"": ""1"", ""pointerEvents"": ""auto"", ""disabled"": false, ""topAtCentre"": ""button#dc-commit-btn.dc-btn"", ""topIsSelfOrChild"": true}",
+PERIOD 1,4-5 preliminary submitted and locked,dc-commit-btn,stage=awaiting_reveal,PASS
+PERIOD 1,reachability of #dc-reveal-btn,served DOM,"{""present"": true, ""w"": 237, ""h"": 31, ""x"": 75, ""y"": 1067, ""inViewport"": true, ""display"": ""inline-block"", ""visibility"": ""visible"", ""opacity"": ""1"", ""pointerEvents"": ""auto"", ""disabled"": false, ""topAtCentre"": ""button#dc-reveal-btn.dc-btn"", ""topIsSelfOrChild"": true}",
+PERIOD 1,6 AI package revealed after preliminary lock,dc-reveal-btn,recommendation present in the DOM,PASS
+PERIOD 1,reachability of #dc-decide-btn,served DOM,"{""present"": true, ""w"": 151, ""h"": 31, ""x"": 75, ""y"": 2493, ""inViewport"": false, ""display"": ""inline-block"", ""visibility"": ""visible"", ""opacity"": ""1"", ""pointerEvents"": ""auto"", ""disabled"": false, ""topAtCentre"": null, ""topIsSelfOrChild"": false}",
+PERIOD 1,sequence stage after the final submit,server,complete,"recorded, not asserted"
+PERIOD 1,7-9 final submitted and locked,dc-decide-btn,stage=complete action=monitor disposition=accept,PASS
+PERIOD 1,reachability of #dc-advance-btn,served DOM,"{""present"": true, ""w"": 188, ""h"": 31, ""x"": 75, ""y"": 1066, ""inViewport"": true, ""display"": ""inline-block"", ""visibility"": ""visible"", ""opacity"": ""1"", ""pointerEvents"": ""auto"", ""disabled"": false, ""topAtCentre"": ""button#dc-advance-btn.dc-btn"", ""topIsSelfOrChild"": true}",
+PERIOD 2,1 fixed evidence review,served page,3770 characters of evidence rendered,PASS
+PERIOD 2,2-3 preliminary action and confidence,served controls,action=investigate confidence=60,PASS
+PERIOD 2,reachability of #dc-commit-btn,served DOM,"{""present"": true, ""w"": 201, ""h"": 31, ""x"": 75, ""y"": 2154, ""inViewport"": false, ""display"": ""inline-block"", ""visibility"": ""visible"", ""opacity"": ""1"", ""pointerEvents"": ""auto"", ""disabled"": false, ""topAtCentre"": null, ""topIsSelfOrChild"": false}",
+PERIOD 2,4-5 preliminary submitted and locked,dc-commit-btn,stage=awaiting_reveal,PASS
+PERIOD 2,reachability of #dc-reveal-btn,served DOM,"{""present"": true, ""w"": 237, ""h"": 31, ""x"": 75, ""y"": 944, ""inViewport"": true, ""display"": ""inline-block"", ""visibility"": ""visible"", ""opacity"": ""1"", ""pointerEvents"": ""auto"", ""disabled"": false, ""topAtCentre"": ""button#dc-reveal-btn.dc-btn"", ""topIsSelfOrChild"": true}",
+PERIOD 2,6 AI package revealed after preliminary lock,dc-reveal-btn,recommendation present in the DOM,PASS
+PERIOD 2,reachability of #dc-decide-btn,served DOM,"{""present"": true, ""w"": 151, ""h"": 31, ""x"": 75, ""y"": 2370, ""inViewport"": false, ""display"": ""inline-block"", ""visibility"": ""visible"", ""opacity"": ""1"", ""pointerEvents"": ""auto"", ""disabled"": false, ""topAtCentre"": null, ""topIsSelfOrChild"": false}",
+PERIOD 2,sequence stage after the final submit,server,evidence,"recorded, not asserted"
+PERIOD 2,7-9 final submitted and locked,dc-decide-btn,stage=evidence action=monitor disposition=accept,PASS

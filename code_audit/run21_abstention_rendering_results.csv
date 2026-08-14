@@ -1,0 +1,13 @@
+state,module,server_state,property,value,result
+C-multidoc,A1.10,server: abstained,band published by server,None,PASS
+C-multidoc,A1.2,server: abstained,band published by server,None,PASS
+C-multidoc,A1.4,server: abstained,band published by server,None,PASS
+C-multidoc,A1.5,server: abstained,band published by server,None,PASS
+C-multidoc,A2.1,server: abstained,band published by server,None,PASS
+C-multidoc,A2.10,server: abstained,band published by server,None,PASS
+C-multidoc,A2.2,server: abstained,band published by server,None,PASS
+C-multidoc,A2.3,server: abstained,band published by server,None,PASS
+C-multidoc,A2.4,server: abstained,band published by server,None,PASS
+C-multidoc,A2.5,server: abstained,band published by server,None,PASS
+C-multidoc,A2.7,server: abstained,band published by server,None,PASS
+C-multidoc,A2.9,server: abstained,band published by server,None,PASS
