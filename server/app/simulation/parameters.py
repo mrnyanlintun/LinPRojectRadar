@@ -378,6 +378,24 @@ for _k, _vs in _EXTRA.items():
     PARAMETER_PROVENANCE_BY_MODULE.setdefault(_k, []).extend(_vs)
 
 
+#: THE TWO ROWS THAT COULD ONLY HAVE BEEN CLOSED BY INVENTING A CONSTANT, named here rather than
+#: left to be inferred from the prose above. Cycle 12 recomputes every disposition from
+#: production, and a determination that lives only inside a paragraph cannot be recomputed: it
+#: can only be transcribed, which is the thing this cycle exists to stop. Neither entry changes
+#: any arithmetic, activates anything, or makes anything voting; both modules stay advisory and
+#: non-voting. This is the Run-20 exit target IMPLEMENTATION_DEFECT equal to zero recorded, in
+#: code, as NOT MET, together with the reason it is not met.
+BLOCKED_DISPOSITIONS: dict[str, str] = {
+    "B1.4": "PARAMETER_PROVENANCE_BLOCKED",
+    "D1.5": "THRESHOLD_CALIBRATION_BLOCKED",
+}
+
+
+def blocked_disposition(module_id: str) -> str | None:
+    """The blocked scientific disposition of a module, or None when it carries none."""
+    return BLOCKED_DISPOSITIONS.get(module_id)
+
+
 def provenance(module_id: str) -> list[Provenance]:
     return PARAMETER_PROVENANCE_BY_MODULE.get(module_id, [])
 
