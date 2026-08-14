@@ -16,7 +16,8 @@
 | handoff after 11 | `fc1b33f` |
 | 12, the hundred-target re-audit | `81ee4d4` |
 | 12, lineage campaign, guards and both evidence gaps | `f8a0137` |
-| **final Run-20 merged main** | `6afee1d` |
+| **final Run-20 merged main, complete content** | `7cb5d8c` |
+| stamping commit, records the hash above and changes nothing else | the tip of `main` |
 
 Cycles 1 to 5 were merged inside the earlier commits of this programme and their evidence is
 carried in the cycle reports under `code_audit/`.

@@ -8457,7 +8457,7 @@ rows still exist only in prose, and only a rerun that emits them will close it.
 
 ## RUN 20 IS COMPLETE. TWELVE OF TWELVE CYCLES CLOSED ON MAIN.
 
-**Final Run-20 merged-main commit `6afee1d`.** Complete merged-main sweep:
+**Final Run-20 merged-main commit `7cb5d8c`, with one stamping commit after it that records this hash and changes nothing else.** Complete merged-main sweep:
 **115 suites, 10060/10060, ALL SUITES GREEN.** Full record in
 `REPORT_2026-08-14_run20-supervised-scientific-remediation-loop.md`.
 
