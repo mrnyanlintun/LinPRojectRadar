@@ -1213,11 +1213,13 @@ Two new suites, both in the runner. `test_run27_remediation_matrix.py` is 47 che
 
 ## 12. Suite result
 
-SUITE_TOTAL_PLACEHOLDER
+**On MERGED main: `server/run_all_suites.sh` — 127 suites, 10682 of 10682 checks, ALL SUITES GREEN, exit 0.** The two new suites are inside that total: `test_run27_remediation_matrix.py` 47/47 and `test_run27_parsimony_proofs.py` 25/25.
+
+The three self-rewriting audit CSVs (`run9_no_operational_effect.csv`, `run10_no_operational_effect.csv`, `run20_cycle12_100_reaudit.csv`) were restored after each suite run and not committed. Generated CSVs are written LF.
 
 ## 13. Merged main
 
-MERGE_PLACEHOLDER
+Branch `run27-remediation-matrix`, commit `b48f1e1`. Merged to `main` with `--no-ff` at **`21675cf`**, and that is the commit the complete suite was run against. The report and this section land on top of it as a second commit, which touches documentation only: no suite reads a `REPORT_*.md` file, checked before landing it.
 
 ## What this run did not do, plainly
 
