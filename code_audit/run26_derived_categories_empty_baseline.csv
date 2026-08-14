@@ -1,0 +1,12 @@
+category,derived,rendered_fill,rendered_opacity,rendered_status,verdict
+A · Cost and EVM Performance,no,#9aa2ae,0.28,,PASS
+A · Schedule Performance,no,#9aa2ae,0.28,,PASS
+A · Cost Risk,no,#9aa2ae,0.28,,PASS
+A · Document-Derived Condition Signals,no,#9aa2ae,0.28,,PASS
+A · System Dynamics and Complexity,no,#9aa2ae,0.28,,PASS
+A · Delivery Quality Performance,no,#9aa2ae,0.28,,PASS
+B · Signal Synthesis,no,#9aa2ae,0.28,,PASS
+B · Evidence Combination,no,#9aa2ae,0.28,,PASS
+B · Regulatory and Authority Thresholds,no,#9aa2ae,0.28,,PASS
+B · Decision Optimization,no,#9aa2ae,0.28,,PASS
+C · Data Integrity,no,#9aa2ae,0.28,,PASS

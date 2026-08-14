@@ -125,8 +125,30 @@ check(_moved == ["assets/css/radar.css", "assets/js/detail.js", "index.html"],
 sys.path.insert(0, str(ROOT / "server" / "tools"))
 import production_tree as pt  # noqa: E402
 
-check(pt.PINNED.name == "run25_production_tree.sha256",
-      "the freeze guard's pinned manifest is the Run-25 one")
+# RUN 26 REPOINTED THE PIN, AND THIS CHECK IS ABOUT SUPERSESSION, NOT ABOUT RUN 25 BEING LAST.
+# The property Run 25 needed is that its manifest exists, is addressable, and is the parent of
+# whatever the current pin is; pinning the CURRENT pin to Run 25's name would have made every
+# later freeze impossible, which is fossilization rather than protection. The Run-25 manifest is
+# still required to exist unchanged, and it is still required to be the pin's immediate parent.
+check(pt.PINNED_RUN25.name == "run25_production_tree.sha256"
+      and pt.PINNED_RUN25.is_file(),
+      "the Run-25 manifest is still present and addressable after being superseded")
+check(pt.PINNED.name in ("run25_production_tree.sha256", "run26_production_tree.sha256"),
+      "the freeze guard's pinned manifest is the Run-25 one or the Run-26 one that supersedes "
+      "it", pt.PINNED.name)
+if pt.PINNED.name != "run25_production_tree.sha256":
+    _p25 = {ln.split("  ", 1)[1]: ln.split("  ", 1)[0]
+            for ln in pt.PINNED_RUN25.read_text(encoding="utf-8").splitlines() if ln.strip()}
+    _p26 = {ln.split("  ", 1)[1]: ln.split("  ", 1)[0]
+            for ln in pt.PINNED.read_text(encoding="utf-8").splitlines() if ln.strip()}
+    check(set(_p25) == set(_p26),
+          "the superseding manifest covers exactly the same file list, so the freeze was not "
+          "narrowed while it was moved",
+          str(sorted(set(_p25) ^ set(_p26))))
+    check(sorted(k for k in _p25 if _p25[k] != _p26[k])
+          == ["assets/js/knowledge.js", "assets/js/neural_flow.js", "index.html"],
+          "and only the three files Run 26 declares moved between the two manifests",
+          str(sorted(k for k in _p25 if _p25[k] != _p26[k])))
 check(pt.PINNED_RUN24.name == "run24_production_tree.sha256",
       "and the Run-24 manifest is kept addressable, so the supersession is provable")
 

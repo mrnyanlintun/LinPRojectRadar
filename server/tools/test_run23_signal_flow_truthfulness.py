@@ -74,7 +74,9 @@ check("cs==='None'?'0.28':'0.88'" not in cat_block,
 check("'data-active':catLive ? 'true' : 'false'" in cat_block,
       "the category node records its activity decision as data-active")
 
-prj_block = FLOW[FLOW.index("// Project Status node"):FLOW.index("// Feedback arc events")]
+# RUN 26. The block boundary moved with the governance feedback arc, which was removed. The
+# marker used here is the next section the file actually contains.
+prj_block = FLOW[FLOW.index("// Project Status node"):FLOW.index("// Document nodes (rendered last")]
 check("prjEstimable ? 'url(#lnf-glow-'" in prj_block,
       "the governed decision node glows only when the rollup it shows is estimable")
 check("opacity:prjEstimable ? '0.92' : '0.26'" in prj_block,
@@ -84,6 +86,14 @@ doc_block = FLOW[FLOW.index("// Document nodes (rendered last"):FLOW.index("8. A
 check("uploaded?'0.88':(notApplicable?'0.34':'0.30')" in doc_block,
       "a document row that was never uploaded stays below the active tier, including the "
       "not-applicable rows that were drawn at 0.75")
+# RUN 26, OWNER-DIRECTED CONTRACT CHANGE, 2026-08-14. The tier above still governs a project
+# that HAS evidence. On an EMPTY project the not-applicable branch is not reached at all: the
+# owner's instruction forbids a purple document square there, so `notApplicable` is additionally
+# gated on the project not being empty. The old contract is not loosened, it is inverted for the
+# one case the owner named. Recorded in run20_anti_fossilization_register.csv.
+check("!uploaded && !projectIsEmpty && !!DOC_NOT_APPLICABLE[key]" in doc_block,
+      "and on an empty project the not-applicable branch is not reached, so no purple square "
+      "is drawn where there is no evidence for it to be a distinction from")
 check("'data-active':uploaded ? 'true' : 'false'" in doc_block,
       "a document row's activity is its upload state and says so in the DOM")
 check("uploaded ? 'url(#lnf-glow-DocOn)' : null" in doc_block,
@@ -99,7 +109,11 @@ check("sinceReset" in FLOW and "signals_reset" in FLOW,
 for old in ("opacity:info.status==='None'?'0.20':'0.85'",
             "cs !== 'None' ? 'url(#lnf-glow-'+cs+')' : null",
             "prjStatus !== 'None' ? 'url(#lnf-glow-'+prjStatus+')' : null",
-            "uploaded?'0.88':(notApplicable?'0.75':'0.30')"):
+            "uploaded?'0.88':(notApplicable?'0.75':'0.30')",
+            # RUN 26. The two the owner's 2026-08-14 empty-project rule retires: the
+            # ungated not-applicable branch, and the red governance arc.
+            "notApplicable = !uploaded && !!DOC_NOT_APPLICABLE[key]",
+            "stroke:COL.Red, 'stroke-width':'1.5', opacity:'0.30'"):
     check(old not in FLOW,
           f"the pre-correction illumination rule {old!r} is absent from the shipped diagram")
 

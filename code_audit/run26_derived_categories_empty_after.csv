@@ -1,0 +1,12 @@
+category,derived,rendered_fill,rendered_opacity,rendered_status,verdict
+Cost and EVM Performance,no,#9aa2ae,0.28,None,PASS
+Schedule Performance,no,#9aa2ae,0.28,None,PASS
+Cost Risk,no,#9aa2ae,0.28,None,PASS
+Document-Derived Condition Signals,no,#9aa2ae,0.28,None,PASS
+System Dynamics and Complexity,no,#9aa2ae,0.28,None,PASS
+Delivery Quality Performance,no,#9aa2ae,0.28,None,PASS
+Signal Synthesis,yes,#9aa2ae,0.28,None,PASS
+Evidence Combination,yes,#9aa2ae,0.28,None,PASS
+Regulatory and Authority Thresholds,yes,#9aa2ae,0.28,None,PASS
+Decision Optimization,yes,#9aa2ae,0.28,None,PASS
+Data Integrity,no,#9aa2ae,0.28,None,PASS

@@ -1,0 +1,67 @@
+state,observation,value
+oracle,authoritative_rows,483
+oracle,authoritative_established_edges,477
+oracle,authoritative_unresolved_rows,6
+app,script_names,"[""admin-ops.js"", ""admin.js"", ""app.js"", ""assistant.js"", ""auditor.js"", ""auth.js"", ""charts3d.js"", ""client"", ""config.js"", ""data.js"", ""decision-ui.js"", ""decision.js"", ""detail.js"", ""disclaimers.js"", ""ds_defensibility_data.js"", ""ds_defensibility_evidence.js"", ""export.js"", ""features.js"", ""files.js"", ""globe.gl.min.js"", ""globe.js"", ""gmap.js"", ""ingest.js"", ""knowledge.js"", ""module_charts.js"", ""neural_flow.js"", ""pdf.min.js"", ""projectnet2d.js"", ""questionnaires.js"", ""recommendation_options.js"", ""signals.js"", ""store.js"", ""taxonomy.js"", ""training.js"", ""tz.js"", ""workingrobot.js"", ""workspace.js"", ""xlsx.full.min.js""]"
+app,page_sections,7
+registry,totalCategories,12
+registry,projectCategories,11
+registry,portfolioCategories,1
+registry,totalModules,101
+registry,projectModules,96
+registry,portfolioModules,5
+registry,byGroup,"{""A"": 53, ""B"": 36, ""C"": 7, ""D"": 5}"
+registry,projectCatNames,"[""Cost and EVM Performance"", ""Schedule Performance"", ""Cost Risk"", ""Document-Derived Condition Signals"", ""System Dynamics and Complexity"", ""Delivery Quality Performance"", ""Signal Synthesis"", ""Evidence Combination"", ""Regulatory and Authority Thresholds"", ""Decision Optimization"", ""Data Integrity""]"
+registry,projectCatIds,"[""a1"", ""a2"", ""a3"", ""a4"", ""a5"", ""a6"", ""b1"", ""b2"", ""b3"", ""b4"", ""c1""]"
+palette,status_colors,"{""Amber"": ""#9a4700"", ""Complete"": ""#1060a8"", ""Green"": ""#12703a"", ""None"": ""#9aa2ae"", ""NotRelevant"": ""#5b3dd6"", ""Red"": ""#b81420"", ""Yellow"": ""#6f5200""}"
+about,rendered,NOT PRESENT
+knowledge,rendered,NOT PRESENT
+home,rendered,NOT PRESENT
+dashboard,rendered,NOT PRESENT
+portfolio,rendered,NOT PRESENT
+empty-collapsed,empty_panel,True
+empty-collapsed,reveal_control,"{""text"": ""Show the registered architecture"", ""expanded"": ""false""}"
+empty-collapsed,svg_shown,False
+empty-collapsed,drawn_shapes,0
+empty-collapsed,drawn_paths,0
+empty-revealed,svg_shown,True
+empty-revealed,headers,27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE
+empty-revealed,summary,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no uploaded documents and no current results, so nothing on the diagram is active and the project status is not estimable."
+empty-revealed,legend,"Green Yellow Amber Red No data Not relevant Registered, not active on this project Uploaded Not uploaded Input (doc→model) ▸Rollup (model→category→status) ▸Derived (category→category) ▸Governance feedback Configured relationship, not carrying current data"
+empty-revealed,project_status_node,Project Status Not estimable
+empty-revealed,animated_edges,0
+empty-revealed,glows,0
+empty-revealed,active_class,0
+empty-revealed,drawn_shapes,144
+empty-revealed,drawn_paths,323
+empty-revealed,documents_total,27
+empty-revealed,modules_total,96
+empty-revealed,categories_total,11
+empty-revealed,non_grey_nodes,"[""module:Material Cost Variance:#5b3dd6"", ""module:Parametric Cost Index:#5b3dd6"", ""module:Plithogenic Sets:#5b3dd6"", ""module:Quantum Probability:#5b3dd6"", ""module:Hypersoft Sets:#5b3dd6"", ""module:Multi-Objective Optimiza:#5b3dd6"", ""module:Linear Programming:#5b3dd6"", ""module:Decision Sensitivity Mat:#5b3dd6"", ""module:Pareto Frontier Analysis:#5b3dd6"", ""document:Past Performance Report:#5b3dd6"", ""document:Historical Project Data:#5b3dd6"", ""document:Test & Commissioning Rep:#5b3dd6""]"
+empty-revealed,non_grey_node_count,12
+empty-revealed,non_grey_edges,"[""(unnamed):->:#5b3dd6"", ""(unnamed):->:#5b3dd6"", ""(unnamed):->:#5b3dd6"", ""(unnamed):->:#5b3dd6"", ""(unnamed):->:#5b3dd6"", ""(unnamed):->:#5b3dd6"", ""(unnamed):->:#5b3dd6"", ""(unnamed):->:#5b3dd6"", ""(unnamed):->:#5b3dd6"", ""(unnamed):->:#b81420""]"
+empty-revealed,non_grey_edge_count,10
+empty-revealed,legend_swatch_colours,"[""rgb(11, 107, 203)"", ""rgb(111, 82, 0)"", ""rgb(154, 162, 174)"", ""rgb(154, 71, 0)"", ""rgb(160, 188, 216)"", ""rgb(18, 112, 58)"", ""rgb(184, 20, 32)"", ""rgb(30, 42, 60)"", ""rgb(84, 91, 102)"", ""rgb(91, 61, 214)"", ""rgb(95, 102, 114)""]"
+empty-revealed,derived_categories_with_status_colour,[]
+wiring,rendered_named_edges,0
+wiring,rendered_unnamed_paths,323
+wiring,missing_edges,"[[""CATEGORY -> CATEGORY"", ""Data Integrity"", ""Decision Optimization""], [""CATEGORY -> CATEGORY"", ""Data Integrity"", ""Evidence Combination""], [""CATEGORY -> CATEGORY"", ""Data Integrity"", ""Regulatory and Authority Thresholds""], [""CATEGORY -> CATEGORY"", ""Data Integrity"", ""Signal Synthesis""], [""CATEGORY -> PROJECT STATUS"", ""Cost Risk"", ""Project status""], [""CATEGORY -> PROJECT STATUS"", ""Cost and EVM Performance"", ""Project status""], [""CATEGORY -> PROJECT STATUS"", ""Decision Optimization"", ""Project status""], [""CATEGORY -> PROJECT STATUS"", ""Delivery Quality Performance"", ""Project status""], [""CATEGORY -> PROJECT STATUS"", ""Document-Derived Condition Signals"", ""Project status""], [""CATEGORY -> PROJECT STATUS"", ""Evidence Combination"", ""Project status""], [""CATEGORY -> PROJECT STATUS"", ""Regulatory and Authority Thresholds"", ""Project status""], [""CATEGORY -> PROJECT STATUS"", ""Schedule Performance"", ""Project status""], [""CATEGORY -> PROJECT STATUS"", ""Signal Synthesis"", ""Project status""], [""CATEGORY -> PROJECT STATUS"", ""System Dynamics and Complexity"", ""Project status""], [""DOCUMENT -> MODULE"", ""commissioning_report"", ""ABM Governance Layer""], [""DOCUMENT -> MODULE"", ""commissioning_report"", ""Belief Rule Base""], [""DOCUMENT -> MODULE"", ""commissioning_report"", ""CRITIC-TOPSIS""], [""DOCUMENT -> MODULE"", ""commissioning_report"", ""Conservative Dominance""], [""DOCUMENT -> MODULE"", ""commissioning_report"", ""Decision Sensitivity Matrix""], [""DOCUMENT -> MODULE"", ""commissioning_report"", ""Dempster-Shafer""]]"
+wiring,missing_edge_count,477
+wiring,fabricated_edges,[]
+wiring,fabricated_edge_count,0
+wiring,wrong_direction_edges,[]
+wiring,wrong_direction_edge_count,0
+computed,svg_shown,True
+computed,headers,27 SUPPORTED DOCUMENT TYPES | 24 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 41 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 10 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT
+computed,summary,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project currently has 24 uploaded documents across 6 types, 41 modules with a current result, 46 with no current result, 0 not applicable to this project and 9 disabled, and 10 estimable categories."
+computed,project_status_node,Project Status Amber
+computed,animated_edges,100
+computed,glows,58
+computed,drawn_shapes,144
+computed,drawn_paths,323
+computed,header_module_count_phrase,96 REGISTERED PROJECT MODULES
+computed,rendered_node_fills,"[""#12703a"", ""#1e2a3c"", ""#5b3dd6"", ""#6f5200"", ""#9a4700"", ""#9aa2ae"", ""#a0bcd8"", ""#b81420""]"
+computed,rendered_edge_count,0
+computed,missing_edge_count,477
+computed,fabricated_edge_count,0
+browser,page_errors,[]

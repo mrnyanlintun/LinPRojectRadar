@@ -114,13 +114,26 @@ check("projectModuleCount()" in DETAIL and "totalModulesForBadge = projectModule
       "the detail page's section badges read the same project-level registry count")
 # THE KNOWLEDGE PAGE'S FIGURE, which is the one that has disagreed before. It states the
 # WHOLE-TAXONOMY count and must reconcile to the registry, not to the project-level figure.
-check(f"All {ALL_MODS - 1} registered computations" in KNOWLEDGE,
-      "the Knowledge page states the whole-taxonomy computed count",
-      f"expected 'All {ALL_MODS - 1} registered computations'")
-check("is not counted in the 100; if it is later implemented server-side the count becomes 101"
-      in KNOWLEDGE,
-      "and says explicitly that the supplied document risk value is excluded from it, so the "
-      "two figures are reconcilable rather than contradictory")
+# RUN 26 REWROTE THE SENTENCE, SO THE ORACLE IS THE REGISTRY, NOT THE SENTENCE.
+# The old form of this check quoted the shipped wording verbatim -- "All 100 registered
+# computations" and the exact clause about becoming 101 -- which is the failure mode the
+# programme lists as encoding the defect's own sentence as the oracle. It could only ever
+# confirm that nobody had reworded the page. The page now has to state THREE scopes, and each
+# figure is checked against the number the registry actually yields.
+check(f"The registry holds {ALL_MODS} modules: {PROJ_MODS} at project level and "
+      f"{ALL_MODS - PROJ_MODS} at portfolio level" in KNOWLEDGE,
+      "the Knowledge page states the registry total and both of its scopes",
+      f"expected the registry's own {ALL_MODS}/{PROJ_MODS}/{ALL_MODS - PROJ_MODS}")
+check(f"The analytical server computes {ALL_MODS - 1} of the {ALL_MODS}" in KNOWLEDGE,
+      "and states the computed count as a scope of the registry rather than as a rival total",
+      f"expected 'computes {ALL_MODS - 1} of the {ALL_MODS}'")
+check("document risk score, which the extraction model supplies as a value rather than the "
+      "server deriving it" in KNOWLEDGE,
+      "and names the one module that makes the two figures differ, so they are reconcilable "
+      "rather than contradictory")
+check("Registration is not activation." in KNOWLEDGE,
+      "and separates registry status from operational state, so a registered module that is "
+      "advisory or disabled is not read as an inflated capability claim")
 
 # ============================================================================ empty state
 

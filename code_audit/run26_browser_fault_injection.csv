@@ -1,0 +1,7 @@
+fault,file_mutated,rendered_dom_fact_under_fault,verdict_under_fault,verdict_after_restore,non_vacuity_proved
+baseline,-,n/a,GREEN,GREEN,yes
+NV-A remove one authoritative edge,assets/js/neural_flow.js,missing_edge_count=1,RED,GREEN,yes
+NV-B add a fabricated edge,assets/js/neural_flow.js,fabricated_edge_count=1,RED,GREEN,yes
+NV-C reverse a valid edge,assets/js/neural_flow.js,wrong_direction_edge_count=4,RED,GREEN,yes
+NV-D a non-grey colour on an empty project,assets/js/neural_flow.js,non_grey_node_count=107,RED,GREEN,yes
+NV-E a derived category forced to a status colour with no upstream evidence,assets/js/neural_flow.js,"derived_categories_with_status_colour=[""Signal Synthesis"", ""Evidence Combination"", ""Regulatory and Authority Thresholds"", ""Decision Optimization""]",RED,GREEN,yes

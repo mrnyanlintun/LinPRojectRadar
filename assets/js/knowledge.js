@@ -551,7 +551,7 @@
         <p>The analytical layer runs explicit rules over the evidence and returns a specific recommended action, a responsible authority role, and the documentation required. The PM still records the decision; the platform makes the recommendation traceable to a rule a reviewer can read aloud.</p>
 
         <h3>The analytical layer</h3>
-        <p>100 distinct computations, organised into four groups by purpose: Project Health, what condition the project is in; Recommendation and Governance, what should be done and by whom; Data and Evidence Health, how trustworthy the evidence is; and Portfolio Level, patterns that need more than one project to exist. The count of 100 excludes one value, the document risk score, which the extraction model supplies rather than the analytical server computing it. Data and Evidence Health and Portfolio Level do not contribute to a project's status.</p>
+        <p>101 registered modules, organised into four groups by purpose: Project Health, what condition the project is in; Recommendation and Governance, what should be done and by whom; Data and Evidence Health, how trustworthy the evidence is; and Portfolio Level, patterns that need more than one project to exist. 96 of the 101 run on a single project; the other 5 are the Portfolio Level modules, which need more than one. Of the 101, the analytical server computes 100: the remaining one, the document risk score, is a value the extraction model supplies rather than one the server computes. Data and Evidence Health and Portfolio Level do not contribute to a project's status.</p>
 
         <h3>Evidence to decision</h3>
         <pre class="kn-flow">Documents uploaded for a reporting period
@@ -576,13 +576,13 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
     },
     {
       id: "why-108-modules",
-      title: "Why 100 distinct computations across four groups",
+      title: "Why 101 registered modules across four groups",
       eyebrow: "Analytical depth",
       build: () => `
         <p class="kn-lead">Public capital projects are complex adaptive systems. A single EVM index (CPI or SPI) captures cost and schedule performance but misses the systemic, probabilistic, and qualitative dimensions that determine whether a project will succeed. The platform addresses this through four principles.</p>
 
         <h3>1. No human can run this many analyses simultaneously</h3>
-        <p>A senior PM reviewing a monthly report might check CPI, SPI, and open RFIs. The analytical layer runs 100 registered computations in milliseconds, probabilistic forecasts, anomaly detection, uncertainty reasoning, optimization, data integrity checks, and governance rules, all before the PM opens their laptop. The platform does not replace human judgment; it gives the PM a complete evidence package to exercise that judgment.</p>
+        <p>A senior PM reviewing a monthly report might check CPI, SPI, and open RFIs. The analytical layer runs the project's 96 registered modules in milliseconds, probabilistic forecasts, anomaly detection, uncertainty reasoning, optimization, data integrity checks, and governance rules, all before the PM opens their laptop. The platform does not replace human judgment; it gives the PM a complete evidence package to exercise that judgment.</p>
 
         <h3>2. Convergence equals confidence</h3>
         <p>When the great majority of methods agree on a Red classification, the PM can act with high confidence. When methods diverge, some showing Amber, others Red, the divergence itself is the finding: the project is in an ambiguous state that requires investigation before action. No single method can surface that ambiguity.</p>
@@ -596,8 +596,8 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
           <li><strong>Portfolio Level</strong>, shows how this project compares to the rest of a portfolio. It requires more than one project and does not affect a single project's status.</li>
         </ul>
 
-        <h3>4. What the 100-computation count includes</h3>
-        <p>All 100 registered computations are executable from standard project documents available in any public capital program. Every status derives from extracted data; a module whose required inputs are absent abstains and reports "Insufficient data" with the specific missing fields. No status is fabricated. One further value, the document risk score, is supplied by the extraction model rather than computed by the analytical server, and is not counted in the 100; if it is later implemented server-side the count becomes 101.</p>
+        <h3>4. What the registered count includes, and what it does not</h3>
+        <p>The registry holds 101 modules: 96 at project level and 5 at portfolio level. The analytical server computes 100 of the 101. The one it does not is the document risk score, which the extraction model supplies as a value rather than the server deriving it; if it is later computed server-side, the server's count becomes 101. Every registered module draws on standard project documents available in any public capital program, and every status derives from extracted data: a module whose required inputs are absent abstains and reports "Insufficient data" with the specific missing fields. No status is fabricated. Registration is not activation. A module can be registered and still be advisory, disabled, awaiting calibration, or outside a single project's scope, and it keeps its registry entry either way.</p>
       `,
     },
     {
@@ -614,7 +614,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
         <p>Public capital programs have a distinct closeout phase, work is done, but sign-off, commissioning, and documentation must be completed. A Green state implies active monitoring is still required. A Complete state signals the project has met its targets and transitions to closeout governance, different authority, different documentation requirements.</p>
 
         <h3>3. Yellow provides an early warning band</h3>
-        <p>The gap between Green (on track) and Amber (significant risk) is too wide: a project moving from Green to Amber has often already been in trouble for two or three reporting periods. Yellow captures the zone in between, minor variance, still recoverable, requiring PM attention before the next cycle. With 100 registered computations producing outputs, Yellow consensus across multiple groups marks the inflection point where a project is leaving the Green zone, and it is where early intervention prevents escalation.</p>
+        <p>The gap between Green (on track) and Amber (significant risk) is too wide: a project moving from Green to Amber has often already been in trouble for two or three reporting periods. Yellow captures the zone in between, minor variance, still recoverable, requiring PM attention before the next cycle. With the whole registered set producing outputs, Yellow consensus across multiple groups marks the inflection point where a project is leaving the Green zone, and it is where early intervention prevents escalation.</p>
 
         <h3>The five statuses</h3>
         <table class="kn-table">
@@ -2447,7 +2447,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
         "Zadeh, L. A. (1975). The concept of a linguistic variable and its application to approximate reasoning, I. <em>Information Sciences</em>, 8(3), 199-249.",
         "Zadeh, L. A. (2011). A note on Z-numbers. <em>Information Sciences</em>, 181(14), 2923-2932."
       ];
-      return `<p class="kn-lead">APA 7th-edition references for every method actually implemented in the 100 registered project-level and Portfolio Health computations, cited in-text throughout the Method Reference sections above. Only works that genuinely underlie an implemented computation are listed here.</p>
+      return `<p class="kn-lead">APA 7th-edition references for every method actually implemented in the 100 modules the analytical server computes, 95 at project level and 5 Portfolio Health, cited in-text throughout the Method Reference sections above. Only works that genuinely underlie an implemented computation are listed here.</p>
         <ul class="kn-list kn-refs">${refs.sort().map((r) => `<li>${r}</li>`).join("")}</ul>`;
     }
   };

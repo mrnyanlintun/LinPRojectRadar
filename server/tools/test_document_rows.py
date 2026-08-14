@@ -99,24 +99,39 @@ def main() -> None:
           "app.js now compares cat.id against the current taxonomy's 'b3' "
           "(Group B: Regulatory & Authority Thresholds, the Governance category)")
 
-    section("2. DOC_KEYS / DOC_TO_CATS: THE PARALLEL-ARRAY INVARIANT")
+    section("2. DOC_KEYS / DOC_EMISSIONS: THE PARALLEL-ARRAY INVARIANT, REPLACED")
 
+    # RUN 26 RETIRED THE ARRAY THIS SECTION USED TO GUARD, AND SAYS SO RATHER THAN QUIETLY
+    # DROPPING THE CHECK. `DOC_TO_CATS` was a hand-written list of category INDICES written
+    # against the retired gapless Cat 1-10 scheme. The eleven-category taxonomy reordered
+    # those positions, so every row of it pointed at the wrong category -- and the check here
+    # could never have seen that, because it only compared LENGTHS. A parallel array of the
+    # right length pointing at the wrong nodes passes this section exactly as the real one did.
+    #
+    # The wiring is now derived: each document type's emitted signal keys, generated from
+    # server/app/extraction_merge.py into neural_flow.js, crossed with each module's own
+    # declared required inputs. The invariant that replaces the length check is stronger and is
+    # about MEANING rather than shape: every document row the diagram draws must be a document
+    # type the emission map knows, and every emitted key must be one the server can emit.
     nf_js = read("assets/js/neural_flow.js")
     doc_keys_m = re.search(r"var DOC_KEYS = \[([\s\S]*?)\];", nf_js)
-    doc_to_cats_m = re.search(r"var DOC_TO_CATS = \[([\s\S]*?)\];", nf_js)
-    check(bool(doc_keys_m) and bool(doc_to_cats_m),
-          "both DOC_KEYS and DOC_TO_CATS are still findable by this test's own parser")
+    emissions_m = re.search(r"var DOC_EMISSIONS = \{([\s\S]*?)\};", nf_js)
+    check(bool(doc_keys_m) and bool(emissions_m),
+          "both DOC_KEYS and the generated DOC_EMISSIONS map are findable by this test's parser")
+    check("var DOC_TO_CATS" not in nf_js,
+          "the positional DOC_TO_CATS array is gone, so no rendered edge is decided by an "
+          "index written against a retired category order")
     doc_keys = re.findall(r"'([a-z_]+)'", doc_keys_m.group(1))
-    doc_to_cats_rows = re.findall(r"\[[0-9,\s]*\]", doc_to_cats_m.group(1))
+    emitted = dict(re.findall(r"'([a-z_]+)':\s*\[([^\]]*)\]", emissions_m.group(1)))
 
-    # Self-test: a synthetic mismatch (one array one entry longer) IS caught by this equality
-    # check before trusting it against the real arrays.
-    check(len(["a", "b", "c"]) != len(["a", "b"]),
-          "self-test: the length-equality check can distinguish unequal lengths")
+    # Self-test: a synthetic mismatch IS caught by the membership check before it is trusted
+    # against the real arrays.
+    check(not {"not_a_real_doc_type"} <= set(emitted),
+          "self-test: the membership check can distinguish a type the map does not carry")
 
-    check(len(doc_keys) == len(doc_to_cats_rows),
-          "DOC_KEYS and DOC_TO_CATS have the same number of entries",
-          f"DOC_KEYS={len(doc_keys)} DOC_TO_CATS={len(doc_to_cats_rows)}")
+    check(set(doc_keys) <= set(emitted),
+          "every document row the diagram draws is a type the generated emission map carries",
+          str(sorted(set(doc_keys) - set(emitted))))
     check(len(doc_keys) == 27, "DOC_KEYS has exactly 27 entries (the current DOC_TYPES count)",
           str(len(doc_keys)))
 
@@ -226,14 +241,26 @@ def main() -> None:
           "every DOC_NOT_APPLICABLE key is a real, current DOC_TYPES member "
           "(not a typo'd or retired string)")
 
-    section("9. THE NOT-APPLICABLE STATE READS AS THE EXISTING NotRelevant COLOUR, NOT A NEW ONE")
+    section("9. THE NOT-APPLICABLE STATE: KEPT WHERE THERE IS EVIDENCE, SUPPRESSED WHERE THERE "
+            "IS NONE")
 
+    # OWNER-DIRECTED CONTRACT CHANGE, 2026-08-14. This section used to require the
+    # not-applicable document row to be drawn in COL.NotRelevant unconditionally, and an
+    # earlier owner instruction endorsed exactly that. The 2026-08-14 instruction reverses it
+    # for the EMPTY case: "no purple document squares, no blue Not Relevant markers" on a
+    # project with no uploaded documents and no computed result. The guard is not loosened --
+    # it still requires the marker on a project that HAS evidence -- it is inverted for the
+    # one case the owner named, and the reversal is recorded in
+    # code_audit/run20_anti_fossilization_register.csv.
     check("COL.NotRelevant" in nf_js, "COL.NotRelevant (the existing blue not-relevant colour) "
-          "is referenced in neural_flow.js")
-    check(re.search(r"notApplicable\s*=\s*!uploaded\s*&&\s*!!DOC_NOT_APPLICABLE\[key\]", nf_js)
-          is not None,
-          "the not-applicable state is gated on !uploaded — a document that WAS uploaded still "
-          "lights normally, even if it is one of the three usually-absent types")
+          "is still the colour of the not-relevant state where that state is drawn at all")
+    check(re.search(r"notApplicable\s*=\s*!uploaded\s*&&\s*!projectIsEmpty\s*&&"
+                    r"\s*!!DOC_NOT_APPLICABLE\[key\]", nf_js) is not None,
+          "the not-applicable state is gated on !uploaded AND on the project not being empty: "
+          "an uploaded document still lights, and an empty project draws no purple square")
+    check("function neutralOnEmpty" in nf_js and "if (!projectIsEmpty) return color;" in nf_js,
+          "and the same rule is applied to nodes through one named predicate rather than "
+          "being spelled out separately at each call site")
 
 
 if __name__ == "__main__":

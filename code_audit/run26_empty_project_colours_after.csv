@@ -1,0 +1,1040 @@
+label,element_class,element_type,element_name,shape,rendered_fill_or_stroke,rendered_stroke,rendered_opacity,filter,state_or_class,allowed_on_empty_project,verdict
+after,node,module,Monte Carlo EAC Forecast,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,CUSUM Anomaly Monitor,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Bayesian EAC,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Kalman Filter SPI Smoother,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,ARIMA CPI Forecast,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Earned Schedule,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,TCPI,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Variance at Completion,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Budget Execution Rate,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Regression to Mean CPI,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,ICE Ratio,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,PERT Network Criticality,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Line of Balance,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,CCPM Buffer Health,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Schedule Compression Index,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Float Consumption Rate,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,S-Curve Deviation,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Milestone Trend Analysis,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Look-Ahead Schedule Health,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Resource Loading Index,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Schedule Risk Analysis P80,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Critical Path Index,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Reference Class Forecasti…,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Contingency Burn Rate,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Labor Productivity Index,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Material Cost Variance,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Overhead Absorption Rate,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Cost Risk Analysis P80,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Analogous Estimating Ratio,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Parametric Cost Index,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Inflation Adjustment Index,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Document Risk Score,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,RFI Velocity,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Submittal Rejection Rate,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,NCR Rate,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Weather Day Impact,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Change Order Frequency,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Dispute Escalation Index,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Subcontractor Performance,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Procurement Lead Time Mon…,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Specification Conflict De…,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,DSM Rework Propagation,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Sensitivity Analysis,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Tornado Risk Ranking,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Scenario Modeling,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Rework Feedback Loop,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Queueing Theory Bottleneck,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Agent-Based Supply Chain,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Discrete Event Simulation,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Quality Compliance Index,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Safety Performance Index,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Environmental Compliance …,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Contractor Performance Sc…,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Conservative Dominance,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Weighted Voting,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Majority Rules,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Worst-N-of-M,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Dempster-Shafer,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Rough Sets,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Neutrosophic Logic,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Interval Fuzzy Sets,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Z-numbers,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,PLTS,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Plithogenic Sets,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Belief Rule Base,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Quantum Probability,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Pythagorean Fuzzy Sets,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Picture Fuzzy Sets,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Hesitant Fuzzy Sets,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Type-2 Fuzzy Sets,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Maximum Entropy,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Possibility Theory,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Spherical Fuzzy Sets,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Fermatean Fuzzy Sets,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,MARCOS Ranking,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,CRITIC-TOPSIS,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Hypersoft Sets,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,ABM Governance Layer,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,FAR Threshold Monitor,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,OMB A-11 Check,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,EVM Reporting Threshold,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Contract Modification Fre…,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Multi-Objective Optimizat…,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Linear Programming,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Constraint Satisfaction A…,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,What-If Scenario Matrix,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Decision Sensitivity Matr…,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Pareto Frontier Analysis,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Regret Minimization Index,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Missing Data Index,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Data Timeliness Score,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Source Reliability Weight…,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Audit Trail Completeness,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Information Completeness …,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Cross-document Consistenc…,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,module,Reporting Frequency Index,circle,#9aa2ae,none,0.2,,,yes,PASS
+after,node,category,A · Cost and EVM Performance,circle,#9aa2ae,none,0.28,,,yes,PASS
+after,node,category,A · Schedule Performance,circle,#9aa2ae,none,0.28,,,yes,PASS
+after,node,category,A · Cost Risk,circle,#9aa2ae,none,0.28,,,yes,PASS
+after,node,category,A · Document-Derived Condition Signals,circle,#9aa2ae,none,0.28,,,yes,PASS
+after,node,category,A · System Dynamics and Complexity,circle,#9aa2ae,none,0.28,,,yes,PASS
+after,node,category,A · Delivery Quality Performance,circle,#9aa2ae,none,0.28,,,yes,PASS
+after,node,category,B · Signal Synthesis,circle,#9aa2ae,none,0.28,,,yes,PASS
+after,node,category,B · Evidence Combination,circle,#9aa2ae,none,0.28,,,yes,PASS
+after,node,category,B · Regulatory and Authority Thresholds,circle,#9aa2ae,none,0.28,,,yes,PASS
+after,node,category,B · Decision Optimization,circle,#9aa2ae,none,0.28,,,yes,PASS
+after,node,category,C · Data Integrity,circle,#9aa2ae,none,0.28,,,yes,PASS
+after,node,project,Project,circle,#9aa2ae,none,0.26,,,yes,PASS
+after,node,document,Contract Value / Original Agreement,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Schedule of Values (G703),circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Pay Application (G702),circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Time-phased Schedule / Baseline,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Schedule Update / Look-ahead,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Monthly Progress Report,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Change Order / PCO,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Submittal Register,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,OAC Meeting Minutes,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Daily / Weekly Field Report,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Inspection Report / NCR,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,NCR Log (Non-Conformance),circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Subcontractor Performance Report,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Procurement Log,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Look-Ahead Schedule (6-week),circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Resource Report,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Cost Report,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Past Performance Report,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Safety Report,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Quality Audit Report,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Environmental Compliance Report,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Historical Project Data,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Test & Commissioning Report,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Correspondence / Notice,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,Risk Register,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,RFI Log (register),circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,node,document,RFA / Approval Log,circle,#1e2a3c,none,0.3,,not-uploaded,yes,PASS
+after,edge,CATEGORY -> PROJECT STATUS,Cost and EVM Performance->Project status,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,CATEGORY -> PROJECT STATUS,Schedule Performance->Project status,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,CATEGORY -> PROJECT STATUS,Cost Risk->Project status,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,CATEGORY -> PROJECT STATUS,Document-Derived Condition Signals->Proj,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,CATEGORY -> PROJECT STATUS,System Dynamics and Complexity->Project ,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,CATEGORY -> PROJECT STATUS,Delivery Quality Performance->Project st,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,CATEGORY -> PROJECT STATUS,Signal Synthesis->Project status,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,CATEGORY -> PROJECT STATUS,Evidence Combination->Project status,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,CATEGORY -> PROJECT STATUS,Regulatory and Authority Thresholds->Pro,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,CATEGORY -> PROJECT STATUS,Decision Optimization->Project status,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Monte Carlo EAC Forecast->Cost and EVM P,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,CUSUM Anomaly Monitor->Cost and EVM Perf,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Bayesian EAC->Cost and EVM Performance,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Kalman Filter SPI Smoother->Cost and EVM,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,ARIMA CPI Forecast->Cost and EVM Perform,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Earned Schedule->Cost and EVM Performanc,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,TCPI->Cost and EVM Performance,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Variance at Completion->Cost and EVM Per,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Budget Execution Rate->Cost and EVM Perf,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Regression to Mean CPI->Cost and EVM Per,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,ICE Ratio->Cost and EVM Performance,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,PERT Network Criticality->Schedule Perfo,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Line of Balance->Schedule Performance,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,CCPM Buffer Health->Schedule Performance,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Schedule Compression Index->Schedule Per,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Float Consumption Rate->Schedule Perform,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,S-Curve Deviation->Schedule Performance,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Milestone Trend Analysis->Schedule Perfo,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Look-Ahead Schedule Health->Schedule Per,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Resource Loading Index->Schedule Perform,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Schedule Risk Analysis P80->Schedule Per,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Critical Path Index->Schedule Performanc,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Reference Class Forecasting->Cost Risk,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Contingency Burn Rate->Cost Risk,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Labor Productivity Index->Cost Risk,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Material Cost Variance->Cost Risk,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Overhead Absorption Rate->Cost Risk,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Cost Risk Analysis P80->Cost Risk,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Analogous Estimating Ratio->Cost Risk,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Parametric Cost Index->Cost Risk,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Inflation Adjustment Index->Cost Risk,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Document Risk Score->Document-Derived Co,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,RFI Velocity->Document-Derived Condition,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Submittal Rejection Rate->Document-Deriv,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,NCR Rate->Document-Derived Condition Sig,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Weather Day Impact->Document-Derived Con,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Change Order Frequency->Document-Derived,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Dispute Escalation Index->Document-Deriv,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Subcontractor Performance->Document-Deri,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Procurement Lead Time Monitor->Document-,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Specification Conflict Density->Document,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,DSM Rework Propagation->System Dynamics ,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Sensitivity Analysis->System Dynamics an,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Tornado Risk Ranking->System Dynamics an,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Scenario Modeling->System Dynamics and C,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Rework Feedback Loop->System Dynamics an,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Queueing Theory Bottleneck->System Dynam,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Agent-Based Supply Chain->System Dynamic,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Discrete Event Simulation->System Dynami,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Quality Compliance Index->Delivery Quali,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Safety Performance Index->Delivery Quali,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Environmental Compliance Rate->Delivery ,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Contractor Performance Score->Delivery Q,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Conservative Dominance->Signal Synthesis,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Weighted Voting->Signal Synthesis,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Majority Rules->Signal Synthesis,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Worst-N-of-M->Signal Synthesis,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Dempster-Shafer->Evidence Combination,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Rough Sets->Evidence Combination,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Neutrosophic Logic->Evidence Combination,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Interval Fuzzy Sets->Evidence Combinatio,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Z-numbers->Evidence Combination,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,PLTS->Evidence Combination,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Plithogenic Sets->Evidence Combination,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Belief Rule Base->Evidence Combination,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Quantum Probability->Evidence Combinatio,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Pythagorean Fuzzy Sets->Evidence Combina,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Picture Fuzzy Sets->Evidence Combination,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Hesitant Fuzzy Sets->Evidence Combinatio,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Type-2 Fuzzy Sets->Evidence Combination,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Maximum Entropy->Evidence Combination,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Possibility Theory->Evidence Combination,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Spherical Fuzzy Sets->Evidence Combinati,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Fermatean Fuzzy Sets->Evidence Combinati,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,MARCOS Ranking->Evidence Combination,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,CRITIC-TOPSIS->Evidence Combination,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Hypersoft Sets->Evidence Combination,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,ABM Governance Layer->Regulatory and Aut,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,FAR Threshold Monitor->Regulatory and Au,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,OMB A-11 Check->Regulatory and Authority,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,EVM Reporting Threshold->Regulatory and ,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Contract Modification Frequency->Regulat,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Multi-Objective Optimization->Decision O,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Linear Programming->Decision Optimizatio,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Constraint Satisfaction Analysis->Decisi,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,What-If Scenario Matrix->Decision Optimi,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Decision Sensitivity Matrix->Decision Op,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Pareto Frontier Analysis->Decision Optim,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Regret Minimization Index->Decision Opti,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Missing Data Index->Data Integrity,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Data Timeliness Score->Data Integrity,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Source Reliability Weighting->Data Integ,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Audit Trail Completeness->Data Integrity,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Information Completeness Ratio->Data Int,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Cross-document Consistency Score->Data I,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,MODULE -> CATEGORY,Reporting Frequency Index->Data Integrit,path,#9aa2ae,,0.14,,lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Monte Carlo EAC Forecast,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Monte Carlo EAC Forecast,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Bayesian EAC,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Bayesian EAC,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Earned Schedule,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Earned Schedule,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->TCPI,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->TCPI,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Variance at Completion,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Variance at Completion,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Budget Execution Rate,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Budget Execution Rate,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->ICE Ratio,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->ICE Ratio,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->PERT Network Criticality,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->PERT Network Criticality,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Schedule Compression Ind,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Schedule Compression Ind,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Schedule Risk Analysis P,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Schedule Risk Analysis P,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Reference Class Forecast,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Reference Class Forecast,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Cost Risk Analysis P80,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Cost Risk Analysis P80,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Analogous Estimating Rat,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Analogous Estimating Rat,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Parametric Cost Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Parametric Cost Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Change Order Frequency,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Change Order Frequency,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Sensitivity Analysis,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Sensitivity Analysis,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Scenario Modeling,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Scenario Modeling,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->FAR Threshold Monitor,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->FAR Threshold Monitor,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->OMB A-11 Check,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->OMB A-11 Check,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->EVM Reporting Threshold,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->EVM Reporting Threshold,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Contract Modification Fr,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Contract Modification Fr,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Linear Programming,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Linear Programming,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Constraint Satisfaction ,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Constraint Satisfaction ,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->What-If Scenario Matrix,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->What-If Scenario Matrix,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Regret Minimization Inde,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Regret Minimization Inde,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Missing Data Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Missing Data Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Source Reliability Weigh,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Source Reliability Weigh,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Audit Trail Completeness,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Audit Trail Completeness,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Information Completeness,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,contract_value->Information Completeness,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Monte Carlo EAC Fore,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Monte Carlo EAC Fore,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Bayesian EAC,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Bayesian EAC,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Earned Schedule,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Earned Schedule,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->TCPI,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->TCPI,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Variance at Completi,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Variance at Completi,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Budget Execution Rat,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Budget Execution Rat,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->ICE Ratio,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->ICE Ratio,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->PERT Network Critica,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->PERT Network Critica,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->S-Curve Deviation,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->S-Curve Deviation,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Reference Class Fore,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Reference Class Fore,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Cost Risk Analysis P,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Cost Risk Analysis P,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Analogous Estimating,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Analogous Estimating,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Parametric Cost Inde,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Parametric Cost Inde,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Sensitivity Analysis,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Sensitivity Analysis,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Scenario Modeling,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Scenario Modeling,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->FAR Threshold Monito,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->FAR Threshold Monito,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->OMB A-11 Check,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->OMB A-11 Check,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->EVM Reporting Thresh,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->EVM Reporting Thresh,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Linear Programming,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Linear Programming,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Constraint Satisfact,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Constraint Satisfact,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->What-If Scenario Mat,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->What-If Scenario Mat,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Regret Minimization ,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Regret Minimization ,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Missing Data Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Missing Data Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Source Reliability W,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Source Reliability W,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Audit Trail Complete,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Audit Trail Complete,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Information Complete,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Information Complete,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Cross-document Consi,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_of_values->Cross-document Consi,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Monte Carlo EAC Forecas,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Monte Carlo EAC Forecas,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Bayesian EAC,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Bayesian EAC,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Earned Schedule,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Earned Schedule,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->TCPI,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->TCPI,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Variance at Completion,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Variance at Completion,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Budget Execution Rate,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Budget Execution Rate,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->ICE Ratio,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->ICE Ratio,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->PERT Network Criticalit,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->PERT Network Criticalit,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Line of Balance,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Line of Balance,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->CCPM Buffer Health,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->CCPM Buffer Health,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Schedule Compression In,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Schedule Compression In,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->S-Curve Deviation,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->S-Curve Deviation,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Schedule Risk Analysis ,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Schedule Risk Analysis ,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Critical Path Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Critical Path Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Reference Class Forecas,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Reference Class Forecas,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Contingency Burn Rate,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Contingency Burn Rate,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Labor Productivity Inde,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Labor Productivity Inde,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Cost Risk Analysis P80,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Cost Risk Analysis P80,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Analogous Estimating Ra,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Analogous Estimating Ra,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Parametric Cost Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Parametric Cost Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Sensitivity Analysis,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Sensitivity Analysis,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Tornado Risk Ranking,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Tornado Risk Ranking,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Scenario Modeling,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Scenario Modeling,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Discrete Event Simulati,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Discrete Event Simulati,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->FAR Threshold Monitor,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->FAR Threshold Monitor,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->OMB A-11 Check,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->OMB A-11 Check,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->EVM Reporting Threshold,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->EVM Reporting Threshold,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Linear Programming,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Linear Programming,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Constraint Satisfaction,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Constraint Satisfaction,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->What-If Scenario Matrix,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->What-If Scenario Matrix,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Regret Minimization Ind,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Regret Minimization Ind,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Missing Data Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Missing Data Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Source Reliability Weig,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Source Reliability Weig,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Audit Trail Completenes,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Audit Trail Completenes,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Information Completenes,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Information Completenes,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Cross-document Consiste,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,pay_application->Cross-document Consiste,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,time_phased_schedule->Earned Schedule,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,time_phased_schedule->Earned Schedule,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,time_phased_schedule->Line of Balance,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,time_phased_schedule->Line of Balance,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,time_phased_schedule->CCPM Buffer Health,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,time_phased_schedule->CCPM Buffer Health,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,time_phased_schedule->Float Consumption ,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,time_phased_schedule->Float Consumption ,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,time_phased_schedule->S-Curve Deviation,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,time_phased_schedule->S-Curve Deviation,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,time_phased_schedule->Critical Path Inde,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,time_phased_schedule->Critical Path Inde,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,time_phased_schedule->Sensitivity Analys,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,time_phased_schedule->Sensitivity Analys,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,time_phased_schedule->Tornado Risk Ranki,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,time_phased_schedule->Tornado Risk Ranki,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,time_phased_schedule->Discrete Event Sim,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,time_phased_schedule->Discrete Event Sim,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->Earned Schedule,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->Earned Schedule,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->Line of Balance,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->Line of Balance,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->CCPM Buffer Health,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->CCPM Buffer Health,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->Float Consumption Rate,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->Float Consumption Rate,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->S-Curve Deviation,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->S-Curve Deviation,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->Look-Ahead Schedule Hea,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->Look-Ahead Schedule Hea,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->Critical Path Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->Critical Path Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->Sensitivity Analysis,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->Sensitivity Analysis,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->Tornado Risk Ranking,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->Tornado Risk Ranking,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->Queueing Theory Bottlen,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->Queueing Theory Bottlen,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->Discrete Event Simulati,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,schedule_update->Discrete Event Simulati,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Monte Carlo EAC Forecast,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Monte Carlo EAC Forecast,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Bayesian EAC,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Bayesian EAC,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Earned Schedule,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Earned Schedule,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->TCPI,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->TCPI,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Variance at Completion,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Variance at Completion,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Budget Execution Rate,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Budget Execution Rate,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->ICE Ratio,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->ICE Ratio,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->PERT Network Criticality,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->PERT Network Criticality,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Line of Balance,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Line of Balance,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->CCPM Buffer Health,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->CCPM Buffer Health,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Schedule Compression Ind,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Schedule Compression Ind,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->S-Curve Deviation,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->S-Curve Deviation,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Schedule Risk Analysis P,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Schedule Risk Analysis P,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Critical Path Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Critical Path Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Reference Class Forecast,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Reference Class Forecast,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Contingency Burn Rate,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Contingency Burn Rate,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Labor Productivity Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Labor Productivity Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Cost Risk Analysis P80,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Cost Risk Analysis P80,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Analogous Estimating Rat,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Analogous Estimating Rat,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Parametric Cost Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Parametric Cost Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Sensitivity Analysis,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Sensitivity Analysis,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Tornado Risk Ranking,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Tornado Risk Ranking,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Scenario Modeling,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Scenario Modeling,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Discrete Event Simulatio,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Discrete Event Simulatio,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->FAR Threshold Monitor,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->FAR Threshold Monitor,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->OMB A-11 Check,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->OMB A-11 Check,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->EVM Reporting Threshold,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->EVM Reporting Threshold,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Linear Programming,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Linear Programming,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Constraint Satisfaction ,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Constraint Satisfaction ,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->What-If Scenario Matrix,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->What-If Scenario Matrix,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Regret Minimization Inde,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Regret Minimization Inde,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Missing Data Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Missing Data Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Source Reliability Weigh,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Source Reliability Weigh,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Audit Trail Completeness,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Audit Trail Completeness,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Information Completeness,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Information Completeness,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Cross-document Consisten,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,monthly_report->Cross-document Consisten,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Monte Carlo EAC Forecast,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Monte Carlo EAC Forecast,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Bayesian EAC,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Bayesian EAC,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Earned Schedule,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Earned Schedule,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->TCPI,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->TCPI,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Variance at Completion,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Variance at Completion,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Budget Execution Rate,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Budget Execution Rate,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->ICE Ratio,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->ICE Ratio,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->PERT Network Criticality,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->PERT Network Criticality,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Reference Class Forecastin,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Reference Class Forecastin,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Cost Risk Analysis P80,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Cost Risk Analysis P80,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Analogous Estimating Ratio,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Analogous Estimating Ratio,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Parametric Cost Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Parametric Cost Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Change Order Frequency,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Change Order Frequency,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Dispute Escalation Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Dispute Escalation Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Sensitivity Analysis,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Sensitivity Analysis,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Scenario Modeling,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Scenario Modeling,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Rework Feedback Loop,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Rework Feedback Loop,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->FAR Threshold Monitor,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->FAR Threshold Monitor,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->OMB A-11 Check,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->OMB A-11 Check,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->EVM Reporting Threshold,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->EVM Reporting Threshold,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Contract Modification Freq,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Contract Modification Freq,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Linear Programming,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Linear Programming,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Constraint Satisfaction An,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Constraint Satisfaction An,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->What-If Scenario Matrix,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->What-If Scenario Matrix,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Regret Minimization Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Regret Minimization Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Missing Data Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Missing Data Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Source Reliability Weighti,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Source Reliability Weighti,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Audit Trail Completeness,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Audit Trail Completeness,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Information Completeness R,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,change_order->Information Completeness R,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Document Risk Score,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Document Risk Score,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Submittal Rejection ,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Submittal Rejection ,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Dispute Escalation I,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Dispute Escalation I,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Specification Confli,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Specification Confli,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Tornado Risk Ranking,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Tornado Risk Ranking,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Conservative Dominan,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Conservative Dominan,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Weighted Voting,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Weighted Voting,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Majority Rules,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Majority Rules,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Worst-N-of-M,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Worst-N-of-M,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Dempster-Shafer,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Dempster-Shafer,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Rough Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Rough Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Neutrosophic Logic,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Neutrosophic Logic,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Z-numbers,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Z-numbers,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->PLTS,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->PLTS,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Plithogenic Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Plithogenic Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Belief Rule Base,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Belief Rule Base,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Quantum Probability,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Quantum Probability,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Pythagorean Fuzzy Se,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Pythagorean Fuzzy Se,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Picture Fuzzy Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Picture Fuzzy Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Maximum Entropy,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Maximum Entropy,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Possibility Theory,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Possibility Theory,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Spherical Fuzzy Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Spherical Fuzzy Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->MARCOS Ranking,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->MARCOS Ranking,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->CRITIC-TOPSIS,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->CRITIC-TOPSIS,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Hypersoft Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Hypersoft Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->ABM Governance Layer,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->ABM Governance Layer,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Multi-Objective Opti,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Multi-Objective Opti,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Decision Sensitivity,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Decision Sensitivity,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Pareto Frontier Anal,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,submittal_register->Pareto Frontier Anal,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Document Risk Score,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Document Risk Score,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Dispute Escalation Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Dispute Escalation Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Specification Conflict Dens,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Specification Conflict Dens,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Tornado Risk Ranking,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Tornado Risk Ranking,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Safety Performance Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Safety Performance Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Environmental Compliance Ra,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Environmental Compliance Ra,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Conservative Dominance,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Conservative Dominance,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Weighted Voting,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Weighted Voting,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Majority Rules,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Majority Rules,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Worst-N-of-M,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Worst-N-of-M,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Dempster-Shafer,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Dempster-Shafer,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Rough Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Rough Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Neutrosophic Logic,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Neutrosophic Logic,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Z-numbers,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Z-numbers,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->PLTS,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->PLTS,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Plithogenic Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Plithogenic Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Belief Rule Base,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Belief Rule Base,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Quantum Probability,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Quantum Probability,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Pythagorean Fuzzy Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Pythagorean Fuzzy Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Picture Fuzzy Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Picture Fuzzy Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Maximum Entropy,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Maximum Entropy,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Possibility Theory,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Possibility Theory,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Spherical Fuzzy Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Spherical Fuzzy Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->MARCOS Ranking,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->MARCOS Ranking,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->CRITIC-TOPSIS,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->CRITIC-TOPSIS,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Hypersoft Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Hypersoft Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->ABM Governance Layer,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->ABM Governance Layer,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Multi-Objective Optimizatio,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Multi-Objective Optimizatio,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Decision Sensitivity Matrix,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Decision Sensitivity Matrix,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Pareto Frontier Analysis,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,oac_minutes->Pareto Frontier Analysis,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Document Risk Score,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Document Risk Score,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Weather Day Impact,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Weather Day Impact,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Dispute Escalation Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Dispute Escalation Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Specification Conflict Den,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Specification Conflict Den,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Tornado Risk Ranking,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Tornado Risk Ranking,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Quality Compliance Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Quality Compliance Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Conservative Dominance,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Conservative Dominance,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Weighted Voting,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Weighted Voting,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Majority Rules,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Majority Rules,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Worst-N-of-M,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Worst-N-of-M,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Dempster-Shafer,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Dempster-Shafer,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Rough Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Rough Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Neutrosophic Logic,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Neutrosophic Logic,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Z-numbers,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Z-numbers,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->PLTS,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->PLTS,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Plithogenic Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Plithogenic Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Belief Rule Base,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Belief Rule Base,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Quantum Probability,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Quantum Probability,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Pythagorean Fuzzy Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Pythagorean Fuzzy Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Picture Fuzzy Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Picture Fuzzy Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Maximum Entropy,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Maximum Entropy,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Possibility Theory,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Possibility Theory,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Spherical Fuzzy Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Spherical Fuzzy Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->MARCOS Ranking,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->MARCOS Ranking,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->CRITIC-TOPSIS,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->CRITIC-TOPSIS,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Hypersoft Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Hypersoft Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->ABM Governance Layer,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->ABM Governance Layer,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Multi-Objective Optimizati,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Multi-Objective Optimizati,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Decision Sensitivity Matri,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Decision Sensitivity Matri,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Pareto Frontier Analysis,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,field_report->Pareto Frontier Analysis,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Document Risk Score,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Document Risk Score,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Dispute Escalation In,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Dispute Escalation In,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Specification Conflic,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Specification Conflic,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Tornado Risk Ranking,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Tornado Risk Ranking,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Quality Compliance In,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Quality Compliance In,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Conservative Dominanc,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Conservative Dominanc,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Weighted Voting,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Weighted Voting,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Majority Rules,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Majority Rules,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Worst-N-of-M,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Worst-N-of-M,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Dempster-Shafer,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Dempster-Shafer,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Rough Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Rough Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Neutrosophic Logic,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Neutrosophic Logic,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Z-numbers,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Z-numbers,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->PLTS,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->PLTS,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Plithogenic Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Plithogenic Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Belief Rule Base,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Belief Rule Base,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Quantum Probability,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Quantum Probability,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Pythagorean Fuzzy Set,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Pythagorean Fuzzy Set,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Picture Fuzzy Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Picture Fuzzy Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Maximum Entropy,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Maximum Entropy,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Possibility Theory,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Possibility Theory,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Spherical Fuzzy Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Spherical Fuzzy Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->MARCOS Ranking,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->MARCOS Ranking,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->CRITIC-TOPSIS,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->CRITIC-TOPSIS,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Hypersoft Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Hypersoft Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->ABM Governance Layer,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->ABM Governance Layer,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Multi-Objective Optim,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Multi-Objective Optim,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Decision Sensitivity ,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Decision Sensitivity ,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Pareto Frontier Analy,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,inspection_report->Pareto Frontier Analy,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,ncr_log->NCR Rate,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,ncr_log->NCR Rate,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,subcontractor_report->Subcontractor Perf,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,subcontractor_report->Subcontractor Perf,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,procurement_log->Procurement Lead Time M,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,procurement_log->Procurement Lead Time M,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,procurement_log->Agent-Based Supply Chai,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,procurement_log->Agent-Based Supply Chai,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,lookahead_schedule->Look-Ahead Schedule ,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,lookahead_schedule->Look-Ahead Schedule ,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,lookahead_schedule->Queueing Theory Bott,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,lookahead_schedule->Queueing Theory Bott,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,resource_report->Resource Loading Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,resource_report->Resource Loading Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,resource_report->Labor Productivity Inde,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,resource_report->Labor Productivity Inde,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,cost_report->Material Cost Variance,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,cost_report->Material Cost Variance,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,cost_report->Overhead Absorption Rate,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,cost_report->Overhead Absorption Rate,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,cost_report->Inflation Adjustment Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,cost_report->Inflation Adjustment Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,past_performance_report->Contractor Perf,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,past_performance_report->Contractor Perf,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,historical_data->Analogous Estimating Ra,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,historical_data->Analogous Estimating Ra,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Document Risk Scor,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Document Risk Scor,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Dispute Escalation,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Dispute Escalation,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Specification Conf,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Specification Conf,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Tornado Risk Ranki,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Tornado Risk Ranki,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Conservative Domin,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Conservative Domin,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Weighted Voting,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Weighted Voting,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Majority Rules,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Majority Rules,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Worst-N-of-M,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Worst-N-of-M,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Dempster-Shafer,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Dempster-Shafer,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Rough Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Rough Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Neutrosophic Logic,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Neutrosophic Logic,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Z-numbers,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Z-numbers,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->PLTS,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->PLTS,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Plithogenic Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Plithogenic Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Belief Rule Base,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Belief Rule Base,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Quantum Probabilit,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Quantum Probabilit,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Pythagorean Fuzzy ,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Pythagorean Fuzzy ,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Picture Fuzzy Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Picture Fuzzy Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Maximum Entropy,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Maximum Entropy,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Possibility Theory,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Possibility Theory,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Spherical Fuzzy Se,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Spherical Fuzzy Se,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->MARCOS Ranking,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->MARCOS Ranking,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->CRITIC-TOPSIS,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->CRITIC-TOPSIS,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Hypersoft Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Hypersoft Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->ABM Governance Lay,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->ABM Governance Lay,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Multi-Objective Op,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Multi-Objective Op,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Decision Sensitivi,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Decision Sensitivi,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Pareto Frontier An,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,commissioning_report->Pareto Frontier An,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Document Risk Sco,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Document Risk Sco,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Dispute Escalatio,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Dispute Escalatio,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Specification Con,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Specification Con,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Tornado Risk Rank,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Tornado Risk Rank,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Conservative Domi,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Conservative Domi,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Weighted Voting,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Weighted Voting,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Majority Rules,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Majority Rules,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Worst-N-of-M,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Worst-N-of-M,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Dempster-Shafer,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Dempster-Shafer,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Rough Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Rough Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Neutrosophic Logi,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Neutrosophic Logi,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Z-numbers,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Z-numbers,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->PLTS,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->PLTS,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Plithogenic Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Plithogenic Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Belief Rule Base,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Belief Rule Base,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Quantum Probabili,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Quantum Probabili,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Pythagorean Fuzzy,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Pythagorean Fuzzy,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Picture Fuzzy Set,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Picture Fuzzy Set,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Maximum Entropy,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Maximum Entropy,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Possibility Theor,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Possibility Theor,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Spherical Fuzzy S,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Spherical Fuzzy S,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->MARCOS Ranking,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->MARCOS Ranking,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->CRITIC-TOPSIS,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->CRITIC-TOPSIS,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Hypersoft Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Hypersoft Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->ABM Governance La,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->ABM Governance La,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Multi-Objective O,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Multi-Objective O,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Decision Sensitiv,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Decision Sensitiv,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Pareto Frontier A,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,correspondence_notice->Pareto Frontier A,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Document Risk Score,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Document Risk Score,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Dispute Escalation Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Dispute Escalation Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Specification Conflict De,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Specification Conflict De,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Tornado Risk Ranking,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Tornado Risk Ranking,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Conservative Dominance,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Conservative Dominance,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Weighted Voting,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Weighted Voting,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Majority Rules,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Majority Rules,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Worst-N-of-M,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Worst-N-of-M,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Dempster-Shafer,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Dempster-Shafer,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Rough Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Rough Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Neutrosophic Logic,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Neutrosophic Logic,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Z-numbers,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Z-numbers,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->PLTS,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->PLTS,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Plithogenic Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Plithogenic Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Belief Rule Base,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Belief Rule Base,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Quantum Probability,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Quantum Probability,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Pythagorean Fuzzy Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Pythagorean Fuzzy Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Picture Fuzzy Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Picture Fuzzy Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Maximum Entropy,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Maximum Entropy,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Possibility Theory,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Possibility Theory,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Spherical Fuzzy Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Spherical Fuzzy Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->MARCOS Ranking,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->MARCOS Ranking,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->CRITIC-TOPSIS,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->CRITIC-TOPSIS,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Hypersoft Sets,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Hypersoft Sets,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->ABM Governance Layer,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->ABM Governance Layer,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Multi-Objective Optimizat,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Multi-Objective Optimizat,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Decision Sensitivity Matr,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Decision Sensitivity Matr,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Pareto Frontier Analysis,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,risk_register->Pareto Frontier Analysis,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,rfi_log->RFI Velocity,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,rfi_log->RFI Velocity,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,rfi_log->Dispute Escalation Index,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,rfi_log->Dispute Escalation Index,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,rfi_log->Specification Conflict Density,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,rfi_log->Specification Conflict Density,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,rfi_log->Rework Feedback Loop,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,rfi_log->Rework Feedback Loop,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,DOCUMENT -> MODULE,rfa_log->Submittal Rejection Rate,path,,,0.12,,lnf-a-line,yes,PASS
+after,edge,DOCUMENT -> MODULE,rfa_log->Submittal Rejection Rate,path,,,0.12,,lnf-a-line lnf-a-dash lnf-static,yes,PASS
+after,edge,CATEGORY -> CATEGORY,Data Integrity->Signal Synthesis,path,#9aa2ae,,0.16,,lnf-static,yes,PASS
+after,edge,CATEGORY -> CATEGORY,Data Integrity->Evidence Combination,path,#9aa2ae,,0.16,,lnf-static,yes,PASS
+after,edge,CATEGORY -> CATEGORY,Data Integrity->Regulatory and Authority,path,#9aa2ae,,0.16,,lnf-static,yes,PASS
+after,edge,CATEGORY -> CATEGORY,Data Integrity->Decision Optimization,path,#9aa2ae,,0.16,,lnf-static,yes,PASS
