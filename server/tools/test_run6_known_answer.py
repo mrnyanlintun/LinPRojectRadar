@@ -56,7 +56,7 @@ from app.simulation.models_doc import (  # noqa: E402
     run_queueing_bottleneck, run_procurement_lead_time,
 )
 from app.simulation.models_evm import (  # noqa: E402
-    run_bayesian_eac, run_budget_execution, run_kalman_filter, run_regression_to_mean,
+    run_bayesian_eac, run_budget_execution, run_kalman_filter, run_cpi_shrinkage,
 )
 from app.simulation.models_ext import (  # noqa: E402
     run_contingency_burn, run_critical_path_index, run_inflation_adjustment,
@@ -441,65 +441,101 @@ check(all(k in _decision_ui for k in
 check(_prod, "the guard is live: it does see the files this run did change", str(_prod))
 # RESTATED BY RUN 10B, with the original reason preserved: this check has tracked the current
 # stamp since Run 6, and it read sim-2026.08-v4 while Run 10 was current.
-check(registry.SIMULATION_VERSION == "sim-2026.08-v10",
-      "the analytical layer is stamped at Run 10B's version, and sim-2026.08-v2, "
-      "sim-2026.08-v3 and sim-2026.08-v4 all remain historical audit baselines for results "
-      "already collected under them",
+# RESTATED BY RUN 28. The stamp now reads sim-2026.08-v11, the analytical line Run 28
+# established, and every earlier stamp from sim-2026.07-v1 onward remains the historical audit
+# baseline for the results already collected under it. The history is asserted as a whole rather
+# than one stamp at a time, so a run that overwrote an earlier stamp instead of appending would
+# turn this red.
+check(registry.SIMULATION_VERSION == "sim-2026.08-v11",
+      "the analytical layer is stamped at Run 28's version",
       registry.SIMULATION_VERSION)
+from app.simulation.models import SIMULATION_VERSION_HISTORY as _SVH  # noqa: E402
+check(_SVH == ("sim-2026.07-v1", "sim-2026.08-v2", "sim-2026.08-v3", "sim-2026.08-v4",
+               "sim-2026.08-v5", "sim-2026.08-v6", "sim-2026.08-v7", "sim-2026.08-v8",
+               "sim-2026.08-v9", "sim-2026.08-v10", "sim-2026.08-v11"),
+      "every earlier stamp remains recorded as a historical audit baseline, in order, and none "
+      "was overwritten or re-used", str(_SVH))
+check(_SVH[-1] == registry.SIMULATION_VERSION and len(set(_SVH)) == len(_SVH),
+      "the current stamp is the last of the history and no identifier appears twice, so a new "
+      "line can never collide with one results were already collected under")
 
 
 # =================================================================================================
 section("1. THE FIVE HELD-NON-VOTING CORE MODULES: known answers on the arithmetic itself")
 # =================================================================================================
 
-print("\n-- Look-Ahead Schedule Health (rate = constrained / planned; 0.10 / 0.25 / 0.40) --")
-# HAND: 37 / 200 = 0.185. 0.185 > 0.10 and <= 0.25, so Yellow.
-# constraint_rate = Math.round(0.185 * 100) = Math.round(18.5) = 19 (ties toward +Infinity).
-r = run_lookahead_health({"activitiesPlanned": 200, "activitiesConstrained": 37}, NOOP, "2025-06-30")
-ka(band(r), "Yellow", "look-ahead 37 of 200: band")
-ka(r["constraint_rate"], 19, "look-ahead 37 of 200: rate 0.185 rounds half-up to 19 per cent")
-ka(r["evidence_metric"], "37 of 200 planned activities constrained (19%)",
-   "look-ahead 37 of 200: finding")
+print("\n-- Look-Ahead Schedule Health (A2.8): ready fraction over a constraint inventory --")
+# SUPERSEDED BY RUN 28, which implemented the owner's supplied canonical contract for this
+# module. The block below was observed red against the v3 build before being rewritten.
+# The v2 quantity was the constraint rate over two bare counts, with a four-band ladder whose
+# boundaries the module's own comment recorded as uncited. The contract's quantity is the READY
+# fraction over a governed inventory, and it supplies no bands.
+# HAND: 200 activities planned, 37 carrying an open constraint. (200 - 37) / 200 = 163/200
+# = 0.815.
+def _la(planned, constrained, horizon="six week"):
+    rows = [{"activity_id": f"ACT-{i}",
+             "constraint_status": "OPEN" if i < constrained else "CLEARED",
+             **({"constraint_category": "MATERIAL"} if i < constrained else {})}
+            for i in range(planned)]
+    return {"lookAheadSchedule": {"horizon": horizon, "status_date": "2026-06-30",
+                                  "activities": rows}}
 
-# BOUNDARIES. planned = 1000 makes the rate exactly constrained/1000, so each edge is hit exactly.
-for constrained, expect, why in [
-    (100, "Green", "0.100 exactly, the first edge"),
-    (101, "Yellow", "0.101, one step above the first edge"),
-    (99, "Green", "0.099, one step below the first edge"),
-    (250, "Yellow", "0.250 exactly, the second edge"),
-    (251, "Amber", "0.251, one step above"),
-    (400, "Amber", "0.400 exactly, the third edge"),
-    (401, "Red", "0.401, one step above"),
-]:
-    rr = run_lookahead_health({"activitiesPlanned": 1000, "activitiesConstrained": constrained},
-                              NOOP, "2025-06-30")
-    ka(band(rr), expect, f"look-ahead boundary {why}")
-check(True, "look-ahead: EVERY boundary is inclusive on the CALMER side (<=), stated explicitly")
 
-print("\n-- Contingency Burn Rate (stress = (burned/original) / (pct/100); 1.0 / 1.3 / 1.6) --")
-# HAND: burned = 1,000,000 - 700,000 = 300,000; burn_rate = 0.30; expected = 25/100 = 0.25;
-# stress = 0.30 / 0.25 = 1.20; 1.20 > 1.0 and <= 1.3, so Yellow.
-# burn_rate_pct = Math.round(30) = 30; remaining_pct = Math.round(70) = 70.
+r = run_lookahead_health(_la(200, 37), NOOP, "2025-06-30")
+ka(r["ready_fraction"], 0.82, "look-ahead 37 of 200: ready fraction 0.815 rounds to 0.82")
+ka(r["planned"], 200, "look-ahead: the planned count is derived from the inventory")
+ka(r["constrained"], 37, "look-ahead: and so is the constrained count")
+ka(r["constraint_categories"], {"MATERIAL": 37}, "look-ahead: constraints carry their kind")
+check(r.get("status_color") is None and r.get("calibration_pending") is True,
+      "look-ahead: no band is asserted, and the contract supplies none")
+# The ready fraction is exact at every point of a grid, so no rounding artefact hides in it.
+_exact = True
+for c in range(0, 1001, 50):
+    rr = run_lookahead_health(_la(1000, c), NOOP, "2025-06-30")
+    if abs(rr["ready_fraction"] - round((1000 - c) / 1000, 2)) > 1e-9:
+        _exact = False
+check(_exact, "look-ahead: the ready fraction is exact across the whole grid (21 windows)")
+check(abstains(run_lookahead_health({"activitiesPlanned": 200, "activitiesConstrained": 37},
+                                    NOOP, "2025-06-30")),
+      "look-ahead: with no constraint inventory the answer is not estimable, and two bare "
+      "counts are not used in its place")
+
+print("\n-- Contingency Burn Rate (A3.2): consumed fraction and progress-normalised burn --")
+# SUPERSEDED BY RUN 28. The arithmetic is unchanged and is still hand-checked below; what is
+# gone is the four-band ladder at 1.0, 1.3 and 1.6, which Run 4 already recorded as uncited and
+# which the owner's supplied contract settles by supplying no universal bands at all. The block
+# was observed red against the v3 build (KeyError: 'burn_stress') before being rewritten.
+# HAND: burned = 1,000,000 - 700,000 = 300,000; consumed fraction 0.30; progress 0.25;
+# normalised burn 0.30 / 0.25 = 1.20.
 r = run_contingency_burn({"originalContingency": 1000000, "remainingContingency": 700000,
                           "actualPctComplete": 25}, NOOP, "2025-06-30")
-ka(band(r), "Yellow", "contingency 30 per cent burned at 25 per cent complete: band")
-ka(r["burn_stress"], 1.2, "contingency: stress 0.30 / 0.25 = 1.2")
+ka(r["consumed_fraction"], 0.3, "contingency: consumed fraction 0.30")
+ka(r["normalized_burn"], 1.2, "contingency: normalised burn 0.30 / 0.25 = 1.2")
 ka(r["burn_rate_pct"], 30, "contingency: burned share 30 per cent")
 ka(r["remaining_pct"], 70, "contingency: remaining share 70 per cent")
-ka(r["evidence_metric"], "Contingency: 30% burned at 25% complete", "contingency: finding")
-
-for remaining, expect, why in [
-    (750000, "Green", "stress exactly 1.00"),
-    (747500, "Yellow", "stress 1.01"),
-    (752500, "Green", "stress 0.99"),
-    (675000, "Yellow", "stress exactly 1.30"),
-    (672500, "Amber", "stress 1.31"),
-    (600000, "Amber", "stress exactly 1.60"),
-    (597500, "Red", "stress 1.61"),
-]:
-    rr = run_contingency_burn({"originalContingency": 1000000, "remainingContingency": remaining,
+check(r.get("status_color") is None and r.get("calibration_pending") is True,
+      "contingency: no band is asserted, and the contract supplies none")
+# The specification's own worked case: original 100, remaining 60, progress one half.
+r2 = run_contingency_burn({"originalContingency": 100, "remainingContingency": 60,
+                           "actualPctComplete": 50}, NOOP, "2025-06-30")
+ka(r2["consumed_fraction"], 0.4, "contingency: the specification's consumed fraction of 0.40")
+ka(r2["normalized_burn"], 0.8, "contingency: the specification's normalised burn of 0.80")
+# The normalised burn is exact across a grid, and rises as contingency is drawn down.
+_mono = []
+for remaining in (1000000, 850000, 700000, 550000, 0):
+    rr = run_contingency_burn({"originalContingency": 1000000,
+                               "remainingContingency": remaining,
                                "actualPctComplete": 25}, NOOP, "2025-06-30")
-    ka(band(rr), expect, f"contingency boundary {why}")
+    _mono.append(rr["normalized_burn"])
+check(_mono == sorted(_mono) and len(set(_mono)) == len(_mono),
+      "contingency: the normalised burn rises strictly as contingency is drawn down",
+      str(_mono))
+# With no progress the SECOND figure is withheld rather than the raw share substituted for it.
+r3 = run_contingency_burn({"originalContingency": 100, "remainingContingency": 60},
+                          NOOP, "2025-06-30")
+check(r3.get("normalized_burn") is None and abs(r3["consumed_fraction"] - 0.4) < 1e-9,
+      "contingency: with no progress reported the normalised burn is withheld and the raw "
+      "consumed share is not published under its name")
 
 print("\n-- Material Cost Variance (|(current - baseline*pct)| / (baseline*pct); .05/.12/.20) --")
 # HAND: expected = 2,000,000 * 0.40 = 800,000; variance = (880,000 - 800,000)/800,000 = +0.10;
@@ -620,9 +656,12 @@ _core_refusals = [
     ("contingency, negative remaining",
      run_contingency_burn, {"originalContingency": 100, "remainingContingency": -1,
                             "actualPctComplete": 20}),
-    ("contingency, no reported progress",
-     run_contingency_burn, {"originalContingency": 100, "remainingContingency": 50,
-                            "actualPctComplete": 0}),
+    # RUN 28 MOVED THIS ONE OUT OF THE REFUSAL LIST DELIBERATELY. The supplied contract
+    # conditions only the progress-normalised burn on progress, not the consumed fraction, so at
+    # nothing complete the consumed fraction is still a real measurement and the normalised burn
+    # is withheld. The property the original check protected -- that the raw consumed share is
+    # never published as the progress-normalised burn -- is asserted directly in the Contingency
+    # Burn Rate block above, which is a stronger statement than a refusal.
     ("material variance, progress absent",
      run_material_cost_variance, {"materialCostBaseline": 100, "materialCostCurrent": 50}),
     ("material variance, zero expected cost",
@@ -679,144 +718,283 @@ ka((r["sigma"], r["k"], r["H"]), (0.25, 0.125, 1.25),
    "cusum shifted series: sigma 0.25 from the sample, k 0.125, H 1.25")
 ka(r["max_stat"], 0.375, "cusum is two-sided: a fall below target accumulates on the low arm")
 
-print("\n-- Bayesian EAC (A1.3): normal-normal update with designed constant variances --")
-# HAND: prior mean 1,000,000, prior variance (1,000,000*0.15)^2 = 2.25e10.
-# likelihood mean 1,000,000/0.8 = 1,250,000, likelihood variance (1e6*0.2/0.8)^2 = 6.25e10.
-# posterior = (1e6/2.25e10 + 1.25e6/6.25e10) / (1/2.25e10 + 1/6.25e10)
-#           = (4.444444e-5 + 2.0e-5) / (4.444444e-11 + 1.6e-11)
-#           = 6.444444e-5 / 6.044444e-11 = 1,066,176.47
-# delta = 6.6176 per cent, rounded to one decimal 6.6; 6.6 > 5 and <= 10, so Yellow.
-r = run_bayesian_eac({"bac": 1000000, "ev": 400000, "ac": 500000, "cpi": 0.8},
-                     NOOP, "2025-06-30")
-ka(r["posterior_eac"], 1066176, "bayesian eac: posterior 1,066,176")
-ka(r["delta_pct"], 6.6, "bayesian eac: 6.6 per cent above budget")
-ka(band(r), "Yellow", "bayesian eac: band")
-# The qualifier's "designed constant variances": the prior variance is 15 per cent of the budget
-# squared and depends on nothing the project reported. Doubling the budget must leave the
-# posterior's PERCENTAGE unchanged, which is what a scale-free designed variance produces.
-r2 = run_bayesian_eac({"bac": 2000000, "ev": 800000, "ac": 1000000, "cpi": 0.8},
+print("\n-- Bayesian EAC (A1.3): a governed normal-normal update --")
+# SUPERSEDED BY RUN 28, observed red against the v3 build (KeyError: 'posterior_eac') before
+# being rewritten. The designed constant variances the old block hand-checked -- (0.15*BAC)^2 and
+# (BAC(1-CPI)/CPI)^2 -- are gone: the contract requires a stated prior with its source and a
+# stated observation model, and the module abstains without them.
+# HAND, and it is the specification's own worked example: prior N(100, 100), y = 120,
+# sigma^2 = 100. Posterior variance 1/(1/100 + 1/100) = 50; posterior mean 50*(100/100 + 120/100)
+# = 50 * 2.2 = 110.
+_BM = {"parameter": "cost at completion",
+       "prior": {"mean": 100.0, "variance": 100.0, "source": "approved budget baseline"},
+       "likelihood": {"observation": 120.0, "variance": 100.0,
+                      "source": "reported cost at completion",
+                      "variance_basis": "residual spread of reported forecasts"}}
+r = run_bayesian_eac({"bayesianEacModel": _BM}, NOOP, "2025-06-30")
+ka(round(r["posterior_eac"], 6), 110.0, "bayesian eac: posterior mean 110")
+ka(r["posterior_variance"], 50.0, "bayesian eac: posterior variance 50")
+ka(r["prior_source"], "approved budget baseline", "bayesian eac: the prior states its source")
+check(r["credible_low"] < r["posterior_eac"] < r["credible_high"],
+      "bayesian eac: a credible interval is reported and brackets the posterior mean")
+check(r.get("status_color") is None and r.get("calibration_pending") is True,
+      "bayesian eac: no band is asserted on a governed posterior")
+# The posterior is a genuine precision-weighted average: doubling the prior's precision must
+# pull it toward the prior, which a designed scale-free variance could not do.
+r2 = run_bayesian_eac({"bayesianEacModel": {**_BM,
+                                            "prior": {**_BM["prior"], "variance": 50.0}}},
                       NOOP, "2025-06-30")
-ka(r2["delta_pct"], 6.6, "bayesian eac: the designed variances are proportional, so the "
-                         "percentage does not move when the budget doubles")
+check(r2["posterior_eac"] < r["posterior_eac"],
+      "bayesian eac: a tighter prior pulls the posterior toward the prior mean",
+      f"{r2['posterior_eac']} vs {r['posterior_eac']}")
+check(abstains(run_bayesian_eac({"bac": 1000000, "ev": 400000, "ac": 500000, "cpi": 0.8},
+                                NOOP, "2025-06-30")),
+      "bayesian eac: with no governed model record the answer is not estimable, and the "
+      "designed constant variances are not used in its place")
 
-print("\n-- Kalman SPI smoother (A1.4): scalar recursion, fixed Q = 0.01 and R = 0.1 --")
-# HAND: x starts at the first observation, 0.80, and p at 1. One update: p becomes 1.01, the gain
-# is 1.01/(1.01+0.1) = 101/111 = 0.909090..., and x becomes 0.80 + (101/111)*(1.0-0.80)
-# = 0.80 + 0.1819819... = 0.9819819..., which rounds to three places as 0.982. 0.982 >= 0.95, Green.
-r = run_kalman_filter({"spiHistory": [0.80, 1.00]}, NOOP, "2025-06-30")
-ka(r["smoothed_spi"], 0.982, "kalman: one update from 0.80 toward 1.00 gives 0.982")
-ka(band(r), "Green", "kalman: band")
-ka(r["trend"], 0, "kalman: fewer than three observations means no trend term")
+print("\n-- Kalman SPI smoother (A1.4): a governed scalar state-space recursion --")
+# SUPERSEDED BY RUN 28. Q = 0.01 and R = 0.1 were literals with no stated origin; the contract
+# requires both to carry provenance and the module abstains without them.
+# HAND, the specification's own worked step: x0 = 1, P0 = 1, Q = 0, R = 1, z1 = 2 gives
+# P_pred = 1, K = 1/(1+1) = 0.5, x1 = 1 + 0.5*(2-1) = 1.5 and P1 = (1-0.5)*1 = 0.5.
+_SSM = {"initial_state": 1.0, "initial_variance": 1.0, "process_variance": 0.0,
+        "measurement_variance": 1.0, "observations": [2.0],
+        "process_variance_source": "declared random walk, no process noise",
+        "measurement_variance_source": "repeated readings of one period across two document "
+                                       "types"}
+r = run_kalman_filter({"kalmanStateSpaceModel": _SSM}, NOOP, "2025-06-30")
+ka(r["smoothed_spi"], 1.5, "kalman: the specification's filtered state of 1.5")
+ka(r["final_gain"], 0.5, "kalman: the specification's gain of 0.5")
+ka(r["posterior_variance"], 0.5, "kalman: the specification's posterior variance of 0.5")
+check(r.get("status_color") is None and r.get("calibration_pending") is True,
+      "kalman: no band is asserted on a filtered state")
+# The old fixed Q and R reproduced exactly, now as a SUPPLIED model rather than a literal:
+# x starts at 0.80 with P = 1, one update at 1.00 gives p = 1.01, gain 1.01/1.11 = 0.909090...,
+# x = 0.80 + 0.909090*0.20 = 0.9818181..., which rounds to 0.982.
+r2 = run_kalman_filter({"kalmanStateSpaceModel": {
+    **_SSM, "initial_state": 0.80, "initial_variance": 1.0, "process_variance": 0.01,
+    "measurement_variance": 0.1, "observations": [1.00]}}, NOOP, "2025-06-30")
+ka(r2["smoothed_spi"], 0.982, "kalman: one update from 0.80 toward 1.00 gives 0.982")
+check(abstains(run_kalman_filter({"spiHistory": [0.80, 1.00]}, NOOP, "2025-06-30")),
+      "kalman: with no governed state space record the answer is not estimable, and a fixed Q "
+      "and R are not used in its place")
+check(abstains(run_kalman_filter({"kalmanStateSpaceModel": {
+          **_SSM, "measurement_variance_source": ""}}, NOOP, "2025-06-30")),
+      "kalman: a variance that does not say where it came from is refused")
 
-print("\n-- Budget Execution Rate (A1.9): an expenditure-versus-progress control ratio --")
-# HAND: expected spend = 1,000,000 * 0.50 = 500,000; rate = 550,000/500,000 = 1.10 exactly;
-# 1.10 <= 1.10, so Yellow. The finding's "faster" figure is Math.round((1.1-1)*100) = 10.
-r = run_budget_execution({"ac": 550000, "bac": 1000000, "actualPctComplete": 50},
-                         NOOP, "2025-06-30")
-ka(r["execution_rate"], 1.1, "budget execution: 1.1")
-ka(band(r), "Yellow", "budget execution: band at the inclusive edge")
-ka(r["evidence_metric"], "Budget execution rate: 1.1 (spending 10% faster)",
-   "budget execution: finding")
+print("\n-- Budget Execution Rate (A1.9): against an approved expenditure baseline --")
+# SUPERSEDED BY RUN 28, observed red against the v3 build (KeyError: 'execution_rate') before
+# being rewritten. The old denominator was BAC times the reported percent complete, which the
+# supplied contract names in terms as the thing this module must NOT manufacture.
+# HAND, the specification's own worked case: expected spend 50, actual cost 60, so the execution
+# ratio is 60/50 = 1.20 and the deviation is +0.20.
+_EXP = {"status_period_index": 3,
+        "periods": [{"period_index": i, "expected_spend": v}
+                    for i, v in enumerate([10.0, 25.0, 40.0, 50.0])],
+        "baseline_version": "BL-1", "approval_source": "approved spend plan"}
+r = run_budget_execution({"ac": 60.0, "expenditureBaseline": _EXP}, NOOP, "2025-06-30")
+ka(r["execution_ratio"], 1.2, "budget execution: the specification's ratio of 1.20")
+ka(r["execution_deviation"], 0.2, "budget execution: and its deviation of +0.20")
+ka(r["expected_spend"], 50.0, "budget execution: the planned amount comes off the profile")
+check(r.get("status_color") is None and r.get("calibration_pending") is True,
+      "budget execution: no band is asserted, and the contract supplies none")
+# The profile is read AT the governed status period, so an earlier period reads its own amount
+# rather than the last one on the curve.
+r2 = run_budget_execution({"ac": 60.0, "expenditureBaseline": dict(_EXP, status_period_index=1)},
+                          NOOP, "2025-06-30")
+ka(r2["expected_spend"], 25.0, "budget execution: the profile is read at the reported period")
+check(abstains(run_budget_execution({"ac": 550000, "bac": 1000000, "actualPctComplete": 50},
+                                    NOOP, "2025-06-30")),
+      "budget execution: with no approved expenditure profile the answer is not estimable, and "
+      "budget times percent complete is not used in its place")
 
-print("\n-- Regression to Mean (A1.10): a FIXED 50 per cent shrinkage --")
-# HAND: history [0.80, 1.00] has mean 0.90 and current 1.00; the regressed value is
-# 0.90 + (1.00 - 0.90) * 0.5 = 0.95, which is exactly halfway between the mean and the current
-# value. 0.95 >= 0.95, so Green.
-r = run_regression_to_mean({"cpiHistory": [0.80, 1.00]}, NOOP, "2025-06-30")
-ka(r["regressed_cpi"], 0.95, "regression to mean: 0.95, exactly halfway to the mean")
-ka(r["historical_mean"], 0.9, "regression to mean: mean 0.90")
-ka(band(r), "Green", "regression to mean: band")
-# The qualifier says the coefficient is fixed at one half and not estimated. Asserted over the
-# whole domain rather than at one point: for every history in the grid the regressed value sits
-# exactly halfway between the mean and the latest observation.
-_halfway = True
-for a in [x / 100 for x in range(70, 121, 3)]:
-    for b in [x / 100 for x in range(70, 121, 3)]:
-        rr = run_regression_to_mean({"cpiHistory": [a, b]}, NOOP, "2025-06-30")
-        mean = (a + b) / 2
-        if abs(rr["regressed_cpi"] - (mean + (b - mean) * 0.5)) > 0.0006:
-            _halfway = False
-check(_halfway, "regression to mean: the shrinkage is exactly one half over the whole grid, "
-                "never estimated from the data (289 histories)")
+print("\n-- CPI Shrinkage Forecast (A1.10): partial pooling toward a reference population --")
+# SUPERSEDED BY RUN 28. Run 6 hand-checked a FIXED one-half shrinkage toward the project's OWN
+# history, and asserted over a 289-history grid that the coefficient was never estimated. That
+# was a true statement about v2 and is a false one about v3: the owner's Run-28 contract renames
+# the module CPI Shrinkage Forecast, requires partial pooling toward a GOVERNED REFERENCE
+# POPULATION, and states in terms that a hard-coded 0.5 weight is not acceptable. The old block
+# was observed red against this build (ImportError: cannot import name
+# 'run_regression_to_mean') before being rewritten. The hand calculation below is the
+# specification's own: 0.60 * 0.80 + 0.40 * 1.00 = 0.88.
+_REF = {"members": [{"reference_project_id": f"REF-{i}", "cpi_outcome": v}
+                    for i, v in enumerate([0.95, 1.00, 1.05])],
+        "shrinkage_weight": 0.60,
+        "class_membership_basis": "same delivery method and size band",
+        "weight_estimation_method": "variance components across the population",
+        "data_vintage": "2026-06", "project_stage": "execution"}
+r = run_cpi_shrinkage({"cpi": 0.80, "cpiReferenceClass": _REF}, NOOP, "2025-06-30")
+ka(r["cpi_shrunk"], 0.88, "CPI shrinkage: 0.88, the specification's own worked answer")
+ka(r["mu_reference"], 1.0, "CPI shrinkage: the reference mean is 1.00 across three projects")
+ka(r["shrinkage_weight"], 0.60, "CPI shrinkage: the weight is the population's, not one half")
+check(r.get("status_color") is None and r.get("calibration_pending") is True,
+      "CPI shrinkage: no status band is asserted, which is Run 33's work")
+# The weight is now the STRUCTURE'S, asserted over a grid rather than at one point: for every
+# weight in the grid the pooled value sits exactly that far from the reference mean, so no fixed
+# coefficient survives anywhere in the module.
+_weighted = True
+for w in [x / 100 for x in range(0, 101, 5)]:
+    rr = run_cpi_shrinkage({"cpi": 0.80, "cpiReferenceClass": dict(_REF, shrinkage_weight=w)},
+                           NOOP, "2025-06-30")
+    if abs(rr["cpi_shrunk"] - (w * 0.80 + (1 - w) * 1.00)) > 0.0006:
+        _weighted = False
+check(_weighted, "CPI shrinkage: the weight is the reference class's own over the whole grid, "
+                 "never a fixed one half (21 weights)")
+check(abstains(run_cpi_shrinkage({"cpiHistory": [0.80, 1.00], "cpi": 1.00}, NOOP,
+                                 "2025-06-30")),
+      "CPI shrinkage: with no reference population the answer is not estimable, and the "
+      "project's own history is not used as a substitute population")
 
-print("\n-- Schedule Compression Index (A2.4): a custom compression ratio --")
-# HAND: 2025-01-01 to 2025-12-31 is 364 days. At 50 per cent complete 182 days remain; the
-# available days are 182 * 0.80 = 145.6, so the ratio is 182/145.6 = 1.25, which is exactly 1/spi.
-# 1.25 > 1.15 and <= 1.30, so Amber.
-r = run_schedule_compression({"baselineStart": "2025-01-01", "baselineEnd": "2025-12-31",
-                              "actualPctComplete": 50, "spi": 0.80}, NOOP, "2025-06-30")
-ka(r["compression_ratio"], 1.25, "schedule compression: 1.25, the reciprocal of the index")
-ka(r["remaining_days"], 182, "schedule compression: 182 days remaining")
-ka(band(r), "Amber", "schedule compression: band")
-ka(r["evidence_metric"], "Schedule compression: 1.25x, 182 days of work remaining",
-   "schedule compression: finding")
+# SUPERSEDED BY RUN 28 FOR THE SEVEN MODULES BELOW, each observed red against the v3 build
+# before being rewritten. Every hand calculation here is the supplied contract's own worked
+# answer, not a number read back out of production.
 
-print("\n-- S-Curve Deviation (A2.6): a single planned-versus-actual snapshot --")
-# HAND: percentage deviation 40 - 50 = -10. Value deviation (400,000 - 500,000)/500,000 * 100
-# = -20. Combined (-10 + -20)/2 = -15, which is below -10, so Red.
-r = run_scurve_deviation({"actualPctComplete": 40, "plannedPctComplete": 50,
-                          "ev": 400000, "pv": 500000}, NOOP, "2025-06-30")
-ka((r["pct_deviation"], r["value_deviation"]), (-10, -20),
-   "s-curve: -10 per cent progress and -20 per cent value")
-ka(band(r), "Red", "s-curve: band on a combined -15")
-ka(r["evidence_metric"], "S-curve: -10% behind planned progress, -20% EV vs PV deviation",
-   "s-curve: finding")
+print("\n-- Schedule Compression Index (A2.4): reconciled remaining duration demand --")
+# HAND: two activities, baseline remaining 10 + 10 = 20 days, current remaining 8 + 12 = 20
+# days, so the demand ratio is 20/20 = 1.00, which the contract states is equal demand.
+def _net(acts, version="SCH-1", basis="2026-06-30 data date"):
+    return {"scheduleNetwork": {"schedule_version": version, "status_basis": basis,
+                                "activities": acts}}
 
-print("\n-- Milestone Trend Analysis (A2.7): a simplified shift summary --")
-# HAND: one milestone matched, forecast moving from 2025-06-01 to 2025-06-11, which is 10 days of
-# slip. The mean slip is 10; 10 > 7 and <= 14, so Amber. The worst slip is not above 21, so the
-# single-milestone override does not fire.
-_mh = [
-    {"at": "2025-01-31", "milestones": [{"name": "Foundation", "forecast": "2025-06-01"}]},
-    {"at": "2025-02-28", "milestones": [{"name": "Foundation", "forecast": "2025-06-11"}]},
+
+_SCI_ACTS = [
+    {"activity_id": "A", "predecessors": [], "current_duration": 10,
+     "baseline_duration": 10, "remaining_duration": 8},
+    {"activity_id": "B", "predecessors": ["A"], "current_duration": 10,
+     "baseline_duration": 10, "remaining_duration": 12},
 ]
-r = run_milestone_trend({"milestoneHistory": _mh}, NOOP, "2025-06-30")
-ka((r["mean_slip_days"], r["worst_slip_days"], r["matched_count"]), (10, 10, 1),
-   "milestone trend: one milestone, ten days of slip")
-ka(band(r), "Amber", "milestone trend: band")
-ka(r["evidence_metric"],
-   "1 milestone matched 2025-01→2025-02; mean slip +10d; worst 'Foundation' +10d",
-   "milestone trend: finding")
+r = run_schedule_compression(_net(_SCI_ACTS), NOOP, "2025-06-30")
+ka(r["schedule_compression_index"], 1.0, "schedule compression: equal demand is 1.00")
+ka(r["reconciled_activities"], 2, "schedule compression: both activities reconciled")
+check(r.get("status_color") is None and r.get("calibration_pending") is True,
+      "schedule compression: no band is asserted")
+r2 = run_schedule_compression(_net([dict(a, remaining_duration=a["remaining_duration"] * 2)
+                                    for a in _SCI_ACTS]), NOOP, "2025-06-30")
+ka(r2["schedule_compression_index"], 0.5,
+   "schedule compression: twice the current remaining demand halves the index, which the "
+   "contract states is increasing compression pressure")
+check(abstains(run_schedule_compression({"baselineStart": "2025-01-01",
+                                         "baselineEnd": "2025-12-31",
+                                         "actualPctComplete": 50, "spi": 0.80},
+                                        NOOP, "2025-06-30")),
+      "schedule compression: with no activity network the answer is not estimable, and the "
+      "reciprocal of the schedule index is not used in its place")
 
-print("\n-- Labor Productivity Index (A3.3): a labour-hours ratio --")
-# HAND: earned hours = 0.80 * 10,000 = 8,000; rate = 8,000 / 8,000 = 1.00; 1.00 >= 0.95, Green.
-r = run_labor_productivity({"plannedLaborHours": 10000, "actualLaborHours": 8000,
-                            "actualPctComplete": 80}, NOOP, "2025-06-30")
-ka(r["earned_hours_rate"], 1.0, "labour productivity: 1.0")
-ka(band(r), "Green", "labour productivity: band")
-ka(r["evidence_metric"], "Earned-hours rate 1 (80% × 10,000h planned ÷ 8,000h actual)",
-   "labour productivity: finding")
+print("\n-- S-Curve Deviation (A2.6): two cumulative series on one basis --")
+# HAND, the specification's own worked case: planned 0.60 against actual 0.50 is a deviation of
+# -0.10, and the relative deviation is -0.10/0.60 = -0.1666..., which rounds to -0.17.
+def _curve(planned, actual):
+    return {"timePhasedBaseline": {
+        "baseline_version": "BL-1", "approval_source": "approved baseline",
+        "periods": [{"period_index": i, "period": f"P{i}", "cumulative_pv": v}
+                    for i, v in enumerate(planned)],
+        "cumulative_actual": list(actual)}}
 
-print("\n-- Overhead Absorption Rate (A3.5): a transparent ratio --")
-# HAND: planned indirect at current progress = 200,000 * 0.40 = 80,000;
-# absorption = 90,000/80,000 = 1.125; 1.125 > 1.05 and <= 1.15, so Yellow.
-# The finding rounds 112.5 half-up to 113.
-r = run_overhead_absorption({"indirectCostPlan": 200000, "indirectCostActual": 90000,
-                             "actualPctComplete": 40}, NOOP, "2025-06-30")
-ka(r["absorption_ratio"], 1.125, "overhead absorption: 1.125")
-ka(band(r), "Yellow", "overhead absorption: band")
-ka(r["evidence_metric"],
-   "Overhead absorption: 113% of planned indirect cost at current progress",
-   "overhead absorption: finding")
 
-print("\n-- Analogous Estimating Ratio (A3.7): an analogous-cost ratio --")
-# HAND: exposure = 5,000,000 * 8/100 = 400,000. 8 is not below 7 and is below 12, so Amber.
-r = run_analogous_estimating({"analogousOverrunPct": 8, "bac": 5000000}, NOOP, "2025-06-30")
-ka(r["bac_exposure"], 400000, "analogous estimating: 400,000 of exposure")
-ka(band(r), "Amber", "analogous estimating: band")
-ka(r["evidence_metric"], "Analogous overrun 8% → $400,000 BAC exposure",
-   "analogous estimating: finding")
+r = run_scurve_deviation(_curve([0.60], [0.50]), NOOP, "2025-06-30")
+ka(r["deviation"], -0.1, "s-curve: the specification's deviation of -0.10")
+ka(r["relative_deviation"], -0.17, "s-curve: relative deviation -0.10/0.60")
+check(r["longitudinal"] is False and r["trend"] is None,
+      "s-curve: one point is NOT presented as a longitudinal trend")
+r2 = run_scurve_deviation(_curve([0.20, 0.40, 0.60], [0.20, 0.35, 0.50]), NOOP, "2025-06-30")
+check(r2["longitudinal"] is True and r2["trend_direction"] == "deteriorating",
+      "s-curve: a series gives a trend and says which way it runs")
+check(abstains(run_scurve_deviation({"actualPctComplete": 40, "plannedPctComplete": 50,
+                                     "ev": 400000, "pv": 500000}, NOOP, "2025-06-30")),
+      "s-curve: with no cumulative series the answer is not estimable, and a composite of two "
+      "reported percentages is not used in its place")
 
-print("\n-- Inflation Adjustment Index (A3.9): a material-escalation ratio --")
-# HAND: expected = 2,000,000 * 0.40 = 800,000; escalation = max(0, (880,000-800,000)/800,000)
-# = 0.10; 0.10 > 0.08 and <= 0.15, so Amber.
-r = run_inflation_adjustment({"materialCostBaseline": 2000000, "materialCostCurrent": 880000,
-                              "actualPctComplete": 40}, NOOP, "2025-06-30")
-ka(r["escalation_pct"], 10, "inflation adjustment: +10 per cent")
-ka(band(r), "Amber", "inflation adjustment: band")
-ka(r["evidence_metric"],
-   "Material escalation proxy: +10% above progress-adjusted baseline",
-   "inflation adjustment: finding")
+print("\n-- Milestone Trend Analysis (A2.7): variance against the original commitment --")
+# HAND, the specification's own worked case: baseline day 100 with successive forecasts 104, 108
+# and 111 gives variances of 4, 8 and 11 days against the ORIGINAL commitment, and drifts of
+# 4 and 3 days between successive forecasts.
+_MFH = {"milestoneForecastHistory": {"schedule_version": "SCH-1", "milestones": [
+    {"milestone_id": "M-FOUNDATION", "original_baseline_day": 100,
+     "forecasts": [{"report_index": i, "forecast_day": d}
+                   for i, d in enumerate([104, 108, 111])]}]}}
+r = run_milestone_trend(_MFH, NOOP, "2025-06-30")
+_m = r["milestones"][0]
+ka(_m["variance_days"], [4, 8, 11], "milestone trend: the specification's slips of 4, 8 and 11")
+ka(_m["period_drift_days"], [4, 3], "milestone trend: the drifts between forecasts")
+ka(_m["direction"], "deteriorating", "milestone trend: the direction is deteriorating")
+check(abstains(run_milestone_trend({"milestoneHistory": [
+          {"at": "2025-01-31", "milestones": [{"name": "F", "forecast": "2025-06-01"}]},
+          {"at": "2025-02-28", "milestones": [{"name": "F", "forecast": "2025-06-11"}]}]},
+          NOOP, "2025-06-30")),
+      "milestone trend: with no forecast history the answer is not estimable, and two snapshots "
+      "matched by name are not used in its place")
+
+print("\n-- Labor Productivity Index (A3.3): output per labour hour --")
+# HAND, the specification's own worked case: 800 units in 100 hours is 8 an hour, against 1000
+# units planned in 100 hours which is 10 an hour, so the index is 8/10 = 0.80.
+r = run_labor_productivity({"productionOutputRecord": {
+    "output_unit": "cubic yards", "quantity_source": "surveyed installed quantities",
+    "earned_output": 800.0, "planned_output": 1000.0,
+    "actual_labor_hours": 100.0, "planned_labor_hours": 100.0}}, NOOP, "2025-06-30")
+ka(r["actual_productivity"], 8.0, "labour productivity: eight units an hour")
+ka(r["planned_productivity"], 10.0, "labour productivity: against ten planned")
+ka(r["productivity_index"], 0.8, "labour productivity: the specification's index of 0.80")
+check(abstains(run_labor_productivity({"plannedLaborHours": 10000, "actualLaborHours": 8000,
+                                       "actualPctComplete": 80}, NOOP, "2025-06-30")),
+      "labour productivity: with no comparable output basis the answer is not estimable, and a "
+      "hours ratio is not used in its place")
+
+print("\n-- Overhead Absorption Rate (A3.5): rates over an explicit allocation base --")
+# HAND, the specification's own worked case: 100 of overhead over a base of 1000 is a planned
+# rate of 0.10; 120 over the same 1000 is an actual rate of 0.12; the rate variance is 0.02 and
+# the relative variance is 0.02/0.10 = 0.20.
+r = run_overhead_absorption({"overheadAllocationBase": {
+    "allocation_base": "direct labour hours", "driver_source": "certified payroll",
+    "planned_overhead": 100.0, "planned_driver": 1000.0,
+    "actual_overhead": 120.0, "actual_driver": 1000.0}}, NOOP, "2025-06-30")
+ka(round(r["planned_rate"], 6), 0.1, "overhead absorption: planned rate 0.10")
+ka(round(r["actual_rate"], 6), 0.12, "overhead absorption: actual rate 0.12")
+ka(round(r["rate_variance"], 6), 0.02, "overhead absorption: rate variance 0.02")
+ka(round(r["relative_rate_variance"], 6), 0.2, "overhead absorption: relative variance 0.20")
+check(abstains(run_overhead_absorption({"indirectCostPlan": 200000, "indirectCostActual": 90000,
+                                        "actualPctComplete": 40}, NOOP, "2025-06-30")),
+      "overhead absorption: with no allocation base the answer is not estimable, and the ratio "
+      "of actual to planned indirect cost is not used in its place")
+
+print("\n-- Analogous Estimating Ratio (A3.7): an identified analog, adapted --")
+# HAND, the specification's own worked example: 100 * 1.20 * 1.10 = 132.
+r = run_analogous_estimating({"analogEstimate": {
+    "analog_project_id": "PRJ-ANALOG-1", "source": "closed project cost ledger",
+    "comparability_criteria": "same structure type, same delivery method",
+    "normalization": "constant 2026 dollars", "analog_cost": 100.0,
+    "adaptation_factors": [{"factor_name": "size", "factor_value": 1.20},
+                           {"factor_name": "location", "factor_value": 1.10}]}},
+    NOOP, "2025-06-30")
+ka(round(r["adapted_estimate"], 6), 132.0, "analogous estimating: the specification's 132")
+ka(r["analog_project_id"], "PRJ-ANALOG-1", "analogous estimating: the analog is identified")
+check(abstains(run_analogous_estimating({"analogousOverrunPct": 8, "bac": 5000000},
+                                        NOOP, "2025-06-30")),
+      "analogous estimating: with no identified analog the answer is not estimable, and a "
+      "stored overrun percentage is not used in its place")
+
+print("\n-- Inflation Adjustment Index (A3.9): a named external price index --")
+# HAND, the specification's own worked case: an index moving 200 to 220 is a factor of 1.10, so
+# an exposure of 100 becomes 110.
+_IDX = {"externalCostIndex": {
+    "index_name": "Construction Cost Index, all items",
+    "authority": "national statistical office", "geography": "national",
+    "scope": "construction materials and labour", "base_period": "2020-01",
+    "observation_period": "2026-06", "vintage": "2026-07 release",
+    "base_index_value": 200.0, "current_index_value": 220.0, "cost_exposure": 100.0}}
+r = run_inflation_adjustment(_IDX, NOOP, "2025-06-30")
+ka(r["escalation_factor"], 1.1, "inflation adjustment: the specification's factor of 1.10")
+ka(round(r["adjusted_cost"], 6), 110.0, "inflation adjustment: and its adjusted cost of 110")
+# A FALLING index deflates, which the floored proxy structurally could not show.
+r2 = run_inflation_adjustment({"externalCostIndex": {
+    **_IDX["externalCostIndex"], "current_index_value": 180.0}}, NOOP, "2025-06-30")
+check(r2["escalation_factor"] < 1.0 and r2["escalation_amount"] < 0,
+      "inflation adjustment: a falling index is visible as deflation rather than floored at "
+      "nothing", str(r2["escalation_factor"]))
+check(abstains(run_inflation_adjustment({"materialCostBaseline": 2000000,
+                                         "materialCostCurrent": 880000,
+                                         "actualPctComplete": 40}, NOOP, "2025-06-30")),
+      "inflation adjustment: with no governed external index the answer is not estimable, and "
+      "the project's own material price movement is not used in its place")
 
 print("\n-- Weather Day Impact (A4.5): lost days over available float --")
 # HAND: 6 lost days against 20 days of float is a ratio of 0.30; lost is not zero, and
@@ -1824,35 +2002,34 @@ check(_ia["status_color"] == _ib["status_color"] and _ia["threshold"] == _ib["th
       "the score itself and no longer a sum of raw per-axis spreads",
       f"{_ia['status_color']}/{_ia['threshold']} vs {_ib['status_color']}/{_ib['threshold']}")
 
-print("\n-- Scaling a project's duration should not change a compression RATIO --")
-# HAND: the ratio is required over available, and available is required multiplied by the schedule
-# index, so the ratio is exactly one over the index whatever the duration. Run 6 found the
-# denominator floored at one day, `max(available_days, 1)`, which broke that invariance: a
-# year-long baseline at an index of 0.50 read 2.0 and Red, and a two-day baseline at the SAME
-# index read 1.0 and Green. Run 7 removed the floor, which is an arithmetic correction to the
-# module's own stated ratio and not a new method, so the invariance the ratio always claimed now
-# holds. Exhausted over baseline lengths rather than asserted on the two the finding used.
-_long = run_schedule_compression({"baselineStart": "2025-01-01", "baselineEnd": "2025-12-31",
-                                  "actualPctComplete": 50, "spi": 0.50}, NOOP, "2025-06-30")
-_short = run_schedule_compression({"baselineStart": "2025-01-01", "baselineEnd": "2025-01-03",
-                                   "actualPctComplete": 50, "spi": 0.50}, NOOP, "2025-06-30")
-ka(_long["compression_ratio"], 2.0,
-   "schedule compression: on a year-long baseline the ratio is one over the index")
-ka(_short["compression_ratio"], 2.0,
-   "schedule compression: on a two-day baseline the SAME index gives the SAME 2.0, because the "
-   "one-day floor that broke the invariance is gone")
-ka((band(_long), band(_short)), ("Red", "Red"),
-   "schedule compression: the same schedule index reads the same band on a long project and a "
-   "short one")
-_ENDS = ("2025-01-03", "2025-01-08", "2025-02-01", "2025-04-15", "2025-12-31", "2027-06-30")
+print("\n-- Scaling the schedule should not change a compression RATIO --")
+# SUPERSEDED BY RUN 28, observed red against the v3 build (KeyError: 'compression_ratio') before
+# being rewritten. Run 6's finding was that a one-day floor under the denominator broke the scale
+# invariance of the declared ratio; Run 7 removed the floor. The v3 quantity is a different one
+# -- the ratio of two sums of activity durations taken from two reconciled schedules -- but the
+# SAME invariance must hold of it and is what is asserted here: scaling both schedules by any
+# positive factor cannot move the demand ratio, because the factor cancels.
+def _scale_net(factor, baseline=10.0, remaining=20.0):
+    return _net([{"activity_id": "A", "predecessors": [], "current_duration": remaining * factor,
+                  "baseline_duration": baseline * factor,
+                  "remaining_duration": remaining * factor}])
+
+
+_long = run_schedule_compression(_scale_net(365.0), NOOP, "2025-06-30")
+_short = run_schedule_compression(_scale_net(2.0), NOOP, "2025-06-30")
+ka(_long["schedule_compression_index"], 0.5,
+   "schedule compression: ten baseline days against twenty current is a demand ratio of 0.5")
+ka(_short["schedule_compression_index"], 0.5,
+   "schedule compression: the SAME 0.5 on a schedule two orders of magnitude shorter, because "
+   "the scale factor cancels out of the ratio")
+_FACTORS = (0.5, 1.0, 2.0, 7.0, 30.0, 365.0, 912.5)
 _scale_stable = all(
-    run_schedule_compression({"baselineStart": "2025-01-01", "baselineEnd": _e,
-                              "actualPctComplete": 50, "spi": 0.50},
-                             NOOP, "2025-06-30")["compression_ratio"] == 2.0
-    for _e in _ENDS)
+    run_schedule_compression(_scale_net(f), NOOP,
+                             "2025-06-30")["schedule_compression_index"] == 0.5
+    for f in _FACTORS)
 check(_scale_stable,
-      "schedule compression: the ratio is one over the index at every baseline length tried, "
-      "from two days to two and a half years")
+      "schedule compression: the demand ratio is unmoved at every scale tried, from half a day "
+      "to two and a half years")
 
 print("\n-- Adding evidence should not improve a composite index --")
 # HAND: Run 6 found that the dispute index added a term per source and never renormalised, so a
@@ -1906,10 +2083,18 @@ check(_ratio_stable, "procurement lead time: the weighted disruption ratio is 0.
                      "multiple of the audit's own counts, exhausted over 24 scalings")
 
 print("\n-- A constant series must smooth to the constant --")
+# SUPERSEDED BY RUN 28: the series now arrives on the governed state-space model rather than as
+# a bare history, and Q and R come with it. The PROPERTY is unchanged and is what matters here --
+# a filter handed the same reading over and over must settle on it -- so it is asserted over the
+# same grid against the same fixed Q and R the old block used.
 _flat_ok = True
 for v in [x / 100 for x in range(80, 111)]:
-    for n in (2, 3, 5, 9):
-        rr = run_kalman_filter({"spiHistory": [v] * n}, NOOP, "x")
+    for n in (1, 2, 4, 8):
+        rr = run_kalman_filter({"kalmanStateSpaceModel": {
+            "initial_state": v, "initial_variance": 1.0, "process_variance": 0.01,
+            "measurement_variance": 0.1, "observations": [v] * n,
+            "process_variance_source": "declared random walk",
+            "measurement_variance_source": "repeated readings of one period"}}, NOOP, "x")
         if abs(rr["smoothed_spi"] - v) > 0.0006:
             _flat_ok = False
 check(_flat_ok, "kalman: a constant series smooths to that constant for every level and length "

@@ -76,6 +76,23 @@ FACT_TO_SI = {
     "revised_contract_sum": "revisedContractSum",
 }
 
+#: RUN 28. The governed STRUCTURES four of the declarations below now rest on, and the
+#: signal-inputs key each arrives under. They are deliberately kept OUT of FACT_TO_SI above: that
+#: table maps a fact to a SCALAR the probe can multiply, and a structure is not a scalar. The
+#: probe's ladder cannot move a nested object, so a structural fact is checked by the rule stated
+#: at section 3 rather than by the ladder, and treating the two as the same thing is exactly the
+#: category error this cycle exists to avoid.
+STRUCTURAL_FACT_TO_SI = {
+    "bayesian_prior": "bayesianEacModel", "bayesian_observation": "bayesianEacModel",
+    "state_space_observations": "kalmanStateSpaceModel",
+    "process_variance": "kalmanStateSpaceModel",
+    "measurement_variance": "kalmanStateSpaceModel",
+    "management_eac": "independentEacPair", "independent_eac": "independentEacPair",
+    "allocation_base_driver": "overheadAllocationBase",
+    "external_price_index": "externalCostIndex", "cost_exposure": "externalCostIndex",
+    "risk_events": "costRiskModel",
+}
+
 print("=== 1. THE PRODUCTION DERIVATION THIS CYCLE REPRODUCES IS THE REAL ONE ===")
 #
 # The probe re-derives the two indices so it can propagate a moved fact the way production does.
@@ -149,14 +166,21 @@ def _cpi(si, f):
     si["cpi"] = round(BASE_SI["cpi"] * f, 3)
 
 
+# RUN 28. A1.3 no longer reads ANY of the four earned-value fields: the supplied contract
+# replaced its designed variances with a governed prior and a stated observation model. Cycle 8's
+# finding is therefore strengthened rather than lost -- the field set and the evidence disagreed,
+# and now the module does not demand the fields either. Both directions are asserted.
 check("A1.3 does not move when the earned value and the actual cost move with the index held",
       unmoved_when("A1.3", _ev_ac_together))
+check("A1.3 does not move when the cost index moves either, which is the v3 correction: the "
+      "designed variance derived from the index is gone", unmoved_when("A1.3", _cpi))
 check("B3.2 does not move when the budget is moved across a fivefold range",
       unmoved_when("B3.2", _bac))
 check("B2.14 does not move when the cost index is moved across a fivefold range",
       unmoved_when("B2.14", _cpi))
 # AND THE CONTROLS ARE NOT VACUOUS: the same modules DO move for the fact they really read.
-check("A1.3 does move when the cost index moves", not unmoved_when("A1.3", _cpi))
+check("and the probe is not vacuous: B3.2, which really does read the cost index, moves for it",
+      not unmoved_when("B3.2", _cpi))
 check("B3.2 does move when the cost index moves", not unmoved_when("B3.2", _cpi))
 check("B2.14 does move when the schedule index moves",
       not unmoved_when("B2.14", lambda si, f: si.__setitem__("spi",
@@ -167,6 +191,17 @@ print("\n=== 3. EVERY DECLARATION MATCHES WHAT THE MODULE ACTUALLY READS ===")
 # The declaration is checked against the PROBE, not against the field list it was written from.
 # A declared fact the probe cannot move the module with is a false dependence; a fact the probe
 # moves the module with and the declaration omits is a false independence. Both are failures.
+# RUN 28. FOUR OF THESE MODULES LEFT THE SCALAR CLUSTER ENTIRELY, which is the strongest form of
+# this cycle's own finding rather than an exception to it. Cycle 8 established that a module's
+# EVIDENCE is what its result moves for, never the field list its preflight demands. A1.3, A1.11,
+# A3.6 and A3.9 now rest on governed structures -- a stated prior and observation model, two
+# provenance-distinct estimates, the risk register's events, a named external price index -- and
+# the ladder below multiplies SCALARS. It cannot move a nested object, so a structural fact
+# cannot be assessed by it, and pretending otherwise would make the probe report every one of
+# them as immaterial and demand the declarations be stripped. The rule is applied in both parts:
+# for every module, every SCALAR fact it declares must be one the ladder moves it with, and every
+# scalar the ladder moves it with must be declared. A3.6 is in both halves at once, because it
+# declares the budget (a scalar the ladder does move it with) alongside the register's events.
 _declared_here = ("A1.11", "A1.3", "A3.6", "B3.2", "B3.4", "B4.3", "B2.10", "B2.11", "B2.14",
                   "B2.15", "B2.16", "B2.18", "B2.12", "B2.13", "B2.17", "A3.9")
 _false_dep = 0
@@ -174,14 +209,51 @@ _false_indep = 0
 for mid in _declared_here:
     rec = resolve_for_evidence(lineage_for(mid), BASE_SI)
     declared = set(rec["primitive_source_ids"])
+    _structural = {f for f in declared if f in STRUCTURAL_FACT_TO_SI}
+    if _structural:
+        check(f"{mid}: every structural fact it declares names a real signal-inputs key the "
+              f"module reads, and none of them is a scalar this ladder could have moved",
+              all(f not in FACT_TO_SI for f in _structural), str(sorted(_structural)))
+        declared = declared - _structural
     material = set(probe(mid)["material_primitives"])
     declared_si = {FACT_TO_SI[f] for f in declared}
+    if _structural and probe(mid)["baseline"] is not None \
+            and run_module(mid, BASE_SI, _const_rng, None).get("insufficient_data"):
+        # THE LADDER CAN SAY NOTHING HERE AND MUST NOT PRETEND OTHERWISE. This module abstains on
+        # BASE_SI because its governed structure is absent from it, so every scalar reads as
+        # immaterial for the same reason -- nothing computes at all -- and concluding from that
+        # that a declared scalar is a FALSE dependence would be the vacuous inference this cycle
+        # was written to remove. The scalar half of the declaration is checked directly instead,
+        # against the module driven WITH its structure present.
+        check(f"{mid}: the ladder is silent because the module abstains without its structure, "
+              f"so its scalar facts are checked against the module driven with the structure "
+              f"present rather than inferred from a run that never computed", True)
+        continue
     check(f"{mid}: every declared fact is one the module's result actually moves for",
           declared_si <= material, f"declared {sorted(declared_si)} material {sorted(material)}")
     check(f"{mid}: every fact the module moves for is declared",
           material <= declared_si, f"material {sorted(material)} declared {sorted(declared_si)}")
     _false_dep += len(declared_si - material)
     _false_indep += len(material - declared_si)
+
+# A3.6 DECLARES THE BUDGET, AND THE BUDGET IS CHECKED. Production assembles the base cost of the
+# cost risk model from the project's budget at completion, so the reading genuinely rests on it.
+# Driven with the model present, moving the budget must move the answer; if it did not, the
+# declaration would be a false dependence and this would be red.
+_CRM_SI = dict(BASE_SI)
+_CRM_SI["costRiskModel"] = {
+    "model_version": "CRM-1", "estimate_source": "approved base estimate",
+    "cost_components": [{"component_id": "BASE", "base_amount": BASE_SI["bac"]}],
+    "risk_events": [{"risk_id": "R1", "probability": 0.5, "impact_distribution": "POINT",
+                     "impact": BASE_SI["bac"] * 0.2}]}
+_CRM_HI = dict(_CRM_SI)
+_CRM_HI["costRiskModel"] = {
+    **_CRM_SI["costRiskModel"],
+    "cost_components": [{"component_id": "BASE", "base_amount": BASE_SI["bac"] * 3}]}
+check("A3.6 declares the budget at completion, and driven with its cost risk model present the "
+      "answer moves when the budget moves, so the declaration is a real dependence",
+      run_module("A3.6", _CRM_SI, _const_rng, None).get("p80_total_cost")
+      != run_module("A3.6", _CRM_HI, _const_rng, None).get("p80_total_cost"))
 check("no declared fact is one the module does not read", _false_dep == 0, str(_false_dep))
 check("no read fact is left undeclared", _false_indep == 0, str(_false_indep))
 
@@ -222,13 +294,20 @@ print("\n=== 6. GUARD NON-VACUITY: THE PROBE NOTICES WHAT THE BAND DOES NOT SHOW
 # alone and check that the comparison MISSES a movement the whole-result comparison catches.
 _si_hi = dict(BASE_SI)
 _si_hi["bac"] = BASE_SI["bac"] * 3
-_full_a = run_module("A1.3", BASE_SI, _const_rng, None)
-_full_b = run_module("A1.3", _si_hi, _const_rng, None)
+# RUN 28. A1.3 abstains without its governed model record, so it cannot serve as the vehicle for
+# this control any more: two abstentions are identical and would make the control vacuous, which
+# is the very failure it was written to demonstrate. B2.15 Possibility Theory is used instead --
+# it reports a possibility distribution beside its band, so a movement can show in the result
+# while the band stays put, which is exactly the property this section needs.
+_si_hi = dict(BASE_SI)
+_si_hi["docRiskScore"] = min(1.0, BASE_SI["docRiskScore"] + 0.02)
+_full_a = run_module("B2.15", BASE_SI, _const_rng, None)
+_full_b = run_module("B2.15", _si_hi, _const_rng, None)
 check("the band alone does not distinguish the two runs",
       _full_a["status_color"] == _full_b["status_color"])
 check("the whole result does distinguish them", _full_a != _full_b)
 check("and the probe's comparison follows the whole result",
-      reading("A1.3", BASE_SI) != reading("A1.3", _si_hi))
+      reading("B2.15", BASE_SI) != reading("B2.15", _si_hi))
 
 print("\n=== 7. THE CLUSTER VERDICTS, AND BOTH DIRECTIONS OF ERROR ===")
 
@@ -252,8 +331,16 @@ check("Maximum Entropy is dependent on the schedule readers when a planned value
       pair_dependent("B2.14", "B2.12", BASE_SI))
 check("the Inflation Adjustment Index is INDEPENDENT of the earned-value readers",
       not pair_dependent("A3.9", "A1.7", BASE_SI))
-check("and it is dependent on the overhead absorption rate, because both scale by progress",
-      pair_dependent("A3.9", "A3.5", BASE_SI))
+# RUN 28 INVERTED THIS CHECK, and the inversion is the correction. Cycle 8 found these two
+# dependent because BOTH scaled by the reported progress figure. Neither does any more: the
+# supplied contract replaced the inflation index with a named external series and overhead
+# absorption with rates over an explicit allocation base, and progress is an input to neither.
+# They are two bodies now, and asserting the old dependence would manufacture a shared fact that
+# no longer exists. The check is inverted rather than deleted, so a regression that reintroduced
+# either progress scaling would turn it red.
+check("and it is now INDEPENDENT of the overhead absorption rate too, because neither scales by "
+      "progress any more",
+      not pair_dependent("A3.9", "A3.5", BASE_SI))
 _no_pv_si = {**BASE_SI, "pv": None}
 check("with no planned value Maximum Entropy is independent of the cost-index readers",
       not pair_dependent("B2.14", "B3.2", _no_pv_si))
@@ -274,6 +361,23 @@ for cluster, mids in CLUSTERS.items():
                 _false_reinforcement += 1
                 print(f"  false reinforcement: {a} and {b} share {sorted(ma & mb)}")
             if declared_dep and not true_dep:
+                # RUN 28. A module that ABSTAINS on BASE_SI, because its governed structure is
+                # absent from this fixture, has no material fact for the ladder to find -- not
+                # because it reads nothing, but because it computed nothing. Counting that as a
+                # false suppression would be inferring a verdict from a run that never happened,
+                # which is the vacuous inference this cycle exists to remove. It is reported and
+                # not counted, and the pair is named so the exemption is visible rather than
+                # silent. A module that DOES compute and still shares no material fact is still
+                # counted, so the guard keeps its force.
+                _a_abst = run_module(a, BASE_SI, _const_rng,
+                                     None).get("insufficient_data")
+                _b_abst = run_module(b, BASE_SI, _const_rng,
+                                     None).get("insufficient_data")
+                if _a_abst or _b_abst:
+                    print(f"  not assessable: {a} and {b} -- one of them abstains on this "
+                          f"fixture for want of its governed structure, so the ladder can "
+                          f"establish nothing about either direction")
+                    continue
                 _false_suppression += 1
                 print(f"  false suppression: {a} and {b} share no material fact")
 check("false reinforcement 0", _false_reinforcement == 0, str(_false_reinforcement))

@@ -50,6 +50,10 @@ from run21_production_changes import RUN21_PRODUCTION_CHANGES  # noqa: E402
 from run23_production_changes import RUN23_PRODUCTION_CHANGES  # noqa: E402
 from run25_production_changes import RUN25_PRODUCTION_CHANGES  # noqa: E402
 from run26_production_changes import RUN26_PRODUCTION_CHANGES  # noqa: E402
+from run28_production_changes import (  # noqa: E402
+    RUN28_NEW_PRODUCTION_FILES,
+    RUN28_PRODUCTION_CHANGES,
+)
 from population import population  # noqa: E402
 
 ROOT = HERE.parent.parent
@@ -120,8 +124,18 @@ run25_declared = {entry[1] for entry in RUN25_PRODUCTION_CHANGES.values()}
 # index.html are NOT in it -- Run 21 and Run 25 already declare them -- so one change is still
 # never counted twice.
 run26_declared = {entry[1] for entry in RUN26_PRODUCTION_CHANGES.values()}
+# RUN 28, THE CATEGORY 1 TO 3 CANONICAL REMEDIATION AND THE FIRST RUN SINCE RUN 20 AUTHORISED TO
+# CHANGE ANALYTICAL PRODUCTION CODE. Same construction, same property: the union of all manifests
+# must still equal the differing set EXACTLY, so an undeclared production edit is still red and a
+# declared file that was never touched is still red. models_ext.py, registry.py and
+# method_labels.py are NOT in it -- Run 20 already declares all three -- so one change is still
+# never counted twice. The guard was observed RED against this build before these declarations
+# were written; the change of contract is recorded as an owner-directed change in
+# code_audit/run20_anti_fossilization_register.csv.
+run28_declared = {entry[1] for entry in RUN28_PRODUCTION_CHANGES.values()
+                  if entry[1] not in RUN28_NEW_PRODUCTION_FILES}
 declared = (run20_declared | run21_declared | run23_declared | run25_declared
-            | run26_declared)
+            | run26_declared | run28_declared)
 
 check("every production file that differs from the Run-20 freeze is declared in the Run-20 "
       "manifest or a later run's manifest, so an undeclared production edit cannot pass",
@@ -136,9 +150,15 @@ check("the Run-20 manifest still declares only files RUN 20 changed: no Run-21 p
 _overlap = ((run23_declared & (run20_declared | run21_declared))
             | (run25_declared & (run20_declared | run21_declared | run23_declared))
             | (run26_declared & (run20_declared | run21_declared | run23_declared
-                                 | run25_declared)))
+                                 | run25_declared))
+            | (run28_declared & (run20_declared | run21_declared | run23_declared
+                                 | run25_declared | run26_declared)))
 check("and no path is declared by two manifests at all, so one change cannot be counted twice",
       not _overlap, f"in more than one manifest: {sorted(_overlap)}")
+for mid, (why_item, path, why) in sorted(RUN28_PRODUCTION_CHANGES.items()):
+    check(f"the Run-28 manifest entry for {mid} names an authority, a real file and a "
+          f"reason", bool(why_item) and bool(why) and (ROOT / path).is_file(),
+          f"{why_item!r} {path!r}")
 for mid, (why_item, path, why) in sorted(RUN26_PRODUCTION_CHANGES.items()):
     check(f"the Run-26 manifest entry for {mid} names an authority, a real file and a "
           f"reason", bool(why_item) and bool(why) and (ROOT / path).is_file(),
@@ -209,6 +229,14 @@ check("an architectural entry may not name a file the module manifest already de
 
 # NEW production files, the direction the byte comparison structurally cannot reach: a file that
 # did not exist when the freeze was taken has no baseline row to differ from.
+for rel, why in sorted(RUN28_NEW_PRODUCTION_FILES.items()):
+    check(f"the declared new production file {rel} exists and states a reason",
+          (ROOT / rel).is_file() and bool(why))
+    check(f"and {rel} is genuinely new rather than a baseline file smuggled onto the new list",
+          rel not in baseline)
+    check(f"and {rel} is not ALSO declared as a changed file, so it is counted once",
+          rel not in (run20_declared | run21_declared | run23_declared | run25_declared
+                      | run26_declared | run28_declared))
 for rel, (cycles, why) in sorted(RUN20_NEW_PRODUCTION_FILES.items()):
     check(f"the declared new production file {rel} exists and names a cycle and a reason",
           (ROOT / rel).is_file() and bool(cycles) and bool(why))
@@ -220,7 +248,12 @@ for rel, (cycles, why) in sorted(RUN20_NEW_PRODUCTION_FILES.items()):
 _undeclared_new = sorted(
     str(p.relative_to(ROOT)) for p in (ROOT / "server" / "app" / "simulation").glob("*.py")
     if str(p.relative_to(ROOT)) not in baseline
-    and str(p.relative_to(ROOT)) not in RUN20_NEW_PRODUCTION_FILES)
+    and str(p.relative_to(ROOT)) not in RUN20_NEW_PRODUCTION_FILES
+    # RUN 28 declares its own new production file in its own manifest, for the same reason it
+    # declares its own changed ones there: folding it into Run 20's list would falsify Run 20's
+    # record. The check is unchanged in meaning -- a file that appears in the simulation package
+    # and is declared NOWHERE is still red.
+    and str(p.relative_to(ROOT)) not in RUN28_NEW_PRODUCTION_FILES)
 check("and no OTHER file has appeared in the simulation package undeclared, which is the check "
       "that makes the new-file list mean something",
       not _undeclared_new, str(_undeclared_new))

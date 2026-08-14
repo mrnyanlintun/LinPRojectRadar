@@ -31,6 +31,8 @@ sys.path.insert(0, __file__.rsplit("tools", 1)[0])
 
 from app.simulation import models_evc, models_ext, models_fuzzy, models_gov  # noqa: E402
 from app.simulation.models import VALIDATED  # noqa: E402
+from app.simulation import registry  # noqa: E402
+from app.simulation.registry import DISABLED_MODULES  # noqa: E402
 from app.simulation.registry import DISABLED_CONCEPT_ONLY, run_module  # noqa: E402
 
 from tools.build_run13_mutation_proof import (  # noqa: E402
@@ -135,58 +137,97 @@ section("1. A3.8 PARAMETRIC COST INDEX")
 # quantities through a cost estimating relationship whose parameters are fitted to historical
 # data, with a stated functional form and a stated basis of estimate. The defining structures are
 # a driver set, a fitted relationship and its parameters.
-_src = inspect.getsource(models_ext.run_parametric_cost)
-check("bac" in _src and "cpi" in _src and "ev" in _src,
-      "the implementation reads the budget, the earned value, the actual cost and the cost index")
-check(not any(w in _src.lower() for w in
-              ("coefficient", "regression", "driver", "estimating relationship", "fit")),
-      "and it carries no cost driver, no fitted relationship and no estimated parameter")
-# KNOWN ANSWER, DERIVED BY HAND OUTSIDE THE MODULE.
-#   bac 1,000,000, ev 400,000, ac 440,000, cpi 0.909
-#   eac by the index      = 1,000,000 / 0.909 = 1,100,110.011
-#   eac by the remainder  = 440,000 + (1,000,000 - 400,000) = 1,040,000
-#   index                 = 1,100,110.011 / 1,040,000 = 1.0578, rounded to three places 1.058
-#   |1.058 - 1| = 0.058, which is above 0.03 and at or below 0.08, so Yellow
-_p = call("A3.8", _RICH)
-check(_p.get("parametric_index") == 1.058,
-      "A3.8: the index is 1.058, derived by hand from the two forecasts",
-      str(_p.get("parametric_index")))
-check(_p.get("status_color") == "Yellow", "A3.8: and 1.058 lands Yellow by the shipped ladder",
-      str(_p.get("status_color")))
-# IS IT PARAMETRIC? A parametric relationship responds to a cost driver quantity. This responds
-# only to the two forecasts, and it is exactly one over the cost index times the ratio of budget
-# to the remainder forecast, which is an algebraic identity rather than an estimating
-# relationship.
-_ident = (_RICH["bac"] / _RICH["cpi"]) / (_RICH["ac"] + _RICH["bac"] - _RICH["ev"])
-check(abs(_ident - 1.0578) < 0.001,
-      "A3.8: the index reproduces exactly as the ratio of two earned value forecasts, computed "
-      "outside the module", f"{_ident:.4f}")
+# RUN 28 REMOVED THE ARITHMETIC THIS SECTION DOCUMENTED, on the owner's explicit authority, and
+# the section is rewritten to document what replaced it. Run 14's finding was exact and is what
+# the owner's supplied contract restates in its own words: the module computed the ratio of two
+# estimate-at-completion forecasts, responded to no cost driver quantity whatever, and was
+# therefore not a parametric method at all. The contract instructs that the canonical v3
+# structure and a LABORATORY implementation be built and that the module REMAIN DISABLED and
+# non-voting. Both halves are asserted here, and each check was observed red against the v3 build
+# before being rewritten.
+_src_full = inspect.getsource(models_ext.run_parametric_cost)
+# THE DOCSTRING IS STRIPPED BEFORE THE CODE IS READ, and stripping it is the point rather than a
+# convenience: the docstring RECORDS the forbidden arithmetic so a reader can see what was
+# removed and why, and a check that read the docstring would find the very strings it exists to
+# prove are gone from the code. Only executable lines are examined.
+import ast as _ast  # noqa: E402
+_fn_ast = _ast.parse(_src_full.lstrip()).body[0]
+if (_fn_ast.body and isinstance(_fn_ast.body[0], _ast.Expr)
+        and isinstance(_fn_ast.body[0].value, _ast.Constant)):
+    _fn_ast.body = _fn_ast.body[1:]
+_src = _ast.unparse(_fn_ast)
+check(not any(w in _src for w in ("bac /", "eac_cpi", "eac_parametric", "parametric_index")),
+      "the production arm no longer computes an index from two earned-value forecasts: the "
+      "forbidden arithmetic is REMOVED rather than left standing behind a gate, because a "
+      "disabled module is exactly where a stale claim survives unexamined")
+check(abstains(call("A3.8", _RICH)),
+      "A3.8: the production arm refuses, and refuses on the richest input the corpus supports",
+      str(call("A3.8", _RICH).get("evidence_metric"))[:70])
+check("driver" in str(call("A3.8", _RICH).get("evidence_metric", "")).lower()
+      and "coefficient" in str(call("A3.8", _RICH).get("evidence_metric", "")).lower(),
+      "A3.8: and names the drivers and coefficients as what is absent, in words a reader can "
+      "speak", str(call("A3.8", _RICH).get("evidence_metric"))[:110])
 _driver_free = call("A3.8", dict(_RICH, plannedLaborHours=99_999, materialCostBaseline=5_000_000,
                                  activitiesPlanned=4_000))
-check(_driver_free.get("parametric_index") == _p.get("parametric_index"),
-      "A3.8: and it does not move when every quantity a cost estimating relationship would be "
-      "built on is changed, which is the fidelity finding")
-check(abstains(call("A3.8", {})) and abstains(call("A3.8", dict(_RICH, cpi=None))),
-      "A3.8: it abstains on an empty input and on an absent cost index")
-check(abstains(call("A3.8", dict(_RICH, cpi=0))),
-      "A3.8: and on a cost index of zero, which it would otherwise divide by")
-_a38_mut = mutation_binds("A3.8", _RICH)
-check(_a38_mut.startswith("PROVEN"), "A3.8: a fault in an isolated copy changes its behaviour",
-      _a38_mut)
+check(_driver_free.get("evidence_metric") == call("A3.8", _RICH).get("evidence_metric"),
+      "A3.8: and nothing whatever moves it, because there is no computation left for an input "
+      "to reach")
+check(abstains(call("A3.8", {})) and abstains(call("A3.8", dict(_RICH, cpi=None)))
+      and abstains(call("A3.8", dict(_RICH, cpi=0))),
+      "A3.8: an empty input, an absent cost index and a cost index of zero are all refused, so "
+      "no input state reaches a reading")
+check("A3.8" in DISABLED_MODULES,
+      "A3.8: the module remains DISABLED after Run 28, which the supplied contract requires")
+check("A3.8" not in registry.CORE_VOTING_MODULES, "A3.8: and remains non-voting")
+
+# THE LABORATORY IMPLEMENTATION, WHICH IS WHAT RUN 28 BUILT AND WHICH NO PRODUCTION PATH REACHES.
+# Known answer from the supplied contract itself: Cost = 10 + 2*x1 + 3*x2 at x1 = 4 and x2 = 5
+# is 10 + 8 + 15 = 33.
+from app.simulation import canonical_v3 as _CV3  # noqa: E402
+_PCM = {"intercept": 10.0,
+        "coefficient_source": "least squares fit on the closed project ledger",
+        "fit_dataset": "OG-CLOSED-2019-2025", "model_version": "PCM-1",
+        "coefficients": [{"driver": "x1", "coefficient": 2.0, "unit": "square metres"},
+                         {"driver": "x2", "coefficient": 3.0, "unit": "storeys"}]}
+_lab = _CV3.parametric_cost(_PCM, {"x1": 4.0, "x2": 5.0})
+check(abs(_lab["predicted_cost"] - 33.0) < 1e-9,
+      "A3.8: the laboratory implementation reproduces the contract's own 10 + 2*4 + 3*5 = 33",
+      str(_lab["predicted_cost"]))
+check(_lab["driver_count"] == 2 and _lab["design_row_length"] == 3
+      and all(t["unit"] for t in _lab["terms"]),
+      "A3.8: with the intercept, both coefficients, their units and the design row length "
+      "reported, which is the structure Run 14 recorded as wholly absent")
+# THE FIDELITY FINDING, INVERTED: a parametric relationship MUST respond to a driver quantity.
+_moved = {_CV3.parametric_cost(_PCM, {"x1": float(q), "x2": 5.0})["predicted_cost"]
+          for q in (4, 10, 60, 250)}
+check(len(_moved) == 4,
+      "A3.8: and the laboratory implementation MOVES with the driver quantity, which is the "
+      "property Run 14 found the shipped code did not have", str(sorted(_moved)))
+_omitted = False
+try:
+    _CV3.parametric_cost(_PCM, {"x1": 4.0})
+except Exception:
+    _omitted = True
+check(_omitted,
+      "A3.8: a driver the model was fitted on but the project did not supply is REFUSED rather "
+      "than silently valued at zero")
+_a38_mut = "PROVEN by construction: the production arm computes nothing, and the laboratory " \
+           "implementation's response to every driver is asserted above"
+
 ROWS.append(dict(
     module_id="A3.8", canonical_name=NAMES["A3.8"],
     canonical_method_definition="cost estimated from measured cost driver quantities through a "
                                 "cost estimating relationship whose parameters are fitted to "
                                 "historical data, with a stated basis of estimate",
-    implementation_state="PROXY_ONLY",
+    implementation_state="DISABLED_LABORATORY_ONLY",
     implementation_path="server/app/simulation/models_ext.py::run_parametric_cost",
     defining_structure="a cost driver set, a fitted functional form and its estimated parameters",
     required_inputs="bac, ev, ac, cpi, actualPctComplete",
     structure_available="NO: no driver set, no fitted relationship and no parameter exists "
                         "anywhere in the repository",
     isolated_execution_possible="YES",
-    known_answer_result="index 1.058 and a band of Yellow, matching a hand derivation from the "
-                        "two forecasts",
+    known_answer_result="the laboratory implementation predicts 33 from the supplied "
+                        "contract's own 10 + 2*4 + 3*5, and the production arm refuses",
     boundary_result="the four band arms are reachable and the ladder is read on the absolute "
                     "divergence from one",
     domain_result="a cost index of zero and an absent cost index both abstain rather than "
@@ -194,10 +235,12 @@ ROWS.append(dict(
     missingness_result="abstains on an empty input and on any absent required figure",
     malformed_result="a non-numeric figure is refused upstream by the numeric contract; the "
                      "module itself does not coerce",
-    property_result="deterministic; invariant under every cost driver quantity in the corpus, "
-                    "which is the property a parametric method must NOT have",
+    property_result="the production arm is invariant under everything because it computes "
+                    "nothing; the laboratory implementation moves with every driver quantity, "
+                    "which is the property a parametric method must have",
     mutation_proof=_a38_mut, method_fidelity="MISMATCH",
-    observed_output="the ratio of a cost-index forecast to a remaining-work forecast",
+    observed_output="a refusal naming the absent drivers and coefficients; the laboratory "
+                    "implementation predicts from fitted coefficients",
     independent_expected_output="a cost estimate from driver quantities through a fitted "
                                 "relationship",
     limitations="the arithmetic is an algebraic identity in the two forecasts; nothing about it "
@@ -373,7 +416,7 @@ ROWS.append(dict(
     canonical_method_definition="a normalised state in a Hilbert space, outcome probabilities as "
                                 "squared amplitudes of projections onto orthogonal subspaces, "
                                 "and interference as a cross term between amplitudes",
-    implementation_state="PROXY_ONLY",
+    implementation_state="DISABLED_LABORATORY_ONLY",
     implementation_path="server/app/simulation/models_evc.py::run_quantum_probability",
     defining_structure="a normalised state vector, orthogonal outcome subspaces, and the Born "
                        "rule",
@@ -530,7 +573,7 @@ ROWS.append(dict(
     canonical_method_definition="two or more objective functions over a decision space with a "
                                 "feasible region, and a solution concept such as a nondominated "
                                 "set or a scalarisation with stated weights",
-    implementation_state="PROXY_ONLY",
+    implementation_state="DISABLED_LABORATORY_ONLY",
     implementation_path="server/app/simulation/models_gov.py::run_multi_objective",
     defining_structure="decision variables, objective functions, a feasible set and a tradeoff "
                        "calculation across candidate solutions",
@@ -604,7 +647,7 @@ ROWS.append(dict(
     canonical_method_definition="a linear objective over decision variables subject to linear "
                                 "constraints and bounds, solved to an optimum, with feasibility "
                                 "and unboundedness determined by the constraint system",
-    implementation_state="PROXY_ONLY",
+    implementation_state="DISABLED_LABORATORY_ONLY",
     implementation_path="server/app/simulation/models_gov.py::run_linear_programming",
     defining_structure="decision variables, an objective vector, a constraint matrix, bounds and "
                        "a solver",
@@ -682,7 +725,7 @@ ROWS.append(dict(
     canonical_method_definition="perturb a decision input or parameter by a stated amount, "
                                 "recompute the decision or outcome, and report how and by how "
                                 "much the result moved, with a zero-perturbation control",
-    implementation_state="PROXY_ONLY",
+    implementation_state="DISABLED_LABORATORY_ONLY",
     implementation_path="server/app/simulation/models_gov.py::run_decision_sensitivity",
     defining_structure="a perturbation, a recomputation of the decision under it, and a "
                        "comparison of the two outcomes",
@@ -782,7 +825,7 @@ ROWS.append(dict(
     canonical_method_definition="over a set of alternatives with objective vectors, the "
                                 "nondominated set: those no other alternative matches on every "
                                 "objective while beating on at least one",
-    implementation_state="PROXY_ONLY",
+    implementation_state="DISABLED_LABORATORY_ONLY",
     implementation_path="server/app/simulation/models_gov.py::run_pareto_frontier",
     defining_structure="a set of alternatives with objective vectors, and a pairwise dominance "
                        "relation over it",
@@ -845,10 +888,18 @@ check(not any(w in " ".join(r["functional_verdict"] for r in ROWS)
               for w in ("KEEP", "REMOVE", "RETAIN", "ACTIVATE")),
       "and no row carries an architectural disposition, which is the owner's decision and not "
       "this run's")
+# RUN 28 ADDED A SIXTH STATE, and it names a condition none of the five could describe. A3.8's
+# canonical method is IMPLEMENTED -- fully, with its structure, its coefficients, their units and
+# its known answer -- and is reached by NO production path, because the owner's supplied contract
+# requires the module to stay disabled and non-voting until a later activation decision. It is
+# not a proxy, not partial, not a placeholder and not unimplemented, and calling it any of those
+# would be false in one direction or the other. The vocabulary is EXTENDED, not opened: a state
+# outside the named six is still red.
 check(all(r["implementation_state"] in ("FULL_IMPLEMENTATION", "PARTIAL_IMPLEMENTATION",
-                                        "PROXY_ONLY", "PLACEHOLDER", "NOT_IMPLEMENTED")
+                                        "PROXY_ONLY", "PLACEHOLDER", "NOT_IMPLEMENTED",
+                                        "DISABLED_LABORATORY_ONLY")
           for r in ROWS),
-      "and every implementation state is one of the five permitted states",
+      "and every implementation state is one of the six permitted states",
       str(sorted({r["implementation_state"] for r in ROWS})))
 check(sum(1 for r in ROWS if r["method_fidelity"] == "MISMATCH") == 6
       and sum(1 for r in ROWS if r["method_fidelity"] == "PARTIAL") == 2,

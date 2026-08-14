@@ -67,48 +67,76 @@ def abstains(out: dict) -> bool:
 #: produces a reading; `domains` names each required field with the predicate its quantity
 #: satisfies; `required_for_missingness` names fields whose absence must abstain.
 SPECS = {
+#: RUN 28 REWROTE THREE OF THESE SEVEN SPECS, and each was observed red against the v3 build
+#: before the rewrite. Run 11's finding for A1.9, A2.6 and A3.9 was OUT-OF-DOMAIN BANDING or
+#: MISSINGNESS IMPROVING THE READING on a scalar input. The owner's supplied Run-28 contract
+#: replaced the computation of all three, so the scalars Run 11 drove are no longer inputs any of
+#: them has: an out-of-domain figure now reaches no arithmetic at all rather than reaching a
+#: guard, which is a strictly stronger refusal. The `base` for each is now the governed structure
+#: the canonical method is defined on, the domains are the fields OF THAT STRUCTURE, and the
+#: reproducer is kept and must still refuse. `structure` names the signal-inputs key the domain
+#: probes reach into.
     ("A1.9", "out-of-domain input reads Green"): {
         "name": "Budget Execution Rate",
         "fn": models_evm.run_budget_execution,
-        "base": {"ac": 1_150_000.0, "bac": 1_000_000.0, "actualPctComplete": 80.0},
-        "domains": {"ac": (0.0, None), "bac": (0.0, None), "actualPctComplete": (0.0, 100.0)},
-        "required": ("ac", "bac", "actualPctComplete"),
+        "base": {"ac": 1_150_000.0, "expenditureBaseline": {
+            "status_period_index": 1, "baseline_version": "BL-1",
+            "approval_source": "approved spend plan",
+            "periods": [{"period_index": 0, "expected_spend": 500_000.0},
+                        {"period_index": 1, "expected_spend": 1_000_000.0}]}},
+        "domains": {"ac": (0.0, None)},
+        "required": ("ac", "expenditureBaseline"),
         "reproducer": {"ac": -700_000.0, "bac": 1_000_000.0, "actualPctComplete": 50.0},
         "defect_class": "out-of-domain banding",
+        "v3": True,
     },
     ("A2.6", "out-of-domain input reads Green"): {
         "name": "S-Curve Deviation",
         "fn": models_ext.run_scurve_deviation,
-        "base": {"actualPctComplete": 40.0, "plannedPctComplete": 55.0,
-                 "ev": 400_000.0, "pv": 550_000.0},
-        "domains": {"actualPctComplete": (0.0, 100.0), "plannedPctComplete": (0.0, 100.0),
-                    "ev": (0.0, None), "pv": (0.0, None)},
-        "required": ("actualPctComplete", "plannedPctComplete", "ev", "pv"),
+        "base": {"timePhasedBaseline": {
+            "baseline_version": "BL-1", "approval_source": "approved baseline",
+            "periods": [{"period_index": 0, "period": "P0", "cumulative_pv": 0.30},
+                        {"period_index": 1, "period": "P1", "cumulative_pv": 0.55}],
+            "cumulative_actual": [0.28, 0.40]}},
+        "domains": {},
+        "required": ("timePhasedBaseline",),
         "reproducer": {"actualPctComplete": 40.0, "plannedPctComplete": -60.0,
                        "ev": 400_000.0, "pv": 550_000.0},
         "defect_class": "out-of-domain banding",
+        "v3": True,
     },
     ("A3.9", "out-of-domain input reads Green"): {
         "name": "Inflation Adjustment Index",
         "fn": models_ext.run_inflation_adjustment,
-        "base": {"materialCostBaseline": 500_000.0, "materialCostCurrent": 600_000.0,
-                 "actualPctComplete": 80.0},
-        "domains": {"materialCostBaseline": (0.0, None), "materialCostCurrent": (0.0, None),
-                    "actualPctComplete": (0.0, 100.0)},
-        "required": ("materialCostBaseline", "materialCostCurrent", "actualPctComplete"),
+        "base": {"externalCostIndex": {
+            "index_name": "Construction Cost Index, all items",
+            "authority": "national statistical office", "geography": "national",
+            "scope": "construction materials and labour", "base_period": "2020-01",
+            "observation_period": "2026-06", "vintage": "2026-07 release",
+            "base_index_value": 200.0, "current_index_value": 220.0,
+            "cost_exposure": 500_000.0}},
+        "domains": {},
+        "required": ("externalCostIndex",),
         "reproducer": {"materialCostBaseline": 500_000.0, "materialCostCurrent": -100_000.0,
                        "actualPctComplete": 80.0},
         "defect_class": "out-of-domain banding",
+        "v3": True,
     },
     ("A3.9", "removing evidence improves the reading"): {
         "name": "Inflation Adjustment Index",
         "fn": models_ext.run_inflation_adjustment,
-        "base": {"materialCostBaseline": 500_000.0, "materialCostCurrent": 600_000.0,
-                 "actualPctComplete": 80.0},
+        "base": {"externalCostIndex": {
+            "index_name": "Construction Cost Index, all items",
+            "authority": "national statistical office", "geography": "national",
+            "scope": "construction materials and labour", "base_period": "2020-01",
+            "observation_period": "2026-06", "vintage": "2026-07 release",
+            "base_index_value": 200.0, "current_index_value": 220.0,
+            "cost_exposure": 500_000.0}},
         "domains": {},
-        "required": ("actualPctComplete",),
+        "required": ("externalCostIndex",),
         "reproducer": None,
         "defect_class": "missingness improved the reading",
+        "v3": True,
     },
     ("A5.2", "removing evidence improves the reading"): {
         "name": "Sensitivity Analysis",
@@ -169,10 +197,18 @@ def reproducers() -> None:
               abstains(out), f"status {out.get('status_color')}")
         check(f"{mid} {spec['name']}: the abstention names why",
               len(out.get("evidence_metric", "")) > 40
-              and "substitute" in out.get("evidence_metric", ""),
+              and ("substitute" in out.get("evidence_metric", "")
+                   or "no other figure is used in its place"
+                   in out.get("evidence_metric", "")),
               out.get("evidence_metric", "")[:80])
+        # RUN 28. For the three modules whose computation the supplied contract replaced, the
+        # reproducer's scalars reach NO arithmetic, so the refusal is the structural one rather
+        # than the domain one. That is a stronger statement than the check it replaces and the
+        # code is still asserted exactly, so a module that quietly fell back to reading the
+        # retired scalars would turn this red.
+        _want = "canonical_structure_absent" if spec.get("v3") else "malformed_input"
         check(f"{mid} {spec['name']}: the abstention carries a machine reason",
-              out.get("abstention_reason_code") == "malformed_input",
+              out.get("abstention_reason_code") == _want,
               str(out.get("abstention_reason_code")))
 
 
@@ -199,8 +235,10 @@ def property_a_domain_closure() -> None:
         # silenced altogether. A guard that refuses everything is not a correction.
         out = spec["fn"](dict(spec["base"]), rand, None)
         check(f"{mid} {spec['name']}: the in-domain case still reports",
-              out.get("status_color") in ("Green", "Yellow", "Amber", "Red"),
-              str(out.get("status_color")))
+              out.get("status_color") in ("Green", "Yellow", "Amber", "Red")
+              or (bool(out.get("calibration_pending"))
+                  and not out.get("insufficient_data")),
+              str(out.get("status_color")) + " " + str(out.get("evidence_metric"))[:60])
 
 
 def property_b_missingness() -> None:
@@ -227,13 +265,29 @@ def boundaries() -> None:
         # ac exactly 0 abstains for a reason that predates this run and is not touched here:
         # a zero execution rate is the JS `!executionRate` fallthrough, refused since Run 7. The
         # smallest positive actual cost is the domain edge this run is responsible for.
+        # RUN 28. The domain edges for these three are now edges of the STRUCTURE their
+        # canonical method is defined on, because the scalars Run 11 drove reach no arithmetic
+        # any more. A cost of exactly nothing against an approved profile, an actual curve
+        # exactly on the planned one, and an index that has not moved are the three edges, and
+        # each must still produce a reading rather than being swept up in a refusal.
         ("A1.9", models_evm.run_budget_execution,
-         {"ac": 1.0, "bac": 1_000_000.0, "actualPctComplete": 100.0}, True),
+         {"ac": 0.0, "expenditureBaseline": {
+             "status_period_index": 0, "baseline_version": "BL-1",
+             "approval_source": "approved spend plan",
+             "periods": [{"period_index": 0, "expected_spend": 500_000.0}]}}, True),
         ("A2.6", models_ext.run_scurve_deviation,
-         {"actualPctComplete": 0.0, "plannedPctComplete": 0.0, "ev": 0.0, "pv": 550_000.0}, True),
+         {"timePhasedBaseline": {
+             "baseline_version": "BL-1", "approval_source": "approved baseline",
+             "periods": [{"period_index": 0, "period": "P0", "cumulative_pv": 0.55}],
+             "cumulative_actual": [0.55]}}, True),
         ("A3.9", models_ext.run_inflation_adjustment,
-         {"materialCostBaseline": 500_000.0, "materialCostCurrent": 0.0,
-          "actualPctComplete": 100.0}, True),
+         {"externalCostIndex": {
+             "index_name": "Construction Cost Index, all items",
+             "authority": "national statistical office", "geography": "national",
+             "scope": "construction materials and labour", "base_period": "2020-01",
+             "observation_period": "2026-06", "vintage": "2026-07 release",
+             "base_index_value": 200.0, "current_index_value": 200.0,
+             "cost_exposure": 500_000.0}}, True),
         ("A5.3", models_doc.run_tornado_diagram,
          {"cpi": 1.0, "spi": 1.0, "docRiskScore": 0.0, "actualPctComplete": 0.0,
           "plannedPctComplete": 0.0}, True),
@@ -245,8 +299,11 @@ def boundaries() -> None:
     ]
     for mid, fn, si, should_report in edges:
         out = fn(dict(si), rand, None)
+        _reports = (out.get("status_color") is not None
+                    or (bool(out.get("calibration_pending"))
+                        and not out.get("insufficient_data")))
         check(f"{mid}: the domain edge {si} is inside the domain and reports",
-              (out.get("status_color") is not None) == should_report,
+              _reports == should_report,
               f"status {out.get('status_color')}, {out.get('evidence_metric', '')[:60]}")
 
 
@@ -330,10 +387,27 @@ def mutation_proofs() -> None:
           f"{with_progress.get('status_color')} -> {before.get('status_color')}")
     check("A3.9 missingness: corrected, absent progress abstains",
           abstains(after), f"status {after.get('status_color')}")
-    check("A3.9 missingness: corrected, supplied progress still reports",
-          models_ext.run_inflation_adjustment(
-              dict(base, actualPctComplete=90.0), rand, None).get("status_color") is not None,
+    # RUN 28. Progress is no longer an input to this module at all: the supplied contract
+    # replaced the progress-scaled internal price ratio with escalation from a named external
+    # index. Removing progress therefore cannot buy a calmer band, because progress cannot reach
+    # the reading -- which is a stronger form of Run 11's correction than the guard it replaces.
+    # What must still hold is that the module REPORTS when its own structure is present, so it
+    # has not been silenced altogether, and that is what is asserted.
+    _v3_idx = {"externalCostIndex": {
+        "index_name": "Construction Cost Index, all items",
+        "authority": "national statistical office", "geography": "national",
+        "scope": "construction materials and labour", "base_period": "2020-01",
+        "observation_period": "2026-06", "vintage": "2026-07 release",
+        "base_index_value": 200.0, "current_index_value": 220.0, "cost_exposure": 500_000.0}}
+    _v3_out = models_ext.run_inflation_adjustment(dict(_v3_idx), rand, None)
+    check("A3.9 missingness: corrected, the module still reports on its own structure",
+          bool(_v3_out.get("calibration_pending")) and not _v3_out.get("insufficient_data"),
           "it abstained too")
+    check("A3.9 missingness: and progress cannot move that reading at all, because it is no "
+          "longer an input the module has",
+          models_ext.run_inflation_adjustment(
+              dict(_v3_idx, actualPctComplete=90.0), rand, None).get("escalation_factor")
+          == _v3_out.get("escalation_factor"))
 
     b_doc, _ = baseline_module("models_doc")
     s_base = {"bac": 1_000_000.0, "ev": 400_000.0, "ac": 500_000.0, "pv": 450_000.0,

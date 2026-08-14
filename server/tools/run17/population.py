@@ -61,7 +61,13 @@ SPEC_NAMES: dict[str, str] = {
     "1.1": "Monte Carlo EAC", "1.2": "CUSUM Anomaly Monitor", "1.3": "Bayesian EAC",
     "1.4": "Kalman Filter SPI Smoother", "1.5": "ARIMA CPI Forecast", "1.6": "Earned Schedule",
     "1.7": "TCPI", "1.8": "Variance at Completion", "1.9": "Budget Execution Rate",
-    "1.10": "Regression to Mean CPI", "1.11": "ICE Ratio",
+    # RUN 28. The owner's Run-28 supervisory contract renames both of these, under its own
+    # authority, and the registry map now carries the new names. The Run-17 transcription is
+    # updated here so the mapping proof continues to compare the registry against the
+    # SPECIFICATION rather than against a stale transcription of an earlier one; the previous
+    # names are recorded beside them so the identity is still followable.
+    "1.10": "CPI Shrinkage Forecast",              # Run 17 and earlier: Regression to Mean CPI
+    "1.11": "Independent EAC Reconciliation Index",  # Run 17 and earlier: ICE Ratio
     "2.1": "PERT Network Criticality", "2.2": "Line of Balance", "2.3": "CCPM Buffer Health",
     "2.4": "Schedule Compression Index", "2.5": "Float Consumption Rate",
     "2.6": "S-Curve Deviation", "2.7": "Milestone Trend Analysis",

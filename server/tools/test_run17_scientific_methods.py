@@ -124,6 +124,14 @@ def run(code_id: str, si: dict) -> dict:
 
 
 def abstained(out: dict) -> bool:
+    # RUN 28. A calibration-pending row is NOT an abstention: the canonical method ran and
+    # produced a figure, and only the status colour is withheld because no boundary for the
+    # quantity has been established from evidence. This is the same distinction
+    # registry.record() makes when it routes such a row to `computed` rather than to
+    # `abstained`. `insufficient_data` still wins, so a module that genuinely refuses is still
+    # read as refusing and no guard below is weakened by this.
+    if out.get("calibration_pending") and not out.get("insufficient_data"):
+        return False
     return bool(out.get("insufficient_data")) or out.get("status_color") is None
 
 
@@ -252,94 +260,165 @@ def cat1() -> None:
 
     # ------------------------------------------------------------------ 1.3 Bayesian EAC
     mid = "1.3"
-    out = run("A1.3", {**BASE_EVM, "bac": 1000.0, "cpi": 0.8})
-    check(mid, "positive: executes", not abstained(out), str(out))
-    # Hand calculation from the normal-normal identity, using the variances the module's own
-    # declared design fixes: prior N(BAC, (0.15 BAC)^2), likelihood N(BAC/CPI, (BAC(1-CPI)/CPI)^2).
-    # The identity comes from the oracle; only the design constants come from the module's
-    # stated design, which is what "implements its declared formulation" means.
-    mu, var = O.normal_normal_posterior(1000.0, (0.15 * 1000.0) ** 2,
-                                        1000.0 / 0.8, (1000.0 * 0.2 / 0.8) ** 2)
-    near(mid, "known-answer: posterior mean matches the normal-normal identity",
-         out.get("posterior_eac"), round(mu), tol=1.0)
-    check(mid, "structure: posterior lies between prior mean and likelihood mean",
-          1000.0 <= mu <= 1250.0, str(mu))
-    check(mid, "boundary: refuses a unit cost index, where the likelihood variance vanishes",
-          abstained(run("A1.3", {**BASE_EVM, "cpi": 1.0})))
-    check(mid, "missingness: refuses without a cost index",
-          abstained(run("A1.3", {"bac": 1000.0, "ev": 500.0, "ac": 600.0})))
+    # RUN 28. Run 17 recorded that this module updated a normal-normal posterior using two
+    # DESIGNED constant variances, (0.15*BAC)^2 and (BAC(1-CPI)/CPI)^2, neither of which stated
+    # a source. v3 requires the governed Bayesian model record and abstains without it. The
+    # oracle below is the specification's own worked example and comes from run17/oracle, which
+    # Run 17 committed and Run 28 did not touch.
+    model = {"parameter": "cost at completion",
+             "prior": {"mean": 100.0, "variance": 100.0, "source": "approved budget baseline"},
+             "likelihood": {"observation": 120.0, "variance": 100.0,
+                            "source": "reported cost at completion",
+                            "variance_basis": "residual spread of reported forecasts"}}
+    out = run("A1.3", {**BASE_EVM, "bayesianEacModel": model})
+    check(mid, "positive: executes on the governed model record", not abstained(out))
+    mu, var = O.normal_normal_posterior(100.0, 100.0, 120.0, 100.0)
+    near(mid, "known-answer: the specification's posterior mean of 110",
+         out.get("posterior_eac"), 110.0, tol=1e-9)
+    near(mid, "known-answer: the specification's posterior variance of 50",
+         out.get("posterior_variance"), 50.0, tol=1e-9)
+    check(mid, "known-answer: production agrees with the independent normal-normal oracle",
+          abs(out.get("posterior_eac") - mu) < 1e-9
+          and abs(out.get("posterior_variance") - var) < 1e-9)
+    check(mid, "structure: the prior, its source, the observation model and a credible "
+               "interval are all reported",
+          all(k in out for k in ("prior_mean", "prior_variance", "prior_source",
+                                 "observation", "observation_variance", "observation_model",
+                                 "credible_low", "credible_high")))
     check(mid, "invariant: the posterior variance is smaller than either input variance",
-          var < (0.15 * 1000.0) ** 2 and var < (1000.0 * 0.2 / 0.8) ** 2)
+          out["posterior_variance"] < 100.0)
+    check(mid, "invariant: the posterior mean lies between the prior mean and the observation",
+          100.0 <= out["posterior_eac"] <= 120.0)
+    check(mid, "missingness: with no governed model record the answer is not estimable, and "
+               "the designed constant variances are not used in its place",
+          abstained(run("A1.3", {**BASE_EVM, "bac": 1000.0, "cpi": 0.8})))
+    check(mid, "missingness: a prior with no stated source is refused",
+          abstained(run("A1.3", {**BASE_EVM, "bayesianEacModel": {
+              **model, "prior": {"mean": 100.0, "variance": 100.0, "source": ""}}})))
+    check(mid, "boundary: a variance of zero or below cannot carry a belief",
+          abstained(run("A1.3", {**BASE_EVM, "bayesianEacModel": {
+              **model, "prior": {"mean": 100.0, "variance": 0.0, "source": "x"}}})))
+    check(mid, "calibration: no status band is asserted on a governed posterior",
+          out.get("status_color") is None and out.get("calibration_pending") is True)
+    check(mid, "label: the proxy qualifier is gone, because the proxy is gone",
+          "A1.3" not in REG.PROXY_QUALIFIERS)
 
     # ------------------------------------------------------------------ 1.4 Kalman
     mid = "1.4"
-    hist = [0.90, 0.94, 0.92, 0.96]
-    out = run("A1.4", {**BASE_EVM, "spiHistory": hist})
-    check(mid, "positive: executes on a history of at least two periods", not abstained(out))
-    # Independent scalar random-walk recursion with the module's own declared Q and R.
-    want = O.kalman_scalar_filter(hist, q=0.01, r=0.1, p0=1.0)
-    near(mid, "known-answer: recursion matches the canonical scalar filter",
-         out.get("smoothed_spi"), round(want, 3), tol=1e-3)
-    check(mid, "boundary: refuses a single observation",
-          abstained(run("A1.4", {**BASE_EVM, "spiHistory": [0.9]})))
-    check(mid, "missingness: refuses with no history at all",
-          abstained(run("A1.4", {"bac": 1000.0})))
-    # Invariant: the filter output lies inside the range of its observations.
-    check(mid, "invariant: the smoothed estimate lies within the observed range",
-          min(hist) <= want <= max(hist), str(want))
-    # Metamorphic: a constant series must be a fixed point of the recursion.
-    near(mid, "metamorphic: a constant series is a fixed point",
-         O.kalman_scalar_filter([0.87] * 6, 0.01, 0.1), 0.87, tol=1e-12)
-    # The specification's own oracle, against the same independent recursion.
-    x, p, k = O.kalman_scalar_step(1.0, 1.0, 0.0, 1.0, 2.0)
+    # THE SPECIFICATION'S OWN WORKED STEP, against the independent recursion Run 17 committed.
+    x, p_, k = O.kalman_scalar_step(1.0, 1.0, 0.0, 1.0, 2.0)
     check(mid, "known-answer: the specification's worked step reproduces exactly",
-          (x, p, k) == (1.5, 0.5, 0.5))
+          (x, p_, k) == (1.5, 0.5, 0.5))
+    ssm = {"initial_state": 1.0, "initial_variance": 1.0, "process_variance": 0.0,
+           "measurement_variance": 1.0, "observations": [2.0],
+           "process_variance_source": "declared random walk, no process noise",
+           "measurement_variance_source": "repeated readings of one period across two "
+                                          "document types"}
+    out = run("A1.4", {**BASE_EVM, "kalmanStateSpaceModel": ssm})
+    check(mid, "positive: executes on the governed state space record", not abstained(out))
+    near(mid, "known-answer: production reproduces the specification's filtered state of 1.5",
+         out.get("smoothed_spi"), 1.5, tol=1e-9)
+    near(mid, "known-answer: and the specification's gain of 0.5",
+         out.get("final_gain"), 0.5, tol=1e-9)
+    near(mid, "known-answer: and the specification's posterior variance of 0.5",
+         out.get("posterior_variance"), 0.5, tol=1e-9)
+    hist = [0.90, 0.94, 0.92, 0.96]
+    want = O.kalman_scalar_filter(hist, q=0.01, r=0.1, p0=1.0)
+    series = run("A1.4", {**BASE_EVM, "kalmanStateSpaceModel": {
+        **ssm, "initial_state": hist[0], "initial_variance": 1.0, "process_variance": 0.01,
+        "measurement_variance": 0.1, "observations": hist[1:]}})
+    near(mid, "known-answer: a longer run matches the independent scalar filter",
+         series.get("smoothed_spi"), round(want, 3), tol=1e-3)
+    check(mid, "invariant: the filtered estimate lies within the observed range",
+          min(hist) <= series["smoothed_spi"] <= max(hist))
+    check(mid, "structure: both variances state where they came from",
+          bool(out.get("process_variance_source"))
+          and bool(out.get("measurement_variance_source")))
+    check(mid, "missingness: with no governed state space record the answer is not estimable, "
+               "and the fixed Q and R are not used in its place",
+          abstained(run("A1.4", {**BASE_EVM, "spiHistory": hist})))
+    check(mid, "missingness: a variance with no stated source is refused",
+          abstained(run("A1.4", {**BASE_EVM, "kalmanStateSpaceModel": {
+              **ssm, "measurement_variance_source": ""}})))
+    check(mid, "boundary: a measurement variance of zero cannot be filtered on",
+          abstained(run("A1.4", {**BASE_EVM, "kalmanStateSpaceModel": {
+              **ssm, "measurement_variance": 0.0}})))
+    check(mid, "calibration: no status band is asserted on a filtered state",
+          out.get("status_color") is None and out.get("calibration_pending") is True)
+    check(mid, "label: the proxy qualifier is gone, because the proxy is gone",
+          "A1.4" not in REG.PROXY_QUALIFIERS)
 
     # ------------------------------------------------------------------ 1.5 ARIMA
     mid = "1.5"
-    out = run("A1.5", {**BASE_EVM, "cpiHistory": [0.95, 0.93, 0.90, 0.88]})
-    check(mid, "positive: executes on a history of at least three periods", not abstained(out))
-    check(mid, "structure: reports a single autoregressive coefficient", "phi" in out)
-    # The declared ARIMA contract needs d, an AR order, an MA order, an identification rule and
-    # a forecast interval. Establish which of those the result object can carry at all.
-    for field in ("d", "differencing_order", "ma_coefficients", "residual_diagnostics",
-                  "forecast_interval", "prediction_interval", "model_selection"):
-        check(mid, f"structure: no {field} is present, so the declared ARIMA contract is "
-                   f"not represented", field not in out)
-    check(mid, "boundary: refuses fewer than three observations",
-          abstained(run("A1.5", {**BASE_EVM, "cpiHistory": [0.95, 0.93]})))
+    # RUN 28 REMEDIATED BOTH OF THESE MODULES, so the propositions below are inverted from
+    # what Run 17 wrote. Run 17 established, and these checks recorded, that A1.5 was an AR(1)
+    # on first differences under an ARIMA name and that A1.6 was a percent-complete ratio under
+    # the Earned Schedule name. Both were observed FAILING against the v3 build before being
+    # rewritten -- test_run17_scientific_methods.py raised KeyError: 'spi_time' -- and the
+    # rewrite asserts the canonical contract rather than the defect it replaced.
+    long_history = [0.99, 0.97, 0.96, 0.94, 0.93, 0.91, 0.90, 0.88, 0.87, 0.86]
+    out = run("A1.5", {**BASE_EVM, "cpiHistory": long_history})
+    check(mid, "positive: executes on a history long enough to identify a model from",
+          not abstained(out))
+    for field in ("arima_p", "arima_d", "arima_q", "ar_coefficients", "ma_coefficients",
+                  "selection_criterion", "aicc", "residual_autocorrelation",
+                  "ljung_box_lag1", "interval_low", "interval_high"):
+        check(mid, f"structure: the declared ARIMA contract's {field} is reported",
+              field in out)
+    check(mid, "structure: the model order is identified rather than fixed at (1,1,0)",
+          out.get("selection_criterion") == "AICc")
+    check(mid, "boundary: a history shorter than the stated minimum is not estimable",
+          abstained(run("A1.5", {**BASE_EVM, "cpiHistory": [0.95, 0.93, 0.90, 0.88]})))
     check(mid, "boundary: refuses a series carrying a non-positive cost index",
-          abstained(run("A1.5", {**BASE_EVM, "cpiHistory": [0.95, 0.0, 0.90, 0.88]})))
-    flat = run("A1.5", {**BASE_EVM, "cpiHistory": [0.9, 0.9, 0.9, 0.9]})
+          abstained(run("A1.5", {**BASE_EVM, "cpiHistory": [0.95, 0.0, 0.90, 0.88] * 3})))
+    flat = run("A1.5", {**BASE_EVM, "cpiHistory": [0.9] * 10})
     near(mid, "invariant: a constant series forecasts itself",
          flat.get("forecast_cpi"), 0.9, tol=1e-9)
+    check(mid, "calibration: the forecast carries no status band, which is Run 33's work",
+          out.get("status_color") is None and out.get("calibration_pending") is True)
 
     # ------------------------------------------------------------------ 1.6 Earned Schedule
     mid = "1.6"
-    out = run("A1.6", {**BASE_EVM, "actualPctComplete": 50.0, "plannedPctComplete": 60.0})
-    check(mid, "positive: executes", not abstained(out))
-    # The canonical answer, from an actual planned-value curve, computed independently.
+    # THE INDEPENDENT ORACLE, committed by Run 17 before Run 28 existed and untouched by it.
     es = O.earned_schedule([0, 20, 40, 60], 50, 3)
     near(mid, "known-answer: the canonical interpolation on the specification's curve",
          es["SPI_t"], 5.0 / 6.0, tol=1e-12)
-    # What production reports for the same project state, and whether the canonical structure
-    # is reachable at all. A percent-complete ratio cannot depend on the shape of the PV curve;
-    # the canonical measure must. That is the discriminating test.
-    ratio = 50.0 / 60.0
-    near(mid, "structural discriminator: production reports the percent-complete ratio",
-         out.get("spi_time"), round(ratio, 3), tol=1e-3)
-    front = O.earned_schedule([0, 40, 55, 60], 50, 3)     # front-loaded curve, same EV and AT
-    check(mid, "structural discriminator: the canonical measure moves when the planned-value "
-               "curve changes shape, and the implemented one cannot",
+    curve = {"periods": [{"period_index": i, "period": f"P{i}", "cumulative_pv": v}
+                         for i, v in enumerate([0, 20, 40, 60])],
+             "actual_time_periods": 3,
+             "baseline_version": "BL-1", "approval_source": "approved baseline"}
+    out = run("A1.6", {**BASE_EVM, "ev": 50, "timePhasedBaseline": curve})
+    check(mid, "positive: executes on the cumulative planned value curve", not abstained(out))
+    near(mid, "known-answer: production now reproduces the independent oracle exactly",
+         out.get("spi_time"), round(es["SPI_t"], 3), tol=1e-3)
+    near(mid, "known-answer: the earned schedule itself is 2.5 periods",
+         out.get("earned_schedule"), 2.5, tol=1e-9)
+    near(mid, "known-answer: the time based schedule variance is minus half a period",
+         out.get("schedule_variance_time"), -0.5, tol=1e-9)
+    # THE DISCRIMINATOR RUN 17 WROTE, NOW SATISFIED IN THE OTHER DIRECTION: the canonical
+    # measure MUST move when the shape of the planned value curve changes, and a percent
+    # complete ratio cannot. Production now moves with it.
+    front_curve = {**curve, "periods": [{"period_index": i, "period": f"P{i}",
+                                         "cumulative_pv": v}
+                                        for i, v in enumerate([0, 40, 55, 60])]}
+    front_out = run("A1.6", {**BASE_EVM, "ev": 50, "timePhasedBaseline": front_curve})
+    front = O.earned_schedule([0, 40, 55, 60], 50, 3)
+    check(mid, "structural discriminator: production tracks the shape of the planned value "
+               "curve, which a percent complete ratio structurally cannot",
           abs(front["SPI_t"] - es["SPI_t"]) > 0.1
-          and out.get("spi_time") == run("A1.6", {**BASE_EVM})["spi_time"])
-    for key in ("pvCurve", "plannedValueCurve", "pv_cumulative"):
-        check(mid, f"canonical structure: no {key} is read from the input contract",
-              key not in REG.run_module.__doc__ if False else True)
-    check(mid, "boundary: refuses a completion percentage outside nought to one hundred",
-          abstained(run("A1.6", {**BASE_EVM, "actualPctComplete": 140.0})))
-    check(mid, "missingness: refuses without a planned completion",
-          abstained(run("A1.6", {"actualPctComplete": 50.0})))
+          and abs(front_out.get("spi_time") - round(front["SPI_t"], 3)) < 1e-3)
+    check(mid, "missingness: with no cumulative planned value curve the answer is not "
+               "estimable, and no percent complete ratio is offered in its place",
+          abstained(run("A1.6", {**BASE_EVM, "actualPctComplete": 50.0,
+                                 "plannedPctComplete": 60.0})))
+    check(mid, "missingness: refuses without the value of work performed",
+          abstained(run("A1.6", {"timePhasedBaseline": curve})))
+    check(mid, "boundary: a curve that falls over time is not a cumulative curve",
+          abstained(run("A1.6", {**BASE_EVM, "ev": 50, "timePhasedBaseline": {
+              **curve, "periods": [{"period_index": i, "period": f"P{i}", "cumulative_pv": v}
+                                   for i, v in enumerate([0, 40, 20, 60])]}})))
+    check(mid, "calibration: the time based index carries no status band",
+          out.get("status_color") is None and out.get("calibration_pending") is True)
 
     # ------------------------------------------------------------------ 1.7 TCPI
     mid = "1.7"
@@ -387,77 +466,146 @@ def cat1() -> None:
 
     # ------------------------------------------------------------------ 1.9 Budget Execution
     mid = "1.9"
-    out = run("A1.9", {"bac": 100.0, "ac": 60.0, "actualPctComplete": 50.0})
-    near(mid, "known-answer: actual cost over progress-scaled budget",
-         out.get("execution_rate"), 1.2, tol=1e-9)
-    check(mid, "structure: the denominator is a progress-scaled budget, not an approved "
-               "time-phased spend profile",
-          all(k not in out for k in ("expected_spend_profile", "approved_spend_curve",
-                                     "spend_profile_source")))
-    check(mid, "boundary: refuses a negative actual cost rather than banding it Green",
-          abstained(run("A1.9", {"bac": 100.0, "ac": -700.0, "actualPctComplete": 50.0})))
-    check(mid, "boundary: refuses progress above one hundred per cent",
-          abstained(run("A1.9", {"bac": 100.0, "ac": 60.0, "actualPctComplete": 140.0})))
-    check(mid, "missingness: refuses without reported progress",
-          abstained(run("A1.9", {"bac": 100.0, "ac": 60.0})))
+    # RUN 28. Run 17 recorded that the denominator was a progress-scaled budget rather than an
+    # approved time-phased spend profile, and these checks recorded that absence. v3 requires
+    # the profile and abstains without it.
+    profile = {"status_period_index": 3,
+               "periods": [{"period_index": i, "expected_spend": v}
+                           for i, v in enumerate([10.0, 25.0, 40.0, 50.0])],
+               "baseline_version": "BL-1", "approval_source": "approved spend plan"}
+    out = run("A1.9", {"ac": 60.0, "expenditureBaseline": profile})
+    check(mid, "positive: executes on the approved expenditure baseline", not abstained(out))
+    near(mid, "known-answer: the specification's execution ratio of 1.20",
+         out.get("execution_ratio"), 1.20, tol=1e-9)
+    near(mid, "known-answer: and its execution deviation of plus 0.20",
+         out.get("execution_deviation"), 0.20, tol=1e-9)
+    check(mid, "structure: the planned amount comes from an approved profile that states its "
+               "version and approval source",
+          out.get("expected_spend") == 50.0 and bool(out.get("baseline_version"))
+          and bool(out.get("approval_source")))
+    check(mid, "missingness: with no approved expenditure profile the answer is not estimable, "
+               "and budget times percent complete is not used in its place",
+          abstained(run("A1.9", {"bac": 100.0, "ac": 60.0, "actualPctComplete": 50.0})))
+    check(mid, "boundary: refuses a negative actual cost rather than banding it",
+          abstained(run("A1.9", {"ac": -700.0, "expenditureBaseline": profile})))
+    check(mid, "boundary: a profile that does not reach the reported period states no planned "
+               "amount for it",
+          abstained(run("A1.9", {"ac": 60.0, "expenditureBaseline": {
+              **profile, "status_period_index": -1}})))
     check(mid, "metamorphic: invariant under a change of currency scale",
-          run("A1.9", {"bac": 100.0, "ac": 60.0, "actualPctComplete": 50.0})["execution_rate"]
-          == run("A1.9", {"bac": 1e6, "ac": 6e5, "actualPctComplete": 50.0})["execution_rate"])
-    check(mid, "label: carries a proxy qualifier naming what it actually computes",
-          "A1.9" in REG.PROXY_QUALIFIERS)
+          run("A1.9", {"ac": 60.0, "expenditureBaseline": profile})["execution_ratio"]
+          == run("A1.9", {"ac": 6e5, "expenditureBaseline": {
+              **profile, "periods": [{"period_index": i, "expected_spend": v * 1e4}
+                                     for i, v in enumerate([10.0, 25.0, 40.0, 50.0])]}
+                 })["execution_ratio"])
+    check(mid, "label: the proxy qualifier is gone, because the proxy is gone",
+          "A1.9" not in REG.PROXY_QUALIFIERS)
+    check(mid, "calibration: no status band is asserted, and the contract supplies none",
+          out.get("status_color") is None and out.get("calibration_pending") is True)
 
-    # ------------------------------------------------------------------ 1.10 Regression to mean
+    # -------------------------------------------------------- 1.10 CPI Shrinkage Forecast
     mid = "1.10"
-    hist = [0.7, 0.8, 0.9]
-    out = run("A1.10", {**BASE_EVM, "cpiHistory": hist})
-    own_mean = sum(hist) / len(hist)
-    near(mid, "known-answer: shrinkage of one half toward the reference mean",
-         out.get("regressed_cpi"), round(O.cpi_shrinkage(hist[-1], own_mean, 0.5), 3), tol=1e-3)
-    check(mid, "canonical structure: the reference mean is the project's OWN history, not an "
-               "outside reference class",
-          abs(out.get("historical_mean") - own_mean) < 1e-9)
-    check(mid, "canonical structure: no reference-population fields exist on the result",
-          all(k not in out for k in ("reference_class", "reference_n", "reference_source")))
-    check(mid, "boundary: refuses a single observation",
-          abstained(run("A1.10", {**BASE_EVM, "cpiHistory": [0.8]})))
-    check(mid, "missingness: refuses with no history", abstained(run("A1.10", {"bac": 1000.0})))
-    check(mid, "invariant: the shrunk value lies between the current value and the mean",
-          min(hist[-1], own_mean) <= out["regressed_cpi"] <= max(hist[-1], own_mean))
-    check(mid, "invariant: a flat history is its own fixed point",
-          run("A1.10", {**BASE_EVM, "cpiHistory": [0.9, 0.9, 0.9]})["regressed_cpi"] == 0.9)
-    check(mid, "parameter: the shrinkage coefficient is a fixed one half, not estimated",
-          "A1.10" in REG.PROXY_QUALIFIERS
-          and "0.5" in REG.PROXY_QUALIFIERS["A1.10"].replace("50 per cent", "0.5"))
+    # RUN 28, APPROVED RENAME: Regression to Mean CPI becomes CPI Shrinkage Forecast. Run 17
+    # recorded that the target was the project's OWN history and the weight a fixed one half.
+    # v3 requires a governed reference population and refuses a weight declared as fixed.
+    refclass = {"members": [{"reference_project_id": f"REF-{i}", "cpi_outcome": v}
+                            for i, v in enumerate([0.95, 1.00, 1.05])],
+                "shrinkage_weight": 0.60,
+                "class_membership_basis": "same delivery method and size band",
+                "weight_estimation_method": "variance components across the population",
+                "data_vintage": "2026-06", "project_stage": "execution",
+                "evaluated_project_id": "PRJ-UNDER-TEST"}
+    out = run("A1.10", {**BASE_EVM, "cpi": 0.80, "cpiReferenceClass": refclass})
+    check(mid, "positive: executes on the governed reference class", not abstained(out))
+    near(mid, "known-answer: the specification's pooled value of 0.88",
+         out.get("cpi_shrunk"), 0.88, tol=1e-9)
+    near(mid, "known-answer: production agrees with the independent shrinkage oracle",
+         out.get("cpi_shrunk"), round(O.cpi_shrinkage(0.80, 1.00, 0.60), 3), tol=1e-3)
+    check(mid, "canonical structure: the target is an OUTSIDE reference population, and the "
+               "population, its basis and its vintage are reported",
+          out.get("reference_members") == 3 and bool(out.get("class_membership_basis"))
+          and bool(out.get("data_vintage")))
+    check(mid, "invariant: the pooled value lies between the project reading and the "
+               "reference mean",
+          min(0.80, 1.00) <= out["cpi_shrunk"] <= max(0.80, 1.00))
+    check(mid, "invariant: a weight of one returns the project's own reading unchanged",
+          run("A1.10", {**BASE_EVM, "cpi": 0.80, "cpiReferenceClass": {
+              **refclass, "shrinkage_weight": 1.0}})["cpi_shrunk"] == 0.8)
+    check(mid, "missingness: with no reference class the answer is not estimable, and the "
+               "project's own history is not used as a substitute population",
+          abstained(run("A1.10", {**BASE_EVM, "cpiHistory": [0.7, 0.8, 0.9]})))
+    check(mid, "parameter: a weight declared as fixed rather than estimated is refused",
+          abstained(run("A1.10", {**BASE_EVM, "cpi": 0.8, "cpiReferenceClass": {
+              **refclass, "weight_estimation_method": "HARD_CODED"}})))
+    check(mid, "boundary: a weight outside nought to one is not a share",
+          abstained(run("A1.10", {**BASE_EVM, "cpi": 0.8, "cpiReferenceClass": {
+              **refclass, "shrinkage_weight": 1.4}})))
+    check(mid, "self-training: the project may not be a member of the population it is pooled "
+               "toward",
+          abstained(run("A1.10", {**BASE_EVM, "cpi": 0.8, "cpiReferenceClass": {
+              **refclass, "members": refclass["members"]
+              + [{"reference_project_id": "PRJ-UNDER-TEST", "cpi_outcome": 0.9}]}})))
+    check(mid, "rename: the registry carries the approved name",
+          REG.registry_index()["A1.10"]["module_name"] == "CPI Shrinkage Forecast")
+    check(mid, "label: the proxy qualifier is gone, because the proxy is gone",
+          "A1.10" not in REG.PROXY_QUALIFIERS)
 
     # ------------------------------------------------------------------ 1.11 ICE Ratio
+    # ------------------------------ 1.11 Independent EAC Reconciliation Index
     mid = "1.11"
-    si = {"bac": 1000.0, "ev": 500.0, "ac": 600.0, "cpi": 0.8}
-    out = run("A1.11", si)
-    eac_cpi = 1000.0 / 0.8
-    eac_par = 600.0 + (1000.0 - 500.0)
-    near(mid, "known-answer: the ratio of the two forecasts", out.get("ice_ratio"),
-         round(eac_cpi / eac_par, 3), tol=1e-3)
-    # THE INDEPENDENCE TEST. Both forecasts are deterministic functions of the same four inputs.
-    # If they were provenance-independent, one could move while the other stayed fixed. Prove
-    # they cannot: perturb the shared inputs and show both move together, and show no input
-    # exists that feeds only one of them from an outside source.
-    si2 = {**si, "cpi": 0.75}
-    out2 = run("A1.11", si2)
-    check(mid, "independence: both estimates are functions of the same input vector, so no "
-               "independent estimate exists",
-          out.get("eac_parametric") == out2.get("eac_parametric")
-          and out.get("eac_cpi") != out2.get("eac_cpi"))
-    check(mid, "independence: no independent-source field is carried on the result",
-          all(k not in out for k in ("independent_estimate_source", "ice_source",
-                                     "independent_basis", "estimator_identity")))
-    check(mid, "boundary: refuses a non-positive cost index",
-          abstained(run("A1.11", {**si, "cpi": 0.0}))
-          and abstained(run("A1.11", {**si, "cpi": -0.5})))
-    check(mid, "missingness: refuses without an actual cost",
-          abstained(run("A1.11", {"bac": 1000.0, "ev": 500.0, "cpi": 0.8})))
-    check(mid, "invariant: identical forecasts give a ratio of exactly one",
-          abs(run("A1.11", {"bac": 1000.0, "ev": 500.0, "ac": 500.0, "cpi": 1.0})["ice_ratio"]
-              - 1.0) < 1e-9)
+    # RUN 28, APPROVED RENAME: ICE Ratio becomes Independent EAC Reconciliation Index. Run 17's
+    # independence test proved that v2's two "forecasts" were deterministic functions of one
+    # input vector, so no independent estimate existed. v3 requires two provenance-distinct
+    # estimates and CHECKS the distinction rather than asserting it.
+    pair = {"management_eac": {"eac": 100.0, "source": "project controls monthly report",
+                               "method": "cost index extrapolation",
+                               "assumptions": "current performance continues",
+                               "model_version": "PC-2026.08",
+                               "responsible_party": "project management team"},
+            "independent_eac": {"eac": 120.0, "source": "independent review board",
+                                "method": "bottom up re-estimate of remaining work",
+                                "assumptions": "remaining scope re-priced at current rates",
+                                "model_version": "IRB-2026.07",
+                                "responsible_party": "independent review board"}}
+    out = run("A1.11", {"independentEacPair": pair})
+    check(mid, "positive: executes on two provenance-distinct forecasts", not abstained(out))
+    near(mid, "known-answer: the specification's reconciliation index of 1.20",
+         out.get("ier"), 1.20, tol=1e-9)
+    near(mid, "known-answer: and its divergence of 0.20",
+         out.get("divergence"), 0.20, tol=1e-9)
+    check(mid, "lineage: both estimates carry source, method, assumptions, model version and "
+               "responsible party",
+          all(k in out.get("management_lineage", {})
+              for k in ("source", "method", "assumptions", "model_version",
+                        "responsible_party"))
+          and all(k in out.get("independent_lineage", {})
+                  for k in ("source", "method", "assumptions", "model_version",
+                            "responsible_party")))
+    check(mid, "independence: two forecasts prepared by the same METHOD are two "
+               "transformations of one estimate and are refused",
+          abstained(run("A1.11", {"independentEacPair": {
+              **pair, "independent_eac": {**pair["independent_eac"],
+                                          "method": "cost index extrapolation"}}})))
+    check(mid, "independence: two forecasts prepared by the same PARTY are refused",
+          abstained(run("A1.11", {"independentEacPair": {
+              **pair, "independent_eac": {**pair["independent_eac"],
+                                          "responsible_party": "project management team"}}})))
+    check(mid, "missingness: with no second estimate the answer is not estimable, and two "
+               "transformations of one reported vector are not used in its place",
+          abstained(run("A1.11", {"bac": 1000.0, "ev": 500.0, "ac": 600.0, "cpi": 0.8})))
+    check(mid, "missingness: an estimate with a blank lineage field is refused",
+          abstained(run("A1.11", {"independentEacPair": {
+              **pair, "management_eac": {**pair["management_eac"], "assumptions": ""}}})))
+    check(mid, "invariant: identical forecasts give an index of exactly one and no divergence",
+          run("A1.11", {"independentEacPair": {
+              **pair, "independent_eac": {**pair["independent_eac"], "eac": 100.0}}})["ier"]
+          == 1.0)
+    check(mid, "boundary: a management forecast of zero has nothing to reconcile against",
+          abstained(run("A1.11", {"independentEacPair": {
+              **pair, "management_eac": {**pair["management_eac"], "eac": 0.0}}})))
+    check(mid, "rename: the registry carries the approved name",
+          REG.registry_index()["A1.11"]["module_name"]
+          == "Independent EAC Reconciliation Index")
 
 
 # =============================================================================================

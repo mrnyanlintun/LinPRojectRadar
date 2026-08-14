@@ -221,7 +221,13 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: record, and the superseding freeze names it as its parent and carries its digest. Repointing
 #: rather than editing is the whole distinction the freeze rests on -- a baseline regenerated in
 #: place agrees with production by construction and can never catch an undeclared edit.
-PINNED = ROOT / "code_audit" / "run26_production_tree.sha256"
+#: RUN 28. Repointed again, and for the first time because ANALYTICAL production code changed
+#: rather than a UI file. The owner's Run-28 supervisory contract authorises modification of v3
+#: analytical production code for the Category 1 to 3 scope; the guard was turned red first and
+#: observed, then repointed. The run26 manifest is NOT rewritten: it stays exactly as Run 26
+#: wrote it, as that release's historical record, and the superseding freeze names it as its
+#: parent and carries its digest.
+PINNED = ROOT / "code_audit" / "run28_production_tree.sha256"
 #: The Run-22 manifest, kept addressable so a guard can prove the supersession is a real change
 #: and not a silent rewrite.
 PINNED_RUN22 = ROOT / "code_audit" / "run22_production_tree.sha256"
@@ -233,6 +239,9 @@ PINNED_RUN24 = ROOT / "code_audit" / "run24_production_tree.sha256"
 #: The Run-25 manifest, the immediate parent of the current one, kept addressable for the
 #: same reason.
 PINNED_RUN25 = ROOT / "code_audit" / "run25_production_tree.sha256"
+#: The Run-26 manifest, the immediate parent of the current one, kept addressable for the
+#: same reason.
+PINNED_RUN26 = ROOT / "code_audit" / "run26_production_tree.sha256"
 #: The same, for the scientific authority tree.
 PINNED_AUTHORITY = ROOT / "code_audit" / "run22_authority_tree.sha256"
 

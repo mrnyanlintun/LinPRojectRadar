@@ -18,7 +18,9 @@ os.environ.setdefault("SESSION_SECRET", "test-secret-do-not-use-in-prod")
 
 from app.simulation.models import run_pert  # noqa: E402
 from app.simulation.models_evm import (  # noqa: E402
-    run_arima_forecast, run_earned_schedule, run_ice_ratio,
+    run_arima_forecast, run_earned_schedule,
+    # RUN 28: the approved rename ICE Ratio -> Independent EAC Reconciliation Index.
+    run_independent_eac_reconciliation as run_ice_ratio,
 )
 from app.simulation.models_ext import (  # noqa: E402
     run_cost_risk, run_critical_path_index, run_float_consumption, run_resource_loading,
@@ -29,6 +31,7 @@ from app.simulation.models_doc import (  # noqa: E402
     run_rework_feedback, run_safety_performance, run_spec_conflict_density,
 )
 from app.simulation.models_fuzzy import run_marcos  # noqa: E402
+from app.simulation.rng import make_rng  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 passed = total = 0
@@ -45,11 +48,23 @@ def check(name, cond):
 
 
 def abstained(r):
+    # RUN 28. A calibration-pending row is NOT an abstention: the canonical method ran and
+    # produced a figure, and only the colour is withheld because no boundary for the quantity has
+    # been established from evidence. `insufficient_data` still wins, so nothing below is
+    # weakened by this.
+    if r.get("calibration_pending") and not r.get("insufficient_data"):
+        return False
     return bool(r.get("insufficient_data")) or r.get("status_color") is None
 
 
 def banded(r):
     return r.get("status_color") in ("Green", "Yellow", "Amber", "Red")
+
+
+def banded_or_pending(r):
+    """Computed: either a banded reading, or a canonical figure with calibration pending."""
+    return banded(r) or (bool(r.get("calibration_pending"))
+                         and not r.get("insufficient_data"))
 
 
 # ---------------------------------------------------------------- scope derived, not transcribed
@@ -65,52 +80,99 @@ for b in ("3", "4", "5"):
           len([r for r in rows if r["final_owner_action_bucket"] == b]) == want)
 
 # ================================================ CLASS 1: open input domains
-CPI_HIST = {"cpiHistory": [0.95, 0.93, 0.91]}
-check("A1.5 forecasts on a valid history", banded(run_arima_forecast(dict(CPI_HIST), None, None)))
-for bad in ([0.95, 0.0, 0.91], [0.95, -0.4, 0.91], [0.0, 0.0, 0.0]):
+#
+# SUPERSEDED IN PART BY RUN 28, and the seven blocks below were observed red against the v3 build
+# before being rewritten (KeyError: 'spi_time' at the first of them). Run 10's finding was that
+# eleven Bucket-2 modules had an OPEN INPUT DOMAIN: a reading outside the domain a quantity can
+# occupy reached a band. Run 28 replaced the computation of seven of those modules entirely, on
+# the owner's supplied contract, so the specific out-of-domain scalars Run 10 drove are no longer
+# inputs any of them has. Run 10's PROPERTY is stronger in v3, not weaker, and that is what is
+# asserted here: the retired inputs reach no band at all because they reach no computation at
+# all, and the canonical structure that replaced them refuses its own out-of-domain readings.
+# A2.5, A5.8, A6.1, A6.2, A6.4, B2.18, A4.10 and A5.5 are untouched by Run 28 and keep Run 10's
+# original checks below.
+
+def _v3_retired(label, fn, cases):
+    """Run 10's out-of-domain scalars now reach no computation at all."""
+    for si in cases:
+        check(f"{label} reaches no band from the retired input contract, so the domain Run 10 "
+              f"opened cannot be reached at all", abstained(fn(dict(si), None, None)))
+
+
+_NET = {"schedule_version": "SCH-1", "status_basis": "2026-06-30 data date"}
+
+
+def _net(acts):
+    return {"scheduleNetwork": dict(_NET, activities=acts)}
+
+
+CPI_HIST = {"cpiHistory": [0.99, 0.97, 0.96, 0.94, 0.93, 0.91, 0.90, 0.88, 0.87, 0.86]}
+check("A1.5 forecasts on a history long enough to identify a model from",
+      banded_or_pending(run_arima_forecast(dict(CPI_HIST), None, None)))
+for bad in ([0.95, 0.0, 0.91] * 4, [0.95, -0.4, 0.91] * 4, [0.0] * 12):
     check(f"A1.5 refuses a history containing {bad[1]}",
           abstained(run_arima_forecast({"cpiHistory": bad}, None, None)))
-check("A1.5 still refuses a short history",
+check("A1.5 refuses a history shorter than the stated minimum",
       abstained(run_arima_forecast({"cpiHistory": [0.9, 0.9]}, None, None)))
 check("A1.5 accepts a history at the edge of the domain",
-      banded(run_arima_forecast({"cpiHistory": [0.01, 0.02, 0.03]}, None, None)))
+      banded_or_pending(run_arima_forecast(
+          {"cpiHistory": [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10]},
+          None, None)))
 
-ES = {"actualPctComplete": 40.0, "plannedPctComplete": 50.0}
-check("A1.6 computes without the three figures it never reads",
-      banded(run_earned_schedule(dict(ES), None, None)))
-check("A1.6 index is progress against plan",
-      abs(run_earned_schedule(dict(ES), None, None)["spi_time"] - 0.8) < 1e-9)
-for key, bad in itertools.product(("actualPctComplete", "plannedPctComplete"), (-1.0, 100.1, 250.0)):
-    check(f"A1.6 refuses {key} of {bad}", abstained(run_earned_schedule(dict(ES, **{key: bad}), None, None)))
-check("A1.6 accepts a completion of exactly one hundred",
-      banded(run_earned_schedule({"actualPctComplete": 100.0, "plannedPctComplete": 100.0}, None, None)))
-check("A1.6 abstains on absent completion", abstained(run_earned_schedule({}, None, None)))
+_ES_CURVE = {"timePhasedBaseline": {
+    "baseline_version": "BL-1", "approval_source": "approved baseline",
+    "actual_time_periods": 3,
+    "periods": [{"period_index": i, "period": f"P{i}", "cumulative_pv": v}
+                for i, v in enumerate([0, 20, 40, 60])]}, "ev": 50}
+check("A1.6 computes on the cumulative planned value curve",
+      banded_or_pending(run_earned_schedule(dict(_ES_CURVE), None, None)))
+check("A1.6 index is the specification's own 2.5 / 3",
+      abs(run_earned_schedule(dict(_ES_CURVE), None, None)["spi_time"] - 0.833) < 1e-3)
+_v3_retired("A1.6", run_earned_schedule, [
+    dict({"actualPctComplete": a, "plannedPctComplete": p})
+    for a, p in itertools.product((-1.0, 40.0, 100.1, 250.0), (-1.0, 50.0, 100.1, 250.0))])
+check("A1.6 abstains on absent evidence entirely", abstained(run_earned_schedule({}, None, None)))
 
-ICE = {"bac": 1_000_000.0, "cpi": 0.9, "ev": 400_000.0, "ac": 444_444.0}
-check("A1.11 computes on a positive index", banded(run_ice_ratio(dict(ICE), None, None)))
+ICE = {"independentEacPair": {
+    "management_eac": {"eac": 100.0, "source": "controls report", "method": "index extrapolation",
+                       "assumptions": "performance continues", "model_version": "PC-1",
+                       "responsible_party": "project management team"},
+    "independent_eac": {"eac": 120.0, "source": "review board", "method": "bottom up re-estimate",
+                        "assumptions": "scope re-priced", "model_version": "IRB-1",
+                        "responsible_party": "independent review board"}}}
+check("A1.11 computes on two provenance-distinct forecasts",
+      banded_or_pending(run_ice_ratio(dict(ICE), None, None)))
+_v3_retired("A1.11", run_ice_ratio, [
+    {"bac": 1_000_000.0, "cpi": c, "ev": 400_000.0, "ac": 444_444.0}
+    for c in (0.9, 0.0, -0.5, -2.0)])
 for bad in (0.0, -0.5, -2.0):
-    r = run_ice_ratio(dict(ICE, cpi=bad), None, None)
-    check(f"A1.11 refuses an index of {bad}", abstained(r))
-    check(f"A1.11 publishes no currency figure at an index of {bad}", "eac_cpi" not in r)
+    r = run_ice_ratio({"independentEacPair": {
+        **ICE["independentEacPair"],
+        "management_eac": {**ICE["independentEacPair"]["management_eac"], "eac": bad}}},
+        None, None)
+    check(f"A1.11 refuses a management forecast of {bad}", abstained(r))
+    check(f"A1.11 publishes no ratio at a management forecast of {bad}", "ier" not in r)
 
-SR = {"spi": 0.9, "baselineStart": "2026-01-01", "baselineEnd": "2026-12-31",
-      "actualPctComplete": 40.0}
-check("A2.10 computes on a valid state", banded(run_schedule_risk(dict(SR), None, None)))
-for bad in (0.0, -0.5):
-    check(f"A2.10 refuses an index of {bad} rather than raising",
-          abstained(run_schedule_risk(dict(SR, spi=bad), None, None)))
-for bad in (-5.0, 130.0):
-    check(f"A2.10 refuses a completion of {bad}",
-          abstained(run_schedule_risk(dict(SR, actualPctComplete=bad), None, None)))
-check("A2.10 reports no favourable delay from an invalid domain",
-      not any(run_schedule_risk(dict(SR, spi=b), None, None).get("p80_delay_days", 0) < 0
-              for b in (-0.5, -2.0)))
+_SRA = _net([{"activity_id": "A", "predecessors": [], "current_duration": 5,
+              "optimistic_duration": 0, "most_likely_duration": 5, "pessimistic_duration": 10}])
+check("A2.10 computes on a governed network with duration distributions",
+      banded_or_pending(run_schedule_risk(dict(_SRA), make_rng(20260828), None)))
+_v3_retired("A2.10", run_schedule_risk, [
+    {"spi": s, "baselineStart": "2026-01-01", "baselineEnd": "2026-12-31",
+     "actualPctComplete": p}
+    for s, p in itertools.product((0.9, 0.0, -0.5), (40.0, -5.0, 130.0))])
+check("A2.10 refuses a network whose activities carry no distribution",
+      abstained(run_schedule_risk(_net([{"activity_id": "A", "predecessors": [],
+                                         "current_duration": 5}]), make_rng(1), None)))
 
-CPI_IDX = {"spi": 0.95, "plannedPctComplete": 50.0, "actualPctComplete": 45.0}
-check("A2.11 computes on a valid state", banded(run_critical_path_index(dict(CPI_IDX), None, None)))
-for bad in (0.0, -1.0):
-    check(f"A2.11 refuses an index of {bad}",
-          abstained(run_critical_path_index(dict(CPI_IDX, spi=bad), None, None)))
+_CPM = _net([{"activity_id": "A", "predecessors": [], "current_duration": 3},
+             {"activity_id": "B", "predecessors": [], "current_duration": 4},
+             {"activity_id": "C", "predecessors": ["A", "B"], "current_duration": 2}])
+check("A2.11 computes on a governed activity network",
+      banded_or_pending(run_critical_path_index(dict(_CPM), None, None)))
+_v3_retired("A2.11", run_critical_path_index, [
+    {"spi": s, "plannedPctComplete": 50.0, "actualPctComplete": 45.0}
+    for s in (0.95, 0.0, -1.0)])
 
 DES = {"spi": 0.95, "cpi": 0.95, "plannedPctComplete": 50.0, "actualPctComplete": 45.0}
 check("A5.8 computes on a valid state", banded(run_discrete_event_sim(dict(DES), None, None)))
@@ -118,23 +180,41 @@ for bad in (0.0, -1.0):
     check(f"A5.8 refuses an index of {bad}",
           abstained(run_discrete_event_sim(dict(DES, spi=bad), None, None)))
 
-FLOAT = {"totalFloat": 20.0, "consumedFloat": 8.0, "actualPctComplete": 40.0}
-check("A2.5 computes on a valid state", banded(run_float_consumption(dict(FLOAT), None, None)))
-for bad in (-1.0, -30.0):
-    r = run_float_consumption(dict(FLOAT, consumedFloat=bad), None, None)
-    check(f"A2.5 refuses consumed float of {bad}", abstained(r))
-    check(f"A2.5 does not read Green on consumed float of {bad}", r.get("status_color") != "Green")
-check("A2.5 accepts consumed float of exactly nought",
-      banded(run_float_consumption(dict(FLOAT, consumedFloat=0.0), None, None)))
+_FLOAT_NET = _net([{"activity_id": "A", "predecessors": [], "current_duration": 3,
+                    "baseline_total_float": 5},
+                   {"activity_id": "B", "predecessors": [], "current_duration": 4,
+                    "baseline_total_float": 2},
+                   {"activity_id": "C", "predecessors": ["A", "B"], "current_duration": 2,
+                    "baseline_total_float": 0}])
+check("A2.5 computes on a governed activity network",
+      banded_or_pending(run_float_consumption(dict(_FLOAT_NET), None, None)))
+_v3_retired("A2.5", run_float_consumption, [
+    {"totalFloat": 20.0, "consumedFloat": c, "actualPctComplete": 40.0}
+    for c in (8.0, 0.0, -1.0, -30.0)])
+check("A2.5 refuses a network in which nothing carries the float it began with",
+      abstained(run_float_consumption(_net([{"activity_id": "A", "predecessors": [],
+                                             "current_duration": 3}]), None, None)))
+check("A2.5 reports an activity that began at zero float as already critical rather than "
+      "dividing by nothing",
+      run_float_consumption(_net([{"activity_id": "A", "predecessors": [],
+                                   "current_duration": 3, "baseline_total_float": 0}]),
+                            None, None).get("float_consumption_ratio") is None)
 
-RES = {"plannedLaborHours": 1000.0, "actualLaborHours": 980.0}
-check("A2.9 computes on a valid pair", banded(run_resource_loading(dict(RES), None, None)))
+_RESPROF = {"resourceProfile": {"resource_plan_version": "RP-1", "buckets": [
+    {"time_bucket": "2026-07", "resource_type": "LABOUR", "demand": 120.0,
+     "available_capacity": 100.0}]}}
+check("A2.9 computes on a time phased resource profile",
+      banded_or_pending(run_resource_loading(dict(_RESPROF), None, None)))
+_v3_retired("A2.9", run_resource_loading, [
+    {"plannedLaborHours": 1000.0, "actualLaborHours": h}
+    for h in (980.0, 0.0, -1.0, -500.0)])
 for bad in (-1.0, -500.0):
-    r = run_resource_loading(dict(RES, actualLaborHours=bad), None, None)
-    check(f"A2.9 refuses actual hours of {bad}", abstained(r))
-    check(f"A2.9 publishes no ratio at actual hours of {bad}", "load_ratio" not in r)
-check("A2.9 accepts actual hours of exactly nought",
-      banded(run_resource_loading(dict(RES, actualLaborHours=0.0), None, None)))
+    r = run_resource_loading({"resourceProfile": {
+        "resource_plan_version": "RP-1",
+        "buckets": [{"time_bucket": "2026-07", "resource_type": "LABOUR", "demand": bad,
+                     "available_capacity": 100.0}]}}, None, None)
+    check(f"A2.9 refuses a demand of {bad}", abstained(r))
+    check(f"A2.9 publishes no ratio at a demand of {bad}", "peak_load_ratio" not in r)
 
 SPEC = {"docRiskScore": 0.3, "rfiCount": 16}
 check("A4.10 computes on a valid pair", banded(run_spec_conflict_density(dict(SPEC), None, None)))
@@ -167,15 +247,37 @@ for edge in (0.0, 5.0):
     check(f"A6.4 accepts a rating of exactly {edge}",
           banded(run_contractor_performance(dict(CONTR, overallRating=edge), None, None)))
 
-CR = {"bac": 1_000_000.0, "cpi": 1.4, "ac": 300_000.0, "ev": 420_000.0}
-below = run_cost_risk(dict(CR), None, None)
-check("A3.6 computes a forecast below budget", banded(below))
-check("A3.6 forecast below budget carries a negative delta", below["p80_delta_pct"] < 0)
-check("A3.6 does not print a plus in front of a negative figure",
-      "(+-" not in below["evidence_metric"] and "+-" not in below["evidence_metric"])
-check("A3.6 prints the minus sign it computed", "-" in below["evidence_metric"].split("(")[-1])
-above = run_cost_risk(dict(CR, cpi=0.8), None, None)
-check("A3.6 still prints a plus in front of an overrun", "(+" in above["evidence_metric"])
+# SUPERSEDED BY RUN 28, observed red against the v3 build (KeyError: 'p80_delta_pct') before
+# being rewritten. Run 10's finding here was a PRESENTATION defect: a forecast below budget
+# printed a hard-coded plus in front of a negative figure, so the sentence said the opposite of
+# the number. Run 28 replaced the whole computation on the owner's supplied contract -- the
+# deterministic cost-index uplift is gone and a total-cost distribution is simulated -- so there
+# is no delta percentage and no signed sentence for the old check to read. The property Run 10
+# established is preserved in the form it now takes: the sentence a reader sees must agree with
+# the figures beside it, which is asserted by reading both out of the same result.
+def _cr(base, prob, impact):
+    return {"costRiskModel": {
+        "model_version": "CRM-1", "estimate_source": "approved base estimate",
+        "cost_components": [{"component_id": "BASE", "base_amount": base}],
+        "risk_events": [{"risk_id": "R1", "probability": prob,
+                         "impact_distribution": "POINT", "impact": impact}]}}
+
+
+_cra = run_cost_risk(_cr(100.0, 0.5, 20.0), make_rng(20260828), None)
+check("A3.6 computes a simulated total cost distribution", banded_or_pending(_cra))
+check("A3.6 the eightieth percentile is the specification's own 120",
+      abs(_cra["p80_total_cost"] - 120.0) < 1e-9)
+check("A3.6 the P80 is at or above the P50, which any percentile pair must satisfy",
+      _cra["p80_total_cost"] >= _cra["p50_total_cost"])
+check("A3.6 the sentence a reader sees carries the same figures the result carries",
+      f"{int(round(_cra['p80_total_cost'])):,}" in _cra["evidence_metric"]
+      and str(_cra["trials"]) in _cra["evidence_metric"])
+check("A3.6 a risk that cannot occur leaves the total at the base cost, so no uplift is "
+      "manufactured", run_cost_risk(_cr(100.0, 0.0, 20.0),
+                                    make_rng(1), None)["p80_total_cost"] == 100.0)
+_v3_retired("A3.6", run_cost_risk, [
+    {"bac": 1_000_000.0, "cpi": c, "ac": 300_000.0, "ev": 420_000.0}
+    for c in (1.4, 0.8, 0.0, -0.5)])
 
 # ================================================ CLASS 2: absence of evidence must not help
 FULL = {"cpi": 0.95, "rfiCount": 10, "changeOrderCount": 4}

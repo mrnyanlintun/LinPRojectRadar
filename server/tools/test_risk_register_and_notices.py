@@ -317,19 +317,57 @@ def main() -> None:
     SI = {"bac": 5_874_620.0, "cpi": 0.673, "ac": 3_000_000.0, "ev": 2_019_000.0,
           "actualPctComplete": 34.0}
 
-    cra = run_cost_risk(dict(SI), lambda: 0.5, date(2026, 4, 30))
-    check(cra.get("p80_eac") is not None, "Cost Risk Analysis computes today", str(cra.get("p80_eac")))
-    # The reported defect, reproduced from the stated inputs.
-    check(cra["p80_eac"] == 10_555_811 and cra["p80_delta_pct"] == 79.7,
-          "and reproduces the reported figure exactly: 10,555,811 at 79.7 per cent over budget",
-          f"{cra['p80_eac']} / {cra['p80_delta_pct']}")
-    # The register plays no part in it: the same inputs with risks attached give the same answer.
-    with_risks = dict(SI)
-    with_risks["risks"] = [{"probability": 0.35, "cost_impact": 450000.0}] * 20
-    again = run_cost_risk(with_risks, lambda: 0.5, date(2026, 4, 30))
-    check(again["p80_eac"] == cra["p80_eac"],
-          "serving the register changes NOTHING in its answer: it has no slot for the data",
-          f"{again['p80_eac']} == {cra['p80_eac']}")
+    # RUN 28 CORRECTED THE DEFECT THIS BLOCK RECORDED, so it now records the correction and
+    # was observed red against the v3 build (KeyError: 'p80_eac') before being rewritten. What it
+    # recorded: Cost Risk Analysis P80 computed a deterministic uplift on the cost index, had no
+    # slot for a list of probability and impact pairs, and gave the SAME answer whether or not
+    # the register was served to it. The owner's supplied Run-28 contract replaces that
+    # arithmetic with a simulated total-cost distribution, and documents.py now assembles the
+    # register into the shape it reads.
+    from app.simulation.rng import make_rng
+
+    cra_no_register = run_cost_risk(dict(SI), make_rng(20260828), date(2026, 4, 30))
+    check(cra_no_register.get("insufficient_data") is True,
+          "Cost Risk Analysis abstains with no cost risk model, rather than inflating the cost "
+          "index", str(cra_no_register.get("evidence_metric"))[:70])
+    # The register, in the shape documents.py now assembles: one event carrying the register's
+    # own probability and its own cost impact.
+    with_model = dict(SI)
+    with_model["costRiskModel"] = {
+        "model_version": "risk register, period 4",
+        "estimate_source": "budget at completion and the register's usable rows",
+        "cost_components": [{"component_id": "BUDGET_AT_COMPLETION",
+                             "base_amount": SI["bac"]}],
+        "risk_events": [{"risk_id": "R-001", "probability": 0.35,
+                         "impact_distribution": "POINT", "cost_impact": 450000.0,
+                         "impact": 450000.0}],
+    }
+    cra = run_cost_risk(with_model, make_rng(20260828), date(2026, 4, 30))
+    check(cra.get("p80_total_cost") is not None,
+          "and computes a simulated total cost distribution once the register reaches it",
+          str(cra.get("p80_total_cost")))
+    # HAND: one event at probability 0.35 puts the impact on 35 per cent of trials, so the
+    # eightieth percentile of the total is the base cost alone: 0.80 lies below 0.65 from the
+    # top... it lies ABOVE 0.65, so the 0.80 quantile is the base plus the impact.
+    check(abs(cra["p80_total_cost"] - (SI["bac"] + 450000.0)) < 1e-6,
+          "and the eightieth percentile is the budget plus the impact, because an event at "
+          "probability 0.35 leaves only 65 per cent of trials at the base cost",
+          str(cra["p80_total_cost"]))
+    # THE DEFECT ITSELF, INVERTED: the register now CHANGES the answer.
+    heavier = dict(with_model)
+    heavier["costRiskModel"] = dict(with_model["costRiskModel"])
+    heavier["costRiskModel"]["risk_events"] = [
+        {"risk_id": f"R-{i:03d}", "probability": 0.35, "impact_distribution": "POINT",
+         "impact": 450000.0} for i in range(20)]
+    again = run_cost_risk(heavier, make_rng(20260828), date(2026, 4, 30))
+    check(again["p80_total_cost"] > cra["p80_total_cost"],
+          "serving twenty register rows instead of one CHANGES its answer, where the shipped "
+          "code gave the identical figure either way",
+          f"{again['p80_total_cost']} > {cra['p80_total_cost']}")
+    check(run_cost_risk({"costRiskModel": with_model["costRiskModel"],
+                         **{k: v for k, v in SI.items() if k != "bac"}},
+                        make_rng(1), date(2026, 4, 30)).get("p80_total_cost") is not None,
+          "and the model is what it reads, not the cost index it used to inflate")
 
     # THIS BLOCK RECORDED A DEFECT AND RUN 7 CORRECTED IT, so it now records the correction.
     # What it recorded: the reference-class percentiles are literals, so the overrun was +38 per
@@ -356,20 +394,30 @@ def main() -> None:
         check("reference class" in str(rcf.get("evidence_metric")),
               f"in words a reader can speak on {label}", str(rcf.get("evidence_metric"))[:90])
 
+    # RUN 28. Parametric Cost Index computed an index from two estimate-at-completion formulas,
+    # which the supplied contract names in terms as not parametric estimating. The module stays
+    # DISABLED and its production arm now refuses; the canonical implementation exists as a
+    # laboratory one and no production path reaches it.
     pc = run_parametric_cost(dict(SI), lambda: 0.5, date(2026, 4, 30))
-    check(pc.get("parametric_index") is not None, "Parametric Cost computes today",
-          str(pc.get("parametric_index")))
-    # Its inputs are all real extracted figures; change one and the answer moves. That is what
-    # distinguishes it from the other two and it is asserted, not claimed.
+    check(pc.get("parametric_index") is None and pc.get("insufficient_data") is True,
+          "Parametric Cost no longer computes an index from the earned value figures alone",
+          str(pc.get("evidence_metric"))[:70])
     moved = dict(SI)
     moved["ac"] = SI["ac"] * 1.2
-    pc2 = run_parametric_cost(moved, lambda: 0.5, date(2026, 4, 30))
-    check(pc2["parametric_index"] != pc["parametric_index"],
-          "and its answer MOVES with a real extracted figure, unlike a literal prior",
-          f"{pc['parametric_index']} -> {pc2['parametric_index']}")
-    check(run_parametric_cost({"bac": 1.0}, lambda: 0.5, date(2026, 4, 30))
-          .get("insufficient_data") is True,
-          "and it already abstains when its inputs are absent")
+    check(run_parametric_cost(moved, lambda: 0.5, date(2026, 4, 30)).get("evidence_metric")
+          == pc.get("evidence_metric"),
+          "and no extracted figure can move it, because there is no computation left for one "
+          "to reach")
+    from app.simulation import canonical_v3 as _CV3
+    _lab = _CV3.parametric_cost(
+        {"intercept": 10.0, "coefficient_source": "least squares on the closed project ledger",
+         "fit_dataset": "OG-CLOSED-2019-2025", "model_version": "PCM-1",
+         "coefficients": [{"driver": "x1", "coefficient": 2.0, "unit": "square metres"},
+                          {"driver": "x2", "coefficient": 3.0, "unit": "storeys"}]},
+        {"x1": 4.0, "x2": 5.0})
+    check(abs(_lab["predicted_cost"] - 33.0) < 1e-9,
+          "the laboratory implementation reproduces the specification's 10 + 2*4 + 3*5 = 33",
+          str(_lab["predicted_cost"]))
 
     section("8. THE REGISTER IS SERVED TO THE MODULES, IN THE SHAPE A MODULE WOULD READ")
 

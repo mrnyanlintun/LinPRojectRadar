@@ -269,36 +269,64 @@ check(not _gaps, "Variance at Completion: the ladder is exhausted from an index 
 # --- The five held non-voting. Their boundaries are uncited, and they are tested anyway,
 # because a band that is not sourced still has to behave as the band it claims to be: a module
 # whose ladder is wrong would be wrong on the ledger whether or not it votes.
-bands_of("A2.8", [
-    ("just below the first boundary", {"activitiesPlanned": 1000, "activitiesConstrained": 99},
-     "Green"),
-    ("exactly on it", {"activitiesPlanned": 1000, "activitiesConstrained": 100}, "Green"),
-    ("just above it", {"activitiesPlanned": 1000, "activitiesConstrained": 101}, "Yellow"),
-    ("exactly on the second", {"activitiesPlanned": 1000, "activitiesConstrained": 250},
-     "Yellow"),
-    ("just above the second", {"activitiesPlanned": 1000, "activitiesConstrained": 251},
-     "Amber"),
-    ("exactly on the third", {"activitiesPlanned": 1000, "activitiesConstrained": 400}, "Amber"),
-    ("just above the third", {"activitiesPlanned": 1000, "activitiesConstrained": 401}, "Red"),
-])
+# RUN 28 REMOVED BOTH OF THESE BAND LADDERS, and their removal is the completion of Run 4's own
+# finding rather than a departure from it. Run 4 looked for a source specifying the boundaries of
+# a look-ahead constraint rate and of contingency consumption against progress, DID NOT FIND ONE,
+# recorded that plainly beside each band, and held both modules non-voting for want of it. The
+# owner's supplied Run-28 contract settles what Run 4 could only record: it states in terms that
+# no universal status bands are supplied for either quantity, and that where the numerical method
+# is correct but the bands are not calibrated the correct output is exposed with calibration
+# pending. So the ladders are gone and the figures stay. The band cases below are replaced by the
+# checks Run 4's finding actually supports: that each module produces its figure, that the figure
+# is exact at the boundaries the ladder used to sit at, and that NO colour is asserted anywhere
+# across that range.
+# RUN 28. Run 4's contingency finding, in the form the v3 contract leaves it in: the raw consumed
+# share must never be published as the progress-normalised burn. Asserted at nothing complete,
+# where Run 4 found the substitution, and with progress absent entirely.
+for _si, _why in (({"originalContingency": 1000.0, "remainingContingency": 900.0,
+                    "actualPctComplete": 0.0}, "at nothing complete"),
+                  ({"originalContingency": 1000.0, "remainingContingency": 900.0},
+                   "with no progress reported at all")):
+    _cb = NEW_FN["A3.2"](dict(_si), None, None)
+    check(_cb.get("normalized_burn") is None,
+          f"Contingency Burn Rate: {_why} the progress-normalised burn is withheld",
+          str(_cb.get("normalized_burn")))
+    check(abs((_cb.get("consumed_fraction") or 0) - 0.1) < 1e-9,
+          f"Contingency Burn Rate: {_why} the consumed fraction is still reported, and it is "
+          f"the real one", str(_cb.get("consumed_fraction")))
+
+_LA_CASES = [(99, 0.9), (100, 0.9), (101, 0.9), (250, 0.75), (251, 0.75), (400, 0.6), (401, 0.6)]
+for _constrained, _want_ready in _LA_CASES:
+    _rows = [{"activity_id": f"ACT-{i}",
+              "constraint_status": "OPEN" if i < _constrained else "CLEARED",
+              **({"constraint_category": "MATERIAL"} if i < _constrained else {})}
+             for i in range(1000)]
+    _out = NEW_FN["A2.8"]({"lookAheadSchedule": {"horizon": "six week",
+                                              "status_date": "2026-06-30",
+                                              "activities": _rows}}, None, None)
+    check(f"Look-Ahead Schedule Health: {_constrained} of 1000 constrained gives a ready "
+          f"fraction of {_want_ready}",
+          abs(_out.get("ready_fraction") - _want_ready) < 5e-3,
+          str(_out.get("ready_fraction")))
+    check(f"Look-Ahead Schedule Health: and asserts no colour at {_constrained} of 1000",
+          _out.get("status_color") is None and _out.get("calibration_pending") is True,
+          str(_out.get("status_color")))
 
 
 def burn_at(stress: float) -> dict:
-    # burnStress = (burned / original) / (pct/100). With original 1000 and pct 50, stress is
-    # burned / 500.
+    # normalisedBurn = (consumed fraction) / (pct/100). With original 1000 and pct 50, the
+    # normalised burn is consumed / 500.
     return {"originalContingency": 1000.0, "remainingContingency": 1000.0 - stress * 500.0,
             "actualPctComplete": 50.0}
 
 
-bands_of("A3.2", [
-    ("just below the first boundary", burn_at(0.99), "Green"),
-    ("exactly on it", burn_at(1.00), "Green"),
-    ("just above it", burn_at(1.01), "Yellow"),
-    ("exactly on the second", burn_at(1.30), "Yellow"),
-    ("just above the second", burn_at(1.31), "Amber"),
-    ("exactly on the third", burn_at(1.60), "Amber"),
-    ("just above the third", burn_at(1.61), "Red"),
-])
+for _stress in (0.99, 1.00, 1.01, 1.30, 1.31, 1.60, 1.61):
+    _out = NEW_FN["A3.2"](burn_at(_stress), None, None)
+    check(f"Contingency Burn Rate: a normalised burn of {_stress} is reported exactly",
+          abs(_out.get("normalized_burn") - _stress) < 5e-3, str(_out.get("normalized_burn")))
+    check(f"Contingency Burn Rate: and no colour is asserted at {_stress}",
+          _out.get("status_color") is None and _out.get("calibration_pending") is True,
+          str(_out.get("status_color")))
 
 
 def mat_at(variance: float) -> dict:
@@ -390,9 +418,15 @@ GUARD_CASES = [
      {"activitiesPlanned": 0, "activitiesConstrained": 0}, "new"),
     ("A2.8", "more activities are constrained than are planned",
      {"activitiesPlanned": 10, "activitiesConstrained": 14}, "new"),
-    ("A3.2", "reported progress is zero",
-     {"originalContingency": 1000.0, "remainingContingency": 900.0, "actualPctComplete": 0.0},
-     "new"),
+    # RUN 28 MOVED THIS ONE OUT OF THE REFUSAL LIST DELIBERATELY. Run 4's finding was that at
+    # nothing complete the module substituted the RAW consumed share for the ratio of burn to
+    # progress -- a different quantity under the same name -- and it refused instead. The owner's
+    # supplied contract conditions only the progress-normalised burn on progress, not the
+    # consumed fraction, so at nothing complete the consumed fraction is a real measurement and
+    # the normalised burn is withheld. Run 4's property is preserved in the form that matters and
+    # is asserted directly below: the raw consumed share is never published as the normalised
+    # burn. That is a stronger statement than a refusal, because it holds at every progress
+    # figure and not only at zero.
     ("A3.2", "more contingency remains than was originally held",
      {"originalContingency": 1000.0, "remainingContingency": 1200.0, "actualPctComplete": 50.0},
      "new"),
@@ -609,10 +643,26 @@ for mid, name in SEVEN.items():
 # than the rule being relaxed, and it is required to abstain WITH the recorded reason, so this
 # allowance cannot cover a module that has merely gone silent.
 RUN16_DISABLED = {"A3.4"}
-check(all(mid in comp for mid in SEVEN if mid not in RUN16_DISABLED),
-      "the six CORE modules that still execute produce a finding on the real path, so nothing "
+# RESTATED BY RUN 28, ORIGINAL FINDING PRESERVED. The owner's supplied Run-28 contract requires
+# Look-Ahead Schedule Health to read a governed constraint inventory -- the window, the activity
+# identities and each activity's constraint status and category -- rather than two bare counts,
+# and states in terms that an unreliable constraint inventory is NOT ESTIMABLE. The corpus
+# carries no such inventory, so the module abstains on the real path. It is named here rather
+# than the rule being relaxed, and it is required to abstain WITH the structural reason, so this
+# allowance cannot cover a module that has merely gone silent.
+RUN28_STRUCTURE_REQUIRED = {"A2.8"}
+check(all(mid in comp for mid in SEVEN
+          if mid not in RUN16_DISABLED and mid not in RUN28_STRUCTURE_REQUIRED),
+      "the five CORE modules that still execute produce a finding on the real path, so nothing "
       "below is vacuous for want of a computed module",
-      str(sorted(set(SEVEN) - set(comp) - RUN16_DISABLED)))
+      str(sorted(set(SEVEN) - set(comp) - RUN16_DISABLED - RUN28_STRUCTURE_REQUIRED)))
+for _mid in sorted(RUN28_STRUCTURE_REQUIRED):
+    check(_mid not in comp,
+          f"{SEVEN[_mid]}: abstains on the real path, because the corpus carries no governed "
+          f"look-ahead constraint inventory")
+    check(abst.get(_mid, {}).get("abstention_reason_code") == "canonical_structure_absent",
+          f"{SEVEN[_mid]}: and says on the stored row that the canonical structure is what is "
+          f"absent", str(abst.get(_mid, {}).get("abstention_reason_code")))
 for _mid in sorted(RUN16_DISABLED):
     check(_mid not in comp,
           f"{SEVEN[_mid]}: disabled by Run 16, so it computes nothing at all")
@@ -627,7 +677,8 @@ for mid in sorted(VOTING_AFTER_RUN4):
           f"{SEVEN[mid]}: and carries its citation into the API response")
     check(bool(comp.get(mid, {}).get("band_source_limit")),
           f"{SEVEN[mid]}: and the sentence stating what the citation does not establish")
-for mid in sorted(set(SEVEN) - VOTING_AFTER_RUN4 - RUN16_DISABLED):
+for mid in sorted(set(SEVEN) - VOTING_AFTER_RUN4 - RUN16_DISABLED
+                  - RUN28_STRUCTURE_REQUIRED):
     check(comp.get(mid, {}).get("votes") is False,
           f"{SEVEN[mid]}: does not vote, on the stored row")
     check(bool(comp.get(mid, {}).get("held_non_voting_reason")),
@@ -648,7 +699,17 @@ non_voting_count = sum(1 for r in comp.values() if not r.get("votes"))
 # document corpus does not carry a line of balance, a sized critical-chain buffer, a queue or a
 # set of agents, so those four now abstain on this project instead of computing a proxy. They are
 # still non-voting; they are no longer counted here because they no longer compute at all.
-check(non_voting_count > 40 and non_voting_count == len(comp) - len(voting_ids),
+# RUN 28 RESTATEMENT, ORIGINAL FINDING PRESERVED AGAIN. Run 4's assertion is that the non-voting
+# set is the BULK of the platform rather than a handful, and that is still exactly what is
+# asserted. The count moves for the same reason it moved at Run 10B: the owner's supplied Run-28
+# contract requires twenty-one further canonical methods to hold their defining structure before
+# they compute, and this project's document corpus carries no activity network, no approved
+# expenditure profile, no reference class, no external price index and no allocation base, so
+# those modules abstain here instead of computing a proxy. They are still non-voting; they are no
+# longer counted here because they no longer compute at all. The RATIO is what the finding is
+# about, so the check is stated as a ratio and additionally pins the arithmetic identity.
+check(non_voting_count >= len(comp) - 2 and non_voting_count == len(comp) - len(voting_ids)
+      and len(comp) > 25,
       "and the ones that do not vote are the bulk of the platform, computed and stored as "
       "before: every computed module except the two voters",
       f"{non_voting_count} non-voting of {len(comp)} computed")

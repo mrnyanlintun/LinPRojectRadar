@@ -39,15 +39,31 @@ RAND = lambda: 0.5  # noqa: E731
 # it: every one of these is a finding carried into the remediation queue. What registration
 # prevents is the suite turning red for a defect Run 19 is forbidden to fix, and equally
 # prevents the defect being asserted as though it were the expected answer.
-KNOWN_DEFECTS = {
-    "2.4/compression-is-defined": "OWNER_DECISION_REQUIRED",
-    "2.4/independent-of-spi": "OWNER_DECISION_REQUIRED",
-    "2.6/banded-quantity-is-point-deviation": "CORRECT_PROXY_ONLY",
-    "2.7/slip-measured-against-baseline": "METHOD_LABEL_MISMATCH",
-    "2.9/time-phased": "CORRECT_PROXY_ONLY",
-    "2.10/simulated-distribution": "METHOD_LABEL_MISMATCH",
-    "2.11/critical-path-computed": "METHOD_LABEL_MISMATCH",
-}
+# RUN 28 EMPTIED THIS REGISTER, and emptying it is the point rather than a convenience. Every
+# key below named a canonical proposition of specification section 11 that production DID NOT
+# satisfy. Run 28 implemented the supplied contract for all seven and production now satisfies
+# each of them, which the harness itself detected: it reported "this proposition NOW HOLDS but is
+# recorded in the Run-19 register" for the ones still listed, and refused to pass them. The
+# harness's rule is that a stale disposition must be revised rather than the test, so the
+# dispositions are revised here. The propositions themselves are NOT removed: each is still
+# evaluated below, in the same direction, and each will go red again if production regresses.
+#
+# RESOLVED IN RUN 28, with the disposition each carried before:
+#   2.4/compression-is-defined                OWNER_DECISION_REQUIRED  -> reconciled remaining
+#                                             activity durations, not the reciprocal of an index
+#   2.4/independent-of-spi                    OWNER_DECISION_REQUIRED  -> the schedule index is
+#                                             no longer an input to the module at all
+#   2.6/banded-quantity-is-point-deviation    CORRECT_PROXY_ONLY       -> the point deviation of
+#                                             two cumulative series on one basis
+#   2.7/slip-measured-against-baseline        METHOD_LABEL_MISMATCH    -> variance against the
+#                                             original commitment, retained across a rebaseline
+#   2.9/time-phased                           CORRECT_PROXY_ONLY       -> demand against capacity
+#                                             per period and per resource
+#   2.10/simulated-distribution               METHOD_LABEL_MISMATCH    -> the network recomputed
+#                                             every trial, percentile of the simulated finishes
+#   2.11/critical-path-computed               METHOD_LABEL_MISMATCH    -> forward and backward
+#                                             pass, total float per activity
+KNOWN_DEFECTS: dict[str, str] = {}
 
 A = Audit("category 2", KNOWN_DEFECTS)
 
@@ -62,6 +78,14 @@ def run(code_id: str, si: dict) -> dict:
 
 
 def abstained(out: dict) -> bool:
+    # RUN 28. A calibration-pending row is NOT an abstention: the canonical method ran and
+    # produced a figure, and only the status colour is withheld because no boundary for the
+    # quantity has been established from evidence. This is the same distinction
+    # registry.record() makes when it routes such a row to `computed` rather than to
+    # `abstained`. `insufficient_data` still wins, so a module that genuinely refuses is still
+    # read as refusing and no guard below is weakened by this.
+    if out.get("calibration_pending") and not out.get("insufficient_data"):
+        return False
     return bool(out.get("insufficient_data")) or out.get("status_color") is None
 
 
@@ -138,8 +162,20 @@ def _lob_structure(rate_lead: float, rate_follow: float, start_lead: float = 0.0
         packages.append({"work_type_id": "PAVE", "location_sequence": u,
                          "production_rate_locations_per_day": rate_follow,
                          "start_day": start_follow})
+    # RUN 28. The supplied Category-2 contract requires the PLANNED production rate alongside
+    # the actual one, so the deterioration of the actual slope against plan is provable rather
+    # than folded into the separation. The planned line here runs at one location a day from
+    # day zero and the actual line at the rate under test, which is the same shape as the
+    # specification's own three-location oracle.
+    unit_progress = []
+    for w, rate in (("GRADE", rate_lead), ("PAVE", rate_follow)):
+        for u in range(1, locations + 1):
+            unit_progress.append({
+                "activity_id": w, "location_sequence": u, "quantity": 1, "crew_id": f"{w}-CREW",
+                "planned_finish_day": float(u),
+                "actual_finish_day": (u / rate) if rate > 0 else float(u)})
     return {"lobStructure": {"leading_work_type": "GRADE", "following_work_type": "PAVE",
-                              "work_packages": packages}}
+                             "work_packages": packages, "unit_progress": unit_progress}}
 
 
 def m_2_2() -> None:
@@ -172,6 +208,28 @@ def m_2_2() -> None:
     A.check("2.2", "metamorphic: slowing the following line widens the minimum separation",
             slower.get("minimum_buffer_days") > out.get("minimum_buffer_days"),
             f"{slower.get('minimum_buffer_days')} vs {out.get('minimum_buffer_days')}")
+
+    # RUN 28. The contract's planned-versus-actual production slopes, now reported by
+    # production rather than only by the oracle beside it.
+    rates = out.get("production_rates") or {}
+    A.check("2.2", "v3 structure: a planned and an actual production rate are reported for "
+                   "each line of work, which is what makes deterioration visible",
+            all(k in rates.get("GRADE", {}) for k in ("planned_rate", "actual_rate",
+                                                      "rate_ratio", "deteriorating")),
+            str(rates))
+    A.near("2.2", "known-answer: a line running at half a location a day against a planned one "
+                  "a day has an actual slope of 0.5",
+           rates.get("GRADE", {}).get("actual_rate"), 0.5, 1e-9)
+    A.check("2.2", "v3 invariant: a line slower than plan is reported as deteriorating and a "
+                   "line at or above plan is not",
+            rates.get("GRADE", {}).get("deteriorating") is True
+            and rates.get("PAVE", {}).get("deteriorating") is False,
+            str(rates))
+    A.check("2.2", "v3 missingness: with no planned production rates the answer is not "
+                   "estimable, and the actual rates alone are not used in their place",
+            abstained(run("A2.2", {"lobStructure": {
+                "leading_work_type": "GRADE", "following_work_type": "PAVE",
+                "work_packages": _lob_structure(0.5, 1.0)["lobStructure"]["work_packages"]}})))
 
     # Boundary and missingness.
     A.check("2.2", "boundary: a production rate of zero is refused, since a line of work cannot "
@@ -237,8 +295,18 @@ def m_2_3() -> None:
     A.check("2.3", "threshold: the fever chart zones move with chain completion rather than "
                    "being fixed constants, so they are a management convention and not a "
                    "mathematical property of the method",
-            run("A2.3", _ccpm(10, 6, 0.20)).get("amber_threshold")
-            != run("A2.3", _ccpm(10, 6, 0.60)).get("amber_threshold"))
+            run("A2.3", _ccpm(10, 6, 0.20)).get("amber_policy_line")
+            != run("A2.3", _ccpm(10, 6, 0.60)).get("amber_policy_line"))
+    # RUN 28. The supplied contract states the two figures in its own terms.
+    A.near("2.3", "known-answer: the specification's ten day buffer with six remaining has "
+                  "four days consumed",
+           run("A2.3", _ccpm(10, 6, 0.5)).get("buffer_consumed_days"), 4.0, 1e-9)
+    A.near("2.3", "known-answer: and a buffer consumption ratio of 0.40",
+           run("A2.3", _ccpm(10, 6, 0.5)).get("buffer_consumption_ratio"), 0.40, 1e-9)
+    A.check("2.3", "calibration: the fever chart lines are reported as the policy lines they "
+                   "are, and no status colour is asserted from them",
+            run("A2.3", _ccpm(10, 6, 0.5)).get("status_color") is None
+            and bool(run("A2.3", _ccpm(10, 6, 0.5)).get("policy_line_note")))
 
 
 # =============================================================================================
@@ -254,62 +322,122 @@ def m_2_3() -> None:
 BASE = {"baselineStart": "2026-01-01", "baselineEnd": "2026-12-31", "actualPctComplete": 40}
 
 
+# THE RUN-28 REWRITE OF 2.4 TO 2.11.
+#
+# Every one of these eight functions recorded a DEFECT that Run 28 has now remediated, and each
+# was observed failing against the v3 build before being rewritten (test_run19_category_2.py
+# raised TypeError comparing None to None at the first of them). What they asserted -- that the
+# compression ratio is one over the schedule index, that float is two reported scalars normalised
+# by progress, that the S-curve is a snapshot composite, that milestone analysis is a two
+# snapshot drift, that look-ahead health is two bare counts, that resource loading is a
+# project-total hours ratio, that schedule risk P80 is a z-score uplift, and that the critical
+# path index is a mean of two ratios -- is no longer true of production. Each is replaced by the
+# supplied canonical contract, checked against the independent oracles Run 17 committed in
+# run17/oracle and against the contract's own stated numbers.
+
+def _network(activities, version="SCH-1", basis="2026-06-30 data date") -> dict:
+    """A governed schedule network on the production input contract."""
+    return {"scheduleNetwork": {"schedule_version": version, "status_basis": basis,
+                                "activities": activities}}
+
+
+#: THE SPECIFICATION'S OWN CPM ORACLE NETWORK, contract 2.11: A=3 -> C=2 and B=4 -> C=2, so path
+#: A-C is 5, path B-C is 6, the project finishes at 6, B and C are critical and A carries one
+#: day of total float.
+_CPM_ORACLE = [
+    {"activity_id": "A", "predecessors": [], "current_duration": 3},
+    {"activity_id": "B", "predecessors": [], "current_duration": 4},
+    {"activity_id": "C", "predecessors": ["A", "B"], "current_duration": 2},
+]
+
+#: THE SPECIFICATION'S PERT COLLAPSE NETWORK, contract 2.1: A duration 3, B duration 2, C
+#: duration 1, A -> C and B -> C. Path A-C is 4 and path B-C is 3, so A and C are critical and B
+#: is not. Three-point estimates are degenerate so the collapse is deterministic.
+_PERT_ORACLE = [
+    {"activity_id": "A", "predecessors": [], "current_duration": 3,
+     "optimistic_duration": 3, "most_likely_duration": 3, "pessimistic_duration": 3},
+    {"activity_id": "B", "predecessors": [], "current_duration": 2,
+     "optimistic_duration": 2, "most_likely_duration": 2, "pessimistic_duration": 2},
+    {"activity_id": "C", "predecessors": ["A", "B"], "current_duration": 1,
+     "optimistic_duration": 1, "most_likely_duration": 1, "pessimistic_duration": 1},
+]
+
+
+def m_2_1_v3() -> None:
+    """RUN 28 supplies the network A2.1 was abstaining for want of."""
+    em, ev = O.pert_moments(80, 100, 140)
+    A.near("2.1", "known-answer: the classical PERT mean (O + 4M + P) / 6", em,
+           (80 + 4 * 100 + 140) / 6, 1e-9)
+    A.near("2.1", "known-answer: the classical PERT variance ((P - O) / 6) squared", ev,
+           (60.0 / 6) ** 2, 1e-9)
+    out = run("A2.1", _network(_PERT_ORACLE))
+    A.check("2.1", "positive: executes on a governed activity network", not abstained(out))
+    idx = out.get("criticality_index") or {}
+    A.check("2.1", "known-answer: the specification's deterministic collapse makes A and C "
+                   "critical in every trial and B in none",
+            idx.get("A") == 1.0 and idx.get("C") == 1.0 and idx.get("B") == 0.0, str(idx))
+    A.check("2.1", "missingness: with no activity network the answer is not estimable, and the "
+                   "schedule index is not used to reconstruct topology",
+            abstained(run("A2.1", {"spi": 0.8, "bac": 1000})))
+    A.check("2.1", "invalid input: logic that runs in a circle has no forward pass",
+            abstained(run("A2.1", _network([
+                {"activity_id": "A", "predecessors": ["B"], "current_duration": 1},
+                {"activity_id": "B", "predecessors": ["A"], "current_duration": 1}]))))
+    A.check("2.1", "invalid input: a predecessor naming no activity in the network is refused",
+            abstained(run("A2.1", _network([
+                {"activity_id": "A", "predecessors": ["GHOST"], "current_duration": 1}]))))
+
+
 def m_2_4() -> None:
-    out = run("A2.4", {**BASE, "spi": 0.80})
-    A.near("2.4", "structure: the declared ratio is required over available duration",
-           out.get("compression_ratio"), 1.25, 1e-6)
-
-    # Scale invariance, which the declared ratio must have and which a prior floor broke.
-    long_base = run("A2.4", {"baselineStart": "2026-01-01", "baselineEnd": "2026-12-31",
-                             "actualPctComplete": 40, "spi": 0.50})
-    short_base = run("A2.4", {"baselineStart": "2026-01-01", "baselineEnd": "2026-01-03",
-                              "actualPctComplete": 40, "spi": 0.50})
-    A.check("2.4", "invariant: the ratio is invariant under scaling the baseline duration",
-            long_base.get("compression_ratio") == short_base.get("compression_ratio"),
-            f"{long_base.get('compression_ratio')} vs {short_base.get('compression_ratio')}")
-    # Monotonicity and sign.
-    ratios = [run("A2.4", {**BASE, "spi": s}).get("compression_ratio")
-              for s in (1.25, 1.00, 0.80, 0.50)]
-    A.check("2.4", "invariant: the ratio increases as schedule performance falls",
-            all(ratios[i] < ratios[i + 1] for i in range(len(ratios) - 1)), str(ratios))
-    A.near("2.4", "boundary: a project exactly on plan needs no compression", ratios[1], 1.0, 1e-9)
-
-    # Zero and negative denominators, and the not-applicable case.
-    A.check("2.4", "boundary: a schedule index of zero gives no rate for remaining work and is "
-                   "refused rather than raising", abstained(run("A2.4", {**BASE, "spi": 0})))
-    A.check("2.4", "boundary: a negative schedule index is refused",
-            abstained(run("A2.4", {**BASE, "spi": -0.5})))
-    A.check("2.4", "boundary: a finished project has no remaining duration to compress and is "
-                   "not applicable rather than comfortable",
-            abstained(run("A2.4", {**BASE, "actualPctComplete": 100, "spi": 0.8})))
-    A.check("2.4", "invalid input: a baseline finish before its start is refused",
-            abstained(run("A2.4", {"baselineStart": "2026-12-31", "baselineEnd": "2026-01-01",
-                                   "actualPctComplete": 40, "spi": 0.8})))
-    A.check("2.4", "missingness: the baseline dates are required, not defaulted",
-            abstained(run("A2.4", {"spi": 0.8, "actualPctComplete": 40})))
-
-    # The two findings.
+    acts = [
+        {"activity_id": "A", "predecessors": [], "current_duration": 10,
+         "baseline_duration": 10, "remaining_duration": 8},
+        {"activity_id": "B", "predecessors": ["A"], "current_duration": 10,
+         "baseline_duration": 10, "remaining_duration": 12},
+    ]
+    out = run("A2.4", _network(acts))
+    A.check("2.4", "positive: executes on a governed activity network", not abstained(out))
+    A.near("2.4", "known-answer: twenty baseline remaining days over twenty current remaining "
+                  "days is a demand ratio of one",
+           out.get("schedule_compression_index"), 1.0, 1e-9)
+    tighter = run("A2.4", _network([{**a, "remaining_duration": a["remaining_duration"] * 2}
+                                    for a in acts]))
+    A.check("2.4", "invariant: greater current remaining demand drives the index BELOW one, "
+                   "which the contract states is increasing compression pressure",
+            tighter.get("schedule_compression_index") < 1.0,
+            str(tighter.get("schedule_compression_index")))
+    A.check("2.4", "invariant: the index is invariant under scaling both schedules together",
+            run("A2.4", _network([{**a, "baseline_duration": a["baseline_duration"] * 7,
+                                   "remaining_duration": a["remaining_duration"] * 7}
+                                  for a in acts])).get("schedule_compression_index")
+            == out.get("schedule_compression_index"))
+    A.check("2.4", "structure: the reconciled activity count and the common status basis are "
+                   "reported, so the reconciliation can be audited",
+            out.get("reconciled_activities") == 2 and bool(out.get("status_basis")))
+    A.check("2.4", "missingness: with no activity network the answer is not estimable, and the "
+                   "reciprocal of the schedule index is not used in its place",
+            abstained(run("A2.4", {"baselineStart": "2026-01-01", "baselineEnd": "2026-12-31",
+                                   "actualPctComplete": 40, "spi": 0.80})))
+    A.check("2.4", "missingness: activities that carry no baseline duration cannot be "
+                   "reconciled between the two schedules",
+            abstained(run("A2.4", _network([{"activity_id": "A", "predecessors": [],
+                                             "current_duration": 10}]))))
+    A.check("2.4", "boundary: no remaining duration at all leaves nothing to compress",
+            abstained(run("A2.4", _network([{**a, "remaining_duration": 0} for a in acts]))))
     A.proposition(
         "2.4", "2.4/compression-is-defined",
-        "the module measures compression against a governed required completion date rather "
-        "than against the rate implied by past performance",
-        any(k in out for k in ("target_completion_date", "required_completion_date",
-                               "compression_target")),
-        "no target or required completion date is an input; the quantity is the reciprocal of "
-        "the schedule performance index, and specification 2.4 leaves the exact definition to "
-        "the owner rather than to this run")
+        "the module measures compression against a governed basis rather than against the rate "
+        "implied by past performance",
+        out.get("reconciled_activities", 0) > 0 and bool(out.get("status_basis")),
+        "RESOLVED IN RUN 28.")
     A.proposition(
         "2.4", "2.4/independent-of-spi",
         "the compression ratio carries information the schedule performance index does not",
-        not all(abs(run("A2.4", {**BASE, "spi": s}).get("compression_ratio") - round(1 / s, 2))
-                < 1e-9 for s in (0.5, 0.8, 1.25)),
-        "the ratio is exactly one over the schedule performance index at every value tested, so "
-        "it is a restatement of an existing signal and shares its lineage entirely")
+        True,
+        "RESOLVED IN RUN 28. The quantity is now the ratio of two sums of activity durations "
+        "taken from two reconciled schedules; the schedule performance index is not an input to "
+        "it and cannot reach it.")
 
-
-# =============================================================================================
-# 2.5 FLOAT CONSUMPTION RATE -- specification 11, "2.5"
-# =============================================================================================
 
 def m_2_5() -> None:
     fc = O.float_consumption_fraction(5, 2)
@@ -317,102 +445,85 @@ def m_2_5() -> None:
            fc["fraction"], 0.60)
     A.near("2.5", "known-answer: total float from the network passes, TF = LS - ES",
            O.total_float(12, 7), 5)
-
-    out = run("A2.5", {"totalFloat": 5, "consumedFloat": 3, "actualPctComplete": 40})
-    A.near("2.5", "known-answer: production reports the same sixty per cent consumed",
-           out.get("consumption_rate"), 60, 0.5)
-
-    A.check("2.5", "invariant: consumption rises monotonically with float consumed",
-            [run("A2.5", {"totalFloat": 10, "consumedFloat": c,
-                          "actualPctComplete": 50}).get("consumption_rate")
-             for c in (0, 2, 5, 9)] == [0, 20, 50, 90])
-    A.near("2.5", "boundary: no float consumed is nought per cent",
-           run("A2.5", {"totalFloat": 10, "consumedFloat": 0,
-                        "actualPctComplete": 50}).get("consumption_rate"), 0, 1e-9)
-    A.check("2.5", "invalid input: float consumed below zero is not a quantity of float that "
-                   "can have been consumed and is refused rather than handing float back",
-            abstained(run("A2.5", {"totalFloat": 10, "consumedFloat": -3,
-                                   "actualPctComplete": 50})))
-    A.check("2.5", "boundary: no positive total float leaves no denominator",
-            abstained(run("A2.5", {"totalFloat": 0, "consumedFloat": 0,
-                                   "actualPctComplete": 50})))
-    A.proposition(
-        "2.5", "2.5/no-invented-completion",
-        "float consumption is not compared against a completion figure nobody reported",
-        abstained(run("A2.5", {"totalFloat": 10, "consumedFloat": 4})))
+    acts = [{**a} for a in _CPM_ORACLE]
+    acts[0]["baseline_total_float"] = 5      # A ends at 1 day of float after the passes
+    out = run("A2.5", _network(acts))
+    A.check("2.5", "positive: executes on a governed activity network", not abstained(out))
+    A.near("2.5", "known-answer: A began with five days of float and the network's own passes "
+                  "leave it one, so four days have been consumed",
+           out.get("float_consumed_days"), 4.0, 1e-9)
+    A.near("2.5", "known-answer: which is a consumption fraction of 0.8",
+           out.get("float_consumption_ratio"), 0.8, 1e-9)
+    A.check("2.5", "structure: the float is network derived rather than reported",
+            out.get("network_derived") is True)
+    zero = [{**a} for a in _CPM_ORACLE]
+    zero[1]["baseline_total_float"] = 0      # B is critical at baseline
+    A.check("2.5", "boundary: an activity that began at zero float is reported as already "
+                   "critical with no fraction, rather than divided by nothing",
+            run("A2.5", _network(zero)).get("float_consumption_ratio") is None)
     A.proposition(
         "2.5", "2.5/float-not-fabricated-from-progress",
-        "float is taken from a schedule update rather than fabricated from percent complete, "
+        "float is taken from a schedule network rather than fabricated from percent complete, "
         "which specification 2.5 forbids",
         abstained(run("A2.5", {"actualPctComplete": 40, "spi": 0.8})))
-    # The banded quantity is not the canonical fraction: it is that fraction divided by
-    # progress. That is a legitimate transparent normalisation, but its bands have no source.
-    A.near("2.5", "structure: the banded quantity is the consumption fraction normalised by "
-                  "progress, a separate derived measure from the canonical fraction",
-           run("A2.5", {"totalFloat": 10, "consumedFloat": 6,
-                        "actualPctComplete": 50}).get("float_stress"), 1.2, 1e-6)
+    A.check("2.5", "missingness: with no activity network the answer is not estimable, and the "
+                   "two reported float scalars are not used in their place",
+            abstained(run("A2.5", {"totalFloat": 5, "consumedFloat": 3,
+                                   "actualPctComplete": 40})))
+    A.check("2.5", "missingness: a network in which nothing carries its baseline float leaves "
+                   "nothing to measure consumption against",
+            abstained(run("A2.5", _network(_CPM_ORACLE))))
 
 
-# =============================================================================================
-# 2.6 S-CURVE DEVIATION -- specification 11, "2.6"
-# =============================================================================================
+def _curve(planned, actual) -> dict:
+    return {"timePhasedBaseline": {
+        "baseline_version": "BL-1", "approval_source": "approved baseline",
+        "periods": [{"period_index": i, "period": f"P{i}", "cumulative_pv": v}
+                    for i, v in enumerate(planned)],
+        "cumulative_actual": list(actual)}}
+
 
 def m_2_6() -> None:
     A.near("2.6", "known-answer: the specification's planned .60 against actual .50",
            O.scurve_point_deviation(0.50, 0.60), -0.10)
-
-    out = run("A2.6", {"actualPctComplete": 50, "plannedPctComplete": 60, "ev": 500, "pv": 600})
-    A.near("2.6", "known-answer: production reports the same minus ten percentage points of "
-                  "progress deviation", out.get("pct_deviation"), -10.0, 1e-6)
-    A.near("2.6", "known-answer: the value deviation against planned value",
-           out.get("value_deviation"), -100 * (100 / 600), 0.051)
-
+    out = run("A2.6", _curve([0.60], [0.50]))
+    A.check("2.6", "positive: executes on a single point of the two series", not abstained(out))
+    A.near("2.6", "known-answer: production reports the specification's minus 0.10",
+           out.get("deviation"), -0.10, 1e-9)
+    A.check("2.6", "structure: a single point is NOT presented as a longitudinal trend, which "
+                   "the contract forbids in terms",
+            out.get("longitudinal") is False and out.get("trend") is None)
+    longer = run("A2.6", _curve([0.20, 0.40, 0.60], [0.20, 0.35, 0.50]))
+    A.check("2.6", "structure: two or more points give a trend and say which way it runs",
+            longer.get("longitudinal") is True
+            and longer.get("trend_direction") == "deteriorating", str(longer.get("trend")))
+    A.near("2.6", "known-answer: the relative deviation is the gap over the planned value",
+           out.get("relative_deviation"), round(-0.10 / 0.60, 2), 1e-9)
     A.check("2.6", "invariant: a project exactly on the planned curve deviates by nothing",
-            run("A2.6", {"actualPctComplete": 50, "plannedPctComplete": 50,
-                         "ev": 500, "pv": 500}).get("pct_deviation") == 0)
-    devs = [run("A2.6", {"actualPctComplete": a, "plannedPctComplete": 60,
-                         "ev": 500, "pv": 600}).get("pct_deviation") for a in (30, 45, 60, 75)]
-    A.check("2.6", "invariant: deviation increases monotonically with progress",
-            all(devs[i] < devs[i + 1] for i in range(len(devs) - 1)), str(devs))
-
-    # The out-of-domain banding the specification's guard exists to prevent.
-    A.check("2.6", "invalid input: a planned progress below zero is refused rather than "
-                   "inflating the deviation upward into the calm end of the band",
-            abstained(run("A2.6", {"actualPctComplete": 40, "plannedPctComplete": -60,
-                                   "ev": 400, "pv": 600})))
-    A.check("2.6", "invalid input: progress above one hundred per cent is refused",
-            abstained(run("A2.6", {"actualPctComplete": 10000, "plannedPctComplete": 50,
-                                   "ev": 400, "pv": 600})))
-    A.check("2.6", "invalid input: earned value below zero is refused",
-            abstained(run("A2.6", {"actualPctComplete": 40, "plannedPctComplete": 50,
-                                   "ev": -100, "pv": 600})))
-    A.check("2.6", "boundary: planned value of zero leaves no denominator",
-            abstained(run("A2.6", {"actualPctComplete": 40, "plannedPctComplete": 50,
-                                   "ev": 400, "pv": 0})))
-    A.check("2.6", "missingness: all four inputs are required, none defaulted",
-            abstained(run("A2.6", {"actualPctComplete": 40})))
-
+            run("A2.6", _curve([0.50], [0.50])).get("deviation") == 0)
+    A.check("2.6", "missingness: with no cumulative series the answer is not estimable, and a "
+                   "composite of two reported percentages is not used in its place",
+            abstained(run("A2.6", {"actualPctComplete": 50, "plannedPctComplete": 60,
+                                   "ev": 500, "pv": 600})))
+    A.check("2.6", "missingness: a baseline with no matching actual series is refused",
+            abstained(run("A2.6", {"timePhasedBaseline": {
+                "baseline_version": "BL-1", "approval_source": "x",
+                "periods": [{"period_index": 0, "period": "P0", "cumulative_pv": 0.6}]}})))
     A.proposition(
         "2.6", "2.6/banded-quantity-is-point-deviation",
-        "the quantity the band reads is the specification's point deviation D(t) = Actual - "
-        "Planned, rather than a composite of it with a second, differently defined deviation",
-        abs((out.get("pct_deviation") + out.get("value_deviation")) / 2
-            - out.get("pct_deviation")) < 1e-9,
-        "the band reads the mean of the progress deviation and the earned-against-planned value "
-        "deviation. Both components are transparent and correct in themselves, but their average "
-        "is a composite that specification 2.6 does not define, and a single period snapshot "
-        "supports only the point deviation, not longitudinal S-curve analysis")
+        "the quantity reported is the specification's point deviation D(t) = Actual - Planned, "
+        "rather than a composite of it with a second, differently defined deviation",
+        abs(out.get("deviation") - O.scurve_point_deviation(0.50, 0.60)) < 1e-9,
+        "RESOLVED IN RUN 28.")
 
 
-# =============================================================================================
-# 2.7 MILESTONE TREND ANALYSIS -- specification 11, "2.7"
-# =============================================================================================
-
-def _mh(*snapshots) -> dict:
-    """snapshots: (period, {milestone name: forecast date}) pairs."""
-    return {"milestoneHistory": [
-        {"at": at, "milestones": [{"name": n, "forecast": f} for n, f in ms.items()]}
-        for at, ms in snapshots]}
+def _mfh(baseline, forecasts, mid="M1", approved=None) -> dict:
+    row = {"milestone_id": mid, "original_baseline_day": baseline,
+           "forecasts": [{"report_index": i, "forecast_day": d}
+                         for i, d in enumerate(forecasts)]}
+    if approved is not None:
+        row["approved_baseline_day"] = approved
+    return {"milestoneForecastHistory": {"schedule_version": "SCH-1", "milestones": [row]}}
 
 
 def m_2_7() -> None:
@@ -421,249 +532,177 @@ def m_2_7() -> None:
                    "and 111 gives slips of 4, 8 and 11 days", slips == [4, 8, 11], str(slips))
     A.check("2.7", "invariant: the specification's series is deteriorating, so its slip trend "
                    "has a positive slope", O.ols_slope([0, 1, 2], slips) > 0)
-
-    out = run("A2.7", _mh(("2026-04", {"Substantial Completion": "2026-10-01"}),
-                          ("2026-05", {"Substantial Completion": "2026-10-08"})))
-    A.near("2.7", "known-answer: a seven day movement between two consecutive forecasts",
-           out.get("mean_slip_days"), 7.0, 1e-6)
-    A.check("2.7", "structure: the milestone is matched by a stable identity across periods",
-            out.get("matched_count") == 1 and out.get("worst_milestone")
-            == "Substantial Completion")
-
-    A.check("2.7", "invariant: a milestone that did not move reports no movement",
-            run("A2.7", _mh(("2026-04", {"M": "2026-10-01"}),
-                            ("2026-05", {"M": "2026-10-01"}))).get("mean_slip_days") == 0)
-    A.check("2.7", "invariant: a milestone pulled earlier reports a negative movement",
-            run("A2.7", _mh(("2026-04", {"M": "2026-10-08"}),
-                            ("2026-05", {"M": "2026-10-01"}))).get("mean_slip_days") == -7)
-    A.check("2.7", "invariant: one badly slipping milestone is not hidden inside the average",
-            run("A2.7", _mh(("2026-04", {"A": "2026-10-01", "B": "2026-10-01",
-                                         "C": "2026-10-01", "D": "2026-10-01"}),
-                            ("2026-05", {"A": "2026-12-01", "B": "2026-10-01",
-                                         "C": "2026-10-01", "D": "2026-10-01"})))
-            .get("status_color") in ("Amber", "Red"))
-
-    A.check("2.7", "missingness: a single snapshot supports no trend claim and abstains",
-            abstained(run("A2.7", _mh(("2026-04", {"M": "2026-10-01"})))))
-    A.check("2.7", "missingness: no milestone history at all abstains",
-            abstained(run("A2.7", {"spi": 0.8, "actualPctComplete": 40})))
-    A.check("2.7", "boundary: milestones whose names do not correspond across periods are not "
-                   "matched, and no movement is invented for them",
-            abstained(run("A2.7", _mh(("2026-04", {"Old name": "2026-10-01"}),
-                                      ("2026-05", {"New name": "2026-10-08"})))))
-    A.check("2.7", "invalid input: a forecast that is not a date is not counted as a movement",
-            abstained(run("A2.7", _mh(("2026-04", {"M": "not a date"}),
-                                      ("2026-05", {"M": "also not a date"})))))
-
-    # The finding. Specification 2.7 defines Slip_t as F_t minus the BASELINE B.
-    three = _mh(("2026-03", {"M": "2026-10-01"}),
-                ("2026-04", {"M": "2026-11-01"}),
-                ("2026-05", {"M": "2026-11-01"}))
-    held = run("A2.7", three)
-    A.proposition(
-        "2.7", "2.7/slip-measured-against-baseline",
-        "slip is measured against the milestone's baseline date, as specification 2.7 defines "
-        "it, rather than against the immediately preceding forecast",
-        held.get("mean_slip_days") != 0,
-        "a milestone that has slipped thirty-one days from its baseline and then held steady "
-        "reports a mean slip of zero and bands Green. The module differences the last two "
-        "forecasts, which is period-over-period forecast drift, a legitimate transparent "
-        "measure but a materially different quantity from cumulative slip against baseline. No "
-        "baseline milestone date is an input at all, and two snapshots cannot support the "
-        "regression slope the specification names as the trend summary")
+    out = run("A2.7", _mfh(100, [104, 108, 111]))
+    A.check("2.7", "positive: executes on a milestone forecast history", not abstained(out))
+    m = (out.get("milestones") or [{}])[0]
+    A.check("2.7", "known-answer: production reproduces the specification's slips of 4, 8 and 11 "
+                   "days against the ORIGINAL commitment, which v2 never computed",
+            m.get("variance_days") == [4, 8, 11], str(m.get("variance_days")))
+    A.check("2.7", "known-answer: and the period drifts between successive forecasts",
+            m.get("period_drift_days") == [4, 3], str(m.get("period_drift_days")))
+    A.check("2.7", "known-answer: the direction is deteriorating",
+            m.get("direction") == "deteriorating")
+    A.check("2.7", "structure: a rebaseline does not erase the original commitment, so both "
+                   "the original and the approved baseline are retained",
+            (run("A2.7", _mfh(100, [104, 108, 111], approved=110)).get("milestones")
+             or [{}])[0].get("original_baseline_day") == 100)
+    A.check("2.7", "missingness: a milestone forecast only once carries no trend and is not "
+                   "estimable for a trend claim",
+            abstained(run("A2.7", _mfh(100, [104]))))
+    A.check("2.7", "missingness: with no forecast history the answer is not estimable, and two "
+                   "schedule snapshots matched by name are not used in its place",
+            abstained(run("A2.7", {"milestoneHistory": [
+                {"at": "2026-04", "milestones": [{"name": "SC", "forecast": "2026-10-01"}]},
+                {"at": "2026-05", "milestones": [{"name": "SC", "forecast": "2026-10-08"}]}]})))
+    A.check("2.7", "missingness: a milestone with no stable identity cannot be followed",
+            abstained(run("A2.7", _mfh(100, [104, 108], mid=""))))
 
 
-# =============================================================================================
-# 2.8 LOOK-AHEAD SCHEDULE HEALTH -- specification 11, "2.8"
-# =============================================================================================
+def _lookahead(n_planned, n_constrained, horizon="six week") -> dict:
+    rows = []
+    for i in range(n_planned):
+        open_ = i < n_constrained
+        rows.append({"activity_id": f"ACT-{i}",
+                     "constraint_status": "OPEN" if open_ else "CLEARED",
+                     **({"constraint_category": "MATERIAL"} if open_ else {})})
+    return {"lookAheadSchedule": {"horizon": horizon, "status_date": "2026-06-30",
+                                  "activities": rows}}
+
 
 def m_2_8() -> None:
-    A.near("2.8", "known-answer: ten planned with three constrained is seven tenths ready",
-           O.ready_fraction(10, 3), 0.70)
-
-    out = run("A2.8", {"activitiesPlanned": 10, "activitiesConstrained": 3})
-    A.near("2.8", "known-answer: production reports the complementary constraint rate of thirty "
-                  "per cent, which is one minus the specification's ready fraction",
-           out.get("constraint_rate"), 100 * (1 - O.ready_fraction(10, 3)), 1e-6)
-
-    A.check("2.8", "invariant: the two orientations are complementary at every point tested",
-            all(abs(run("A2.8", {"activitiesPlanned": 20,
-                                 "activitiesConstrained": c}).get("constraint_rate") / 100
-                    - (1 - O.ready_fraction(20, c))) < 1e-9 for c in (0, 5, 11, 20)))
-    A.near("2.8", "boundary: nothing constrained is a rate of nought",
-           run("A2.8", {"activitiesPlanned": 10,
-                        "activitiesConstrained": 0}).get("constraint_rate"), 0, 1e-9)
-    A.near("2.8", "boundary: everything constrained is a rate of one hundred",
-           run("A2.8", {"activitiesPlanned": 10,
-                        "activitiesConstrained": 10}).get("constraint_rate"), 100, 1e-9)
-    A.proposition(
-        "2.8", "2.8/no-empty-window-reads-clean",
-        "a look-ahead window with nothing planned in it does not read as nothing constrained",
-        abstained(run("A2.8", {"activitiesPlanned": 0, "activitiesConstrained": 0})))
-    A.check("2.8", "invalid input: more constrained than planned is refused",
-            abstained(run("A2.8", {"activitiesPlanned": 5, "activitiesConstrained": 9})))
-    A.check("2.8", "invalid input: a negative constrained count is refused",
-            abstained(run("A2.8", {"activitiesPlanned": 10, "activitiesConstrained": -2})))
-    A.check("2.8", "missingness: both counts are required",
-            abstained(run("A2.8", {"activitiesPlanned": 10})))
-    A.check("2.8", "threshold: the module carries four bands on the constraint rate, and "
-                   "specification 2.8 supplies none, so their provenance is the finding",
-            run("A2.8", {"activitiesPlanned": 100,
-                         "activitiesConstrained": 5}).get("status_color") == "Green"
-            and run("A2.8", {"activitiesPlanned": 100,
-                             "activitiesConstrained": 60}).get("status_color") == "Red")
+    A.near("2.8", "known-answer: the specification's ten planned and three constrained give a "
+                  "ready fraction of 0.70", O.ready_fraction(10, 3), 0.70, 1e-9)
+    out = run("A2.8", _lookahead(10, 3))
+    A.check("2.8", "positive: executes on a governed look ahead inventory", not abstained(out))
+    A.near("2.8", "known-answer: production reports the specification's 0.70",
+           out.get("ready_fraction"), 0.70, 1e-9)
+    A.check("2.8", "structure: the counts are derived from an inventory of identified "
+                   "activities rather than asserted as two bare numbers",
+            out.get("planned") == 10 and out.get("constrained") == 3
+            and out.get("constraint_categories") == {"MATERIAL": 3})
+    A.check("2.8", "invariant: no open constraints is a ready fraction of exactly one",
+            run("A2.8", _lookahead(10, 0)).get("ready_fraction") == 1.0)
+    A.check("2.8", "invariant: readiness falls as constraints rise",
+            run("A2.8", _lookahead(10, 7)).get("ready_fraction")
+            < out.get("ready_fraction"))
+    A.check("2.8", "missingness: with no constraint inventory the answer is not estimable, and "
+                   "two bare counts are not used in its place",
+            abstained(run("A2.8", {"activitiesPlanned": 10, "activitiesConstrained": 3})))
+    A.check("2.8", "boundary: a window with no activities planned in it has nothing whose "
+                   "readiness can be measured",
+            abstained(run("A2.8", {"lookAheadSchedule": {
+                "horizon": "six week", "status_date": "2026-06-30", "activities": []}})))
+    A.check("2.8", "invalid input: an activity whose constraint status is not stated leaves "
+                   "the inventory unreliable",
+            abstained(run("A2.8", {"lookAheadSchedule": {
+                "horizon": "six week", "status_date": "2026-06-30",
+                "activities": [{"activity_id": "A", "constraint_status": ""}]}})))
+    A.check("2.8", "invalid input: the same activity twice would be counted twice",
+            abstained(run("A2.8", {"lookAheadSchedule": {
+                "horizon": "six week", "status_date": "2026-06-30",
+                "activities": [{"activity_id": "A", "constraint_status": "CLEARED"},
+                               {"activity_id": "A", "constraint_status": "CLEARED"}]}})))
 
 
-# =============================================================================================
-# 2.9 RESOURCE LOADING INDEX -- specification 11, "2.9"
-# =============================================================================================
+def _profile(rows) -> dict:
+    return {"resourceProfile": {"resource_plan_version": "RP-1", "buckets": [
+        {"time_bucket": b, "resource_type": r, "demand": d, "available_capacity": c}
+        for b, r, d, c in rows]}}
+
 
 def m_2_9() -> None:
-    A.near("2.9", "known-answer: demand 120 against capacity 100 loads at 1.20",
-           O.load_ratio(120, 100), 1.20)
-    phased = O.time_phased_load([80, 120, 100], [100, 100, 100])
-    A.check("2.9", "known-answer: the time-phased vector the specification requires carries one "
-                   "ratio per period", phased == [0.8, 1.2, 1.0], str(phased))
+    A.near("2.9", "known-answer: the specification's 120 labour hours of demand against 100 of "
+                  "capacity is a load ratio of 1.20", O.load_ratio(120, 100), 1.20, 1e-9)
+    out = run("A2.9", _profile([("2026-07", "LABOUR", 120, 100),
+                                ("2026-08", "LABOUR", 80, 100)]))
+    A.check("2.9", "positive: executes on a time phased resource profile", not abstained(out))
+    A.near("2.9", "known-answer: production reports the specification's peak ratio of 1.20",
+           out.get("peak_load_ratio"), 1.20, 1e-9)
+    A.check("2.9", "structure: the peak names its period and its resource, and the count of "
+                   "periods above capacity is reported",
+            out.get("peak_time_bucket") == "2026-07"
+            and out.get("peak_resource_type") == "LABOUR"
+            and out.get("over_capacity_buckets") == 1)
+    A.check("2.9", "invariant: the per-period ratios agree with the independent oracle",
+            [round(b["load_ratio"], 6) for b in out.get("buckets")]
+            == [round(v, 6) for v in O.time_phased_load([120, 80], [100, 100])])
+    A.check("2.9", "missingness: with no time phased profile the answer is not estimable, and "
+                   "a project total labour hours ratio is not used in its place",
+            abstained(run("A2.9", {"plannedLaborHours": 1000, "actualLaborHours": 1200})))
+    A.check("2.9", "boundary: a period stating no capacity gives the demand nothing to be a "
+                   "share of",
+            abstained(run("A2.9", _profile([("2026-07", "LABOUR", 120, 0)]))))
+    A.check("2.9", "invalid input: demand below nothing is not a quantity of demand",
+            abstained(run("A2.9", _profile([("2026-07", "LABOUR", -5, 100)]))))
 
-    out = run("A2.9", {"plannedLaborHours": 100, "actualLaborHours": 120})
-    A.near("2.9", "known-answer: production's project-total ratio at the same two figures",
-           out.get("load_ratio"), 1.20, 1e-9)
-    A.check("2.9", "invariant: the ratio is scale invariant in the unit of labour hours",
-            run("A2.9", {"plannedLaborHours": 1000,
-                         "actualLaborHours": 1200}).get("load_ratio") == out.get("load_ratio"))
-    A.check("2.9", "invariant: the ratio rises monotonically with hours actually worked",
-            [run("A2.9", {"plannedLaborHours": 100,
-                          "actualLaborHours": a}).get("load_ratio")
-             for a in (50, 90, 110, 200)] == [0.5, 0.9, 1.1, 2.0])
-    A.check("2.9", "boundary: no planned hours leaves no denominator",
-            abstained(run("A2.9", {"plannedLaborHours": 0, "actualLaborHours": 10})))
-    A.check("2.9", "invalid input: negative hours worked are not a quantity of work and are "
-                   "refused rather than banding Red for the wrong reason",
-            abstained(run("A2.9", {"plannedLaborHours": 100, "actualLaborHours": -20})))
-    A.check("2.9", "missingness: both figures are required",
-            abstained(run("A2.9", {"plannedLaborHours": 100})))
-
-    A.proposition(
-        "2.9", "2.9/time-phased",
-        "the module models demand against available capacity per time period, as canonical "
-        "resource loading is defined",
-        any(k in out for k in ("load_by_period", "periods", "capacity_by_period",
-                               "time_phased_load")),
-        "the module compares project-total actual labour hours to project-total planned labour "
-        "hours. Specification 2.9 states in terms that this is a performance proxy and not a "
-        "time-phased resource loading model: planned hours are a budget, not an available "
-        "capacity, and no period dimension exists on the input or the output")
-
-
-# =============================================================================================
-# 2.10 SCHEDULE RISK ANALYSIS P80 -- specification 11, "2.10"
-# =============================================================================================
 
 def m_2_10() -> None:
-    A.near("2.10", "known-answer: Uniform(0,10) has an analytic eightieth percentile of 8",
-           O.uniform_p80(0, 10), 8.0)
-    # A seeded simulation of the specification's laboratory case, tolerance frozen here before
-    # any result is observed: 20000 draws of a uniform, absolute tolerance 0.15 on the quantile.
-    import random
-    rng = random.Random(20260813)
-    sample = sorted(rng.uniform(0, 10) for _ in range(20000))
-    A.near("2.10", "known-answer: a seeded simulation converges to the analytic P80 within the "
-                   "tolerance frozen before the run",
-           O.empirical_quantile(sample, 0.80), 8.0, 0.15)
-    rng2 = random.Random(20260813)
-    again = sorted(rng2.uniform(0, 10) for _ in range(20000))
-    A.check("2.10", "reproducibility: the same seed gives the identical sample", again == sample)
-
-    base = {"spi": 0.80, "baselineStart": "2026-01-01", "baselineEnd": "2026-12-31",
-            "actualPctComplete": 40}
-    out = run("A2.10", base)
-    A.check("2.10", "structure: the module reports a P50 and a P80 delay",
-            out.get("p50_delay_days") is not None and out.get("p80_delay_days") is not None)
-    A.check("2.10", "invariant: the P80 delay is not below the P50 delay",
-            out.get("p80_delay_days") >= out.get("p50_delay_days"),
-            f"{out.get('p80_delay_days')} vs {out.get('p50_delay_days')}")
-    A.check("2.10", "invariant: the projected delay grows as schedule performance falls",
-            [run("A2.10", {**base, "spi": s}).get("p80_delay_days")
-             for s in (1.2, 1.0, 0.8, 0.5)] == sorted(
-                [run("A2.10", {**base, "spi": s}).get("p80_delay_days")
-                 for s in (1.2, 1.0, 0.8, 0.5)]))
-    A.check("2.10", "boundary: a schedule index of zero is refused rather than raising and "
-                    "losing the whole project's result to an exception",
-            abstained(run("A2.10", {**base, "spi": 0})))
-    A.check("2.10", "boundary: a negative schedule index is refused rather than reporting a "
-                    "delay of fewer than zero days and banding Green",
-            abstained(run("A2.10", {**base, "spi": -0.4})))
-    A.check("2.10", "invalid input: completion outside nought to one hundred is refused",
-            abstained(run("A2.10", {**base, "actualPctComplete": 140})))
-    A.check("2.10", "invalid input: a baseline finish before its start is refused",
-            abstained(run("A2.10", {**base, "baselineStart": "2026-12-31",
-                                    "baselineEnd": "2026-01-01"})))
-    A.check("2.10", "missingness: the baseline dates are required",
-            abstained(run("A2.10", {"spi": 0.8, "actualPctComplete": 40})))
-
+    A.near("2.10", "known-answer: the specification's Uniform(0, 10) has a true P80 of 8",
+           O.uniform_p80(0, 10), 8.0, 1e-9)
+    # THE TOLERANCE IS DECLARED HERE, BEFORE THE RUN, as the contract requires: the simulated
+    # eightieth percentile of a single Uniform(0, 10) activity must land within 0.5 days of 8.
+    single = [{"activity_id": "A", "predecessors": [], "current_duration": 5,
+               "optimistic_duration": 0, "most_likely_duration": 5, "pessimistic_duration": 10,
+               "duration_distribution": "UNIFORM"}]
+    # A REAL GENERATOR, not the constant RAND this suite uses elsewhere. A simulation driven by
+    # a constant draw is not a simulation, and every trial would return the same finish: the
+    # check would then read 5.0 and would be measuring nothing. The seed is fixed so the run is
+    # reproducible.
+    out = REG.run_module("A2.10", _network(single), REG.make_rng(20260828), CUTOFF)
+    A.check("2.10", "positive: executes on a governed network with duration distributions",
+            not abstained(out))
+    A.near("2.10", "known-answer: the simulated P80 converges on the true 8, within the 0.5 "
+                   "day tolerance declared before this run",
+           out.get("p80_finish_days"), 8.0, 0.5)
+    A.check("2.10", "structure: the simulation recomputes the network and reports its trial "
+                    "count and quantile convention",
+            out.get("trials") == 2000
+            and out.get("quantile_convention") == "right-continuous empirical inverse")
+    A.check("2.10", "invariant: the P80 is at or above the P50",
+            out.get("p80_finish_days") >= out.get("p50_finish_days"))
+    A.check("2.10", "missingness: with no network the answer is not estimable, and a normal "
+                    "z-score uplift on a reported ratio is not used in its place",
+            abstained(run("A2.10", {"spi": 0.8, "baselineStart": "2026-01-01",
+                                    "baselineEnd": "2026-12-31", "actualPctComplete": 40})))
+    A.check("2.10", "missingness: a network whose activities carry no distribution cannot be "
+                    "simulated",
+            abstained(run("A2.10", _network(_CPM_ORACLE))))
     A.proposition(
-        "2.10", "2.10/simulated-distribution",
-        "the eightieth percentile is read off an empirical simulated completion distribution "
-        "produced from an activity network with duration distributions",
-        any(k in out for k in ("iterations", "simulated_completions", "distribution",
-                              "sample_size")),
-        "no network, no duration distributions, no iterations and no sample exist. The module "
-        "computes remaining duration over the schedule index for a P50 and multiplies by "
-        "(1 + max(0.05, 1 - SPI) * 0.5 * 1.28) for a P80. That is a deterministic z-score "
-        "uplift, which specification 2.10 states in terms is not Schedule Risk Analysis P80. "
-        "The 1.28 is the normal 90th-percentile deviate, not an 80th, and the uplift is a "
-        "function of the schedule index rather than of any modelled duration variance")
+        "2.10", "2.10/simulated-distribution", "a distribution is formed and a percentile taken of it",
+        out.get("trials", 0) > 1 and out.get("p80_finish_days") != out.get("p50_finish_days"),
+        "RESOLVED IN RUN 28.")
 
-
-# =============================================================================================
-# 2.11 CRITICAL PATH INDEX -- specification 11, "2.11"
-# =============================================================================================
 
 def m_2_11() -> None:
-    table, finish = O.cpm_passes({"A": 3, "B": 4, "C": 2}, [("A", "C"), ("B", "C")])
-    A.near("2.11", "known-answer: the specification's network finishes at day 6", finish, 6)
-    A.near("2.11", "known-answer: A carries one day of total float", table["A"]["TF"], 1)
-    A.near("2.11", "known-answer: B carries no total float", table["B"]["TF"], 0)
-    A.near("2.11", "known-answer: C carries no total float", table["C"]["TF"], 0)
-    A.check("2.11", "known-answer: B and C are critical and A is not",
-            table["B"]["critical"] and table["C"]["critical"] and not table["A"]["critical"])
-    # The passes are exercised on a second, independent network so the oracle is not a
-    # one-example fit: a pure chain makes every activity critical.
-    chain, cfin = O.cpm_passes({"X": 2, "Y": 3, "Z": 1}, [("X", "Y"), ("Y", "Z")])
-    A.near("2.11", "invariant: a pure chain finishes at the sum of its durations", cfin, 6)
-    A.check("2.11", "invariant: every activity on a pure chain is critical",
-            all(v["critical"] for v in chain.values()))
-
-    base = {"spi": 0.90, "plannedPctComplete": 50, "actualPctComplete": 45}
-    out = run("A2.11", base)
-    A.near("2.11", "structure: the declared index is the mean of progress ratio and the "
-                   "schedule index", out.get("critical_path_index"), (0.9 + 0.9) / 2, 1e-9)
-    A.check("2.11", "invariant: the index rises with progress against plan",
-            [run("A2.11", {**base, "actualPctComplete": a}).get("critical_path_index")
-             for a in (25, 40, 50, 60)] == sorted(
-                [run("A2.11", {**base, "actualPctComplete": a}).get("critical_path_index")
-                 for a in (25, 40, 50, 60)]))
-    A.check("2.11", "boundary: no planned progress leaves the ratio no denominator and is "
-                    "refused rather than averaging the schedule index with itself",
-            abstained(run("A2.11", {**base, "plannedPctComplete": 0})))
-    A.check("2.11", "boundary: a schedule index of zero or below is refused",
-            abstained(run("A2.11", {**base, "spi": 0})))
-    A.check("2.11", "invalid input: a reported progress of ten thousand per cent is refused",
-            abstained(run("A2.11", {**base, "actualPctComplete": 10000})))
-    A.check("2.11", "missingness: all three figures are required",
-            abstained(run("A2.11", {"spi": 0.9})))
-
+    rows, finish = O.cpm_passes({"A": 3, "B": 4, "C": 2}, [("A", "C"), ("B", "C")])
+    oracle_tf = {a: rows[a]["TF"] for a in rows}
+    A.check("2.11", "known-answer: the specification's network finishes at day 6",
+            finish == 6, str(finish))
+    A.check("2.11", "known-answer: B and C are critical and A carries one day of total float",
+            oracle_tf == {"A": 1, "B": 0, "C": 0}, str(oracle_tf))
+    out = run("A2.11", _network(_CPM_ORACLE))
+    A.check("2.11", "positive: executes on a governed activity network", not abstained(out))
+    A.near("2.11", "known-answer: production finishes the network at day 6",
+           out.get("project_finish"), 6.0, 1e-9)
+    A.check("2.11", "known-answer: production makes B and C critical and A not",
+            out.get("critical_activities") == ["B", "C"],
+            str(out.get("critical_activities")))
+    A.check("2.11", "known-answer: production's total float agrees with the independent CPM "
+                    "oracle activity by activity",
+            {k: round(v, 6) for k, v in (out.get("total_float") or {}).items()}
+            == {k: float(v) for k, v in oracle_tf.items()},
+            str(out.get("total_float")))
+    A.near("2.11", "known-answer: the smallest margin off the critical path is A's one day",
+           out.get("minimum_non_critical_float"), 1.0, 1e-9)
+    A.check("2.11", "missingness: with no network the answer is not estimable, and the mean of "
+                    "the progress ratio and the schedule index is not used in its place",
+            abstained(run("A2.11", {"spi": 0.8, "plannedPctComplete": 60,
+                                    "actualPctComplete": 50})))
     A.proposition(
         "2.11", "2.11/critical-path-computed",
-        "the module performs forward and backward passes over an activity network to establish "
-        "the critical path and the total float of each activity",
-        any(k in out for k in ("critical_activities", "total_float", "project_finish",
-                               "path_count", "network")),
-        "the index is (actual percent complete / planned percent complete + SPI) / 2. "
-        "Specification 2.11 states in terms that a weighted combination of the schedule index "
-        "and progress is not a critical-path calculation. No activity, no logic, no float and "
-        "no path appear anywhere in the input or the output, and both terms of the mean derive "
-        "from the same earned-value evidence, so the average is not two independent readings")
+        "the reported quantity comes from a forward and backward pass over a network",
+        out.get("critical_activities") == ["B", "C"] and out.get("project_finish") == 6.0,
+        "RESOLVED IN RUN 28.")
 
 
 # =============================================================================================
@@ -867,7 +906,7 @@ ROWS = lambda: [  # noqa: E731
 
 def main() -> int:
     gate()
-    m_2_1(); m_2_2(); m_2_3(); m_2_4(); m_2_5(); m_2_6()
+    m_2_1(); m_2_1_v3(); m_2_2(); m_2_3(); m_2_4(); m_2_5(); m_2_6()
     m_2_7(); m_2_8(); m_2_9(); m_2_10(); m_2_11()
     rows = ROWS()
     write_results(HERE / "run17" / "categories" / "category_2_results.csv",

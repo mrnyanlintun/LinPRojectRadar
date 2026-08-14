@@ -1,6 +1,6 @@
 guard,protects,violation_landed,detected,guard_failure
 manifest integrity,coverage of every module carrying a tunable value,removed the provenance entry for A1.1 from the live register,yes,manifest integrity reported the violation
-registry identity,a registered name against its truthful label,renamed A1.5 at the source the registry index is built from,yes,registry identity reported the violation
+registry identity,a registered name against its truthful label,renamed A3.8 at the source the registry index is built from,yes,registry identity reported the violation
 PH.* existence,the existence of every portfolio identifier,"removed D1.5, the portfolio anomaly score, at the registry source",yes,PH.* existence reported the violation
 Category-9 qualification,the canonical structure requirement of a gated module,removed the line of balance canonical structure requirement,yes,Category-9 qualification reported the violation
 lineage declaration,the identity of every declared lineage record,pointed A1.7's lineage record at a module that is not itself,yes,lineage declaration reported the violation

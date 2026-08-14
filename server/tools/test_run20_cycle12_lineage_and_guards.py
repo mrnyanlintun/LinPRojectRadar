@@ -196,18 +196,31 @@ def bayesian_eac_negative_control() -> None:
     them. A control that cannot fail is not a control, so the same comparison is made against a
     record that genuinely does rest elsewhere.
     """
-    bayes = LIN.lineage_for("A1.3") or rec("A1.3", ("ev", "ac", "bac"),
-                                           ("EARNED_VALUE_MEASUREMENT",), LIN.CORRELATED)
+    # RUN 28 REVERSED THE FIRST HALF OF THIS CONTROL, and the reversal is the correction. Until
+    # Run 28 the Bayesian estimate at completion derived both of its designed variances from the
+    # budget and the cost index, so it rested on the same facts as the other cost modules and
+    # must NOT have been admitted as independent corroboration of them. The owner's supplied
+    # Run-28 contract replaced that computation with a governed normal-normal update over a
+    # stated prior and a stated observation model, and it touches no earned-value field at all,
+    # so it IS independent of them now and declaring otherwise would suppress corroboration that
+    # is really there. The control keeps both directions and keeps its force: the module must be
+    # independent of the earned-value readers AND the comparison must still be able to find a
+    # dependence where one exists, which is checked against the to-complete index and the
+    # variance at completion, two records that genuinely do share the earned-value facts.
+    bayes = LIN.lineage_for("A1.3") or rec("A1.3", ("bayesian_prior", "bayesian_observation"),
+                                           ("BAYESIAN_MODEL_RECORD",), LIN.INDEPENDENT)
     tcpi = LIN.lineage_for("A1.7")
+    vac = LIN.lineage_for("A1.8")
     pa, pb = LIN.resolve_primitive_sources([bayes, tcpi])
-    dep = LIN.dependent(bayes, tcpi, pa, pb)
-    other = rec("ELSEWHERE", ("permit_condition",), ("PERMIT_RECORD",))
-    pc, pd = LIN.resolve_primitive_sources([bayes, other])
-    indep = not LIN.dependent(bayes, other, pc, pd)
-    campaign("the Bayesian estimate at completion is not independent corroboration of the "
-             "earned value modules, and the control can still find independence elsewhere",
-             dep and indep, "dependent on earned value, independent of the permit record",
-             f"dependent {dep}, independent-elsewhere {indep}")
+    indep_of_ev = not LIN.dependent(bayes, tcpi, pa, pb)
+    pe, pf = LIN.resolve_primitive_sources([tcpi, vac])
+    can_find_dep = LIN.dependent(tcpi, vac, pe, pf)
+    campaign("the Bayesian estimate at completion rests on its own governed model record and is "
+             "no longer a transform of the earned value, and the control can still find a "
+             "dependence where one genuinely exists",
+             indep_of_ev and can_find_dep,
+             "independent of the earned value, and the two voters still dependent on each other",
+             f"independent-of-earned-value {indep_of_ev}, finds-dependence {can_find_dep}")
 
 
 def portfolio_canonical_id_guard() -> None:

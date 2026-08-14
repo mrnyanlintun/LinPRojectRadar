@@ -133,14 +133,25 @@ import production_tree as pt  # noqa: E402
 check(pt.PINNED_RUN25.name == "run25_production_tree.sha256"
       and pt.PINNED_RUN25.is_file(),
       "the Run-25 manifest is still present and addressable after being superseded")
-check(pt.PINNED.name in ("run25_production_tree.sha256", "run26_production_tree.sha256"),
-      "the freeze guard's pinned manifest is the Run-25 one or the Run-26 one that supersedes "
+# RUN 28 repointed the pin again, for the first time because ANALYTICAL production code changed
+# rather than a UI file. The chain of accepted pins is EXTENDED, not opened: the guard still
+# requires the pin to be one of the named manifests in the chain, so a pin at an unnamed or
+# invented file is still red.
+check(pt.PINNED.name in ("run25_production_tree.sha256", "run26_production_tree.sha256",
+                        "run28_production_tree.sha256"),
+      "the freeze guard's pinned manifest is the Run-25 one or one of the manifests that "
+      "supersede it "
       "it", pt.PINNED.name)
 if pt.PINNED.name != "run25_production_tree.sha256":
     _p25 = {ln.split("  ", 1)[1]: ln.split("  ", 1)[0]
             for ln in pt.PINNED_RUN25.read_text(encoding="utf-8").splitlines() if ln.strip()}
     _p26 = {ln.split("  ", 1)[1]: ln.split("  ", 1)[0]
+            for ln in pt.PINNED_RUN26.read_text(encoding="utf-8").splitlines() if ln.strip()}
+    _now = {ln.split("  ", 1)[1]: ln.split("  ", 1)[0]
             for ln in pt.PINNED.read_text(encoding="utf-8").splitlines() if ln.strip()}
+    # RUN 25 -> RUN 26 is unchanged and is still asserted exactly, against the Run-26 manifest
+    # itself rather than against whatever the pin currently points at, so a later run cannot
+    # dilute Run 26's own record by moving the pin.
     check(set(_p25) == set(_p26),
           "the superseding manifest covers exactly the same file list, so the freeze was not "
           "narrowed while it was moved",
@@ -149,6 +160,34 @@ if pt.PINNED.name != "run25_production_tree.sha256":
           == ["assets/js/knowledge.js", "assets/js/neural_flow.js", "index.html"],
           "and only the three files Run 26 declares moved between the two manifests",
           str(sorted(k for k in _p25 if _p25[k] != _p26[k])))
+    # RUN 26 -> RUN 28. The freeze was WIDENED and not narrowed: the file list gains the v3
+    # canonical method layer and loses nothing, and the files whose bytes moved are exactly the
+    # ones Run 28's own manifest declares plus the three Run 20 already declares and Run 28
+    # deliberately does not declare twice.
+    if pt.PINNED.name == "run28_production_tree.sha256":
+        from run28_production_changes import (  # noqa: E402
+            RUN28_NEW_PRODUCTION_FILES, RUN28_PRODUCTION_CHANGES,
+        )
+        check(set(_p26) <= set(_now),
+              "the Run-28 manifest covers everything the Run-26 one did, so the freeze was "
+              "widened rather than narrowed", str(sorted(set(_p26) - set(_now))))
+        check(sorted(set(_now) - set(_p26)) == sorted(RUN28_NEW_PRODUCTION_FILES),
+              "and the only file it adds is the one Run 28 declares as new production code",
+              str(sorted(set(_now) - set(_p26))))
+        _moved = sorted(k for k in _p26 if k in _now and _p26[k] != _now[k])
+        _declared_28 = {e[1] for e in RUN28_PRODUCTION_CHANGES.values()}
+        # The five paths Run 20 already declares against the immovable Run-20 freeze. Run 28
+        # changed all five again and deliberately does NOT declare any of them a second time,
+        # because the declared-changes guard requires that no path appear in two manifests.
+        _already = {"server/app/simulation/models_ext.py",
+                    "server/app/simulation/registry.py",
+                    "server/app/simulation/method_labels.py",
+                    "server/app/simulation/lineage.py",
+                    "server/app/simulation/parameters.py"}
+        check(set(_moved) <= (_declared_28 | _already),
+              "and every file whose bytes moved between the two is declared by Run 28 or was "
+              "already declared against the Run-20 freeze by an earlier run",
+              str(sorted(set(_moved) - (_declared_28 | _already))))
 check(pt.PINNED_RUN24.name == "run24_production_tree.sha256",
       "and the Run-24 manifest is kept addressable, so the supersession is provable")
 
