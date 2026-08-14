@@ -1,0 +1,29 @@
+kind,item,expected,observed,result
+campaign property,duplicate identical evidence confers no additional confidence,the same band and no gain in belief,"bands Red then Red, belief 0.0000 then 0.0000",HOLDS
+campaign property,two transforms of one body of evidence are separated into one body,one independent body and no gain in belief,"1 bodies, belief 0.0000 then 0.0000",HOLDS
+campaign property,a bridging signal is dependent on both bodies it draws from,dependent on both,as expected,HOLDS
+campaign property,"dependence is not closed transitively, in all six orderings of the triangle",A and C independent in all six,failed in none,HOLDS
+campaign property,a same-lineage reading does not suppress the more adverse one,the adverse band Red is kept,got Red,HOLDS
+campaign property,genuinely independent evidence is separated into two bodies and may corroborate,two independent bodies,2 bodies,HOLDS
+campaign property,"the Bayesian estimate at completion is not independent corroboration of the earned value modules, and the control can still find independence elsewhere","dependent on earned value, independent of the permit record","dependent True, independent-elsewhere True",HOLDS
+campaign property,the portfolio canonical identifier guard admits PH.5 and rejects a deliberate invalid PH reference,"PH.5 admitted, PH.9 rejected","admitted True, rejected True",HOLDS
+campaign property,the four production evidence-combination arms are separated and every arm is placed in exactly one body,each of the four arms in exactly one body,"2 bodies over indices [0, 1, 2, 3]",HOLDS
+campaign property,the portfolio clusters compute on the production path over three projects,a populated result mapping,ok=True,HOLDS
+campaign property,sibling modules of the earned value family are dependent on one another,every pair dependent,"3 pairs over ['A1.1', 'A1.7', 'A1.8']",HOLDS
+campaign property,the derived index resolver takes the union with no evidence and never widens beyond it with evidence,"union with no evidence, a subset with evidence","union ['actual_pct_complete', 'ev', 'planned_pct_complete', 'pv'], resolved ['ev', 'pv']",HOLDS
+campaign property,"an undeclared signal is kept, named, never assumed independent, and adding a second one changes nothing","the adverse band kept, the signal named, and idempotent under duplication","band Red, reported True, idempotent True",HOLDS
+campaign property,every declared lineage record names the module it belongs to,no identity defects,0 defects: [],HOLDS
+suite re-executed by Run 22,test_run20_category9_gate.py,all checks pass,61/61,GREEN
+suite re-executed by Run 22,test_run20_lineage_declaration_truth.py,all checks pass,288/288,GREEN
+suite re-executed by Run 22,test_run20_voting_lineage.py,all checks pass,100/100,GREEN
+suite re-executed by Run 22,test_run20_cycle12_lineage_and_guards.py,all checks pass,33/33,GREEN
+suite re-executed by Run 22,test_run20_cycle12_reaudit.py,all checks pass,30/30,GREEN
+suite re-executed by Run 22,test_run20_primitive_lineage.py,all checks pass,149/149,GREEN
+suite re-executed by Run 22,test_run20_b21_dst_lineage.py,all checks pass,69/69,GREEN
+suite re-executed by Run 22,test_run20_cycle8_arch3_clusters.py,all checks pass,115/115,GREEN
+suite re-executed by Run 22,test_run20_cycle9_arch5_siblings.py,all checks pass,108/108,GREEN
+suite re-executed by Run 22,test_run21_lineage_presentation.py,all checks pass,(in the full suite),GREEN (full suite)
+required outcome,false reinforcement,0,0,MET -- 'duplicate identical evidence confers no additional confidence' and 'genuinely independent evidence is separated into two bodies and may corroborate' both HOLD
+required outcome,false suppression,0,0,MET -- 'a same-lineage reading does not suppress the more adverse one' HOLDS
+required outcome,declaration identity defects,0,0,"MET -- 'every declared lineage record names the module it belongs to' HOLDS, and test_run20_lineage_declaration_truth.py is 288/288"
+required outcome,no transitive-closure dependence,not closed transitively,"not closed transitively, in all six orderings of the triangle","MET -- the bridge case A={X}, B={X,Y}, C={Y} is exercised in all six orderings"
