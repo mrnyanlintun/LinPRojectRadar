@@ -2036,29 +2036,51 @@
     if (!checkInputs(si, ['bac','cpi','ev','ac'])) return insufficientData('FAR_Threshold');
     var eac = si.bac / si.cpi;
     var overrunPct = ((eac - si.bac) / si.bac) * 100;
-    var far34Threshold = 25;
-    var distanceToThreshold = far34Threshold - overrunPct;
+    // RUN 21, QUEUE ITEM 3. This browser instrument went on publishing the regulatory claim that
+    // Run 20 cycle 2 WITHDREW from the server: a FAR part number attached to a 25% overrun level,
+    // a key named far_reporting_required, and the sentence "REPORTING REQUIRED". FAR 34.201
+    // states earned value management policy and applicability and states NO numeric overrun
+    // threshold of any kind, so the regulation's name was attached to an uncited internal level.
+    // The arithmetic, the boundaries and the band are UNCHANGED and no substitute threshold is
+    // introduced; only the false attribution is removed. Kept byte-identical in meaning to
+    // server/app/simulation/models_gov.py run_far_threshold, which is the authority.
+    var reviewThreshold = 25;
+    var distanceToThreshold = reviewThreshold - overrunPct;
     var status = overrunPct <= 5 ? 'Green' :
                  overrunPct <= 15 ? 'Yellow' :
                  overrunPct <= 25 ? 'Amber' : 'Red';
     return {
       method_class: 'FAR_Threshold', status_color: status,
       overrun_pct: Math.round(overrunPct * 10) / 10,
-      far34_threshold_pct: far34Threshold,
+      review_threshold_pct: reviewThreshold,
+      threshold_provenance: 'UNCITED_INTERNAL_REVIEW_LEVEL',
       distance_to_threshold: Math.round(distanceToThreshold * 10) / 10,
-      far_reporting_required: overrunPct >= far34Threshold,
-      evidence_metric: 'FAR Part 34: ' + Math.round(overrunPct*10)/10 +
-        '% overrun, threshold ' + far34Threshold + '% (' +
-        (overrunPct >= far34Threshold ? 'REPORTING REQUIRED' :
-         Math.round(distanceToThreshold*10)/10 + '% headroom') + ')'
+      exceeds_review_threshold: overrunPct >= reviewThreshold,
+      regulatory_determination: 'NOT_MADE',
+      evidence_metric: Math.round(overrunPct*10)/10 +
+        '% forecast overrun against an internal review level of ' + reviewThreshold +
+        '%, which no regulation states (' +
+        (overrunPct >= reviewThreshold ? 'above the review level' :
+         Math.round(distanceToThreshold*10)/10 + '% headroom') +
+        '). Whether earned value management applies, and whether any report is due, is not ' +
+        'determined here.'
     };
   }
 
   function runOMBA11Check(si) {
     if (!checkInputs(si, ['bac','cpi','actualPctComplete'])) return insufficientData('OMB_A11_Check');
+    // RUN 21, QUEUE ITEM 3. Withdrawn on the server by Run 20 cycle 2 and withdrawn here now.
+    // OMB Circular A-11 must not be reduced to budget, cost-index and progress thresholds, and
+    // that is precisely what this check is: no rule identifier, no section or appendix, no
+    // applicability, no required evidence, no result per requirement, no reviewer and no
+    // edition. A check that evaluates NONE of a circular's requirements cannot conclude that
+    // the circular obliges anything, so "MANDATORY REPORTING TRIGGERED" is removed. What is
+    // removed is the conclusion, not the observation: the two conditions are real observations
+    // and remain, renamed for what they are. The conjunction, the boundaries and the band are
+    // untouched. Authority: models_gov.py run_omb_a11_check.
     var cpiBelow90 = si.cpi < 0.90;
-    var majorProgram = si.bac >= 10000000;
-    var reportingTriggered = cpiBelow90 && majorProgram;
+    var largeBudget = si.bac >= 10000000;
+    var reviewConditionMet = cpiBelow90 && largeBudget;
     var eac = si.bac / si.cpi;
     var projectedOverrun = eac - si.bac;
     var status = !cpiBelow90 ? 'Green' :
@@ -2067,12 +2089,18 @@
     return {
       method_class: 'OMB_A11_Check', status_color: status,
       cpi_below_90: cpiBelow90,
-      major_program: majorProgram,
-      reporting_triggered: reportingTriggered,
+      large_budget: largeBudget,
+      review_condition_met: reviewConditionMet,
+      threshold_provenance: 'UNCITED_INTERNAL_REVIEW_LEVEL',
+      regulatory_determination: 'NOT_MADE',
       projected_overrun: Math.round(projectedOverrun),
-      evidence_metric: 'OMB A-11: CPI ' + si.cpi +
-        (reportingTriggered ? ': MANDATORY REPORTING TRIGGERED' :
-         cpiBelow90 ? ': below threshold, monitor' : ': within threshold')
+      evidence_metric: 'Cost index ' + si.cpi +
+        (reviewConditionMet
+          ? ', below the internal review level of 0.90 on a budget of ten million or more, ' +
+            'which is an internal review condition and not a reporting obligation'
+          : cpiBelow90 ? ', below the internal review level of 0.90'
+                       : ', at or above the internal review level of 0.90') +
+        '. No requirement of the circular is evaluated here, so no conformance finding is made.'
     };
   }
 
@@ -2086,14 +2114,23 @@
     var status = (!cpiBreached && !spiBreached) ? 'Green' :
                  (cpiBreached !== spiBreached) ? 'Yellow' :
                  bothBreached && eacDeltaPct <= 15 ? 'Amber' : 'Red';
+    // RUN 21, QUEUE ITEM 3. "BREACHED" asserts a reporting obligation was violated. No reporting
+    // cadence, due date or received date is held anywhere in this repository, so whether any
+    // required report was submitted CANNOT be assessed and is not. Withdrawn on the server by
+    // Run 20 cycle 2; withdrawn here now. Boundaries and band unchanged, no substitute threshold
+    // introduced. Authority: models_gov.py run_evm_reporting_threshold.
     return {
       method_class: 'EVM_Reporting_Threshold', status_color: status,
-      cpi_breached: cpiBreached, spi_breached: spiBreached,
-      both_breached: bothBreached,
+      cpi_below_review_level: cpiBreached, spi_below_review_level: spiBreached,
+      both_below_review_level: bothBreached,
+      threshold_provenance: 'UNCITED_INTERNAL_REVIEW_LEVEL',
+      reporting_compliance_assessed: false,
       eac_delta_pct: Math.round(eacDeltaPct * 10) / 10,
-      evidence_metric: 'EVM threshold: CPI ' + (cpiBreached ? 'BREACHED' : 'ok') +
-        ', SPI ' + (spiBreached ? 'BREACHED' : 'ok') +
-        ', EAC +' + Math.round(eacDeltaPct*10)/10 + '%'
+      evidence_metric: 'Cost index ' + (cpiBreached ? 'below' : 'at or above') +
+        ' the internal review level of 0.90, schedule index ' +
+        (spiBreached ? 'below' : 'at or above') + ' it, forecast at completion ' +
+        Math.round(eacDeltaPct*10)/10 + '% over budget. No reporting cadence, due date or ' +
+        'received date is held, so whether required reports were submitted is not assessed here.'
     };
   }
 
@@ -2648,7 +2685,14 @@
       { name: 'Cost constraint (CPI ≥ 0.90)', satisfied: si.cpi >= 0.90, value: si.cpi, threshold: 0.90 },
       { name: 'Schedule constraint (SPI ≥ 0.90)', satisfied: si.spi >= 0.90, value: si.spi, threshold: 0.90 },
       { name: 'Document risk (score < 0.70)', satisfied: (si.docRiskScore || 0) < 0.70, value: si.docRiskScore || 0, threshold: 0.70 },
-      { name: 'FAR threshold (overrun < 25%)', satisfied: si.cpi > 0.80, value: si.cpi, threshold: 0.80 }
+      // RUN 21, QUEUE ITEM 3. This rule was presented to the reader as "FAR threshold
+      // (overrun < 25%)" and Run 20 cycle 2 removed that name from the server. The comparison
+      // itself is coherent and UNCHANGED: a forecast at completion of budget over cost index
+      // overruns by less than a quarter exactly when the cost index exceeds 0.80. Only the false
+      // attribution to a regulation that states no such threshold is removed. This name is also
+      // published in violated_constraints and in evidence_metric, so a stale name here reaches
+      // the reader directly. Authority: models_gov.py run_constraint_satisfaction.
+      { name: 'Forecast overrun below 25% (CPI > 0.80)', satisfied: si.cpi > 0.80, value: si.cpi, threshold: 0.80 }
     ];
     var satisfied = constraints.filter(function (c) { return c.satisfied; }).length;
     var violated = constraints.filter(function (c) { return !c.satisfied; });
