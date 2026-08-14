@@ -411,6 +411,34 @@
     })();
     var uploadedTypeCount = Object.keys(uploadedNorm).length;
 
+    // RUN 21. HOW MANY DOCUMENTS THE PROJECT STILL HOLDS FROM BEFORE THE RESET.
+    //
+    // THE DEFECT THIS FIXES, measured in a real browser on a RELOADED document so it is not a
+    // cache artefact. Run 18 correctly made the count above a count SINCE THE LAST RESET, so a
+    // cleared project stops claiming its old evidence is current. But the words beside it were
+    // left saying "UPLOADED ON THIS PROJECT", and the summary strip said "This project has no
+    // uploaded documents". Both are FALSE after a reset. The reset deliberately does not delete
+    // documents -- its own control says so, "Clears this project's stored signal values so its
+    // documents can be read again. Does not delete documents" -- and the server still holds
+    // every one of them. MEASURED: a project reset after twenty-four uploads served twenty-five
+    // events, reported "0 UPLOADED ON THIS PROJECT" and "no uploaded documents" after a real
+    // reload, and then computed FORTY-ONE modules from those retained documents the moment
+    // signals were regenerated. A reader was being told the evidence was gone while it was
+    // being kept and was about to be used.
+    //
+    // This is the same class of defect Run 16 fixed for "96 modules": the NUMBER was right for
+    // what it counted and the WORDS asserted something else. NO COUNT CHANGES HERE. The
+    // since-reset figure is untouched, no document is re-admitted to the current window, and
+    // nothing on the diagram becomes active. Only the retained documents are disclosed, and
+    // only when there are some.
+    var retainedBeforeReset = 0;
+    if (sinceReset !== evAll) {
+      evAll.slice(0, evAll.length - sinceReset.length).forEach(function (e) {
+        var ty = (e && (e.event || e.type || e.kind)) || '';
+        if (ty === 'signals_extracted') retainedBeforeReset++;
+      });
+    }
+
     // ── 2. Canonical categories/modules + status resolution ──────────────────
     var model = buildModel();
     var CATS = model.CATS, MODULES = model.MODULES, catModIdxs = model.catModIdxs, catIds = model.catIds;
@@ -585,8 +613,15 @@
     // registry rather than typed in; what changed is that they are now labelled as what they
     // are, and the project's own figures sit beneath them.
     var HEADERS = [
+      // RUN 21. The words now match what the number counts. Before a reset the window IS the
+      // project, so the original wording is kept exactly. After one, the figure is a
+      // since-the-reset count and says so, and the retained documents are named beside it
+      // instead of being silently reported as absent.
       [CX.doc, DOC_KEYS.length + ' SUPPORTED DOCUMENT TYPES',
-               uploadedDocCount + ' UPLOADED ON THIS PROJECT'],
+               retainedBeforeReset > 0
+                 ? (uploadedDocCount + ' UPLOADED SINCE THE RESET, ' + retainedBeforeReset +
+                    ' RETAINED')
+                 : (uploadedDocCount + ' UPLOADED ON THIS PROJECT')],
       [CX.mod, MODULES.length + ' REGISTERED PROJECT MODULES',
                modWithResult + ' WITH A CURRENT RESULT'],
       [CX.cat, CATS.length + ' REGISTERED CATEGORIES',
@@ -943,9 +978,20 @@
       'It is what the platform can do, not what this project has done.';
     var actSentence;
     if (uploadedDocCount === 0 && modWithResult === 0 && catEstimable === 0) {
-      actSentence = 'This project has no uploaded documents and no current results, so nothing ' +
-        'on the diagram is active and the ' + (governedLabel || 'project status') +
-        ' is not estimable.';
+      // RUN 21. The empty-project sentence is UNCHANGED and is still the one a project with
+      // nothing uploaded reads. What changed is that a project whose signals were CLEARED no
+      // longer reads it, because for that project it is false: the documents were deliberately
+      // not deleted, the server still serves them, and regenerating signals reads them again.
+      actSentence = retainedBeforeReset > 0
+        ? ('This project has no documents uploaded since its stored signals were cleared and no '
+           + 'current results, so nothing on the diagram is active and the '
+           + (governedLabel || 'project status') + ' is not estimable. '
+           + retainedBeforeReset + ' document' + (retainedBeforeReset === 1 ? '' : 's')
+           + ' uploaded before the reset ' + (retainedBeforeReset === 1 ? 'is' : 'are')
+           + ' retained and will be read again when signals are regenerated.')
+        : ('This project has no uploaded documents and no current results, so nothing '
+           + 'on the diagram is active and the ' + (governedLabel || 'project status')
+           + ' is not estimable.');
     } else {
       actSentence = 'This project currently has ' + uploadedDocCount + ' uploaded document' +
         (uploadedDocCount === 1 ? '' : 's') + ' across ' + uploadedTypeCount + ' type' +

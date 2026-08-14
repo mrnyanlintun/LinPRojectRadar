@@ -39,4 +39,24 @@ RUN21_PRODUCTION_CHANGES: dict[str, tuple[str, str, str]] = {
         "executing the shipped JavaScript in node against the shipped server on the same inputs "
         "in server/tools/test_run21_governance_instrument_parity.py, and each guard proved RED "
         "by a real violation there."),
+    "RESET.1 neural_flow": (
+        "Run-21 section 5 STATE D and section 6, FINAL FLOW truthfulness",
+        "assets/js/neural_flow.js",
+        "AFTER THE SUPPORTED RESET THE DIAGRAM TOLD THE READER THE PROJECT HAD NO DOCUMENTS, "
+        "WHILE THE SERVER STILL HELD THEM AND WAS ABOUT TO USE THEM. Run 18 correctly made the "
+        "document figure a count SINCE THE LAST RESET, so a cleared project stops presenting old "
+        "evidence as current. The WORDS beside it were left saying 'UPLOADED ON THIS PROJECT', "
+        "and the summary strip said 'This project has no uploaded documents'. Both are false "
+        "after a reset: the reset deliberately does not delete documents -- its own control says "
+        "so -- and the server still serves every one. MEASURED IN A REAL BROWSER ON A RELOADED "
+        "DOCUMENT, so it is not a cache artefact: a project reset after twenty-four uploads "
+        "served twenty-five events, reported '0 UPLOADED ON THIS PROJECT' and 'no uploaded "
+        "documents', and then computed FORTY-ONE modules from those retained documents the "
+        "moment signals were regenerated. Same class as the '96 modules' defect Run 16 fixed: "
+        "the number was right for what it counted and the words asserted something else. NO "
+        "COUNT CHANGED. The since-reset figure is untouched, no document is re-admitted to the "
+        "current window, nothing on the diagram becomes active, and the pre-reset wording and "
+        "the empty-project sentence are both kept byte-identical for a project that has not "
+        "been reset. Only the retained documents are disclosed, and only when there are some. "
+        "Pinned by server/tools/test_run21_reset_disclosure.py."),
 }
