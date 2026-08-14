@@ -16,6 +16,10 @@ import csv
 import pathlib
 from typing import Any, Callable
 
+from .method_labels import (  # noqa: F401
+    PARTICIPANT_SURFACE_OWNER_DECISION, STRUCTURAL_CLAIM_LIMITS, TRUTHFUL_METHOD_LABELS,
+    claim_limit, method_label,
+)
 from .models import SIMULATION_VERSION, STOCHASTIC, VALIDATED  # noqa: F401
 from .portfolio import PORTFOLIO_VALIDATED
 from .rng import make_rng, seed_from
@@ -255,6 +259,25 @@ def activation_state(new_id: str) -> str:
     return "ADVISORY_ONLY"
 
 
+def _attach_method_label(entry: dict, new_id: str) -> None:
+    """
+    RUN 20 CYCLE 10. Attach the truthful method label and the claim limit, if this module has
+    one. Mutates in place and returns nothing, because it is called from two places that build
+    two different shapes of record and both must carry the same claim.
+
+    NOTHING IS INVENTED HERE. Every sentence comes from method_labels.py, and the registered
+    name in that file is checked against the registry CSV by the cycle 10 suite, so a rename in
+    the registry cannot leave a stale claim standing.
+    """
+    label = method_label(new_id)
+    if label is not None:
+        entry.update(label.as_dict())
+    limit = claim_limit(new_id)
+    if limit is not None:
+        entry["claim_limit_disposition"] = limit[0]
+        entry["claim_limit"] = limit[1]
+
+
 def proxy_label(new_id: str, canonical_name: str) -> str | None:
     """
     The canonical name plus its proxy qualifier, in the one fixed form used on every surface the
@@ -406,6 +429,11 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
                 "reason": reason,
                 "activation_state": out.get("activation_state") or activation_state(new_id),
             }
+            # RUN 20 CYCLE 10. The truthful method label travels with an abstaining or disabled
+            # module too. Four of the entries below are disabled modules whose registered name
+            # claims a method that is not implemented at all, and a disabled module is exactly
+            # where a stale prestigious claim survives unexamined.
+            _attach_method_label(entry, new_id)
             # RUN 7. The stable machine code for WHY, beside the sentence that says why in
             # words. The sentence is what the ledger renders and it carries no code, no key name
             # and no module id; the code is what the API, the export and the analysis group on,
@@ -433,6 +461,13 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
         # This is what makes the qualifier reach the API response without reaching the ledger:
         # taxonomy.js's getModuleStatus/getModuleResult never read these two keys.
         out["activation_state"] = activation_state(new_id)
+        # RUN 20 CYCLE 10. See method_labels.py. Where the registered name claims a method the
+        # code does not perform, the result carries the truthful name of the computation, the
+        # canonical structure that is absent, and the disposition. New keys only: the
+        # participant ledger's status accessors read module_id, status_color and
+        # evidence_metric, none of which is touched, and the served participant package is
+        # frozen and is not renamed by this run.
+        _attach_method_label(out, new_id)
         label = proxy_label(new_id, index[new_id]["module_name"])
         if label is not None:
             out["proxy_qualifier"] = PROXY_QUALIFIERS[new_id]

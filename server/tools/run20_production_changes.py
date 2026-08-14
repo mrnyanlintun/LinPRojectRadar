@@ -110,6 +110,15 @@ RUN20_ARCHITECTURAL_CHANGES: dict[str, tuple[str, str, str]] = {
                "reading. Interval Fuzzy Sets keeps the more adverse of the two index readings, "
                "which are one body. The Belief Rule Base stops conditioning on the trend breach "
                "as a separate antecedent from the index state"),
+    "LABEL.1 registry": ("10 P2", "server/app/simulation/registry.py",
+               "every module whose registered NAME claims a method the code does not perform, "
+               "and every module whose reported claim rests on a canonical structure this "
+               "repository does not hold, now carries on its published record the truthful name "
+               "of the computation it performs, the structure that is absent, and its "
+               "disposition. NEW KEYS ONLY: no arithmetic, band, boundary or constant is "
+               "touched, the registry CSV keeps its registered names, and the participant "
+               "ledger's three accessors are untouched, so the frozen instrument is not renamed "
+               "mid-study. That rename is recorded as an owner decision instead"),
 }
 
 #: PRODUCTION FILES CREATED BY RUN 20. A new file cannot differ from a freeze taken before it
@@ -143,6 +152,14 @@ RUN20_NEW_PRODUCTION_FILES: dict[str, tuple[tuple[str, ...], str]] = {
         "established by execution and are moved here byte for byte; the separation resolves them "
         "against the project's own evidence first, using cycle 8's derived-index resolver, so "
         "the schedule index's two ancestries are the project's property and not the module's"),
+    "server/app/simulation/method_labels.py": (
+        ("10 P2",),
+        "LABEL.1. The truthful method label table: for each module whose registered name claims "
+        "a method the code does not perform, the name of the computation actually performed, "
+        "the canonical structure that is absent stated in plain words, and the disposition. It "
+        "carries no arithmetic and no constant that any computation reads, and it refuses at "
+        "construction both a truthful name that merely repeats the registered claim and a "
+        "disposition outside the permitted vocabulary"),
 }
 
 
