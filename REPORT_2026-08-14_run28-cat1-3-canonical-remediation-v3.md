@@ -53,6 +53,8 @@ immovable freeze's own recorded digest and the guard goes red (90/90 to 89/90).*
 * **identifier:** `OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN28-CANONICAL-CAT1-3-V11-1`
 * **manifest:** `research/freeze/RUN28_CANONICAL_CAT1_3_FREEZE_2026-08-14.json`
 * **manifest sha256:** `383318621e97cb9ebb302a54d371cd5fe65789f8320a1f3d6fedc655e339e5bc`
+* **companion:** `research/freeze/RUN28_CANONICAL_CAT1_3_FREEZE_2026-08-14.sha256`, stage-1
+  commit `bc98bd530d1f35e367026ba82682d4db3e36327a`
 * **supersedes:** `...-RUN26-COUNTS-WIRING-EMPTY-1` (named as parent, digest carried, not rewritten)
 * **production surface:** 227 files, pinned at `code_audit/run28_production_tree.sha256`
 
@@ -729,6 +731,25 @@ name. Voting is exactly two. Participant protocol unchanged.
 | unsupported bands introduced | ✓ none; two removed |
 | Category-9 findings closed | ✓ none |
 | non-vacuity | ✓ **6/6 faults PROVEN**, each confirmed applied and each restored |
+
+# 15a. THE COMPLETE SUITE ON MERGED MAIN
+
+**`server/run_all_suites.sh` on merged `main`: 127 suites, `10730/10730`, ALL SUITES GREEN.**
+Fresh SQLite per test file, `PYTHONIOENCODING=utf-8`, interpreter CPython 3.11.15 confirmed real.
+This is the merged-main total and the only one quoted. The pre-merge branch total was identical.
+
+**Merged-main commit: `a74efe2`** (merge), with the guard re-pointing and the register row that
+followed it at **`bc98bd5`**, which is the commit the freeze names as its stage-1 parent.
+
+**One thing found after the merge, and reported rather than smoothed over.** Two scope guards —
+`test_run6_known_answer.py` and `test_run8_retest_classify_27.py` — had been GREEN through every
+pre-commit full-suite run of this work while `canonical_v3.py`, a whole new production module,
+sat in the working tree undeclared. They went red the moment it was committed. Both diff against
+a pinned baseline with `git diff --name-only`, which does not report untracked files. What caught
+the file before it was committed is the byte-level guard, which walks
+`server/app/simulation/*.py` from the filesystem. Both scope guards are now re-pointed with Run
+28's scope, and **the blind spot is recorded OPEN in the anti-fossilization register** for a later
+run to close by giving them the same filesystem walk.
 
 # 16. RUN-29 HANDOFF
 
