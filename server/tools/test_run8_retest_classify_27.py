@@ -287,6 +287,17 @@ RUN20_SCOPED_FILES = {
     "server/app/simulation/models_doc.py",
     "server/app/simulation/models_decision.py",
 }
+# RUN 21. The two browser files this run corrects, named rather than admitted by widening the
+# rule. simulations.js went on publishing the four regulatory claims Run 20 cycle 2 withdrew from
+# the server, on research/deepdive.html and on no participant route. neural_flow.js told the
+# reader, after the supported reset, that the project had no uploaded documents while the server
+# still held them and was about to read them again. NO BAND, BOUNDARY, THRESHOLD OR ARITHMETIC
+# RESULT CHANGED IN EITHER: the first removes a withdrawn conclusion and a false attribution, the
+# second corrects a label over a count that is itself unchanged.
+RUN21_SCOPED_FILES = {
+    "assets/js/simulations.js",
+    "assets/js/neural_flow.js",
+}
 
 _diff = subprocess.run(["git", "diff", "--name-only", GUARD_BASELINE_REV, "--"],
                        cwd=str(ROOT), capture_output=True, text=True).stdout.split()
@@ -296,7 +307,7 @@ _prod = [p for p in _diff
          and p not in RUN10B_SCOPED_FILES and p not in RUN11_SCOPED_FILES
          and p not in RUN12_SCOPED_FILES and p not in RUN14_SCOPED_FILES
          and p not in RUN15_SCOPED_FILES and p not in RUN16_SCOPED_FILES
-         and p not in RUN20_SCOPED_FILES]
+         and p not in RUN20_SCOPED_FILES and p not in RUN21_SCOPED_FILES]
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
 # RESTATED BY RUN 11, original finding preserved. This read "nothing under assets/ differs"
@@ -306,7 +317,8 @@ _unscoped_assets = sorted(p for p in _diff
                           if p.startswith("assets/") and p not in RUN11_SCOPED_FILES
                           and p not in RUN12_SCOPED_FILES
                           and p not in RUN15_SCOPED_FILES
-                          and p not in RUN16_SCOPED_FILES)
+                          and p not in RUN16_SCOPED_FILES
+                          and p not in RUN21_SCOPED_FILES)
 check(not _unscoped_assets,
       "nothing under assets/ outside Run 11's authorised browser scope differs from the pinned "
       "baseline", " ".join(_unscoped_assets))

@@ -85,9 +85,20 @@ def main() -> None:
 
     reg = read(REGISTER)
     A.check("GAP2", "the anti-fossilization register is present", bool(reg))
-    cycles = {str(r["cycle"]).strip() for r in reg}
+    # RUN 21. The register is APPEND-ONLY across runs, and later runs do not have numbered
+    # cycles: Run 21 is a single qualification pass and labels its cycle column with what it was.
+    # This check is about RUN 20's twelve cycles, so it reads Run-20 rows, and the print at the
+    # end no longer assumes every cycle label in the whole file parses as an integer -- which is
+    # what it did, and it CRASHED the suite rather than failing it when Run 21's rows arrived.
+    # The strict runner caught that as a FAIL because no canonical RESULT line was printed, which
+    # is the Run-20 queue item 6 question answered by demonstration.
+    run20_rows = [r for r in reg if str(r.get("run", "")).strip() == "20"]
+    A.check("GAP2", "the register still carries the Run-20 rows", bool(run20_rows),
+            f"{len(reg)} rows, {len(run20_rows)} of them Run 20")
+    cycles = {str(r["cycle"]).strip() for r in run20_rows}
+    all_cycle_labels = {str(r["cycle"]).strip() for r in reg}
     absent = [str(c) for c in range(1, 13) if str(c) not in cycles]
-    A.check("GAP2", "every cycle from one to twelve has at least one register entry",
+    A.check("GAP2", "every Run-20 cycle from one to twelve has at least one register entry",
             not absent, f"no entry for cycle(s): {absent}")
     open_rows = [r for r in reg if str(r["status"]).strip().upper() == "OPEN"]
     A.check("GAP2", "the cycle-3 evidence-only-in-prose row is no longer open",
@@ -104,7 +115,9 @@ def main() -> None:
             f"only {len(vacuity_rows)} non-GUARD_WORKED entries")
 
     print(f"cycle-3 injections: {len(c3)}; Run-20 injections: {len(run20)}; "
-          f"register entries: {len(reg)} covering cycles {sorted(cycles, key=lambda c: int(c))}")
+          f"register entries: {len(reg)} covering Run-20 cycles "
+          f"{sorted(cycles, key=lambda c: int(c))}; all cycle labels present in the register: "
+          f"{sorted(all_cycle_labels)}")
 
 
 if __name__ == "__main__":

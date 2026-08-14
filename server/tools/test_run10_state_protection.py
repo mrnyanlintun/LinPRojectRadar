@@ -162,11 +162,23 @@ RUN15_BROWSER_SCOPE = {"assets/js/knowledge.js"}
 # connection animated on a project with no evidence and no stored result. Both are presentation
 # faults on a participant-visible surface and neither could be corrected anywhere else.
 RUN16_BROWSER_SCOPE = {"assets/js/neural_flow.js"}
+# RESTATED BY RUN 21, ORIGINAL FINDING PRESERVED. Run 21 adds ONE browser asset and names it
+# rather than widening the rule: simulations.js, which computes fourteen models in the browser
+# and went on publishing the four regulatory claims Run 20 cycle 2 withdrew from the SERVER --
+# a FAR part number attached to an uncited overrun level, an OMB circular reduced to three
+# thresholds and then said to make reporting mandatory, an EVM compliance said to be breached
+# when no reporting cadence is held anywhere, and a constraint rule named after a regulation
+# that states no such threshold. It is loaded by research/deepdive.html and tests.html and by NO
+# participant route, so what it misled was the researcher on the deep-dive page. neural_flow.js
+# is already named by Run 16 above and Run 21 corrects it again: after the supported reset it
+# told the reader the project had no uploaded documents while the server still held them and was
+# about to read them again. NO BAND, BOUNDARY, THRESHOLD OR ARITHMETIC RESULT CHANGED IN EITHER.
+RUN21_BROWSER_SCOPE = {"assets/js/simulations.js", "assets/js/neural_flow.js"}
 check("this run touched no participant-facing browser asset outside Run 11's authorised scope",
       not [d for d in diff_names
            if d.startswith("assets/") and d not in RUN11_BROWSER_SCOPE
            and d not in RUN12_BROWSER_SCOPE and d not in RUN15_BROWSER_SCOPE
-           and d not in RUN16_BROWSER_SCOPE])
+           and d not in RUN16_BROWSER_SCOPE and d not in RUN21_BROWSER_SCOPE])
 check("this run touched no page the participant is served",
       not [d for d in diff_names if d.endswith(".html") and not d.startswith("tests")
            and d not in RUN11_PAGE_SCOPE])
