@@ -8454,3 +8454,48 @@ Run 21.
 **THE TWO EVIDENCE GAPS ARE UNCHANGED AND NEITHER WAS SILENTLY CLOSED.** The anti-fossilization
 register is still not back-transcribed for cycles 1 to 7. Cycle 3's M13 to M21 fault-injection
 rows still exist only in prose, and only a rerun that emits them will close it.
+
+## RUN 20 IS COMPLETE. TWELVE OF TWELVE CYCLES CLOSED ON MAIN.
+
+**Final Run-20 merged-main commit `6afee1d`.** Complete merged-main sweep:
+**115 suites, 10060/10060, ALL SUITES GREEN.** Full record in
+`REPORT_2026-08-14_run20-supervised-scientific-remediation-loop.md`.
+
+**THE HUNDRED TARGETS RECONCILE AS NINETY-FIVE PLUS FIVE.** Ninety-six registered project-level
+modules less Material Cost Variance is ninety-five; PH.1 to PH.5 are the other five. The
+population is derived twice, from the registry and from the renumbering map, and the two
+derivations are required to agree. Unique identifiers a hundred, NOT_REACHED nought,
+NOT_ASSESSED nought.
+
+**EVERY DISPOSITION WAS RECOMPUTED FROM PRODUCTION, NOT COPIED.** Seventy-four of the hundred
+differ from the Run-19 baseline. Final distribution: 44 CORRECT_PROXY_ONLY, 23
+METHOD_PASS_CALIBRATION_PENDING, 16 CORRECT_ABSTENTION, 8 FUTURE_RESEARCH_ONLY, 3
+SCIENTIFIC_PASS, 2 OWNER_DECISION_REQUIRED, and one each of EMPIRICAL_VALIDATION_BLOCKED,
+REGULATORY_VERSION_BLOCKED, PARAMETER_PROVENANCE_BLOCKED and THRESHOLD_CALIBRATION_BLOCKED.
+**METHOD_LABEL_MISMATCH is nought and MISSING_CANONICAL_DATA_STRUCTURE is nought.**
+
+**THE ONE EXIT TARGET NOT MET IS IMPLEMENTATION_DEFECT EQUAL TO NOUGHT, AND IT WAS KNOWN NOT TO
+BE MET BEFORE THE CYCLE BEGAN.** B1.4 and PH.5 could only have been closed by inventing a
+constant that exists in no source this repository holds or cites. They are reclassified honestly
+and remain advisory and non-voting. **It was not forced closed.**
+
+**FALSE REINFORCEMENT NOUGHT, FALSE SUPPRESSION NOUGHT, LINEAGE DECLARATION IDENTITY DEFECTS
+NOUGHT,** over fourteen properties including the triangle in all six orderings. Transitive
+closure is used nowhere.
+
+**ELEVEN CRITICAL GUARDS NOW FAIL BY NAME UNDER DELIBERATE VIOLATION. SEVEN OF THEM DID NOT ON
+FIRST WRITING,** and were vacuous in the same ways this run has been finding all along. The
+expectations now live in pinned literals held independently of the object under test.
+
+**BOTH EVIDENCE GAPS ARE CLOSED BY EXECUTION.** The cycle-3 injections M13 to M21 were rerun
+against production; all nine landed bytes, all nine were detected, all nine restored green. The
+anti-fossilization register is back-transcribed for cycles 1 to 7 and extended through 12.
+
+**SAFETY, UNCHANGED.** Voting is exactly two. Concept-only activation is nought. Material Cost
+Variance is still disabled under evidence review and was not reactivated. The participant
+protocol, sequence, randomization and treatment are untouched, and the participant surface was
+deliberately NOT renamed because the served package is frozen and the study is mid-sequence.
+
+**DO NOT LAUNCH RUN 21 FROM THIS HANDOFF WITHOUT READING ITS QUEUE.** The Run-21 instrument and
+browser qualification queue is the last section of the final report. Nothing in Run 20 drove a
+browser: every finding is a computation-layer finding.
