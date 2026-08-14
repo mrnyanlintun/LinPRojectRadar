@@ -8195,3 +8195,85 @@ and the mandatory complete 100-module re-audit last. Do not launch Run 21.
 **The two open evidence gaps are unchanged and are not silently closed.** Cycle 3's M13 to M21
 fault-injection rows still exist only in prose, and no anti-fossilization register file exists
 under any name; the neighbour-sweep artifact continues to carry the function.
+
+---
+
+## Run 20 cycle 8 closed on main: ARCH.3, and the difference between a field name and a fact
+
+**Merged-main commit `29e07ef`** (`Merge Run 20 cycle 8: evidence lineage established by
+execution, not by field name`), merging `99acdab` with `--no-ff`. Pushed. **EIGHT OF TWELVE
+CYCLES ARE DONE.**
+
+**THE MERGE WAS REVERIFIED, NOT TRUSTED.** Full suite rerun on merged main: **107 suites,
+9571/9571, ALL SUITES GREEN.** Voting reads `['A1.7', 'A1.8']`, count 2. Activation states read
+from the registry itself: ENABLED_QUALIFIED 2, ADVISORY_ONLY 90, DISABLED_UNSAFE 8,
+DISABLED_EVIDENCE_UNDER_REVIEW 1. No concept-only module is activated. Material Cost Variance
+remains DISABLED_EVIDENCE_UNDER_REVIEW. The voting pair is still one body at 0.7000 with conflict
+0.0000. Every key in the shipped lineage table resolves in the registry, zero unresolvable.
+
+**EVERY VERDICT CAME FROM EXECUTION.** All twenty-four modules in the six clusters were probed by
+moving each primitive fact through the real production derivation, four multipliers per fact,
+comparing the module's WHOLE emitted result. `server/tools/run20_cycle8_probe.py`, output in
+`code_audit/run20_cycle8_material_influence.csv`.
+
+**THE FIELD SET AND THE EVIDENCE DISAGREE ON FOUR SHIPPED MODULES.** B3.2, B3.4 and B4.3 all
+demand the budget and none of them reads it: each reports a percentage OF the budget and the
+ratio is scale-invariant in it, so tripling the budget moves nothing. B2.14 demands the cost
+index and does not read it at all. A field-set reading would have declared four false
+dependences. Those three are now production negative controls beside the Bayesian EAC control,
+which was re-executed here and holds: move the earned value and the actual cost with the index
+held and the posterior does not move.
+
+**SIXTEEN DECLARATIONS WRITTEN, SIX MODULES DELIBERATELY LEFT UNDECLARED.** B4.2, B2.20, B4.1,
+B4.5, B4.6 and A3.4 are disabled and emit no signal on any project, so there is no signal whose
+evidence there is anything to declare. That is the A2.1 precedent from cycle 5, unchanged. It
+dissolves one cluster outright: A3.4 with A3.9 is not a pair, because only one member executes,
+so the Inflation Adjustment Index is a body of one on the material cost record.
+
+**THE SCHEDULE INDEX HAS TWO ANCESTRIES AND WHICH ONE APPLIES BELONGS TO THE PROJECT, NOT THE
+MODULE.** `extraction_merge` derives it from the earned value over the planned value, and falls
+back to actual over planned progress when no planned value exists. Measured: with a planned value
+present Maximum Entropy rests on the earned value; with it absent, the same module on the same
+code rests on the two progress figures and does not touch the earned value at all. A record keyed
+only by module id is WRONG IN ONE REGIME whichever ancestry it names. So a record now declares
+`derived_index_reads`, carries the UNION of both ancestries when no evidence is in hand, and
+`lineage.resolve_for_evidence` narrows it to the branch the project's evidence selects. The
+resolution can only ever narrow: it never adds a fact the declaration did not carry.
+
+**THE AMPLIFICATION WAS MEASURED BEFORE AND AFTER.** Three cluster modules, all Amber, all on one
+earned-value body: undeclared they fused as THREE bodies and drove Amber belief 0.7000 to 0.9861;
+declared they are one body at 0.7000. The band never changed, only the certainty attached to it.
+Real corroboration still survives: a cluster module against the material cost body is still two
+bodies. False reinforcement 0, false suppression 0.
+
+**A CLAIM THE ARCH.3 ROW MADE IS FALSE AND IS NOW A REGISTER ROW OF ITS OWN, FUSION.1 at P1.**
+ARCH.3 recorded that the combination rule does not assume independence for an undeclared signal.
+IT DOES: `fuse_signals` replaces a missing record with `lineage_record(mid)`, whose primitive set
+is EMPTY, and an empty set intersects nothing. The counter it keeps records the condition and no
+consumer acts on it. Exposure is bounded and the bound was MEASURED rather than assumed: only
+`CORE_VOTING_MODULES` reach the fusion in `compute.py` and both are declared. Cycle 8 closes the
+exposure for the ARCH.3 modules by declaring them and leaves the framework contract alone,
+because `dst_fuse` documents the one-body-per-status assumption for callers that genuinely have
+independent sources and rewriting that contract is its own determination.
+
+**THE PROBE'S OWN FIRST VERSION WAS VACUOUS.** It compared `status_color`, `value`,
+`insufficient_data` and `finding`; no module in any cluster emits `value` or `finding`, so it
+compared the BAND ALONE and scored four real dependences as absent, including every fact the
+Inflation Adjustment Index reads. Rewritten to compare the entire result, and pinned by a named
+non-vacuity check. One mutation changed bytes without changing the verdict and was RE-AIMED, not
+counted. Five mutations, zero survivors. Two existing guards fired correctly and by name before
+anything was transcribed: cycle 6's declaration sweep named all fifteen new declarations, and
+cycle 5's fact vocabulary named the two new material cost fact names.
+
+**ONE OF THE TWO EVIDENCE GAPS IS CLOSED.** `code_audit/run20_anti_fossilization_register.csv`
+now exists and carries the instrument defects, including this cycle's four. It is NOT
+back-transcribed for cycles 1 to 7 and says so. **The other gap is NOT closed and was not
+silently closed:** cycle 3's M13 to M21 fault-injection rows still exist only in prose, and only
+a rerun that emits them will close it.
+
+**REGISTER: 110 rows, 87 OPEN.** ARCH.3 CLOSED_RUN20; FUSION.1 added at P1.
+
+**EXACT NEXT REQUIREMENTS. RUN 20 IS INCOMPLETE. EIGHT OF TWELVE CYCLES ARE DONE.** Cycle 9 is
+ARCH.5 first and then the remaining P1, and it must use the cycle-8 resolver rather than a static
+record: a B2.x arm reading the schedule index has two possible ancestries. Then cycle 10's P2,
+cycle 11's P3, and the mandatory complete 100-module re-audit last. Do not launch Run 21.
