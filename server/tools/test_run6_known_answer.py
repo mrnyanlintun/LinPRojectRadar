@@ -382,10 +382,36 @@ RUN23_SCOPED_FILES = {
     "assets/css/radar.css",
 }
 
+# RUN 28. THE CATEGORY 1 TO 3 CANONICAL REMEDIATION, on the owner's supervisory instruction and
+# named on the same footing as every scope above it and no wider. This is the first run since the
+# instrument was frozen to change analytical production code. What is in scope: the version
+# boundary and the calibration-pending contract in models.py; the v3 canonical method layer in
+# canonical_v3.py, which is NEW; the Category-1 runners in models_evm.py and the Category-2 and 3
+# runners in models_ext.py; the registry's routing of a calibration-pending row and the removal of
+# eleven proxy qualifiers whose proxies are gone; nine truthful-method labels removed for the same
+# reason; six lineage declarations rewritten against the facts their modules now read; two
+# provenance rows added for the two modules that gained tunable values by gaining a supply path;
+# the two corpus supply paths in documents.py; and the two approved renames in the registry map,
+# which propagate to the generated defensibility evidence. A1.7 and A1.8 are untouched.
+RUN28_SCOPED_FILES = {
+    "server/app/simulation/models.py",
+    "server/app/simulation/canonical_v3.py",
+    "server/app/simulation/models_evm.py",
+    "server/app/simulation/models_ext.py",
+    "server/app/simulation/registry.py",
+    "server/app/simulation/method_labels.py",
+    "server/app/simulation/lineage.py",
+    "server/app/simulation/parameters.py",
+    "server/app/documents.py",
+    "p0-baseline/module_renumbering_map.csv",
+    "assets/js/ds_defensibility_evidence.js",
+}
+
 _unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES
                    - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES - RUN14_SCOPED_FILES
                    - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES
-                   - RUN20_SCOPED_FILES - RUN21_SCOPED_FILES - RUN23_SCOPED_FILES)
+                   - RUN20_SCOPED_FILES - RUN21_SCOPED_FILES - RUN23_SCOPED_FILES
+                   - RUN28_SCOPED_FILES)
 check(not _unscoped,
       "no production file outside the authorised scope of Run 7, Run 10, Run 10B, Run 11, "
       "Run 12, Run 14, Run 20 or Run 21 differs from the pinned baseline",

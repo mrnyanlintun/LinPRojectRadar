@@ -317,6 +317,24 @@ RUN23_SCOPED_FILES = {
     "assets/css/radar.css",
 }
 
+# RUN 28. THE CATEGORY 1 TO 3 CANONICAL REMEDIATION, named on the same footing as every scope
+# above it and no wider. The first run since the instrument was frozen to change analytical
+# production code, on the owner's supervisory instruction. See the fuller note in
+# test_run6_known_answer.py and server/tools/run28_production_changes.py, which is the declared
+# manifest the byte-level guard checks this same set against.
+RUN28_SCOPED_FILES = {
+    "server/app/simulation/models.py",
+    "server/app/simulation/canonical_v3.py",
+    "server/app/simulation/models_evm.py",
+    "server/app/simulation/models_ext.py",
+    "server/app/simulation/registry.py",
+    "server/app/simulation/method_labels.py",
+    "server/app/simulation/lineage.py",
+    "server/app/simulation/parameters.py",
+    "server/app/documents.py",
+    "assets/js/ds_defensibility_evidence.js",
+}
+
 _diff = subprocess.run(["git", "diff", "--name-only", GUARD_BASELINE_REV, "--"],
                        cwd=str(ROOT), capture_output=True, text=True).stdout.split()
 _prod = [p for p in _diff
@@ -326,7 +344,7 @@ _prod = [p for p in _diff
          and p not in RUN12_SCOPED_FILES and p not in RUN14_SCOPED_FILES
          and p not in RUN15_SCOPED_FILES and p not in RUN16_SCOPED_FILES
          and p not in RUN20_SCOPED_FILES and p not in RUN21_SCOPED_FILES
-         and p not in RUN23_SCOPED_FILES]
+         and p not in RUN23_SCOPED_FILES and p not in RUN28_SCOPED_FILES]
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
 # RESTATED BY RUN 11, original finding preserved. This read "nothing under assets/ differs"
