@@ -1,0 +1,165 @@
+variant,measurement,value,note
+A_reload_populated_3p_aborted,primitive,timed_out,Page.reload: Timeout 45000ms exceeded.
+A_reload_populated_3p_aborted,primitive_seconds,45.00,
+A_reload_populated_3p_aborted,document_destroyed,yes,the sentinel proves a real document reload
+A_reload_populated_3p_aborted,first_response_seconds,0.02,time to the server's HTML response
+A_reload_populated_3p_aborted,domcontentloaded_seconds,54.12,
+A_reload_populated_3p_aborted,app_object_seconds,54.13,core application initialised
+A_reload_populated_3p_aborted,controls_usable_seconds,53.85,PARTICIPANT-FACING METRIC
+A_reload_populated_3p_aborted,load_event_seconds,never,includes nonessential subresources
+A_reload_populated_3p_aborted,readyState_when_app_ready,interactive,
+A_reload_populated_3p_aborted,evaluate_reads,2,
+A_reload_populated_3p_aborted,evaluate_errors,1,
+A_reload_populated_3p_aborted,last_AUTH_seconds,0.04,1 requests
+A_reload_populated_3p_aborted,last_CORE_APPLICATION_seconds,54.13,47 requests
+A_reload_populated_3p_aborted,last_REQUIRED_API_seconds,54.13,10 requests
+A_reload_populated_3p_aborted,slowest_request,54.13s REQUIRED_API 200,http://127.0.0.1:8223/exec?action=listarchived
+A_reload_populated_3p_aborted,slowest_request,54.13s REQUIRED_API 200,http://127.0.0.1:8223/exec
+A_reload_populated_3p_aborted,slowest_request,54.13s REQUIRED_API 200,http://127.0.0.1:8223/exec?action=listslim
+A_reload_populated_3p_aborted,slowest_request,54.13s REQUIRED_API 200,http://127.0.0.1:8223/exec
+A_reload_populated_3p_aborted,slowest_request,54.13s REQUIRED_API 200,http://127.0.0.1:8223/exec
+A_reload_populated_3p_aborted,browser_perf_responseStart_ms,12,the browser's own navigation timeline
+A_reload_populated_3p_aborted,browser_perf_responseEnd_ms,21,the browser's own navigation timeline
+A_reload_populated_3p_aborted,browser_perf_domInteractive_ms,53968,the browser's own navigation timeline
+A_reload_populated_3p_aborted,browser_perf_domContentLoaded_ms,53970,the browser's own navigation timeline
+A_reload_populated_3p_aborted,browser_perf_domComplete_ms,0,the browser's own navigation timeline
+A_reload_populated_3p_aborted,browser_perf_loadEvent_ms,0,the browser's own navigation timeline
+A_reload_populated_3p_aborted,browser_perf_duration_ms,0,the browser's own navigation timeline
+A_reload_populated_3p_aborted,browser_slowest_resource,53ms,http://127.0.0.1:8223/logo.png
+A_reload_populated_3p_aborted,browser_slowest_resource,36ms,http://127.0.0.1:8223/assets/css/radar.css
+A_reload_populated_3p_aborted,browser_slowest_resource,30ms,http://127.0.0.1:8223/assets/vendor/fonts/inter-600-latin.woff2
+A_reload_populated_3p_aborted,browser_slowest_resource,30ms,http://127.0.0.1:8223/assets/vendor/fonts/ibm-plex-mono-600-latin.woff2
+A_reload_populated_3p_aborted,browser_slowest_resource,29ms,http://127.0.0.1:8223/assets/vendor/fonts/archivo-800-latin.woff2
+B_reload_populated_3p_allowed,primitive,timed_out,Page.reload: Timeout 45000ms exceeded.
+B_reload_populated_3p_allowed,primitive_seconds,45.00,
+B_reload_populated_3p_allowed,document_destroyed,yes,the sentinel proves a real document reload
+B_reload_populated_3p_allowed,first_response_seconds,0.03,time to the server's HTML response
+B_reload_populated_3p_allowed,domcontentloaded_seconds,59.05,
+B_reload_populated_3p_allowed,app_object_seconds,59.06,core application initialised
+B_reload_populated_3p_allowed,controls_usable_seconds,59.06,PARTICIPANT-FACING METRIC
+B_reload_populated_3p_allowed,load_event_seconds,never,includes nonessential subresources
+B_reload_populated_3p_allowed,readyState_when_app_ready,interactive,
+B_reload_populated_3p_allowed,evaluate_reads,1,
+B_reload_populated_3p_allowed,evaluate_errors,1,
+B_reload_populated_3p_allowed,last_AUTH_seconds,0.03,1 requests
+B_reload_populated_3p_allowed,last_CORE_APPLICATION_seconds,59.06,47 requests
+B_reload_populated_3p_allowed,last_REQUIRED_API_seconds,59.06,15 requests
+B_reload_populated_3p_allowed,slowest_request,59.06s REQUIRED_API 200,http://127.0.0.1:8223/exec
+B_reload_populated_3p_allowed,slowest_request,59.06s REQUIRED_API 200,http://127.0.0.1:8223/exec?action=listarchived
+B_reload_populated_3p_allowed,slowest_request,59.06s REQUIRED_API 200,http://127.0.0.1:8223/exec
+B_reload_populated_3p_allowed,slowest_request,59.06s REQUIRED_API 200,http://127.0.0.1:8223/exec
+B_reload_populated_3p_allowed,slowest_request,59.06s REQUIRED_API 200,http://127.0.0.1:8223/exec
+B_reload_populated_3p_allowed,browser_perf_responseStart_ms,14,the browser's own navigation timeline
+B_reload_populated_3p_allowed,browser_perf_responseEnd_ms,32,the browser's own navigation timeline
+B_reload_populated_3p_allowed,browser_perf_domInteractive_ms,58897,the browser's own navigation timeline
+B_reload_populated_3p_allowed,browser_perf_domContentLoaded_ms,58899,the browser's own navigation timeline
+B_reload_populated_3p_allowed,browser_perf_domComplete_ms,0,the browser's own navigation timeline
+B_reload_populated_3p_allowed,browser_perf_loadEvent_ms,0,the browser's own navigation timeline
+B_reload_populated_3p_allowed,browser_perf_duration_ms,0,the browser's own navigation timeline
+B_reload_populated_3p_allowed,browser_slowest_resource,58ms,http://127.0.0.1:8223/exec
+B_reload_populated_3p_allowed,browser_slowest_resource,39ms,http://127.0.0.1:8223/exec
+B_reload_populated_3p_allowed,browser_slowest_resource,28ms,http://127.0.0.1:8223/exec?action=listarchived
+B_reload_populated_3p_allowed,browser_slowest_resource,27ms,http://127.0.0.1:8223/exec
+B_reload_populated_3p_allowed,browser_slowest_resource,26ms,http://127.0.0.1:8223/exec
+C_goto_populated_3p_aborted,primitive,timed_out,Page.goto: Timeout 45000ms exceeded.
+C_goto_populated_3p_aborted,primitive_seconds,45.00,
+C_goto_populated_3p_aborted,document_destroyed,yes,the sentinel proves a real document reload
+C_goto_populated_3p_aborted,first_response_seconds,0.02,time to the server's HTML response
+C_goto_populated_3p_aborted,domcontentloaded_seconds,58.54,
+C_goto_populated_3p_aborted,app_object_seconds,58.55,core application initialised
+C_goto_populated_3p_aborted,controls_usable_seconds,58.29,PARTICIPANT-FACING METRIC
+C_goto_populated_3p_aborted,load_event_seconds,never,includes nonessential subresources
+C_goto_populated_3p_aborted,readyState_when_app_ready,interactive,
+C_goto_populated_3p_aborted,evaluate_reads,2,
+C_goto_populated_3p_aborted,evaluate_errors,1,
+C_goto_populated_3p_aborted,last_AUTH_seconds,0.02,1 requests
+C_goto_populated_3p_aborted,last_CORE_APPLICATION_seconds,58.55,47 requests
+C_goto_populated_3p_aborted,last_REQUIRED_API_seconds,58.55,8 requests
+C_goto_populated_3p_aborted,slowest_request,58.55s REQUIRED_API 200,http://127.0.0.1:8223/exec?action=listslim
+C_goto_populated_3p_aborted,slowest_request,58.55s CORE_APPLICATION 404,http://127.0.0.1:8223/assets/menu_emblem.png
+C_goto_populated_3p_aborted,slowest_request,58.55s REQUIRED_API 200,http://127.0.0.1:8223/exec
+C_goto_populated_3p_aborted,slowest_request,58.55s REQUIRED_API 200,http://127.0.0.1:8223/exec
+C_goto_populated_3p_aborted,slowest_request,58.55s REQUIRED_API 200,http://127.0.0.1:8223/exec
+C_goto_populated_3p_aborted,browser_perf_responseStart_ms,14,the browser's own navigation timeline
+C_goto_populated_3p_aborted,browser_perf_responseEnd_ms,18,the browser's own navigation timeline
+C_goto_populated_3p_aborted,browser_perf_domInteractive_ms,58434,the browser's own navigation timeline
+C_goto_populated_3p_aborted,browser_perf_domContentLoaded_ms,58436,the browser's own navigation timeline
+C_goto_populated_3p_aborted,browser_perf_domComplete_ms,0,the browser's own navigation timeline
+C_goto_populated_3p_aborted,browser_perf_loadEvent_ms,0,the browser's own navigation timeline
+C_goto_populated_3p_aborted,browser_perf_duration_ms,0,the browser's own navigation timeline
+C_goto_populated_3p_aborted,browser_slowest_resource,65ms,http://127.0.0.1:8223/logo.png
+C_goto_populated_3p_aborted,browser_slowest_resource,45ms,http://127.0.0.1:8223/exec?action=listslim
+C_goto_populated_3p_aborted,browser_slowest_resource,38ms,http://127.0.0.1:8223/assets/css/radar.css
+C_goto_populated_3p_aborted,browser_slowest_resource,37ms,http://127.0.0.1:8223/assets/menu_emblem.png
+C_goto_populated_3p_aborted,browser_slowest_resource,36ms,http://127.0.0.1:8223/assets/vendor/fonts/inter-600-latin.woff2
+D_reload_empty_3p_aborted,primitive,timed_out,Page.reload: Timeout 45000ms exceeded.
+D_reload_empty_3p_aborted,primitive_seconds,45.00,
+D_reload_empty_3p_aborted,document_destroyed,yes,the sentinel proves a real document reload
+D_reload_empty_3p_aborted,first_response_seconds,0.02,time to the server's HTML response
+D_reload_empty_3p_aborted,domcontentloaded_seconds,61.88,
+D_reload_empty_3p_aborted,app_object_seconds,61.89,core application initialised
+D_reload_empty_3p_aborted,controls_usable_seconds,61.61,PARTICIPANT-FACING METRIC
+D_reload_empty_3p_aborted,load_event_seconds,never,includes nonessential subresources
+D_reload_empty_3p_aborted,readyState_when_app_ready,interactive,
+D_reload_empty_3p_aborted,evaluate_reads,2,
+D_reload_empty_3p_aborted,evaluate_errors,1,
+D_reload_empty_3p_aborted,last_AUTH_seconds,0.03,1 requests
+D_reload_empty_3p_aborted,last_CORE_APPLICATION_seconds,61.89,47 requests
+D_reload_empty_3p_aborted,last_REQUIRED_API_seconds,61.89,16 requests
+D_reload_empty_3p_aborted,slowest_request,61.89s REQUIRED_API 200,http://127.0.0.1:8223/exec?action=listarchived
+D_reload_empty_3p_aborted,slowest_request,61.89s REQUIRED_API 200,http://127.0.0.1:8223/exec
+D_reload_empty_3p_aborted,slowest_request,61.89s REQUIRED_API 200,http://127.0.0.1:8223/exec
+D_reload_empty_3p_aborted,slowest_request,61.89s REQUIRED_API 200,http://127.0.0.1:8223/exec
+D_reload_empty_3p_aborted,slowest_request,61.89s REQUIRED_API 200,http://127.0.0.1:8223/exec
+D_reload_empty_3p_aborted,browser_perf_responseStart_ms,13,the browser's own navigation timeline
+D_reload_empty_3p_aborted,browser_perf_responseEnd_ms,17,the browser's own navigation timeline
+D_reload_empty_3p_aborted,browser_perf_domInteractive_ms,61705,the browser's own navigation timeline
+D_reload_empty_3p_aborted,browser_perf_domContentLoaded_ms,61707,the browser's own navigation timeline
+D_reload_empty_3p_aborted,browser_perf_domComplete_ms,0,the browser's own navigation timeline
+D_reload_empty_3p_aborted,browser_perf_loadEvent_ms,0,the browser's own navigation timeline
+D_reload_empty_3p_aborted,browser_perf_duration_ms,0,the browser's own navigation timeline
+D_reload_empty_3p_aborted,browser_slowest_resource,70ms,http://127.0.0.1:8223/assets/menu_emblem.png
+D_reload_empty_3p_aborted,browser_slowest_resource,64ms,http://127.0.0.1:8223/logo.png
+D_reload_empty_3p_aborted,browser_slowest_resource,49ms,http://127.0.0.1:8223/exec?action=listarchived
+D_reload_empty_3p_aborted,browser_slowest_resource,48ms,http://127.0.0.1:8223/assets/vendor/fonts/inter-600-latin.woff2
+D_reload_empty_3p_aborted,browser_slowest_resource,48ms,http://127.0.0.1:8223/assets/css/radar.css
+E_reload_no_project_3p_aborted,primitive,returned,
+E_reload_no_project_3p_aborted,primitive_seconds,0.24,
+E_reload_no_project_3p_aborted,document_destroyed,yes,the sentinel proves a real document reload
+E_reload_no_project_3p_aborted,first_response_seconds,0.01,time to the server's HTML response
+E_reload_no_project_3p_aborted,domcontentloaded_seconds,0.78,
+E_reload_no_project_3p_aborted,app_object_seconds,0.78,core application initialised
+E_reload_no_project_3p_aborted,controls_usable_seconds,0.26,PARTICIPANT-FACING METRIC
+E_reload_no_project_3p_aborted,load_event_seconds,never,includes nonessential subresources
+E_reload_no_project_3p_aborted,readyState_when_app_ready,interactive,
+E_reload_no_project_3p_aborted,evaluate_reads,3,
+E_reload_no_project_3p_aborted,evaluate_errors,0,
+E_reload_no_project_3p_aborted,last_AUTH_seconds,0.23,1 requests
+E_reload_no_project_3p_aborted,last_CORE_APPLICATION_seconds,0.78,47 requests
+E_reload_no_project_3p_aborted,last_REQUIRED_API_seconds,0.78,22 requests
+E_reload_no_project_3p_aborted,slowest_request,0.78s REQUIRED_API 200,http://127.0.0.1:8223/exec?action=get&id=PRJ-R22-FULL
+E_reload_no_project_3p_aborted,slowest_request,0.78s REQUIRED_API 200,http://127.0.0.1:8223/exec?action=get&id=PRJ-R22-EMPTY
+E_reload_no_project_3p_aborted,slowest_request,0.78s REQUIRED_API 200,http://127.0.0.1:8223/exec?action=get&id=PRJ-R22-ONEDOC
+E_reload_no_project_3p_aborted,slowest_request,0.78s REQUIRED_API 200,http://127.0.0.1:8223/exec
+E_reload_no_project_3p_aborted,slowest_request,0.78s REQUIRED_API 200,http://127.0.0.1:8223/exec
+E_reload_no_project_3p_aborted,browser_perf_responseStart_ms,5,the browser's own navigation timeline
+E_reload_no_project_3p_aborted,browser_perf_responseEnd_ms,8,the browser's own navigation timeline
+E_reload_no_project_3p_aborted,browser_perf_domInteractive_ms,531,the browser's own navigation timeline
+E_reload_no_project_3p_aborted,browser_perf_domContentLoaded_ms,533,the browser's own navigation timeline
+E_reload_no_project_3p_aborted,browser_perf_domComplete_ms,0,the browser's own navigation timeline
+E_reload_no_project_3p_aborted,browser_perf_loadEvent_ms,0,the browser's own navigation timeline
+E_reload_no_project_3p_aborted,browser_perf_duration_ms,0,the browser's own navigation timeline
+E_reload_no_project_3p_aborted,browser_slowest_resource,83ms,http://127.0.0.1:8223/exec?action=get&id=PRJ-R22-FULL
+E_reload_no_project_3p_aborted,browser_slowest_resource,81ms,http://127.0.0.1:8223/exec
+E_reload_no_project_3p_aborted,browser_slowest_resource,80ms,http://127.0.0.1:8223/exec?action=get&id=PRJ-R22-EMPTY
+E_reload_no_project_3p_aborted,browser_slowest_resource,78ms,http://127.0.0.1:8223/exec?action=get&id=PRJ-R22-ONEDOC
+E_reload_no_project_3p_aborted,browser_slowest_resource,70ms,http://127.0.0.1:8223/exec
+DETERMINATION,owner_option_A_blocked_third_party_resources,REFUTED,"aborting the third parties exactly as the Run-21 driver does gives 54.13s; ALLOWING them gives 59.06s. Third-party resources account for about five seconds of fifty-four, so they are not the cause and option A does not apply."
+DETERMINATION,owner_option_B_required_application_or_API_work,REFUTED,"the browser's own navigation timeline puts responseEnd at 12ms and every subresource under 53ms, so nothing is being fetched slowly; and a DevTools CPU profile of the interval attributes 51913ms of 52202 samples -- 99.4% -- to (program), V8's label for time spent OUTSIDE JavaScript in native browser code. Application JavaScript accounts for under 0.4% of the interval. The server and the application's own code are not the cost."
+DETERMINATION,owner_option_C_test_environment_not_representative,ESTABLISHED MECHANICALLY,"three GL configurations differing in nothing but their GL flags: swiftshader as the Run-21 driver launches it, 61111ms; the browser's own default with no flags forced, 62726ms (this container has no GPU, so the default is also a software fallback); WebGL disabled outright, 288ms. Removing the software GL pipeline removes 61 seconds of a 61-second interval and the application becomes usable in 0.54s. The delay IS the CPU-emulated WebGL rasterisation of the 3D surfaces, performed in software because the qualification container has no GPU."
+DETERMINATION,owner_option_D_cause_cannot_be_established,DOES NOT APPLY,"the cause is established and is reproducible in three independent ways: the three-way GL comparison, the CPU profile, and the project-state comparison below."
+DETERMINATION,independent_confirmation_from_project_state,CONSISTENT,"variant E, a reload with NO project detail open and therefore no 3D surface to render, completes with domInteractive at 531ms and the application usable at 0.78s. Variant D, an EMPTY project with the detail open, takes 61.9s -- as long as the fully populated project's 54.1s. The cost does not scale with data and appears only when a 3D surface must be rasterised, which is what the GL comparison independently says."
+DETERMINATION,what_the_195_seconds_in_run21_was,"EXPLAINED, TWO SEPARABLE PARTS","part one is this same software-GL rasterisation. Part two is measurement: Run 21 polled every two seconds through page.evaluate, which cannot answer while the renderer main thread is busy, and its own note records two usable samples in 212 seconds. The figure it reported was the moment the harness was next willing to look, not the moment the page was ready. Run 22 measured the same interval from browser events and the document's own performance timeline, which need no execution context, and reads 54-62s under the same flags."
+DETERMINATION,why_playwright_reload_times_out_at_45s,"EXPLAINED, NOT WIDENED","page.goto costs the same as page.reload (58.5s vs 54.1s), so the primitive is not the cause; the reload primitive's acknowledgement requires a round trip to a main thread that is busy rasterising. NO TIMEOUT WAS WIDENED. The 45s timeout is unchanged and the 900s sentinel deadline is unchanged; only the poll INTERVAL was narrowed from 2s to 0.25s, which cannot make a slow page look fast."
+RELEASE EFFECT,does_this_block_release,NO,"the instrument's own cost to become usable after a reload is 288ms of main-thread work plus a 12ms server response. The 54-195s is paid by a headless qualification container with no GPU emulating the GL pipeline on its CPU, and is not executed at all on a machine with working graphics acceleration. This is the owner's option C and the appropriate boundary is qualified accordingly."
+KNOWN LIMITATION,residual_risk_recorded_not_dismissed,"OPEN, BOUNDED","what is proved is that the cost is borne entirely by the GL pipeline, not by the server or the application's JavaScript. It follows that a participant whose browser has hardware graphics acceleration does not pay it. It does NOT follow that a participant whose browser falls back to software WebGL -- old hardware, a blocklisted driver, or WebGL disabled by policy -- would have an acceptable experience on the project detail view; such a machine would meet the same software rasterisation this container does. That is a screening question for participant machines, it is bounded to the 3D surfaces on the detail view, and it is recorded here rather than dismissed."

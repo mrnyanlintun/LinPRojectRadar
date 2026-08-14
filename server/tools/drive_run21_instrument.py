@@ -417,6 +417,13 @@ def main_drive() -> None:
             after = "not-determined"
             errs = 0
             reads = 0
+            ready_at = None
+            # RUN 22 NARROWED THE POLL INTERVAL FROM TWO SECONDS TO A QUARTER OF A SECOND, AND
+            # THIS IS NOT A WIDENED TIMEOUT. The deadline is unchanged. Run 21's two-second
+            # interval, against a main thread that is busy for the whole interval, produced two
+            # usable samples in 212 seconds, so the number it reported was the moment the harness
+            # was next willing to look rather than the moment the page was ready. Sampling more
+            # often cannot make a slow page look fast; it can only stop a fast page looking slow.
             deadline = time.time() + 900
             while time.time() < deadline:
                 try:
@@ -425,11 +432,12 @@ def main_drive() -> None:
                     reads += 1
                     if s is None and ready:
                         after = None
+                        ready_at = time.time()
                         break
                     after = s
                 except Exception:
                     errs += 1
-                time.sleep(2)
+                time.sleep(0.25)
             RESET.append((tag, "sentinel_after_reload", str(after),
                           f"waited {time.time() - t0:.0f}s, {reads} successful reads, "
                           f"{errs} evaluate errors while the document was navigating"))
@@ -446,14 +454,28 @@ def main_drive() -> None:
                           f"{'yes' if after is None else 'no'}",
                           "a primitive timeout with a destroyed document is a harness "
                           "wait-condition fault, not an application reload defect"))
-            return verdict
-            return after is None
             # THE OWNER'S RULE, BOTH WAYS. A hanging third-party subresource is instrumented
             # rather than used as an excuse; and it is not allowed to hide a real defect either,
             # because the post-reload DOM is read and asserted against the server below.
+            #
+            # RUN 22 FIXED A DEFECT HERE. These two statements sat AFTER `return verdict`, behind
+            # a second dead `return after is None`, so neither ever ran: the driver's own
+            # disclosure of what it blocks was described in a comment and never written to the
+            # evidence, and run21_reset_reload_results.csv has no such row. A driver that
+            # documents a disclosure it does not emit is exactly the class of defect this
+            # programme keeps finding in its own instruments. Both are now emitted BEFORE the
+            # return, and the dead second return is gone.
             RESET.append((tag, "third_party_subresources_aborted_by_this_driver",
                           "accounts.google.com apis.google.com gstatic.com "
                           "tiles.openfreemap.org maps.googleapis.com", ""))
+            # RUN 22 ITEM 7, MEASURED. The readiness figure is now recorded as a number rather
+            # than left implicit in the polling note, so the evidence carries the participant
+            # facing metric and not only the harness's elapsed time.
+            RESET.append((tag, "seconds_until_application_usable",
+                          f"{ready_at - t0:.2f}" if ready_at is not None else "not-determined",
+                          "measured by polling; Run-22 probes measured the same interval from "
+                          "the browser's own navigation timeline, which is the authority"))
+            return verdict
 
         # ------------------------------------------------------------ STATE A
         print()
@@ -603,8 +625,13 @@ def main_drive() -> None:
         print("STATE G - a REAL browser reload on the populated project")
         print("=" * 78)
         did = real_reload("G-populated-reload")
-        check(did != "no",
-              "STATE G: the browser reload did not leave the old document standing",
+        # RUN 22 TIGHTENED THIS. It read `did != "no"`, which passes for the verdict
+        # "not determined" -- the case where the page could NOT be read at all within the
+        # deadline. A qualification claim that the document was destroyed must rest on having
+        # OBSERVED it destroyed, not on having failed to observe it surviving. Only "yes" passes
+        # now, and "yes" is set solely by seeing the sentinel gone.
+        check(did == "yes",
+              "STATE G: the browser reload destroyed the old document, observed via the sentinel",
               f"verdict={did}")
         obs("G-populated-reload", "application_reloaded_from_server", did)
         open_detail(page, FULL)
@@ -676,9 +703,10 @@ def main_drive() -> None:
         print()
         print("STATE D - the cleared state after a REAL reload")
         did2 = real_reload("D-reset-reload")
-        check(did2 != "no",
-              "STATE D: the post-reset reload did not leave the old document standing",
-              f"verdict={did2}")
+        # RUN 22: same tightening as STATE G. "not determined" is not evidence of a reload.
+        check(did2 == "yes",
+              "STATE D: the post-reset reload destroyed the old document, observed via the "
+              "sentinel", f"verdict={did2}")
         obs("D-reset-reload", "application_reloaded_from_server", did2)
         open_detail(page, FULL)
         d2 = read_state(page, "D-reset-after-reload", FULL)

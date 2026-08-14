@@ -1,0 +1,32 @@
+config,measurement,value,note
+swiftshader_as_run21,gl_flags,--use-gl=swiftshader --enable-webgl --ignore-gpu-blocklist,exactly the flags drive_run21_instrument.py launches with
+swiftshader_as_run21,app_usable_seconds,61.27,core application initialised after the reload
+swiftshader_as_run21,domcontentloaded_seconds,61.26,
+swiftshader_as_run21,browser_responseEnd_ms,12,"the server's part, from the browser's own timeline"
+swiftshader_as_run21,browser_domInteractive_ms,61123,parser finished and blocking scripts executed
+swiftshader_as_run21,browser_main_thread_ms,61111,THE INTERVAL IN QUESTION: responseEnd to domInteractive
+swiftshader_as_run21,cpu_profile_samples,52202,sampled at 1 ms through the DevTools Profiler
+swiftshader_as_run21,cpu_profile_top,51913ms (99.4%),(no url):(program)
+swiftshader_as_run21,cpu_profile_top,167ms (0.3%),(no url):(idle)
+swiftshader_as_run21,cpu_profile_top,53ms (0.1%),(no url):(garbage collector)
+swiftshader_as_run21,cpu_profile_top,27ms (0.1%),xlsx.full.min.js:(anonymous)
+swiftshader_as_run21,cpu_profile_top,8ms (0.0%),app.js:onScroll
+swiftshader_as_run21,cpu_profile_top,7ms (0.0%),(no url):fetch
+swiftshader_as_run21,cpu_profile_top,3ms (0.0%),(no url):getPropertyValue
+swiftshader_as_run21,cpu_profile_top,2ms (0.0%),globe.gl.min.js:getParameters
+swiftshader_as_run21,cpu_profile_top,2ms (0.0%),xlsx.full.min.js:make_xlsx_lib
+swiftshader_as_run21,cpu_profile_top,1ms (0.0%),globe.gl.min.js:setFromCartesianCoords
+swiftshader_as_run21,cpu_profile_top,1ms (0.0%),globe.gl.min.js:render
+swiftshader_as_run21,cpu_profile_top,1ms (0.0%),globe.gl.min.js:setValue
+browser_default_gl,gl_flags,(none),"no GL flags forced; the browser decides, as a participant's browser does"
+browser_default_gl,app_usable_seconds,62.85,core application initialised after the reload
+browser_default_gl,domcontentloaded_seconds,62.84,
+browser_default_gl,browser_responseEnd_ms,10,"the server's part, from the browser's own timeline"
+browser_default_gl,browser_domInteractive_ms,62736,parser finished and blocking scripts executed
+browser_default_gl,browser_main_thread_ms,62726,THE INTERVAL IN QUESTION: responseEnd to domInteractive
+webgl_disabled,gl_flags,--disable-webgl --disable-gpu,"WebGL removed outright, so any 3D surface cannot render at all"
+webgl_disabled,app_usable_seconds,0.54,core application initialised after the reload
+webgl_disabled,domcontentloaded_seconds,0.54,
+webgl_disabled,browser_responseEnd_ms,9,"the server's part, from the browser's own timeline"
+webgl_disabled,browser_domInteractive_ms,297,parser finished and blocking scripts executed
+webgl_disabled,browser_main_thread_ms,288,THE INTERVAL IN QUESTION: responseEnd to domInteractive
