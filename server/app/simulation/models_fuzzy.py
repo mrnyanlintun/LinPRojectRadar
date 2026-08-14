@@ -40,14 +40,31 @@ def run_pythagorean_fuzzy(si: dict, rand: Callable[[], float], period_cutoff) ->
     evm_min = min(si["cpi"], si["spi"])
     mu = _clamp01((evm_min - 0.85) / 0.15)
     nu = _clamp01((0.95 - evm_min) / 0.15)
-    if mu * mu + nu * nu > 1:
-        norm = math.sqrt(mu * mu + nu * nu)
-        mu /= norm
-        nu /= norm
-    pi = math.sqrt(max(0, 1 - mu * mu - nu * nu))
     doc = si.get("docRiskScore") or 0
     adj_mu = mu * (1 - doc * 0.3)
     adj_nu = min(1, nu + doc * 0.3)
+    # RUN 20 CYCLE 9. THE HESITANCY WAS COMPUTED FROM A PAIR THE MODULE DOES NOT REPORT, AND THE
+    # PAIR IT DOES REPORT DID NOT SATISFY THE CONSTRAINT THAT DEFINES A PYTHAGOREAN FUZZY SET.
+    #
+    # A Pythagorean fuzzy set is exactly the pair whose squares sum to at most one, and the
+    # hesitancy is what the constraint leaves over: mu^2 + nu^2 + pi^2 = 1. This module applied
+    # the constraint to the RAW pair, took the hesitancy from it, and THEN adjusted the pair by
+    # the document risk score -- reporting the adjusted membership and non-membership beside a
+    # hesitancy belonging to a pair that had been discarded. The three reported numbers therefore
+    # did not satisfy the identity that gives them their meaning, and on any project with a
+    # document risk score they could not: measured on cpi = spi = 0.95, doc = 0.8, the reported
+    # triple was mu 0.53, nu 0.24, pi 0.00, whose squares sum to 0.34 rather than 1.
+    #
+    # The order is corrected rather than the arithmetic: the adjustment happens first, the
+    # constraint is enforced on the ADJUSTED pair, and the hesitancy is what that pair leaves
+    # over. This is exactly what the spherical module in this same file already does, so the two
+    # implementations of one construction stop disagreeing about it. No membership map, boundary
+    # or band threshold is touched.
+    if adj_mu * adj_mu + adj_nu * adj_nu > 1:
+        norm = math.sqrt(adj_mu * adj_mu + adj_nu * adj_nu)
+        adj_mu /= norm
+        adj_nu /= norm
+    pi = math.sqrt(max(0, 1 - adj_mu * adj_mu - adj_nu * adj_nu))
     score = adj_mu - adj_nu
     color = ("Green" if score >= 0.3 else "Yellow" if score >= 0.0
              else "Amber" if score >= -0.3 else "Red")
@@ -198,12 +215,41 @@ def run_possibility_theory(si: dict, rand: Callable[[], float], period_cutoff) -
         return insufficient("Possibility_Theory")
     evm_min = min(si["cpi"], si["spi"])
     doc = si.get("docRiskScore") or 0
-    possibility = {
+    raw = {
         "Green": min(1, max(0, (evm_min - 0.85) / 0.10) * (1 - doc * 0.5)),
         "Amber": min(1, max(0, 1 - (evm_min - 0.88) / 0.10) * (1 + doc * 0.3)),
         "Red": min(1, max(0, (0.92 - evm_min) / 0.10) + doc * 0.4),
     }
-    necessity = {k: max(0, v - 0.3) for k, v in possibility.items()}
+    # ------------------------------------------------------------ RUN 20 CYCLE 9
+    #
+    # TWO DEFECTS, BOTH OF THEM DEPARTURES FROM THE DEFINITIONS THAT MAKE THIS POSSIBILITY THEORY
+    # RATHER THAN AN ARBITRARY TRIPLE OF NUMBERS.
+    #
+    # ONE, THE DISTRIBUTION WAS NOT NORMALISED. A possibility distribution over a frame is
+    # normalised: at least one element is fully possible, so the supremum is 1. That is not a
+    # convention, it is what makes the measure a possibility measure and what makes the duality
+    # below hold. The three values here are each mapped and clipped independently and their
+    # supremum was whatever the maps happened to produce -- measured on cpi = spi = 0.90,
+    # doc = 0, the whole distribution was Green 0.00, Amber 1.00, Red 0.20, and on
+    # cpi = spi = 0.94, doc = 0 it was Green 0.90, Amber 0.00, Red 0.00, a frame in which
+    # NOTHING was fully possible. Normalising divides through by the supremum, which is a
+    # monotone rescaling, so THE DOMINANT BAND CANNOT MOVE: the correction changes what the
+    # numbers mean, not which band the module reports.
+    #
+    # TWO, THE NECESSITY WAS NOT A NECESSITY. It was the possibility less 0.30, an invented
+    # constant with no provenance, which is neither dual to anything nor bounded by the
+    # possibility in the way necessity must be. Necessity is the dual of possibility:
+    # N(A) = 1 - Pi(not A). Over a three-element frame the complement of a band is the other two
+    # bands, so N(A) = 1 - max of the other two possibilities. That is computed from the
+    # distribution itself and introduces no constant at all.
+    #
+    # The consistency condition N(A) <= Pi(A) then holds by construction on a normalised
+    # distribution, and the cycle 9 suite asserts it on a sweep rather than trusting it.
+    sup = max(raw.values())
+    possibility = ({k: v / sup for k, v in raw.items()} if sup > 0
+                   else dict(raw))
+    necessity = {k: max(0.0, 1 - max([v for j, v in possibility.items() if j != k] or [0.0]))
+                 for k in possibility}
     dominant = "Green"
     for b in list(possibility)[1:]:  # JS reduce with `>`: later key wins ties
         dominant = dominant if possibility[dominant] > possibility[b] else b
@@ -212,6 +258,10 @@ def run_possibility_theory(si: dict, rand: Callable[[], float], period_cutoff) -
         "status_color": dominant,
         "possibility": {k: round2(v) for k, v in possibility.items()},
         "necessity": {k: round2(v) for k, v in necessity.items()},
+        # The unnormalised maps, kept so a reader can see what was rescaled and by how much
+        # rather than having to take the normalisation on trust.
+        "possibility_unnormalised": {k: round2(v) for k, v in raw.items()},
+        "normalisation_divisor": round2(sup),
         "evidence_metric": (
             f"Possibility: {dominant} (Π={_js_str(round2(possibility[dominant]))}, "
             f"N={_js_str(round2(necessity[dominant]))})"

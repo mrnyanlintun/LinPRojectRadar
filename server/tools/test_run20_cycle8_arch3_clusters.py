@@ -290,10 +290,19 @@ _declared = [{"module_id": m, "status": "Amber",
              for m in ("B2.12", "B2.13", "B2.17")]
 _u = fuse_signals(_undeclared)
 _d = fuse_signals(_declared)
-check("undeclared, three readings of one body counted as three bodies",
-      _u["lineage_groups"] == 3)
-check("undeclared, Amber belief was sharpened well past the single reading",
-      _u["mass"]["Amber"] > 0.98, str(_u["mass"]["Amber"]))
+# RUN 20 CYCLE 9, FUSION.1. THESE TWO CHECKS WERE REWRITTEN AND THEIR PREMISE IS RECORDED, NOT
+# ERASED. When cycle 8 measured this, an undeclared signal was given `lineage_record(mid)`, whose
+# primitive set is empty, so three undeclared readings of ONE earned-value measurement were
+# selected as THREE INDEPENDENT BODIES and Amber belief was sharpened from 0.7000 to 0.9861. That
+# was FUSION.1, and cycle 9 fixed it in production: an undeclared signal is no longer independent
+# by default. The measured amplification is therefore now ZERO EVEN WITHOUT the declarations,
+# which does not make the declarations pointless -- it makes them the difference between one body
+# and an UNRESOLVED reading that cannot corroborate anything at all, including a real second body.
+check("undeclared, no body is manufactured at all: silence is not independence",
+      _u["lineage_groups"] == 0 and _u["unresolved_signal_count"] == 3,
+      f"{_u['lineage_groups']} bodies, {_u['unresolved_signal_count']} unresolved")
+check("undeclared, Amber belief is NOT sharpened past the single reading (was 0.9861 in cycle 8)",
+      abs(_u["mass"]["Amber"] - 0.70) < 5e-4, str(_u["mass"]["Amber"]))
 check("declared, they are one body", _d["lineage_groups"] == 1, str(_d["lineage_groups"]))
 check("declared, Amber belief is the single reading and nothing more",
       abs(_d["mass"]["Amber"] - 0.70) < 5e-4, str(_d["mass"]["Amber"]))

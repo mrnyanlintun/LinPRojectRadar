@@ -160,22 +160,80 @@ def _guard(project: dict) -> bool:
     return signals is not None and signals.get("cusum") is not None
 
 
+#: Severity order over the four bands, worst last. Imported rather than restated so this module
+#: and the combination rule cannot disagree about which band is worse.
+from .fusion import BAND_SEVERITY  # noqa: E402
+
+
+def _dominant_band(statuses: dict) -> str | None:
+    """The most adverse band any present signal reads, which is what dominance means."""
+    present = [b for b in statuses.values() if b in BAND_SEVERITY]
+    return max(present, key=lambda b: BAND_SEVERITY[b]) if present else None
+
+
 def run_conservative_dominance(si: dict, rand: Callable[[], float],
                                period_cutoff) -> dict[str, Any]:
     if not _guard(si):
         return insufficient("Conservative_Dominance")
     d = _derive_decision(si)
+    # ------------------------------------------------------------- RUN 20 CYCLE 9, THE P1 DEFECT
+    #
+    # THE MODULE NAMED CONSERVATIVE DOMINANCE DID NOT APPLY A DOMINANCE RULE. It returned the
+    # shared decision-layer health state, which is a COUNTING rule: two or more Red signals, or a
+    # cumulative-sum breach together with a Red forecast, reach "Red-review"; everything else
+    # that is not uniformly Green reaches Amber. So a project whose worst signal was RED, alone,
+    # reported AMBER and selected routine early-warning review rather than escalation. Adverse
+    # evidence was outvoted by the count of the signals that had nothing adverse to say.
+    #
+    # Conservative dominance is not a count. It is the rule that the most adverse reading
+    # DOMINATES: the decision is taken against the worst state the evidence supports, and a
+    # single adverse signal is enough because that is precisely what "conservative" means. The
+    # rule is also IDEMPOTENT, which matters here for a second reason established this same
+    # cycle: three of the four signals this module reads are readings of ONE earned-value
+    # measurement, so a counting rule over them was counting one measurement up to three times
+    # while a dominance rule cannot.
+    #
+    # NO THRESHOLD, WEIGHT OR CONSTANT IS INTRODUCED. The rule has no parameter: it is a maximum
+    # over the bands already assigned by the signals themselves.
+    #
+    # THE GOVERNANCE PROJECTION IS DELIBERATELY LEFT ALONE. B3.1 reads the same decision layer to
+    # decide WHICH ACTION AND WHOSE AUTHORITY, which is a different question from what the
+    # evidence most adversely supports, and it is not this module's finding to change. The two
+    # states are therefore reported side by side here rather than silently reconciled, so a
+    # reader can see the dominance state and the decision-layer state and is never shown one
+    # while believing it is the other.
+    # THE CONSERVATIVE TREATMENT OF ABSENT EVIDENCE IS PART OF THE RULE, NOT AN EXCEPTION TO IT.
+    # A dominance rule over the signals PRESENT would let an absent or unrecognised signal read
+    # as agreement: three Greens and one missing would dominate to Green, which is the strongest
+    # claim available and the one the missing signal never made. The pre-existing rule already
+    # required every one of the four signals to be present and Green before it would say Green,
+    # and that requirement is kept exactly: the calmest band is reachable only on complete
+    # evidence, and incomplete evidence cannot be calmer than Amber. Nothing is invented; the
+    # existing `_all_green` predicate is the one applied.
+    _bands = _signal_statuses(si)
+    _dominant = _dominant_band(_bands)
+    _complete = _all_green(_bands) or all(_bands.get(n) is not None for n in SIGNAL_NAMES)
+    if _dominant is None:
+        state = d["healthState"]
+    elif _dominant == "Green" and not _all_green(_bands):
+        state = "Amber"
+    else:
+        state = _dominant
     return {
         "method_class": "Conservative_Dominance",
-        "status_color": d["healthState"],
-        "state": d["healthState"],
+        "status_color": state,
+        "state": state,
+        "dominant_signal_band": _dominant,
+        "signal_bands": _bands,
+        "decision_layer_state": d["healthState"],
+        "evidence_complete": _complete,
         "conflict": d["conflictType"],
         # NO EM DASH. This string is what the Signal Ledger renders as this module's finding,
         # and until the flat-to-nested adapter landed it reached no screen, because the module
         # could not execute on the normal path at all. The moment it became reachable it became
         # user-facing text, which NAMING_AUTHORITY.md's standing rule covers. The separator is
         # the only change: no arithmetic, no state name, no classification is touched.
-        "evidence_metric": f"{d['healthState']}: {d['conflictType']}",
+        "evidence_metric": f"{state}: {d['conflictType']}",
     }
 
 

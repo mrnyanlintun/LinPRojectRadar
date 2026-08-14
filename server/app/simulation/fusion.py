@@ -144,9 +144,41 @@ def worst_band(bands) -> str | None:
     return max(present, key=lambda b: BAND_SEVERITY[b]) if present else None
 
 
-def fuse_signals(signals) -> dict[str, Any] | None:
+def fuse_signals(signals, assume_independent: bool = False) -> dict[str, Any] | None:
     """
     Fuse LINEAGE-BEARING signals into one belief distribution.
+
+    RUN 20 CYCLE 9, FUSION.1. AN UNDECLARED SIGNAL IS NEVER INDEPENDENT BY DEFAULT.
+
+    THE SAFE DEFAULT CHOSEN IS EXPLICIT UNRESOLVED, NOT REFUSAL AND NOT ABSTENTION, and the
+    justification is that the other two are each wrong in one direction:
+
+      * REFUSAL -- returning nothing when any signal is undeclared -- destroys a fusion that is
+        largely declared because one member is silent, and turns a latent modelling defect into
+        an availability defect on the governed status. It also discards adverse evidence, which
+        is the direction this file has consistently refused to fail in.
+      * ABSTENTION -- dropping the undeclared signal -- is worse still, because an undeclared RED
+        signal would then make the fusion read GREENER than the evidence in hand. Silently
+        removing the most adverse reading is false suppression, the exact failure cycle 5 was
+        opened to fix.
+
+      * EXPLICIT UNRESOLVED keeps the signal, keeps its adverse reading, and refuses only the one
+        thing that was never justified: the CERTAINTY that corroboration confers. Every
+        undeclared signal is placed in ONE shared unresolved body, and that body is NOT combined
+        with the declared bodies by Dempster's rule, because Dempster's rule is exactly the step
+        that requires the independence nobody declared. The unresolved body is folded in with the
+        idempotent within-body operator instead: the reported status is the MOST ADVERSE of the
+        declared fusion's band and the unresolved body's band. Adding a copy of an undeclared
+        signal changes nothing; an undeclared Red still drives the answer to Red; and no mass is
+        moved toward any band on the strength of an independence claim that was never made.
+
+    The condition is REPORTED and not only handled: `lineage_declared` is False,
+    `unresolved_module_ids` names them, and `unresolved_band` gives their reading.
+
+    `assume_independent=True` is the ONE way to obtain the old behaviour, and it is a positive
+    assertion made by the caller rather than a default reached by silence. `dst_fuse` passes it,
+    because its whole documented contract is a caller who genuinely has independent sources and
+    has nothing else to say about them.
 
     This is the lineage-aware combination, and `dst_fuse` below is now a thin caller of it. Each
     signal is a mapping carrying at least `status`, optionally `module_id` and optionally
@@ -198,6 +230,8 @@ def fuse_signals(signals) -> dict[str, Any] | None:
     admitted_recs: list[dict] = []
     excluded: list[dict] = []
     undeclared = 0
+    unresolved_ids: list[str] = []
+    unresolved_bands: list[str] = []
 
     for i, sig in enumerate(signals or []):
         rec = sig.get("lineage")
@@ -213,12 +247,42 @@ def fuse_signals(signals) -> dict[str, Any] | None:
             continue
         if rec is None:
             undeclared += 1
-            rec = lineage_record(mid)
+            if assume_independent:
+                # The caller asserted independence explicitly. That is a declaration, made by
+                # the caller rather than by silence, and it is still reported as undeclared
+                # lineage so a consumer can tell an assertion from a record.
+                rec = lineage_record(mid)
+            else:
+                unresolved_ids.append(mid)
+                unresolved_bands.append(band)
+                continue
         admitted_bands.append(band)
         admitted_recs.append(rec)
 
+    unresolved_band = worst_band(unresolved_bands)
+
     if not admitted_bands:
-        return None
+        if unresolved_band is None:
+            return None
+        # Nothing declared at all. There is no fusion to perform, so none is manufactured: the
+        # single unresolved body is reported as itself, with the mass of its own reading and no
+        # combination applied.
+        mass = STATUS_MASS[unresolved_band]
+        return {
+            "mass": {s: mass[s] for s in STATES},
+            "status": unresolved_band,
+            "conflict": 0.0,
+            "lineage_groups": 0,
+            "lineage_bodies": [],
+            "conflict_estimable": False,
+            "excluded_non_evidential": excluded,
+            "lineage_declared": False,
+            "body_selection_exact": True,
+            "signals_admitted": 0,
+            "unresolved_module_ids": unresolved_ids,
+            "unresolved_band": unresolved_band,
+            "unresolved_signal_count": len(unresolved_bands),
+        }
 
     separation = evidence_bodies(admitted_recs)
     groups = separation["bodies"]
@@ -256,6 +320,11 @@ def fuse_signals(signals) -> dict[str, Any] | None:
     for b in BANDS[1:]:
         if result[b] > result[status]:
             status = b
+    if unresolved_band is not None:
+        # THE IDEMPOTENT FOLD, NOT A COMBINATION. No mass moves: only the reported band can
+        # become more adverse. Duplicating an undeclared signal cannot change this, and an
+        # undeclared signal cannot add certainty to any band.
+        status = worst_band([status, unresolved_band])
     return {
         "mass": {s: result[s] for s in STATES},
         "status": status,
@@ -267,6 +336,9 @@ def fuse_signals(signals) -> dict[str, Any] | None:
         "lineage_declared": undeclared == 0,
         "body_selection_exact": separation["selection_exact"],
         "signals_admitted": len(admitted_bands),
+        "unresolved_module_ids": unresolved_ids,
+        "unresolved_band": unresolved_band,
+        "unresolved_signal_count": len(unresolved_bands),
     }
 
 
@@ -285,8 +357,13 @@ def dst_fuse(statuses) -> dict[str, Any] | None:
     re-combination) so a single Red cannot silently sink a set of greens while genuine Red
     evidence still dominates. The conflict K recorded is the last genuine combine, not the Red
     re-combine, which is a weighting artefact and would inflate it.
+
+    RUN 20 CYCLE 9, FUSION.1. The independence is now passed EXPLICITLY rather than obtained by
+    saying nothing. Nothing about this function's behaviour changes; what changes is that a
+    caller of `fuse_signals` who simply forgot to attach a lineage no longer receives the same
+    treatment as a caller who deliberately asserted one.
     """
-    return fuse_signals([{"status": st} for st in (statuses or [])])
+    return fuse_signals([{"status": st} for st in (statuses or [])], assume_independent=True)
 
 
 # ---------------------------------------------------------------------------- RUN 11, GATES 5, 6

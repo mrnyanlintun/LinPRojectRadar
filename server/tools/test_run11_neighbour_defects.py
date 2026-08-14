@@ -351,8 +351,20 @@ def mutation_proofs() -> None:
     with_doc = models_doc.run_sensitivity_analysis(dict(s_base, docRiskScore=0.55), rand, None)
     check("A5.2 missingness: corrected, the supplied driver still reports",
           with_doc.get("status_color") is not None, "it abstained too")
-    check("A5.2: and the supplied driver can be the top one, which is what zero suppressed",
-          with_doc.get("top_driver") == "DocRisk", str(with_doc.get("top_driver")))
+    # RUN 20 CYCLE 9. THIS CHECK'S SCIENTIFIC PREMISE IS NOW WRONG AND IS REPLACED RATHER THAN
+    # DELETED. Run 11 fixed a real defect here: an absent document risk score was read as a
+    # sensitivity of exactly zero, which demoted the driver and let withholding it calm the band.
+    # The requirement that the score be PRESENT is unchanged and is still checked immediately
+    # above. What this last check asserted -- that the document risk score can be the TOP DRIVER
+    # -- rested on the assumption that it was a sensitivity at all. It is not: it is the raw
+    # score, never perturbed, and the estimate at completion is not a function of it. So a
+    # quantity that cannot be a sensitivity cannot be the top one, and the correct assertion is
+    # the opposite: it is reported as a LEVEL, under its own name, and is not ranked.
+    check("A5.2: the document risk score is reported as a level and is not eligible to be the "
+          "top driver, because it is never perturbed",
+          with_doc.get("top_driver") == "CPI"
+          and "DocRisk" in [x["name"] for x in with_doc.get("levels_not_perturbed", [])],
+          str(with_doc.get("top_driver")))
 
 
 reconciliation()

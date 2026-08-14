@@ -29,8 +29,10 @@ CUTOFF = datetime.date(2026, 6, 30)
 RAND = lambda: 0.5  # noqa: E731
 
 KNOWN_DEFECTS = {
-    "5.2/all-drivers-perturbed": "IMPLEMENTATION_DEFECT",
-    "5.2/commensurable-ranking": "IMPLEMENTATION_DEFECT",
+    # RUN 20 CYCLE 9 REPAIRED BOTH 5.2 PROPOSITIONS, so they are removed from the register rather
+    # than left to go stale. Only the cost-index driver was ever perturbed; the other two were a
+    # halved index deviation and a raw risk share, ranked against it on an uncited scaling. The
+    # module now reports the one driver it perturbs and reports the other two as levels.
     "5.3/output-evaluated-at-low-and-high": "METHOD_LABEL_MISMATCH",
     "5.3/presents-5.2-results": "METHOD_LABEL_MISMATCH",
     "5.4/system-conditions-not-action-choice": "OWNER_DECISION_REQUIRED",
@@ -126,8 +128,17 @@ def m_5_2() -> None:
                                            {"x1": 2.0, "x2": 1000.0}, "x2", 0.10)) < 1e-9)
 
     out = run("A5.2", dict(EVM))
-    A.check("5.2", "structure: three drivers are ranked and the top one is named",
-            len(out.get("drivers", [])) == 3 and bool(out.get("top_driver")))
+    # RUN 20 CYCLE 9. THE EXPECTED STRUCTURE CHANGED BECAUSE THE DEFECT THIS SUITE RECORDED WAS
+    # FIXED, and the fix was the one this suite's own finding recommended: report only the driver
+    # that is perturbed. Two of the three "drivers" were never perturbed and could not be -- the
+    # estimate at completion is bac over the cost index and is not a function of the schedule
+    # index or the document risk score at all -- so ranking three was the defect, not the
+    # structure. One perturbed driver is ranked and named; the other two quantities are still
+    # reported, under their own names, as levels that are not ranked.
+    A.check("5.2", "structure: the perturbed driver is ranked and named, and the two quantities "
+                   "that are not sensitivities are reported separately as levels",
+            len(out.get("drivers", [])) == 1 and out.get("top_driver") == "CPI"
+            and [d["name"] for d in out.get("levels_not_perturbed", [])] == ["SPI", "DocRisk"])
     A.proposition(
         "5.2", "5.2/no-absent-driver-reads-zero",
         "an absent document risk score is required rather than read as a sensitivity of exactly "
@@ -145,11 +156,21 @@ def m_5_2() -> None:
             abstained(run("A5.2", {"cpi": 0.8})))
 
     drivers = {d["name"]: d["sensitivity"] for d in out["drivers"]}
+    # RUN 20 CYCLE 9. EVALUATED LIVE RATHER THAN PINNED TO False. The proposition is tested by
+    # moving each ranked driver's input and requiring the reported sensitivity to respond, which
+    # is what "perturbed and recomputed" means, and by requiring that nothing is ranked which the
+    # estimate is not a function of.
+    _moved = run("A5.2", {**EVM, "cpi": EVM["cpi"] * 1.1})
+    _all_perturbed = (
+        len(out["drivers"]) == 1
+        and out["drivers"][0]["name"] == "CPI"
+        and _moved["drivers"][0]["sensitivity"] != out["drivers"][0]["sensitivity"]
+        and "sensitivity" not in {k for lv in out["levels_not_perturbed"] for k in lv})
     A.proposition(
         "5.2", "5.2/all-drivers-perturbed",
         "every driver ranked is perturbed and the estimate recomputed, which is what "
         "specification 5.2 requires before a quantity may be called a sensitivity",
-        False,
+        _all_perturbed,
         f"only ONE of the three is. The cost index driver genuinely perturbs the index by plus "
         f"and minus 0.05 and recomputes the forecast at completion, which is a real local "
         f"sensitivity. The other two are not perturbed at all: the schedule driver is the "
@@ -157,11 +178,19 @@ def m_5_2() -> None:
         f"the document risk score itself. Specification 5.2 says in terms not to call current "
         f"badness a sensitivity unless an input is actually perturbed and the output recomputed. "
         f"Observed at the standard input: {drivers}")
+    # RUN 20 CYCLE 9. ALSO EVALUATED LIVE. A ranking is commensurable when everything in it is
+    # the same kind of quantity. With one perturbed driver ranked and the two levels excluded from
+    # the ranking, the band is read from a relative spread of the forecast and from nothing else.
+    _commensurable = (len({d.get("method", "") for d in out["drivers"]}) == 1
+                      and out["top_sensitivity"] == int(round(
+                          out["drivers"][0]["sensitivity"] * 100))
+                      and all("level" in lv and "sensitivity" not in lv
+                              for lv in out["levels_not_perturbed"]))
     A.proposition(
         "5.2", "5.2/commensurable-ranking",
         "the three driver figures are on a common scale, so ranking them and taking the largest "
         "means something",
-        False,
+        _commensurable,
         "the first driver is a dimensionless relative spread of the forecast, the second is half "
         "an index deviation and the third is a raw risk share. They are three different "
         "quantities, and the 0.5 multiplier on the schedule driver is the only thing setting "

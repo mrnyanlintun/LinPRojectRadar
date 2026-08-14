@@ -200,8 +200,16 @@ try:
     check(old_r.get("state") == "Green",
           "the audit's case (cost performance Red, forecast Red, control chart Green, document "
           "risk Green) returned Green on the old code", str(old_r.get("state")))
-    check(new_r.get("state") == "Red-review",
-          "and returns a red review now", str(new_r.get("state")))
+    # RUN 20 CYCLE 9. The expected value here was the decision layer's own state NAME,
+    # "Red-review", because Conservative Dominance returned that layer's counting state. It now
+    # applies the dominance rule its name asserts and reports a BAND. The defect this section
+    # exists to pin is unchanged and still pinned: two Red signals returned GREEN on the old code
+    # and return an adverse band now. The decision layer's state is still reported, under its own
+    # name, and is asserted here too so nothing is lost.
+    check(normalise_status(new_r.get("state")) == "Red"
+          and new_r.get("decision_layer_state") == "Red-review",
+          "and returns a red band now, with the decision layer still classifying it a red review",
+          str(new_r.get("state")))
     check(new_r.get("conflict") == "Multi-signal red-review",
           "with the conflict classified as a multi-signal red review",
           str(new_r.get("conflict")))
@@ -214,9 +222,11 @@ try:
         case = {"signals": {"evm": {"status": statuses[0]}, "mc": {"status": statuses[1]},
                             "cusum": {"status": statuses[2], "breached": False},
                             "doc": {"status": statuses[3]}}}
-        check(run_conservative_dominance(case, None, None).get("state") == "Red-review",
-              f"two Red inputs return a red review when written {casing}",
-              str(run_conservative_dominance(case, None, None).get("state")))
+        _got = run_conservative_dominance(case, None, None)
+        check(normalise_status(_got.get("state")) == "Red"
+              and _got.get("decision_layer_state") == "Red-review",
+              f"two Red inputs return a red band when written {casing}",
+              str(_got.get("state")))
 
     # The vote bucket: an unknown value must not become reassuring evidence.
     for bad in ("unexpected", "light-amber", "Yellow", "purple", "n/a"):

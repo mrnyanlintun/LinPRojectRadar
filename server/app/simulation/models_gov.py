@@ -38,10 +38,10 @@ import math
 from typing import Any, Callable
 
 from .fusion import BAND_SEVERITY, dst_combine, normalise_status
-from .lineage import (
-    CORRELATED, DOCUMENT_BODY, EARNED_VALUE_BODY, INDEPENDENT, REPORTING_HISTORY_BODY,
-    SAME_SOURCE_TRANSFORM, evidence_bodies, lineage_record,
+from .arm_lineage import (  # noqa: F401  (re-exported for existing readers)
+    ARM_LINEAGE_CUSUM, ARM_LINEAGE_DOC, ARM_LINEAGE_EVM, ARM_LINEAGE_MC,
 )
+from .lineage import evidence_bodies
 from .models import (
     ABSTAIN_DECISION_STRUCTURE_ABSENT, ABSTAIN_MALFORMED_INPUT, check_inputs, insufficient,
 )
@@ -100,43 +100,10 @@ def _jsdiv(a: float, b: float) -> float:
 # NO BAND, BOUNDARY, THRESHOLD OR ARM MASS IS CHANGED BY ANY OF THIS. What changed is which
 # masses are combined against each other.
 
-#: The arms' declared lineage. Each names the PRIMITIVE facts the arm's reading ultimately rests
-#: on, not the immediate argument it is handed: the cost index is not a fact, it is a step.
-ARM_LINEAGE_EVM = lineage_record(
-    "B2.1.evm", source_fact_ids=("ac", "ev", "pv"),
-    lineage_group_ids=(EARNED_VALUE_BODY,),
-    evidence_relationship=SAME_SOURCE_TRANSFORM,
-    derivation_chain=("ev,ac,pv", "cost performance index = ev / ac",
-                      "schedule performance index = ev / pv", "the lesser of the two indices"))
-# THE BUDGET IS DELIBERATELY ABSENT HERE, AND THIS CYCLE'S OWN FIRST DRAFT DECLARED IT. A1.1
-# reads the budget and its absolute forecast figures rest on it, so A1.1's own record names it
-# correctly. THIS ARM READS ONLY THE EIGHTIETH-PERCENTILE OVERRUN AS A PERCENTAGE OF THE BUDGET,
-# and that ratio is scale-invariant in the budget: doubling the budget does not move it by a
-# rounding step. A fact that cannot move an arm's reading is not that arm's evidence, whatever
-# the producing module rests on, and the material-influence probe is what caught the
-# over-declaration rather than any amount of reading the producer's declaration.
-ARM_LINEAGE_MC = lineage_record(
-    "B2.1.mc", source_fact_ids=("ac", "doc_risk_score", "ev", "pv"),
-    lineage_group_ids=(EARNED_VALUE_BODY, DOCUMENT_BODY),
-    evidence_relationship=CORRELATED,
-    derivation_chain=("A1.1", "cost performance index = ev / ac",
-                      "schedule performance index = ev / pv",
-                      "estimate at completion scaled by the two indices",
-                      "stochastic sampling spread by the document risk score",
-                      "eightieth-percentile overrun against the budget"))
-ARM_LINEAGE_CUSUM = lineage_record(
-    "B2.1.cusum", source_fact_ids=("ev", "pv", "reporting_history"),
-    lineage_group_ids=(EARNED_VALUE_BODY, REPORTING_HISTORY_BODY),
-    evidence_relationship=CORRELATED,
-    derivation_chain=("A1.2", "schedule index history ending with this period",
-                      "two-sided cumulative sum of the index deviations",
-                      "whether the decision interval was breached"))
-ARM_LINEAGE_DOC = lineage_record(
-    "B2.1.doc", source_fact_ids=("doc_risk_score",),
-    lineage_group_ids=(DOCUMENT_BODY,),
-    evidence_relationship=INDEPENDENT,
-    derivation_chain=("the document risk score",))
-
+# RUN 20 CYCLE 9, ARCH.5. The four arm declarations MOVED to arm_lineage.py unchanged,
+# because seven more registered modules read the same four arms and a second copy of a
+# lineage declaration is a second thing that can drift. Re-exported here so every existing
+# reader of `models_gov.ARM_LINEAGE_EVM` keeps working.
 
 def _arm_band(mass: dict) -> str:
     """The band an arm's mass asserts, which is the state carrying most of it.

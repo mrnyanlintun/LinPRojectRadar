@@ -39,6 +39,32 @@ RUN20_PRODUCTION_CHANGES: dict[str, tuple[str, str, str]] = {
     "10.3": ("2 P0C", "server/app/simulation/models_gov.py",
              "the rule named FAR threshold is renamed for the forecast-overrun comparison it "
              "actually is, since no provision states it"),
+    "5.2": ("9 P1", "server/app/simulation/models_doc.py",
+            "Sensitivity Analysis ranked three quantities of which only ONE was a sensitivity. "
+            "The cost-index driver perturbs the index and recomputes the estimate at completion; "
+            "the other two were the schedule index's distance from one, halved, and the raw "
+            "document risk score, and the estimate at completion is not a function of either. It "
+            "now reports the one driver it perturbs, and reports the other two under their own "
+            "names as levels that are not ranked and cannot set the band"),
+    "6.1": ("9 P1", "server/app/simulation/models_decision.py",
+            "Conservative Dominance applied a COUNTING rule, not a dominance rule: a lone Red "
+            "signal read Amber and selected routine early warning. It now reports the most "
+            "adverse band any present signal reads, which introduces no threshold, weight or "
+            "constant. Absent or unrecognised evidence still cannot reach the calmest band, "
+            "which is the pre-existing requirement kept unchanged. The governance projection's "
+            "decision-layer state is untouched and is reported beside the dominance state"),
+    "7.10": ("9 P1", "server/app/simulation/models_fuzzy.py",
+             "Pythagorean Fuzzy Sets took the hesitancy from the RAW membership pair and then "
+             "adjusted the pair, so the three numbers a reader is shown did not satisfy the "
+             "identity that defines the set. The constraint is now enforced on the adjusted pair "
+             "and the hesitancy taken from it, which is what the spherical module in the same "
+             "file already did"),
+    "7.15": ("9 P1", "server/app/simulation/models_fuzzy.py",
+             "Possibility Theory did not normalise its possibility distribution, so on some "
+             "projects nothing was fully possible, and its necessity was the possibility less an "
+             "invented 0.30. The distribution is normalised by its own supremum, a monotone "
+             "rescaling that cannot move the dominant band, and the necessity is the dual, one "
+             "less the possibility of the complement"),
 }
 
 
@@ -63,18 +89,32 @@ RUN20_ARCHITECTURAL_CHANGES: dict[str, tuple[str, str, str]] = {
                "the combination rule partitions its signals into bodies of evidence before "
                "combining them, so two transforms of one body no longer corroborate each other, "
                "and a quality, governance or decision output is refused as project evidence"),
+    "FUSION.1 fusion": ("9 P1", "server/app/simulation/fusion.py",
+               "an undeclared signal is no longer treated as INDEPENDENT by default. Silence "
+               "produced an empty primitive set, which intersects nothing, so an undeclared "
+               "signal was selected as its own body of evidence and corroborated everything. It "
+               "is now an EXPLICIT UNRESOLVED reading: kept, folded in with the idempotent "
+               "worst-band operator so it can never add certainty, never combined by Dempster's "
+               "rule, and reported by name. Independence must now be ASSERTED by the caller, "
+               "which dst_fuse does and only dst_fuse does"),
+    "ARCH.5 evc": ("9 P1", "server/app/simulation/models_evc.py",
+               "the six advisory evidence-combination siblings aggregated the same four "
+               "assembled arms with equal weight per arm, and three of those four arms are "
+               "readings of ONE earned-value measurement, so that measurement held three "
+               "quarters of every vote. The arms are now separated into independent bodies by "
+               "the existing lineage contract and each body contributes one reading, the most "
+               "adverse of its members. NO WEIGHT, correlation coefficient or reliability "
+               "discount is introduced. Neutrosophic Logic's absolute count threshold is "
+               "expressed as the share it always was, one half, because left absolute it would "
+               "have demanded unanimity over two bodies and suppressed a Red earned-value "
+               "reading. Interval Fuzzy Sets keeps the more adverse of the two index readings, "
+               "which are one body. The Belief Rule Base stops conditioning on the trend breach "
+               "as a separate antecedent from the index state"),
 }
 
 #: PRODUCTION FILES CREATED BY RUN 20. A new file cannot differ from a freeze taken before it
 #: existed, so the byte comparison can never see one. Declaring them here is what stops a whole
 #: new production module being added without any declaration at all.
-#:
-#: RUN 20 CYCLE 4 WIDENED THIS ENTRY FROM ONE CYCLE TO THE TUPLE OF CYCLES THAT HAVE TOUCHED THE
-#: FILE, and the reason is a gap cycle 4's own sweep found in cycle 3's guard. Cycle 4 changes
-#: only lineage.py, which is a NEW production file and therefore has no baseline row to differ
-#: from. The manifest's cycle-set check reads the cycles off the baseline-file declarations, so
-#: a cycle that touches nothing but a new file declared itself NOWHERE and the check that exists
-#: to catch exactly that would have stayed green. The cycles are read off this list too now.
 #:
 #: relative path -> (the cycles that have changed it, in order, what the file is)
 RUN20_NEW_PRODUCTION_FILES: dict[str, tuple[tuple[str, ...], str]] = {
@@ -95,6 +135,14 @@ RUN20_NEW_PRODUCTION_FILES: dict[str, tuple[tuple[str, ...], str]] = {
         "Overhead Absorption Rate resting on the indirect cost ledger, and the A2.1 entry was "
         "removed because that module abstains on an absent canonical structure on every project "
         "and so emits no signal whose evidence there is anything to declare"),
+    "server/app/simulation/arm_lineage.py": (
+        ("9 P1",),
+        "ARCH.5. The four assembled signal arms declared ONCE for every module that reads them, "
+        "and the weight-free deduplication that gives each independent body of evidence exactly "
+        "one reading, the most adverse of its members. The declarations are the ones cycle 7 "
+        "established by execution and are moved here byte for byte; the separation resolves them "
+        "against the project's own evidence first, using cycle 8's derived-index resolver, so "
+        "the schedule index's two ancestries are the project's property and not the module's"),
 }
 
 

@@ -267,9 +267,17 @@ RUN16_SCOPED_FILES = {
 # nine evidence relationships, the lineage record and the partition that decides which signals
 # are one body of evidence. It is a new file rather than an edit; the combination rule and the
 # compute entry point that read it are already inside earlier runs' authorised scope.
+# RUN 20 CYCLE 9 (ARCH.5) adds the shared arm-lineage declarations, a new file, and the edit to
+# the six advisory evidence-combination siblings that stops one earned-value measurement read
+# three ways from holding three quarters of every one of their votes.
 RUN20_SCOPED_FILES = {
     "server/app/simulation/lineage.py",
     "server/app/simulation/qualification_gate.py",
+    "server/app/simulation/arm_lineage.py",
+    "server/app/simulation/models_evc.py",
+    "server/app/simulation/models_fuzzy.py",
+    "server/app/simulation/models_doc.py",
+    "server/app/simulation/models_decision.py",
 }
 
 _diff = subprocess.run(["git", "diff", "--name-only", GUARD_BASELINE_REV, "--"],

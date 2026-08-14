@@ -190,11 +190,28 @@ check("B3.5 still bands Amber on the fixture", _b35["status_color"] == "Amber", 
 check("B3.5 still reports six modifications", _b35["co_count"] == 6, str(_b35.get("co_count")))
 near("B3.5 still reports eight per cent scope growth", _b35["scope_growth_pct"], 8.0)
 
+# RUN 20 CYCLE 9 CHANGED A5.2, AND THESE THREE PINS ARE UPDATED WITH THE REASON RATHER THAN
+# DELETED. This section exists to prove that a LINEAGE DECLARATION never moves a band, and it
+# still proves exactly that: cycle 4's declaration moved nothing. What moved these three numbers
+# is a different change entirely, cycle 9's repair of the module's own arithmetic. Only one of
+# the three quantities A5.2 ranked was a sensitivity: the cost index driver perturbs the index
+# and recomputes the estimate at completion. The other two were never perturbed -- the schedule
+# term is the index's distance from one, halved, and the document term is the risk score itself
+# -- and on this fixture the raw document risk score of 0.42 won the ranking outright, which is
+# why the module read Red and named DocRisk at forty-two per cent. It now reports the one driver
+# it actually perturbs. The pins are re-taken against the corrected module and still pin it.
 _a52 = run("A5.2", FIXTURE)
-check("A5.2 still bands Red on the fixture", _a52["status_color"] == "Red", str(_a52.get("status_color")))
-check("A5.2 still names DocRisk the top driver", _a52["top_driver"] == "DocRisk", str(_a52.get("top_driver")))
-check("A5.2 still reports a forty-two per cent top sensitivity", _a52["top_sensitivity"] == 42,
-      str(_a52.get("top_sensitivity")))
+check("A5.2 bands Yellow on the fixture, from the one driver it genuinely perturbs",
+      _a52["status_color"] == "Yellow", str(_a52.get("status_color")))
+check("A5.2 names CPI the top driver, because it is the only input the estimate at completion "
+      "is a function of", _a52["top_driver"] == "CPI", str(_a52.get("top_driver")))
+check("A5.2 reports the cost-index sensitivity and not the raw document risk score",
+      _a52["top_sensitivity"] == 11, str(_a52.get("top_sensitivity")))
+check("and the two quantities that are not sensitivities are still reported, under their own "
+      "names, as levels that are not ranked",
+      [x["name"] for x in _a52["levels_not_perturbed"]] == ["SPI", "DocRisk"]
+      and _a52["inputs_perturbed"] == 1,
+      str(_a52.get("levels_not_perturbed")))
 
 _a53 = run("A5.3", FIXTURE)
 check("A5.3 still bands Amber on the fixture", _a53["status_color"] == "Amber", str(_a53.get("status_color")))
