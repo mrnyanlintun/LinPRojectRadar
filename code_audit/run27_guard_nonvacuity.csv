@@ -1,0 +1,14 @@
+fault,injection_confirmed,guard_exit,verdict,detail,expected_check
+BASELINE (before any injection),n/a,0,GREEN,47/47,
+F1 omit one of the non-pass targets (A5.6 Queueing Theory Bottleneck),YES,1,RED_FOR_THE_INTENDED_REASON,44/47; missing non-pass targets = 0 :: ['A5.6'],missing non-pass targets = 0
+F1 omit one of the non-pass targets (A5.6 Queueing Theory Bottleneck) :: RESTORED AND BASELINE RE-CHECKED,n/a,0,GREEN,47/47,
+F2 duplicate one module (A1.2 CUSUM Anomaly Monitor appears twice),YES,1,RED_FOR_THE_INTENDED_REASON,44/47; duplicate rows = 0 :: ['A1.2'],duplicate rows = 0
+F2 duplicate one module (A1.2 CUSUM Anomaly Monitor appears twice) :: RESTORED AND BASELINE RE-CHECKED,n/a,0,GREEN,47/47,
+F3 include a SCIENTIFIC_PASS module (A1.7 TCPI smuggled into the matrix),YES,1,RED_FOR_THE_INTENDED_REASON,44/47; SCIENTIFIC_PASS targets accidentally included = 0 :: ['A1.7'],SCIENTIFIC_PASS targets accidentally included = 0
+F3 include a SCIENTIFIC_PASS module (A1.7 TCPI smuggled into the matrix) :: RESTORED AND BASELINE RE-CHECKED,n/a,0,GREEN,47/47,
+F4 remove the DATA requirement from a DATA row (A2.10 missing evidence emptied),YES,1,RED_FOR_THE_INTENDED_REASON,45/47; DATA rows without a stated missing input = 0 :: ['A2.10'],DATA rows without a stated missing input = 0
+F4 remove the DATA requirement from a DATA row (A2.10 missing evidence emptied) :: RESTORED AND BASELINE RE-CHECKED,n/a,0,GREEN,47/47,
+F5 remove the supply mechanism from that same DATA row (A2.10),YES,1,RED_FOR_THE_INTENDED_REASON,46/47; DATA rows without a proposed supply mechanism = 0 :: ['A2.10'],DATA rows without a proposed supply mechanism = 0
+F5 remove the supply mechanism from that same DATA row (A2.10) :: RESTORED AND BASELINE RE-CHECKED,n/a,0,GREEN,47/47,
+F6 leave one row without a future run (C1.7 Reporting Frequency Index),YES,1,RED_FOR_THE_INTENDED_REASON,45/47; orphan future-run assignments = 0 :: ['C1.7'],orphan future-run assignments = 0
+F6 leave one row without a future run (C1.7 Reporting Frequency Index) :: RESTORED AND BASELINE RE-CHECKED,n/a,0,GREEN,47/47,

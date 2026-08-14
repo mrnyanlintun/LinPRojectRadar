@@ -9800,3 +9800,70 @@ files. New freeze record:
 `research/freeze/POST_RUN22_UI_CORRECTION_FREEZE_2026-08-14.json`, identifier
 **OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-POSTRUN22-UI-1**, parent
 OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN22.
+
+# RUN 27 — THE REMEDIATION MATRIX, THE EVIDENCE CONTRACT, AND PARSIMONY
+
+## The commissioned number was 98. Derived, it is 97, and that is the run's first finding
+
+The prompt asked for a 98-module matrix and instructed that the 98 be derived from the Cycle-12
+re-audit rather than copied from a narrative, reporting the real remainder if it differed.
+`code_audit/run20_cycle12_100_reaudit.csv` holds **three** `SCIENTIFIC_PASS` targets, not two:
+**A1.7 TCPI, A1.8 Variance at Completion and B1.1 Conservative Dominance.** B1.1 was raised by
+Run 20 Cycle 9, which replaced a counting rule with a genuine dominance rule; the Run 20 report
+records the transition as `| SCIENTIFIC_PASS | 2 | 3 |`. 100 minus 3 is **97**.
+
+The artifact keeps the commissioned path `code_audit/run27_98_module_remediation_matrix.csv` so
+the owner's reference resolves, and holds 97 rows. **The guard asserts the identity
+`targets - passes == rows` and never the literal**, so a later run that raises a fourth target
+moves the matrix instead of breaking the suite.
+
+## The matrix is generated, not typed
+
+Every mechanical column is read at build time from the registry, the re-audit, `method_labels.py`,
+`parameters.py`, `registry.py` and `code_audit/signal_flow_authoritative_edges.csv`. Only the
+evidence contract is authored, in `server/tools/run27_curation.py`. A rename in the registry or a
+disposition change in the re-audit moves the matrix without anyone editing it.
+
+## Two absent structures account for most of the population's exposure
+
+`LINEAGE` is carried by 95 of 97 rows and `CAL` by 91. That is not 97 problems: the Category-9
+qualification gate is unimplemented platform-wide (production discloses it itself), and no
+labelled corpus or expert reference standard exists in this repository. `PKG-CAT9` and
+`PKG-DOCLABEL` are those two structures. **PKG-CAT9 is blocked by the platform freeze and Run 27
+records that rather than working around it.**
+
+## The cheapest package in the programme needs no new evidence at all
+
+`PKG-ORPHANFIELDS`. Environmental Report, Quality Audit Report and Safety Report are already
+supported document types whose fields are already extracted and consumed by **no** registered
+module, while A6.1, A6.2 and A6.3 read meeting-minute proxies instead. Three P0 rows, zero new
+evidence, wiring only.
+
+## Parsimony verdicts are proven, and three of eight are negative
+
+`server/tools/test_run27_parsimony_proofs.py` re-derives every claim from the live production
+functions. **Conservative Dominance and Worst-N-of-M are NOT redundant** (one Red primary signal
+among forty Green module signals gives Red and Green respectively). **The fuzzy variants are NOT
+identical** (no identical pair over 5,166 grid points; agreement 92.6% to 97.8%) — the redundancy
+is informational, not mathematical, and nothing may be deleted on a proof. **B4.3's rule
+`CPI >= 0.90` logically implies its rule `CPI > 0.80`**, so two of its four checklist items are
+one cost test. **D1.5 Anomaly Score is a strict function of D1.2's and D1.3's internals** and does
+not read D1.1. **B3.1 contains no agent, no interaction structure and no time step**: RENAME, not
+remove.
+
+One false redundancy finding was caught: B2.3 to B2.6 looked pairwise identical because all four
+*abstain* on that input shape. Identity between two abstentions is not redundancy.
+
+## Nothing operational moved
+
+No production file changed and no freeze record was taken or needed. Voting is still exactly two.
+No disabled module was activated and the guard checks that every disabled row's destination says
+so. Nothing was removed or consolidated: those are recommendations to the owner. The registry
+`Monte Carlo EAC` against taxonomy `Monte Carlo EAC Forecast` disagreement **remains open** and is
+handed to Run 28; the matrix joins on identity through an explicit alias rather than editing
+production to make itself accurate.
+
+## Do not begin Run 28 from this section
+
+Runs 28 to 33 are assigned in the matrix with zero orphan rows. Read
+`REPORT_2026-08-14_run27-98-module-remediation-matrix.md` and the two CSVs before starting one.
