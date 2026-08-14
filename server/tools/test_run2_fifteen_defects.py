@@ -1183,8 +1183,20 @@ try:
                 return (line == '// Scroll-spy: highlight whichever section is currently most in view.'
                         or line == 'b.classList.toggle("active", b.getAttribute("data-secnav-target") === secId);'
                         or line == 'p.history = []; p.events = [];')
+            # RUN 25, OWNER-DIRECTED CONTRACT CHANGE, 2026-08-14. The owner ordered the left
+            # section-navigator rail removed entirely, reversing the earlier instruction that
+            # it stays. The whole buildSectionNav block the baseline carried (delimited by its
+            # own section comments) and its one call site therefore leave this file. The
+            # allowance is the baseline's OWN lines for that block, so it cannot excuse the
+            # removal of anything else. Recorded in run20_anti_fossilization_register.csv.
+            _rail_slice = base[base.index("/* ---------- section navigator (second, left-side menu bar)"):
+                               base.index("fetch full stored result")]
+            _rail_base_lines = {ln.strip() for ln in _rail_slice.splitlines()}
+            _rail_base_lines.add("buildSectionNav(root);")
+            def _run25_rail_removed(line):
+                return line in _rail_base_lines
             check(all('" modules")' in ln or '" categories")' in ln or "modules`)" in ln
-                  or _postrun22_removed(ln)
+                  or _postrun22_removed(ln) or _run25_rail_removed(ln)
                   for ln in removed),
                   f"{rel}: the freeze removed nothing from this file beyond the three section "
                   f"badges Run 16 reworded", str(removed)[:200])

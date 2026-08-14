@@ -156,40 +156,42 @@ check("LIN_ALLOW_CLIENT_ANALYTICS" not in FLOW,
       "the diagram does not reach for the historical client-arithmetic opt-in")
 
 # ---------------------------------------------------------------- B: the Signal navigation rail
-check('id="detail-secnav"' in INDEX, "the Signal navigation rail element is served")
-check(".detail-secnav {" in CSS, "and is styled as a permanently positioned rail")
-check("position: fixed; left: 12px" in CSS, "fixed to the left edge")
-check("function buildSectionNav" in DETAIL, "and populated from the rendered sections")
-check(".collapse-section" in DETAIL and "hand-maintained" in DETAIL,
-      "from the sections actually rendered, not a duplicate list")
-
-# NO COLLAPSE OR HIDE CONTROL, in the rail or anywhere the rail could acquire one. Run 16 found
-# none present on the served desktop route; this is the guard that keeps it that way.
-nav_css_start = CSS.index(".detail-secnav {")
-nav_css = CSS[nav_css_start:nav_css_start + 3000]
+# RUN 25, OWNER-DIRECTED CONTRACT CHANGE, 2026-08-14. Run 16 asserted the rail is served,
+# styled, populated from the rendered sections, and carries no collapse or paging control.
+# The owner then ordered the LEFT RAIL REMOVED ENTIRELY, reversing the earlier instruction
+# that it stays. Section B is therefore inverted: every shipped rail marker must be ABSENT
+# from every served source. The reversal is recorded in
+# code_audit/run20_anti_fossilization_register.csv as a contract change, not a fossilization;
+# the browser-level absence proof at five viewport widths is drive_run25_rail_removal.py.
+for marker in ("detail-secnav", "buildSectionNav", "data-secnav-target"):
+    check(marker not in INDEX, f"index.html serves no rail marker {marker!r}")
+    check(marker not in DETAIL, f"detail.js builds no rail marker {marker!r}")
+    check(marker not in CSS, f"radar.css styles no rail marker {marker!r}")
+# The paging/collapse control the owner described under the rail must be gone with it, in the
+# whole of each file now that there is no rail block to scope to. detail.js's one triangle use
+# is inside a bullet-stripping character class in a text helper, which renders nothing; the
+# check is on what the file BUILDS.
 for arrow in ("◀", "▶", "◂", "▸", "‹", "›", "❮", "❯"):
-    check(arrow not in nav_css, f"the rail's styles introduce no {arrow} control")
-    # detail.js's one use of a triangle is inside a bullet-stripping character class in a text
-    # helper, which renders nothing; the check is on what the file BUILDS.
     built = re.findall(r'"[^"\n]*' + arrow + r'[^"\n]*"', DETAIL) + \
         re.findall(r"'[^'\n]*" + arrow + r"[^'\n]*'", DETAIL)
     check(not [b for b in built if "<" in b or "button" in b.lower()],
-          f"and detail.js builds no {arrow} control", str(built)[:120])
+          f"detail.js builds no {arrow} control", str(built)[:120])
 for token in ("secnav-toggle", "secnav-collapse", "secnav-hide", "detail-secnav-toggle"):
     check(token not in DETAIL and token not in CSS and token not in INDEX,
           f"no {token} control exists")
-navbuild = DETAIL[DETAIL.index("function buildSectionNav"):DETAIL.index("// Scroll-spy")]
-check("<button" in navbuild and navbuild.count("<button") == 1,
-      "the rail renders exactly one kind of button: a numbered section target",
-      str(navbuild.count("<button")))
-check("data-secnav-target" in navbuild,
-      "and every one of them targets a section")
-check("nav.hidden = false" in DETAIL,
-      "the rail is shown whenever the page has sections")
-# The one place the rail hides is the pre-existing mobile breakpoint, which is deliberate and
-# out of scope: the run must not have touched it.
-check("@media (max-width: 700px)" in CSS[nav_css_start:nav_css_start + 3000],
-      "the existing mobile behaviour is preserved")
+# The sections the rail used to list are still rendered and reachable by their own headers:
+# the collapsible-section machinery lives in app.js and must be untouched by the removal.
+APP = (ROOT / "assets" / "js" / "app.js").read_text(encoding="utf-8")
+check("window.toggleSection = function" in APP and "collapse-section" in APP,
+      "the collapsible sections the rail listed still exist and still toggle")
+# NON-VACUITY of the absence checks: a copy of the served page with the old rail element
+# reinserted must fail the exact predicate used above.
+_mut = INDEX.replace('<div id="detail-root">',
+                     '<nav id="detail-secnav" class="detail-secnav"></nav><div id="detail-root">', 1)
+check(_mut != INDEX and 'id="detail-secnav"' in _mut,
+      "INJECTION TOOK EFFECT: the mutated copy carries the rail element")
+check(not all(m not in _mut for m in ("detail-secnav",)),
+      "and the absence predicate goes RED on that copy, so it can fail")
 
 for f in failures:
     print("FAILED:", f)

@@ -433,8 +433,12 @@ def main_drive() -> None:
         check(pager_a["count"] == 0 and pager_c["count"] == 0,
               f"{GUARD_PAGER}: no paging or collapse control is rendered on either project",
               json.dumps(pager_a["hits"] + pager_c["hits"]))
-        check(pager_a["navPresent"] and pager_a["navButtons"] > 0,
-              "the section navigator itself is still present and still has its controls",
+        # RUN 25, OWNER-DIRECTED CONTRACT CHANGE, 2026-08-14. This check used to assert the
+        # section navigator was still present with its controls. The owner then ordered the
+        # rail removed entirely, so the assertion is inverted; the standing browser guard for
+        # the new contract is drive_run25_rail_removal.py.
+        check(not pager_a["navPresent"] and pager_a["navButtons"] == 0,
+              "the section navigator rail is gone, per the owner's 2026-08-14 instruction",
               json.dumps(pager_a))
 
         # ITEM 3 — the header count against the registry read in the same browser.

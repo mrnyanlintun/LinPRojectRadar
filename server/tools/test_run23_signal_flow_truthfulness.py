@@ -30,6 +30,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 FLOW = (ROOT / "assets" / "js" / "neural_flow.js").read_text(encoding="utf-8")
 DETAIL = (ROOT / "assets" / "js" / "detail.js").read_text(encoding="utf-8")
 CSS = (ROOT / "assets" / "css" / "radar.css").read_text(encoding="utf-8")
+INDEX = (ROOT / "index.html").read_text(encoding="utf-8")
 
 passed = 0
 total = 0
@@ -104,51 +105,35 @@ for old in ("opacity:info.status==='None'?'0.20':'0.85'",
 
 # ---------------------------------------------------------------- 2. selected is not active
 
-nav = DETAIL[DETAIL.index("function buildSectionNav"):DETAIL.index("fetch full stored result")]
-check("aria-current" in nav, "the rail publishes its selection as aria-current")
-check('b.classList.toggle("selected", on)' in nav,
-      "and marks it with `selected`, a navigation word")
-check('classList.toggle("active"' not in nav,
-      "the rail no longer uses `active`, the Signal Flow's analytical word, for a selection")
-# The comments in both files NAME the marker, deliberately, to say it is never used here; the
-# checks are on the code that would set or match it, not on the prose that explains it.
-check('setAttribute("data-active"' not in nav and 'data-active="' not in nav,
-      "and a rail control never carries the Signal Flow's activity marker")
-check("setSelected(secId);" in nav,
-      "a click sets the selection itself rather than waiting on the scroll-spy observer")
-check("selectionPinnedUntil" in nav and "if (Date.now() < selectionPinnedUntil) return;" in nav,
-      "and the scroll-spy cannot overwrite that selection while the smooth scroll it started "
-      "is still running")
+# RUN 25, OWNER-DIRECTED CONTRACT CHANGE, 2026-08-14. Sections 2 and 3 of this suite guarded
+# the rail's selection vocabulary (`selected`/`aria-current`, never `active`) and its mobile
+# layout. The owner then ordered the LEFT RAIL REMOVED ENTIRELY, reversing the earlier
+# instruction that it stays, so there is no rail to publish a selection and no rail to
+# survive mobile. The vocabulary property those sections protected is preserved in its only
+# remaining form: no rail code exists at all, so no navigation state can ever be spelt with
+# the Signal Flow's analytical word. Recorded in run20_anti_fossilization_register.csv;
+# browser-level absence proof at five widths is drive_run25_rail_removal.py.
+check("buildSectionNav" not in DETAIL and "data-secnav-target" not in DETAIL,
+      "the rail builder and its selection machinery are gone from detail.js")
+check("detail-secnav" not in CSS,
+      "and every rail style, desktop and mobile, is gone from the stylesheet")
+check("detail-secnav" not in INDEX,
+      "and the served page carries no rail element")
 # The reset must not blank the append-only event log client-side: that mask made the live page
-# deny retained documents the reloaded page correctly disclosed.
+# deny retained documents the reloaded page correctly disclosed. Unrelated to the rail and
+# kept exactly as Run 23 wrote it.
 check("p.events = [];" not in DETAIL and "p.history = []; p.events" not in DETAIL,
       "the reset no longer blanks the event log in the browser copy")
-check(".detail-secnav-btn.selected" in CSS and '[aria-current="true"]' in CSS,
-      "the stylesheet paints the selection off `selected`/`aria-current`")
-check(".detail-secnav-btn.active" not in CSS,
-      "and no stylesheet rule paints a rail control off `active`")
-check("[data-active" not in CSS[CSS.index(".detail-secnav {"):CSS.index(".detail-secnav {") + 4000],
-      "nor off the Signal Flow's activity marker")
-
-# ---------------------------------------------------------------- 3. the rail survives mobile
-
-nav_css = CSS[CSS.index(".detail-secnav {"):CSS.index(".detail-secnav {") + 4000]
-mobile = nav_css[nav_css.index("@media (max-width: 700px)"):]
-check("display: none" not in mobile.split("}")[0] + mobile.split("}")[1],
-      "the mobile breakpoint no longer removes the rail from the page")
-check("flex-direction: row" in mobile,
-      "it lays the numbered controls out horizontally at phone width instead")
-check("bottom: 152px" in mobile,
-      "and it sits clear of the mobile dock and launcher bands, which were swallowing every "
-      "one of its clicks")
-check("opacity: 1;" in nav_css.split("@media")[0],
-      "and the rail is opaque rather than dimmed to .7 until hovered")
-
-# No collapse control has reappeared, in any of the three files this correction touched.
-for arrow in ("◀", "▶", "◂", "▸", "‹", "›", "❮", "❯"):
-    check(arrow not in nav_css, f"the rail's styles introduce no {arrow} control")
-for token in ("secnav-toggle", "secnav-collapse", "secnav-hide"):
+# No collapse or paging control has appeared anywhere in the two files that carried the rail.
+for token in ("secnav-toggle", "secnav-collapse", "secnav-hide", "nav-page", "section-pager"):
     check(token not in DETAIL and token not in CSS, f"no {token} control exists")
+# NON-VACUITY: a copy of the stylesheet with one rail rule reinserted fails the exact
+# predicate used above.
+_css_mut = CSS + "\n.detail-secnav { position: fixed; }\n"
+check("detail-secnav" in _css_mut and _css_mut != CSS,
+      "INJECTION TOOK EFFECT: the mutated stylesheet carries a rail rule")
+check(not ("detail-secnav" not in _css_mut),
+      "and the absence predicate goes RED on that copy, so it can fail")
 
 # ---------------------------------------------------------------- 4. the superseding freeze
 

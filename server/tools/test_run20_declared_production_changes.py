@@ -48,6 +48,7 @@ from run20_production_changes import (  # noqa: E402
 )
 from run21_production_changes import RUN21_PRODUCTION_CHANGES  # noqa: E402
 from run23_production_changes import RUN23_PRODUCTION_CHANGES  # noqa: E402
+from run25_production_changes import RUN25_PRODUCTION_CHANGES  # noqa: E402
 from population import population  # noqa: E402
 
 ROOT = HERE.parent.parent
@@ -110,7 +111,11 @@ run21_declared = {entry[1] for entry in RUN21_PRODUCTION_CHANGES.values()}
 # the Run-20 and Run-21 records stay exactly what those runs changed, and the union is still
 # required to equal the differing set exactly, so nothing here loosens the guard.
 run23_declared = {entry[1] for entry in RUN23_PRODUCTION_CHANGES.values()}
-declared = run20_declared | run21_declared | run23_declared
+# RUN 25, THE RAIL REMOVAL. Its own manifest, same construction, same property: the union of
+# all manifests must still equal the differing set exactly. detail.js and radar.css are NOT
+# in it -- Run 23 already declares both -- so one change is still never counted twice.
+run25_declared = {entry[1] for entry in RUN25_PRODUCTION_CHANGES.values()}
+declared = run20_declared | run21_declared | run23_declared | run25_declared
 
 check("every production file that differs from the Run-20 freeze is declared in the Run-20 "
       "manifest or a later run's manifest, so an undeclared production edit cannot pass",
@@ -123,8 +128,14 @@ check("the Run-20 manifest still declares only files RUN 20 changed: no Run-21 p
       not (run20_declared & run21_declared),
       f"in both manifests: {sorted(run20_declared & run21_declared)}")
 check("and no path is declared by two manifests at all, so one change cannot be counted twice",
-      not (run23_declared & (run20_declared | run21_declared)),
-      f"in more than one manifest: {sorted(run23_declared & (run20_declared | run21_declared))}")
+      not (run23_declared & (run20_declared | run21_declared))
+      and not (run25_declared & (run20_declared | run21_declared | run23_declared)),
+      f"in more than one manifest: "
+      f"{sorted((run23_declared & (run20_declared | run21_declared)) | (run25_declared & (run20_declared | run21_declared | run23_declared)))}")
+for mid, (why_item, path, why) in sorted(RUN25_PRODUCTION_CHANGES.items()):
+    check(f"the Run-25 manifest entry for {mid} names an authority, a real file and a "
+          f"reason", bool(why_item) and bool(why) and (ROOT / path).is_file(),
+          f"{why_item!r} {path!r}")
 for mid, (why_item, path, why) in sorted(RUN23_PRODUCTION_CHANGES.items()):
     check(f"the post-Run-22 manifest entry for {mid} names an authority, a real file and a "
           f"reason", bool(why_item) and bool(why) and (ROOT / path).is_file(),
