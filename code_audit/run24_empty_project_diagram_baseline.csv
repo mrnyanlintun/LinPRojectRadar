@@ -1,0 +1,74 @@
+state,observation,value
+server:PRJ-R24-EMPTY,live_row,False
+server:PRJ-R24-FULL,live_row,True
+server:PRJ-R24-FULL,modules,41
+server:PRJ-R24-FULL,categories,1
+server:PRJ-R24-FULL,project_status,Amber
+registry,allCats,12
+registry,allModules,101
+registry,projCats,11
+registry,projModules,96
+registry,supplied,"[""Document Risk Score""]"
+A-empty-as-shown,svgPresent,True
+A-empty-as-shown,svgShown,True
+A-empty-as-shown,emptyPanel,False
+A-empty-as-shown,drawnShapes,144
+A-empty-as-shown,drawnPaths,323
+A-empty-as-shown,activeNodes,0
+A-empty-as-shown,docGlowNodes,0
+A-empty-as-shown,verdictGlowNodes,0
+A-empty-as-shown,brightNodes,0
+A-empty-as-shown,pulseNodes,0
+A-empty-as-shown,activeCls,0
+A-empty-as-shown,animated,0
+A-empty-as-shown,staticPaths,229
+A-empty-as-shown,headers,27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE
+A-empty-as-shown,opacity_tiers,"{""0.20"": 87, ""0.26"": 1, ""0.28"": 11, ""0.30"": 24, ""0.34"": 12}"
+A-empty-as-shown,bright_list,[]
+A-empty-as-shown,empty_panel_text,None
+A-empty-as-shown,reveal_control,null
+A-empty-as-shown,summary,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no uploaded documents and no current results, so nothing on the diagram is active and the project status is not estimable."
+A-empty-as-shown,legend,None
+A-empty-as-shown,pager,"{""count"": 0, ""hits"": [], ""navButtons"": 10, ""navPresent"": true, ""navSelected"": [""1""]}"
+A2-empty-revealed,svgPresent,True
+A2-empty-revealed,svgShown,True
+A2-empty-revealed,emptyPanel,False
+A2-empty-revealed,drawnShapes,144
+A2-empty-revealed,drawnPaths,323
+A2-empty-revealed,activeNodes,0
+A2-empty-revealed,docGlowNodes,0
+A2-empty-revealed,verdictGlowNodes,0
+A2-empty-revealed,brightNodes,0
+A2-empty-revealed,pulseNodes,0
+A2-empty-revealed,activeCls,0
+A2-empty-revealed,animated,0
+A2-empty-revealed,staticPaths,229
+A2-empty-revealed,headers,27 SUPPORTED DOCUMENT TYPES | 0 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 0 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 0 ESTIMABLE NOW | PROJECT STATUS | NOT ESTIMABLE
+A2-empty-revealed,opacity_tiers,"{""0.20"": 87, ""0.26"": 1, ""0.28"": 11, ""0.30"": 24, ""0.34"": 12}"
+A2-empty-revealed,bright_list,[]
+A2-empty-revealed,empty_panel_text,None
+A2-empty-revealed,reveal_control,null
+A2-empty-revealed,summary,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project has no uploaded documents and no current results, so nothing on the diagram is active and the project status is not estimable."
+A2-empty-revealed,legend,None
+C-computed,svgPresent,True
+C-computed,svgShown,True
+C-computed,emptyPanel,False
+C-computed,drawnShapes,144
+C-computed,drawnPaths,323
+C-computed,activeNodes,116
+C-computed,docGlowNodes,6
+C-computed,verdictGlowNodes,52
+C-computed,brightNodes,58
+C-computed,pulseNodes,5
+C-computed,activeCls,100
+C-computed,animated,100
+C-computed,staticPaths,129
+C-computed,headers,27 SUPPORTED DOCUMENT TYPES | 24 UPLOADED ON THIS PROJECT | 96 REGISTERED PROJECT MODULES | 41 WITH A CURRENT RESULT | 11 REGISTERED CATEGORIES | 10 ESTIMABLE NOW | COST RECOVERY STATUS | CURRENT
+C-computed,opacity_tiers,"{""0.20"": 46, ""0.28"": 1, ""0.30"": 18, ""0.34"": 12, ""0.85"": 41, ""0.88"": 16, ""0.92"": 1}"
+C-computed,bright_list,"[""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""polygon:#9a4700:0.85"", ""polygon:#9a4700:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""polygon:#6f5200:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""rect:#b81420:0.85"", ""circle:#12703a:0.85"", ""rect:#b81420:0.85"", ""polygon:#9a4700:0.85"", ""polygon:#6f5200:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""polygon:#6f5200:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""circle:#12703a:0.85"", ""polygon:#6f5200:0.85"", ""polygon:#9a4700:0.85"", ""circle:#12703a:0.85"", ""polygon:#9a4700:0.85"", ""rect:#b81420:0.85"", ""polygon:#9a4700:0.85""]"
+C-computed,empty_panel_text,None
+C-computed,reveal_control,null
+C-computed,summary,"This diagram shows the platform’s registered architecture: 27 supported document types, 96 registered project modules and 11 registered categories. It is what the platform can do, not what this project has done. This project currently has 24 uploaded documents across 6 types, 41 modules with a current result, 46 with no current result, 0 not applicable to this project and 9 disabled, and 10 estimable categories."
+C-computed,legend,None
+C-computed,pager,"{""count"": 0, ""hits"": [], ""navButtons"": 10, ""navPresent"": true, ""navSelected"": [""1""]}"
+registry,badges_on_detail_page,"[""11 registered"", ""96 registered"", ""96 registered""]"

@@ -330,8 +330,12 @@
   }
 
   // ─── Main render function ─────────────────────────────────────────────────────
-  function render(project, container) {
-    if (!container) return;
+  // RUN 24. `drawDiagram` is the WHOLE previous `render`, unchanged in what it draws. It now
+  // RETURNS the emptiness decision it already computed for its own summary sentence, so the
+  // empty-state gate below keys on the SAME predicate rather than on a second copy of it.
+  // See `render` at the bottom of this file for the gate.
+  function drawDiagram(project, container) {
+    if (!container) return null;
     container.innerHTML = '';
 
     ensureStyles();
@@ -803,7 +807,7 @@
       // decision in the DOM so it is nameable rather than inferred from an opacity.
       var live = isEstimable(info.status);
       var glow = live ? 'url(#lnf-glow-'+info.status+')' : null;
-      var g = se('g', { class:'lnf-nd', 'data-active':live ? 'true' : 'false' }, nodeG);
+      var g = se('g', { class:'lnf-nd', 'data-kind':'module', 'data-active':live ? 'true' : 'false' }, nodeG);
 
       var circleAttrs = {
         fill:info.color, opacity:live ? '0.85' : (info.status === 'None' ? '0.20' : '0.34'),
@@ -869,7 +873,7 @@
       var catLive = isEstimable(cs);
       var glow = catLive ? 'url(#lnf-glow-'+cs+')' : null;
       var x=CX.cat, y=catCY[ci];
-      var g = se('g', { class:'lnf-nd', 'data-active':catLive ? 'true' : 'false' }, nodeG);
+      var g = se('g', { class:'lnf-nd', 'data-kind':'category', 'data-active':catLive ? 'true' : 'false' }, nodeG);
       var cAttrs = { fill:color, opacity:catLive ? '0.88' : '0.28', stroke:'none',
                      'data-active':catLive ? 'true' : 'false' };
       if (glow) cAttrs.filter = glow;
@@ -911,7 +915,7 @@
     // it displays is not estimable. Before this correction it rendered at 0.92 on every
     // project, empty ones included.
     var prjGlow = prjEstimable ? 'url(#lnf-glow-'+prjStatus+')' : null;
-    var prjG = se('g', { class:'lnf-nd', id:'lnf-prj', 'data-active':prjEstimable ? 'true' : 'false' }, nodeG);
+    var prjG = se('g', { class:'lnf-nd', 'data-kind':'project', id:'lnf-prj', 'data-active':prjEstimable ? 'true' : 'false' }, nodeG);
     var pcAttrs = { cx:CX.prj, cy:PRJ_Y, r:'22', fill:prjColor,
                     opacity:prjEstimable ? '0.92' : '0.26', stroke:'none',
                     'data-active':prjEstimable ? 'true' : 'false' };
@@ -966,14 +970,18 @@
       var color = uploaded ? COL.DocOn : (notApplicable ? COL.NotRelevant : COL.DocOff);
       var glow  = uploaded ? 'url(#lnf-glow-DocOn)' : null;
       var x=CX.doc, y=docY(di);
-      var g = se('g', { class:'lnf-nd', 'data-active':uploaded ? 'true' : 'false' }, nodeG);
+      var g = se('g', { class:'lnf-nd', 'data-kind':'document', 'data-active':uploaded ? 'true' : 'false' }, nodeG);
       // A document row is ACTIVE only when this project has actually uploaded that type since
       // the reset boundary. "Not applicable to this corpus" is an editorial registry fact and
       // was being drawn at 0.75 — brighter than every other unlit row and read by the owner as
       // a lit document on an empty project. It keeps its own colour and square shape so the
       // distinction from a plain "not uploaded" row survives, at the inactive opacity tier.
       var dAttrs = { fill:color, opacity:uploaded?'0.88':(notApplicable?'0.34':'0.30'),
-                     stroke:'none', 'data-active':uploaded ? 'true' : 'false' };
+                     stroke:'none', 'data-active':uploaded ? 'true' : 'false',
+                     // RUN 24. The three states this column can be in, named in the DOM so a
+                     // check reads the shipped decision instead of inferring it from a shade.
+                     'data-state':uploaded ? 'uploaded'
+                                  : (notApplicable ? 'registered-not-active' : 'not-uploaded') };
       if (glow) dAttrs.filter = glow;
       seShape(notApplicable ? 'square' : 'circle', x, y, 5, dAttrs, g);
       var t = se('text', { x:x-10, y:y,
@@ -1012,7 +1020,12 @@
       ' registered project modules and ' + CATS.length + ' registered categories. ' +
       'It is what the platform can do, not what this project has done.';
     var actSentence;
-    if (uploadedDocCount === 0 && modWithResult === 0 && catEstimable === 0) {
+    // RUN 24. THE ONE PREDICATE. This is the condition that already decided the empty-project
+    // sentence; it is now also what decides whether the architecture is drawn unasked. Both
+    // readings therefore cannot disagree, which is how "0 uploaded, 0 with a current result"
+    // came to sit above a full picture in the first place.
+    var projectIsEmpty = (uploadedDocCount === 0 && modWithResult === 0 && catEstimable === 0);
+    if (projectIsEmpty) {
       // RUN 21. The empty-project sentence is UNCHANGED and is still the one a project with
       // nothing uploaded reads. What changed is that a project whose signals were CLEARED no
       // longer reads it, because for that project it is false: the documents were deliberately
@@ -1042,6 +1055,7 @@
 
     // ── 9. Legend strip ───────────────────────────────────────────────────────
     var leg = document.createElement('div');
+    leg.className = 'lnf-legend';
     leg.style.cssText = 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 12px 6px;' +
       'font-size:10.5px;color:var(--muted, #4a5a7a);font-family:monospace;' +
       'background:var(--surface, #0b0e17);border-top:1px solid var(--line, #1a2440);margin-top:0;';
@@ -1103,6 +1117,126 @@
       leg.appendChild(s);
     });
     container.appendChild(leg);
+    return { empty: projectIsEmpty, retainedBeforeReset: retainedBeforeReset,
+             governedLabel: governedLabel };
+  }
+
+  // ─── RUN 24. AN EMPTY PROJECT MUST LOOK EMPTY ────────────────────────────────
+  //
+  // THE DEFECT, reproduced in a real browser on a brand-new project before a line was changed
+  // (code_audit/run24_empty_project_diagram_baseline.csv, state A-empty-as-shown): the diagram
+  // drew 144 node shapes and 323 link paths, every one of the supported document types, every
+  // registered module row, every registered category and every configured link, and said
+  // "0 UPLOADED ON THIS PROJECT / 0 WITH A CURRENT RESULT" in a caption above it. Nothing was
+  // lit: the post-Run-22 correction had already made that true, and this run re-measured it as
+  // true (0 nodes at the active tier, 0 animated edges, 0 `.lnf-active`). The remaining defect
+  // is not false light. It is MASS. A reader's dominant impression of ~96 module rows, ~11
+  // category nodes and 229 drawn links is a working diagram, whatever the caption says.
+  //
+  // THE THREE OPTIONS THE OWNER ASKED TO BE WEIGHED, and why this is the third.
+  //   * Do not draw the links at all until something is uploaded. Rejected: measured here, the
+  //     links are 323 of 467 drawn elements, so removing them leaves ~144 shapes including
+  //     every module row. It reduces the mass without changing the impression, and it also
+  //     destroys the architecture view for the case where a reader legitimately wants it.
+  //   * Draw everything at a weight that plainly reads as inactive. Already shipped, and
+  //     already verified here: the inactive tiers are 0.20 (no data), 0.28 to 0.34 and 0.14 to
+  //     0.16 on links. The owner is looking at that build and still reads it as dense, which is
+  //     the evidence that weight alone does not carry the distinction.
+  //   * Replace the diagram with a short statement of what it will show once documents arrive,
+  //     with the full architecture behind an explicit control. Chosen. It is the only one of
+  //     the three where the absence, and not the architecture, is what the page leads with,
+  //     and it is the only one that separates "what the platform can do" from "what this
+  //     project has done" by an act of the reader rather than by a shade of grey.
+  //
+  // THE DIAGRAM IS NOT REMOVED. It is built exactly as before, by exactly the same code, and
+  // is one click away on an empty project. On a project with any current evidence nothing here
+  // applies and the diagram is shown directly, as it always was.
+  var revealSeq = 0;
+
+  function render(project, container) {
+    if (!container) return;
+    container.innerHTML = '';
+    var host = document.createElement('div');
+    host.className = 'lnf-diagram';
+    host.id = 'lnf-diagram-' + (++revealSeq);
+    container.appendChild(host);
+
+    var info = drawDiagram(project, host);
+    if (!info || !info.empty) return;
+
+    // The project has nothing current. Lead with that.
+    host.style.display = 'none';
+    host.setAttribute('aria-hidden', 'true');
+
+    var panel = document.createElement('div');
+    panel.className = 'lnf-empty';
+    panel.style.cssText = 'padding:26px 22px 22px;font-family:monospace;' +
+      'background:var(--surface, #0b0e17);color:var(--muted, #4a5a7a);';
+
+    var h = document.createElement('div');
+    h.style.cssText = 'font-size:13px;font-weight:700;letter-spacing:0.08em;' +
+      'color:var(--muted, #5a7898);margin-bottom:10px;';
+    h.textContent = 'NOTHING TO SHOW ON THIS PROJECT YET';
+    panel.appendChild(h);
+
+    var p1 = document.createElement('p');
+    p1.style.cssText = 'font-size:12px;line-height:1.7;margin:0 0 8px;max-width:74ch;';
+    p1.textContent = info.retainedBeforeReset > 0
+      ? ('No documents have been uploaded since this project’s stored signals were cleared '
+         + 'and there are no current results, so the ' + (info.governedLabel || 'project status')
+         + ' is not estimable. ' + info.retainedBeforeReset + ' document'
+         + (info.retainedBeforeReset === 1 ? '' : 's') + ' uploaded before the reset '
+         // WORDED DELIBERATELY DIFFERENTLY from the summary strip's retained-document
+         // sentence. Repeating that sentence verbatim here would give the Run-21 reset
+         // disclosure guard a second copy to find, so reverting the real one in the summary
+         // strip would no longer turn that guard red. Measured: it did exactly that.
+         + (info.retainedBeforeReset === 1 ? 'is' : 'are')
+         + ' still held and will be read the next time signals are generated.')
+      : ('This project has no uploaded documents and no current results, so the '
+         + (info.governedLabel || 'project status') + ' is not estimable.');
+    panel.appendChild(p1);
+
+    var p2 = document.createElement('p');
+    p2.style.cssText = 'font-size:12px;line-height:1.7;margin:0 0 16px;max-width:74ch;';
+    p2.textContent = 'Once documents are uploaded and signals are generated, this view will '
+      + 'show which document types arrived, which analytical groups they reached, and which '
+      + 'of those produced a current status.';
+    panel.appendChild(p2);
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'lnf-reveal';
+    btn.setAttribute('aria-expanded', 'false');
+    btn.setAttribute('aria-controls', host.id);
+    btn.style.cssText = 'font-family:monospace;font-size:11.5px;letter-spacing:0.06em;' +
+      'padding:8px 14px;border:1px solid var(--line, #1a2440);border-radius:4px;' +
+      'background:transparent;color:var(--muted, #5a7898);cursor:pointer;';
+    btn.textContent = 'Show the registered architecture';
+    panel.appendChild(btn);
+
+    var note = document.createElement('div');
+    note.style.cssText = 'font-size:11px;line-height:1.6;margin-top:10px;max-width:74ch;' +
+      'color:var(--faint, #4a5a7a);';
+    note.textContent = 'The architecture view is what the platform can do, not what this '
+      + 'project has done. Nothing on it will be active until this project has evidence.';
+    panel.appendChild(note);
+
+    btn.addEventListener('click', function () {
+      var open = btn.getAttribute('aria-expanded') === 'true';
+      if (open) {
+        host.style.display = 'none';
+        host.setAttribute('aria-hidden', 'true');
+        btn.setAttribute('aria-expanded', 'false');
+        btn.textContent = 'Show the registered architecture';
+      } else {
+        host.style.display = '';
+        host.removeAttribute('aria-hidden');
+        btn.setAttribute('aria-expanded', 'true');
+        btn.textContent = 'Hide the registered architecture';
+      }
+    });
+
+    container.insertBefore(panel, host);
   }
 
   window.LinNeuralFlow = { render: render };
