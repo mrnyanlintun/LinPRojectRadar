@@ -10008,3 +10008,48 @@ Analytical line stays `sim-2026.08-v11`: no arithmetic moved, so moving the stam
 reader the numbers had changed. Tables: `code_audit/run28_supply_path_closure.csv` (20 rows),
 `code_audit/run28_operational_closure_28.csv` (28 rows),
 `code_audit/run28_closure_fault_injection.csv` (8 faults, 8 proven).
+
+## Run 28 CLOSURE, SECOND PASS
+
+**Simulation line is now `sim-2026.08-v12`.** The first closure pass held it at v11 arguing "no
+arithmetic moved"; that was too narrow and is corrected. Proved by execution, not assertion:
+`server/tools/test_run28_version_boundary.py` extracts `canonical_v3.py` from git object `0e0dfbd`,
+runs it, and shows v11 emitting `p80_total_cost = 1200.0` for a three-event cost risk model with no
+dependence policy where the current line refuses. Also: `project_data.py` does not exist at that
+commit, and `projectDataStructures` appears in no v11 row. History is append-only and that is
+asserted against git, not against a note.
+
+**A1.1 is `Monte Carlo EAC Forecast`, decided by the owner, final.** The naming authority
+`p0-baseline/module_renumbering_map.csv` line 2 was updated and everything generated from it
+re-propagated. This is a third rename beyond Run 28's two and it is authorised. The stale
+`owner_prose_alias` label in the production-contract fixture is reconciled: the decided name is
+canonical, the retired name is the backward-compatible alias, the field is nulled with a note
+rather than deleted. Guard: `test_run28_closure.py` fails if any current surface reintroduces
+`Monte Carlo EAC` not followed by "Forecast", in a table or in prose.
+
+**The 23-key arithmetic is closed.** `V3_STRUCTURE_KEYS` holds 23 module-to-key ENTRIES over 18
+DISTINCT KEYS; the first pass's "19 + 2 = 21" mixed the two units. Per entry: 19 need the intake,
+4 do not — A1.1 computes without its structure, A2.7 and A3.6 have theirs produced by document
+extraction, A3.8 is registered disabled and never executed.
+`code_audit/run28_v3_structure_key_reconciliation.csv`.
+
+**Participant v1 is preserved executably from git object `c44e3ce`**, not from the filesystem —
+fourteen of its seventy files had legitimately drifted, so the working tree is not evidence for it.
+`server/tools/test_run28_participant_v1_preservation.py` extracts all seventy into an isolated
+temporary directory, verifies inventory and all seventy checksums, verifies the Run-12 record has
+not been rewritten, verifies v2 independently, and proves a change to a current-package copy cannot
+move a reconstructed v1 hash.
+
+**Thirteen faults, thirteen proven non-vacuous**, `code_audit/run28_closure_fault_injection.csv`:
+duplicate version, rolled-back stamp, old A1.1 name in a table and in prose, orphan structure key,
+mutated Run-12 record, mutated historical byte (inline), untracked protected file, single-forecast
+milestone in the canonical guard and in the real-corpus assembler, supply path removed, dependence
+policy optional, hidden Kalman default.
+
+**Freeze `...-RUN28-CLOSURE-V12-1`**, `research/freeze/RUN28_CLOSURE_V12_FREEZE_2026-08-14.json`,
+superseding `...-RUN28-CLOSURE-V11-2` which is preserved and still verifies against its own
+`.sha256`. Production surface 228 files.
+
+**Still open and handed on:** Run 27's R estimator is not implemented (A1.4 abstains, Q and R are
+not invented, Run 33 owns calibration); A3.8 remains disabled laboratory-only with no production
+supply route because no production execution reaches it.

@@ -354,6 +354,7 @@ RUN28_CLOSURE_SCOPED_FILES = {
     "assets/js/workspace.js",
     "assets/js/ds_defensibility_data.js",
     "assets/js/neural_flow.js",
+    "assets/js/recommendation_options.js",
 }
 
 # RUN 28 CLOSURE, ITEM 4: THE UNTRACKED-FILE BLIND SPOT, CLOSED WHERE IT WAS FOUND.

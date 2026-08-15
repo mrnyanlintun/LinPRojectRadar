@@ -178,7 +178,7 @@ check(old_models.SIMULATION_VERSION == "sim-2026.08-v2",
 # sim-2026.08-v2, it is imported and EXECUTED by this suite, and every comparison below runs the
 # old code and the new code side by side on identical inputs. A frozen record that could not be
 # executed would not be evidence of anything.
-check(SIMULATION_VERSION == "sim-2026.08-v11",
+check(SIMULATION_VERSION == "sim-2026.08-v12",
       "and this branch is stamped at Run 28's version, so results computed before and after "
       "each run are distinguishable in the data. Every earlier stamp from sim-2026.07-v1 "
       "onward is preserved in the version history rather than overwritten",

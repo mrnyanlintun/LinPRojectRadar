@@ -14,11 +14,16 @@ therefore no longer describes the executable baseline. It is NOT rewritten: it s
 Run 28 wrote it, as that release's historical record, and this document supersedes it by naming
 it as its parent and carrying its digest. Every freeze behind it is likewise untouched.
 
-THE ANALYTICAL LINE DOES NOT MOVE. sim-2026.08-v11 is the line Run 28 established and this
-closure belongs to it: no module's arithmetic, band, boundary or reported quantity changed. What
-changed is a set of display names, an intake path that stores data and computes nothing, and one
-declaration -- A3.6's dependence policy -- that the supplied contract requires to be stated and
-that Run 28 assumed silently. A stamp move would falsely tell a reader the numbers had changed.
+THE ANALYTICAL LINE MOVES TO sim-2026.08-v12, AND THE FIRST DRAFT OF THIS FILE ARGUED THE
+OPPOSITE. It said the line should stay at v11 because "no module's arithmetic, band, boundary or
+reported quantity changed". That reading of what a stamp identifies was too narrow, and the
+counter-example is mechanical: on one identical governed input -- a cost risk model with three
+risk events and no stated dependence policy -- canonical_v3.py as it shipped at commit 0e0dfbd
+emits an eightieth-percentile total cost of 1200.0, and canonical_v3.py after the closure refuses
+and reports nothing. server/tools/test_run28_version_boundary.py extracts the v11 file from that
+git object, EXECUTES it beside the current one and asserts the divergence. Two further changes
+move what the layer emits: the governed project-data intake lets a module that could only ever
+abstain compute, and a stored row gains a key recording which structures the modules were given.
 
 THE PARTICIPANT PACKAGE DOES MOVE, and that is the one thing here the owner had to authorise
 explicitly. Run 28 refused to rename assets/js/taxonomy.js because it is the participant ledger's
@@ -53,12 +58,12 @@ sys.path.insert(0, str(ROOT / "server"))
 import production_tree as pt  # noqa: E402
 import run28_production_changes as _R28  # noqa: E402
 
-RELEASE_ID = "OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN28-CLOSURE-V11-2"
-PARENT_ID = "OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN28-CANONICAL-CAT1-3-V11-1"
-STAGE1 = ROOT / "research" / "freeze" / "RUN28_CLOSURE_FREEZE_2026-08-14.json"
+RELEASE_ID = "OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN28-CLOSURE-V12-1"
+PARENT_ID = "OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN28-CLOSURE-V11-2"
+STAGE1 = ROOT / "research" / "freeze" / "RUN28_CLOSURE_V12_FREEZE_2026-08-14.json"
 STAGE2 = STAGE1.with_suffix(".sha256")
 REPORT = "REPORT_2026-08-14_run28-closure.md"
-PARENT_FREEZE = "research/freeze/RUN28_CANONICAL_CAT1_3_FREEZE_2026-08-14.json"
+PARENT_FREEZE = "research/freeze/RUN28_CLOSURE_FREEZE_2026-08-14.json"
 
 
 def sha(rel: str) -> str | None:
@@ -86,14 +91,19 @@ def build() -> None:
         "supersedes_manifest": PARENT_FREEZE,
         "supersedes_manifest_sha256": sha(PARENT_FREEZE),
         "grandparent_release":
-            "OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN26-COUNTS-WIRING-EMPTY-1",
+            "OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN28-CANONICAL-CAT1-3-V11-1",
         "grandparent_manifest":
-            "research/freeze/RUN26_COUNTS_WIRING_EMPTY_FREEZE_2026-08-14.json",
+            "research/freeze/RUN28_CANONICAL_CAT1_3_FREEZE_2026-08-14.json",
         "grandparent_manifest_sha256": sha(
-            "research/freeze/RUN26_COUNTS_WIRING_EMPTY_FREEZE_2026-08-14.json"),
+            "research/freeze/RUN28_CANONICAL_CAT1_3_FREEZE_2026-08-14.json"),
         "supersedes_note":
-            "the Run-28 freeze, and every freeze behind it, are preserved unchanged as the "
-            "historical record of those releases. This one supersedes, it does not rewrite.",
+            "the first closure freeze RUN28-CLOSURE-V11-2, the Run-28 freeze behind it and "
+            "every freeze behind that are preserved unchanged as the historical record of those "
+            "releases; RUN28_CLOSURE_FREEZE_2026-08-14.json still verifies against its own "
+            "companion .sha256. This one supersedes, it does not rewrite. It exists because the "
+            "second closure pass moved the analytical line to sim-2026.08-v12, renamed A1.1 in "
+            "the naming authority on the owner's decision, and changed eleven production files "
+            "again, so its parent no longer describes the executable baseline.",
         "release_date": dt.date(2026, 8, 14).isoformat(),
         "generated_by": "server/tools/build_run28_closure_freeze.py",
         "reason":
@@ -104,14 +114,29 @@ def build() -> None:
             "production surface independently of git tracked status; and BUILD the intake path "
             "the twenty abstentions rest on rather than describing it.",
         "version_boundary": {
-            "line": SIMULATION_VERSION,
-            "line_unchanged_by_this_closure": True,
-            "why_unchanged":
-                "no module's arithmetic, band, boundary or reported quantity changed. Display "
-                "names moved, an intake that stores data and computes nothing was added, and one "
-                "declaration the supplied contract requires -- A3.6's dependence policy -- was "
-                "made explicit. Moving the stamp would tell a reader the numbers had changed.",
+            "new_line": SIMULATION_VERSION,
+            "superseded_line": "sim-2026.08-v11",
+            "line_moved_by_this_closure": True,
+            "why_it_moved":
+                "a stamp identifies EXECUTABLE ANALYTICAL BEHAVIOUR, and this layer's behaviour "
+                "is not v11's. Proved by execution rather than asserted: on one identical "
+                "governed input -- a cost risk model with three risk events and no stated "
+                "dependence policy -- the v11 file extracted from git object 0e0dfbd emits "
+                "p80_total_cost = 1200.0 and the current file refuses. Two further changes move "
+                "what the layer emits for some input: the governed project-data intake means a "
+                "module whose structure no production code could write, and which could "
+                "therefore only ever abstain, can now compute; and a stored row gains a "
+                "projectDataStructures key that v11 rows do not carry.",
+            "first_draft_judgement_corrected":
+                "the first closure pass held the line at v11 on the grounds that no arithmetic, "
+                "band, boundary or reported quantity moved. That was too narrow and is recorded "
+                "here rather than quietly replaced.",
+            "proof": "server/tools/test_run28_version_boundary.py",
             "history_preserved": list(SIMULATION_VERSION_HISTORY),
+            "history_is_append_only":
+                "the tuple recorded at commit 0e0dfbd is asserted to be a strict PREFIX of the "
+                "tuple now, read out of git rather than out of a note, so a run that overwrote a "
+                "stamp instead of appending one is detectable.",
         },
         "self_reference_note":
             "manifest_sha256 and final_commit are null BY CONSTRUCTION; both are recorded in the "
@@ -202,13 +227,42 @@ def build() -> None:
             "intake_path":
                 "server/app/writes.py::w_saveprojectdata -> server/app/project_data.py -> "
                 "server/app/documents.py::run_and_store",
+            "structure_key_reconciliation":
+                "code_audit/run28_v3_structure_key_reconciliation.csv",
+            "structure_key_reconciliation_sha256": sha(
+                "code_audit/run28_v3_structure_key_reconciliation.csv"),
+            "structure_key_arithmetic":
+                "the first closure pass reported 23 keys, 2 production-reachable and 19 exercised "
+                "through the intake, and 19 + 2 = 21. The gap is a conflation: V3_STRUCTURE_KEYS "
+                "holds 23 MODULE-TO-KEY ENTRIES over 18 DISTINCT KEYS, because one schedule "
+                "network serves five Category-2 methods and one time-phased baseline serves two. "
+                "Per entry: 19 need the intake and 4 do not -- A1.1 computes without its "
+                "structure, A2.7 and A3.6 have theirs PRODUCED by document extraction rather than "
+                "supplied, and A3.8 is registered disabled and never executed.",
+            "participant_v1_preservation":
+                "server/tools/test_run28_participant_v1_preservation.py",
+            "participant_v1_git_object": "c44e3ced94a22a9def35fa5a2be3a2268fbed6bb",
+            "participant_v1_note":
+                "the live filesystem is NOT evidence for og-participant-2026.08-v1: fourteen of "
+                "its seventy files had legitimately moved on before this closure. The package is "
+                "reconstructed from the commit that wrote the Run-12 record, into an isolated "
+                "temporary directory, and all seventy checksums are verified there. No "
+                "historical file is restored into the application and the Run-12 record is not "
+                "rewritten.",
             "a1_1_naming_conflict":
-                "the designated authority p0-baseline/module_renumbering_map.csv line 2 records "
-                "`Monte Carlo EAC`; the owner's closure instruction asserts the identity is "
-                "`Monte Carlo EAC Forecast`. The CURRENT SURFACES were aligned to the authority "
-                "and the AUTHORITY WAS NOT EDITED, because renaming it would have been a third "
-                "rename beyond the two authorised. Current active naming conflicts for A1.1 = 0. "
-                "The conflict itself is an owner decision and is reported, not resolved.",
+                "RESOLVED BY THE OWNER. The first closure pass found the authority recording "
+                "`Monte Carlo EAC` against an owner prose name of `Monte Carlo EAC Forecast`, "
+                "aligned the surfaces TO the authority, refused to edit the authority on the "
+                "strength of a prose sentence, and reported the conflict as an owner decision. "
+                "The owner decided: A1.1 IS `Monte Carlo EAC Forecast`, final, and the current "
+                "naming authority is to be updated. p0-baseline/module_renumbering_map.csv line "
+                "2 now records it, every generated surface was re-propagated from it, and the "
+                "stale `owner_prose_alias` label in the production-contract fixture is "
+                "reconciled: the decided name is canonical and the retired name is the "
+                "backward-compatible alias. Current active naming conflicts for A1.1 = 0, "
+                "asserted by a guard that fails if any current surface reintroduces the old "
+                "name in a table, a heading, a node label or a sentence of prose. This is a "
+                "THIRD rename beyond Run 28's two and it is explicitly authorised.",
             "report": REPORT,
             "report_present_in_tree": (ROOT / REPORT).is_file(),
             "report_sha256": sha(REPORT),

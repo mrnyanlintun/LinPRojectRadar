@@ -125,7 +125,13 @@ check("no matrix row is outside the registry",
 # are checked against the names Run 27 recorded and against the registry's current names
 # separately, and both must hold, which is a stronger statement than the single comparison it
 # replaces -- it pins the rename itself rather than letting either side drift unnoticed.
-RUN28_RENAMES = {"A1.10": ("Regression to Mean CPI", "CPI Shrinkage Forecast"),
+# THE RUN-28 CLOSURE ADDS A THIRD, on the owner's explicit decision, and it belongs in exactly
+# the same place for exactly the same reason: the matrix records `Monte Carlo EAC`, which is what
+# A1.1 was called when Run 27 audited it, and the registry now records `Monte Carlo EAC Forecast`,
+# which is what the owner decided it is. Both are true of their own moment and neither is edited
+# to agree with the other.
+RUN28_RENAMES = {"A1.1": ("Monte Carlo EAC", "Monte Carlo EAC Forecast"),
+                 "A1.10": ("Regression to Mean CPI", "CPI Shrinkage Forecast"),
                  "A1.11": ("ICE Ratio", "Independent EAC Reconciliation Index")}
 check("every registered name in the matrix is the registry's own name for that id, except the "
       "two Run 28 renamed on the owner's authority",

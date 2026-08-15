@@ -212,6 +212,23 @@ RUN28_PRODUCTION_CHANGES: dict[str, tuple[str, str, str]] = {
         "The module names and the permitted-claim sentences that quote them, so a claim limit "
         "cannot name a module that no longer exists under that name. Names only.",
     ),
+    "R28.7i the recommendation options copy": (
+        _OWNER, "assets/js/recommendation_options.js",
+        "One sentence of reader-facing copy that names A1.1 by name, updated with the owner's "
+        "decided identity. Names only; no option, no quantity and no recommendation changed.",
+    ),
+    "R28.10 the naming authority, on the owner's decision": (
+        _OWNER, "p0-baseline/module_renumbering_map.csv",
+        "A1.1 becomes `Monte Carlo EAC Forecast`. THIS IS A THIRD RENAME BEYOND RUN 28'S TWO AND "
+        "IT IS EXPLICITLY AUTHORISED. The first closure pass found the authority recording "
+        "`Monte Carlo EAC` against an owner prose name of `Monte Carlo EAC Forecast`, aligned the "
+        "surfaces TO the authority, refused to edit the authority on the strength of a prose "
+        "sentence, and reported the conflict as an owner decision. The owner decided: the "
+        "identity IS `Monte Carlo EAC Forecast`, final, and the current naming authority is to be "
+        "updated. This entry shares the file with R28.5, which carries the two Run-28 renames; "
+        "the declared-changes guard forbids a PATH appearing in two MANIFESTS, and both entries "
+        "are in this one.",
+    ),
     "R28.8 the supply path the abstentions rest on": (
         _OWNER,
         "server/app/writes.py",

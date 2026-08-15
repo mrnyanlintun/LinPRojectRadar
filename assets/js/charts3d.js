@@ -16,7 +16,7 @@
     return{x:isFinite(px)?px:cx,y:isFinite(py)?py:cy,s:isFinite(s)?s:1};
   }
 
-  /* ---------- 1.1 Monte Carlo EAC — 3D histogram ---------- */
+  /* ---------- 1.1 Monte Carlo EAC Forecast — 3D histogram ---------- */
   function render_histogram3d(ctx, W, H, m, rx, ry) {
     var d=m.data, bac=d.bac, cpi=d.cpi;
     var eacMean=bac/cpi;

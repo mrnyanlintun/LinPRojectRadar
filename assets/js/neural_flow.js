@@ -63,7 +63,7 @@
   // ─── Fallback module definitions: [catIdx, displayName, method_class] ───────
   var RAW_MODS = [
     // Cat 1 — Quantitative EVM (12)
-    [0,'Monte Carlo EAC','Monte_Carlo_EAC'],  [0,'CUSUM Anomaly','CUSUM_Anomaly'],
+    [0,'Monte Carlo EAC Forecast','Monte_Carlo_EAC'],  [0,'CUSUM Anomaly','CUSUM_Anomaly'],
     [0,'Doc Risk Score','Doc_Risk_Score'],    [0,'Bayesian EAC','Bayesian_EAC'],
     [0,'Kalman Filter','Kalman_Filter'],      [0,'ARIMA Forecast','ARIMA_Forecast'],
     [0,'Earned Schedule','Earned_Schedule'],  [0,'TCPI Monitor','TCPI_Monitor'],

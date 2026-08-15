@@ -1199,9 +1199,25 @@ try:
                   f"{rel}: and no line the file can put in front of a reader makes a "
                   f"validation claim; the word survives only in the comment recording why it "
                   f"was removed")
+            # RUN 28 CLOSURE. A SECOND PERMITTED DIFFERENCE IN THIS FILE, NAMED RATHER THAN
+            # ADMITTED BY LOOSENING THE CHECK. One sentence of copy names A1.1, and the owner
+            # decided A1.1's identity is `Monte Carlo EAC Forecast`. The rename is normalised
+            # OUT of both sides before the comparison, so the Run-4 property below -- every
+            # removed line carried the validation claim, every added line is a comment or a
+            # continuation -- is asserted over a file that differs from the baseline in nothing
+            # else. The rename itself is then asserted on its own, so it cannot hide here.
+            _A11_OLD, _A11_NEW = "Monte Carlo EAC", "Monte Carlo EAC Forecast"
+            check(_A11_NEW in live and _A11_OLD in base,
+                  f"{rel}: the copy names A1.1, and the name it uses is the one the owner "
+                  f"decided rather than the one the Run-4 baseline carried")
+            _norm = live.replace(_A11_NEW, _A11_OLD)
+            check(_norm.count(_A11_OLD) == base.count(_A11_OLD),
+                  f"{rel}: and the rename is the ONLY thing that changed about that name: "
+                  f"normalising it back gives exactly the baseline's occurrences",
+                  f"{_norm.count(_A11_OLD)} vs {base.count(_A11_OLD)}")
             removed = [ln.strip() for ln in base.splitlines()
-                       if ln not in live.splitlines()]
-            added = [ln.strip() for ln in live.splitlines()
+                       if ln not in _norm.splitlines()]
+            added = [ln.strip() for ln in _norm.splitlines()
                      if ln not in base.splitlines()]
             check(all("validated" in ln or ln.startswith("+")
                       or ln.startswith('+ "') for ln in removed),

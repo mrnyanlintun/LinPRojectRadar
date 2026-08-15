@@ -58,7 +58,16 @@ GROUP_TO_CATEGORY: dict[str, tuple[str, int]] = {
 #: It exists so the group mapping above is PROVED rather than believed: if the registry and the
 #: specification ever disagree about which module an identifier names, verify_mapping() raises.
 SPEC_NAMES: dict[str, str] = {
-    "1.1": "Monte Carlo EAC", "1.2": "CUSUM Anomaly Monitor", "1.3": "Bayesian EAC",
+    # RUN 28 CLOSURE. The owner decided A1.1's canonical identity is `Monte Carlo EAC Forecast`,
+    # final, and directed that the CURRENT naming authority be updated; it was. The Run-17
+    # transcription follows the decision for exactly the reason the two Run-28 renames below do:
+    # this table exists so the mapping proof compares the registry against the SPECIFICATION AS
+    # IT NOW STANDS rather than against a stale transcription of an earlier one. The previous
+    # name is recorded beside it so the identity stays followable, and the specification document
+    # itself is untouched -- it is the immutable controlling authority and this is a
+    # transcription of the owner's later decision, not an edit of it.
+    "1.1": "Monte Carlo EAC Forecast",  # Run 17 and earlier: Monte Carlo EAC
+    "1.2": "CUSUM Anomaly Monitor", "1.3": "Bayesian EAC",
     "1.4": "Kalman Filter SPI Smoother", "1.5": "ARIMA CPI Forecast", "1.6": "Earned Schedule",
     "1.7": "TCPI", "1.8": "Variance at Completion", "1.9": "Budget Execution Rate",
     # RUN 28. The owner's Run-28 supervisory contract renames both of these, under its own

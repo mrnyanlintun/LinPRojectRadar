@@ -28,7 +28,9 @@ it works.
 from __future__ import annotations
 
 import csv
+import json
 import pathlib
+import re
 import sys
 from datetime import date
 
@@ -110,10 +112,17 @@ head("1. THE NAMING AUTHORITY, AND WHAT IT DESIGNATES")
 AUTHORITY = ROOT / "p0-baseline" / "module_renumbering_map.csv"
 _names = {r["new_id"]: r["module_name"] for r in rows("p0-baseline/module_renumbering_map.csv")}
 
-check(_names.get("A1.1") == "Monte Carlo EAC",
-      "the designated naming authority records A1.1 as `Monte Carlo EAC`. The owner's closure "
-      "instruction asserts the identity is `Monte Carlo EAC Forecast`; the two disagree, the "
-      "AUTHORITY IS LEFT UNCHANGED, and the conflict is reported as an owner decision",
+# THE CONFLICT IS RESOLVED, AND BY THE ONLY PARTY THAT COULD RESOLVE IT. The first closure pass
+# found the authority recording `Monte Carlo EAC` against an owner prose name of `Monte Carlo EAC
+# Forecast`, aligned the surfaces TO the authority, refused to edit the authority on the strength
+# of a prose sentence, and reported the conflict as an owner decision. The owner has now decided:
+# A1.1 IS `Monte Carlo EAC Forecast`, final, and the CURRENT naming authority is to be updated.
+# That is an explicit authorisation for a third rename beyond Run 28's two, so the authority moved
+# and everything generated from it re-propagated. Historical reports and historical packages keep
+# their historical wording.
+check(_names.get("A1.1") == "Monte Carlo EAC Forecast",
+      "the designated naming authority records A1.1 as `Monte Carlo EAC Forecast`, on the "
+      "owner's explicit decision, and every generated surface is re-propagated from it",
       str(_names.get("A1.1")))
 check(_names.get("A1.10") == "CPI Shrinkage Forecast",
       "and it records the first approved rename", str(_names.get("A1.10")))
@@ -188,17 +197,36 @@ for _hist, _text in (("REPORT_2026-08-14_run28-cat1-3-canonical-remediation-v3.m
 head("3. DEFECT: A1.1 NAMING DRIFT, CLOSED TO THE AUTHORITY")
 # =================================================================================================
 
+# THE GUARD THE OWNER ASKED FOR: it fails if an ACTIVE surface reintroduces the old name. The
+# retired name is `Monte Carlo EAC` used AS A NAME -- that is, not immediately followed by the
+# word Forecast -- so the new name does not trip its own check and a reversion anywhere does.
+_OLD_A11 = re.compile(r"Monte Carlo EAC(?! [Ff]orecast)")
 _a11_conflicts = sorted(
     rel for rel in CURRENT_SURFACES
-    if "Monte Carlo EAC Forecast" in (ROOT / rel).read_text(encoding="utf-8", errors="replace"))
+    if _OLD_A11.search((ROOT / rel).read_text(encoding="utf-8", errors="replace")))
 check(not _a11_conflicts,
-      "CURRENT ACTIVE NAMING CONFLICTS FOR A1.1 = 0: no current surface renders a name for A1.1 "
-      "that differs from the one the designated authority records",
+      "CURRENT ACTIVE NAMING CONFLICTS FOR A1.1 = 0: no current surface reintroduces the retired "
+      "name, in a display table, a heading, a node label or a sentence of prose",
       str(_a11_conflicts))
 check(sum(1 for rel in CURRENT_SURFACES
-          if "Monte Carlo EAC" in (ROOT / rel).read_text(encoding="utf-8", errors="replace")) >= 5,
-      "and the authority's name is what those surfaces now carry, so the drift was closed by "
-      "moving the SURFACES rather than by editing the authority")
+          if "Monte Carlo EAC Forecast"
+          in (ROOT / rel).read_text(encoding="utf-8", errors="replace")) >= 5,
+      "and the decided name is what those surfaces carry, in the authority and in every surface "
+      "generated from or aligned to it")
+
+# THE STALE ALIAS LABEL, RECONCILED. The production-contract fixture recorded the new name as
+# `owner_prose_alias` against a registry that said otherwise. It is no longer an alias for
+# anything: it is the canonical name, and the OLD name is now the backward-compatible alias.
+_contract = json.loads(
+    (ROOT / "research_fixtures" / "production_contract" / "monte_carlo_eac_forecast"
+     / "contract.json").read_text(encoding="utf-8"))
+check(_contract["canonical_module_name"] == "Monte Carlo EAC Forecast"
+      and _contract["owner_prose_alias"] is None
+      and "Monte Carlo EAC" in _contract["backward_compatible_aliases"],
+      "the production-contract fixture's stale `owner_prose_alias` label is reconciled: the "
+      "decided name is the canonical one, the retired name is the backward-compatible alias, and "
+      "the field is nulled rather than deleted so the history of the disagreement survives",
+      str(_contract.get("owner_prose_alias")))
 
 # =================================================================================================
 head("4. DEFECT 5: THE SUPPLY PATHS, TWENTY ROWS, EACH ONE EXERCISED")
@@ -326,6 +354,83 @@ _si = {"scheduleNetwork": {"from": "documents"}}
 attempt(lambda: apply_to_signal_inputs(_si, _doc, 4))
 check(_si["scheduleNetwork"] == {"from": "documents"},
       "a structure the period's own documents produced is never overwritten by a supplied one")
+
+# =================================================================================================
+head("4b. ALL TWENTY-THREE STRUCTURE-KEY ENTRIES, RECONCILED")
+# =================================================================================================
+
+# THE ARITHMETIC THE FIRST CLOSURE PASS LEFT UNEXPLAINED. It reported 23 structure keys, 2
+# production-reachable, 21 fixture-only and 19 exercised through the intake. 19 + 2 = 21, not 23.
+# The gap is a conflation, and naming it is the fix: `V3_STRUCTURE_KEYS` holds 23 MODULE-TO-KEY
+# ENTRIES over 18 DISTINCT KEYS, because one schedule network serves five Category-2 methods and
+# one time-phased baseline serves two. The reconciliation is therefore per ENTRY, which is the
+# unit a module's supply question is actually asked in, and 19 entries need the intake while 4 do
+# not, for four different and individually stated reasons.
+KEYS = rows("code_audit/run28_v3_structure_key_reconciliation.csv")
+check(len(KEYS) == 23, "the structure-key reconciliation carries exactly twenty-three rows",
+      str(len(KEYS)))
+check(len({(r["structure_key"], r["module_served"]) for r in KEYS}) == 23,
+      "DUPLICATES = 0: every row is a distinct module-and-structure pair", str(len(KEYS)))
+check(len({r["structure_key"] for r in KEYS}) == 18,
+      "over eighteen distinct keys, which is where 23 and 19 + 2 stopped agreeing",
+      str(len({r["structure_key"] for r in KEYS})))
+
+# CLASSIFIED = 23, UNEXPLAINED = 0. The population is READ FROM THE ANALYTICAL LAYER, so a key
+# added to production and not classified here is red, and a row here naming a key production does
+# not declare is red too. Neither side is derived from the other.
+_declared = {(m, k) for m, k in V3_STRUCTURE_KEYS.items()}
+_classified = {(r["module_served"], r["structure_key"]) for r in KEYS}
+check(_classified == _declared,
+      "UNEXPLAINED = 0: the rows are exactly the module-to-key entries the analytical layer "
+      "declares, with none invented and none missing. AN ORPHAN KEY ADDED TO PRODUCTION AND NOT "
+      "CLASSIFIED HERE IS RED", str(sorted(_classified ^ _declared)))
+check(all(r["verdict"] == "PASS" for r in KEYS), "and every row is classified",
+      str([r["structure_key"] for r in KEYS if r["verdict"] != "PASS"]))
+
+_needs = [r for r in KEYS if r["needs_the_project_data_intake"] == "yes"]
+_not = [r for r in KEYS if r["needs_the_project_data_intake"] != "yes"]
+check(len(_needs) == 19 and len(_not) == 4 and len(_needs) + len(_not) == 23,
+      "nineteen entries need the intake route and FOUR do not, which closes the arithmetic",
+      f"{len(_needs)} + {len(_not)}")
+check(sorted(r["module_served"] for r in _not) == ["A1.1", "A2.7", "A3.6", "A3.8"],
+      "and the four are named: A1.1 computes without its structure, A2.7 and A3.6 have theirs "
+      "PRODUCED by document extraction rather than supplied, and A3.8 is registered disabled and "
+      "never executed", str(sorted(r["module_served"] for r in _not)))
+check(all(len(r["if_not_why_not"]) > 80 for r in _not),
+      "each of the four states its own reason rather than sharing one")
+
+# REASONABLY SUPPLYABLE BUT UNREACHABLE = 0, and NO FIXTURE-ONLY STRUCTURE MASQUERADES AS A
+# PRODUCTION PATH. Both are decided by the intake itself, not by the column: the vocabulary comes
+# from the analytical layer, so a key the intake does not accept cannot be written down as
+# accepted here and survive.
+check(all(r["accepted_by_the_project_data_intake"] == "yes" for r in KEYS),
+      "every entry's structure is accepted by the intake")
+_unreachable = sorted({r["structure_key"] for r in KEYS
+                       if r["structure_key"] not in _intake})
+check(not _unreachable,
+      "REASONABLY SUPPLYABLE BUT UNREACHABLE = 0, and no fixture-only structure masquerades as a "
+      "production supply path: the intake's own vocabulary is the arbiter", str(_unreachable))
+
+# THE TWO PRODUCTION PRODUCERS, verified by reading production for an assignment of the key
+# rather than by trusting the column.
+_prod_src = "\n".join(p.read_text(encoding="utf-8")
+                      for p in (ROOT / "server" / "app").rglob("*.py")
+                      if "__pycache__" not in str(p))
+for r in KEYS:
+    _written = bool(re.search(r'si\["%s"\]\s*=' % re.escape(r["structure_key"]), _prod_src))
+    if (r["real_corpus_currently_populates_it"] == "yes") != _written:
+        check(False, f"the producer column for {r['structure_key']} matches production",
+              f"column says {r['real_corpus_currently_populates_it']}, code says {_written}")
+        break
+else:
+    check(True, "every row's producer column agrees with what production actually assigns, read "
+                "out of server/app rather than out of the table")
+check(sorted({r["structure_key"] for r in KEYS
+              if r["real_corpus_currently_populates_it"] == "yes"})
+      == ["costRiskModel", "milestoneForecastHistory"],
+      "and exactly two structures are populated from the real corpus today",
+      str(sorted({r["structure_key"] for r in KEYS
+                  if r["real_corpus_currently_populates_it"] == "yes"})))
 
 # =================================================================================================
 head("5. DEFECT 6: ALL TWENTY-EIGHT OPERATIONAL OUTCOMES, RECONCILED")

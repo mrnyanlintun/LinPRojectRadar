@@ -99,9 +99,10 @@ FAULTS = [
      "the approved rename reverted on ONE current surface while the registry keeps the new name: "
      "exactly the mixed state the owner's instruction forbids"),
     ("F4", "test_run28_closure", "EDIT",
-     "assets/js/categories.js", "name: 'Monte Carlo EAC'", "name: 'Monte Carlo EAC Forecast'",
-     "the A1.1 naming drift reintroduced on a current surface, so active naming conflicts for "
-     "A1.1 becomes one rather than zero"),
+     "assets/js/categories.js", "name: 'Monte Carlo EAC Forecast'", "name: 'Monte Carlo EAC'",
+     "the retired A1.1 name reintroduced in the DISPLAY TABLE of the registry the taxonomy is "
+     "generated from, so active naming conflicts for A1.1 becomes one rather than zero. F11 is "
+     "the same reversion in a sentence of PROSE, so both shapes are proved"),
     ("F5", "test_run28_closure", "EDIT",
      "server/app/project_data.py",
      "    return set(V3_STRUCTURE_KEYS.values()) | set(CANONICAL_STRUCTURE_KEYS.values())",
@@ -122,6 +123,35 @@ FAULTS = [
      'structure.get("measurement_variance_source") or "assumed"}',
      "a hidden default substituted for Q and R provenance, so an uncalibrated variance passes as "
      "a calibrated one"),
+    # ---------------------------------------------------------------- THE SECOND CLOSURE PASS
+    ("F9", "test_run28_version_boundary", "EDIT",
+     "server/app/simulation/models.py",
+     '    "sim-2026.08-v11", "sim-2026.08-v12",',
+     '    "sim-2026.08-v11", "sim-2026.08-v11",',
+     "A DUPLICATE SIMULATION VERSION: the history is made to carry v11 twice, which is what an "
+     "overwritten stamp looks like from the outside. Every identifier must be unique"),
+    ("F10", "test_run28_version_boundary", "EDIT",
+     "server/app/simulation/models.py",
+     'SIMULATION_VERSION = "sim-2026.08-v12"',
+     'SIMULATION_VERSION = "sim-2026.08-v11"',
+     "the stamp rolled back to v11 while the layer's behaviour is v12's, so already-collected "
+     "results would be indistinguishable from results computed under the old line"),
+    ("F11", "test_run28_closure", "EDIT",
+     "assets/js/knowledge.js", "Monte Carlo EAC Forecast randomises cost performance",
+     "Monte Carlo EAC randomises cost performance",
+     "the retired A1.1 name reintroduced in a sentence of prose on a current knowledge surface, "
+     "which is the mixed state the owner's decision forbids"),
+    ("F12", "test_run28_closure", "EDIT",
+     "server/app/simulation/canonical_v3.py",
+     '    "A3.9": "externalCostIndex",',
+     '    "A3.9": "externalCostIndex",\n    "A9.9": "run28ClosureOrphanStructure",',
+     "AN ORPHAN STRUCTURE KEY: a twenty-fourth module-to-key entry added to production with no "
+     "classified row in the reconciliation table"),
+    ("F13", "test_run28_participant_v1_preservation", "EDIT",
+     "code_audit/run12_participant_package_checksums.sha256",
+     "  assets/js/taxonomy.js", "  assets/js/taxonomy.js\n",
+     "the historical Run-12 participant record altered. The reconstruction reads the git object, "
+     "so the working-tree record must still match it byte for byte"),
     # THE OWNER'S NAMED A2.7 FAULT, on the REAL-CORPUS route rather than on the structure. F2
     # weakens the canonical method's own minimum-history guard; this one weakens the ASSEMBLER
     # that builds the history out of the stored schedule snapshots, so a milestone that appears
