@@ -853,3 +853,17 @@ alone, which is exactly the case a checksum guard cannot catch. The campaign now
 No production file changed in this pass. The eleven package files moved in the SECOND pass and
 were already declared there; what changed here is the record that describes them, the chain
 declaration, the guard and the report.
+
+## Third-pass final-head verification
+
+Same discipline. All third-pass work on `run28-participant-v3` → `--no-ff` merge into `main` → the
+freeze finalised on the merged head (stage-1 commit `a7692bd9b87f605906ca66d08b0eadcc001ec50d`,
+manifest sha256 `349ed3252d37cc79c12cf4f319afa10eb9b6f1400083c9cc8893776d259663a6`) → this section
+committed as the last commit, nothing after it → the complete suite run on that exact commit →
+push → `origin/main` confirmed equal.
+
+**130 suites, 10884 checks, all green.** The second pass finished at 130 / 10866; this pass adds
+eighteen checks to `test_run28_participant_packages.py` (19 → 37) and no new suite.
+
+The exact hash and the `HEAD == main == origin/main` confirmation are in the run's handover
+message and reproducible with `git rev-parse`.
