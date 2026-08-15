@@ -1,13 +1,28 @@
-# OPUS GUBERNATIO PARTICIPANT PACKAGE og-participant-2026.08-v2
-# SUCCESSOR to og-participant-2026.08-v1, whose checksum record is preserved unchanged at
-# code_audit/run12_participant_package_checksums.sha256. This successor exists because the
-# Run-28 closure propagated the two approved Category-1 renames and the A1.1 naming alignment
-# into assets/js/taxonomy.js, the participant ledger's own name source, on the owner's explicit
-# instruction that the current v11 surface be consistent and that a successor package be
-# created rather than the predecessor edited.
-# WHAT CHANGED: display strings only. Every method_class constant, every required-input key,
-# every module id and every number in the package is byte-identical, and the participant
-# decision sequence -- preliminary, lock, reveal, final, lock -- is untouched.
+# OPUS GUBERNATIO PARTICIPANT PACKAGE og-participant-2026.08-v3
+#
+# SUCCESSOR to og-participant-2026.08-v2, whose checksum record is preserved unchanged at
+# code_audit/run28_closure_participant_package_checksums.sha256, and to og-participant-2026.08-v1
+# at code_audit/run12_participant_package_checksums.sha256. Neither predecessor is rewritten.
+#
+# WHY v3 EXISTS. The Run-28 closure's SECOND pass applied the owner's A1.1 naming decision --
+# `Monte Carlo EAC` becomes `Monte Carlo EAC Forecast` -- to the current naming authority and
+# re-propagated it. Eleven files inside this package carry that name and their bytes moved after
+# the v2 record was taken. This is the successor that records them.
+#
+# THE DEFECT THIS ALSO CORRECTS, STATED PLAINLY. The second pass did NOT create a successor at
+# the time: it REGENERATED THE v2 RECORD IN PLACE over those eleven files. A package record
+# rewritten to agree with the tree describes the tree and not the package it names, which is
+# exactly the staleness this programme found in the Run-12 v1 record and exactly the thing a
+# freeze exists to prevent. The v2 record has been restored to the bytes it carried when v2 was
+# frozen, at commit 0293dc5, and this file is the successor that should have been created then.
+#
+# WHAT CHANGED FROM v2: display strings only, all of them the same module name. Proved by
+# normalisation rather than asserted -- server/tools/test_run28_participant_packages.py maps each
+# current file back through the rename and requires BYTE IDENTITY with the v2-era blob. The
+# participant decision sequence -- evidence, preliminary assessment, confidence, preliminary
+# lock, reveal, final action, final lock, next period -- randomization, reveal timing, lock
+# enforcement, server authority, append-only records and treatment logic are all unchanged, and
+# every file that implements any of them is byte-identical to its v2 bytes.
 dd1c6a327ca6b657eb4c891e022fd8f2efcb1d7b9d42f8b9fc6951ad4c5abb14  assets/css/radar.css
 d6d6b2d7ef569bbc371eeb6c30a7a48c5f68cae4d151ca2d8226961bc0e2b4e3  assets/js/admin-ops.js
 3a7b401893ffc537430dd73f2cc5be70a009dc35fa7814a6e77ffecae8ee803e  assets/js/admin.js
@@ -15,39 +30,39 @@ aba29d78a430211a2b5b33e7bf1c66d33b9bdb9fdd309066ef04b2faaf979e41  assets/js/app.
 603a080ab2fd52789005591235b8a63d7dc50ae6b03e1001243c003e6828ae29  assets/js/assistant.js
 4a44c6cf6e02a8a79f9594bd1122ee460378a25a731a058179b772a7601e26d3  assets/js/auditor.js
 9d37481b6f138d90f181b42c7e48e8ea929019b5ae48909e52efa5676c53b832  assets/js/auth.js
-29e3ab5bd2fa70edfea4deb14c9e8cdc2d570f1a40ecbb4696d882a22b40042c  assets/js/categories.js
-b45d1504fe0acb80c2dcddffaf8cf7f594d3494adb0c44bddc2e4ad47052e76d  assets/js/charts3d.js
+f928109bb8a10ad4b59ff359c00621c8a6ff4c37186871b2f96a6a07e4a25174  assets/js/categories.js
+6732edb11a969fe1e7e11cb2c3d4cef75528215f91a5a9a18ebfbb33bd2ac376  assets/js/charts3d.js
 870647d8db80109a0a9ec43c7975e3cb7987ebbdd5919b3e0414384a0a9fde25  assets/js/client_algorithm_version.js
 ba183d1cdd857a977c78d59f6f4f34d45af17e26d6faabf36bf12eeef6bbebd1  assets/js/config.js
 110c279b4523659a0a9a5fa36178b7ba9f2888010e89f1bf2466db1be742d6ca  assets/js/data.js
-6fa320d8bad169a4aaaf439739470f3435c0f458f0a2414a79aaadefbbd0d315  assets/js/decision-ui.js
+2590bd25c87e5edb61441170c2436e12f08c81455d066500e9e0970cd9cc7341  assets/js/decision-ui.js
 fc44259d6a2ffa0b595cc72532c961be8ce574a317dc2b5c36598aed799a1bdb  assets/js/decision.js
-e3d371a79229f4fe4827bcab93aab5704bf252c68c8aaf2f6977690e64e83279  assets/js/deepdive.js
+d91526096702ee8417228145330773057a2db5717e485066b7bc22acacfc68ea  assets/js/deepdive.js
 a228511197df8a68e4a9449bb4037ff2fb3b992451e3c045c6d3cbdf52fe2a11  assets/js/detail.js
 34e1b7f123e10f9979fbaa26dbe18697052f63cb067a1bbe81aced19286ac6d5  assets/js/disclaimers.js
-d5dbc4116bff096fbc5beac97c7461d0f9b25305698902e8e74eba01054f8b3c  assets/js/ds_defensibility_data.js
-9f57921732e1131be4da5e10b0a8527c7b957ac7487202077f30a86339af9870  assets/js/ds_defensibility_evidence.js
+1d3f8b604cf70a0856a16b3203b764d89cb225c741f97eab62f32fbec2ece010  assets/js/ds_defensibility_data.js
+43735ced5b4a5cf040c8f6a357759cebfb788d306be1ae940607b6aaa4535e85  assets/js/ds_defensibility_evidence.js
 061b3079656dfa43d0637677e907974167d7c56b405a6945a1dc4eeea2f57826  assets/js/export.js
 5f6ce1da1b527a42955fc9d6717464665b91d9b9d035c8c6d1292b2cdf4c7233  assets/js/features.js
 62e1c8f581dad95fd825b90e11bb0017f6e3705afef9d17af4a26f48c963343a  assets/js/files.js
 b6262686b1d86e6cda74a0090035fd29e5b25943246606ed88f9643d09dd9e1d  assets/js/globe.js
 d42f6f6ceb649ac9dc785be8e60417f5206908d2aa722e7dd14cf980a5afe498  assets/js/gmap.js
 957718c6a3dfdbfc00d695a7389bbcf7990cc8d2d059d6f1d41d98dad9b050c6  assets/js/ingest.js
-1112540ac2aac161f603213e86dfa1b9fa0c47dad2232a66ab20ee65a87faa32  assets/js/knowledge.js
+2847b3e2897efdd6c392044fe60eb81352a772677f31da2852a5cbe090edd1ef  assets/js/knowledge.js
 6b287872c57a801c1d9ba590dcf62bade48d436d07c6e8d30bb6cbdf793a5002  assets/js/module_charts.js
-95c294405d1a899105be6f07aafe2faa85abaec15e41f6bcbbac32373efe97a6  assets/js/neural_flow.js
+6bd6c5fe5c80ac4712daf61fcc51271507f703ec39fa34a20a17851d919ab872  assets/js/neural_flow.js
 bdadb0742546de55d57fa38888e7dadf1725b2f19aaced199a5f824f10a233b9  assets/js/projectnet2d.js
 cd022ac427b4c39b28bf5ed54885fa0ba168122f1eec9d4c9d617a278519b5dc  assets/js/questionnaires.js
-ac163495d35b39331e699fb7751c9942d75a218a6bae9260331721f2968e22d3  assets/js/recommendation_options.js
+3c5bbc095a3493344abe8eecb58a1e86962bc67153639662192a8bc5129d7ea7  assets/js/recommendation_options.js
 931ebed362c3dfbddd93f91cc3a5758f55306d3a58bdc9b0dd546079d07ea7f3  assets/js/signals.js
 2910f84ebd5d1ae592ff1f467cd47a84b1756eb3c5df9463019447a826e1307f  assets/js/sim.js
 e552be89478cc648de4b6a764a15507261a2d403a2980785de34b91437878946  assets/js/simulations.js
 73cf90214e09e208f902dc9e88ecc0a8aa8c1b4425aaf72f786a49034a798505  assets/js/store.js
-9200a33bc39a8ad0c23241440a8005631048069a595291869831e19c4c351174  assets/js/taxonomy.js
+efb36bc794f3f3cfc26ba599254833bc4afa83320640f5e513c260d008dd4ecc  assets/js/taxonomy.js
 a2c8afd9d6edbfcc41c14ae396ebe4cc1cbfec2eb581a6b1ecab417e04bfb25c  assets/js/training.js
 eceecf01bfb5ec92c5662d85ad0d747d166d2b32256b791c24539eee30b6c7a9  assets/js/tz.js
 8cd3fe7e89333dba23abdbaab82abfef3bd73ba1cdc58a95471e0fa94d3df539  assets/js/workingrobot.js
-b161dd225946e32119b4fb76ab31ef2c865a7c79ada6a8e9b55ee211c0107512  assets/js/workspace.js
+59dff11a8a47c6650a8b0e266e710f29f4bf09ebcdfb73fcbabc89951baf843a  assets/js/workspace.js
 8064c60b004706c37dfb88ae6de1f55f56e97014979940baf1645a257ee5b3d8  assets/questionnaires/debrief.json
 400195fb47d8f8d68ab4defda6a1aff7ea6abb714b25d1f9a4040d2b216078b6  assets/questionnaires/intake.json
 d6a807659a01c67372d765a74a1fba6d915bd9cbe0c007b6362c84d45f62a557  assets/vendor/ASSETS.md

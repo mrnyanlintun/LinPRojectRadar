@@ -716,3 +716,140 @@ confirmation are in the run's handover message and reproducible with `git rev-pa
 
 **First `sim-2026.08-v12` commit: `ba1b1f2`** (`Run 28 closure, second pass: sim-2026.08-v12, the
 owner's A1.1 decision, 23/23 keys, participant v1 from git`), merged at `3969908`.
+
+---
+
+# RUN 28 CLOSURE, THIRD PASS: THE PARTICIPANT PACKAGE CHAIN
+
+Still Run 28. Run 29 is not begun.
+
+## The finding, and it is a real one
+
+**The A1.1 propagation moved eleven participant-package files after the v2 record was taken — and
+the second pass did not create a successor. It REGENERATED THE v2 RECORD IN PLACE.**
+
+Established mechanically, not assumed. The v2 record as committed at `0293dc5`, where v2 was
+created, compared against the same file at `6b50f29`:
+
+```
+record rows at 0293dc5 : 70
+record rows at 6b50f29 : 70
+rows whose recorded digest was rewritten : 11
+```
+
+| file | moved after the v2 record was taken |
+|---|---|
+| `assets/js/categories.js` | yes |
+| `assets/js/charts3d.js` | yes |
+| `assets/js/decision-ui.js` | yes |
+| `assets/js/deepdive.js` | yes |
+| `assets/js/ds_defensibility_data.js` | yes |
+| `assets/js/ds_defensibility_evidence.js` | yes |
+| `assets/js/knowledge.js` | yes |
+| `assets/js/neural_flow.js` | yes |
+| `assets/js/recommendation_options.js` | yes |
+| `assets/js/taxonomy.js` | yes |
+| `assets/js/workspace.js` | yes |
+
+The other fifty-nine are byte-identical. Measured both ways: the live bytes differ from the
+**as-created** v2 record in exactly those eleven, and differ from the record **as it stood after
+the second pass** in none — which is the proof that the record had been rewritten to agree with
+the tree rather than the tree having been left alone.
+
+**This is the same defect the second pass had just found in the Run-12 v1 record, reproduced one
+link further along the chain by the run that found it.** A package record rewritten in place
+describes the tree and not the package it names, and a current file was therefore masquerading as
+the predecessor package.
+
+## What was done
+
+* **`og-participant-2026.08-v2` restored** to the bytes commit `0293dc5` wrote, byte for byte.
+  The in-place regeneration is undone.
+* **`og-participant-2026.08-v3` created**:
+  `code_audit/run28_closure_v3_participant_package_checksums.sha256`, seventy rows over the same
+  inventory. Reason recorded in the file header: *current participant-visible naming propagation
+  after the A1.1 authority correction*, together with the record-rewriting defect it also corrects.
+* **`og-participant-2026.08-v1` untouched**, still reconstructed from `c44e3ce`.
+* **`server/tools/participant_packages.py`** declares the chain once: identifier, record, the
+  commit whose blobs the record describes (`None` for the current one), and why each link exists.
+
+## The identity guard, which the checksum guard alone cannot be
+
+**Exactly one record in the chain may describe the live tree, and it must be the one declared
+current.** A predecessor that matches the tree means either nothing changed or a predecessor was
+rewritten to agree with the present, and both are failures. Asserted in
+`server/tools/test_run28_participant_packages.py`:
+
+```
+records matching the live tree == ["og-participant-2026.08-v3"] == the declared current link
+```
+
+Each link has its own record file; all three exist; only the current link reads the working tree
+and both predecessors name the commit their bytes live in.
+
+## Protocol invariance: only display bytes moved
+
+Eleven files differ between v2 and v3, and they are the eleven declared. The proof is not a count
+of differing lines: **each current file is mapped back through the A1.1 rename and required to be
+BYTE-IDENTICAL to its v2-era blob**, so a single changed character anywhere else is red. The
+inverse mapping also undoes three de-duplications the rename required
+("Monte Carlo EAC Monte Carlo outputs", "the full Monte Carlo EAC Monte Carlo run",
+"Monte Carlo EAC forecast"), which is why those lines are covered rather than excused.
+
+Every file carrying a step of the sequence — evidence review, preliminary assessment and action,
+confidence, preliminary lock, AI reveal, final action, confidence, disposition, evidence,
+rationale, final lock, next period — and every file carrying randomization, reveal timing, lock
+enforcement, server authority, the append-only record or treatment logic is **byte-identical**
+between v2 and v3, asserted by name over the sixteen files of `PROTOCOL_SURFACE` rather than
+inferred from the changed list being short. The check also asserts each of those sixteen is
+actually inside the package inventory, so it is over real rows.
+
+The distinction the filenames invite and the bytes settle is asserted explicitly:
+`decision.js` **runs** the sequence and did not move; `decision-ui.js` holds a
+module-id-to-display-name table and did.
+
+The **server side**, which no package record covers and where the sequence is actually enforced,
+is checked too: `research_decision.py`, `research_transitions.py`, `research_assignment.py`,
+`research_audit.py`, `research_consent.py` and `research_membership.py` are each byte-identical to
+their v2 bytes. Voting is still exactly A1.7 and A1.8; A3.4 is registered, disabled, non-voting
+and not executed.
+
+## The three-package chain, green simultaneously
+
+| link | source | inventory | checksums |
+|---|---|---|---|
+| v1 `og-participant-2026.08-v1` | git object `c44e3ce`, isolated extraction | 70/70 | **70/70 hold** |
+| v2 `og-participant-2026.08-v2` | git object `0293dc5`, isolated extraction | 70/70 | **70/70 hold** |
+| v3 `og-participant-2026.08-v3` | the live tree | 70/70 | **70/70 hold** |
+
+`server/tools/test_run28_participant_packages.py`, 37 checks, all green. No historical file is
+restored into the application; neither predecessor record is rewritten.
+
+## Non-vacuity: faults A, B and C
+
+| id | fault | injection confirmed | before | observed | after |
+|---|---|---|---|---|---|
+| **A** | one current-package byte mutated without updating its record | yes, re-read from disk | 37/37 | **RED 34/37** | 37/37 |
+| **B** | current changed bytes stamped with the predecessor package ID | yes, re-read from disk | 37/37 | **RED 35/37** | 37/37 |
+| **C** (tree side) | the historical v2 record altered so it no longer matches its freeze commit | yes, re-read from disk | 37/37 | **RED 36/37** | 37/37 |
+| **C** (workspace side) | one byte of the reconstructed v2 package mutated in the isolated workspace | yes, re-read from disk | — | **guard names exactly `assets/js/taxonomy.js`** | green over all 70 |
+
+Fault A turns the checksum guard red **and** the identity guard, because with the tree mutated no
+record in the chain describes it. Fault B leaves every checksum holding and fails on identity
+alone, which is exactly the case a checksum guard cannot catch. The campaign now stands at
+**16 faults, 16 proven non-vacuous**; none was accepted on a crash.
+
+## Successor freeze
+
+| record | value |
+|---|---|
+| identifier | `OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN28-CLOSURE-V12-2` |
+| manifest | `research/freeze/RUN28_PARTICIPANT_V3_FREEZE_2026-08-14.json` |
+| supersedes | `...-RUN28-CLOSURE-V12-1`, preserved unchanged |
+| grandparent | `...-RUN28-CLOSURE-V11-2`, preserved unchanged |
+| analytical line | `sim-2026.08-v12`, unchanged: no production analytical file moved in this pass |
+| production surface | 228 files, unchanged |
+
+No production file changed in this pass. The eleven package files moved in the SECOND pass and
+were already declared there; what changed here is the record that describes them, the chain
+declaration, the guard and the report.

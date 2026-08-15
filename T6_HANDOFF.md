@@ -10053,3 +10053,39 @@ superseding `...-RUN28-CLOSURE-V11-2` which is preserved and still verifies agai
 **Still open and handed on:** Run 27's R estimator is not implemented (A1.4 abstains, Q and R are
 not invented, Run 33 owns calibration); A3.8 remains disabled laboratory-only with no production
 supply route because no production execution reaches it.
+
+## Run 28 CLOSURE, THIRD PASS: the participant package chain
+
+**The finding was real.** The A1.1 propagation moved ELEVEN participant-package files after the v2
+record was taken, and the second pass did not create a successor: it **regenerated the v2 record in
+place**. Established from git, not assumed — the record at `0293dc5` versus the record at
+`6b50f29` differs in exactly those eleven rows, and the live bytes differ from the as-created v2
+record in exactly the same eleven.
+
+That is the same defect the second pass had just found in the Run-12 v1 record, reproduced one
+link further along the chain by the run that found it.
+
+**Fixed:** v2 restored byte for byte to `0293dc5`; **`og-participant-2026.08-v3`** created at
+`code_audit/run28_closure_v3_participant_package_checksums.sha256` with the reason recorded; v1
+untouched. `server/tools/participant_packages.py` declares the chain once.
+
+**The identity guard is the new part.** Exactly one record may describe the live tree and it must
+be the one declared current — a predecessor that matches the tree means either nothing changed or a
+predecessor was rewritten to agree with the present. A checksum guard cannot catch that; fault B
+proves this one does.
+
+**Protocol invariance is proved by normalisation, not by counting lines:** each of the eleven
+current files, mapped back through the A1.1 rename, is byte-identical to its v2 blob. The sixteen
+files of `PROTOCOL_SURFACE` and the six server-side research modules are byte-identical to v2.
+`decision.js` did not move; `decision-ui.js` did, and it is a name table.
+
+Chain: v1 from `c44e3ce` 70/70, v2 from `0293dc5` 70/70, v3 from the live tree 70/70, all green
+simultaneously. `server/tools/test_run28_participant_packages.py`, 37 checks. Campaign now 16
+faults, 16 proven.
+
+Freeze `...-RUN28-CLOSURE-V12-2`, `research/freeze/RUN28_PARTICIPANT_V3_FREEZE_2026-08-14.json`.
+No production file changed in this pass; the analytical line stays `sim-2026.08-v12`.
+
+**Standing lesson for whoever runs next:** never regenerate a package or freeze record in place.
+A record rewritten to agree with the tree describes the tree, not the thing it names, and it agrees
+with itself by construction.

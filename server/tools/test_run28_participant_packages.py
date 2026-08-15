@@ -1,5 +1,5 @@
 """
-RUN 28 CLOSURE. HISTORICAL PARTICIPANT PACKAGE v1, PRESERVED EXECUTABLY.
+RUN 28 CLOSURE. THE PARTICIPANT PACKAGE CHAIN: v1, v2 AND v3, ALL THREE AT ONCE.
 
 THE DEFECT THIS CLOSES, WHICH THE CLOSURE FOUND IN ITS OWN WORK. The first closure pass reported
 that FOURTEEN files named by `code_audit/run12_participant_package_checksums.sha256` had already
@@ -44,6 +44,8 @@ HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 
+import participant_packages as PP  # noqa: E402
+
 #: THE EXACT GIT OBJECT. The commit that ADDED code_audit/run12_participant_package_checksums.sha256
 #: -- Run 12 Gates 11-12, the release freeze that took the package -- found with
 #: `git log --diff-filter=A -- <record>`. A commit cannot be mutated in place, so this is evidence
@@ -51,8 +53,11 @@ sys.path.insert(0, str(HERE))
 V1_COMMIT = "c44e3ced94a22a9def35fa5a2be3a2268fbed6bb"
 V1_IDENTITY = "og-participant-2026.08-v1"
 V2_IDENTITY = "og-participant-2026.08-v2"
+V3_IDENTITY = "og-participant-2026.08-v3"
 RECORD = "code_audit/run12_participant_package_checksums.sha256"
 SUCCESSOR = "code_audit/run28_closure_participant_package_checksums.sha256"
+V3_RECORD = "code_audit/run28_closure_v3_participant_package_checksums.sha256"
+V2_COMMIT = "0293dc5dff40c66a61bc0f57330611de96c4f7b0"
 
 PASSED = 0
 FAILED = 0
@@ -205,32 +210,149 @@ with tempfile.TemporaryDirectory(prefix="og-participant-v1-") as _td:
           "restored byte for byte, and the guard is GREEN again over all seventy")
 
 # =================================================================================================
-head("3. THE CURRENT SUCCESSOR, VERIFIED INDEPENDENTLY")
+head("3. THE PREDECESSOR v2, NOW ALSO HISTORICAL, RECONSTRUCTED FROM ITS OWN COMMIT")
 # =================================================================================================
 
-_v2 = parse((ROOT / SUCCESSOR).read_text(encoding="utf-8"))
-check(len(_v2) == 70,
-      f"the successor record for {V2_IDENTITY} names the same seventy files, so the package was "
-      f"not narrowed while it was superseded", str(len(_v2)))
-check(set(_v2) == set(_v1),
-      "over exactly the same inventory as v1", str(sorted(set(_v2) ^ set(_v1))))
-_v2_bad = sorted(rel for rel, digest in _v2.items()
+# THE DEFECT THIS SECTION EXISTS BECAUSE OF, STATED AS IT WAS FOUND. The closure's second pass
+# applied the owner's A1.1 decision across the current surfaces, ELEVEN OF WHICH ARE INSIDE THIS
+# PACKAGE, and then REGENERATED THE v2 RECORD IN PLACE rather than creating a successor. A package
+# record rewritten to agree with the tree describes the tree and not the package it names. That is
+# precisely the staleness this file was written to catch in the Run-12 v1 record, reproduced one
+# link further along the chain by the run that found it. The v2 record has been restored to the
+# bytes it carried at its own freeze commit, and v3 is the successor that should have existed.
+_v2_rec_bytes = git_bytes(SUCCESSOR, V2_COMMIT)
+check(_v2_rec_bytes is not None and (ROOT / SUCCESSOR).read_bytes() == _v2_rec_bytes,
+      f"the v2 record in the working tree is BYTE-IDENTICAL to the one commit {V2_COMMIT[:7]} "
+      f"wrote, so the in-place regeneration is undone and v2 describes v2 again")
+_v2 = parse((_v2_rec_bytes or b"").decode("utf-8"))
+check(len(_v2) == 70 and set(_v2) == set(_v1),
+      "it names the same seventy files as v1, so the package was not narrowed while it was "
+      "superseded", f"{len(_v2)}")
+
+with tempfile.TemporaryDirectory(prefix="og-participant-v2-") as _td2:
+    _sandbox2 = pathlib.Path(_td2)
+    _ex2: dict[str, pathlib.Path] = {}
+    for rel in sorted(_v2):
+        blob = git_bytes(rel, V2_COMMIT)
+        if blob is None:
+            continue
+        dest = _sandbox2 / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(blob)
+        _ex2[rel] = dest
+    check(len(_ex2) == 70, "all seventy v2 files reconstruct from that commit into an isolated "
+                           "directory", str(len(_ex2)))
+    _bad2 = [rel for rel, path in sorted(_ex2.items())
+             if hashlib.sha256(path.read_bytes()).hexdigest() != _v2[rel]]
+    check(not _bad2, "ALL SEVENTY v2 CHECKSUMS HOLD against the restored v2 record", str(_bad2))
+
+    # NON-VACUITY, FAULT C, inline and in an isolated workspace: mutate one byte of the
+    # reconstructed v2 package and require the v2 checksum guard to name exactly that file.
+    _victim2 = _ex2["assets/js/taxonomy.js"]
+    _orig2 = _victim2.read_bytes()
+    _victim2.write_bytes(_orig2 + b"\n// deliberate Run-28-closure v2 reconstruction probe\n")
+    check(b"v2 reconstruction probe" in _victim2.read_bytes(),
+          "FAULT C: one byte of the reconstructed v2 package is mutated, confirmed by re-reading "
+          "the file from disk")
+    _red2 = [rel for rel, path in sorted(_ex2.items())
+             if hashlib.sha256(path.read_bytes()).hexdigest() != _v2[rel]]
+    check(_red2 == ["assets/js/taxonomy.js"],
+          "and the HISTORICAL v2 checksum guard goes RED, naming exactly that file", str(_red2))
+    _victim2.write_bytes(_orig2)
+    check(not [rel for rel, path in _ex2.items()
+               if hashlib.sha256(path.read_bytes()).hexdigest() != _v2[rel]],
+          "restored byte for byte, and the v2 guard is GREEN again over all seventy")
+
+# =================================================================================================
+head("4. THE CURRENT PACKAGE v3, AND THE IDENTITY GUARD")
+# =================================================================================================
+
+_v3 = parse((ROOT / V3_RECORD).read_text(encoding="utf-8"))
+check(len(_v3) == 70 and set(_v3) == set(_v2),
+      "the v3 record names the same seventy files", str(len(_v3)))
+_v3_bad = sorted(rel for rel, digest in _v3.items()
                  if not (ROOT / rel).is_file()
                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
-check(not _v2_bad,
-      "and every one of its seventy checksums holds against the LIVE tree, which is where the "
-      "current package correctly lives", str(_v2_bad))
-_header = (ROOT / SUCCESSOR).read_text(encoding="utf-8")
-check(V2_IDENTITY in _header and V1_IDENTITY in _header and RECORD in _header,
-      "the successor states its own identity, names v1 as its predecessor and points at the "
-      "record it does not replace")
-check(_v2 != _v1,
-      "the two records genuinely differ, so the successor is a real supersession and not a copy "
-      "of its predecessor under a new name",
-      str(len([r for r in _v2 if _v2[r] != _v1[r]])))
-check(_v2["assets/js/taxonomy.js"] != _v1["assets/js/taxonomy.js"],
-      "and the participant ledger's own name source is one of the files that moved, which is the "
-      "change that required a successor package at all")
+check(not _v3_bad,
+      "and every one of its seventy checksums holds against the LIVE TREE, which is where the "
+      "current package correctly lives", str(_v3_bad))
+
+# THE IDENTITY GUARD, which is the one the checksum guard alone cannot be. EXACTLY ONE record in
+# the chain may describe the live tree, and it must be the one declared current. A predecessor
+# that matches the tree means either nothing changed or a predecessor was rewritten to agree with
+# the present, and both are failures.
+_matches_tree = []
+for _pkg in PP.PARTICIPANT_PACKAGES:
+    _rec = parse((ROOT / _pkg.record).read_text(encoding="utf-8"))
+    if all((ROOT / rel).is_file()
+           and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() == digest
+           for rel, digest in _rec.items()):
+        _matches_tree.append(_pkg.identifier)
+check(_matches_tree == [PP.CURRENT.identifier] == [V3_IDENTITY],
+      "PACKAGE IDENTITY IS TRUTHFUL: exactly ONE record in the chain describes the live tree and "
+      "it is the one declared current. A CURRENT FILE CANNOT MASQUERADE AS A PREDECESSOR PACKAGE",
+      str(_matches_tree))
+check([p.identifier for p in PP.PARTICIPANT_PACKAGES]
+      == [V1_IDENTITY, V2_IDENTITY, V3_IDENTITY],
+      "the chain is declared oldest first and every link is named", str(PP.PARTICIPANT_PACKAGES))
+check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 3
+      and all((ROOT / p.record).is_file() for p in PP.PARTICIPANT_PACKAGES),
+      "each link has its OWN record file and all three are present, so no link shares a record "
+      "with another")
+check(PP.CURRENT.source_commit is None
+      and all(p.source_commit for p in PP.PARTICIPANT_PACKAGES[:-1]),
+      "and only the current link reads the working tree; both predecessors name the commit their "
+      "bytes live in")
+
+# =================================================================================================
+head("5. PROTOCOL INVARIANCE: ONLY DISPLAY BYTES MOVED FROM v2 TO v3")
+# =================================================================================================
+
+_changed = sorted(rel for rel in _v3 if _v3[rel] != _v2[rel])
+check(_changed == sorted(PP.V2_TO_V3_CHANGED),
+      "exactly eleven package files differ between v2 and v3, and they are the eleven declared",
+      str(_changed))
+
+# THE PROOF THAT ONLY THE NAME MOVED. Each current file is mapped back through the rename and
+# must be BYTE-IDENTICAL to its v2-era blob. This is stronger than counting differing lines: a
+# single changed character anywhere else makes it red.
+_not_name_only = []
+for rel in _changed:
+    _v2_text = (git_bytes(rel, V2_COMMIT) or b"").decode("utf-8")
+    if PP.to_v2_era((ROOT / rel).read_text(encoding="utf-8")) != _v2_text:
+        _not_name_only.append(rel)
+check(not _not_name_only,
+      "and every one of them, mapped back through the A1.1 rename, is BYTE-IDENTICAL to its v2 "
+      "bytes. ONLY THE DISPLAY NAME MOVED: no behaviour, no threshold, no sequence step, not one "
+      "other character", str(_not_name_only))
+
+# THE PROTOCOL SURFACE ITSELF, byte-identical. The decision sequence, the reveal gate, the lock,
+# the randomization, the server contract and the append-only record all live in files that are
+# NOT in the changed list, and that is asserted rather than inferred from the list's shortness.
+_protocol_moved = [rel for rel in PP.PROTOCOL_SURFACE if _v3.get(rel) != _v2.get(rel)]
+check(not _protocol_moved,
+      "every file carrying a step of the participant sequence -- evidence, preliminary "
+      "assessment, confidence, preliminary lock, reveal, final action, final lock, next period -- "
+      "and every file carrying randomization, reveal timing, lock enforcement, the server "
+      "contract, the append-only record or treatment logic is BYTE-IDENTICAL between v2 and v3",
+      str(_protocol_moved))
+check(all(rel in _v3 for rel in PP.PROTOCOL_SURFACE),
+      "and every one of those files is actually inside the package inventory, so the check above "
+      "is over real rows rather than over names that are not there",
+      str([rel for rel in PP.PROTOCOL_SURFACE if rel not in _v3]))
+check("assets/js/decision.js" not in _changed and "assets/js/decision-ui.js" in _changed,
+      "the distinction the file names invite and the bytes settle: decision.js RUNS the sequence "
+      "and did not move; decision-ui.js holds a module-id-to-display-name table and did")
+
+# THE SERVER SIDE, which no package record covers and which is where the sequence is actually
+# enforced. Read from the tree at the v2 commit, because a display rename that had quietly
+# reached the enforcement path would not show up in the package at all.
+for _srv in ("server/app/research_decision.py", "server/app/research_transitions.py",
+             "server/app/research_assignment.py", "server/app/research_audit.py",
+             "server/app/research_consent.py", "server/app/research_membership.py"):
+    check(git_bytes(_srv, V2_COMMIT) == (ROOT / _srv).read_bytes(),
+          f"{_srv} is byte-identical to its v2 bytes, so lock enforcement, reveal timing, "
+          f"randomization, server authority and the append-only record are untouched")
 
 print()
 print("=" * 78)
