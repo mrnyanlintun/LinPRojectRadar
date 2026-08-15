@@ -147,11 +147,30 @@ FAULTS = [
      '    "A3.9": "externalCostIndex",\n    "A9.9": "run28ClosureOrphanStructure",',
      "AN ORPHAN STRUCTURE KEY: a twenty-fourth module-to-key entry added to production with no "
      "classified row in the reconciliation table"),
-    ("F13", "test_run28_participant_v1_preservation", "EDIT",
+    ("F13", "test_run28_participant_packages", "EDIT",
      "code_audit/run12_participant_package_checksums.sha256",
      "  assets/js/taxonomy.js", "  assets/js/taxonomy.js\n",
      "the historical Run-12 participant record altered. The reconstruction reads the git object, "
      "so the working-tree record must still match it byte for byte"),
+    # ------------------------------------------------- THE PARTICIPANT PACKAGE CHAIN, THIRD PASS
+    ("FA", "test_run28_participant_packages", "EDIT",
+     "assets/js/taxonomy.js", "   Opus Gubernatio", "   Opus Gubernatio  ",
+     "FAULT A: one CURRENT-package byte mutated without updating its package record. The v3 "
+     "checksum guard must name that file, and the identity guard must stop finding any record "
+     "that describes the tree"),
+    ("FB", "test_run28_participant_packages", "EDIT",
+     "server/tools/participant_packages.py",
+     '        "og-participant-2026.08-v3",\n        "code_audit/run28_closure_v3_participant',
+     '        "og-participant-2026.08-v2",\n        "code_audit/run28_closure_v3_participant',
+     "FAULT B: the current changed bytes stamped with the PREDECESSOR package identifier, which "
+     "is a current file masquerading as a predecessor package"),
+    ("FC", "test_run28_participant_packages", "EDIT",
+     "code_audit/run28_closure_participant_package_checksums.sha256",
+     "  assets/js/taxonomy.js", "  assets/js/taxonomy.js\n",
+     "FAULT C, the tree-side half: the historical v2 record altered so it no longer matches the "
+     "commit that froze it. The in-workspace half -- mutating one byte of the reconstructed v2 "
+     "package and requiring the guard to name exactly that file -- is proved inline inside the "
+     "suite itself, with the mutation confirmed by re-reading it"),
     # THE OWNER'S NAMED A2.7 FAULT, on the REAL-CORPUS route rather than on the structure. F2
     # weakens the canonical method's own minimum-history guard; this one weakens the ASSEMBLER
     # that builds the history out of the stored schedule snapshots, so a milestone that appears

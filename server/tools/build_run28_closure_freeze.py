@@ -58,12 +58,12 @@ sys.path.insert(0, str(ROOT / "server"))
 import production_tree as pt  # noqa: E402
 import run28_production_changes as _R28  # noqa: E402
 
-RELEASE_ID = "OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN28-CLOSURE-V12-1"
-PARENT_ID = "OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN28-CLOSURE-V11-2"
-STAGE1 = ROOT / "research" / "freeze" / "RUN28_CLOSURE_V12_FREEZE_2026-08-14.json"
+RELEASE_ID = "OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN28-CLOSURE-V12-2"
+PARENT_ID = "OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN28-CLOSURE-V12-1"
+STAGE1 = ROOT / "research" / "freeze" / "RUN28_PARTICIPANT_V3_FREEZE_2026-08-14.json"
 STAGE2 = STAGE1.with_suffix(".sha256")
 REPORT = "REPORT_2026-08-14_run28-closure.md"
-PARENT_FREEZE = "research/freeze/RUN28_CLOSURE_FREEZE_2026-08-14.json"
+PARENT_FREEZE = "research/freeze/RUN28_CLOSURE_V12_FREEZE_2026-08-14.json"
 
 
 def sha(rel: str) -> str | None:
@@ -91,11 +91,10 @@ def build() -> None:
         "supersedes_manifest": PARENT_FREEZE,
         "supersedes_manifest_sha256": sha(PARENT_FREEZE),
         "grandparent_release":
-            "OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN28-CANONICAL-CAT1-3-V11-1",
-        "grandparent_manifest":
-            "research/freeze/RUN28_CANONICAL_CAT1_3_FREEZE_2026-08-14.json",
+            "OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN28-CLOSURE-V11-2",
+        "grandparent_manifest": "research/freeze/RUN28_CLOSURE_FREEZE_2026-08-14.json",
         "grandparent_manifest_sha256": sha(
-            "research/freeze/RUN28_CANONICAL_CAT1_3_FREEZE_2026-08-14.json"),
+            "research/freeze/RUN28_CLOSURE_FREEZE_2026-08-14.json"),
         "supersedes_note":
             "the first closure freeze RUN28-CLOSURE-V11-2, the Run-28 freeze behind it and "
             "every freeze behind that are preserved unchanged as the historical record of those "
@@ -173,30 +172,52 @@ def build() -> None:
                       for rel, digest, size, tracked in prod],
         },
 
-        "participant_package": {
-            "identifier": "og-participant-2026.08-v2",
-            "supersedes": "og-participant-2026.08-v1",
-            "checksums": "code_audit/run28_closure_participant_package_checksums.sha256",
-            "checksums_sha256": sha(
+        "participant_package_chain": {
+            "current": "og-participant-2026.08-v3",
+            "current_record":
+                "code_audit/run28_closure_v3_participant_package_checksums.sha256",
+            "current_record_sha256": sha(
+                "code_audit/run28_closure_v3_participant_package_checksums.sha256"),
+            "predecessor": "og-participant-2026.08-v2",
+            "predecessor_record":
+                "code_audit/run28_closure_participant_package_checksums.sha256",
+            "predecessor_record_sha256": sha(
                 "code_audit/run28_closure_participant_package_checksums.sha256"),
-            "predecessor_checksums": "code_audit/run12_participant_package_checksums.sha256",
-            "predecessor_checksums_sha256": sha(
+            "predecessor_source_commit": "0293dc5dff40c66a61bc0f57330611de96c4f7b0",
+            "historical": "og-participant-2026.08-v1",
+            "historical_record": "code_audit/run12_participant_package_checksums.sha256",
+            "historical_record_sha256": sha(
                 "code_audit/run12_participant_package_checksums.sha256"),
-            "predecessor_preserved_unchanged": True,
-            "why":
-                "assets/js/taxonomy.js, the participant ledger's own name source, carries the two "
-                "approved Category-1 renames and the A1.1 alignment. Run 28 refused this because "
-                "the study is mid-sequence; the owner's closure instruction requires the current "
-                "surface to be consistent and permits a successor record with the predecessor "
-                "preserved.",
-            "what_changed": "display strings only",
-            "decision_sequence_unchanged":
-                "preliminary, lock, reveal, final, lock. No experimental logic was touched.",
-            "predecessor_record_was_already_stale":
-                "REPORTED RATHER THAN QUIETLY CORRECTED. Fourteen package files already differed "
-                "from the Run-12 record before this closure -- radar.css, detail.js, "
-                "simulations.js, index.html and others, from Runs 21 to 26 -- so the successor "
-                "records the bytes as they actually stand rather than only this closure's edits.",
+            "historical_source_commit": "c44e3ced94a22a9def35fa5a2be3a2268fbed6bb",
+            "declaration": "server/tools/participant_packages.py",
+            "guard": "server/tools/test_run28_participant_packages.py",
+            "why_v3":
+                "the closure's second pass applied the owner's A1.1 decision to the naming "
+                "authority and re-propagated it; ELEVEN files inside the participant package "
+                "carry that name and their bytes moved after the v2 record was taken.",
+            "defect_this_also_corrects":
+                "the second pass did NOT create a successor at the time: it REGENERATED THE v2 "
+                "RECORD IN PLACE over those eleven files. A package record rewritten to agree "
+                "with the tree describes the tree and not the package it names, which is exactly "
+                "the staleness the same pass had just found in the Run-12 v1 record. The v2 "
+                "record is restored byte for byte to the bytes commit 0293dc5 wrote, and v3 is "
+                "the successor that should have been created then.",
+            "identity_rule":
+                "EXACTLY ONE record in the chain may describe the live tree and it must be the "
+                "one declared current. A predecessor that matches the tree means either nothing "
+                "changed or a predecessor was rewritten to agree with the present.",
+            "what_changed_from_v2": "display strings only, all of them the same module name",
+            "proof_method":
+                "not asserted: each of the eleven current files is mapped BACK through the "
+                "rename and required to be BYTE-IDENTICAL to its v2-era blob, so a single "
+                "changed character anywhere else is red.",
+            "protocol_unchanged":
+                "every file carrying a step of the participant sequence -- evidence, preliminary "
+                "assessment, confidence, preliminary lock, reveal, final action, final lock, "
+                "next period -- and every file carrying randomization, reveal timing, lock "
+                "enforcement, the server contract, the append-only record or treatment logic is "
+                "byte-identical between v2 and v3, asserted by name rather than inferred. The "
+                "six server-side research modules are byte-identical to their v2 bytes too.",
         },
 
         "scientific_authority": {
