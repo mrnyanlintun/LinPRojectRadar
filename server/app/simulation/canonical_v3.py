@@ -220,7 +220,7 @@ def empirical_quantile(values: Sequence[float], p: float) -> float:
 # CATEGORY 1
 # =================================================================================================
 
-# ------------------------------------------------------------ 1.1 Monte Carlo EAC
+# ------------------------------------------------------------ 1.1 Monte Carlo EAC Forecast
 
 
 def beta_pert_moments(a: float, m: float, b: float, lam: float = 4.0) -> dict[str, float]:

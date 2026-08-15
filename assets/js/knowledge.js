@@ -639,7 +639,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
        advise the PM" and the per-category articles. */
     {
       id: "module01",
-      title: "Monte Carlo EAC",
+      title: "Monte Carlo EAC Forecast",
       eyebrow: "Cost and EVM Performance",
       build: () => `
         <p class="kn-lead">EVM integrates scope, schedule, and cost on a single measurement plane. On U.S. public capital programs it is required under OMB Circular A-11 and FAR Part 34 for major investments; under most agency policies a CPI shortfall sustained over multiple reporting periods is itself a reporting trigger.</p>
@@ -689,7 +689,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
         <h3>Governance implication</h3>
         <p>CPI &lt; 0.90 on a public capital program is the FAR-region threshold for potential corrective action reporting. A CPI of 0.88 sustained over three periods is not a "watch item", under most agency program-controls policies it is a recovery-plan trigger, and the audit record should show the decision was made (or formally deferred) by named authority on a documented date.</p>
 
-        <h3>Monte Carlo EAC forecast, why a range, not a point</h3>
+        <h3>Monte Carlo EAC Forecast, why a range, not a point</h3>
         <p>A single deterministic EAC gives false precision. A P50/P80 range is more honest and more useful: it lets program controls fund contingency to an explicit risk percentile rather than to a point estimate that pretends the future is known.</p>
 
         <h3>Why Beta-PERT</h3>
@@ -794,8 +794,8 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
           ["P80 vs baseline", { label: "within baseline", color: RAG.green }, { label: "+0 to +20%", color: RAG.amber }, { label: "> +20%", color: RAG.red }],
         ])}
 
-        <h3>How it differs from Monte Carlo EAC</h3>
-        <p>Monte Carlo EAC randomises cost performance; PERT Network Criticality randomises activity durations along the schedule network. Monte Carlo EAC answers "what will it cost?"; PERT Network Criticality answers "when will it finish?". Both contribute independent evidence to Conservative Dominance synthesis.</p>
+        <h3>How it differs from Monte Carlo EAC Forecast</h3>
+        <p>Monte Carlo EAC Forecast randomises cost performance; PERT Network Criticality randomises activity durations along the schedule network. Monte Carlo EAC Forecast answers "what will it cost?"; PERT Network Criticality answers "when will it finish?". Both contribute independent evidence to Conservative Dominance synthesis.</p>
       `,
     },
     {
@@ -1544,7 +1544,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
 
   /* ---------- Cost and EVM Performance, Quantitative EVM (1.1-1.12) ---------- */
   const CAT1_MODULES = [
-    { n: "A1.1", name: "Monte Carlo EAC", mc: "Monte_Carlo",
+    { n: "A1.1", name: "Monte Carlo EAC Forecast", mc: "Monte_Carlo",
       purpose: "Replaces a single-point EAC with a probabilistic range so contingency and escalation decisions are made against an explicit confidence level rather than false precision.",
       formula: "5,000-iteration simulation: CPI is sampled per-iteration from a Beta-PERT(a, m, b) distribution derived from the project's current CPI/SPI; EAC_i = BAC / CPI_i. P50 and P80 are read from the sorted simulated array; P(delay) = share of iterations where EAC_i &gt; BAC × 1.10.",
       bands: [["green","Green","P80 EAC within +5% of BAC"], ["amber","Amber","P80 EAC +5% to +10% of BAC"], ["red","Red","P80 EAC &gt; +10% of BAC"]],
@@ -1569,7 +1569,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       formula: "priorMean = BAC, priorVariance = (BAC × 0.15)²; likelihoodMean = BAC/CPI, likelihoodVariance = (BAC × (1−CPI)/CPI)²; posteriorMean = (priorMean/priorVariance + likelihoodMean/likelihoodVariance) / (1/priorVariance + 1/likelihoodVariance); deltaPct = (posteriorMean − BAC)/BAC × 100.",
       bands: [["green","Green","delta ≤ 5%"], ["yellow","Yellow","5% &lt; delta ≤ 10%"], ["amber","Amber","10% &lt; delta ≤ 20%"], ["red","Red","delta &gt; 20%"]],
       abstain: "any of bac, ev, ac, cpi is null/undefined.",
-      sources: "Pay Application, Schedule of Values, Cost Report, the same BAC/EV/AC/CPI inputs as Monte Carlo EAC.",
+      sources: "Pay Application, Schedule of Values, Cost Report, the same BAC/EV/AC/CPI inputs as Monte Carlo EAC Forecast.",
       interp: "A posterior far from BAC means the current-period evidence is overwhelming the prior; the PM should treat the posterior, not the raw BAC/CPI figure, as the credible forecast.",
       ground: "Bayesian updating (prior + evidence → posterior) is the standard mechanism for revising an estimate as new reporting-period evidence arrives, letting a forecast move with the data instead of staying anchored to the original budget." },
     { n: "A1.4", name: "Kalman Filter SPI Smoother", mc: "Kalman_Filter",
@@ -1586,7 +1586,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       bands: [["green","Green","forecast CPI ≥ 0.95"], ["yellow","Yellow","0.92-0.94"], ["amber","Amber","0.88-0.91"], ["red","Red","&lt; 0.88"]],
       abstain: "cpiHistory (or a single cpi reading) has fewer than 3 periods.",
       sources: "Pay Application, Cost Report, the CPI series across reporting periods.",
-      interp: "'Recovering' vs 'declining' in the evidence string tells the PM whether the autocorrelation structure of recent periods points toward or away from budget; treat as a trend confirmation for Monte Carlo EAC and Bayesian EAC, not an independent verdict.",
+      interp: "'Recovering' vs 'declining' in the evidence string tells the PM whether the autocorrelation structure of recent periods points toward or away from budget; treat as a trend confirmation for Monte Carlo EAC Forecast and Bayesian EAC, not an independent verdict.",
       ground: "Box-Jenkins ARIMA methodology (Box &amp; Jenkins, 1970) models a series from its own autocorrelation structure; this implementation is a simplified AR(1)-on-differences approximation, a lightweight proxy for the full Box-Jenkins identification/estimation/diagnostic cycle." },
     { n: "A1.6", name: "Earned Schedule", mc: "Earned_Schedule",
       purpose: "Converts the cost-based SPI (which converges to 1.0 near closeout and becomes uninformative) into a time-based schedule performance index that stays meaningful through the whole project.",
@@ -1710,13 +1710,13 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       interp: "This is a two-sided band: both under-loading (risk of schedule slip) and over-loading (risk of cost overrun or crew crowding) trigger the same escalating status, so the PM should check which direction the ratio is off before choosing an action.",
       ground: "Resource-loading histograms comparing actual to planned labor hours are a standard construction resource-management technique for detecting staffing mismatches against the baseline plan." },
     { n: "A2.10", name: "Schedule Risk Analysis P80", mc: "Schedule_Risk_Analysis",
-      purpose: "Produces a conservative P80 estimate of schedule delay beyond the baseline finish date, the schedule analogue of the Monte Carlo EAC Monte Carlo cost forecast.",
+      purpose: "Produces a conservative P80 estimate of schedule delay beyond the baseline finish date, the schedule analogue of the Monte Carlo EAC Forecast.",
       formula: "remainingDays = total baseline days × (100 − actualPctComplete)/100; p50Days = remainingDays / SPI; uncertainty = max(0.05, 1 − SPI) × 0.5; p80Days = p50Days × (1 + uncertainty × 1.28); delayDays = round(p80Days − remainingDays).",
       bands: [["green","Green","delayDays ≤ 0"], ["yellow","Yellow","0-14 days"], ["amber","Amber","14-30 days"], ["red","Red","&gt; 30 days"]],
       abstain: "spi, baselineEnd, baselineStart or actualPctComplete missing, or baseline duration ≤ 0.",
       sources: "Schedule Update / Look-ahead, Time-phased Schedule / Baseline.",
       interp: "delayDays is the conservative (P80) projected slip beyond the baseline finish; a positive value even a few days above zero is worth tracking, since P80 is meant to be the number contingency schedule is planned against.",
-      ground: "P80 schedule-risk analysis mirrors P80 cost-risk analysis (Monte Carlo EAC and Cost Risk Analysis P80): a single deterministic finish date is replaced with a conservative percentile estimate, applying an analytic uncertainty scaling (1.28 ≈ the z-score for the 80th percentile of a normal approximation) rather than a full simulation." },
+      ground: "P80 schedule-risk analysis mirrors P80 cost-risk analysis (Monte Carlo EAC Forecast and Cost Risk Analysis P80): a single deterministic finish date is replaced with a conservative percentile estimate, applying an analytic uncertainty scaling (1.28 ≈ the z-score for the 80th percentile of a normal approximation) rather than a full simulation." },
     { n: "A2.11", name: "Critical Path Index", mc: "Critical_Path_Index",
       purpose: "Blends the physical-progress ratio and SPI into a single composite index of schedule health along the critical path.",
       formula: "progressRatio = actualPctComplete / plannedPctComplete (falls back to SPI if plannedPctComplete is 0); criticalPathIndex = (progressRatio + SPI) / 2.",
@@ -1734,7 +1734,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       formula: "Fixed airport-infrastructure reference-class multiplier set [1.00, 1.04, 1.10, 1.14, 1.15, 1.26, 1.38, 1.45, 1.52]; P50/P80 read from this sorted array; P80 prior = BAC × multiplier[P80]; overP80 = (multiplier[P80] − 1) × 100.",
       bands: [["green","Green","P80 overrun ≤ 10% of BAC"], ["amber","Amber","10-25%"], ["red","Red","&gt; 25%"]],
       sources: "Historical Project Data, Past Performance Report, the reference class itself is a fixed synthetic distribution, not per-project extracted data; only BAC is read from the project.",
-      interp: "The debiasing multiplier is the outside-view answer to 'what do comparable projects actually cost'; when it diverges sharply from the project's own bottom-up EAC (Monte Carlo EAC and Bayesian EAC), the gap is itself the finding worth escalating.",
+      interp: "The debiasing multiplier is the outside-view answer to 'what do comparable projects actually cost'; when it diverges sharply from the project's own bottom-up EAC (Monte Carlo EAC Forecast and Bayesian EAC), the gap is itself the finding worth escalating.",
       ground: "Reference Class Forecasting (Flyvbjerg, 2008) replaces inside-view estimation with the empirical outside-view distribution of a comparable reference class, the method now embedded in UK Treasury Green Book guidance for major infrastructure business cases." },
     /* The "Design Structure Matrix" entry that stood here was removed in the module
        renumbering (its id is not in the registered set). As with the Document Risk
@@ -1773,12 +1773,12 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       interp: "An absorption rate above 1.0 means overhead is running ahead of progress, a fixed-cost/duration risk that compounds if the schedule slips further, since overhead accrues by time, not by units of work completed.",
       ground: "Overhead absorption analysis, comparing actual indirect cost to the rate implied by progress, is a standard cost-accounting check that isolates fixed/time-based cost risk from the direct-cost performance already captured by CPI." },
     { n: "A3.6", name: "Cost Risk Analysis P80", mc: "Cost_Risk_Analysis",
-      purpose: "Produces an analytic (non-simulated) P80 conservative cost estimate as a fast cross-check against the full Monte Carlo EAC Monte Carlo run.",
+      purpose: "Produces an analytic (non-simulated) P80 conservative cost estimate as a fast cross-check against the full Monte Carlo EAC Forecast run.",
       formula: "eac = BAC/CPI; uncertainty = max(0.03, |1 − CPI|) × 0.5; p80EAC = eac × (1 + uncertainty × 1.28); p80DeltaPct = ((p80EAC − BAC)/BAC) × 100.",
       bands: [["green","Green","p80DeltaPct ≤ 5%"], ["yellow","Yellow","5-10%"], ["amber","Amber","10-20%"], ["red","Red","&gt; 20%"]],
       abstain: "bac, cpi, ac or ev missing, or cpi ≤ 0, or bac ≤ 0. A cost performance index of zero once raised inside the computation rather than abstaining.",
       sources: "Pay Application, Schedule of Values, Cost Report.",
-      interp: "This is an analytic shortcut, not a full simulation; when it disagrees with Monte Carlo EAC's simulated P80, the simulated figure should be treated as the more defensible one for a formal funding conversation, but disagreement itself is worth investigating.",
+      interp: "This is an analytic shortcut, not a full simulation; when it disagrees with Monte Carlo EAC Forecast's simulated P80, the simulated figure should be treated as the more defensible one for a formal funding conversation, but disagreement itself is worth investigating.",
       ground: "The 1.28 scaling factor approximates the 80th-percentile z-score of a normal distribution, a standard analytic proxy for percentile-based risk estimation when a full Monte Carlo run is not warranted." },
     { n: "A3.7", name: "Analogous Estimating Ratio", mc: "Analogous_Estimating",
       purpose: "Applies a documented overrun percentage from an analogous prior project directly to this project's BAC, a lightweight top-down cross-check independent of Reference Class Forecasting's fixed reference class.",
@@ -1920,7 +1920,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       bands: [["green","Green","pessimistic EAC ≤ BAC × 1.05"], ["yellow","Yellow","≤ 1.10"], ["amber","Amber","≤ 1.20"], ["red","Red","&gt; 1.20"]],
       abstain: "bac, ev, ac, cpi or spi missing; cpi or spi ≤ 0; bac ≤ 0; negative earned value or actual cost; or earned value above the budget at completion, which leaves no remaining work to forecast.",
       sources: "Pay Application, Schedule of Values, Cost Report.",
-      interp: "Unlike Monte Carlo EAC's simulated distribution, this is three fixed deterministic points; a wide gap between the three scenarios (large scenarioRange) even with a Green status on the pessimistic band alone is itself informative about how uncertain the current forecast really is.",
+      interp: "Unlike Monte Carlo EAC Forecast's simulated distribution, this is three fixed deterministic points; a wide gap between the three scenarios (large scenarioRange) even with a Green status on the pessimistic band alone is itself informative about how uncertain the current forecast really is.",
       ground: "Three-point (optimistic/most-likely/pessimistic) scenario forecasting is the deterministic ancestor of full Monte Carlo simulation, still standard practice for a quick range estimate when a full stochastic run is not required." },
     { n: "A5.5", name: "Rework Feedback Loop", mc: "Rework_Feedback",
       purpose: "Combines RFI volume, change-order volume, and CPI degradation into a single index estimating how much of current cost inefficiency is being driven by a rework feedback loop rather than original scope.",
@@ -1993,21 +1993,21 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       purpose: "Combines four independent evidence sources (EVM, Monte Carlo forecast, CUSUM, document risk) into explicit belief masses over {Green, Amber, Red, Unknown}, rather than taking the single worst signal.",
       formula: "Each source assigns a basic probability assignment (mass function); Dempster's combination rule merges sources pairwise, normalising out the conflict mass K = Σ mass pairs whose intersection is empty. Ignorance is the whole frame of discernment rather than a fifth state, so mass a source declines to commit is compatible with every state and contributes nothing to K. Final state = argmax belief mass.",
       bands: [["green","Low (K &lt; 0.10)","sources broadly agree, result is reliable"], ["amber","Moderate (0.10-0.30)","some inter-signal tension"], ["red","High (K &gt; 0.30)","strong disagreement, itself a governance finding"]],
-      sources: "Consumes existing Cost and EVM Performance EVM/CUSUM/Doc Risk and Monte Carlo EAC Monte Carlo outputs.",
+      sources: "Consumes existing Cost and EVM Performance EVM/CUSUM/Doc Risk and Monte Carlo EAC Forecast outputs.",
       interp: "When DST and Conservative Dominance agree, both corroborate each other; when they diverge, the divergence is recorded rather than resolved in favor of one method, telling the reviewer the evidence picture is genuinely ambiguous.",
       ground: "Dempster-Shafer Theory (Dempster, 1967; Shafer, 1976) is a mathematical framework for combining evidence from multiple independent sources under uncertainty, explicitly modeling and quantifying inter-source conflict rather than assuming sources always agree." },
     { n: "B2.2", name: "Rough Sets", mc: "Rough_Sets_Classification",
       purpose: "Classifies the project's state via lower/upper set approximations rather than a single point estimate, explicitly naming the indeterminate boundary region when evidence is insufficient for a definite classification.",
       formula: "Each of the four evidence sources is bucketed into Green/Amber/Red; lower approximation = states with &gt;75% signal agreement; upper approximation = states with any support; boundary = upper − lower.",
       bands: [["green","Definite","lower approximation contains exactly one state"], ["amber","Borderline","boundary region is non-empty (Red if it contains Red, else Amber)"], ["amber","Indeterminate","upper approximation spans multiple states with no clear majority"]],
-      sources: "Consumes existing Cost and EVM Performance EVM/CUSUM/Doc Risk and Monte Carlo EAC Monte Carlo outputs.",
+      sources: "Consumes existing Cost and EVM Performance EVM/CUSUM/Doc Risk and Monte Carlo EAC Forecast outputs.",
       interp: "A non-empty boundary region is itself the finding: it means the current evidence set cannot yet support a confident single classification, and the governance response should be to gather more evidence, not to force a verdict.",
       ground: "Rough Set Theory (Pawlak, 1982) provides a set-theoretic framework for classification under incomplete or imprecise information, distinguishing what is definitely, possibly, and indeterminately true given the available attributes." },
     { n: "B2.3", name: "Neutrosophic Logic", mc: "Neutrosophic_Logic",
       purpose: "Adds indeterminacy (I) as an independent third dimension alongside truth (T) and falsity (F), so genuine unresolvable uncertainty is modelled explicitly rather than folded into a soft Amber reading.",
       formula: "T_combined = 1 − ∏(1−Tᵢ) (disjunctive); I_combined = ∏Iᵢ; F_combined = ∏Fᵢ (both conjunctive); normalized so T+I+F sums consistently. Status: Red if ≥2 sources Red, Amber if ≥2 Amber, else Green; escalates Green→Amber if I &gt; 0.30.",
       abstain: "no evidence-source components are available (returns an Amber 'Insufficient signal data' stub rather than the standard insufficient-data flag).",
-      sources: "Consumes existing Cost and EVM Performance EVM/CUSUM/Doc Risk and Monte Carlo EAC Monte Carlo outputs.",
+      sources: "Consumes existing Cost and EVM Performance EVM/CUSUM/Doc Risk and Monte Carlo EAC Forecast outputs.",
       interp: "High indeterminacy (&gt;30%) triggers an automatic upgrade from Green to Amber, the module treats 'we genuinely don't know' as a governance-relevant state in its own right, distinct from 'we know it's fine' or 'we know it's a problem'.",
       ground: "Neutrosophic Logic (Smarandache, 1995) generalises fuzzy and intuitionistic logic by treating indeterminacy as an independent axis, T+I+F need not sum to 1, capturing epistemic uncertainty that classical and fuzzy frameworks force into the residual of truth and falsity." },
     { n: "B2.4", name: "Interval Fuzzy Sets", mc: "Interval_Fuzzy_Sets",
@@ -2022,14 +2022,14 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       purpose: "Pairs each evidence source's classification (the restriction) with a fixed reliability weight for that source type (the reliability), so a verified pay-application-derived signal carries more weight than a less-reliable proxy source.",
       formula: "Fixed source reliabilities: EVM 0.85, CUSUM 0.90, Document Risk 0.65, Monte Carlo forecast 0.88. Reliability-weighted totals accumulate per bucket; status = the bucket with the highest total reliability-weighted mass.",
       abstain: "no signals are available (returns an Amber 'Insufficient signal data' stub).",
-      sources: "Consumes existing Cost and EVM Performance EVM/CUSUM/Doc Risk and Monte Carlo EAC Monte Carlo outputs.",
+      sources: "Consumes existing Cost and EVM Performance EVM/CUSUM/Doc Risk and Monte Carlo EAC Forecast outputs.",
       interp: "Because document risk carries the lowest fixed reliability (0.65) of the four sources, a Red from Document Risk Extraction alone is weighted less heavily here than an equivalent Red from CUSUM (0.90); this is a deliberate check against over-weighting the least-verified signal class.",
       ground: "The Z-number (Zadeh, 2011) is a pair (restriction, reliability) explicitly separating what a signal says from how much to trust it, letting the governance layer discount lower-reliability sources rather than treating every signal as equally trustworthy." },
     { n: "B2.6", name: "PLTS", mc: "PLTS",
       purpose: "Represents each evidence source as a full probability distribution over {Green, Amber, Red} rather than a single crisp label, then averages those distributions across sources.",
       formula: "Each source is mapped through a 6-band lookup table into a {Green, Amber, Red} probability triple; the four sources' triples are simple-averaged; status = argmax of the averaged triple.",
       abstain: "no source distributions are available (returns an Amber stub with p_green:33, p_amber:34, p_red:33).",
-      sources: "Consumes existing Cost and EVM Performance EVM/CUSUM/Doc Risk and Monte Carlo EAC Monte Carlo outputs.",
+      sources: "Consumes existing Cost and EVM Performance EVM/CUSUM/Doc Risk and Monte Carlo EAC Forecast outputs.",
       interp: "The reported probability triple (not just the winning label) shows how close a call was, e.g. 40/35/25 Green/Amber/Red is a genuinely different situation from 90/8/2 even though both round to the same 'Green' headline status.",
       ground: "Probabilistic Linguistic Term Sets (Pang, Wang &amp; Xu, 2016) let an evaluator express a judgment as a distribution over linguistic terms rather than committing to one, appropriate for evidence that is not cleanly binary." },
     { n: "B2.7", name: "Plithogenic Sets", mc: "Plithogenic_Sets",
@@ -2037,13 +2037,13 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       formula: "Each attribute's weight = membership × (1 − contradiction × 0.5); weighted scores accumulate per bucket; status = argmax bucket; avgContradiction is reported as its own metric.",
       bands: [["green","Low (&lt; 0.30)","attributes are broadly consistent"], ["amber","Moderate (0.30-0.60)","some attributes pull against the classification"], ["red","High (&gt; 0.60)","the evidence set is internally contradictory"]],
       abstain: "no evidence attributes are available (returns an Amber 'Insufficient signal data' stub).",
-      sources: "Consumes existing Cost and EVM Performance EVM/CUSUM/Doc Risk and Monte Carlo EAC Monte Carlo outputs.",
+      sources: "Consumes existing Cost and EVM Performance EVM/CUSUM/Doc Risk and Monte Carlo EAC Forecast outputs.",
       interp: "A high contradiction level is a distinct finding from a high Red mass: it means the sources are not just disagreeing on the verdict but structurally pulling in opposite directions, worth investigating why before acting on the majority classification alone.",
       ground: "Plithogenic Sets (Smarandache, 2018) generalise crisp, fuzzy, intuitionistic, and neutrosophic sets by attaching an explicit contradiction degree to each attribute relative to a dominant attribute value." },
     { n: "B2.8", name: "Belief Rule Base", mc: "Belief_Rule_Base",
       purpose: "Applies eight fixed, explicit IF-THEN governance rules matched against the current EVM state, CUSUM breach status, and document-risk state, then combines the belief distributions of every matching rule.",
       formula: "8 rules (R1-R8), each a fixed belief distribution over {Green,Amber,Red} with an associated weight, matched by condition; matched rules combine via weighted average: aggregate = Σ(belief × weight) / Σweight; status = argmax of the aggregate.",
-      sources: "Consumes existing Cost and EVM Performance EVM/CUSUM/Doc Risk and Monte Carlo EAC Monte Carlo outputs.",
+      sources: "Consumes existing Cost and EVM Performance EVM/CUSUM/Doc Risk and Monte Carlo EAC Forecast outputs.",
       interp: "Because the rules are fixed and enumerable (not learned from data), every classification this module produces traces back to a specific, readable IF-THEN rule, the same auditability principle that governs decision.js's escalation logic.",
       ground: "The Belief Rule Base methodology (Yang, Liu, Wang, Sii &amp; Wang, 2006) combines expert-authored IF-THEN rules with Dempster-Shafer-style belief distributions, an interpretable alternative to a learned (black-box) classifier for the same evidence-combination task." },
     { n: "B2.9", name: "Quantum Probability", mc: "Quantum_Probability",
@@ -2301,7 +2301,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       bands: [["green","Green","range ≤ 5% of BAC"], ["yellow","Yellow","≤ 10%"], ["amber","Amber","≤ 20%"], ["red","Red","&gt; 20%"]],
       abstain: "bac, ev, ac, cpi or spi missing; cpi or spi ≤ 0; bac ≤ 0; negative earned value or actual cost; or earned value above the budget at completion.",
       sources: "Pay Application, Schedule of Values, Cost Report.",
-      interp: "A wide scenario range means the decision the PM faces this cycle is genuinely uncertain even before considering probability weights, useful context for how much confidence to attach to whichever single-point forecast (Monte Carlo EAC, 1.4, 3.7) is being used for the funding conversation.",
+      interp: "A wide scenario range means the decision the PM faces this cycle is genuinely uncertain even before considering probability weights, useful context for how much confidence to attach to whichever single-point forecast (Monte Carlo EAC Forecast, 1.4, 3.7) is being used for the funding conversation.",
       ground: "Named-scenario decision matrices are a standard decision-analysis technique for presenting a bounded range of plausible futures to a non-technical decision-maker without requiring them to interpret a full probability distribution." },
     { n: "B4.5", name: "Decision Sensitivity Matrix", mc: "Decision_Sensitivity_Matrix",
       purpose: "Identifies which single input (cost, schedule, or document risk) would most change the governance recommendation if it shifted, directing verification effort to the highest-leverage variable, the Decision Optimization counterpart to Sensitivity Analysis's broader sensitivity analysis.",
@@ -2736,7 +2736,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
 
       <h3>Core thresholds, as implemented</h3>
       ${modBands([
-        ["green","Monte Carlo EAC forecast","Green when the P80 overrun is under 5% of budget at completion; Amber from 5% to 10%; Red at or beyond 10%"],
+        ["green","Monte Carlo EAC Forecast","Green when the P80 overrun is under 5% of budget at completion; Amber from 5% to 10%; Red at or beyond 10%"],
         ["amber","CUSUM anomaly monitor","two-sided tabular CUSUM against a target of 1.00, slack k = 0.5σ, decision interval H = 5σ. Red on a breach of H; Amber once the statistic reaches 60% of H"],
       ])}
       <p class="about-note">The document risk score is not listed here. It is a value the extraction model supplies and the server carries through, not a computation the analytical server performs, so it has no server-side threshold of its own to quote.</p>

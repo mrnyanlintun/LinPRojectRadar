@@ -82,7 +82,7 @@
   /* ---------------------------------------------------------- the exposure sentence
      The one figure every option is weighed against: what the analytical layer says this
      project finishes at. Cost Risk Analysis stores an integer estimate and a percentage;
-     Monte Carlo EAC stores the same quantity from its own simulation. Either is quoted
+     Monte Carlo EAC Forecast stores the same quantity from its own simulation. Either is quoted
      verbatim. When neither computed, the exposure is stated as not established rather than
      replaced with an adjective. */
   function exposure(mods, si, docEv) {

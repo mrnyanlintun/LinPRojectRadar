@@ -292,7 +292,7 @@ const DS_DEFENSIBILITY = {
    "count": 12,
    "modules": [
     {
-     "name": "Monte Carlo EAC",
+     "name": "Monte Carlo EAC Forecast",
      "methodClass": "Monte Carlo",
      "defenseTier": "Tier 1 - Statistical / stochastic model",
      "asCodedTier": "Tier 1 - Statistical / stochastic model",
@@ -310,7 +310,7 @@ const DS_DEFENSIBILITY = {
      "accreditationBasis": "Traceable to standard risk-analysis practice (AACE RP 41R-08 / NASA cost-risk guidance). Validation for this method would consist of convergence checks (stability of percentiles across iteration counts) and sensitivity of outputs to input-distribution choices. None of that has been performed on this platform. What the repository holds is known-answer testing of the stated formula and, for many modules, a domain and boundary enumeration. That supports the claim that the arithmetic is independently verified for the stated formula. It does not establish empirical validation or calibration.",
      "validationRequired": "Verify equations and code; test deterministic seeds; perform convergence or residual diagnostics; use seeded known-pattern cases; conduct sensitivity analysis; compare with a trusted reference implementation; document calibration and holdout performance where data permit.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP and MEASURE, with MANAGE for response; NIST TEVV for validity, reliability, uncertainty, benchmark, robustness, and monitoring evidence; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 25059 quality characteristics.",
-     "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Monte Carlo EAC method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
+     "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Monte Carlo EAC Forecast method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
      "governanceRole": "Enters the signal package with provenance, method version, input completeness, uncertainty/confidence, status, evidence metric, and abstention state; cannot authorize action without human judgment.",
      "defenseQuestions": [
       {
@@ -579,7 +579,7 @@ const DS_DEFENSIBILITY = {
      "defenseQuestions": [
       {
        "question": "Where does uncertainty appear?",
-       "answer": "Through EAC: when the Monte Carlo EAC distribution is used, VAC inherits an interval; the deterministic VAC is its central value."
+       "answer": "Through EAC: when the Monte Carlo EAC Forecast distribution is used, VAC inherits an interval; the deterministic VAC is its central value."
       },
       {
        "question": "Professors will ask: 'Where is the statistical test?'",

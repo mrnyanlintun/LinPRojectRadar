@@ -248,8 +248,21 @@ check("the fixture family declares its permanent repository identifier",
       contract["repository_module_id"] == "A1.1")
 check("the fixture family declares its permanent synthetic identifier",
       contract["synthetic_module_id"] == "1.1")
-check("the short registry name is retained as an alias",
-      "Monte Carlo EAC Forecast" in contract["backward_compatible_aliases"])
+# RUN 28 CLOSURE. THE NAMES SWAPPED PLACES, ON THE OWNER'S DECISION, AND THE CHECK FOLLOWS THE
+# DECISION RATHER THAN THE STRING. This fixture was written when the registry said `Monte Carlo
+# EAC` and the owner's prose said `Monte Carlo EAC Forecast`, so the prose name sat here as an
+# alias. The owner has now decided A1.1 IS `Monte Carlo EAC Forecast` and the naming authority was
+# updated; the retired registry name is the backward-compatible alias now. The property this
+# check has always had is unchanged: the OTHER name is still resolvable, so a joiner written
+# against either era still finds the module.
+check("the retired registry name is retained as an alias, so a joiner written before the rename "
+      "still resolves the module",
+      "Monte Carlo EAC" in contract["backward_compatible_aliases"])
+check("and the fixture's canonical name is the one the naming authority now records",
+      contract["canonical_module_name"] == "Monte Carlo EAC Forecast")
+check("while the stale owner_prose_alias label is nulled rather than deleted, so the record that "
+      "the two names once disagreed survives the reconciliation",
+      contract["owner_prose_alias"] is None and bool(contract.get("owner_prose_alias_note")))
 
 # --- checksums
 import hashlib  # noqa: E402

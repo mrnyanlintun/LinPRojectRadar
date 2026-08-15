@@ -202,7 +202,7 @@ RUN28_CLOSURE_BROWSER_SCOPE = {
     "assets/js/categories.js", "assets/js/taxonomy.js", "assets/js/knowledge.js",
     "assets/js/deepdive.js", "assets/js/charts3d.js", "assets/js/decision-ui.js",
     "assets/js/workspace.js", "assets/js/ds_defensibility_data.js",
-    "assets/js/neural_flow.js",
+    "assets/js/neural_flow.js", "assets/js/recommendation_options.js",
 }
 check("this run touched no participant-facing browser asset outside Run 11's authorised scope",
       not [d for d in diff_names
@@ -258,7 +258,7 @@ check("this run changed only the analytical layer under the application, plus th
 # below still proves every earlier stamp is preserved rather than overwritten.
 check("the analytical layer is stamped at this run's version, and Run 10's sim-2026.08-v4 is "
       "kept as a historical audit baseline rather than being overwritten",
-      SIMULATION_VERSION == "sim-2026.08-v11")
+      SIMULATION_VERSION == "sim-2026.08-v12")
 history = (ROOT / "server" / "app" / "simulation" / "models.py").read_text(encoding="utf-8")
 # RESTATED BY RUN 12, every earlier entry preserved: v5 and v6 join the list rather than
 # replacing it, so each run's freeze record is asserted present for as long as the file exists.

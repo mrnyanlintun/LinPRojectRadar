@@ -246,7 +246,7 @@ def main() -> int:
     campaign(
         "F2", "the new analytical line's version stamp",
         "server/app/simulation/models.py",
-        'SIMULATION_VERSION = "sim-2026.08-v11"',
+        'SIMULATION_VERSION = "sim-2026.08-v12"',
         'SIMULATION_VERSION = "sim-2026.08-v3"',
         "test_run6_known_answer.py",
         "the stamp must be the new line's, and must be the last of the recorded history, so a "

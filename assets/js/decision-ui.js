@@ -68,7 +68,7 @@
     C1: "Data Integrity", D1: "Portfolio Health"
   };
   var MODULE_NAMES = {
-    "A1.1": "Monte Carlo EAC", "A1.2": "CUSUM Anomaly Monitor", "A1.3": "Bayesian EAC",
+    "A1.1": "Monte Carlo EAC Forecast", "A1.2": "CUSUM Anomaly Monitor", "A1.3": "Bayesian EAC",
     "A1.4": "Kalman Filter SPI Smoother", "A1.5": "ARIMA CPI Forecast",
     "A1.6": "Earned Schedule", "A1.7": "TCPI", "A1.8": "Variance at Completion",
     "A1.9": "Budget Execution Rate", "A1.10": "CPI Shrinkage Forecast", "A1.11": "Independent EAC Reconciliation Index",

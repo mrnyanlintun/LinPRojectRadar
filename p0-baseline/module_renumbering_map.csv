@@ -1,5 +1,5 @@
 new_id,module_name,old_id,group,group_name,category,category_name,notes
-A1.1,Monte Carlo EAC,1.1,A,Project Health,A1,Cost & EVM Performance,
+A1.1,Monte Carlo EAC Forecast,1.1,A,Project Health,A1,Cost & EVM Performance,
 A1.2,CUSUM Anomaly Monitor,1.2,A,Project Health,A1,Cost & EVM Performance,
 A1.3,Bayesian EAC,1.4,A,Project Health,A1,Cost & EVM Performance,
 A1.4,Kalman Filter SPI Smoother,1.5,A,Project Health,A1,Cost & EVM Performance,

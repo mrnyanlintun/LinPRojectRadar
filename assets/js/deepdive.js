@@ -10,7 +10,7 @@
    no governance rules are duplicated here.
 
    Display module numbering (final / 2026 reorder):
-     01  Monte Carlo EAC               — Signal generator
+     01  Monte Carlo EAC Forecast               — Signal generator
      02  CUSUM Anomaly Monitor                  — Signal generator
      03  Document Risk Extraction               — Signal generator
      04  PERT Network Criticality               — Signal generator
@@ -157,7 +157,7 @@
       `<line x1="${sx(v)}" y1="16" x2="${sx(v)}" y2="${base}" stroke="${strong ? c : "var(--ring-line)"}" stroke-width="${strong ? 1.8 : 1.2}" stroke-dasharray="${strong ? "none" : "4 3"}"></line>` +
       `<text x="${sx(v) + 4}" y="${strong ? 14 : 28}" class="mod-axis" fill="${strong ? c : "var(--muted)"}">${esc(label)}</text>`;
 
-    const svg = svgo(h, "Real Monte Carlo EAC distribution (5,000 iterations) with P50 and P80 markers") +
+    const svg = svgo(h, "Real Monte Carlo EAC Forecast distribution (5,000 iterations) with P50 and P80 markers") +
       `<line x1="${pad}" y1="${base}" x2="${W - 12}" y2="${base}" stroke="var(--ring-line)"></line>` +
       bars +
       mark(mc.baseline, `BAC ${mc.baseline.toFixed(0)}`, false) +

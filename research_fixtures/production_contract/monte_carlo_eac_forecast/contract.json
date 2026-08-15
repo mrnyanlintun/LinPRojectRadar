@@ -1,8 +1,12 @@
 {
   "fixture_family": "MC-EAC-PROD-0.1",
-  "canonical_module_name": "Monte Carlo EAC",
-  "owner_prose_alias": "Monte Carlo EAC Forecast",
-  "backward_compatible_aliases": ["Monte Carlo EAC Forecast", "Monte_Carlo", "1.1"],
+  "canonical_module_name": "Monte Carlo EAC Forecast",
+  "owner_prose_alias": null,
+  "backward_compatible_aliases": [
+    "Monte Carlo EAC",
+    "Monte_Carlo",
+    "1.1"
+  ],
   "repository_module_id": "A1.1",
   "synthetic_module_id": "1.1",
   "data_origin": "SYNTHETIC_RESEARCH_FIXTURE",
@@ -67,5 +71,10 @@
     "alpha_two_sided": 0.001,
     "justification": "alpha 0.001 is 0.05 Bonferroni corrected across fifty mean checks in the programme. The rule is fixed before any result is computed."
   },
-  "convergence_sample_counts": [1000, 5000, 20000]
+  "convergence_sample_counts": [
+    1000,
+    5000,
+    20000
+  ],
+  "owner_prose_alias_note": "STALE LABEL, RECONCILED BY THE RUN-28 CLOSURE. This field recorded `Monte Carlo EAC Forecast` as the OWNER'S PROSE name against a registry that said `Monte Carlo EAC`. The owner has since decided that A1.1's canonical identity IS `Monte Carlo EAC Forecast` and the naming authority p0-baseline/module_renumbering_map.csv was updated on that decision, so the name is no longer an alias for anything: it is the canonical name and it now sits in canonical_module_name. The alias field is nulled rather than deleted so a reader of the fixture's history can see that the disagreement existed and how it was settled."
 }

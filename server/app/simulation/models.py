@@ -135,12 +135,30 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # reports the number and asserts NO colour: the band is calibration pending and Run 33 owns it.
 # That is a change in what a stored row contains, in several directions at once, and it has to be
 # distinguishable in already-collected data, which is what this stamp exists for.
-SIMULATION_VERSION = "sim-2026.08-v11"
+# RUN 28 CLOSURE moves it to sim-2026.08-v12, AND THIS CORRECTS A JUDGEMENT THE CLOSURE ITSELF
+# GOT WRONG FIRST TIME. The closure's own report argued the line should stay at v11 because "no
+# arithmetic, band, boundary or reported quantity moved". That reasoning was too narrow, and the
+# counter-example is mechanical rather than rhetorical: on ONE identical governed input -- a cost
+# risk model with three risk events and no stated dependence policy --
+#
+#     canonical_v3.py as it shipped at commit 0e0dfbd (v11)  emits p80_total_cost = 1200.0
+#     canonical_v3.py after the closure                      RAISES StructureAbsent and abstains
+#
+# server/tools/test_run28_version_boundary.py extracts the v11 file from that git object,
+# EXECUTES it beside the current one and asserts exactly that divergence, so the bump rests on
+# observed behaviour rather than on a claim about it. Two further changes move what the layer
+# emits for some input: the governed project-data intake means a module that could only ever
+# abstain -- because twenty-one of the twenty-three structure keys were written by no production
+# code at all -- can now compute, and a stored row gains a `projectDataStructures` key recording
+# which structures the modules were given. A stamp identifies EXECUTABLE ANALYTICAL BEHAVIOUR,
+# and this layer's behaviour differs from v11's. Every earlier stamp, v11 included, remains the
+# historical audit baseline for the results collected under it; none is overwritten or re-used.
+SIMULATION_VERSION = "sim-2026.08-v12"
 
 #: THE LINE THAT RUN 28 FROZE, kept addressable so a reader of this file can see which stamp the
 #: historical audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v10"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v11"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -148,7 +166,7 @@ SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v10"
 SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.07-v1", "sim-2026.08-v2", "sim-2026.08-v3", "sim-2026.08-v4", "sim-2026.08-v5",
     "sim-2026.08-v6", "sim-2026.08-v7", "sim-2026.08-v8", "sim-2026.08-v9", "sim-2026.08-v10",
-    "sim-2026.08-v11",
+    "sim-2026.08-v11", "sim-2026.08-v12",
 )
 
 
