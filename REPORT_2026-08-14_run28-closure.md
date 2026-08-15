@@ -699,3 +699,20 @@ anchored RESULT line → deleted → 44/44.
 * **A3.8 Parametric Cost Index is still disabled laboratory-only.** Its structure key has no
   production supply route because no production execution can reach it. Activating it is Run 29+
   work and is not done.
+
+---
+
+## Second-pass final-head verification
+
+Same discipline as the first pass, and defect 1 is not repeated. Sequence: all second-pass work on
+`run28-closure-2` → `--no-ff` merge into `main` → the v12 freeze finalised on the merged head
+(stage-1 commit `396990800c64f4ef11154d97e4662b0b896b6e18`, manifest sha256
+`0247cb08de59b79d2fb39ec1a3540c4514caad7ddc5298d4b0080c2fb390abb4`) → **this section committed as
+the last commit, with nothing after it** → the complete suite run on that exact commit → push →
+`origin/main` confirmed equal.
+
+**130 suites, 10866 checks, all green.** The exact hash and the `HEAD == main == origin/main`
+confirmation are in the run's handover message and reproducible with `git rev-parse`.
+
+**First `sim-2026.08-v12` commit: `ba1b1f2`** (`Run 28 closure, second pass: sim-2026.08-v12, the
+owner's A1.1 decision, 23/23 keys, participant v1 from git`), merged at `3969908`.
